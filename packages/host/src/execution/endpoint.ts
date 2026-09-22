@@ -379,6 +379,13 @@ class EndpointImpl implements Endpoint {
   private readonly subscriptions: Subscriptions
   private readonly remote = new Map<string, RemoteHandleState>()
   private readonly remoteProxies = new Map<string, RemoteCapabilityImpl>()
+  /**
+   * The highest peer sequence released per `<owner><generation>`. A released handle leaves the
+   * live tables entirely — it must not hold a slot under `maxHandles` or keep its proxy alive for
+   * the life of the session — and the peer allocates sequences monotonically, so one watermark
+   * per generation still refuses a reused id without retaining anything per handle.
+   */
+  private readonly retiredRemote = new Map<string, number>()
   private readonly pumps = new Map<string, PumpState>()
   private pumpSequence = 0
   private outboundId = 0
@@ -419,7 +426,7 @@ class EndpointImpl implements Endpoint {
       pendingCalls: this.pending.size,
       activeCalls: this.active.size,
       localHandles: this.table.counts().live,
-      remoteHandles: [...this.remote.values()].filter(item => !item.released).length,
+      remoteHandles: this.remote.size,
       subscriptions: this.subscriptions.size,
       droppedLateReplies: this.pending.droppedLateReplies,
       droppedEvents: this.droppedEvents,
@@ -499,6 +506,10 @@ class EndpointImpl implements Endpoint {
     }
     const existing = this.remoteProxies.get(inner.id)
     if (existing !== undefined) return existing
+    // A released handle is gone for good: materializing its ref again must not revive it.
+    if (this.retiredRemoteHandle(inner.id)) {
+      throw this.failWith({ code: 'bad-handle', message: `handle ${inner.id} was released` })
+    }
     if (!this.remote.has(inner.id))
       this.remote.set(inner.id, { ref, released: false, children: new Set() })
     const capability = new RemoteCapabilityImpl(
@@ -703,6 +714,8 @@ class EndpointImpl implements Endpoint {
     }
     this.pumps.clear()
     for (const state of this.remote.values()) state.released = true
+    this.remote.clear()
+    this.remoteProxies.clear()
     const { failures } = await this.table.invalidate()
     for (const failure of failures)
       this.report(
@@ -1033,7 +1046,7 @@ class EndpointImpl implements Endpoint {
     const inner = ref[HANDLE_MARKER]
     if (this.table.owns(inner.id))
       throw this.failWith({ code: 'bad-handle', message: 'peer returned a handle this side owns' })
-    if (this.remote.has(inner.id))
+    if (this.remote.has(inner.id) || this.retiredRemoteHandle(inner.id))
       throw this.failWith({ code: 'bad-handle', message: `peer reused handle ${inner.id}` })
     if (expectKind !== undefined && inner.kind !== expectKind)
       throw this.failWith({ code: 'bad-handle', message: `expected a ${expectKind} handle` })
@@ -1048,12 +1061,35 @@ class EndpointImpl implements Endpoint {
     return inner.id
   }
 
+  /** Splits a validated handle id into its `<owner><generation>` prefix and sequence. */
+  private static parseRemoteId(id: string): { prefix: string; sequence: number } | undefined {
+    const cut = id.lastIndexOf('-')
+    if (cut <= 0) return undefined
+    const sequence = Number(id.slice(cut + 1))
+    return Number.isSafeInteger(sequence) ? { prefix: id.slice(0, cut), sequence } : undefined
+  }
+
+  private retiredRemoteHandle(id: string): boolean {
+    const parsed = EndpointImpl.parseRemoteId(id)
+    if (parsed === undefined) return false
+    const watermark = this.retiredRemote.get(parsed.prefix)
+    return watermark !== undefined && parsed.sequence <= watermark
+  }
+
   private markRemoteReleased(id: string): void {
     const state = this.remote.get(id)
     if (state === undefined || state.released) return
     state.released = true
     for (const child of [...state.children].reverse()) this.markRemoteReleased(child)
     if (state.parent !== undefined) this.remote.get(state.parent)?.children.delete(id)
+    this.remote.delete(id)
+    this.remoteProxies.delete(id)
+    const parsed = EndpointImpl.parseRemoteId(id)
+    if (parsed === undefined) return
+    const watermark = this.retiredRemote.get(parsed.prefix)
+    if (watermark === undefined || parsed.sequence > watermark) {
+      this.retiredRemote.set(parsed.prefix, parsed.sequence)
+    }
   }
 
   async releaseRemote(id: string): Promise<void> {

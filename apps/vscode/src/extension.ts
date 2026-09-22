@@ -15,12 +15,20 @@
  */
 import { createHash, randomBytes } from 'node:crypto'
 import { imageGalleryExtensions, galleryThumbnail, imageGalleryHtml } from './image-gallery.js'
-import { copyFileSync, createReadStream, existsSync, readFileSync, statSync } from 'node:fs'
+import {
+  copyFileSync,
+  createReadStream,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs'
 import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import * as vscode from 'vscode'
 import { loadContentSources, callContentSources } from '@modkit/vfs/content-sources/node'
-import type { ContentSources } from '@modkit/vfs/content-sources'
+import type { ContentSourceLocalPath, ContentSources } from '@modkit/vfs/content-sources'
 import { chooseContentSource } from '@modkit/ui/content-sources'
 import type { CatalogSource, ExtensionManagerEntry } from '@modkit/extension-manager'
 import {
@@ -53,27 +61,35 @@ import {
 import {
   containerUriPath,
   containerUriText,
+  containerLocationIdentity,
   CONTAINER_SCHEME,
   parseContainerUriPath,
   parseContainerUriText,
   splitContainer,
   type ContainerNode,
 } from './container-uri.js'
+import { advertisesSubjectCandidates, SUBJECT_SELECTOR_SOURCE } from './subject-candidates.js'
+import { createChainTreeDataSource, type ResourceChainLayer } from './resource-chain.js'
 import {
   commandSubjectsFrom,
+  composeLanguageDocumentSources,
   createModkitCommandRuntime,
   discoverServiceOperations,
   invokeServiceOperation,
   SERVICE_OPERATION_CATALOG_MAX_PAGE_ITEMS,
   loadLocalizationCatalogs,
+  resolveContentLanguageSources,
   type CommandInput,
   type CommandResult,
 } from '@modkit/host'
 import {
   createLanguageWorkspace,
+  languageWorkspaceContextToken,
   languageProviderRoutes,
+  languageProviderTriggerCharacters,
   resolveLanguageProvider,
   type LanguageWorkspaceDocumentSource,
+  type LanguageWorkspaceDocumentSourceResult,
 } from '@modkit/host/language'
 import { discoverGameInstallations } from '@modkit/host/games'
 import {
@@ -82,13 +98,24 @@ import {
   launchNodeGameResource,
   useArtifactDigestCache,
 } from '@modkit/host/node'
-import type { SubjectCandidateProviderSource, SubjectCandidateScope } from '@modkit/sdk'
+import type {
+  AnyDescriptor,
+  AssetSession,
+  OperationSession,
+  SubjectCandidateProviderSource,
+  SubjectCandidateScope,
+  TreeDataSource,
+  TreeNodeFacts,
+  TreeNodeRef,
+} from '@modkit/sdk'
+import { createSubjectCandidateProvider } from '@modkit/sdk'
 import { isModkitError } from '@modkit/core'
 import {
   CONTAINER_ENTRY_EXISTS,
   CONTAINER_ENTRY_NOT_FOUND,
   type ContainerRegistry,
 } from './containers.js'
+import { createContainerDependencyContentSources } from './container-content-sources.js'
 import {
   createOperationOutputStore,
   operationOutputName,
@@ -105,6 +132,7 @@ import {
 } from './extension-cards.js'
 import { openVsCodeExtensionCardResource } from './extension-card-resource-actions.js'
 import {
+  configuredExtensionRoots,
   configuredDisabledContributions,
   configuredDisabledExtensions,
   describeConfiguredExtensions,
@@ -152,6 +180,7 @@ import {
   type VsCodeConfigurationPort,
   type VsCodeServed,
   type VsCodeSubjectHost,
+  type VsCodeTreeSubject,
 } from './host.js'
 import { describeDegradation, describeFacilities, type FacilityReport } from './facilities.js'
 import { pageHtml, refusalHtml, type WebviewLike } from './page.js'
@@ -159,9 +188,12 @@ import BUNDLED_CATALOG from '../generated/bundled-catalog.json' with { type: 'js
 import { describeOpenTarget } from './uri.js'
 import { createVscodeLocalizer, VSCODE_UI_CATALOGS } from './localization.js'
 import {
+  applyEditorOnTypeEditResult,
+  caseInsensitiveExtensionPattern,
   createLanguageSessionController,
   LANGUAGE_TOKEN_MODIFIERS,
   LANGUAGE_TOKEN_TYPES,
+  plainLanguagePosition,
   type EditorDocumentSymbol,
   type EditorLanguageDocument,
 } from './language-session.js'
@@ -180,11 +212,13 @@ import {
   withoutSelectedContentSource,
   type SelectedContentSource,
 } from './workbench-workflows.js'
+import { createSourceTree, type SourceTreeNode } from './source-tree.js'
 import { runExplicitGameLaunch, VSCODE_GAME_LAUNCH_COMMAND } from './game-launch-workflow.js'
 import { planEditorAssociations, type AssociationPlan } from './editor-associations.js'
 import { createPhaseLog } from './timing.js'
 import { createViewerStatusBar } from './viewer-status.js'
 import {
+  selectScopedSubject,
   selectScopedSubjectCandidates,
   type VsCodeSubjectCandidateScope,
 } from './subject-candidates.js'
@@ -265,6 +299,8 @@ const SERVICE_OPERATION_BUDGET = Object.freeze({
 })
 
 const PACKAGE_INSTALL_GATE_COMMAND = '_modkit.acceptance.packageInstallGate'
+/** Whether Resources joins the dependency chain, remembered per workspace. */
+const RESOURCES_CHAIN_KEY = 'modkit.resources.showChain'
 const PACKAGE_INSTALL_GATE_ENV = 'MODKIT_VSCODE_ACCEPTANCE_PACKAGE_GATE'
 const PACKAGE_INSTALL_GATE_GENERATION_ENV = 'MODKIT_VSCODE_ACCEPTANCE_GENERATION'
 const PACKAGE_INSTALL_GATE_ARTIFACT_ENV = 'MODKIT_VSCODE_ACCEPTANCE_ARTIFACT_SHA256'
@@ -625,6 +661,88 @@ function subjectUriOf(path: string): vscode.Uri {
         scheme: CONTAINER_SCHEME,
         path: containerUriPath(location.container, location.entry),
       })
+}
+
+/**
+ * The entry a namespace-entry subject id names, or nothing when the subject is not one.
+ *
+ * Codecs address an entry inside their own package as `<package source uri>?vfs-path=<entry>`; the
+ * package part is the codec's source uri, which is not this window's subject string, so only the
+ * entry travels — the caller already knows which package it asked.
+ */
+function namespaceEntryPathOf(subjectId: string): string | undefined {
+  const match = /[?&]vfs-path=([^&]*)$/u.exec(subjectId)
+  if (match?.[1] === undefined) return undefined
+  try {
+    const entry = decodeURIComponent(match[1]).replaceAll('\\', '/').replace(/^\/+/u, '')
+    return entry === '' || entry.split('/').includes('..') ? undefined : entry
+  } catch {
+    return undefined
+  }
+}
+
+/**
+ * The package a namespace-entry subject belongs to, when its own address names one.
+ *
+ * With a dependency chain on screen the resource under the cursor usually belongs to a *lower*
+ * layer — an alert declared by Core, read while editing Void. Both packages carry a file of the
+ * same name, so resolving the entry against the active package opens the wrong document at a line
+ * that means nothing. The subject id already carries its package; this reads it back.
+ */
+function namespaceEntryRootOf(subjectId: string): string | undefined {
+  const cut = subjectId.search(/[?&]vfs-path=/u)
+  if (cut <= 0) return undefined
+  const head = subjectId.slice(0, cut)
+  if (parseContainerUriText(head) !== undefined) return head
+  if (!head.startsWith('file:')) return undefined
+  try {
+    return vscode.Uri.parse(head, true).fsPath
+  } catch {
+    return undefined
+  }
+}
+
+/** The URI of one entry inside a package subject, for a directory package or a container member. */
+function memberUriOf(root: string, entry: string): vscode.Uri {
+  const location = parseContainerUriText(root)
+  return location === undefined
+    ? vscode.Uri.file(join(root, entry))
+    : subjectUriOf(
+        containerUriText(
+          location.container,
+          location.entry === '' ? entry : `${location.entry}/${entry}`,
+        ),
+      )
+}
+
+/**
+ * Show a resource file, at its declaration when one is known.
+ *
+ * A file already on screen is revealed where it is: opening it «beside» a second time would split
+ * the window once per click and leave the reader hunting for the copy that moved.
+ */
+async function openResourceFile(
+  target: vscode.Uri,
+  range?: TreeNodeFacts['range'],
+): Promise<void> {
+  const open = vscode.window.tabGroups.all
+    .flatMap(group => group.tabs.map(tab => ({ group, tab })))
+    .find(
+      ({ tab }) =>
+        (tab.input instanceof vscode.TabInputText || tab.input instanceof vscode.TabInputCustom) &&
+        tab.input.uri.toString() === target.toString(),
+    )
+  const line = range === undefined ? undefined : (range as { line?: number }).line
+  const column = range === undefined ? undefined : (range as { column?: number }).column
+  const at =
+    typeof line === 'number' && typeof column === 'number'
+      ? new vscode.Range(new vscode.Position(line, column), new vscode.Position(line, column))
+      : undefined
+  await vscode.commands.executeCommand('vscode.open', target, {
+    viewColumn: open?.group.viewColumn ?? vscode.ViewColumn.Beside,
+    preview: false,
+    ...(at === undefined ? {} : { selection: at }),
+  })
 }
 
 function subjectCandidateScopeOf(uri: vscode.Uri): VsCodeSubjectCandidateScope {
@@ -1196,6 +1314,450 @@ class HostView implements vscode.TreeDataProvider<HostNode> {
   }
 }
 
+/** The native, persistent view over the source authorities already used by the host. */
+class SourcesView implements vscode.TreeDataProvider<SourceTreeNode>, vscode.Disposable {
+  private readonly changed = new vscode.EventEmitter<SourceTreeNode | undefined>()
+  readonly onDidChangeTreeData = this.changed.event
+  private providerState:
+    | Promise<{
+        readonly snapshot?: Awaited<ReturnType<ContentSources['snapshot']>>
+        readonly problem?: string
+      }>
+    | undefined
+
+  constructor(
+    private readonly workspaceFolders: () => readonly {
+      readonly name: string
+      readonly uri: string
+    }[],
+    private readonly selectedInstallations: () => readonly SelectedContentSource[],
+    private readonly mountedProviderRootIds: () => ReadonlySet<string>,
+    private readonly providerSnapshot: () => Promise<
+      Awaited<ReturnType<ContentSources['snapshot']>>
+    >,
+    private readonly localizer: UiLocalizer,
+    private readonly mountedInstallationPaths: () => ReadonlySet<string> = () => new Set(),
+    private readonly mountingIds: () => ReadonlySet<string> = () => new Set(),
+  ) {}
+
+  dispose(): void {
+    this.changed.dispose()
+  }
+
+  refresh(): void {
+    this.providerState = undefined
+    this.changed.fire(undefined)
+  }
+
+  private loadProviderState(): Promise<{
+    readonly snapshot?: Awaited<ReturnType<ContentSources['snapshot']>>
+    readonly problem?: string
+  }> {
+    this.providerState ??= this.providerSnapshot().then(
+      snapshot => ({ snapshot }),
+      error => ({ problem: error instanceof Error ? error.message : String(error) }),
+    )
+    return this.providerState
+  }
+
+  getTreeItem(node: SourceTreeNode): vscode.TreeItem {
+    const item = new vscode.TreeItem(
+      node.label,
+      node.children === undefined
+        ? vscode.TreeItemCollapsibleState.None
+        : vscode.TreeItemCollapsibleState.Expanded,
+    )
+    item.id = node.id
+    item.iconPath = new vscode.ThemeIcon(node.icon)
+    if (node.contextValue !== undefined) item.contextValue = node.contextValue
+    if (node.description !== undefined) item.description = node.description
+    item.tooltip = node.tooltip ?? node.description ?? node.label
+    if (node.kind === 'provider-root') {
+      item.command = {
+        command: 'modkit.sources.open',
+        title: this.localizer.text('vscode.sources.open'),
+        arguments: [node],
+      }
+    } else if (node.kind === 'installation' && node.uri !== undefined) {
+      item.command = {
+        command: 'modkit.sources.openInstallation',
+        title: this.localizer.text('vscode.sources.open'),
+        arguments: [node],
+      }
+    } else if (node.kind === 'workspace' && node.uri !== undefined) {
+      item.command = {
+        command: 'revealInExplorer',
+        title: this.localizer.text('vscode.sources.reveal'),
+        arguments: [vscode.Uri.parse(node.uri)],
+      }
+    } else if (node.id === 'provider:sign-in') {
+      // The row that says there is no account is the row that adds one.
+      item.command = {
+        command: 'modkit.sources.signIn',
+        title: this.localizer.text('vscode.sources.signIn'),
+      }
+    } else if (node.id === 'provider:unavailable') {
+      item.command = {
+        command: 'modkit.contentSources',
+        title: this.localizer.text('vscode.sources.manage'),
+      }
+    } else if (node.id === 'installations:none') {
+      item.command = {
+        command: 'modkit.selectGameInstallation',
+        title: this.localizer.text('vscode.game.selectInstallation'),
+      }
+    }
+    return item
+  }
+
+  async getChildren(node?: SourceTreeNode): Promise<SourceTreeNode[]> {
+    if (node !== undefined) return [...(node.children ?? [])]
+    const provider = await this.loadProviderState()
+    return [
+      ...createSourceTree({
+        workspaceFolders: this.workspaceFolders(),
+        selectedInstallations: this.selectedInstallations(),
+        mountedProviderRootIds: this.mountedProviderRootIds(),
+        mountedInstallationPaths: this.mountedInstallationPaths(),
+        mountingIds: this.mountingIds(),
+        ...(provider.snapshot === undefined ? {} : { providerSnapshot: provider.snapshot }),
+        ...(provider.problem === undefined ? {} : { providerProblem: provider.problem }),
+        text: {
+          workspace: this.localizer.text('vscode.sources.workspace'),
+          selectedInstallations: this.localizer.text('vscode.sources.selectedInstallations'),
+          providerSources: this.localizer.text('vscode.sources.providerSources'),
+          connections: this.localizer.text('vscode.sources.connections'),
+          roots: this.localizer.text('vscode.sources.roots'),
+          noWorkspaceFolders: this.localizer.text('vscode.sources.noWorkspaceFolders'),
+          noSelectedInstallations: this.localizer.text('vscode.host.noSelectedGame'),
+          providerUnavailable: this.localizer.text('vscode.sources.providerUnavailable'),
+          connected: this.localizer.text('vscode.sources.connected'),
+          selected: this.localizer.text('vscode.sources.selected'),
+          mounted: this.localizer.text('vscode.sources.mounted'),
+          mounting: this.localizer.text('vscode.sources.mounting'),
+          available: this.localizer.text('vscode.sources.available'),
+          signIn: this.localizer.text('vscode.sources.signIn'),
+          onlineUnavailable: this.localizer.text('vscode.sources.onlineUnavailable'),
+          myPublications: this.localizer.text('vscode.sources.myPublications'),
+          publicCatalogue: this.localizer.text('vscode.sources.publicCatalogue'),
+          localFolders: this.localizer.text('vscode.sources.localFolders'),
+        },
+      }),
+    ]
+  }
+}
+
+/** How many children of one resource node the view will render before it says it stopped. */
+const RESOURCE_CHILD_LIMIT = 20_000
+/** Facts fetched at once; the protocol allows 256 calls in flight across everything. */
+const RESOURCE_FACT_BATCH = 32
+
+type ResourceTreeNode =
+  | Readonly<{
+      kind: 'resource'
+      ref: TreeNodeRef
+      facts: TreeNodeFacts
+    }>
+  /*
+   * A node *inside* a resource file, answered by that format's own codec.
+   *
+   * A `.galaxy`, `.SC2Layout` or `.SC2Style` file is not a leaf: its functions, frames and styles
+   * are the resources an author actually references. Each of those formats already publishes a
+   * tree, so the file expands into that tree rather than this view learning a second parser.
+   */
+  | Readonly<{
+      kind: 'member'
+      subject: string
+      ref: TreeNodeRef
+      facts: TreeNodeFacts
+    }>
+  | Readonly<{
+      kind: 'more'
+      parent: TreeNodeRef
+      cursor: string
+    }>
+  | Readonly<{
+      kind: 'notice'
+      label: string
+      detail?: string
+    }>
+
+interface ResourceTreeHost extends Pick<VsCodeServed, 'openTreeDataSource'> {
+  /** A resource opens at its declaration when the node carries one. */
+  navigate(subjectId: string, range?: TreeNodeFacts['range']): void
+}
+
+/** Opens the tree a resource file publishes through its own codec, when it publishes one. */
+type ResourceMemberTrees = Readonly<{
+  /** The subject string of the file a resource node names, when this window can open it. */
+  subjectOf(subjectId: string): string | undefined
+  open(subject: string): Promise<TreeDataSource | undefined>
+  /** Shows the file a member node lives in, at that node's own position. */
+  reveal(subject: string, range?: TreeNodeFacts['range']): void
+  reset(): void
+}>
+
+/** Native projection of the active subject's standard tree data source. */
+class ResourcesView implements vscode.TreeDataProvider<ResourceTreeNode>, vscode.Disposable {
+  private readonly changed = new vscode.EventEmitter<ResourceTreeNode | undefined>()
+  readonly onDidChangeTreeData = this.changed.event
+  private searchResults: readonly ResourceTreeNode[] | undefined
+  private generation = 0
+
+  constructor(
+    private readonly active: () => ResourceTreeHost | undefined,
+    private readonly localizer: UiLocalizer,
+    private readonly fallback?: () => Promise<ResourceTreeHost | undefined>,
+    private readonly onRefresh?: () => void,
+    private readonly members?: ResourceMemberTrees,
+  ) {}
+
+  dispose(): void {
+    this.changed.dispose()
+  }
+
+  refresh(): void {
+    this.generation += 1
+    this.searchResults = undefined
+    this.onRefresh?.()
+    this.members?.reset()
+    this.changed.fire(undefined)
+  }
+
+  private async current(): Promise<ResourceTreeHost | undefined> {
+    return this.active() ?? (await this.fallback?.())
+  }
+
+  async open(node?: ResourceTreeNode): Promise<boolean> {
+    // The command is also reachable from the palette, where there is no node at all.
+    if (node === undefined || node.kind === 'notice' || node.kind === 'more') return false
+    if (node.kind === 'member') {
+      // A node inside a file — a Galaxy function, a layout frame — opens that file at its own
+      // position. Its subject is the file, so there is nothing to resolve.
+      this.members?.reveal(node.subject, node.facts.range)
+      return true
+    }
+    if (node.facts.subjectId === undefined) return false
+    const served = await this.current()
+    if (served === undefined) return false
+    served.navigate(node.facts.subjectId, node.facts.range)
+    return true
+  }
+
+  /** The file subject a resource node names, when that file has a codec that publishes a tree. */
+  private memberSubjectOf(node: ResourceTreeNode): string | undefined {
+    if (node.kind !== 'resource' || node.facts.subjectId === undefined) return undefined
+    return this.members?.subjectOf(node.facts.subjectId)
+  }
+
+  private async loadMember(subject: string, parent?: TreeNodeRef): Promise<ResourceTreeNode[]> {
+    const tree = await this.members?.open(subject)
+    if (tree === undefined) return []
+    const node = parent ?? (await tree.root())
+    const items: TreeNodeRef[] = []
+    let cursor: string | undefined
+    do {
+      const page = await tree.children(node, cursor === undefined ? { limit: 500 } : { cursor, limit: 500 })
+      items.push(...page.items)
+      cursor = page.nextCursor
+    } while (cursor !== undefined && items.length < RESOURCE_CHILD_LIMIT)
+    const nodes: ResourceTreeNode[] = []
+    for (let start = 0; start < items.length; start += RESOURCE_FACT_BATCH) {
+      const batch = items.slice(start, start + RESOURCE_FACT_BATCH)
+      nodes.push(
+        ...(await Promise.all(
+          batch.map(async ref =>
+            Object.freeze({ kind: 'member' as const, subject, ref, facts: await tree.facts(ref) }),
+          ),
+        )),
+      )
+    }
+    return nodes
+  }
+
+  private notice(label: string, detail?: string): ResourceTreeNode {
+    return Object.freeze({ kind: 'notice', label, ...(detail === undefined ? {} : { detail }) })
+  }
+
+  /*
+   * Children arrive as one list, not as a chain of «Load more» nodes.
+   *
+   * A cursor node made the rest of a catalog a *child* of the last page, so a long list grew
+   * sideways into nested trees instead of continuing. The pages are drained here and the list is
+   * flat; the cap is what keeps a runaway source from filling the view forever.
+   */
+  private async loadPage(
+    tree: TreeDataSource,
+    parent: TreeNodeRef,
+    cursor?: string,
+  ): Promise<ResourceTreeNode[]> {
+    const items: TreeNodeRef[] = []
+    let next = cursor
+    do {
+      const page = await tree.children(
+        parent,
+        next === undefined ? { limit: 500 } : { cursor: next, limit: 500 },
+      )
+      items.push(...page.items)
+      next = page.nextCursor
+    } while (next !== undefined && items.length < RESOURCE_CHILD_LIMIT)
+    /*
+     * Facts are fetched in bounded batches. One `Promise.all` over a whole catalog put thousands
+     * of calls on the wire at once and tripped the protocol's 256 pending-call ceiling, which the
+     * reader saw as «pending call limit 256 reached» on Abil and on layouts.
+     */
+    const nodes: ResourceTreeNode[] = []
+    for (let start = 0; start < items.length; start += RESOURCE_FACT_BATCH) {
+      const batch = items.slice(start, start + RESOURCE_FACT_BATCH)
+      nodes.push(
+        ...(await Promise.all(
+          batch.map(async ref =>
+            Object.freeze({ kind: 'resource' as const, ref, facts: await tree.facts(ref) }),
+          ),
+        )),
+      )
+    }
+    return next === undefined
+      ? nodes
+      : [
+          ...nodes,
+          this.notice(
+            this.localizer.text('vscode.resources.truncated', {
+              count: String(RESOURCE_CHILD_LIMIT),
+            }),
+          ),
+        ]
+  }
+
+  private async load(parent: TreeNodeRef, cursor?: string): Promise<ResourceTreeNode[]> {
+    const served = await this.current()
+    if (served === undefined) {
+      return [this.notice(this.localizer.text('vscode.resources.noActiveSubject'))]
+    }
+    const lease = await served.openTreeDataSource()
+    if (lease === undefined) {
+      return [this.notice(this.localizer.text('vscode.resources.unavailable'))]
+    }
+    try {
+      return await this.loadPage(lease.value, parent, cursor)
+    } finally {
+      await lease.release()
+    }
+  }
+
+  async search(pattern: string | undefined): Promise<void> {
+    const query = pattern?.trim()
+    if (!query) {
+      this.refresh()
+      return
+    }
+    const served = await this.current()
+    const lease = await served?.openTreeDataSource()
+    if (lease === undefined) {
+      this.searchResults = [this.notice(this.localizer.text('vscode.resources.unavailable'))]
+      this.changed.fire(undefined)
+      return
+    }
+    const generation = ++this.generation
+    try {
+      const found: ResourceTreeNode[] = []
+      for await (const ref of lease.value.search({ pattern: query })) {
+        found.push(Object.freeze({ kind: 'resource', ref, facts: await lease.value.facts(ref) }))
+        if (found.length >= 200) break
+      }
+      if (generation !== this.generation) return
+      this.searchResults =
+        found.length === 0
+          ? [this.notice(this.localizer.text('vscode.resources.noMatches', { query }))]
+          : Object.freeze(found)
+      this.changed.fire(undefined)
+    } finally {
+      await lease.release()
+    }
+  }
+
+  getTreeItem(node: ResourceTreeNode): vscode.TreeItem {
+    if (node.kind === 'notice') {
+      const item = new vscode.TreeItem(node.label, vscode.TreeItemCollapsibleState.None)
+      item.iconPath = new vscode.ThemeIcon('info')
+      if (node.detail !== undefined) item.description = node.detail
+      item.tooltip = node.detail ?? node.label
+      return item
+    }
+    if (node.kind === 'more') {
+      const item = new vscode.TreeItem(
+        this.localizer.text('vscode.resources.loadMore'),
+        vscode.TreeItemCollapsibleState.Collapsed,
+      )
+      item.iconPath = new vscode.ThemeIcon('ellipsis')
+      return item
+    }
+    const item = new vscode.TreeItem(
+      node.facts.label,
+      // A file whose format publishes a tree is expandable even though the package's own tree
+      // calls it a leaf — the children come from that file's codec, not from the package.
+      node.ref.hasChildren || (node.kind === 'resource' && this.memberSubjectOf(node) !== undefined)
+        ? vscode.TreeItemCollapsibleState.Collapsed
+        : vscode.TreeItemCollapsibleState.None,
+    )
+    item.id = node.kind === 'member' ? `${node.subject}|${node.ref.id}` : node.ref.id
+    if (node.facts.preview !== undefined) item.description = node.facts.preview
+    item.tooltip = node.facts.preview ?? node.facts.label
+    item.contextValue =
+      node.facts.subjectId === undefined ? 'modkitResource.node' : 'modkitResource.openable'
+    item.iconPath = new vscode.ThemeIcon(
+      node.ref.hasChildren
+        ? 'symbol-folder'
+        : /file|document|script|layout|string|style/iu.test(node.facts.kind)
+          ? 'file'
+          : 'symbol-field',
+    )
+    if (node.facts.subjectId !== undefined) {
+      item.command = {
+        command: 'modkit.resources.open',
+        title: this.localizer.text('vscode.resources.open'),
+        arguments: [node],
+      }
+    }
+    return item
+  }
+
+  async getChildren(node?: ResourceTreeNode): Promise<ResourceTreeNode[]> {
+    try {
+      if (node?.kind === 'notice') return []
+      if (node?.kind === 'more') return this.load(node.parent, node.cursor)
+      if (node?.kind === 'member') return this.loadMember(node.subject, node.ref)
+      if (node?.kind === 'resource') {
+        // A file that publishes its own tree expands into it; anything else expands as before.
+        const subject = node.ref.hasChildren ? undefined : this.memberSubjectOf(node)
+        return subject === undefined ? this.load(node.ref) : this.loadMember(subject)
+      }
+      if (this.searchResults !== undefined) return [...this.searchResults]
+      const served = await this.current()
+      if (served === undefined) {
+        return [this.notice(this.localizer.text('vscode.resources.noActiveSubject'))]
+      }
+      const lease = await served.openTreeDataSource()
+      if (lease === undefined) {
+        return [this.notice(this.localizer.text('vscode.resources.unavailable'))]
+      }
+      try {
+        const root = await lease.value.root()
+        return await this.loadPage(lease.value, root)
+      } finally {
+        await lease.release()
+      }
+    } catch (error) {
+      return [
+        this.notice(
+          this.localizer.text('vscode.resources.failed'),
+          error instanceof Error ? error.message : String(error),
+        ),
+      ]
+    }
+  }
+}
+
 // ---------------------------------------------------------------------------------------------
 // activation
 
@@ -1213,6 +1775,10 @@ export interface ModkitExtensionApi {
   /** Roots the shipped catalog named that this build does not contain. Empty is the healthy state. */
   readonly missingCatalogRoots: readonly string[]
   readonly contributions: number
+  /** Language routes composed for this process; exposed so installed acceptance can name coverage. */
+  readonly languageRoutes: readonly string[]
+  /** Bounded mirror of the output channel for installed acceptance and support bundles. */
+  diagnostics(): readonly string[]
   /** Generic leased runtime control for other editor integrations; selection stays host-owned. */
   readonly runtime: RuntimeDebugController
   /**
@@ -1507,6 +2073,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
   let selectedSources = selectedContentSources(
     context.workspaceState.get<unknown>(SELECTED_SOURCES_KEY),
   )
+  /**
+   * Mounts in flight, by the id the Sources row carries — a provider root id or an installation's
+   * normalized path. A mount adds its folder first and reads afterwards, so this is what lets the
+   * row say it is still loading while the workspace folder is already there.
+   */
+  const mountingSources = new Map<string, AbortController>()
+  const normalizedSourcePath = (path: string): string => resolve(path).toLowerCase()
   const hostView = new HostView(
     host,
     host.services.host.topology.topologyId,
@@ -1571,13 +2144,72 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         workspaceFolderAnnouncements += 1
       }),
     )
+  const workspaceFolderIdentity = (uri: vscode.Uri): string => {
+    if (uri.scheme !== CONTAINER_SCHEME) return uri.toString()
+    const location = parseContainerUriPath(uri.path)
+    return location === undefined
+      ? uri.toString()
+      : `${CONTAINER_SCHEME}:${containerLocationIdentity(
+          location.container,
+          location.entry,
+          process.platform !== 'win32',
+        )}`
+  }
+  const synchronizeContainerWorkspaceFolders = async (): Promise<void> => {
+    const current = vscode.workspace.workspaceFolders ?? []
+    const seen = new Set<string>()
+    let changed = false
+    const desired = current.flatMap(item => {
+      if (item.uri.scheme !== CONTAINER_SCHEME) return [{ uri: item.uri, name: item.name }]
+      const identity = workspaceFolderIdentity(item.uri)
+      if (seen.has(identity)) {
+        changed = true
+        return []
+      }
+      seen.add(identity)
+      const source = selectedSources.find(candidate => {
+        const uri = vscode.Uri.from({
+          scheme: CONTAINER_SCHEME,
+          path: containerUriPath(candidate.installPath),
+        })
+        return workspaceFolderIdentity(uri) === identity
+      })
+      const name =
+        source === undefined
+          ? item.name
+          : `CASC: ${source.displayName}${
+              source.version === undefined ? '' : ` · ${source.version}`
+            }`
+      if (name !== item.name) changed = true
+      return [{ uri: item.uri, name }]
+    })
+    if (!changed) return
+    let announce: (() => void) | undefined
+    const announced = new Promise<void>(resolvePromise => {
+      announce = resolvePromise
+    })
+    const subscription = vscode.workspace.onDidChangeWorkspaceFolders(() => announce?.())
+    const accepted = vscode.workspace.updateWorkspaceFolders(0, current.length, ...desired)
+    if (accepted) {
+      await Promise.race([
+        announced,
+        new Promise<void>(resolvePromise => setTimeout(resolvePromise, 500)),
+      ])
+      log('normalized container workspace folders')
+    } else {
+      log('the workspace refused container folder normalization')
+    }
+    subscription.dispose()
+  }
+  await synchronizeContainerWorkspaceFolders()
   const addContainerWorkspaceFolder = (
     folder: vscode.Uri,
     name: string,
   ): Promise<'added' | 'already-present' | 'rejected'> => {
     const attempt = async (settleMs: number): Promise<'added' | 'already-present' | 'rejected'> => {
       const current = vscode.workspace.workspaceFolders ?? []
-      if (current.some(item => item.uri.toString() === folder.toString())) {
+      const identity = workspaceFolderIdentity(folder)
+      if (current.some(item => workspaceFolderIdentity(item.uri) === identity)) {
         return 'already-present'
       }
       let announce: (() => void) | undefined
@@ -1614,6 +2246,57 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     })
     workspaceFolderMutation = mutation.catch(() => undefined)
     return mutation
+  }
+
+  /** Open either an archive file or an installation namespace through the shared container VFS. */
+  const openContainerPath = async (container: string, label: string) => {
+    const startedAt = Date.now()
+    const absolute = resolve(container)
+    granted.add(statSync(absolute).isDirectory() ? absolute : dirname(absolute))
+    const existing = vscode.workspace.workspaceFolders
+    if (existing === undefined || existing.length === 0) {
+      throw new Error(localizer.text('vscode.container.openFolderFirst'))
+    }
+    const folder = vscode.Uri.from({
+      scheme: CONTAINER_SCHEME,
+      path: containerUriPath(absolute),
+    })
+    /*
+     * Order matters, and every step here was a delay the reader saw as «nothing happened».
+     *
+     * The row is marked mounting *before* anything is awaited, so the spinner and its cancel
+     * action exist from the click. The folder is then added — that is the only wait — and
+     * revealing it is fire-and-forget, because revealing makes the Explorer list the container,
+     * and listing an installation is exactly the long read this mount is trying not to block on.
+     */
+    const mountKey = normalizedSourcePath(absolute)
+    const cancellation = new AbortController()
+    mountingSources.get(mountKey)?.abort()
+    mountingSources.set(mountKey, cancellation)
+    sourcesView.refresh()
+    const effect = await addContainerWorkspaceFolder(folder, label)
+    if (effect === 'rejected') {
+      mountingSources.delete(mountKey)
+      sourcesView.refresh()
+      throw new Error(localizer.text('vscode.container.workspaceRejected'))
+    }
+    void vscode.commands.executeCommand('revealInExplorer', folder).then(undefined, () => undefined)
+    log(`container ${effect} in the workspace in ${String(Date.now() - startedAt)} ms: ${label}`)
+    try {
+      const index = await vscode.window.withProgress(
+        { location: vscode.ProgressLocation.Window, title: `Modkit: ${label}` },
+        () => containers.index(absolute, cancellation.signal),
+      )
+      return Object.freeze({
+        container: absolute,
+        folder,
+        indexedFiles: index.files.size,
+        workspaceEffect: effect,
+      })
+    } finally {
+      if (mountingSources.get(mountKey) === cancellation) mountingSources.delete(mountKey)
+      sourcesView.refresh()
+    }
   }
 
   const containerLocation = (uri: vscode.Uri): { container: string; entry: string } => {
@@ -1659,15 +2342,93 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
   context.subscriptions.push(containerChanges)
   // The same Explorer accepts local containers and remote VFS roots. This adapter owns no login protocol.
   let contentSources: Promise<ContentSources | undefined> | undefined
+  const automaticContentSourceConfig = (storage: string): string | undefined => {
+    const roots = [
+      ...managedExtensionState.roots
+        .filter(item => item.expectedId === 'blizzard/starcraft2')
+        .map(item => item.root),
+      ...localExtensionCandidates
+        .filter(item => item.id === 'blizzard/starcraft2' && item.root !== undefined)
+        .map(item => item.root!),
+      ...configuredExtensionRoots(rawConfiguredExtensions, path => resolve(path)).roots.map(
+        item => item.root,
+      ),
+    ]
+    const checked = new Set<string>()
+    for (const root of roots) {
+      const absolute = resolve(root)
+      const key = process.platform === 'win32' ? absolute.toLowerCase() : absolute
+      if (checked.has(key)) continue
+      checked.add(key)
+      const declaration = join(absolute, 'package.json')
+      const module = join(
+        absolute,
+        'dist',
+        'modules',
+        'game',
+        'battlenet',
+        'content-sources',
+        'local-content-sources.js',
+      )
+      if (!existsSync(declaration) || !existsSync(module)) continue
+      try {
+        const manifest = JSON.parse(readFileSync(declaration, 'utf8')) as {
+          readonly modkit?: { readonly publisher?: unknown; readonly id?: unknown }
+        }
+        if (manifest.modkit?.publisher !== 'blizzard' || manifest.modkit.id !== 'starcraft2') {
+          continue
+        }
+      } catch {
+        continue
+      }
+      mkdirSync(storage, { recursive: true })
+      const generated = join(storage, 'local-provider.generated.json')
+      const installationDirectory = selectedSources.find(
+        item => item.gameId === 'blizzard/starcraft-2',
+      )?.installPath
+      writeFileSync(
+        generated,
+        `${JSON.stringify(
+          {
+            module,
+            options: {
+              ...(installationDirectory === undefined ? {} : { installationDirectory }),
+              // With a state directory the provider can also offer the public Battle.net
+              // catalogue, which needs no account: published content is addressed by digest and
+              // served over HTTPS, and whatever the game already downloaded is read from its
+              // own cache. Signing in stays with the native runtime.
+              stateDirectory: storage,
+            },
+          },
+          null,
+          2,
+        )}\n`,
+      )
+      return generated
+    }
+    return undefined
+  }
+  const resetContentSources = (): void => {
+    const previous = contentSources
+    contentSources = undefined
+    void previous?.then(source => source?.dispose()).catch(() => undefined)
+  }
   const requireContentSources = async (): Promise<ContentSources> => {
     if (!vscode.workspace.isTrusted) throw new Error('Content sources require a trusted workspace')
     const storage = join(context.globalStorageUri.fsPath, 'content-sources')
     const defaultConfig = join(storage, 'provider.json')
-    contentSources ??= loadContentSources(
+    const configuredSetting = vscode.workspace
+      .getConfiguration('modkit')
+      .get<unknown>('contentSourceConfig')
+    const configuredPath =
+      typeof configuredSetting === 'string' && configuredSetting.trim().length > 0
+        ? configuredSetting.trim()
+        : undefined
+    const configured =
       process.env['MODKIT_CONTENT_SOURCE_CONFIG'] ??
-        (existsSync(defaultConfig) ? defaultConfig : undefined),
-      storage,
-    )
+      configuredPath ??
+      (existsSync(defaultConfig) ? defaultConfig : automaticContentSourceConfig(storage))
+    contentSources ??= loadContentSources(configured, storage)
     const source = await contentSources
     if (!source)
       throw new Error('Battle.net source runtime is not configured for this installation')
@@ -1695,6 +2456,120 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       throw vscode.FileSystemError.FileNotFound(uri)
     return { id, path: parts.join('/') }
   }
+  const openContentSourceRoot = async (source: {
+    readonly id: string
+    readonly label: string
+  }): Promise<void> => {
+    if (!vscode.workspace.workspaceFolders?.length) {
+      throw new Error(localizer.text('vscode.container.openFolderFirst'))
+    }
+    const uri = vscode.Uri.from({
+      scheme: 'modkit-source',
+      authority: 'battlenet',
+      path: `/${source.id}`,
+    })
+    const cancellation = new AbortController()
+    mountingSources.get(source.id)?.abort()
+    mountingSources.set(source.id, cancellation)
+    sourcesView.refresh()
+    let result: Awaited<ReturnType<typeof addContainerWorkspaceFolder>>
+    try {
+      result = await addContainerWorkspaceFolder(uri, source.label)
+    } finally {
+      if (mountingSources.get(source.id) === cancellation) mountingSources.delete(source.id)
+      sourcesView.refresh()
+    }
+    if (result === 'rejected') {
+      // Say which folder the workspace refused: the id is what distinguishes one root from the
+      // next, and without it every refused mount reads as the same unactionable failure.
+      log(`content source mount rejected: ${uri.toString()}`)
+      throw new Error(
+        `The workspace could not add this content source: ${uri.toString(true)}. ` +
+          'Reload the window and try again.',
+      )
+    }
+    await vscode.commands.executeCommand('revealInExplorer', uri)
+  }
+  const revealLocalPath = async (target: ContentSourceLocalPath): Promise<boolean> => {
+    if (!isAbsolute(target.path))
+      throw new Error('The content provider returned a non-absolute local path')
+    const uri = vscode.Uri.file(target.path)
+    if (target.kind === 'directory') return vscode.env.openExternal(uri)
+    await vscode.commands.executeCommand('revealFileInOS', uri)
+    return true
+  }
+  const revealLocalSource = async (argument: unknown): Promise<boolean> => {
+    if (argument instanceof vscode.Uri) {
+      if (argument.scheme === 'modkit-source') {
+        const location = sourceLocation(argument)
+        const target = (await callContentSources(
+          await requireContentSources(),
+          'resolveLocalPath',
+          [location.id, location.path],
+        )) as ContentSourceLocalPath | undefined
+        if (target !== undefined) return revealLocalPath(target)
+      } else if (argument.scheme === CONTAINER_SCHEME) {
+        const location = parseContainerUriPath(argument.path)
+        if (location !== undefined) {
+          const path = splitContainer(location.container).file
+          const stat = statSync(path)
+          return revealLocalPath({ path, kind: stat.isDirectory() ? 'directory' : 'file' })
+        }
+      } else if (argument.scheme === 'file') {
+        const stat = statSync(argument.fsPath)
+        return revealLocalPath({
+          path: argument.fsPath,
+          kind: stat.isDirectory() ? 'directory' : 'file',
+        })
+      }
+    }
+    if (typeof argument === 'object' && argument !== null) {
+      const row = argument as { readonly sourceId?: unknown; readonly uri?: unknown }
+      if (typeof row.sourceId === 'string') {
+        const target = (await callContentSources(
+          await requireContentSources(),
+          'resolveLocalPath',
+          [row.sourceId, ''],
+        )) as ContentSourceLocalPath | undefined
+        if (target !== undefined) return revealLocalPath(target)
+      }
+      if (typeof row.uri === 'string' && isAbsolute(row.uri)) {
+        const stat = statSync(row.uri)
+        return revealLocalPath({ path: row.uri, kind: stat.isDirectory() ? 'directory' : 'file' })
+      }
+    }
+    void vscode.window.showInformationMessage('Modkit: This source has no local folder to reveal.')
+    return false
+  }
+  const sourcesView = new SourcesView(
+    () =>
+      (vscode.workspace.workspaceFolders ?? []).map(folder => ({
+        name: folder.name,
+        uri: folder.uri.toString(),
+      })),
+    () => selectedSources,
+    () =>
+      new Set(
+        (vscode.workspace.workspaceFolders ?? [])
+          .filter(folder => folder.uri.scheme === 'modkit-source')
+          .map(folder => folder.uri.path.replace(/^\//u, '').split('/')[0])
+          .filter((id): id is string => id !== undefined && id.length > 0),
+      ),
+    async () => (await requireContentSources()).snapshot(),
+    localizer,
+    () =>
+      new Set(
+        (vscode.workspace.workspaceFolders ?? [])
+          .filter(folder => folder.uri.scheme === CONTAINER_SCHEME)
+          .flatMap(folder => {
+            const location = parseContainerUriPath(folder.uri.path)
+            return location === undefined || location.entry !== ''
+              ? []
+              : [normalizedSourcePath(location.container)]
+          }),
+      ),
+    () => new Set(mountingSources.keys()),
+  )
   const sourceFileSystem: vscode.FileSystemProvider = {
     onDidChangeFile: sourceChanges.event,
     watch: () => new vscode.Disposable(() => undefined),
@@ -1770,6 +2645,81 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
           void contentSources?.then(source => source?.dispose()).catch(() => undefined)
         },
       },
+      /*
+       * Signing in and out are first-class rows, not steps buried in a quick-pick.
+       *
+       * The provider already models several accounts at once — one connection per account and
+       * region — so the view offers the region list to add one and offers sign-out on the
+       * connection itself. Nothing here holds a credential: the provider owns the login.
+       */
+      vscode.commands.registerCommand('modkit.sources.signIn', async () => {
+        const source = await requireContentSources()
+        const snapshot = await source.snapshot()
+        const regions = snapshot.regions ?? []
+        if (regions.length === 0) {
+          /*
+           * There is nothing to sign in to unless the provider's online half is configured: it
+           * runs the official Blizzard login out of process, so it needs a native runtime this
+           * window does not ship. Say that, and offer the setting that points at it.
+           */
+          const open = await vscode.window.showWarningMessage(
+            localizer.text('vscode.sources.onlineUnavailable'),
+            localizer.text('vscode.sources.openSetting'),
+          )
+          if (open !== undefined) {
+            await vscode.commands.executeCommand(
+              'workbench.action.openSettings',
+              'modkit.contentSourceConfig',
+            )
+          }
+          return false
+        }
+        const chosen =
+          regions.length === 1
+            ? regions[0]
+            : await vscode.window.showQuickPick(
+                regions.map(region => ({ label: region.label, description: region.id, id: region.id })),
+                { title: localizer.text('vscode.sources.chooseRegion') },
+              )
+        const region = chosen === undefined ? undefined : ('id' in chosen ? chosen.id : undefined)
+        if (typeof region !== 'string') return false
+        await callContentSources(source, 'connect', [region])
+        sourcesView.refresh()
+        return true
+      }),
+
+      vscode.commands.registerCommand('modkit.sources.signOut', async (argument: unknown) => {
+        const row =
+          typeof argument === 'object' && argument !== null
+            ? (argument as { readonly id?: unknown })
+            : undefined
+        const source = await requireContentSources()
+        const snapshot = await source.snapshot()
+        const connections = snapshot.connections ?? []
+        const named =
+          typeof row?.id === 'string' && row.id.startsWith('connection:')
+            ? row.id.slice('connection:'.length)
+            : undefined
+        const chosen =
+          named ??
+          (connections.length === 1
+            ? connections[0]?.id
+            : (
+                await vscode.window.showQuickPick(
+                  connections.map(connection => ({
+                    label: connection.label,
+                    description: connection.region,
+                    id: connection.id,
+                  })),
+                  { title: localizer.text('vscode.sources.chooseSignOut') },
+                )
+              )?.id)
+        if (typeof chosen !== 'string') return false
+        await callContentSources(source, 'disconnect', [chosen])
+        sourcesView.refresh()
+        return true
+      }),
+
       vscode.commands.registerCommand('modkit.contentSources', async () => {
         try {
           await chooseContentSource({
@@ -1796,23 +2746,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
                     .filter(folder => folder.uri.scheme === 'modkit-source')
                     .map(folder => ({ type: vscode.FileChangeType.Changed, uri: folder.uri })),
                 )
+                sourcesView.refresh()
               }
               return value
             },
-            async open(source) {
-              if (!vscode.workspace.workspaceFolders?.length) {
-                throw new Error(localizer.text('vscode.container.openFolderFirst'))
-              }
-              const uri = vscode.Uri.from({
-                scheme: 'modkit-source',
-                authority: 'battlenet',
-                path: `/${source.id}`,
-              })
-              const result = await addContainerWorkspaceFolder(uri, source.label)
-              if (result === 'rejected')
-                throw new Error('The workspace could not add this content source')
-              await vscode.commands.executeCommand('revealInExplorer', uri)
-            },
+            open: openContentSourceRoot,
             async openLocal() {
               const selected = await vscode.commands.executeCommand<
                 { installPath: string } | undefined
@@ -1829,6 +2767,139 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
             `Modkit: ${error instanceof Error ? error.message : 'Content source failed'}`,
           )
         }
+      }),
+      vscode.commands.registerCommand('modkit.sources.refresh', () => {
+        sourcesView.refresh()
+        return true
+      }),
+      vscode.workspace.onDidChangeConfiguration(event => {
+        if (!event.affectsConfiguration('modkit.contentSourceConfig')) return
+        resetContentSources()
+        sourcesView.refresh()
+      }),
+      vscode.commands.registerCommand('modkit.sources.open', async (argument: unknown) => {
+        const row =
+          typeof argument === 'object' && argument !== null
+            ? (argument as { readonly sourceId?: unknown; readonly label?: unknown })
+            : undefined
+        if (typeof row?.sourceId !== 'string' || typeof row.label !== 'string') {
+          throw new TypeError('A content source root must be selected')
+        }
+        return openContentSourceRoot({ id: row.sourceId, label: row.label })
+      }),
+      vscode.commands.registerCommand(
+        'modkit.sources.openInstallation',
+        async (argument: unknown) => {
+          const row =
+            typeof argument === 'object' && argument !== null
+              ? (argument as { readonly uri?: unknown; readonly label?: unknown })
+              : undefined
+          if (typeof row?.uri !== 'string' || typeof row.label !== 'string') {
+            throw new TypeError('A selected game installation must be provided')
+          }
+          try {
+            return await openContainerPath(row.uri, row.label)
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error)
+            log(`installation namespace refused ${row.uri}: ${message}`)
+            void vscode.window.showWarningMessage(
+              localizer.text('vscode.container.cannotBrowse', { reason: message }),
+            )
+            return undefined
+          }
+        },
+      ),
+      vscode.commands.registerCommand('modkit.sources.revealLocal', revealLocalSource),
+      /*
+       * Unmount is the exact inverse of opening a provider root: the root is mounted as this
+       * window's `modkit-source:` workspace folder, so removing that folder is what releases it.
+       * The provider connection itself stays — disconnecting it is a different action.
+       */
+      vscode.commands.registerCommand('modkit.sources.unmount', async (argument: unknown) => {
+        const row =
+          typeof argument === 'object' && argument !== null
+            ? (argument as {
+                readonly sourceId?: unknown
+                readonly uri?: unknown
+                readonly normalizedPath?: unknown
+              })
+            : undefined
+        const sourceId = typeof row?.sourceId === 'string' ? row.sourceId : undefined
+        /*
+         * An installation row names its directory, and it does so in two fields — the path the
+         * discovery reported and the normalized one the view keys on. Reading only the first left
+         * the command refusing to unmount a CASC installation that was plainly mounted. With
+         * neither field — from the command palette, say — the mounted folders are offered instead
+         * of failing.
+         */
+        const named =
+          typeof row?.uri === 'string'
+            ? row.uri
+            : typeof row?.normalizedPath === 'string'
+              ? row.normalizedPath
+              : undefined
+        let containerPath = named === undefined ? undefined : normalizedSourcePath(named)
+        if (sourceId === undefined && containerPath === undefined) {
+          const mounted = (vscode.workspace.workspaceFolders ?? []).flatMap(folder => {
+            if (folder.uri.scheme !== CONTAINER_SCHEME) return []
+            const location = parseContainerUriPath(folder.uri.path)
+            return location === undefined || location.entry !== ''
+              ? []
+              : [{ label: folder.name, description: location.container }]
+          })
+          if (mounted.length === 0) {
+            void vscode.window.showInformationMessage(
+              localizer.text('vscode.sources.nothingMounted'),
+            )
+            return false
+          }
+          const chosen =
+            mounted.length === 1
+              ? mounted[0]
+              : await vscode.window.showQuickPick(mounted, {
+                  title: localizer.text('vscode.sources.chooseUnmount'),
+                })
+          if (chosen?.description === undefined) return false
+          containerPath = normalizedSourcePath(chosen.description)
+        }
+        // Cancel a read still in flight before removing the folder it was filling.
+        for (const key of [sourceId, containerPath]) {
+          if (key === undefined) continue
+          const pending = mountingSources.get(key)
+          if (pending === undefined) continue
+          pending.abort()
+          mountingSources.delete(key)
+        }
+        const folders = vscode.workspace.workspaceFolders ?? []
+        const index = folders.findIndex(folder => {
+          if (folder.uri.scheme === 'modkit-source') {
+            return (
+              sourceId !== undefined &&
+              folder.uri.path.replace(/^\//u, '').split('/')[0] === sourceId
+            )
+          }
+          if (folder.uri.scheme !== CONTAINER_SCHEME || containerPath === undefined) return false
+          const location = parseContainerUriPath(folder.uri.path)
+          return (
+            location !== undefined &&
+            location.entry === '' &&
+            normalizedSourcePath(location.container) === containerPath
+          )
+        })
+        if (index === -1) {
+          sourcesView.refresh()
+          return false
+        }
+        const removed = vscode.workspace.updateWorkspaceFolders(index, 1)
+        // Unmounting a container also releases its held session; leaving it open would keep the
+        // whole index alive for a folder the window no longer shows.
+        const folder = folders[index]
+        if (removed && folder?.uri.scheme === CONTAINER_SCHEME) {
+          const location = parseContainerUriPath(folder.uri.path)
+          if (location !== undefined) await containers.release(location.container)
+        }
+        sourcesView.refresh()
+        return removed
       }),
     )
   const containerFileSystem: vscode.FileSystemProvider = {
@@ -4484,6 +5555,202 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
 
   const live = new Set<VsCodeServed>()
   const liveSubjects = new Map<VsCodeServed, string | undefined>()
+  /** The Modkit editor the user is looking at, or nothing while another editor is active. */
+  let activeSubject: string | undefined
+  const supportedDirectorySubjects = new Set(
+    host.supportedExtensions.map(extension => extension.replace(/^\./u, '').toLowerCase()),
+  )
+  let workspaceResourceSubject: VsCodeTreeSubject | undefined
+  let workspaceResourceRoot: string | undefined
+  let workspaceResourceOpening: Promise<ResourceTreeHost | undefined> | undefined
+  let workspaceResourceOpeningRoot: string | undefined
+  let activeDocumentResources: () => Promise<ResourceTreeHost | undefined> = async () => undefined
+  let navigateWorkspaceResource: (
+    root: string,
+    subjectId: string,
+    range?: TreeNodeFacts['range'],
+  ) => Promise<boolean> = async () => false
+
+  const workspaceResourcePath = (): string | undefined => {
+    const folders = (vscode.workspace.workspaceFolders ?? []).filter(
+      folder => folder.uri.scheme === 'file',
+    )
+    if (folders.length === 0) return undefined
+    const activeUri = vscode.window.activeTextEditor?.document.uri
+    const folder =
+      (activeUri?.scheme === 'file' ? vscode.workspace.getWorkspaceFolder(activeUri) : undefined) ??
+      folders[0]
+    if (folder === undefined) return undefined
+    const boundary = resolve(folder.uri.fsPath)
+    let candidate =
+      activeUri?.scheme === 'file' && vscode.workspace.getWorkspaceFolder(activeUri) === folder
+        ? dirname(activeUri.fsPath)
+        : boundary
+    for (;;) {
+      const extension = basename(candidate).split('.').at(-1)?.toLowerCase()
+      if (extension !== undefined && supportedDirectorySubjects.has(extension)) return candidate
+      if (candidate === boundary) return undefined
+      const parent = dirname(candidate)
+      if (parent === candidate || relative(boundary, parent).startsWith('..')) return undefined
+      candidate = parent
+    }
+  }
+
+  const resetWorkspaceResources = (): void => {
+    workspaceResourceOpening = undefined
+    workspaceResourceOpeningRoot = undefined
+    workspaceResourceRoot = undefined
+    const previous = workspaceResourceSubject
+    workspaceResourceSubject = undefined
+    if (previous !== undefined) void previous.dispose().catch(() => undefined)
+  }
+
+  const workspaceResources = async (): Promise<ResourceTreeHost | undefined> => {
+    const root = workspaceResourcePath()
+    if (root === undefined) return undefined
+    if (workspaceResourceSubject !== undefined && workspaceResourceRoot === root) {
+      const subject = workspaceResourceSubject
+      return Object.freeze({
+        openTreeDataSource: (signal?: AbortSignal) => subject.openTreeDataSource(signal),
+        navigate(subjectId: string, range?: TreeNodeFacts['range']) {
+          void navigateWorkspaceResource(root, subjectId, range).catch(error =>
+            vscode.window.showErrorMessage(
+              `Modkit: ${error instanceof Error ? error.message : String(error)}`,
+            ),
+          )
+        },
+      })
+    }
+    if (workspaceResourceOpening !== undefined && workspaceResourceOpeningRoot === root) {
+      return workspaceResourceOpening
+    }
+    resetWorkspaceResources()
+    workspaceResourceOpeningRoot = root
+    workspaceResourceOpening = (async () => {
+      const subject = await host.openTreeSubject(root, roots())
+      if (subject === undefined) return undefined
+      if (workspaceResourceOpeningRoot !== root) {
+        await subject.dispose()
+        return undefined
+      }
+      workspaceResourceSubject = subject
+      workspaceResourceRoot = root
+      return Object.freeze({
+        openTreeDataSource: (signal?: AbortSignal) => subject.openTreeDataSource(signal),
+        navigate(subjectId: string, range?: TreeNodeFacts['range']) {
+          void navigateWorkspaceResource(root, subjectId, range).catch(error =>
+            vscode.window.showErrorMessage(
+              `Modkit: ${error instanceof Error ? error.message : String(error)}`,
+            ),
+          )
+        },
+      })
+    })().finally(() => {
+      if (workspaceResourceOpeningRoot === root) {
+        workspaceResourceOpening = undefined
+        workspaceResourceOpeningRoot = undefined
+      }
+    })
+    return workspaceResourceOpening
+  }
+  /**
+   * Resource files opened as subjects of their own, so their codec can answer what is inside.
+   *
+   * Held for the life of one tree render: expanding twenty layout files must not open twenty
+   * sessions twice, and a refresh drops them all rather than letting them accumulate.
+   */
+  const memberTreeSubjects = new Map<
+    string,
+    Promise<{ readonly subject: VsCodeTreeSubject; readonly tree: TreeDataSource } | undefined>
+  >()
+  /*
+   * Which files are worth expanding in place.
+   *
+   * This is a hint, not a contract: a codec states what it can open, but nothing in the ABI says
+   * whether its tree is a useful outline or a single metadata row. Expanding every file would put
+   * a twisty on thousands of textures that open to one line, so the view asks only the formats
+   * whose contents are themselves reference targets — scripts, layouts, styles, component lists.
+   */
+  const OUTLINE_FORMATS = Object.freeze([
+    'galaxy',
+    'sc2layout',
+    'sc2style',
+    'sc2lib',
+    'sc2triggers',
+    'sc2components',
+    'blizwiz',
+  ])
+  const memberFormats = new Set(
+    OUTLINE_FORMATS.filter(extension =>
+      host.supportedExtensions.some(
+        supported => supported.replace(/^\./u, '').toLowerCase() === extension,
+      ),
+    ),
+  )
+  const resourceMemberTrees: ResourceMemberTrees = Object.freeze({
+    subjectOf(subjectId: string): string | undefined {
+      const entry = namespaceEntryPathOf(subjectId)
+      if (entry === undefined) return undefined
+      const extension = entry.split('/').at(-1)?.split('.').at(-1)?.toLowerCase()
+      // Package directories are subjects too, but a package inside a package is not what this is
+      // for; only a file of a format this window can open expands here.
+      if (extension === undefined || !memberFormats.has(extension)) return undefined
+      const root = namespaceEntryRootOf(subjectId)
+      if (root === undefined) return undefined
+      return subjectPathOf(memberUriOf(root, entry))
+    },
+    async open(subject: string): Promise<TreeDataSource | undefined> {
+      const known = memberTreeSubjects.get(subject)
+      if (known !== undefined) return (await known)?.tree
+      const opening = (async () => {
+        const opened = await host.openTreeSubject(subject, roots())
+        if (opened === undefined) return undefined
+        const lease = await opened.openTreeDataSource()
+        if (lease === undefined) {
+          await opened.dispose()
+          return undefined
+        }
+        return Object.freeze({ subject: opened, tree: lease.value })
+      })().catch(error => {
+        log(
+          `[resources] ${subject} published no tree: ${error instanceof Error ? error.message : String(error)}`,
+        )
+        return undefined
+      })
+      memberTreeSubjects.set(subject, opening)
+      return (await opening)?.tree
+    },
+    reveal(subject: string, range?: TreeNodeFacts['range']): void {
+      void openResourceFile(subjectUriOf(subject), range).catch(error =>
+        vscode.window.showErrorMessage(
+          `Modkit: ${error instanceof Error ? error.message : String(error)}`,
+        ),
+      )
+    },
+    reset(): void {
+      const pending = [...memberTreeSubjects.values()]
+      memberTreeSubjects.clear()
+      for (const item of pending) {
+        void item.then(value => value?.subject.dispose()).catch(() => undefined)
+      }
+    },
+  })
+  context.subscriptions.push({ dispose: () => resourceMemberTrees.reset() })
+
+  const resourcesView = new ResourcesView(
+    () => {
+      if (activeSubject === undefined) return undefined
+      for (const [served, path] of liveSubjects) {
+        if (path === activeSubject) return served
+      }
+      return undefined
+    },
+    localizer,
+    async () => (await activeDocumentResources()) ?? (await workspaceResources()),
+    resetWorkspaceResources,
+    resourceMemberTrees,
+  )
+  context.subscriptions.push({ dispose: resetWorkspaceResources })
   const languageSubjectCandidates: SubjectCandidateProviderSource = Object.freeze({
     async open(scope: SubjectCandidateScope, signal?: AbortSignal) {
       let requested: VsCodeSubjectCandidateScope
@@ -4505,119 +5772,916 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
           ]
         }),
       )
-      return selected?.open(signal)
+      if (selected !== undefined) return selected.open(signal)
+      const automatic = await resolveLanguageScope(vscode.Uri.parse(scope.uri, true), signal)
+      if (automatic === undefined || !advertisesSubjectCandidates(automatic.descriptor)) {
+        return undefined
+      }
+      const opened = await automaticLanguageScopes.get(automatic.path)
+      const lease = await opened?.session.dataSource(
+        SUBJECT_SELECTOR_SOURCE.contract,
+        SUBJECT_SELECTOR_SOURCE.major,
+      )
+      return lease === undefined
+        ? undefined
+        : Object.freeze({
+            value: createSubjectCandidateProvider(lease.value),
+            release: () => lease.release(),
+          })
     },
   })
 
-  const languageDocumentSource: LanguageWorkspaceDocumentSource = Object.freeze({
-    async snapshot(request: Parameters<LanguageWorkspaceDocumentSource['snapshot']>[0]) {
-      request.signal.throwIfAborted()
-      const accepted = new Set(request.workspaceLanguageIds)
-      const extensions = [
-        ...new Set(
-          languageRoutes.flatMap(route =>
-            accepted.has(route.languageId) && route.extension !== undefined
-              ? [route.extension]
-              : [],
-          ),
-        ),
-      ].sort()
-      if (extensions.length === 0 || request.maxDocuments === 0) {
-        return { documents: Object.freeze([]), isComplete: extensions.length === 0 }
+  interface LiveLanguageScope {
+    readonly path: string
+    readonly root?: vscode.Uri
+    readonly contextId: string
+    readonly layerId: string
+    readonly revision: string
+    readonly descriptor: AnyDescriptor
+    readonly operations: OperationSession
+    readonly openTreeDataSource: ResourceTreeHost['openTreeDataSource']
+  }
+
+  const liveLanguageScope = (uri: vscode.Uri): LiveLanguageScope | undefined => {
+    const selected = selectScopedSubject(
+      subjectCandidateScopeOf(uri),
+      [...liveSubjects].flatMap(([served, path]) => {
+        if (path === undefined) return []
+        const subject = served.languageSubject()
+        return [
+          {
+            ...subjectCandidateScopeOf(subjectUriOf(path)),
+            available: subject !== undefined,
+            path,
+            served,
+            subject,
+          },
+        ]
+      }),
+    )
+    const subject = selected?.subject
+    if (selected === undefined || subject === undefined) return undefined
+    const container = uri.scheme === CONTAINER_SCHEME ? parseContainerUriPath(uri.path) : undefined
+    const workspaceTarget = container === undefined ? uri : vscode.Uri.file(container.container)
+    const workspaceRoot = vscode.workspace.getWorkspaceFolder(workspaceTarget)?.uri
+    let subjectRoot: vscode.Uri | undefined
+    if (isAbsolute(selected.path)) {
+      try {
+        if (statSync(selected.path).isDirectory()) subjectRoot = vscode.Uri.file(selected.path)
+      } catch {
+        // A subject may be a container member or may have disappeared after it was opened.
       }
-      // The document under the cursor is open too, and the host rejects a snapshot that repeats it.
-      const openUris = new Set([
-        request.document.uri,
-        ...request.workspaceDocuments.map(document => document.uri),
-      ])
-      const candidates = new Map<string, { readonly uri: vscode.Uri; readonly extension: string }>()
-      let isComplete = true
-      for (const extension of extensions) {
-        request.signal.throwIfAborted()
-        const remaining = request.maxDocuments - candidates.size
-        if (remaining <= 0) {
-          isComplete = false
-          break
-        }
-        const uris = await vscode.workspace.findFiles(
-          `**/*.${extension}`,
-          '**/{node_modules,.git}/**',
-          remaining + 1,
+    }
+    const selectedUri = subjectUriOf(selected.path)
+    const selectedContainer =
+      selectedUri.scheme === CONTAINER_SCHEME ? parseContainerUriPath(selectedUri.path) : undefined
+    const root =
+      subjectRoot ??
+      (selectedContainer?.entry === undefined || selectedContainer.entry === ''
+        ? workspaceRoot
+        : selectedUri)
+    const contextId = languageWorkspaceContextToken({
+      subject: subjectKey(selected.path),
+      workspace: root?.toString(),
+    })
+    return Object.freeze({
+      path: selected.path,
+      ...(root === undefined ? {} : { root }),
+      contextId,
+      layerId: `${contextId}:subject`,
+      revision: subject.revision,
+      descriptor: subject.descriptor,
+      operations: subject.operations,
+      openTreeDataSource: (signal?: AbortSignal) => selected.served.openTreeDataSource(signal),
+    })
+  }
+
+  interface AutomaticLanguageScope extends LiveLanguageScope {
+    readonly session: AssetSession
+  }
+
+  interface LanguageSubjectCandidate {
+    readonly path: string
+    readonly root: vscode.Uri
+    /** Load order when this candidate came from a resolved dependency chain. */
+    readonly order?: number
+  }
+
+  const directorySubjectCandidates = (uri: vscode.Uri): readonly LanguageSubjectCandidate[] => {
+    if (uri.scheme === CONTAINER_SCHEME) {
+      const location = parseContainerUriPath(uri.path)
+      if (location === undefined) return Object.freeze([])
+      const segments = location.entry.split('/').filter(Boolean)
+      const candidates: LanguageSubjectCandidate[] = []
+      for (let count = segments.length - 1; count > 0; count -= 1) {
+        const entry = segments.slice(0, count).join('/')
+        const extension = segments[count - 1]?.split('.').at(-1)?.toLowerCase()
+        if (extension === undefined || !supportedDirectorySubjects.has(extension)) continue
+        const root = vscode.Uri.from({
+          scheme: CONTAINER_SCHEME,
+          path: containerUriPath(location.container, entry),
+        })
+        candidates.push(Object.freeze({ path: containerUriText(location.container, entry), root }))
+      }
+      return Object.freeze(candidates)
+    }
+    if (uri.scheme !== 'file') return Object.freeze([])
+    const candidates: LanguageSubjectCandidate[] = []
+    let candidate = dirname(uri.fsPath)
+    for (let depth = 0; depth < 64; depth += 1) {
+      const extension = basename(candidate).split('.').at(-1)?.toLowerCase()
+      if (extension !== undefined && supportedDirectorySubjects.has(extension)) {
+        candidates.push(Object.freeze({ path: candidate, root: vscode.Uri.file(candidate) }))
+      }
+      const parent = dirname(candidate)
+      if (parent === candidate) break
+      candidate = parent
+    }
+    return Object.freeze(candidates)
+  }
+
+  const automaticLanguageScopes = new Map<string, Promise<AutomaticLanguageScope | undefined>>()
+  const resolvedLanguageScopesByDocument = new Map<string, LiveLanguageScope>()
+  const languageSubjectOpener = createVsCodeCommandOpener({
+    services: host.services,
+    roots,
+    containers,
+  })
+  const openAutomaticLanguageScope = (
+    candidate: LanguageSubjectCandidate,
+    signal?: AbortSignal,
+  ): Promise<AutomaticLanguageScope | undefined> => {
+    const known = automaticLanguageScopes.get(candidate.path)
+    if (known !== undefined) return known
+    const opening = (async () => {
+      // Opening a document is an explicit read action. Admit its containing package so the codec
+      // can read DocumentInfo and sibling components even when the file is outside the workspace.
+      if (candidate.root.scheme === 'file') granted.add(resolve(candidate.root.fsPath))
+      const answer = await languageSubjectOpener(candidate.path, signal)
+      if (answer.snapshot.state !== 'opened' || answer.session === undefined) return undefined
+      const session = answer.session
+      const descriptor = await session.descriptor()
+      if (
+        !descriptor.operations.some(
+          operation =>
+            operation.id === 'content.resolve-dependencies' && operation.state === 'available',
         )
-        if (uris.length > remaining) isComplete = false
-        for (const uri of uris.slice(0, remaining)) {
-          if (openUris.has(uri.toString())) continue
-          candidates.set(uri.toString(), { uri, extension })
+      ) {
+        await session.dispose()
+        return undefined
+      }
+      const contextId = languageWorkspaceContextToken({
+        subject: subjectKey(candidate.path),
+        root: candidate.root.toString(),
+      })
+      log(`[language-context] loaded package scope ${candidate.path}`)
+      return Object.freeze({
+        path: candidate.path,
+        root: candidate.root,
+        contextId,
+        layerId: `${contextId}:subject`,
+        revision: String(session.revision),
+        descriptor,
+        operations: session.operations(),
+        async openTreeDataSource(openSignal?: AbortSignal) {
+          openSignal?.throwIfAborted()
+          if (
+            session.state() !== 'live' ||
+            !descriptor.dataSources.some(
+              source => source.contract === 'common.view/tree-data-source' && source.major === 1,
+            )
+          ) return undefined
+          const lease = await session.dataSource('common.view/tree-data-source', 1)
+          try {
+            openSignal?.throwIfAborted()
+          } catch (error) {
+            await lease.release()
+            throw error
+          }
+          if (session.state() !== 'live') {
+            await lease.release()
+            return undefined
+          }
+          return lease
+        },
+        session,
+      })
+    })().catch(error => {
+      if (signal?.aborted === true) throw error
+      log(
+        `[language-context] package candidate ${candidate.path} did not open: ${error instanceof Error ? error.message : String(error)}`,
+      )
+      return undefined
+    })
+    automaticLanguageScopes.set(candidate.path, opening)
+    return opening
+  }
+
+  const resolveLanguageScope = async (
+    uri: vscode.Uri,
+    signal?: AbortSignal,
+  ): Promise<LiveLanguageScope | undefined> => {
+    const liveScope = liveLanguageScope(uri)
+    if (liveScope !== undefined) {
+      resolvedLanguageScopesByDocument.set(uri.toString(), liveScope)
+      return liveScope
+    }
+    for (const candidate of directorySubjectCandidates(uri)) {
+      const scope = await openAutomaticLanguageScope(candidate, signal)
+      if (scope === undefined) continue
+      resolvedLanguageScopesByDocument.set(uri.toString(), scope)
+      return scope
+    }
+    resolvedLanguageScopesByDocument.delete(uri.toString())
+    return undefined
+  }
+
+  const cachedLanguageScope = (uri: vscode.Uri): LiveLanguageScope | undefined =>
+    liveLanguageScope(uri) ?? resolvedLanguageScopesByDocument.get(uri.toString())
+
+  /**
+   * The packages loaded under the active one, in load order, as this window can open them.
+   *
+   * The subject itself answers what it depends on — the same operation the host uses when it
+   * mounts dependencies for the language — so nothing here knows the SC2 engine graph. A
+   * dependency path is relative to whatever holds the active package: an entry of the same
+   * container, or a sibling directory on disk.
+   */
+  const dependencyLayersOf = async (
+    scope: LiveLanguageScope,
+    signal?: AbortSignal,
+  ): Promise<readonly LanguageSubjectCandidate[]> => {
+    if (
+      !scope.descriptor.operations.some(
+        operation =>
+          operation.id === 'content.resolve-dependencies' && operation.state === 'available',
+      )
+    ) {
+      return Object.freeze([])
+    }
+    let answer: Awaited<ReturnType<OperationSession['invoke']>>
+    try {
+      answer = await scope.operations.invoke(
+        'resolve-dependencies',
+        {},
+        signal === undefined ? {} : { signal },
+      )
+    } catch (error) {
+      log(
+        `[resources] dependency chain unavailable for ${scope.path}: ${error instanceof Error ? error.message : String(error)}`,
+      )
+      return Object.freeze([])
+    }
+    if (answer.state !== 'ok' || answer.output.kind !== 'json') return Object.freeze([])
+    const content = (answer.output.value as { contentDependencies?: unknown }).contentDependencies
+    const rows = (content as { dependencies?: unknown } | undefined)?.dependencies
+    if (!Array.isArray(rows)) return Object.freeze([])
+    const host = scope.root
+    const container = host?.scheme === CONTAINER_SCHEME ? parseContainerUriPath(host.path) : undefined
+    const layers: LanguageSubjectCandidate[] = []
+    for (const row of rows) {
+      const path = (row as { path?: unknown })?.path
+      const order = (row as { order?: unknown })?.order
+      if (typeof path !== 'string' || path === '' || !Number.isSafeInteger(order)) continue
+      if (container !== undefined) {
+        const entry = containerUriText(container.container, path.replaceAll('\\', '/'))
+        layers.push(
+          Object.freeze({ path: entry, root: subjectUriOf(entry), order: order as number }),
+        )
+        continue
+      }
+      if (host?.scheme !== 'file') continue
+      // A file-backed package sits inside an installation: its dependencies are siblings of the
+      // `Mods`/`Campaigns` directory that holds it, not of the package itself.
+      const installation = host.fsPath.replace(/[\\/](?:Mods|Campaigns)[\\/][^\\/]+$/iu, '')
+      if (installation === host.fsPath) continue
+      const candidate = join(installation, ...path.split('/'))
+      layers.push(
+        Object.freeze({ path: candidate, root: vscode.Uri.file(candidate), order: order as number }),
+      )
+    }
+    return Object.freeze(
+      layers.sort((left, right) => (left.order ?? 0) - (right.order ?? 0)),
+    )
+  }
+
+  /** Whether Resources shows the resolved chain or only what the active package declares. */
+  let resourcesShowChain = context.workspaceState.get<boolean>(RESOURCES_CHAIN_KEY) ?? true
+  const chainTrees = new Map<string, ReturnType<typeof createChainTreeDataSource>>()
+  const disposeChainTrees = (): void => {
+    const pending = [...chainTrees.values()]
+    chainTrees.clear()
+    for (const tree of pending) void tree.dispose().catch(() => undefined)
+  }
+  context.subscriptions.push({ dispose: disposeChainTrees })
+
+  const chainTreeFor = async (
+    scope: LiveLanguageScope,
+    signal?: AbortSignal,
+  ): Promise<ResourceTreeHost['openTreeDataSource'] | undefined> => {
+    const dependencies = await dependencyLayersOf(scope, signal)
+    if (dependencies.length === 0) return undefined
+    const key = `${scope.path}|${scope.revision}`
+    const known = chainTrees.get(key)
+    if (known === undefined) {
+      const layers: ResourceChainLayer[] = [
+        ...dependencies.map(candidate => ({
+          label: basename(candidate.path),
+          open: async (openSignal?: AbortSignal) => {
+            const layer = await openAutomaticLanguageScope(candidate, openSignal)
+            return layer === undefined ? undefined : layer.openTreeDataSource(openSignal)
+          },
+        })),
+        {
+          label: basename(scope.path),
+          open: (openSignal?: AbortSignal) => scope.openTreeDataSource(openSignal),
+        },
+      ]
+      chainTrees.set(key, createChainTreeDataSource(layers))
+    }
+    const tree = chainTrees.get(key)
+    if (tree === undefined) return undefined
+    // The chain owns its layer leases for as long as the scope lives; a reader's lease is a view.
+    return async () => Object.freeze({ value: tree, release: async () => undefined })
+  }
+
+  activeDocumentResources = async () => {
+    const uri = vscode.window.activeTextEditor?.document.uri
+    if (uri === undefined) return undefined
+    const scope = await resolveLanguageScope(uri)
+    if (scope === undefined) return undefined
+    const chain = resourcesShowChain ? await chainTreeFor(scope) : undefined
+    return Object.freeze({
+      openTreeDataSource: (signal?: AbortSignal) =>
+        chain === undefined ? scope.openTreeDataSource(signal) : chain(signal),
+      navigate(subjectId: string, range?: TreeNodeFacts['range']) {
+        void navigateWorkspaceResource(scope.path, subjectId, range).catch(error =>
+          vscode.window.showErrorMessage(
+            `Modkit: ${error instanceof Error ? error.message : String(error)}`,
+          ),
+        )
+      },
+    })
+  }
+
+  const logicalIdInScope = (scope: LiveLanguageScope, uri: vscode.Uri): string | undefined => {
+    const root = scope.root
+    if (root === undefined) return undefined
+    if (root.scheme === CONTAINER_SCHEME && uri.scheme === CONTAINER_SCHEME) {
+      const rootLocation = parseContainerUriPath(root.path)
+      const location = parseContainerUriPath(uri.path)
+      if (rootLocation === undefined || location === undefined) return undefined
+      if (
+        containerLocationIdentity(rootLocation.container) !==
+        containerLocationIdentity(location.container)
+      ) {
+        return undefined
+      }
+      const prefix = rootLocation.entry === '' ? '' : `${rootLocation.entry}/`
+      if (location.entry === rootLocation.entry) return ''
+      return location.entry.startsWith(prefix) ? location.entry.slice(prefix.length) : undefined
+    }
+    if (root.scheme !== 'file' || uri.scheme !== 'file') return undefined
+    const logicalId = relative(root.fsPath, uri.fsPath).replaceAll('\\', '/')
+    return logicalId.startsWith('../') ? undefined : logicalId
+  }
+
+  interface EnumeratedScopeFiles {
+    readonly files: readonly { readonly uri: vscode.Uri; readonly logicalId: string }[]
+    readonly complete: boolean
+  }
+
+  const enumerateScopeFiles = async (
+    root: vscode.Uri,
+    extensions: ReadonlySet<string> | undefined,
+    maxEntries: number,
+    signal?: AbortSignal,
+  ): Promise<EnumeratedScopeFiles> => {
+    const queue: { readonly uri: vscode.Uri; readonly logicalId: string }[] = [
+      { uri: root, logicalId: '' },
+    ]
+    const files: { readonly uri: vscode.Uri; readonly logicalId: string }[] = []
+    let complete = true
+    while (queue.length > 0) {
+      signal?.throwIfAborted()
+      const directory = queue.shift()!
+      const entries = [...(await vscode.workspace.fs.readDirectory(directory.uri))].sort(
+        ([left], [right]) => left.localeCompare(right),
+      )
+      for (const [name, type] of entries) {
+        signal?.throwIfAborted()
+        if (name === '.git' || name === 'node_modules') continue
+        const logicalId = directory.logicalId === '' ? name : `${directory.logicalId}/${name}`
+        const uri = vscode.Uri.joinPath(directory.uri, name)
+        if ((type & vscode.FileType.Directory) !== 0) {
+          queue.push({ uri, logicalId })
+          continue
+        }
+        if ((type & vscode.FileType.File) === 0) continue
+        const extension = name.split('.').at(-1)?.toLowerCase()
+        if (extensions !== undefined && (extension === undefined || !extensions.has(extension))) {
+          continue
+        }
+        files.push(Object.freeze({ uri, logicalId }))
+        if (files.length > maxEntries) {
+          complete = false
+          return Object.freeze({ files: Object.freeze(files.slice(0, maxEntries)), complete })
         }
       }
-      /*
-       * Order decides what survives the byte budget. Files of the edited document's own kind come
-       * first — a layout resolves its templates against other layouts — and the rest are interleaved
-       * by extension so one large kind cannot spend the remainder alone.
-       */
-      const primaryExtension = request.document.uri.split('.').at(-1)?.toLowerCase()
-      const byExtension = new Map<
-        string,
-        { readonly uri: vscode.Uri; readonly extension: string }[]
-      >()
-      for (const candidate of [...candidates.values()].sort((left, right) =>
-        left.uri.toString().localeCompare(right.uri.toString()),
-      ))
-        byExtension.set(candidate.extension, [
-          ...(byExtension.get(candidate.extension) ?? []),
-          candidate,
-        ])
-      const ranked = [...(byExtension.get(primaryExtension ?? '') ?? [])]
-      const others = [...byExtension.entries()]
-        .filter(([extension]) => extension !== primaryExtension)
-        .map(([, list]) => list)
-      for (let index = 0; others.some(list => index < list.length); index += 1)
-        for (const list of others) {
-          const candidate = list[index]
-          if (candidate !== undefined) ranked.push(candidate)
+    }
+    return Object.freeze({ files: Object.freeze(files), complete })
+  }
+
+  const disposeAutomaticLanguageScopes = (): void => {
+    const pending = [...automaticLanguageScopes.values()]
+    automaticLanguageScopes.clear()
+    resolvedLanguageScopesByDocument.clear()
+    for (const scope of pending) {
+      void scope.then(value => value?.session.dispose()).catch(() => undefined)
+    }
+  }
+  context.subscriptions.push({ dispose: disposeAutomaticLanguageScopes })
+
+  interface LanguageContentPathIndex {
+    readonly paths: readonly string[]
+    readonly complete: boolean
+    readonly revision: string
+  }
+
+  const languageContentPathIndexes = new Map<string, Promise<LanguageContentPathIndex>>()
+  type LanguageSnapshotRequest = Parameters<LanguageWorkspaceDocumentSource['snapshot']>[0]
+  interface CachedLanguageDocumentSnapshot {
+    readonly capturedAt: number
+    readonly value: LanguageWorkspaceDocumentSourceResult
+  }
+  const languageDocumentSnapshots = new Map<string, CachedLanguageDocumentSnapshot>()
+  const clearLanguageCaches = (): void => {
+    languageContentPathIndexes.clear()
+    languageDocumentSnapshots.clear()
+    disposeAutomaticLanguageScopes()
+  }
+  context.subscriptions.push(
+    vscode.workspace.onDidCreateFiles(clearLanguageCaches),
+    vscode.workspace.onDidDeleteFiles(clearLanguageCaches),
+    vscode.workspace.onDidRenameFiles(clearLanguageCaches),
+  )
+
+  const workspaceContentPathIndex = (
+    scope: LiveLanguageScope | undefined,
+    contextId: string,
+  ): Promise<LanguageContentPathIndex> => {
+    const key = `${contextId}\0${scope?.revision ?? ''}`
+    const cached = languageContentPathIndexes.get(key)
+    if (cached !== undefined) return cached
+    const pending = (async () => {
+      const maxEntries = 65_536
+      if (scope?.root !== undefined) {
+        try {
+          const enumerated = await enumerateScopeFiles(scope.root, undefined, maxEntries)
+          const paths = Object.freeze(enumerated.files.map(item => item.logicalId).sort())
+          return Object.freeze({
+            paths,
+            complete: enumerated.complete,
+            revision: languageWorkspaceContextToken({ complete: enumerated.complete, paths }),
+          })
+        } catch {
+          return Object.freeze({
+            paths: Object.freeze([]),
+            complete: false,
+            revision: languageWorkspaceContextToken({ complete: false, paths: [] }),
+          })
         }
-      const documents = []
-      let totalTextBytes = 0
-      for (const candidate of ranked.slice(0, request.maxDocuments)) {
+      }
+      let complete = true
+      let uris: readonly vscode.Uri[] = []
+      try {
+        uris = await vscode.workspace.findFiles('**/*', '**/{node_modules,.git}/**', maxEntries + 1)
+      } catch {
+        complete = false
+      }
+      if (uris.length > maxEntries) complete = false
+      const paths = Object.freeze(
+        [
+          ...new Set(
+            uris.slice(0, maxEntries).flatMap(candidate => {
+              const root = vscode.workspace.getWorkspaceFolder(candidate)?.uri
+              if (root === undefined) return []
+              const logicalId = relative(root.fsPath, candidate.fsPath).replaceAll('\\', '/')
+              return logicalId.startsWith('../') ? [] : [logicalId]
+            }),
+          ),
+        ].sort(),
+      )
+      return Object.freeze({
+        paths,
+        complete,
+        revision: languageWorkspaceContextToken({ complete, paths }),
+      })
+    })()
+    languageContentPathIndexes.set(key, pending)
+    return pending
+  }
+
+  const languageSnapshotKey = (
+    scope: LiveLanguageScope | undefined,
+    request: LanguageSnapshotRequest,
+  ): string =>
+    languageWorkspaceContextToken({
+      scope: scope?.contextId,
+      scopeRevision: scope?.revision,
+      workspaceFolders: (vscode.workspace.workspaceFolders ?? []).map(folder =>
+        folder.uri.toString(),
+      ),
+      languages: [...request.workspaceLanguageIds].sort(),
+    })
+
+  const rebaseLanguageSnapshot = (
+    snapshot: LanguageWorkspaceDocumentSourceResult,
+    request: LanguageSnapshotRequest,
+  ): LanguageWorkspaceDocumentSourceResult => {
+    const context = snapshot.workspaceContext
+    if (context === undefined) return snapshot
+    const openUris = new Set([
+      request.document.uri,
+      ...request.workspaceDocuments.map(document => document.uri),
+    ])
+    const documents = Object.freeze(
+      snapshot.documents
+        .filter(document => !openUris.has(document.uri))
+        .slice(0, request.maxDocuments),
+    )
+    const allowedUris = new Set([...openUris, ...documents.map(document => document.uri)])
+    const documentOrigins = Object.freeze([
+      ...request.workspaceDocumentOrigins,
+      ...context.documentOrigins.filter(
+        origin => !openUris.has(origin.uri) && allowedUris.has(origin.uri),
+      ),
+    ])
+    return Object.freeze({
+      ...snapshot,
+      documents,
+      isComplete: snapshot.isComplete && documents.length === snapshot.documents.length,
+      workspaceContext: Object.freeze({
+        ...context,
+        revision: languageWorkspaceContextToken({
+          snapshotRevision: context.revision,
+          openDocuments: documentOrigins
+            .filter(origin => openUris.has(origin.uri))
+            .map(origin => ({ uri: origin.uri, sourceRevision: origin.sourceRevision })),
+        }),
+        documentOrigins,
+      }),
+    })
+  }
+
+  const cachedLanguageSnapshot = (
+    key: string,
+    request: LanguageSnapshotRequest,
+  ): LanguageWorkspaceDocumentSourceResult | undefined => {
+    const cached = languageDocumentSnapshots.get(key)
+    if (cached === undefined || Date.now() - cached.capturedAt > 10_000) {
+      languageDocumentSnapshots.delete(key)
+      return undefined
+    }
+    languageDocumentSnapshots.delete(key)
+    languageDocumentSnapshots.set(key, cached)
+    return rebaseLanguageSnapshot(cached.value, request)
+  }
+
+  const rememberLanguageSnapshot = (
+    key: string,
+    snapshot: LanguageWorkspaceDocumentSourceResult,
+  ): void => {
+    languageDocumentSnapshots.delete(key)
+    languageDocumentSnapshots.set(key, Object.freeze({ capturedAt: Date.now(), value: snapshot }))
+    while (languageDocumentSnapshots.size > 32) {
+      const oldest = languageDocumentSnapshots.keys().next().value
+      if (oldest === undefined) break
+      languageDocumentSnapshots.delete(oldest)
+    }
+  }
+
+  const workspaceLanguageDocumentSource = (
+    scope: LiveLanguageScope | undefined,
+    semanticComplete: boolean,
+  ): LanguageWorkspaceDocumentSource =>
+    Object.freeze({
+      async snapshot(request: Parameters<LanguageWorkspaceDocumentSource['snapshot']>[0]) {
         request.signal.throwIfAborted()
-        const document = await vscode.workspace.openTextDocument(candidate.uri)
-        const routedLanguageIds = [
+        const accepted = new Set(request.workspaceLanguageIds)
+        const extensions = [
           ...new Set(
             languageRoutes.flatMap(route =>
-              accepted.has(route.languageId) && route.extension === candidate.extension
-                ? [route.languageId]
+              accepted.has(route.languageId) && route.extension !== undefined
+                ? [route.extension]
                 : [],
             ),
           ),
-        ]
-        const languageId = accepted.has(document.languageId)
-          ? document.languageId
-          : routedLanguageIds.length === 1
-            ? routedLanguageIds[0]
-            : undefined
-        if (languageId === undefined) {
-          // `.xml` and `.txt` commonly have several SC2 meanings. Extension-only routing would
-          // inject the wrong semantic document, so leave the snapshot honestly incomplete.
-          isComplete = false
-          continue
+        ].sort()
+        if (extensions.length === 0 || request.maxDocuments === 0) {
+          return { documents: Object.freeze([]), isComplete: extensions.length === 0 }
         }
-        const text = document.getText()
-        const bytes = new TextEncoder().encode(text).byteLength
-        if (bytes > 4_194_304 || totalTextBytes + bytes > 67_108_864) {
-          isComplete = false
-          continue
+        // The document under the cursor is open too, and the host rejects a snapshot that repeats it.
+        const openUris = new Set([
+          request.document.uri,
+          ...request.workspaceDocuments.map(document => document.uri),
+        ])
+        const candidates = new Map<
+          string,
+          { readonly uri: vscode.Uri; readonly extension: string }
+        >()
+        let isComplete = true
+        if (scope?.root !== undefined) {
+          const enumerated = await enumerateScopeFiles(
+            scope.root,
+            new Set(extensions),
+            request.maxDocuments + 1,
+            request.signal,
+          )
+          isComplete = enumerated.complete
+          for (const item of enumerated.files.slice(0, request.maxDocuments)) {
+            if (openUris.has(item.uri.toString())) continue
+            const extension = item.logicalId.split('.').at(-1)?.toLowerCase()
+            if (extension !== undefined) {
+              candidates.set(item.uri.toString(), { uri: item.uri, extension })
+            }
+          }
+        } else {
+          for (const extension of extensions) {
+            request.signal.throwIfAborted()
+            const remaining = request.maxDocuments - candidates.size
+            if (remaining <= 0) {
+              isComplete = false
+              break
+            }
+            const extensionPattern = caseInsensitiveExtensionPattern(extension)
+            const uris = await vscode.workspace.findFiles(
+              `**/*.${extensionPattern}`,
+              '**/{node_modules,.git}/**',
+              remaining + 1,
+            )
+            if (uris.length > remaining) isComplete = false
+            for (const uri of uris.slice(0, remaining)) {
+              if (openUris.has(uri.toString())) continue
+              candidates.set(uri.toString(), { uri, extension })
+            }
+          }
         }
-        totalTextBytes += bytes
-        documents.push(
-          Object.freeze({
-            uri: candidate.uri.toString(),
-            languageId,
-            version: document.version,
-            text,
-          }),
+        /*
+         * Order decides what survives the byte budget. Files of the edited document's own kind come
+         * first — a layout resolves its templates against other layouts — and the rest are interleaved
+         * by extension so one large kind cannot spend the remainder alone.
+         */
+        const primaryExtension = request.document.uri.split('.').at(-1)?.toLowerCase()
+        const byExtension = new Map<
+          string,
+          { readonly uri: vscode.Uri; readonly extension: string }[]
+        >()
+        for (const candidate of [...candidates.values()].sort((left, right) =>
+          left.uri.toString().localeCompare(right.uri.toString()),
+        ))
+          byExtension.set(candidate.extension, [
+            ...(byExtension.get(candidate.extension) ?? []),
+            candidate,
+          ])
+        const ranked = [...(byExtension.get(primaryExtension ?? '') ?? [])]
+        const others = [...byExtension.entries()]
+          .filter(([extension]) => extension !== primaryExtension)
+          .map(([, list]) => list)
+        for (let index = 0; others.some(list => index < list.length); index += 1)
+          for (const list of others) {
+            const candidate = list[index]
+            if (candidate !== undefined) ranked.push(candidate)
+          }
+        const documents = []
+        const documentOrigins = []
+        const folders = vscode.workspace.workspaceFolders ?? []
+        const contextId =
+          scope?.contextId ??
+          languageWorkspaceContextToken({
+            folders: folders.map(folder => folder.uri.toString()),
+          })
+        const pathIndex = await workspaceContentPathIndex(scope, contextId)
+        request.signal.throwIfAborted()
+        let totalTextBytes = 0
+        for (const candidate of ranked.slice(0, request.maxDocuments)) {
+          request.signal.throwIfAborted()
+          const document = await vscode.workspace.openTextDocument(candidate.uri)
+          const routedLanguageIds = [
+            ...new Set(
+              languageRoutes.flatMap(route =>
+                accepted.has(route.languageId) && route.extension === candidate.extension
+                  ? [route.languageId]
+                  : [],
+              ),
+            ),
+          ]
+          const languageId = accepted.has(document.languageId)
+            ? document.languageId
+            : routedLanguageIds.length === 1
+              ? routedLanguageIds[0]
+              : undefined
+          if (languageId === undefined) {
+            // `.xml` and `.txt` commonly have several SC2 meanings. Extension-only routing would
+            // inject the wrong semantic document, so leave the snapshot honestly incomplete.
+            isComplete = false
+            continue
+          }
+          const text = document.getText()
+          const bytes = new TextEncoder().encode(text).byteLength
+          if (bytes > 4_194_304 || totalTextBytes + bytes > 67_108_864) {
+            isComplete = false
+            continue
+          }
+          totalTextBytes += bytes
+          documents.push(
+            Object.freeze({
+              uri: candidate.uri.toString(),
+              languageId,
+              version: document.version,
+              text,
+            }),
+          )
+          const folder = vscode.workspace.getWorkspaceFolder(candidate.uri)
+          const root = scope?.root ?? folder?.uri
+          const precedence =
+            scope === undefined ? (folder === undefined ? -1 : folders.indexOf(folder)) : 0
+          const logicalId =
+            scope === undefined
+              ? root === undefined
+                ? undefined
+                : relative(root.fsPath, candidate.uri.fsPath).replaceAll('\\', '/')
+              : logicalIdInScope(scope, candidate.uri)
+          if (root !== undefined && logicalId !== undefined && precedence >= 0) {
+            documentOrigins.push(
+              Object.freeze({
+                uri: candidate.uri.toString(),
+                layerId: scope?.layerId ?? `${contextId}:root:${precedence}`,
+                logicalId,
+                precedence,
+                sourceRevision: languageWorkspaceContextToken({
+                  version: document.version,
+                  text,
+                }),
+                readOnly: candidate.uri.scheme !== 'file',
+                overlay: candidate.uri.scheme === 'file',
+              }),
+            )
+          }
+        }
+        const suppliedOpenOrigins = request.workspaceDocumentOrigins.filter(origin =>
+          scope === undefined
+            ? origin.layerId.startsWith(`${contextId}:root:`)
+            : origin.layerId === scope.layerId,
         )
+        const openOriginsByUri = new Map(suppliedOpenOrigins.map(origin => [origin.uri, origin]))
+        if (scope !== undefined) {
+          for (const document of [request.document, ...request.workspaceDocuments]) {
+            if (openOriginsByUri.has(document.uri)) continue
+            let documentUri: vscode.Uri
+            try {
+              documentUri = vscode.Uri.parse(document.uri, true)
+            } catch {
+              continue
+            }
+            const logicalId = logicalIdInScope(scope, documentUri)
+            if (logicalId === undefined || logicalId === '') continue
+            openOriginsByUri.set(
+              document.uri,
+              Object.freeze({
+                uri: document.uri,
+                layerId: scope.layerId,
+                logicalId,
+                precedence: 0,
+                sourceRevision: languageWorkspaceContextToken({
+                  version: document.version,
+                  text: document.text,
+                }),
+                readOnly: documentUri.scheme !== 'file',
+                overlay: documentUri.scheme === 'file',
+              }),
+            )
+          }
+        }
+        const openOrigins = [...openOriginsByUri.values()]
+        const contextOrigins = Object.freeze([...openOrigins, ...documentOrigins])
+        const semanticInputs = Object.freeze([
+          Object.freeze({
+            kind: 'locale-set',
+            id: 'selected-game-locales:enUS',
+            revision: languageWorkspaceContextToken(['enUS']),
+          }),
+          Object.freeze({
+            kind: 'content-path-index',
+            id: `${contextId}:local`,
+            revision: pathIndex.revision,
+            payload: Object.freeze({
+              schemaVersion: 1,
+              isComplete: pathIndex.complete,
+              paths: pathIndex.paths,
+            }),
+          }),
+          ...(scope === undefined
+            ? []
+            : [
+                Object.freeze({
+                  kind: 'subject',
+                  id: scope.contextId,
+                  revision: scope.revision,
+                }),
+              ]),
+        ])
+        if (languageOnly) {
+          log(
+            `[language-context] local workspace snapshot for ${request.document.uri}: accepted=${request.workspaceLanguageIds.join(',')} open=${request.workspaceDocuments.map(document => `${document.languageId}:${document.uri}`).join(',')} additional=${documents.map(document => `${document.languageId}:${document.uri}`).join(',')} origins=${contextOrigins.map(origin => `${origin.logicalId}:${origin.uri}`).join(',')}`,
+          )
+        }
+        return {
+          documents: Object.freeze(documents),
+          isComplete,
+          workspaceContext: Object.freeze({
+            id: contextId,
+            revision: languageWorkspaceContextToken({
+              complete: isComplete,
+              subjectRevision: scope?.revision,
+              semanticInputs,
+              documents: contextOrigins.map(origin => ({
+                uri: origin.uri,
+                sourceRevision: origin.sourceRevision,
+              })),
+            }),
+            semanticComplete: semanticComplete && isComplete && pathIndex.complete,
+            documentOrigins: contextOrigins,
+            semanticInputs,
+          }),
+        }
+      },
+    })
+
+  const dependencyFailureNotices = new Set<string>()
+  const languageDocumentSource: LanguageWorkspaceDocumentSource = Object.freeze({
+    async snapshot(request: Parameters<LanguageWorkspaceDocumentSource['snapshot']>[0]) {
+      let uri: vscode.Uri
+      try {
+        uri = vscode.Uri.parse(request.document.uri, true)
+      } catch {
+        return workspaceLanguageDocumentSource(undefined, false).snapshot(request)
       }
-      return { documents: Object.freeze(documents), isComplete }
+      const scope = await resolveLanguageScope(uri, request.signal)
+      const snapshotKey = languageSnapshotKey(scope, request)
+      const cached = cachedLanguageSnapshot(snapshotKey, request)
+      if (cached !== undefined) return cached
+      if (scope === undefined) {
+        const snapshot = await workspaceLanguageDocumentSource(undefined, false).snapshot(request)
+        rememberLanguageSnapshot(snapshotKey, snapshot)
+        return rebaseLanguageSnapshot(snapshot, request)
+      }
+      let projected: Awaited<ReturnType<typeof resolveContentLanguageSources>> | undefined
+      try {
+        const configuredContentSources = await requireContentSources()
+        const containerLocation =
+          scope.root?.scheme === CONTAINER_SCHEME
+            ? parseContainerUriPath(scope.root.path)
+            : undefined
+        projected = await resolveContentLanguageSources({
+          contentSources:
+            containerLocation === undefined
+              ? configuredContentSources
+              : createContainerDependencyContentSources(
+                  configuredContentSources,
+                  containers,
+                  containerLocation.container,
+                ),
+          routes: languageRoutes,
+          limits: {
+            maxDocumentBytes: 4_194_304,
+            maxWorkspaceBytes: 67_108_864,
+            maxEntries: 65_536,
+          },
+          subjects: [{ descriptor: scope.descriptor, operations: scope.operations }],
+          standingMounts: true,
+          signal: request.signal,
+        })
+        for (const item of projected.diagnostics) {
+          log(`[language-context] ${item.severity} ${item.code}: ${item.message}`)
+        }
+      } catch (error) {
+        request.signal.throwIfAborted()
+        const message = error instanceof Error ? error.message : String(error)
+        const notice = `${scope.contextId}:${message}`
+        if (!dependencyFailureNotices.has(notice)) {
+          dependencyFailureNotices.add(notice)
+          log(`[language-context] dependency context unavailable for ${scope.path}: ${message}`)
+        }
+      }
+      const local = workspaceLanguageDocumentSource(scope, projected?.dependenciesComplete === true)
+      const composed = composeLanguageDocumentSources([...(projected?.sources ?? []), local])
+      const snapshot = await composed!.snapshot(request)
+      rememberLanguageSnapshot(snapshotKey, snapshot)
+      log(
+        `[language-context] workspace snapshot for ${request.document.uri}: accepted=${request.workspaceLanguageIds.join(',')} open=${request.workspaceDocuments.map(document => `${document.languageId}:${document.uri}`).join(',')} additional=${snapshot.documents.map(document => `${document.languageId}:${document.uri}`).join(',')} origins=${snapshot.workspaceContext?.documentOrigins.map(origin => `${origin.logicalId}:${origin.uri}`).join(',') ?? ''}`,
+      )
+      return rebaseLanguageSnapshot(snapshot, request)
     },
   })
 
@@ -4647,12 +6711,80 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     return [route.languageId, ...accepted.filter(item => item !== route.languageId)]
   }
 
+  const observedLanguageContexts = new Set<string>()
   const languageWorkspace = createLanguageWorkspace({
     services: host.services,
     grant: { id: 'modkit.app.vscode/language', classes: [] },
     budgets: LANGUAGE_ACTIVATION_BUDGET,
     subjectCandidates: languageSubjectCandidates,
     documentSource: languageDocumentSource,
+    documentOrigin: document => {
+      let uri: vscode.Uri
+      try {
+        uri = vscode.Uri.parse(document.uri, true)
+      } catch {
+        return undefined
+      }
+      const scope = cachedLanguageScope(uri)
+      if (scope !== undefined) {
+        const logicalId = logicalIdInScope(scope, uri)
+        if (logicalId === undefined || logicalId === '' || logicalId.startsWith('..')) {
+          return undefined
+        }
+        return Object.freeze({
+          uri: document.uri,
+          layerId: scope.layerId,
+          logicalId,
+          precedence: 0,
+          sourceRevision: languageWorkspaceContextToken({
+            version: document.version,
+            text: document.text,
+          }),
+          readOnly: uri.scheme !== 'file',
+          overlay: uri.scheme === 'file',
+        })
+      }
+      const folders = vscode.workspace.workspaceFolders ?? []
+      const folder = vscode.workspace.getWorkspaceFolder(uri)
+      const precedence = folder === undefined ? -1 : folders.indexOf(folder)
+      if (folder === undefined || precedence < 0) return undefined
+      const contextId = languageWorkspaceContextToken({
+        folders: folders.map(item => item.uri.toString()),
+      })
+      return Object.freeze({
+        uri: document.uri,
+        layerId: `${contextId}:root:${precedence}`,
+        logicalId: relative(folder.uri.fsPath, uri.fsPath).replaceAll('\\', '/'),
+        precedence,
+        sourceRevision: languageWorkspaceContextToken({
+          version: document.version,
+          text: document.text,
+        }),
+        readOnly: false,
+        overlay: true,
+      })
+    },
+    observeWorkspaceContext: context => {
+      if (context === undefined || observedLanguageContexts.has(context.revision)) return
+      observedLanguageContexts.add(context.revision)
+      const inputs = context.semanticInputs?.map(input => `${input.kind}:${input.id}`).sort() ?? []
+      const failures =
+        context.semanticInputs?.flatMap(input => {
+          if (
+            input.kind !== 'semantic-context-status' ||
+            typeof input.payload !== 'object' ||
+            input.payload === null ||
+            Array.isArray(input.payload)
+          ) {
+            return []
+          }
+          const message = (input.payload as Readonly<Record<string, unknown>>)['message']
+          return typeof message === 'string' ? [message] : []
+        }) ?? []
+      log(
+        `[language-context] resolved revision=${context.revision} complete=${String(context.semanticComplete)} inputs=${inputs.join(',')} failures=${failures.join('; ')}`,
+      )
+    },
   })
 
   const rangeOf = (range: {
@@ -4780,6 +6912,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
   const languageController = createLanguageSessionController({
     workspace: languageWorkspace,
     routes: languageRoutes,
+    semanticDiagnosticsDelayMs: 1_000,
     publishDiagnostics: (uri, diagnostics) => {
       const target = vscode.Uri.parse(uri)
       for (const item of diagnostics) {
@@ -4816,14 +6949,28 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     const byLanguage: vscode.DocumentFilter = { language: route.languageId }
     selectorEntries.set(JSON.stringify(byLanguage), byLanguage)
     if (route.extension !== undefined) {
+      const extensionPattern = caseInsensitiveExtensionPattern(route.extension)
       const byExtension: vscode.DocumentFilter = {
         scheme: 'file',
-        pattern: `**/*.${route.extension.replace(/^\./u, '')}`,
+        pattern: `**/*.${extensionPattern}`,
       }
       selectorEntries.set(JSON.stringify(byExtension), byExtension)
     }
   }
   const languageSelector: vscode.DocumentSelector = [...selectorEntries.values()]
+  const completionTriggerCharacters = languageProviderTriggerCharacters(
+    languageRoutes,
+    'completion',
+  )
+  const signatureHelpTriggerCharacters = languageProviderTriggerCharacters(
+    languageRoutes,
+    'signatureHelp',
+  )
+  const onTypeFormattingTriggerCharacters = languageProviderTriggerCharacters(
+    languageRoutes,
+    'onTypeFormatting',
+  )
+  const onTypeFormattingTriggers = new Set(onTypeFormattingTriggerCharacters)
 
   const signalFor = (
     token: vscode.CancellationToken,
@@ -4834,6 +6981,72 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       controller.abort('VS Code cancelled the language request'),
     )
     return { signal: controller.signal, dispose: () => subscription.dispose() }
+  }
+
+  const applyOnTypeEdit = async (event: vscode.TextDocumentChangeEvent): Promise<void> => {
+    const [change] = event.contentChanges
+    if (
+      event.contentChanges.length !== 1 ||
+      change === undefined ||
+      change.rangeLength !== 0 ||
+      !onTypeFormattingTriggers.has(change.text)
+    ) {
+      return
+    }
+    const document = languageDocument(event.document)
+    const editor = vscode.window.visibleTextEditors.find(
+      candidate => candidate.document.uri.toString() === document.uri,
+    )
+    const tabSize = typeof editor?.options.tabSize === 'number' ? editor.options.tabSize : 4
+    const insertSpaces =
+      typeof editor?.options.insertSpaces === 'boolean' ? editor.options.insertSpaces : true
+    const result = await languageController.onTypeFormatting(
+      document,
+      plainLanguagePosition(event.document.positionAt(change.rangeOffset + change.text.length)),
+      change.text,
+      { tabSize, insertSpaces },
+    )
+    if (result === undefined) return
+    let actionVersion: number | undefined
+    await applyEditorOnTypeEditResult(result, {
+      async applyEdits(edits) {
+        if (event.document.version !== document.version) return false
+        if (edits.length === 0) {
+          actionVersion = document.version
+          return true
+        }
+        const workspaceEdit = new vscode.WorkspaceEdit()
+        workspaceEdit.set(
+          event.document.uri,
+          edits.map(item => vscode.TextEdit.replace(rangeOf(item.range), item.newText)),
+        )
+        const applied = await vscode.workspace.applyEdit(workspaceEdit)
+        if (!applied || event.document.version !== document.version + 1) return false
+        actionVersion = event.document.version
+        return true
+      },
+      moveCursor(position) {
+        const active = vscode.window.activeTextEditor
+        if (
+          active?.document.uri.toString() !== document.uri ||
+          active.document.version !== actionVersion
+        ) {
+          return
+        }
+        const cursor = new vscode.Position(position.line, position.character)
+        active.selection = new vscode.Selection(cursor, cursor)
+      },
+      async requestCompletion() {
+        const active = vscode.window.activeTextEditor
+        if (
+          active?.document.uri.toString() !== document.uri ||
+          active.document.version !== actionVersion
+        ) {
+          return
+        }
+        await vscode.commands.executeCommand('editor.action.triggerSuggest')
+      },
+    })
   }
 
   if (languageSelector.length > 0) {
@@ -5032,50 +7245,54 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
           }
         },
       }),
-      vscode.languages.registerCompletionItemProvider(languageSelector, {
-        async provideCompletionItems(document, position, token) {
-          const cancellation = signalFor(token)
-          try {
-            const completion = await languageController.completion(
-              languageDocument(document),
-              { line: position.line, character: position.character },
-              cancellation.signal,
-            )
-            if (completion === undefined) return undefined
-            return new vscode.CompletionList(
-              completion.items.map(item => {
-                const native = new vscode.CompletionItem(
-                  item.label,
-                  nativeCompletionKind(item.kind),
-                )
-                if (item.detail !== undefined) native.detail = item.detail
-                if (item.documentation !== undefined) {
-                  native.documentation = new vscode.MarkdownString(item.documentation)
-                }
-                if (item.insertText !== undefined) {
-                  native.insertText =
-                    item.insertTextFormat === 'snippet'
-                      ? new vscode.SnippetString(item.insertText)
-                      : item.insertText
-                }
-                if (item.replacementRange !== undefined)
-                  native.range = rangeOf(item.replacementRange)
-                if (item.sortText !== undefined) native.sortText = item.sortText
-                return native
-              }),
-              completion.isIncomplete,
-            )
-          } catch (error) {
-            if (token.isCancellationRequested) return undefined
-            log(
-              `[language] completion failed: ${error instanceof Error ? error.message : String(error)}`,
-            )
-            return undefined
-          } finally {
-            cancellation.dispose()
-          }
+      vscode.languages.registerCompletionItemProvider(
+        languageSelector,
+        {
+          async provideCompletionItems(document, position, token) {
+            const cancellation = signalFor(token)
+            try {
+              const completion = await languageController.completion(
+                languageDocument(document),
+                { line: position.line, character: position.character },
+                cancellation.signal,
+              )
+              if (completion === undefined) return undefined
+              return new vscode.CompletionList(
+                completion.items.map(item => {
+                  const native = new vscode.CompletionItem(
+                    item.label,
+                    nativeCompletionKind(item.kind),
+                  )
+                  if (item.detail !== undefined) native.detail = item.detail
+                  if (item.documentation !== undefined) {
+                    native.documentation = new vscode.MarkdownString(item.documentation)
+                  }
+                  if (item.insertText !== undefined) {
+                    native.insertText =
+                      item.insertTextFormat === 'snippet'
+                        ? new vscode.SnippetString(item.insertText)
+                        : item.insertText
+                  }
+                  if (item.replacementRange !== undefined)
+                    native.range = rangeOf(item.replacementRange)
+                  if (item.sortText !== undefined) native.sortText = item.sortText
+                  return native
+                }),
+                completion.isIncomplete,
+              )
+            } catch (error) {
+              if (token.isCancellationRequested) return undefined
+              log(
+                `[language] completion failed: ${error instanceof Error ? error.message : String(error)}`,
+              )
+              return undefined
+            } finally {
+              cancellation.dispose()
+            }
+          },
         },
-      }),
+        ...completionTriggerCharacters,
+      ),
       vscode.languages.registerHoverProvider(languageSelector, {
         async provideHover(document, position, token) {
           const cancellation = signalFor(token)
@@ -5140,8 +7357,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
             }
           },
         },
-        '(',
-        ',',
+        ...signatureHelpTriggerCharacters,
       ),
       vscode.languages.registerDefinitionProvider(languageSelector, {
         async provideDefinition(document, position, token) {
@@ -5287,13 +7503,28 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         },
         legend,
       ),
-      vscode.workspace.onDidOpenTextDocument(document =>
-        languageController.open(languageDocument(document)),
-      ),
-      vscode.workspace.onDidChangeTextDocument(event =>
-        languageController.change(languageDocument(event.document)),
-      ),
+      vscode.workspace.onDidOpenTextDocument(document => {
+        languageController.open(languageDocument(document))
+        void resolveLanguageScope(document.uri).catch(error =>
+          log(
+            `[language-context] package preload failed: ${error instanceof Error ? error.message : String(error)}`,
+          ),
+        )
+      }),
+      vscode.workspace.onDidChangeTextDocument(event => {
+        languageController.change(languageDocument(event.document))
+        void applyOnTypeEdit(event).catch(error =>
+          log(
+            `[language] on-type edit failed: ${error instanceof Error ? error.message : String(error)}${
+              isModkitError(error) && typeof error.context?.['error'] === 'string'
+                ? `: ${error.context['error']}`
+                : ''
+            }`,
+          ),
+        )
+      }),
       vscode.workspace.onDidCloseTextDocument(document => {
+        resolvedLanguageScopesByDocument.delete(document.uri.toString())
         void languageController
           .close(document.uri.toString())
           .catch(error =>
@@ -5304,7 +7535,18 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       }),
     )
     for (const document of vscode.workspace.textDocuments) {
-      languageController.open(languageDocument(document))
+      if (
+        vscode.window.visibleTextEditors.some(
+          editor => editor.document.uri.toString() === document.uri.toString(),
+        )
+      ) {
+        languageController.open(languageDocument(document))
+        void resolveLanguageScope(document.uri).catch(error =>
+          log(
+            `[language-context] package preload failed: ${error instanceof Error ? error.message : String(error)}`,
+          ),
+        )
+      }
     }
   }
 
@@ -5335,8 +7577,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         host.extensions.problems.filter(problem => problem.startsWith('the shipped catalog names')),
       ),
       contributions: host.contributions.length,
+      languageRoutes: Object.freeze(
+        languageRoutes.map(
+          route => `${route.languageId}:${route.documentKind}:${route.extension ?? '*'}`,
+        ),
+      ),
       runtime: runtimeDebug,
       facilities: () => undefined,
+      diagnostics: () => journal.lines(),
     })
   }
 
@@ -5580,6 +7828,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         const snapshot = await languageDocumentSource.snapshot({
           document: primary,
           workspaceDocuments: [primary],
+          workspaceDocumentOrigins: [],
           workspaceLanguageIds: languageIds,
           maxDocuments: Math.min(request.maxDocuments ?? 1_024, 1_024),
           signal: controller.signal,
@@ -5681,6 +7930,33 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     grantFor(target)
     // The custom editor is the one place a subject is shown; there is no second panel any more.
     void vscode.commands.executeCommand('vscode.openWith', uri, CUSTOM_EDITOR_TYPE)
+  }
+
+  navigateWorkspaceResource = async (root, subjectId, range) => {
+    /*
+     * A resource that *is* a file opens as that file. Routing it through the package's own custom
+     * editor made every click open the package instead — which a CASC package cannot even preview,
+     * because extracting the package as if it were one of its own entries does not exist.
+     */
+    const entry = namespaceEntryPathOf(subjectId)
+    if (entry !== undefined) {
+      // A resource that knows where it is declared opens *at* that declaration, in the file
+      // of the layer that declared it — which with a chain on screen is often not the active
+      // package.
+      await openResourceFile(memberUriOf(namespaceEntryRootOf(subjectId) ?? root, entry), range)
+      return true
+    }
+    const uri = subjectUriOf(root)
+    await vscode.commands.executeCommand('vscode.openWith', uri, CUSTOM_EDITOR_TYPE, {
+      viewColumn: vscode.ViewColumn.Beside,
+      preserveFocus: false,
+    })
+    const served = [...liveSubjects].find(([, path]) => path === subjectKey(root))?.[0]
+    if (served === undefined) {
+      throw new Error(`the resource workspace subject did not open: ${basename(root)}`)
+    }
+    served.navigate(subjectId)
+    return true
   }
 
   // ---------------------------------------------------------------- shared command runtime
@@ -6276,10 +8552,57 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
   const publishSelectedSources = async (next: readonly SelectedContentSource[]): Promise<void> => {
     selectedSources = next
     await context.workspaceState.update(SELECTED_SOURCES_KEY, next)
+    resetContentSources()
     hostView.refresh()
+    sourcesView.refresh()
     for (const served of live) {
       served.publishRoots()
       served.notice(localizer.text('vscode.shell.selectedSourcesChanged'))
+    }
+  }
+
+  if (selectedSources.some(source => source.version === undefined)) {
+    let enriched = selectedSources
+    for (const source of selectedSources.filter(item => item.version === undefined)) {
+      try {
+        const discovery = await discoverGameInstallations({
+          services: host.services,
+          gameId: source.gameId,
+          configuredPaths: [source.installPath],
+          maxCandidates: 4,
+          grant: {
+            id: `vscode-game-installation-refresh-${nonce()}`,
+            classes:
+              process.platform === 'win32'
+                ? ['filesystem-read', 'process-launch']
+                : ['filesystem-read'],
+          },
+          budgets: GAME_DISCOVERY_BUDGET,
+        })
+        const installation =
+          discovery.state === 'discovered'
+            ? discovery.result.installations.find(
+                item => item.normalizedPath === source.normalizedPath,
+              )
+            : undefined
+        if (installation === undefined) continue
+        enriched = withSelectedContentSource(enriched, {
+          ...source,
+          ...(installation.version === undefined ? {} : { version: installation.version }),
+          ...(installation.buildName === undefined ? {} : { buildName: installation.buildName }),
+          ...(installation.buildUid === undefined ? {} : { buildUid: installation.buildUid }),
+        })
+      } catch (error) {
+        log(
+          `[installation] could not refresh ${source.installPath}: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        )
+      }
+    }
+    if (enriched !== selectedSources) {
+      await publishSelectedSources(enriched)
+      await synchronizeContainerWorkspaceFolders()
     }
   }
 
@@ -7360,6 +9683,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
               displayName: installation.displayName,
               installPath: installation.installPath,
               normalizedPath: installation.normalizedPath,
+              ...(installation.version === undefined ? {} : { version: installation.version }),
+              ...(installation.buildName === undefined
+                ? {}
+                : { buildName: installation.buildName }),
+              ...(installation.buildUid === undefined ? {} : { buildUid: installation.buildUid }),
             })
           }
         }
@@ -7372,7 +9700,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         const picked = await vscode.window.showQuickPick(
           candidates.map(source => ({
             label: source.displayName,
-            description: source.gameId,
+            description:
+              source.version === undefined ? source.gameId : `${source.gameId} · ${source.version}`,
             detail: source.installPath,
             source,
           })),
@@ -7560,6 +9889,45 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       }
       return refreshed
     }),
+
+    vscode.commands.registerCommand('modkit.resources.refresh', () => {
+      resourcesView.refresh()
+      return true
+    }),
+
+    /*
+     * The chain is what the game loads; the package alone is what the author writes. Both are
+     * legitimate questions, and neither can be inferred from the other, so the reader picks.
+     */
+    vscode.commands.registerCommand('modkit.resources.toggleChain', async () => {
+      resourcesShowChain = !resourcesShowChain
+      await context.workspaceState.update(RESOURCES_CHAIN_KEY, resourcesShowChain)
+      disposeChainTrees()
+      resourcesView.refresh()
+      void vscode.window.setStatusBarMessage(
+        localizer.text(
+          resourcesShowChain
+            ? 'vscode.resources.chainOn'
+            : 'vscode.resources.chainOff',
+        ),
+        4_000,
+      )
+      return resourcesShowChain
+    }),
+
+    vscode.commands.registerCommand('modkit.resources.search', async () => {
+      const query = await vscode.window.showInputBox({
+        title: localizer.text('vscode.resources.searchTitle'),
+        placeHolder: localizer.text('vscode.resources.searchPlaceholder'),
+      })
+      if (query === undefined) return false
+      await resourcesView.search(query)
+      return true
+    }),
+
+    vscode.commands.registerCommand('modkit.resources.open', (argument: unknown) =>
+      resourcesView.open(argument as ResourceTreeNode),
+    ),
 
     /** Open the current or supplied resource through the generic workbench. */
     vscode.commands.registerCommand('modkit.navigateResource', (argument: unknown) => {
@@ -7933,9 +10301,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         if (panel.active) {
           activeSubject = key
           viewerStatusBar.setActive(key)
+          resourcesView.refresh()
         } else if (activeSubject === key) {
           activeSubject = undefined
           viewerStatusBar.setActive(undefined)
+          resourcesView.refresh()
         }
       }
       followActive()
@@ -7951,6 +10321,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         viewerStatusBar.remove(subjectKey(target.path))
         if (activeSubject === subjectKey(target.path)) {
           activeSubject = undefined
+          resourcesView.refresh()
         }
         subjectFacts.delete(subjectKey(target.path))
         document.state.detach(served)
@@ -8180,7 +10551,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
    * the archive stage in the editor is where container entries are listed.
    */
   context.subscriptions.push(
-    vscode.window.registerTreeDataProvider('modkit.host', hostView),
+    sourcesView,
+    resourcesView,
+    vscode.window.registerTreeDataProvider('modkit.sources', sourcesView),
+    vscode.window.registerTreeDataProvider('modkit.resources', resourcesView),
     vscode.window.registerTreeDataProvider('modkit.extensions', extensionsView),
     vscode.workspace.onDidChangeWorkspaceFolders(() => {
       // The grant widened or narrowed; every open page reloads its tree and is told why.
@@ -8188,6 +10562,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         served.publishRoots()
         served.notice(localizer.text('vscode.shell.workspaceFoldersChanged'))
       }
+      sourcesView.refresh()
+      resourcesView.refresh()
+    }),
+    vscode.window.onDidChangeActiveTextEditor(() => resourcesView.refresh()),
+    vscode.workspace.onDidSaveTextDocument(document => {
+      if (document.uri.scheme === 'file') resourcesView.refresh()
     }),
   )
 
@@ -8213,15 +10593,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     { readonly contributionId: string; readonly variantId: string; readonly bytes?: number }
   >()
 
-  /** The Modkit editor the user is looking at, or nothing when they are looking elsewhere. */
-  let activeSubject: string | undefined
-
   const rememberSubject = (opened: {
     readonly path: string
     readonly contributionId: string
     readonly variantId: string
   }): void => {
     const key = subjectKey(opened.path)
+    resourcesView.refresh()
     // The size of a container member comes from the provider registered above, so this one call
     // answers for both kinds of subject.
     void vscode.workspace.fs.stat(subjectUriOf(key)).then(
@@ -8272,8 +10650,16 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       host.extensions.problems.filter(problem => problem.startsWith('the shipped catalog names')),
     ),
     contributions: host.contributions.length,
+    languageRoutes: Object.freeze(
+      languageRoutes.map(
+        route => `${route.languageId}:${route.documentKind}:${route.extension ?? '*'}`,
+      ),
+    ),
+    completionTriggerCharacters,
+    signatureHelpTriggerCharacters,
     runtime: runtimeDebug,
     facilities: () => facilityReport,
+    diagnostics: () => journal.lines(),
   })
 }
 

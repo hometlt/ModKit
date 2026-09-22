@@ -3,7 +3,8 @@
   "commands": [
     {
       "command": "modkit.contentSources",
-      "title": "%command.contentSources%"
+      "title": "%command.contentSources%",
+      "icon": "$(remote-explorer)"
     },
     {
       "command": "modkit.addExtensionFolder",
@@ -146,7 +147,18 @@
     },
     {
       "command": "modkit.selectGameInstallation",
-      "title": "%command.selectGameInstallation%"
+      "title": "%command.selectGameInstallation%",
+      "icon": "$(folder-library)"
+    },
+    {
+      "command": "modkit.sources.openInstallation",
+      "title": "%command.openGameInstallation%",
+      "icon": "$(plug)"
+    },
+    {
+      "command": "modkit.sources.revealLocal",
+      "title": "%command.revealLocalSource%",
+      "icon": "$(folder)"
     },
     {
       "command": "modkit.showDiagnostics",
@@ -154,7 +166,33 @@
     },
     {
       "command": "modkit.unloadSource",
-      "title": "%command.unloadContentSource%"
+      "title": "%command.unloadContentSource%",
+      "icon": "$(trash)"
+    },
+    {
+      "command": "modkit.sources.open",
+      "title": "%command.openContentSource%",
+      "icon": "$(plug)"
+    },
+    {
+      "command": "modkit.sources.refresh",
+      "title": "%command.refreshSources%",
+      "icon": "$(refresh)"
+    },
+    {
+      "command": "modkit.resources.refresh",
+      "title": "%command.refreshResources%",
+      "icon": "$(refresh)"
+    },
+    {
+      "command": "modkit.resources.search",
+      "title": "%command.searchResources%",
+      "icon": "$(search)"
+    },
+    {
+      "command": "modkit.resources.open",
+      "title": "%command.openResourceNode%",
+      "icon": "$(go-to-file)"
     },
     {
       "command": "modkit.setCodecDefaultEditor",
@@ -163,6 +201,26 @@
     {
       "command": "modkit.syncEditorAssociations",
       "title": "%command.syncEditorAssociations%"
+    },
+    {
+      "command": "modkit.sources.unmount",
+      "title": "%command.unmountContentSource%",
+      "icon": "$(debug-disconnect)"
+    },
+    {
+      "command": "modkit.resources.toggleChain",
+      "title": "%command.toggleResourceChain%",
+      "icon": "$(layers)"
+    },
+    {
+      "command": "modkit.sources.signIn",
+      "title": "%command.signInBattleNet%",
+      "icon": "$(sign-in)"
+    },
+    {
+      "command": "modkit.sources.signOut",
+      "title": "%command.signOutBattleNet%",
+      "icon": "$(sign-out)"
     }
   ],
   "configuration": {
@@ -199,6 +257,11 @@
         "type": "string",
         "default": "",
         "markdownDescription": "%configuration.extensionRegistry.description%"
+      },
+      "modkit.contentSourceConfig": {
+        "type": "string",
+        "default": "",
+        "markdownDescription": "%configuration.contentSourceConfig.description%"
       },
       "modkit.disabledContributions": {
         "type": "array",
@@ -281,7 +344,117 @@
       "priority": "option"
     }
   ],
-  "languages": [],
+  "grammars": [
+    {
+      "language": "sc2-data",
+      "scopeName": "text.xml.sc2-data",
+      "path": "./media/sc2-data.tmLanguage.json"
+    }
+  ],
+  "languages": [
+    {
+      "id": "galaxy",
+      "aliases": [
+        "Galaxy"
+      ],
+      "extensions": [
+        ".galaxy"
+      ]
+    },
+    {
+      "id": "sc2-bank",
+      "aliases": [
+        "StarCraft II Bank"
+      ],
+      "extensions": [
+        ".SC2Bank",
+        ".sc2bank"
+      ]
+    },
+    {
+      "id": "sc2-cutscene",
+      "aliases": [
+        "StarCraft II Cutscene"
+      ],
+      "extensions": [
+        ".SC2Cutscene",
+        ".sc2cutscene"
+      ]
+    },
+    {
+      "id": "sc2-data",
+      "aliases": [
+        "StarCraft II GameData"
+      ],
+      "filenamePatterns": [
+        "**/[Gg]ame[Dd]ata/*.[xX][mM][lL]"
+      ],
+      "configuration": "./media/sc2-data-language-configuration.json"
+    },
+    {
+      "id": "sc2-layout",
+      "aliases": [
+        "StarCraft II Layout"
+      ],
+      "extensions": [
+        ".SC2Layout",
+        ".sc2layout"
+      ]
+    },
+    {
+      "id": "sc2-strings",
+      "aliases": [
+        "StarCraft II Strings"
+      ],
+      "filenamePatterns": [
+        "**/[Ll]ocalized[Dd]ata/*.[tT][xX][tT]"
+      ]
+    },
+    {
+      "id": "sc2-style",
+      "aliases": [
+        "StarCraft II Style"
+      ],
+      "extensions": [
+        ".SC2Style",
+        ".sc2style"
+      ]
+    },
+    {
+      "id": "sc2-triggers",
+      "aliases": [
+        "StarCraft II Triggers"
+      ],
+      "extensions": [
+        ".SC2Lib",
+        ".SC2Triggers",
+        ".TriggerLib",
+        ".sc2lib",
+        ".triggers",
+        ".triggerlib"
+      ]
+    },
+    {
+      "id": "sc2-wizard",
+      "aliases": [
+        "StarCraft II Wizard"
+      ],
+      "extensions": [
+        ".BlizWiz",
+        ".blizwiz"
+      ]
+    },
+    {
+      "id": "storm-cutscene",
+      "aliases": [
+        "Storm Cutscene"
+      ],
+      "extensions": [
+        ".StormCutscene",
+        ".stormcutscene"
+      ]
+    }
+  ],
   "viewsContainers": {
     "activitybar": [
       {
@@ -299,8 +472,12 @@
         "type": "webview"
       },
       {
-        "id": "modkit.host",
-        "name": "%view.host%"
+        "id": "modkit.sources",
+        "name": "%view.sources%"
+      },
+      {
+        "id": "modkit.resources",
+        "name": "%view.resources%"
       },
       {
         "id": "modkit.extensions",
@@ -309,7 +486,76 @@
     ]
   },
   "menus": {
+    "explorer/context": [
+      {
+        "command": "modkit.sources.revealLocal",
+        "when": "resourceScheme == modkit-source || resourceScheme == modkit-container",
+        "group": "navigation@20"
+      }
+    ],
+    "view/title": [
+      {
+        "command": "modkit.contentSources",
+        "when": "view == modkit.sources",
+        "group": "navigation@1"
+      },
+      {
+        "command": "modkit.selectGameInstallation",
+        "when": "view == modkit.sources",
+        "group": "navigation@2"
+      },
+      {
+        "command": "modkit.sources.refresh",
+        "when": "view == modkit.sources",
+        "group": "navigation@3"
+      },
+      {
+        "command": "modkit.resources.search",
+        "when": "view == modkit.resources",
+        "group": "navigation@1"
+      },
+      {
+        "command": "modkit.resources.refresh",
+        "when": "view == modkit.resources",
+        "group": "navigation@2"
+      },
+      {
+        "command": "modkit.resources.toggleChain",
+        "when": "view == modkit.resources",
+        "group": "navigation@0"
+      }
+    ],
     "view/item/context": [
+      {
+        "command": "modkit.sources.open",
+        "when": "view == modkit.sources && viewItem =~ /^modkitSource\\.(?:providerRoot|localRoot)$/",
+        "group": "inline@1"
+      },
+      {
+        "command": "modkit.sources.revealLocal",
+        "when": "view == modkit.sources && viewItem =~ /^modkitSource\\.localRoot(?:\\.(?:mounted|mounting))?$/",
+        "group": "inline@2"
+      },
+      {
+        "command": "modkit.sources.openInstallation",
+        "when": "view == modkit.sources && viewItem == modkitSource.installation",
+        "group": "inline@1"
+      },
+      {
+        "command": "modkit.sources.revealLocal",
+        "when": "view == modkit.sources && viewItem =~ /^modkitSource\\.installation(?:\\.(?:mounted|mounting))?$/",
+        "group": "inline@2"
+      },
+      {
+        "command": "modkit.unloadSource",
+        "when": "view == modkit.sources && viewItem =~ /^modkitSource\\.installation(?:\\.(?:mounted|mounting))?$/",
+        "group": "inline@3"
+      },
+      {
+        "command": "modkit.resources.open",
+        "when": "view == modkit.resources && viewItem == modkitResource.openable",
+        "group": "inline@1"
+      },
       {
         "command": "modkit.extensions.enableContribution",
         "when": "view == modkit.extensions && viewItem == modkitContribution.codec.disabled",
@@ -369,8 +615,26 @@
         "command": "modkit.extensions.remove",
         "when": "view == modkit.extensions && viewItem =~ /^modkitExtension\\.installed\\.mutable(?:\\.update)?(?:\\.codecs\\.(?:enabled|disabled))?$/",
         "group": "inline@2"
+      },
+      {
+        "command": "modkit.sources.unmount",
+        "when": "view == modkit.sources && viewItem =~ /^modkitSource\\.(?:providerRoot|localRoot|installation)\\.(?:mounted|mounting)$/",
+        "group": "inline@3"
+      },
+      {
+        "command": "modkit.sources.signIn",
+        "when": "view == modkit.sources && viewItem =~ /^modkitSource\\.(?:provider|connections)$/",
+        "group": "inline@1"
+      },
+      {
+        "command": "modkit.sources.signOut",
+        "when": "view == modkit.sources && viewItem == modkitSource.connection",
+        "group": "inline@1"
       }
     ]
   },
-  "fileSystemSchemes": ["modkit-container", "modkit-source"]
+  "fileSystemSchemes": [
+    "modkit-container",
+    "modkit-source"
+  ]
 }

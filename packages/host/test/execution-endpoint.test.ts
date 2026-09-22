@@ -987,6 +987,30 @@ describe('capability-rpc endpoints — leased values, dynamic lease results, ari
     expect(p.host.state).toBe('open')
   })
 
+  /**
+   * The remote handle limit is a ceiling on what is *live*, not on what the session has ever
+   * leased. A released handle that still counted turned a long-running window into a hard stop:
+   * reading CASC entries leased and released normally, and after 4096 reads every further adopt
+   * threw, which then read back as «no contribution claimed this container» when the installation
+   * was opened again.
+   */
+  it('stops counting a released remote handle against the limit', async () => {
+    const p = pair(protocolLimits({ maxHandles: 8, defaultCallDeadlineMs: 2_000 }))
+    const { session } = await openSession(p)
+    const sourceFor = session['sourceFor'] as (
+      contract: string,
+      major: number,
+    ) => Promise<{ value: Record<string, unknown>; release(): Promise<void> }>
+    for (let index = 0; index < 40; index += 1) {
+      const text = await sourceFor('x3.demo/text', 1)
+      await text.release()
+    }
+    expect(p.world.released.text).toBe(40)
+    expect(p.host.counters().remoteHandles).toBeLessThanOrEqual(8)
+    expect(p.failures.host).toEqual([])
+    expect(p.host.state).toBe('open')
+  })
+
   it('arity pads omitted trailing arguments so the signal stays last', async () => {
     const p = pair()
     const { session } = await openSession(p)
