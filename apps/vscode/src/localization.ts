@@ -76,6 +76,7 @@ const EN_MESSAGES = Object.freeze({
   'vscode.sources.publishPrivate': 'Private',
   'vscode.sources.publishLocked': 'Lock the published document?',
   'vscode.sources.publishLockedYes': 'Locked',
+  'vscode.sources.publishLockedProtected': 'Locked + BadName header protection',
   'vscode.sources.publishLockedNo': 'Not locked',
   'vscode.sources.publishPreparing': 'Compiling the revision…',
   'vscode.sources.publishConfirm':
@@ -487,6 +488,7 @@ const RU_MESSAGES: Readonly<Record<keyof typeof EN_MESSAGES, string>> = Object.f
   'vscode.sources.publishPrivate': 'Приватная',
   'vscode.sources.publishLocked': 'Закрыть опубликованный документ?',
   'vscode.sources.publishLockedYes': 'Locked',
+  'vscode.sources.publishLockedProtected': 'Locked + защита заголовка BadName',
   'vscode.sources.publishLockedNo': 'Без Locked',
   'vscode.sources.publishPreparing': 'Собирается ревизия…',
   'vscode.sources.publishConfirm':

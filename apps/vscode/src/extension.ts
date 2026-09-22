@@ -3152,8 +3152,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         if (listing === undefined) return false
         const lock = await vscode.window.showQuickPick(
           [
-            { label: localizer.text('vscode.sources.publishLockedYes'), value: true },
-            { label: localizer.text('vscode.sources.publishLockedNo'), value: false },
+            {
+              label: localizer.text('vscode.sources.publishLockedProtected'),
+              value: true,
+              protect: true,
+            },
+            { label: localizer.text('vscode.sources.publishLockedYes'), value: true, protect: false },
+            { label: localizer.text('vscode.sources.publishLockedNo'), value: false, protect: false },
           ],
           { title: localizer.text('vscode.sources.publishLocked') },
         )
@@ -3168,6 +3173,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
                 ...(archivePath === undefined ? {} : { archivePath }),
                 visibility: listing.value,
                 locked: lock.value,
+                protectHeader: lock.protect,
               },
             ]),
         )) as {
