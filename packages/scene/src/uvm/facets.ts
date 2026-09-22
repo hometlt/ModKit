@@ -2,12 +2,14 @@ import type {
   JsonObject,
   ModelCollisionVolume,
   ModelMaterialRef,
+  ModelMaterialLayerRef,
   ModelSocketRef,
   ModelSocketOrientation,
 } from '@modkit/sdk'
 import type { UvmScalarBudget } from '@modkit/uv/model/accessor'
 import { readCollisionMesh } from './collision-mesh.js'
-import { array, field, object, nonBlank, string } from './values.js'
+import { array, field, object, nonBlank, string, safeIndex } from './values.js'
+import { uvmImageResourceId } from './images.js'
 
 function axis(value: unknown): ModelSocketOrientation['forward'] {
   if (
@@ -133,13 +135,41 @@ function extensionRole(extension: unknown): string | undefined {
   return typeof role === 'string' ? role : undefined
 }
 
-/**
- * Per-material contract coverage — `common.view/model-material-source@1`.
- *
- * The contracts are the extension names the document itself declares, not a vocabulary invented
- * here: UV preserves shader *parameters* and does not define pixel output, so a material's identity
- * plus the contracts it carries is exactly what this facet can honestly say about it.
- */
+/** Describe declared glTF image bindings when no native material layer metadata was retained. */
+function materialImageLayers(
+  document: JsonObject,
+  material: JsonObject,
+): readonly ModelMaterialLayerRef[] {
+  const pbr =
+    material['pbrMetallicRoughness'] === undefined
+      ? {}
+      : object(material['pbrMetallicRoughness'], 'PBR material')
+  const textures = array(document, 'textures'),
+    images = array(document, 'images')
+  const layers: ModelMaterialLayerRef[] = []
+  for (const [slot, reference] of [
+    ['baseColor', pbr['baseColorTexture']],
+    ['metallicRoughness', pbr['metallicRoughnessTexture']],
+    ['normal', material['normalTexture']],
+    ['emissive', material['emissiveTexture']],
+    ['occlusion', material['occlusionTexture']],
+  ] as const) {
+    if (reference === undefined) continue
+    const binding = object(reference, `${slot} texture`)
+    const texture = object(
+      textures[safeIndex(binding['index'], textures.length, 'texture')],
+      'texture',
+    )
+    const image = safeIndex(texture['source'], images.length, 'texture image')
+    const uvSource = binding['texCoord'] ?? 0
+    if (typeof uvSource !== 'number' || !Number.isSafeInteger(uvSource) || uvSource < 0)
+      throw new TypeError('material texture texCoord must be a nonnegative integer')
+    layers.push(Object.freeze({ slot, resourceId: uvmImageResourceId(document, image), uvSource }))
+  }
+  return Object.freeze(layers)
+}
+
+/** Material identities, declared image bindings and extension contracts; no shader simulation. */
 function decodeMaterialRefs(document: JsonObject): readonly ModelMaterialRef[] {
   return array(document, 'materials').map((candidate, index) => {
     const material = object(candidate, `material ${index}`)
@@ -183,8 +213,10 @@ function decodeMaterialRefs(document: JsonObject): readonly ModelMaterialRef[] {
     ) {
       throw new TypeError(`material ${index} alphaCutoff must be finite and nonnegative`)
     }
+    const layers = fields['layers'] === undefined ? materialImageLayers(document, material) : []
     return Object.freeze({
       ...fields,
+      ...(layers.length === 0 ? {} : { layers }),
       // the identity the artifact binding fixes, so a primitive and its material can be joined
       id: `material-${index}`,
       ...(typeof material['name'] === 'string' ? { name: material['name'] } : {}),

@@ -33,6 +33,74 @@ describe('headless scene renderer', () => {
     assert.ok(result.statistics.fragments > 0)
   })
 
+  // A game material names its textures in its own layer list, not as a glTF base-color texture.
+  // Before this, every StarCraft II and Warcraft III material drew flat here.
+  it('samples the diffuse layer a render material names through its own bindings', async () => {
+    const texture = {
+      id: 'diffuse-texture',
+      width: 2,
+      height: 2,
+      rgba: Uint8Array.from([255, 0, 0, 255, 255, 0, 0, 255, 255, 0, 0, 255, 255, 0, 0, 255]),
+      filter: 'nearest',
+    }
+    const scene = binding => ({
+      outputKind: 'rgba8',
+      viewport: { width: 8, height: 8 },
+      camera: { viewProjection: identity },
+      clearColor: [0, 0, 0, 0],
+      scene: {
+        textures: [texture],
+        materials: [
+          {
+            id: 'material',
+            baseColor: [1, 1, 1, 1],
+            // A game material from a publisher that does not carry StarCraft II's standard
+            // material payload: the layer list is all the renderer has to go on.
+            shader: {
+              id: 'example.game-material.v1',
+              parameters: {
+                renderModel: { layers: [{ label: 'diffuse', path: 'Textures/A.dds' }] },
+              },
+            },
+            ...(binding === undefined ? {} : { textureBindings: [binding] }),
+          },
+        ],
+        primitives: [
+          {
+            id: 'triangle',
+            topology: 'triangles',
+            materialId: 'material',
+            positions: Float32Array.from([-0.9, -0.9, 0, 0, 0.9, 0, 0.9, -0.9, 0]),
+            textureCoordinates: Float32Array.from([0, 0, 0.5, 1, 1, 0]),
+          },
+        ],
+      },
+    })
+
+    const bound = await renderHeadless(
+      scene({ resourceId: 'Textures/A.dds', textureId: 'diffuse-texture' }),
+    )
+    const centre = (bound.height / 2) * bound.width * 4 + (bound.width / 2) * 4
+    assert.equal(bound.rgba[centre], 255)
+    assert.equal(bound.rgba[centre + 1], 0)
+    assert.equal(bound.rgba[centre + 2], 0)
+
+    // Without a binding the material keeps its base colour: an unresolved texture is not a
+    // missing mesh, and the renderer must not invent one.
+    const unbound = await renderHeadless(scene(undefined))
+    assert.equal(unbound.rgba[centre], 255)
+    assert.equal(unbound.rgba[centre + 1], 255)
+    assert.equal(unbound.rgba[centre + 2], 255)
+
+    // A binding that names a texture the scene did not carry is reported, not silently dropped.
+    const dangling = await renderHeadless(
+      scene({ resourceId: 'Textures/A.dds', textureId: 'absent-texture' }),
+    )
+    assert.ok(
+      dangling.diagnostics.some(entry => entry.code === 'modkit.headless/diffuse-layer-unavailable'),
+    )
+  })
+
   it('modulates ordinary base-color materials with perspective-correct vertex RGBA', async () => {
     const result = await renderHeadless({
       outputKind: 'rgba8',

@@ -8,14 +8,63 @@ import { createStandardMaterialPrograms, RENDER_MATERIAL_SHADER } from '../mater
 import { field, object, string } from './values.js'
 import { uvmImageTexels } from './images.js'
 
+/**
+ * A material whose only texture statement is its neutral layer list.
+ *
+ * A publisher that does not carry StarCraft II's standard-material payload still says which
+ * logical resource each layer wants, in the bounded native envelope every model facet writes.
+ * Warcraft III and Diablo III materials are exactly that, and without this they drew flat: the
+ * renderer had no route from a layer to a texture except the StarCraft II shader.
+ *
+ * This shader identity is the renderer's own view of the document, assembled here. Nothing is
+ * written back, and no material model is claimed beyond "these layers name these resources".
+ */
+export const MATERIAL_LAYERS_SHADER = 'modkit.material-layers.v1'
+
+function layerList(material: JsonObject): { label: string; path: string }[] {
+  const extras = field(material['extras'], 'modkit')
+  const native = extras === undefined ? undefined : field(extras, 'material')
+  const fields = native === undefined ? undefined : field(native, 'fields')
+  const layers = fields === undefined ? undefined : field(fields, 'layers')
+  if (!Array.isArray(layers)) return []
+  const out: { label: string; path: string }[] = []
+  for (const entry of layers) {
+    if (typeof entry !== 'object' || entry === null) continue
+    const record = entry as JsonObject
+    const path = record['resourceId']
+    const slot = record['slot']
+    if (typeof path !== 'string' || path === '') continue
+    out.push({ label: typeof slot === 'string' && slot !== '' ? slot : 'diffuse', path })
+  }
+  return out
+}
+
 export function uvmMaterialShader(material: JsonObject): SceneRendererMaterial['shader'] {
   const extension = field(material['extensions'], 'UV_game_material')
-  if (extension === undefined) return undefined
+  if (extension === undefined) {
+    const layers = layerList(material)
+    return layers.length === 0
+      ? undefined
+      : { id: MATERIAL_LAYERS_SHADER, parameters: { renderModel: { layers } } }
+  }
   const data = object(extension, 'game material')
   return {
     id: string(data['shader'], 'game material shader'),
     parameters: object(data['params'] ?? {}, 'game material parameters'),
   }
+}
+
+/** The resource ids a neutral layer list names, in declaration order. */
+export function materialLayerResources(
+  shader: NonNullable<SceneRendererMaterial['shader']>,
+): readonly string[] {
+  const params = shader.parameters as
+    | { readonly renderModel?: { readonly layers?: readonly { readonly path?: string }[] } }
+    | undefined
+  const seen = new Set<string>()
+  for (const layer of params?.renderModel?.layers ?? [])
+    if (typeof layer.path === 'string' && layer.path !== '') seen.add(layer.path)
+  return [...seen]
 }
 
 /** Resource enumeration is synchronous so all material inputs are captured before host awaits. */
@@ -41,6 +90,8 @@ export function uvmMaterialResources(
           ...(signal === undefined ? {} : { signal }),
         }).resources,
       )
+    else if (material.shader?.id === MATERIAL_LAYERS_SHADER)
+      result.set(material.id, materialLayerResources(material.shader))
   return result
 }
 

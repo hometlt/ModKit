@@ -1,4 +1,4 @@
-import { OrthographicCamera, Raycaster, Sphere, Vector2, Vector3 } from 'three'
+import { Box3, OrthographicCamera, Raycaster, Sphere, Vector2, Vector3 } from 'three'
 import type {
   MapModelComponentPlacement,
   MapTerrainMaterialDefinition,
@@ -92,10 +92,17 @@ export interface WorldWebGlStats {
 export interface WorldWebGlRendererStats {
   readonly frames: number
   readonly programCompilations: number
+  /** Actual material draw submissions, including shadow passes and retired material leases. */
+  readonly materialDrawCalls: number
   readonly shadowTargetAllocations: number
   readonly shadowTargetReuses: number
   readonly worldPlanBuilds: number
   readonly worldPlanReuses: number
+  /** Updates that retained ground/cliff preparation and rebuilt only the dynamic sections. */
+  readonly worldPlanDynamicUpdates: number
+  readonly worldPlanDynamicUpdateSamples: number
+  readonly worldPlanDynamicUpdateP50Milliseconds?: number
+  readonly worldPlanDynamicUpdateP95Milliseconds?: number
   readonly worldPlanBuildSamples: number
   readonly worldPlanBuildP50Milliseconds?: number
   readonly worldPlanBuildP95Milliseconds?: number
@@ -107,6 +114,9 @@ export interface WorldWebGlRendererStats {
   readonly geometryDisposals: number
   readonly geometryEntries: number
   readonly geometryBytesRetained: number
+  readonly materialBufferEntries: number
+  readonly materialBufferBytesRetained: number
+  readonly materialVertexArrayEntries: number
   readonly textureUploads: number
   readonly textureCacheHits: number
   readonly textureDisposals: number
@@ -135,6 +145,7 @@ export interface WorldWebGlRendererStats {
  */
 export interface WorldWebGlRenderer {
   draw(input: WorldWebGlInput): WorldWebGlStats
+  pick(input: WorldWebGlInput, screen: WorldWebGlPickScreen): WorldWebGlPick | undefined
   stats(): WorldWebGlRendererStats
   dispose(): void
 }
@@ -268,6 +279,8 @@ export interface WorldWebGlPlan {
       objectId: number
       center: readonly [number, number, number]
       triangles: Float32Array
+      /** Shared model geometry; triangles are transformed only after a bounds hit. */
+      primitives?: readonly WorldWebGlPickPrimitive[]
       placeholder: boolean
     }>[]
   }>
@@ -302,6 +315,12 @@ export interface WorldWebGlPlan {
   readonly stats: WorldWebGlStats
 }
 
+interface WorldWebGlPickPrimitive {
+  readonly primitive: SceneRendererPrimitive
+  readonly minimum: readonly [number, number, number]
+  readonly maximum: readonly [number, number, number]
+}
+
 export interface WorldWebGlModelEffectInstance {
   readonly source: UvmEffectSource
   /** Model-to-world transform of the placed component. */
@@ -323,10 +342,13 @@ const effectFrames = new WeakMap<
     }
   >
 >()
-const effectDrawPlans = new WeakMap<WorldWebGlPlan, {
-  cameraKey: string
-  draws: ReturnType<typeof worldModelEffectDraws>
-}>()
+const effectDrawPlans = new WeakMap<
+  WorldWebGlPlan,
+  {
+    cameraKey: string
+    draws: ReturnType<typeof worldModelEffectDraws>
+  }
+>()
 
 /** One parsed effect source per converted model; models without effects (or unreadable) cache null. */
 function uvmEffectSource(bytes: Uint8Array, sequenceIndex?: number): UvmEffectSource | undefined {
@@ -366,8 +388,7 @@ function worldModelEffectDraws(
     // Simulate one full clip before the current phase so plumes are already developed at load.
     // ponytail: cost grows with clip length per instance per frame; cache emitter state per clock.
     const period = effect.source.clipSeconds
-    const time =
-      period === undefined || period <= 0 ? effect.time : period + (effect.time % period)
+    const time = period === undefined || period <= 0 ? effect.time : period + (effect.time % period)
     try {
       const localView = multiplyComponentTransforms(camera.viewMatrix, effect.transform)
       // Instances of one model at the same clock and orientation build identical local sprites
@@ -380,7 +401,8 @@ function worldModelEffectDraws(
         Array.from(localView.subarray(0, 11), value => value.toFixed(4)).join(','),
       ].join('|')
       let frames = effectFrames.get(effect.source)
-      if (frames === undefined || frames.size > 64) effectFrames.set(effect.source, (frames = new Map()))
+      if (frames === undefined || frames.size > 64)
+        effectFrames.set(effect.source, (frames = new Map()))
       let cached = frames.get(key)
       if (cached === undefined) {
         const frame = effect.source.frame(time, effect.materials, localView)
@@ -411,7 +433,14 @@ function worldModelEffectDraws(
         programs,
         textures: effect.textures,
       })
-      for (const draw of sceneMaterialDraws(primitives, frame.materials, programs, camera.viewProjection, [], 1))
+      for (const draw of sceneMaterialDraws(
+        primitives,
+        frame.materials,
+        programs,
+        camera.viewProjection,
+        [],
+        1,
+      ))
         // ponytail: simple single-texture effects (no render-material program) are not drawn here.
         if (draw.program !== undefined && draw.depthOnly !== true)
           draws.push({ scene, draw: { ...draw, program: draw.program } })
@@ -434,11 +463,23 @@ export interface WorldWebGlModelMaterialScene {
 const batch = (): MutableBatch => ({ positions: [], normals: [], colors: [] })
 
 /** Actor animation properties select a named sequence, not the first clip with keyframes. */
-export function worldModelAnimation(result: Extract<WorldSceneModelResult, { state: 'converted' }>, item: WorldSceneObjectItem) {
-  const requested = [item.presentationAnimation?.name ?? 'Stand', ...(item.presentationAnimation?.groups ?? [])].join(' ').toLowerCase()
-  return result.animations?.find(clip => clip.name?.toLowerCase() === requested)
-    ?? result.animations?.find(clip => clip.name?.toLowerCase().startsWith(`${requested} `))
-    ?? (item.presentationAnimation === undefined ? result.animations?.find(clip => clip.kind === 'animation' && clip.channels.length > 0) : undefined)
+export function worldModelAnimation(
+  result: Extract<WorldSceneModelResult, { state: 'converted' }>,
+  item: WorldSceneObjectItem,
+) {
+  const requested = [
+    item.presentationAnimation?.name ?? 'Stand',
+    ...(item.presentationAnimation?.groups ?? []),
+  ]
+    .join(' ')
+    .toLowerCase()
+  return (
+    result.animations?.find(clip => clip.name?.toLowerCase() === requested) ??
+    result.animations?.find(clip => clip.name?.toLowerCase().startsWith(`${requested} `)) ??
+    (item.presentationAnimation === undefined
+      ? result.animations?.find(clip => clip.kind === 'animation' && clip.channels.length > 0)
+      : undefined)
+  )
 }
 
 function worldObjectTime(
@@ -447,9 +488,11 @@ function worldObjectTime(
   hasSelectedAnimation: boolean,
 ): number {
   return (
-    input.animationTimes?.get(item.objectId) ??
-    (item.presentationAnimation !== undefined || hasSelectedAnimation ? input.timeSeconds ?? 0 : 0)
-  ) * (item.presentationAnimation?.speed ?? 1)
+    (input.animationTimes?.get(item.objectId) ??
+      (item.presentationAnimation !== undefined || hasSelectedAnimation
+        ? (input.timeSeconds ?? 0)
+        : 0)) * (item.presentationAnimation?.speed ?? 1)
+  )
 }
 
 function colorHash(value: string | number): readonly [number, number, number, number] {
@@ -706,7 +749,12 @@ function pushSplatTriangle(
 ) {
   const normal = faceNormal(vertices[0], vertices[1], vertices[2])
   for (let vertex = 0; vertex < 3; vertex += 1) {
-    pushVertex(target, vertices[vertex]!, normals?.[vertex] ?? normal, [1, 1, 1, occlusion?.[vertex] ?? 1])
+    pushVertex(target, vertices[vertex]!, normals?.[vertex] ?? normal, [
+      1,
+      1,
+      1,
+      occlusion?.[vertex] ?? 1,
+    ])
     for (let texture = 0; texture < target.textures.length; texture += 1)
       target.textureCoordinates[texture]!.push(...textureCoordinates[texture]![vertex]!)
     target.textureWeights0.push(weights[0] ?? 0, weights[1] ?? 0, weights[2] ?? 0, weights[3] ?? 0)
@@ -907,6 +955,53 @@ function primitiveTriangles(
   return triangles
 }
 
+const referencedVertices = new WeakMap<SceneRendererPrimitive, readonly number[]>()
+
+function primitiveTriangleCount(primitive: SceneRendererPrimitive): number {
+  const count = primitive.indices?.length ?? Math.floor(primitive.positions.length / 3)
+  return primitive.topology === 'triangles'
+    ? Math.floor(count / 3)
+    : primitive.topology === 'triangle-strip' || primitive.topology === 'triangle-fan'
+      ? Math.max(0, count - 2)
+      : 0
+}
+
+function sharedPickPrimitive(
+  source: SceneRendererPrimitive,
+  primitive: SceneRendererPrimitive,
+): WorldWebGlPickPrimitive {
+  let indices = referencedVertices.get(source)
+  if (indices === undefined) {
+    const count = source.indices?.length ?? Math.floor(source.positions.length / 3)
+    const used =
+      primitiveTriangleCount(source) === 0
+        ? 0
+        : source.topology === 'triangles'
+          ? Math.floor(count / 3) * 3
+          : count
+    indices = [
+      ...new Set(Array.from({ length: used }, (_, index) => source.indices?.[index] ?? index)),
+    ]
+    referencedVertices.set(source, indices)
+  }
+  const minimum: [number, number, number] = [Infinity, Infinity, Infinity]
+  const maximum: [number, number, number] = [-Infinity, -Infinity, -Infinity]
+  for (const index of indices) {
+    const vertex = transformedPrimitiveVertex(primitive, index)
+    for (const axis of [0, 1, 2] as const) {
+      if (!Number.isFinite(vertex[axis]))
+        throw new TypeError('world WebGL plan contains a non-finite model coordinate')
+      minimum[axis] = Math.min(minimum[axis], vertex[axis])
+      maximum[axis] = Math.max(maximum[axis], vertex[axis])
+    }
+  }
+  return Object.freeze({
+    primitive,
+    minimum: Object.freeze(minimum),
+    maximum: Object.freeze(maximum),
+  })
+}
+
 function frozenBatch(source: MutableBatch): WorldWebGlBatch {
   return Object.freeze({
     positions: Float32Array.from(source.positions),
@@ -941,7 +1036,9 @@ function frozenSplatBatch(source: MutableSplatBatch): WorldWebGlSplatBatch {
     textureWeights1: Float32Array.from(source.textureWeights1),
     textures: Object.freeze([...source.textures]),
     normalTextures: Object.freeze([...source.normalTextures]),
-    ...(source.specularTextures === undefined ? {} : { specularTextures: Object.freeze([...source.specularTextures]) }),
+    ...(source.specularTextures === undefined
+      ? {}
+      : { specularTextures: Object.freeze([...source.specularTextures]) }),
     normalSwizzles: Object.freeze([...source.normalSwizzles]),
     ...(source.weightTextures === undefined
       ? {}
@@ -1151,177 +1248,39 @@ function finitePlan(plan: readonly MutableBatch[]) {
   return true
 }
 
-/** Builds a renderer-ready, game-neutral 3D scene without requiring a browser or GPU. */
-export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
-  const opaque = batch()
-  const modelMaterialScenes: WorldWebGlModelMaterialScene[] = []
-  const modelEffects: WorldWebGlModelEffectInstance[] = []
-  let modelMaterialShadowTriangles = 0
-  const shadowControlledOpaque = new Map<
-    string,
-    MutableBatch & { readonly castShadows: boolean; readonly receiveShadows: boolean }
-  >()
-  const transparent = batch()
-  const lines = batch()
-  const points = batch()
-  const textured = new Map<string, MutableTexturedBatch>()
-  const transparentTextured = new Map<
-    string,
-    MutableTexturedBatch & {
-      readonly blendMode: 'blend' | 'additive'
-      readonly receiveShadows: boolean
-    }
-  >()
-  const splat = new Map<string, MutableSplatBatch>()
-  const terrainPickTriangles: number[] = []
-  const objectPickMeshes: {
-    objectId: number
-    center: readonly [number, number, number]
-    triangles: number[]
-    placeholder: boolean
-  }[] = []
-  const terrain = input.items.filter(
-    (item): item is WorldSceneTerrainItem => item.facet === 'terrain',
+type WorldModelSample = Readonly<{
+  result: Extract<WorldSceneModelResult, { state: 'converted' }>
+  primitives: readonly SceneRendererPrimitive[]
+  nodeTransforms: ReadonlyMap<string, Float32Array>
+}>
+
+const staticModelSamples = new WeakMap<WorldModelSample['result'], Map<string, WorldModelSample>>()
+
+function worldModelHasAnimatedGeometry(
+  result: WorldModelSample['result'],
+  item: WorldSceneObjectItem,
+): boolean {
+  const clip = worldModelAnimation(result, item)
+  // Match createModelSceneSampler: only keyed TRS and visibility affect sampled primitives.
+  // Empty Stand clips and material-only sequences must not invalidate the terrain every frame.
+  return (
+    (result.nodes?.length ?? 0) > 0 &&
+    clip?.kind === 'animation' &&
+    clip.channels.some(
+      channel =>
+        ['translation', 'rotation', 'scale', 'visibility'].includes(channel.kind) &&
+        (channel.samples?.length ?? 0) > 0,
+    )
   )
-  const terrainByCell = new Map(terrain.map(item => [`${item.x}:${item.y}`, item]))
-  const materialByCell = new Map(
-    input.items
-      .filter(item => item.facet === 'terrain-materials')
-      .map(item => [`${item.x}:${item.y}`, item]),
-  )
-  let terrainTriangles = 0
-  let terrainTexturedTriangles = 0
-  let terrainSplatFallbackCells = 0
-  const terrainMinimumX = Math.min(...terrain.map(item => item.x))
-  const terrainMaximumX = Math.max(...terrain.map(item => item.x))
-  const terrainMinimumY = Math.min(...terrain.map(item => item.y))
-  const terrainMaximumY = Math.max(...terrain.map(item => item.y))
-  const rasterDefinitions = (input.terrainWeightRasters ?? []).flatMap(raster =>
-    raster.materialIds.map(materialId =>
-      input.terrainMaterials?.find(material => material.materialId === materialId),
-    ),
-  )
-  const rasterMaterialTextures = rasterDefinitions.map(definition =>
-    definition?.baseColorResourceId === undefined
-      ? undefined
-      : input.terrainTextures?.get(definition.baseColorResourceId),
-  )
-  const rasterNormalTextures = rasterDefinitions.map(definition =>
-    definition?.normalResourceId === undefined
-      ? undefined
-      : input.terrainTextures?.get(definition.normalResourceId),
-  )
-  const rasterWeightTextures = (input.terrainWeightRasters ?? []).map(raster =>
-    input.terrainTextures?.get(raster.resourceId),
-  )
-  const exactRasterSplat =
-    (input.terrainWeightRasters?.length ?? 0) > 0 &&
-    input.terrainWeightRasters!.length <= 2 &&
-    rasterDefinitions.length <= 8 &&
-    rasterDefinitions.every(definition => definition !== undefined) &&
-    rasterWeightTextures.every(
-      (texture, index) =>
-        texture !== undefined &&
-        texture.width === input.terrainWeightRasters![index]!.width &&
-        texture.height === input.terrainWeightRasters![index]!.height,
-    ) &&
-    terrainMaximumX > terrainMinimumX &&
-    terrainMaximumY > terrainMinimumY
-      ? Object.freeze({
-          definitions: rasterDefinitions as readonly MapTerrainMaterialDefinition[],
-          // One unresolved layer must not drop per-pixel blending for the whole map.
-          textures: rasterMaterialTextures.map(texture => texture ?? MISSING_TERRAIN_LAYER_TEXTURE),
-          normalTextures: rasterNormalTextures,
-          specularTextures: rasterDefinitions.map(definition => definition?.specularResourceId === undefined ? undefined : input.terrainTextures?.get(definition.specularResourceId)),
-          normalSwizzles: (rasterDefinitions as readonly MapTerrainMaterialDefinition[]).map(
-            definition => (definition.normalEncoding === 'xy-in-alpha-green' ? 1 : 0),
-          ),
-          weightTextures: rasterWeightTextures as readonly SceneRendererTexture[],
-        })
-      : undefined
-  const planSamples = new Map<
-    string,
-    Readonly<{
-      result: Extract<WorldSceneModelResult, { state: 'converted' }>
-      primitives: readonly SceneRendererPrimitive[]
-      nodeTransforms: ReadonlyMap<string, Float32Array>
-    }>
-  >()
-  // Instances of one model at the same clock share the sampled (skinned) primitives, so their
-  // prepared geometry and GPU buffers are shared too.
-  const sampleSharedModel = (resourceId: string, item: WorldSceneObjectItem) => {
-    const result = input.models?.get(resourceId)
-    if (result?.state !== 'converted') return undefined
-    const selected = worldModelAnimation(result, item)
-    const clock = worldObjectTime(input, item, selected !== undefined)
-    const time = selected?.durationSeconds && (item.presentationAnimation?.loop ?? selected.looping)
-      ? clock % selected.durationSeconds : clock
-    const sharedKey = `${resourceId}\u0000${selected?.id ?? ''}\u0000${time}`
-    const shared = planSamples.get(sharedKey)
-    if (shared !== undefined) return shared
-    const clip = selected?.kind === 'animation' ? selected : undefined
-    const sample =
-      (result.nodes?.length ?? 0) === 0
-        ? { primitives: result.primitives, nodeTransforms: new Map<string, Float32Array>() }
-        : createModelSceneSampler(
-            {
-              nodes: result.nodes ?? [],
-              meshes: result.meshes,
-              primitives: result.primitives,
-              ...(result.skeleton === undefined ? {} : { skeleton: result.skeleton }),
-            },
-            {
-              ...(clip === undefined ? {} : { clip }),
-              maxBytes: 64 * 1024 * 1024,
-            },
-          ).sample(time)
-    const current = {
-      result,
-      primitives: sample.primitives,
-      nodeTransforms: sample.nodeTransforms,
-    }
-    planSamples.set(sharedKey, current)
-    return current
-  }
-  /** The one batch that draws the exact raster splat: the height field and the cliff tiles share it. */
-  const rasterSplatKey =
-    exactRasterSplat === undefined
-      ? undefined
-      : [
-          'terrain-raster-splat',
-          exactRasterSplat.textures.map(candidate => candidate.id).join(String.fromCharCode(0)),
-          exactRasterSplat.normalTextures
-            .map(candidate => candidate?.id ?? '')
-            .join(String.fromCharCode(0)),
-          exactRasterSplat.weightTextures.map(candidate => candidate.id).join(String.fromCharCode(0)),
-        ].join(String.fromCharCode(0))
-  const rasterSplatBatch = (key = rasterSplatKey!): MutableSplatBatch => {
-    const existing = splat.get(key)
-    if (existing !== undefined) return existing
-    const target: MutableSplatBatch = {
-      ...batch(),
-      textureCoordinates: exactRasterSplat!.textures.map(() => []),
-      textureWeights0: [],
-      textureWeights1: [],
-      textures: exactRasterSplat!.textures,
-      normalTextures: exactRasterSplat!.normalTextures,
-      specularTextures: exactRasterSplat!.specularTextures,
-      normalSwizzles: exactRasterSplat!.normalSwizzles,
-      weightTextures: exactRasterSplat!.weightTextures,
-      weightTextureCoordinates: [],
-    }
-    splat.set(key, target)
-    return target
-  }
-  const rasterUv = (x: number, y: number): readonly [number, number] => [
-    (x - terrainMinimumX) / (terrainMaximumX - terrainMinimumX),
-    (y - terrainMinimumY) / (terrainMaximumY - terrainMinimumY),
-  ]
-  const terrainAoAt = (x: number, y: number): number => {
-    const gx = Math.floor(x), gy = Math.floor(y), fx = x - gx, fy = y - gy
-    const at = (dx: number, dy: number) => terrainByCell.get(`${gx + dx}:${gy + dy}`)?.ambientOcclusion ?? 1
-    return at(0, 0) * (1 - fx) * (1 - fy) + at(1, 0) * fx * (1 - fy) + at(1, 1) * fx * fy + at(0, 1) * (1 - fx) * fy
-  }
+}
+
+// Separate scope: the retained lifter owns only the terrain lookup, never mutable build batches.
+function createCliffPrimitiveLifter(
+  terrain: readonly WorldSceneTerrainItem[],
+  terrainByCell: ReadonlyMap<string, WorldSceneTerrainItem>,
+  terrainMinimumX: number,
+  terrainMinimumY: number,
+) {
   // Height-grid coordinates of a world point, read off where the terrain places its first cell.
   const gridOrigin = terrainByCell.get(`${terrainMinimumX}:${terrainMinimumY}`)
   const gridEast = terrainByCell.get(`${terrainMinimumX + 1}:${terrainMinimumY}`)
@@ -1399,7 +1358,7 @@ export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
    * world-up offset), so the transform, normals and tangents stay as authored. Primitives that do not
    * move are returned as-is and keep their shared GPU buffers.
    */
-  const liftedCliffPrimitives = <P extends { readonly positions: Float32Array }>(
+  const computeLiftedCliffPrimitives = <P extends { readonly positions: Float32Array }>(
     primitives: readonly P[],
     instanceTransform: Float32Array,
   ): readonly P[] => {
@@ -1452,11 +1411,7 @@ export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
       }
     if (footprint.every(entry => entry.offset === 0)) return primitives
     const LEVEL_TOLERANCE = 0.05
-    const nearest = (
-      candidates: readonly (typeof footprint)[number][],
-      x: number,
-      z: number,
-    ) => {
+    const nearest = (candidates: readonly (typeof footprint)[number][], x: number, z: number) => {
       let best = candidates[0]!
       let bestDistance = Infinity
       for (const candidate of candidates) {
@@ -1472,9 +1427,15 @@ export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
       let below: number | undefined
       let above: number | undefined
       for (const entry of footprint) {
-        if (entry.standard <= y + LEVEL_TOLERANCE && (below === undefined || entry.standard > below))
+        if (
+          entry.standard <= y + LEVEL_TOLERANCE &&
+          (below === undefined || entry.standard > below)
+        )
           below = entry.standard
-        if (entry.standard >= y - LEVEL_TOLERANCE && (above === undefined || entry.standard < above))
+        if (
+          entry.standard >= y - LEVEL_TOLERANCE &&
+          (above === undefined || entry.standard < above)
+        )
           above = entry.standard
       }
       const low = below ?? above!
@@ -1523,6 +1484,174 @@ export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
       return moved ? { ...primitive, positions } : primitive
     })
   }
+  // Scoped to this ground revision. Static samples keep the same input arrays across frames;
+  // animated samples have weak keys, so old poses are not retained by this cache.
+  const lifted = new WeakMap<object, Map<string, readonly { readonly positions: Float32Array }[]>>()
+  const liftedCliffPrimitives = <P extends { readonly positions: Float32Array }>(
+    primitives: readonly P[],
+    instanceTransform: Float32Array,
+  ): readonly P[] => {
+    let instances = lifted.get(primitives)
+    if (instances === undefined) lifted.set(primitives, (instances = new Map()))
+    const key = instanceTransform.join(',')
+    let result = instances.get(key)
+    if (result === undefined) {
+      result = computeLiftedCliffPrimitives(primitives, instanceTransform)
+      instances.set(key, result)
+    }
+    return result as readonly P[]
+  }
+  return { gridOf, liftedCliffPrimitives }
+}
+
+/** Frozen ground preparation shared across animated frames; water and actors are rebuilt below. */
+function prepareWorldStaticTerrain(
+  input: WorldWebGlInput,
+  sampleSharedModel: (
+    resourceId: string,
+    item: WorldSceneObjectItem,
+  ) => WorldModelSample | undefined,
+) {
+  const opaque = batch(),
+    lines = batch(),
+    points = batch()
+  const textured = new Map<string, MutableTexturedBatch>()
+  const splat = new Map<string, MutableSplatBatch>()
+  const terrainPickTriangles: number[] = []
+  const terrain = input.items.filter(
+    (item): item is WorldSceneTerrainItem => item.facet === 'terrain',
+  )
+  const terrainByCell = new Map(terrain.map(item => [`${item.x}:${item.y}`, item]))
+  let lowHeight = Infinity,
+    highHeight = -Infinity
+  for (const item of terrain) {
+    const height = terrainPosition(item)[1]
+    lowHeight = Math.min(lowHeight, height)
+    highHeight = Math.max(highHeight, height)
+  }
+  // Progressive lattice surface: per-vertex interpolation makes ramp slopes continuous.
+  const heightColor = (height: number): readonly [number, number, number, number] => {
+    const t =
+      highHeight > lowHeight
+        ? Math.min(1, Math.max(0, (height - lowHeight) / (highHeight - lowHeight)))
+        : 0.5
+    return [0.06 + t * 0.69, 0.13 + t * 0.69, 0.21 + t * 0.41, 1]
+  }
+  const materialByCell = new Map(
+    input.items
+      .filter(item => item.facet === 'terrain-materials')
+      .map(item => [`${item.x}:${item.y}`, item]),
+  )
+  let terrainTriangles = 0
+  let terrainTexturedTriangles = 0
+  let terrainSplatFallbackCells = 0
+  const terrainMinimumX = Math.min(...terrain.map(item => item.x))
+  const terrainMaximumX = Math.max(...terrain.map(item => item.x))
+  const terrainMinimumY = Math.min(...terrain.map(item => item.y))
+  const terrainMaximumY = Math.max(...terrain.map(item => item.y))
+  const rasterDefinitions = (input.terrainWeightRasters ?? []).flatMap(raster =>
+    raster.materialIds.map(materialId =>
+      input.terrainMaterials?.find(material => material.materialId === materialId),
+    ),
+  )
+  const rasterMaterialTextures = rasterDefinitions.map(definition =>
+    definition?.baseColorResourceId === undefined
+      ? undefined
+      : input.terrainTextures?.get(definition.baseColorResourceId),
+  )
+  const rasterNormalTextures = rasterDefinitions.map(definition =>
+    definition?.normalResourceId === undefined
+      ? undefined
+      : input.terrainTextures?.get(definition.normalResourceId),
+  )
+  const rasterWeightTextures = (input.terrainWeightRasters ?? []).map(raster =>
+    input.terrainTextures?.get(raster.resourceId),
+  )
+  const exactRasterSplat =
+    (input.terrainWeightRasters?.length ?? 0) > 0 &&
+    input.terrainWeightRasters!.length <= 2 &&
+    rasterDefinitions.length <= 8 &&
+    rasterDefinitions.every(definition => definition !== undefined) &&
+    rasterWeightTextures.every(
+      (texture, index) =>
+        texture !== undefined &&
+        texture.width === input.terrainWeightRasters![index]!.width &&
+        texture.height === input.terrainWeightRasters![index]!.height,
+    ) &&
+    terrainMaximumX > terrainMinimumX &&
+    terrainMaximumY > terrainMinimumY
+      ? Object.freeze({
+          definitions: rasterDefinitions as readonly MapTerrainMaterialDefinition[],
+          // One unresolved layer must not drop per-pixel blending for the whole map.
+          textures: rasterMaterialTextures.map(texture => texture ?? MISSING_TERRAIN_LAYER_TEXTURE),
+          normalTextures: rasterNormalTextures,
+          specularTextures: rasterDefinitions.map(definition =>
+            definition?.specularResourceId === undefined
+              ? undefined
+              : input.terrainTextures?.get(definition.specularResourceId),
+          ),
+          normalSwizzles: (rasterDefinitions as readonly MapTerrainMaterialDefinition[]).map(
+            definition => (definition.normalEncoding === 'xy-in-alpha-green' ? 1 : 0),
+          ),
+          weightTextures: rasterWeightTextures as readonly SceneRendererTexture[],
+        })
+      : undefined
+  /** The one batch that draws the exact raster splat: the height field and the cliff tiles share it. */
+  const rasterSplatKey =
+    exactRasterSplat === undefined
+      ? undefined
+      : [
+          'terrain-raster-splat',
+          exactRasterSplat.textures.map(candidate => candidate.id).join(String.fromCharCode(0)),
+          exactRasterSplat.normalTextures
+            .map(candidate => candidate?.id ?? '')
+            .join(String.fromCharCode(0)),
+          exactRasterSplat.weightTextures
+            .map(candidate => candidate.id)
+            .join(String.fromCharCode(0)),
+        ].join(String.fromCharCode(0))
+  const rasterSplatBatch = (key = rasterSplatKey!): MutableSplatBatch => {
+    const existing = splat.get(key)
+    if (existing !== undefined) return existing
+    const target: MutableSplatBatch = {
+      ...batch(),
+      textureCoordinates: exactRasterSplat!.textures.map(() => []),
+      textureWeights0: [],
+      textureWeights1: [],
+      textures: exactRasterSplat!.textures,
+      normalTextures: exactRasterSplat!.normalTextures,
+      specularTextures: exactRasterSplat!.specularTextures,
+      normalSwizzles: exactRasterSplat!.normalSwizzles,
+      weightTextures: exactRasterSplat!.weightTextures,
+      weightTextureCoordinates: [],
+    }
+    splat.set(key, target)
+    return target
+  }
+  const rasterUv = (x: number, y: number): readonly [number, number] => [
+    (x - terrainMinimumX) / (terrainMaximumX - terrainMinimumX),
+    (y - terrainMinimumY) / (terrainMaximumY - terrainMinimumY),
+  ]
+  const terrainAoAt = (x: number, y: number): number => {
+    const gx = Math.floor(x),
+      gy = Math.floor(y),
+      fx = x - gx,
+      fy = y - gy
+    const at = (dx: number, dy: number) =>
+      terrainByCell.get(`${gx + dx}:${gy + dy}`)?.ambientOcclusion ?? 1
+    return (
+      at(0, 0) * (1 - fx) * (1 - fy) +
+      at(1, 0) * fx * (1 - fy) +
+      at(1, 1) * fx * fy +
+      at(0, 1) * (1 - fx) * fy
+    )
+  }
+  const { gridOf, liftedCliffPrimitives } = createCliffPrimitiveLifter(
+    terrain,
+    terrainByCell,
+    terrainMinimumX,
+    terrainMinimumY,
+  )
   type CliffTriangle = readonly [
     readonly [number, number, number],
     readonly [number, number, number],
@@ -1580,7 +1709,11 @@ export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
   const cliffFills: CliffFill[] = []
   if (exactRasterSplat !== undefined)
     for (const item of input.items) {
-      if (item.facet !== 'objects' || item.derivedFrom !== 'cliffs' || item.resourceId === undefined)
+      if (
+        item.facet !== 'objects' ||
+        item.derivedFrom !== 'cliffs' ||
+        item.resourceId === undefined
+      )
         continue
       const sampled = sampleSharedModel(item.resourceId, item)
       if (sampled === undefined) continue
@@ -1752,11 +1885,14 @@ export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
             ),
           ) as [readonly [number, number], readonly [number, number], readonly [number, number]],
       )
-      pushSplatTriangle(target, plate.vertices, coordinates, [], [
-        plate.normal,
-        plate.normal,
-        plate.normal,
-      ], grid.map(([x, y]) => terrainAoAt(x, y)))
+      pushSplatTriangle(
+        target,
+        plate.vertices,
+        coordinates,
+        [],
+        [plate.normal, plate.normal, plate.normal],
+        grid.map(([x, y]) => terrainAoAt(x, y)),
+      )
       target.weightTextureCoordinates!.push(
         ...grid.map(point => rasterUv(point[0], point[1])).flat(),
       )
@@ -1765,7 +1901,9 @@ export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
     }
   }
   /** A height-field vertex, snapped onto a cliff piece's surface where one covers it. */
-  const snappedTerrainPosition = (item: WorldSceneTerrainItem): readonly [number, number, number] => {
+  const snappedTerrainPosition = (
+    item: WorldSceneTerrainItem,
+  ): readonly [number, number, number] => {
     const position = terrainPosition(item)
     const override = vertexOverride.get(`${item.x}:${item.y}`)
     return override === undefined ? position : [position[0], override, position[2]]
@@ -1871,229 +2009,538 @@ export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
     if (cell === undefined || east === undefined || south === undefined || southEast === undefined)
       continue
     for (const patch of cell.patches) {
-    const tri = <T,>(values: readonly [T, T, T, T], index: 0 | 1) =>
-      patch.split[index].map(corner => values[corner]!) as [T, T, T]
-    const cornerNormals = (
-      patch.normal !== undefined
-        ? [patch.normal, patch.normal, patch.normal, patch.normal]
-        : patch.quadrant
-        ? [
-            [0, 1, 0],
-            [0, 1, 0],
-            [0, 1, 0],
-            [0, 1, 0],
+      const tri = <T>(values: readonly [T, T, T, T], index: 0 | 1) =>
+        patch.split[index].map(corner => values[corner]!) as [T, T, T]
+      const cornerNormals = (
+        patch.normal !== undefined
+          ? [patch.normal, patch.normal, patch.normal, patch.normal]
+          : patch.quadrant
+            ? [
+                [0, 1, 0],
+                [0, 1, 0],
+                [0, 1, 0],
+                [0, 1, 0],
+              ]
+            : [
+                vertexNormal(item.x, item.y),
+                vertexNormal(item.x + 1, item.y),
+                vertexNormal(item.x + 1, item.y + 1),
+                vertexNormal(item.x, item.y + 1),
+              ]
+      ) as readonly [
+        readonly [number, number, number],
+        readonly [number, number, number],
+        readonly [number, number, number],
+        readonly [number, number, number],
+      ]
+      const quad = patch.positions
+      const cornerAo = patch.locals.map(([x, y]) => terrainAoAt(item.x + x, item.y + y)) as [
+        number,
+        number,
+        number,
+        number,
+      ]
+      if (exactRasterSplat !== undefined) {
+        const key = `terrain-raster-splat\u0000${exactRasterSplat.textures
+          .map(candidate => candidate.id)
+          .join('\u0000')}\u0000${exactRasterSplat.normalTextures
+          .map(candidate => candidate?.id ?? '')
+          .join('\u0000')}\u0000${exactRasterSplat.weightTextures
+          .map(candidate => candidate.id)
+          .join('\u0000')}`
+        const target = rasterSplatBatch(key)
+        const coordinates = exactRasterSplat.definitions.map(definition => {
+          const [uvA, uvB, uvC, uvD] = patch.locals.map(local =>
+            terrainSurfaceUv(item, local, undefined, definition.uvTransform),
+          ) as [
+            readonly [number, number],
+            readonly [number, number],
+            readonly [number, number],
+            readonly [number, number],
           ]
-        : [
-            vertexNormal(item.x, item.y),
-            vertexNormal(item.x + 1, item.y),
-            vertexNormal(item.x + 1, item.y + 1),
-            vertexNormal(item.x, item.y + 1),
-          ]
-    ) as readonly [
-      readonly [number, number, number],
-      readonly [number, number, number],
-      readonly [number, number, number],
-      readonly [number, number, number],
-    ]
-    const quad = patch.positions
-    const cornerAo = patch.locals.map(([x, y]) => terrainAoAt(item.x + x, item.y + y)) as [number, number, number, number]
-    if (exactRasterSplat !== undefined) {
-      const key = `terrain-raster-splat\u0000${exactRasterSplat.textures
-        .map(candidate => candidate.id)
-        .join('\u0000')}\u0000${exactRasterSplat.normalTextures
-        .map(candidate => candidate?.id ?? '')
-        .join('\u0000')}\u0000${exactRasterSplat.weightTextures
-        .map(candidate => candidate.id)
-        .join('\u0000')}`
-      const target = rasterSplatBatch(key)
-      const coordinates = exactRasterSplat.definitions.map(definition => {
+          return { first: tri([uvA, uvB, uvC, uvD], 0), second: tri([uvA, uvB, uvC, uvD], 1) }
+        })
         const [uvA, uvB, uvC, uvD] = patch.locals.map(local =>
-          terrainSurfaceUv(item, local, undefined, definition.uvTransform),
+          rasterUv(item.x + local[0], item.y + local[1]),
         ) as [
           readonly [number, number],
           readonly [number, number],
           readonly [number, number],
           readonly [number, number],
         ]
-        return { first: tri([uvA, uvB, uvC, uvD], 0), second: tri([uvA, uvB, uvC, uvD], 1) }
-      })
-      const [uvA, uvB, uvC, uvD] = patch.locals.map(local =>
-        rasterUv(item.x + local[0], item.y + local[1]),
-      ) as [
-        readonly [number, number],
-        readonly [number, number],
-        readonly [number, number],
-        readonly [number, number],
-      ]
-      pushSplatTriangle(
-        target,
-        tri(quad, 0),
-        coordinates.map(candidate => candidate.first),
-        [],
-        tri(cornerNormals, 0),
-        tri(cornerAo, 0),
-      )
-      target.weightTextureCoordinates!.push(...tri([uvA, uvB, uvC, uvD], 0).flat())
-      pushSplatTriangle(
-        target,
-        tri(quad, 1),
-        coordinates.map(candidate => candidate.second),
-        [],
-        tri(cornerNormals, 1),
-        tri(cornerAo, 1),
-      )
-      target.weightTextureCoordinates!.push(...tri([uvA, uvB, uvC, uvD], 1).flat())
-      terrainPickTriangles.push(...tri(quad, 0).flat(), ...tri(quad, 1).flat())
-      terrainTexturedTriangles += 2
-      terrainTriangles += 2
-      continue
-    }
-    const materialSample = materialByCell.get(`${item.x}:${item.y}`)
-    const declaredWeights =
-      materialSample?.weights?.filter(weight => weight.weight > 0) ??
-      input.terrainMaterials
-        ?.filter(material => material.sourceIndex === materialSample?.textureIndex)
-        .map(material => ({ materialId: material.materialId, weight: 1 })) ??
-      []
-    const dominantMaterialId =
-      declaredWeights.slice().sort((left, right) => right.weight - left.weight)[0]?.materialId ??
-      input.terrainMaterials?.find(
-        material => material.sourceIndex === materialSample?.textureIndex,
-      )?.materialId
-    const material = input.terrainMaterials?.find(
-      candidate => candidate.materialId === dominantMaterialId,
-    )
-    const texture =
-      material?.baseColorResourceId === undefined
-        ? undefined
-        : input.terrainTextures?.get(material.baseColorResourceId)
-    const normalTexture =
-      material?.normalResourceId === undefined
-        ? undefined
-        : input.terrainTextures?.get(material.normalResourceId)
-    const color =
-      texture === undefined
-        ? colorHash(dominantMaterialId ?? materialSample?.textureIndex ?? 0)
-        : ([1, 1, 1, 1] as const)
-    const resolvedSplat = declaredWeights.flatMap(weight => {
-      const definition = input.terrainMaterials?.find(
-        candidate => candidate.materialId === weight.materialId,
-      )
-      const resolvedTexture =
-        definition?.baseColorResourceId === undefined
-          ? undefined
-          : input.terrainTextures?.get(definition.baseColorResourceId)
-      return definition === undefined || resolvedTexture === undefined
-        ? []
-        : [{ definition, texture: resolvedTexture, weight: weight.weight }]
-    })
-    if (
-      declaredWeights.length > 1 &&
-      (declaredWeights.length > 8 || resolvedSplat.length !== declaredWeights.length)
-    )
-      terrainSplatFallbackCells += 1
-    if (
-      declaredWeights.length > 1 &&
-      declaredWeights.length <= 8 &&
-      resolvedSplat.length === declaredWeights.length
-    ) {
-      const textures = resolvedSplat.map(layer => layer.texture)
-      const normalTextures = resolvedSplat.map(layer =>
-        layer.definition.normalResourceId === undefined
-          ? undefined
-          : input.terrainTextures?.get(layer.definition.normalResourceId),
-      )
-      const key = `terrain-splat\u0000${textures
-        .map(candidate => candidate.id)
-        .join(
-          '\u0000',
-        )}\u0000${normalTextures.map(candidate => candidate?.id ?? '').join('\u0000')}`
-      const target = splat.get(key) ?? {
-        ...batch(),
-        textureCoordinates: textures.map(() => []),
-        textureWeights0: [],
-        textureWeights1: [],
-        textures,
-        normalTextures,
-        specularTextures: resolvedSplat.map(layer => layer.definition.specularResourceId === undefined ? undefined : input.terrainTextures?.get(layer.definition.specularResourceId)),
-        normalSwizzles: resolvedSplat.map(layer =>
-          layer.definition.normalEncoding === 'xy-in-alpha-green' ? 1 : 0,
-        ),
+        pushSplatTriangle(
+          target,
+          tri(quad, 0),
+          coordinates.map(candidate => candidate.first),
+          [],
+          tri(cornerNormals, 0),
+          tri(cornerAo, 0),
+        )
+        target.weightTextureCoordinates!.push(...tri([uvA, uvB, uvC, uvD], 0).flat())
+        pushSplatTriangle(
+          target,
+          tri(quad, 1),
+          coordinates.map(candidate => candidate.second),
+          [],
+          tri(cornerNormals, 1),
+          tri(cornerAo, 1),
+        )
+        target.weightTextureCoordinates!.push(...tri([uvA, uvB, uvC, uvD], 1).flat())
+        terrainPickTriangles.push(...tri(quad, 0).flat(), ...tri(quad, 1).flat())
+        terrainTexturedTriangles += 2
+        terrainTriangles += 2
+        continue
       }
-      splat.set(key, target)
-      const coordinates = resolvedSplat.map(layer => {
-        const transform = (uv: readonly [number, number]) =>
-          terrainSurfaceUv(item, uv, materialSample?.uvTransform, layer.definition.uvTransform)
-        const [uvA, uvB, uvC, uvD] = patch.locals.map(transform) as [
+      const materialSample = materialByCell.get(`${item.x}:${item.y}`)
+      const declaredWeights =
+        materialSample?.weights?.filter(weight => weight.weight > 0) ??
+        input.terrainMaterials
+          ?.filter(material => material.sourceIndex === materialSample?.textureIndex)
+          .map(material => ({ materialId: material.materialId, weight: 1 })) ??
+        []
+      const dominantMaterialId =
+        declaredWeights.slice().sort((left, right) => right.weight - left.weight)[0]?.materialId ??
+        input.terrainMaterials?.find(
+          material => material.sourceIndex === materialSample?.textureIndex,
+        )?.materialId
+      const material = input.terrainMaterials?.find(
+        candidate => candidate.materialId === dominantMaterialId,
+      )
+      const texture =
+        material?.baseColorResourceId === undefined
+          ? undefined
+          : input.terrainTextures?.get(material.baseColorResourceId)
+      const normalTexture =
+        material?.normalResourceId === undefined
+          ? undefined
+          : input.terrainTextures?.get(material.normalResourceId)
+      const color = [1, 1, 1, 1] as const
+      const resolvedSplat = declaredWeights.flatMap(weight => {
+        const definition = input.terrainMaterials?.find(
+          candidate => candidate.materialId === weight.materialId,
+        )
+        const resolvedTexture =
+          definition?.baseColorResourceId === undefined
+            ? undefined
+            : input.terrainTextures?.get(definition.baseColorResourceId)
+        return definition === undefined || resolvedTexture === undefined
+          ? []
+          : [{ definition, texture: resolvedTexture, weight: weight.weight }]
+      })
+      if (
+        declaredWeights.length > 1 &&
+        (declaredWeights.length > 8 || resolvedSplat.length !== declaredWeights.length)
+      )
+        terrainSplatFallbackCells += 1
+      if (
+        declaredWeights.length > 1 &&
+        declaredWeights.length <= 8 &&
+        resolvedSplat.length === declaredWeights.length
+      ) {
+        const textures = resolvedSplat.map(layer => layer.texture)
+        const normalTextures = resolvedSplat.map(layer =>
+          layer.definition.normalResourceId === undefined
+            ? undefined
+            : input.terrainTextures?.get(layer.definition.normalResourceId),
+        )
+        const key = `terrain-splat\u0000${textures
+          .map(candidate => candidate.id)
+          .join(
+            '\u0000',
+          )}\u0000${normalTextures.map(candidate => candidate?.id ?? '').join('\u0000')}`
+        const target = splat.get(key) ?? {
+          ...batch(),
+          textureCoordinates: textures.map(() => []),
+          textureWeights0: [],
+          textureWeights1: [],
+          textures,
+          normalTextures,
+          specularTextures: resolvedSplat.map(layer =>
+            layer.definition.specularResourceId === undefined
+              ? undefined
+              : input.terrainTextures?.get(layer.definition.specularResourceId),
+          ),
+          normalSwizzles: resolvedSplat.map(layer =>
+            layer.definition.normalEncoding === 'xy-in-alpha-green' ? 1 : 0,
+          ),
+        }
+        splat.set(key, target)
+        const coordinates = resolvedSplat.map(layer => {
+          const transform = (uv: readonly [number, number]) =>
+            terrainSurfaceUv(item, uv, materialSample?.uvTransform, layer.definition.uvTransform)
+          const [uvA, uvB, uvC, uvD] = patch.locals.map(transform) as [
+            readonly [number, number],
+            readonly [number, number],
+            readonly [number, number],
+            readonly [number, number],
+          ]
+          return { first: tri([uvA, uvB, uvC, uvD], 0), second: tri([uvA, uvB, uvC, uvD], 1) }
+        })
+        const weights = resolvedSplat.map(layer => layer.weight)
+        pushSplatTriangle(
+          target,
+          tri(quad, 0),
+          coordinates.map(candidate => candidate.first),
+          weights,
+          tri(cornerNormals, 0),
+          tri(cornerAo, 0),
+        )
+        pushSplatTriangle(
+          target,
+          tri(quad, 1),
+          coordinates.map(candidate => candidate.second),
+          weights,
+          tri(cornerNormals, 1),
+          tri(cornerAo, 1),
+        )
+        terrainTexturedTriangles += 2
+      } else if (texture === undefined) {
+        for (const index of [0, 1] as const) {
+          const vertices = tri(quad, index),
+            normals = tri(cornerNormals, index)
+          for (const corner of [0, 1, 2] as const)
+            pushVertex(opaque, vertices[corner], normals[corner], heightColor(vertices[corner][1]))
+        }
+      } else {
+        const key = `terrain\u0000${texture.id}\u0000${normalTexture?.id ?? ''}`
+        const target = textured.get(key) ?? {
+          ...batch(),
+          textureCoordinates: [],
+          texture,
+          ...(normalTexture === undefined ? {} : { normalTexture }),
+        }
+        textured.set(key, target)
+        const uv = (local: readonly [number, number]) =>
+          terrainSurfaceUv(item, local, materialSample?.uvTransform, material?.uvTransform)
+        const [uvA, uvB, uvC, uvD] = patch.locals.map(uv) as [
           readonly [number, number],
           readonly [number, number],
           readonly [number, number],
           readonly [number, number],
         ]
-        return { first: tri([uvA, uvB, uvC, uvD], 0), second: tri([uvA, uvB, uvC, uvD], 1) }
-      })
-      const weights = resolvedSplat.map(layer => layer.weight)
-      pushSplatTriangle(
-        target,
-        tri(quad, 0),
-        coordinates.map(candidate => candidate.first),
-        weights,
-        tri(cornerNormals, 0),
-        tri(cornerAo, 0),
-      )
-      pushSplatTriangle(
-        target,
-        tri(quad, 1),
-        coordinates.map(candidate => candidate.second),
-        weights,
-        tri(cornerNormals, 1),
-        tri(cornerAo, 1),
-      )
-      terrainTexturedTriangles += 2
-    } else if (texture === undefined) {
-      pushTriangle(opaque, ...tri(quad, 0), color, tri(cornerNormals, 0))
-      pushTriangle(opaque, ...tri(quad, 1), color, tri(cornerNormals, 1))
-    } else {
-      const key = `terrain\u0000${texture.id}\u0000${normalTexture?.id ?? ''}`
-      const target = textured.get(key) ?? {
-        ...batch(),
-        textureCoordinates: [],
-        texture,
-        ...(normalTexture === undefined ? {} : { normalTexture }),
+        pushTexturedTriangle(
+          target,
+          tri(quad, 0),
+          tri([uvA, uvB, uvC, uvD], 0),
+          color,
+          tri(cornerNormals, 0),
+        )
+        pushTexturedTriangle(
+          target,
+          tri(quad, 1),
+          tri([uvA, uvB, uvC, uvD], 1),
+          color,
+          tri(cornerNormals, 1),
+        )
+        terrainTexturedTriangles += 2
       }
-      textured.set(key, target)
-      const uv = (local: readonly [number, number]) =>
-        terrainSurfaceUv(item, local, materialSample?.uvTransform, material?.uvTransform)
-      const [uvA, uvB, uvC, uvD] = patch.locals.map(uv) as [
-        readonly [number, number],
-        readonly [number, number],
-        readonly [number, number],
-        readonly [number, number],
-      ]
-      pushTexturedTriangle(
-        target,
-        tri(quad, 0),
-        tri([uvA, uvB, uvC, uvD], 0),
-        color,
-        tri(cornerNormals, 0),
-      )
-      pushTexturedTriangle(
-        target,
-        tri(quad, 1),
-        tri([uvA, uvB, uvC, uvD], 1),
-        color,
-        tri(cornerNormals, 1),
-      )
-      terrainTexturedTriangles += 2
-    }
-    terrainPickTriangles.push(...tri(quad, 0).flat(), ...tri(quad, 1).flat())
-    terrainTriangles += 2
+      terrainPickTriangles.push(...tri(quad, 0).flat(), ...tri(quad, 1).flat())
+      terrainTriangles += 2
     }
   }
   if (terrainTriangles === 0) {
-    for (const item of terrain) pushVertex(points, terrainPosition(item), [0, 1, 0], colorHash(0))
+    for (const item of terrain) {
+      const position = terrainPosition(item)
+      pushVertex(points, position, [0, 1, 0], heightColor(position[1]))
+    }
   }
 
+  let cliffEdges = 0
+  let cliffTriangles = 0
+  // Progressive acquisition: only suppress a skirt where a resolved cliff actually covers it.
+  // A declared resource (or the first loaded piece elsewhere) does not replace the whole map.
+  const resolvedCliffBounds: { minimum: number[]; maximum: number[] }[] = []
+  const cliffObjects = input.items.filter(
+    (item): item is WorldSceneObjectItem & { readonly resourceId: string } =>
+      item.facet === 'objects' && item.derivedFrom === 'cliffs' && item.resourceId !== undefined,
+  )
+  let resolvedCliffObjects = 0
+  for (const item of cliffObjects) {
+    const sampled = sampleSharedModel(item.resourceId, item)
+    if (sampled === undefined) continue
+    resolvedCliffObjects += 1
+    const transform = worldObjectTransform(item, objectPosition(item, input))
+    const minimum = [Infinity, Infinity, Infinity],
+      maximum = [-Infinity, -Infinity, -Infinity]
+    for (const primitive of sampled.primitives) {
+      if (primitiveTriangleCount(primitive) === 0) continue
+      const entry = sharedPickPrimitive(primitive, {
+        ...primitive,
+        transform: multiplyComponentTransforms(
+          transform,
+          primitive.transform ?? IDENTITY_COMPONENT_TRANSFORM,
+        ),
+      })
+      for (const axis of [0, 1, 2] as const) {
+        minimum[axis] = Math.min(minimum[axis]!, entry.minimum[axis])
+        maximum[axis] = Math.max(maximum[axis]!, entry.maximum[axis])
+      }
+    }
+    if (Number.isFinite(minimum[0])) resolvedCliffBounds.push({ minimum, maximum })
+  }
+  const allCliffModelsResolved =
+    cliffObjects.length > 0 && resolvedCliffObjects === cliffObjects.length
+  const cliffs = input.items.filter(item => item.facet === 'cliffs')
+  const cliffByCell = new Map(cliffs.map(item => [`${item.x}:${item.y}`, item]))
+  for (const item of cliffs) {
+    for (const [dx, dy] of [
+      [1, 0],
+      [0, 1],
+    ] as const) {
+      const neighbor = cliffByCell.get(`${item.x + dx}:${item.y + dy}`)
+      if (neighbor === undefined || neighbor.level === item.level) continue
+      const a = terrainByCell.get(`${item.x}:${item.y}`)
+      const b = terrainByCell.get(`${item.x + dx}:${item.y + dy}`)
+      if (a === undefined || b === undefined) continue
+      const alongX = dy === 0 ? 0 : 1
+      const alongY = dx === 0 ? 0 : 1
+      const c = terrainByCell.get(`${item.x + alongX}:${item.y + alongY}`)
+      const d = terrainByCell.get(`${item.x + dx + alongX}:${item.y + dy + alongY}`)
+      if (c === undefined || d === undefined) continue
+      const positionA = terrainPosition(a)
+      const positionB = terrainPosition(b)
+      const positionC = terrainPosition(c)
+      const positionD = terrainPosition(d)
+      if (
+        Math.abs(positionA[1] - positionB[1]) <= Number.EPSILON &&
+        Math.abs(positionC[1] - positionD[1]) <= Number.EPSILON
+      )
+        continue
+      const sideA0 = [
+        (positionA[0] + positionB[0]) / 2,
+        positionA[1],
+        (positionA[2] + positionB[2]) / 2,
+      ] as const
+      const sideB0 = [sideA0[0], positionB[1], sideA0[2]] as const
+      const sideA1 = [
+        (positionC[0] + positionD[0]) / 2,
+        positionC[1],
+        (positionC[2] + positionD[2]) / 2,
+      ] as const
+      const sideB1 = [sideA1[0], positionD[1], sideA1[2]] as const
+      if (
+        allCliffModelsResolved ||
+        resolvedCliffBounds.some(bounds =>
+          [sideA0, sideA1].every(
+            vertex =>
+              vertex[0] >= bounds.minimum[0]! - 1e-4 &&
+              vertex[0] <= bounds.maximum[0]! + 1e-4 &&
+              vertex[2] >= bounds.minimum[2]! - 1e-4 &&
+              vertex[2] <= bounds.maximum[2]! + 1e-4,
+          ),
+        )
+      )
+        continue
+      pushLine(lines, terrainPosition(a), terrainPosition(b), [0.18, 0.1, 0.05, 1])
+      cliffEdges += 1
+      const color = [0.27, 0.16, 0.09, 1] as const
+      pushTriangle(opaque, sideA0, sideA1, sideB1, color)
+      pushTriangle(opaque, sideA0, sideB1, sideB0, color)
+      terrainPickTriangles.push(...sideA0, ...sideA1, ...sideB1, ...sideA0, ...sideB1, ...sideB0)
+      cliffTriangles += 2
+    }
+  }
+
+  let gatewaySegments = 0
+  for (const item of input.items.filter(item => item.facet === 'gateways')) {
+    const start = item.uvwStart ?? { x: item.x1, y: 0, z: item.y1 }
+    const end = item.uvwEnd ?? { x: item.x2, y: 0, z: item.y2 }
+    const terrainElevation = (x: number, z: number) => {
+      const match = terrain.find(candidate => {
+        const position = terrainPosition(candidate)
+        return position[0] === x && position[2] === z
+      })
+      return match === undefined ? 0 : terrainPosition(match)[1]
+    }
+    pushLine(
+      lines,
+      [start.x, terrainElevation(start.x, start.z) + 0.5, start.z],
+      [end.x, terrainElevation(end.x, end.z) + 0.5, end.z],
+      [0.12, 0.95, 0.9, 1],
+    )
+    gatewaySegments += 1
+  }
+
+  if (!finitePlan([opaque, lines, points, ...textured.values(), ...splat.values()]))
+    throw new TypeError('world WebGL plan contains a non-finite coordinate')
+  for (const item of textured.values())
+    if (!item.textureCoordinates.every(Number.isFinite))
+      throw new TypeError('world WebGL plan contains a non-finite texture coordinate')
+  for (const item of splat.values()) {
+    if (
+      item.textureCoordinates.some(coordinates => !coordinates.every(Number.isFinite)) ||
+      !item.textureWeights0.every(Number.isFinite) ||
+      !item.textureWeights1.every(Number.isFinite) ||
+      (item.weightTextureCoordinates !== undefined &&
+        !item.weightTextureCoordinates.every(Number.isFinite))
+    )
+      throw new TypeError('world WebGL splat plan contains a non-finite texture value')
+  }
+
+  const minimum: [number, number, number] = [Infinity, Infinity, Infinity]
+  const maximum: [number, number, number] = [-Infinity, -Infinity, -Infinity]
+  let hasPositions = false
+  for (const item of [opaque, lines, points, ...textured.values(), ...splat.values()]) {
+    if (item.positions.length > 0) hasPositions = true
+    for (let offset = 0; offset < item.positions.length; offset += 3)
+      for (const axis of [0, 1, 2] as const) {
+        minimum[axis] = Math.min(minimum[axis], item.positions[offset + axis]!)
+        maximum[axis] = Math.max(maximum[axis], item.positions[offset + axis]!)
+      }
+  }
+  return {
+    terrain,
+    terrainByCell,
+    liftedCliffPrimitives,
+    minimum,
+    maximum,
+    hasPositions,
+    opaqueTriangles: frozenBatch(opaque),
+    texturedTriangles: Object.freeze([...textured.values()].map(frozenTexturedBatch)),
+    splatTriangles: Object.freeze([...splat.values()].map(frozenSplatBatch)),
+    lines: frozenBatch(lines),
+    points: frozenBatch(points),
+    terrainTriangles: Float32Array.from(terrainPickTriangles),
+    shadowCasterTriangles:
+      (opaque.positions.length +
+        [...textured.values(), ...splat.values()].reduce(
+          (sum, item) => sum + item.positions.length,
+          0,
+        )) /
+      9,
+    stats: {
+      terrainTriangles,
+      terrainTexturedTriangles,
+      terrainSplatFallbackCells,
+      cliffEdges,
+      cliffTriangles,
+      gatewaySegments,
+    },
+  }
+}
+
+const worldStaticPreparations = new WeakMap<
+  WorldWebGlPlan,
+  {
+    input: WorldWebGlInput
+    preparation: ReturnType<typeof prepareWorldStaticTerrain>
+  }
+>()
+
+function appendWorldBatch(
+  staticBatch: WorldWebGlBatch,
+  dynamicBatch: MutableBatch,
+): WorldWebGlBatch {
+  if (dynamicBatch.positions.length === 0) return staticBatch
+  if (staticBatch.positions.length === 0) return frozenBatch(dynamicBatch)
+  const append = (left: Float32Array, right: readonly number[]) => {
+    const result = new Float32Array(left.length + right.length)
+    result.set(left)
+    result.set(right, left.length)
+    return result
+  }
+  return Object.freeze({
+    positions: append(staticBatch.positions, dynamicBatch.positions),
+    normals: append(staticBatch.normals, dynamicBatch.normals),
+    colors: append(staticBatch.colors, dynamicBatch.colors),
+  })
+}
+
+/** Builds a renderer-ready, game-neutral 3D scene without requiring a browser or GPU. */
+export function createWorldWebGlPlan(
+  input: WorldWebGlInput,
+  previousPlan?: WorldWebGlPlan,
+): WorldWebGlPlan {
+  const opaque = batch()
+  const modelMaterialScenes: WorldWebGlModelMaterialScene[] = []
+  const modelEffects: WorldWebGlModelEffectInstance[] = []
+  let modelMaterialShadowTriangles = 0
+  const shadowControlledOpaque = new Map<
+    string,
+    MutableBatch & { readonly castShadows: boolean; readonly receiveShadows: boolean }
+  >()
+  const transparent = batch()
+  const lines = batch()
+  const points = batch()
+  const textured = new Map<string, MutableTexturedBatch>()
+  const transparentTextured = new Map<
+    string,
+    MutableTexturedBatch & {
+      readonly blendMode: 'blend' | 'additive'
+      readonly receiveShadows: boolean
+    }
+  >()
+  const objectPickMeshes: {
+    objectId: number
+    center: readonly [number, number, number]
+    triangles: number[]
+    primitives: WorldWebGlPickPrimitive[]
+    placeholder: boolean
+  }[] = []
+  const planSamples = new Map<
+    string,
+    Readonly<{
+      result: Extract<WorldSceneModelResult, { state: 'converted' }>
+      primitives: readonly SceneRendererPrimitive[]
+      nodeTransforms: ReadonlyMap<string, Float32Array>
+    }>
+  >()
+  // Instances of one model at the same clock share the sampled (skinned) primitives, so their
+  // prepared geometry and GPU buffers are shared too.
+  const sampleSharedModel = (resourceId: string, item: WorldSceneObjectItem) => {
+    const result = input.models?.get(resourceId)
+    if (result?.state !== 'converted') return undefined
+    const selected = worldModelAnimation(result, item)
+    const staticGeometry = !worldModelHasAnimatedGeometry(result, item)
+    const staticKey = selected?.id ?? ''
+    const previousStatic = staticGeometry
+      ? staticModelSamples.get(result)?.get(staticKey)
+      : undefined
+    if (previousStatic !== undefined) return previousStatic
+    const clock = worldObjectTime(input, item, selected !== undefined)
+    const time =
+      selected?.durationSeconds && (item.presentationAnimation?.loop ?? selected.looping)
+        ? clock % selected.durationSeconds
+        : clock
+    const sharedKey = `${resourceId}\u0000${selected?.id ?? ''}\u0000${time}`
+    const shared = planSamples.get(sharedKey)
+    if (shared !== undefined) return shared
+    const clip = selected?.kind === 'animation' ? selected : undefined
+    const sample =
+      (result.nodes?.length ?? 0) === 0
+        ? { primitives: result.primitives, nodeTransforms: new Map<string, Float32Array>() }
+        : createModelSceneSampler(
+            {
+              nodes: result.nodes ?? [],
+              meshes: result.meshes,
+              primitives: result.primitives,
+              ...(result.skeleton === undefined ? {} : { skeleton: result.skeleton }),
+            },
+            {
+              ...(clip === undefined ? {} : { clip }),
+              maxBytes: 64 * 1024 * 1024,
+            },
+          ).sample(time)
+    const current = {
+      result,
+      primitives: sample.primitives,
+      nodeTransforms: sample.nodeTransforms,
+    }
+    planSamples.set(sharedKey, current)
+    if (staticGeometry) {
+      let samples = staticModelSamples.get(result)
+      if (samples === undefined) staticModelSamples.set(result, (samples = new Map()))
+      samples.set(staticKey, current)
+    }
+    return current
+  }
+  const previous =
+    previousPlan === undefined ? undefined : worldStaticPreparations.get(previousPlan)
+  const preparation =
+    previous !== undefined && sameWorldStaticInput(previous.input, input)
+      ? previous.preparation
+      : prepareWorldStaticTerrain(input, sampleSharedModel)
+  const { terrain, terrainByCell, liftedCliffPrimitives } = preparation
   const timeSeconds = input.timeSeconds ?? 0
   if (!Number.isFinite(timeSeconds) || timeSeconds < 0)
     throw new TypeError('world WebGL timeSeconds must be finite and nonnegative')
@@ -2118,8 +2565,16 @@ export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
     const cells: WorldSceneTerrainItem[] = []
     // A cell reaches one sample past its corner in either direction, so widen by that margin.
     const bucket = (value: number) => Math.floor(value / WATER_BUCKET_SIZE)
-    for (let bx = bucket(minimum.x - WATER_CELL_MARGIN); bx <= bucket(maximum.x + WATER_CELL_MARGIN); bx += 1)
-      for (let bz = bucket(minimum.z - WATER_CELL_MARGIN); bz <= bucket(maximum.z + WATER_CELL_MARGIN); bz += 1)
+    for (
+      let bx = bucket(minimum.x - WATER_CELL_MARGIN);
+      bx <= bucket(maximum.x + WATER_CELL_MARGIN);
+      bx += 1
+    )
+      for (
+        let bz = bucket(minimum.z - WATER_CELL_MARGIN);
+        bz <= bucket(maximum.z + WATER_CELL_MARGIN);
+        bz += 1
+      )
         for (const ground of waterGroundBuckets.get(`${bx}:${bz}`) ?? []) cells.push(ground)
     return cells
   }
@@ -2216,91 +2671,24 @@ export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
   const waterDepthPositions: number[] = []
   for (const source of [transparent, ...transparentTextured.values()]) {
     for (let offset = 0; offset < source.positions.length; offset += 9) {
-      const color = offset / 3 * 4
-      if (Math.max(source.colors[color + 3]!, source.colors[color + 7]!, source.colors[color + 11]!) <= 0.01) continue
+      const color = (offset / 3) * 4
+      if (
+        Math.max(
+          source.colors[color + 3]!,
+          source.colors[color + 7]!,
+          source.colors[color + 11]!,
+        ) <= 0.01
+      )
+        continue
       waterDepthPositions.push(...source.positions.slice(offset, offset + 9))
     }
   }
   const waterSurfaceDepth = Float32Array.from(waterDepthPositions)
 
-  let cliffEdges = 0
-  let cliffTriangles = 0
-  // Authored cliff meshes replace the procedural skirts.
-  const authoredCliffMeshes = input.items.some(
-    item => item.facet === 'objects' && item.derivedFrom === 'cliffs',
-  )
-  const cliffs = authoredCliffMeshes ? [] : input.items.filter(item => item.facet === 'cliffs')
-  const cliffByCell = new Map(cliffs.map(item => [`${item.x}:${item.y}`, item]))
-  for (const item of cliffs) {
-    for (const [dx, dy] of [
-      [1, 0],
-      [0, 1],
-    ] as const) {
-      const neighbor = cliffByCell.get(`${item.x + dx}:${item.y + dy}`)
-      if (neighbor === undefined || neighbor.level === item.level) continue
-      const a = terrainByCell.get(`${item.x}:${item.y}`)
-      const b = terrainByCell.get(`${item.x + dx}:${item.y + dy}`)
-      if (a === undefined || b === undefined) continue
-      pushLine(lines, terrainPosition(a), terrainPosition(b), [0.18, 0.1, 0.05, 1])
-      cliffEdges += 1
-      const alongX = dy === 0 ? 0 : 1
-      const alongY = dx === 0 ? 0 : 1
-      const c = terrainByCell.get(`${item.x + alongX}:${item.y + alongY}`)
-      const d = terrainByCell.get(`${item.x + dx + alongX}:${item.y + dy + alongY}`)
-      if (c === undefined || d === undefined) continue
-      const positionA = terrainPosition(a)
-      const positionB = terrainPosition(b)
-      const positionC = terrainPosition(c)
-      const positionD = terrainPosition(d)
-      if (
-        Math.abs(positionA[1] - positionB[1]) <= Number.EPSILON &&
-        Math.abs(positionC[1] - positionD[1]) <= Number.EPSILON
-      )
-        continue
-      const sideA0 = [
-        (positionA[0] + positionB[0]) / 2,
-        positionA[1],
-        (positionA[2] + positionB[2]) / 2,
-      ] as const
-      const sideB0 = [sideA0[0], positionB[1], sideA0[2]] as const
-      const sideA1 = [
-        (positionC[0] + positionD[0]) / 2,
-        positionC[1],
-        (positionC[2] + positionD[2]) / 2,
-      ] as const
-      const sideB1 = [sideA1[0], positionD[1], sideA1[2]] as const
-      const color = [0.27, 0.16, 0.09, 1] as const
-      pushTriangle(opaque, sideA0, sideA1, sideB1, color)
-      pushTriangle(opaque, sideA0, sideB1, sideB0, color)
-      terrainPickTriangles.push(...sideA0, ...sideA1, ...sideB1, ...sideA0, ...sideB1, ...sideB0)
-      cliffTriangles += 2
-    }
-  }
-
-  let gatewaySegments = 0
-  for (const item of input.items.filter(item => item.facet === 'gateways')) {
-    const start = item.uvwStart ?? { x: item.x1, y: 0, z: item.y1 }
-    const end = item.uvwEnd ?? { x: item.x2, y: 0, z: item.y2 }
-    const terrainElevation = (x: number, z: number) => {
-      const match = terrain.find(candidate => {
-        const position = terrainPosition(candidate)
-        return position[0] === x && position[2] === z
-      })
-      return match === undefined ? 0 : terrainPosition(match)[1]
-    }
-    pushLine(
-      lines,
-      [start.x, terrainElevation(start.x, start.z) + 0.5, start.z],
-      [end.x, terrainElevation(end.x, end.z) + 0.5, end.z],
-      [0.12, 0.95, 0.9, 1],
-    )
-    gatewaySegments += 1
-  }
-
   const objects = input.items.filter(
     (item): item is WorldSceneObjectItem => item.facet === 'objects',
   )
-  const projectorGround = Float32Array.from(terrainPickTriangles)
+  const projectorGround = preparation.terrainTriangles
   let modelTriangles = 0
   let diagnosticPlaceholders = 0
   const planPrograms = new Map<
@@ -2313,6 +2701,7 @@ export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
   for (const item of objects) {
     const translation = objectPosition(item, input)
     const pickTriangles: number[] = []
+    const pickPrimitives: WorldWebGlPickPrimitive[] = []
     const resourceIds = [
       ...new Set([
         ...(item.resourceId === undefined ? [] : [item.resourceId]),
@@ -2389,22 +2778,29 @@ export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
         item.derivedFrom === 'cliffs'
           ? (liftedCliffPrimitives(
               sampled.primitives,
-              multiplyComponentTransforms(worldObjectTransform(item, translation), componentTransform),
+              multiplyComponentTransforms(
+                worldObjectTransform(item, translation),
+                componentTransform,
+              ),
             ) as typeof sampled.primitives)
           : sampled.primitives
       let programs: ReadonlyMap<string, SceneMaterialPrograms> = new Map()
       const selectedAnimation = worldModelAnimation(result, item)
       const time = worldObjectTime(input, item, selectedAnimation !== undefined)
-      const sequenceTime = selectedAnimation?.durationSeconds &&
+      const sequenceTime =
+        selectedAnimation?.durationSeconds &&
         (item.presentationAnimation?.loop ?? selectedAnimation.looping)
-        ? time % selectedAnimation.durationSeconds : time
+          ? time % selectedAnimation.durationSeconds
+          : time
       const teamColor =
         item.presentationTeamColor ??
         (item.player === undefined ? undefined : input.teamColors?.get(item.player))
       const materialContext: SceneRendererMaterialContext = {
         time,
         sequenceTime,
-        ...(selectedAnimation?.sequenceIndex === undefined ? {} : { sequenceIndex: selectedAnimation.sequenceIndex }),
+        ...(selectedAnimation?.sequenceIndex === undefined
+          ? {}
+          : { sequenceIndex: selectedAnimation.sequenceIndex }),
         sceneLighting: true,
         ...(teamColor === undefined ? {} : { teamColor }),
         ...(item.presentationTeamColorIntensity === undefined
@@ -2469,6 +2865,14 @@ export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
           })
           materialPrimitives.push(instancePrimitive)
           if (castsSharedMaterialShadow) materialShadowPrimitives.push(instancePrimitive)
+          const count = primitiveTriangleCount(primitive)
+          if (count > 0) {
+            pickPrimitives.push(sharedPickPrimitive(primitive, instancePrimitive))
+            if (castsSharedMaterialShadow) modelMaterialShadowTriangles += count
+            modelTriangles += count
+            rendered = true
+          }
+          continue
         }
         const layer = material?.layers?.find(candidate =>
           BASE_COLOR_SLOTS.has(materialSlot(candidate.slot)),
@@ -2516,9 +2920,7 @@ export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
             readonly [number, number, number],
             readonly [number, number, number],
           ]
-          if (sharedMaterial) {
-            if (castsSharedMaterialShadow) modelMaterialShadowTriangles += 1
-          } else if (
+          if (
             texture !== undefined &&
             textureCoordinates !== undefined &&
             textureCoordinates.length >= (primitive.positions.length / 3) * 2
@@ -2572,12 +2974,19 @@ export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
           rendered = true
         }
       }
-      const effectSource = result.uvmBytes === undefined ? undefined : uvmEffectSource(result.uvmBytes, selectedAnimation?.sequenceIndex)
+      const effectSource =
+        result.uvmBytes === undefined
+          ? undefined
+          : uvmEffectSource(result.uvmBytes, selectedAnimation?.sequenceIndex)
       if (effectSource?.hasProjectors && scene.materials.length > 0) {
-        const projected = effectSource.project(time, scene.materials, [{
-          id: 'world-terrain-receiver', topology: 'triangles', positions: projectorGround,
-          transform: Float32Array.from(invertMaterialFrame(Array.from(instanceTransform))),
-        }])
+        const projected = effectSource.project(time, scene.materials, [
+          {
+            id: 'world-terrain-receiver',
+            topology: 'triangles',
+            positions: projectorGround,
+            transform: Float32Array.from(invertMaterialFrame(Array.from(instanceTransform))),
+          },
+        ])
         let projectedPrograms: ReadonlyMap<string, SceneMaterialPrograms> = new Map()
         try {
           projectedPrograms = prepareSceneMaterialPrograms(
@@ -2591,46 +3000,67 @@ export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
         }
         const projectedMaterialPrimitives: SceneRendererPrimitive[] = []
         for (const primitive of projected.primitives) {
-          const material = projected.materials.find(candidate => candidate.id === primitive.materialId)
+          const material = projected.materials.find(
+            candidate => candidate.id === primitive.materialId,
+          )
           if (material !== undefined && material.simpleEffect === undefined) {
             if (projectedPrograms.has(material.id))
-              projectedMaterialPrimitives.push(Object.freeze({
-                ...primitive,
-                transform: multiplyComponentTransforms(
-                  instanceTransform,
-                  primitive.transform ?? IDENTITY_COMPONENT_TRANSFORM,
-                ),
-              }))
+              projectedMaterialPrimitives.push(
+                Object.freeze({
+                  ...primitive,
+                  transform: multiplyComponentTransforms(
+                    instanceTransform,
+                    primitive.transform ?? IDENTITY_COMPONENT_TRANSFORM,
+                  ),
+                }),
+              )
             continue
           }
           const resource = material?.simpleEffect?.textureResource
-          const textureId = material?.textureBindings?.find(binding => binding.resourceId === resource)?.textureId
+          const textureId = material?.textureBindings?.find(
+            binding => binding.resourceId === resource,
+          )?.textureId
           const texture = scene.textures.find(candidate => candidate.id === textureId)
           if (!texture || !primitive.textureCoordinates) continue
           const key = `projector:${texture.id}`
           const target = transparentTextured.get(key) ?? {
-            ...batch(), textureCoordinates: [], texture, blendMode: 'blend' as const,
-            castShadows: false, receiveShadows: false,
+            ...batch(),
+            textureCoordinates: [],
+            texture,
+            blendMode: 'blend' as const,
+            castShadows: false,
+            receiveShadows: false,
           }
           transparentTextured.set(key, target)
           for (const triangle of primitiveTriangles(primitive)) {
             const vertices = triangle.map(index => {
-              const p = transformedComponentVertex(transformedPrimitiveVertex(primitive, index), instanceTransform)
+              const p = transformedComponentVertex(
+                transformedPrimitiveVertex(primitive, index),
+                instanceTransform,
+              )
               return [p[0], p[1] + 0.005, p[2]] as const
             })
-            pushTexturedTriangle(target, vertices as unknown as Parameters<typeof pushTexturedTriangle>[1],
-              triangle.map(index => [primitive.textureCoordinates![index * 2]!, primitive.textureCoordinates![index * 2 + 1]!]) as unknown as Parameters<typeof pushTexturedTriangle>[2],
-              [1, 1, 1, material?.baseColor?.[3] ?? 1])
+            pushTexturedTriangle(
+              target,
+              vertices as unknown as Parameters<typeof pushTexturedTriangle>[1],
+              triangle.map(index => [
+                primitive.textureCoordinates![index * 2]!,
+                primitive.textureCoordinates![index * 2 + 1]!,
+              ]) as unknown as Parameters<typeof pushTexturedTriangle>[2],
+              [1, 1, 1, material?.baseColor?.[3] ?? 1],
+            )
           }
         }
         if (projectedMaterialPrimitives.length > 0)
-          modelMaterialScenes.push(Object.freeze({
-            primitives: Object.freeze(projectedMaterialPrimitives),
-            shadowPrimitives: Object.freeze([]),
-            materials: projected.materials,
-            programs: projectedPrograms,
-            textures: scene.textures,
-          }))
+          modelMaterialScenes.push(
+            Object.freeze({
+              primitives: Object.freeze(projectedMaterialPrimitives),
+              shadowPrimitives: Object.freeze([]),
+              materials: projected.materials,
+              programs: projectedPrograms,
+              textures: scene.textures,
+            }),
+          )
       }
       if (effectSource !== undefined)
         modelEffects.push(
@@ -2665,6 +3095,7 @@ export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
       objectId: item.objectId,
       center: translation,
       triangles: pickTriangles,
+      primitives: pickPrimitives,
       placeholder: !resolved,
     })
   }
@@ -2735,7 +3166,6 @@ export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
       points,
       ...textured.values(),
       ...transparentTextured.values(),
-      ...splat.values(),
     ])
   )
     throw new TypeError('world WebGL plan contains a non-finite coordinate')
@@ -2748,16 +3178,6 @@ export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
   for (const item of transparentTextured.values())
     if (!item.textureCoordinates.every(Number.isFinite))
       throw new TypeError('world WebGL plan contains a non-finite texture coordinate')
-  for (const item of splat.values()) {
-    if (
-      item.textureCoordinates.some(coordinates => !coordinates.every(Number.isFinite)) ||
-      !item.textureWeights0.every(Number.isFinite) ||
-      !item.textureWeights1.every(Number.isFinite) ||
-      (item.weightTextureCoordinates !== undefined &&
-        !item.weightTextureCoordinates.every(Number.isFinite))
-    )
-      throw new TypeError('world WebGL splat plan contains a non-finite texture value')
-  }
   const positionSets: readonly (readonly number[] | Float32Array)[] = [
     opaque,
     transparent,
@@ -2766,17 +3186,25 @@ export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
     ...shadowControlledOpaque.values(),
     ...textured.values(),
     ...transparentTextured.values(),
-    ...splat.values(),
   ].map(item => item.positions)
-  const minimum: [number, number, number] = [Infinity, Infinity, Infinity]
-  const maximum: [number, number, number] = [-Infinity, -Infinity, -Infinity]
-  let hasPositions = false
+  const minimum: [number, number, number] = [...preparation.minimum]
+  const maximum: [number, number, number] = [...preparation.maximum]
+  let hasPositions = preparation.hasPositions
   for (const positions of [...positionSets, ...objectPickMeshes.map(item => item.triangles)]) {
     if (positions.length > 0) hasPositions = true
     for (let offset = 0; offset < positions.length; offset += 3) {
       for (const axis of [0, 1, 2] as const) {
         minimum[axis] = Math.min(minimum[axis], positions[offset + axis]!)
         maximum[axis] = Math.max(maximum[axis], positions[offset + axis]!)
+      }
+    }
+  }
+  for (const item of objectPickMeshes) {
+    for (const primitive of item.primitives) {
+      hasPositions = true
+      for (const axis of [0, 1, 2] as const) {
+        minimum[axis] = Math.min(minimum[axis], primitive.minimum[axis])
+        maximum[axis] = Math.max(maximum[axis], primitive.maximum[axis])
       }
     }
   }
@@ -2790,6 +3218,7 @@ export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
   const direction: readonly [number, number, number] = directional?.direction ?? [-0.45, -1, -0.35]
   const lightColor: readonly [number, number, number] = directional?.color ?? [1, 0.97, 0.9]
   const shadowCasterTriangles =
+    preparation.shadowCasterTriangles +
     modelMaterialShadowTriangles +
     (opaque.positions.length +
       [...shadowControlledOpaque.values()].reduce(
@@ -2799,11 +3228,10 @@ export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
       [...textured.values()].reduce(
         (sum, item) => sum + (item.castShadows === false ? 0 : item.positions.length),
         0,
-      ) +
-      [...splat.values()].reduce((sum, item) => sum + item.positions.length, 0)) /
+      )) /
       9
-  return Object.freeze({
-    opaqueTriangles: frozenBatch(opaque),
+  const plan: WorldWebGlPlan = Object.freeze({
+    opaqueTriangles: appendWorldBatch(preparation.opaqueTriangles, opaque),
     waterSurfaceDepth,
     modelMaterialScenes: Object.freeze(modelMaterialScenes),
     modelEffects: Object.freeze(modelEffects),
@@ -2816,7 +3244,10 @@ export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
         }),
       ),
     ),
-    texturedTriangles: Object.freeze([...textured.values()].map(frozenTexturedBatch)),
+    texturedTriangles: Object.freeze([
+      ...preparation.texturedTriangles,
+      ...[...textured.values()].map(frozenTexturedBatch),
+    ]),
     transparentTexturedTriangles: Object.freeze(
       [...transparentTextured.values()].map(item =>
         Object.freeze({
@@ -2826,10 +3257,10 @@ export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
         }),
       ),
     ),
-    splatTriangles: Object.freeze([...splat.values()].map(frozenSplatBatch)),
+    splatTriangles: preparation.splatTriangles,
     transparentTriangles: frozenBatch(transparent),
-    lines: frozenBatch(lines),
-    points: frozenBatch(points),
+    lines: appendWorldBatch(preparation.lines, lines),
+    points: appendWorldBatch(preparation.points, points),
     picking: Object.freeze({
       terrainTriangles: projectorGround,
       objects: Object.freeze(
@@ -2838,6 +3269,7 @@ export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
             objectId: item.objectId,
             center: item.center,
             triangles: Float32Array.from(item.triangles),
+            primitives: Object.freeze(item.primitives),
             placeholder: item.placeholder,
           }),
         ),
@@ -2869,22 +3301,24 @@ export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
       ),
     }),
     stats: Object.freeze({
-      terrainTriangles,
-      terrainTexturedTriangles,
-      terrainSplatFallbackCells,
+      terrainTriangles: preparation.stats.terrainTriangles,
+      terrainTexturedTriangles: preparation.stats.terrainTexturedTriangles,
+      terrainSplatFallbackCells: preparation.stats.terrainSplatFallbackCells,
       waterPolygons,
-      cliffEdges,
-      cliffTriangles,
+      cliffEdges: preparation.stats.cliffEdges,
+      cliffTriangles: preparation.stats.cliffTriangles,
       objectInstances: objects.length,
       modelTriangles,
       navigationSamples,
-      gatewaySegments,
+      gatewaySegments: preparation.stats.gatewaySegments,
       regionShapes,
       diagnosticPlaceholders,
       shadowCasterTriangles,
       shadowMapSize: 0,
     }),
   })
+  worldStaticPreparations.set(plan, { input: snapshotWorldPlanInput(input), preparation })
+  return plan
 }
 
 const VERTEX_SHADER = `#version 300 es
@@ -3249,7 +3683,9 @@ interface WorldWebGlOwnedResources {
   shadowTargetReuses: number
   worldPlanBuilds: number
   worldPlanReuses: number
+  worldPlanDynamicUpdates: number
   readonly worldPlanBuildMilliseconds: number[]
+  readonly worldPlanDynamicUpdateMilliseconds: number[]
   readonly animationSeekMilliseconds: number[]
   lastPlanInput: WorldWebGlInput | undefined
   lastPlan: WorldWebGlPlan | undefined
@@ -3268,6 +3704,7 @@ interface WorldWebGlOwnedResources {
   materialDraws: ReturnType<typeof materialWebGlDraws>
   materialPlan: WorldWebGlPlan | undefined
   retiredMaterialProgramCompilations: number
+  retiredMaterialDrawCalls: number
   sentinelTexture: WorldWebGlTextureEntry | undefined
   textureUploads: number
   textureCacheHits: number
@@ -3426,7 +3863,15 @@ function worldTextureKey(texture: SceneRendererTexture): string {
     let checksum = 0
     for (let offset = 0; offset < bytes.length; offset += step)
       checksum = (Math.imul(checksum, 31) + bytes[offset]!) | 0
-    key = [texture.id, texture.width, texture.height, texture.wrapU, texture.wrapV, texture.filter, checksum].join('|')
+    key = [
+      texture.id,
+      texture.width,
+      texture.height,
+      texture.wrapU,
+      texture.wrapV,
+      texture.filter,
+      checksum,
+    ].join('|')
     worldTextureKeys.set(texture, key)
   }
   return key
@@ -3555,49 +4000,81 @@ function samePreviewPosition(
   )
 }
 
-function animatedWater(input: WorldWebGlInput): boolean {
-  return (
-    input.waterMaterials?.some(material => material.scroll?.some(component => component !== 0)) ===
-    true
-  )
+/** Snapshot collection membership; entries and typed arrays follow the immutable world contract. */
+function snapshotWorldPlanInput(input: WorldWebGlInput): WorldWebGlInput {
+  return {
+    ...input,
+    items: [...input.items],
+    ...(input.models === undefined ? {} : { models: new Map(input.models) }),
+    ...(input.terrainMaterials === undefined
+      ? {}
+      : { terrainMaterials: [...input.terrainMaterials] }),
+    ...(input.terrainWeightRasters === undefined
+      ? {}
+      : { terrainWeightRasters: [...input.terrainWeightRasters] }),
+    ...(input.terrainTextures === undefined
+      ? {}
+      : { terrainTextures: new Map(input.terrainTextures) }),
+    ...(input.waterMaterials === undefined ? {} : { waterMaterials: [...input.waterMaterials] }),
+    ...(input.animationTimes === undefined
+      ? {}
+      : { animationTimes: new Map(input.animationTimes) }),
+    ...(input.teamColors === undefined ? {} : { teamColors: new Map(input.teamColors) }),
+    ...(input.previewPosition === undefined
+      ? {}
+      : { previewPosition: { ...input.previewPosition } }),
+  }
 }
 
-function animatedWorld(input: WorldWebGlInput): boolean {
-  return animatedWater(input) || input.items.some(item => item.facet === 'objects' && item.presentationAnimation !== undefined)
+function sameWorldMap<K, V>(
+  left: ReadonlyMap<K, V> | undefined,
+  right: ReadonlyMap<K, V> | undefined,
+): boolean {
+  if (left === right) return true
+  if (left === undefined || right === undefined || left.size !== right.size) return false
+  for (const [key, value] of left) if (right.get(key) !== value) return false
+  return true
 }
 
-function sameWorldPlanInput(left: WorldWebGlInput, right: WorldWebGlInput): boolean {
-  return (
-    sameArrayIdentity(left.items, right.items) &&
-    left.models === right.models &&
-    sameArrayIdentity(left.terrainMaterials, right.terrainMaterials) &&
-    sameArrayIdentity(left.terrainWeightRasters, right.terrainWeightRasters) &&
-    left.terrainTextures === right.terrainTextures &&
-    sameArrayIdentity(left.waterMaterials, right.waterMaterials) &&
-    left.selectedObjectId === right.selectedObjectId &&
-    samePreviewPosition(left.previewPosition, right.previewPosition) &&
-    sameNumberMap(left.animationTimes, right.animationTimes) &&
-    left.teamColors === right.teamColors &&
-    (!animatedWorld(left) || left.timeSeconds === right.timeSeconds)
-  )
-}
-
+/** Every non-clock input affecting generated geometry, materials or presentation. */
 function sameWorldPlanInputExceptAnimationTimes(
   left: WorldWebGlInput,
   right: WorldWebGlInput,
 ): boolean {
   return (
     sameArrayIdentity(left.items, right.items) &&
-    left.models === right.models &&
+    sameWorldMap(left.models, right.models) &&
     sameArrayIdentity(left.terrainMaterials, right.terrainMaterials) &&
     sameArrayIdentity(left.terrainWeightRasters, right.terrainWeightRasters) &&
-    left.terrainTextures === right.terrainTextures &&
+    sameWorldMap(left.terrainTextures, right.terrainTextures) &&
     sameArrayIdentity(left.waterMaterials, right.waterMaterials) &&
     left.selectedObjectId === right.selectedObjectId &&
     samePreviewPosition(left.previewPosition, right.previewPosition) &&
-    left.teamColors === right.teamColors &&
-    (!animatedWorld(left) || left.timeSeconds === right.timeSeconds)
+    sameWorldMap(left.teamColors, right.teamColors)
   )
+}
+
+function sameWorldPlanInput(left: WorldWebGlInput, right: WorldWebGlInput): boolean {
+  // Default model clips and sequence-only material/effect animations also consume this clock.
+  return (
+    sameWorldPlanInputExceptAnimationTimes(left, right) &&
+    sameNumberMap(left.animationTimes, right.animationTimes) &&
+    (left.timeSeconds ?? 0) === (right.timeSeconds ?? 0)
+  )
+}
+
+function sameWorldStaticInput(left: WorldWebGlInput, right: WorldWebGlInput): boolean {
+  if (!sameWorldPlanInputExceptAnimationTimes(left, right)) return false
+  // Cliff caps are sampled model geometry. A changed cliff clock must regenerate both caps and
+  // neighbouring terrain. Material-only/empty clips do not alter the sampled cap geometry.
+  for (const item of right.items) {
+    if (item.facet !== 'objects' || item.derivedFrom !== 'cliffs' || item.resourceId === undefined)
+      continue
+    const model = right.models?.get(item.resourceId)
+    if (model?.state !== 'converted' || !worldModelHasAnimatedGeometry(model, item)) continue
+    if (worldObjectTime(left, item, true) !== worldObjectTime(right, item, true)) return false
+  }
+  return true
 }
 
 function retainedWorldPlan(
@@ -3610,7 +4087,6 @@ function retainedWorldPlan(
     sameWorldPlanInput(resources.lastPlanInput, input)
   ) {
     resources.worldPlanReuses += 1
-    resources.lastPlanInput = input
     return resources.lastPlan
   }
   const previousInput = resources.lastPlanInput
@@ -3618,17 +4094,28 @@ function retainedWorldPlan(
     previousInput !== undefined &&
     sameWorldPlanInputExceptAnimationTimes(previousInput, input) &&
     !sameNumberMap(previousInput.animationTimes, input.animationTimes)
+  const previousPreparation =
+    resources.lastPlan === undefined
+      ? undefined
+      : worldStaticPreparations.get(resources.lastPlan)?.preparation
   const startedAt = globalThis.performance?.now() ?? Date.now()
-  const plan = createWorldWebGlPlan(input)
+  const plan = createWorldWebGlPlan(input, resources.lastPlan)
   const elapsed = (globalThis.performance?.now() ?? Date.now()) - startedAt
-  retainPerformanceSample(resources.worldPlanBuildMilliseconds, elapsed)
+  if (
+    previousPreparation !== undefined &&
+    worldStaticPreparations.get(plan)?.preparation === previousPreparation
+  ) {
+    resources.worldPlanDynamicUpdates += 1
+    retainPerformanceSample(resources.worldPlanDynamicUpdateMilliseconds, elapsed)
+  } else {
+    resources.worldPlanBuilds += 1
+    retainPerformanceSample(resources.worldPlanBuildMilliseconds, elapsed)
+  }
   if (animationSeek) retainPerformanceSample(resources.animationSeekMilliseconds, elapsed)
-  resources.worldPlanBuilds += 1
-  resources.lastPlanInput = input
+  resources.lastPlanInput = worldStaticPreparations.get(plan)!.input
   resources.lastPlan = plan
   return plan
 }
-
 function retainedWorldPlanBytes(plan: WorldWebGlPlan | undefined): number {
   if (plan === undefined) return 0
   const buffers = new Set<ArrayBufferLike>()
@@ -3641,6 +4128,13 @@ function retainedWorldPlanBytes(plan: WorldWebGlPlan | undefined): number {
     retain(value.colors)
   }
   retainBatch(plan.opaqueTriangles)
+  // An appended fallback batch owns a new buffer while the static prefix stays cached separately.
+  const preparation = worldStaticPreparations.get(plan)?.preparation
+  if (preparation !== undefined) {
+    retainBatch(preparation.opaqueTriangles)
+    retainBatch(preparation.lines)
+    retainBatch(preparation.points)
+  }
   for (const scene of plan.modelMaterialScenes) {
     for (const primitive of scene.primitives) {
       retain(primitive.positions)
@@ -3713,7 +4207,9 @@ function createOwnedResources(gl: WebGL2RenderingContext): WorldWebGlOwnedResour
       shadowTargetReuses: 0,
       worldPlanBuilds: 0,
       worldPlanReuses: 0,
+      worldPlanDynamicUpdates: 0,
       worldPlanBuildMilliseconds: [],
+      worldPlanDynamicUpdateMilliseconds: [],
       animationSeekMilliseconds: [],
       lastPlanInput: undefined,
       lastPlan: undefined,
@@ -3728,9 +4224,13 @@ function createOwnedResources(gl: WebGL2RenderingContext): WorldWebGlOwnedResour
       textureArrays: new Map(),
       usedTextures: new Set(),
       materialTextureHandles,
-      materialDraws: materialWebGlDraws(gl, materialTextureHandles, { mipmaps: true, checkEachDraw: false }),
+      materialDraws: materialWebGlDraws(gl, materialTextureHandles, {
+        mipmaps: true,
+        checkEachDraw: false,
+      }),
       materialPlan: undefined,
       retiredMaterialProgramCompilations: 0,
+      retiredMaterialDrawCalls: 0,
       sentinelTexture: undefined,
       textureUploads: 0,
       textureCacheHits: 0,
@@ -3758,6 +4258,7 @@ function disposeOwnedResources(resources: WorldWebGlOwnedResources): void {
   resources.lastPlan = undefined
   resources.materialPlan = undefined
   resources.retiredMaterialProgramCompilations += resources.materialDraws.programCompilations()
+  resources.retiredMaterialDrawCalls += resources.materialDraws.drawCalls()
   resources.materialDraws.release()
   resources.materialTextureHandles.clear()
   resources.usedGeometry.clear()
@@ -3867,13 +4368,27 @@ function prepareWorldMaterialResources(
   plan: WorldWebGlPlan,
 ): void {
   if (resources.materialPlan !== plan) {
-    resources.retiredMaterialProgramCompilations += resources.materialDraws.programCompilations()
-    resources.materialDraws.release()
+    const previous =
+      resources.materialPlan === undefined
+        ? undefined
+        : worldStaticPreparations.get(resources.materialPlan)
+    const current = worldStaticPreparations.get(plan)
+    // Animated updates change uniforms/program descriptions, not the source texture bindings.
+    // Retain the material renderer so its VAOs and linked shaders survive; sweep drops dead leases.
+    if (
+      previous === undefined ||
+      current === undefined ||
+      !sameWorldPlanInputExceptAnimationTimes(previous.input, current.input)
+    ) {
+      resources.retiredMaterialProgramCompilations += resources.materialDraws.programCompilations()
+      resources.retiredMaterialDrawCalls += resources.materialDraws.drawCalls()
+      resources.materialDraws.release()
+      resources.materialDraws = materialWebGlDraws(resources.gl, resources.materialTextureHandles, {
+        mipmaps: true,
+        checkEachDraw: false,
+      })
+    }
     resources.materialTextureHandles.clear()
-    resources.materialDraws = materialWebGlDraws(resources.gl, resources.materialTextureHandles, {
-      mipmaps: true,
-      checkEachDraw: false,
-    })
     resources.materialPlan = plan
   }
   const seen = new Set<SceneRendererTexture>()
@@ -3905,7 +4420,11 @@ function renderWorldShadowMap(
   // Spend the depth map on what the camera sees: the orbit target and the ground footprint of the
   // orthographic view (stretched by a low elevation), plus the world height for casters that lean
   // in. A whole-map map at close zoom turns each texel into a visible block.
-  const center = minimum.clone().add(maximum).multiplyScalar(0.5).add(new Vector3(...view.target))
+  const center = minimum
+    .clone()
+    .add(maximum)
+    .multiplyScalar(0.5)
+    .add(new Vector3(...view.target))
   const aspect = gl.drawingBufferWidth / Math.max(1, gl.drawingBufferHeight)
   const footprint =
     ((Math.max(1, extent.length() * 0.65) / view.zoom) * Math.max(1, aspect)) /
@@ -3983,11 +4502,7 @@ function renderWorldShadowMap(
     gl.polygonOffset(1.1, 4)
     gl.clear(gl.DEPTH_BUFFER_BIT)
     gl.useProgram(program)
-    gl.uniformMatrix4fv(
-      uniformLocation(gl, program, 'lightViewProjection'),
-      false,
-      viewProjection,
-    )
+    gl.uniformMatrix4fv(uniformLocation(gl, program, 'lightViewProjection'), false, viewProjection)
     bindSentinelTexture2d(resources, 0)
     gl.uniform1i(uniformLocation(gl, program, 'baseColorMap'), 0)
     drawShadowPositions(resources, program, plan.opaqueTriangles.positions)
@@ -4749,7 +5264,9 @@ export function worldMaterialLight(plan: WorldWebGlPlan) {
     // World facets carry the emitted ray; materialGeometry expects surface-to-light.
     direction: [-direction[0], -direction[1], -direction[2]] as const,
     color: [color[0] * intensity, color[1] * intensity, color[2] * intensity, 1] as const,
-    specularColor: (plan.light.specularColor ?? color).map(value => value * (plan.light.specularIntensity ?? intensity)) as [number, number, number],
+    specularColor: (plan.light.specularColor ?? color).map(
+      value => value * (plan.light.specularIntensity ?? intensity),
+    ) as [number, number, number],
     ambient: ambientIntensity,
     ambientColor: [
       ambient[0] * ambientIntensity,
@@ -4815,10 +5332,20 @@ export type WorldWebGlPick = Readonly<{
   objectId?: number
 }>
 
+export type WorldWebGlPickScreen = Readonly<{ x: number; y: number; width: number; height: number }>
+
 /** Casts through the same camera as the renderer and tests instance triangles before terrain. */
 export function pickWorldWebGl(
   input: WorldWebGlInput,
-  screen: Readonly<{ x: number; y: number; width: number; height: number }>,
+  screen: WorldWebGlPickScreen,
+): WorldWebGlPick | undefined {
+  return pickWorldWebGlPlan(createWorldWebGlPlan(input), input, screen)
+}
+
+function pickWorldWebGlPlan(
+  plan: WorldWebGlPlan,
+  input: WorldWebGlInput,
+  screen: WorldWebGlPickScreen,
 ): WorldWebGlPick | undefined {
   if (
     ![screen.x, screen.y, screen.width, screen.height].every(Number.isFinite) ||
@@ -4827,7 +5354,6 @@ export function pickWorldWebGl(
   ) {
     throw new TypeError('world WebGL pick screen must be finite and non-empty')
   }
-  const plan = createWorldWebGlPlan(input)
   const { camera, radius } = cameraFor(plan, screen.width, screen.height, input.camera)
   const raycaster = new Raycaster()
   raycaster.setFromCamera(
@@ -4837,6 +5363,10 @@ export function pickWorldWebGl(
   let nearestDistance = Infinity
   let nearest: WorldWebGlPick | undefined
   const target = new Vector3()
+  const a = new Vector3(),
+    b = new Vector3(),
+    c = new Vector3()
+  const box = new Box3()
   const intersectTriangles = (
     triangles: Float32Array,
     callback: (position: Vector3) => WorldWebGlPick,
@@ -4882,6 +5412,26 @@ export function pickWorldWebGl(
         position: Object.freeze([hit.x, hit.y, hit.z] as const),
       }),
     )
+    for (const entry of object.primitives ?? []) {
+      box.min.set(...entry.minimum)
+      box.max.set(...entry.maximum)
+      if (!raycaster.ray.intersectsBox(box)) continue
+      for (const triangle of primitiveTriangles(entry.primitive)) {
+        a.set(...transformedPrimitiveVertex(entry.primitive, triangle[0]))
+        b.set(...transformedPrimitiveVertex(entry.primitive, triangle[1]))
+        c.set(...transformedPrimitiveVertex(entry.primitive, triangle[2]))
+        const hit = raycaster.ray.intersectTriangle(a, b, c, false, target)
+        if (hit === null) continue
+        const distance = raycaster.ray.origin.distanceTo(hit)
+        if (distance >= nearestDistance) continue
+        nearestDistance = distance
+        nearest = Object.freeze({
+          kind: 'object',
+          objectId: object.objectId,
+          position: Object.freeze([hit.x, hit.y, hit.z] as const),
+        })
+      }
+    }
   }
   intersectTriangles(plan.picking.terrainTriangles, hit =>
     Object.freeze({
@@ -4941,9 +5491,22 @@ function drawWorldWebGlWithResources(
     const sceneCamera = createWorldWebGlCameraFrame(plan, canvas.width, canvas.height, input.camera)
     gl.uniform3fv(uniformLocation(gl, program, 'eyePosition'), sceneCamera.eyePosition)
     const terrainLight = plan.light.terrain
-    gl.uniform3f(uniformLocation(gl, program, 'terrainLighting'), terrainLight?.specularExponent ?? 16, terrainLight?.diffuseMultiplier ?? 1, terrainLight?.specularMultiplier ?? 0)
-    gl.uniform1f(uniformLocation(gl, program, 'keyUsesVertexAo'), plan.light.useAmbientOcclusion === false ? 0 : 1)
-    gl.uniform3fv(uniformLocation(gl, program, 'lightSpecularRadiance'), (plan.light.specularColor ?? plan.light.color).map(value => value * (plan.light.specularIntensity ?? plan.light.intensity)))
+    gl.uniform3f(
+      uniformLocation(gl, program, 'terrainLighting'),
+      terrainLight?.specularExponent ?? 16,
+      terrainLight?.diffuseMultiplier ?? 1,
+      terrainLight?.specularMultiplier ?? 0,
+    )
+    gl.uniform1f(
+      uniformLocation(gl, program, 'keyUsesVertexAo'),
+      plan.light.useAmbientOcclusion === false ? 0 : 1,
+    )
+    gl.uniform3fv(
+      uniformLocation(gl, program, 'lightSpecularRadiance'),
+      (plan.light.specularColor ?? plan.light.color).map(
+        value => value * (plan.light.specularIntensity ?? plan.light.intensity),
+      ),
+    )
     gl.uniform1i(uniformLocation(gl, program, 'terrainSpecularMaps'), 8)
     const viewProjection = sceneCamera.viewProjection
     gl.uniformMatrix4fv(uniformLocation(gl, program, 'viewProjection'), false, viewProjection)
@@ -4961,8 +5524,18 @@ function drawWorldWebGlWithResources(
     const fills = plan.light.fills.slice(0, MAXIMUM_FILL_LIGHTS)
     for (let index = 0; index < MAXIMUM_FILL_LIGHTS; index += 1) {
       const fill = fills[index]
-      gl.uniform1f(uniformLocation(gl, program, `fillUsesVertexAo${String(index)}`), fill?.useAmbientOcclusion === false ? 0 : 1)
-      gl.uniform3fv(uniformLocation(gl, program, `fillSpecularRadiance${String(index)}`), fill === undefined ? [0, 0, 0] : (fill.specularColor ?? fill.color).map(value => value * (fill.specularIntensity ?? fill.intensity)))
+      gl.uniform1f(
+        uniformLocation(gl, program, `fillUsesVertexAo${String(index)}`),
+        fill?.useAmbientOcclusion === false ? 0 : 1,
+      )
+      gl.uniform3fv(
+        uniformLocation(gl, program, `fillSpecularRadiance${String(index)}`),
+        fill === undefined
+          ? [0, 0, 0]
+          : (fill.specularColor ?? fill.color).map(
+              value => value * (fill.specularIntensity ?? fill.intensity),
+            ),
+      )
       gl.uniform3fv(
         uniformLocation(gl, program, `fillLightDirection${String(index)}`),
         Float32Array.from(fill?.direction ?? [0, 0, 0]),
@@ -5039,7 +5612,10 @@ function drawWorldWebGlWithResources(
     ])
     if (materialSceneDraws.length > 0) {
       for (const { draw } of materialSceneDraws)
-        if (draw.depthOnly === true || (draw.program !== undefined && materialIsSolid(draw.program)))
+        if (
+          draw.depthOnly === true ||
+          (draw.program !== undefined && materialIsSolid(draw.program))
+        )
           resources.materialDraws.draw(draw, sceneCamera, sceneLight)
       gl.useProgram(program)
       gl.disable(gl.POLYGON_OFFSET_FILL)
@@ -5098,7 +5674,11 @@ function drawWorldWebGlWithResources(
     }
     gl.depthMask(true)
     assertNoWebGlError(gl, 'transparent pass')
-    if (resources.toneMapper !== undefined && (plan.light.toneMapping?.ambientOcclusion?.radius ?? 0) > 0 && plan.waterSurfaceDepth.length > 0) {
+    if (
+      resources.toneMapper !== undefined &&
+      (plan.light.toneMapping?.ambientOcclusion?.radius ?? 0) > 0 &&
+      plan.waterSurfaceDepth.length > 0
+    ) {
       // Color blending stays depth-read-only. Afterwards AO needs the visible water plane,
       // not the submerged height field: otherwise its tile creases darken the whole water color.
       gl.disable(gl.BLEND)
@@ -5106,7 +5686,11 @@ function drawWorldWebGlWithResources(
       gl.colorMask(false, false, false, false)
       const depthProgram = resources.shadowProgram
       gl.useProgram(depthProgram)
-      gl.uniformMatrix4fv(uniformLocation(gl, depthProgram, 'lightViewProjection'), false, sceneCamera.viewProjection)
+      gl.uniformMatrix4fv(
+        uniformLocation(gl, depthProgram, 'lightViewProjection'),
+        false,
+        sceneCamera.viewProjection,
+      )
       bindSentinelTexture2d(resources, 0)
       gl.uniform1i(uniformLocation(gl, depthProgram, 'baseColorMap'), 0)
       try {
@@ -5116,7 +5700,8 @@ function drawWorldWebGlWithResources(
       }
       assertNoWebGlError(gl, 'water surface depth pass')
     }
-    if (plan.light.toneMapping !== undefined) resources.toneMapper?.finish(plan.light.toneMapping, sceneCamera.viewProjection)
+    if (plan.light.toneMapping !== undefined)
+      resources.toneMapper?.finish(plan.light.toneMapping, sceneCamera.viewProjection)
     assertNoWebGlError(gl, 'postprocess pass')
     resources.frames += 1
     completed = true
@@ -5165,6 +5750,10 @@ export function createWorldWebGlRenderer(
   const resources = createOwnedResources(context)
   return Object.freeze({
     draw: (input: WorldWebGlInput) => drawWorldWebGlWithResources(canvas, input, resources),
+    pick: (input: WorldWebGlInput, screen: WorldWebGlPickScreen) => {
+      if (resources.disposed) throw new TypeError('world WebGL renderer is disposed')
+      return pickWorldWebGlPlan(retainedWorldPlan(input, resources), input, screen)
+    },
     stats: (): WorldWebGlRendererStats =>
       (() => {
         harvestGpuTimer(resources)
@@ -5174,10 +5763,15 @@ export function createWorldWebGlRenderer(
         const gpuP95 = percentile(resources.gpuFrameMilliseconds, 0.95)
         const planP50 = percentile(resources.worldPlanBuildMilliseconds, 0.5)
         const planP95 = percentile(resources.worldPlanBuildMilliseconds, 0.95)
+        const dynamicP50 = percentile(resources.worldPlanDynamicUpdateMilliseconds, 0.5)
+        const dynamicP95 = percentile(resources.worldPlanDynamicUpdateMilliseconds, 0.95)
         const seekP50 = percentile(resources.animationSeekMilliseconds, 0.5)
         const seekP95 = percentile(resources.animationSeekMilliseconds, 0.95)
         const geometry = geometryResourceTotals(resources)
         const textures = textureResourceTotals(resources)
+        const material = resources.disposed
+          ? { bufferEntries: 0, bufferBytesRetained: 0, vertexArrayEntries: 0 }
+          : resources.materialDraws.stats()
         const worldPlanBytesRetained = retainedWorldPlanBytes(resources.lastPlan)
         const shadowTargetBytesRetained =
           resources.shadowTarget === undefined ? 0 : resources.shadowTarget.size ** 2 * 4
@@ -5188,10 +5782,21 @@ export function createWorldWebGlRenderer(
             resources.programCompilations +
             resources.retiredMaterialProgramCompilations +
             (resources.disposed ? 0 : resources.materialDraws.programCompilations()),
+          materialDrawCalls:
+            resources.retiredMaterialDrawCalls +
+            (resources.disposed ? 0 : resources.materialDraws.drawCalls()),
           shadowTargetAllocations: resources.shadowTargetAllocations,
           shadowTargetReuses: resources.shadowTargetReuses,
           worldPlanBuilds: resources.worldPlanBuilds,
           worldPlanReuses: resources.worldPlanReuses,
+          worldPlanDynamicUpdates: resources.worldPlanDynamicUpdates,
+          worldPlanDynamicUpdateSamples: resources.worldPlanDynamicUpdateMilliseconds.length,
+          ...(dynamicP50 === undefined
+            ? {}
+            : { worldPlanDynamicUpdateP50Milliseconds: dynamicP50 }),
+          ...(dynamicP95 === undefined
+            ? {}
+            : { worldPlanDynamicUpdateP95Milliseconds: dynamicP95 }),
           worldPlanBuildSamples: resources.worldPlanBuildMilliseconds.length,
           ...(planP50 === undefined ? {} : { worldPlanBuildP50Milliseconds: planP50 }),
           ...(planP95 === undefined ? {} : { worldPlanBuildP95Milliseconds: planP95 }),
@@ -5203,6 +5808,9 @@ export function createWorldWebGlRenderer(
           geometryDisposals: resources.geometryDisposals,
           geometryEntries: geometry.entries,
           geometryBytesRetained: geometry.bytes,
+          materialBufferEntries: material.bufferEntries,
+          materialBufferBytesRetained: material.bufferBytesRetained,
+          materialVertexArrayEntries: material.vertexArrayEntries,
           textureUploads: resources.textureUploads,
           textureCacheHits: resources.textureCacheHits,
           textureDisposals: resources.textureDisposals,
@@ -5211,7 +5819,12 @@ export function createWorldWebGlRenderer(
           worldPlanBytesRetained,
           shadowTargetBytesRetained,
           // textures.bytes already includes the retained 1x1 sentinel texture.
-          knownGpuBytesRetained: geometry.bytes + textures.bytes + shadowTargetBytesRetained + (resources.toneMapper?.bytes() ?? 0),
+          knownGpuBytesRetained:
+            geometry.bytes +
+            material.bufferBytesRetained +
+            textures.bytes +
+            shadowTargetBytesRetained +
+            (resources.toneMapper?.bytes() ?? 0),
           gpuProgramBytesObservable: false as const,
           cpuFrameSamples: resources.cpuFrameMilliseconds.length,
           ...(cpuP50 === undefined ? {} : { cpuFrameP50Milliseconds: cpuP50 }),
@@ -5240,8 +5853,6 @@ export function drawWorldWebGl(
     renderer.dispose()
   }
 }
-
-
 
 /**
  * Quad [a, b, c, d] split along a–c or b–d, both wound so the face normal points up.

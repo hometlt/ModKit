@@ -20,6 +20,10 @@
       "types": "./dist/model/index.d.ts",
       "default": "./dist/model/index.js"
     },
+    "./model/matrix": {
+      "types": "./dist/model/billboard-math.d.ts",
+      "default": "./dist/model/billboard-math.js"
+    },
     "./world": {
       "types": "./dist/world/index.d.ts",
       "default": "./dist/world/index.js"

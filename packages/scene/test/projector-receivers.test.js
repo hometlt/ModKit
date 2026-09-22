@@ -244,3 +244,34 @@ test('headless provider applies offset per primitive and preserves unbiased draw
   assert.deepEqual([...plain.rgba.slice(center, center + 4)], [255, 0, 0, 255])
   assert.deepEqual([...biased.rgba.slice(center, center + 4)], [0, 255, 0, 255])
 })
+
+// Receiver position/index scans are cached per buffer so a frame's projectors do not rescan the
+// same geometry. A rejected buffer must never be recorded as validated.
+test('cached receiver validation still rejects the same bad geometry on every call', () => {
+  const bad = receiver([NaN, 0, 1, 1, 0, 1, 0, 1, 1])
+  for (let call = 0; call < 3; call += 1)
+    assert.throws(() => clipProjectorReceivers(frame, bad, budget), /nonfinite/)
+  const indexed = [
+    {
+      primitive: {
+        id: 'indexed',
+        topology: 'triangles',
+        positions: Float32Array.from([-0.5, -0.5, 1, 0.5, -0.5, 1, 0, 0.5, 1]),
+        indices: Uint32Array.from([0, 1, 7]),
+      },
+      transform: identity,
+    },
+  ]
+  for (let call = 0; call < 3; call += 1)
+    assert.throws(() => clipProjectorReceivers(frame, indexed, budget), /index absent/)
+})
+test('validating one receiver buffer does not validate a different one', () => {
+  const good = receiver([-0.5, -0.5, 1, 0.5, -0.5, 1, 0, 0.5, 1])
+  assert.equal(clipProjectorReceivers(frame, good, budget).indices.length, 3)
+  assert.throws(
+    () => clipProjectorReceivers(frame, receiver([0, 0, 1, Infinity, 0, 1, 0, 1, 1]), budget),
+    /nonfinite/,
+  )
+  // Repeating the accepted buffer takes the cached path and must still produce the same geometry.
+  assert.deepEqual([...clipProjectorReceivers(frame, good, budget).indices], [0, 1, 2])
+})

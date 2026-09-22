@@ -4,7 +4,7 @@
 //
 //   node scripts/render-world-payload.mjs --payload <dir> --out <dir> [--cameras <file>] [--size 1280x900]
 //        [--backend gpu|swiftshader] [--time 0] [--shadows 1] [--terrain-only]
-//        [--benchmark 12] [--animation-step 0.25]
+//        [--benchmark 12] [--animation-step 0.25] [--lattice] [--geometry-only]
 //
 // cameras file: [{ "name": "overview", "azimuth": 0.785, "elevation": 0.52, "zoom": 1, "target": [0,0,0] }]
 import {
@@ -17,6 +17,7 @@ import {
 } from 'node:fs'
 import { createServer } from 'node:http'
 import { dirname, join, resolve } from 'node:path'
+import { createHash } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
 import { build } from 'esbuild'
@@ -34,6 +35,8 @@ const { values } = parseArgs({
     shadows: { type: 'string', default: '1' },
     profile: { type: 'boolean', default: false },
     'terrain-only': { type: 'boolean', default: false },
+    'geometry-only': { type: 'boolean', default: false },
+    lattice: { type: 'boolean', default: false },
     'lighting-effects': { type: 'string', default: '1' },
     ssao: { type: 'string', default: '1' },
     benchmark: { type: 'string', default: '0' },
@@ -50,7 +53,7 @@ if (!Number.isSafeInteger(width) || !Number.isSafeInteger(height))
 const camerasPath = values.cameras ?? join(payloadDir, 'cameras.json')
 const cameras = existsSync(camerasPath)
   ? JSON.parse(readFileSync(camerasPath, 'utf8').replace(/^﻿/u, ''))
-  : [{ name: 'overview', azimuth: 3 * Math.PI / 4, elevation: 0.52, zoom: 1, target: [0, 0, 0] }]
+  : [{ name: 'overview', azimuth: (3 * Math.PI) / 4, elevation: 0.52, zoom: 1, target: [0, 0, 0] }]
 const executablePath = [
   process.env.CHROME_PATH,
   'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
@@ -62,6 +65,7 @@ const bundled = await build({
   stdin: {
     contents: `
       import { createWorldWebGlRenderer } from './packages/scene/src/world/webgl.ts';
+      import { createWorldLatticePlan, drawWorldLattice } from './packages/ui/src/world/lattice.ts';
       const constructors = { Int8Array, Uint8Array, Uint8ClampedArray, Int16Array, Uint16Array,
         Int32Array, Uint32Array, Float32Array, Float64Array, DataView };
       const binary = await fetch('/world.bin').then(response => response.arrayBuffer());
@@ -89,6 +93,10 @@ const bundled = await build({
         return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, revive(item)]));
       };
       const payload = revive(await fetch('/world.json').then(response => response.json()));
+      if (${values['geometry-only']}) {
+        payload.models = new Map();
+        payload.terrainTextures = new Map();
+      }
       if (${values['terrain-only']}) payload.items = payload.items.filter(item => item.facet !== 'objects' || item.derivedFrom === 'cliffs');
       if (${values.ssao === '0'}) payload.items = payload.items.map(item => {
         if (item.facet !== 'lighting' || item.toneMapping === undefined) return item;
@@ -106,9 +114,28 @@ const bundled = await build({
         });
       }
       const canvas = document.querySelector('canvas');
+      if (${values.lattice}) {
+        const plan = createWorldLatticePlan(payload.items);
+        globalThis.worldRenderer = {
+          glRenderer: 'Canvas2D lattice',
+          draw() {
+            const started = performance.now();
+            drawWorldLattice(canvas, plan);
+            return { stats: { latticeCells: plan.cells.length, contours: plan.contours.length, objectMarkers: plan.objects.length },
+              renderer: {}, milliseconds: performance.now() - started };
+          },
+          async benchmark() { throw new Error('Use --benchmark 0 for lattice screenshots'); },
+        };
+      } else {
       const renderer = createWorldWebGlRenderer(canvas);
       if (renderer === undefined) throw new Error('WebGL2 is unavailable');
       const gl = canvas.getContext('webgl2');
+      const drawCalls = { arrays: 0, elements: 0, arraysInstanced: 0, elementsInstanced: 0 };
+      for (const [method, counter] of Object.entries({ drawArrays: 'arrays', drawElements: 'elements',
+        drawArraysInstanced: 'arraysInstanced', drawElementsInstanced: 'elementsInstanced' })) {
+        const draw = gl[method].bind(gl);
+        gl[method] = (...args) => { drawCalls[counter] += 1; return draw(...args); };
+      }
       const info = gl.getExtension('WEBGL_debug_renderer_info');
       globalThis.worldRenderer = {
         glRenderer: info ? gl.getParameter(info.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER),
@@ -118,23 +145,27 @@ const bundled = await build({
           for (let frame = 0; frame < 2; frame += 1)
             stats = renderer.draw({ ...payload, camera, shadows, shadowMapSize: 2048, timeSeconds });
           gl.finish();
-          return { stats, renderer: renderer.stats(), milliseconds: performance.now() - started };
+          return { stats, renderer: renderer.stats(), drawCalls: { ...drawCalls }, milliseconds: performance.now() - started };
         },
         async benchmark(camera, timeSeconds, shadows, count, step) {
           const milliseconds = [];
+          const callsPerFrame = [];
           for (let frame = 0; frame < count; frame++) {
+            const beforeCalls = Object.values(drawCalls).reduce((a, b) => a + b, 0);
             const start = performance.now();
             renderer.draw({ ...payload, camera, shadows, shadowMapSize: 2048, timeSeconds: timeSeconds + frame * step });
             gl.finish();
             milliseconds.push(performance.now() - start);
+            callsPerFrame.push(Object.values(drawCalls).reduce((a, b) => a + b, 0) - beforeCalls);
             await new Promise(resolve => setTimeout(resolve, 0));
           }
           const ordered = [...milliseconds].sort((a, b) => a - b);
           const p50 = ordered[Math.floor(ordered.length / 2)];
-          return { milliseconds, p50, equivalentFps: 1000 / p50, animationStepSeconds: step, renderer: renderer.stats(),
+          return { milliseconds, p50, equivalentFps: 1000 / p50, animationStepSeconds: step, callsPerFrame, drawCalls: { ...drawCalls }, renderer: renderer.stats(),
             jsHeapBytes: performance.memory?.usedJSHeapSize };
         },
       };
+      }
     `,
     resolveDir: coreRoot,
     loader: 'ts',
@@ -261,6 +292,22 @@ try {
         )
       : undefined
   const receipt = {
+    schemaVersion: 2,
+    generatedAt: new Date().toISOString(),
+    applicationSha256: createHash('sha256').update(application).digest('hex'),
+    payloadJsonSha256: createHash('sha256')
+      .update(readFileSync(join(payloadDir, 'world.json')))
+      .digest('hex'),
+    configuration: {
+      timeSeconds: Number(values.time),
+      animationStepSeconds: Number(values['animation-step']),
+      benchmarkFrames: benchmarkCount,
+      shadows: values.shadows !== '0',
+      terrainOnly: values['terrain-only'] ?? false,
+      geometryOnly: values['geometry-only'],
+      lattice: values.lattice,
+      cameras,
+    },
     payloadDir,
     glRenderer,
     backend: values.backend,

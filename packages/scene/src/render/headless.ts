@@ -611,6 +611,41 @@ function textureTable(textures: readonly SceneRendererTexture[] | undefined) {
   return table
 }
 
+/** The texture a render material's diffuse layer names, resolved through its own bindings. */
+function diffuseLayerTexture(
+  material: SceneRendererMaterial,
+  textures: ReadonlyMap<string, SceneRendererTexture>,
+  diagnostics: SceneRendererDiagnostic[],
+): SceneRendererTexture | undefined {
+  const bindings = material.textureBindings
+  if (bindings === undefined || bindings.length === 0) return undefined
+  const params = material.shader?.parameters as
+    | {
+        readonly renderModel?: {
+          readonly layers?: readonly { readonly label?: string; readonly path?: string }[]
+        }
+      }
+    | undefined
+  const layers = params?.renderModel?.layers ?? []
+  const diffuse = layers.find(layer => layer.label === 'diffuse') ?? layers[0]
+  const resourceId = diffuse?.path
+  if (typeof resourceId !== 'string' || resourceId === '') return undefined
+  const binding = bindings.find(entry => entry.resourceId === resourceId)
+  if (binding === undefined) return undefined
+  const texture = textures.get(binding.textureId)
+  if (texture === undefined || texture.dimension === 'cube') {
+    diagnostics.push(
+      Object.freeze({
+        severity: 'warning',
+        code: 'modkit.headless/diffuse-layer-unavailable',
+        message: `material ${material.id} names diffuse ${resourceId}, which the scene did not carry as a 2D texture`,
+      }),
+    )
+    return undefined
+  }
+  return texture
+}
+
 /**
  * Materials as this renderer needs them: a colour, an optional resolved texture, a shading model.
  *
@@ -633,6 +668,12 @@ function materialSurfaces(
       throw new TypeError(`material ${material.id} declares an unknown shading model`)
     }
     let texture
+    // A game material states its textures in its own layer list, not as a glTF base-colour
+    // texture, so without this the whole StarCraft II / Warcraft III material family drew flat.
+    // Its diffuse layer is the base colour; the rest of that model is not emulated here, which
+    // the `pbr-lighting-unrendered` diagnostic already reported upstream.
+    if (material.baseColorTexture === undefined && material.shader !== undefined)
+      texture = diffuseLayerTexture(material, textures, diagnostics)
     if (material.baseColorTexture !== undefined) {
       texture = textures.get(material.baseColorTexture)
       if (texture?.dimension === 'cube') {

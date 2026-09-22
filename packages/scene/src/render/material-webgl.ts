@@ -12,7 +12,7 @@ import { materialIsSolid, type MaterialDraw } from './material-draws.js'
 import { requiresEnvironmentEye, snapshotEyePosition } from '../materials/environment.js'
 import { cubeNearestSamplerSource } from '../materials/cube-maps.js'
 
-/** Per-frame GPU program leases. Scene owns geometry, camera matrices and render state. */
+/** Retained GPU program/geometry leases. Scene owns camera matrices and render state. */
 export function materialWebGlDraws(
   gl: WebGL2RenderingContext,
   textures: ReadonlyMap<string, WebGLTexture>,
@@ -29,10 +29,26 @@ export function materialWebGlDraws(
   const pendingPrograms = new Set<WebGLProgram>()
   const usedPrograms = new Set<StandardMaterialProgram>()
   let programCompilations = 0
+  let drawCalls = 0
   // Primitive arrays are immutable for the lifetime of a draw plan; keep their GPU copies across
   // frames instead of re-uploading every attribute on every draw. `sweep()` drops arrays a frame
   // did not touch, `release()` drops everything.
-  const retained = new Map<ArrayBufferView, { buffer: WebGLBuffer; used: boolean }>()
+  interface BufferEntry {
+    buffer: WebGLBuffer
+    byteLength: number
+    used: boolean
+  }
+  interface VertexArrayEntry {
+    vao: WebGLVertexArrayObject
+    data: readonly (ArrayBufferView | undefined)[]
+    buffers: BufferEntry[]
+    constants: { location: number; value: Float32Array }[]
+    used: boolean
+  }
+  const retained = new Map<ArrayBufferView, BufferEntry>()
+  // Instances share arrays, but not primitive objects. Attribute layouts belong to the linked
+  // program; uniforms (including transform/tint) do not belong in the VAO key.
+  const vertexArrays = new Map<WebGLProgram, Map<Float32Array, VertexArrayEntry[]>>()
   const retainedBuffer = (target: number, data: ArrayBufferView) => {
     let entry = retained.get(data)
     if (entry === undefined) {
@@ -40,13 +56,101 @@ export function materialWebGlDraws(
       if (buffer === null) throw new TypeError('could not allocate material geometry')
       gl.bindBuffer(target, buffer)
       gl.bufferData(target, data, gl.STATIC_DRAW)
-      entry = { buffer, used: true }
+      entry = { buffer, byteLength: data.byteLength, used: true }
       retained.set(data, entry)
     } else gl.bindBuffer(target, entry.buffer)
     entry.used = true
+    return entry
+  }
+  const bindGeometry = (
+    program: WebGLProgram,
+    source: StandardMaterialProgram,
+    primitive: MaterialDraw['primitive'],
+  ) => {
+    const attributes = [
+      primitive.positions,
+      primitive.normals,
+      primitive.tangents,
+      primitive.colors,
+    ]
+    for (let set = 0; set < source.defines.uvSetCount; set++)
+      attributes.push(
+        primitive.textureCoordinateSets?.find(uv => uv.set === set)?.coordinates ??
+          (set === 0 ? primitive.textureCoordinates : undefined),
+      )
+    const data = [...attributes, primitive.indices]
+    const geometries = vertexArrays.get(program)
+    const variants = geometries?.get(primitive.positions)
+    let entry = variants?.find(
+      candidate =>
+        candidate.data.length === data.length &&
+        candidate.data.every((value, index) => value === data[index]),
+    )
+    if (entry === undefined) {
+      const vao = gl.createVertexArray()
+      if (vao === null) throw new TypeError('could not allocate material vertex array')
+      const created: VertexArrayEntry = { vao, data, buffers: [], constants: [], used: true }
+      entry = created
+      gl.bindVertexArray(vao)
+      try {
+        const attribute = (name: string, index: number, size: number, fallback: number[]) => {
+          const location = gl.getAttribLocation(program, name)
+          if (location < 0) return
+          const values = attributes[index]
+          if (values === undefined) {
+            gl.disableVertexAttribArray(location)
+            created.constants.push({ location, value: Float32Array.from(fallback) })
+          } else {
+            created.buffers.push(retainedBuffer(gl.ARRAY_BUFFER, values))
+            gl.enableVertexAttribArray(location)
+            gl.vertexAttribPointer(location, size, gl.FLOAT, false, 0, 0)
+          }
+        }
+        attribute('a_position', 0, 3, [0, 0, 0, 1])
+        attribute('a_normal', 1, 3, [0, 0, 1, 1])
+        attribute('a_tangent', 2, 4, [1, 0, 0, 1])
+        attribute('a_color', 3, 4, [1, 1, 1, 1])
+        for (let set = 0; set < source.defines.uvSetCount; set++)
+          attribute(`a_uv${set}`, 4 + set, 2, [0, 0, 0, 1])
+        if (primitive.indices !== undefined)
+          entry.buffers.push(retainedBuffer(gl.ELEMENT_ARRAY_BUFFER, primitive.indices))
+      } catch (error) {
+        gl.bindVertexArray(null)
+        gl.deleteVertexArray(vao)
+        throw error
+      }
+      const retainedGeometries = geometries ?? new Map<Float32Array, VertexArrayEntry[]>()
+      retainedGeometries.set(primitive.positions, [...(variants ?? []), entry])
+      vertexArrays.set(program, retainedGeometries)
+    } else {
+      gl.bindVertexArray(entry.vao)
+      for (const buffer of entry.buffers) buffer.used = true
+    }
+    entry.used = true
+    // Generic attribute values are context state, not VAO state. Other draws/passes can change
+    // them, so restore missing normal/tangent/color/UV defaults even when reusing a VAO.
+    for (const { location, value } of entry.constants) gl.vertexAttrib4fv(location, value)
   }
   return {
     programCompilations: () => programCompilations,
+    /** Cumulative drawArrays/drawElements submissions, including depth-only material passes.
+     * Snapshot before/after a pass or frame for its direct draw count. */
+    drawCalls: () => drawCalls,
+    /** Snapshot of this renderer's owned GPU geometry; no GL queries or frame-state changes.
+     * Each retained entry owns one distinct buffer, even for views sharing CPU backing storage.
+     * Bytes describe uploaded buffer storage, excluding textures and driver VAO/program overhead. */
+    stats() {
+      let bufferBytesRetained = 0
+      for (const entry of retained.values()) bufferBytesRetained += entry.byteLength
+      let vertexArrayEntries = 0
+      for (const geometries of vertexArrays.values())
+        for (const variants of geometries.values()) vertexArrayEntries += variants.length
+      return Object.freeze({
+        bufferEntries: retained.size,
+        bufferBytesRetained,
+        vertexArrayEntries,
+      })
+    },
     /** Link every program these draws still need in one parallel batch, before any of them draws. */
     warm(draws: Iterable<MaterialDraw>): number {
       const sources = new Map<string, Readonly<{ vertexSource: string; fragmentSource: string }>>()
@@ -59,8 +163,13 @@ export function materialWebGlDraws(
       return linkWebGlMaterialProgramsInParallel(gl, sources.values(), linked, pendingPrograms)
     },
     release() {
+      for (const geometries of vertexArrays.values())
+        for (const variants of geometries.values())
+          for (const entry of variants) gl.deleteVertexArray(entry.vao)
+      vertexArrays.clear()
       for (const lease of programs.values()) lease.release()
       programs.clear()
+      usedPrograms.clear()
       for (const program of linked.values()) gl.deleteProgram(program)
       linked.clear()
       pendingPrograms.clear()
@@ -75,6 +184,22 @@ export function materialWebGlDraws(
           programs.delete(source)
         }
       usedPrograms.clear()
+      // Delete unused VAOs before their buffers, including replaced animated attribute arrays.
+      for (const [program, geometries] of vertexArrays) {
+        for (const [positions, variants] of geometries) {
+          const live = variants.filter(entry => {
+            if (!entry.used) {
+              gl.deleteVertexArray(entry.vao)
+              return false
+            }
+            entry.used = false
+            return true
+          })
+          if (live.length === 0) geometries.delete(positions)
+          else geometries.set(positions, live)
+        }
+        if (geometries.size === 0) vertexArrays.delete(program)
+      }
       for (const [data, entry] of retained) {
         if (entry.used) entry.used = false
         else {
@@ -130,10 +255,8 @@ export function materialWebGlDraws(
         programCompilations += 1
         programs.set(source, lease)
       }
-      const vao = gl.createVertexArray()
-      if (vao === null) throw new TypeError('could not allocate material vertex array')
-      gl.bindVertexArray(vao)
       try {
+        bindGeometry(lease.program, source, primitive)
         lease.bind()
         gl.uniform4fv(
           uniformLocation(gl, lease.program, 'u_instanceTint'),
@@ -147,43 +270,6 @@ export function materialWebGlDraws(
             source.worldToMaterial,
             environmentEnabled,
             worldShading,
-          )
-        const attribute = (
-          name: string,
-          data: Float32Array | undefined,
-          size: number,
-          fallback: readonly number[],
-        ) => {
-          const location = gl.getAttribLocation(program, name)
-          if (location < 0) return
-          if (data === undefined) {
-            gl.disableVertexAttribArray(location)
-            gl.vertexAttrib4fv(
-              location,
-              new Float32Array([
-                fallback[0] ?? 0,
-                fallback[1] ?? 0,
-                fallback[2] ?? 0,
-                fallback[3] ?? 1,
-              ]),
-            )
-            return
-          }
-          retainedBuffer(gl.ARRAY_BUFFER, data)
-          gl.enableVertexAttribArray(location)
-          gl.vertexAttribPointer(location, size, gl.FLOAT, false, 0, 0)
-        }
-        attribute('a_position', primitive.positions, 3, [0, 0, 0])
-        attribute('a_normal', primitive.normals, 3, [0, 0, 1])
-        attribute('a_tangent', primitive.tangents, 4, [1, 0, 0, 1])
-        attribute('a_color', primitive.colors, 4, [1, 1, 1, 1])
-        for (let set = 0; set < source.defines.uvSetCount; set++)
-          attribute(
-            `a_uv${set}`,
-            primitive.textureCoordinateSets?.find(uv => uv.set === set)?.coordinates ??
-              (set === 0 ? primitive.textureCoordinates : undefined),
-            2,
-            [0, 0],
           )
         const uniform = (name: string) => uniformLocation(gl, program, name)
         gl.uniformMatrix4fv(uniform('u_model'), false, geometry.model)
@@ -286,10 +372,8 @@ export function materialWebGlDraws(
         }
         const count = primitive.indices?.length ?? primitive.positions.length / 3
         if (primitive.indices === undefined) gl.drawArrays(mode, 0, count)
-        else {
-          retainedBuffer(gl.ELEMENT_ARRAY_BUFFER, primitive.indices)
-          gl.drawElements(mode, count, gl.UNSIGNED_INT, 0)
-        }
+        else gl.drawElements(mode, count, gl.UNSIGNED_INT, 0)
+        drawCalls += 1
         if (options.checkEachDraw !== false) {
           const error = gl.getError()
           if (error !== gl.NO_ERROR) throw new TypeError(`material WebGL draw failed (${error})`)
@@ -298,7 +382,6 @@ export function materialWebGlDraws(
       } finally {
         for (let unit = 0; unit < source.textures.length; unit++) gl.bindSampler(unit, null)
         gl.bindVertexArray(null)
-        gl.deleteVertexArray(vao)
         gl.colorMask(true, true, true, true)
         gl.disable(gl.CULL_FACE)
       }

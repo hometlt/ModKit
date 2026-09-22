@@ -1,6 +1,6 @@
 # Handoff: ускорение загрузки и рендеринга SC2 M3-моделей
 
-Дата: 2026-09-21. Репозитории: `modkit-core` и
+Дата: 2026-09-22. Репозитории: `modkit-core` и
 `modkit-extensions-blizzard`.
 
 Этот документ является самодостаточной постановкой задачи для следующего
@@ -20,8 +20,8 @@ renderer и не ухудшая текущую визуальную точнос
 но порядок должен подтвердить профиль.
 
 Ревизия 2026-09-21 добавила раздел «Проверенные факты» (F1–F8). Он меняет
-порядок и атрибуцию целей: reuse UVM projection получает доказанный холодный
-выигрыш (F1), устранение picking- и per-triangle работы поднимается выше
+порядок и атрибуцию целей: reuse UVM projection устраняет холодные повторы
+(выигрыш времени ещё нужно измерить, F1), устранение picking- и per-triangle работы поднимается выше
 instancing (F4, F5), а любая цель по анимированному кадру требует сначала
 разделить static plan и dynamic state (F6). Читать F1–F8 до выбора этапа.
 
@@ -41,8 +41,8 @@ WebGL не может непосредственно рисовать бинар
 1. кешировать результат M3 -> UVM и повторно открывать готовый UVM;
 2. для безопасных случаев потреблять уже опубликованные M3 codec-ом общие
    `common.view/model-*` facets без сериализации и повторного открытия UVM;
-3. не копировать геометрию для каждого экземпляра, а инстансировать один GPU
-   mesh.
+3. уменьшить число GPU draws через instancing уже разделяемой геометрии;
+   отдельно убрать CPU-копии треугольников для picking.
 
 Уровень 2 нельзя включать вслепую: renderer сейчас использует `uvmBytes` для
 части effect/projector behavior. Модель без UVM projection не должна молча
@@ -73,8 +73,10 @@ step 0, `maxConcurrentModelAcquisitions: 8`, `maxModelBytes: 1_610_612_736` и
 Закоммиченный в репозитории receipt
 (`../../../artifacts/sc2-amphion-product-route.json`) снят на другой
 конфигурации: 512 моделей, 87.979 s model acquisition, payload 76,719,004 bytes
-и `modelTextureBytes: 0` — то есть ни одна текстура модели не загрузилась и все
-материалы рисовались hashed-цветом. Его нельзя использовать ни как visual, ни
+и `modelTextureBytes: 0` — текстуры моделей отсутствуют. В receipt есть 2080
+`x3.host/raster-codec-unavailable`; причиной нельзя считать только бюджет.
+Нельзя также утверждать, что все материалы рисовались hashed-цветом: часть
+идёт через standard shader с fallback-ресурсами. Его нельзя использовать ни как visual, ни
 как performance baseline. Перед любым A/B нужно снять свой cold baseline на
 фиксированной конфигурации и зафиксировать её в receipt.
 
@@ -116,13 +118,16 @@ step 0, `maxConcurrentModelAcquisitions: 8`, `maxModelBytes: 1_610_612_736` и
 Ниже — не гипотезы, а то, что читается из текущего кода и уже снятых receipts.
 Каждый пункт меняет приоритет или формулировку соответствующего этапа плана.
 
-### F1. 527 acquisitions разрешаются в 349 уникальных M3
+### F1. 526 успешных результатов содержат 349 уникальных M3
 
 Извлечение `sourceKey` из `../artifacts/lighting/payload-complete/world.json`:
-527 моделей, 349 различных `sourceKey` и ровно 349 различных `source.ref.id`.
-То есть **178 из 527 конвертаций (33.8%) в одном холодном прогоне повторяют уже
-выполненную конвертацию того же файла**. Максимальные повторы — cliff pieces
-(до x5 на один `.m3`).
+Пересчёт 2026-09-22: 527 записей, 526 converted, один unresolved,
+349 различных `sourceKey` и 349 `source.ref.id` среди успешных результатов.
+Это **177 повторных успешных результатов (33.65% от 526)**, максимум x4 на
+ключ. SHA-256 текущего `world.json`:
+`bffc9726da4d4971fa91c2a2152c31d0cfb943a56fa059341ff5950b7fc73be1`.
+Payload не является trace всех вызовов: candidate retries и отдельный
+material-model acquisition могут добавить работу. Их считает инструментация.
 
 Причина: `resources` строится на уровне catalog entity и model requirement, а
 `item.modelCandidates` содержит повёрнутые варианты одного piece. Yaw
@@ -130,11 +135,10 @@ step 0, `maxConcurrentModelAcquisitions: 8`, `maxModelBytes: 1_610_612_736` и
 в `world-source.ts`, и в UVM bytes не попадает. Значит один кешированный UVM
 корректен для всех yaw-вариантов.
 
-Следствие для плана: этап 1A (process-wide single-flight/cache) — это в первую
-очередь **холодная** оптимизация с ожидаемым сокращением числа конвертаций на
-треть, а не только warm-оптимизация, как сформулировано ниже. Это делает его
-первым по соотношению выигрыш/риск независимо от того, что покажет split
-`open` против `export`.
+Следствие: bounded reuse внутри одного resource session полезен уже для
+холодного открытия. Доля повторных запросов не равна доле времени: маленькие
+cliff pieces могут быть значительно дешевле уникальных сложных моделей.
+Приоритет разумен, но обещание −25% времени без профиля необоснованно.
 
 ### F2. Что на самом деле содержит `sourceKey`
 
@@ -166,10 +170,18 @@ step 0, `maxConcurrentModelAcquisitions: 8`, `maxModelBytes: 1_610_612_736` и
 - **revision конвертера в ключ не входит**. Для in-process кеша безвредно, для
   persistent — ошибка корректности.
 
-Рабочая форма: namespace = (inventory/contribution identity + converter/cache
-revision + identity dependency closure самой resolution session, которая уже
-присутствует в `snapshotId`), ключ = (`source.ref.id`, `source.revision`,
-`metersPerSourceUnit`, UVM schema version). Оба вычислимы до открытия M3.
+Предлагаемая форма требует проверки: namespace = inventory/contribution и
+converter/cache revision + identity неизменяемой resolution session; ключ =
+source identity/revision + units/schema + влияющие на результат options.
+`snapshotId` строится из session revision и загруженных map documents; это не
+доказанный digest M3A closure. В `createSubjectModelResources.Options` его вообще
+нет. Перенос operation/handler в namespace сам по себе не доказывает, что codec
+выбран корректно до open. Начать с ограниченного session-local кеша.
+
+Ещё один обязательный gate для pre-open hit: native `opened.resources`
+сохраняет overlay DDS/M3A, которого нет у synthetic UVM. При пропуске native
+open нужен равноценный живой resource origin. Если он не доказан, первый кеш
+должен быть post-open и честно измерять только пропущенный export.
 
 ### F3. Пятая копия UVM и мёртвый per-open cache
 
@@ -192,17 +204,18 @@ memory-находка, её стоит закрыть вместе с этапо
 `geometryBytesRetained: 79,508,848` при 10,742 instances и 1,786,824 model
 triangles.
 
-Значит формулировка «не разворачивать geometry для каждого экземпляра» неверна
-для shared-material пути: 240 GPU-записей на 10,742 экземпляра — геометрия уже
-общая, а `modelMaterialScenes` хранит per-instance только
-`{...primitive, transform}`. Реальная цена — **число draw calls и CPU submit**:
-около 8.7 тыс. model draws на кадр (17,452 geometry bind за два кадра). Это и
-есть то, что исправляет GPU instancing; экономии GPU-памяти от него ждать не
-следует.
+Shared-material путь действительно хранит `{...primitive, transform}` и
+разделяет geometry arrays. Но проверка 2026-09-22 выявила важную границу
+счётчиков: 240 entries относятся к `world.resources.geometry`; собственные
+buffers/VAO material renderer в них не входят. Поэтому это число не описывает
+всю модельную GPU память. Повторное использование подтверждается кодом,
+а не отношением 240 к 10,742. GPU instancing прежде всего сокращает submission;
+фактическую память и стоимость GPU passes нужно измерять отдельно.
 
-Важно: 8.7 тыс. — это оценка, выведенная из `geometryCacheHits`, а не
-прямой счётчик draw calls. Прямой счётчик входит в список F8 и нужен до
-того, как instancing станет целью с числовым gate.
+17,452 geometry cache hits за два кадра нельзя переименовывать в 8.7 тыс.
+model draw calls/кадр: счётчик охватывает другую область владения и не все
+passes. Нужны прямые draw counters. Нельзя также объявлять кадр CPU-bound
+без разделения CPU-submit, GPU timer и ожидания `gl.finish`.
 
 ### F5. Per-triangle работа выполняется и там, где её никто не потребляет
 
@@ -238,8 +251,8 @@ contracts, ни instancing.
 
 Значит опубликованная медиана 987.4 ms снята при `timeSeconds: 0` и описывает
 **кадр с переиспользованным планом**, а не анимированный steady state. При
-ненулевом animation step каждый кадр дополнительно платит около 7.4 s
-построения плана.
+ненулевом animation step код повторяет полное построение. 7.4 s — один
+статичный build sample, не измеренная медиана анимированных перестроений.
 
 Следствие для плана: цель «steady-state object frame минимум в два раза
 быстрее» обязана указывать, о каком steady state речь. Для анимированного
@@ -253,13 +266,15 @@ contracts, ни instancing.
 действительно проходит маршрут Warzone -> WorldScene -> UVW -> SC2 и UVW ->
 свежий `.wz`. Но:
 
-- он вызывает `inspectCandidateWorld` с `maxModels: 1`, поэтому **не покрывает
-  ни конвертацию моделей, ни instancing, ни model facets**; как архитектурное
+- он создаёт `createCandidateWorldSceneLease(snapshot, [], 1024)` без model
+  resource port. Именно поэтому **не покрывает конвертацию моделей,
+  instancing и model facets**; сам лимит `maxModels: 1` допускал бы одну модель.
+  Как архитектурное
   доказательство границ он годится, как регрессионный тест модельного
   конвейера — нет;
 - он проверяет точные длины массивов плана
   (`renderPlan.transparentTriangles.positions.length / 9`,
-  `renderPlan.stats.terrainTriangles`). Любое изменение формы плана ломает тест
+  `renderPlan.stats.terrainTriangles`). Изменение этих полей формы плана ломает тест
   **в другом репозитории**, поэтому изменение формы плана и правка этого теста
   должны идти согласованно, а не «потом».
 
@@ -423,8 +438,8 @@ Warzone .wz/game.map
 Тот же UVW преобразуется обратно через `convertUvwToWarzoneWz`, повторно
 открывается Warzone provider-ом и загружается установленной игрой.
 
-Границы этого доказательства см. F7: тест работает с `maxModels: 1`, поэтому
-не покрывает модельный конвейер, и при этом проверяет точные длины массивов
+Границы этого доказательства см. F7: тест не подключает model resource port,
+поэтому не покрывает модельный конвейер, и при этом проверяет точные длины массивов
 плана, то есть является cross-repo регрессионным gate. Это
 подтверждает жизнеспособность source adapter + UVW + target writer, хотя
 конвертация использует явные material/object/unit/water mappings и фиксирует
@@ -749,8 +764,10 @@ serialization, parsing и allocations.
 - `uvmArtifactSource()` делает ещё одну `bytes.slice()` и удерживает её всё
   время жизни переоткрытой UVM session (F3).
 
-Итого пять копий на miss-пути, одна из которых (per-open conversion cache)
-доказуемо мертва на этом маршруте.
+Это как минимум пять мест копирования. На miss conversion cache делает копию
+при `set`, а не при `get`; source reads и codec parsing могут добавить другие.
+Это не замер пяти одновременно удерживаемых полных буферов. Per-open cache
+полезен standalone consumers и не должен удаляться глобально из-за map route.
 
 Нельзя просто удалить все копии: execution boundary, lease ownership и
 Transferable semantics могут отсоединить buffer. Но их стоимость следует
@@ -760,15 +777,14 @@ Transferable semantics могут отсоединить buffer. Но их ст�
 
 Уточнено измерениями (F4, F5):
 
-- на shared-material ветке геометрия **не** разворачивается: GPU держит 240
-  geometry entries и 79,508,848 bytes на 10,742 экземпляра, а план хранит
-  `{...primitive, transform}`;
+- на shared-material ветке план хранит `{...primitive, transform}` с общей
+  geometry. Старые world geometry counters не включают material buffers (F4);
 - но per-triangle world-space преобразование выполняется для каждого
   экземпляра на **всех** ветках, включая shared-material, где его результат
   нужен только для picking;
 - picking удерживает `number[]` на объект, затем `Float32Array.from`: около
   64 MB retained и около 129 MB транзитно при 1.79 млн треугольников,
-  одновременно живущих в момент материализации плана;
+  при материализации плана; transient bytes оценены, а не измерены heap profiler;
 - расчёт `bounds` проходит по тем же picking-числам ещё раз;
 - полностью разворачиваются в batch-массивы только fallback-ветки
   (`textured`, `transparentTextured`, `opaque`), то есть экземпляры, для которых
@@ -835,15 +851,16 @@ source/compressed bytes, CPU RGBA и GPU allocation.
 
 Уточнение после ревизии: это не только warm-оптимизация. По F1 треть
 конвертаций одного холодного прогона Amphion — повторы того же `.m3`, поэтому
-этап 1A даёт измеримый **холодный** выигрыш сам по себе. Ожидаемый порядок
-величины — сокращение числа конвертаций с 527 до 349; фактический выигрыш во
+этап 1A может дать **холодный** выигрыш. Потенциальное сокращение успешных
+повторных exports для этого payload — с 526 до 349; фактический выигрыш во
 времени подтверждается только подтаймерами этапа 0.
 
-### 1A. Сначала process-wide single-flight
+### 1A. Сначала single-flight в пределах resource session
 
 Минимальная реализация для доказательства:
 
-- один cache/single-flight выше отдельного M3 session;
+- один cache/single-flight выше отдельного M3 session, с явным владельцем
+  и ограничением памяти; сначала один неизменяемый resource session;
 - одинаковый ключ возвращает один pending `Promise`;
 - aborted/failed/unresolved результаты не кешируются;
 - cache ограничен общим количеством bytes;
@@ -851,8 +868,9 @@ source/compressed bytes, CPU RGBA и GPU allocation.
 - при выдаче соблюдается ownership: mutable bytes не разделяются между
   независимыми потребителями.
 
-Не писать сначала сложную CAS database. Process-wide memory cache достаточно,
-чтобы доказать корректность ключа и warm effect.
+Не писать сначала сложную CAS database. Расширять reuse на другие sessions
+только после доказательства identity dependency closure. Отмена одного
+подписчика не отменяет работу других; release не возвращает протухшие leases.
 
 ### Ключ кеша
 
@@ -968,8 +986,8 @@ cache.
 Для runtime нужен instancing повторяющихся моделей.
 
 Уточнение после ревизии (F4): цель instancing здесь — **число draw calls и
-стоимость CPU submit**, около 8.7 тыс. model draws на кадр при всего 240
-уникальных GPU geometry entries. Экономии GPU-памяти от instancing ждать не
+стоимость CPU submit**. Старые geometry counters не охватывают все material
+buffers и draws (F4). Автоматической экономии GPU-памяти от instancing ждать не
 следует: геометрия уже общая. И по F6 instancing не улучшит анимированный кадр,
 пока план пересобирается целиком, поэтому при ненулевом animation step
 разделение static plan и dynamic state обязательно раньше instancing.
@@ -991,8 +1009,8 @@ ModelGeometryKey
 material program и texture bindings. Это наиболее простой и безопасный класс.
 
 Перед instancing выгоднее закрыть F5: убрать per-triangle world-space
-преобразование и picking-копии на shared-material ветке. Это меньший дифф, не
-меняет contracts и не требует изменения shader programs, но напрямую уменьшает
+преобразование и picking-копии на shared-material ветке. Это меньший дифф,
+может менять внутренний picking plan, но не требует изменения shader programs и уменьшает
 plan bytes и время построения плана (7430 ms p50).
 
 Следующие классы добавлять отдельно:
@@ -1002,9 +1020,10 @@ plan bytes и время построения плана (7430 ms p50).
 3. разные animation times — отдельные pose groups или GPU skinning;
 4. particles/projectors — отдельный effect path, не смешивать с mesh instancing.
 
-Shadow pass должен использовать тот же instance buffer. Picking лучше переводить
-на object-id instance attribute/GPU picking, чтобы не хранить world-space
-triangle copy на каждый объект.
+Shadow pass должен использовать тот же instance buffer. Первый picking path:
+shared local-space geometry + instance transform + bounds rejection и точное
+пересечение по требованию. GPU picking добавлять только если CPU path останется
+дорогим: он требует отдельного pass и синхронизации readback.
 
 ### Ключ инстанса
 
@@ -1081,11 +1100,12 @@ Transform и object ID не входят в geometry key, а находятся 
 
 ### PR/коммит 2: минимальный cache
 
-1. Добавить process-wide bounded single-flight UVM projection cache с
+1. Добавить session-scoped bounded single-flight UVM projection cache с
    namespace и ключом по F2.
 2. Доказать byte-exact equality cached/uncached UVM.
-3. Проверить счётчиком, что число конвертаций упало до числа уникальных
-   `sourceKey` (F1), и что cliff yaw-варианты по-прежнему различаются в render.
+3. Считать resolve/native opens/exports отдельно, включая retries и material
+   models; сравнить успешные exports с уникальными безопасными cache keys (F1).
+   Проверить, что cliff yaw-варианты по-прежнему различаются в render.
 4. Повторить Amphion cold и warm.
 5. Если выигрыш мал, не строить persistent cache; перейти к bottleneck,
    показанному профилем.
@@ -1102,7 +1122,19 @@ Transform и object ID не входят в geometry key, а находятся 
    результат picking на фиксированной камере до и после.
 4. Согласованно обновить Warzone-тест, если изменилась форма плана (F7).
 
-### PR/коммит 3: persistent cache, если оправдан
+### PR/коммит 3: static/dynamic frame
+
+1. Переиспользовать terrain/cliff preparation и неизменные данные между
+   animation frames; отдельно обновлять poses, material clocks, water/effects.
+2. Проверить, что меняются реальные позы/UV/эффекты, а static buffers сохраняют
+   identity. Нельзя достигать reuse замораживанием времени.
+3. Invalidation при geometry/material/source revision, edit/preview transform;
+   selection должна обновлять highlight. Новые progressive batches не должны
+   оставлять старые placeholders или менять framing при каждом draw.
+4. Снять статичный и анимированный receipts, отдельные static builds/dynamic
+   updates и их timings; отсутствие полного rebuild само по себе не FPS gate.
+
+### Необязательный отдельный коммит: persistent cache
 
 1. Реализовать bounded atomic Node storage.
 2. Добавить invalidation/corruption/budget tests.
@@ -1151,21 +1183,19 @@ parity fixture. Он не является обязательным услови
 После profiling зафиксировать конкретные gates. Предварительные цели, уточнённые
 после ревизии:
 
-- **cold** model acquisition сокращается не менее чем на 25% уже на этапе 1A,
-  за счёт устранения 178 повторных конвертаций из 527 (F1). Это проверяемый
-  счётчиком результат: число конвертаций должно упасть до числа уникальных
-  `sourceKey`;
+- **cold**: устранить доказанные повторные exports при одинаковом безопасном
+  ключе; процент ускорения установить после профиля. 177 повторов результатов
+  не доказывают −25% wall time, особенно при восьми workers;
 - warm model acquisition минимум в 5 раз быстрее cold либо <= 30 s на том же
   стенде;
 - cold acquisition не медленнее baseline более чем на 10%;
 - cache hit не вызывает `convertM3ProjectionToUvm`;
-- objects plan bytes уменьшаются минимум на 30% на Amphion. Атрибуция цели
-  изменена: основной вклад ожидается не от instancing, а от устранения
-  picking-копий (около 64 MB retained из 375,974,896) и от fallback-ветвей,
-  разворачивающих геометрию по экземплярам (F4, F5). Instancing оценивается
-  отдельной метрикой — числом draw calls на кадр;
-- instancing уменьшает число model draw calls минимум в 4 раза относительно
-  8.7 тыс./кадр при неизменных stats треугольников;
+- objects plan bytes: picking-копии всех 1,786,824 треугольников занимали бы
+  64,325,664 bytes, около 17.1% от 375,974,896. Удаление только shared-material
+  копий даст меньше; −30% требует ещё одного доказанного источника экономии.
+  Число 129 MB для `number[]` — оценка хранения double, не heap measurement;
+- instancing: цель сокращения draws назначить по прямому счётчику каждого pass.
+  `geometryCacheHits` не является счётчиком draws или доказательством CPU bound;
 - **steady-state frame измеряется в двух режимах отдельно**: при неизменном
   `timeSeconds` (план переиспользуется) и при ненулевом animation step (план
   сейчас пересобирается каждый кадр, F6). Цель «в 2 раза быстрее» относится к
@@ -1240,7 +1270,7 @@ Product route находится в соседнем репозитории:
 
 Не заменять текущую архитектуру прямым M3 renderer. Сначала измерить этапы
 `resolve -> native open/decode -> UVM export -> UVM reopen/facets -> textures`.
-Если дорог UVM export, добавить bounded process-wide cache, затем безопасный
+Если дорог UVM export, добавить bounded session-scoped cache, затем безопасный
 persistent cache source-free UVM. Если дорог native decode, кешировать projection
 так, чтобы hit происходил до полного M3 decode, сохранив resource provenance и
 companion identity. После загрузки основной runtime выигрыш получать через

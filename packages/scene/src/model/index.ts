@@ -6,6 +6,7 @@ export {
 } from './sampler.js'
 export { preserveUnweightedVertices, type GeneratedSkinBinding } from './unweighted.js'
 export { expandOrderedEulerNode, type OrderedEulerKey } from './ordered-euler.js'
+export { decomposeMatrix4 } from './billboard-math.js'
 export {
   applyModelBillboards,
   applyModelFaceCameraBillboard,

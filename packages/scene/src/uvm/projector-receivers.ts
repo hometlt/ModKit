@@ -37,6 +37,12 @@ const component = (values: ArrayLike<number>, index: number): number => {
 }
 const dot = (x: number, y: number, z: number, v: ProjectorVec3) => x * v[0] + y * v[1] + z * v[2]
 const clamp = (value: number) => Math.min(1, Math.max(0, value))
+// Every projector of a frame validates the same receiver arrays, and the next frame receives the
+// same retained geometry. These scans are O(geometry) and their inputs are immutable render buffers,
+// so one scan per buffer replaces one scan per projector per frame. Budget and shape checks below
+// stay per call: they depend on the caller's remaining budget, not on the buffer.
+const finiteReceiverPositions = new WeakSet<Float32Array>()
+const highestReceiverIndex = new WeakMap<Uint32Array, number>()
 
 /** Two passes reserve exact output before allocation. Unlike the old live-buffer preview,
  * exhaustion rejects the frame instead of publishing silently truncated receiver geometry. */
@@ -87,11 +93,21 @@ export function clipProjectorReceivers(
     const count = primitive.indices?.length ?? primitive.positions.length / 3
     if (count % 3 !== 0 || (triangles += count / 3) > options.maxTriangles)
       throw new RangeError('projector receiver work exceeds budget')
-    for (const index of primitive.indices ?? [])
-      if (index >= primitive.positions.length / 3)
+    if (primitive.indices !== undefined) {
+      let highest = highestReceiverIndex.get(primitive.indices)
+      if (highest === undefined) {
+        highest = -1
+        for (const index of primitive.indices) if (index > highest) highest = index
+        highestReceiverIndex.set(primitive.indices, highest)
+      }
+      if (highest >= primitive.positions.length / 3)
         throw new RangeError('projector receiver index absent')
-    for (const value of primitive.positions)
-      if (!Number.isFinite(value)) throw new TypeError('nonfinite projector receiver')
+    }
+    if (!finiteReceiverPositions.has(primitive.positions)) {
+      for (const value of primitive.positions)
+        if (!Number.isFinite(value)) throw new TypeError('nonfinite projector receiver')
+      finiteReceiverPositions.add(primitive.positions)
+    }
   }
   const first = new Float32Array(60),
     second = new Float32Array(60)

@@ -262,7 +262,8 @@ cliffs и water. `--lighting-effects 0` — A/B режим новых lighting e
 Замеры 1280 x 1280 на Chrome/ANGLE, Intel Graphics, D3D11:
 
 - холодный product-route acquisition: 192.665 s;
-- model conversion: 185.793 s, то есть около 96% acquisition;
+- aggregate model acquisition: 185.793 s, около 96% acquisition; включает
+  resolve/open/export/reopen/facets/textures, а не только конвертер;
 - terrain textures: 6.808 s;
 - typed-array payload: 230,741,844 bytes;
   - models: 147,773,268 bytes;
@@ -289,11 +290,13 @@ cliffs и water. `--lighting-effects 0` — A/B режим новых lighting e
 описывает анимированный steady state: при ненулевом animation step каждый
 кадр дополнительно платит полное построение плана.
 
-Из того же receipt видно, что GPU-геометрия уже разделяется между
-экземплярами: `geometryEntries: 240` и `geometryBytesRetained: 79,508,848`
-на 10,742 instances при `geometryCacheHits: 17452` за два кадра, то есть
-около 8.7 тыс. model draw calls на кадр. Узкое место кадра — число draw
-calls и CPU submit, а не дублирование геометрии в GPU-памяти.
+Shared-material код уже разделяет geometry arrays между экземплярами.
+В receipt `geometryEntries: 240` и `geometryBytesRetained: 79,508,848`
+относятся к world geometry cache, исключая собственные material GPU buffers.
+На 10,742 instances получено `geometryCacheHits: 17452` за два кадра, то есть
+около 8.7 тыс. geometry cache hits на кадр. Это не прямой счётчик model draws
+и не доказательство CPU bound: GPU timings/pass breakdown нужно измерять отдельно.
+Instancing направлен прежде всего на draw submission; shared geometry уже существует.
 
 Это не гарантированный игровой FPS. Выборка мала, первый кадр включает plan
 build/прогрев, значения заметно колеблются. Payload, plan, JS heap и GPU bytes
@@ -318,21 +321,24 @@ renderer сам по себе достаточно быстрый.
 
 ### P1: наибольшая ожидаемая отдача
 
-1. **Переиспользование UVM projection.** В одном холодном прогоне Amphion 527
-   acquisitions разрешаются в 349 уникальных `.m3`: 178 конвертаций (33.8%) —
-   повторы того же файла, в основном cliff pieces. Yaw применяется после
+1. **Переиспользование UVM projection.** Пересчёт payload 2026-09-22: 527
+   результатов, 526 converted, 349 уникальных `.m3`, 177 повторов успешных
+   результатов (33.65%), максимум x4, в основном cliff pieces. Yaw применяется после
    model port, поэтому один UVM корректен для всех повёрнутых вариантов.
-   Сначала process-wide single-flight/cache в памяти, persistent — только
+   Сначала session-scoped single-flight/cache в памяти, persistent — только
    после доказанного выигрыша. Ключ и его текущие пробелы описаны в F2
    handoff-документа: companion/M3A closure и revision конвертера в него
-   сейчас не входят.
+   сейчас не входят. Pre-open hit обязан сохранить native DDS/M3A resource
+   overlay; `snapshotId` не является доказанным companion digest. Доля
+   повторов не доказывает такой же процент ускорения загрузки.
 2. **Убрать per-instance world-space работу и picking-копии.** Внутренний цикл
    плана считает три world-space вершины на треугольник для каждого
    экземпляра даже на shared-material ветке, где результат нужен только
    picking, и складывает их в `number[]` на объект, затем в `Float32Array`.
    При 1.79 млн треугольников это около 64 MB retained и около 129 MB
-   транзитно. Это самый дешёвый по диффу пункт: он не меняет contracts и не
-   требует instancing.
+   транзитно при double storage (оценка, не heap measurement). Изменяется
+   внутренний picking plan: shared geometry + bounds + точные пересечения
+   по требованию. Instancing не требуется.
 3. **Разделить static plan и dynamic state.** Terrain, static geometry и
    материалы остаются неизменными; на animation frame обновляются только
    transforms, skinning/effects и действительно изменившиеся buffers. Это
@@ -340,9 +346,9 @@ renderer сам по себе достаточно быстрый.
    изменение `timeSeconds` пересобирает план целиком.
 4. **GPU instancing повторяющихся статичных моделей.** Одна local-space
    geometry и массив transforms/team colors для одинаковых doodads, cliff
-   pieces и props. Цель — сократить около 8.7 тыс. model draw calls на кадр;
-   GPU-геометрия уже общая (240 entries), поэтому экономии GPU-памяти от
-   этого пункта ждать не следует.
+   pieces и props. Числовую цель назначить после прямого подсчёта draws по passes;
+   shared-material геометрия уже общая, поэтому память измерять отдельно,
+   включая material GPU buffers, отсутствующие в прежнем world counter.
 5. **Убрать дубли ресурсов.** Reference-counted decoded texture/model cache;
    освобождать исходные binary/CPU copies после успешной GPU upload, если они
    не нужны для edit/inspection lease.
@@ -422,5 +428,13 @@ renderer сам по себе достаточно быстрый.
    этого различения любые выводы о steady-state FPS неверны;
 9. в receipt фиксируется конфигурация замера: `maxModels`, `maxModelBytes`,
    `maxConcurrentModelAcquisitions`, размер, backend и animation step. Числа,
-   снятые при разных `maxModels`, несравнимы, потому что этот параметр
-   определяет и бюджет текстур модели.
+   снятые при разном числе admitted моделей, несравнимы, потому что оно
+   определяет и бюджет текстур. Два лимита выше числа доступных ресурсов
+   могут давать одинаковый набор и одинаковые effective budgets.
+
+Дополнение 2026-09-22: сравнивать отдельные receipts для payload preparation,
+static frame и animated frame. Фиксировать commit/build каждого repo, dirty
+diff identity, хеши payload, реальные admitted/converted/texture counts,
+effective budgets и codec inventory. Старый receipt с нулём model textures и
+`raster-codec-unavailable` не годится для оценки полного рендера. Один build
+за 7430 ms не является замером стоимости каждого анимированного кадра.

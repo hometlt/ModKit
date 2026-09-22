@@ -11,6 +11,7 @@ import {
   pickWorldWebGl,
   zoomWorldWebGlCamera,
   type WorldWebGlCamera,
+  type WorldWebGlInput,
   type WorldWebGlRenderer,
 } from '@modkit/scene/world'
 import type {
@@ -50,6 +51,9 @@ import {
 import { type UiLocalizer } from '../localization/index.js'
 import { WORLD_FALLBACK_MESSAGES } from '../localization/fallback-catalogs.generated.js'
 import { withEnglishUiFallback } from '../localization/fallback.js'
+import { createMediaShell } from '../media-shell/index.js'
+import { createWorldLatticePlan, drawWorldLattice, type WorldLatticePlan } from './lattice.js'
+export { createWorldLatticePlan, drawWorldLattice, worldLatticeColor } from './lattice.js'
 
 export const WORLD_VIEWER_MAX_LAYERS = 16
 export const WORLD_VIEWER_MAX_ITEMS_PER_LAYER = 100_000
@@ -77,6 +81,14 @@ export interface CandidateWorldViewerOptions {
   readonly modelResourceFilter?: (resourceId: string) => boolean
   readonly signal?: AbortSignal
   readonly previous?: CandidateWorldViewerModel
+  /** Immutable bounded snapshots; geometry is published before any texture/model request. */
+  readonly onProgress?: (model: CandidateWorldViewerModel, progress: WorldLoadProgress) => void
+}
+
+export interface WorldLoadProgress {
+  readonly phase: 'geometry' | 'textures' | 'cliffs' | 'objects' | 'complete'
+  readonly completed: number
+  readonly total: number
 }
 
 export interface CandidateWorldViewerLayer {
@@ -96,7 +108,41 @@ export interface CandidateWorldViewerModel {
   readonly terrainTextures?: ReadonlyMap<string, SceneRendererTexture>
   readonly terrainTextureDiagnostics?: readonly Diagnostic[]
   readonly modelRequestKey?: string
+  /** Admission/request limits, not a measurement or hard cap of renderer CPU/GPU memory. */
+  readonly modelBudget?: Readonly<{
+    maxModels: number
+    maxModelBytes: number
+    bytesPerModel: number
+    textureBytesPerModel: number
+  }>
   readonly loadPerformance: CandidateWorldViewerLoadPerformance
+}
+
+/** Count the advertised resources, including ones absent from the results map. */
+export function worldModelAssetStatus(
+  model: Pick<CandidateWorldViewerModel, 'layers' | 'models'>,
+): {
+  total: number
+  converted: number
+  partial: boolean
+} {
+  const ids = new Set(
+    model.layers.flatMap(({ page }) =>
+      page.items.flatMap(item =>
+        item.facet === 'resources' && item.modelResource !== undefined ? [item.id] : [],
+      ),
+    ),
+  )
+  let converted = 0
+  let partial = false
+  for (const id of ids) {
+    const result = model.models?.get(id)
+    if (result?.state === 'converted') {
+      converted++
+      if (!result.complete) partial = true
+    } else partial = true
+  }
+  return { total: ids.size, converted, partial }
 }
 
 /** Wall-clock phase receipt for one bounded candidate inspection. */
@@ -223,7 +269,12 @@ export async function inspectCandidateWorld(
           reused: true,
         })
       }
-      const lod = layer.lods.includes('sampled') ? 'sampled' : layer.lods[0]
+      const lod =
+        layer.lods.includes('exact') && layer.itemCount <= maxItemsPerLayer
+          ? 'exact'
+          : layer.lods.includes('sampled')
+            ? 'sampled'
+            : layer.lods[0]
       const items: WorldSceneItem[] = []
       const cursors = new Set<string>()
       let cursor: string | undefined
@@ -270,6 +321,18 @@ export async function inspectCandidateWorld(
     }),
   )
   const layerAcquisitionMilliseconds = elapsedInspectionMilliseconds(layerAcquisitionStartedAt)
+  const cliffResources = new Set(
+    inspected.flatMap(({ page }) =>
+      page.items.flatMap(item =>
+        item.facet === 'objects' && item.derivedFrom === 'cliffs'
+          ? [
+              ...(item.resourceId === undefined ? [] : [item.resourceId]),
+              ...(item.resourceIds ?? []),
+            ]
+          : [],
+      ),
+    ),
+  )
   const resourceItems = inspected
     .flatMap(item => item.page.items)
     .filter(
@@ -279,7 +342,9 @@ export async function inspectCandidateWorld(
     .filter((item, index, all) => all.findIndex(candidate => candidate.id === item.id) === index)
     .sort(
       (left, right) =>
-        right.objectIds.length - left.objectIds.length || left.id.localeCompare(right.id),
+        Number(cliffResources.has(right.id)) - Number(cliffResources.has(left.id)) ||
+        right.objectIds.length - left.objectIds.length ||
+        left.id.localeCompare(right.id),
     )
   const models = new Map<string, WorldSceneModelResult>()
   const requestedResources =
@@ -303,9 +368,8 @@ export async function inspectCandidateWorld(
     Math.min(16 * 1024 * 1024, Math.floor(perModelBytes / 2), maxTextureTotalBytes),
   )
   const modelRequestKey = JSON.stringify({
-    maxModels,
-    maxModelBytes,
-    maxConcurrentModelAcquisitions,
+    // Admission count, aggregate budget and worker count do not change an individual result.
+    // Only actual per-resource limits belong here, so Load more can retain previous projections.
     perModelBytes,
     maxMeshes: Math.min(256, maxItemsPerLayer),
     maxNodes: Math.min(1_024, maxItemsPerLayer),
@@ -336,38 +400,40 @@ export async function inspectCandidateWorld(
   }
   let modelRequests = 0
   let reusedModels = 0
-  const modelAcquisitionStartedAt = inspectionClock()
-  if (source.model !== undefined) {
-    await forEachConcurrent(admittedResources, maxConcurrentModelAcquisitions, async item => {
-      const previous = options.previous?.models?.get(item.id)
-      if (
-        options.previous?.snapshotId === identity.snapshotId &&
-        options.previous.modelRequestKey === modelRequestKey &&
-        previous?.state === 'converted'
-      ) {
-        reusedModels += 1
+  let modelAcquisitionMilliseconds = 0
+  if (
+    options.previous?.snapshotId === identity.snapshotId &&
+    options.previous.modelRequestKey === modelRequestKey
+  ) {
+    for (const item of admittedResources) {
+      const previous = options.previous.models?.get(item.id)
+      if (previous?.state === 'converted') {
         models.set(item.id, previous)
-        return
+        reusedModels++
       }
-      modelRequests += 1
-      const result = await source.model!(
-        item.id,
-        {
-          maxBytes: perModelBytes,
-          maxNodes: Math.min(1_024, maxItemsPerLayer),
-          maxMeshes: Math.min(256, maxItemsPerLayer),
-          maxPrimitives: Math.min(512, maxItemsPerLayer),
-          maxPrimitiveBytes: Math.min(16 * 1024 * 1024, perModelBytes),
-          maxResources: Math.min(64, maxItemsPerLayer),
-          maxTextureBytes,
-          maxTextureTotalBytes,
-        },
-        options.signal,
-      )
-      models.set(item.id, result)
-    })
+    }
   }
-  const modelAcquisitionMilliseconds = elapsedInspectionMilliseconds(modelAcquisitionStartedAt)
+  const acquireModel = async (item: WorldSceneResourceItem) => {
+    options.signal?.throwIfAborted()
+    if (models.get(item.id)?.state === 'converted') return
+    modelRequests += 1
+    const result = await source.model!(
+      item.id,
+      {
+        maxBytes: perModelBytes,
+        maxNodes: Math.min(1_024, maxItemsPerLayer),
+        maxMeshes: Math.min(256, maxItemsPerLayer),
+        maxPrimitives: Math.min(512, maxItemsPerLayer),
+        maxPrimitiveBytes: Math.min(16 * 1024 * 1024, perModelBytes),
+        maxResources: Math.min(64, maxItemsPerLayer),
+        maxTextureBytes,
+        maxTextureTotalBytes,
+      },
+      options.signal,
+    )
+    options.signal?.throwIfAborted()
+    models.set(item.id, result)
+  }
   const terrainTextures = new Map<string, SceneRendererTexture>()
   const terrainTextureDiagnostics: Diagnostic[] = []
   const terrainTextureIds = [
@@ -391,8 +457,70 @@ export async function inspectCandidateWorld(
       ]),
     ),
   ].slice(0, WORLD_VIEWER_MAX_TERRAIN_TEXTURES)
+  if (options.previous?.snapshotId === identity.snapshotId) {
+    for (const resourceId of terrainTextureIds) {
+      const previous = options.previous.terrainTextures?.get(resourceId)
+      if (previous !== undefined) terrainTextures.set(resourceId, previous)
+    }
+  }
   let terrainTextureRequests = 0
   let reusedTerrainTextures = 0
+  let terrainTextureAcquisitionMilliseconds = 0
+  const snapshot = (): CandidateWorldViewerModel =>
+    Object.freeze({
+      contract: identity.contract,
+      major: identity.major,
+      snapshotId: identity.snapshotId,
+      info,
+      layers: worldLayers,
+      reusedLayerKinds,
+      models: new Map(models),
+      terrainTextures: new Map(terrainTextures),
+      terrainTextureDiagnostics: Object.freeze([...terrainTextureDiagnostics]),
+      modelRequestKey,
+      modelBudget: Object.freeze({
+        maxModels,
+        maxModelBytes,
+        bytesPerModel: perModelBytes,
+        textureBytesPerModel: maxTextureTotalBytes,
+      }),
+      loadPerformance: Object.freeze({
+        coldStart: options.previous === undefined,
+        infoMilliseconds,
+        layerCatalogMilliseconds,
+        layerAcquisitionMilliseconds,
+        modelAcquisitionMilliseconds,
+        terrainTextureAcquisitionMilliseconds,
+        totalMilliseconds: elapsedInspectionMilliseconds(inspectionStartedAt),
+        layerPageRequests,
+        reusedLayers: reusedLayerKinds.length,
+        modelRequests,
+        reusedModels,
+        terrainTextureRequests,
+        reusedTerrainTextures,
+      }),
+      ...(layerPage.nextCursor === undefined ? {} : { nextLayerCursor: layerPage.nextCursor }),
+    })
+  const worldLayers = Object.freeze(
+    inspected.map(({ layer, page }) => Object.freeze({ layer, page })),
+  )
+  const reusedLayerKinds = Object.freeze(
+    inspected.filter(item => item.reused).map(item => item.layer.kind),
+  )
+  let lastProgressAt = -Infinity
+  const publish = (phase: WorldLoadProgress['phase'], completed: number, total: number) => {
+    options.signal?.throwIfAborted()
+    if (options.onProgress === undefined) return
+    // Bound render-plan rebuilds while concurrent acquisitions complete. Phase boundaries always publish.
+    const now = inspectionClock()
+    if (completed !== 0 && completed !== total && now - lastProgressAt < 500) return
+    options.onProgress(snapshot(), { phase, completed, total })
+    // Measure from the end of the consumer's work: a slow WebGL rebuild must not make the very
+    // next completed model eligible for another expensive rebuild.
+    lastProgressAt = inspectionClock()
+  }
+  publish('geometry', 0, 0)
+  publish('textures', 0, terrainTextureIds.length)
   const terrainTextureAcquisitionStartedAt = inspectionClock()
   if (source.texture !== undefined) {
     const perTextureBytes = Math.max(
@@ -400,6 +528,7 @@ export async function inspectCandidateWorld(
       Math.min(16 * 1024 * 1024, Math.floor(maxModelBytes / Math.max(1, terrainTextureIds.length))),
     )
     await forEachConcurrent(terrainTextureIds, maxConcurrentModelAcquisitions, async resourceId => {
+      options.signal?.throwIfAborted()
       const previous = options.previous?.terrainTextures?.get(resourceId)
       if (options.previous?.snapshotId === identity.snapshotId && previous !== undefined) {
         reusedTerrainTextures += 1
@@ -415,43 +544,33 @@ export async function inspectCandidateWorld(
         weightRaster === undefined ? 0 : weightRaster.width * weightRaster.height * 4,
       )
       const result = await source.texture!(resourceId, { maxBytes: requestedBytes }, options.signal)
+      options.signal?.throwIfAborted()
       terrainTextureDiagnostics.push(...result.diagnostics)
       if (result.state === 'decoded') terrainTextures.set(resourceId, result.texture)
     })
   }
-  const terrainTextureAcquisitionMilliseconds = elapsedInspectionMilliseconds(
+  terrainTextureAcquisitionMilliseconds = elapsedInspectionMilliseconds(
     terrainTextureAcquisitionStartedAt,
   )
-  return Object.freeze({
-    contract: identity.contract,
-    major: identity.major,
-    snapshotId: identity.snapshotId,
-    info,
-    layers: Object.freeze(inspected.map(({ layer, page }) => Object.freeze({ layer, page }))),
-    reusedLayerKinds: Object.freeze(
-      inspected.filter(item => item.reused).map(item => item.layer.kind),
-    ),
-    models,
-    terrainTextures,
-    terrainTextureDiagnostics: Object.freeze(terrainTextureDiagnostics),
-    modelRequestKey,
-    loadPerformance: Object.freeze({
-      coldStart: options.previous === undefined,
-      infoMilliseconds,
-      layerCatalogMilliseconds,
-      layerAcquisitionMilliseconds,
-      modelAcquisitionMilliseconds,
-      terrainTextureAcquisitionMilliseconds,
-      totalMilliseconds: elapsedInspectionMilliseconds(inspectionStartedAt),
-      layerPageRequests,
-      reusedLayers: inspected.filter(item => item.reused).length,
-      modelRequests,
-      reusedModels,
-      terrainTextureRequests,
-      reusedTerrainTextures,
-    }),
-    ...(layerPage.nextCursor === undefined ? {} : { nextLayerCursor: layerPage.nextCursor }),
-  })
+  publish('textures', terrainTextures.size, terrainTextureIds.length)
+  const modelAcquisitionStartedAt = inspectionClock()
+  if (source.model !== undefined) {
+    for (const phase of ['cliffs', 'objects'] as const) {
+      const resources = admittedResources.filter(
+        item => cliffResources.has(item.id) === (phase === 'cliffs'),
+      )
+      let completed = 0
+      publish(phase, completed, resources.length)
+      await forEachConcurrent(resources, maxConcurrentModelAcquisitions, async item => {
+        await acquireModel(item)
+        modelAcquisitionMilliseconds = elapsedInspectionMilliseconds(modelAcquisitionStartedAt)
+        publish(phase, ++completed, resources.length)
+      })
+    }
+  }
+  modelAcquisitionMilliseconds = elapsedInspectionMilliseconds(modelAcquisitionStartedAt)
+  publish('complete', admittedResources.length, requestedResources.length)
+  return snapshot()
 }
 
 interface WorldPreviewPoint {
@@ -727,6 +846,10 @@ function colorForMaterial(index: number, normalizedHeight: number): string {
   return `hsl(${hue} 34% ${lightness}%)`
 }
 
+// Picking uses the exact visible frame (including its animation clock and material inputs).
+// Reconstructing a reduced/newer input would invalidate the renderer's retained plan on click.
+const lastWorldWebGlInputs = new WeakMap<HTMLCanvasElement, WorldWebGlInput>()
+
 /** Draws a bounded game-neutral isometric scene from common terrain/world facets. */
 export function drawCandidateWorld(
   canvas: HTMLCanvasElement,
@@ -756,7 +879,10 @@ export function drawCandidateWorld(
     shadows: true,
   }
   const webGlStats = renderer?.draw(webGlInput) ?? drawWorldWebGl(canvas, webGlInput)
-  if (webGlStats !== undefined) return webGlStats
+  if (webGlStats !== undefined) {
+    lastWorldWebGlInputs.set(canvas, webGlInput)
+    return webGlStats
+  }
   const context = canvas.getContext('2d')
   if (context === null) throw new TypeError('2d canvas context is unavailable')
   const width = 720
@@ -1132,6 +1258,8 @@ export function drawCandidateWorld(
 /** Common viewer for every world publisher that implements the shared candidate source contract. */
 export interface WorldViewerModuleOptions {
   readonly localizer?: UiLocalizer
+  /** Maps can show their bounded height lattice immediately while assets load. */
+  readonly initialView?: 'lattice' | '3d'
 }
 
 /**
@@ -1159,13 +1287,43 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
     async mount(args) {
       const scope = new ViewerMountScope(args.signal)
       const root = createSurface(args.container, localizer.text('viewer.world'))
-      const stage = element(root, 'div', { part: 'model' })
-      const readout = element(stage, 'output', { part: 'model.readout' })
+      const shell = createMediaShell(root.ownerDocument, {
+        localizer,
+        ...(args.gallery === undefined ? {} : { gallery: args.gallery }),
+      })
+      root.append(shell.root)
+      scope.cleanup(() => shell.destroy())
+      if (args.gallery !== undefined) void shell.refreshGallery(scope.signal).catch(() => undefined)
+      const stage = element(shell.stage, 'div', { part: 'model' })
+      const details = shell.section('world', localizer.text('viewer.world'), { icon: 'globe' }).body
+      const readout = element(details, 'output', { part: 'model.readout' })
+      readout.setAttribute('aria-live', 'polite')
+      const toolbar = element(stage, 'div', { part: 'model.toolbar', role: 'toolbar' })
+      toolbar.setAttribute('aria-label', localizer.text('viewer.worldView'))
+      const latticeButton = element(toolbar, 'button', {
+        text: localizer.text('viewer.worldLattice'),
+      }) as HTMLButtonElement
+      const sceneButton = element(toolbar, 'button', {
+        text: localizer.text('viewer.world3d'),
+      }) as HTMLButtonElement
+      latticeButton.type = sceneButton.type = 'button'
+      latticeButton.dataset['worldView'] = 'lattice'
+      sceneButton.dataset['worldView'] = '3d'
       const canvas = element(stage, 'canvas', { part: 'model.canvas' }) as HTMLCanvasElement
+      const latticeCanvas = element(stage, 'canvas', { part: 'model.canvas' }) as HTMLCanvasElement
       canvas.width = 720
       canvas.height = 480
-      const editStatus = element(stage, 'output', { part: 'model.readout' })
-      const saveMove = element(stage, 'button', { text: 'Save selected move' }) as HTMLButtonElement
+      latticeCanvas.width = 720
+      latticeCanvas.height = 480
+      latticeCanvas.setAttribute('role', 'img')
+      latticeCanvas.setAttribute('aria-label', localizer.text('viewer.worldLattice'))
+      latticeCanvas.dataset['worldRenderer'] = 'lattice-2d'
+      const editStatus = element(details, 'output', { part: 'model.readout' })
+      const saveMove = element(details, 'button', {
+        text: localizer.text('viewer.worldSaveMove'),
+      }) as HTMLButtonElement
+      saveMove.type = 'button'
+      saveMove.disabled = true
       canvas.setAttribute('role', 'img')
       canvas.setAttribute('aria-label', localizer.text('viewer.worldPreview'))
       canvas.tabIndex = 0
@@ -1176,6 +1334,7 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
       ])
       if (lease === undefined) {
         await transportLease?.release()
+        await scope.close()
         throw new TypeError('world binding is unavailable')
       }
       scope.lease(lease)
@@ -1183,11 +1342,22 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
       let renderRevision = 0
       let descriptor = args.descriptor
       let currentModel: CandidateWorldViewerModel | undefined
+      let viewMode = options.initialView ?? '3d'
+      let latticePlan: WorldLatticePlan | undefined
+      let latticeLayers: CandidateWorldViewerModel['layers'] | undefined
+      let loading = false
+      const phaseKeys = {
+        geometry: 'viewer.worldLoadingGeometry',
+        textures: 'viewer.worldLoadingTextures',
+        cliffs: 'viewer.worldLoadingCliffs',
+        objects: 'viewer.worldLoadingObjects',
+        complete: 'viewer.worldLoaded',
+      } as const
       let edit = createWorldEditState(descriptor.revision)
       let camera = DEFAULT_WORLD_WEBGL_CAMERA
       const animationEpochs = new Map<number, number>()
       const view = canvas.ownerDocument.defaultView
-      const webGlRenderer = createWorldWebGlRenderer(canvas)
+      let webGlRenderer: WorldWebGlRenderer | undefined
       const worldEpoch = (view?.performance.now() ?? Date.now()) / 1000
       let animationFrame: number | undefined
       const currentWorldTime = () => (view?.performance.now() ?? Date.now()) / 1000 - worldEpoch
@@ -1212,8 +1382,12 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
             item.resourceId === undefined ? undefined : currentModel.models?.get(item.resourceId)
           if (
             result?.state !== 'converted' ||
-            !(result.animations?.some(clip => clip.kind === 'animation' && clip.channels.length > 0) ||
-              (item.presentationAnimation !== undefined && (result.animations?.length ?? 0) > 0))
+            !(
+              result.animations?.some(
+                clip => clip.kind === 'animation' && clip.channels.length > 0,
+              ) ||
+              (item.presentationAnimation !== undefined && (result.animations?.length ?? 0) > 0)
+            )
           )
             continue
           const epoch = animationEpochs.get(item.objectId) ?? now
@@ -1225,16 +1399,36 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
         return times
       }
       const redraw = () => {
-        if (currentModel !== undefined)
-          drawCandidateWorld(
-            canvas,
-            currentModel,
-            edit,
-            camera,
-            currentAnimationTimes(),
-            currentWorldTime(),
-            webGlRenderer,
-          )
+        canvas.hidden = viewMode !== '3d'
+        latticeCanvas.hidden = viewMode !== 'lattice'
+        latticeButton.setAttribute('aria-pressed', String(viewMode === 'lattice'))
+        sceneButton.setAttribute('aria-pressed', String(viewMode === '3d'))
+        if (currentModel !== undefined) {
+          if (viewMode === 'lattice') {
+            if (latticeLayers !== currentModel.layers) {
+              latticePlan = createWorldLatticePlan(
+                currentModel.layers.flatMap(layer => layer.page.items),
+              )
+              latticeLayers = currentModel.layers
+            }
+            if (latticePlan !== undefined)
+              drawWorldLattice(latticeCanvas, latticePlan, edit.selectedObjectId)
+          } else {
+            webGlRenderer ??= createWorldWebGlRenderer(canvas)
+            const stats = drawCandidateWorld(
+              canvas,
+              currentModel,
+              edit,
+              camera,
+              currentAnimationTimes(),
+              currentWorldTime(),
+              webGlRenderer,
+            )
+            canvas.dataset['worldRenderer'] = webGlRenderer === undefined ? 'isometric-2d' : 'webgl'
+            canvas.dataset['worldModelTriangles'] = String(stats.modelTriangles)
+            canvas.dataset['worldPlaceholders'] = String(stats.diagnosticPlaceholders)
+          }
+        }
         setViewerText(editStatus, edit.message ?? (edit.status === 'preview' ? 'Move preview' : ''))
         saveMove.disabled = edit.status !== 'preview'
       }
@@ -1242,6 +1436,8 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
         const requestFrame = view?.requestAnimationFrame.bind(view)
         const cancelFrame = view?.cancelAnimationFrame.bind(view)
         if (
+          viewMode !== '3d' ||
+          loading ||
           (currentAnimationTimes().size === 0 && !hasAnimatedWater()) ||
           requestFrame === undefined
         ) {
@@ -1259,7 +1455,10 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
       }
       const render = async () => {
         const revision = ++renderRevision
+        loading = true
+        syncAnimationLoop()
         setState(stage, ['loading'])
+        setViewerText(readout, localizer.text('viewer.worldLoadingGeometry'))
         let model: CandidateWorldViewerModel
         try {
           model = await inspectCandidateWorld(lease.value as WorldSceneSource, {
@@ -1268,11 +1467,21 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
             maxPageItems: WORLD_VIEWER_MAX_PAGE_ITEMS,
             signal: scope.signal,
             ...(currentModel === undefined ? {} : { previous: currentModel }),
+            onProgress(model, progress) {
+              if (revision !== renderRevision || scope.signal.aborted) return
+              currentModel = model
+              stage.dataset['worldLoadingPhase'] = progress.phase
+              setViewerText(
+                readout,
+                `${localizer.text(phaseKeys[progress.phase])} · ${progress.completed}/${progress.total}`,
+              )
+              redraw()
+            },
           })
         } catch (error) {
           if (revision !== renderRevision || scope.signal.aborted) return
+          loading = false
           setState(stage, ['error'])
-          canvas.hidden = true
           setViewerText(
             readout,
             localizer.text('viewer.worldError', {
@@ -1282,6 +1491,7 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
           return
         }
         if (revision !== renderRevision || scope.signal.aborted) return
+        loading = false
         currentModel = model
         if (edit.selectedObjectId !== undefined) {
           const refreshed = model.layers
@@ -1294,8 +1504,10 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
         }
         const available = model.layers.filter(layer => layer.page.state === 'available')
         const itemCount = available.reduce((total, layer) => total + layer.page.items.length, 0)
+        const modelAssets = worldModelAssetStatus(model)
         const partial =
           model.nextLayerCursor !== undefined ||
+          modelAssets.partial ||
           model.layers.some(
             layer => layer.page.nextCursor !== undefined || layer.layer.state !== 'available',
           )
@@ -1306,9 +1518,9 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
             layers: available.length,
             items: itemCount,
             bounded: partial ? localizer.text('viewer.boundedPreview') : '',
-          }),
+          }) +
+            ` · ${String(modelAssets.converted)}/${String(modelAssets.total)} ${localizer.text('viewer.modelResources')}`,
         )
-        canvas.hidden = itemCount === 0
         if (itemCount > 0) redraw()
         if (itemCount === 0) {
           setViewerText(readout, localizer.text('viewer.worldEmpty'))
@@ -1316,6 +1528,40 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
         setState(stage, [])
         syncAnimationLoop()
       }
+
+      const setViewMode = (mode: 'lattice' | '3d') => {
+        viewMode = mode
+        redraw()
+        syncAnimationLoop()
+      }
+      const onLattice = () => setViewMode('lattice')
+      const onScene = () => setViewMode('3d')
+      latticeButton.addEventListener('click', onLattice)
+      sceneButton.addEventListener('click', onScene)
+      redraw()
+      const resizeObserver =
+        typeof ResizeObserver === 'undefined'
+          ? undefined
+          : new ResizeObserver(() => {
+              const activeCanvas = viewMode === '3d' ? canvas : latticeCanvas
+              const rect = activeCanvas.getBoundingClientRect()
+              if (rect.width <= 0 || rect.height <= 0) return
+              const density = Math.min(2, view?.devicePixelRatio ?? 1)
+              const width = Math.max(1, Math.min(2048, Math.round(rect.width * density)))
+              const height = Math.max(1, Math.min(2048, Math.round(rect.height * density)))
+              if (
+                canvas.width === width &&
+                canvas.height === height &&
+                latticeCanvas.width === width &&
+                latticeCanvas.height === height
+              )
+                return
+              canvas.width = latticeCanvas.width = width
+              canvas.height = latticeCanvas.height = height
+              redraw()
+            })
+      resizeObserver?.observe(stage)
+      scope.cleanup(() => resizeObserver?.disconnect())
 
       const onPointer = (event: PointerEvent) => {
         if (event.button !== 0 || event.altKey) return
@@ -1326,20 +1572,22 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
         if (objects.length === 0) return
         const rect = canvas.getBoundingClientRect()
         const worldItems = currentModel.layers.flatMap(layer => layer.page.items)
-        const hit = pickWorldWebGl(
-          {
-            items: worldItems,
-            ...(currentModel.models === undefined ? {} : { models: currentModel.models }),
-            camera,
-            animationTimes: currentAnimationTimes(),
-          },
-          {
-            x: ((event.clientX - rect.left) / Math.max(1, rect.width)) * canvas.width,
-            y: ((event.clientY - rect.top) / Math.max(1, rect.height)) * canvas.height,
-            width: canvas.width,
-            height: canvas.height,
-          },
-        )
+        const pickInput = lastWorldWebGlInputs.get(canvas) ?? {
+          items: worldItems,
+          ...(currentModel.models === undefined ? {} : { models: currentModel.models }),
+          camera,
+          animationTimes: currentAnimationTimes(),
+        }
+        const screen = {
+          x: ((event.clientX - rect.left) / Math.max(1, rect.width)) * canvas.width,
+          y: ((event.clientY - rect.top) / Math.max(1, rect.height)) * canvas.height,
+          width: canvas.width,
+          height: canvas.height,
+        }
+        const hit =
+          webGlRenderer === undefined
+            ? pickWorldWebGl(pickInput, screen)
+            : webGlRenderer.pick(pickInput, screen)
         edit = selectWorldObject(
           edit,
           hit?.kind === 'object' ? objects.find(item => item.objectId === hit.objectId) : undefined,
@@ -1448,6 +1696,8 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
       canvas.addEventListener('keydown', onKey)
       saveMove.addEventListener('click', onSave)
       scope.cleanup(() => {
+        latticeButton.removeEventListener('click', onLattice)
+        sceneButton.removeEventListener('click', onScene)
         webGlRenderer?.dispose()
         if (animationFrame !== undefined) view?.cancelAnimationFrame(animationFrame)
         canvas.removeEventListener('pointerdown', onPointer)
@@ -1461,13 +1711,13 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
         saveMove.removeEventListener('click', onSave)
       })
 
-      await render()
-      if (transportLease !== undefined) {
-        void watchTransportedWorld(
-          transportLease.value as TransportSource,
-          render,
-          scope.signal,
-        ).catch(error => {
+      // Return the mount immediately: closing/switching views must be able to cancel asset loading.
+      void render()
+        .then(async () => {
+          if (transportLease === undefined || scope.signal.aborted) return
+          await watchTransportedWorld(transportLease.value as TransportSource, render, scope.signal)
+        })
+        .catch(error => {
           if (scope.signal.aborted) return
           setState(stage, ['error'])
           canvas.hidden = true
@@ -1478,7 +1728,6 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
             }),
           )
         })
-      }
 
       return createViewerMount(root, scope, args, ({ descriptor: nextDescriptor }) => {
         const changed = nextDescriptor.revision !== edit.sourceRevision

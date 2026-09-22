@@ -6,32 +6,14 @@ import { validateUvmDocument } from '@modkit/uv/model/validation'
 import type { UvwEmbeddedModelDecoder } from '@modkit/uv/world'
 
 import { readUvmFacets } from '../uvm/facets.js'
+import { prepareUvmImages, uvmImageResourceId, uvmImageTexels } from '../uvm/images.js'
 import { readUvmModel } from '../uvm/model.js'
 
 function positive(value: number | undefined, fallback: number): number {
   const result = value ?? fallback
-  if (!Number.isSafeInteger(result) || result <= 0) throw new TypeError('invalid embedded UVM budget')
+  if (!Number.isSafeInteger(result) || result <= 0)
+    throw new TypeError('invalid embedded UVM budget')
   return result
-}
-
-function texture(
-  id: string,
-  decoded: Awaited<ReturnType<RasterResourcePort['read']>>,
-): SceneRendererTexture | undefined {
-  if (decoded.state !== 'decoded' || decoded.info.orientation === 'unknown') return undefined
-  const rowBytes = decoded.region.width * 4
-  const rgba = new Uint8Array(rowBytes * decoded.region.height)
-  for (let y = 0; y < decoded.region.height; y += 1) {
-    const sourceY = decoded.info.orientation === 'bottom-left' ? decoded.region.height - 1 - y : y
-    rgba.set(
-      decoded.region.pixels.subarray(
-        sourceY * decoded.region.rowStride,
-        sourceY * decoded.region.rowStride + rowBytes,
-      ),
-      y * rowBytes,
-    )
-  }
-  return Object.freeze({ id, width: decoded.region.width, height: decoded.region.height, rgba })
 }
 
 /** Decode one package-owned UVM without native codecs, CASC, WZ or filesystem lookup. External
@@ -69,7 +51,8 @@ export function createEmbeddedUvmWorldModelDecoder(
       signal,
     )
     if (model.scene.nodes.length > maxNodes) throw new RangeError('embedded UVM exceeds maxNodes')
-    if (model.scene.meshes.length > request.maxMeshes) throw new RangeError('embedded UVM exceeds maxMeshes')
+    if (model.scene.meshes.length > request.maxMeshes)
+      throw new RangeError('embedded UVM exceeds maxMeshes')
     if (model.scene.primitives.length > request.maxPrimitives)
       throw new RangeError('embedded UVM exceeds maxPrimitives')
     for (const primitive of model.scene.primitives) {
@@ -82,7 +65,8 @@ export function createEmbeddedUvmWorldModelDecoder(
         (primitive.textureCoordinates?.byteLength ?? 0) +
         (primitive.boneIndices?.byteLength ?? 0) +
         (primitive.boneWeights?.byteLength ?? 0)
-      if (bytes > maxPrimitiveBytes) throw new RangeError('embedded UVM primitive exceeds maxPrimitiveBytes')
+      if (bytes > maxPrimitiveBytes)
+        throw new RangeError('embedded UVM primitive exceeds maxPrimitiveBytes')
     }
     const facets = readUvmFacets(
       container.document,
@@ -97,47 +81,73 @@ export function createEmbeddedUvmWorldModelDecoder(
     let textureBytes = 0
     if (Array.isArray(images)) {
       if (images.length > maxResources) throw new RangeError('embedded UVM exceeds maxResources')
-      for (const [index, candidate] of images.entries()) {
+      const prepared = prepareUvmImages(
+        container.document,
+        container.binary,
+        images.map((_, index) => index),
+        maxBytes,
+        signal,
+      )
+      for (const { image: index, source } of prepared) {
         signal?.throwIfAborted()
+        const candidate = images[index]
         if (typeof candidate !== 'object' || candidate === null || Array.isArray(candidate))
           throw new TypeError(`embedded UVM image ${String(index)} is invalid`)
         const image = candidate as { readonly uri?: unknown; readonly name?: unknown }
-        if (typeof image.uri !== 'string') continue
-        const id = typeof image.name === 'string' && image.name.length > 0 ? image.name : image.uri
-        resources.push(Object.freeze({ id, role: 'texture' as const, provenance: 'companion' as const }))
-        const embedded = input.mediaByUri.get(image.uri)
+        const id = uvmImageResourceId(container.document, index)
+        resources.push(
+          Object.freeze({ id, role: 'texture' as const, provenance: 'companion' as const }),
+        )
+        // Only consult the package table for logical resources. Never forward a URI to the host.
+        const embedded =
+          source.kind === 'embedded'
+            ? source
+            : typeof image.uri === 'string'
+              ? input.mediaByUri.get(image.uri)
+              : undefined
         if (embedded === undefined || rasterResources === undefined) {
-          diagnostics.push(diagnostic(
-            'warning',
-            'x3.scene/embedded-uvm-texture-unavailable',
-            `embedded UVM texture ${image.uri} is not available in its UVP media table`,
-          ))
+          diagnostics.push(
+            diagnostic(
+              'warning',
+              'x3.scene/embedded-uvm-texture-unavailable',
+              `embedded UVM texture ${id} has no package-owned bytes or raster decoder`,
+            ),
+          )
           continue
         }
         if (embedded.bytes.byteLength > maxTextureBytes)
-          throw new RangeError(`embedded UVM texture ${image.uri} exceeds maxTextureBytes`)
+          throw new RangeError(`embedded UVM texture ${id} exceeds maxTextureBytes`)
         const decoded = await rasterResources.read(
           {
             kind: 'embedded',
             bytes: embedded.bytes,
             ...(embedded.mediaType === undefined ? {} : { mediaType: embedded.mediaType }),
-            maxBytes: maxTextureBytes,
+            maxBytes: Math.min(maxTextureBytes, maxTextureTotalBytes - textureBytes),
           },
           signal,
         )
-        const value = texture(id, decoded)
-        if (value === undefined) {
-          diagnostics.push(diagnostic(
-            'warning',
-            'x3.scene/embedded-uvm-texture-undecoded',
-            `embedded UVM texture ${image.uri} could not be normalized to top-left RGBA8`,
-          ))
+        signal?.throwIfAborted()
+        diagnostics.push(...decoded.diagnostics)
+        if (decoded.state !== 'decoded' || decoded.info.orientation === 'unknown') {
+          diagnostics.push(
+            diagnostic(
+              'warning',
+              'x3.scene/embedded-uvm-texture-undecoded',
+              `embedded UVM texture ${id} could not be normalized to top-left RGBA8`,
+            ),
+          )
           continue
         }
-        textureBytes += value.rgba.byteLength
-        if (textureBytes > maxTextureTotalBytes)
+        const decodedBytes = decoded.info.width * decoded.info.height * 4
+        if (decodedBytes > maxTextureBytes || decodedBytes > maxTextureTotalBytes - textureBytes)
           throw new RangeError('embedded UVM textures exceed maxTextureTotalBytes')
-        textures.push(value)
+        // These resources include packed normal/specular channels as well as color images.
+        // Preserve their channel values; material presentation owns their interpretation.
+        const rgba = uvmImageTexels(decoded, { channels: 'data' })
+        textureBytes += rgba.byteLength
+        textures.push(
+          Object.freeze({ id, width: decoded.info.width, height: decoded.info.height, rgba }),
+        )
       }
     }
     return Object.freeze({

@@ -230,8 +230,10 @@ async function prepareUvmRender(
     rasterResources === undefined ||
     (textureDeclarations.length === 0 &&
       !hasEffectTextures &&
+      // A material states its textures either as a game material or as the neutral layer list
+      // every model facet writes; both need the raster budget, and neither is a glTF texture.
       !array(document, 'materials').some(
-        material => field(field(material, 'extensions'), 'UV_game_material') !== undefined,
+        material => uvmMaterialShader(object(material, 'material')) !== undefined,
       ))
       ? 0
       : Math.floor(sceneAvailable / 3)

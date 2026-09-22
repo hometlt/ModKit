@@ -3,7 +3,7 @@
 // programs and pick meshes from a saved payload (MODKIT_WORLD_PAYLOAD_OUT).
 //
 //   node --cpu-prof --cpu-prof-dir <dir> scripts/bench-world-plan.mjs --payload <dir> [--time 3] [--runs 2]
-import { readFileSync } from 'node:fs'
+import { readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { parseArgs } from 'node:util'
@@ -16,6 +16,9 @@ const { values } = parseArgs({
     payload: { type: 'string' },
     time: { type: 'string', default: '0' },
     runs: { type: 'string', default: '2' },
+    steps: { type: 'string', default: '0' },
+    prof: { type: 'string' },
+    step: { type: 'string', default: '0.1' },
   },
 })
 if (values.payload === undefined) throw new TypeError('--payload is required')
@@ -48,10 +51,33 @@ let started = performance.now()
 const payload = revive(JSON.parse(readFileSync(join(payloadDir, 'world.json'), 'utf8')))
 console.log(`[bench-world-plan] load ${Math.round(performance.now() - started)} ms`)
 const timeSeconds = Number(values.time)
+let plan
 for (let run = 0; run < Number(values.runs); run += 1) {
   started = performance.now()
-  const plan = createWorldWebGlPlan({ ...payload, timeSeconds })
+  plan = createWorldWebGlPlan({ ...payload, timeSeconds })
   console.log(
     `[bench-world-plan] plan ${run}: ${Math.round(performance.now() - started)} ms, objects ${plan.stats.objectInstances}, model triangles ${plan.stats.modelTriangles}, material scenes ${plan.modelMaterialScenes.length}`,
   )
+}
+// Animated steady state: the previous plan is passed back, so static preparation is reused and only
+// the dynamic update is timed. This is the 3 s the handoff attributes to dynamic plan updates.
+const steps = Number(values.steps)
+// --prof profiles ONLY the dynamic loop, so the full build above cannot blur the attribution.
+let session
+if (values.prof !== undefined && steps > 0) {
+  const { Session } = await import('node:inspector/promises')
+  session = new Session()
+  session.connect()
+  await session.post('Profiler.enable')
+  await session.post('Profiler.start')
+}
+for (let step = 1; step <= steps; step += 1) {
+  started = performance.now()
+  plan = createWorldWebGlPlan({ ...payload, timeSeconds: timeSeconds + step * Number(values.step) }, plan)
+  console.log(`[bench-world-plan] dynamic ${step}: ${Math.round(performance.now() - started)} ms`)
+}
+if (session !== undefined) {
+  const { profile } = await session.post('Profiler.stop')
+  writeFileSync(resolve(values.prof), JSON.stringify(profile))
+  console.log(`[bench-world-plan] dynamic cpu profile -> ${resolve(values.prof)}`)
 }

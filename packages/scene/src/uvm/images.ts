@@ -1,12 +1,24 @@
 import type { JsonObject, RasterResourceRequest, RasterResourceResult } from '@modkit/sdk'
 import { array, object, safeIndex, string } from './values.js'
 
-export interface UvmTextureImage {
-  readonly texture: number
+export interface UvmImage {
   readonly image: number
   readonly source:
     | Omit<Extract<RasterResourceRequest, { kind: 'embedded' }>, 'maxBytes'>
     | Omit<Extract<RasterResourceRequest, { kind: 'logical' }>, 'maxBytes'>
+}
+
+export interface UvmTextureImage extends UvmImage {
+  readonly texture: number
+}
+
+/** Shared identity for a material layer and its package-owned decoded image. */
+export function uvmImageResourceId(document: JsonObject, index: number): string {
+  const images = array(document, 'images')
+  const image = object(images[safeIndex(index, images.length, 'image')], 'image')
+  if (typeof image['name'] === 'string' && image['name'].length > 0) return image['name']
+  if (typeof image['uri'] === 'string' && !image['uri'].startsWith('data:')) return image['uri']
+  return `uvm-image-${index}`
 }
 
 /** Snapshot referenced image payloads before asynchronous host acquisition. No URI is opened here. */
@@ -17,17 +29,34 @@ export function prepareUvmTextureImages(
   maxEmbeddedBytes: number,
   signal?: AbortSignal,
 ): readonly UvmTextureImage[] {
+  const textures = array(document, 'textures'),
+    images = array(document, 'images')
+  const imageIndices = indices.map(textureIndex => {
+    const texture = object(textures[safeIndex(textureIndex, textures.length, 'texture')], 'texture')
+    return safeIndex(texture['source'], images.length, 'texture image')
+  })
+  return prepareUvmImages(document, binary, imageIndices, maxEmbeddedBytes, signal).map(
+    (image, index) => Object.freeze({ ...image, texture: indices[index]! }),
+  )
+}
+
+/** Shared image acquisition for standalone models and models embedded in worlds. */
+export function prepareUvmImages(
+  document: JsonObject,
+  binary: Uint8Array,
+  indices: readonly number[],
+  maxEmbeddedBytes: number,
+  signal?: AbortSignal,
+): readonly UvmImage[] {
   if (!Number.isSafeInteger(maxEmbeddedBytes) || maxEmbeddedBytes < 0)
     throw new TypeError('invalid image budget')
-  const textures = array(document, 'textures'),
-    images = array(document, 'images'),
+  const images = array(document, 'images'),
     views = array(document, 'bufferViews')
-  const captured = new Map<number, UvmTextureImage['source']>()
+  const captured = new Map<number, UvmImage['source']>()
   let remaining = maxEmbeddedBytes
-  return indices.map(textureIndex => {
+  return indices.map(index => {
     signal?.throwIfAborted()
-    const texture = object(textures[safeIndex(textureIndex, textures.length, 'texture')], 'texture')
-    const imageIndex = safeIndex(texture['source'], images.length, 'texture image')
+    const imageIndex = safeIndex(index, images.length, 'image')
     let source = captured.get(imageIndex)
     if (source === undefined) {
       const image = object(images[imageIndex], 'image')
@@ -121,7 +150,7 @@ export function prepareUvmTextureImages(
       }
       captured.set(imageIndex, source)
     }
-    return Object.freeze({ texture: textureIndex, image: imageIndex, source })
+    return Object.freeze({ image: imageIndex, source })
   })
 }
 
