@@ -1,4 +1,5 @@
 {
+  "command.verifyDocument": "Modkit: Verify Document",
   "view.gallery": "Image Gallery",
   "command.contentSources": "Modkit: Content Sources (local / providers)…",
   "command.openContentSource": "Mount Content Source",
@@ -68,5 +69,9 @@
   "command.syncEditorAssociations": "Modkit: Sync Editor Associations With Codec Settings",
   "configuration.nonDefaultContributions.description": "Contribution ids that stay enabled but do NOT become the default editor for their formats. An enabled codec is the default viewer for the formats it claims; listing it here keeps the codec working while the built-in editor stays the default. Modkit only ever removes associations it added itself, so an \"Open With → Set Default\" chosen in VS Code is never overwritten.",
   "configuration.defaultEditorForTextFormats.description": "Also make Modkit the default editor for text-first formats (txt, xml, json, md, csv, ini, yaml, galaxy, sc2layout and the rest of that list). Off by default: those open in an editor people type into, and taking that over on install would replace editing with viewing. Modkit is always reachable for them through \"Reopen Editor With\".",
-  "configuration.managedEditorAssociations.description": "The `workbench.editorAssociations` patterns Modkit wrote. Modkit removes only these, never an association you set yourself. Edited automatically; listed here so what the extension changed is visible."
+  "configuration.managedEditorAssociations.description": "The `workbench.editorAssociations` patterns Modkit wrote. Modkit removes only these, never an association you set yourself. Edited automatically; listed here so what the extension changed is visible.",
+  "command.addPublicSource": "Add a published mod…",
+  "command.downloadSource": "Download",
+  "command.clearSourceCache": "Remove local copy",
+  "command.detachSource": "Detach mod"
 }

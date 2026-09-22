@@ -178,6 +178,26 @@
       "title": "%command.openWorkbench%"
     },
     {
+      "command": "modkit.sources.addPublic",
+      "title": "%command.addPublicSource%",
+      "icon": "$(add)"
+    },
+    {
+      "command": "modkit.sources.clearCache",
+      "title": "%command.clearSourceCache%",
+      "icon": "$(trash)"
+    },
+    {
+      "command": "modkit.sources.detach",
+      "title": "%command.detachSource%",
+      "icon": "$(close)"
+    },
+    {
+      "command": "modkit.sources.download",
+      "title": "%command.downloadSource%",
+      "icon": "$(cloud-download)"
+    },
+    {
       "command": "modkit.sources.open",
       "title": "%command.openContentSource%",
       "icon": "$(plug)"
@@ -220,6 +240,12 @@
       "command": "modkit.unloadSource",
       "title": "%command.unloadContentSource%",
       "icon": "$(trash)"
+    },
+    {
+      "command": "modkit.verifyDocument",
+      "title": "%command.verifyDocument%",
+      "icon": "$(check)",
+      "enablement": "modkit.canVerifyDocument"
     }
   ],
   "configuration": {
@@ -411,7 +437,29 @@
     }
   ],
   "menus": {
+    "editor/title": [
+      {
+        "command": "modkit.verifyDocument",
+        "when": "modkit.canVerifyDocument",
+        "group": "navigation@4"
+      }
+    ],
     "explorer/context": [
+      {
+        "command": "modkit.sources.clearCache",
+        "when": "resourceScheme == modkit-source",
+        "group": "navigation@22"
+      },
+      {
+        "command": "modkit.sources.detach",
+        "when": "resourceScheme == modkit-source",
+        "group": "navigation@23"
+      },
+      {
+        "command": "modkit.sources.download",
+        "when": "resourceScheme == modkit-source",
+        "group": "navigation@21"
+      },
       {
         "command": "modkit.sources.revealLocal",
         "when": "resourceScheme == modkit-source || resourceScheme == modkit-container",
@@ -550,6 +598,11 @@
         "command": "modkit.selectGameInstallation",
         "when": "view == modkit.sources",
         "group": "navigation@2"
+      },
+      {
+        "command": "modkit.sources.addPublic",
+        "when": "view == modkit.sources",
+        "group": "navigation@0"
       },
       {
         "command": "modkit.sources.refresh",

@@ -2,6 +2,12 @@
   "schemaVersion": 1,
   "commands": [
     {
+      "command": "modkit.verifyDocument",
+      "title": "%command.verifyDocument%",
+      "icon": "$(check)",
+      "enablement": "modkit.canVerifyDocument"
+    },
+    {
       "command": "modkit.contentSources",
       "title": "%command.contentSources%",
       "icon": "$(remote-explorer)"
@@ -221,6 +227,26 @@
       "command": "modkit.sources.signOut",
       "title": "%command.signOutBattleNet%",
       "icon": "$(sign-out)"
+    },
+    {
+      "command": "modkit.sources.addPublic",
+      "title": "%command.addPublicSource%",
+      "icon": "$(add)"
+    },
+    {
+      "command": "modkit.sources.download",
+      "title": "%command.downloadSource%",
+      "icon": "$(cloud-download)"
+    },
+    {
+      "command": "modkit.sources.clearCache",
+      "title": "%command.clearSourceCache%",
+      "icon": "$(trash)"
+    },
+    {
+      "command": "modkit.sources.detach",
+      "title": "%command.detachSource%",
+      "icon": "$(close)"
     }
   ],
   "configuration": {
@@ -486,11 +512,33 @@
     ]
   },
   "menus": {
+    "editor/title": [
+      {
+        "command": "modkit.verifyDocument",
+        "when": "modkit.canVerifyDocument",
+        "group": "navigation@4"
+      }
+    ],
     "explorer/context": [
       {
         "command": "modkit.sources.revealLocal",
         "when": "resourceScheme == modkit-source || resourceScheme == modkit-container",
         "group": "navigation@20"
+      },
+      {
+        "command": "modkit.sources.download",
+        "when": "resourceScheme == modkit-source",
+        "group": "navigation@21"
+      },
+      {
+        "command": "modkit.sources.clearCache",
+        "when": "resourceScheme == modkit-source",
+        "group": "navigation@22"
+      },
+      {
+        "command": "modkit.sources.detach",
+        "when": "resourceScheme == modkit-source",
+        "group": "navigation@23"
       }
     ],
     "view/title": [
@@ -522,6 +570,11 @@
       {
         "command": "modkit.resources.toggleChain",
         "when": "view == modkit.resources",
+        "group": "navigation@0"
+      },
+      {
+        "command": "modkit.sources.addPublic",
+        "when": "view == modkit.sources",
         "group": "navigation@0"
       }
     ],

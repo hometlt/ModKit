@@ -3,12 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
-    }
-  },
+  "exports": { ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" } },
   "files": [
     "contributes.generated.json",
     "package.nls.json",
@@ -52,45 +47,26 @@
   "displayName": "%extension.displayName%",
   "description": "%extension.description%",
   "publisher": "modkit",
-  "engines": {
-    "vscode": "^1.125.0"
-  },
+  "engines": { "vscode": "^1.125.0" },
   "main": "./dist-app/extension.cjs",
-  "categories": [
-    "Other"
-  ],
+  "categories": ["Other"],
   "contributes": {
     "commands": [
-      {
-        "command": "modkit.addExtensionFolder",
-        "title": "%command.addExtensionFolder%"
-      },
-      {
-        "command": "modkit.browseContainer",
-        "title": "%command.browseContainer%"
-      },
+      { "command": "modkit.addExtensionFolder", "title": "%command.addExtensionFolder%" },
+      { "command": "modkit.browseContainer", "title": "%command.browseContainer%" },
       {
         "command": "modkit.contentSources",
         "title": "%command.contentSources%",
         "icon": "$(remote-explorer)"
       },
-      {
-        "command": "modkit.explainResolution",
-        "title": "%command.explainResolution%"
-      },
-      {
-        "command": "modkit.exportDiagnostics",
-        "title": "%command.exportDiagnostics%"
-      },
+      { "command": "modkit.explainResolution", "title": "%command.explainResolution%" },
+      { "command": "modkit.exportDiagnostics", "title": "%command.exportDiagnostics%" },
       {
         "command": "modkit.extensions.completeGameSupport",
         "title": "%command.completeGameSupport%",
         "icon": "$(tools)"
       },
-      {
-        "command": "modkit.extensions.disable",
-        "title": "%command.disableExtension%"
-      },
+      { "command": "modkit.extensions.disable", "title": "%command.disableExtension%" },
       {
         "command": "modkit.extensions.disableAllCodecs",
         "title": "%command.disableAllCodecs%",
@@ -101,10 +77,7 @@
         "title": "%command.disableCodec%",
         "icon": "$(circle-slash)"
       },
-      {
-        "command": "modkit.extensions.enable",
-        "title": "%command.enableExtension%"
-      },
+      { "command": "modkit.extensions.enable", "title": "%command.enableExtension%" },
       {
         "command": "modkit.extensions.enableAllCodecs",
         "title": "%command.enableAllCodecs%",
@@ -115,10 +88,7 @@
         "title": "%command.enableCodec%",
         "icon": "$(check)"
       },
-      {
-        "command": "modkit.extensions.install",
-        "title": "%command.installExtension%"
-      },
+      { "command": "modkit.extensions.install", "title": "%command.installExtension%" },
       {
         "command": "modkit.extensions.installAll",
         "title": "%command.installAllExtensions%",
@@ -133,14 +103,8 @@
         "command": "modkit.extensions.openContribution",
         "title": "%command.openContributionCard%"
       },
-      {
-        "command": "modkit.extensions.openExtension",
-        "title": "%command.openExtensionCard%"
-      },
-      {
-        "command": "modkit.extensions.refresh",
-        "title": "%command.refreshExtensionCatalog%"
-      },
+      { "command": "modkit.extensions.openExtension", "title": "%command.openExtensionCard%" },
+      { "command": "modkit.extensions.refresh", "title": "%command.refreshExtensionCatalog%" },
       {
         "command": "modkit.extensions.remove",
         "title": "%command.removeExtension%",
@@ -161,34 +125,16 @@
         "title": "%command.updateExtension%",
         "icon": "$(sync)"
       },
-      {
-        "command": "modkit.game.launchActiveMap",
-        "title": "%command.launchActiveMap%"
-      },
+      { "command": "modkit.game.launchActiveMap", "title": "%command.launchActiveMap%" },
       {
         "command": "modkit.materializeContainerEntry",
         "title": "%command.materializeContainerMember%"
       },
-      {
-        "command": "modkit.navigateResource",
-        "title": "%command.navigateResource%"
-      },
-      {
-        "command": "modkit.openArchiveEntry",
-        "title": "%command.openContainerMember%"
-      },
-      {
-        "command": "modkit.openWith",
-        "title": "%command.openActiveFile%"
-      },
-      {
-        "command": "modkit.refreshContainer",
-        "title": "%command.refreshContainer%"
-      },
-      {
-        "command": "modkit.refreshRelations",
-        "title": "%command.refreshRelations%"
-      },
+      { "command": "modkit.navigateResource", "title": "%command.navigateResource%" },
+      { "command": "modkit.openArchiveEntry", "title": "%command.openContainerMember%" },
+      { "command": "modkit.openWith", "title": "%command.openActiveFile%" },
+      { "command": "modkit.refreshContainer", "title": "%command.refreshContainer%" },
+      { "command": "modkit.refreshRelations", "title": "%command.refreshRelations%" },
       {
         "command": "modkit.resources.open",
         "title": "%command.openResourceNode%",
@@ -209,34 +155,32 @@
         "title": "%command.toggleResourceChain%",
         "icon": "$(layers)"
       },
-      {
-        "command": "modkit.runCommand",
-        "title": "%command.runCommand%"
-      },
-      {
-        "command": "modkit.runtime.control",
-        "title": "%command.controlRuntime%"
-      },
-      {
-        "command": "modkit.searchContainer",
-        "title": "%command.searchContainer%"
-      },
+      { "command": "modkit.runCommand", "title": "%command.runCommand%" },
+      { "command": "modkit.runtime.control", "title": "%command.controlRuntime%" },
+      { "command": "modkit.searchContainer", "title": "%command.searchContainer%" },
       {
         "command": "modkit.selectGameInstallation",
         "title": "%command.selectGameInstallation%",
         "icon": "$(folder-library)"
       },
+      { "command": "modkit.setCodecDefaultEditor", "title": "%command.setCodecDefaultEditor%" },
+      { "command": "modkit.showDiagnostics", "title": "%command.showDiagnostics%" },
+      { "command": "modkit.showHostProfile", "title": "%command.openWorkbench%" },
       {
-        "command": "modkit.setCodecDefaultEditor",
-        "title": "%command.setCodecDefaultEditor%"
+        "command": "modkit.sources.addPublic",
+        "title": "%command.addPublicSource%",
+        "icon": "$(add)"
       },
       {
-        "command": "modkit.showDiagnostics",
-        "title": "%command.showDiagnostics%"
+        "command": "modkit.sources.clearCache",
+        "title": "%command.clearSourceCache%",
+        "icon": "$(trash)"
       },
+      { "command": "modkit.sources.detach", "title": "%command.detachSource%", "icon": "$(close)" },
       {
-        "command": "modkit.showHostProfile",
-        "title": "%command.openWorkbench%"
+        "command": "modkit.sources.download",
+        "title": "%command.downloadSource%",
+        "icon": "$(cloud-download)"
       },
       {
         "command": "modkit.sources.open",
@@ -273,14 +217,17 @@
         "title": "%command.unmountContentSource%",
         "icon": "$(debug-disconnect)"
       },
-      {
-        "command": "modkit.syncEditorAssociations",
-        "title": "%command.syncEditorAssociations%"
-      },
+      { "command": "modkit.syncEditorAssociations", "title": "%command.syncEditorAssociations%" },
       {
         "command": "modkit.unloadSource",
         "title": "%command.unloadContentSource%",
         "icon": "$(trash)"
+      },
+      {
+        "command": "modkit.verifyDocument",
+        "title": "%command.verifyDocument%",
+        "icon": "$(check)",
+        "enablement": "modkit.canVerifyDocument"
       }
     ],
     "configuration": {
@@ -298,17 +245,13 @@
         },
         "modkit.disabledContributions": {
           "default": [],
-          "items": {
-            "type": "string"
-          },
+          "items": { "type": "string" },
           "markdownDescription": "%configuration.disabledContributions.description%",
           "type": "array"
         },
         "modkit.disabledExtensions": {
           "default": [],
-          "items": {
-            "type": "string"
-          },
+          "items": { "type": "string" },
           "markdownDescription": "%configuration.disabledExtensions.description%",
           "type": "array"
         },
@@ -321,22 +264,13 @@
           "default": [],
           "items": {
             "anyOf": [
-              {
-                "type": "string"
-              },
+              { "type": "string" },
               {
                 "type": "object",
                 "properties": {
-                  "path": {
-                    "type": "string"
-                  },
-                  "id": {
-                    "type": "string"
-                  },
-                  "enabled": {
-                    "type": "boolean",
-                    "default": true
-                  }
+                  "path": { "type": "string" },
+                  "id": { "type": "string" },
+                  "enabled": { "type": "boolean", "default": true }
                 }
               }
             ]
@@ -346,17 +280,13 @@
         },
         "modkit.managedEditorAssociations": {
           "default": [],
-          "items": {
-            "type": "string"
-          },
+          "items": { "type": "string" },
           "markdownDescription": "%configuration.managedEditorAssociations.description%",
           "type": "array"
         },
         "modkit.nonDefaultContributions": {
           "default": [],
-          "items": {
-            "type": "string"
-          },
+          "items": { "type": "string" },
           "markdownDescription": "%configuration.nonDefaultContributions.description%",
           "type": "array"
         }
@@ -366,41 +296,25 @@
       {
         "viewType": "modkit.archiveViewer",
         "displayName": "%customEditor.archiveViewer%",
-        "selector": [
-          {
-            "filenamePattern": "*"
-          }
-        ],
+        "selector": [{ "filenamePattern": "*" }],
         "priority": "option"
       },
       {
         "viewType": "modkit.genericAssetPreview",
         "displayName": "%customEditor.assetPreview%",
-        "selector": [
-          {
-            "filenamePattern": "*"
-          }
-        ],
+        "selector": [{ "filenamePattern": "*" }],
         "priority": "option"
       },
       {
         "viewType": "modkit.hexViewer",
         "displayName": "%customEditor.hexViewer%",
-        "selector": [
-          {
-            "filenamePattern": "*"
-          }
-        ],
+        "selector": [{ "filenamePattern": "*" }],
         "priority": "option"
       },
       {
         "viewType": "modkit.imageViewer",
         "displayName": "%customEditor.imageViewer%",
-        "selector": [
-          {
-            "filenamePattern": "*"
-          }
-        ],
+        "selector": [{ "filenamePattern": "*" }],
         "priority": "option"
       }
     ],
@@ -412,79 +326,41 @@
       }
     ],
     "languages": [
-      {
-        "id": "galaxy",
-        "aliases": [
-          "Galaxy"
-        ],
-        "extensions": [
-          ".galaxy"
-        ]
-      },
+      { "id": "galaxy", "aliases": ["Galaxy"], "extensions": [".galaxy"] },
       {
         "id": "sc2-bank",
-        "aliases": [
-          "StarCraft II Bank"
-        ],
-        "extensions": [
-          ".SC2Bank",
-          ".sc2bank"
-        ]
+        "aliases": ["StarCraft II Bank"],
+        "extensions": [".SC2Bank", ".sc2bank"]
       },
       {
         "id": "sc2-cutscene",
-        "aliases": [
-          "StarCraft II Cutscene"
-        ],
-        "extensions": [
-          ".SC2Cutscene",
-          ".sc2cutscene"
-        ]
+        "aliases": ["StarCraft II Cutscene"],
+        "extensions": [".SC2Cutscene", ".sc2cutscene"]
       },
       {
         "id": "sc2-data",
-        "aliases": [
-          "StarCraft II GameData"
-        ],
-        "filenamePatterns": [
-          "**/[Gg]ame[Dd]ata/*.[xX][mM][lL]"
-        ],
+        "aliases": ["StarCraft II GameData"],
+        "filenamePatterns": ["**/[Gg]ame[Dd]ata/*.[xX][mM][lL]"],
         "configuration": "./media/sc2-data-language-configuration.json"
       },
       {
         "id": "sc2-layout",
-        "aliases": [
-          "StarCraft II Layout"
-        ],
-        "extensions": [
-          ".SC2Layout",
-          ".sc2layout"
-        ]
+        "aliases": ["StarCraft II Layout"],
+        "extensions": [".SC2Layout", ".sc2layout"]
       },
       {
         "id": "sc2-strings",
-        "aliases": [
-          "StarCraft II Strings"
-        ],
-        "filenamePatterns": [
-          "**/[Ll]ocalized[Dd]ata/*.[tT][xX][tT]"
-        ]
+        "aliases": ["StarCraft II Strings"],
+        "filenamePatterns": ["**/[Ll]ocalized[Dd]ata/*.[tT][xX][tT]"]
       },
       {
         "id": "sc2-style",
-        "aliases": [
-          "StarCraft II Style"
-        ],
-        "extensions": [
-          ".SC2Style",
-          ".sc2style"
-        ]
+        "aliases": ["StarCraft II Style"],
+        "extensions": [".SC2Style", ".sc2style"]
       },
       {
         "id": "sc2-triggers",
-        "aliases": [
-          "StarCraft II Triggers"
-        ],
+        "aliases": ["StarCraft II Triggers"],
         "extensions": [
           ".SC2Lib",
           ".SC2Triggers",
@@ -496,27 +372,39 @@
       },
       {
         "id": "sc2-wizard",
-        "aliases": [
-          "StarCraft II Wizard"
-        ],
-        "extensions": [
-          ".BlizWiz",
-          ".blizwiz"
-        ]
+        "aliases": ["StarCraft II Wizard"],
+        "extensions": [".BlizWiz", ".blizwiz"]
       },
       {
         "id": "storm-cutscene",
-        "aliases": [
-          "Storm Cutscene"
-        ],
-        "extensions": [
-          ".StormCutscene",
-          ".stormcutscene"
-        ]
+        "aliases": ["Storm Cutscene"],
+        "extensions": [".StormCutscene", ".stormcutscene"]
       }
     ],
     "menus": {
+      "editor/title": [
+        {
+          "command": "modkit.verifyDocument",
+          "when": "modkit.canVerifyDocument",
+          "group": "navigation@4"
+        }
+      ],
       "explorer/context": [
+        {
+          "command": "modkit.sources.clearCache",
+          "when": "resourceScheme == modkit-source",
+          "group": "navigation@22"
+        },
+        {
+          "command": "modkit.sources.detach",
+          "when": "resourceScheme == modkit-source",
+          "group": "navigation@23"
+        },
+        {
+          "command": "modkit.sources.download",
+          "when": "resourceScheme == modkit-source",
+          "group": "navigation@21"
+        },
         {
           "command": "modkit.sources.revealLocal",
           "when": "resourceScheme == modkit-source || resourceScheme == modkit-container",
@@ -657,6 +545,11 @@
           "group": "navigation@2"
         },
         {
+          "command": "modkit.sources.addPublic",
+          "when": "view == modkit.sources",
+          "group": "navigation@0"
+        },
+        {
           "command": "modkit.sources.refresh",
           "when": "view == modkit.sources",
           "group": "navigation@3"
@@ -665,32 +558,15 @@
     },
     "views": {
       "modkit": [
-        {
-          "id": "modkit.extensions",
-          "name": "%view.extensions%"
-        },
-        {
-          "id": "modkit.gallery",
-          "name": "%view.gallery%",
-          "type": "webview"
-        },
-        {
-          "id": "modkit.resources",
-          "name": "%view.resources%"
-        },
-        {
-          "id": "modkit.sources",
-          "name": "%view.sources%"
-        }
+        { "id": "modkit.extensions", "name": "%view.extensions%" },
+        { "id": "modkit.gallery", "name": "%view.gallery%", "type": "webview" },
+        { "id": "modkit.resources", "name": "%view.resources%" },
+        { "id": "modkit.sources", "name": "%view.sources%" }
       ]
     },
     "viewsContainers": {
       "activitybar": [
-        {
-          "id": "modkit",
-          "title": "%viewContainer.modkit%",
-          "icon": "media/icon-128.png"
-        }
+        { "id": "modkit", "title": "%viewContainer.modkit%", "icon": "media/icon-128.png" }
       ]
     }
   },
@@ -735,6 +611,10 @@
     "onCommand:modkit.setCodecDefaultEditor",
     "onCommand:modkit.showDiagnostics",
     "onCommand:modkit.showHostProfile",
+    "onCommand:modkit.sources.addPublic",
+    "onCommand:modkit.sources.clearCache",
+    "onCommand:modkit.sources.detach",
+    "onCommand:modkit.sources.download",
     "onCommand:modkit.sources.open",
     "onCommand:modkit.sources.openInstallation",
     "onCommand:modkit.sources.refresh",
@@ -744,6 +624,7 @@
     "onCommand:modkit.sources.unmount",
     "onCommand:modkit.syncEditorAssociations",
     "onCommand:modkit.unloadSource",
+    "onCommand:modkit.verifyDocument",
     "onCustomEditor:modkit.archiveViewer",
     "onCustomEditor:modkit.genericAssetPreview",
     "onCustomEditor:modkit.hexViewer",

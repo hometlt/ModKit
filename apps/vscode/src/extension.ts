@@ -28,7 +28,11 @@ import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:pat
 import { pathToFileURL } from 'node:url'
 import * as vscode from 'vscode'
 import { loadContentSources, callContentSources } from '@modkit/vfs/content-sources/node'
-import type { ContentSourceLocalPath, ContentSources } from '@modkit/vfs/content-sources'
+import type {
+  ContentSourceLocalPath,
+  ContentSourceSearchResult,
+  ContentSources,
+} from '@modkit/vfs/content-sources'
 import { chooseContentSource } from '@modkit/ui/content-sources'
 import type { CatalogSource, ExtensionManagerEntry } from '@modkit/extension-manager'
 import {
@@ -186,6 +190,7 @@ import { describeDegradation, describeFacilities, type FacilityReport } from './
 import { pageHtml, refusalHtml, type WebviewLike } from './page.js'
 import BUNDLED_CATALOG from '../generated/bundled-catalog.json' with { type: 'json' }
 import { describeOpenTarget } from './uri.js'
+import { registerDocumentVerification } from './verify-document.js'
 import { createVscodeLocalizer, VSCODE_UI_CATALOGS } from './localization.js'
 import {
   applyEditorOnTypeEditResult,
@@ -721,10 +726,7 @@ function memberUriOf(root: string, entry: string): vscode.Uri {
  * A file already on screen is revealed where it is: opening it «beside» a second time would split
  * the window once per click and leave the reader hunting for the copy that moved.
  */
-async function openResourceFile(
-  target: vscode.Uri,
-  range?: TreeNodeFacts['range'],
-): Promise<void> {
+async function openResourceFile(target: vscode.Uri, range?: TreeNodeFacts['range']): Promise<void> {
   const open = vscode.window.tabGroups.all
     .flatMap(group => group.tabs.map(tab => ({ group, tab })))
     .find(
@@ -1557,7 +1559,10 @@ class ResourcesView implements vscode.TreeDataProvider<ResourceTreeNode>, vscode
     const items: TreeNodeRef[] = []
     let cursor: string | undefined
     do {
-      const page = await tree.children(node, cursor === undefined ? { limit: 500 } : { cursor, limit: 500 })
+      const page = await tree.children(
+        node,
+        cursor === undefined ? { limit: 500 } : { cursor, limit: 500 },
+      )
       items.push(...page.items)
       cursor = page.nextCursor
     } while (cursor !== undefined && items.length < RESOURCE_CHILD_LIMIT)
@@ -2456,6 +2461,77 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       throw vscode.FileSystemError.FileNotFound(uri)
     return { id, path: parts.join('/') }
   }
+  /**
+   * Which publications of a root are already in the local cache.
+   *
+   * The provider says so per row: a cached publication offers `clear-cache`, one that is not yet
+   * downloaded offers `download`. Listing a root is a catalogue call, so the answer is held briefly
+   * and dropped whenever a row is downloaded, cleared, added or detached.
+   */
+  /** A row action arrives as the Explorer's URI; anything else is not a content-source row. */
+  const contentSourceRow = (
+    argument: unknown,
+  ): { readonly id: string; readonly path: string; readonly name: string } | undefined => {
+    const uri =
+      argument instanceof vscode.Uri
+        ? argument
+        : typeof argument === 'object' &&
+            argument !== null &&
+            (argument as { readonly resourceUri?: unknown }).resourceUri instanceof vscode.Uri
+          ? ((argument as { readonly resourceUri: vscode.Uri }).resourceUri)
+          : undefined
+    if (uri === undefined) return undefined
+    try {
+      const location = sourceLocation(uri)
+      if (!location.path) return undefined
+      return { ...location, name: location.path.split('/').at(-1) ?? location.path }
+    } catch {
+      return undefined
+    }
+  }
+  const sourceDecorations = new vscode.EventEmitter<vscode.Uri | vscode.Uri[] | undefined>()
+  const cacheStates = new Map<string, { readonly at: number; readonly rows: Map<string, boolean> }>()
+  const CACHE_STATE_TTL = 15_000
+  const forgetCacheStates = (id?: string) => {
+    if (id === undefined) cacheStates.clear()
+    else cacheStates.delete(id)
+    sourceDecorations.fire(undefined)
+  }
+  const cacheStateOf = async (id: string): Promise<Map<string, boolean>> => {
+    const held = cacheStates.get(id)
+    if (held !== undefined && Date.now() - held.at < CACHE_STATE_TTL) return held.rows
+    const rows = new Map<string, boolean>()
+    for (const entry of await (await requireContentSources()).list(id, '')) {
+      const actions = entry.actions ?? []
+      if (actions.some(action => action.id === 'clear-cache')) rows.set(entry.name, true)
+      else if (actions.some(action => action.id === 'download')) rows.set(entry.name, false)
+    }
+    cacheStates.set(id, { at: Date.now(), rows })
+    return rows
+  }
+  const sourceDecorationProvider: vscode.FileDecorationProvider = {
+    onDidChangeFileDecorations: sourceDecorations.event,
+    async provideFileDecoration(uri) {
+      if (uri.scheme !== 'modkit-source') return undefined
+      let location: { id: string; path: string }
+      try {
+        location = sourceLocation(uri)
+      } catch {
+        return undefined
+      }
+      // Only a publication row carries a cache state; everything below it lives inside one.
+      if (!location.path || location.path.includes('/')) return undefined
+      const cached = (await cacheStateOf(location.id).catch(() => undefined))?.get(location.path)
+      if (cached === undefined) return undefined
+      return cached
+        ? { tooltip: localizer.text('vscode.sources.cached') }
+        : {
+            badge: '☁',
+            color: new vscode.ThemeColor('disabledForeground'),
+            tooltip: localizer.text('vscode.sources.notCached'),
+          }
+    },
+  }
   const openContentSourceRoot = async (source: {
     readonly id: string
     readonly label: string
@@ -2678,10 +2754,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
           regions.length === 1
             ? regions[0]
             : await vscode.window.showQuickPick(
-                regions.map(region => ({ label: region.label, description: region.id, id: region.id })),
+                regions.map(region => ({
+                  label: region.label,
+                  description: region.id,
+                  id: region.id,
+                })),
                 { title: localizer.text('vscode.sources.chooseRegion') },
               )
-        const region = chosen === undefined ? undefined : ('id' in chosen ? chosen.id : undefined)
+        const region = chosen === undefined ? undefined : 'id' in chosen ? chosen.id : undefined
         if (typeof region !== 'string') return false
         await callContentSources(source, 'connect', [region])
         sourcesView.refresh()
@@ -2768,6 +2848,122 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
           )
         }
       }),
+      vscode.window.registerFileDecorationProvider(sourceDecorationProvider),
+      sourceDecorations,
+
+      /*
+       * Adding a published mod is a search, not a path: Battle.net addresses a publication by id
+       * and version, which nobody types. The account answers the search, the row names what it
+       * found, and adding it only records the choice — the bytes arrive when it is opened or
+       * downloaded.
+       */
+      vscode.commands.registerCommand('modkit.sources.addPublic', async () => {
+        const source = await requireContentSources()
+        const snapshot = await source.snapshot()
+        const connections = snapshot.connections ?? []
+        if (connections.length === 0) {
+          await vscode.commands.executeCommand('modkit.sources.signIn')
+          return
+        }
+        const connection =
+          connections.length === 1
+            ? connections[0]
+            : await vscode.window
+                .showQuickPick(
+                  connections.map(item => ({
+                    label: item.label,
+                    description: item.region.toUpperCase(),
+                    id: item.id,
+                  })),
+                  { title: localizer.text('vscode.sources.chooseConnection') },
+                )
+                .then(picked => (picked === undefined ? undefined : { id: picked.id }))
+        if (connection === undefined) return
+        const query = await vscode.window.showInputBox({
+          title: localizer.text('vscode.sources.searchTitle'),
+          placeHolder: localizer.text('vscode.sources.searchPlaceholder'),
+          validateInput: value => (value.trim().length > 0 ? undefined : ''),
+        })
+        if (query === undefined || query.trim().length === 0) return
+        const results = await vscode.window.withProgress(
+          { location: vscode.ProgressLocation.Window, title: localizer.text('vscode.sources.searching') },
+          () => callContentSources(source, 'search', [connection.id, query.trim()]),
+        )
+        const rows = (results ?? []) as readonly ContentSourceSearchResult[]
+        if (rows.length === 0) {
+          void vscode.window.showInformationMessage(
+            localizer.text('vscode.sources.noMatches', { query: query.trim() }),
+          )
+          return
+        }
+        const chosen = await vscode.window.showQuickPick(
+          rows.map(row => ({ label: row.label, description: row.description, id: row.id })),
+          { title: localizer.text('vscode.sources.chooseResult') },
+        )
+        if (chosen === undefined) return
+        await callContentSources(source, 'add', [chosen.id])
+        forgetCacheStates()
+        sourcesView.refresh()
+        void vscode.window.showInformationMessage(
+          localizer.text('vscode.sources.added', { name: chosen.label }),
+        )
+      }),
+
+      vscode.commands.registerCommand('modkit.sources.download', async (argument: unknown) => {
+        const target = contentSourceRow(argument)
+        if (target === undefined) return
+        const source = await requireContentSources()
+        if (typeof source.download !== 'function') {
+          void vscode.window.showWarningMessage(localizer.text('vscode.sources.actionUnavailable'))
+          return
+        }
+        await vscode.window.withProgress(
+          {
+            location: vscode.ProgressLocation.Notification,
+            title: localizer.text('vscode.sources.downloading', { name: target.name }),
+          },
+          () => callContentSources(source, 'download', [target.id, target.path]),
+        )
+        forgetCacheStates(target.id)
+        void vscode.window.showInformationMessage(
+          localizer.text('vscode.sources.downloaded', { name: target.name }),
+        )
+      }),
+
+      vscode.commands.registerCommand('modkit.sources.clearCache', async (argument: unknown) => {
+        const target = contentSourceRow(argument)
+        if (target === undefined) return
+        const source = await requireContentSources()
+        if (typeof source.clearCache !== 'function') {
+          void vscode.window.showWarningMessage(localizer.text('vscode.sources.actionUnavailable'))
+          return
+        }
+        await callContentSources(source, 'clearCache', [target.id, target.path])
+        forgetCacheStates(target.id)
+        void vscode.window.showInformationMessage(
+          localizer.text('vscode.sources.cacheCleared', { name: target.name }),
+        )
+      }),
+
+      /** Detaching drops the row from this catalogue; the publication itself is untouched. */
+      vscode.commands.registerCommand('modkit.sources.detach', async (argument: unknown) => {
+        const target = contentSourceRow(argument)
+        if (target === undefined) return
+        const confirmed = await vscode.window.showWarningMessage(
+          localizer.text('vscode.sources.confirmDetach', { name: target.name }),
+          { modal: true },
+          localizer.text('vscode.sources.detach'),
+        )
+        if (confirmed === undefined) return
+        const source = await requireContentSources()
+        await callContentSources(source, 'remove', [target.id, target.path])
+        forgetCacheStates(target.id)
+        sourcesView.refresh()
+        void vscode.window.showInformationMessage(
+          localizer.text('vscode.sources.detached', { name: target.name }),
+        )
+      }),
+
       vscode.commands.registerCommand('modkit.sources.refresh', () => {
         sourcesView.refresh()
         return true
@@ -5950,7 +6146,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
             !descriptor.dataSources.some(
               source => source.contract === 'common.view/tree-data-source' && source.major === 1,
             )
-          ) return undefined
+          )
+            return undefined
           const lease = await session.dataSource('common.view/tree-data-source', 1)
           try {
             openSignal?.throwIfAborted()
@@ -6037,7 +6234,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     const rows = (content as { dependencies?: unknown } | undefined)?.dependencies
     if (!Array.isArray(rows)) return Object.freeze([])
     const host = scope.root
-    const container = host?.scheme === CONTAINER_SCHEME ? parseContainerUriPath(host.path) : undefined
+    const container =
+      host?.scheme === CONTAINER_SCHEME ? parseContainerUriPath(host.path) : undefined
     const layers: LanguageSubjectCandidate[] = []
     for (const row of rows) {
       const path = (row as { path?: unknown })?.path
@@ -6057,12 +6255,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       if (installation === host.fsPath) continue
       const candidate = join(installation, ...path.split('/'))
       layers.push(
-        Object.freeze({ path: candidate, root: vscode.Uri.file(candidate), order: order as number }),
+        Object.freeze({
+          path: candidate,
+          root: vscode.Uri.file(candidate),
+          order: order as number,
+        }),
       )
     }
-    return Object.freeze(
-      layers.sort((left, right) => (left.order ?? 0) - (right.order ?? 0)),
-    )
+    return Object.freeze(layers.sort((left, right) => (left.order ?? 0) - (right.order ?? 0)))
   }
 
   /** Whether Resources shows the resolved chain or only what the active package declares. */
@@ -6912,7 +7112,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
   const languageController = createLanguageSessionController({
     workspace: languageWorkspace,
     routes: languageRoutes,
-    semanticDiagnosticsDelayMs: 1_000,
+    // Keep background semantic analysis out of the completion latency window after a keystroke.
+    // Explicit Verify is immediate; only automatic diagnostics wait for the editor to go idle.
+    semanticDiagnosticsDelayMs: 2_500,
     publishDiagnostics: (uri, diagnostics) => {
       const target = vscode.Uri.parse(uri)
       for (const item of diagnostics) {
@@ -6943,6 +7145,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       ),
   })
   await languageController.initialize()
+  context.subscriptions.push(registerDocumentVerification(languageController, localizer))
 
   const selectorEntries = new Map<string, vscode.DocumentFilter>()
   for (const route of languageRoutes) {
@@ -9906,9 +10109,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       resourcesView.refresh()
       void vscode.window.setStatusBarMessage(
         localizer.text(
-          resourcesShowChain
-            ? 'vscode.resources.chainOn'
-            : 'vscode.resources.chainOff',
+          resourcesShowChain ? 'vscode.resources.chainOn' : 'vscode.resources.chainOff',
         ),
         4_000,
       )

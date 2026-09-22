@@ -1,4 +1,5 @@
 {
+  "command.verifyDocument": "Modkit: Проверить документ",
   "view.gallery": "Галерея изображений",
   "command.contentSources": "Modkit: Источники содержимого (локальные / провайдеры)…",
   "command.openContentSource": "Смонтировать источник",
@@ -68,5 +69,9 @@
   "command.syncEditorAssociations": "Modkit: синхронизировать ассоциации редакторов с настройками кодеков",
   "configuration.nonDefaultContributions.description": "Идентификаторы вкладов, которые остаются включёнными, но НЕ становятся редактором по умолчанию для своих форматов. Включённый кодек по умолчанию открывает заявленные им форматы; запись здесь оставляет кодек рабочим, а редактором по умолчанию остаётся встроенный. Modkit удаляет только те ассоциации, которые записал сам, поэтому выбор «Open With → Set Default», сделанный средствами VS Code, никогда не перезаписывается.",
   "configuration.defaultEditorForTextFormats.description": "Делать Modkit редактором по умолчанию и для текстовых форматов (txt, xml, json, md, csv, ini, yaml, galaxy, sc2layout и остальной список). По умолчанию выключено: такие файлы открываются в редакторе, в котором печатают, и захват этого при установке заменил бы редактирование просмотром. Modkit для них всегда доступен через «Reopen Editor With».",
-  "configuration.managedEditorAssociations.description": "Шаблоны `workbench.editorAssociations`, записанные Modkit. Modkit удаляет только их и никогда — ассоциацию, заданную вами. Изменяется автоматически; показано здесь, чтобы было видно, что именно поменяло расширение."
+  "configuration.managedEditorAssociations.description": "Шаблоны `workbench.editorAssociations`, записанные Modkit. Modkit удаляет только их и никогда — ассоциацию, заданную вами. Изменяется автоматически; показано здесь, чтобы было видно, что именно поменяло расширение.",
+  "command.addPublicSource": "Добавить опубликованный мод…",
+  "command.downloadSource": "Скачать",
+  "command.clearSourceCache": "Удалить локальную копию",
+  "command.detachSource": "Открепить мод"
 }
