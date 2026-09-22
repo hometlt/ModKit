@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "legacy": "legacy.mjs",
+  "migrated": "native.mjs",
+  "corpus": "corpus.json",
+  "operation": "sc2-mod.content-parity",
+  "receipt": "receipt.json",
+  "outputs": "cases.json"
+}
