@@ -403,6 +403,33 @@ describe('Node game-installation map-preview resource resolver', () => {
     expect(open).not.toHaveBeenCalled()
   })
 
+  it('discovers the installation under its own grant when one is configured', async () => {
+    const root = await installationRoot()
+    const originalPath = join(root, 'subject.wz')
+    await writeFile(originalPath, 'subject')
+    const original = await namespaceSession(pathToFileURL(originalPath).href, new Map())
+    const installationDiscoveryGrant = Object.freeze({
+      id: 'fixture-discovery',
+      classes: Object.freeze(['filesystem-read' as const]),
+    })
+    const resolver = createNodeMapPreviewResourcePlanResolver({
+      subjects: { open: vi.fn() } as unknown as Pick<SubjectServices, 'open'>,
+      installationDiscoveryGrant,
+    })
+
+    mocks.discover.mockResolvedValueOnce({
+      state: 'discovered',
+      result: discovery(root, { complete: false }),
+      diagnostics: [],
+    })
+    await resolver.resolve(await requestFixture(plan(), originalPath, original.session))
+    // The subject grant carries read-source only; discovery is a filesystem probe and would be
+    // rejected with permission-required under it.
+    expect(mocks.discover).toHaveBeenCalledWith(
+      expect.objectContaining({ grant: installationDiscoveryGrant }),
+    )
+  })
+
   it('refuses incomplete or ambiguous installation discovery', async () => {
     const root = await installationRoot()
     const second = await installationRoot()

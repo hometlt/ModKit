@@ -13,6 +13,7 @@ import {
   revisionIdFromRef,
   type AssetSession,
   type NamespaceEntrySource,
+  type PermissionGrant,
   type RevisionId,
 } from '@modkit/sdk'
 import type { GameInstallation } from '@modkit/sdk/games'
@@ -99,6 +100,13 @@ export interface NodeMapPreviewResourcePlanResolverOptions {
     >
   /** User/app settings, keyed by the same extension-owned game id used for discovery routing. */
   readonly configuredPaths?: Readonly<Record<string, readonly string[]>>
+  /*
+   * Installation discovery is a filesystem/registry probe, not a subject read, so it needs its own
+   * narrow grant: a map opened with `read-source` alone made every discovery provider reject with
+   * `permission-required` and the preview fell back to the archive entry list. Only the discovery
+   * call receives it; installed archives are still opened under the caller's subject grant.
+   */
+  readonly installationDiscoveryGrant?: PermissionGrant
   readonly maxInstallationCandidates?: number
   readonly pageLimit?: number
   readonly maxPages?: number
@@ -440,7 +448,7 @@ export function createNodeMapPreviewResourcePlanResolver(
             ? {}
             : { configuredPaths: options.configuredPaths[request.workspace.gameId] }),
           maxCandidates: maxInstallationCandidates,
-          grant: request.grant,
+          grant: options.installationDiscoveryGrant ?? request.grant,
           budgets: request.budgets,
           ...(request.signal === undefined ? {} : { signal: request.signal }),
         })
