@@ -48,9 +48,35 @@ export function uvmMaterialShader(material: JsonObject): SceneRendererMaterial['
       : { id: MATERIAL_LAYERS_SHADER, parameters: { renderModel: { layers } } }
   }
   const data = object(extension, 'game material')
+  const parameters = object(data['params'] ?? {}, 'game material parameters')
   return {
     id: string(data['shader'], 'game material shader'),
-    parameters: object(data['params'] ?? {}, 'game material parameters'),
+    parameters: withLayerList(parameters, material),
+  }
+}
+
+/**
+ * A game material keeps its own parameters, and gains the layer list it left out.
+ *
+ * The renderer's only route from a layer to a texture is `renderModel.layers`. A publisher that
+ * declares a game shader but states its layers only in the neutral envelope beside it - Warzone's
+ * PIE does exactly that - used to draw flat white: declaring the shader took its parameters
+ * verbatim and dropped the list the same material had already written down.
+ *
+ * The list comes from that material, so filling an absent field with it invents nothing. A
+ * publisher that states `renderModel.layers` itself keeps what it wrote, untouched.
+ */
+function withLayerList(parameters: JsonObject, material: JsonObject): JsonObject {
+  const renderModel = field(parameters, 'renderModel')
+  if (renderModel !== undefined && field(renderModel, 'layers') !== undefined) return parameters
+  const layers = layerList(material)
+  if (layers.length === 0) return parameters
+  return {
+    ...parameters,
+    renderModel: {
+      ...(renderModel === undefined ? {} : object(renderModel, 'render model parameters')),
+      layers,
+    },
   }
 }
 
