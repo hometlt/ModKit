@@ -2603,9 +2603,25 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     else cacheStates.delete(id)
     sourceDecorations.fire(undefined)
   }
+  /*
+   * A publication that was read is downloaded from that moment, whoever caused the read. The row
+   * is redrawn once per publication, not once per file inside it: opening a mod reads hundreds of
+   * entries, and each one would otherwise ask the provider again.
+   */
+  const readPublications = new Set<string>()
+  const publicationRead = (location: { readonly id: string; readonly path: string }): void => {
+    const root = location.path.split('/')[0]
+    if (root === undefined || root === '') return
+    const key = `${location.id}/${root}`
+    if (readPublications.has(key)) return
+    rowChanged({ id: location.id, path: root })
+    readPublications.add(key)
+  }
   /** A row whose cache state changed is redrawn at once: decoration, colour and tree row. */
   const rowChanged = (target: { readonly id: string; readonly path: string }): void => {
     cacheStates.delete(target.id)
+    // Clearing a local copy makes the next read count again.
+    readPublications.delete(`${target.id}/${target.path}`)
     sourceDecorations.fire(
       vscode.Uri.parse(
         `modkit-source://battlenet/${encodeURIComponent(target.id)}/${target.path
@@ -2822,14 +2838,22 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     },
     async readDirectory(uri) {
       const location = sourceLocation(uri)
-      return (await (await requireContentSources()).list(location.id, location.path)).map(item => [
-        item.name,
-        item.directory ? vscode.FileType.Directory : vscode.FileType.File,
-      ])
+      const entries = (
+        await (await requireContentSources()).list(location.id, location.path)
+      ).map(item => [item.name, item.directory ? vscode.FileType.Directory : vscode.FileType.File] as const)
+      // Browsing inside a publication downloads it, so the row it belongs to has to say so.
+      publicationRead(location)
+      return entries.map(entry => [entry[0], entry[1]] as [string, vscode.FileType])
     },
     async readFile(uri) {
       const location = sourceLocation(uri)
-      return (await requireContentSources()).read(location.id, location.path, 64 * 1024 * 1024)
+      const bytes = await (await requireContentSources()).read(
+        location.id,
+        location.path,
+        64 * 1024 * 1024,
+      )
+      publicationRead(location)
+      return bytes
     },
     createDirectory: uri => {
       throw vscode.FileSystemError.NoPermissions(uri)
