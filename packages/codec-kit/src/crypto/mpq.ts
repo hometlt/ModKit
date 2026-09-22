@@ -214,37 +214,10 @@ export function crc32(data: Uint8Array): number {
   return (crc ^ 0xffffffff) >>> 0
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// MD5 (for header validation)
-// ─────────────────────────────────────────────────────────────────────────────
-
-/**
- * Calculate MD5 hash.
- *
- * Note: Uses Web Crypto API in browser, crypto module in Node.js.
- *
- * @param data Data to hash
- * @returns MD5 hash as hex string
- */
-export async function md5(data: Uint8Array): Promise<string> {
-  if (typeof crypto !== 'undefined' && crypto.subtle) {
-    // Browser
-    const hash = await crypto.subtle.digest('MD5', data.buffer as ArrayBuffer)
-    return Array.from(new Uint8Array(hash))
-      .map(b => b.toString(16).padStart(2, '0'))
-      .join('')
-  } else {
-    // Node.js
-    const { createHash } = await import('crypto')
-    return createHash('md5').update(data).digest('hex')
-  }
-}
-
 export default {
   mpqHash,
   mpqEncrypt,
   mpqDecrypt,
   crc32,
-  md5,
   HASH_TYPE,
 }
