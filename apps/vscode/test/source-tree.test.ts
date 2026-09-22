@@ -92,7 +92,8 @@ describe('VS Code Sources tree', () => {
     expect(provider?.children?.[2]?.children?.[0]).toMatchObject({
       sourceId: 'public:us',
       description: 'us · mounted',
-      contextValue: 'modkitSource.providerRoot.mounted',
+      // A public catalogue is one server's row, and carries the search that adds a mod to it.
+      contextValue: 'modkitSource.publicRoot.mounted',
     })
   })
 
@@ -253,5 +254,27 @@ describe('a catalogue kept from an earlier session', () => {
     // The live root wins: an account that is connected is not also listed from what was kept.
     const live = build([{ id: 'mine:account', label: 'Example account · US', region: 'us' }])
     expect(find(live, 'provider-root:mine:account')?.contextValue).toBe('modkitSource.providerRoot')
+  })
+})
+
+describe('a public catalogue row', () => {
+  it('is marked as one server, so only it offers the search that adds a mod', () => {
+    const find = (nodes: readonly SourceTreeNode[], id: string): SourceTreeNode | undefined => {
+      for (const node of nodes) {
+        if (node.id === id) return node
+        const found = find(node.children ?? [], id)
+        if (found !== undefined) return found
+      }
+      return undefined
+    }
+    const tree = createSourceTree({
+      workspaceFolders: [],
+      selectedInstallations: [],
+      mountedProviderRootIds: new Set(),
+      providerSnapshot,
+      text,
+    })
+    expect(find(tree, 'provider-root:public:us')?.contextValue).toBe('modkitSource.publicRoot')
+    expect(find(tree, 'provider-root:mine:account')?.contextValue).toBe('modkitSource.providerRoot')
   })
 })

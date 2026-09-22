@@ -252,7 +252,8 @@ export function createSourceTree(input: SourceTreeInput): readonly SourceTreeNod
           icon: mounting ? 'sync~spin' : mounted ? 'folder-opened' : 'cloud',
           // A mounted root carries its own context value so the view can offer unmount on exactly
           // the rows that are mounted, without a second state the menu would have to guess at.
-          contextValue: `${root.kind === 'local' ? 'modkitSource.localRoot' : 'modkitSource.providerRoot'}${mounting ? '.mounting' : mounted ? '.mounted' : ''}`,
+          // A public catalogue is one server's, so its row carries actions the account roots do not.
+          contextValue: `${root.kind === 'local' ? 'modkitSource.localRoot' : root.kind === 'public' ? 'modkitSource.publicRoot' : 'modkitSource.providerRoot'}${mounting ? '.mounting' : mounted ? '.mounted' : ''}`,
           sourceId: root.id,
         })
       })

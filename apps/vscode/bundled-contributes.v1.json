@@ -581,17 +581,12 @@
         "command": "modkit.resources.toggleChain",
         "when": "view == modkit.resources",
         "group": "navigation@0"
-      },
-      {
-        "command": "modkit.sources.addPublic",
-        "when": "view == modkit.sources",
-        "group": "navigation@0"
       }
     ],
     "view/item/context": [
       {
         "command": "modkit.sources.open",
-        "when": "view == modkit.sources && viewItem =~ /^modkitSource\\.(?:providerRoot|localRoot)$/",
+        "when": "view == modkit.sources && viewItem =~ /^modkitSource\\.(?:providerRoot|publicRoot|localRoot)$/",
         "group": "inline@1"
       },
       {
@@ -681,7 +676,7 @@
       },
       {
         "command": "modkit.sources.unmount",
-        "when": "view == modkit.sources && viewItem =~ /^modkitSource\\.(?:providerRoot|localRoot|installation)\\.(?:mounted|mounting)$/",
+        "when": "view == modkit.sources && viewItem =~ /^modkitSource\\.(?:providerRoot|publicRoot|localRoot|installation)\\.(?:mounted|mounting)$/",
         "group": "inline@4"
       },
       {
@@ -721,13 +716,18 @@
       },
       {
         "command": "modkit.sources.refresh",
-        "when": "view == modkit.sources && viewItem =~ /^modkitSource\\.providerRoot(\\.|$)/",
+        "when": "view == modkit.sources && viewItem =~ /^modkitSource\\.(?:providerRoot|publicRoot)(\\.|$)/",
         "group": "inline@2"
       },
       {
         "command": "modkit.sources.disconnect",
         "when": "view == modkit.sources && viewItem =~ /^modkitSource\\.providerRoot(\\.|$)/",
         "group": "inline@3"
+      },
+      {
+        "command": "modkit.sources.addPublic",
+        "when": "view == modkit.sources && viewItem =~ /^modkitSource\\.publicRoot(\\.|$)/",
+        "group": "inline@0"
       }
     ]
   },

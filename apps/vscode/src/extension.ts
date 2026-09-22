@@ -3222,56 +3222,122 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
        * found, and adding it only records the choice — the bytes arrive when it is opened or
        * downloaded.
        */
-      vscode.commands.registerCommand('modkit.sources.addPublic', async () => {
+      /*
+       * Adding a published mod is a search on one server: the + sits on that server's row, so the
+       * region is decided before the dialog opens and the account used is one signed in there.
+       * The results follow what is typed, because a reader looking for a mod rarely knows its
+       * exact name and should be able to narrow it without starting over.
+       */
+      vscode.commands.registerCommand('modkit.sources.addPublic', async (argument: unknown) => {
         const source = await requireContentSources()
-        const snapshot = await source.snapshot()
-        const connections = snapshot.connections ?? []
-        if (connections.length === 0) {
-          await vscode.commands.executeCommand('modkit.sources.signIn')
-          return
-        }
-        const connection =
-          connections.length === 1
-            ? connections[0]
-            : await vscode.window
-                .showQuickPick(
-                  connections.map(item => ({
-                    label: item.label,
-                    description: item.region.toUpperCase(),
-                    id: item.id,
-                  })),
-                  { title: localizer.text('vscode.sources.chooseConnection') },
-                )
-                .then(picked => (picked === undefined ? undefined : { id: picked.id }))
-        if (connection === undefined) return
-        const query = await vscode.window.showInputBox({
-          title: localizer.text('vscode.sources.searchTitle'),
-          placeHolder: localizer.text('vscode.sources.searchPlaceholder'),
-          validateInput: value => (value.trim().length > 0 ? undefined : ''),
-        })
-        if (query === undefined || query.trim().length === 0) return
-        const results = await vscode.window.withProgress(
-          { location: vscode.ProgressLocation.Window, title: localizer.text('vscode.sources.searching') },
-          () => callContentSources(source, 'search', [connection.id, query.trim()]),
-        )
-        const rows = (results ?? []) as readonly ContentSourceSearchResult[]
-        if (rows.length === 0) {
-          void vscode.window.showInformationMessage(
-            localizer.text('vscode.sources.noMatches', { query: query.trim() }),
+        const row =
+          typeof argument === 'object' && argument !== null
+            ? (argument as { readonly sourceId?: unknown })
+            : undefined
+        const region =
+          typeof row?.sourceId === 'string' && row.sourceId.startsWith('public:')
+            ? row.sourceId.slice('public:'.length)
+            : undefined
+        const connectionFor = async (): Promise<string | undefined> => {
+          const inRegion = ((await source.snapshot()).connections ?? []).filter(
+            item => region === undefined || item.region === region,
           )
-          return
+          if (inRegion.length === 1) return inRegion[0]?.id
+          if (inRegion.length > 1) {
+            return (
+              await vscode.window.showQuickPick(
+                inRegion.map(item => ({
+                  label: item.label,
+                  description: item.region.toUpperCase(),
+                  id: item.id,
+                })),
+                { title: localizer.text('vscode.sources.chooseConnection') },
+              )
+            )?.id
+          }
+          // Searching a server needs an account on it, so the row that searches also signs in.
+          if (region === undefined) {
+            await vscode.commands.executeCommand('modkit.sources.signIn')
+          } else {
+            await callContentSources(source, 'connect', [region, rememberedAccount(region)])
+            await rememberConnections(source)
+            sourcesView.refresh()
+          }
+          return ((await source.snapshot()).connections ?? []).find(
+            item => region === undefined || item.region === region,
+          )?.id
         }
-        const chosen = await vscode.window.showQuickPick(
-          rows.map(row => ({ label: row.label, description: row.description, id: row.id })),
-          { title: localizer.text('vscode.sources.chooseResult') },
-        )
-        if (chosen === undefined) return
+        const connectionId = await connectionFor()
+        if (connectionId === undefined) return false
+        const chosen = await new Promise<ContentSourceSearchResult | undefined>(resolve => {
+          const pick = vscode.window.createQuickPick<vscode.QuickPickItem & { id?: string }>()
+          pick.title =
+            region === undefined
+              ? localizer.text('vscode.sources.searchTitle')
+              : `${localizer.text('vscode.sources.searchTitle')} · ${region.toUpperCase()}`
+          pick.placeholder = localizer.text('vscode.sources.searchPlaceholder')
+          pick.matchOnDescription = true
+          const found = new Map<string, ContentSourceSearchResult>()
+          let latest = 0
+          let timer: ReturnType<typeof setTimeout> | undefined
+          const search = (): void => {
+            const query = pick.value.trim()
+            const mine = ++latest
+            if (query.length === 0) {
+              pick.items = []
+              pick.busy = false
+              return
+            }
+            pick.busy = true
+            void (async () => {
+              try {
+                const rows = ((await callContentSources(source, 'search', [
+                  connectionId,
+                  query,
+                ])) ?? []) as readonly ContentSourceSearchResult[]
+                if (mine !== latest) return
+                found.clear()
+                for (const item of rows) found.set(item.id, item)
+                pick.items =
+                  rows.length > 0
+                    ? rows.map(item => ({
+                        label: item.label,
+                        ...(item.description === undefined ? {} : { description: item.description }),
+                        id: item.id,
+                      }))
+                    : [{ label: localizer.text('vscode.sources.noMatches', { query }) }]
+              } catch {
+                if (mine === latest) pick.items = []
+              } finally {
+                if (mine === latest) pick.busy = false
+              }
+            })()
+          }
+          pick.onDidChangeValue(() => {
+            // One request per pause in typing, not per keystroke.
+            if (timer !== undefined) clearTimeout(timer)
+            timer = setTimeout(search, 400)
+          })
+          pick.onDidAccept(() => {
+            const selected = pick.selectedItems[0]
+            resolve(selected?.id === undefined ? undefined : found.get(selected.id))
+            pick.hide()
+          })
+          pick.onDidHide(() => {
+            if (timer !== undefined) clearTimeout(timer)
+            resolve(undefined)
+            pick.dispose()
+          })
+          pick.show()
+        })
+        if (chosen === undefined) return false
         await callContentSources(source, 'add', [chosen.id])
         forgetCacheStates()
         sourcesView.refresh()
         void vscode.window.showInformationMessage(
           localizer.text('vscode.sources.added', { name: chosen.label }),
         )
+        return true
       }),
 
       vscode.commands.registerCommand('modkit.sources.download', async (argument: unknown) => {
