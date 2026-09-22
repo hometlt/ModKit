@@ -438,6 +438,24 @@ export function createNodeMapPreviewResourcePlanResolver(
         )
       }
 
+      const findings: Diagnostic[] = []
+      /*
+       * Phase timings, reported as ordinary diagnostics.
+       *
+       * A cold preview of an installed map spends its time in two places this resolver owns:
+       * locating the installation, and opening and indexing each installed archive. Without a
+       * receipt per phase an open that ends at the caller's deadline says only that it was slow.
+       */
+      const startedAt = Date.now()
+      const timing = (label: string, since: number): void => {
+        findings.push(
+          diagnostic(
+            'information',
+            'x3.host/map-preview-resource-timing',
+            `${label}: ${String(Date.now() - since)} ms`,
+          ),
+        )
+      }
       let discovery: Awaited<ReturnType<typeof discoverGameInstallations>>
       try {
         discovery = await discoverGameInstallations({
@@ -465,10 +483,8 @@ export function createNodeMapPreviewResourcePlanResolver(
           discovery.diagnostics,
         )
       }
-      const findings: Diagnostic[] = [
-        ...discovery.diagnostics,
-        ...discoveryFindings(discovery.result.diagnostics),
-      ]
+      findings.push(...discovery.diagnostics, ...discoveryFindings(discovery.result.diagnostics))
+      timing('installation discovery', startedAt)
       if (!discovery.result.complete) {
         return fail(
           'x3.host/map-preview-installation-discovery-truncated',
@@ -662,6 +678,7 @@ export function createNodeMapPreviewResourcePlanResolver(
           if (existing !== undefined) {
             mount = existing
           } else {
+            const archiveStartedAt = Date.now()
             let opened: Awaited<ReturnType<SubjectServices['open']>>
             let releaseSource = async (): Promise<void> => undefined
             try {
@@ -743,6 +760,7 @@ export function createNodeMapPreviewResourcePlanResolver(
               )
             }
             mount = openedMount
+            timing(`open and index ${resourcePath}`, archiveStartedAt)
             externalMounts.set(key, mount)
             releases.push(() =>
               releaseAll([releaseSource, () => mount.session.dispose(), mount.namespaceRelease]),
@@ -783,6 +801,7 @@ export function createNodeMapPreviewResourcePlanResolver(
           originRoots.map(root => [root.rootId, String(root.containerRevision)]),
         ),
       })
+      timing('resource plan resolved', startedAt)
       return Object.freeze({
         state: 'resolved' as const,
         origin: createCompositeWorkspaceNamespaceCompanionOrigin({
