@@ -353,3 +353,145 @@ export function bakeSkinToRigidParts(
   }
   return { parts, blendedVertices, maxDroppedWeight }
 }
+
+
+/** One draw's worth of triangles, addressing at most the bone budget the caller stated. */
+export interface BoneLimitPart {
+  /** The distinct bones this part uses, ascending. Its length never exceeds `maxBones`. */
+  readonly bones: readonly number[]
+  /** The original vertex each of this part's vertices came from, in the part's own order. */
+  readonly vertices: Uint32Array
+  /** Triangles, as indices into `vertices`. */
+  readonly indices: Uint32Array
+}
+
+export interface BoneLimitOptions {
+  /** Most distinct bones one part may address. */
+  readonly maxBones: number
+  readonly maxBytes?: number
+  readonly signal?: AbortSignal
+}
+
+/**
+ * Split triangles so no part addresses more bones than a target can bind at once.
+ *
+ * Every skinned format binds a bounded set of bone matrices per draw and stores each vertex's
+ * influence as a small index into that set: StarCraft II's M3 region lookup is one byte wide, and
+ * its shaders bind far fewer than that byte could address. A mesh that names more bones than the
+ * bound cannot be written truthfully - the surplus either wraps or silently rebinds geometry to
+ * whatever bone index zero happens to be - so it is split instead.
+ *
+ * The split is greedy in triangle order: a triangle joins the current part while its bones still
+ * fit, and starts a new one when they do not. That keeps neighbouring triangles together, which
+ * is what makes the parts few, and it never reorders or drops a triangle. A single part is
+ * returned unchanged when the whole mesh already fits, so a caller can skip the rebuild.
+ *
+ * ponytail: greedy in authored order, not a clustering pass. Real models come in well under any
+ * sane bound, so the parts are usually one; reach for a proper partitioner only if a corpus shows
+ * this producing many more draws than a target can afford.
+ */
+export function splitTrianglesByBoneLimit(
+  indices: ArrayLike<number>,
+  boneIndices: ArrayLike<number> | undefined,
+  boneWeights: ArrayLike<number> | undefined,
+  options: BoneLimitOptions,
+): readonly BoneLimitPart[] {
+  const { maxBones, signal } = options
+  signal?.throwIfAborted()
+  if (!Number.isSafeInteger(maxBones) || maxBones < 1)
+    throw new RangeError('a bone budget must be a positive whole number')
+  if (indices.length % 3 !== 0) throw new TypeError('splitting a mesh requires whole triangles')
+  const maxBytes = options.maxBytes ?? 134_217_728
+  if (indices.length * 8 > maxBytes) throw new RangeError('bone split exceeds maxBytes')
+
+  /** The bones one vertex actually follows; an unskinned vertex follows none. */
+  const bonesOf = (vertex: number): number[] => {
+    if (boneIndices === undefined || boneWeights === undefined) return []
+    const out: number[] = []
+    for (let influence = 0; influence < 4; influence += 1) {
+      const at = vertex * 4 + influence
+      if (at >= boneIndices.length) break
+      const weight = boneWeights[at] ?? 0
+      const bone = boneIndices[at] ?? 0
+      if (weight > 0 && !out.includes(bone)) out.push(bone)
+    }
+    return out
+  }
+
+  const all = new Set<number>()
+  for (let triangle = 0; triangle + 2 < indices.length; triangle += 3) {
+    if ((triangle & 1023) === 0) signal?.throwIfAborted()
+    for (let corner = 0; corner < 3; corner += 1)
+      for (const bone of bonesOf(indices[triangle + corner] ?? 0)) all.add(bone)
+  }
+  const whole = (): BoneLimitPart[] => {
+    const vertices: number[] = []
+    const remap = new Map<number, number>()
+    const out = new Uint32Array(indices.length)
+    for (let at = 0; at < indices.length; at += 1) {
+      const vertex = indices[at] ?? 0
+      let mapped = remap.get(vertex)
+      if (mapped === undefined) {
+        mapped = vertices.length
+        remap.set(vertex, mapped)
+        vertices.push(vertex)
+      }
+      out[at] = mapped
+    }
+    return [
+      {
+        bones: [...all].sort((left, right) => left - right),
+        vertices: Uint32Array.from(vertices),
+        indices: out,
+      },
+    ]
+  }
+  if (all.size <= maxBones) return whole()
+
+  const parts: BoneLimitPart[] = []
+  let bones = new Set<number>()
+  let vertices: number[] = []
+  let remap = new Map<number, number>()
+  let partIndices: number[] = []
+  const close = (): void => {
+    if (partIndices.length === 0) return
+    parts.push({
+      bones: [...bones].sort((left, right) => left - right),
+      vertices: Uint32Array.from(vertices),
+      indices: Uint32Array.from(partIndices),
+    })
+    bones = new Set<number>()
+    vertices = []
+    remap = new Map<number, number>()
+    partIndices = []
+  }
+  for (let triangle = 0; triangle + 2 < indices.length; triangle += 3) {
+    signal?.throwIfAborted()
+    const corners = [
+      indices[triangle] ?? 0,
+      indices[triangle + 1] ?? 0,
+      indices[triangle + 2] ?? 0,
+    ]
+    const wanted = new Set<number>()
+    for (const corner of corners) for (const bone of bonesOf(corner)) wanted.add(bone)
+    if (wanted.size > maxBones)
+      throw new RangeError(
+        `one triangle follows ${String(wanted.size)} bones, more than the budget of ${String(maxBones)}`,
+      )
+    let added = 0
+    for (const bone of wanted) if (!bones.has(bone)) added += 1
+    if (bones.size + added > maxBones) close()
+    for (const bone of wanted) bones.add(bone)
+    for (const corner of corners) {
+      let mapped = remap.get(corner)
+      if (mapped === undefined) {
+        mapped = vertices.length
+        remap.set(corner, mapped)
+        vertices.push(corner)
+      }
+      partIndices.push(mapped)
+    }
+  }
+  close()
+  return parts
+}
