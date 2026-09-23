@@ -1,12 +1,14 @@
 import { describe, expect, it, vi } from 'vitest'
 import { operationId } from '@modkit/core'
 import type { AnyDescriptor, OperationSession } from '@modkit/sdk'
-import type { ContentSources } from '@modkit/vfs/content-sources'
+import type { ContentSources, ModContext, ModContextRequest } from '@modkit/vfs/content-sources'
 import type { LanguageWorkspaceDocumentSource } from '../src/language/workspace.js'
 import {
   analyzeOperationContentDependencies,
+  baseModsFor,
   composeLanguageDocumentSources,
   readOperationContentDependencies,
+  resolveContentAssetOrigins,
   resolveContentLanguageSources,
 } from '../src/content-dependency-operations.js'
 
@@ -260,5 +262,72 @@ describe('operation content dependency coordinator', () => {
         { uri: dependencyUri, precedence: 0, layerId: 'dependency', readOnly: true },
       ],
     })
+  })
+
+  it('opens a file subject inside its mods, with the base the setting names for its path', async () => {
+    const opened: ModContextRequest[] = []
+    const dispose = vi.fn(async () => {})
+    const openModContext = vi.fn(async (request: ModContextRequest): Promise<ModContext> => {
+      opened.push(request)
+      return {
+        schemaVersion: 1,
+        gameId: 'example/game',
+        contextId: 'context',
+        layers: [
+          { id: 'l0', displayName: 'Core', sourceId: 'casc', sourcePath: 'Mods/Core', role: 'dependency', provenance: 'implicit' },
+          { id: 'l1', displayName: 'Base', sourceId: 'casc', sourcePath: 'Mods/Base', role: 'base', provenance: 'setting' },
+          { id: 'l2', displayName: 'script', sourceId: 'host', sourcePath: request.target, role: 'primary', provenance: 'opened' },
+        ],
+        unresolved: [],
+        diagnostics: [],
+        files: async () => ({ items: [] }),
+        read: async () => new Uint8Array(),
+        locate: async () => undefined,
+        dispose,
+      }
+    })
+    const resolveDependencies = vi.fn()
+    const languageMounts = vi.fn(async () => ({
+      schemaVersion: 1 as const,
+      gameId: 'example/game',
+      complete: true,
+      dependencies: [],
+      diagnostics: [],
+      mounts: [
+        { dependencyId: 'core', order: 0, sourceId: 'casc', sourcePath: 'mods/core', displayName: 'Core', kind: 'mod' },
+        { dependencyId: 'wizards', order: 1, sourceId: 'wizards', sourcePath: '', displayName: 'Wizards', kind: 'editor-wizards' },
+      ],
+    }))
+    const operationsSession = operations(dependencySet)
+    const origins = await resolveContentAssetOrigins({
+      contentSources: { ...sources(), openModContext, resolveDependencies, languageMounts } as ContentSources,
+      subjects: [
+        {
+          descriptor: { ...descriptor(), subjectUri: 'file:///C:/Work/Scripts/My%20Script.galaxy' },
+          operations: operationsSession,
+        },
+      ],
+      baseMods: { '*': ['Mods/Void'], 'C:\\Work\\Scripts': ['Mods/Base'], 'C:/Work/Scripts2': ['Mods/Other'] },
+      standingMounts: true,
+    })
+    expect(opened).toEqual([
+      { schemaVersion: 1, target: 'C:/Work/Scripts/My Script.galaxy', baseMods: ['Mods/Base'] },
+    ])
+    expect(dispose).toHaveBeenCalledOnce()
+    // the codec operation and the old resolver are not consulted for a subject on disk
+    expect(operationsSession.invoke).not.toHaveBeenCalled()
+    expect(resolveDependencies).not.toHaveBeenCalled()
+    // the context's two content-source layers, then the standing wizards (Core is already held)
+    expect(origins.origins).toHaveLength(2)
+    expect(origins.dependenciesComplete).toBe(true)
+  })
+
+  it('picks the longest setting key that holds a path', () => {
+    const setting = { '*': ['any'], 'C:/A': ['a'], 'c:\\a\\b': ['b'], 'C:/A/b.txt': ['file'] }
+    expect(baseModsFor('C:/A/b/c.galaxy', setting)).toEqual(['b'])
+    expect(baseModsFor('C:/A/b.txt', setting)).toEqual(['file'])
+    expect(baseModsFor('C:/A/bc/x', setting)).toEqual(['a'])
+    expect(baseModsFor('D:/x', setting)).toEqual(['any'])
+    expect(baseModsFor('D:/x', undefined)).toBeUndefined()
   })
 })

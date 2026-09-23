@@ -181,10 +181,14 @@ export {
 } from './namespace-origin.js'
 export {
   analyzeOperationContentDependencies,
+  baseModsFor,
   composeLanguageDocumentSources,
+  modContextResolution,
   readOperationContentDependencies,
   resolveContentAssetOrigins,
   resolveContentLanguageSources,
+  type BaseModSetting,
+  type ContentSubject,
   type ContentAssetOrigins,
   type ContentAssetOriginsRequest,
   type ContentLanguageSourceLimits,

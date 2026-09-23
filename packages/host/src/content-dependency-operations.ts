@@ -1,9 +1,11 @@
 import { compareUtf8, diagnostic, type Diagnostic } from '@modkit/core'
 import type { AnyDescriptor, OperationSession } from '@modkit/sdk'
-import type {
-  ContentDependencyRequest,
-  ContentDependencyResolution,
-  ContentSources,
+import {
+  HOST_LAYER_SOURCE_ID,
+  type ContentDependencyRequest,
+  type ContentDependencyResolution,
+  type ContentSources,
+  type ModContext,
 } from '@modkit/vfs/content-sources'
 import {
   analyzeReadOnlyContentDependencies,
@@ -33,7 +35,7 @@ import type { AnalyzedResolvedDataWorkspace } from './data/index.js'
 const DEFAULT_DEPENDENCY_OPERATION = 'content.resolve-dependencies'
 
 export interface ReadOperationContentDependenciesRequest {
-  readonly descriptor: Pick<AnyDescriptor, 'operations'>
+  readonly descriptor: Pick<AnyDescriptor, 'operations'> & { readonly subjectUri?: string }
   readonly operations: OperationSession
   readonly operationId?: string
   readonly signal?: AbortSignal
@@ -182,10 +184,219 @@ export async function analyzeOperationContentDependencies(
   })
 }
 
+/** A subject whose content closure a host projects. */
+export interface ContentSubject extends Omit<ReadOperationContentDependenciesRequest, 'signal'> {
+  /**
+   * Host path of the subject — a package, a file inside one, or a file inside none. Defaults to
+   * the descriptor's `file:` subject URI. With it, the closure comes from the provider's
+   * `openModContext`; without it, from the subject's `content.resolve-dependencies` operation.
+   */
+  readonly target?: string
+}
+
+/**
+ * Packages a file outside any package opens inside, keyed by the host path of a folder or a file
+ * (`*` for anywhere), as the game names them (`Mods/Void.SC2Mod`, or a mod folder's path). Several
+ * packages, of several games, may be listed; each game's loader takes the ones it knows.
+ */
+export type BaseModSetting = Readonly<Record<string, readonly string[]>>
+
+const foldHostPath = (value: string): string =>
+  value.replaceAll('\\', '/').replace(/\/+$/u, '').toLowerCase()
+
+/** The setting's packages for a host path: the longest key that holds the path wins. */
+export function baseModsFor(
+  target: string,
+  setting: BaseModSetting | undefined,
+): readonly string[] | undefined {
+  if (setting === undefined) return undefined
+  const wanted = foldHostPath(target)
+  let best: { readonly length: number; readonly mods: readonly string[] } | undefined
+  for (const [key, mods] of Object.entries(setting)) {
+    const folded = key === '*' ? '' : foldHostPath(key)
+    const holds = folded === '' || wanted === folded || wanted.startsWith(`${folded}/`)
+    if (holds && (best === undefined || folded.length > best.length)) {
+      best = { length: folded.length, mods }
+    }
+  }
+  return best?.mods
+}
+
+/** The host path of a `file:` URI; undefined for any other scheme. */
+function hostPathOf(uri: string | undefined): string | undefined {
+  if (uri === undefined || !uri.startsWith('file:')) return undefined
+  let url: URL
+  try {
+    url = new URL(uri)
+  } catch {
+    return undefined
+  }
+  const path = decodeURIComponent(url.pathname)
+  if (url.host !== '') return `//${url.host}${path}`
+  return /^\/[A-Za-z]:\//u.test(path) ? path.slice(1) : path
+}
+
+/**
+ * The layers of a mod context a host reads through its content sources, as the mounts of a
+ * dependency closure — dependencies first. The opened package on the host's disk is left out: the
+ * host already serves it as the subject itself.
+ */
+export function modContextResolution(context: ModContext): ContentDependencyResolution {
+  return Object.freeze({
+    schemaVersion: 1,
+    gameId: context.gameId,
+    complete: context.unresolved.length === 0,
+    mounts: Object.freeze(
+      context.layers.flatMap((layer, order) =>
+        layer.sourceId === HOST_LAYER_SOURCE_ID
+          ? []
+          : [
+              Object.freeze({
+                dependencyId: `${layer.sourceId}:${layer.sourcePath}`,
+                order,
+                sourceId: layer.sourceId,
+                sourcePath: layer.sourcePath,
+                displayName: layer.displayName,
+                kind: layer.role,
+              }),
+            ],
+      ),
+    ),
+    dependencies: Object.freeze([]),
+    diagnostics: context.diagnostics,
+  })
+}
+
+interface SubjectClosures {
+  readonly resolutions: readonly ContentDependencyResolution[]
+  readonly diagnostics: readonly Diagnostic[]
+  readonly complete: boolean
+}
+
+const failure = (code: string, error: unknown): Diagnostic =>
+  diagnostic('warning', code, error instanceof Error ? error.message : String(error))
+
+/**
+ * Each subject's dependency closure, then the provider's standing mounts — the two answers every
+ * projection below is built from. Standing mounts a subject's closure already holds are dropped,
+ * and they never make a partial closure complete.
+ */
+async function subjectClosures(request: {
+  readonly contentSources: ContentSources
+  readonly subjects: readonly ContentSubject[]
+  readonly baseMods?: BaseModSetting
+  readonly standingMounts?: boolean
+  readonly signal?: AbortSignal
+}): Promise<SubjectClosures> {
+  const { contentSources, signal } = request
+  const resolutions: ContentDependencyResolution[] = []
+  const diagnostics: Diagnostic[] = []
+  let complete = request.subjects.length > 0
+  for (const subject of request.subjects) {
+    const target = subject.target ?? hostPathOf(subject.descriptor.subjectUri)
+    if (target !== undefined && contentSources.openModContext !== undefined) {
+      try {
+        const baseMods = baseModsFor(target, request.baseMods)
+        const context = await contentSources.openModContext({
+          schemaVersion: 1,
+          target,
+          ...(baseMods === undefined ? {} : { baseMods }),
+        })
+        try {
+          signal?.throwIfAborted()
+          const resolution = modContextResolution(context)
+          diagnostics.push(...contentDependencyDiagnostics(resolution.diagnostics))
+          complete &&= resolution.complete
+          resolutions.push(resolution)
+        } finally {
+          await context.dispose()
+        }
+      } catch (error) {
+        signal?.throwIfAborted()
+        complete = false
+        diagnostics.push(failure('x3.host/mod-context-failed', error))
+      }
+      continue
+    }
+    let discovered: ReadOperationContentDependenciesResult
+    try {
+      discovered = await readOperationContentDependencies({
+        ...subject,
+        ...(signal === undefined ? {} : { signal }),
+      })
+    } catch (error) {
+      signal?.throwIfAborted()
+      discovered = Object.freeze({
+        state: 'unresolved',
+        diagnostics: Object.freeze([failure('x3.host/content-dependency-operation-failed', error)]),
+      })
+    }
+    diagnostics.push(...discovered.diagnostics)
+    if (discovered.state !== 'resolved') {
+      complete = false
+      continue
+    }
+    if (contentSources.resolveDependencies === undefined) {
+      complete = false
+      diagnostics.push(
+        diagnostic(
+          'information',
+          'x3.host/content-dependency-resolver-unavailable',
+          'the configured content source cannot resolve subject dependencies',
+        ),
+      )
+      continue
+    }
+    try {
+      const resolution = await contentSources.resolveDependencies(discovered.dependencies)
+      signal?.throwIfAborted()
+      diagnostics.push(...contentDependencyDiagnostics(resolution.diagnostics))
+      complete &&= resolution.complete
+      resolutions.push(resolution)
+    } catch (error) {
+      signal?.throwIfAborted()
+      complete = false
+      diagnostics.push(failure('x3.host/content-dependency-resolution-failed', error))
+    }
+  }
+  if (request.standingMounts === true && contentSources.languageMounts !== undefined) {
+    try {
+      const standing = await contentSources.languageMounts()
+      signal?.throwIfAborted()
+      diagnostics.push(...contentDependencyDiagnostics(standing.diagnostics))
+      const held = new Set(
+        resolutions.flatMap(resolution =>
+          resolution.mounts.map(mount => `${mount.sourceId}\0${foldHostPath(mount.sourcePath)}`),
+        ),
+      )
+      resolutions.push(
+        Object.freeze({
+          ...standing,
+          mounts: Object.freeze(
+            standing.mounts.filter(
+              mount => !held.has(`${mount.sourceId}\0${foldHostPath(mount.sourcePath)}`),
+            ),
+          ),
+        }),
+      )
+    } catch (error) {
+      signal?.throwIfAborted()
+      diagnostics.push(failure('x3.host/content-language-mounts-failed', error))
+    }
+  }
+  return Object.freeze({
+    resolutions: Object.freeze(resolutions.filter(resolution => resolution.mounts.length > 0)),
+    diagnostics: Object.freeze(diagnostics),
+    complete,
+  })
+}
+
 export interface ContentAssetOriginsRequest {
   readonly contentSources: ContentSources
-  /** Subjects whose `content.resolve-dependencies` names the dependency closure to project. */
-  readonly subjects: readonly Omit<ReadOperationContentDependenciesRequest, 'signal'>[]
+  /** Subjects whose content closure to project. */
+  readonly subjects: readonly ContentSubject[]
+  /** Packages a subject outside any package opens inside, per host path. */
+  readonly baseMods?: BaseModSetting
   /** Also project the provider's standing mounts (content the game loads whatever is open). */
   readonly standingMounts?: boolean
   readonly maximumEntryBytes?: number
@@ -203,107 +414,29 @@ export interface ContentAssetOrigins {
 /**
  * Where a subject's *resources* may be found, as the mod it belongs to and what that mod depends on.
  *
- * The twin of `resolveContentLanguageSources`, over the same two calls — each subject's declared
- * dependency closure, then the provider's standing mounts — because "which files does this document
- * read" and "which files does this model's texture come out of" are the same question asked of the
- * same provider. They were answered by different machinery: the language had this, and a model had
- * only the directory its file sat in.
- *
- * Standing mounts are what a game loads whatever is open — StarCraft II always has Core and Liberty
- * beneath it — so they are also the answer for a file that belongs to no mod at all.
+ * The twin of `resolveContentLanguageSources`, over the same closures, because "which files does
+ * this document read" and "which files does this model's texture come out of" are the same question
+ * asked of the same provider.
  */
 export async function resolveContentAssetOrigins(
   request: ContentAssetOriginsRequest,
 ): Promise<ContentAssetOrigins> {
-  const { contentSources, signal } = request
-  const origins: CompanionOrigin[] = []
-  const diagnostics: Diagnostic[] = []
-  let complete = request.subjects.length > 0
-  const project = (resolution: ContentDependencyResolution): void => {
-    const origin = createContentDependencyAssetOrigin({
-      contentSources,
-      resolution,
-      ...(request.maximumEntryBytes === undefined
-        ? {}
-        : { maximumEntryBytes: request.maximumEntryBytes }),
-    })
-    if (origin !== undefined) origins.push(origin)
-  }
-  for (const subject of request.subjects) {
-    let discovered: ReadOperationContentDependenciesResult
-    try {
-      discovered = await readOperationContentDependencies({
-        ...subject,
-        ...(signal === undefined ? {} : { signal }),
-      })
-    } catch (error) {
-      signal?.throwIfAborted()
-      discovered = Object.freeze({
-        state: 'unresolved',
-        diagnostics: Object.freeze([
-          diagnostic(
-            'warning',
-            'x3.host/content-dependency-operation-failed',
-            error instanceof Error ? error.message : String(error),
-          ),
-        ]),
-      })
-    }
-    diagnostics.push(...discovered.diagnostics)
-    if (discovered.state !== 'resolved') {
-      complete = false
-      continue
-    }
-    if (contentSources.resolveDependencies === undefined) {
-      complete = false
-      diagnostics.push(
-        diagnostic(
-          'information',
-          'x3.host/content-dependency-resolver-unavailable',
-          'the configured content source cannot resolve subject dependencies',
-        ),
-      )
-      continue
-    }
-    try {
-      const resolution = await contentSources.resolveDependencies(discovered.dependencies)
-      signal?.throwIfAborted()
-      diagnostics.push(...contentDependencyDiagnostics(resolution.diagnostics))
-      complete &&= resolution.complete
-      project(resolution)
-    } catch (error) {
-      signal?.throwIfAborted()
-      complete = false
-      diagnostics.push(
-        diagnostic(
-          'warning',
-          'x3.host/content-dependency-resolution-failed',
-          error instanceof Error ? error.message : String(error),
-        ),
-      )
-    }
-  }
-  if (request.standingMounts === true && contentSources.languageMounts !== undefined) {
-    try {
-      const standing = await contentSources.languageMounts()
-      signal?.throwIfAborted()
-      diagnostics.push(...contentDependencyDiagnostics(standing.diagnostics))
-      project(standing)
-    } catch (error) {
-      signal?.throwIfAborted()
-      diagnostics.push(
-        diagnostic(
-          'warning',
-          'x3.host/content-language-mounts-failed',
-          error instanceof Error ? error.message : String(error),
-        ),
-      )
-    }
-  }
+  const closures = await subjectClosures(request)
   return Object.freeze({
-    origins: Object.freeze(origins),
-    diagnostics: Object.freeze(diagnostics),
-    dependenciesComplete: complete,
+    origins: Object.freeze(
+      closures.resolutions.flatMap(resolution => {
+        const origin = createContentDependencyAssetOrigin({
+          contentSources: request.contentSources,
+          resolution,
+          ...(request.maximumEntryBytes === undefined
+            ? {}
+            : { maximumEntryBytes: request.maximumEntryBytes }),
+        })
+        return origin === undefined ? [] : [origin]
+      }),
+    ),
+    diagnostics: closures.diagnostics,
+    dependenciesComplete: closures.complete,
   })
 }
 
@@ -317,8 +450,10 @@ export interface ContentLanguageSourcesRequest {
   readonly contentSources: ContentSources
   readonly routes: readonly LanguageProviderRoute[]
   readonly limits: ContentLanguageSourceLimits
-  /** Subjects whose `content.resolve-dependencies` names the dependency closure to project. */
-  readonly subjects: readonly Omit<ReadOperationContentDependenciesRequest, 'signal'>[]
+  /** Subjects whose content closure to project. */
+  readonly subjects: readonly ContentSubject[]
+  /** Packages a subject outside any package opens inside, per host path. */
+  readonly baseMods?: BaseModSetting
   /** Also project the provider's standing mounts (content loaded regardless of the subject). */
   readonly standingMounts?: boolean
   readonly signal?: AbortSignal
@@ -332,95 +467,28 @@ export interface ContentLanguageSources {
 }
 
 /**
- * Read-only language documents from a content provider: each subject's resolved dependency
- * closure, then the provider's standing mounts. Shared by every host that serves language features
- * over packed dependencies (MCP sessions, the standalone LSP), so they project them identically.
- * Standing mounts add documents only; they never make a partial dependency closure complete.
+ * Read-only language documents from a content provider: each subject's closure, then the
+ * provider's standing mounts. Shared by every host that serves language features over packed
+ * dependencies (VS Code, MCP sessions, the standalone LSP), so they project them identically.
  */
 export async function resolveContentLanguageSources(
   request: ContentLanguageSourcesRequest,
 ): Promise<ContentLanguageSources> {
-  const { contentSources, routes, limits, signal } = request
-  const sources: LanguageWorkspaceDocumentSource[] = []
-  const diagnostics: Diagnostic[] = []
-  let complete = request.subjects.length > 0
-  const project = (resolution: ContentDependencyResolution) =>
-    createContentDependencyLanguageDocumentSource({ contentSources, resolution, routes, ...limits })
-  for (const subject of request.subjects) {
-    let discovered: ReadOperationContentDependenciesResult
-    try {
-      discovered = await readOperationContentDependencies({
-        ...subject,
-        ...(signal === undefined ? {} : { signal }),
-      })
-    } catch (error) {
-      signal?.throwIfAborted()
-      discovered = Object.freeze({
-        state: 'unresolved',
-        diagnostics: Object.freeze([
-          diagnostic(
-            'warning',
-            'x3.host/content-dependency-operation-failed',
-            error instanceof Error ? error.message : String(error),
-          ),
-        ]),
-      })
-    }
-    diagnostics.push(...discovered.diagnostics)
-    if (discovered.state !== 'resolved') {
-      complete = false
-      continue
-    }
-    if (contentSources.resolveDependencies === undefined) {
-      complete = false
-      diagnostics.push(
-        diagnostic(
-          'information',
-          'x3.host/content-dependency-resolver-unavailable',
-          'the configured content source cannot resolve subject dependencies',
-        ),
-      )
-      continue
-    }
-    try {
-      const resolution = await contentSources.resolveDependencies(discovered.dependencies)
-      signal?.throwIfAborted()
-      diagnostics.push(...contentDependencyDiagnostics(resolution.diagnostics))
-      complete &&= resolution.complete
-      if (resolution.mounts.length > 0) sources.push(project(resolution))
-    } catch (error) {
-      signal?.throwIfAborted()
-      complete = false
-      diagnostics.push(
-        diagnostic(
-          'warning',
-          'x3.host/content-dependency-resolution-failed',
-          error instanceof Error ? error.message : String(error),
-        ),
-      )
-    }
-  }
-  if (request.standingMounts === true && contentSources.languageMounts !== undefined) {
-    try {
-      const standing = await contentSources.languageMounts()
-      signal?.throwIfAborted()
-      diagnostics.push(...contentDependencyDiagnostics(standing.diagnostics))
-      if (standing.mounts.length > 0) sources.push(project(standing))
-    } catch (error) {
-      signal?.throwIfAborted()
-      diagnostics.push(
-        diagnostic(
-          'warning',
-          'x3.host/content-language-mounts-failed',
-          error instanceof Error ? error.message : String(error),
-        ),
-      )
-    }
-  }
+  const { contentSources, routes, limits } = request
+  const closures = await subjectClosures(request)
   return Object.freeze({
-    sources: Object.freeze(sources),
-    diagnostics: Object.freeze(diagnostics),
-    dependenciesComplete: complete,
+    sources: Object.freeze(
+      closures.resolutions.map(resolution =>
+        createContentDependencyLanguageDocumentSource({
+          contentSources,
+          resolution,
+          routes,
+          ...limits,
+        }),
+      ),
+    ),
+    diagnostics: closures.diagnostics,
+    dependenciesComplete: closures.complete,
   })
 }
 

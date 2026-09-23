@@ -263,6 +263,13 @@
     "configuration": {
       "title": "%configuration.title%",
       "properties": {
+        "modkit.baseMods": {
+          "additionalProperties": { "items": { "type": "string" }, "type": "array" },
+          "default": {},
+          "markdownDescription": "%configuration.baseMods.description%",
+          "scope": "resource",
+          "type": "object"
+        },
         "modkit.contentSourceConfig": {
           "default": "",
           "markdownDescription": "%configuration.contentSourceConfig.description%",

@@ -82,11 +82,17 @@ export interface ModContextRequest {
   readonly locales?: readonly string[]
 }
 
+/** The `sourceId` of a layer that lives on the host's own disk rather than in a content source. */
+export const HOST_LAYER_SOURCE_ID = 'host'
+
 /** One layer of a context, in load order: where it came from and why it is there. */
 export interface ModContextLayer {
   readonly id: string
   readonly displayName: string
-  /** The content source holding it, and its original path there (`Mods/Core.SC2Mod`). */
+  /**
+   * The content source holding it, and its original path there (`Mods/Core.SC2Mod`); or
+   * {@link HOST_LAYER_SOURCE_ID} and the host path, for the opened package on disk.
+   */
   readonly sourceId: string
   readonly sourcePath: string
   /** `primary` is the opened package, `base` a setting-chosen package under a loose file. */

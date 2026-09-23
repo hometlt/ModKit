@@ -87,6 +87,7 @@ import {
   SERVICE_OPERATION_CATALOG_MAX_PAGE_ITEMS,
   loadLocalizationCatalogs,
   resolveContentLanguageSources,
+  type BaseModSetting,
   type CommandInput,
   type CommandResult,
 } from '@modkit/host'
@@ -7672,10 +7673,13 @@ async function activateModkit(
   const languageSnapshotKey = (
     scope: LiveLanguageScope | undefined,
     request: LanguageSnapshotRequest,
+    closure?: { readonly loose?: string; readonly baseMods?: BaseModSetting },
   ): string =>
     languageWorkspaceContextToken({
       scope: scope?.contextId,
       scopeRevision: scope?.revision,
+      loose: closure?.loose,
+      baseMods: closure?.baseMods,
       workspaceFolders: (vscode.workspace.workspaceFolders ?? []).map(folder =>
         folder.uri.toString(),
       ),
@@ -8005,6 +8009,35 @@ async function activateModkit(
       },
     })
 
+  /**
+   * `modkit.baseMods` for a document: the packages a file outside any package opens inside, keyed
+   * by folder or file. Relative keys are taken against the document's workspace folder.
+   */
+  const baseModsSetting = (uri: vscode.Uri): BaseModSetting | undefined => {
+    const raw: unknown = vscode.workspace.getConfiguration('modkit', uri).get('baseMods')
+    if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) return undefined
+    const folder = vscode.workspace.getWorkspaceFolder(uri)?.uri.fsPath
+    const entries = Object.entries(raw).flatMap(([key, mods]) =>
+      Array.isArray(mods) && mods.length > 0 && mods.every(mod => typeof mod === 'string' && mod)
+        ? [[key === '*' || isAbsolute(key) || folder === undefined ? key : join(folder, key), mods]]
+        : [],
+    )
+    return entries.length === 0 ? undefined : Object.freeze(Object.fromEntries(entries))
+  }
+
+  /** A file in no package: the provider opens it inside the base mods, with no operation of its own. */
+  const looseLanguageSubject = (path: string) =>
+    Object.freeze({
+      target: path,
+      descriptor: Object.freeze({ operations: Object.freeze([]) }),
+      operations: Object.freeze({
+        invoke: async () => {
+          throw new Error('a loose file has no operations')
+        },
+        dispose: async () => {},
+      }) as OperationSession,
+    })
+
   const dependencyFailureNotices = new Set<string>()
   const languageDocumentSource: LanguageWorkspaceDocumentSource = Object.freeze({
     async snapshot(request: Parameters<LanguageWorkspaceDocumentSource['snapshot']>[0]) {
@@ -8015,10 +8048,16 @@ async function activateModkit(
         return workspaceLanguageDocumentSource(undefined, false).snapshot(request)
       }
       const scope = await resolveLanguageScope(uri, request.signal)
-      const snapshotKey = languageSnapshotKey(scope, request)
+      const baseMods = baseModsSetting(uri)
+      // A file that belongs to no package still opens inside mods: the setting's, or the game's own.
+      const loose = scope === undefined && uri.scheme === 'file' ? uri.fsPath : undefined
+      const snapshotKey = languageSnapshotKey(scope, request, {
+        ...(loose === undefined ? {} : { loose }),
+        ...(baseMods === undefined ? {} : { baseMods }),
+      })
       const cached = cachedLanguageSnapshot(snapshotKey, request)
       if (cached !== undefined) return cached
-      if (scope === undefined) {
+      if (scope === undefined && loose === undefined) {
         const snapshot = await workspaceLanguageDocumentSource(undefined, false).snapshot(request)
         rememberLanguageSnapshot(snapshotKey, snapshot)
         return rebaseLanguageSnapshot(snapshot, request)
@@ -8027,7 +8066,7 @@ async function activateModkit(
       try {
         const configuredContentSources = await requireContentSources()
         const containerLocation =
-          scope.root?.scheme === CONTAINER_SCHEME
+          scope?.root?.scheme === CONTAINER_SCHEME
             ? parseContainerUriPath(scope.root.path)
             : undefined
         projected = await resolveContentLanguageSources({
@@ -8045,7 +8084,11 @@ async function activateModkit(
             maxWorkspaceBytes: 67_108_864,
             maxEntries: 65_536,
           },
-          subjects: [{ descriptor: scope.descriptor, operations: scope.operations }],
+          subjects:
+            scope === undefined
+              ? [looseLanguageSubject(loose!)]
+              : [{ descriptor: scope.descriptor, operations: scope.operations }],
+          ...(baseMods === undefined ? {} : { baseMods }),
           standingMounts: true,
           signal: request.signal,
         })
@@ -8055,10 +8098,12 @@ async function activateModkit(
       } catch (error) {
         request.signal.throwIfAborted()
         const message = error instanceof Error ? error.message : String(error)
-        const notice = `${scope.contextId}:${message}`
+        const notice = `${scope?.contextId ?? loose}:${message}`
         if (!dependencyFailureNotices.has(notice)) {
           dependencyFailureNotices.add(notice)
-          log(`[language-context] dependency context unavailable for ${scope.path}: ${message}`)
+          log(
+            `[language-context] dependency context unavailable for ${scope?.path ?? loose}: ${message}`,
+          )
         }
       }
       const local = workspaceLanguageDocumentSource(scope, projected?.dependenciesComplete === true)
