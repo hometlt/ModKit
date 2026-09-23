@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "kind": "owner-decision/owner-dropped",
+  "date": "2026-09-24",
+  "reason": "Owner decision 2026-09-24: every StarCraft II package loads through the content sources into the one mod loader, so the JSON mod source (JsonModReader, jsonModToFiles, the sc2-mod/json-source export) is removed. Parity with MK2 was reached (reports/parity/sc2-mod-json/receipt.json, verdict pass); a comparison with MK2 is not rerun once parity holds, and MK2 stays readable in references/modkitmk2.",
+  "rows": [
+    {
+      "id": "legacy/codec-manifest/modkit/sc2-mod/feature/51f919fb5ce9eda8",
+      "note": "JsonModReader: modkit-json-mod@1 read back as a BaseReader"
+    }
+  ],
+  "priorParity": {
+    "path": "modkit-core/reports/parity/sc2-mod-json/receipt.json",
+    "sha256": "dd092395d80b751f38e0bbde44e9c8c993d92ad3e7087218f0e1e2b0f7c3035a",
+    "verdict": "pass"
+  },
+  "removedBy": {
+    "repository": "modkit-extensions-blizzard",
+    "commit": "48076516",
+    "paths": [
+      "starcraft2/modules/mod/shared/json-mod.ts",
+      "starcraft2/modules/mod/test/json-mod.test.ts"
+    ]
+  }
+}
