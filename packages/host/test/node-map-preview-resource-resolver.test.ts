@@ -300,6 +300,7 @@ describe('Node game-installation map-preview resource resolver', () => {
       return { state: 'opened', session: base.session, diagnostics: [] }
     })
     const resolver = createNodeMapPreviewResourcePlanResolver({
+      installationRetentionMs: 0,
       subjects: { open } as unknown as Pick<SubjectServices, 'open'>,
       configuredPaths: { [GAME_ID]: [root] },
     })
@@ -393,6 +394,7 @@ describe('Node game-installation map-preview resource resolver', () => {
     const original = await namespaceSession(pathToFileURL(originalPath).href, new Map())
     const open = vi.fn()
     const resolver = createNodeMapPreviewResourcePlanResolver({
+      installationRetentionMs: 0,
       subjects: { open } as unknown as Pick<SubjectServices, 'open'>,
     })
     const result = await resolver.resolve(
@@ -401,6 +403,81 @@ describe('Node game-installation map-preview resource resolver', () => {
     expect(result).toMatchObject({ state: 'unresolved', diagnostics: [{ code }] })
     expect(mocks.discover).not.toHaveBeenCalled()
     expect(open).not.toHaveBeenCalled()
+  })
+
+  it('keeps a released installation for its retention so the next pass reuses it', async () => {
+    const root = await installationRoot()
+    const mpPath = join(root, 'data', 'mp.wz')
+    const basePath = join(root, 'data', 'base.wz')
+    await Promise.all([writeFile(mpPath, 'mp'), writeFile(basePath, 'base')])
+    mocks.discover.mockResolvedValue({
+      state: 'discovered',
+      result: discovery(root),
+      diagnostics: [],
+    })
+    const first = await namespaceSession(pathToFileURL(mpPath).href, new Map())
+    const second = await namespaceSession(pathToFileURL(mpPath).href, new Map())
+    const base = await namespaceSession(pathToFileURL(basePath).href, new Map())
+    const open = vi.fn(async () => ({ state: 'opened', session: base.session, diagnostics: [] }))
+    const resolver = createNodeMapPreviewResourcePlanResolver({
+      installationRetentionMs: 60_000,
+      subjects: { open } as unknown as Pick<SubjectServices, 'open'>,
+      configuredPaths: { [GAME_ID]: [root] },
+    })
+
+    // The warm pass and the mount pass of one map open are sequential: the first releases before
+    // the second asks, so pure reference counting would index the installation twice.
+    const one = await resolver.resolve(await requestFixture(plan(), mpPath, first.session))
+    if (one.state !== 'resolved') throw new Error('first resolve failed')
+    await one.release()
+    expect(base.sessionRelease).not.toHaveBeenCalled()
+
+    const two = await resolver.resolve(await requestFixture(plan(), mpPath, second.session))
+    if (two.state !== 'resolved') throw new Error('second resolve failed')
+    expect(open).toHaveBeenCalledOnce()
+    await two.release()
+  })
+
+  it('opens an installed archive once across concurrent resolves and releases it last', async () => {
+    const root = await installationRoot()
+    const mpPath = join(root, 'data', 'mp.wz')
+    const basePath = join(root, 'data', 'base.wz')
+    await Promise.all([writeFile(mpPath, 'mp'), writeFile(basePath, 'base')])
+    mocks.discover.mockResolvedValue({
+      state: 'discovered',
+      result: discovery(root),
+      diagnostics: [],
+    })
+    const first = await namespaceSession(pathToFileURL(mpPath).href, new Map())
+    const second = await namespaceSession(pathToFileURL(mpPath).href, new Map())
+    const base = await namespaceSession(
+      pathToFileURL(basePath).href,
+      new Map([['stats/templates.json', new Uint8Array([4, 5])]]),
+    )
+    const open = vi.fn(async () => ({ state: 'opened', session: base.session, diagnostics: [] }))
+    const resolver = createNodeMapPreviewResourcePlanResolver({
+      installationRetentionMs: 0,
+      subjects: { open } as unknown as Pick<SubjectServices, 'open'>,
+      configuredPaths: { [GAME_ID]: [root] },
+    })
+
+    // Concurrent on purpose: the two passes of one map open overlap, so a cache that only holds
+    // finished mounts never hits and the installation is indexed twice.
+    const [one, two] = await Promise.all([
+      resolver.resolve(await requestFixture(plan(), mpPath, first.session)),
+      resolver.resolve(await requestFixture(plan(), mpPath, second.session)),
+    ])
+    if (one.state !== 'resolved' || two.state !== 'resolved') {
+      throw new Error('fixture resource plan did not resolve twice')
+    }
+    // Opening and indexing an installation is the expensive half of a cold map preview.
+    expect(open).toHaveBeenCalledOnce()
+
+    await one.release()
+    expect(base.sessionRelease).not.toHaveBeenCalled()
+    await two.release()
+    expect(base.sessionRelease).toHaveBeenCalledOnce()
+    expect(base.namespaceRelease).toHaveBeenCalledOnce()
   })
 
   it('discovers the installation under its own grant when one is configured', async () => {
@@ -413,6 +490,7 @@ describe('Node game-installation map-preview resource resolver', () => {
       classes: Object.freeze(['filesystem-read' as const]),
     })
     const resolver = createNodeMapPreviewResourcePlanResolver({
+      installationRetentionMs: 0,
       subjects: { open: vi.fn() } as unknown as Pick<SubjectServices, 'open'>,
       installationDiscoveryGrant,
     })
@@ -437,6 +515,7 @@ describe('Node game-installation map-preview resource resolver', () => {
     await writeFile(originalPath, 'subject')
     const original = await namespaceSession(pathToFileURL(originalPath).href, new Map())
     const resolver = createNodeMapPreviewResourcePlanResolver({
+      installationRetentionMs: 0,
       subjects: { open: vi.fn() } as unknown as Pick<SubjectServices, 'open'>,
     })
 
@@ -491,6 +570,7 @@ describe('Node game-installation map-preview resource resolver', () => {
     const original = await namespaceSession(pathToFileURL(originalPath).href, new Map())
     const open = vi.fn()
     const resolver = createNodeMapPreviewResourcePlanResolver({
+      installationRetentionMs: 0,
       subjects: { open } as unknown as Pick<SubjectServices, 'open'>,
     })
     const result = await resolver.resolve(
@@ -531,6 +611,7 @@ describe('Node game-installation map-preview resource resolver', () => {
       .mockResolvedValueOnce({ state: 'opened', session: mp.session, diagnostics: [] })
       .mockResolvedValueOnce({ state: 'unresolved', diagnostics: [] })
     const resolver = createNodeMapPreviewResourcePlanResolver({
+      installationRetentionMs: 0,
       subjects: { open } as unknown as Pick<SubjectServices, 'open'>,
     })
     const installationOnlyPlan = plan([

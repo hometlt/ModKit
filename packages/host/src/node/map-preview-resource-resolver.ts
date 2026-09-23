@@ -35,6 +35,24 @@ import type { SubjectServices } from '../subject-services.js'
 import { artifactNamespaceSourceFromVfsMount } from '../vfs-source.js'
 import { openFileArtifactSource } from './file-artifact-source.js'
 
+/** One installed archive shared by the concurrent passes of a single map open. */
+interface SharedArchive {
+  readonly mount: NamespaceMount
+  readonly close: () => Promise<void>
+}
+
+/** A named refusal from the shared opening, carried to whichever pass awaited it. */
+class ArchiveOpenFailure extends Error {
+  constructor(
+    readonly code: string,
+    message: string,
+    readonly diagnostics: readonly Diagnostic[] = [],
+  ) {
+    super(message)
+    this.name = 'ArchiveOpenFailure'
+  }
+}
+
 const LOCATOR_KIND = 'game-installation-archive'
 const SUBJECT_LOCATOR_KIND = 'game-installation-subject'
 export const NODE_GAME_INSTALLATION_ARCHIVE_MAP_PREVIEW_RESOLVER_ID =
@@ -107,6 +125,11 @@ export interface NodeMapPreviewResourcePlanResolverOptions {
    * call receives it; installed archives are still opened under the caller's subject grant.
    */
   readonly installationDiscoveryGrant?: PermissionGrant
+  /**
+   * How long a finished installation mount is kept after its last holder released it, so the
+   * sequential passes of one map open share it. 0 closes it immediately. Default 60000.
+   */
+  readonly installationRetentionMs?: number
   readonly maxInstallationCandidates?: number
   readonly pageLimit?: number
   readonly maxPages?: number
@@ -387,6 +410,47 @@ export function createNodeMapPreviewResourcePlanResolver(
   )
   const pageLimit = positiveLimit(options.pageLimit ?? 256, 'pageLimit')
   const maxPages = positiveLimit(options.maxPages ?? 4096, 'maxPages')
+
+  const idleRetentionMs = options.installationRetentionMs ?? 60_000
+
+  /*
+   * An installed game is opened and indexed once, not once per resolve.
+   *
+   * One map open resolves its plan twice — a warm pass and the mount pass — and each pass opened
+   * and indexed the whole installation again: measured at 26 s per pass, and the second pass
+   * carried enough heap to kill the archive worker with ERR_WORKER_OUT_OF_MEMORY, which dropped
+   * the preview back to the container entry list on roughly every other open.
+   *
+   * Two things are shared. The opening itself, so passes that overlap wait instead of indexing
+   * twice; and the finished mount for a short idle period, because the two passes are usually
+   * sequential and pure reference counting would close it in the gap between them. An installation
+   * does not change while a window is open, so the retention only bounds how long its memory and
+   * handles are held after the last map that wanted it.
+   */
+  const sharedArchives = new Map<
+    string,
+    { readonly opening: Promise<SharedArchive>; refs: number; idle?: NodeJS.Timeout | undefined }
+  >()
+  const closeShared = async (key: string): Promise<void> => {
+    const entry = sharedArchives.get(key)
+    if (entry === undefined || entry.refs > 0) return
+    sharedArchives.delete(key)
+    // A rejected opening owns its own cleanup; there is nothing left to close.
+    await entry.opening.then(archive => archive.close()).catch(() => undefined)
+  }
+  const releaseShared = async (key: string): Promise<void> => {
+    const entry = sharedArchives.get(key)
+    if (entry === undefined) return
+    entry.refs -= 1
+    if (entry.refs > 0) return
+    if (idleRetentionMs <= 0) {
+      await closeShared(key)
+      return
+    }
+    // Never a reason to keep the process alive on its own.
+    entry.idle = setTimeout(() => void closeShared(key), idleRetentionMs)
+    entry.idle.unref?.()
+  }
 
   return Object.freeze({
     async resolve(
@@ -674,97 +738,149 @@ export function createNodeMapPreviewResourcePlanResolver(
           mount = originalMount
         } else {
           const key = pathKey(resourcePath)
+          const sharedKey = `${request.grant.id} ${key}`
           const existing = externalMounts.get(key)
           if (existing !== undefined) {
             mount = existing
           } else {
-            const archiveStartedAt = Date.now()
-            let opened: Awaited<ReturnType<SubjectServices['open']>>
-            let releaseSource = async (): Promise<void> => undefined
-            try {
-              const resourceInfo = await stat(resourcePath)
-              if (resourceInfo.isDirectory()) {
-                if (
-                  options.subjects.inventory === undefined ||
-                  options.subjects.target === undefined ||
-                  options.subjects.executionBackends === undefined
-                ) {
-                  throw new TypeError(
-                    'directory resource opening requires inventory, target and execution backends',
-                  )
-                }
-                const vfs = new VirtualFileSystem().registerProvider(createFileVfsProvider())
-                try {
-                  const vfsMount = await vfs.openMount(
-                    pathToFileURL(resourcePath).href,
-                    request.signal === undefined ? {} : { signal: request.signal },
-                  )
-                  releaseSource = async () => vfs.dispose()
-                  opened = await openSubject({
-                    inventory: options.subjects.inventory,
-                    source: artifactNamespaceSourceFromVfsMount(vfsMount),
-                    path: resourcePath,
-                    intent: 'inspect',
-                    target: options.subjects.target,
-                    grant: request.grant,
-                    budget: request.budgets,
-                    executionBackends: options.subjects.executionBackends,
-                    ...(options.subjects.serviceDefinitions === undefined
-                      ? {}
-                      : { serviceDefinitions: options.subjects.serviceDefinitions }),
-                    ...(request.signal === undefined ? {} : { signal: request.signal }),
+            /*
+             * The two passes of one map open run side by side, so sharing a finished mount never
+             * hit: the second pass looked before the first had opened anything. What is shared is
+             * the opening itself, so the second pass waits for the first instead of indexing the
+             * installation a second time. The first pass owns the abort signal for that open.
+             */
+            let entry = sharedArchives.get(sharedKey)
+            if (entry === undefined) {
+              const archiveStartedAt = Date.now()
+              entry = {
+                refs: 0,
+                opening: (async (): Promise<SharedArchive> => {
+                  let opened: Awaited<ReturnType<SubjectServices['open']>>
+                  let releaseSource = async (): Promise<void> => undefined
+                  try {
+                    const resourceInfo = await stat(resourcePath)
+                    if (resourceInfo.isDirectory()) {
+                      if (
+                        options.subjects.inventory === undefined ||
+                        options.subjects.target === undefined ||
+                        options.subjects.executionBackends === undefined
+                      ) {
+                        throw new TypeError(
+                          'directory resource opening requires inventory, target and execution backends',
+                        )
+                      }
+                      const vfs = new VirtualFileSystem().registerProvider(createFileVfsProvider())
+                      try {
+                        const vfsMount = await vfs.openMount(
+                          pathToFileURL(resourcePath).href,
+                          request.signal === undefined ? {} : { signal: request.signal },
+                        )
+                        releaseSource = async () => vfs.dispose()
+                        opened = await openSubject({
+                          inventory: options.subjects.inventory,
+                          source: artifactNamespaceSourceFromVfsMount(vfsMount),
+                          path: resourcePath,
+                          intent: 'inspect',
+                          target: options.subjects.target,
+                          grant: request.grant,
+                          budget: request.budgets,
+                          executionBackends: options.subjects.executionBackends,
+                          ...(options.subjects.serviceDefinitions === undefined
+                            ? {}
+                            : { serviceDefinitions: options.subjects.serviceDefinitions }),
+                          ...(request.signal === undefined ? {} : { signal: request.signal }),
+                        })
+                      } catch (error) {
+                        await vfs.dispose()
+                        throw error
+                      }
+                    } else {
+                      opened = await options.subjects.open({
+                        source: await openFileArtifactSource(
+                          resourcePath,
+                          request.signal === undefined ? {} : { signal: request.signal },
+                        ),
+                        path: resourcePath,
+                        intent: 'inspect',
+                        grant: request.grant,
+                        budget: request.budgets,
+                        ...(request.signal === undefined ? {} : { signal: request.signal }),
+                      })
+                    }
+                  } catch (error) {
+                    await releaseSource()
+                    throw new ArchiveOpenFailure(
+                      'x3.host/map-preview-installation-archive-open-failed',
+                      `ordinary subject opening failed for ${resourcePath} (${error instanceof Error ? error.message : String(error)})`,
+                    )
+                  }
+                  if (opened.state !== 'opened') {
+                    await releaseSource()
+                    throw new ArchiveOpenFailure(
+                      'x3.host/map-preview-installation-archive-unresolved',
+                      `ordinary subject opening did not resolve ${resourcePath}`,
+                      opened.diagnostics,
+                    )
+                  }
+                  let openedMount: NamespaceMount
+                  try {
+                    openedMount = await namespaceMount(opened.session)
+                  } catch (error) {
+                    await opened.session.dispose()
+                    await releaseSource()
+                    throw new ArchiveOpenFailure(
+                      'x3.host/map-preview-installation-archive-unusable',
+                      error instanceof Error ? error.message : String(error),
+                      opened.diagnostics,
+                    )
+                  }
+                  timing(`open and index ${resourcePath}`, archiveStartedAt)
+                  return Object.freeze({
+                    mount: openedMount,
+                    close: () =>
+                      releaseAll([
+                        releaseSource,
+                        () => openedMount.session.dispose(),
+                        openedMount.namespaceRelease,
+                      ]),
                   })
-                } catch (error) {
-                  await vfs.dispose()
-                  throw error
-                }
-              } else {
-                opened = await options.subjects.open({
-                  source: await openFileArtifactSource(
-                    resourcePath,
-                    request.signal === undefined ? {} : { signal: request.signal },
-                  ),
-                  path: resourcePath,
-                  intent: 'inspect',
-                  grant: request.grant,
-                  budget: request.budgets,
-                  ...(request.signal === undefined ? {} : { signal: request.signal }),
-                })
+                })(),
               }
-            } catch (error) {
-              await releaseSource()
-              return fail(
-                'x3.host/map-preview-installation-archive-open-failed',
-                `ordinary subject opening failed for ${resourcePath} (${error instanceof Error ? error.message : String(error)})`,
-                findings,
+              sharedArchives.set(sharedKey, entry)
+            } else {
+              if (entry.idle !== undefined) {
+                clearTimeout(entry.idle)
+                entry.idle = undefined
+              }
+              findings.push(
+                diagnostic(
+                  'information',
+                  'x3.host/map-preview-resource-timing',
+                  `reused the open index of ${resourcePath} (${sharedKey})`,
+                ),
               )
             }
-            if (opened.state !== 'opened') {
-              await releaseSource()
-              return fail(
-                'x3.host/map-preview-installation-archive-unresolved',
-                `ordinary subject opening did not resolve ${resourcePath}`,
-                [...findings, ...opened.diagnostics],
-              )
-            }
-            let openedMount: NamespaceMount
+            entry.refs += 1
+            releases.push(() => releaseShared(sharedKey))
+            let acquired: SharedArchive
             try {
-              openedMount = await namespaceMount(opened.session)
+              acquired = await entry.opening
             } catch (error) {
-              await opened.session.dispose()
-              await releaseSource()
+              // A refused open is not cached: the next map may still find the installation.
+              sharedArchives.delete(sharedKey)
+              const failure = error instanceof ArchiveOpenFailure ? error : undefined
               return fail(
-                'x3.host/map-preview-installation-archive-unusable',
-                error instanceof Error ? error.message : String(error),
-                [...findings, ...opened.diagnostics],
+                failure?.code ?? 'x3.host/map-preview-installation-archive-open-failed',
+                failure === undefined
+                  ? error instanceof Error
+                    ? error.message
+                    : String(error)
+                  : failure.message,
+                [...findings, ...(failure?.diagnostics ?? [])],
               )
             }
-            mount = openedMount
-            timing(`open and index ${resourcePath}`, archiveStartedAt)
+            mount = acquired.mount
             externalMounts.set(key, mount)
-            releases.push(() =>
-              releaseAll([releaseSource, () => mount.session.dispose(), mount.namespaceRelease]),
-            )
           }
         }
         rootsById.set(
