@@ -20,6 +20,33 @@ import {
   type SubjectRasterResourceState,
 } from './raster-resources.js'
 import type { OpenSubjectResult } from './subject-open.js'
+import { createModelProjectionCache, modelProjectionKey } from './model-projection-cache.js'
+
+/** Host-local profiling hook, deliberately outside the codec/worker SDK contracts. */
+export interface ModelResourceProfile {
+  readonly state: 'converted' | 'unresolved' | 'aborted'
+  readonly cache: 'bypass' | 'miss' | 'hit' | 'shared-hit'
+  readonly reserveMs: number
+  readonly resolveMs: number
+  /** Includes native inspection and companion discovery; not an isolated decode timer. */
+  readonly nativeOpenMs: number
+  readonly projectionWaitMs: number
+  readonly exportUvmMs: number
+  readonly reopenUvmMs: number
+  readonly acquireFacetsMs: number
+  readonly totalMs: number
+  readonly exportInvocations: number
+  readonly uvmBytes: number
+  readonly cacheRetainedBytes: number
+  /**
+   * Which layer of the load order the model itself came out of, when the origin names one.
+   *
+   * A world receipt can count converted models; it could not say whether a map carries its own art
+   * or borrows all of it from the installed game, which is the question asked of any map that is
+   * about to be shared.
+   */
+  readonly rootId?: string
+}
 
 interface Options {
   readonly state: SubjectRasterResourceState
@@ -33,6 +60,7 @@ interface Options {
   /** Session cleanup owns every outstanding lease, including abandoned worker requests. */
   readonly own: (release: () => Promise<void>) => void
   readonly ancestors: readonly string[]
+  readonly onProfile?: (profile: ModelResourceProfile) => void
 }
 
 function uvmArtifactSource(
@@ -40,7 +68,9 @@ function uvmArtifactSource(
   bytes: Uint8Array,
   conversionKey: string,
 ): ArtifactByteSource {
-  const owned = bytes.slice()
+  // bytes is an owned host projection, never exposed to codecs or callers. Reads/streams copy;
+  // the public ModelResourceResult owns a separate copy that may be mutated or transferred.
+  const owned = bytes
   const size = BigInt(owned.byteLength)
   const range = (offset: bigint, length: bigint): Uint8Array => {
     if (offset < 0n || length < 0n || offset > size) {
@@ -81,6 +111,9 @@ function uvmArtifactSource(
 
 /** Codec selection and conversion stay in the host. No native parser or scene dependency. */
 export function createSubjectModelResources(options: Options): ModelResourcePort {
+  const projections = createModelProjectionCache(options.state, options.budget.maxScalarBytes)
+  let projectionResources = options.state.resources
+  let closed = false
   const outstanding = new Set<() => Promise<void>>()
   const reservationWaiters = new Set<() => void>()
   let reservedByModels = 0
@@ -89,6 +122,7 @@ export function createSubjectModelResources(options: Options): ModelResourcePort
   }
   const reserve = async (maxBytes: number, signal?: AbortSignal): Promise<boolean> => {
     if (maxBytes > options.budget.maxScalarBytes) return false
+    projections.trimForReservation(maxBytes)
     while (options.state.reservedBytes + maxBytes > options.budget.maxScalarBytes) {
       signal?.throwIfAborted()
       if (!available() || reservedByModels === 0) return false
@@ -101,6 +135,7 @@ export function createSubjectModelResources(options: Options): ModelResourcePort
         reservationWaiters.add(wake)
         signal?.addEventListener('abort', wake, { once: true })
       })
+      projections.trimForReservation(maxBytes)
     }
     signal?.throwIfAborted()
     if (!available()) return false
@@ -109,11 +144,14 @@ export function createSubjectModelResources(options: Options): ModelResourcePort
     return true
   }
   options.own(async () => {
+    closed = true
+    projections.clear()
+    wakeReservationWaiters()
     const results = await Promise.allSettled([...outstanding].map(release => release()))
     const failed = results.find(result => result.status === 'rejected')
     if (failed?.status === 'rejected') throw failed.reason
   })
-  const available = () => options.state.live && options.isAuthorized()
+  const available = () => !closed && options.state.live && options.isAuthorized()
   const refuse = (message: string): Lease<ModelResourceAsset> => ({
     value: {
       result: {
@@ -134,6 +172,7 @@ export function createSubjectModelResources(options: Options): ModelResourcePort
   return {
     async acquire(request: ModelResourceRequest, signal?: AbortSignal) {
       signal?.throwIfAborted()
+      const started = performance.now()
       if (!available()) return refuse('Model resources require a live read-source subject.')
       if (options.ancestors.length >= Math.min(8, options.budget.maxDepth))
         return refuse('Nested models exceed the depth limit.')
@@ -149,8 +188,13 @@ export function createSubjectModelResources(options: Options): ModelResourcePort
         return refuse('Model conversion metersPerSourceUnit must be positive and finite.')
       const resources = options.state.resources
       if (resources === undefined) return refuse('The subject has no model resource origin.')
+      if (resources !== projectionResources) {
+        projections.clear()
+        projectionResources = resources
+      }
       // Concurrent model requests wait for the bounded session reservation instead of becoming
       // permanently unresolved merely because an earlier conversion is still in flight.
+      const reservationStarted = performance.now()
       if (!(await reserve(maxBytes, signal)))
         return refuse(
           `Model conversion requires ${String(maxBytes)} bytes with ${String(options.state.reservedBytes)} bytes already reserved, exceeding the ${String(options.budget.maxScalarBytes)} byte subject limit.`,
@@ -158,6 +202,39 @@ export function createSubjectModelResources(options: Options): ModelResourcePort
       // The resource session captures and validates the complete requirement before yielding.
       const releases: (() => Promise<void>)[] = []
       let released = false
+      const profile = {
+        state: 'unresolved' as ModelResourceProfile['state'],
+        cache: 'bypass' as ModelResourceProfile['cache'],
+        reserveMs: performance.now() - reservationStarted,
+        resolveMs: 0,
+        nativeOpenMs: 0,
+        projectionWaitMs: 0,
+        exportUvmMs: 0,
+        reopenUvmMs: 0,
+        acquireFacetsMs: 0,
+        exportInvocations: 0,
+        uvmBytes: 0,
+      }
+      /** Kept beside the profile rather than in it: the field is absent, not `undefined`. */
+      let rootId: string | undefined
+      const timed = async <T>(
+        phase:
+          | 'resolveMs'
+          | 'nativeOpenMs'
+          | 'projectionWaitMs'
+          | 'exportUvmMs'
+          | 'reopenUvmMs'
+          | 'acquireFacetsMs',
+        work: () => Promise<T>,
+      ): Promise<T> => {
+        const start = performance.now()
+        try {
+          return await work()
+        } finally {
+          profile[phase] += performance.now() - start
+        }
+      }
+      let projection: Awaited<ReturnType<typeof projections.claim>> | undefined
       const release = async () => {
         if (released) return
         released = true
@@ -179,11 +256,14 @@ export function createSubjectModelResources(options: Options): ModelResourcePort
         if (failure !== undefined) throw failure
       }
       try {
-        const resolution = await resources.resolve(request.requirement, signal)
+        const resolution = await timed('resolveMs', () =>
+          resources.resolve(request.requirement, signal),
+        )
         if (resolution.state !== 'resolved') {
           await release()
           return refuse(resolution.diagnostic.message)
         }
+        rootId = resolution.provenance.rootId
         releases.push(() => resolution.lease.release())
         const source = resolution.lease.value
         if (source.kind !== 'bytes') throw new TypeError('model resource needs a byte source')
@@ -191,7 +271,9 @@ export function createSubjectModelResources(options: Options): ModelResourcePort
         if (options.ancestors.includes(sourceIdentityKey))
           throw new TypeError('model resource cycle')
         if (!available()) throw new TypeError('model resource authority expired')
-        const opened = await options.open(source, resolution.provenance.logicalId, signal)
+        const opened = await timed('nativeOpenMs', () =>
+          options.open(source, resolution.provenance.logicalId, signal),
+        )
         if (opened.state !== 'opened') {
           const details = [
             ...opened.diagnostics,
@@ -220,24 +302,48 @@ export function createSubjectModelResources(options: Options): ModelResourcePort
           'schemaVersion=1',
           `metersPerSourceUnit=${units === undefined ? 'source-unit' : String(units)}`,
         ].join('|')
-        const converted = await opened.session.operations().invoke(
-          operation.handlerId,
-          {
-            schemaVersion: 1,
-            ...(units === undefined ? {} : { metersPerSourceUnit: units }),
-          },
-          signal === undefined ? {} : { signal },
+        projection = await timed('projectionWaitMs', () =>
+          projections.claim(
+            resources === options.state.resources
+              ? modelProjectionKey(opened, source, sourceKey, resolution.provenance.logicalId)
+              : undefined,
+            signal,
+          ),
         )
+        profile.cache = projection.state
         signal?.throwIfAborted()
         if (!available()) throw new TypeError('model resource authority expired')
-        if (
-          converted.state !== 'ok' ||
-          converted.output.kind !== 'bytes' ||
-          !(converted.output.value instanceof Uint8Array) ||
-          converted.output.value.length > maxBytes
-        )
+        let conversionDiagnostics: ModelResourceResult['diagnostics'] = []
+        let uvmBytes: Uint8Array
+        if ('bytes' in projection) {
+          uvmBytes = projection.bytes
+        } else {
+          profile.exportInvocations++
+          const converted = await timed('exportUvmMs', () =>
+            opened.session.operations().invoke(
+              operation.handlerId,
+              {
+                schemaVersion: 1,
+                ...(units === undefined ? {} : { metersPerSourceUnit: units }),
+              },
+              signal === undefined ? {} : { signal },
+            ),
+          )
+          if (
+            converted.state !== 'ok' ||
+            converted.output.kind !== 'bytes' ||
+            !(converted.output.value instanceof Uint8Array) ||
+            converted.output.value.length > maxBytes
+          )
+            throw new RangeError('model resource conversion did not return bounded UVM bytes')
+          uvmBytes = converted.output.value.slice()
+          conversionDiagnostics = converted.diagnostics
+        }
+        signal?.throwIfAborted()
+        if (!available()) throw new TypeError('model resource authority expired')
+        if (uvmBytes.length > maxBytes)
           throw new RangeError('model resource conversion did not return bounded UVM bytes')
-        const uvmBytes = converted.output.value.slice()
+        profile.uvmBytes = uvmBytes.byteLength
         let scene: Lease<ModelSceneSource> | undefined
         let skeleton: Lease<ModelSkeletonSource> | undefined
         let animations: Lease<ModelAnimationSource> | undefined
@@ -248,10 +354,8 @@ export function createSubjectModelResources(options: Options): ModelResourcePort
         let sceneResources = opened.resources
         try {
           const uvmPath = resolution.provenance.logicalId.replace(/(?:\.[^./]+)?$/u, '.uvm')
-          const uvmOpened = await options.open(
-            uvmArtifactSource(source, uvmBytes, sourceKey),
-            uvmPath,
-            signal,
+          const uvmOpened = await timed('reopenUvmMs', () =>
+            options.open(uvmArtifactSource(source, uvmBytes, sourceKey), uvmPath, signal),
           )
           if (uvmOpened.state !== 'opened') {
             const details = [
@@ -272,39 +376,47 @@ export function createSubjectModelResources(options: Options): ModelResourcePort
           // game-logical DDS/M3A companions. Keep the native model overlay when one was captured;
           // only fall back to the UVM origin for a codec that supplied no native resource port.
           sceneResources = sceneResources ?? uvmOpened.resources
-          const acquiredScene = await uvmOpened.session.dataSource(
-            'common.view/model-scene-source',
-            1,
-          )
-          scene = acquiredScene
-          releases.push(() => acquiredScene.release())
-          const advertised = new Set(
-            (uvmOpened.descriptor.dataSources ?? [])
-              .filter(item => item.major === 1)
-              .map(item => item.contract),
-          )
-          if (advertised.has('common.view/model-skeleton-source')) {
-            skeleton = await uvmOpened.session.dataSource('common.view/model-skeleton-source', 1)
-            releases.push(() => skeleton!.release())
-          }
-          if (advertised.has('common.view/model-animation-source')) {
-            animations = await uvmOpened.session.dataSource('common.view/model-animation-source', 1)
-            releases.push(() => animations!.release())
-          }
-          if (advertised.has('common.view/model-material-source')) {
-            materials = await uvmOpened.session.dataSource('common.view/model-material-source', 1)
-            releases.push(() => materials!.release())
-          }
-          if (advertised.has('common.view/model-resource-refs-source')) {
-            resourceReferences = await uvmOpened.session.dataSource(
-              'common.view/model-resource-refs-source',
+          const facetsStarted = performance.now()
+          try {
+            const acquiredScene = await uvmOpened.session.dataSource(
+              'common.view/model-scene-source',
               1,
             )
-            releases.push(() => resourceReferences!.release())
-          }
-          if (advertised.has('common.view/model-socket-source')) {
-            sockets = await uvmOpened.session.dataSource('common.view/model-socket-source', 1)
-            releases.push(() => sockets!.release())
+            scene = acquiredScene
+            releases.push(() => acquiredScene.release())
+            const advertised = new Set(
+              (uvmOpened.descriptor.dataSources ?? [])
+                .filter(item => item.major === 1)
+                .map(item => item.contract),
+            )
+            if (advertised.has('common.view/model-skeleton-source')) {
+              skeleton = await uvmOpened.session.dataSource('common.view/model-skeleton-source', 1)
+              releases.push(() => skeleton!.release())
+            }
+            if (advertised.has('common.view/model-animation-source')) {
+              animations = await uvmOpened.session.dataSource(
+                'common.view/model-animation-source',
+                1,
+              )
+              releases.push(() => animations!.release())
+            }
+            if (advertised.has('common.view/model-material-source')) {
+              materials = await uvmOpened.session.dataSource('common.view/model-material-source', 1)
+              releases.push(() => materials!.release())
+            }
+            if (advertised.has('common.view/model-resource-refs-source')) {
+              resourceReferences = await uvmOpened.session.dataSource(
+                'common.view/model-resource-refs-source',
+                1,
+              )
+              releases.push(() => resourceReferences!.release())
+            }
+            if (advertised.has('common.view/model-socket-source')) {
+              sockets = await uvmOpened.session.dataSource('common.view/model-socket-source', 1)
+              releases.push(() => sockets!.release())
+            }
+          } finally {
+            profile.acquireFacetsMs += performance.now() - facetsStarted
           }
         } catch (error) {
           sceneDiagnostic = diagnostic(
@@ -315,13 +427,15 @@ export function createSubjectModelResources(options: Options): ModelResourcePort
               : 'The exported UVM has no renderable scene.',
           )
         }
+        signal?.throwIfAborted()
+        if (!available()) throw new TypeError('model resource authority expired')
         const result: ModelResourceResult = {
           state: 'converted',
           bytes: uvmBytes.slice(),
           sourceKey,
           diagnostics: [
             ...opened.diagnostics,
-            ...converted.diagnostics,
+            ...conversionDiagnostics,
             ...(sceneDiagnostic === undefined ? [] : [sceneDiagnostic]),
           ],
         }
@@ -349,6 +463,13 @@ export function createSubjectModelResources(options: Options): ModelResourcePort
           open: (bytes, hint, abort) => options.open(bytes, hint.path ?? '', abort),
         })
         outstanding.add(release)
+        if (
+          projection.state === 'miss' &&
+          sceneDiagnostic === undefined &&
+          conversionDiagnostics.length === 0
+        )
+          projection.finish(uvmBytes)
+        profile.state = 'converted'
         return {
           value: {
             result,
@@ -390,6 +511,21 @@ export function createSubjectModelResources(options: Options): ModelResourcePort
         await release()
         if (signal?.aborted) throw error
         return refuse(error instanceof Error ? error.message : 'Model acquisition failed.')
+      } finally {
+        if (projection?.state === 'miss') projection.finish()
+        if (signal?.aborted) profile.state = 'aborted'
+        try {
+          options.onProfile?.(
+            Object.freeze({
+              ...profile,
+              totalMs: performance.now() - started,
+              cacheRetainedBytes: projections.retainedBytes,
+              ...(rootId === undefined ? {} : { rootId }),
+            }),
+          )
+        } catch {
+          // A diagnostic observer must not change acquisition or leak its lease.
+        }
       }
     },
   }
