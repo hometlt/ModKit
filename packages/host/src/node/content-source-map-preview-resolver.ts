@@ -1,10 +1,9 @@
 /**
  * Map preview resources through the product's content sources: a map is opened like a mod.
  *
- * The opened map names its own dependency closure (`content.resolve-dependencies`, the operation a
- * mod answers), the configured content sources resolve it to ordered mounts — an installation
+ * The configured content sources open the map inside its mods (`openModContext`) — an installation
  * folder, the game's CASC storage, a player's own folders — and every layer of the preview reads
- * through those mounts. Nothing here knows a game: the preparation provider still names the
+ * through those layers. Nothing here knows a game: the preparation provider still names the
  * workspace roots, and a root is backed by the mount at the same package path.
  */
 
@@ -21,11 +20,8 @@ import type {
   ContentSourceEntry,
   ContentSources,
 } from '@modkit/vfs/content-sources'
-import {
-  contentDependencyDiagnostics,
-  entryRevision as contentDependencyMountRevision,
-} from '../content-dependencies.js'
-import { readOperationContentDependencies } from '../content-dependency-operations.js'
+import { entryRevision as contentDependencyMountRevision } from '../content-dependencies.js'
+import { resolveSubjectClosure } from '../content-dependency-operations.js'
 import type {
   MapPreviewResourcePlanResolution,
   MapPreviewResourcePlanResolver,
@@ -193,32 +189,21 @@ export function createContentSourceMapPreviewResourcePlanResolver(
             'the opened subject no longer matches the prepared subject snapshot')]),
         })
       }
-      const discovered = await readOperationContentDependencies({
-        descriptor,
-        operations: request.original.operations(),
+      const sources = await options.contentSources().catch(() => undefined)
+      if (sources === undefined) {
+        return fallback(request, [diagnostic('information',
+          'x3.host/content-dependency-resolver-unavailable',
+          'no content source is configured to resolve map dependencies')])
+      }
+      const closure = await resolveSubjectClosure({
+        contentSources: sources,
+        subject: { descriptor, operations: request.original.operations() },
         ...(request.signal === undefined ? {} : { signal: request.signal }),
       })
-      if (discovered.state !== 'resolved') return fallback(request, discovered.diagnostics)
-      const sources = await options.contentSources().catch(() => undefined)
-      if (sources?.resolveDependencies === undefined) {
-        return fallback(request, [...discovered.diagnostics, diagnostic('information',
-          'x3.host/content-dependency-resolver-unavailable',
-          'no configured content source resolves map dependencies')])
-      }
-      let resolution: ContentDependencyResolution
-      try {
-        resolution = await sources.resolveDependencies(discovered.dependencies)
-      } catch (error) {
-        request.signal?.throwIfAborted()
-        return fallback(request, [...discovered.diagnostics, diagnostic('warning',
-          'x3.host/content-dependency-resolution-failed',
-          error instanceof Error ? error.message : String(error))])
-      }
+      if (closure.resolution === undefined) return fallback(request, closure.diagnostics)
       request.signal?.throwIfAborted()
-      const findings: Diagnostic[] = [
-        ...discovered.diagnostics,
-        ...contentDependencyDiagnostics(resolution.diagnostics),
-      ]
+      const resolution: ContentDependencyResolution = closure.resolution
+      const findings: Diagnostic[] = [...closure.diagnostics]
 
       const sourcePathOf = (rootId: string) =>
         request.workspace.loadOrder.find(root => root.rootId === rootId)?.sourcePath

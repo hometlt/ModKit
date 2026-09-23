@@ -277,6 +277,92 @@ const failure = (code: string, error: unknown): Diagnostic =>
   diagnostic('warning', code, error instanceof Error ? error.message : String(error))
 
 /**
+ * One subject's closure: its mod context when the subject is on disk and the provider opens
+ * contexts, else its `content.resolve-dependencies` operation resolved by the provider. The one
+ * place every projection — languages, assets, map previews — asks it.
+ */
+export async function resolveSubjectClosure(request: {
+  readonly contentSources: ContentSources
+  readonly subject: ContentSubject
+  readonly baseMods?: BaseModSetting
+  readonly signal?: AbortSignal
+}): Promise<{
+  readonly resolution?: ContentDependencyResolution
+  readonly diagnostics: readonly Diagnostic[]
+}> {
+  const { contentSources, subject, signal } = request
+  const target = subject.target ?? hostPathOf(subject.descriptor.subjectUri)
+  if (target !== undefined && contentSources.openModContext !== undefined) {
+    try {
+      const baseMods = baseModsFor(target, request.baseMods)
+      const context = await contentSources.openModContext({
+        schemaVersion: 1,
+        target,
+        ...(baseMods === undefined ? {} : { baseMods }),
+      })
+      try {
+        signal?.throwIfAborted()
+        const resolution = modContextResolution(context)
+        return Object.freeze({
+          resolution,
+          diagnostics: contentDependencyDiagnostics(resolution.diagnostics),
+        })
+      } finally {
+        await context.dispose()
+      }
+    } catch (error) {
+      signal?.throwIfAborted()
+      return Object.freeze({ diagnostics: Object.freeze([failure('x3.host/mod-context-failed', error)]) })
+    }
+  }
+  let discovered: ReadOperationContentDependenciesResult
+  try {
+    discovered = await readOperationContentDependencies({
+      ...subject,
+      ...(signal === undefined ? {} : { signal }),
+    })
+  } catch (error) {
+    signal?.throwIfAborted()
+    discovered = Object.freeze({
+      state: 'unresolved',
+      diagnostics: Object.freeze([failure('x3.host/content-dependency-operation-failed', error)]),
+    })
+  }
+  if (discovered.state !== 'resolved') return Object.freeze({ diagnostics: discovered.diagnostics })
+  if (contentSources.resolveDependencies === undefined) {
+    return Object.freeze({
+      diagnostics: Object.freeze([
+        ...discovered.diagnostics,
+        diagnostic(
+          'information',
+          'x3.host/content-dependency-resolver-unavailable',
+          'the configured content source cannot resolve subject dependencies',
+        ),
+      ]),
+    })
+  }
+  try {
+    const resolution = await contentSources.resolveDependencies(discovered.dependencies)
+    signal?.throwIfAborted()
+    return Object.freeze({
+      resolution,
+      diagnostics: Object.freeze([
+        ...discovered.diagnostics,
+        ...contentDependencyDiagnostics(resolution.diagnostics),
+      ]),
+    })
+  } catch (error) {
+    signal?.throwIfAborted()
+    return Object.freeze({
+      diagnostics: Object.freeze([
+        ...discovered.diagnostics,
+        failure('x3.host/content-dependency-resolution-failed', error),
+      ]),
+    })
+  }
+}
+
+/**
  * Each subject's dependency closure, then the provider's standing mounts — the two answers every
  * projection below is built from. Standing mounts a subject's closure already holds are dropped,
  * and they never make a partial closure complete.
@@ -293,70 +379,17 @@ async function subjectClosures(request: {
   const diagnostics: Diagnostic[] = []
   let complete = request.subjects.length > 0
   for (const subject of request.subjects) {
-    const target = subject.target ?? hostPathOf(subject.descriptor.subjectUri)
-    if (target !== undefined && contentSources.openModContext !== undefined) {
-      try {
-        const baseMods = baseModsFor(target, request.baseMods)
-        const context = await contentSources.openModContext({
-          schemaVersion: 1,
-          target,
-          ...(baseMods === undefined ? {} : { baseMods }),
-        })
-        try {
-          signal?.throwIfAborted()
-          const resolution = modContextResolution(context)
-          diagnostics.push(...contentDependencyDiagnostics(resolution.diagnostics))
-          complete &&= resolution.complete
-          resolutions.push(resolution)
-        } finally {
-          await context.dispose()
-        }
-      } catch (error) {
-        signal?.throwIfAborted()
-        complete = false
-        diagnostics.push(failure('x3.host/mod-context-failed', error))
-      }
-      continue
-    }
-    let discovered: ReadOperationContentDependenciesResult
-    try {
-      discovered = await readOperationContentDependencies({
-        ...subject,
-        ...(signal === undefined ? {} : { signal }),
-      })
-    } catch (error) {
-      signal?.throwIfAborted()
-      discovered = Object.freeze({
-        state: 'unresolved',
-        diagnostics: Object.freeze([failure('x3.host/content-dependency-operation-failed', error)]),
-      })
-    }
-    diagnostics.push(...discovered.diagnostics)
-    if (discovered.state !== 'resolved') {
-      complete = false
-      continue
-    }
-    if (contentSources.resolveDependencies === undefined) {
-      complete = false
-      diagnostics.push(
-        diagnostic(
-          'information',
-          'x3.host/content-dependency-resolver-unavailable',
-          'the configured content source cannot resolve subject dependencies',
-        ),
-      )
-      continue
-    }
-    try {
-      const resolution = await contentSources.resolveDependencies(discovered.dependencies)
-      signal?.throwIfAborted()
-      diagnostics.push(...contentDependencyDiagnostics(resolution.diagnostics))
-      complete &&= resolution.complete
-      resolutions.push(resolution)
-    } catch (error) {
-      signal?.throwIfAborted()
-      complete = false
-      diagnostics.push(failure('x3.host/content-dependency-resolution-failed', error))
+    const closure = await resolveSubjectClosure({
+      contentSources,
+      subject,
+      ...(request.baseMods === undefined ? {} : { baseMods: request.baseMods }),
+      ...(signal === undefined ? {} : { signal }),
+    })
+    diagnostics.push(...closure.diagnostics)
+    if (closure.resolution === undefined) complete = false
+    else {
+      complete &&= closure.resolution.complete
+      resolutions.push(closure.resolution)
     }
   }
   if (request.standingMounts === true && contentSources.languageMounts !== undefined) {

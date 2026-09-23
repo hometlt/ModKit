@@ -185,6 +185,7 @@ export {
   composeLanguageDocumentSources,
   modContextResolution,
   readOperationContentDependencies,
+  resolveSubjectClosure,
   resolveContentAssetOrigins,
   resolveContentLanguageSources,
   type BaseModSetting,

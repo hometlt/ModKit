@@ -6,7 +6,12 @@ import {
   type JsonValue,
   type OperationOutput,
 } from '@modkit/sdk'
-import type { ContentSourceEntry, ContentSources } from '@modkit/vfs/content-sources'
+import type {
+  ContentSourceEntry,
+  ContentSources,
+  ModContext,
+  ModContextRequest,
+} from '@modkit/vfs/content-sources'
 import { assembleSubjectDescriptor, createAssetSession } from '../src/index.js'
 import type {
   MapPreviewResourcePlanResolver,
@@ -20,7 +25,11 @@ const bytes = (text: string) => new TextEncoder().encode(text)
 const DEPENDENCIES = { schemaVersion: 1, gameId: GAME_ID, complete: true, dependencies: [] }
 
 /** An opened map: its own namespace, extraction, and (optionally) the dependency operation. */
-async function mapSession(files: ReadonlyMap<string, Uint8Array>, dependencies = true) {
+async function mapSession(
+  files: ReadonlyMap<string, Uint8Array>,
+  dependencies = true,
+  subjectUri = 'memory://maps/demo.map',
+) {
   const namespaceRelease = vi.fn(async () => undefined)
   const paths = [...files.keys()].sort()
   const namespace = Object.freeze({
@@ -48,7 +57,7 @@ async function mapSession(files: ReadonlyMap<string, Uint8Array>, dependencies =
   const wire = resolvedDescriptorWire(operations)
   const descriptor = await assembleSubjectDescriptor({
     ...wire,
-    subjectUri: 'memory://maps/demo.map',
+    subjectUri,
     revision: revisionId('provider-token:demo-map'),
     dataSources: [{ contract: 'common.view/namespace-entry-source', major: 1 }],
   })
@@ -102,7 +111,11 @@ function contentSources(trees: Readonly<Record<string, Readonly<Record<string, s
   return { resolveDependencies, read, sources: { resolveDependencies, list, read } as unknown as ContentSources }
 }
 
-function request(original: Awaited<ReturnType<typeof mapSession>>['session'], roots = ['mp', 'base']) {
+function request(
+  original: Awaited<ReturnType<typeof mapSession>>['session'],
+  roots = ['mp', 'base'],
+  subjectUri = 'memory://maps/demo.map',
+) {
   const workspace = resolveModWorkspaceGraph({
     workspaceId: 'fixture-preview', gameId: GAME_ID, activeRootId: 'map',
     sources: [{ sourceId: 'opened', kind: 'archive', location: 'fixture:map' }],
@@ -123,7 +136,7 @@ function request(original: Awaited<ReturnType<typeof mapSession>>['session'], ro
       roots: roots.concat(roots.includes('base') ? [] : ['base']).map(rootId => ({ rootId, locator: {} })),
     },
     subject: {
-      schemaVersion: 1, subjectUri: 'memory://maps/demo.map', revision: 'provider-token:demo-map',
+      schemaVersion: 1, subjectUri, revision: 'provider-token:demo-map',
       formatId: 'fixture/map', traits: [], dataSources: [], operations: [], namespace: { state: 'complete', entries: [] },
     },
     workspace, original,
@@ -180,6 +193,40 @@ describe('content-source map preview resources', { timeout: 30_000 }, () => {
     await result.release()
     await result.release()
     expect(original.namespaceRelease).toHaveBeenCalledOnce()
+  })
+
+  it('reads the layers of the mod context a map on disk opens in, not its dependency operation', async () => {
+    const uri = 'file:///C:/Games/Maps/demo.map'
+    const original = await mapSession(new Map([['Assets/Textures/Shared.dds', bytes('map')]]), true, uri)
+    const catalogue = contentSources({
+      casc: { 'mods/base.pkg/assets/textures/shared.dds': 'base', 'mods/base.pkg/assets/textures/base-only.dds': 'base-only' },
+      disk: { 'Mods/MP.Pkg/Assets/Textures/Base-Only.dds': 'mp-override' },
+    })
+    const opened: ModContextRequest[] = []
+    const openModContext = vi.fn(async (request: ModContextRequest): Promise<ModContext> => {
+      opened.push(request)
+      return {
+        schemaVersion: 1, gameId: GAME_ID, contextId: 'demo',
+        layers: [
+          { id: 'l0', displayName: 'Base', sourceId: 'casc', sourcePath: 'mods/base.pkg', role: 'dependency', provenance: 'implicit' },
+          { id: 'l1', displayName: 'MP', sourceId: 'disk', sourcePath: 'Mods/MP.Pkg', role: 'dependency', provenance: 'declared' },
+          { id: 'l2', displayName: 'demo.map', sourceId: 'host', sourcePath: request.target, role: 'primary', provenance: 'opened' },
+        ],
+        unresolved: [], diagnostics: [],
+        files: async () => ({ items: [] }), read: async () => new Uint8Array(), locate: async () => undefined,
+        dispose: async () => {},
+      }
+    })
+    const sources = { ...catalogue.sources, openModContext } as ContentSources
+    const resolver = createContentSourceMapPreviewResourcePlanResolver({ contentSources: async () => sources })
+    const result = await resolver.resolve(request(original.session, ['mp', 'base'], uri))
+    if (result.state !== 'resolved') throw new Error(JSON.stringify(result.diagnostics))
+    expect(opened).toEqual([{ schemaVersion: 1, target: 'C:/Games/Maps/demo.map' }])
+    expect(catalogue.resolveDependencies).not.toHaveBeenCalled()
+    expect(await text(result.origin, 'Assets/Textures/Shared.dds')).toBe('map')
+    expect(await text(result.origin, 'Assets/Textures/Base-Only.dds')).toBe('mp-override')
+    expect(await text(result.origin, 'mods/base.pkg/assets/textures/shared.dds')).toBe('base')
+    await result.release()
   })
 
   it('names a workspace root no source holds and keeps the rest', async () => {
