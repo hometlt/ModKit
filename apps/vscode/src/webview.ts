@@ -26,7 +26,7 @@ import { createWorkbench } from '@modkit/ui/workbench'
 import { resolveModelViewerTextures } from '@modkit/ui/model'
 import { templateImagesFromRaster } from '@modkit/ui/template'
 import type { UiCatalogDocument, UiLocale, UiLocalizer } from '@modkit/ui/localization'
-import type { ViewerGalleryPort, ViewerStatusPort } from '@modkit/sdk'
+import type { ViewerStatusPort } from '@modkit/sdk'
 import type { ImagePixelOperation } from '@modkit/ui/image'
 import {
   createSubjectCard,
@@ -142,9 +142,6 @@ function base64Of(bytes: Uint8Array): string {
   }
   return btoa(text)
 }
-
-/** A sibling larger than this is listed without a thumbnail rather than read for one. */
-const GALLERY_THUMBNAIL_MAXIMUM_BYTES = 16 * 1024 * 1024
 
 function baseName(path: string): string {
   const parts = path.split(/[\\/]/u).filter(Boolean)
@@ -414,86 +411,19 @@ async function mount(
    */
   let pixelEditing: import('@modkit/ui/image').ImageEditingHandlers | undefined
 
-  const galleryFor = (entry: ExplorerEntry): ViewerGalleryPort | undefined => {
-    // Images use the workspace gallery in the native Modkit sidebar.
-    const sources = subjects.get(entry.id)?.descriptor['dataSources']
-    if (
-      Array.isArray(sources) &&
-      sources.some(source =>
-        ['common.view/raster-image-source', 'common.view/vector-scene-source'].includes(
-          source?.contract,
-        ),
-      )
-    )
-      return undefined
-    if (snapshot.openPath === undefined || entry.id !== snapshot.openPath) return undefined
-    const cut = Math.max(entry.id.lastIndexOf('/'), entry.id.lastIndexOf(String.fromCharCode(92)))
-    const extension = entry.name.includes('.')
-      ? entry.name.split('.').at(-1)?.toLowerCase()
-      : undefined
-    if (cut <= 0 || extension === undefined) return undefined
-    const folder = entry.id.slice(0, cut)
-    return {
-      async list() {
-        const entries = await access.list(folder).catch(() => [])
-        return entries
-          .filter(
-            item => !item.directory && item.name.split('.').at(-1)?.toLowerCase() === extension,
-          )
-          .map(item => ({
-            id: item.id,
-            label: item.name,
-            group: baseName(folder),
-            active: item.id === entry.id,
-          }))
-      },
-      /*
-       * MK2 streamed gallery thumbnails from the extension host, which owns the decoders. Here the
-       * page reads the sibling's bytes through the same granted access it already has and hands
-       * them to the opened subject's raster port as embedded bytes — so a DDS thumbnail costs one
-       * host decode of a fitting mip level, and the page never chooses a codec or a path.
-       */
-      async thumbnail(id, maxEdge, signal) {
-        const readRaster = subjects.get(entry.id)?.session.readRasterResource
-        if (readRaster === undefined) return undefined
-        try {
-          const bytes = await access.read(id, GALLERY_THUMBNAIL_MAXIMUM_BYTES, signal)
-          const result = await readRaster(
-            {
-              kind: 'embedded',
-              bytes,
-              maxBytes: Math.max(4, maxEdge) ** 2 * 4 * 16,
-              selection: { mipLevel: 'fit' },
-            },
-            signal,
-          )
-          if (result.state !== 'decoded') return undefined
-          return {
-            width: result.region.width,
-            height: result.region.height,
-            rgba: result.region.pixels,
-          }
-        } catch {
-          return undefined
-        }
-      },
-      /*
-       * Into this page, not a new tab: MK2's viewer was a browser over a folder, and reopening a
-       * whole webview per thumbnail is both slower and loses the layout. VS Code's own tab keeps
-       * naming the file it was opened for, so the status bar carries the file actually shown.
-       */
-      async open(id) {
-        const name = baseName(id)
-        await editors.open({ id, name, directory: false })
-      },
-    }
-  }
+  /*
+   * No gallery inside a viewer.
+   *
+   * The workspace gallery is the native Modkit sidebar view, which every viewer shares and which
+   * survives switching tabs. The media shell's own left pane listed the opened file's siblings a
+   * second time, so it is not given a port: without one the shell collapses that pane and hides
+   * its toggle, leaving the render area the full width.
+   */
 
   const codecPreview = createCodecPreview({
     localizer,
     supported: snapshot.supportedExtensions,
     ...(viewerStatus === undefined ? {} : { status: viewerStatus }),
-    gallery: galleryFor,
     stages: onlyForcedStage(
       createVsCodePreviewStages({
         localizer,

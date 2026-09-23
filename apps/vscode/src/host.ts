@@ -77,6 +77,7 @@ import {
   type NodeSubjectServices,
 } from '@modkit/host/node'
 
+import { anchorDocumentIndex, anchoredSubjectPath } from './anchor-documents.js'
 import { STAGE_ORDER } from './view-policy.js'
 import type { PhaseLog } from './timing.js'
 import { contentSourceOpener, type ContentSourceReader } from './content-source-open.js'
@@ -1067,6 +1068,9 @@ function serveVsCode(
   /** Paths already warmed in this window; warming twice buys nothing. */
   const warmed = new Set<string>()
 
+  /** Codec-declared entries that stand for their source; read once per window. */
+  const anchors = anchorDocumentIndex(services.inventory)
+
   const openSubject: SubjectOpener = async (requested, signal) => {
     const generation = beginsSubjectOpen()
     if (requested.startsWith('modkit-source:')) {
@@ -1083,7 +1087,7 @@ function serveVsCode(
       return answer
     }
     const mapSelection = parseVsCodeMapPreviewSelectionRequest(requested)
-    const subjectRequested = mapSelection?.path ?? requested
+    const subjectRequested = anchoredSubjectPath(mapSelection?.path ?? requested, anchors)
     /*
      * A container member, opened as a subject of its own.
      *

@@ -118,7 +118,29 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
       // Loaded on first mount: the world renderer is the one stage that brings three.js, and a
       // page that shows a texture or a table should not fetch or evaluate it.
       module: lazyViewerModule(async () =>
-        (await import('@modkit/ui/world')).createWorldViewer({ localizer: context.localizer }),
+        (await import('@modkit/ui/world')).createWorldViewer({
+          localizer: context.localizer,
+          initialView: 'lattice',
+          /*
+           * A map's identity documents open the map, not themselves: MapInfo names the map and
+           * carries little else, so a person who clicks it came for the terrain. Its facts would
+           * be lost with the document view, so the subject card is a section of this sidebar.
+           */
+          sections: [
+            {
+              id: 'facts',
+              title: context.localizer.text('stage.card'),
+              icon: 'info',
+              module: createSubjectCardViewer({ localizer: context.localizer }),
+            },
+            {
+              id: 'structure',
+              title: context.localizer.text('stage.tree'),
+              icon: 'list-tree',
+              module: createTreeViewer({ localizer: context.localizer }),
+            },
+          ],
+        }),
       ),
       // A timed world (a replay, a cutscene) follows its transport.
       optionalContracts: ['common.view/transport-source'],
