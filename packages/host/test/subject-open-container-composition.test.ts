@@ -687,3 +687,52 @@ describe('host-owned container composition', () => {
     )
   })
 })
+
+describe('container alias absence is on the record', () => {
+  it('says so when no alias codec was in the inventory at open time', async () => {
+    const { inventory, executionBackends } = await harness()
+    // The shape of "the file was opened before the extension's codecs reached the inventory".
+    const withoutAliases = {
+      ...inventory,
+      extensions: inventory.extensions.map(extension => ({
+        ...extension,
+        contributions: extension.contributions.filter(
+          contribution =>
+            (contribution.manifest?.spec as { container?: unknown } | undefined)?.container ===
+            undefined,
+        ),
+      })),
+    }
+    const result = await openSubject({
+      inventory: withoutAliases,
+      source: source(),
+      path: 'map.car',
+      intent: 'full',
+      target: { environment: 'node', operatingSystem: 'windows', architecture: 'x64' },
+      grant: { id: 'container-alias-absent', classes: ['read-source', 'write-source'] },
+      executionBackends,
+      budget,
+    })
+    expect(result.state).toBe('opened')
+    expect(result.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'x3.host/container-alias-none',
+          message: expect.stringContaining('map.car'),
+        }),
+      ]),
+    )
+    if (result.state === 'opened') await result.session.dispose()
+  })
+
+  it('stays quiet when an alias did run and won', async () => {
+    const { result } = await openedComposition()
+    try {
+      expect(result.diagnostics.map(item => item.code)).not.toContain(
+        'x3.host/container-alias-none',
+      )
+    } finally {
+      await result.session.dispose()
+    }
+  })
+})

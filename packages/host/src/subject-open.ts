@@ -2029,16 +2029,9 @@ function scanContainerAliases(options: OpenSubjectOptions): ContainerAliasScan {
         contributionId: manifest.id,
         extensionId: extension.manifest?.id ?? extension.source,
       }
-      if (!contribution.activationEligible) {
-        const reasons = [...new Set(contribution.diagnostics.map(item => item.code))]
-        skipped.push(
-          Object.freeze({
-            ...entry,
-            reason: `not activation-eligible${reasons.length === 0 ? '' : `: ${reasons.join(', ')}`}`,
-          }),
-        )
-        continue
-      }
+      // An ineligible contribution already gets x3.host/candidate-suppressed from the carrier
+      // pass; repeating it here would only double the line.
+      if (!contribution.activationEligible) continue
       if (!spec.openIntents.includes(options.intent)) {
         skipped.push(
           Object.freeze({
@@ -2122,8 +2115,11 @@ export async function openSubject(request: OpenSubjectOptions): Promise<OpenSubj
       : { logicalResourceDiscovery: snapshotLogicalResourceDiscoveryPolicies(policies) }),
   }
   const compositionStartedAt = Date.now()
-  const aliases = matchingContainerAliases(options)
-  if (aliases.length === 0) return openSubjectDirect(options)
+  const scan = scanContainerAliases(options)
+  const aliases = scan.aliases
+  if (aliases.length === 0) {
+    return withDiagnostics(await openSubjectDirect(options), containerAliasAbsence(scan, options))
+  }
   const formats = [
     ...new Set(aliases.map(alias => alias.spec.container?.formatId).filter(Boolean)),
   ] as string[]
@@ -2146,7 +2142,10 @@ export async function openSubject(request: OpenSubjectOptions): Promise<OpenSubj
     includeSelectionLock: true,
   })
   if (parent.state !== 'opened') {
-    if (parent.reason === 'no-match') return openSubjectDirect(options)
+    if (parent.reason === 'no-match') {
+      // The carrier itself did not match; its reasons are the only account of this open.
+      return withDiagnostics(await openSubjectDirect(options), parent.diagnostics)
+    }
     return Object.freeze({
       ...parent,
       reason: 'input-unresolved' as const,
@@ -2200,7 +2199,28 @@ export async function openSubject(request: OpenSubjectOptions): Promise<OpenSubj
     if (semantic.state !== 'opened') {
       await composition.dispose()
       composition = undefined
-      if (semantic.reason === 'no-candidate' || semantic.reason === 'no-match') return parent
+      if (semantic.reason === 'no-candidate' || semantic.reason === 'no-match') {
+        // Falling back to the carrier used to discard the semantic pass entirely, so a map that
+        // opened as a bare archive explained itself with nothing at all.
+        return withDiagnostics(parent, [
+          ...semantic.diagnostics,
+          diagnostic(
+            'warning',
+            'x3.host/container-semantic-unclaimed',
+            `no semantic alias claimed the ${formatId} namespace (${semantic.reason}); the carrier view wins`,
+            aliases.map(alias => alias.contributionId),
+            {
+              reason: semantic.reason,
+              candidates: semantic.candidates.map(item => ({
+                contributionId: item.contributionId,
+                state: item.state,
+                confidence: item.confidence,
+                diagnostics: item.diagnostics.map(entry => entry.code),
+              })),
+            },
+          ),
+        ])
+      }
       await parent.session.dispose()
       return semantic
     }
