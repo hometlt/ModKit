@@ -4027,9 +4027,29 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-content-mount-superseded-2026-09-24.json",
+        "reason": "Owner decisions 2026-09-23 (one mod loader) and 2026-09-24 (one loading path, no duplicated functionality). The MK2 sc2-mod operation content.mount mounted a mod's dependency chain into the workspace; in MK3 the game's mod loader does this for every subject through ContentSources.openModContext (layers in load order, unresolved packages named). The MK3 content.mount stub, which asked a separate workspace-composition provider with its own drifted copy of the engine layering, is removed (blizzard 34c7a4b6). No MK2 comparison is owed: the MK3 loader is the reference.",
+        "sha256": "ac164cd384509ac7f6e6656142f6b212c07c38fc90a2a86ca2449c5d90928a7a"
+      },
+      "evidence": [
+        {
+          "path": "modkit-extensions-blizzard/starcraft2/modules/mod/test/workspace/mod-contexts.test.ts",
+          "sha256": "b353e307d905364b732b002304a281d4fc826cc55839ea798b11bb881b3dae45"
+        },
+        {
+          "path": "modkit-extensions-blizzard/starcraft2/modules/game/test/battlenet-local-sources.test.mjs",
+          "sha256": "e58bf05664a8a19b3c2730209be1473bc09c6de16674a1391fac3bd5758705f2"
+        },
+        {
+          "path": "modkit-core/packages/host/test/content-dependency-operations.test.ts",
+          "sha256": "00b4a52bb3528d1a7e3f5ecdbf9424151a5cfb4f54e7cb26e9226380392480d4"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-mod/operation/content.mount",
-      "status": "pending"
+      "status": "superseded"
     },
     {
       "decision": {

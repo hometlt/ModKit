@@ -2230,7 +2230,7 @@
       "contribution": null,
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/sc2-mod/operation/content.mount",
-      "status": "pending",
+      "status": "superseded",
       "targetOperation": null
     },
     {
