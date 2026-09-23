@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "kind": "owner-decision/superseded",
+  "date": "2026-09-24",
+  "reason": "Owner decisions 2026-09-23 (one mod loader, ModContextManager everywhere) and 2026-09-24 (one loading path: every file loads through the VFS by one model, no duplicated functionality). The MK2 sc2-mod operation content.resolve-dependencies was adapted as a codec operation whose result the host turned into mounts; it is superseded by the game's mod loader, which every host (VS Code, LSP, MCP, map preview) reaches through ContentSources.openModContext. A mod, map, campaign or replay subject opens as a context whose layers are the resolved dependency chain in load order, with declared-but-missing packages reported as unresolved. Parity with MK2 was reached before (reports/parity/sc2-mod-content/receipt.json stays as evidence); a comparison with MK2 is not rerun once parity holds.",
+  "rows": [
+    {
+      "id": "legacy/codec-manifest/modkit/sc2-mod/operation/content.resolve-dependencies",
+      "replacement": "ContentSources.openModContext (modkit-extensions-blizzard/starcraft2/modules/mod/shared/workspace/mod-contexts.ts)"
+    }
+  ],
+  "priorParity": {
+    "path": "modkit-core/reports/parity/sc2-mod-content/receipt.json",
+    "sha256": "bceba443da8ff2738efd506355045fdbe63f7789990204a54418f5bc4a20782e"
+  },
+  "mk3Evidence": {
+    "commits": {
+      "modkit-core": "992653ca",
+      "modkit-extensions-blizzard": ["2bfa7efc", "493482c2"]
+    },
+    "files": [
+      {
+        "path": "modkit-extensions-blizzard/starcraft2/modules/mod/test/workspace/mod-contexts.test.ts",
+        "sha256": "b353e307d905364b732b002304a281d4fc826cc55839ea798b11bb881b3dae45",
+        "passed": 10,
+        "failed": 0
+      },
+      {
+        "path": "modkit-extensions-blizzard/starcraft2/modules/game/test/battlenet-local-sources.test.mjs",
+        "sha256": "e58bf05664a8a19b3c2730209be1473bc09c6de16674a1391fac3bd5758705f2",
+        "passed": 11,
+        "failed": 0,
+        "environment": "MODKIT_SC2_INSTALLATION=C:/Apps/StarCraft II (real CASC)"
+      },
+      {
+        "path": "modkit-core/packages/host/test/content-dependency-operations.test.ts",
+        "sha256": "00b4a52bb3528d1a7e3f5ecdbf9424151a5cfb4f54e7cb26e9226380392480d4"
+      }
+    ]
+  }
+}

@@ -4032,14 +4032,33 @@
       "status": "pending"
     },
     {
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-one-loading-path-superseded-2026-09-24.json",
+        "reason": "Owner decisions 2026-09-23 (one mod loader, ModContextManager everywhere) and 2026-09-24 (one loading path: every file loads through the VFS by one model, no duplicated functionality). The MK2 sc2-mod operation content.resolve-dependencies was adapted as a codec operation whose result the host turned into mounts; it is superseded by the game's mod loader, which every host (VS Code, LSP, MCP, map preview) reaches through ContentSources.openModContext. A mod, map, campaign or replay subject opens as a context whose layers are the resolved dependency chain in load order, with declared-but-missing packages reported as unresolved. Parity with MK2 was reached before (reports/parity/sc2-mod-content/receipt.json stays as evidence); a comparison with MK2 is not rerun once parity holds.",
+        "sha256": "8c7542d26b1abc3fd5034dc72c75df16300644d1835e00cb595ad247646484e5"
+      },
       "evidence": [
         {
           "path": "modkit-core/reports/parity/sc2-mod-content/receipt.json",
           "sha256": "bceba443da8ff2738efd506355045fdbe63f7789990204a54418f5bc4a20782e"
+        },
+        {
+          "path": "modkit-extensions-blizzard/starcraft2/modules/mod/test/workspace/mod-contexts.test.ts",
+          "sha256": "b353e307d905364b732b002304a281d4fc826cc55839ea798b11bb881b3dae45"
+        },
+        {
+          "path": "modkit-extensions-blizzard/starcraft2/modules/game/test/battlenet-local-sources.test.mjs",
+          "sha256": "e58bf05664a8a19b3c2730209be1473bc09c6de16674a1391fac3bd5758705f2"
+        },
+        {
+          "path": "modkit-core/packages/host/test/content-dependency-operations.test.ts",
+          "sha256": "00b4a52bb3528d1a7e3f5ecdbf9424151a5cfb4f54e7cb26e9226380392480d4"
         }
       ],
       "id": "legacy/codec-manifest/modkit/sc2-mod/operation/content.resolve-dependencies",
-      "status": "adapted"
+      "status": "superseded"
     },
     {
       "evidence": [],

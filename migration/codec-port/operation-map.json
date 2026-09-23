@@ -2237,7 +2237,7 @@
       "contribution": "modkit-extensions-blizzard/starcraft2/modules/mod/codecs/mod/codec.json",
       "handlerId": "resolve-dependencies",
       "id": "legacy/codec-manifest/modkit/sc2-mod/operation/content.resolve-dependencies",
-      "status": "adapted",
+      "status": "superseded",
       "targetOperation": "content.resolve-dependencies"
     },
     {
