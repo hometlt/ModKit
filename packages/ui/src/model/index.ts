@@ -35,6 +35,7 @@ export {
 } from './source.js'
 export type { ModelStageModel } from './source.js'
 import { createMediaShell } from '../media-shell/index.js'
+import { PART_ATTRIBUTE } from '../parts.js'
 import { commitOperationWrite } from '../field-write/index.js'
 import { exportOffer, type EditOperationForm } from '../field-editor/index.js'
 import type { ImageExportFile, ImageExportOutcome, ImageSidebarSection } from '../image/index.js'
@@ -232,6 +233,11 @@ const FACET_READOUT: Readonly<Record<string, { labelKey: UiMessageKey; key: stri
  * A section whose facet is absent, or whose records are all of another kind, is not rendered: an
  * empty list says a model has no lights, which is a different claim from a codec not publishing
  * them.
+ *
+ * The list, and its order, is MK2's. Four of its lists — Ribbon Splines, Particle Copies, Shadow
+ * Boxes, Cloth Constraints — are named here with the `kind` their records would carry although no
+ * codec publishes one yet: they are the native vocabulary a reader of an M3 looks for, and stating
+ * them costs nothing while they are empty and costs a forgotten edit later if left out.
  */
 const MODEL_PANEL_SECTIONS: readonly {
   readonly id: string
@@ -240,27 +246,179 @@ const MODEL_PANEL_SECTIONS: readonly {
   readonly kind?: string
   readonly icon: string
 }[] = Object.freeze([
-  { id: 'meshes', title: 'Meshes', contract: 'common.view/model-material-source', icon: 'symbol-method' },
-  { id: 'materials', title: 'Materials', contract: 'common.view/model-material-source', icon: 'paintcan' },
-  { id: 'bones', title: 'Bones', contract: 'common.view/model-skeleton-source', icon: 'type-hierarchy' },
-  { id: 'animations', title: 'Animations', contract: 'common.view/model-animation-source', icon: 'play' },
-  { id: 'attachments', title: 'Attachments', contract: 'common.view/model-socket-source', icon: 'pinned' },
-  { id: 'hit-volumes', title: 'Hit Volumes', contract: 'common.view/model-collision-source', icon: 'shield' },
-  { id: 'resources', title: 'Resources', contract: 'common.view/model-resource-refs-source', icon: 'file-media' },
+  {
+    id: 'meshes',
+    title: 'Meshes',
+    contract: 'common.view/model-material-source',
+    icon: 'symbol-method',
+  },
+  {
+    id: 'materials',
+    title: 'Materials',
+    contract: 'common.view/model-material-source',
+    icon: 'paintcan',
+  },
+  {
+    id: 'resources',
+    title: 'Resources',
+    contract: 'common.view/model-resource-refs-source',
+    icon: 'file-media',
+  },
+  {
+    id: 'bones',
+    title: 'Bones',
+    contract: 'common.view/model-skeleton-source',
+    icon: 'type-hierarchy',
+  },
+  {
+    id: 'animations',
+    title: 'Animations',
+    contract: 'common.view/model-animation-source',
+    icon: 'play',
+  },
+  {
+    id: 'attachments',
+    title: 'Attachments',
+    contract: 'common.view/model-socket-source',
+    icon: 'pinned',
+  },
+  {
+    id: 'hit-volumes',
+    title: 'Hit Volumes',
+    contract: 'common.view/model-collision-source',
+    icon: 'shield',
+  },
   { id: 'lights', title: 'Lights', contract: 'common.view/model-light-source', icon: 'lightbulb' },
-  { id: 'cameras', title: 'Cameras', contract: 'common.view/model-camera-source', icon: 'device-camera' },
-  { id: 'particles', title: 'Particles', contract: 'common.view/model-effect-source', kind: 'particle', icon: 'sparkle' },
-  { id: 'ribbons', title: 'Ribbons', contract: 'common.view/model-effect-source', kind: 'ribbon', icon: 'sparkle' },
-  { id: 'forces', title: 'Forces', contract: 'common.view/model-effect-source', kind: 'force', icon: 'sparkle' },
-  { id: 'warps', title: 'Warps', contract: 'common.view/model-effect-source', kind: 'warp', icon: 'sparkle' },
-  { id: 'projections', title: 'Projections', contract: 'common.view/model-effect-source', kind: 'projection', icon: 'sparkle' },
-  { id: 'turrets', title: 'Turrets', contract: 'common.view/model-node-behaviour-source', kind: 'turret', icon: 'target' },
-  { id: 'billboards', title: 'Billboards', contract: 'common.view/model-node-behaviour-source', kind: 'billboard', icon: 'target' },
-  { id: 'ik', title: 'Inverse Kinematics', contract: 'common.view/model-node-behaviour-source', kind: 'ik', icon: 'target' },
-  { id: 'rigid-bodies', title: 'Rigid Bodies', contract: 'common.view/model-physics-source', kind: 'rigid-body', icon: 'circuit-board' },
-  { id: 'physics-shapes', title: 'Physics Shapes', contract: 'common.view/model-physics-source', kind: 'shape', icon: 'circuit-board' },
-  { id: 'physics-joints', title: 'Physics Joints', contract: 'common.view/model-physics-source', kind: 'joint', icon: 'circuit-board' },
-  { id: 'physics-cloths', title: 'Physics Cloths', contract: 'common.view/model-physics-source', kind: 'cloth', icon: 'circuit-board' },
+  {
+    id: 'turrets',
+    title: 'Turrets',
+    contract: 'common.view/model-node-behaviour-source',
+    kind: 'turret',
+    icon: 'target',
+  },
+  {
+    id: 'cameras',
+    title: 'Cameras',
+    contract: 'common.view/model-camera-source',
+    icon: 'device-camera',
+  },
+  {
+    id: 'ribbons',
+    title: 'Ribbons',
+    contract: 'common.view/model-effect-source',
+    kind: 'ribbon',
+    icon: 'sparkle',
+  },
+  {
+    id: 'ribbon-splines',
+    title: 'Ribbon Splines',
+    contract: 'common.view/model-effect-source',
+    kind: 'ribbon-spline',
+    icon: 'sparkle',
+  },
+  {
+    id: 'particles',
+    title: 'Particles',
+    contract: 'common.view/model-effect-source',
+    kind: 'particle',
+    icon: 'sparkle',
+  },
+  {
+    id: 'particle-copies',
+    title: 'Particle Copies',
+    contract: 'common.view/model-effect-source',
+    kind: 'particle-copy',
+    icon: 'sparkle',
+  },
+  {
+    id: 'projections',
+    title: 'Projections',
+    contract: 'common.view/model-effect-source',
+    kind: 'projection',
+    icon: 'sparkle',
+  },
+  {
+    id: 'forces',
+    title: 'Forces',
+    contract: 'common.view/model-effect-source',
+    kind: 'force',
+    icon: 'sparkle',
+  },
+  {
+    id: 'billboards',
+    title: 'Billboards',
+    contract: 'common.view/model-node-behaviour-source',
+    kind: 'billboard',
+    icon: 'target',
+  },
+  {
+    id: 'warps',
+    title: 'Warps',
+    contract: 'common.view/model-effect-source',
+    kind: 'warp',
+    icon: 'sparkle',
+  },
+  {
+    id: 'shadow-boxes',
+    title: 'Shadow Boxes',
+    contract: 'common.view/model-effect-source',
+    kind: 'shadow-box',
+    icon: 'sparkle',
+  },
+  {
+    id: 'rigid-bodies',
+    title: 'Rigid Bodies',
+    contract: 'common.view/model-physics-source',
+    kind: 'rigid-body',
+    icon: 'circuit-board',
+  },
+  {
+    id: 'physics-shapes',
+    title: 'Physics Shapes',
+    contract: 'common.view/model-physics-source',
+    kind: 'shape',
+    icon: 'circuit-board',
+  },
+  {
+    id: 'physics-joints',
+    title: 'Physics Joints',
+    contract: 'common.view/model-physics-source',
+    kind: 'joint',
+    icon: 'circuit-board',
+  },
+  {
+    id: 'physics-cloths',
+    title: 'Physics Cloths',
+    contract: 'common.view/model-physics-source',
+    kind: 'cloth',
+    icon: 'circuit-board',
+  },
+  {
+    id: 'cloth-constraints',
+    title: 'Cloth Constraints',
+    contract: 'common.view/model-physics-source',
+    kind: 'cloth-constraint',
+    icon: 'circuit-board',
+  },
+  {
+    id: 'ik',
+    title: 'Inverse Kinematics',
+    contract: 'common.view/model-node-behaviour-source',
+    kind: 'ik',
+    icon: 'target',
+  },
+])
+
+/** MK2's eight team colours, as the quick picks beside the custom swatch. */
+const MODEL_TEAM_COLOR_PRESETS: readonly string[] = Object.freeze([
+  '#d9140f',
+  '#2563eb',
+  '#16a34a',
+  '#facc15',
+  '#9333ea',
+  '#06b6d4',
+  '#f97316',
+  '#e5e7eb',
 ])
 
 /** A record's own fields, in its own words, as the key/value rows MK2 showed. */
@@ -992,19 +1150,96 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
             facets: facets.length === 0 ? '' : ` · ${facets.join(' · ')}`,
           }),
         )
+        /*
+         * MK2's five control sections, created before anything the document declares.
+         *
+         * Every one of these controls already existed; they lived in a strip over the render area,
+         * which is the arrangement MK2 moved away from — a toolbar has room for a row of buttons
+         * and no room for a labelled field, so «Model scale» and the team colour had nowhere to go
+         * and were simply absent. They are created here, empty, so the panel reads in MK2's order
+         * whatever order the controls below happen to be built in; each is removed at the end if
+         * nothing put a control in it, because an empty «Export» would claim a writer this host
+         * did not grant.
+         */
+        const panel = {
+          rendering: shell.section('rendering', localizer.text('viewer.modelRendering'), {
+            icon: 'device-camera-video',
+            collapsed: false,
+          }),
+          animation: shell.section('animation', localizer.text('viewer.modelAnimation'), {
+            icon: 'play',
+            collapsed: false,
+          }),
+          editing: shell.section('editing', localizer.text('viewer.modelEditing'), {
+            icon: 'edit',
+          }),
+          teamColor: shell.section('team-color', localizer.text('viewer.modelTeamColor'), {
+            icon: 'symbol-color',
+          }),
+          export: shell.section('export', localizer.text('viewer.modelExport'), {
+            icon: 'export',
+          }),
+        }
+        const controlRow = (
+          section: (typeof panel)['rendering'],
+          label: string,
+        ): { readonly row: HTMLElement; readonly field: HTMLElement } => {
+          const grid =
+            section.body.querySelector<HTMLElement>(`[${PART_ATTRIBUTE}="model.controls"]`) ??
+            element(section.body, 'div', { part: 'model.controls' })
+          const row = element(grid, 'div', { part: 'model.control-row' })
+          element(row, 'span', { text: label, part: 'model.control-label' })
+          return { row, field: element(row, 'span', { part: 'model.control-field' }) }
+        }
+
         // What the scene declares, as sidebar sections rather than a panel over the render area.
-        const body = shell.section('model', localizer.text('viewer.model'), {
+        const body = shell.section('properties', localizer.text('viewer.modelProperties'), {
           icon: 'symbol-misc',
+          collapsed: false,
         }).body
         const list = element(body, 'dl', { part: 'image.metadata' })
+        /*
+         * Everything `ModelSceneInfo` states, not the three counts this used to pick out.
+         *
+         * `upAxis` decides whether the model is drawn on its side and `geometryAccess` decides
+         * whether it is drawn at all — a reader who cannot see either has no way to tell a
+         * metadata-only source from a broken one.
+         */
         for (const [label, value] of [
+          [localizer.text('viewer.modelSceneCount'), String(model.info.scenes)],
+          [localizer.text('viewer.modelNodeCount'), String(model.info.nodes)],
           [localizer.text('viewer.modelMeshCount'), String(model.info.meshes)],
+          [localizer.text('viewer.modelPrimitiveCount'), String(model.info.primitives)],
           [localizer.text('viewer.modelMaterialCount'), String(model.info.materials)],
+          [localizer.text('viewer.modelTextureCount'), String(model.info.textures)],
           [localizer.text('viewer.modelAnimationCount'), String(model.info.animations)],
+          [localizer.text('viewer.modelUpAxis'), model.info.upAxis ?? '+y'],
+          [localizer.text('viewer.modelGeometryAccess'), model.info.geometryAccess],
         ] as const) {
           const row = element(list, 'div', { part: 'metadata.row' })
           element(row, 'dt', { text: label, part: 'metadata.label' })
           setViewerText(element(row, 'dd', { part: 'metadata.value' }), value, 64)
+        }
+        if (model.info.bounds !== undefined) {
+          const bounds = model.info.bounds
+          const boundsList = element(
+            shell.section('bounds', localizer.text('viewer.modelBounds'), {
+              icon: 'symbol-ruler',
+              collapsed: true,
+            }).body,
+            'dl',
+            { part: 'image.metadata' },
+          )
+          const extent = bounds.max.map((value, axis) => value - (bounds.min[axis] ?? 0))
+          for (const [label, value] of [
+            [localizer.text('viewer.modelBoundsMinimum'), describeModelValue(bounds.min)],
+            [localizer.text('viewer.modelBoundsMaximum'), describeModelValue(bounds.max)],
+            [localizer.text('viewer.modelBoundsExtent'), describeModelValue(extent)],
+          ] as const) {
+            const row = element(boundsList, 'div', { part: 'metadata.row' })
+            element(row, 'dt', { text: label, part: 'metadata.label' })
+            setViewerText(element(row, 'dd', { part: 'metadata.value' }), value, 160)
+          }
         }
         for (const contributed of options.sections ?? []) {
           const section = shell.section(contributed.id, contributed.title, {
@@ -1060,6 +1295,28 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
               setViewerText(element(row, 'dd', { part: 'metadata.value' }), value, 160)
             }
           }
+        }
+        /*
+         * MK2's last section: what each facet actually answered.
+         *
+         * `describeModelFacetPages` was already being computed and then thrown away, so a facet
+         * that returned a truncated page — a model with more emitters than one page holds — looked
+         * exactly like one that returned everything. The renderer's own outcome joins it further
+         * down, where the provider is known.
+         */
+        const diagnostics = shell.section(
+          'diagnostics',
+          localizer.text('viewer.modelDiagnosticsSection'),
+          { icon: 'warning', collapsed: true },
+        )
+        const diagnosticsList = element(diagnostics.body, 'dl', { part: 'image.metadata' })
+        const diagnosticRow = (label: string, value: string): void => {
+          const row = element(diagnosticsList, 'div', { part: 'metadata.row' })
+          element(row, 'dt', { text: label, part: 'metadata.label' })
+          setViewerText(element(row, 'dd', { part: 'metadata.value' }), value, 160)
+        }
+        for (const detail of facetDetails) {
+          diagnosticRow(detail.label, detail.items.join(' · ') + (detail.truncated ? ' …' : ''))
         }
         /*
          * The footer MK2 had: what the model is made of, at a glance.
@@ -1221,12 +1478,24 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
           const orient = (sampled: ReturnType<typeof player.sample>) =>
             correction === undefined
               ? sampled
-              : { ...sampled, primitives: sampled.primitives.map(one => orientPrimitive(one, correction)) }
+              : {
+                  ...sampled,
+                  primitives: sampled.primitives.map(one => orientPrimitive(one, correction)),
+                }
           let player = createModelSceneSampler(projection, { signal: scope.signal })
           let scene = orient(player.sample(0, scope.signal))
           let selectedPrimitive: string | undefined
           let activeClip: ModelAnimationClip | undefined
           let timeSeconds = 0
+          /*
+           * The colour a team-coloured material layer resolves to, MK2's red by default.
+           *
+           * A model whose materials declare no team-colour layer is unaffected by this, which is
+           * why the section is offered whenever a material facet was published rather than gated on
+           * a capability query: the honest answer for such a model is that nothing changes, and
+           * that is visible the moment the swatch is used.
+           */
+          let teamColor: readonly [number, number, number] = [0.851, 0.078, 0.059]
           const restFraming = framePrimitives(scene.primitives)
           const playbackStatus = element(stage, 'output', { part: 'model.playback-status' })
           const showDiagnostics = () => {
@@ -1245,6 +1514,19 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
           }
           const surfaces = sceneMaterials(materialRefs, texels, true)
           canvas.setAttribute('data-model-textures', String(surfaces.textures.length))
+          /*
+           * The two facts a reader of an untextured model needs, stated rather than inferred from
+           * the picture: which renderer drew it, and how many of the textures it asked the host for
+           * came back. `2 of 9` is a resolution problem; `0 of 0` is a model with no textures.
+           */
+          diagnosticRow(
+            localizer.text('viewer.modelRendererLabel'),
+            `${canvas.getAttribute('data-model-renderer') ?? ''} · ${canvas.getAttribute('data-model-renderer-status') ?? ''}${provider === undefined ? '' : ` · ${provider.rendererId}`}`,
+          )
+          diagnosticRow(
+            localizer.text('viewer.modelTextureStatus'),
+            `${surfaces.textures.length} / ${resourceRefs.filter(item => item.role === 'texture').length}`,
+          )
           canvas.setAttribute('data-model-skeleton', String(scene.joints.length))
           let skeletonVisible = scene.joints.length > 0
 
@@ -1328,6 +1610,7 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
                     materialContext: {
                       time: drawnTime,
                       sequenceTime: drawnTime,
+                      teamColor,
                       ...(activeClip?.sequenceIndex === undefined
                         ? {}
                         : { sequenceIndex: activeClip.sequenceIndex }),
@@ -1403,20 +1686,30 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
           scope.cleanup(camera.onChange(redraw))
           camera.attach(canvas, scope.signal)
 
-          const button = (label: string, title: string, run: () => void): HTMLElement => {
-            const node = element(toolbar, 'button', { part: 'operations.button', text: label })
+          const button = (
+            parent: HTMLElement,
+            label: string,
+            title: string,
+            run: () => void,
+          ): HTMLElement => {
+            const node = element(parent, 'button', { part: 'operations.button', text: label })
             node.setAttribute('type', 'button')
             node.title = title
             node.addEventListener('click', run, { signal: scope.signal })
             return node
           }
-          button(localizer.text('viewer.reset'), localizer.text('viewer.resetCamera'), () =>
-            camera.reset(),
+          const viewRow = controlRow(panel.rendering, localizer.text('viewer.modelView3d')).field
+          button(
+            viewRow,
+            localizer.text('viewer.reset'),
+            localizer.text('viewer.resetCamera'),
+            () => camera.reset(),
           )
-          button('−', localizer.text('viewer.zoomOut'), () => camera.zoom(1))
-          button('+', localizer.text('viewer.zoomIn'), () => camera.zoom(-1))
+          button(viewRow, '−', localizer.text('viewer.zoomOut'), () => camera.zoom(1))
+          button(viewRow, '+', localizer.text('viewer.zoomIn'), () => camera.zoom(-1))
           if (scene.joints.length > 0) {
             const toggle = button(
+              viewRow,
               localizer.text('viewer.modelBones'),
               localizer.text('viewer.modelSkeletonOverlay'),
               () => {
@@ -1430,10 +1723,61 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
             canvas.setAttribute('data-model-skeleton-visible', String(skeletonVisible))
           }
 
+          /*
+           * The team colour, offered whenever this subject published materials at all.
+           *
+           * Which layers are team-coloured is the material's own business and the renderer's; the
+           * viewer neither knows nor needs to. It states the colour and redraws — a model with no
+           * such layer simply does not change, which is a truthful answer and a visible one.
+           */
+          if (materialRefs.length > 0) {
+            const swatchRow = controlRow(
+              panel.teamColor,
+              localizer.text('viewer.modelTeamColorCustom'),
+            )
+            const picker = element(swatchRow.field, 'input', {
+              part: 'model.team-color',
+            }) as HTMLInputElement
+            picker.type = 'color'
+            picker.value = '#d9140f'
+            picker.setAttribute('aria-label', localizer.text('viewer.modelTeamColorCustom'))
+            const applyTeamColor = (hex: string): void => {
+              const value = /^#([0-9a-f]{6})$/iu.exec(hex)?.[1]
+              if (value === undefined) return
+              teamColor = Object.freeze([
+                Number.parseInt(value.slice(0, 2), 16) / 255,
+                Number.parseInt(value.slice(2, 4), 16) / 255,
+                Number.parseInt(value.slice(4, 6), 16) / 255,
+              ] as [number, number, number])
+              canvas.setAttribute('data-model-team-color', `#${value.toLowerCase()}`)
+              generation++
+              redraw()
+            }
+            picker.addEventListener('input', () => applyTeamColor(picker.value), {
+              signal: scope.signal,
+            })
+            const presets = controlRow(
+              panel.teamColor,
+              localizer.text('viewer.modelTeamColorPresets'),
+            ).field
+            presets.setAttribute('role', 'group')
+            for (const preset of MODEL_TEAM_COLOR_PRESETS) {
+              const swatch = button(presets, '', preset, () => {
+                picker.value = preset
+                applyTeamColor(preset)
+              })
+              swatch.style.setProperty('background', preset)
+              swatch.setAttribute('aria-label', preset)
+            }
+            canvas.setAttribute('data-model-team-color', '#d9140f')
+          }
+
           if (model.primitiveIds.length > 1) {
-            const selector = element(toolbar, 'select', {
-              part: 'model.primitive-selector',
-            }) as HTMLSelectElement
+            const selector = element(
+              controlRow(panel.rendering, localizer.text('viewer.modelPrimitive')).field,
+              'select',
+              { part: 'model.primitive-selector' },
+            ) as HTMLSelectElement
             selector.setAttribute('aria-label', localizer.text('viewer.modelPrimitive'))
             const all = element(selector, 'option', {
               text: localizer.text('viewer.modelAllPrimitives'),
@@ -1455,7 +1799,8 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
           }
           const conversions = modelConversions(args.descriptor)
           if (conversions.length > 0) {
-            const convert = element(toolbar, 'select', {
+            const exportRow = controlRow(panel.export, localizer.text('viewer.modelConvert'))
+            const convert = element(exportRow.field, 'select', {
               part: 'model.convert-selector',
             }) as HTMLSelectElement
             convert.setAttribute('aria-label', localizer.text('viewer.modelConvert'))
@@ -1467,7 +1812,9 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
               const option = element(convert, 'option', { text: preset.form.label })
               ;(option as HTMLOptionElement).value = preset.form.id
             }
-            const convertStatus = element(toolbar, 'output', { part: 'model.convert-status' })
+            const convertStatus = element(exportRow.field, 'output', {
+              part: 'model.convert-status',
+            })
             const writeFiles = options.exportBytes
             if (writeFiles === undefined) {
               convert.disabled = true
@@ -1522,19 +1869,30 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
               )
           }
           if (clips.length > 0) {
-            const selector = element(toolbar, 'select', {
+            const sequenceField = controlRow(
+              panel.animation,
+              localizer.text('viewer.modelAnimation'),
+            ).field
+            const selector = element(sequenceField, 'select', {
               part: 'model.animation-selector',
             }) as HTMLSelectElement
-            const renameClip = mountClipRename(toolbar, {
-              localizer,
-              descriptor: args.descriptor,
-              operations: args.operations,
-              ...(args.commit === undefined ? {} : { commit: args.commit }),
-              ...(args.authorization === undefined ? {} : { authorization: args.authorization }),
-              selector,
-              clips,
-              signal: scope.signal,
-            })
+            /*
+             * The rename field goes to Editing, as it did in MK2: renaming a sequence changes the
+             * document, which is a different act from choosing which one to watch.
+             */
+            const renameClip = mountClipRename(
+              controlRow(panel.editing, localizer.text('viewer.modelAnimationRename')).field,
+              {
+                localizer,
+                descriptor: args.descriptor,
+                operations: args.operations,
+                ...(args.commit === undefined ? {} : { commit: args.commit }),
+                ...(args.authorization === undefined ? {} : { authorization: args.authorization }),
+                selector,
+                clips,
+                signal: scope.signal,
+              },
+            )
             if (renameClip !== undefined) scope.cleanup(renameClip)
             selector.setAttribute('aria-label', localizer.text('viewer.modelAnimation'))
             const rest = element(selector, 'option', {
@@ -1545,9 +1903,15 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
               const option = element(selector, 'option', { text: clip.name }) as HTMLOptionElement
               option.value = clip.id
             }
-            const seek = element(toolbar, 'input', {
-              part: 'model.animation-seek',
-            }) as HTMLInputElement
+            const playbackField = controlRow(
+              panel.animation,
+              localizer.text('viewer.modelPlayback'),
+            ).field
+            const seek = element(
+              controlRow(panel.animation, localizer.text('viewer.modelAnimationTime')).field,
+              'input',
+              { part: 'model.animation-seek' },
+            ) as HTMLInputElement
             seek.type = 'range'
             seek.min = '0'
             seek.max = '0'
@@ -1559,7 +1923,7 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
             let playing = false
             let duration = 0
             let startedAt = 0
-            const toggle = button('▶', localizer.text('viewer.playPause'), () => {
+            const toggle = button(playbackField, '▶', localizer.text('viewer.playPause'), () => {
               if (duration <= 0) return
               playing = !playing
               if (playing) {
@@ -1638,6 +2002,19 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
           scope.cleanup(() => resizeObserver?.disconnect())
           redraw()
         }
+        /*
+         * What this subject actually offered, and nothing else.
+         *
+         * The five control sections are created up front so the panel keeps MK2's order whatever
+         * order the controls are built in; the ones nothing filled are removed here. An empty
+         * «Export» claims a writer the host did not grant, and an empty «Animation» claims a model
+         * has sequences — both are worse than the section not being there.
+         */
+        for (const section of Object.values(panel)) {
+          if (section.body.childElementCount === 0) section.root.remove()
+        }
+        // Every control moved into the panel; the strip over the render area has nothing left.
+        if (toolbar.childElementCount === 0) toolbar.remove()
         setState(stage, [])
       } catch (error) {
         setState(stage, ['error'])
