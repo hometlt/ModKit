@@ -221,6 +221,80 @@ const FACET_READOUT: Readonly<Record<string, { labelKey: UiMessageKey; key: stri
     },
   })
 
+/**
+ * The sidebar MK2 had, restated over the facets MK3 publishes.
+ *
+ * MK2 showed twenty-seven named lists - Particles apart from Ribbons apart from Forces, Turrets
+ * apart from Billboards - and a reader looking for a model's turrets should not have to scan an
+ * "Effects (12)" list to find them. The facet is the source; `kind` is how one facet's records
+ * split into the lists the format's own vocabulary names.
+ *
+ * A section whose facet is absent, or whose records are all of another kind, is not rendered: an
+ * empty list says a model has no lights, which is a different claim from a codec not publishing
+ * them.
+ */
+const MODEL_PANEL_SECTIONS: readonly {
+  readonly id: string
+  readonly title: string
+  readonly contract: (typeof MODEL_FACET_CONTRACTS)[number]
+  readonly kind?: string
+  readonly icon: string
+}[] = Object.freeze([
+  { id: 'meshes', title: 'Meshes', contract: 'common.view/model-material-source', icon: 'symbol-method' },
+  { id: 'materials', title: 'Materials', contract: 'common.view/model-material-source', icon: 'paintcan' },
+  { id: 'bones', title: 'Bones', contract: 'common.view/model-skeleton-source', icon: 'type-hierarchy' },
+  { id: 'animations', title: 'Animations', contract: 'common.view/model-animation-source', icon: 'play' },
+  { id: 'attachments', title: 'Attachments', contract: 'common.view/model-socket-source', icon: 'pinned' },
+  { id: 'hit-volumes', title: 'Hit Volumes', contract: 'common.view/model-collision-source', icon: 'shield' },
+  { id: 'resources', title: 'Resources', contract: 'common.view/model-resource-refs-source', icon: 'file-media' },
+  { id: 'lights', title: 'Lights', contract: 'common.view/model-light-source', icon: 'lightbulb' },
+  { id: 'cameras', title: 'Cameras', contract: 'common.view/model-camera-source', icon: 'device-camera' },
+  { id: 'particles', title: 'Particles', contract: 'common.view/model-effect-source', kind: 'particle', icon: 'sparkle' },
+  { id: 'ribbons', title: 'Ribbons', contract: 'common.view/model-effect-source', kind: 'ribbon', icon: 'sparkle' },
+  { id: 'forces', title: 'Forces', contract: 'common.view/model-effect-source', kind: 'force', icon: 'sparkle' },
+  { id: 'warps', title: 'Warps', contract: 'common.view/model-effect-source', kind: 'warp', icon: 'sparkle' },
+  { id: 'projections', title: 'Projections', contract: 'common.view/model-effect-source', kind: 'projection', icon: 'sparkle' },
+  { id: 'turrets', title: 'Turrets', contract: 'common.view/model-node-behaviour-source', kind: 'turret', icon: 'target' },
+  { id: 'billboards', title: 'Billboards', contract: 'common.view/model-node-behaviour-source', kind: 'billboard', icon: 'target' },
+  { id: 'ik', title: 'Inverse Kinematics', contract: 'common.view/model-node-behaviour-source', kind: 'ik', icon: 'target' },
+  { id: 'rigid-bodies', title: 'Rigid Bodies', contract: 'common.view/model-physics-source', kind: 'rigid-body', icon: 'circuit-board' },
+  { id: 'physics-shapes', title: 'Physics Shapes', contract: 'common.view/model-physics-source', kind: 'shape', icon: 'circuit-board' },
+  { id: 'physics-joints', title: 'Physics Joints', contract: 'common.view/model-physics-source', kind: 'joint', icon: 'circuit-board' },
+  { id: 'physics-cloths', title: 'Physics Cloths', contract: 'common.view/model-physics-source', kind: 'cloth', icon: 'circuit-board' },
+])
+
+/** A record's own fields, in its own words, as the key/value rows MK2 showed. */
+function modelRecordRows(record: unknown): readonly (readonly [string, string])[] {
+  if (typeof record !== 'object' || record === null || Array.isArray(record)) return []
+  const rows: [string, string][] = []
+  for (const [key, value] of Object.entries(record)) {
+    if (value === undefined || value === null) continue
+    if (key === 'properties' && Array.isArray(value)) {
+      // A codec's own extra fields are already key/value; they read as rows like any other.
+      for (const entry of value) {
+        if (typeof entry !== 'object' || entry === null || Array.isArray(entry)) continue
+        const property = entry as { key?: unknown; value?: unknown }
+        if (typeof property.key !== 'string') continue
+        rows.push([property.key, describeModelValue(property.value)])
+      }
+      continue
+    }
+    rows.push([key, describeModelValue(value)])
+  }
+  return rows
+}
+
+function describeModelValue(value: unknown): string {
+  if (value === null || value === undefined) return ''
+  if (Array.isArray(value))
+    return value
+      .map(item => (typeof item === 'number' ? Number(item.toFixed(4)) : describeModelValue(item)))
+      .join(', ')
+  if (typeof value === 'number') return String(Number(value.toFixed(4)))
+  if (typeof value === 'object') return JSON.stringify(value)
+  return String(value)
+}
+
 export interface ModelFacetDetail {
   readonly contract: (typeof MODEL_FACET_CONTRACTS)[number]
   readonly label: string
@@ -512,7 +586,7 @@ function drawPrimitive(
   }
 }
 
-/** Pixel size of the frame this stage asks a provider for, and of its own 2D canvas. */
+/** Fallback frame size, used until the canvas has been laid out. */
 const MODEL_STAGE_WIDTH = 720
 const MODEL_STAGE_HEIGHT = 480
 
@@ -945,17 +1019,68 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
             // A section whose module cannot bind (no such data source here) is removed, not empty.
             .catch(() => section.root.remove())
         }
-        for (const detail of facetDetails) {
-          const section = shell.section(
-            `facet:${detail.label}`,
-            `${detail.label} (${detail.items.length}${detail.truncated ? '+' : ''})`,
-            { icon: 'list-tree', collapsed: true },
-          )
-          const items = element(section.body, 'ul', { part: 'model.facet-list' })
-          for (const item of detail.items) {
-            element(items, 'li', { part: 'model.facet-item', text: item })
+        /*
+         * One section per list the format names, each row a field the record itself carries.
+         * A record is shown as its own fields rather than as a rendered sentence, because the
+         * reason to open Lights is to read a light's colour and the node it hangs on.
+         */
+        for (const spec of MODEL_PANEL_SECTIONS) {
+          const page = facetPages.get(spec.contract)
+          if (page === undefined) continue
+          const records =
+            spec.kind === undefined
+              ? page.items
+              : page.items.filter(
+                  item =>
+                    typeof item === 'object' &&
+                    item !== null &&
+                    (item as { kind?: unknown }).kind === spec.kind,
+                )
+          if (records.length === 0) continue
+          const section = shell.section(spec.id, `${spec.title} (${records.length})`, {
+            icon: spec.icon,
+            collapsed: true,
+          })
+          for (const record of records) {
+            const rows = modelRecordRows(record)
+            if (rows.length === 0) continue
+            const named = record as { name?: unknown; id?: unknown }
+            const entry = element(section.body, 'details', { part: 'model.facet-item' })
+            element(entry, 'summary', {
+              text: String(
+                (typeof named.name === 'string' && named.name !== '' ? named.name : undefined) ??
+                  named.id ??
+                  spec.title,
+              ),
+            })
+            const list = element(entry, 'dl', { part: 'image.metadata' })
+            for (const [key, value] of rows) {
+              const row = element(list, 'div', { part: 'metadata.row' })
+              element(row, 'dt', { text: key, part: 'metadata.label' })
+              setViewerText(element(row, 'dd', { part: 'metadata.value' }), value, 160)
+            }
           }
         }
+        /*
+         * The footer MK2 had: what the model is made of, at a glance.
+         *
+         * Counts of meshes and materials say how a model is organised; vertices and triangles say
+         * how big it is, and that is the number a reader wants before opening a section. Bones and
+         * resources follow because a skinned model and a textured one behave differently in every
+         * other surface.
+         */
+        const sceneTotals = model.primitives.reduce(
+          (totals: { vertices: number; triangles: number }, primitive) => ({
+            vertices: totals.vertices + Math.floor(primitive.positions.length / 3),
+            triangles:
+              totals.triangles +
+              Math.floor((primitive.indices?.length ?? primitive.positions.length / 3) / 3),
+          }),
+          { vertices: 0, triangles: 0 },
+        )
+        const boneCount = facetPages.get('common.view/model-skeleton-source')?.items.length ?? 0
+        const resourceCount =
+          facetPages.get('common.view/model-resource-refs-source')?.items.length ?? 0
         args.status?.set([
           {
             id: 'scene',
@@ -967,6 +1092,32 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
             }),
             align: 'start',
           },
+          {
+            id: 'geometry',
+            icon: 'symbol-method',
+            text: `${sceneTotals.vertices} v · ${sceneTotals.triangles} tri`,
+            align: 'start',
+          },
+          ...(boneCount === 0
+            ? []
+            : [
+                {
+                  id: 'rig',
+                  icon: 'type-hierarchy',
+                  text: `${boneCount} bones`,
+                  align: 'start' as const,
+                },
+              ]),
+          ...(resourceCount === 0
+            ? []
+            : [
+                {
+                  id: 'resources',
+                  icon: 'file-media',
+                  text: `${resourceCount} textures`,
+                  align: 'start' as const,
+                },
+              ]),
         ])
         scope.cleanup(() => args.status?.clear())
         if (model.primitive === undefined) {
@@ -978,7 +1129,29 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
             text: localizer.text('viewer.modelGeometryUnavailable'),
           })
         } else {
+          /*
+           * The frame follows the canvas, because the canvas follows the panel.
+           *
+           * The element is laid out by flex - a VS Code editor column is rarely 3:2 - while the
+           * backing store and the projection come from this viewport. Leaving it at a fixed size
+           * meant the browser scaled a 3:2 frame into whatever box the panel gave it, and the
+           * model came out stretched along one axis. It is measured instead, and re-measured
+           * whenever the panel changes.
+           */
           const viewport = { width: MODEL_STAGE_WIDTH, height: MODEL_STAGE_HEIGHT }
+          const view = canvas.ownerDocument.defaultView
+          const measureViewport = (): boolean => {
+            const rect = canvas.getBoundingClientRect()
+            // No layout yet, or a detached document: the fallback size is the honest answer.
+            if (rect.width <= 0 || rect.height <= 0) return false
+            const density = Math.min(2, view?.devicePixelRatio ?? 1)
+            const width = Math.max(1, Math.min(2048, Math.round(rect.width * density)))
+            const height = Math.max(1, Math.min(2048, Math.round(rect.height * density)))
+            if (viewport.width === width && viewport.height === height) return false
+            viewport.width = width
+            viewport.height = height
+            return true
+          }
 
           /*
            * The renderer, asked for once per mount through the host's port.
@@ -1084,6 +1257,7 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
            */
           let generation = 0
           const drawWireframe = (): void => {
+            measureViewport()
             canvas.width = viewport.width
             canvas.height = viewport.height
             const placement = modelCamera(
@@ -1110,6 +1284,7 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
           let redrawPending = false
           let pendingFrame: Promise<void> | undefined
           const redraw = (): void => {
+            measureViewport()
             const pose = camera.pose
             gizmo.update(pose.yaw, pose.pitch)
             const request = generation
@@ -1452,6 +1627,15 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
           }
 
           scope.cleanup(() => gizmo.destroy())
+          // The panel is resizable, and a frame drawn for the old width is the stretched one.
+          const resizeObserver =
+            typeof ResizeObserver === 'undefined'
+              ? undefined
+              : new ResizeObserver(() => {
+                  if (measureViewport()) redraw()
+                })
+          resizeObserver?.observe(canvas)
+          scope.cleanup(() => resizeObserver?.disconnect())
           redraw()
         }
         setState(stage, [])
