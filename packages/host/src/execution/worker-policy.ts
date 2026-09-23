@@ -8,6 +8,8 @@
 
 import { ModkitError } from '@modkit/core'
 
+import { DEFAULT_PROTOCOL_LIMITS } from './protocol.js'
+
 export interface WorkerResourceLimits {
   readonly maxOldGenerationSizeMb: number
   readonly maxYoungGenerationSizeMb: number
@@ -17,6 +19,14 @@ export interface WorkerResourceLimits {
 
 export interface WorkerBackendPolicy {
   readonly resourceLimits: WorkerResourceLimits
+  /**
+   * Node ceiling for one value crossing the worker boundary.
+   *
+   * A resolved game catalog is the value that tests this: the StarCraft II stock chain does not
+   * fit the protocol default, and the refusal reads `value has more than N nodes`. A root that
+   * raises it is spending host memory on that frame, so the ceiling stays a composition choice.
+   */
+  readonly maxValueNodes: number
   /** Budget for `load` (spawn + verify + evaluate + `ready`). */
   readonly loadDeadlineMs: number
   /** Default per-call deadline for the host endpoint. */
@@ -46,6 +56,7 @@ export const WORKER_BACKEND_POLICY_CEILINGS: WorkerBackendPolicy = Object.freeze
   graceMs: 30_000,
   outputCapBytes: 4 * 1024 * 1024,
   maxRestartsPerLease: 1_000,
+  maxValueNodes: 64_000_000,
 })
 
 /**
@@ -66,10 +77,12 @@ export const DEFAULT_WORKER_BACKEND_POLICY: WorkerBackendPolicy = Object.freeze(
   graceMs: 5_000,
   outputCapBytes: 1024 * 1024,
   maxRestartsPerLease: 3,
+  maxValueNodes: DEFAULT_PROTOCOL_LIMITS.maxNodes,
 })
 
 export interface WorkerBackendPolicyInput {
   readonly resourceLimits?: Partial<WorkerResourceLimits>
+  readonly maxValueNodes?: number
   readonly loadDeadlineMs?: number
   readonly defaultCallDeadlineMs?: number
   readonly graceMs?: number
@@ -142,6 +155,11 @@ export function workerBackendPolicy(input: WorkerBackendPolicyInput = {}): Worke
       input.maxRestartsPerLease ?? d.maxRestartsPerLease,
       c.maxRestartsPerLease,
       0,
+    ),
+    maxValueNodes: bounded(
+      'maxValueNodes',
+      input.maxValueNodes ?? d.maxValueNodes,
+      c.maxValueNodes,
     ),
   })
 }

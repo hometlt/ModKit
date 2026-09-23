@@ -20,6 +20,9 @@ export const MAP_PREVIEW_CATALOG_ENRICHMENT_POLICY: NonNullable<
   locales: Object.freeze(['enUS']),
   limits: Object.freeze({
     // A multi-root workspace may need hundreds of bounded reads across catalog families and locale.
+    // Full catalog planning over the installed StarCraft II stock chain asks for 555. Granting it
+    // (1024) was measured together with a raised node ceiling: the analysis then cost 3 GB in one
+    // process and still missed the call deadline, so the reduced plan stands until it can be paged.
     maxRequirements: 512,
     maxDocumentBytes: 16_777_216,
     maxTextBytes: 268_435_456,

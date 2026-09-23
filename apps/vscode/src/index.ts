@@ -49,6 +49,16 @@ export const VSCODE_WORKER_POLICY: WorkerBackendPolicy = workerBackendPolicy({
     codeRangeSizeMb: 128,
     stackSizeMb: 8,
   },
+  /*
+   * The node ceiling stays at the protocol default, measured.
+   *
+   * The resolved StarCraft II catalog does not fit 4,000,000 nodes, and the refusal leaves the map
+   * preview without the data that binds an object to its model and a terrain set to its textures.
+   * Raising it to 32,000,000 was tried on the installed stock chain: peak resident memory went
+   * from 500 MB to 3015 MB in one process (1984 MB to 4263 MB across the window) and the preview
+   * still did not finish inside the call deadline. The catalog has to be paged rather than carried
+   * in one frame; until then the clean refusal is the better failure.
+   */
   loadDeadlineMs: 20_000,
   defaultCallDeadlineMs: 60_000,
   graceMs: 2_000,

@@ -136,6 +136,7 @@ export function createNodeWorkerBackend(options: NodeWorkerBackendOptions = {}):
   const report = (diagnostic: Diagnostic) => options.onDiagnostic?.(diagnostic)
   const limits: ProtocolLimits = protocolLimits({
     defaultCallDeadlineMs: policy.defaultCallDeadlineMs,
+    maxNodes: policy.maxValueNodes,
   })
 
   // the target names the realm the code will run in — the worker realm of a Node host is
