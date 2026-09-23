@@ -219,9 +219,61 @@ describe('the Explorer can be answered from inside a container', () => {
     }
     const listedBytes = new TextEncoder().encode('namespace member')
     const lateMember = 'mods/core.sc2mod/base.sc2assets/assets/sounds/late.wav'
+    let rootSourceId = ''
+    const children = vi.fn(async (path: string) => {
+      if (path === '') {
+        return {
+          items: [
+            {
+              id: 'mods',
+              path: 'Mods',
+              name: 'Mods',
+              kind: 'directory' as const,
+              revision: revisionId('provider-token:directory-container-root'),
+            },
+            {
+              id: 'campaigns',
+              path: 'Campaigns',
+              name: 'Campaigns',
+              kind: 'directory' as const,
+              revision: revisionId('provider-token:directory-container-root'),
+            },
+          ],
+        }
+      }
+      if (path.toLowerCase() === 'mods') {
+        return {
+          items: [
+            {
+              id: 'mods/core.sc2mod',
+              path: 'Mods/core.sc2mod',
+              name: 'core.sc2mod',
+              kind: 'directory' as const,
+              revision: revisionId('provider-token:directory-container-mod'),
+            },
+          ],
+        }
+      }
+      return { items: [] }
+    })
     const namespace: NamespaceEntrySource = {
-      async list(_prefix, page) {
+      async list(prefix, page) {
         expect(page.limit).toBeLessThanOrEqual(256)
+        if (prefix.toLowerCase() === 'mods/core.sc2mod') {
+          const path = 'Mods/core.sc2mod/DocumentInfo'
+          return {
+            items: [
+              {
+                id: path,
+                path,
+                name: 'DocumentInfo',
+                kind: 'file' as const,
+                size: BigInt(listedBytes.byteLength),
+                revision: revisionId('provider-token:directory-container-document-info'),
+              },
+            ],
+          }
+        }
         const path = 'member.dds'
         return {
           items: [
@@ -236,32 +288,68 @@ describe('the Explorer can be answered from inside a container', () => {
           ],
         }
       },
+      children,
       async openEntry(entryId) {
-        expect([lateMember, 'member.dds']).toContain(entryId)
+        expect([lateMember, 'member.dds', 'Mods/core.sc2mod/DocumentInfo']).toContain(entryId)
         return {
-          value: { id: `fixture:${entryId}`, uri: `fixture:${entryId}` },
+          value: {
+            id: `fixture:${entryId}`,
+            uri: `fixture:${entryId}`,
+            ...(rootSourceId === '' ? {} : { parentIds: [rootSourceId] }),
+          },
           release: async () => undefined,
         }
       },
     }
     let disposed = false
+    const operations = vi.fn(() => ({
+      async invoke() {
+        return { state: 'ok', output: { kind: 'bytes', value: listedBytes }, diagnostics: [] }
+      },
+      dispose: async () => undefined,
+    }))
+    const dataSource = vi.fn(async () => ({ value: namespace, release: async () => undefined }))
     const session = {
       revision: revisionId('provider-token:directory-container'),
       state: () => (disposed ? 'disposed' : 'live'),
       descriptor: async () => descriptor,
-      dataSource: async () => ({ value: namespace, release: async () => undefined }),
-      operations: () => ({
-        async invoke() {
-          return { state: 'ok', output: { kind: 'bytes', value: listedBytes }, diagnostics: [] }
-        },
-        dispose: async () => undefined,
-      }),
+      dataSource,
+      operations,
       events: () =>
         (async function* () {
           /* this stand-in session publishes no events */
         })(),
       dispose: vi.fn(async () => {
         disposed = true
+      }),
+    } as unknown as AssetSession
+    const modDescriptor = {
+      identity: { formatId: 'sc2-mod' },
+      dataSources: [],
+      operations: [
+        {
+          id: 'content.resolve-dependencies',
+          handlerId: 'resolve-dependencies',
+          state: 'available',
+          mutatesSource: false,
+        },
+      ],
+    }
+    let modDisposed = false
+    const modSession = {
+      revision: revisionId('provider-token:directory-container-mod-session'),
+      state: () => (modDisposed ? 'disposed' : 'live'),
+      descriptor: async () => modDescriptor,
+      dataSource: async () => {
+        throw new TypeError('the fixture mod publishes no data source')
+      },
+      operations: () => ({ invoke: vi.fn(), dispose: async () => undefined }),
+      events: () =>
+        (async function* () {
+          /* this stand-in session publishes no events */
+        })(),
+      dispose: vi.fn(async () => {
+        modDisposed = true
       }),
     } as unknown as AssetSession
     const openNamespaceSubject = vi.fn(async (request: Parameters<typeof openSubject>[0]) => {
@@ -271,7 +359,25 @@ describe('the Explorer can be answered from inside a container', () => {
       try {
         const physical: string[] = []
         for await (const item of lease.value.list('')) physical.push(item.path)
-        expect(physical).toContain('Data.000')
+        if (physical.includes('Data.000')) {
+          rootSourceId = request.source.ref.id
+        } else {
+          expect(physical).toContain('DocumentInfo')
+          return {
+            state: 'opened',
+            session: modSession,
+            descriptor: modDescriptor,
+            selected: {
+              extensionId: 'fixture/sc2-mod',
+              contributionId: 'fixture/sc2-mod',
+              variantId: 'default',
+              offerId: 'fixture',
+              confidence: 1,
+            },
+            candidates: [],
+            diagnostics: [],
+          } as never
+        }
       } finally {
         await lease.release()
       }
@@ -309,7 +415,21 @@ describe('the Explorer can be answered from inside a container', () => {
     })
     cleanup.push(() => containers.dispose())
 
-    expect((await containers.list(workspace, '')).map(item => item.name)).toEqual(['member.dds'])
+    expect((await containers.list(workspace, '')).map(item => item.name)).toEqual([
+      'Mods',
+      'Campaigns',
+    ])
+    expect((await containers.list(workspace, 'Mods')).map(item => item.name)).toEqual([
+      'core.sc2mod',
+    ])
+    expect(
+      (await containers.walk(workspace, 'Mods/core.sc2mod', 100)).map(item => item.path),
+    ).toEqual(['Mods/core.sc2mod/DocumentInfo'])
+    expect(await containers.stat(workspace, 'mods/core.sc2mod')).toMatchObject({
+      name: 'core.sc2mod',
+      kind: 'directory',
+    })
+    expect(children).toHaveBeenCalledTimes(2)
     expect(new TextDecoder().decode(await containers.read(workspace, 'member.dds'))).toBe(
       'namespace member',
     )
@@ -321,13 +441,25 @@ describe('the Explorer can be answered from inside a container', () => {
     expect(new TextDecoder().decode(await containers.read(workspace, lateMember))).toBe(
       'namespace member',
     )
-    expect(openNamespaceSubject).toHaveBeenCalledOnce()
+    expect(operations).toHaveBeenCalledOnce()
+    expect(dataSource).toHaveBeenCalledOnce()
+    const openedMod = await containers.open(containerUriText(workspace, 'Mods/core.sc2mod'))
+    expect(openedMod.snapshot).toMatchObject({
+      state: 'opened',
+      selected: { contributionId: 'fixture/sc2-mod' },
+    })
+    await expect(openedMod.session?.descriptor()).resolves.toMatchObject({
+      identity: { formatId: 'sc2-mod' },
+    })
+    await openedMod.session?.dispose()
+    expect(modSession.dispose).toHaveBeenCalledOnce()
+    expect(openNamespaceSubject).toHaveBeenCalledTimes(2)
     expect(await containers.release(workspace)).toBe(true)
     expect(session.dispose).toHaveBeenCalledOnce()
 
     descriptor.identity.formatId = 'fixture-directory-container'
     await expect(containers.index(workspace)).rejects.toMatchObject({ code: NOT_A_CONTAINER })
-    expect(openNamespaceSubject).toHaveBeenCalledTimes(2)
+    expect(openNamespaceSubject).toHaveBeenCalledTimes(3)
 
     const granted = mkdtempSync(join(tmpdir(), 'modkit-vscode-container-granted-'))
     const outside = mkdtempSync(join(tmpdir(), 'modkit-vscode-container-outside-'))
@@ -346,7 +478,7 @@ describe('the Explorer can be answered from inside a container', () => {
     await expect(escapedContainers.index(escaped)).rejects.toThrow(
       /outside the physically granted roots/u,
     )
-    expect(openNamespaceSubject).toHaveBeenCalledTimes(2)
+    expect(openNamespaceSubject).toHaveBeenCalledTimes(3)
 
     descriptor.identity.formatId = 'casc'
     const raceRoot = mkdtempSync(join(tmpdir(), 'modkit-vscode-container-race-'))
@@ -406,8 +538,18 @@ describe('the Explorer can be answered from inside a container', () => {
         },
       ],
     }
+    let listings = 0
     const namespace: NamespaceEntrySource = {
-      async list() {
+      async list(prefix) {
+        listings += 1
+        if (prefix === '' && listings > 1) {
+          lookupStarted?.()
+          await lookupContinue
+          // `release()` has dropped the registry key, but this in-flight nested lookup still owns
+          // a retainer. A disposed parent here would invalidate the VFS mount before open.
+          expect(disposed).toBe(false)
+          return { items: [] }
+        }
         return {
           items: [
             {
@@ -480,7 +622,7 @@ describe('the Explorer can be answered from inside a container', () => {
     await expect(containers.release(workspace)).resolves.toBe(true)
     expect(session.dispose).not.toHaveBeenCalled()
     continueLookup?.()
-    await expect(opening).rejects.toThrow(/late entry is absent|lists no/u)
+    await expect(opening).rejects.toThrow(/late entry is absent|lists no|has no entry/u)
     expect(session.dispose).toHaveBeenCalledOnce()
   })
 

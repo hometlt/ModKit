@@ -54,6 +54,6 @@ describe('image gallery', () => {
       },
       1,
     )
-    expect(thumb).toEqual({ width: 1, height: 1, pixels: [255, 0, 0, 255] })
+    expect(thumb).toEqual({ width: 1, height: 1, rgba: new Uint8Array([255, 0, 0, 255]) })
   })
 })

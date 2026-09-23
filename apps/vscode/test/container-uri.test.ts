@@ -10,6 +10,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   buildContainerIndex,
+  containerLocationIdentity,
   containerUriPath,
   containerUriText,
   CONTAINER_SCHEME,
@@ -56,6 +57,12 @@ describe('a container member has an address', () => {
   it('is stable: the same container is always the same folder', () => {
     expect(containerUriPath('/srv/a.big')).toBe(containerUriPath('/srv/a.big'))
     expect(containerUriPath('/srv/a.big')).not.toBe(containerUriPath('/srv/b.big'))
+  })
+
+  it('treats Windows drive case and separators as one workspace folder', () => {
+    expect(containerLocationIdentity('C:\\Apps\\StarCraft II', '', false)).toBe(
+      containerLocationIdentity('c:/Apps/StarCraft II/', '', false),
+    )
   })
 
   it('accepts the authority-less spellings an editor may hand back', () => {

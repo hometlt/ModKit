@@ -8,9 +8,85 @@ import type {
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import {
+  applyEditorOnTypeEditResult,
+  caseInsensitiveExtensionPattern,
   createLanguageSessionController,
+  plainLanguagePosition,
   type EditorLanguageDocument,
 } from '../src/language-session.js'
+
+it('builds case-insensitive suffix globs for mixed-case SC2 files', () => {
+  expect(caseInsensitiveExtensionPattern('.sc2style')).toBe('[sS][cC]2[sS][tT][yY][lL][eE]')
+  expect(caseInsensitiveExtensionPattern('xml')).toBe('[xX][mM][lL]')
+})
+
+it('copies editor-native positions to plain worker-safe language DTOs', () => {
+  class NativePosition {
+    constructor(
+      readonly line: number,
+      readonly character: number,
+    ) {}
+  }
+  const position = plainLanguagePosition(new NativePosition(2, 7))
+  expect(position).toEqual({ line: 2, character: 7 })
+  expect(Object.getPrototypeOf(position)).toBe(Object.prototype)
+})
+
+it('applies an on-type action before moving the caret and requesting completion', async () => {
+  let text = 'value='
+  let cursor = { line: 0, character: text.length }
+  const requestCompletion = vi.fn(async () => {
+    expect(text).toBe('value=""')
+    expect(cursor).toEqual({ line: 0, character: 7 })
+  })
+  await expect(
+    applyEditorOnTypeEditResult(
+      {
+        edits: [
+          {
+            range: { start: cursor, end: cursor },
+            newText: '""',
+          },
+        ],
+        isComplete: true,
+        cursor: { line: 0, character: 7 },
+        requestCompletion: true,
+      },
+      {
+        async applyEdits(edits) {
+          const [edit] = edits
+          if (edit === undefined) return false
+          text = `${text.slice(0, edit.range.start.character)}${edit.newText}${text.slice(edit.range.end.character)}`
+          return true
+        },
+        moveCursor(position) {
+          cursor = position
+        },
+        requestCompletion,
+      },
+    ),
+  ).resolves.toBe(true)
+  expect(text).toBe('value=""')
+  expect(cursor).toEqual({ line: 0, character: 7 })
+  expect(requestCompletion).toHaveBeenCalledOnce()
+})
+
+it('requests repeated completion for an on-type action without inventing an edit', async () => {
+  const applyEdits = vi.fn(async () => true)
+  const requestCompletion = vi.fn(async () => undefined)
+  await expect(
+    applyEditorOnTypeEditResult(
+      { edits: [], isComplete: true, requestCompletion: true },
+      {
+        applyEdits,
+        moveCursor: vi.fn(),
+        requestCompletion,
+      },
+    ),
+  ).resolves.toBe(true)
+  expect(applyEdits).toHaveBeenCalledWith([])
+  expect(requestCompletion).toHaveBeenCalledOnce()
+})
 
 const ROUTE = Object.freeze({
   languageId: 'fixture-language',
@@ -66,6 +142,7 @@ function fakeWorkspace(
   const closes: string[] = []
   const counts = { initialize: 0, shutdown: 0 }
   let current: LanguageWorkspaceAnalysisResult | undefined
+  let analyzed = false
   return {
     opens,
     changes,
@@ -74,9 +151,24 @@ function fakeWorkspace(
     async initialize() {
       counts.initialize += 1
     },
+    async synchronize() {
+      return { state: 'resolved', hostDiagnostics: [] }
+    },
+    async analyze(request) {
+      if (!analyzed) {
+        opens.push(request)
+        current = await (options.open?.(request) ?? Promise.resolve(resolved(request)))
+        analyzed = true
+      } else {
+        changes.push(request)
+        current = await (options.change?.(request) ?? Promise.resolve(resolved(request)))
+      }
+      return current
+    },
     async open(request) {
       opens.push(request)
       current = await (options.open?.(request) ?? Promise.resolve(resolved(request)))
+      analyzed = true
       return current
     },
     async change(request) {
@@ -114,6 +206,9 @@ function fakeWorkspace(
     async formatting() {
       return undefined
     },
+    async onTypeFormatting() {
+      return undefined
+    },
     async codeActions() {
       return undefined
     },
@@ -135,6 +230,7 @@ function fakeWorkspace(
     async close(uri) {
       closes.push(uri)
       current = undefined
+      analyzed = false
     },
     async shutdown() {
       counts.shutdown += 1
@@ -187,12 +283,14 @@ describe('VS Code-free language session controller', () => {
     ).resolves.toMatchObject({ presentations: [{ label: 'FF8000' }] })
     const actionRange = { start: { line: 0, character: 0 }, end: { line: 0, character: 6 } }
     await expect(
-      controller.codeActions(document, actionRange, [{
-        range: actionRange,
-        severity: 'warning',
-        message: 'fixture colour',
-        code: 'fixture/colour',
-      }]),
+      controller.codeActions(document, actionRange, [
+        {
+          range: actionRange,
+          severity: 'warning',
+          message: 'fixture colour',
+          code: 'fixture/colour',
+        },
+      ]),
     ).resolves.toMatchObject({ actions: [{ title: 'Replace colour' }] })
     expect(colors).toHaveBeenCalledWith(expect.objectContaining({ documentVersion: 1 }))
     expect(presentations).toHaveBeenCalledWith(
@@ -201,12 +299,14 @@ describe('VS Code-free language session controller', () => {
         range: { start: { line: 0, character: 0 }, end: { line: 0, character: 6 } },
       }),
     )
-    expect(actions).toHaveBeenCalledWith(expect.objectContaining({
-      documentVersion: 1,
-      range: actionRange,
-      diagnostics: [expect.objectContaining({ code: 'fixture/colour' })],
-      maxEdits: 4_096,
-    }))
+    expect(actions).toHaveBeenCalledWith(
+      expect.objectContaining({
+        documentVersion: 1,
+        range: actionRange,
+        diagnostics: [expect.objectContaining({ code: 'fixture/colour' })],
+        maxEdits: 4_096,
+      }),
+    )
     await controller.shutdown()
   })
 
@@ -290,6 +390,221 @@ describe('VS Code-free language session controller', () => {
     await controller.documentSymbols(editorDocument(1))
     expect(documentPublications).toEqual([[documentDiagnostic]])
     expect(hostPublications).toEqual([[hostDiagnostic]])
+    await controller.shutdown()
+  })
+
+  it('publishes the provider semantic diagnostics after a document change', async () => {
+    const analysisDiagnostic = {
+      severity: 'warning' as const,
+      message: 'syntax warning',
+      range: { start: { line: 0, character: 0 }, end: { line: 0, character: 3 } },
+    }
+    const semanticDiagnostic = {
+      severity: 'error' as const,
+      message: "Function 'Missing' is not declared.",
+      code: 'fixture/unresolved-call',
+      range: { start: { line: 0, character: 4 }, end: { line: 0, character: 11 } },
+    }
+    const workspace = fakeWorkspace({
+      open: request =>
+        Promise.resolve(
+          resolved(request, {
+            ...emptyAnalysis(request.document),
+            diagnostics: [analysisDiagnostic],
+          }),
+        ),
+    })
+    const diagnostics = vi.spyOn(workspace, 'diagnostics').mockResolvedValue({
+      diagnostics: [semanticDiagnostic],
+      isIncomplete: false,
+    })
+    const publications: (readonly unknown[])[] = []
+    const controller = createLanguageSessionController({
+      workspace,
+      routes: [ROUTE],
+      debounceMs: 0,
+      publishDiagnostics: (_uri, items) => publications.push(items),
+    })
+    await controller.initialize()
+    await controller.documentSymbols(editorDocument(1))
+    controller.change(editorDocument(2, 'let Missing = 1'))
+    await controller.documentSymbols(editorDocument(2, 'let Missing = 1'))
+    expect(diagnostics).toHaveBeenCalledWith(
+      expect.objectContaining({
+        uri: 'file:///workspace/sample.fixture',
+        documentVersion: 2,
+        maxResults: 512,
+        maxDocuments: 1_024,
+        signal: expect.any(AbortSignal),
+      }),
+    )
+    expect(publications.at(-1)).toEqual([semanticDiagnostic])
+    await controller.shutdown()
+  })
+
+  it('verifies the unsaved buffer and publishes semantic findings with incomplete status', async () => {
+    const workspace = fakeWorkspace()
+    const finding = {
+      severity: 'error' as const,
+      message: 'Unresolved live reference',
+      range: { start: { line: 0, character: 0 }, end: { line: 0, character: 7 } },
+    }
+    vi.spyOn(workspace, 'diagnostics').mockResolvedValue({
+      diagnostics: [finding],
+      isIncomplete: true,
+    })
+    const publish = vi.fn()
+    const controller = createLanguageSessionController({
+      workspace,
+      routes: [ROUTE],
+      publishDiagnostics: publish,
+    })
+    await controller.initialize()
+    const buffer = editorDocument(7, 'Missing unsaved text')
+    expect(controller.supports(buffer)).toBe(true)
+    await expect(controller.verify(buffer)).resolves.toEqual({
+      diagnostics: [finding],
+      isIncomplete: true,
+    })
+    expect(workspace.opens[0]?.document.text).toBe(buffer.text)
+    expect(publish).toHaveBeenLastCalledWith(buffer.uri, [finding])
+    await controller.shutdown()
+  })
+
+  it('marks syntax-only verification incomplete when semantic diagnostics are unavailable', async () => {
+    const workspace = fakeWorkspace()
+    vi.spyOn(workspace, 'diagnostics').mockResolvedValue(undefined)
+    const controller = createLanguageSessionController({
+      workspace,
+      routes: [ROUTE],
+      publishDiagnostics: () => undefined,
+    })
+    await controller.initialize()
+    await expect(controller.verify(editorDocument(1))).resolves.toEqual({
+      diagnostics: [],
+      isIncomplete: true,
+    })
+    await controller.shutdown()
+  })
+
+  it('refuses stale verification before asking a provider to diagnose an older revision', async () => {
+    const workspace = fakeWorkspace()
+    const diagnostics = vi.spyOn(workspace, 'diagnostics')
+    const controller = createLanguageSessionController({
+      workspace,
+      routes: [ROUTE],
+      publishDiagnostics: () => undefined,
+    })
+    await controller.initialize()
+    await controller.documentSymbols(editorDocument(2, 'latest'))
+    await expect(controller.verify(editorDocument(1, 'stale'))).rejects.toBeInstanceOf(
+      OperationCancelledError,
+    )
+    expect(diagnostics).not.toHaveBeenCalled()
+    await controller.shutdown()
+  })
+
+  it('does not verify unsupported or ambiguous document routes', async () => {
+    const workspace = fakeWorkspace()
+    const diagnostics = vi.spyOn(workspace, 'diagnostics')
+    const controller = createLanguageSessionController({
+      workspace,
+      routes: [ROUTE, { ...ROUTE, languageId: 'other-language' }],
+      publishDiagnostics: () => undefined,
+    })
+    await controller.initialize()
+    const ambiguous = editorDocument(1)
+    const unsupported = editorDocument(1, 'hello', { fileName: '/workspace/readme.unknown' })
+    for (const document of [ambiguous, unsupported]) {
+      expect(controller.supports(document)).toBe(false)
+      await expect(controller.verify(document)).resolves.toBeUndefined()
+    }
+    expect(diagnostics).not.toHaveBeenCalled()
+    await controller.shutdown()
+  })
+
+  it.each(['change', 'close', 'cancel'] as const)(
+    'does not publish an explicit verification after %s',
+    async action => {
+      const workspace = fakeWorkspace()
+      const finding = {
+        severity: 'error' as const,
+        message: 'Stale finding',
+        range: { start: { line: 0, character: 0 }, end: { line: 0, character: 1 } },
+      }
+      let finish = (): void => undefined
+      const diagnostics = vi.spyOn(workspace, 'diagnostics').mockImplementationOnce(
+        () =>
+          new Promise(resolve => {
+            finish = () => resolve({ diagnostics: [finding], isIncomplete: false })
+          }),
+      )
+      const publish = vi.fn()
+      const controller = createLanguageSessionController({
+        workspace,
+        routes: [ROUTE],
+        debounceMs: 1000,
+        publishDiagnostics: publish,
+      })
+      await controller.initialize()
+      const buffer = editorDocument(1)
+      const abort = new AbortController()
+      const verifying = controller.verify(buffer, abort.signal)
+      const rejected = expect(verifying).rejects.toBeInstanceOf(OperationCancelledError)
+      await vi.waitFor(() => expect(diagnostics).toHaveBeenCalled())
+      if (action === 'change') controller.change(editorDocument(2, 'fixed'))
+      if (action === 'close') await controller.close(buffer.uri)
+      if (action === 'cancel') abort.abort('cancelled')
+      if (action === 'cancel') await rejected
+      finish()
+      await rejected
+      expect(publish.mock.calls.some(([, items]) => items.includes(finding))).toBe(false)
+      await controller.shutdown()
+    },
+  )
+
+  it('does not make completion wait for semantic diagnostics after an edit', async () => {
+    const workspace = fakeWorkspace()
+    let finishDiagnostics = (): void => undefined
+    const pendingDiagnostics = new Promise<{
+      diagnostics: readonly []
+      isIncomplete: boolean
+    }>(resolve => {
+      finishDiagnostics = () => resolve({ diagnostics: [], isIncomplete: false })
+    })
+    const diagnostics = vi.spyOn(workspace, 'diagnostics').mockReturnValue(pendingDiagnostics)
+    const completion = vi.spyOn(workspace, 'completion').mockResolvedValue({
+      items: [{ label: 'Catalog', kind: 'class' }],
+      isIncomplete: true,
+    })
+    const controller = createLanguageSessionController({
+      workspace,
+      routes: [ROUTE],
+      debounceMs: 0,
+      semanticDiagnosticsDelayMs: 25,
+      publishDiagnostics: () => undefined,
+    })
+    await controller.initialize()
+    await controller.documentSymbols(editorDocument(1))
+    const edited = editorDocument(2, '<')
+    controller.change(edited)
+
+    await expect(controller.completion(edited, { line: 0, character: 1 })).resolves.toMatchObject({
+      items: [{ label: 'Catalog' }],
+    })
+    expect(diagnostics).not.toHaveBeenCalled()
+    expect(workspace.changes).toHaveLength(0)
+    expect(completion).toHaveBeenCalledWith(
+      expect.objectContaining({
+        documentVersion: 2,
+        semanticContextPolicy: 'cached',
+      }),
+    )
+
+    await new Promise(resolve => setTimeout(resolve, 30))
+    expect(workspace.changes.map(request => request.document.version)).toEqual([2])
+    expect(diagnostics).toHaveBeenCalled()
+    finishDiagnostics()
     await controller.shutdown()
   })
 
@@ -393,6 +708,7 @@ describe('VS Code-free language session controller', () => {
       position: { line: 0, character: 3 },
       maxResults: 512,
       maxDocuments: 1_024,
+      semanticContextPolicy: 'cached',
     })
     const formatting = vi.spyOn(workspace, 'formatting').mockResolvedValue({
       edits: [],
@@ -407,6 +723,40 @@ describe('VS Code-free language session controller', () => {
       options: { tabSize: 2, insertSpaces: true },
       maxResults: 512,
       maxDocuments: 1_024,
+    })
+    const onTypeFormatting = vi.spyOn(workspace, 'onTypeFormatting').mockResolvedValue({
+      edits: [
+        {
+          range: {
+            start: { line: 0, character: 3 },
+            end: { line: 0, character: 3 },
+          },
+          newText: '""',
+        },
+      ],
+      isComplete: true,
+      cursor: { line: 0, character: 4 },
+      requestCompletion: true,
+    })
+    await expect(
+      controller.onTypeFormatting(editorDocument(4), { line: 0, character: 3 }, '=', {
+        tabSize: 2,
+        insertSpaces: true,
+      }),
+    ).resolves.toMatchObject({
+      edits: [{ newText: '""' }],
+      cursor: { line: 0, character: 4 },
+      requestCompletion: true,
+    })
+    expect(onTypeFormatting).toHaveBeenCalledWith({
+      uri: 'file:///workspace/sample.fixture',
+      documentVersion: 4,
+      position: { line: 0, character: 3 },
+      ch: '=',
+      options: { tabSize: 2, insertSpaces: true },
+      maxResults: 512,
+      maxDocuments: 1_024,
+      semanticContextPolicy: 'cached',
     })
     await controller.shutdown()
   })
@@ -468,6 +818,7 @@ describe('VS Code-free language session controller', () => {
     await controller.initialize()
     const abort = new AbortController()
     const pending = controller.documentSymbols(editorDocument(1), abort.signal)
+    await vi.waitFor(() => expect(observedSignal).toBeDefined())
     abort.abort('editor cancelled request')
     await expect(pending).rejects.toBeInstanceOf(OperationCancelledError)
     expect(observedSignal?.aborted).toBe(true)

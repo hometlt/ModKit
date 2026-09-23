@@ -25,6 +25,7 @@ import type {
   LanguageFormattingOptions,
   LanguageHover,
   LanguageLocationList,
+  LanguageOnTypeEditResult,
   LanguagePosition,
   LanguageRange,
   LanguageRenamePreparation,
@@ -33,6 +34,7 @@ import type {
   LanguageSymbolKind,
   LanguageTokenKind,
   LanguageTextEditList,
+  LanguageTextEdit,
   LanguageWorkspaceEdit,
   LanguageWorkspaceSymbolList,
 } from '@modkit/sdk/language'
@@ -110,6 +112,8 @@ export interface LanguageSessionControllerOptions {
   readonly workspace: LanguageWorkspace
   readonly routes: readonly LanguageProviderRoute[]
   readonly debounceMs?: number
+  /** Delay background analysis and semantic diagnostics so interactive requests run first. */
+  readonly semanticDiagnosticsDelayMs?: number
   /** Document diagnostics have their own native collection. Host notices must not enter it. */
   readonly publishDiagnostics: (
     uri: string,
@@ -119,8 +123,31 @@ export interface LanguageSessionControllerOptions {
   readonly reportNotice?: (notice: LanguageControllerNotice) => void
 }
 
+/** Small native-editor port for applying one exact-version on-type action in order. */
+export interface EditorOnTypeEditTarget {
+  applyEdits(edits: readonly LanguageTextEdit[]): Promise<boolean>
+  moveCursor(position: LanguagePosition): void
+  requestCompletion(): Promise<void>
+}
+
+/** Copy an editor-native structural position into the plain DTO required by worker RPC. */
+export function plainLanguagePosition(position: LanguagePosition): LanguagePosition {
+  return { line: position.line, character: position.character }
+}
+
+export async function applyEditorOnTypeEditResult(
+  result: LanguageOnTypeEditResult,
+  target: EditorOnTypeEditTarget,
+): Promise<boolean> {
+  if (!(await target.applyEdits(result.edits))) return false
+  if (result.cursor !== undefined) target.moveCursor(result.cursor)
+  if (result.requestCompletion === true) await target.requestCompletion()
+  return true
+}
+
 export interface LanguageSessionController {
   initialize(): Promise<void>
+  supports(document: Pick<EditorLanguageDocument, 'fileName' | 'languageId'>): boolean
   open(document: EditorLanguageDocument): void
   change(document: EditorLanguageDocument): void
   close(uri: string): Promise<void>
@@ -170,6 +197,13 @@ export interface LanguageSessionController {
     formatting: LanguageFormattingOptions,
     signal?: AbortSignal,
   ): Promise<LanguageTextEditList | undefined>
+  onTypeFormatting(
+    document: EditorLanguageDocument,
+    position: LanguagePosition,
+    ch: string,
+    formatting: LanguageFormattingOptions,
+    signal?: AbortSignal,
+  ): Promise<LanguageOnTypeEditResult | undefined>
   codeActions(
     document: EditorLanguageDocument,
     range: LanguageRange,
@@ -191,6 +225,11 @@ export interface LanguageSessionController {
     signal?: AbortSignal,
   ): Promise<LanguageWorkspaceSymbolList | undefined>
   diagnostics(
+    document: EditorLanguageDocument,
+    signal?: AbortSignal,
+  ): Promise<LanguageDiagnosticList | undefined>
+  /** Explicit verification uses the live buffer and publishes only its current revision. */
+  verify(
     document: EditorLanguageDocument,
     signal?: AbortSignal,
   ): Promise<LanguageDiagnosticList | undefined>
@@ -225,11 +264,28 @@ interface TrackedDocument {
   generation: number
   timer?: ReturnType<typeof setTimeout>
   controller?: AbortController
+  /** Resolves as soon as the live document version is accepted, before provider analysis. */
+  synchronized?: Promise<void>
+  /** Resolves after provider analysis, before resolved-workspace semantic diagnostics. */
+  ready?: Promise<void>
   task?: Promise<void>
   analysis?: Extract<LanguageWorkspaceAnalysisResult, { readonly state: 'resolved' }>
 }
 
 const normalizedExtension = (value: string): string => value.replace(/^\./u, '').toLowerCase()
+
+/** VS Code glob matching is case-sensitive even on Windows; SC2 uses mixed-case suffixes. */
+export function caseInsensitiveExtensionPattern(extension: string): string {
+  return extension
+    .replace(/^\./u, '')
+    .split('')
+    .map(character => {
+      const lower = character.toLowerCase()
+      const upper = character.toUpperCase()
+      return lower === upper ? character : `[${lower}${upper}]`
+    })
+    .join('')
+}
 
 function extensionOf(fileName: string): string | undefined {
   const normalized = fileName.replaceAll('\\', '/')
@@ -240,7 +296,7 @@ function extensionOf(fileName: string): string | undefined {
 
 function selectRoute(
   routes: readonly LanguageProviderRoute[],
-  document: EditorLanguageDocument,
+  document: Pick<EditorLanguageDocument, 'fileName' | 'languageId'>,
 ): RouteSelection {
   const extension = extensionOf(document.fileName)
   const candidates = routes.filter(route => {
@@ -370,6 +426,7 @@ export function createLanguageSessionController(
   const documents = new Map<string, TrackedDocument>()
   const refusals = new Map<string, string>()
   const debounceMs = options.debounceMs ?? 150
+  const semanticDiagnosticsDelayMs = options.semanticDiagnosticsDelayMs ?? 0
   let state: 'new' | 'ready' | 'shut-down' = 'new'
   let shutdownPromise: Promise<void> | undefined
 
@@ -395,6 +452,7 @@ export function createLanguageSessionController(
     tracked: TrackedDocument,
     generation: number,
     result: LanguageWorkspaceAnalysisResult,
+    semanticDiagnostics?: readonly EditorLanguageDiagnostic[],
   ): void => {
     if (documents.get(tracked.document.uri) !== tracked || tracked.generation !== generation) return
     options.reportHostDiagnostics?.(tracked.document.uri, result.hostDiagnostics)
@@ -410,7 +468,10 @@ export function createLanguageSessionController(
       return
     }
     tracked.analysis = result
-    options.publishDiagnostics(tracked.document.uri, result.analysis.diagnostics)
+    options.publishDiagnostics(
+      tracked.document.uri,
+      semanticDiagnostics ?? result.analysis.diagnostics,
+    )
   }
 
   const execute = (tracked: TrackedDocument): Promise<void> => {
@@ -421,6 +482,16 @@ export function createLanguageSessionController(
     const predecessor = tracked.task
     const controller = new AbortController()
     tracked.controller = controller
+    let markSynchronized = (): void => undefined
+    const synchronized = new Promise<void>(resolve => {
+      markSynchronized = resolve
+    })
+    tracked.synchronized = synchronized
+    let markReady = (): void => undefined
+    const ready = new Promise<void>(resolve => {
+      markReady = resolve
+    })
+    tracked.ready = ready
     const task = (async (): Promise<void> => {
       if (predecessor !== undefined) {
         try {
@@ -437,17 +508,61 @@ export function createLanguageSessionController(
         throw new OperationCancelledError('stale editor document')
       }
       try {
-        const result = tracked.opened
-          ? await options.workspace.change(requestOf(document, route, controller.signal))
-          : await options.workspace.open(requestOf(document, route, controller.signal))
-        if (result.state === 'resolved') tracked.opened = true
-        reportResult(tracked, generation, result)
+        const refreshSemanticDiagnostics = tracked.opened
+        const request = requestOf(document, route, controller.signal)
+        const synchronizedResult = await options.workspace.synchronize(request)
+        if (synchronizedResult.state === 'unresolved') {
+          options.reportHostDiagnostics?.(document.uri, synchronizedResult.hostDiagnostics)
+          options.publishDiagnostics(document.uri, [])
+          markSynchronized()
+          markReady()
+          return
+        }
+        tracked.opened = true
+        markSynchronized()
+        // Analysis is intentionally idle-delayed. Completion and on-type formatting only need the
+        // synchronized live snapshot and should enter the provider worker before background work.
+        if (semanticDiagnosticsDelayMs > 0) {
+          await waitWithSignal(
+            new Promise<void>(resolve => setTimeout(resolve, semanticDiagnosticsDelayMs)),
+            controller.signal,
+          )
+        }
+        throwIfAborted(controller.signal)
+        const result = await options.workspace.analyze(request)
+        let semanticDiagnostics: readonly EditorLanguageDiagnostic[] | undefined
+        if (result.state === 'resolved') {
+          reportResult(tracked, generation, result)
+          markReady()
+          try {
+            if (!refreshSemanticDiagnostics) {
+              return
+            }
+            semanticDiagnostics = (
+              await options.workspace.diagnostics({
+                uri: document.uri,
+                documentVersion: document.version,
+                maxResults: EDITOR_MAX_RESULTS,
+                maxDocuments: EDITOR_MAX_DOCUMENTS,
+                signal: controller.signal,
+              })
+            )?.diagnostics
+          } catch (error) {
+            if (isCancellation(error) || controller.signal.aborted) throw error
+            options.reportNotice?.(noticeFor(error, document.uri))
+          }
+        }
+        reportResult(tracked, generation, result, semanticDiagnostics)
       } catch (error) {
         if (isCancellation(error) || controller.signal.aborted) return
         options.reportNotice?.(noticeFor(error, document.uri))
       } finally {
+        markSynchronized()
+        markReady()
         if (tracked.controller === controller) {
           delete tracked.controller
+          delete tracked.synchronized
+          delete tracked.ready
           delete tracked.task
         }
       }
@@ -540,11 +655,11 @@ export function createLanguageSessionController(
     if (tracked === undefined) return undefined
     if (tracked.analysis !== undefined) return tracked.analysis
     if (tracked.task === undefined) void execute(tracked)
-    const task = tracked.task
+    const ready = tracked.ready ?? tracked.task
     const abort = (): void => tracked.controller?.abort(signal?.reason)
     signal?.addEventListener('abort', abort, { once: true })
     try {
-      if (task !== undefined) await waitWithSignal(task, signal)
+      if (ready !== undefined) await waitWithSignal(ready, signal)
     } finally {
       signal?.removeEventListener('abort', abort)
     }
@@ -555,7 +670,66 @@ export function createLanguageSessionController(
     return tracked.analysis
   }
 
+  const prepareInteractive = async (
+    document: EditorLanguageDocument,
+    signal?: AbortSignal,
+  ): Promise<boolean> => {
+    const tracked = stage(document, true)
+    if (tracked === undefined) return false
+    if (tracked.opened && tracked.task === undefined) return true
+    if (tracked.task === undefined) void execute(tracked)
+    const synchronized = tracked.synchronized ?? tracked.task
+    const abort = (): void => tracked.controller?.abort(signal?.reason)
+    signal?.addEventListener('abort', abort, { once: true })
+    try {
+      if (synchronized !== undefined) await waitWithSignal(synchronized, signal)
+    } finally {
+      signal?.removeEventListener('abort', abort)
+    }
+    throwIfAborted(signal)
+    if (documents.get(document.uri) !== tracked || tracked.document.version !== document.version) {
+      throw new OperationCancelledError('stale editor document')
+    }
+    return tracked.opened
+  }
+
+  const diagnosticsFor = async (
+    document: EditorLanguageDocument,
+    signal?: AbortSignal,
+    publish = false,
+  ): Promise<LanguageDiagnosticList | undefined> => {
+    const result = await ensure(document, signal)
+    if (result === undefined) return undefined
+    const tracked = documents.get(document.uri)
+    if (tracked === undefined || tracked.document.version !== document.version) {
+      throw new OperationCancelledError('stale editor document')
+    }
+    const semantic = await waitWithSignal(
+      options.workspace.diagnostics({
+        uri: document.uri,
+        documentVersion: document.version,
+        maxResults: EDITOR_MAX_RESULTS,
+        maxDocuments: EDITOR_MAX_DOCUMENTS,
+        ...(signal === undefined ? {} : { signal }),
+      }),
+      signal,
+    )
+    throwIfAborted(signal)
+    if (documents.get(document.uri) !== tracked || tracked.document.version !== document.version) {
+      throw new OperationCancelledError('stale editor document')
+    }
+    const diagnostics = semantic ?? {
+      diagnostics: result.analysis.diagnostics,
+      isIncomplete: true,
+    }
+    if (publish) options.publishDiagnostics(document.uri, diagnostics.diagnostics)
+    return diagnostics
+  }
+
   return Object.freeze({
+    supports(document: Pick<EditorLanguageDocument, 'fileName' | 'languageId'>): boolean {
+      return state !== 'shut-down' && selectRoute(options.routes, document).state === 'selected'
+    },
     async initialize(): Promise<void> {
       if (state === 'shut-down') {
         throw new ModkitError({
@@ -610,14 +784,14 @@ export function createLanguageSessionController(
       position: LanguagePosition,
       signal?: AbortSignal,
     ): Promise<LanguageCompletionList | undefined> {
-      const result = await ensure(document, signal)
-      if (result === undefined) return undefined
+      if (!(await prepareInteractive(document, signal))) return undefined
       return options.workspace.completion({
         uri: document.uri,
         documentVersion: document.version,
         position,
         maxResults: EDITOR_MAX_RESULTS,
         maxDocuments: EDITOR_MAX_DOCUMENTS,
+        semanticContextPolicy: 'cached',
         ...(signal === undefined ? {} : { signal }),
       })
     },
@@ -746,6 +920,27 @@ export function createLanguageSessionController(
       })
     },
 
+    async onTypeFormatting(
+      document: EditorLanguageDocument,
+      position: LanguagePosition,
+      ch: string,
+      formatting: LanguageFormattingOptions,
+      signal?: AbortSignal,
+    ): Promise<LanguageOnTypeEditResult | undefined> {
+      if (!(await prepareInteractive(document, signal))) return undefined
+      return options.workspace.onTypeFormatting({
+        uri: document.uri,
+        documentVersion: document.version,
+        position,
+        ch,
+        options: formatting,
+        maxResults: EDITOR_MAX_RESULTS,
+        maxDocuments: EDITOR_MAX_DOCUMENTS,
+        semanticContextPolicy: 'cached',
+        ...(signal === undefined ? {} : { signal }),
+      })
+    },
+
     async codeActions(
       document: EditorLanguageDocument,
       range: LanguageRange,
@@ -823,21 +1018,14 @@ export function createLanguageSessionController(
       document: EditorLanguageDocument,
       signal?: AbortSignal,
     ): Promise<LanguageDiagnosticList | undefined> {
-      const result = await ensure(document, signal)
-      if (result === undefined) return undefined
-      const semantic = await options.workspace.diagnostics({
-        uri: document.uri,
-        documentVersion: document.version,
-        maxResults: EDITOR_MAX_RESULTS,
-        maxDocuments: EDITOR_MAX_DOCUMENTS,
-        ...(signal === undefined ? {} : { signal }),
-      })
-      return (
-        semantic ?? {
-          diagnostics: result.analysis.diagnostics,
-          isIncomplete: false,
-        }
-      )
+      return diagnosticsFor(document, signal)
+    },
+
+    async verify(
+      document: EditorLanguageDocument,
+      signal?: AbortSignal,
+    ): Promise<LanguageDiagnosticList | undefined> {
+      return diagnosticsFor(document, signal, true)
     },
 
     async semanticTokens(

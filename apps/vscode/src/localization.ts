@@ -152,6 +152,9 @@ const EN_MESSAGES = Object.freeze({
     'The active subject and its relation and tree views were refreshed.',
   'vscode.shell.workspaceFoldersChanged':
     'Workspace folders changed, so the file tree was reloaded.',
+  'vscode.views.loading': 'Loading Modkit…',
+  'vscode.explorer.pick': 'Open in Modkit Explorer',
+  'vscode.explorer.cannotOpen': 'Modkit Explorer cannot list {name}: {reason}',
   'vscode.shell.exportDiagnostics': 'Export Modkit diagnostics',
   'vscode.shell.alreadyPresent': 'Already present',
   'vscode.shell.statusNotOpened': 'Not opened by a codec',
@@ -586,6 +589,9 @@ const RU_MESSAGES: Readonly<Record<keyof typeof EN_MESSAGES, string>> = Object.f
     'Активный субъект и его представления связей и дерева обновлены.',
   'vscode.shell.workspaceFoldersChanged':
     'Папки рабочей области изменились, поэтому дерево файлов перезагружено.',
+  'vscode.views.loading': 'Загрузка Modkit…',
+  'vscode.explorer.pick': 'Открыть в проводнике Modkit',
+  'vscode.explorer.cannotOpen': 'Проводник Modkit не может показать {name}: {reason}',
   'vscode.shell.exportDiagnostics': 'Экспортировать диагностику Modkit',
   'vscode.shell.alreadyPresent': 'Уже добавлено',
   'vscode.shell.statusNotOpened': 'Не открыт кодеком',

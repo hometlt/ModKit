@@ -13,8 +13,12 @@
  * webview is not an extension host) stays true in the running product and not only in the
  * topology.
  */
-import { createHash, randomBytes } from 'node:crypto'
-import { imageGalleryExtensions, galleryThumbnail, imageGalleryHtml } from './image-gallery.js'
+import { createHash } from 'node:crypto'
+import {
+  imageGalleryExtensions,
+  renderGalleryThumbnail,
+  type GalleryThumbnail,
+} from './image-gallery.js'
 import {
   copyFileSync,
   createReadStream,
@@ -97,6 +101,7 @@ import {
 } from '@modkit/host/language'
 import { discoverGameInstallations } from '@modkit/host/games'
 import {
+  createContentSourceMapPreviewResourcePlanResolver,
   createNodeMapPreviewResourcePlanResolver,
   flushArtifactDigestCache,
   launchNodeGameResource,
@@ -184,6 +189,7 @@ import {
   type ViewerSurfaceOperationResult,
   type VsCodeConfigurationPort,
   type VsCodeServed,
+  type VsCodeServeOptions,
   type VsCodeSubjectHost,
   type VsCodeTreeSubject,
 } from './host.js'
@@ -226,6 +232,7 @@ import {
   planEditorAssociations,
   type AssociationPlan,
 } from './editor-associations.js'
+import { deferredTreeDataProvider, type DeferredTreeDataProvider } from './deferred-tree.js'
 import { createPhaseLog } from './timing.js'
 import { createViewerStatusBar } from './viewer-status.js'
 import {
@@ -892,6 +899,10 @@ interface PanelPageOptions {
   /** The one stage a stage-specific native editor raised this page for. */
   readonly forcedStage?: string
   readonly extensionCard?: import('./extension-cards.js').ExtensionCardBundle
+  /** Lower-case extensions the explorer's gallery draws, from the enabled image codecs. */
+  readonly galleryExtensions?: readonly string[]
+  /** Raised as a Modkit Explorer over one folder rather than for a subject. */
+  readonly explorer?: { readonly label: string }
 }
 
 /**
@@ -937,6 +948,10 @@ function panelHtml(options: PanelPageOptions): string {
       ...(options.openPath === undefined ? {} : { openPath: options.openPath }),
       ...(options.forcedStage === undefined ? {} : { forcedStage: options.forcedStage }),
       ...(options.extensionCard === undefined ? {} : { extensionCard: options.extensionCard }),
+      ...(options.galleryExtensions === undefined
+        ? {}
+        : { galleryExtensions: options.galleryExtensions }),
+      ...(options.explorer === undefined ? {} : { explorer: options.explorer }),
     },
   })
 }
@@ -1882,7 +1897,55 @@ export interface ModkitExtensionApi {
   facilities(): FacilityReport | undefined
 }
 
+/**
+ * The sidebar's three views, with providers from the first moment of activation.
+ *
+ * Composing the host reads and validates every extension root before any view can be built, and a
+ * view without a provider says "There is no data provider registered" for that whole time. Each
+ * view shows one loading row and a progress bar instead, then hands over to its real provider.
+ */
+interface DeferredModkitViews {
+  readonly sources: DeferredTreeDataProvider<SourceTreeNode>
+  readonly resources: DeferredTreeDataProvider<ResourceTreeNode>
+  readonly extensions: DeferredTreeDataProvider<ExtensionNode>
+}
+
 export async function activate(context: vscode.ExtensionContext): Promise<ModkitExtensionApi> {
+  const loading = createVscodeLocalizer(vscode.env.language).text('vscode.views.loading')
+  const views: DeferredModkitViews = {
+    sources: deferredTreeDataProvider(loading),
+    resources: deferredTreeDataProvider(loading),
+    extensions: deferredTreeDataProvider(loading),
+  }
+  context.subscriptions.push(
+    vscode.window.registerTreeDataProvider('modkit.sources', views.sources),
+    vscode.window.registerTreeDataProvider('modkit.resources', views.resources),
+    vscode.window.registerTreeDataProvider('modkit.extensions', views.extensions),
+  )
+  let composed!: () => void
+  const settled = new Promise<void>(resolve => (composed = resolve))
+  for (const viewId of ['modkit.sources', 'modkit.resources', 'modkit.extensions']) {
+    void vscode.window.withProgress({ location: { viewId } }, () => settled)
+  }
+  let failure: string | undefined
+  try {
+    return await activateModkit(context, views)
+  } catch (error) {
+    failure = error instanceof Error ? error.message : String(error)
+    throw error
+  } finally {
+    // A view whose provider never arrived (language-only debugging, a failed start) stops saying
+    // it is loading; `modkit.ready` retires the welcome text shown before activation began.
+    for (const view of [views.sources, views.resources, views.extensions]) view.settle(failure)
+    composed()
+    void vscode.commands.executeCommand('setContext', 'modkit.ready', true)
+  }
+}
+
+async function activateModkit(
+  context: vscode.ExtensionContext,
+  views: DeferredModkitViews,
+): Promise<ModkitExtensionApi> {
   if (activeLanguageShutdown !== undefined) await activeLanguageShutdown()
   const activationStarted = Date.now()
   const languageOnly = process.env.MODKIT_VSCODE_LANGUAGE_ONLY === '1'
@@ -2020,6 +2083,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         vscode.workspace.getConfiguration('modkit').get('disabledExtensions'),
       ).ids,
     ],
+    configuredContributionSettings: vscode.workspace
+      .getConfiguration('modkit')
+      .get('contributionSettings'),
+    // Where a contribution may keep what it wants between windows (a parsed index, a digest
+    // table). One subdirectory per contribution id; the host names it, the contribution fills it.
+    contributionCacheDirectory: join(context.globalStorageUri.fsPath, 'contribution-cache'),
     // the bootstrap this extension ships beside its own bundle: a CommonJS entry has no
     // `import.meta.url` for the backend to resolve it from
     bootstrapUrl: pathToFileURL(join(extensionRoot, 'dist-app', 'worker-bootstrap.js')),
@@ -2110,15 +2179,24 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
   } finally {
     await localizationVfs.dispose()
   }
-  const mapPreviewResourcePlanResolver = createNodeMapPreviewResourcePlanResolver({
-    subjects: host.services,
-    // Same classes the explicit discovery commands pass; without them the installed game is never
-    // located and a map opens as its archive entry list instead of the world view.
-    installationDiscoveryGrant: {
-      id: 'vscode-map-preview-installation-discovery',
-      classes:
-        process.platform === 'win32' ? ['filesystem-read', 'process-launch'] : ['filesystem-read'],
-    },
+  /*
+   * A map loads like a mod: it names its dependencies, the configured content sources (the
+   * installation, its CASC storage, the player's folders) resolve them, and the world reads every
+   * layer from those mounts. A subject that names none, or a window with no source catalogue,
+   * keeps the installation locator path.
+   */
+  const mapPreviewResourcePlanResolver = createContentSourceMapPreviewResourcePlanResolver({
+    contentSources: () => requireContentSources().catch(() => undefined),
+    fallback: createNodeMapPreviewResourcePlanResolver({
+      subjects: host.services,
+      // Same classes the explicit discovery commands pass; without them the installed game is never
+      // located and a map opens as its archive entry list instead of the world view.
+      installationDiscoveryGrant: {
+        id: 'vscode-map-preview-installation-discovery',
+        classes:
+          process.platform === 'win32' ? ['filesystem-read', 'process-launch'] : ['filesystem-read'],
+      },
+    }),
   })
   const runtimeDebug = createRuntimeDebugController({
     services: host.services,
@@ -8920,6 +8998,33 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     hostView.report(facilityReport)
   }
 
+  // ---------------------------------------------------------------- explorer gallery
+  /*
+   * Pictures for the gallery of the webview file explorer.
+   *
+   * The gallery used to be a sidebar view of its own; it is now part of the explorer, so it draws
+   * whatever the explorer lists — archive members, folder files, content-source entries — through
+   * one opener that takes all three kinds of ref. Requests run one at a time, so a folder of large
+   * images cannot flood the codec workers.
+   */
+  const galleryExtensions = imageGalleryExtensions(host.services.inventory)
+  const thumbnailOpener = createVsCodeCommandOpener({
+    services: host.services,
+    roots,
+    containers,
+    readContentSource,
+  })
+  let thumbnailQueue: Promise<unknown> = Promise.resolve()
+  const galleryThumbnailOf = (
+    ref: string,
+    maxEdge: number,
+  ): Promise<GalleryThumbnail | undefined> => {
+    const drawn = thumbnailQueue.then(() => renderGalleryThumbnail(thumbnailOpener, ref, maxEdge))
+    thumbnailQueue = drawn.catch(() => undefined)
+    // A file with no decoded pixels stays in the gallery by name.
+    return drawn.catch(() => undefined)
+  }
+
   // ---------------------------------------------------------------- webviews
   const attach = (
     webview: vscode.Webview,
@@ -8934,6 +9039,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     extensionCardResources?: import('./extension-cards.js').ExtensionCardResourceTargets,
     extensionCardIconPath?: string,
     forcedStage?: string,
+    explorer?: {
+      readonly label: string
+      readonly backend: NonNullable<VsCodeServeOptions['explorer']>
+    },
   ): VsCodeServed => {
     const channel: WebviewChannel = {
       post: message => {
@@ -9111,6 +9220,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         // A tab of its own: a preview tab would replace the archive the member was opened from.
         await vscode.commands.executeCommand('vscode.open', subjectUriOf(path), { preview: false })
       },
+      thumbnail: galleryThumbnailOf,
+      ...(explorer === undefined ? {} : { explorer: explorer.backend }),
       /*
        * The same bounded snapshot the language features run on, for the operations that need it.
        * A template names a template in another file and a localized value renders through the
@@ -9193,6 +9304,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       ...(openPath === undefined ? {} : { openPath }),
       ...(forcedStage === undefined ? {} : { forcedStage }),
       ...(displayedExtensionCard === undefined ? {} : { extensionCard: displayedExtensionCard }),
+      galleryExtensions: [...galleryExtensions].sort(),
+      ...(explorer === undefined ? {} : { explorer: { label: explorer.label } }),
     })
     /*
      * The page is now fetching and evaluating its bundle; the codec can come up in that time
@@ -9271,162 +9384,158 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     return true
   }
 
-  // ---------------------------------------------------------------- shared command runtime
-  const galleryExtensions = imageGalleryExtensions(host.services.inventory)
-  const galleryOpener = createVsCodeCommandOpener({ services: host.services, roots })
-  context.subscriptions.push(
-    vscode.window.registerWebviewViewProvider('modkit.gallery', {
-      resolveWebviewView(view) {
-        const galleryResources = vscode.Uri.joinPath(context.extensionUri, 'dist-app')
-        view.webview.options = { enableScripts: true, localResourceRoots: [galleryResources] }
-        const resource = (name: string) =>
-          view.webview.asWebviewUri(vscode.Uri.joinPath(galleryResources, name)).toString()
-        view.webview.html = imageGalleryHtml(randomBytes(16).toString('hex'), {
-          cspSource: view.webview.cspSource,
-          script: resource('gallery-webview.js'),
-          stylesheet: resource('modkit-ui.css'),
-          icons: resource('codicons/codicon.css'),
-        })
-        let items: { id: string; label: string; group: string }[] = []
-        let revision = 0
-        let queue = Promise.resolve()
-        const cancellation = new AbortController()
-        const active = () => {
-          const tab = vscode.window.tabGroups.activeTabGroup.activeTab?.input
-          return tab instanceof vscode.TabInputCustom ? tab.uri.fsPath : ''
-        }
-        const refresh = async () => {
-          const current = ++revision
-          const folders = vscode.workspace.workspaceFolders ?? []
-          const groups = await Promise.all(
-            folders
-              .filter(folder => folder.uri.scheme === 'file')
-              .map(async folder => {
-                const entries = await Promise.resolve(
-                  vscode.workspace.fs.readDirectory(folder.uri),
-                ).catch(() => [])
-                return entries
-                  .filter(
-                    ([name, type]) =>
-                      type === vscode.FileType.File &&
-                      galleryExtensions.has(name.split('.').at(-1)?.toLowerCase() ?? ''),
-                  )
-                  .map(([name]) => ({
-                    id: vscode.Uri.joinPath(folder.uri, name).fsPath,
-                    label: name,
-                    group: folder.name,
-                  }))
-                  .sort((a, b) => a.label.localeCompare(b.label))
-              }),
-          )
-          if (current !== revision || cancellation.signal.aborted) return
-          items = groups.flat()
-          await view.webview.postMessage({ op: 'files', items, active: active() })
-        }
-        const subscriptions: vscode.Disposable[] = [
-          view.onDidDispose(() => {
-            cancellation.abort()
-            subscriptions.forEach(item => item.dispose())
-          }),
-          vscode.workspace.onDidChangeWorkspaceFolders(() => void refresh()),
-          vscode.window.tabGroups.onDidChangeTabs(
-            () => void view.webview.postMessage({ op: 'active', id: active() }),
-          ),
-          view.webview.onDidReceiveMessage((message: unknown) => {
-            if (message === null || typeof message !== 'object') return
-            const request = message as { op?: string; id?: string; generation?: number }
-            if (request.op === 'refresh') {
-              void refresh()
-              return
+  // ---------------------------------------------------------------- Modkit Explorer
+  /*
+   * A folder of any VS Code file system in the webview file explorer.
+   *
+   * An archive's editor lists the container's members; this is the same page listing a folder —
+   * `file:`, a `modkit-source:` content source, a folder inside a mounted `modkit-container:` —
+   * through `vscode.workspace.fs`, the one API all of those schemes answer. The page names only ids
+   * this panel handed out and paths below its one root.
+   */
+  const openInTab = async (uri: vscode.Uri): Promise<void> => {
+    const target = describeOpenTarget(uri)
+    if (target.state !== 'refused') grantFor(target)
+    // VS Code's own choice of editor: an associated format opens in Modkit, text in the text editor.
+    await vscode.commands.executeCommand('vscode.open', uri, { preview: false })
+  }
+  const explorerBackend = (root: vscode.Uri): NonNullable<VsCodeServeOptions['explorer']> => {
+    const listed = new Map<string, vscode.Uri>()
+    const folderOf = (path: string): { readonly uri: vscode.Uri; readonly path: string } => {
+      const parts = path.split('/').filter(part => part !== '')
+      if (parts.some(part => part === '.' || part === '..' || part.includes(BACKSLASH))) {
+        throw new Error('that path is not inside this explorer')
+      }
+      return {
+        uri: parts.length === 0 ? root : vscode.Uri.joinPath(root, ...parts),
+        path: parts.join('/'),
+      }
+    }
+    return {
+      async children(path) {
+        const folder = folderOf(path)
+        const children = await vscode.workspace.fs.readDirectory(folder.uri)
+        return Promise.all(
+          children.map(async ([name, type]) => {
+            const uri = vscode.Uri.joinPath(folder.uri, name)
+            const directory = (type & vscode.FileType.Directory) !== 0
+            const stat = directory
+              ? undefined
+              : await Promise.resolve(vscode.workspace.fs.stat(uri)).catch(() => undefined)
+            const id = uri.toString()
+            listed.set(id, uri)
+            return {
+              id,
+              path: folder.path === '' ? name : `${folder.path}/${name}`,
+              name,
+              kind: directory ? ('directory' as const) : ('file' as const),
+              ...(stat === undefined ? {} : { size: stat.size, modifiedAt: stat.mtime }),
             }
-            const item = items.find(item => item.id === request.id)
-            if (!item) return
-            if (request.op === 'open') {
-              openResource(vscode.Uri.file(item.id))
-              return
-            }
-            if (request.op !== 'thumbnail') return
-            const current = revision
-            queue = queue
-              .then(async () => {
-                if (current !== revision || cancellation.signal.aborted) return
-                let opened: Awaited<ReturnType<typeof galleryOpener>> | undefined
-                let sent = false
-                let raster:
-                  import('@modkit/sdk').Lease<import('@modkit/sdk').RasterImageSource> | undefined
-                try {
-                  const stat = await vscode.workspace.fs.stat(vscode.Uri.file(item.id))
-                  if (stat.size > 16 * 1024 * 1024) return
-                  opened = await galleryOpener(item.id, cancellation.signal)
-                  if (!opened.session) return
-                  raster = await opened.session.dataSource('common.view/raster-image-source', 1)
-                  const info = await raster.value.info(cancellation.signal)
-                  if (!info.decodedAccess || !raster.value.readRegion) return
-                  let mipLevel = 0
-                  while (
-                    mipLevel + 1 < info.mipLevels &&
-                    Math.max(info.width, info.height) / 2 ** mipLevel > 96
-                  )
-                    mipLevel++
-                  const width = Math.max(1, Math.floor(info.width / 2 ** mipLevel))
-                  const height = Math.max(1, Math.floor(info.height / 2 ** mipLevel))
-                  if (width * height * 4 > 16 * 1024 * 1024) return
-                  const region = await raster.value.readRegion(
-                    {
-                      x: 0,
-                      y: 0,
-                      width,
-                      height,
-                      mipLevel,
-                      frame: 0,
-                      layer: 0,
-                      face: 0,
-                      slice: 0,
-                      pixelFormat: 'rgba8',
-                      maxBytes: 16 * 1024 * 1024,
-                    },
-                    cancellation.signal,
-                  )
-                  if (current === revision && !cancellation.signal.aborted) {
-                    await view.webview.postMessage({
-                      op: 'thumbnail',
-                      id: item.id,
-                      generation: request.generation,
-                      thumbnail: galleryThumbnail(region),
-                    })
-                    sent = true
-                  }
-                } catch {
-                  /* A file with no decoded pixels stays in the gallery by name. */
-                } finally {
-                  if (!sent && current === revision && !cancellation.signal.aborted)
-                    await view.webview.postMessage({
-                      op: 'thumbnail',
-                      id: item.id,
-                      generation: request.generation,
-                    })
-                  await raster?.release()
-                  await opened?.session?.dispose()
-                }
-              })
-              .catch(error => log(`[gallery] ${String(error)}`))
           }),
-        ]
-        for (const folder of vscode.workspace.workspaceFolders ?? []) {
-          const watcher = vscode.workspace.createFileSystemWatcher(
-            new vscode.RelativePattern(folder, '*'),
-          )
-          subscriptions.push(
-            watcher,
-            watcher.onDidCreate(() => void refresh()),
-            watcher.onDidChange(() => void refresh()),
-            watcher.onDidDelete(() => void refresh()),
-          )
-        }
+        )
       },
-    }),
-  )
+      async open(id) {
+        const uri = listed.get(id)
+        if (uri === undefined) throw new Error('that entry is not listed in this explorer')
+        await openInTab(uri)
+      },
+      async thumbnail(id, maxEdge) {
+        const uri = listed.get(id)
+        if (uri === undefined) return undefined
+        const target = describeOpenTarget(uri)
+        if (target.state === 'refused') return undefined
+        grantFor(target)
+        return galleryThumbnailOf(target.path, maxEdge)
+      },
+    }
+  }
+  /**
+   * What an "Open in Modkit Explorer" was invoked on: a folder of the native Explorer, a content
+   * source root or a game installation of the Sources view (its logical container, not the
+   * physical directory), or nothing — then a folder is asked for.
+   */
+  const explorerTargetOf = async (argument: unknown): Promise<vscode.Uri | undefined> => {
+    if (argument instanceof vscode.Uri) return argument
+    const row =
+      typeof argument === 'object' && argument !== null
+        ? (argument as {
+            readonly sourceId?: unknown
+            readonly uri?: unknown
+            readonly normalizedPath?: unknown
+          })
+        : undefined
+    if (typeof row?.sourceId === 'string') {
+      return vscode.Uri.from({ scheme: 'modkit-source', authority: 'battlenet', path: `/${row.sourceId}` })
+    }
+    const installation =
+      typeof row?.uri === 'string'
+        ? row.uri
+        : typeof row?.normalizedPath === 'string'
+          ? row.normalizedPath
+          : undefined
+    if (installation !== undefined) {
+      const absolute = resolve(installation)
+      granted.add(absolute)
+      return vscode.Uri.from({ scheme: CONTAINER_SCHEME, path: containerUriPath(absolute) })
+    }
+    return (
+      await vscode.window.showOpenDialog({
+        canSelectFiles: false,
+        canSelectFolders: true,
+        canSelectMany: false,
+        openLabel: localizer.text('vscode.explorer.pick'),
+      })
+    )?.[0]
+  }
+  const openExplorer = async (argument: unknown): Promise<void> => {
+    const uri = await explorerTargetOf(argument)
+    if (uri === undefined) return
+    const name = basename(uri.path) || uri.toString()
+    // The folder the user chose is the grant: its files open, list and draw like workspace files.
+    if (uri.scheme === 'file') granted.add(uri.fsPath)
+    else {
+      const target = describeOpenTarget(uri)
+      if (target.state !== 'refused') grantFor(target)
+    }
+    try {
+      const stat = await vscode.workspace.fs.stat(uri)
+      // A file is shown by its own editor; an archive's editor is this same explorer.
+      if ((stat.type & vscode.FileType.Directory) === 0) {
+        await openInTab(uri)
+        return
+      }
+    } catch (error) {
+      void vscode.window.showWarningMessage(
+        localizer.text('vscode.explorer.cannotOpen', {
+          name,
+          reason: error instanceof Error ? error.message : String(error),
+        }),
+      )
+      return
+    }
+    const panel = vscode.window.createWebviewPanel('modkit.explorer', name, vscode.ViewColumn.Active, {
+      ...webviewOptions(),
+      retainContextWhenHidden: true,
+    })
+    const served = attach(
+      panel.webview,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      { label: name, backend: explorerBackend(uri) },
+    )
+    panel.onDidDispose(() => {
+      live.delete(served)
+      liveSubjects.delete(served)
+      void served.close('the Modkit Explorer was closed')
+    })
+  }
+  context.subscriptions.push(vscode.commands.registerCommand('modkit.openExplorer', openExplorer))
 
+  // ---------------------------------------------------------------- shared command runtime
   /*
    * The same subject and generic service commands the CLI and protocol adapters run.
    *
@@ -11909,9 +12018,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
   context.subscriptions.push(
     sourcesView,
     resourcesView,
-    vscode.window.registerTreeDataProvider('modkit.sources', sourcesView),
-    vscode.window.registerTreeDataProvider('modkit.resources', resourcesView),
-    vscode.window.registerTreeDataProvider('modkit.extensions', extensionsView),
+    // Registered at the very start of activation; the real providers take over here.
+    views.sources.resolve(sourcesView),
+    views.resources.resolve(resourcesView),
+    views.extensions.resolve(extensionsView),
     vscode.workspace.onDidChangeWorkspaceFolders(() => {
       // The grant widened or narrowed; every open page reloads its tree and is told why.
       for (const served of live) {

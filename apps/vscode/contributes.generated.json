@@ -117,6 +117,11 @@
       "title": "%command.openContainerMember%"
     },
     {
+      "command": "modkit.openExplorer",
+      "title": "%command.openExplorer%",
+      "icon": "$(folder-library)"
+    },
+    {
       "command": "modkit.openWith",
       "title": "%command.openActiveFile%"
     },
@@ -280,6 +285,14 @@
         "default": "",
         "markdownDescription": "%configuration.contentSourceConfig.description%",
         "type": "string"
+      },
+      "modkit.contributionSettings": {
+        "additionalProperties": {
+          "type": "object"
+        },
+        "default": {},
+        "markdownDescription": "%configuration.contributionSettings.description%",
+        "type": "object"
       },
       "modkit.defaultEditorForTextFormats": {
         "default": false,
@@ -471,6 +484,11 @@
     ],
     "explorer/context": [
       {
+        "command": "modkit.openExplorer",
+        "when": "explorerResourceIsFolder",
+        "group": "navigation@19"
+      },
+      {
         "command": "modkit.sources.clearCache",
         "when": "resourceScheme == modkit-source",
         "group": "navigation@22"
@@ -561,6 +579,11 @@
         "command": "modkit.extensions.update",
         "when": "view == modkit.extensions && viewItem =~ /^modkitExtension\\.installed\\.mutable\\.update(?:\\.|$)/",
         "group": "inline@1"
+      },
+      {
+        "command": "modkit.openExplorer",
+        "when": "view == modkit.sources && viewItem =~ /^modkitSource\\.(?:providerRoot|publicRoot|localRoot|installation)(?:\\.(?:mounted|mounting))?$/",
+        "group": "explorer@0"
       },
       {
         "command": "modkit.resources.open",
@@ -708,11 +731,6 @@
         "name": "%view.extensions%"
       },
       {
-        "id": "modkit.gallery",
-        "name": "%view.gallery%",
-        "type": "webview"
-      },
-      {
         "id": "modkit.resources",
         "name": "%view.resources%"
       },
@@ -730,5 +748,22 @@
         "icon": "media/icon-128.png"
       }
     ]
-  }
+  },
+  "viewsWelcome": [
+    {
+      "view": "modkit.extensions",
+      "contents": "%view.loading%",
+      "when": "!modkit.ready"
+    },
+    {
+      "view": "modkit.resources",
+      "contents": "%view.loading%",
+      "when": "!modkit.ready"
+    },
+    {
+      "view": "modkit.sources",
+      "contents": "%view.loading%",
+      "when": "!modkit.ready"
+    }
+  ]
 }

@@ -68,6 +68,9 @@ export interface SelectedContentSource {
   readonly displayName: string
   readonly installPath: string
   readonly normalizedPath: string
+  readonly version?: string
+  readonly buildName?: string
+  readonly buildUid?: string
 }
 
 const recordOf = (value: unknown): Readonly<Record<string, unknown>> | undefined =>
@@ -88,6 +91,9 @@ export function selectedContentSources(value: unknown): readonly SelectedContent
     const displayName = nonBlank(row?.['displayName'])
     const installPath = nonBlank(row?.['installPath'])
     const normalizedPath = nonBlank(row?.['normalizedPath'])
+    const version = nonBlank(row?.['version'])
+    const buildName = nonBlank(row?.['buildName'])
+    const buildUid = nonBlank(row?.['buildUid'])
     if (
       gameId === undefined ||
       displayName === undefined ||
@@ -96,7 +102,18 @@ export function selectedContentSources(value: unknown): readonly SelectedContent
     ) {
       continue
     }
-    byPath.set(normalizedPath, Object.freeze({ gameId, displayName, installPath, normalizedPath }))
+    byPath.set(
+      normalizedPath,
+      Object.freeze({
+        gameId,
+        displayName,
+        installPath,
+        normalizedPath,
+        ...(version === undefined ? {} : { version }),
+        ...(buildName === undefined ? {} : { buildName }),
+        ...(buildUid === undefined ? {} : { buildUid }),
+      }),
+    )
   }
   return Object.freeze(
     [...byPath.values()].sort((a, b) => compareText(a.normalizedPath, b.normalizedPath)),

@@ -51,6 +51,29 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
       localizer: context.localizer,
       ...(context.renderer === undefined ? {} : { renderer: context.renderer }),
       ...(context.textures === undefined ? {} : { textures: context.textures }),
+      // Conversion writes a new file, so it needs the same host writer the image view uses.
+      ...(context.exportFiles === undefined ? {} : { exportBytes: context.exportFiles }),
+      exportBaseName: descriptor => context.exportBaseName?.(descriptor) ?? 'model',
+      /*
+       * The same sidebar the image stage has, for the same reason: MK2 showed a model's codec
+       * operations, its document tree and its metadata as separate tabs, and here they are
+       * sections of the render view. A model publishes more structure than an image, so the tree
+       * is where Properties, Sections, Bounds and Codec Metadata are read.
+       */
+      sections: [
+        {
+          id: 'transform',
+          title: context.localizer.text('stage.transform'),
+          icon: 'tools',
+          module: createVsCodeEditPanel({ ...context, omitEncoding: true }),
+        },
+        {
+          id: 'structure',
+          title: context.localizer.text('stage.tree'),
+          icon: 'list-tree',
+          module: createTreeViewer({ localizer: context.localizer }),
+        },
+      ],
     })
   return orderStages<PreviewStage>([
     {
@@ -183,6 +206,7 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
               act: (action, target) =>
                 context.archiveAction?.(action, target) ?? Promise.resolve(false),
             }),
+        ...(context.archiveGallery === undefined ? {} : { gallery: context.archiveGallery }),
         reload: descriptor => context.reopen(descriptor as unknown as Record<string, unknown>),
       }),
     },
@@ -227,7 +251,13 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
       id: 'localization',
       label: context.localizer.text('stage.localization'),
       contract: 'common.view/table-data-source',
-      module: createTableViewer({ localizer: context.localizer }),
+      // Keep the viewer available for read-only dependencies, but lend authorized host write
+      // ports when present. A successful commit must reopen the revision-pinned table session.
+      usesEditorPorts: true,
+      module: createTableViewer({
+        localizer: context.localizer,
+        onCommitted: descriptor => context.reopen(descriptor as unknown as Record<string, unknown>),
+      }),
     },
     {
       id: 'table',

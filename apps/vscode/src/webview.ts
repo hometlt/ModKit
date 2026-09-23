@@ -26,7 +26,16 @@ import { createWorkbench } from '@modkit/ui/workbench'
 import { resolveModelViewerTextures } from '@modkit/ui/model'
 import { templateImagesFromRaster } from '@modkit/ui/template'
 import type { UiCatalogDocument, UiLocale, UiLocalizer } from '@modkit/ui/localization'
-import type { ViewerStatusPort } from '@modkit/sdk'
+import type {
+  AnyDescriptor,
+  NamespaceEntry,
+  NamespaceEntrySource,
+  Page,
+  PageRequest,
+  PresentationSlot,
+  ViewerSources,
+  ViewerStatusPort,
+} from '@modkit/sdk'
 import type { ImagePixelOperation } from '@modkit/ui/image'
 import {
   createSubjectCard,
@@ -45,7 +54,16 @@ import {
   type ExtensionSubjectCardWireDocument,
 } from '@modkit/extension-manager'
 
-import { createBridge, type ShellEntry, type WebviewChannel } from './bridge.js'
+import { createArchiveViewer, type ArchiveGalleryThumbnail } from '@modkit/ui/archive'
+import { revisionIdFromRef } from '@modkit/sdk'
+
+import {
+  createBridge,
+  type ShellEntry,
+  type ShellExplorerEntry,
+  type ShellThumbnail,
+  type WebviewChannel,
+} from './bridge.js'
 import {
   exposeModkitAcceptance,
   withSubjectAcceptance,
@@ -102,6 +120,10 @@ interface Bootstrap {
   /** The single stage a stage-specific native editor raised this page for. */
   readonly forcedStage?: string
   readonly extensionCard?: import('./extension-cards.js').ExtensionCardBundle
+  /** Lower-case extensions the explorer's gallery draws as pictures. */
+  readonly galleryExtensions?: readonly string[]
+  /** Raised as a Modkit Explorer over one folder; see `mountExplorerFolder`. */
+  readonly explorer?: PageBootstrap['explorer']
 }
 
 /** `acquireVsCodeApi`, declared structurally so nothing here depends on the editor's typings. */
@@ -111,6 +133,164 @@ interface VsCodeWebviewApi {
 
 function describe(error: unknown): string {
   return error instanceof Error ? error.message : String(error)
+}
+
+const NAMESPACE_CONTRACT = 'common.view/namespace-entry-source'
+
+/** Which entries the explorer's gallery shows: files whose extension an enabled image codec reads. */
+function galleryAccepts(
+  extensions: readonly string[] | undefined,
+): ((entry: NamespaceEntry) => boolean) | undefined {
+  if (extensions === undefined || extensions.length === 0) return undefined
+  const names = new Set(extensions)
+  return entry => {
+    const dot = entry.name.lastIndexOf('.')
+    return entry.kind === 'file' && dot > 0 && names.has(entry.name.slice(dot + 1).toLowerCase())
+  }
+}
+
+/**
+ * The host's thumbnails, remembered per entry revision and size.
+ *
+ * The gallery redraws on every selection, and each redraw asks for every visible picture again;
+ * without this each click would decode them all a second time. A failed or cancelled draw is not
+ * kept, so the next redraw asks again.
+ */
+function rememberedThumbnails(
+  draw: (entry: NamespaceEntry, maxEdge: number) => Promise<ArchiveGalleryThumbnail | undefined>,
+): (entry: NamespaceEntry, maxEdge: number) => Promise<ArchiveGalleryThumbnail | undefined> {
+  const drawn = new Map<string, Promise<ArchiveGalleryThumbnail | undefined>>()
+  return (entry, maxEdge) => {
+    const key = `${maxEdge}:${entry.revision}:${entry.id}`
+    const known = drawn.get(key)
+    if (known !== undefined) return known
+    const pending = draw(entry, maxEdge)
+    pending.catch(() => drawn.delete(key))
+    drawn.set(key, pending)
+    return pending
+  }
+}
+
+/** A `thumbnail` answer, checked: the host may have had nothing to draw. */
+function thumbnailFrom(answer: unknown): ArchiveGalleryThumbnail | undefined {
+  if (answer === null || typeof answer !== 'object') return undefined
+  const { width, height, rgba } = answer as Partial<ShellThumbnail>
+  return typeof width === 'number' &&
+    typeof height === 'number' &&
+    rgba instanceof Uint8Array &&
+    rgba.byteLength === width * height * 4
+    ? { width, height, rgba }
+    : undefined
+}
+
+/**
+ * The webview file explorer over one folder of any VS Code file system.
+ *
+ * The same archive explorer an archive's editor shows, bound to a namespace the extension host
+ * lists one folder at a time (`explorer-children`), so a content source or a CASC-sized tree loads
+ * only the folders that are opened. The page never sees the folder's address: entries carry ids
+ * the host handed out, and opening or drawing one sends the id back.
+ */
+async function mountExplorerFolder(
+  workbench: ReturnType<typeof createWorkbench>,
+  bridge: ReturnType<typeof createBridge>,
+  snapshot: Bootstrap,
+  localizer: UiLocalizer,
+): Promise<void> {
+  const listings = new Map<string, Promise<readonly NamespaceEntry[]>>()
+  const listing = (path: string): Promise<readonly NamespaceEntry[]> => {
+    const known = listings.get(path)
+    if (known !== undefined) return known
+    const listed = bridge.request({ op: 'explorer-children', path }).then(answer =>
+      (answer as readonly ShellExplorerEntry[]).map(
+        (entry): NamespaceEntry => ({
+          id: entry.id,
+          path: entry.path,
+          name: entry.name,
+          kind: entry.kind,
+          ...(entry.size === undefined ? {} : { size: BigInt(entry.size) }),
+          ...(entry.modifiedAt === undefined ? {} : { modifiedAt: entry.modifiedAt }),
+          revision: revisionIdFromRef({
+            kind: 'provider-token',
+            value: `${Math.trunc(entry.modifiedAt ?? 0)}-${entry.size ?? 0}`,
+          }),
+        }),
+      ),
+    )
+    // A failed listing is not remembered: opening the folder again asks again.
+    listed.catch(() => listings.delete(path))
+    listings.set(path, listed)
+    return listed
+  }
+  const children = async (path: string, page: PageRequest): Promise<Page<NamespaceEntry>> => {
+    const entries = await listing(path)
+    const offset = page.cursor === undefined ? 0 : Number(page.cursor)
+    const end = offset + page.limit
+    return {
+      items: entries.slice(offset, end),
+      ...(end < entries.length ? { nextCursor: String(end) } : {}),
+    }
+  }
+  const source: NamespaceEntrySource = {
+    list: children,
+    children,
+    openEntry() {
+      return Promise.reject(new Error('explorer entries are opened by the extension host'))
+    },
+  }
+  const binding = { bindingId: 'modkit.explorer/folder', contract: NAMESPACE_CONTRACT, major: 1 }
+  const slot = {
+    slotId: 'modkit.explorer/folder',
+    kind: 'stage',
+    contributionId: 'modkit.app.vscode/explorer',
+    extensionId: 'modkit/vscode',
+    priority: 0,
+    bindings: [binding],
+  } as unknown as PresentationSlot
+  const sources: ViewerSources = {
+    get: (async (requested: { readonly contract?: string }) =>
+      requested.contract === NAMESPACE_CONTRACT
+        ? { value: source, release: async () => undefined }
+        : undefined) as ViewerSources['get'],
+    getUnknown: async () => undefined,
+  }
+  const accepts = galleryAccepts(snapshot.galleryExtensions)
+  const viewer = createArchiveViewer({
+    localizer,
+    ...(snapshot.explorer === undefined ? {} : { rootLabel: snapshot.explorer.label }),
+    openEntry: async entry => {
+      await bridge.request({ op: 'explorer-open', id: entry.id })
+    },
+    ...(accepts === undefined
+      ? {}
+      : {
+          gallery: {
+            accepts,
+            thumbnail: rememberedThumbnails(async (entry, maxEdge) =>
+              thumbnailFrom(
+                await bridge.request({ op: 'thumbnail', explorerId: entry.id, maxEdge }),
+              ),
+            ),
+          },
+        }),
+  })
+  const container = document.createElement('div')
+  container.className = 'modkit-explorer'
+  workbench.setMain(container)
+  const scope = new AbortController()
+  window.addEventListener('unload', () => scope.abort(), { once: true })
+  await viewer.mount({
+    container,
+    // A folder has no codec interpretation; the viewer reads only its revision.
+    descriptor: {
+      interpretation: 'none',
+      candidates: [],
+      revision: snapshot.explorer?.label ?? 'explorer',
+    } as unknown as AnyDescriptor,
+    slot,
+    sources,
+    signal: scope.signal,
+  } as unknown as Parameters<typeof viewer.mount>[0])
 }
 
 interface MapPreviewCandidate {
@@ -254,6 +434,10 @@ async function mount(
 
   if (snapshot.extensionCard !== undefined) {
     await mountExtensionSubjectCard(workbench, bridge, snapshot.extensionCard, localizer)
+    return
+  }
+  if (snapshot.explorer !== undefined) {
+    await mountExplorerFolder(workbench, bridge, snapshot, localizer)
     return
   }
 
@@ -412,13 +596,14 @@ async function mount(
   let pixelEditing: import('@modkit/ui/image').ImageEditingHandlers | undefined
 
   /*
-   * No gallery inside a viewer.
+   * No sibling gallery inside a viewer.
    *
-   * The workspace gallery is the native Modkit sidebar view, which every viewer shares and which
-   * survives switching tabs. The media shell's own left pane listed the opened file's siblings a
-   * second time, so it is not given a port: without one the shell collapses that pane and hides
+   * The media shell's left pane is given no port of siblings: the one gallery is the webview file
+   * explorer's, which shows the pictures among an archive's members (below, `archiveGallery`) or a
+   * folder's files (a Modkit Explorer panel). Without a port the shell collapses that pane and hides
    * its toggle, leaving the render area the full width.
    */
+  const archiveGalleryAccepts = galleryAccepts(snapshot.galleryExtensions)
 
   const codecPreview = createCodecPreview({
     localizer,
@@ -499,6 +684,26 @@ async function mount(
           if (container === undefined) return
           await bridge.request({ op: 'open-in-editor', path: container, entry })
         },
+        // The explorer's gallery: members an enabled image codec reads, drawn by the extension host.
+        ...(archiveGalleryAccepts === undefined
+          ? {}
+          : {
+              archiveGallery: {
+                accepts: archiveGalleryAccepts,
+                thumbnail: rememberedThumbnails(async (entry, maxEdge) => {
+                  const container = focused ?? snapshot.openPath
+                  if (container === undefined) return undefined
+                  return thumbnailFrom(
+                    await bridge.request({
+                      op: 'thumbnail',
+                      path: container,
+                      entry: entry.path,
+                      maxEdge,
+                    }),
+                  )
+                }),
+              },
+            }),
         async archiveAction(action, target) {
           const subject = focused ?? snapshot.openPath
           if (subject === undefined) return false
@@ -895,10 +1100,23 @@ async function mount(
     await editors.open(entry)
   }
 
+  const navigateSubject = async (target: string): Promise<void> => {
+    const parent = subjects.get(snapshot.openPath ?? focused ?? '')
+    const navigation = parent?.session.subjectNavigation
+    if (navigation === undefined) throw new Error('the mounted subject does not support navigation')
+    const result = await navigation.open({ scope: navigation.scope, target })
+    if (result.state === 'rejected') {
+      throw new Error(`subject navigation rejected ${target}: ${result.reason}`)
+    }
+  }
+
   bridge.onEvent(event => {
     switch (event.op) {
       case 'open':
         void openPath(event.path, event.name).catch((error: unknown) => say(describe(error)))
+        break
+      case 'navigate-subject':
+        void navigateSubject(event.subjectId).catch((error: unknown) => say(describe(error)))
         break
       case 'notice':
         say(event.text)

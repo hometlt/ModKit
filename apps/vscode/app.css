@@ -72,6 +72,18 @@ body {
   min-height: 0;
 }
 
+/* A Modkit Explorer panel: the archive explorer over one folder fills the page. */
+.modkit-explorer {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.modkit-explorer > * {
+  flex: 1 1 0;
+  min-height: 0;
+}
+
 [data-mk-part='workbench.titlebar'] {
   display: flex;
   grid-area: title;

@@ -29,6 +29,7 @@ import {
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { builtinModules } from 'node:module'
+import { execFileSync } from 'node:child_process'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -408,6 +409,9 @@ async function buildInto(output, syncManifest) {
   // The closure is a complete generated subtree. Remove only that owned subtree before copying so
   // a root's production files whitelist cannot leave stale tests or migration notes in dist-app.
   rmSync(join(output, 'extensions'), { recursive: true, force: true })
+  // Split webview chunks are content-hashed. Keeping the previous build's directory leaves every
+  // superseded hash in the VSIX and makes a clean reproducibility check report false source drift.
+  rmSync(join(output, 'chunks'), { recursive: true, force: true })
 
   await build({
     entryPoints: [join(appRoot, 'src', 'extension.ts')],
@@ -461,7 +465,6 @@ async function buildInto(output, syncManifest) {
   await build({
     entryPoints: {
       webview: join(appRoot, 'src', 'webview.ts'),
-      'gallery-webview': join(appRoot, 'src', 'gallery-webview.ts'),
     },
     outdir: output,
     bundle: true,
@@ -513,52 +516,8 @@ async function buildInto(output, syncManifest) {
   // ---------------------------------------------------------------- manifest
   // Only the real output owns the manifest: a check build must not write the package it is checking.
   if (syncManifest) {
-    const manifestPath = join(appRoot, 'package.json')
-    const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
-    const contributes = JSON.parse(
-      readFileSync(join(appRoot, 'contributes.generated.json'), 'utf8'),
-    )
-    /*
-     * Filesystem schemes are an activation point with no `contributes` entry of their own — a
-     * provider is registered in code — so they are declared in the authority document rather than in
-     * this script: a saved workspace holding a `modkit-container:` folder has to start this extension
-     * before the Explorer can ask anything of it, and a scheme spelled in two places would drift.
-     */
-    const authority = JSON.parse(readFileSync(join(appRoot, 'bundled-contributes.v1.json'), 'utf8'))
-    const fileSystemSchemes = [...(authority.fileSystemSchemes ?? [])].sort()
-
-    const previous = JSON.stringify([
-      manifest.contributes ?? null,
-      manifest.activationEvents ?? null,
-    ])
-    manifest.contributes = contributes
-    // Every command and every custom editor in the generated catalog is an activation point; VS Code
-    // 1.75+ infers the commands, but a custom editor still has to be declared or the provider is never
-    // registered and "Reopen Editor With… → Modkit Asset Preview" opens an editor nothing resolves.
-    manifest.activationEvents = [
-      ...contributes.commands.map(command => `onCommand:${command.command}`),
-      ...contributes.customEditors.map(editor => `onCustomEditor:${editor.viewType}`),
-      // The tree views are the other way in: opening the Modkit container has to start the host.
-      ...Object.values(contributes.views)
-        .flat()
-        .map(view => `onView:${view.id}`),
-      ...fileSystemSchemes.map(scheme => `onFileSystem:${scheme}`),
-      /*
-       * Language routes come from the configured extension directories at runtime, so no static
-       * `onLanguage` event can name them. Without this the editor starts the host only when a panel
-       * or a command asks for it, and opening an SC2 file gives no diagnostics, navigation or
-       * tokens. `generate-contributes.mjs` derives the same list; leaving it out here made every
-       * build undo that script's own check.
-       */
-      'onStartupFinished',
-    ]
-
-    if (JSON.stringify([manifest.contributes, manifest.activationEvents]) !== previous) {
-      writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`)
-      console.log(
-        'manifest contributes and activation events synced from contributes.generated.json',
-      )
-    }
+    // One generator owns contributions and activation events; builds cannot diverge from emit.
+    execFileSync(process.execPath, [join(here, 'generate-contributes.mjs')], { stdio: 'inherit' })
   }
   assertPublicationArtifact(output)
 }

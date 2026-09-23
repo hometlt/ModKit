@@ -168,7 +168,7 @@ describe('the VS Code subject bridge', () => {
   })
 
   it('opens a subject over the JSON channel and hands the page its descriptor', async () => {
-    const { client, workspace } = await wire({
+    const { client, served, workspace } = await wire({
       'sample.json': '{"name":"Modkit","items":[1,2,3]}',
     })
     const result = await client.open(join(workspace, 'sample.json'))
@@ -186,11 +186,34 @@ describe('the VS Code subject bridge', () => {
       'content.text',
     )
     expect(result.snapshot.selected.contributionId).toContain('text-json')
+    expect(served.languageSubject()).toMatchObject({
+      descriptor: { interpretation: 'codec' },
+      revision: expect.any(String),
+    })
 
     // and the live session is a lease, not a copy: a data source resolves through the wire
     const lease = await result.session.dataSource('common.view/byte-range-source', 1)
     expect(lease.value).toBeDefined()
     await result.session.dispose()
+    expect(served.languageSubject()).toBeUndefined()
+  }, 120_000)
+
+  it('lends the same generic tree data source to native views without a webview session', async () => {
+    const { host, workspace } = await wire({
+      'sample.json': '{"name":"Modkit","items":[1,2,3]}',
+    })
+    const subject = await host.openTreeSubject(join(workspace, 'sample.json'), [workspace])
+    expect(subject).toBeDefined()
+    if (subject === undefined) return
+    const lease = await subject.openTreeDataSource()
+    expect(lease).toBeDefined()
+    if (lease !== undefined) {
+      const root = await lease.value.root()
+      expect(await lease.value.facts(root)).toMatchObject({ label: expect.any(String) })
+      await lease.release()
+    }
+    await subject.dispose()
+    expect(await subject.openTreeDataSource()).toBeUndefined()
   }, 120_000)
 
   it('refuses a path outside the granted roots before it touches the filesystem', async () => {
@@ -263,8 +286,20 @@ describe('the VS Code subject bridge', () => {
     if (prepared.state !== 'ready') return
     const committed = await arm.commit(prepared.preparedId)
     expect(committed.state, JSON.stringify(committed)).toBe('committed')
+    if (committed.state !== 'committed') return
 
     expect(readFileSync(path, 'utf8')).toBe('{"name":"Modkit MK3","items":[1,2,3]}')
+
+    const undone = await arm.undo(committed.receipt.transactionId)
+    expect(undone.state, JSON.stringify(undone)).toBe('committed')
+    expect(readFileSync(path, 'utf8')).toBe(source)
+    const redone = await arm.redo(committed.receipt.transactionId)
+    expect(redone.state, JSON.stringify(redone)).toBe('committed')
+    expect(readFileSync(path, 'utf8')).toBe('{"name":"Modkit MK3","items":[1,2,3]}')
+    expect(await arm.discardHistory(committed.receipt.transactionId)).toBe(true)
+    await expect(arm.undo(committed.receipt.transactionId)).rejects.toThrow(
+      /unknown editing transaction/u,
+    )
 
     // the id is spent: a replay is refused rather than writing twice
     await expect(arm.commit(prepared.preparedId)).rejects.toThrow(/unknown prepared commit/u)

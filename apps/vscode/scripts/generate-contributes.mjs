@@ -50,6 +50,21 @@ const sortedKeys = value =>
 
 const commands = [...input.commands].sort((a, b) => compareUtf8(a.command, b.command))
 const customEditors = [...input.customEditors].sort((a, b) => compareUtf8(a.viewType, b.viewType))
+const grammars = [...(input.grammars ?? [])].sort((a, b) => compareUtf8(a.language, b.language))
+if (
+  grammars.some(
+    (grammar, index) =>
+      typeof grammar.language !== 'string' ||
+      grammar.language.length === 0 ||
+      typeof grammar.scopeName !== 'string' ||
+      grammar.scopeName.length === 0 ||
+      typeof grammar.path !== 'string' ||
+      grammar.path.length === 0 ||
+      (index > 0 && grammar.language === grammars[index - 1].language),
+  )
+) {
+  throw new TypeError('grammars must contain unique languages and non-empty scopes and paths')
+}
 const languages = [...(input.languages ?? [])].sort((a, b) => compareUtf8(a.id, b.id))
 if (
   languages.some(
@@ -63,6 +78,8 @@ if (
 }
 const views = sortedGroups(input.views, 'id')
 const viewsContainers = sortedGroups(input.viewsContainers, 'id')
+// What a view shows before its provider exists (VS Code shows it instead of "no data provider").
+const viewsWelcome = [...(input.viewsWelcome ?? [])].sort((a, b) => compareUtf8(a.view, b.view))
 const menus = sortedGroups(input.menus ?? {}, 'command')
 // The settings schema is authored as one object; only its property order is normalised, because a
 // JSON Schema's own keyword order carries no meaning but its nesting does.
@@ -75,10 +92,12 @@ const document = {
   commands,
   configuration,
   customEditors,
+  grammars,
   languages,
   menus,
   views,
   viewsContainers,
+  ...(viewsWelcome.length === 0 ? {} : { viewsWelcome }),
 }
 const rendered = await format(`${JSON.stringify(document, null, 2)}\n`, {
   ...(await resolveConfig(output)),
@@ -143,12 +162,24 @@ if (check) {
   console.log(
     `contributes:check: ${commands.length} commands, ${customEditors.length} generic editor, ` +
       `${languages.length} language associations, ` +
+      `${grammars.length} language grammars, ` +
       `${Object.values(menus).flat().length} menu items, ` +
       `${Object.values(views).flat().length} views in ` +
       `${Object.values(viewsContainers).flat().length} container, ` +
       `${Object.keys(configuration.properties).length} setting, ${activationEvents.length} activation events`,
   )
 } else {
+  const manifest = JSON.parse(await readFile(manifestPath, 'utf8'))
+  manifest.contributes = document
+  manifest.activationEvents = activationEvents
   await writeFile(output, rendered, 'utf8')
-  console.log('contributes:emit: static VS Code contributions generated')
+  await writeFile(
+    manifestPath,
+    await format(JSON.stringify(manifest), {
+      ...(await resolveConfig(manifestPath)),
+      parser: 'json',
+    }),
+    'utf8',
+  )
+  console.log('contributes:emit: static VS Code contributions and package manifest generated')
 }

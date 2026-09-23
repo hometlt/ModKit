@@ -1,30 +1,26 @@
 /**
- * Resources over the whole load chain, not one package.
- *
- * SC2 loads a package on top of everything it depends on: a mod that declares Void still runs with
- * Core, Liberty and Swarm underneath it, and most of what an author reads — layouts, font styles,
- * editor categories, inherited entities — lives in those layers, not in the package being edited.
- * A tree built from the active package alone shows empty sections and calls them empty, which is
- * how MK2 parity was lost here.
- *
- * Each layer is an ordinary subject with its own `common.view/tree-data-source`; this module only
- * joins them. The join is by node id, which every layer mints the same way for the same resource,
- * so the last layer to define a node wins — exactly the engine's own override order — and the one
- * that won is the one whose facts are shown. Nothing here knows what a layout or a unit is.
+ * Navigation overlay, NOT a calculated model. Equal node ids share one visible node, whose
+ * facts come from the last contributor. Domain owners still resolve inheritance and defaults.
  */
-import type { PageRequest, TreeDataSource, TreeNodeFacts, TreeNodeRef, TreeQuery } from '@modkit/sdk'
+import type {
+  PageRequest,
+  TreeDataSource,
+  TreeNodeFacts,
+  TreeNodeRef,
+  TreeQuery,
+} from '@modkit/sdk'
 
-/** One package of the chain, Core first, the edited package last. */
 export interface ResourceChainLayer {
-  /** Display name of the layer, e.g. `Mods/Core.SC2Mod`. */
   readonly label: string
-  /** Opens this layer's tree. `undefined` when the layer cannot be opened at all. */
-  open(signal?: AbortSignal): Promise<
-    { readonly value: TreeDataSource; release(): Promise<void> } | undefined
-  >
+  /** Return undefined for an unavailable layer; operational errors remain visible. */
+  open(
+    signal?: AbortSignal,
+  ): Promise<{ readonly value: TreeDataSource; release(): Promise<void> } | undefined>
 }
 
-const LAYER_SEPARATOR = ''
+const LAYER_SEPARATOR = '\u0001'
+const ROOT = 'chain:root'
+const UNAVAILABLE = 'chain:unavailable:'
 
 interface OpenLayer {
   readonly label: string
@@ -42,245 +38,243 @@ function page(items: readonly TreeNodeRef[], request: PageRequest) {
   const slice = items.slice(start, start + limit)
   return Object.freeze({
     items: Object.freeze(slice),
-    ...(start + slice.length < items.length
-      ? { nextCursor: String(start + slice.length) }
-      : {}),
+    ...(start + slice.length < items.length ? { nextCursor: String(start + slice.length) } : {}),
   })
 }
 
-/**
- * Join several layer trees into one.
- *
- * Layers are opened lazily — the first request that needs a layer opens it — because a chain can
- * carry an installed package with six figures of entries, and a tree the reader never expands must
- * not pay for it.
- */
+/** Open layer leases on first use and retain them only for the lifetime of this overlay. */
 export function createChainTreeDataSource(
   layers: readonly ResourceChainLayer[],
 ): TreeDataSource & { dispose(): Promise<void> } {
+  const lifetime = new AbortController()
   const opened = new Map<number, Promise<OpenLayer | undefined>>()
-  /** Which layer owns each composite node, so facts and children go back to the right tree. */
-  const ownerOf = new Map<string, number>()
+  const unavailable = new Set<number>()
   const childrenCache = new Map<string, readonly TreeNodeRef[]>()
+  const contributorsOf = new Map<string, ReadonlyMap<number, TreeNodeRef>>()
+  let disposing: Promise<void> | undefined
+
+  const assertLive = (signal?: AbortSignal): void => {
+    lifetime.signal.throwIfAborted()
+    signal?.throwIfAborted()
+  }
 
   const layerAt = (index: number): Promise<OpenLayer | undefined> => {
+    assertLive()
     const known = opened.get(index)
     if (known !== undefined) return known
     const layer = layers[index]
-    const opening =
-      layer === undefined
-        ? Promise.resolve(undefined)
-        : layer.open().then(
-            lease =>
-              lease === undefined
-                ? undefined
-                : Object.freeze({
-                    label: layer.label,
-                    tree: lease.value,
-                    release: () => lease.release(),
-                  }),
-            () => undefined,
-          )
+    if (layer === undefined) return Promise.resolve(undefined)
+    // One reader cancelling must not cancel a shared lease. Unmount cancels its lifetime.
+    const opening = Promise.resolve()
+      .then(() => layer.open(lifetime.signal))
+      .then(lease => {
+        if (lease === undefined) {
+          unavailable.add(index)
+          return undefined
+        }
+        unavailable.delete(index)
+        return Object.freeze({
+          label: layer.label,
+          tree: lease.value,
+          release: () => lease.release(),
+        })
+      })
+      .catch((error: unknown) => {
+        opened.delete(index) // Retry transient failures rather than caching an empty layer.
+        throw error
+      })
     opened.set(index, opening)
     return opening
   }
 
-  /** Which layers define each composite node, in chain order, for counts and expansion. */
-  const contributorsOf = new Map<string, number[]>()
-
-  const compose = (index: number, node: TreeNodeRef): TreeNodeRef => {
-    const id = `${String(index)}${LAYER_SEPARATOR}${node.id}`
-    ownerOf.set(id, index)
-    return Object.freeze({ id, hasChildren: node.hasChildren })
-  }
-
-  /** The layer-local node a composite id names, or the root of a layer. */
-  const split = (id: string): { readonly index: number; readonly nodeId: string } | undefined => {
+  const split = (id: string): { index: number; nodeId: string } | undefined => {
     const cut = id.indexOf(LAYER_SEPARATOR)
     if (cut <= 0) return undefined
     const index = Number(id.slice(0, cut))
-    return Number.isSafeInteger(index) ? { index, nodeId: id.slice(cut + 1) } : undefined
+    return Number.isSafeInteger(index) && index >= 0 && index < layers.length
+      ? { index, nodeId: id.slice(cut + 1) }
+      : undefined
   }
 
-  /** Every child of `nodeId` in one layer, drained across its own pages. */
   const layerChildren = async (
     layer: OpenLayer,
-    nodeId: string,
-    hasChildren: boolean,
+    node: TreeNodeRef,
     signal?: AbortSignal,
   ): Promise<readonly TreeNodeRef[]> => {
+    if (!node.hasChildren) return []
     const collected: TreeNodeRef[] = []
+    const cursors = new Set<string>()
+    const readSignal =
+      signal === undefined ? lifetime.signal : AbortSignal.any([lifetime.signal, signal])
     let cursor: string | undefined
     do {
-      signal?.throwIfAborted()
+      assertLive(signal)
       const answer = await layer.tree.children(
-        Object.freeze({ id: nodeId, hasChildren }),
-        cursor === undefined ? { limit: 200 } : { cursor, limit: 200 },
-        signal,
+        node,
+        { limit: 200, ...(cursor === undefined ? {} : { cursor }) },
+        readSignal,
       )
+      assertLive(signal)
       collected.push(...answer.items)
       cursor = answer.nextCursor
-      if (collected.length >= 50_000) break
+      if (cursor !== undefined) {
+        if (cursors.has(cursor))
+          throw new Error('resource tree pagination did not advance: ' + layer.label)
+        cursors.add(cursor)
+      }
     } while (cursor !== undefined)
-    return Object.freeze(collected)
+    return collected
   }
 
-  /**
-   * Children of one logical node across every layer that has it.
-   *
-   * Later layers override earlier ones by node id, and the order the reader sees is the order the
-   * deepest layer that defines the node used — an inherited resource keeps its place.
-   */
   const joinedChildren = async (
-    nodeId: string,
-    hasChildren: boolean,
+    node: TreeNodeRef,
     signal?: AbortSignal,
   ): Promise<readonly TreeNodeRef[]> => {
-    const cacheKey = `${nodeId}${LAYER_SEPARATOR}${hasChildren ? '1' : '0'}`
-    const known = childrenCache.get(cacheKey)
-    if (known !== undefined) return known
-    const order: string[] = []
-    const winner = new Map<string, TreeNodeRef>()
-    /*
-     * Expansion is a property of the chain, not of the layer that happens to win. Void defines
-     * `Layouts` with no children of its own; Core fills it with 377. Taking the winner's flag
-     * alone left the node unexpandable, which is exactly how an inherited section reads as empty.
-     */
-    const expandable = new Set<string>()
-    const contributors = new Map<string, number[]>()
+    assertLive(signal)
+    const cached = childrenCache.get(node.id)
+    if (cached !== undefined) return cached
+    const target = split(node.id)
+    const contributors =
+      contributorsOf.get(node.id) ??
+      new Map(
+        target === undefined
+          ? []
+          : [[target.index, { id: target.nodeId, hasChildren: node.hasChildren }]],
+      )
+    const members = new Map<string, Map<number, TreeNodeRef>>()
     for (let index = 0; index < layers.length; index += 1) {
-      signal?.throwIfAborted()
+      assertLive(signal)
+      if (node.id !== ROOT && !contributors.has(index)) continue
       const layer = await layerAt(index)
+      assertLive(signal)
       if (layer === undefined) continue
-      let items: readonly TreeNodeRef[]
-      try {
-        items = await layerChildren(layer, nodeId, hasChildren, signal)
-      } catch {
-        // A layer that does not carry this node at all is not an error: Void has no Layouts.
-        continue
-      }
-      for (const item of items) {
-        if (!winner.has(item.id)) order.push(item.id)
-        winner.set(item.id, compose(index, item))
-        if (item.hasChildren) expandable.add(item.id)
-        const seen = contributors.get(item.id)
-        if (seen === undefined) contributors.set(item.id, [index])
-        else seen.push(index)
+      const local = node.id === ROOT ? await layer.tree.root() : contributors.get(index)
+      if (local === undefined) continue
+      for (const item of await layerChildren(layer, local, signal)) {
+        const found = members.get(item.id) ?? new Map<number, TreeNodeRef>()
+        found.set(index, item)
+        members.set(item.id, found)
       }
     }
-    const joined = Object.freeze(
-      order.flatMap(id => {
-        const item = winner.get(id)
-        if (item === undefined) return []
-        const merged = Object.freeze({ id: item.id, hasChildren: expandable.has(id) })
-        contributorsOf.set(item.id, contributors.get(id) ?? [])
-        return [merged]
-      }),
-    )
-    childrenCache.set(cacheKey, joined)
-    return joined
+    assertLive(signal)
+    const joined: TreeNodeRef[] = []
+    for (const [localId, definitions] of members) {
+      const last = [...definitions.keys()].at(-1)
+      if (last === undefined) continue
+      const id = String(last) + LAYER_SEPARATOR + localId
+      contributorsOf.set(id, definitions)
+      joined.push(
+        Object.freeze({
+          id,
+          hasChildren: [...definitions.values()].some(item => item.hasChildren),
+        }),
+      )
+    }
+    if (node.id === ROOT) {
+      for (const index of unavailable) {
+        joined.push(Object.freeze({ id: UNAVAILABLE + index, hasChildren: false }))
+      }
+    }
+    const result = Object.freeze(joined)
+    childrenCache.set(node.id, result)
+    return result
   }
 
+  const completeness = (): string =>
+    unavailable.size === 0 ? '' : ' · incomplete: ' + unavailable.size + ' unavailable layers'
   const source = Object.freeze({
     async root(): Promise<TreeNodeRef> {
-      return Object.freeze({ id: 'chain:root', hasChildren: true })
+      assertLive()
+      return Object.freeze({ id: ROOT, hasChildren: layers.length > 0 })
     },
 
     async children(node: TreeNodeRef, request: PageRequest, signal?: AbortSignal) {
-      signal?.throwIfAborted()
-      if (node.id === 'chain:root') {
-        // The root of every layer is the same logical node; ask each layer for its own root id.
-        const first = await layerAt(layers.length - 1)
-        const rootRef = first === undefined ? undefined : await first.tree.root()
-        if (rootRef === undefined) return page(Object.freeze([]), request)
-        return page(await joinedChildren(rootRef.id, true, signal), request)
-      }
-      const target = split(node.id)
-      if (target === undefined) return page(Object.freeze([]), request)
-      return page(await joinedChildren(target.nodeId, node.hasChildren, signal), request)
+      return page(await joinedChildren(node, signal), request)
     },
 
     async facts(node: TreeNodeRef): Promise<TreeNodeFacts> {
-      if (node.id === 'chain:root') {
-        return Object.freeze({ kind: 'resources', label: 'Resources', preview: chainPreview() })
+      assertLive()
+      if (node.id === ROOT) {
+        return Object.freeze({
+          kind: 'resources',
+          label: 'Resources',
+          preview: layers.length + ' layers' + completeness(),
+        })
+      }
+      if (node.id.startsWith(UNAVAILABLE)) {
+        const index = Number(node.id.slice(UNAVAILABLE.length))
+        const layer = layers[index]
+        if (layer === undefined || !unavailable.has(index))
+          throw new TypeError('unknown chain node ' + node.id)
+        return Object.freeze({
+          kind: 'unavailable-layer',
+          label: layer.label,
+          preview: 'Unavailable — dependency chain is incomplete',
+        })
       }
       const target = split(node.id)
-      if (target === undefined) throw new TypeError(`unknown chain node ${node.id}`)
+      if (target === undefined) throw new TypeError('unknown chain node ' + node.id)
       const layer = await layerAt(target.index)
-      if (layer === undefined) throw new TypeError(`chain layer ${target.index} is not open`)
-      const facts = await layer.tree.facts(
-        Object.freeze({ id: target.nodeId, hasChildren: node.hasChildren }),
-      )
-      const contributors = contributorsOf.get(node.id) ?? [target.index]
-      /*
-       * A count belongs to the chain too. `Layouts 0 · Void` is a lie when Core contributes 377,
-       * so a node several layers define reports their total — when every layer states one. A
-       * preview that is not a plain count (a path, a string value) stays the winner's own.
-       */
-      const total =
-        contributors.length <= 1 ? undefined : await countAcrossLayers(contributors, target.nodeId)
-      return Object.freeze({
-        ...facts,
-        preview:
-          total === undefined
-            ? withLayer(facts.preview, layer.label)
-            : `${String(total)} · ${String(contributors.length)} layers`,
-      })
+      if (layer === undefined) throw new TypeError('chain layer ' + target.index + ' is not open')
+      const contributors = contributorsOf.get(node.id)
+      const local = contributors?.get(target.index) ?? {
+        id: target.nodeId,
+        hasChildren: node.hasChildren,
+      }
+      const facts = await layer.tree.facts(local)
+      assertLive()
+      // Numeric values may be stats or descendant counts. Never sum them: count unique children.
+      const preview =
+        node.hasChildren && contributors !== undefined && contributors.size > 1
+          ? (await joinedChildren(node)).length + ' children · ' + contributors.size + ' layers'
+          : facts.preview === undefined || facts.preview === ''
+            ? layer.label
+            : facts.preview + ' · ' + layer.label
+      return Object.freeze({ ...facts, preview: preview + completeness() })
     },
 
     async *search(query: TreeQuery, signal?: AbortSignal): AsyncIterable<TreeNodeRef> {
-      for (let index = 0; index < layers.length; index += 1) {
-        signal?.throwIfAborted()
-        const layer = await layerAt(index)
-        if (layer === undefined) continue
-        for await (const found of layer.tree.search(query, signal)) {
-          yield compose(index, found)
+      const needle = query.pattern.toLocaleLowerCase()
+      const pending = [...(await joinedChildren(await source.root(), signal))].reverse()
+      const seen = new Set<string>()
+      while (pending.length > 0) {
+        assertLive(signal)
+        const node = pending.pop()
+        if (node === undefined) break
+        if (seen.has(node.id)) continue
+        seen.add(node.id)
+        const facts = await source.facts(node)
+        assertLive(signal)
+        if (
+          [facts.label, facts.kind, facts.preview ?? ''].some(value =>
+            value.toLocaleLowerCase().includes(needle),
+          )
+        )
+          yield node
+        if (node.hasChildren) {
+          for (const child of [...(await joinedChildren(node, signal))].reverse())
+            pending.push(child)
         }
       }
     },
 
     async dispose(): Promise<void> {
+      if (disposing !== undefined) return disposing
+      lifetime.abort(new Error('resource chain disposed'))
       const pending = [...opened.values()]
       opened.clear()
-      ownerOf.clear()
       childrenCache.clear()
-      for (const layer of pending) {
-        await layer.then(value => value?.release()).catch(() => undefined)
-      }
+      contributorsOf.clear()
+      disposing = Promise.all(
+        pending.map(async opening => {
+          const layer = await opening.catch(() => undefined)
+          await layer?.release()
+        }),
+      ).then(() => {
+        unavailable.clear()
+      })
+      return disposing
     },
   })
-
-  /** The summed count of one node across the layers that define it, when all of them state one. */
-  async function countAcrossLayers(
-    contributors: readonly number[],
-    nodeId: string,
-  ): Promise<number | undefined> {
-    let total = 0
-    for (const index of contributors) {
-      const layer = await layerAt(index)
-      if (layer === undefined) return undefined
-      let facts: TreeNodeFacts
-      try {
-        facts = await layer.tree.facts(Object.freeze({ id: nodeId, hasChildren: true }))
-      } catch {
-        return undefined
-      }
-      // The typed `value` is the count; `preview` is prose for a human («891 · 891 own») and must
-      // not be parsed back into a number.
-      const count = typeof facts.value === 'number' ? facts.value : Number(facts.preview)
-      if (!Number.isFinite(count)) return undefined
-      total += count
-    }
-    return total
-  }
-
-  function chainPreview(): string {
-    return layers.length === 1 ? layers[0]?.label ?? '' : `${String(layers.length)} layers`
-  }
-
   return source
-}
-
-function withLayer(preview: string | undefined, label: string): string {
-  return preview === undefined || preview === '' ? label : `${preview} · ${label}`
 }

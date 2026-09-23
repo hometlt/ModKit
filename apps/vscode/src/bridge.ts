@@ -224,11 +224,45 @@ export type ShellRequest =
   | { readonly op: 'set-extension'; readonly index: number; readonly enabled: boolean }
   | { readonly op: 'remove-extension'; readonly index: number }
   | { readonly op: 'add-extension-folder' }
+  /**
+   * A small picture for the explorer's gallery: the member `entry` of the container at `path`, or
+   * the Modkit Explorer entry `explorerId`. `undefined` when the host cannot decode one.
+   */
+  | {
+      readonly op: 'thumbnail'
+      readonly path?: string
+      readonly entry?: string
+      readonly explorerId?: string
+      readonly maxEdge: number
+    }
+  /** The immediate children of `path` (`''` is the root) in the folder a Modkit Explorer shows. */
+  | { readonly op: 'explorer-children'; readonly path: string }
+  /** Open one Modkit Explorer entry in an editor tab of its own. */
+  | { readonly op: 'explorer-open'; readonly id: string }
+
+/** A picture the gallery draws: RGBA, at most the requested edge on its long side. */
+export interface ShellThumbnail {
+  readonly width: number
+  readonly height: number
+  readonly rgba: Uint8Array
+}
+
+/** One entry of a Modkit Explorer folder: `id` is opaque to the page, `path` is from the root. */
+export interface ShellExplorerEntry {
+  readonly id: string
+  readonly path: string
+  readonly name: string
+  readonly kind: 'file' | 'directory'
+  readonly size?: number
+  readonly modifiedAt?: number
+}
 
 /** Fire-and-forget, in both directions. */
 export type ShellEvent =
   | { readonly op: 'roots'; readonly roots: readonly ShellRoot[] }
   | { readonly op: 'open'; readonly path: string; readonly name: string }
+  /** Open an opaque subject reference through the navigation port of the mounted parent session. */
+  | { readonly op: 'navigate-subject'; readonly subjectId: string }
   | { readonly op: 'notice'; readonly text: string; readonly severity: 'info' | 'error' }
   /** The webview's status line, mirrored into the extension's output channel. */
   | { readonly op: 'status'; readonly text: string }

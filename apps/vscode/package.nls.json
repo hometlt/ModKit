@@ -1,6 +1,5 @@
 {
   "command.verifyDocument": "Modkit: Verify Document",
-  "view.gallery": "Image Gallery",
   "command.contentSources": "Modkit: Content Sources (local / providers)…",
   "command.openContentSource": "Mount Content Source",
   "command.refreshSources": "Refresh Sources",
@@ -15,6 +14,8 @@
   "extension.description": "Modkit MK3 host for game mod assets.",
   "command.addExtensionFolder": "Modkit: Add Extension Folder…",
   "command.browseContainer": "Modkit: Browse Container in Explorer",
+  "command.openExplorer": "Modkit: Open in Modkit Explorer",
+  "view.loading": "Loading Modkit…",
   "command.controlRuntime": "Modkit: Control Runtime Session…",
   "command.disableExtension": "Modkit: Disable Extension…",
   "command.disableCodec": "Disable Codec",
@@ -56,6 +57,7 @@
   "configuration.disabledExtensions.description": "Extension coordinates to switch off without removing their cards or contributions from the inventory. Individual contribution choices are preserved and become effective again when the extension is enabled. Takes effect when the window reloads.",
   "configuration.extensionRegistry.description": "Catalog file or HTTPS URL used by the extension manager. Opening the Extensions view reads only its local cache; the registry is contacted only by `Modkit: Refresh Extension Catalog`. `MODKIT_EXTENSION_REGISTRY` is used when this setting is empty. Remote catalogs also require an Ed25519 key map in `MODKIT_EXTENSION_TRUSTED_PUBLIC_KEYS`; remote artifact origins stay blocked unless listed in `MODKIT_EXTENSION_ALLOWED_ORIGINS`.",
   "configuration.contentSourceConfig.description": "Absolute path to a trusted desktop content-source provider JSON. Leave empty to use Modkit's automatic local sources (selected game installation, Battle.net cache, player documents and editor wizards). An online account/publishing provider may be supplied here and takes effect without restarting the window.",
+  "configuration.contributionSettings.description": "Settings for individual codecs and providers, keyed by contribution id (for example `blizzard/casc`). Keys inside an entry apply to every source that contribution opens; a `bySource` object keyed by source uri narrows them to one archive or installation. A contribution that does not read a key is unaffected by it.",
   "configuration.extensions.description": "Extension directories to load beside the ones that ship with this build. Each item is either a path, or an object with `path`, an optional `id` the directory is expected to declare, and an optional `enabled` flag. Directories named here are loaded as installed artifacts and never run in the extension host process.",
   "customEditor.assetPreview": "Modkit Asset Preview",
   "view.extensions": "Extensions",

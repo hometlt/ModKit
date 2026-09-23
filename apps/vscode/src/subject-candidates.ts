@@ -30,18 +30,22 @@ export interface VsCodeScopedSubjectCandidates extends VsCodeSubjectCandidateSco
   open(signal?: AbortSignal): Promise<Lease<SubjectCandidateProvider> | undefined>
 }
 
-const uniqueAvailable = (
-  entries: readonly VsCodeScopedSubjectCandidates[],
-): VsCodeScopedSubjectCandidates | undefined => {
+interface VsCodeAvailableSubjectScope extends VsCodeSubjectCandidateScope {
+  readonly available: boolean
+}
+
+const uniqueAvailable = <Entry extends VsCodeAvailableSubjectScope>(
+  entries: readonly Entry[],
+): Entry | undefined => {
   const available = entries.filter(entry => entry.available)
   return available.length === 1 ? available[0] : undefined
 }
 
 /** Prefer an exact subject, then its container, then one unambiguous subject in the workspace. */
-export function selectScopedSubjectCandidates(
+export function selectScopedSubject<Entry extends VsCodeAvailableSubjectScope>(
   scope: VsCodeSubjectCandidateScope,
-  entries: readonly VsCodeScopedSubjectCandidates[],
-): VsCodeScopedSubjectCandidates | undefined {
+  entries: readonly Entry[],
+): Entry | undefined {
   const exact = entries.filter(entry => entry.uri === scope.uri)
   if (exact.length > 0) return uniqueAvailable(exact)
 
@@ -58,3 +62,6 @@ export function selectScopedSubjectCandidates(
   }
   return undefined
 }
+
+/** Candidate-source specialization retained for editor completion callers. */
+export const selectScopedSubjectCandidates = selectScopedSubject<VsCodeScopedSubjectCandidates>

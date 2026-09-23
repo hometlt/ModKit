@@ -64,6 +64,8 @@ describe('generic source lifecycle', () => {
     displayName: 'Example Game Alpha',
     installPath: 'C:\\Games\\Example Game Alpha',
     normalizedPath: 'c:/games/example game alpha',
+    version: '1.2.3',
+    buildUid: 'build-alpha',
   }
   const beta = {
     gameId: 'org.example/game-beta',

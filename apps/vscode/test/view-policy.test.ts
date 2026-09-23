@@ -348,4 +348,14 @@ describe('VS Code view policy', () => {
     expect(preferredStage(applicable, 'hex')).toBe('hex')
     expect(preferredStage(applicable, 'image')).toBe(applicable[0])
   })
+
+  it('opens maps and models on their render area even when a thumbnail or archive is available', () => {
+    for (const scene of ['world', 'model']) {
+      const applicable = ['image', scene, 'archive', 'card', 'hex']
+      for (const planned of [undefined, 'image', 'archive', 'card']) {
+        expect(preferredStage(applicable, planned)).toBe(scene)
+      }
+      expect(preferredStage(applicable, 'hex')).toBe('hex')
+    }
+  })
 })

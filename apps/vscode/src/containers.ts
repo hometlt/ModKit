@@ -34,6 +34,8 @@ import { isAbsolute, relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { ModkitError, type Diagnostic } from '@modkit/core'
 import type {
+  ArtifactNamespaceSource,
+  ArtifactSource,
   AssetSession,
   ContainerPackCreateFileV1,
   ContainerPackEntryRefV1,
@@ -43,6 +45,8 @@ import type {
   RevisionId,
   NamespaceEntry,
   NamespaceEntrySource,
+  OperationSession,
+  Lease,
   PayloadStore,
   PermissionGrant,
   ResourceBudget,
@@ -52,6 +56,7 @@ import type {
 import {
   artifactNamespaceSourceFromVfsMount,
   codecFidelityEvidenceRecords,
+  createContainerNamespaceComposition,
   createEvidenceRegistry,
   createSubjectEditing,
   invokeContainerPack,
@@ -126,6 +131,13 @@ export interface ContainerRegistry {
   index(container: string, signal?: AbortSignal): Promise<ContainerIndex>
   /** Children of one directory inside a container. */
   list(container: string, entry: string, signal?: AbortSignal): Promise<readonly ContainerNode[]>
+  /** Bounded flat files beneath a prefix, using the provider's paged namespace directly. */
+  walk(
+    container: string,
+    entry: string,
+    maximum: number,
+    signal?: AbortSignal,
+  ): Promise<readonly NamespaceEntry[]>
   /** What one entry path names inside a container. */
   stat(container: string, entry: string, signal?: AbortSignal): Promise<ContainerNode>
   /** The member's bytes, through the container's own bounded extraction. */
@@ -164,20 +176,63 @@ export interface ContainerRegistry {
 
 interface HeldContainer {
   readonly session: AssetSession
+  /** One operation facade for the lifetime of the session; remote facades are RPC handles. */
+  readonly operations: OperationSession
+  readonly extractHandlerId: string
+  /** One namespace lease for every hierarchical lookup; reacquiring it exhausts RPC handle ids. */
+  readonly namespace: NamespaceEntrySource
+  readonly releaseNamespace: () => Promise<void>
+  /** Original source retained so a directory subtree can become its own semantic subject. */
+  readonly namespaceSource?: ArtifactNamespaceSource
   readonly index: ContainerIndex
+  /** A namespace that can enumerate one directory without flattening the entire container. */
+  readonly hierarchical: boolean
+  /** Directory listings retained by normalized, case-insensitive member path. */
+  readonly directoryChildren: Map<string, Promise<readonly ContainerNode[]>>
   /** Releases a directory-backed namespace mount; a regular file owns no extra source. */
   readonly releaseSource: () => Promise<void>
   /** Actual parent selection, with no container path or entry locator. */
   readonly selectedRoute: NonNullable<SubjectOpenedSnapshot['selectedRoute']>
   /** True when the listing stopped at `MAXIMUM_PAGES` rather than at the container's last page. */
   readonly capped: boolean
-  /** CASC's stable namespace entry ids are normalized member paths, including unlisted hashes. */
+  /** CASC's stable namespace entry ids are normalized paths, including entries outside the index. */
   readonly directPathEntryIds: boolean
   /** Child sessions retaining this parent for companions and nested reads. */
   retainers: number
   /** A release/dispose arrived; disposal runs once the last child is gone. */
   releaseRequested: boolean
   disposal?: Promise<void>
+}
+
+const nodeOf = (entry: NamespaceEntry): ContainerNode => ({
+  name: entry.name,
+  kind: entry.kind,
+  ...(entry.kind === 'file' ? { entryId: entry.id } : {}),
+  ...(entry.size === undefined ? {} : { size: Number(entry.size) }),
+  ...(entry.modifiedAt === undefined ? {} : { modifiedAt: entry.modifiedAt }),
+})
+
+async function listImmediateChildren(
+  namespace: NamespaceEntrySource,
+  path: string,
+  signal?: AbortSignal,
+): Promise<{ readonly items: readonly ContainerNode[]; readonly capped: boolean }> {
+  if (namespace.children === undefined) {
+    throw new TypeError('the namespace does not publish hierarchical listing')
+  }
+  const items: ContainerNode[] = []
+  let cursor: string | undefined
+  for (let pageNumber = 0; pageNumber < MAXIMUM_PAGES; pageNumber += 1) {
+    const page = await namespace.children(
+      path,
+      cursor === undefined ? { limit: PAGE_LIMIT } : { cursor, limit: PAGE_LIMIT },
+      signal,
+    )
+    items.push(...page.items.map(nodeOf))
+    cursor = page.nextCursor
+    if (cursor === undefined) return { items: Object.freeze(items), capped: false }
+  }
+  return { items: Object.freeze(items), capped: true }
 }
 
 function insideGrantedRoots(roots: readonly string[], path: string): boolean {
@@ -339,6 +394,7 @@ export function createContainerRegistry(options: ContainerRegistryOptions): Cont
 
     let releaseSource = async (): Promise<void> => undefined
     let sessionToDispose: AssetSession | undefined
+    let namespaceSource: ArtifactNamespaceSource | undefined
     try {
       const inner = members.at(-1)
       const directory = inner === undefined && (await stat(container)).isDirectory()
@@ -372,9 +428,10 @@ export function createContainerRegistry(options: ContainerRegistryOptions): Cont
           pathToFileURL(physicalContainer).href,
           signal === undefined ? {} : { signal },
         )
+        namespaceSource = artifactNamespaceSourceFromVfsMount(mount)
         const result = await (options.openNamespaceSubject ?? openSubject)({
           inventory: options.services.inventory,
-          source: artifactNamespaceSourceFromVfsMount(mount),
+          source: namespaceSource,
           path: container,
           intent: 'full',
           target: options.services.target,
@@ -387,6 +444,9 @@ export function createContainerRegistry(options: ContainerRegistryOptions): Cont
           ...(options.services.serviceDefinitions === undefined
             ? {}
             : { serviceDefinitions: options.services.serviceDefinitions }),
+          ...(options.services.contributionSettings === undefined
+            ? {}
+            : { contributionSettings: options.services.contributionSettings }),
           ...(signal === undefined ? {} : { signal }),
         })
         const diagnostics = result.diagnostics.map(item => ({
@@ -464,7 +524,8 @@ export function createContainerRegistry(options: ContainerRegistryOptions): Cont
           context: { dataSources: descriptor.dataSources.map(item => item.contract) },
         })
       }
-      if (findArchiveExtractOperation(descriptor.operations) === undefined) {
+      const extract = findArchiveExtractOperation(descriptor.operations)
+      if (extract === undefined) {
         throw new ModkitError({
           code: NOT_A_CONTAINER,
           message:
@@ -473,8 +534,55 @@ export function createContainerRegistry(options: ContainerRegistryOptions): Cont
         })
       }
       const lease = await session.dataSource(NAMESPACE_ENTRY_SOURCE, 1)
+      let keepNamespaceLease = false
       try {
         const namespace = lease.value as NamespaceEntrySource
+        if (directory && namespace.children !== undefined) {
+          const root = await listImmediateChildren(namespace, '', signal)
+          const rootItems = [...root.items].sort((left, right) => {
+            const rank = (name: string): number =>
+              name.toLowerCase() === 'mods' ? 0 : name.toLowerCase() === 'campaigns' ? 1 : 2
+            return rank(left.name) - rank(right.name) || left.name.localeCompare(right.name)
+          })
+          if (root.capped) {
+            options.onDiagnostic?.({
+              code: 'x3.app/vscode-container-listing-capped',
+              severity: 'warning',
+              message:
+                `the root listing stopped after ${MAXIMUM_PAGES} pages ` +
+                `(${rootItems.length} entries); later children are not shown`,
+            })
+          }
+          const holder: HeldContainer = {
+            session,
+            operations: session.operations(),
+            extractHandlerId: extract.handlerId,
+            namespace,
+            releaseNamespace: () => lease.release(),
+            ...(namespaceSource === undefined ? {} : { namespaceSource }),
+            index: buildContainerIndex(
+              rootItems.map(item => ({
+                id: item.entryId ?? item.name,
+                path: item.name,
+                name: item.name,
+                kind: item.kind,
+                ...(item.size === undefined ? {} : { size: BigInt(item.size) }),
+                ...(item.modifiedAt === undefined ? {} : { modifiedAt: item.modifiedAt }),
+              })),
+            ),
+            hierarchical: true,
+            directoryChildren: new Map([['', Promise.resolve(Object.freeze(rootItems))]]),
+            releaseSource,
+            selectedRoute: Object.freeze([...(answer.snapshot.selectedRoute ?? [])]),
+            capped: root.capped,
+            directPathEntryIds: true,
+            retainers: 0,
+            releaseRequested: false,
+          }
+          keepNamespaceLease = true
+          sessionToDispose = undefined
+          return holder
+        }
         const entries: NamespaceEntry[] = []
         let cursor: string | undefined
         let pages = 0
@@ -500,7 +608,14 @@ export function createContainerRegistry(options: ContainerRegistryOptions): Cont
         }
         const holder: HeldContainer = {
           session,
+          operations: session.operations(),
+          extractHandlerId: extract.handlerId,
+          namespace,
+          releaseNamespace: () => lease.release(),
+          ...(namespaceSource === undefined ? {} : { namespaceSource }),
           index: buildContainerIndex(entries),
+          hierarchical: false,
+          directoryChildren: new Map(),
           releaseSource,
           selectedRoute: Object.freeze([...(answer.snapshot.selectedRoute ?? [])]),
           capped,
@@ -508,10 +623,11 @@ export function createContainerRegistry(options: ContainerRegistryOptions): Cont
           retainers: 0,
           releaseRequested: false,
         }
+        keepNamespaceLease = true
         sessionToDispose = undefined
         return holder
       } finally {
-        await lease.release()
+        if (!keepNamespaceLease) await lease.release()
       }
     } catch (error) {
       // The container is not kept when its listing could not be read: a half-open session that
@@ -544,9 +660,13 @@ export function createContainerRegistry(options: ContainerRegistryOptions): Cont
     if (holder.retainers > 0) return
     holder.disposal ??= (async () => {
       try {
-        await holder.session.dispose()
+        await holder.releaseNamespace()
       } finally {
-        await holder.releaseSource()
+        try {
+          await holder.session.dispose()
+        } finally {
+          await holder.releaseSource()
+        }
       }
     })()
     await holder.disposal
@@ -558,7 +678,11 @@ export function createContainerRegistry(options: ContainerRegistryOptions): Cont
     if (holder.retainers === 0 && holder.releaseRequested) await requestHolderDisposal(holder)
   }
 
-  const retainedChildSession = (holder: HeldContainer, child: AssetSession): AssetSession => {
+  const retainedChildSession = (
+    holder: HeldContainer,
+    child: AssetSession,
+    releaseResources: () => Promise<void> = async () => undefined,
+  ): AssetSession => {
     let disposed = false
     return {
       revision: child.revision,
@@ -573,7 +697,11 @@ export function createContainerRegistry(options: ContainerRegistryOptions): Cont
         try {
           await child.dispose()
         } finally {
-          await releaseRetainer(holder)
+          try {
+            await releaseResources()
+          } finally {
+            await releaseRetainer(holder)
+          }
         }
       },
     }
@@ -607,30 +735,16 @@ export function createContainerRegistry(options: ContainerRegistryOptions): Cont
        * must not lose it merely because that path sorts beyond the cap: ask the container's own
        * bounded namespace for that exact prefix and admit only an exact file match.
        */
-      const lease = await holder.session.dataSource(NAMESPACE_ENTRY_SOURCE, 1)
-      try {
-        const namespace = lease.value as NamespaceEntrySource
-        if (holder.directPathEntryIds) {
-          try {
-            const entryLease = await namespace.openEntry(entry, signal)
-            await entryLease.release()
-            return entry
-          } catch (error) {
-            if (signal?.aborted === true) throw error
-            // An invalid direct path can still be represented by an opaque listed entry id.
-          }
-        }
-        const requested = entry.replaceAll('\\', '/').replace(/^\/+/, '').toLowerCase()
-        const page = await namespace.list(entry, { limit: 1 }, signal)
-        const exact = page.items.find(
-          item =>
-            item.kind === 'file' &&
-            item.path.replaceAll('\\', '/').replace(/^\/+/, '').toLowerCase() === requested,
-        )
-        if (exact !== undefined) return exact.id
-      } finally {
-        await lease.release()
-      }
+      if (holder.directPathEntryIds) return normalizeEntryPath(entry)
+      const namespace = holder.namespace
+      const requested = entry.replaceAll('\\', '/').replace(/^\/+/, '').toLowerCase()
+      const page = await namespace.list(entry, { limit: PAGE_LIMIT }, signal)
+      const exact = page.items.find(
+        item =>
+          item.kind === 'file' &&
+          item.path.replaceAll('\\', '/').replace(/^\/+/, '').toLowerCase() === requested,
+      )
+      if (exact !== undefined) return exact.id
     }
     throw new ModkitError({
       code: CONTAINER_ENTRY_NOT_FOUND,
@@ -640,6 +754,37 @@ export function createContainerRegistry(options: ContainerRegistryOptions): Cont
           : `«${entry}» is a directory inside this container, not a member`,
       context: { entry, container },
     })
+  }
+
+  const hierarchicalChildren = async (
+    holder: HeldContainer,
+    path: string,
+    signal?: AbortSignal,
+  ): Promise<readonly ContainerNode[]> => {
+    const normalized = normalizeEntryPath(path)
+    const key = normalized.toLowerCase()
+    const known = holder.directoryChildren.get(key)
+    if (known !== undefined) return known
+    const loading = (async () => {
+      const result = await listImmediateChildren(holder.namespace, normalized, signal)
+      if (result.capped) {
+        options.onDiagnostic?.({
+          code: 'x3.app/vscode-container-listing-capped',
+          severity: 'warning',
+          message:
+            `the directory «${normalized}» stopped after ${MAXIMUM_PAGES} pages ` +
+            `(${result.items.length} entries); later children are not shown`,
+        })
+      }
+      return result.items
+    })()
+    holder.directoryChildren.set(key, loading)
+    try {
+      return await loading
+    } catch (error) {
+      if (holder.directoryChildren.get(key) === loading) holder.directoryChildren.delete(key)
+      throw error
+    }
   }
 
   /**
@@ -700,6 +845,124 @@ export function createContainerRegistry(options: ContainerRegistryOptions): Cont
     }
   }
 
+  /**
+   * Open a directory subtree as a namespace subject. An SC2Mod inside CASC must keep its package
+   * root: its codec reads DocumentInfo, ComponentList and companions relative to this source.
+   */
+  const openDirectory = async (
+    holder: HeldContainer,
+    entry: string,
+    signal?: AbortSignal,
+  ): Promise<{
+    readonly answer: Awaited<ReturnType<SubjectOpener>>
+    readonly releaseResources: () => Promise<void>
+  }> => {
+    const root = holder.namespaceSource
+    if (root === undefined) {
+      throw new ModkitError({
+        code: NOT_A_CONTAINER,
+        message: 'this container cannot open directory members as namespace subjects',
+        context: { entry },
+      })
+    }
+    const composition = await createContainerNamespaceComposition({
+      parent: holder.session,
+      root: root.ref,
+      revision: root.revision,
+      budget: options.budget,
+      ...(signal === undefined ? {} : { signal }),
+    })
+    const rootLease = await composition.source.openNamespace(signal)
+    let subtreeLease: Lease<ArtifactSource> | undefined
+    let released = false
+    const releaseResources = async (): Promise<void> => {
+      if (released) return
+      released = true
+      let firstError: unknown
+      try {
+        await subtreeLease?.release()
+      } catch (error) {
+        firstError = error
+      }
+      try {
+        await rootLease.release()
+      } catch (error) {
+        firstError ??= error
+      }
+      try {
+        await composition.dispose()
+      } catch (error) {
+        firstError ??= error
+      }
+      if (firstError !== undefined) throw firstError
+    }
+    try {
+      const openedSubtree = await rootLease.value.open(normalizeEntryPath(entry), signal)
+      subtreeLease = openedSubtree
+      if (openedSubtree.value.kind !== 'namespace') {
+        throw new ModkitError({
+          code: CONTAINER_ENTRY_NOT_FOUND,
+          message: `«${entry}» is not a directory inside this container`,
+          context: { entry },
+        })
+      }
+      const result = await (options.openNamespaceSubject ?? openSubject)({
+        inventory: options.services.inventory,
+        source: openedSubtree.value,
+        path: entry,
+        intent: 'full',
+        target: options.services.target,
+        grant: writeGrant(),
+        budget: options.budget,
+        executionBackends: options.services.executionBackends,
+        ...(options.services.serviceDefinitions === undefined
+          ? {}
+          : { serviceDefinitions: options.services.serviceDefinitions }),
+        ...(options.services.contributionSettings === undefined
+          ? {}
+          : { contributionSettings: options.services.contributionSettings }),
+        ...(signal === undefined ? {} : { signal }),
+      })
+      const diagnostics = result.diagnostics.map(item => ({
+        code: item.code,
+        message: item.message,
+        severity: item.severity,
+      }))
+      if (result.state === 'unresolved') {
+        await releaseResources()
+        return {
+          answer: {
+            snapshot: subjectOpenSnapshot({
+              result,
+              sessionId: () => '',
+              diagnostics,
+            }),
+          },
+          releaseResources: async () => undefined,
+        }
+      }
+      const snapshot = subjectOpenSnapshot({
+        result,
+        sessionId: () => `container-directory:${randomUUID()}`,
+        diagnostics,
+      })
+      const selectedRoute = Object.freeze([
+        ...holder.selectedRoute,
+        ...(snapshot.selectedRoute ?? []),
+      ])
+      return {
+        answer: {
+          snapshot: selectedRoute.length === 0 ? snapshot : { ...snapshot, selectedRoute },
+          session: result.session,
+        },
+        releaseResources,
+      }
+    } catch (error) {
+      await releaseResources().catch(() => undefined)
+      throw error
+    }
+  }
+
   const registry: ContainerRegistry = {
     async index(container, signal) {
       return (await holderFor(container, signal)).index
@@ -707,6 +970,7 @@ export function createContainerRegistry(options: ContainerRegistryOptions): Cont
 
     async list(container, entry, signal) {
       const holder = await holderFor(container, signal)
+      if (holder.hierarchical) return hierarchicalChildren(holder, entry, signal)
       const children = listContainerDirectory(holder.index, entry)
       if (children === undefined) {
         throw new ModkitError({
@@ -718,10 +982,58 @@ export function createContainerRegistry(options: ContainerRegistryOptions): Cont
       return children
     },
 
+    async walk(container, entry, maximum, signal) {
+      if (!Number.isSafeInteger(maximum) || maximum <= 0 || maximum > 1_000_000) {
+        throw new RangeError('container walk maximum must be within 1..1000000')
+      }
+      const holder = await holderFor(container, signal)
+      const prefix = normalizeEntryPath(entry)
+      const foldedPrefix = prefix.toLowerCase()
+      const inside = (path: string): boolean => {
+        const folded = normalizeEntryPath(path).toLowerCase()
+        return (
+          foldedPrefix === '' || folded === foldedPrefix || folded.startsWith(`${foldedPrefix}/`)
+        )
+      }
+      const files: NamespaceEntry[] = []
+      let cursor: string | undefined
+      for (
+        let pageNumber = 0;
+        pageNumber < MAXIMUM_PAGES && files.length < maximum;
+        pageNumber += 1
+      ) {
+        signal?.throwIfAborted()
+        const page = await holder.namespace.list(
+          prefix,
+          cursor === undefined ? { limit: PAGE_LIMIT } : { cursor, limit: PAGE_LIMIT },
+          signal,
+        )
+        for (const item of page.items) {
+          if (item.kind !== 'file' || !inside(item.path)) continue
+          files.push(item)
+          if (files.length >= maximum) break
+        }
+        cursor = page.nextCursor
+        if (cursor === undefined) break
+      }
+      return Object.freeze(files)
+    },
+
     async stat(container, entry, signal) {
       const holder = await holderFor(container, signal)
       const node = statContainerEntry(holder.index, entry)
       if (node !== undefined) return node
+
+      if (holder.hierarchical) {
+        const normalized = normalizeEntryPath(entry)
+        const cut = normalized.lastIndexOf('/')
+        const parent = cut === -1 ? '' : normalized.slice(0, cut)
+        const name = cut === -1 ? normalized : normalized.slice(cut + 1)
+        const child = (await hierarchicalChildren(holder, parent, signal)).find(
+          item => item.name.toLowerCase() === name.toLowerCase(),
+        )
+        if (child !== undefined) return child
+      }
 
       /*
        * VS Code asks its FileSystemProvider for stat before it lets a custom editor read/open the
@@ -741,18 +1053,11 @@ export function createContainerRegistry(options: ContainerRegistryOptions): Cont
     async read(container, entry, signal) {
       const holder = await holderFor(container, signal)
       const entryId = await entryIdOf(holder, container, entry, signal)
-      const descriptor = await holder.session.descriptor()
-      const extract = findArchiveExtractOperation(descriptor.operations)
-      if (extract === undefined) {
-        throw new ModkitError({
-          code: NOT_A_CONTAINER,
-          message: 'this container no longer publishes an available container.extract',
-          context: { entry, container },
-        })
-      }
-      const invoked = await holder.session
-        .operations()
-        .invoke(extract.handlerId, { entryId }, signal === undefined ? {} : { signal })
+      const invoked = await holder.operations.invoke(
+        holder.extractHandlerId,
+        { entryId },
+        signal === undefined ? {} : { signal },
+      )
       if (invoked.state !== 'ok' || invoked.output.kind !== 'bytes') {
         throw new ModkitError({
           code: CONTAINER_ENTRY_NOT_FOUND,
@@ -926,19 +1231,33 @@ export function createContainerRegistry(options: ContainerRegistryOptions): Cont
       holder.retainers += 1
       let childToDispose: AssetSession | undefined
       let retainerTransferredToChild = false
+      let releaseResources = async (): Promise<void> => undefined
       try {
-        const answer = await openMember(holder, location.container, location.entry, signal)
+        const node = await registry.stat(location.container, location.entry, signal)
+        const opened =
+          node.kind === 'directory'
+            ? await openDirectory(holder, location.entry, signal)
+            : {
+                answer: await openMember(holder, location.container, location.entry, signal),
+                releaseResources: async () => undefined,
+              }
+        const answer = opened.answer
+        releaseResources = opened.releaseResources
         if (answer.session === undefined) return answer
         childToDispose = answer.session
-        const session = retainedChildSession(holder, answer.session)
+        const session = retainedChildSession(holder, answer.session, releaseResources)
         childToDispose = undefined
+        releaseResources = async () => undefined
         retainerTransferredToChild = true
         return { snapshot: answer.snapshot, session }
       } catch (error) {
         await childToDispose?.dispose().catch(() => undefined)
         throw error
       } finally {
-        if (!retainerTransferredToChild) await releaseRetainer(holder)
+        if (!retainerTransferredToChild) {
+          await releaseResources().catch(() => undefined)
+          await releaseRetainer(holder)
+        }
       }
     },
 

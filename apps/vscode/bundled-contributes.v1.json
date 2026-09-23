@@ -128,6 +128,11 @@
       "title": "%command.browseContainer%"
     },
     {
+      "command": "modkit.openExplorer",
+      "title": "%command.openExplorer%",
+      "icon": "$(folder-library)"
+    },
+    {
       "command": "modkit.openArchiveEntry",
       "title": "%command.openContainerMember%"
     },
@@ -350,6 +355,14 @@
         "items": {
           "type": "string"
         }
+      },
+      "modkit.contributionSettings": {
+        "type": "object",
+        "default": {},
+        "additionalProperties": {
+          "type": "object"
+        },
+        "markdownDescription": "%configuration.contributionSettings.description%"
       }
     }
   },
@@ -506,6 +519,23 @@
       ]
     }
   ],
+  "viewsWelcome": [
+    {
+      "view": "modkit.extensions",
+      "contents": "%view.loading%",
+      "when": "!modkit.ready"
+    },
+    {
+      "view": "modkit.resources",
+      "contents": "%view.loading%",
+      "when": "!modkit.ready"
+    },
+    {
+      "view": "modkit.sources",
+      "contents": "%view.loading%",
+      "when": "!modkit.ready"
+    }
+  ],
   "viewsContainers": {
     "activitybar": [
       {
@@ -517,11 +547,6 @@
   },
   "views": {
     "modkit": [
-      {
-        "id": "modkit.gallery",
-        "name": "%view.gallery%",
-        "type": "webview"
-      },
       {
         "id": "modkit.sources",
         "name": "%view.sources%"
@@ -545,6 +570,11 @@
       }
     ],
     "explorer/context": [
+      {
+        "command": "modkit.openExplorer",
+        "when": "explorerResourceIsFolder",
+        "group": "navigation@19"
+      },
       {
         "command": "modkit.sources.revealLocal",
         "when": "resourceScheme == modkit-source || resourceScheme == modkit-container",
@@ -609,6 +639,11 @@
       }
     ],
     "view/item/context": [
+      {
+        "command": "modkit.openExplorer",
+        "when": "view == modkit.sources && viewItem =~ /^modkitSource\\.(?:providerRoot|publicRoot|localRoot|installation)(?:\\.(?:mounted|mounting))?$/",
+        "group": "explorer@0"
+      },
       {
         "command": "modkit.sources.open",
         "when": "view == modkit.sources && viewItem =~ /^modkitSource\\.(?:providerRoot|publicRoot|localRoot)$/",

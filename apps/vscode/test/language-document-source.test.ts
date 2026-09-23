@@ -8,6 +8,10 @@ describe('default language workspace composition', () => {
   it('supplies bounded inventory-routed workspace documents with editor overlays', () => {
     expect(source).toContain('const languageDocumentSource: LanguageWorkspaceDocumentSource')
     expect(source).toContain('documentSource: languageDocumentSource')
+    expect(source).toContain('resolveContentLanguageSources({')
+    expect(source).toContain('composeLanguageDocumentSources([')
+    expect(source).toContain('selectScopedSubject(')
+    expect(source).toContain('projected?.dependenciesComplete === true')
     expect(source).toContain('vscode.workspace.findFiles(')
     expect(source).toContain('vscode.workspace.openTextDocument(candidate.uri)')
     expect(source).toContain('routedLanguageIds.length === 1')

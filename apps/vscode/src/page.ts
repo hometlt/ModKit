@@ -76,6 +76,16 @@ export interface PageBootstrap {
   readonly forcedStage?: string
   /** Function-free extension/contribution subject cards for the generic subject-card renderer. */
   readonly extensionCard?: import('./extension-cards.js').ExtensionCardBundle
+  /**
+   * Lower-case file extensions the explorer's gallery shows as pictures, from the enabled image
+   * codecs. Names only: the pictures themselves are decoded by the extension host on request.
+   */
+  readonly galleryExtensions?: readonly string[]
+  /**
+   * Raised as a Modkit Explorer: the page lists one folder of any VS Code file system through
+   * `explorer-children` and shows no subject of its own. The folder itself stays on the host side.
+   */
+  readonly explorer?: { readonly label: string }
 }
 
 export interface PageOptions {

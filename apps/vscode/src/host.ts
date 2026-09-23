@@ -33,13 +33,16 @@ import {
   type AnyDescriptor,
   type AssetSession,
   type Lease,
+  type OperationSession,
   type PermissionGrant,
   type ResourceBudget,
   type SubjectCandidateProvider,
   type SubjectSelectorSource,
+  type TreeDataSource,
   type Writer,
 } from '@modkit/sdk'
 import { advertisesSubjectCandidates, SUBJECT_SELECTOR_SOURCE } from './subject-candidates.js'
+import { configuredContributionSettings } from './contribution-settings.js'
 import { uvModule } from '@modkit/uv/module'
 import type { MapPreviewResourcePlanResolver } from '@modkit/host/maps'
 import { selectSceneRenderer, type SceneRendererSelection } from '@modkit/host/renderer'
@@ -90,8 +93,10 @@ import {
   type CloseAnswer,
   type ShellConfigureResult,
   type ShellEntry,
+  type ShellExplorerEntry,
   type ShellRequest,
   type ShellSettingsView,
+  type ShellThumbnail,
   type WebviewChannel,
 } from './bridge.js'
 import type { ExtensionCardResourceTarget } from './extension-cards.js'
@@ -298,6 +303,18 @@ export interface VsCodeSubjectHost {
   containers(options: VsCodeContainerOptions): ContainerRegistry
   /** Serve the subject RPC and the shell over one webview channel. */
   serve(options: VsCodeServeOptions): VsCodeServed
+  /** Open one directory/file subject for a native tree view without creating a webview. */
+  openTreeSubject(
+    path: string,
+    roots: readonly string[],
+    signal?: AbortSignal,
+  ): Promise<VsCodeTreeSubject | undefined>
+}
+
+export interface VsCodeTreeSubject {
+  readonly path: string
+  openTreeDataSource(signal?: AbortSignal): Promise<Lease<TreeDataSource> | undefined>
+  dispose(): Promise<void>
 }
 
 export interface VsCodeContainerOptions {
@@ -335,6 +352,10 @@ export interface VsCodeSubjectHostOptions {
   readonly configuredDisabledContributions?: unknown
   /** Raw value of `modkit.disabledExtensions`; disabled roots remain inspectable. */
   readonly configuredDisabledExtensions?: unknown
+  /** Raw value of `modkit.contributionSettings`, exactly as the editor returned it. */
+  readonly configuredContributionSettings?: unknown
+  /** The host storage this window may cache into; each contribution gets a subdirectory. */
+  readonly contributionCacheDirectory?: string
   /**
    * The worker bootstrap this extension shipped beside its bundle. Required in a packaged build:
    * the backend default resolves it through `import.meta.url`, which a CommonJS extension entry
@@ -465,6 +486,14 @@ export async function createVsCodeSubjectHost(
     ...installed.inputs,
     ...managed.inputs,
   ]
+  const contributionSettings = configuredContributionSettings({
+    ...(options.configuredContributionSettings === undefined
+      ? {}
+      : { configured: options.configuredContributionSettings }),
+    ...(options.contributionCacheDirectory === undefined
+      ? {}
+      : { cacheDirectory: options.contributionCacheDirectory }),
+  })
   const switchedOff = configuredDisabledContributions(options.configuredDisabledContributions)
   const switchedOffExtensions = configuredDisabledExtensions(options.configuredDisabledExtensions)
 
@@ -477,6 +506,7 @@ export async function createVsCodeSubjectHost(
     policy: VSCODE_WORKER_POLICY,
     disabledExtensions: switchedOffExtensions.ids,
     disabledContributions: switchedOff.ids,
+    contributionSettings: contributionSettings.settingsFor,
     /*
      * Where this host shipped the worker bootstrap.
      *
@@ -516,13 +546,12 @@ export async function createVsCodeSubjectHost(
   ])
   // The bridge realm, composed only so the page can be told what its own realm holds. It shares
   // the topology, so `apps:check`'s claim — the webview holds no extension-host facility — is a
-  // statement about the very object the running product hands the page.
+  // statement about the very object the running product hands the page. The inventory is the
+  // extension host's: the same inputs and switches, so building it a third time only repeated work.
   const webview = await createHostComposition({
     topology,
     realmId: VSCODE_WEBVIEW_REALM,
-    extensions: extensionInputs,
-    disabledExtensions: switchedOffExtensions.ids,
-    disabledContributions: switchedOff.ids,
+    inventory: services.host.inventory,
   })
   /*
    * The renderer decision for that realm, taken once per composition.
@@ -593,6 +622,46 @@ export async function createVsCodeSubjectHost(
       }),
     serve: (served: VsCodeServeOptions) =>
       serveVsCode(services, served, { extensions, contributions }),
+    async openTreeSubject(path: string, roots: readonly string[], signal?: AbortSignal) {
+      const opener = createPathSubjectOpener({
+        subjects: services,
+        roots,
+        grant: DEFAULT_OPEN_GRANT,
+        budget: DEFAULT_OPEN_BUDGET,
+      })
+      const answer = await opener(path, signal)
+      if (answer.snapshot.state !== 'opened' || answer.session === undefined) return undefined
+      const session = answer.session
+      const descriptor = await session.descriptor()
+      if (
+        !descriptor.dataSources.some(
+          item => item.contract === 'common.view/tree-data-source' && item.major === 1,
+        )
+      ) {
+        await session.dispose()
+        return undefined
+      }
+      return Object.freeze({
+        path: resolve(path),
+        async openTreeDataSource(openSignal?: AbortSignal) {
+          throwIfAborted(openSignal)
+          if (session.state() !== 'live') return undefined
+          const lease = await session.dataSource('common.view/tree-data-source', 1)
+          try {
+            throwIfAborted(openSignal)
+          } catch (error) {
+            await lease.release()
+            throw error
+          }
+          if (session.state() !== 'live') {
+            await lease.release()
+            return undefined
+          }
+          return lease
+        },
+        dispose: () => session.dispose(),
+      })
+    },
   })
 }
 
@@ -665,6 +734,20 @@ export interface VsCodeServeOptions {
   }) => Promise<boolean>
   /** Open a file in an editor of its own kind (a gallery pick). */
   readonly openInEditor?: (path: string) => Promise<void>
+  /**
+   * A small picture of one archive member for the explorer's gallery. The ref reaching it is
+   * already authorized: a member of a container inside the granted folders.
+   */
+  readonly thumbnail?: (ref: string, maxEdge: number) => Promise<ShellThumbnail | undefined>
+  /**
+   * The folder a Modkit Explorer panel shows. The adapter lists, opens and draws its entries, so
+   * the page names only ids this adapter handed out and paths under the one root it was given.
+   */
+  readonly explorer?: {
+    children(path: string): Promise<readonly ShellExplorerEntry[]>
+    open(id: string): Promise<void>
+    thumbnail(id: string, maxEdge: number): Promise<ShellThumbnail | undefined>
+  }
   /** Draw the mounted viewer's status items; `choose` reports a picked choice back to the page. */
   readonly viewerStatus?: (
     items: Extract<ShellRequest, { op: 'status-set' }>['items'],
@@ -818,6 +901,8 @@ export interface VsCodeServed {
   readonly exposure: SubjectRpcExposure
   /** Ask the page to open this path in a tab. */
   open(path: string): void
+  /** Ask the mounted parent session to open one of its opaque nested subject references. */
+  navigate(subjectId: string): void
   /**
    * Bring the codec this path needs up while the page is still loading.
    *
@@ -855,6 +940,16 @@ export interface VsCodeServed {
   hasSubjectCandidates(): boolean
   /** Acquire the currently served subject's selector as one request-owned provider lease. */
   openSubjectCandidates(signal?: AbortSignal): Promise<Lease<SubjectCandidateProvider> | undefined>
+  /** Acquire the currently served subject's generic resource tree. */
+  openTreeDataSource(signal?: AbortSignal): Promise<Lease<TreeDataSource> | undefined>
+  /** The current subject's dependency operation surface for one language snapshot. */
+  languageSubject():
+    | Readonly<{
+        descriptor: AnyDescriptor
+        operations: OperationSession
+        revision: string
+      }>
+    | undefined
   close(reason: string): Promise<void>
 }
 
@@ -968,10 +1063,13 @@ function serveVsCode(
   let subjectGeneration = 0
   let navigationSequence = 0
   let candidateSession: Readonly<{ generation: number; session: AssetSession }> | undefined
+  let languageSession:
+    Readonly<{ generation: number; descriptor: AnyDescriptor; session: AssetSession }> | undefined
 
   const beginsSubjectOpen = (): number => {
     subjectGeneration += 1
     candidateSession = undefined
+    languageSession = undefined
     return subjectGeneration
   }
   const retainCandidateSession = (
@@ -986,6 +1084,7 @@ function serveVsCode(
     ) {
       return
     }
+    languageSession = Object.freeze({ generation, descriptor, session })
     if (advertisesSubjectCandidates(descriptor)) {
       candidateSession = Object.freeze({ generation, session })
     }
@@ -1599,6 +1698,24 @@ function serveVsCode(
           })) ?? false
         )
       }
+      case 'thumbnail': {
+        const maxEdge = Math.min(256, Math.max(16, Math.floor(Number(request.maxEdge) || 96)))
+        if (request.explorerId !== undefined) {
+          return (await options.explorer?.thumbnail(request.explorerId, maxEdge)) ?? null
+        }
+        if (request.path === undefined || request.entry === undefined) return null
+        const container = containerOfSubject(request.path)
+        if (!withinRoots(roots, splitContainer(container).file))
+          throw new Error('that archive is outside the granted folders')
+        return (await options.thumbnail?.(containerUriText(container, request.entry), maxEdge)) ?? null
+      }
+      case 'explorer-children':
+        if (options.explorer === undefined) throw new Error('this page is not a Modkit Explorer')
+        return options.explorer.children(request.path)
+      case 'explorer-open':
+        if (options.explorer === undefined) throw new Error('this page is not a Modkit Explorer')
+        await options.explorer.open(request.id)
+        return true
       case 'viewer-operations':
         return (await options.viewerOperations?.list(request.surface)) ?? []
       case 'viewer-operation-run': {
@@ -1885,6 +2002,9 @@ function serveVsCode(
     open(path: string) {
       bridge.emit({ op: 'open', path: subjectKey(path), name: subjectLabel(path) })
     },
+    navigate(subjectId: string) {
+      bridge.emit({ op: 'navigate-subject', subjectId })
+    },
     warm(path: string) {
       if (warmed.has(subjectKey(path))) return
       warmed.add(subjectKey(path))
@@ -2018,9 +2138,58 @@ function serveVsCode(
         release: () => lease.release(),
       })
     },
+    async openTreeDataSource(signal?: AbortSignal) {
+      throwIfAborted(signal)
+      const selected = languageSession
+      if (
+        selected === undefined ||
+        selected.generation !== subjectGeneration ||
+        selected.session.state() !== 'live' ||
+        !selected.descriptor.dataSources.some(
+          item => item.contract === 'common.view/tree-data-source' && item.major === 1,
+        )
+      ) {
+        return undefined
+      }
+      let lease: Lease<TreeDataSource>
+      try {
+        lease = await selected.session.dataSource('common.view/tree-data-source', 1)
+      } catch (error) {
+        if (languageSession !== selected || selected.session.state() !== 'live') return undefined
+        throw error
+      }
+      try {
+        throwIfAborted(signal)
+      } catch (error) {
+        await lease.release()
+        throw error
+      }
+      if (
+        languageSession !== selected ||
+        selected.generation !== subjectGeneration ||
+        selected.session.state() !== 'live'
+      ) {
+        await lease.release()
+        return undefined
+      }
+      return lease
+    },
+    languageSubject() {
+      const selected = languageSession
+      return selected === undefined ||
+        selected.generation !== subjectGeneration ||
+        selected.session.state() !== 'live'
+        ? undefined
+        : Object.freeze({
+            descriptor: selected.descriptor,
+            operations: selected.session.operations(),
+            revision: String(selected.session.revision),
+          })
+    },
     async close(reason: string) {
       subjectGeneration += 1
       candidateSession = undefined
+      languageSession = undefined
       let bridgeDisposeError: unknown
       try {
         bridge.dispose()

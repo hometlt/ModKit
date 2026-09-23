@@ -70,6 +70,22 @@ export function joinContainer(file: string, members: readonly string[]): string 
   return [file, ...members].join(CONTAINER_SEPARATOR)
 }
 
+/** Stable identity for duplicate checks; Windows paths differ in spelling more often than value. */
+export function containerLocationIdentity(
+  container: string,
+  entry = '',
+  caseSensitive = true,
+): string {
+  const fold = (value: string): string => (caseSensitive ? value : value.toLowerCase())
+  const { file, members } = splitContainer(container)
+  const normalizedFile = file.replaceAll(BACKSLASH, '/').replace(/\/+$/u, '')
+  return JSON.stringify([
+    fold(normalizedFile),
+    ...members.map(member => fold(normalizeEntryPath(member))),
+    fold(normalizeEntryPath(entry)),
+  ])
+}
+
 /** The `path` component of the URI addressing an entry (or the container root, for an empty entry). */
 export function containerUriPath(container: string, entry = ''): string {
   const { file, members } = splitContainer(container)

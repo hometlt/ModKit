@@ -189,6 +189,12 @@ export function preferredStage(
    * the picker, and remains the plan's choice for subjects that have no render of their own.
    */
   const media = applicable.find(id => MEDIA_STAGE_IDS.includes(id))
+  // A map package or model may also publish a thumbnail or archive entries. The subject's
+  // render area wins over those defaults; explicit inspector/hex choices remain available.
+  if (planActive === undefined || ['card', 'archive', 'image'].includes(planActive)) {
+    const scene = ['world', 'model'].find(id => applicable.includes(id))
+    if (scene !== undefined) return scene
+  }
   if (planActive === 'card' && media !== undefined) return media
   if (planActive !== undefined && applicable.includes(planActive)) return planActive
   return applicable[0]
