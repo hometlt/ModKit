@@ -62,6 +62,7 @@ export interface VariantTableArgs {
   readonly render: (rows: readonly Row[]) => readonly HTMLTableRowElement[]
   /** Called after any committed write; `true` means the host reopens the subject. */
   readonly committed: () => Promise<void>
+  readonly writeRefusal?: () => string | undefined
   /** The rows' own element; the controls are placed above it. */
   readonly before: HTMLElement
 }
@@ -286,16 +287,31 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
     ...(args.commit === undefined ? {} : { commit: args.commit }),
     ...(args.authorization === undefined ? {} : { authorization: args.authorization }),
   }
+  let writing = false
   const write = async (operation: string, input: JsonValue): Promise<boolean> => {
-    say(text('table.working'))
-    const refusal = await commitOperationWrite(route, operation, input, args.signal)
-    if (refusal !== undefined) {
-      say(text('table.refused', { reason: refusal }))
+    if (writing || args.signal.aborted) return false
+    const stale = args.writeRefusal?.()
+    if (stale !== undefined) {
+      say(text('table.refused', { reason: stale }))
       return false
     }
-    say(text('table.saved'))
-    await args.committed()
-    return true
+    writing = true
+    try {
+      say(text('table.working'))
+      const refusal = await commitOperationWrite(route, operation, input, args.signal)
+      if (refusal !== undefined) {
+        say(text('table.refused', { reason: refusal }))
+        return false
+      }
+      say(text('table.saved'))
+      await args.committed()
+      return true
+    } catch (error) {
+      say(text('table.refused', { reason: error instanceof Error ? error.message : String(error) }))
+      return false
+    } finally {
+      writing = false
+    }
   }
 
   const showAdd = (): void => {
@@ -432,7 +448,9 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
     }
   }
 
+  let translating = false
   const translate = async (): Promise<void> => {
+    if (translating || args.signal.aborted) return
     if (actions.translateVariant === undefined || base === undefined) return
     const column = variants.find(item => String(item.index) === target.value)
     if (column === undefined) return
@@ -449,65 +467,75 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
       )
       return
     }
-    const ready: { key: string; value: string }[] = []
-    say(text('table.working'))
-    for (const row of empty.slice(0, TRANSLATE_BATCH)) {
-      const key = row.cells[keyColumn] ?? ''
-      const result = await invokeOperation(
-        args.descriptor,
-        args.operations,
-        actions.translateVariant,
-        {
-          key,
-          sourceVariant: base.variant ?? '',
-          targetVariant: column.variant ?? '',
-          sourceLanguage: base.language ?? base.variant ?? '',
-          targetLanguage: column.language ?? column.variant ?? '',
-        },
-        { signal: args.signal },
-      )
-      const value =
-        result.state === 'ok' && result.output.kind === 'json'
-          ? (result.output.value as { translated?: string; refused?: string })
-          : undefined
-      const refused = result.state !== 'ok' ? invokeRefusalMessage(result) : value?.refused
-      const line = element(panel, 'p', { part: 'table.compare' })
-      if (refused !== undefined || typeof value?.translated !== 'string') {
-        setViewerText(
-          line,
-          text('table.translateRefused', { key, reason: refused ?? 'no answer' }),
-          1024,
+    translating = true
+    toolbar.setDisabled('translate', true)
+    try {
+      const ready: { key: string; value: string }[] = []
+      say(text('table.working'))
+      for (const row of empty.slice(0, TRANSLATE_BATCH)) {
+        if (args.signal.aborted) return
+        const key = row.cells[keyColumn] ?? ''
+        const result = await invokeOperation(
+          args.descriptor,
+          args.operations,
+          actions.translateVariant,
+          {
+            key,
+            sourceVariant: base.variant ?? '',
+            targetVariant: column.variant ?? '',
+            sourceLanguage: base.language ?? base.variant ?? '',
+            targetLanguage: column.language ?? column.variant ?? '',
+          },
+          { signal: args.signal },
         )
-        continue
-      }
-      setViewerText(line, `${key} → ${value.translated}`, 1024)
-      ready.push({ key, value: value.translated })
-    }
-    say(text('table.translateReady', { count: ready.length, variant: column.variant ?? '' }))
-    if (ready.length === 0 || actions.addRow === undefined) return
-    // A human accepts the batch; one plan writes the whole batch into one locale file.
-    const apply = element(panel, 'button', {
-      part: 'toolbar.action',
-      text: text('table.translateApply'),
-    })
-    ;(apply as HTMLButtonElement).type = 'button'
-    apply.addEventListener('click', () => {
-      void write(actions.addRow as string, {
-        action: 'set-many',
-        variant: column.variant ?? '',
-        entries: ready,
-      }).then(done => {
-        if (!done) return
-        for (const entry of ready) {
-          const row = rows.find(item => item.cells[keyColumn] === entry.key)
-          if (row === undefined) continue
-          ;(row.cells as string[])[column.index] = entry.value
-          changed.add(row.index)
+        const value =
+          result.state === 'ok' && result.output.kind === 'json'
+            ? (result.output.value as { translated?: string; refused?: string; changed?: boolean })
+            : undefined
+        const refused = result.state !== 'ok' ? invokeRefusalMessage(result) : value?.refused
+        const line = element(panel, 'p', { part: 'table.compare' })
+        if (refused !== undefined || typeof value?.translated !== 'string') {
+          setViewerText(
+            line,
+            text('table.translateRefused', { key, reason: refused ?? 'no answer' }),
+            1024,
+          )
+          continue
         }
-        panel.hidden = true
-        refresh()
+        setViewerText(line, `${key} → ${value.translated}`, 1024)
+        if (value.changed !== false) ready.push({ key, value: value.translated })
+      }
+      say(text('table.translateReady', { count: ready.length, variant: column.variant ?? '' }))
+      if (ready.length === 0 || actions.addRow === undefined) return
+      // A human accepts the batch; one plan writes the whole batch into one locale file.
+      const apply = element(panel, 'button', {
+        part: 'toolbar.action',
+        text: text('table.translateApply'),
       })
-    })
+      ;(apply as HTMLButtonElement).type = 'button'
+      apply.addEventListener('click', () => {
+        void write(actions.addRow as string, {
+          action: 'set-many',
+          variant: column.variant ?? '',
+          entries: ready,
+        }).then(done => {
+          if (!done) return
+          for (const entry of ready) {
+            const row = rows.find(item => item.cells[keyColumn] === entry.key)
+            if (row === undefined) continue
+            ;(row.cells as string[])[column.index] = entry.value
+            changed.add(row.index)
+          }
+          panel.hidden = true
+          refresh()
+        })
+      })
+    } catch (error) {
+      say(text('table.refused', { reason: error instanceof Error ? error.message : String(error) }))
+    } finally {
+      translating = false
+      if (!args.signal.aborted) toolbar.setDisabled('translate', false)
+    }
   }
 
   refresh()

@@ -75,6 +75,8 @@ const MIN_PANE = 120
 const MAX_PANE = 640
 const THUMB_EDGE = { small: 76, big: 128 } as const
 const THUMB_CONCURRENCY = 6
+/** A group auto-expands the first time it appears, only while the gallery holds this many items. */
+const AUTO_EXPAND_MAX_ITEMS = 200
 
 function el<K extends keyof HTMLElementTagNameMap>(
   document: Document,
@@ -291,6 +293,8 @@ export function createMediaShell(document: Document, options: MediaShellOptions)
   let items: readonly ViewerGalleryItem[] = []
   const expanded = new Set<string>()
   let thumbnails: AbortController | undefined
+  /** Groups the gallery has shown before; only a group seen for the first time auto-expands. */
+  const seenGroups = new Set<string>()
 
   const renderGallery = (): void => {
     thumbnails?.abort()
@@ -387,6 +391,18 @@ export function createMediaShell(document: Document, options: MediaShellOptions)
   const refreshGallery = async (signal?: AbortSignal): Promise<void> => {
     if (options.gallery === undefined) return
     items = await options.gallery.list(signal)
+    if (items.length === 0) {
+      // Nothing to show yet: never leave an empty gallery pane open by default.
+      state.leftCollapsed = true
+      applyLayout()
+    }
+    // A group that appears (the first fill, or a folder the viewer loaded later) opens while the
+    // gallery is small; one the user has already seen keeps whatever state they left it in.
+    for (const item of items) {
+      if (item.group === undefined || seenGroups.has(item.group)) continue
+      seenGroups.add(item.group)
+      if (items.length <= AUTO_EXPAND_MAX_ITEMS) expanded.add(item.group)
+    }
     for (const item of items) {
       if (item.active === true && item.group !== undefined) expanded.add(item.group)
     }

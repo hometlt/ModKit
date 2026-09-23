@@ -20,11 +20,7 @@ import {
   ViewerMountScope,
 } from '../viewer/index.js'
 import { type FieldEditorRegistry } from '../field-editor/index.js'
-import {
-  fieldWriteRefusal,
-  mountFieldEditTarget,
-  mountInlineField,
-} from '../field-write/index.js'
+import { fieldWriteRefusal, mountFieldEditTarget, mountInlineField } from '../field-write/index.js'
 import { renderValueWithSpans } from '../spans/index.js'
 import { type UiLocalizationOptions } from '../localization/index.js'
 import { TABLE_FALLBACK_MESSAGES } from '../localization/fallback-catalogs.generated.js'
@@ -71,9 +67,9 @@ export interface TableViewerOptions extends UiLocalizationOptions {
   /**
    * Draw each cell's syntax runs, when the codec publishes them.
    *
-   * Off by default, and deliberately a decision rather than a side effect: `rows()` returns display
+   * On for variant tables by default: `rows()` returns display
    * text and the runs live in `cell()`, so highlighting costs one call per cell the reader touches.
-   * A host that wants it says so; a host that does not keeps the calls it makes today.
+   * Other tables opt in. A host may explicitly disable it for either kind of table.
    */
   readonly highlight?: boolean
   /**
@@ -157,6 +153,10 @@ export function createTableViewer(options: TableViewerOptions = {}): ViewerModul
       let variants: VariantTable | undefined
       /** Why this table no longer writes, once a commit left its session behind. */
       let stale: string | undefined
+      const activeEdits = new Set<() => Promise<void>>()
+      scope.cleanup(async () => {
+        for (const dispose of activeEdits) await dispose()
+      })
       const committed = async (): Promise<void> => {
         const reopened = (await options.onCommitted?.(args.descriptor)) === true
         if (!reopened) stale = localizer.text('table.stale')
@@ -264,7 +264,8 @@ export function createTableViewer(options: TableViewerOptions = {}): ViewerModul
       const beginEdit = async (cell: HTMLTableCellElement, coord: CellCoord): Promise<void> => {
         if (cell.dataset['editing'] === 'true') return
         const facts = await model.cell(coord, scope.signal)
-        if (scope.signal.aborted) return
+        if (scope.signal.aborted || !body.contains(cell) || cell.dataset['editing'] === 'true')
+          return
         if (facts.type === undefined) return
         if (stale !== undefined) {
           cell.title = stale
@@ -305,17 +306,33 @@ export function createTableViewer(options: TableViewerOptions = {}): ViewerModul
             written = value === null || value === undefined ? '' : String(value)
           },
         })
-        const finish = async (write: boolean) => {
-          const accepted = write ? await mount.commit() : false
-          if (!accepted && write) return // the status line inside the field says why; stay open
-          await mount.unmount()
+        let finished = false
+        let finishing = false
+        const dispose = async () => {
+          if (finished) return
+          finished = true
+          activeEdits.delete(dispose)
+          cell.removeEventListener('keydown', onKey)
           delete cell.dataset['editing']
-          // The session still holds the old snapshot; the committed value is what the file has now.
-          const shown = written ?? previous
-          setViewerText(cell, shown)
-          if (written !== undefined) {
-            variants?.written(coord.row, coord.column, shown)
-            await committed()
+          await mount.unmount()
+        }
+        const finish = async (write: boolean) => {
+          if (finished || finishing) return
+          finishing = true
+          try {
+            const accepted = write ? await mount.commit() : false
+            if (!accepted && write) return // the field explains the refusal; stay open
+            await dispose()
+            const shown = written ?? previous
+            setViewerText(cell, shown)
+            if (written !== undefined) {
+              variants?.written(coord.row, coord.column, shown)
+              await committed()
+            }
+          } catch (error) {
+            setViewerText(knowledge, error instanceof Error ? error.message : String(error))
+          } finally {
+            finishing = false
           }
         }
         const onKey = (event: KeyboardEvent) => {
@@ -328,14 +345,20 @@ export function createTableViewer(options: TableViewerOptions = {}): ViewerModul
             void finish(false)
           }
         }
+        if (scope.signal.aborted || !body.contains(cell)) {
+          await dispose()
+          return
+        }
+        activeEdits.add(dispose)
         cell.addEventListener('keydown', onKey)
-        scope.cleanup(() => cell.removeEventListener('keydown', onKey))
+        cell.querySelector<HTMLElement>('input, textarea, select')?.focus()
       }
 
       const render = (rows: readonly Row[]): readonly HTMLTableRowElement[] => {
         cancelLookup('table-page-changed')
         clearEditTarget()
         showMissingKnowledge()
+        for (const dispose of activeEdits) void dispose()
         body.replaceChildren()
         const drawn: HTMLTableRowElement[] = []
         for (const row of rows) {
@@ -352,7 +375,7 @@ export function createTableViewer(options: TableViewerOptions = {}): ViewerModul
             const inspect = () => inspectCell(coord)
             cell.addEventListener('focus', inspect)
             cell.addEventListener('mouseenter', inspect)
-            if (options.highlight === true) {
+            if (options.highlight ?? variantMode) {
               // Once per cell: the runs do not change until the value does, and a re-render replaces
               // the whole body anyway.
               const highlight = () => {
@@ -363,7 +386,14 @@ export function createTableViewer(options: TableViewerOptions = {}): ViewerModul
                 void model
                   .cell(coord, scope.signal)
                   .then(facts => {
-                    if (facts.spans === undefined || cell.dataset['editing'] === 'true') return
+                    if (
+                      scope.signal.aborted ||
+                      !body.contains(cell) ||
+                      facts.value !== value ||
+                      facts.spans === undefined ||
+                      cell.dataset['editing'] === 'true'
+                    )
+                      return
                     renderValueWithSpans(cell, facts.value, facts.spans)
                   })
                   .catch(() => undefined)
@@ -377,7 +407,11 @@ export function createTableViewer(options: TableViewerOptions = {}): ViewerModul
              * of eleven thousand rows must not make eleven thousand of those calls to draw itself,
              * so the facts are fetched when the reader actually asks to edit that one cell.
              */
-            const begin = () => void beginEdit(cell, coord)
+            const begin = () =>
+              void beginEdit(cell, coord).catch(error => {
+                delete cell.dataset['editing']
+                setViewerText(knowledge, error instanceof Error ? error.message : String(error))
+              })
             cell.addEventListener('dblclick', begin)
             const onKey = (event: KeyboardEvent) => {
               if (event.key === 'Enter' && cell.dataset['editing'] !== 'true') {
@@ -407,6 +441,7 @@ export function createTableViewer(options: TableViewerOptions = {}): ViewerModul
           ...(options.localizer === undefined ? {} : { localizer: options.localizer }),
           render,
           committed,
+          writeRefusal: () => stale,
           before: table,
         })
         return createViewerMount(root, scope, args, ({ descriptor }) => {
