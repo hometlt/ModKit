@@ -129,6 +129,15 @@ export interface NamespaceProbePlan {
  * The alias is data only. It does not grant the semantic codec the container session, its byte
  * source, or any container operation. The host selects and retains that provider independently.
  */
+/**
+ * Entry paths inside one source that stand for the whole source.
+ *
+ * Opening such an entry opens the source instead: `MapInfo` names a StarCraft II map and carries
+ * little beyond that name, and a person who opened it came for the map. Compared case-insensitively
+ * against the entry path relative to the source root, so common code never learns a format's names.
+ */
+export type CodecAnchorDocuments = readonly string[]
+
 export interface ContainerTopologyAlias {
   readonly formatId: string
   /**
@@ -304,6 +313,7 @@ interface CodecContributionSpecV1Base<
   readonly artifactStages: readonly ArtifactStage[]
   readonly openIntents: readonly OpenIntent[]
   readonly match: MatchRules
+  readonly anchorDocuments?: CodecAnchorDocuments
   readonly companions?: readonly CompanionRule<Ids>[]
   readonly representations: readonly RepresentationDecl<Ids>[]
   readonly publishesDataSources: readonly DataSourceRefFor<DataSourceContract>[]

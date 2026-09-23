@@ -6422,6 +6422,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
           path: contribution.path,
           // Not installed here, so this window knows no formats for it; only inventory rows do.
           fileExtensions: [],
+          anchorFileNames: [],
         })),
       ),
   )

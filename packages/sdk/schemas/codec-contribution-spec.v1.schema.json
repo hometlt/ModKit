@@ -5,6 +5,15 @@
     {
       "additionalProperties": false,
       "properties": {
+        "anchorDocuments": {
+          "items": {
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 8,
+          "type": "array"
+        },
         "artifactStages": {
           "items": {
             "enum": [
@@ -884,6 +893,15 @@
     {
       "additionalProperties": false,
       "properties": {
+        "anchorDocuments": {
+          "items": {
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 8,
+          "type": "array"
+        },
         "artifactStages": {
           "items": {
             "enum": [
@@ -1794,6 +1812,15 @@
     {
       "additionalProperties": false,
       "properties": {
+        "anchorDocuments": {
+          "items": {
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 8,
+          "type": "array"
+        },
         "artifactStages": {
           "items": {
             "enum": [

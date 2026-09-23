@@ -416,6 +416,17 @@ const codecContributionProperties = {
     minItems: 1,
   },
   match: matchRulesSchema,
+  /*
+   * Entries that stand for the whole source, so opening one opens the source.
+   *
+   * MapInfo names a map and carries little else; a person who opened it came for the map. The
+   * names belong to the format, so the codec declares them and no common code learns them.
+   */
+  anchorDocuments: {
+    type: 'array',
+    items: { type: 'string', minLength: 1, maxLength: 256 },
+    maxItems: 8,
+  },
   companions: { type: 'array', items: companionRuleSchema },
   representations: { type: 'array', items: representationDeclSchema, minItems: 1 },
   publishesDataSources: { type: 'array', items: dataSourceRefWireSchema },

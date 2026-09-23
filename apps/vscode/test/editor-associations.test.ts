@@ -42,6 +42,33 @@ const plan = (overrides: {
   })
 
 describe('which formats an enabled codec claims by default', () => {
+  it('claims an anchor document by its exact name, since it has no extension', () => {
+    expect(
+      defaultAssociationPatterns({
+        contributions: [
+          { id: 'blizzard/sc2-map', disabled: false, fileExtensions: ['sc2map'],
+            anchorFileNames: ['MapInfo'] },
+        ],
+        nonDefault: [],
+        includeTextFormats: false,
+      }),
+      // Without this, MapInfo opens in the text editor and the anchor rule is never consulted.
+    ).toEqual(['**/MapInfo', '*.sc2map'])
+  })
+
+  it('does not claim an anchor of a codec the user opted out of', () => {
+    expect(
+      defaultAssociationPatterns({
+        contributions: [
+          { id: 'blizzard/sc2-map', disabled: false, fileExtensions: ['sc2map'],
+            anchorFileNames: ['MapInfo'] },
+        ],
+        nonDefault: ['blizzard/sc2-map'],
+        includeTextFormats: false,
+      }),
+    ).toEqual([])
+  })
+
   it('claims every extension of every enabled codec, common formats included', async () => {
     expect(
       defaultAssociationPatterns({

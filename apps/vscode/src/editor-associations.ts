@@ -17,6 +17,7 @@ export interface AssociationContribution {
   readonly id?: string
   readonly disabled: boolean
   readonly fileExtensions: readonly string[]
+  readonly anchorFileNames?: readonly string[]
 }
 
 export interface AssociationInputs {
@@ -81,6 +82,9 @@ const normalizedExtension = (value: string): string => value.replace(/^\./u, '')
 export const associationPattern = (extension: string): string =>
   `*.${normalizedExtension(extension)}`
 
+/** The glob for a file name that carries no extension, matched in any folder. */
+export const anchorAssociationPattern = (name: string): string => `**/${name}`
+
 /**
  * Every pattern an enabled, default-eligible codec claims.
  *
@@ -100,6 +104,14 @@ export function defaultAssociationPatterns(
       if (normalized.length === 0) continue
       if (!inputs.includeTextFormats && TEXT_FIRST_EXTENSIONS.includes(normalized)) continue
       patterns.add(associationPattern(normalized))
+    }
+    // An anchor has no extension, so it keys on its name. VS Code matches an association key as a
+    // path glob, so a bare `MapInfo` matches nothing in a folder: it needs a recursive prefix, the
+    // way `*.ext` gets one for free. An anchor is never a text-first format either — the codec
+    // declared the name precisely because reading the document is not the point.
+
+    for (const name of contribution.anchorFileNames ?? []) {
+      if (name.length > 0) patterns.add(anchorAssociationPattern(name))
     }
   }
   return Object.freeze([...patterns].sort())

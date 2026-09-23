@@ -42,6 +42,13 @@ export interface ContributionRow {
    * beside it.
    */
   readonly fileExtensions: readonly string[]
+  /**
+   * File names the codec declares as anchors of a source (`spec.anchorDocuments`).
+   *
+   * They carry no extension — `MapInfo`, `DocumentInfo` — so VS Code would hand them to the text
+   * editor and the subject opener, where the anchor rule lives, would never see them.
+   */
+  readonly anchorFileNames: readonly string[]
 }
 
 /** `spec.match.extensions` of a codec contribution, normalised; empty for anything else. */
@@ -58,6 +65,24 @@ function fileExtensionsOf(manifest: unknown): readonly string[] {
             ? [value.replace(/^\./u, '').toLowerCase()]
             : [],
         ),
+      ),
+    ].sort(),
+  )
+}
+
+/** `spec.anchorDocuments` of a codec contribution, as bare file names; empty for anything else. */
+function anchorFileNamesOf(manifest: unknown): readonly string[] {
+  const spec = (manifest as { readonly spec?: { readonly anchorDocuments?: unknown } })?.spec
+  if (!Array.isArray(spec?.anchorDocuments)) return Object.freeze([])
+  return Object.freeze(
+    [
+      ...new Set(
+        spec.anchorDocuments.flatMap(value => {
+          if (typeof value !== 'string' || value.length === 0) return []
+          // An association keys on a file name; a nested anchor path has none to offer.
+          const name = value.split('/').filter(Boolean).at(-1)
+          return name === undefined || name.length === 0 ? [] : [name]
+        }),
       ),
     ].sort(),
   )
@@ -83,6 +108,10 @@ export function describeInventoryContributions(inventory: Inventory): readonly C
         fileExtensions:
           manifest?.contract.id === 'modkit/codec-contribution'
             ? fileExtensionsOf(manifest)
+            : Object.freeze([]),
+        anchorFileNames:
+          manifest?.contract.id === 'modkit/codec-contribution'
+            ? anchorFileNamesOf(manifest)
             : Object.freeze([]),
       }
     })

@@ -52,6 +52,7 @@ import { type UiLocalizer } from '../localization/index.js'
 import { WORLD_FALLBACK_MESSAGES } from '../localization/fallback-catalogs.generated.js'
 import { withEnglishUiFallback } from '../localization/fallback.js'
 import { createMediaShell } from '../media-shell/index.js'
+import type { ImageSidebarSection } from '../image/index.js'
 import { createWorldLatticePlan, drawWorldLattice, type WorldLatticePlan } from './lattice.js'
 export { createWorldLatticePlan, drawWorldLattice, worldLatticeColor } from './lattice.js'
 
@@ -1260,6 +1261,14 @@ export interface WorldViewerModuleOptions {
   readonly localizer?: UiLocalizer
   /** Maps can show their bounded height lattice immediately while assets load. */
   readonly initialView?: 'lattice' | '3d'
+  /**
+   * Sidebar sections the host contributes, beside the world's own readout.
+   *
+   * A map's identity documents are not opened on their own — `MapInfo` opens the map — so the
+   * facts they carry have to be readable here or they are lost. A section whose module cannot
+   * bind to this subject removes itself rather than showing an empty box.
+   */
+  readonly sections?: readonly ImageSidebarSection[]
 }
 
 /**
@@ -1298,6 +1307,16 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
       const details = shell.section('world', localizer.text('viewer.world'), { icon: 'globe' }).body
       const readout = element(details, 'output', { part: 'model.readout' })
       readout.setAttribute('aria-live', 'polite')
+      for (const contributed of options.sections ?? []) {
+        const section = shell.section(contributed.id, contributed.title, {
+          ...(contributed.icon === undefined ? {} : { icon: contributed.icon }),
+          collapsed: contributed.collapsed ?? false,
+        })
+        void contributed.module
+          .mount({ ...args, container: section.body })
+          .then(mounted => scope.cleanup(() => void mounted.unmount()))
+          .catch(() => section.root.remove())
+      }
       const toolbar = element(stage, 'div', { part: 'model.toolbar', role: 'toolbar' })
       toolbar.setAttribute('aria-label', localizer.text('viewer.worldView'))
       const latticeButton = element(toolbar, 'button', {
