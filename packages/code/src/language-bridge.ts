@@ -50,6 +50,8 @@ export interface LanguageBridgeOptions {
   readonly subjects?: SubjectCompletionResolver
   /** Characters that ask Monaco to request the provider's signature help automatically. */
   readonly signatureHelpTriggerCharacters?: readonly string[]
+  /** Characters after which Monaco requests protocol-neutral on-type formatting edits. */
+  readonly onTypeFormattingTriggerCharacters?: readonly string[]
   /** Trigger characters used while an existing signature-help popup is active. */
   readonly signatureHelpRetriggerCharacters?: readonly string[]
   /**
@@ -512,6 +514,32 @@ export function bridgeLanguageProvider(
             range: toMonacoRange(item.range),
             text: item.newText,
           }))
+        },
+      }),
+    )
+  }
+
+  if (
+    provider.onTypeFormatting !== undefined &&
+    options.onTypeFormattingTriggerCharacters !== undefined &&
+    options.onTypeFormattingTriggerCharacters.length > 0
+  ) {
+    const onTypeFormatting = provider.onTypeFormatting.bind(provider)
+    disposables.push(
+      monaco.languages.registerOnTypeFormattingEditProvider(selector, {
+        autoFormatTriggerCharacters: [...options.onTypeFormattingTriggerCharacters],
+        async provideOnTypeFormattingEdits(model, position, ch, formattingOptions, token) {
+          if (!claims(model)) return []
+          const list = await onTypeFormatting({
+            ...request(model, token),
+            position: { line: position.lineNumber - 1, character: position.column - 1 },
+            ch,
+            options: {
+              tabSize: formattingOptions.tabSize,
+              insertSpaces: formattingOptions.insertSpaces,
+            },
+          })
+          return list.edits.map(item => ({ range: toMonacoRange(item.range), text: item.newText }))
         },
       }),
     )

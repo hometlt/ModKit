@@ -6,6 +6,7 @@ import {
 } from '@modkit/host'
 import { createKnowledgeCatalog } from '@modkit/host/knowledge'
 import type { KnowledgePackSpecV1 } from '@modkit/sdk/knowledge'
+import type { VfsMount } from '@modkit/vfs'
 
 const fieldTarget = {
   kind: 'field',
@@ -130,7 +131,7 @@ const rankedExtensionInput = (
 ): ExtensionInput => {
   const path = `contributions/${extensionId}.json`
   const artifactDigest = `sha256:${extensionId}-artifact`
-  const entry = pack.entries[2]
+  const entry = pack.entries?.[2]
   if (entry === undefined) throw new Error('fixture must contain a generic subject entry')
   return {
     source: extensionId,
@@ -363,5 +364,143 @@ describe('inventory-backed knowledge catalog', () => {
     expect(createKnowledgeCatalog(first).snapshotId).not.toBe(
       createKnowledgeCatalog(second).snapshotId,
     )
+  })
+})
+
+describe('knowledge entries kept in an entriesPath file', () => {
+  const manifestPath = 'contributions/alpha-knowledge.json'
+  const entriesPath = 'contributions/knowledge/alpha.entries.json'
+  const entriesBytes = new TextEncoder().encode(JSON.stringify({ entries: pack.entries }))
+
+  const externalInput = (): ExtensionInput => {
+    const base = extensionInput()
+    const { entries: _inline, ...spec } = pack
+    return {
+      ...base,
+      files: [manifestPath, entriesPath],
+      documents: new Map([
+        [
+          manifestPath,
+          {
+            schemaVersion: 1,
+            contract: { id: 'modkit/knowledge-pack', major: 1 },
+            id: 'org.example.alpha/alpha-data-knowledge',
+            displayName: 'ALPHA data knowledge',
+            spec: { ...spec, entriesPath },
+          },
+        ],
+      ]),
+      artifact: {
+        ...base.artifact,
+        fileDigests: {
+          [manifestPath]: 'sha256:knowledge-manifest',
+          [entriesPath]: 'sha256:knowledge-entries',
+        },
+      },
+    }
+  }
+
+  /** A VFS that serves the one entries file and counts the mounts it was asked for. */
+  const servingVfs = (bytes: Uint8Array) => {
+    const mounted: string[] = []
+    const mount = {
+      async stat(path: string) {
+        return path === entriesPath ? { kind: 'file', size: BigInt(bytes.byteLength) } : undefined
+      },
+      async open() {
+        return {
+          size: async () => bytes.byteLength,
+          readAt: async (offset: number, length: number) => bytes.slice(offset, offset + length),
+          dispose: async () => undefined,
+        }
+      },
+      dispose: async () => undefined,
+    }
+    return {
+      mounted,
+      vfs: {
+        async openMount(uri: string) {
+          mounted.push(uri)
+          return mount as unknown as VfsMount
+        },
+      },
+    }
+  }
+
+  it('reads the file on the first query only, attested and validated like inline entries', async () => {
+    const inventory = await buildInventory(
+      [externalInput()],
+      createHostContributionContractRegistry(),
+    )
+    const contribution = inventory.extensions[0]?.contributions[0]
+    expect(contribution?.inventoryEligible, JSON.stringify(contribution?.diagnostics)).toBe(true)
+    const served = servingVfs(entriesBytes)
+    const catalog = createKnowledgeCatalog(
+      inventory,
+      {},
+      { vfs: served.vfs, digest: async () => 'sha256:knowledge-entries' },
+    )
+    expect(served.mounted).toEqual([])
+    const page = await catalog.resolve({ target: fieldTarget, locales: ['ru-RU', 'en'] })
+    expect(page.diagnostics).toEqual([])
+    expect(page.total).toBe(1)
+    expect(page.items[0]?.entry.locale).toBe('ru')
+    await catalog.search({ text: 'unit', locales: ['en'] })
+    expect(served.mounted).toEqual(['file:///knowledge-fixture/'])
+  })
+
+  it('refuses a file whose bytes are not the attested ones', async () => {
+    const inventory = await buildInventory(
+      [externalInput()],
+      createHostContributionContractRegistry(),
+    )
+    const catalog = createKnowledgeCatalog(
+      inventory,
+      {},
+      { vfs: servingVfs(entriesBytes).vfs, digest: async () => 'sha256:tampered' },
+    )
+    const page = await catalog.resolve({ target: fieldTarget, locales: ['en'] })
+    expect(page.total).toBe(0)
+    expect(page.diagnostics).toEqual([
+      expect.objectContaining({
+        code: 'x3.knowledge/entries-file-refused',
+        message: expect.stringContaining('does not match its attested SHA-256'),
+      }),
+    ])
+  })
+
+  it('refuses entries that would not validate inline', async () => {
+    const inventory = await buildInventory(
+      [externalInput()],
+      createHostContributionContractRegistry(),
+    )
+    const broken = new TextEncoder().encode(
+      JSON.stringify({ entries: [{ ...pack.entries?.[0], claimKind: 'rumour' }] }),
+    )
+    const catalog = createKnowledgeCatalog(
+      inventory,
+      {},
+      { vfs: servingVfs(broken).vfs, digest: async () => 'sha256:knowledge-entries' },
+    )
+    const page = await catalog.search({ text: 'life', locales: ['en'] })
+    expect(page.total).toBe(0)
+    expect(page.diagnostics).toEqual([
+      expect.objectContaining({ code: 'x3.knowledge/entries-file-refused' }),
+    ])
+  })
+
+  it('says so when the entries are in a file and no reader was given', async () => {
+    const inventory = await buildInventory(
+      [externalInput()],
+      createHostContributionContractRegistry(),
+    )
+    const page = await createKnowledgeCatalog(inventory).search({ text: 'life', locales: ['en'] })
+    expect(page.total).toBe(0)
+    expect(page.diagnostics).toEqual([
+      expect.objectContaining({
+        code: 'x3.knowledge/entries-file-refused',
+        message: expect.stringContaining(entriesPath),
+      }),
+    ])
   })
 })

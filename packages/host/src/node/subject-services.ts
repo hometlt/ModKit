@@ -15,7 +15,11 @@
  */
 
 import type { Diagnostic } from '@modkit/core'
-import type { HostTopology, ServiceContractDefinitionRegistry } from '@modkit/sdk'
+import type {
+  ContributionSettings,
+  HostTopology,
+  ServiceContractDefinitionRegistry,
+} from '@modkit/sdk'
 import { createHostComposition, type HostComposition } from '../composition.js'
 import type { ExecutionBackendRegistry } from '../execution/backend.js'
 import type { WorkerBackendPolicy } from '../execution/worker-policy.js'
@@ -59,6 +63,8 @@ export interface NodeSubjectServicesOptions {
    * inventoried and their individual disabled settings remain independent.
    */
   readonly disabledExtensions?: readonly string[]
+  /** What the user configured for a contribution; handed to it when the host activates it. */
+  readonly contributionSettings?: (contributionId: string) => ContributionSettings | undefined
   /** Contribution ids the user switched off; they stay listed and lose activation eligibility. */
   readonly disabledContributions?: readonly string[]
 }
@@ -91,32 +97,27 @@ export async function createNodeSubjectServices(
       : { trustedInProcess: options.trustedInProcess }),
     ...(options.linkedModules === undefined ? {} : { linkedModules: options.linkedModules }),
   })
-  const [host, workers] = await Promise.all([
-    createHostComposition({
-      topology: options.topology,
-      realmId: options.realms.host,
-      extensions: options.extensions,
-      executionBackends,
-      ...(options.disabledExtensions === undefined
-        ? {}
-        : { disabledExtensions: options.disabledExtensions }),
-      ...(options.disabledContributions === undefined
-        ? {}
-        : { disabledContributions: options.disabledContributions }),
-    }),
-    createHostComposition({
-      topology: options.topology,
-      realmId: options.realms.workers,
-      extensions: options.extensions,
-      executionBackends,
-      ...(options.disabledExtensions === undefined
-        ? {}
-        : { disabledExtensions: options.disabledExtensions }),
-      ...(options.disabledContributions === undefined
-        ? {}
-        : { disabledContributions: options.disabledContributions }),
-    }),
-  ])
+  const host = await createHostComposition({
+    topology: options.topology,
+    realmId: options.realms.host,
+    extensions: options.extensions,
+    executionBackends,
+    ...(options.disabledExtensions === undefined
+      ? {}
+      : { disabledExtensions: options.disabledExtensions }),
+    ...(options.disabledContributions === undefined
+      ? {}
+      : { disabledContributions: options.disabledContributions }),
+  })
+  // Same extensions, contracts and switches: the worker realm shares the host's inventory. Two
+  // compositions built side by side validated every manifest twice (the validation cache only
+  // fills once a validation finishes).
+  const workers = await createHostComposition({
+    topology: options.topology,
+    realmId: options.realms.workers,
+    executionBackends,
+    inventory: host.inventory,
+  })
   if (definitions !== undefined)
     await registerServiceDefinitionsOrThrow(host.inventory, definitions)
   const services = createSubjectServices({
@@ -124,6 +125,9 @@ export async function createNodeSubjectServices(
     target: workers.target,
     executionBackends,
     ...(definitions === undefined ? {} : { serviceDefinitions: definitions }),
+    ...(options.contributionSettings === undefined
+      ? {}
+      : { contributionSettings: options.contributionSettings }),
   })
   return Object.freeze({ ...services, host, workers })
 }

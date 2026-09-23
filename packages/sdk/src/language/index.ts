@@ -8,6 +8,8 @@
 
 import type { ServiceProviderModule } from '../runtime-abi.js'
 import type { SubjectFilter } from '../fields/index.js'
+import type { ReferenceOccurrenceBatch } from '../references.js'
+import type { JsonValue } from '../asset-capabilities/types.js'
 
 /** Standard service coordinate for syntax-aware document analysis. */
 export const LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT = 'common.language/document-analysis' as const
@@ -243,12 +245,7 @@ export interface LanguageWorkspaceEdit {
 }
 
 export type LanguageCodeActionKind =
-  | 'quickfix'
-  | 'refactor'
-  | 'refactor.extract'
-  | 'refactor.inline'
-  | 'rewrite'
-  | 'source'
+  'quickfix' | 'refactor' | 'refactor.extract' | 'refactor.inline' | 'rewrite' | 'source'
 
 /** A bounded, command-free editor action. Mutations are exact-version workspace edits. */
 export interface LanguageCodeAction {
@@ -288,6 +285,56 @@ export interface LanguageDiagnosticList {
   readonly isIncomplete: boolean
 }
 
+/** Host-authored identity of one document inside a resolved semantic context. */
+export interface LanguageWorkspaceDocumentOrigin {
+  readonly uri: string
+  /** Stable identity of the mod, dependency, root, or other precedence layer. */
+  readonly layerId: string
+  /** Logical file identity shared across layers for merge and precedence semantics. */
+  readonly logicalId: string
+  /** Weakest to strongest. Higher precedence overrides lower precedence. */
+  readonly precedence: number
+  readonly sourceRevision: string
+  readonly readOnly: boolean
+  /** True for an open buffer replacing the same logical file in the same layer. */
+  readonly overlay?: boolean
+}
+
+/**
+ * One non-document input whose identity or revision can change semantic answers.
+ *
+ * `kind` names the authority (for example `locale-set`, `provider` or `schema`), `id` selects the
+ * concrete authority, and `revision` changes whenever the selected authority's meaning changes.
+ * Hosts include these inputs in workspace snapshot identities so caches never reuse answers across
+ * a schema, provider, dependency closure or locale change.
+ */
+export interface LanguageWorkspaceSemanticInput {
+  readonly kind: string
+  readonly id: string
+  readonly revision: string
+  /** Optional bounded, immutable JSON data supplied by the input's owning authority. */
+  readonly payload?: JsonValue
+}
+
+/** Provider-declared request for one host-resolved effective Data snapshot. */
+export interface LanguageResolvedDataSemanticContextRequirement {
+  readonly kind: 'resolved-data-snapshot'
+  readonly gameId: string
+  /** Only final workspace documents with one of these language ids enter Data analysis. */
+  readonly languageIds: readonly string[]
+}
+
+export type LanguageSemanticContextRequirement = LanguageResolvedDataSemanticContextRequirement
+
+/** Versioned host-owned mod/dependency context shared by every language provider. */
+export interface LanguageWorkspaceContext {
+  readonly id: string
+  readonly revision: string
+  readonly semanticComplete: boolean
+  readonly documentOrigins: readonly LanguageWorkspaceDocumentOrigin[]
+  readonly semanticInputs?: readonly LanguageWorkspaceSemanticInput[]
+}
+
 /**
  * Full snapshots supplied to one semantic request. `workspaceDocuments` includes `document` and
  * never exceeds `maxDocuments`; no provider owns mutable editor state or transport objects.
@@ -295,11 +342,20 @@ export interface LanguageDiagnosticList {
 export interface LanguageFeatureRequest {
   readonly document: LanguageDocument
   readonly workspaceDocuments: readonly LanguageDocument[]
+  readonly workspaceContext?: LanguageWorkspaceContext
   readonly workspaceIncomplete: boolean
   readonly maxResults: number
   readonly maxDocuments: number
   readonly signal?: AbortSignal
 }
+
+/** True when read-only semantic answers may omit documents, independent of editability. */
+export const languageWorkspaceIsSemanticallyIncomplete = (
+  request: Pick<LanguageFeatureRequest, 'workspaceContext' | 'workspaceIncomplete'>,
+): boolean =>
+  request.workspaceContext === undefined
+    ? request.workspaceIncomplete
+    : !request.workspaceContext.semanticComplete
 
 export interface LanguagePositionRequest extends LanguageFeatureRequest {
   readonly position: LanguagePosition
@@ -322,6 +378,20 @@ export interface LanguageFormattingRequest extends LanguageFeatureRequest {
   readonly options: LanguageFormattingOptions
 }
 
+/** A formatting request made immediately after the editor inserted one trigger character. */
+export interface LanguageOnTypeFormattingRequest extends LanguagePositionRequest {
+  readonly ch: string
+  readonly options: LanguageFormattingOptions
+}
+
+/** Atomic on-type editor action calculated against the request's exact document version. */
+export interface LanguageOnTypeEditResult extends LanguageTextEditList {
+  /** Absolute caret position in the document after `edits` are applied. */
+  readonly cursor?: LanguagePosition
+  /** Ask an interactive editor to open completion after applying edits and moving the caret. */
+  readonly requestCompletion?: boolean
+}
+
 export interface LanguageColorPresentationRequest extends LanguageFeatureRequest {
   readonly color: LanguageColor
   readonly range: LanguageRange
@@ -337,6 +407,10 @@ export interface LanguageCodeActionsRequest extends LanguageFeatureRequest {
 export interface LanguageProvider {
   readonly contract: typeof LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT
   readonly languageIds: readonly string[]
+  /** Provider-owned schemas/specifications that participate in semantic cache identity. */
+  readonly semanticInputs?: readonly LanguageWorkspaceSemanticInput[]
+  /** Host-resolved semantic contexts required by this provider. */
+  readonly semanticContextRequirements?: readonly LanguageSemanticContextRequirement[]
   /**
    * Explicit opt-in for bounded mixed-language workspace snapshots.
    *
@@ -355,6 +429,7 @@ export interface LanguageProvider {
   prepareRename?(request: LanguagePositionRequest): Promise<LanguageRenamePreparation | undefined>
   rename?(request: LanguageRenameRequest): Promise<LanguageWorkspaceEdit | undefined>
   formatting?(request: LanguageFormattingRequest): Promise<LanguageTextEditList>
+  onTypeFormatting?(request: LanguageOnTypeFormattingRequest): Promise<LanguageOnTypeEditResult>
   documentColors?(request: LanguageFeatureRequest): Promise<LanguageColorList>
   colorPresentations?(
     request: LanguageColorPresentationRequest,
@@ -363,6 +438,10 @@ export interface LanguageProvider {
   documentSymbols?(request: LanguageFeatureRequest): Promise<LanguageDocumentSymbolList>
   workspaceSymbols?(request: LanguageWorkspaceSymbolsRequest): Promise<LanguageWorkspaceSymbolList>
   diagnostics?(request: LanguageFeatureRequest): Promise<LanguageDiagnosticList>
+  /** Typed owner-authored occurrences used by the host cross-module reference index. */
+  referenceOccurrences?(
+    request: LanguageFeatureRequest,
+  ): Promise<readonly ReferenceOccurrenceBatch[]>
 }
 
 /** JSON-safe route advertised by a provider contribution. */
@@ -370,6 +449,12 @@ export interface LanguageProviderOfferFacet {
   readonly languageIds: readonly string[]
   readonly documentKinds?: readonly string[]
   readonly extensions?: readonly string[]
+  /** Characters that should automatically request completion in editor and LSP adapters. */
+  readonly completionTriggerCharacters?: readonly string[]
+  /** Characters that should automatically request signature help in editor and LSP adapters. */
+  readonly signatureHelpTriggerCharacters?: readonly string[]
+  /** Characters after which editor and LSP adapters should request on-type formatting edits. */
+  readonly onTypeFormattingTriggerCharacters?: readonly string[]
 }
 
 /** JSON-safe route supplied by an editor, checker or LSP adapter. */

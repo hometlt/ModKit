@@ -18,8 +18,11 @@ import {
   type KnowledgeResolveQuery,
   type KnowledgeSearchQuery,
   type KnowledgeTarget,
+  validateContributionManifest,
 } from '@modkit/sdk'
-import type { Inventory } from '../inventory.js'
+import { readAttestedArtifactFile, type ArtifactVfsPort } from '../artifact-files.js'
+import { createHostContributionContractRegistry } from '../contribution-registry.js'
+import type { Inventory, InventoryContribution } from '../inventory.js'
 
 const DEFAULT_PAGE_LIMIT = 20
 const MAXIMUM_PAGE_LIMIT = 100
@@ -118,7 +121,6 @@ interface IndexedKnowledgeEntry {
 
 interface CollectedKnowledge {
   readonly entries: readonly IndexedKnowledgeEntry[]
-  readonly snapshotComponents: readonly string[]
   readonly diagnostics: readonly KnowledgeDiagnostic[]
   readonly completeness: 'complete' | 'capped'
 }
@@ -293,13 +295,25 @@ const cursorOffset = (
   return Number.isSafeInteger(parsed) ? parsed : undefined
 }
 
-const collect = (
-  inventory: Inventory,
-  limits: ResolvedKnowledgeCatalogLimits,
-): CollectedKnowledge => {
-  const retained: KnowledgeCandidate[] = []
-  const snapshotComponents = new Set<string>()
-  let candidateCount = 0
+/** Largest `entriesPath` file the catalog reads, before JSON decoding. */
+export const KNOWLEDGE_ENTRIES_MAXIMUM_JSON_BYTES = 32 * 1024 * 1024
+
+/** Where a catalog reads the entries a pack keeps in an `entriesPath` file of its artifact. */
+export interface KnowledgeEntriesSource {
+  readonly vfs: ArtifactVfsPort
+  /** Injectable for non-WebCrypto environments; returns `sha256:<lowercase hex>`. */
+  readonly digest?: (bytes: Uint8Array) => Promise<string>
+}
+
+interface KnowledgePack {
+  readonly contribution: InventoryContribution
+  readonly manifest: NonNullable<InventoryContribution['manifest']>
+  readonly spec: KnowledgePackSpecV1
+  readonly provenance: InventoryContribution['facts'][number]['provenance']
+}
+
+const knowledgePacks = (inventory: Inventory): readonly KnowledgePack[] => {
+  const packs: KnowledgePack[] = []
   for (const extension of inventory.extensions) {
     for (const contribution of extension.contributions) {
       const manifest = contribution.manifest
@@ -315,39 +329,122 @@ const collect = (
           candidate.contract.id === KNOWLEDGE_PACK_FACT && candidate.contract.major === 1,
       )
       if (fact === undefined) continue
-      const spec = fact.value as unknown as KnowledgePackSpecV1
-      snapshotComponents.add(
-        canonicalJsonStringify([
-          fact.provenance.ownerExtensionId,
-          fact.provenance.extensionVersion,
-          fact.provenance.inventoryRecordId,
-          manifest.id,
-          fact.provenance.manifestPath,
-          fact.provenance.manifestDigest,
-          fact.provenance.artifactDigest,
-        ]),
+      packs.push({
+        contribution,
+        manifest,
+        spec: fact.value as unknown as KnowledgePackSpecV1,
+        provenance: fact.provenance,
+      })
+    }
+  }
+  return packs
+}
+
+const snapshotComponentOf = (pack: KnowledgePack): string =>
+  canonicalJsonStringify([
+    pack.provenance.ownerExtensionId,
+    pack.provenance.extensionVersion,
+    pack.provenance.inventoryRecordId,
+    pack.manifest.id,
+    pack.provenance.manifestPath,
+    pack.provenance.manifestDigest,
+    pack.provenance.artifactDigest,
+  ])
+
+const entriesDecoder = new TextDecoder('utf-8', { fatal: true })
+
+/**
+ * A pack's entries: inline, or read from its `entriesPath` file.
+ *
+ * The file is admitted only as the attested bytes of the artifact, and its entries pass the very
+ * validation an inline pack passes at inventory time — the manifest is validated again with them
+ * in place — so moving entries out of a manifest never widens what a catalog accepts.
+ */
+async function packEntries(
+  pack: KnowledgePack,
+  source: KnowledgeEntriesSource | undefined,
+): Promise<
+  | { readonly entries: readonly KnowledgeEntry[] }
+  | { readonly diagnostic: KnowledgeDiagnostic }
+> {
+  const { entriesPath, ...inline } = pack.spec
+  if (entriesPath === undefined) return { entries: pack.spec.entries ?? [] }
+  const refused = (message: string): { readonly diagnostic: KnowledgeDiagnostic } => ({
+    diagnostic: Object.freeze({
+      code: 'x3.knowledge/entries-file-refused',
+      message: `knowledge pack ${pack.manifest.id}: ${message}`,
+      severity: 'warning' as const,
+    }),
+  })
+  if (source === undefined) {
+    return refused(`its entries are in ${entriesPath}, and this catalog was given no way to read it`)
+  }
+  try {
+    const bytes = await readAttestedArtifactFile(pack.contribution, entriesPath, {
+      vfs: source.vfs,
+      maxBytes: KNOWLEDGE_ENTRIES_MAXIMUM_JSON_BYTES,
+      label: 'knowledge entries file',
+      ...(source.digest === undefined ? {} : { digest: source.digest }),
+    })
+    const document = JSON.parse(entriesDecoder.decode(bytes)) as unknown
+    const entries =
+      document !== null && typeof document === 'object' && !Array.isArray(document)
+        ? (document as { readonly entries?: unknown }).entries
+        : undefined
+    if (!Array.isArray(entries)) return refused(`${entriesPath} has no "entries" array`)
+    const validated = await validateContributionManifest(
+      { ...pack.manifest, spec: { ...inline, entries } },
+      createHostContributionContractRegistry().validationRegistry(),
+    )
+    if (!validated.inventoryEligible || validated.manifest === undefined) {
+      const first = validated.diagnostics.find(item => item.severity === 'error')
+      return refused(
+        `${entriesPath} does not validate${first === undefined ? '' : `: ${first.code} ${first.message}`}`,
       )
-      for (const entry of spec.entries) {
-        candidateCount += 1
-        retainCandidate(
-          retained,
-          Object.freeze({
-            entry,
+    }
+    return {
+      entries: (validated.manifest.spec as unknown as KnowledgePackSpecV1).entries ?? [],
+    }
+  } catch (error) {
+    return refused(error instanceof Error ? error.message : String(error))
+  }
+}
+
+const collect = async (
+  packs: readonly KnowledgePack[],
+  limits: ResolvedKnowledgeCatalogLimits,
+  source: KnowledgeEntriesSource | undefined,
+): Promise<CollectedKnowledge> => {
+  const retained: KnowledgeCandidate[] = []
+  const loadDiagnostics: KnowledgeDiagnostic[] = []
+  let candidateCount = 0
+  for (const pack of packs) {
+    const { manifest, spec, provenance } = pack
+    const loaded = await packEntries(pack, source)
+    if ('diagnostic' in loaded) {
+      loadDiagnostics.push(loaded.diagnostic)
+      continue
+    }
+    for (const entry of loaded.entries) {
+      candidateCount += 1
+      retainCandidate(
+        retained,
+        Object.freeze({
+          entry,
+          packId: manifest.id,
+          sourceLocale: spec.sourceLocale,
+          priority: spec.priority,
+          provenance: Object.freeze({
             packId: manifest.id,
-            sourceLocale: spec.sourceLocale,
-            priority: spec.priority,
-            provenance: Object.freeze({
-              packId: manifest.id,
-              ownerExtensionId: fact.provenance.ownerExtensionId,
-              extensionVersion: fact.provenance.extensionVersion,
-              manifestPath: fact.provenance.manifestPath,
-              manifestDigest: fact.provenance.manifestDigest,
-              artifactDigest: fact.provenance.artifactDigest,
-            }),
+            ownerExtensionId: provenance.ownerExtensionId,
+            extensionVersion: provenance.extensionVersion,
+            manifestPath: provenance.manifestPath,
+            manifestDigest: provenance.manifestDigest,
+            artifactDigest: provenance.artifactDigest,
           }),
-          limits.maxIndexedEntries,
-        )
-      }
+        }),
+        limits.maxIndexedEntries,
+      )
     }
   }
 
@@ -381,9 +478,9 @@ const collect = (
   const capped = candidateCount > retained.length || characterCapped
   return Object.freeze({
     entries: Object.freeze(items),
-    snapshotComponents: Object.freeze([...snapshotComponents].sort(compareUtf8)),
-    diagnostics: Object.freeze(
-      capped
+    diagnostics: Object.freeze([
+      ...loadDiagnostics,
+      ...(capped
         ? [
             {
               code: 'x3.knowledge/catalog-index-capped',
@@ -391,8 +488,8 @@ const collect = (
               severity: 'warning' as const,
             },
           ]
-        : [],
-    ),
+        : []),
+    ]),
     completeness: capped ? ('capped' as const) : ('complete' as const),
   })
 }
@@ -578,22 +675,40 @@ const queryProblem = (
   return undefined
 }
 
-/** Build a bounded query view from one immutable inventory snapshot. */
+/**
+ * Build a bounded query view from one immutable inventory snapshot.
+ *
+ * Entries are read and indexed on the first query, not here: a pack may keep them in an
+ * `entriesPath` file, read through `entriesSource`, and a host builds its catalog long before
+ * anyone asks it a question. The snapshot id is fixed now, from what pins every entry — manifest
+ * and artifact digests — and the limits.
+ */
 export function createKnowledgeCatalog(
   inventory: Inventory,
   requestedLimits: KnowledgeCatalogLimits = {},
+  entriesSource?: KnowledgeEntriesSource,
 ): KnowledgeCatalog {
   const limits = resolveCatalogLimits(requestedLimits)
-  const collected = collect(inventory, limits)
+  const packs = knowledgePacks(inventory)
   const snapshotId = `knowledge-v1:${opaqueFingerprint(
     canonicalJsonStringify([
-      collected.snapshotComponents,
+      [...new Set(packs.map(snapshotComponentOf))].sort(compareUtf8),
       limits.maxIndexedEntries,
       limits.maxSearchableCharacters,
-      collected.entries.length,
-      collected.completeness,
     ]),
   )}`
+  let collecting: Promise<CollectedKnowledge> | undefined
+  let settled: CollectedKnowledge | undefined
+  const knowledge = (): Promise<CollectedKnowledge> => {
+    collecting ??= collect(packs, limits, entriesSource).then(
+      value => (settled = value),
+      (error: unknown) => {
+        collecting = undefined
+        throw error
+      },
+    )
+    return collecting
+  }
   return Object.freeze({
     snapshotId,
     async search(query: KnowledgeSearchQuery, signal?: AbortSignal): Promise<KnowledgePage> {
@@ -606,8 +721,10 @@ export function createKnowledgeCatalog(
         query.cursor,
       )
       if (problem !== undefined) {
-        return rejectedQuery(snapshotId, problem.code, problem.message, collected.diagnostics)
+        return rejectedQuery(snapshotId, problem.code, problem.message, settled?.diagnostics ?? [])
       }
+      const collected = await knowledge()
+      signal?.throwIfAborted()
       const ranked = await resolvedHits(
         collected.entries,
         query.locales,
@@ -641,8 +758,10 @@ export function createKnowledgeCatalog(
       signal?.throwIfAborted()
       const problem = queryProblem(undefined, query.locales, query.target, undefined, query.cursor)
       if (problem !== undefined) {
-        return rejectedQuery(snapshotId, problem.code, problem.message, collected.diagnostics)
+        return rejectedQuery(snapshotId, problem.code, problem.message, settled?.diagnostics ?? [])
       }
+      const collected = await knowledge()
+      signal?.throwIfAborted()
       const ranked = await resolvedHits(
         collected.entries,
         query.locales,

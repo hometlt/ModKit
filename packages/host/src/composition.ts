@@ -23,6 +23,13 @@ export interface HostCompositionOptions {
   readonly disabledExtensions?: readonly string[]
   /** Contribution ids switched off by the user; see `InventoryBuildOptions`. */
   readonly disabledContributions?: readonly string[]
+  /**
+   * The inventory another realm of this topology already built from these same extensions,
+   * contracts and switches. An inventory does not depend on the realm, so realms share one;
+   * building it again repeats the validation of every manifest. When given, `extensions` and the
+   * switches above are not read.
+   */
+  readonly inventory?: Inventory
 }
 
 export interface HostComposition {
@@ -51,18 +58,20 @@ export async function createHostComposition(
       context: { topologyId: topology.topologyId, realmId: options.realmId },
     })
   }
-  const inventory = await buildInventory(
-    [NATIVE_TEXT_INPUT, ...(options.extensions ?? [])],
-    options.contributionContracts ?? createHostContributionContractRegistry(),
-    {
-      ...(options.disabledExtensions === undefined
-        ? {}
-        : { disabledExtensions: options.disabledExtensions }),
-      ...(options.disabledContributions === undefined
-        ? {}
-        : { disabledContributions: options.disabledContributions }),
-    },
-  )
+  const inventory =
+    options.inventory ??
+    (await buildInventory(
+      [NATIVE_TEXT_INPUT, ...(options.extensions ?? [])],
+      options.contributionContracts ?? createHostContributionContractRegistry(),
+      {
+        ...(options.disabledExtensions === undefined
+          ? {}
+          : { disabledExtensions: options.disabledExtensions }),
+        ...(options.disabledContributions === undefined
+          ? {}
+          : { disabledContributions: options.disabledContributions }),
+      },
+    ))
   return Object.freeze({
     topology,
     profile,

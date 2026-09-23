@@ -79,7 +79,10 @@ import type { Inventory } from '../inventory.js'
 import { createHostServiceResolver } from '../service-leases.js'
 
 /** Owner id under which the standard catalog-analysis definition is registered. */
-export const STANDARD_DATA_OWNER = 'modkit/data'
+// Kept distinct from the bundled `modkit/data` extension coordinate. Definition inventory is
+// owner-replaced atomically, so sharing that owner would let the extension's CSV/XML definitions
+// erase the platform Data contracts registered immediately before them.
+export const STANDARD_DATA_OWNER = 'modkit/platform-data'
 
 const OFFER_KEYS = new Set(['gameIds'])
 const REQUEST_KEYS = new Set(['gameId'])
@@ -216,6 +219,12 @@ export const RESOLVED_DATA_WORKSPACE_CONTRACT_DEFINITION: ServiceContractDefinit
           kind: 'value',
           signal: Object.freeze({ arg: 0, key: 'signal' }),
           limits: Object.freeze({ maxBytes: 16_777_216, maxStringLength: 4_194_304 }),
+        }),
+        analyzeAuthoringIndex: Object.freeze({
+          kind: 'value',
+          optional: true,
+          signal: Object.freeze({ arg: 0, key: 'signal' }),
+          limits: Object.freeze({ maxBytes: 50_331_648, maxStringLength: 50_331_648 }),
         }),
         openSchemaTree: Object.freeze({
           kind: 'lease',
@@ -444,6 +453,8 @@ function isResolvedDataWorkspace(value: unknown): value is ResolvedDataWorkspace
     stringList(record['gameIds']) !== undefined &&
     typeof record['plan'] === 'function' &&
     typeof record['analyze'] === 'function' &&
+    (record['analyzeAuthoringIndex'] === undefined ||
+      typeof record['analyzeAuthoringIndex'] === 'function') &&
     typeof record['openSchemaTree'] === 'function' &&
     typeof record['openDefinitionTable'] === 'function' &&
     typeof record['openLocalizationTable'] === 'function' &&

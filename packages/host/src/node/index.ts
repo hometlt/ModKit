@@ -38,6 +38,10 @@ export {
   type NodeMapPreviewResourcePlanResolverOptions,
 } from './map-preview-resource-resolver.js'
 export {
+  createContentSourceMapPreviewResourcePlanResolver,
+  type ContentSourceMapPreviewResourcePlanResolverOptions,
+} from './content-source-map-preview-resolver.js'
+export {
   launchNodeGameResource,
   spawnDetachedGameProcess,
   type LaunchNodeGameResourceRequest,

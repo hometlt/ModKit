@@ -1,11 +1,25 @@
-import { beforeAll, describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { OperationCancelledError, uint64 } from '@modkit/core'
 import {
   createHostTopology,
+  revisionId,
   type SubjectCandidateProvider,
   type SubjectCandidateProviderSource,
 } from '@modkit/sdk'
-import type { LanguageAnalysis, LanguageDocument, LanguageProvider } from '@modkit/sdk/language'
+import {
+  RESOLVED_DATA_WORKSPACE_CONTRACT,
+  type ResolvedDataWorkspace,
+  type ResolvedDataWorkspaceAnalysisRequest,
+} from '@modkit/sdk/data'
+import type {
+  LanguageAnalysis,
+  LanguageDiagnosticList,
+  LanguageDocument,
+  LanguageProvider,
+  LanguageWorkspaceContext,
+  LanguageWorkspaceDocumentOrigin,
+  LanguageWorkspaceSemanticInput,
+} from '@modkit/sdk/language'
 import { LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT } from '@modkit/sdk/language'
 import {
   createBundledServiceDefinitionRegistry,
@@ -18,6 +32,8 @@ import {
 } from '@modkit/host'
 import {
   createLanguageWorkspace,
+  languageProviderRoutes,
+  languageProviderTriggerCharacters,
   LANGUAGE_DOCUMENT_CONTRACT_DEFINITION,
   type LanguageHostServices,
   type LanguageWorkspaceDocumentSource,
@@ -26,9 +42,13 @@ import {
 
 describe('standard language execution surface', () => {
   it('carries colour methods across in-process and worker boundaries', () => {
+    expect(LANGUAGE_DOCUMENT_CONTRACT_DEFINITION.surface?.fields).toContain(
+      'semanticContextRequirements',
+    )
     expect(LANGUAGE_DOCUMENT_CONTRACT_DEFINITION.surface?.methods).toMatchObject({
       documentColors: { kind: 'value', optional: true },
       colorPresentations: { kind: 'value', optional: true },
+      onTypeFormatting: { kind: 'value', optional: true },
     })
   })
 })
@@ -75,14 +95,24 @@ const analysisFor = (document: LanguageDocument): LanguageAnalysis => ({
 
 let observedWorkspaceIncomplete: boolean | undefined
 let observedWorkspaceDocuments: readonly string[] = []
+let observedWorkspaceContext: LanguageWorkspaceContext | undefined
 
 const provider: LanguageProvider = {
   contract: LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT,
   languageIds: ['fixture-language'],
+  semanticContextRequirements: [
+    {
+      kind: 'resolved-data-snapshot',
+      gameId: 'fixture-game',
+      languageIds: ['fixture-language'],
+    },
+  ],
+  semanticInputs: [{ kind: 'schema', id: 'fixture/schema@1', revision: 'fixture-schema:1' }],
   analyze: request => Promise.resolve(analysisFor(request.document)),
   completion: request => {
     observedWorkspaceIncomplete = request.workspaceIncomplete
     observedWorkspaceDocuments = request.workspaceDocuments.map(document => document.uri)
+    observedWorkspaceContext = request.workspaceContext
     return Promise.resolve({
       items: [
         {
@@ -104,6 +134,13 @@ const provider: LanguageProvider = {
       isIncomplete: false,
     })
   },
+  onTypeFormatting: request =>
+    Promise.resolve({
+      edits: [{ range: { start: request.position, end: request.position }, newText: '""' }],
+      isComplete: true,
+      cursor: { line: request.position.line, character: request.position.character + 1 },
+      requestCompletion: true,
+    }),
   definition: request =>
     Promise.resolve({
       locations: request.workspaceDocuments
@@ -117,6 +154,67 @@ const provider: LanguageProvider = {
         })),
       isIncomplete: request.workspaceIncomplete,
     }),
+  references: request =>
+    Promise.resolve({
+      locations: request.workspaceDocuments
+        .filter(document => document.uri.endsWith('/dependency.lang'))
+        .map(document => ({
+          uri: document.uri,
+          range: {
+            start: { line: 0, character: 0 },
+            end: { line: 0, character: Math.min(10, document.text.length) },
+          },
+        })),
+      isIncomplete: request.workspaceIncomplete,
+    }),
+  referenceOccurrences: request => {
+    if (!request.document.text.startsWith('indexed-') || request.workspaceContext === undefined)
+      return Promise.resolve([])
+    const origin = request.workspaceContext.documentOrigins.find(
+      item => item.uri === request.document.uri,
+    )
+    if (origin === undefined) return Promise.resolve([])
+    return Promise.resolve([
+      {
+        contextId: request.workspaceContext.id,
+        contextRevision: request.workspaceContext.revision,
+        semanticComplete: request.workspaceContext.semanticComplete,
+        sourceUri: request.document.uri,
+        sourceRevision: origin.sourceRevision,
+        occurrences: [
+          {
+            target: {
+              owner: 'org.modkit.test/subject-completion-language-provider',
+              kind: 'cross-language-symbol',
+              id: 'dependency',
+              workspace: request.workspaceContext.id,
+            },
+            source: {
+              uri: request.document.uri,
+              sourceRevision: origin.sourceRevision,
+              span: { utf16Offset: 0, utf16Length: 11, line: 0, column: 0 },
+              origin,
+            },
+            semanticPath: ['dependency'],
+            role: request.document.text.startsWith('indexed-declaration')
+              ? 'declaration'
+              : 'reference',
+            form: 'literal',
+            provenance: 'org.modkit.test/subject-completion-language-provider',
+            ...(request.document.text.startsWith('indexed-declaration')
+              ? {
+                  subject: {
+                    workspace: request.workspaceContext.id,
+                    source: { id: request.document.uri },
+                    identity: { kind: 'fixture/cross-language-symbol', key: 'dependency' },
+                  },
+                }
+              : {}),
+          },
+        ],
+      },
+    ])
+  },
   rename: request =>
     Promise.resolve({
       isComplete: true,
@@ -177,6 +275,115 @@ const provider: LanguageProvider = {
     }),
 }
 
+const dataAnalyzeRequests: ResolvedDataWorkspaceAnalysisRequest[] = []
+let dataProviderReleases = 0
+let dataPayloadPaddingBytes = 0
+let dataAnalyzeWaitForAbort = false
+let noteDataAnalyzeEntered = (): void => undefined
+const projectionAdapter = { id: 'fixture/data', version: '1' }
+const projectionRevision = revisionId('provider-token:fixture-data-1')
+const dataOwnerMetadata = { fixture: { editorCategories: ['units'] } }
+const dataProvider: ResolvedDataWorkspace = {
+  contract: RESOLVED_DATA_WORKSPACE_CONTRACT,
+  providerId: 'org.modkit.test/resolved-data',
+  gameIds: ['fixture-game'],
+  plan: async request => ({
+    schemaVersion: 1,
+    workspaceId: request.workspace.workspaceId,
+    gameId: request.workspace.gameId,
+    analyzerId: 'fixture-data',
+    requirements: [],
+    diagnostics: [],
+    complete: true,
+  }),
+  analyze: async request => {
+    dataAnalyzeRequests.push(request)
+    if (dataAnalyzeWaitForAbort) {
+      noteDataAnalyzeEntered()
+      await new Promise<never>((_resolve, reject) => {
+        const signal = request.signal
+        if (signal === undefined) {
+          reject(new Error('expected a cancellation signal'))
+          return
+        }
+        if (signal.aborted) {
+          reject(new OperationCancelledError(signal.reason))
+          return
+        }
+        signal.addEventListener('abort', () => reject(new OperationCancelledError(signal.reason)), {
+          once: true,
+        })
+      })
+    }
+    const documentOrder = request.documents.map(
+      document => `${document.rootId}:${document.path}:${document.text}`,
+    )
+    const definition = {
+      namespace: 'Unit',
+      typeId: 'CUnit',
+      entityId: 'Marine',
+      inheritanceChain: [],
+      fields: {
+        documentOrder,
+        ...(dataPayloadPaddingBytes === 0 ? {} : { padding: 'x'.repeat(dataPayloadPaddingBytes) }),
+      },
+      fieldSources: {},
+      sources: [],
+      complete: request.unresolvedRequirementIds.length === 0,
+    }
+    return {
+      schemaVersion: 1,
+      workspaceId: request.workspaceId,
+      gameId: request.gameId,
+      analyzerId: 'fixture-data',
+      typeIds: ['CUnit'],
+      namespaces: [{ namespace: 'Unit', entityCount: 1 }],
+      entityCount: 1,
+      patchCount: request.documents.length,
+      definitions: [definition],
+      entities: [],
+      relations: [],
+      localizedStrings: [],
+      diagnostics: [],
+      ownerMetadata: dataOwnerMetadata,
+      snapshotId: request.snapshotId ?? 'fixture-data',
+      projectionPlan: {
+        adapter: projectionAdapter,
+        subjectRevision: projectionRevision,
+        facets: [],
+      },
+      projectionReceipt: {
+        form: 'local',
+        adapter: projectionAdapter,
+        subjectRevision: projectionRevision,
+        companions: [],
+        basis: {
+          handedness: 'right',
+          upAxis: 'z',
+          forwardAxis: '+y',
+          unit: 'source-unit',
+        },
+        planes: [],
+        evidence: [],
+        confidence: 'exact',
+      },
+      complete: request.unresolvedRequirementIds.length === 0,
+    }
+  },
+  openSchemaTree: async () => {
+    throw new Error('not used')
+  },
+  openDefinitionTable: async () => {
+    throw new Error('not used')
+  },
+  openLocalizationTable: async () => {
+    throw new Error('not used')
+  },
+  openRelations: async () => {
+    throw new Error('not used')
+  },
+}
+
 const fixture = defineLinkedExtension({
   source: 'linked:test/subject-completion-language',
   packageJson: {
@@ -189,7 +396,7 @@ const fixture = defineLinkedExtension({
       schemaVersion: 1,
       publisher: 'org.modkit.test',
       id: 'subject-completion-language',
-      contributionManifests: ['./contributions/language.json'],
+      contributionManifests: ['./contributions/language.json', './contributions/data.json'],
     },
   },
   contributions: [
@@ -220,7 +427,40 @@ const fixture = defineLinkedExtension({
                 languageIds: ['fixture-language'],
                 documentKinds: ['fixture-source'],
                 extensions: ['lang'],
+                completionTriggerCharacters: ['<', ' '],
+                signatureHelpTriggerCharacters: ['(', ','],
+                onTypeFormattingTriggerCharacters: ['='],
               },
+            },
+          ],
+          lifecycleScope: 'session',
+        },
+      },
+    },
+    {
+      path: 'contributions/data.json',
+      manifest: {
+        schemaVersion: 1,
+        contract: { id: 'org.modkitx/service-provider-contribution', major: 1 },
+        id: 'org.modkit.test/resolved-data-provider',
+        displayName: 'Resolved Data provider',
+        runtimeVariants: [
+          {
+            variantId: 'trusted-node',
+            entrypoint: './src/data-provider.js',
+            target: { environments: ['node'] },
+            executionProfile: 'trusted-in-process',
+            requestedPermissionClasses: [],
+          },
+        ],
+        spec: {
+          provides: [
+            {
+              offerId: 'fixture-data-v1',
+              contract: 'common.data/resolved-workspace',
+              major: 1,
+              version: '1.0.0',
+              facet: { gameIds: ['fixture-game'] },
             },
           ],
           lifecycleScope: 'session',
@@ -233,6 +473,16 @@ const fixture = defineLinkedExtension({
       abiVersion: 1,
       provides: ['common.language/document-analysis'],
       createProvider: () => ({ value: provider, release: async () => undefined }),
+    },
+    './src/data-provider.js': {
+      abiVersion: 1,
+      provides: ['common.data/resolved-workspace'],
+      createProvider: () => ({
+        value: dataProvider,
+        release: async () => {
+          dataProviderReleases += 1
+        },
+      }),
     },
   },
 })
@@ -253,7 +503,24 @@ beforeAll(async () => {
   services = { ...composition, serviceDefinitions: definitions }
 })
 
-const languageRequest = (version: number): LanguageWorkspaceDocumentRequest => ({
+it('projects provider-owned trigger characters with the language route', () => {
+  const routes = languageProviderRoutes(services.inventory)
+  expect(routes).toEqual([
+    {
+      languageId: 'fixture-language',
+      documentKind: 'fixture-source',
+      extension: 'lang',
+      completionTriggerCharacters: [' ', '<'],
+      signatureHelpTriggerCharacters: ['(', ','],
+      onTypeFormattingTriggerCharacters: ['='],
+    },
+  ])
+  expect(languageProviderTriggerCharacters(routes, 'completion')).toEqual([' ', '<'])
+  expect(languageProviderTriggerCharacters(routes, 'signatureHelp')).toEqual(['(', ','])
+  expect(languageProviderTriggerCharacters(routes, 'onTypeFormatting')).toEqual(['='])
+})
+
+const languageRequest = (version: number, text = 'value'): LanguageWorkspaceDocumentRequest => ({
   languageId: 'fixture-language',
   documentKind: 'fixture-source',
   extension: 'lang',
@@ -261,7 +528,7 @@ const languageRequest = (version: number): LanguageWorkspaceDocumentRequest => (
     uri: DOCUMENT_URI,
     languageId: 'fixture-language',
     version,
-    text: 'value',
+    text,
   },
 })
 
@@ -280,6 +547,9 @@ async function openWorkspace(
   subjectCandidates: SubjectCandidateProviderSource,
   workspaceIncomplete: boolean | (() => boolean) = false,
   documentSource?: LanguageWorkspaceDocumentSource,
+  documentOrigin?: (document: LanguageDocument) => LanguageWorkspaceDocumentOrigin | undefined,
+  semanticInputs?: () => readonly LanguageWorkspaceSemanticInput[],
+  initialText = 'value',
 ) {
   const workspace = createLanguageWorkspace({
     services,
@@ -288,9 +558,11 @@ async function openWorkspace(
     subjectCandidates,
     workspaceIncomplete,
     ...(documentSource === undefined ? {} : { documentSource }),
+    ...(documentOrigin === undefined ? {} : { documentOrigin }),
+    ...(semanticInputs === undefined ? {} : { semanticInputs }),
   })
   await workspace.initialize()
-  const opened = await workspace.open(languageRequest(1))
+  const opened = await workspace.open(languageRequest(1, initialText))
   if (opened.state !== 'resolved') {
     throw new Error(`neutral language fixture did not resolve: ${JSON.stringify(opened)}`)
   }
@@ -338,6 +610,270 @@ const completionRequest = () => ({
 })
 
 describe('language subject completion lifecycle', () => {
+  it('does not resolve a subject candidate source for ordinary provider completions', async () => {
+    const open = vi.fn(async () => undefined)
+    const original = provider.completion
+    provider.completion = async () => ({
+      items: [{ label: 'Catalog', kind: 'class' }],
+      isIncomplete: false,
+    })
+    const workspace = await openWorkspace({ open })
+    try {
+      await expect(workspace.completion(completionRequest())).resolves.toEqual({
+        items: [{ label: 'Catalog', kind: 'class' }],
+        isIncomplete: false,
+      })
+      expect(open).not.toHaveBeenCalled()
+    } finally {
+      provider.completion = original
+      await workspace.shutdown()
+    }
+  })
+
+  it('routes and validates protocol-neutral on-type formatting edits', async () => {
+    const workspace = await openWorkspace({ open: async () => undefined })
+    try {
+      await expect(
+        workspace.onTypeFormatting({
+          ...completionRequest(),
+          ch: '=',
+          options: { tabSize: 2, insertSpaces: true },
+        }),
+      ).resolves.toEqual({
+        edits: [
+          {
+            range: {
+              start: { line: 0, character: 0 },
+              end: { line: 0, character: 0 },
+            },
+            newText: '""',
+          },
+        ],
+        isComplete: true,
+        cursor: { line: 0, character: 1 },
+        requestCompletion: true,
+      })
+      await expect(
+        workspace.onTypeFormatting({
+          ...completionRequest(),
+          ch: '==',
+          options: { tabSize: 2, insertSpaces: true },
+        }),
+      ).rejects.toThrow(/exactly one trigger character/u)
+    } finally {
+      await workspace.shutdown()
+    }
+  })
+
+  it('falls back to the provider when the reference index recognizes an unresolved definition', async () => {
+    const workspace = await openWorkspace(
+      { open: async () => undefined },
+      false,
+      {
+        snapshot: async () => ({
+          documents: [
+            {
+              uri: 'file:///workspace/dependency.lang',
+              languageId: 'fixture-language',
+              version: 1,
+              text: 'dependency',
+            },
+          ],
+          isComplete: true,
+        }),
+      },
+      document => ({
+        uri: document.uri,
+        layerId: 'fixture:workspace',
+        logicalId: document.uri.slice('file:///workspace/'.length),
+        precedence: 0,
+        sourceRevision: `fixture:${document.version}:${document.text}`,
+        readOnly: false,
+      }),
+      undefined,
+      'indexed-use',
+    )
+    try {
+      await expect(workspace.definition(completionRequest())).resolves.toMatchObject({
+        locations: [{ uri: 'file:///workspace/dependency.lang' }],
+      })
+    } finally {
+      await workspace.shutdown()
+    }
+  })
+
+  it('falls back to the provider when the reference index has no reference locations', async () => {
+    const workspace = await openWorkspace(
+      { open: async () => undefined },
+      false,
+      {
+        snapshot: async () => ({
+          documents: [
+            {
+              uri: 'file:///workspace/dependency.lang',
+              languageId: 'fixture-language',
+              version: 1,
+              text: 'dependency',
+            },
+          ],
+          isComplete: true,
+        }),
+      },
+      document => ({
+        uri: document.uri,
+        layerId: 'fixture:workspace',
+        logicalId: document.uri.slice('file:///workspace/'.length),
+        precedence: 0,
+        sourceRevision: `fixture:${document.version}:${document.text}`,
+        readOnly: false,
+      }),
+      undefined,
+      'indexed-declaration',
+    )
+    try {
+      await expect(
+        workspace.references({ ...completionRequest(), includeDeclaration: false }),
+      ).resolves.toMatchObject({ locations: [{ uri: 'file:///workspace/dependency.lang' }] })
+    } finally {
+      await workspace.shutdown()
+    }
+  })
+
+  it.each([
+    {
+      name: 'complete dependency context',
+      providerIncomplete: false,
+      sourceComplete: true,
+      contextComplete: true,
+      callerIncomplete: false,
+      fallback: false,
+      expected: false,
+    },
+    {
+      name: 'provider-reported incompleteness',
+      providerIncomplete: true,
+      sourceComplete: true,
+      contextComplete: true,
+      callerIncomplete: false,
+      fallback: false,
+      expected: true,
+    },
+    {
+      name: 'truncated dependency source',
+      providerIncomplete: false,
+      sourceComplete: false,
+      contextComplete: true,
+      callerIncomplete: false,
+      fallback: false,
+      expected: true,
+    },
+    {
+      name: 'partial semantic context',
+      providerIncomplete: false,
+      sourceComplete: true,
+      contextComplete: false,
+      callerIncomplete: false,
+      fallback: false,
+      expected: true,
+    },
+    {
+      name: 'caller-reported incompleteness',
+      providerIncomplete: false,
+      sourceComplete: true,
+      contextComplete: true,
+      callerIncomplete: true,
+      fallback: false,
+      expected: true,
+    },
+    {
+      name: 'analysis fallback with complete read-only dependencies',
+      providerIncomplete: false,
+      sourceComplete: true,
+      contextComplete: true,
+      callerIncomplete: false,
+      fallback: true,
+      expected: false,
+    },
+  ])('preserves diagnostic findings and completeness for $name', async scenario => {
+    const findings = [
+      {
+        range: { start: { line: 0, character: 0 }, end: { line: 0, character: 1 } },
+        severity: 'warning' as const,
+        message: 'Provider-owned finding',
+        code: 'fixture/diagnostic',
+      },
+    ]
+    if (!scenario.fallback) {
+      provider.diagnostics = async () => ({
+        diagnostics: findings,
+        isIncomplete: scenario.providerIncomplete,
+      })
+    }
+    const dependencyUri = 'content-source://fixture/dependency.lang'
+    const workspace = await openWorkspace(
+      { open: async () => undefined },
+      scenario.callerIncomplete,
+      {
+        snapshot: async () => ({
+          documents: [
+            { uri: dependencyUri, languageId: 'fixture-language', version: 1, text: 'dependency' },
+          ],
+          isComplete: scenario.sourceComplete,
+          workspaceContext: {
+            id: 'diagnostics-context',
+            revision: 'diagnostics-context:1',
+            semanticComplete: scenario.contextComplete,
+            documentOrigins: [
+              {
+                uri: dependencyUri,
+                layerId: 'dependency',
+                logicalId: 'dependency.lang',
+                precedence: 0,
+                sourceRevision: 'dependency:1',
+                readOnly: true,
+              },
+            ],
+          },
+        }),
+      },
+      document => ({
+        uri: document.uri,
+        layerId: 'workspace',
+        logicalId: 'fixture.lang',
+        precedence: 1,
+        sourceRevision: `open:${document.version}`,
+        readOnly: false,
+        overlay: true,
+      }),
+    )
+    try {
+      await expect(workspace.diagnostics(completionRequest())).resolves.toEqual({
+        diagnostics: scenario.fallback ? [] : findings,
+        isIncomplete: scenario.expected,
+      })
+    } finally {
+      delete provider.diagnostics
+      await workspace.shutdown()
+    }
+  })
+
+  it('rejects malformed diagnostic completeness before applying host context', async () => {
+    provider.diagnostics = async () =>
+      ({
+        diagnostics: [],
+        isIncomplete: 'false',
+      }) as unknown as LanguageDiagnosticList
+    const workspace = await openWorkspace({ open: async () => undefined }, true)
+    try {
+      await expect(workspace.diagnostics(completionRequest())).rejects.toThrow(
+        /invalid or unbounded diagnostics/u,
+      )
+    } finally {
+      delete provider.diagnostics
+      await workspace.shutdown()
+    }
+  })
+
   it('adds bounded read-only dependency documents to semantic feature snapshots', async () => {
     observedWorkspaceIncomplete = undefined
     observedWorkspaceDocuments = []
@@ -382,6 +918,573 @@ describe('language subject completion lifecycle', () => {
     }
   })
 
+  it('replaces only the same-layer file with an open overlay and retains weaker layers', async () => {
+    const baseUri = 'content-source://fixture/base/fixture.lang'
+    const dependencyUri = 'content-source://fixture/layer/fixture.lang'
+    const logicalId = 'layer/fixture.lang'
+    const source: LanguageWorkspaceDocumentSource = {
+      snapshot: async request => ({
+        documents: [
+          {
+            uri: baseUri,
+            languageId: 'fixture-language',
+            version: 1,
+            text: 'base',
+          },
+          {
+            uri: dependencyUri,
+            languageId: 'fixture-language',
+            version: 1,
+            text: 'dependency',
+          },
+        ],
+        isComplete: true,
+        workspaceContext: {
+          id: 'fixture-context',
+          revision: 'fixture-context:1',
+          semanticComplete: true,
+          documentOrigins: [
+            {
+              uri: baseUri,
+              layerId: 'base-layer',
+              logicalId,
+              precedence: 0,
+              sourceRevision: 'base:1',
+              readOnly: true,
+            },
+            {
+              uri: dependencyUri,
+              layerId: 'fixture-layer',
+              logicalId,
+              precedence: 1,
+              sourceRevision: 'dependency:1',
+              readOnly: true,
+            },
+          ],
+        },
+      }),
+    }
+    const workspace = await openWorkspace(
+      { open: async () => undefined },
+      false,
+      source,
+      document => ({
+        uri: document.uri,
+        layerId: 'fixture-layer',
+        logicalId,
+        precedence: 2,
+        sourceRevision: `open:${document.version}`,
+        readOnly: false,
+        overlay: true,
+      }),
+    )
+    try {
+      await workspace.completion(completionRequest())
+      expect(observedWorkspaceDocuments).toEqual([baseUri, DOCUMENT_URI])
+      expect(observedWorkspaceIncomplete).toBe(true)
+      expect(observedWorkspaceContext).toMatchObject({
+        id: expect.stringMatching(/^language-context-v1:/u),
+        semanticComplete: true,
+        semanticInputs: expect.arrayContaining([
+          { kind: 'schema', id: 'fixture/schema@1', revision: 'fixture-schema:1' },
+          expect.objectContaining({ kind: 'provider-artifact' }),
+        ]),
+        documentOrigins: [
+          { uri: baseUri, layerId: 'base-layer', logicalId, readOnly: true },
+          {
+            uri: DOCUMENT_URI,
+            layerId: 'fixture-layer',
+            logicalId,
+            readOnly: false,
+            overlay: true,
+          },
+        ],
+      })
+      const firstRevision = observedWorkspaceContext?.revision
+
+      await workspace.change(languageRequest(2))
+      await workspace.completion({ ...completionRequest(), documentVersion: 2 })
+      expect(observedWorkspaceContext?.revision).not.toBe(firstRevision)
+    } finally {
+      await workspace.shutdown()
+    }
+  })
+
+  it('analyzes the final precedence-ordered snapshot once and releases the Data lease', async () => {
+    const baselineAnalyses = dataAnalyzeRequests.length
+    const baselineReleases = dataProviderReleases
+    const dependencyUri = 'content-source://fixture/base/GameData/UnitData.xml'
+    const source: LanguageWorkspaceDocumentSource = {
+      snapshot: async () => ({
+        documents: [
+          {
+            uri: dependencyUri,
+            languageId: 'fixture-language',
+            version: 1,
+            text: '<Base/>',
+          },
+        ],
+        isComplete: true,
+        workspaceContext: {
+          id: 'fixture-data-context',
+          revision: 'fixture-data-context:1',
+          semanticComplete: true,
+          documentOrigins: [
+            {
+              uri: dependencyUri,
+              layerId: 'base-mod',
+              logicalId: 'GameData/UnitData.xml',
+              precedence: 0,
+              sourceRevision: 'base:1',
+              readOnly: true,
+            },
+          ],
+        },
+      }),
+    }
+    const workspace = await openWorkspace(
+      { open: async () => undefined },
+      false,
+      source,
+      document => ({
+        uri: document.uri,
+        layerId: 'selected-mod',
+        logicalId: 'GameData/UnitData.xml',
+        precedence: 1,
+        sourceRevision: `open:${document.version}`,
+        readOnly: false,
+        overlay: true,
+      }),
+    )
+    try {
+      await workspace.completion(completionRequest())
+      await workspace.completion(completionRequest())
+
+      expect(dataAnalyzeRequests).toHaveLength(baselineAnalyses + 1)
+      expect(dataProviderReleases).toBe(baselineReleases + 1)
+      expect(dataAnalyzeRequests.at(-1)).toMatchObject({
+        gameId: 'fixture-game',
+        plannedDocumentCount: 2,
+        unresolvedRequirementIds: [],
+        maxTextBytes: 1_000_000,
+        maxEntities: 100_000,
+        maxDepth: 64,
+        documents: [
+          { rootId: 'base-mod', path: 'GameData/UnitData.xml', text: '<Base/>' },
+          { rootId: 'selected-mod', path: 'GameData/UnitData.xml', text: 'value' },
+        ],
+      })
+      const semanticInput = observedWorkspaceContext?.semanticInputs?.find(
+        input => input.kind === 'resolved-data-snapshot',
+      )
+      expect(semanticInput).toMatchObject({
+        id: 'fixture-game',
+        payload: {
+          gameId: 'fixture-game',
+          definitions: [
+            {
+              namespace: 'Unit',
+              entityId: 'Marine',
+              fields: {
+                documentOrder: [
+                  'base-mod:GameData/UnitData.xml:<Base/>',
+                  'selected-mod:GameData/UnitData.xml:value',
+                ],
+              },
+            },
+          ],
+          ownerMetadata: dataOwnerMetadata,
+        },
+      })
+      expect(semanticInput?.payload).not.toHaveProperty('projectionPlan')
+      expect(semanticInput?.payload).not.toHaveProperty('projectionReceipt')
+      expect(observedWorkspaceContext?.semanticComplete).toBe(true)
+      expect(dataAnalyzeRequests.at(-1)?.signal).toBeInstanceOf(AbortSignal)
+    } finally {
+      await workspace.shutdown()
+    }
+  })
+
+  it('prefers a provider-owned bounded authoring index over the full snapshot', async () => {
+    const baselineAnalyses = dataAnalyzeRequests.length
+    const baselineReleases = dataProviderReleases
+    const authoringRequests: unknown[] = []
+    Object.defineProperty(dataProvider, 'analyzeAuthoringIndex', {
+      configurable: true,
+      value: async (request: { snapshotId?: string; maxOutputBytes: number }) => {
+        authoringRequests.push(request)
+        return {
+          schemaVersion: 1,
+          kind: 'resolved-data-authoring-index',
+          workspaceId: 'language:fixture',
+          gameId: 'fixture-game',
+          analyzerId: 'fixture-data',
+          snapshotId: request.snapshotId ?? 'fixture-authoring',
+          sourceTable: [
+            { rootId: 'selected-mod', path: 'GameData/UnitData.xml', documentIndex: 0 },
+          ],
+          namespaces: [{ namespace: 'Unit', entityCount: 1 }],
+          entityCount: 1,
+          patchCount: 1,
+          entities: [
+            {
+              identity: 'Unit\0Marine',
+              namespace: 'Unit',
+              typeId: 'CUnit',
+              entityId: 'Marine',
+              source: 0,
+              complete: true,
+              fields: [
+                {
+                  fieldId: 'LifeMax',
+                  value: 45,
+                  source: 0,
+                  originEntityId: 'Marine',
+                  origins: [{ path: [], source: 0, originEntityId: 'Marine' }],
+                },
+              ],
+              tombstones: [],
+            },
+          ],
+          diagnostics: {
+            errorCount: 0,
+            warningCount: 0,
+            informationCount: 0,
+            items: [],
+            truncated: false,
+          },
+          ownerMetadata: dataOwnerMetadata,
+          complete: true,
+          valuesComplete: true,
+        }
+      },
+    })
+    const workspace = await openWorkspace(
+      { open: async () => undefined },
+      false,
+      undefined,
+      document => ({
+        uri: document.uri,
+        layerId: 'selected-mod',
+        logicalId: 'GameData/UnitData.xml',
+        precedence: 0,
+        sourceRevision: `open:${document.version}`,
+        readOnly: false,
+        overlay: true,
+      }),
+    )
+    try {
+      await workspace.completion(completionRequest())
+      expect(dataAnalyzeRequests).toHaveLength(baselineAnalyses)
+      expect(authoringRequests).toEqual([
+        expect.objectContaining({ gameId: 'fixture-game', maxOutputBytes: 48 * 1_024 * 1_024 }),
+      ])
+      expect(
+        observedWorkspaceContext?.semanticInputs?.find(
+          input => input.kind === 'resolved-data-authoring-index',
+        ),
+      ).toMatchObject({
+        id: 'fixture-game',
+        payload: {
+          valuesComplete: true,
+          ownerMetadata: dataOwnerMetadata,
+          entities: [
+            expect.objectContaining({
+              identity: 'Unit\0Marine',
+              source: 0,
+              fields: [
+                expect.objectContaining({
+                  fieldId: 'LifeMax',
+                  origins: [{ path: [], source: 0, originEntityId: 'Marine' }],
+                }),
+              ],
+            }),
+          ],
+        },
+      })
+      expect(observedWorkspaceContext?.semanticComplete).toBe(true)
+      expect(dataProviderReleases).toBe(baselineReleases + 1)
+    } finally {
+      delete (dataProvider as { analyzeAuthoringIndex?: unknown }).analyzeAuthoringIndex
+      await workspace.shutdown()
+    }
+  })
+
+  it('evicts completed semantic contexts by encoded byte weight', async () => {
+    const authoringRequests: string[] = []
+    const padding = 'x'.repeat(33 * 1_024 * 1_024)
+    Object.defineProperty(dataProvider, 'analyzeAuthoringIndex', {
+      configurable: true,
+      value: async (request: { snapshotId?: string }) => {
+        authoringRequests.push(request.snapshotId ?? '')
+        return {
+          schemaVersion: 1,
+          kind: 'resolved-data-authoring-index',
+          workspaceId: 'language:fixture',
+          gameId: 'fixture-game',
+          analyzerId: 'fixture-data',
+          snapshotId: request.snapshotId ?? 'fixture-authoring',
+          sourceTable: [
+            { rootId: 'selected-mod', path: 'GameData/UnitData.xml', documentIndex: 0 },
+          ],
+          namespaces: [{ namespace: 'Unit', entityCount: 1 }],
+          entityCount: 1,
+          patchCount: 1,
+          entities: [
+            {
+              identity: 'Unit\0Marine',
+              namespace: 'Unit',
+              typeId: 'CUnit',
+              entityId: 'Marine',
+              source: 0,
+              complete: true,
+              fields: [
+                {
+                  fieldId: 'Padding',
+                  value: padding,
+                  source: 0,
+                  originEntityId: 'Marine',
+                },
+              ],
+              tombstones: [],
+            },
+          ],
+          diagnostics: {
+            errorCount: 0,
+            warningCount: 0,
+            informationCount: 0,
+            items: [],
+            truncated: false,
+          },
+          complete: true,
+          valuesComplete: true,
+        }
+      },
+    })
+    const origin = (document: LanguageDocument): LanguageWorkspaceDocumentOrigin => ({
+      uri: document.uri,
+      layerId: 'selected-mod',
+      logicalId: 'GameData/UnitData.xml',
+      precedence: 0,
+      sourceRevision: `content:${document.text}`,
+      readOnly: false,
+      overlay: true,
+    })
+    const workspace = await openWorkspace(
+      { open: async () => undefined },
+      false,
+      undefined,
+      origin,
+      undefined,
+      'cache-a',
+    )
+    try {
+      await workspace.completion(completionRequest())
+      await workspace.completion(completionRequest())
+      expect(authoringRequests).toHaveLength(1)
+
+      await workspace.change(languageRequest(2, 'cache-b'))
+      await workspace.completion({ ...completionRequest(), documentVersion: 2 })
+      expect(authoringRequests).toHaveLength(2)
+
+      await workspace.close(DOCUMENT_URI)
+      await workspace.open(languageRequest(1, 'cache-a'))
+      await workspace.completion(completionRequest())
+      expect(authoringRequests).toHaveLength(3)
+      expect(authoringRequests[2]).toBe(authoringRequests[0])
+    } finally {
+      delete (dataProvider as { analyzeAuthoringIndex?: unknown }).analyzeAuthoringIndex
+      await workspace.shutdown()
+    }
+  }, 30_000)
+
+  it('serves cached semantic context during an edit without rebuilding resolved Data', async () => {
+    const baselineAnalyses = dataAnalyzeRequests.length
+    const workspace = await openWorkspace(
+      { open: async () => undefined },
+      false,
+      undefined,
+      document => ({
+        uri: document.uri,
+        layerId: 'selected-mod',
+        logicalId: 'GameData/UnitData.xml',
+        precedence: 0,
+        sourceRevision: `open:${document.version}`,
+        readOnly: false,
+        overlay: true,
+      }),
+    )
+    try {
+      await workspace.completion(completionRequest())
+      expect(dataAnalyzeRequests).toHaveLength(baselineAnalyses + 1)
+
+      await workspace.change(languageRequest(2, 'value<'))
+      await workspace.completion({
+        ...completionRequest(),
+        documentVersion: 2,
+        semanticContextPolicy: 'cached',
+      })
+      expect(dataAnalyzeRequests).toHaveLength(baselineAnalyses + 1)
+      expect(observedWorkspaceContext?.semanticComplete).toBe(false)
+      expect(
+        observedWorkspaceContext?.semanticInputs?.some(
+          input => input.kind === 'resolved-data-snapshot',
+        ),
+      ).toBe(true)
+
+      await workspace.completion({ ...completionRequest(), documentVersion: 2 })
+      expect(dataAnalyzeRequests).toHaveLength(baselineAnalyses + 2)
+    } finally {
+      await workspace.shutdown()
+    }
+  })
+
+  it('degrades an oversized resolved Data payload to incomplete without failing the feature', async () => {
+    dataPayloadPaddingBytes = 64 * 1024 * 1024
+    const baselineReleases = dataProviderReleases
+    const workspace = await openWorkspace(
+      { open: async () => undefined },
+      false,
+      undefined,
+      document => ({
+        uri: document.uri,
+        layerId: 'selected-mod',
+        logicalId: 'GameData/UnitData.xml',
+        precedence: 0,
+        sourceRevision: `open:${document.version}`,
+        readOnly: false,
+        overlay: true,
+      }),
+    )
+    try {
+      await expect(workspace.completion(completionRequest())).resolves.toBeDefined()
+      expect(
+        observedWorkspaceContext?.semanticInputs?.some(
+          input => input.kind === 'resolved-data-snapshot',
+        ),
+      ).toBe(false)
+      expect(observedWorkspaceContext?.semanticComplete).toBe(false)
+      expect(dataProviderReleases).toBe(baselineReleases + 1)
+    } finally {
+      dataPayloadPaddingBytes = 0
+      await workspace.shutdown()
+    }
+  }, 15_000)
+
+  it('cancels resolved Data analysis and releases its service lease', async () => {
+    let entered = (): void => undefined
+    const analyzeEntered = new Promise<void>(resolve => {
+      entered = resolve
+    })
+    dataAnalyzeWaitForAbort = true
+    noteDataAnalyzeEntered = entered
+    const baselineReleases = dataProviderReleases
+    const workspace = await openWorkspace(
+      { open: async () => undefined },
+      false,
+      undefined,
+      document => ({
+        uri: document.uri,
+        layerId: 'selected-mod',
+        logicalId: 'GameData/UnitData.xml',
+        precedence: 0,
+        sourceRevision: `open:${document.version}`,
+        readOnly: false,
+        overlay: true,
+      }),
+    )
+    const controller = new AbortController()
+    try {
+      const pending = workspace.completion({ ...completionRequest(), signal: controller.signal })
+      await analyzeEntered
+      controller.abort('test cancellation')
+      await expect(pending).rejects.toBeInstanceOf(OperationCancelledError)
+      expect(dataProviderReleases).toBe(baselineReleases + 1)
+    } finally {
+      dataAnalyzeWaitForAbort = false
+      noteDataAnalyzeEntered = (): void => undefined
+      await workspace.shutdown()
+    }
+  })
+
+  it('changes semantic revision when a host-owned input changes without editing the buffer', async () => {
+    let localeRevision = 'locale:enUS:1'
+    const workspace = await openWorkspace(
+      { open: async () => undefined },
+      false,
+      undefined,
+      undefined,
+      () => [{ kind: 'locale-set', id: 'selected-game-locales:enUS', revision: localeRevision }],
+    )
+    try {
+      await workspace.completion(completionRequest())
+      const first = observedWorkspaceContext
+      localeRevision = 'locale:enUS:2'
+      workspace.invalidate('locale data changed')
+      await workspace.completion(completionRequest())
+      expect(observedWorkspaceContext?.id).toBe(first?.id)
+      expect(observedWorkspaceContext?.revision).not.toBe(first?.revision)
+    } finally {
+      await workspace.shutdown()
+    }
+  })
+
+  it('defensively copies a host-owned semantic payload before calling the provider', async () => {
+    const payload = { locale: { ids: ['enUS'] } }
+    const workspace = await openWorkspace(
+      { open: async () => undefined },
+      false,
+      undefined,
+      undefined,
+      () => [{ kind: 'locale-set', id: 'selected-game-locales', revision: '1', payload }],
+    )
+    try {
+      await workspace.completion(completionRequest())
+      const copied = observedWorkspaceContext?.semanticInputs?.find(
+        input => input.id === 'selected-game-locales',
+      )?.payload
+      expect(copied).toEqual(payload)
+      expect(copied).not.toBe(payload)
+      expect(Object.isFrozen(copied)).toBe(true)
+      payload.locale.ids[0] = 'deDE'
+      expect(copied).toEqual({ locale: { ids: ['enUS'] } })
+    } finally {
+      await workspace.shutdown()
+    }
+  })
+
+  it('includes open document bytes in revision even when URI and version are identical', async () => {
+    const first = await openWorkspace(
+      { open: async () => undefined },
+      false,
+      undefined,
+      undefined,
+      undefined,
+      'alpha',
+    )
+    let firstRevision: string | undefined
+    try {
+      await first.completion(completionRequest())
+      firstRevision = observedWorkspaceContext?.revision
+    } finally {
+      await first.shutdown()
+    }
+    const second = await openWorkspace(
+      { open: async () => undefined },
+      false,
+      undefined,
+      undefined,
+      undefined,
+      'bravo',
+    )
+    try {
+      await second.completion(completionRequest())
+      expect(observedWorkspaceContext?.revision).not.toBe(firstRevision)
+    } finally {
+      await second.shutdown()
+    }
+  })
+
   it('does not allow rename to write through read-only dependency context', async () => {
     const workspace = await openWorkspace({ open: async () => undefined }, false, {
       snapshot: async () => ({
@@ -408,30 +1511,36 @@ describe('language subject completion lifecycle', () => {
   it('allows a revision-bound local code action with read-only dependency context', async () => {
     const workspace = await openWorkspace({ open: async () => undefined }, false, {
       snapshot: async () => ({
-        documents: [{
-          uri: 'file:///workspace/dependency.lang',
-          languageId: 'fixture-language',
-          version: 1,
-          text: 'dependency',
-        }],
+        documents: [
+          {
+            uri: 'file:///workspace/dependency.lang',
+            languageId: 'fixture-language',
+            version: 1,
+            text: 'dependency',
+          },
+        ],
         isComplete: true,
       }),
     })
     try {
       const range = { start: { line: 0, character: 0 }, end: { line: 0, character: 5 } }
-      await expect(workspace.codeActions({
-        ...completionRequest(),
-        range,
-        diagnostics: [{ range, severity: 'warning', message: 'fixture', code: 'fixture/token' }],
-        maxEdits: 4,
-      })).resolves.toEqual({
-        actions: [expect.objectContaining({
-          title: 'Replace fixture token',
-          diagnosticCodes: ['fixture/token'],
-          edit: expect.objectContaining({
-            documentChanges: [expect.objectContaining({ uri: DOCUMENT_URI, documentVersion: 1 })],
+      await expect(
+        workspace.codeActions({
+          ...completionRequest(),
+          range,
+          diagnostics: [{ range, severity: 'warning', message: 'fixture', code: 'fixture/token' }],
+          maxEdits: 4,
+        }),
+      ).resolves.toEqual({
+        actions: [
+          expect.objectContaining({
+            title: 'Replace fixture token',
+            diagnosticCodes: ['fixture/token'],
+            edit: expect.objectContaining({
+              documentChanges: [expect.objectContaining({ uri: DOCUMENT_URI, documentVersion: 1 })],
+            }),
           }),
-        })],
+        ],
         isIncomplete: false,
       })
     } finally {

@@ -55,6 +55,11 @@ export interface ProviderActivation {
   readonly effectiveGrant: PermissionGrant
   /** Exact gate-admitted execution profile; callers must not infer it from the host target. */
   readonly executionProfile: ExecutionProfile
+  readonly attestation: Readonly<{
+    readonly manifestDigest: string
+    readonly artifactDigest: string
+    readonly offerFingerprint: string
+  }>
   /** Releases the provider lease and then the activation (realm); idempotent. */
   release(): Promise<void>
 }
@@ -122,6 +127,11 @@ export async function activateServiceProvider(
     lease,
     effectiveGrant: activation.effectiveGrant,
     executionProfile: activation.variant.executionProfile,
+    attestation: Object.freeze({
+      manifestDigest: ticket.manifestDigest,
+      artifactDigest: ticket.artifactDigest,
+      offerFingerprint: ticket.offerFingerprint,
+    }),
     async release() {
       if (released) return
       released = true
@@ -166,6 +176,9 @@ export interface ProviderActivationFact {
   readonly offerId: string
   readonly runtimeVariant: string
   readonly executionProfile: ExecutionProfile
+  readonly manifestDigest: string
+  readonly artifactDigest: string
+  readonly offerFingerprint: string
   /** Gate-narrowed authority actually supplied to this provider instance. */
   readonly effectiveGrant: PermissionGrant
 }
@@ -236,6 +249,9 @@ export function createHostServiceResolver(
             offerId: selection.offerId,
             runtimeVariant: result.selected.offer.runtimeVariant,
             executionProfile: activation.executionProfile,
+            manifestDigest: activation.attestation.manifestDigest,
+            artifactDigest: activation.attestation.artifactDigest,
+            offerFingerprint: activation.attestation.offerFingerprint,
             effectiveGrant: activation.effectiveGrant,
           }),
         )

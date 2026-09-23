@@ -2,8 +2,10 @@ import { describe, expect, it, vi } from 'vitest'
 import { operationId } from '@modkit/core'
 import type { AnyDescriptor, OperationSession } from '@modkit/sdk'
 import type { ContentSources } from '@modkit/vfs/content-sources'
+import type { LanguageWorkspaceDocumentSource } from '../src/language/workspace.js'
 import {
   analyzeOperationContentDependencies,
+  composeLanguageDocumentSources,
   readOperationContentDependencies,
   resolveContentLanguageSources,
 } from '../src/content-dependency-operations.js'
@@ -15,16 +17,20 @@ const dependencySet = Object.freeze({
   dependencies: Object.freeze([{ id: 'base' }]),
 })
 
-function descriptor(state: 'available' | 'disabled' = 'available'): Pick<AnyDescriptor, 'operations'> {
+function descriptor(
+  state: 'available' | 'disabled' = 'available',
+): Pick<AnyDescriptor, 'operations'> {
   const operation = {
     id: operationId('content.resolve-dependencies', { contributionId: 'test/content' }),
     handlerId: 'resolve-dependencies',
     mutatesSource: false,
   } as const
   return {
-    operations: [state === 'available'
-      ? { ...operation, state: 'available' }
-      : { ...operation, state: 'disabled', reason: 'initialization data unavailable' }],
+    operations: [
+      state === 'available'
+        ? { ...operation, state: 'available' }
+        : { ...operation, state: 'disabled', reason: 'initialization data unavailable' },
+    ],
   }
 }
 
@@ -41,38 +47,75 @@ function operations(value: unknown): OperationSession & { invoke: ReturnType<typ
 
 function sources(): ContentSources {
   return {
-    async snapshot() { return { label: 'test', regions: [], connections: [], roots: [] } },
-    async connect() {}, async disconnect() {}, async search() { return [] }, async add() {},
-    async remove() {}, async refresh() {}, async list() { return [] },
-    async read() { return new Uint8Array() }, async dispose() {},
+    async snapshot() {
+      return { label: 'test', regions: [], connections: [], roots: [] }
+    },
+    async connect() {},
+    async disconnect() {},
+    async search() {
+      return []
+    },
+    async add() {},
+    async remove() {},
+    async refresh() {},
+    async list() {
+      return []
+    },
+    async read() {
+      return new Uint8Array()
+    },
+    async dispose() {},
   }
 }
 
 describe('operation content dependency coordinator', () => {
   it('reads the standard dependency operation as bounded inert data', async () => {
     const session = operations(dependencySet)
-    await expect(readOperationContentDependencies({
-      descriptor: descriptor(), operations: session,
-    })).resolves.toMatchObject({ state: 'resolved', dependencies: dependencySet })
+    await expect(
+      readOperationContentDependencies({
+        descriptor: descriptor(),
+        operations: session,
+      }),
+    ).resolves.toMatchObject({ state: 'resolved', dependencies: dependencySet })
     expect(session.invoke).toHaveBeenCalledWith('resolve-dependencies', {}, undefined)
   })
 
   it('accepts the request carried beside a codec-owned workspace lock', async () => {
-    await expect(readOperationContentDependencies({
-      descriptor: descriptor(),
-      operations: operations({ schemaVersion: 1, loadOrder: [], contentDependencies: dependencySet }),
-    })).resolves.toMatchObject({ state: 'resolved', dependencies: dependencySet })
+    await expect(
+      readOperationContentDependencies({
+        descriptor: descriptor(),
+        operations: operations({
+          schemaVersion: 1,
+          loadOrder: [],
+          contentDependencies: dependencySet,
+        }),
+      }),
+    ).resolves.toMatchObject({ state: 'resolved', dependencies: dependencySet })
   })
 
   it('projects resolved closures into language sources and reports a failing operation', async () => {
     const failing: OperationSession = {
-      invoke: async () => { throw new Error('handler exploded') },
+      invoke: async () => {
+        throw new Error('handler exploded')
+      },
       async dispose() {},
     }
     const resolveDependencies = vi.fn(async () => ({
-      schemaVersion: 1 as const, gameId: 'example/game', complete: true, dependencies: [],
+      schemaVersion: 1 as const,
+      gameId: 'example/game',
+      complete: true,
+      dependencies: [],
       diagnostics: [],
-      mounts: [{ dependencyId: 'base', order: 0, sourceId: 'local', sourcePath: 'Base', displayName: 'Base', kind: 'mod' }],
+      mounts: [
+        {
+          dependencyId: 'base',
+          order: 0,
+          sourceId: 'local',
+          sourcePath: 'Base',
+          displayName: 'Base',
+          kind: 'mod',
+        },
+      ],
     }))
     const projected = await resolveContentLanguageSources({
       contentSources: { ...sources(), resolveDependencies } as ContentSources,
@@ -86,43 +129,136 @@ describe('operation content dependency coordinator', () => {
     expect(resolveDependencies).toHaveBeenCalledWith(dependencySet)
     expect(projected.sources).toHaveLength(1)
     expect(projected.dependenciesComplete).toBe(false)
-    expect(projected.diagnostics).toMatchObject([{
-      code: 'x3.host/content-dependency-operation-failed',
-      message: 'handler exploded',
-    }])
+    expect(projected.diagnostics).toMatchObject([
+      {
+        code: 'x3.host/content-dependency-operation-failed',
+        message: 'handler exploded',
+      },
+    ])
   })
 
   it('reports disabled and malformed dependency operations without consulting a source', async () => {
-    await expect(readOperationContentDependencies({
-      descriptor: descriptor('disabled'), operations: operations(dependencySet),
-    })).resolves.toMatchObject({ state: 'unresolved', diagnostics: [{
-      code: 'x3.host/content-dependency-operation-unavailable',
-      message: 'initialization data unavailable',
-    }] })
-    await expect(readOperationContentDependencies({
-      descriptor: descriptor(), operations: operations({ schemaVersion: 2 }),
-    })).resolves.toMatchObject({ state: 'unresolved', diagnostics: [{
-      code: 'x3.host/content-dependency-operation-invalid',
-    }] })
+    await expect(
+      readOperationContentDependencies({
+        descriptor: descriptor('disabled'),
+        operations: operations(dependencySet),
+      }),
+    ).resolves.toMatchObject({
+      state: 'unresolved',
+      diagnostics: [
+        {
+          code: 'x3.host/content-dependency-operation-unavailable',
+          message: 'initialization data unavailable',
+        },
+      ],
+    })
+    await expect(
+      readOperationContentDependencies({
+        descriptor: descriptor(),
+        operations: operations({ schemaVersion: 2 }),
+      }),
+    ).resolves.toMatchObject({
+      state: 'unresolved',
+      diagnostics: [
+        {
+          code: 'x3.host/content-dependency-operation-invalid',
+        },
+      ],
+    })
   })
 
   it('continues from the codec operation into the host content resolver', async () => {
-    await expect(analyzeOperationContentDependencies({
-      descriptor: descriptor(),
-      operations: operations(dependencySet),
-      contentSources: sources(),
-      workspaceId: 'subject:example',
-      services: {} as never,
-      grant: {} as never,
-      budgets: {} as never,
-      locales: ['enUS'],
-      queries: [],
-      limits: {
-        maxRequirements: 1, maxDocumentBytes: 1, maxTextBytes: 1,
-        maxEntities: 1, maxDepth: 1, maxPageSize: 1,
-      },
-    })).resolves.toMatchObject({ state: 'unresolved', diagnostics: [{
-      code: 'x3.host/content-dependency-resolver-unavailable',
-    }] })
+    await expect(
+      analyzeOperationContentDependencies({
+        descriptor: descriptor(),
+        operations: operations(dependencySet),
+        contentSources: sources(),
+        workspaceId: 'subject:example',
+        services: {} as never,
+        grant: {} as never,
+        budgets: {} as never,
+        locales: ['enUS'],
+        queries: [],
+        limits: {
+          maxRequirements: 1,
+          maxDocumentBytes: 1,
+          maxTextBytes: 1,
+          maxEntities: 1,
+          maxDepth: 1,
+          maxPageSize: 1,
+        },
+      }),
+    ).resolves.toMatchObject({
+      state: 'unresolved',
+      diagnostics: [
+        {
+          code: 'x3.host/content-dependency-resolver-unavailable',
+        },
+      ],
+    })
+  })
+
+  it('rebases an open overlay after weaker dependency layers', async () => {
+    const dependencyUri = 'content-source://fixture/base/GameData/UnitData.xml'
+    const openUri = 'file:///workspace/GameData/UnitData.xml'
+    const localOrigin = {
+      uri: openUri,
+      layerId: 'local',
+      logicalId: 'GameData/UnitData.xml',
+      precedence: 0,
+      sourceRevision: 'open:2',
+      readOnly: false,
+      overlay: true,
+    } as const
+    const dependency: LanguageWorkspaceDocumentSource = {
+      snapshot: async () => ({
+        documents: [{ uri: dependencyUri, languageId: 'sc2-data', version: 1, text: '<Catalog/>' }],
+        isComplete: true,
+        workspaceContext: {
+          id: 'dependency-context',
+          revision: 'dependency:1',
+          semanticComplete: true,
+          documentOrigins: [
+            {
+              uri: dependencyUri,
+              layerId: 'dependency',
+              logicalId: 'GameData/UnitData.xml',
+              precedence: 0,
+              sourceRevision: 'dependency:1',
+              readOnly: true,
+            },
+          ],
+        },
+      }),
+    }
+    const local: LanguageWorkspaceDocumentSource = {
+      snapshot: async () => ({
+        documents: [],
+        isComplete: true,
+        workspaceContext: {
+          id: 'local-context',
+          revision: 'local:1',
+          semanticComplete: true,
+          documentOrigins: [localOrigin],
+        },
+      }),
+    }
+    const source = composeLanguageDocumentSources([dependency, local])
+    const document = { uri: openUri, languageId: 'sc2-data', version: 2, text: '<Catalog/>' }
+    const result = await source!.snapshot({
+      document,
+      workspaceDocuments: [document],
+      workspaceDocumentOrigins: [localOrigin],
+      workspaceLanguageIds: ['sc2-data'],
+      maxDocuments: 8,
+      signal: new AbortController().signal,
+    })
+    expect(result.workspaceContext).toMatchObject({
+      semanticComplete: true,
+      documentOrigins: [
+        { uri: openUri, precedence: 1, layerId: 'local', overlay: true },
+        { uri: dependencyUri, precedence: 0, layerId: 'dependency', readOnly: true },
+      ],
+    })
   })
 })

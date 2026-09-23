@@ -61,6 +61,30 @@ export interface ContributionProviderIdentity {
   readonly artifactDigest: string
 }
 
+/**
+ * Settings a host hands one contribution — the user's answer to questions only that codec or
+ * provider can ask ("cache this installation's index", "stream these prefixes"). Plain data, so
+ * it crosses the worker boundary as a copy; a contribution reads what it knows and ignores the
+ * rest, and supplies its own default for a key the host did not set.
+ *
+ * `bySource` narrows the same keys per opened source, keyed by that source's uri: one installed
+ * game may cache its index while another does not.
+ */
+export interface ContributionSettings {
+  readonly values: Readonly<Record<string, unknown>>
+  readonly bySource?: Readonly<Record<string, Readonly<Record<string, unknown>>>>
+}
+
+/** The settings that apply to one source: the contribution's values with its overrides on top. */
+export function contributionSettingsFor(
+  settings: ContributionSettings | undefined,
+  sourceUri: string | undefined,
+): Readonly<Record<string, unknown>> {
+  if (settings === undefined) return Object.freeze({})
+  const override = sourceUri === undefined ? undefined : settings.bySource?.[sourceUri]
+  return Object.freeze(override === undefined ? { ...settings.values } : { ...settings.values, ...override })
+}
+
 export interface ContributionContext {
   readonly contracts: ContractResolverPort
   /** Available after the owning subject opens; sources and codecs are selected by its host. */
@@ -72,6 +96,8 @@ export interface ContributionContext {
   readonly budgets: ResourceBudget
   /** Present for service providers activated from trusted inventory; never extension-authored. */
   readonly providerIdentity?: ContributionProviderIdentity
+  /** The host's settings for this contribution; absent when the host configures none. */
+  readonly settings?: ContributionSettings
   readonly signal?: AbortSignal
 }
 

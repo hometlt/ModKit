@@ -93,6 +93,13 @@ describe('descriptor-v2 wire facts', () => {
       'common.view/model-material-source',
       // Block 15D: standard wire contract, publisher-candidate until a second native publisher exists.
       'common.view/model-socket-source',
+      // Block 15D: emitters and fields, published by StarCraft II's M3 and Warcraft III's MDX.
+      'common.view/model-effect-source',
+      // Block 15D: lights, cameras, simulation bodies and the behaviours an engine drives itself.
+      'common.view/model-light-source',
+      'common.view/model-camera-source',
+      'common.view/model-physics-source',
+      'common.view/model-node-behaviour-source',
       'common.view/relation-graph-source',
       // P2: admitted after the field picker and language completion shared one conformance seam.
       'common.view/subject-selector-source',

@@ -300,6 +300,12 @@ export async function buildInventory(
       ...expansion.diagnostics.map(d => ({ ...d, path: [input.source, ...(d.path ?? [])] })),
     )
 
+    // One frozen copy per extension, shared by the private record of each of its contributions:
+    // a copy per contribution cost starcraft2 (5,242 files × 81 contributions) about a second.
+    const fileDigests =
+      input.artifact.fileDigests === undefined
+        ? undefined
+        : Object.freeze({ ...input.artifact.fileDigests })
     const contributions: InventoryContribution[] = []
     for (const entry of expansion.entries) {
       const document = input.documents.get(entry.path)
@@ -453,9 +459,7 @@ export async function buildInventory(
           publicRecord: record,
           manifest: ownedManifest,
           verifyArtifactDigest: input.artifact.verifyArtifactDigest,
-          ...(input.artifact.fileDigests === undefined
-            ? {}
-            : { fileDigests: Object.freeze({ ...input.artifact.fileDigests }) }),
+          ...(fileDigests === undefined ? {} : { fileDigests }),
           artifactRoot: new URL(input.artifact.artifactRoot.href),
           execution: execution.policy,
         })

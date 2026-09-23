@@ -102,7 +102,7 @@ interface GameInstallationSubjectLocator {
 type GameInstallationResourceLocator =
   GameInstallationArchiveLocator | GameInstallationSubjectLocator
 
-interface NamespaceMount {
+export interface NamespaceMount {
   readonly session: AssetSession
   readonly namespace: NamespaceEntrySource
   readonly namespaceRelease: () => Promise<void>
@@ -323,7 +323,7 @@ async function releaseAll(releases: readonly (() => Promise<void>)[]): Promise<v
   if (firstError !== undefined) throw firstError
 }
 
-async function namespaceMount(session: AssetSession): Promise<NamespaceMount> {
+export async function namespaceMount(session: AssetSession): Promise<NamespaceMount> {
   const descriptor = await session.descriptor()
   if (
     !descriptor.dataSources.some(

@@ -103,6 +103,11 @@ export interface HostCommitCoordinatorOptions {
   /** Injected IDs must be unique across coordinators sharing a backend or recovery store. */
   readonly nextId?: (kind: 'prepared' | 'transaction') => string
   readonly maxInlinePayloadBytes?: number
+  /** Invalidate/reopen affected semantic sessions after commit, undo or redo. Errors are isolated. */
+  readonly onTransactionApplied?: (
+    receipt: CommitReceipt,
+    operation: 'commit' | 'undo' | 'redo',
+  ) => void | Promise<void>
 }
 
 export interface ManagedEditSession extends EditSession {
@@ -1351,7 +1356,41 @@ export function createCommitCoordinator(options: HostCommitCoordinatorOptions): 
     return true
   }
 
-  return Object.freeze({ prepare, commit, undo, redo, discardHistory })
+  const notify = async (
+    result: Awaited<ReturnType<CommitCoordinator['commit']>>,
+    operation: 'commit' | 'undo' | 'redo',
+  ): Promise<void> => {
+    if (result.state === 'not-applied' || options.onTransactionApplied === undefined) return
+    try {
+      await options.onTransactionApplied(result.receipt, operation)
+    } catch {
+      // The transaction result is durable authority. A cache/UI invalidator may fail, but must not
+      // rewrite an already committed/rolled-back receipt into an application failure.
+    }
+  }
+  const publicCommit: CommitCoordinator['commit'] = async (prepared, commitOptions) => {
+    const result = await commit(prepared, commitOptions)
+    await notify(result, 'commit')
+    return result
+  }
+  const publicUndo: CommitCoordinator['undo'] = async (transactionId, undoOptions) => {
+    const result = await undo(transactionId, undoOptions)
+    await notify(result, 'undo')
+    return result
+  }
+  const publicRedo: CommitCoordinator['redo'] = async (transactionId, redoOptions) => {
+    const result = await redo(transactionId, redoOptions)
+    await notify(result, 'redo')
+    return result
+  }
+
+  return Object.freeze({
+    prepare,
+    commit: publicCommit,
+    undo: publicUndo,
+    redo: publicRedo,
+    discardHistory,
+  })
 }
 
 export function createEditSession(options: {

@@ -119,11 +119,12 @@ describe('optional model facet sources', () => {
     }
   })
 
-  it('reserves the three unpublished facets without pretending they are contracts', () => {
+  it('reserves the unpublished facets without pretending they are contracts', () => {
+    // `model-effect-source` left this list once M3 and MDX published per-emitter records: a
+    // reservation exists to be closed, and the two that remain still have no publisher.
     expect(RESERVED_MODEL_FACET_SOURCES.map(entry => entry.contract)).toEqual([
       'common.view/model-lod-source',
       'common.view/model-variant-source',
-      'common.view/model-effect-source',
     ])
     for (const entry of RESERVED_MODEL_FACET_SOURCES) {
       // a reserved id is not callable: it is deliberately absent from the standard registry, so a

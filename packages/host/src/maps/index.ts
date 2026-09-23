@@ -78,7 +78,7 @@ import { createWorkspaceNamespaceCompanionOrigin } from '../namespace-origin.js'
 import { createResourceSession } from '../resource-session.js'
 import { createHostServiceResolver } from '../service-leases.js'
 import { assembleSubjectDescriptor, createAssetSession } from '../session.js'
-import { createSubjectModelResources } from '../model-resources.js'
+import { createSubjectModelResources, type ModelResourceProfile } from '../model-resources.js'
 import { openSubject, type SubjectInputResolver } from '../subject-open.js'
 import {
   createSubjectRasterResources,
@@ -680,6 +680,8 @@ export interface AnalyzeResolvedMapWorkspaceRequest {
   readonly inputResolver?: SubjectInputResolver
   readonly catalog?: DataCatalogSnapshot
   readonly limits: ResolvedMapWorkspaceLimits
+  /** Host-only acquisition measurements; never forwarded to a game provider or worker. */
+  readonly onModelResourceProfile?: (profile: ModelResourceProfile) => void
   readonly signal?: AbortSignal
 }
 
@@ -1048,6 +1050,9 @@ export async function analyzeResolvedMapWorkspace(
       isAuthorized: () => modelState.live && request.grant.classes.includes('read-source'),
       ancestors: [`map:${request.workspace.workspaceId}@${request.resources.revision}`],
       own: release => modelReleases.push(release),
+      ...(request.onModelResourceProfile === undefined
+        ? {}
+        : { onProfile: request.onModelResourceProfile }),
       open: (source, path, signal) =>
         openSubject({
           inventory: request.services.inventory,
@@ -1405,6 +1410,8 @@ export interface CoordinateMapPreviewAssetSessionRequest {
     readonly limits: ResolvedDataWorkspaceLimits
   }>
   readonly catalog?: DataCatalogSnapshot
+  /** Optional host-local observer for the lazy model resources of the resulting world. */
+  readonly onModelResourceProfile?: (profile: ModelResourceProfile) => void
   readonly signal?: AbortSignal
 }
 
@@ -2727,6 +2734,9 @@ export async function coordinateMapPreviewAssetSession(
       resources,
       inputResolver,
       subjectUri: descriptor.subjectUri,
+      ...(request.onModelResourceProfile === undefined
+        ? {}
+        : { onModelResourceProfile: request.onModelResourceProfile }),
       ...(enrichment.catalog === undefined ? {} : { catalog: enrichment.catalog }),
       ...(enrichment.sources === undefined ? {} : { catalogSources: enrichment.sources }),
       limits: request.limits,

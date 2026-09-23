@@ -4,6 +4,8 @@ import type {
   LanguageProviderCompletionList,
   LanguageProviderModule,
   LanguageProviderRequestFacet,
+  LanguageResolvedDataSemanticContextRequirement,
+  LanguageWorkspaceSemanticInput,
 } from '@modkit/sdk/language'
 import type { TypedServiceContractRequest } from '@modkit/sdk/service-contracts'
 
@@ -24,6 +26,9 @@ export const galaxyProviderContribution = {
         languageIds: ['galaxy'],
         documentKinds: ['galaxy-source'],
         extensions: ['galaxy'],
+        completionTriggerCharacters: ['.', '/'],
+        signatureHelpTriggerCharacters: ['(', ','],
+        onTypeFormattingTriggerCharacters: ['='],
       },
     },
   ],
@@ -55,3 +60,16 @@ export const subjectReferenceCompletion = {
   ],
   isIncomplete: true,
 } satisfies LanguageProviderCompletionList
+
+export const semanticPayload = {
+  kind: 'catalog',
+  id: 'sc2/effective',
+  revision: 'snapshot:1',
+  payload: { assets: ['Assets/Marine.m3'], complete: true },
+} satisfies LanguageWorkspaceSemanticInput
+
+export const resolvedDataContextRequirement = {
+  kind: 'resolved-data-snapshot',
+  gameId: 'starcraft-2',
+  languageIds: ['sc2-data'],
+} satisfies LanguageResolvedDataSemanticContextRequirement

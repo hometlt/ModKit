@@ -9,13 +9,19 @@
  */
 
 import { ModkitError, type Diagnostic } from '@modkit/core'
-import type { ContributionContext, ContributionProviderIdentity, ResourceBudget } from '@modkit/sdk'
+import type {
+  ContributionContext,
+  ContributionProviderIdentity,
+  ContributionSettings,
+  ResourceBudget,
+} from '@modkit/sdk'
 import { ABI_CODEC_MODULE, ABI_SERVICE_PROVIDER_MODULE } from './abi-surfaces.js'
 import { logicalResourcesFromWire, type WireLogicalResourcePort } from './logical-resources.js'
 
 export interface WireContext {
   readonly budgets: ResourceBudget
   readonly providerIdentity?: ContributionProviderIdentity
+  readonly settings?: ContributionSettings
   readonly diagnostics?: { report(diagnostic: Diagnostic): Promise<unknown> }
   /** Host-executed contract resolver (materialized proxy of `x3.abi/contract-resolver@1`). */
   readonly contracts?: ContributionContext['contracts']
@@ -59,6 +65,7 @@ export function contributionContext(wire: WireContext): ContributionContext {
     ...(wire.providerIdentity === undefined
       ? {}
       : { providerIdentity: Object.freeze({ ...wire.providerIdentity }) }),
+    ...(wire.settings === undefined ? {} : { settings: wire.settings }),
   }
 }
 

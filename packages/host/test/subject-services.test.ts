@@ -6,7 +6,7 @@ import { mkdtempSync, rmSync, writeFileSync, utimesSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, describe, expect, it } from 'vitest'
-import { uint64 } from '@modkit/core'
+import { contractId, uint64 } from '@modkit/core'
 import { createHostTopology } from '@modkit/sdk'
 import {
   createBundledServiceDefinitionRegistry,
@@ -30,6 +30,7 @@ import {
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const imagesDir = join(repoRoot, 'extensions', 'images')
+const dataDir = join(repoRoot, 'extensions', 'data')
 const png = join(repoRoot, 'apps', 'web', 'public', 'favicon-32.png')
 
 const HOST = 'org.example.app/host'
@@ -180,6 +181,20 @@ describe('createNodeSubjectServices (host realm inventory, worker realm target)'
     // the inventory's definitions were registered into the given registry, fail-closed
     expect(own.list().length).toBeGreaterThan(0)
     expect(serviceDefinitionSurfaces(own).every(item => item.surface !== undefined)).toBe(true)
+  })
+
+  it('keeps platform Data contracts when the bundled modkit/data extension registers its own contracts', async () => {
+    const services = await createNodeSubjectServices({
+      topology,
+      realms: { host: HOST, workers: WORKERS },
+      extensions: [await linked(dataDir)],
+      policy,
+    })
+    const definitions = services.serviceDefinitions
+    expect(definitions).toBeDefined()
+    expect(definitions?.lookup(contractId('common.data/resolved-workspace'), 1)).toBeDefined()
+    expect(definitions?.lookup(contractId('common.data/catalog-analysis'), 1)).toBeDefined()
+    expect(definitions?.lookup(contractId('common.text-data/xml-syntax'), 1)).toBeDefined()
   })
 })
 

@@ -951,8 +951,10 @@ export const validateServiceProviderContributionSemantics: SpecSemanticValidator
 /** Cross-entry identities a JSON Schema cannot compare. */
 export const validateKnowledgePackSemantics: SpecSemanticValidator = manifest => {
   const spec = manifest.spec as unknown as KnowledgePackSpecV1Wire
+  // Entries kept in an `entriesPath` file are checked by the host when it reads that file.
+  const entries = spec.entries ?? []
   const diagnostics = duplicateFieldDiagnostics(
-    spec.entries.map(entry => `${entry.id}\u0000${entry.locale.toLowerCase()}`),
+    entries.map(entry => `${entry.id}\u0000${entry.locale.toLowerCase()}`),
     ['spec', 'entries'],
     'knowledge entry and locale',
   )
@@ -962,7 +964,7 @@ export const validateKnowledgePackSemantics: SpecSemanticValidator = manifest =>
     string,
     { readonly firstIndex: number; readonly values: Set<string> }
   >()
-  spec.entries.forEach((entry, index) => {
+  entries.forEach((entry, index) => {
     const targetKey = knowledgeTargetKey(entry.target)
     const coordinate = `${targetKey}\u0000${entry.locale.toLowerCase()}`
     if (targetLocales.has(coordinate)) {

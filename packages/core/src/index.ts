@@ -60,3 +60,9 @@ export {
   isCancellation,
 } from './cancellation.js'
 export { DisposableStore, type ModkitDisposable } from './lifecycle.js'
+export {
+  createReferenceIndex,
+  type ReferenceIndex,
+  type ReferenceIndexOptions,
+  type ReferenceIndexSnapshot,
+} from './reference-index.js'

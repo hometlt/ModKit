@@ -17,6 +17,7 @@ import {
 } from '@modkit/core'
 import {
   LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT,
+  languageWorkspaceIsSemanticallyIncomplete,
   type LanguageAnalysis,
   type LanguageAnalysisRequest,
   type LanguageCodeActionList,
@@ -33,6 +34,7 @@ import {
   type LanguageFormattingOptions,
   type LanguageHover,
   type LanguageLocationList,
+  type LanguageOnTypeEditResult,
   type LanguagePosition,
   type LanguageProvider,
   type LanguageProviderOfferFacet,
@@ -46,11 +48,15 @@ import {
   type LanguageTextEditList,
   type LanguageToken,
   type LanguageWorkspaceEdit,
+  type LanguageWorkspaceContext,
+  type LanguageWorkspaceDocumentOrigin,
+  type LanguageWorkspaceSemanticInput,
   type LanguageWorkspaceSymbolList,
 } from '@modkit/sdk/language'
 import type {
   JsonValue,
   PermissionGrant,
+  ReferenceOccurrence,
   ResourceBudget,
   SubjectCandidateProviderSource,
   SubjectFilter,
@@ -63,6 +69,17 @@ import {
   type LanguageProviderResolution,
 } from './index.js'
 import { expandSubjectReferenceCompletions } from './subject-completion.js'
+import {
+  languageWorkspaceContextToken,
+  validatedLanguageWorkspaceSemanticInputs,
+} from './context.js'
+import { createWorkspaceReferenceIndex } from '../references.js'
+import {
+  analyzeResolvedDataSemanticContext,
+  prepareResolvedDataSemanticContext,
+  validatedLanguageSemanticContextRequirements,
+  type ResolvedDataSemanticContextResult,
+} from './semantic-context.js'
 
 export const LANGUAGE_WORKSPACE_NOT_INITIALIZED = 'x3.host/language-workspace-not-initialized'
 export const LANGUAGE_WORKSPACE_SHUT_DOWN = 'x3.host/language-workspace-shut-down'
@@ -86,10 +103,25 @@ export const LANGUAGE_MAX_DOCUMENTS = 4_096
 export const LANGUAGE_DEFAULT_MAX_EDITS = 1_024
 export const LANGUAGE_MAX_EDITS = 4_096
 
-/** One exact request route projected from a provider offer. */
-export type LanguageProviderRoute = Readonly<LanguageProviderRequestFacet>
+const SEMANTIC_CONTEXT_CACHE_MAX_BYTES = 64 * 1_024 * 1_024
+const SEMANTIC_CONTEXT_PENDING_MAX = 16
+const SEMANTIC_CONTEXT_SCOPE_MAX = 64
 
-const ROUTE_KEYS = new Set(['languageIds', 'documentKinds', 'extensions'])
+/** One exact request route plus provider-owned editor activation metadata. */
+export interface LanguageProviderRoute extends LanguageProviderRequestFacet {
+  readonly completionTriggerCharacters?: readonly string[]
+  readonly signatureHelpTriggerCharacters?: readonly string[]
+  readonly onTypeFormattingTriggerCharacters?: readonly string[]
+}
+
+const ROUTE_KEYS = new Set([
+  'languageIds',
+  'documentKinds',
+  'extensions',
+  'completionTriggerCharacters',
+  'signatureHelpTriggerCharacters',
+  'onTypeFormattingTriggerCharacters',
+])
 const TOKEN_KINDS = new Set([
   'comment',
   'function',
@@ -150,6 +182,13 @@ function nonBlankStrings(value: unknown): readonly string[] | undefined {
   return new Set(strings).size === strings.length ? strings : undefined
 }
 
+function triggerCharacters(value: unknown): readonly string[] | undefined {
+  if (!Array.isArray(value) || value.length === 0) return undefined
+  if (!value.every(item => typeof item === 'string' && [...item].length === 1)) return undefined
+  const strings = value as string[]
+  return new Set(strings).size === strings.length ? strings : undefined
+}
+
 function languageOfferFacet(value: unknown): LanguageProviderOfferFacet {
   const record = recordOf(value)
   if (record === undefined || Object.keys(record).some(key => !ROUTE_KEYS.has(key))) {
@@ -160,10 +199,28 @@ function languageOfferFacet(value: unknown): LanguageProviderOfferFacet {
     record['documentKinds'] === undefined ? undefined : nonBlankStrings(record['documentKinds'])
   const extensions =
     record['extensions'] === undefined ? undefined : nonBlankStrings(record['extensions'])
+  const completionTriggerCharacters =
+    record['completionTriggerCharacters'] === undefined
+      ? undefined
+      : triggerCharacters(record['completionTriggerCharacters'])
+  const signatureHelpTriggerCharacters =
+    record['signatureHelpTriggerCharacters'] === undefined
+      ? undefined
+      : triggerCharacters(record['signatureHelpTriggerCharacters'])
+  const onTypeFormattingTriggerCharacters =
+    record['onTypeFormattingTriggerCharacters'] === undefined
+      ? undefined
+      : triggerCharacters(record['onTypeFormattingTriggerCharacters'])
   if (
     languageIds === undefined ||
     (record['documentKinds'] !== undefined && documentKinds === undefined) ||
-    (record['extensions'] !== undefined && extensions === undefined)
+    (record['extensions'] !== undefined && extensions === undefined) ||
+    (record['completionTriggerCharacters'] !== undefined &&
+      completionTriggerCharacters === undefined) ||
+    (record['signatureHelpTriggerCharacters'] !== undefined &&
+      signatureHelpTriggerCharacters === undefined) ||
+    (record['onTypeFormattingTriggerCharacters'] !== undefined &&
+      onTypeFormattingTriggerCharacters === undefined)
   ) {
     throw new TypeError('language provider offer facet contains an invalid route list')
   }
@@ -171,6 +228,11 @@ function languageOfferFacet(value: unknown): LanguageProviderOfferFacet {
     languageIds,
     ...(documentKinds === undefined ? {} : { documentKinds }),
     ...(extensions === undefined ? {} : { extensions }),
+    ...(completionTriggerCharacters === undefined ? {} : { completionTriggerCharacters }),
+    ...(signatureHelpTriggerCharacters === undefined ? {} : { signatureHelpTriggerCharacters }),
+    ...(onTypeFormattingTriggerCharacters === undefined
+      ? {}
+      : { onTypeFormattingTriggerCharacters }),
   }
 }
 
@@ -199,12 +261,43 @@ export function languageProviderRoutes(inventory: Inventory): readonly LanguageP
             if (extension !== undefined && extension.length === 0) {
               throw new TypeError('language provider extension route must not be only a dot')
             }
-            const route: LanguageProviderRoute = Object.freeze({
+            const identity: LanguageProviderRequestFacet = {
               languageId,
               ...(documentKind === undefined ? {} : { documentKind }),
               ...(extension === undefined ? {} : { extension }),
+            }
+            const key = canonicalJsonStringify(identity)
+            const prior = routes.get(key)
+            const merge = (
+              left: readonly string[] | undefined,
+              right: readonly string[] | undefined,
+            ): readonly string[] | undefined => {
+              const values = [...new Set([...(left ?? []), ...(right ?? [])])].sort(compareUtf8)
+              return values.length === 0 ? undefined : Object.freeze(values)
+            }
+            const completionTriggerCharacters = merge(
+              prior?.completionTriggerCharacters,
+              facet.completionTriggerCharacters,
+            )
+            const signatureHelpTriggerCharacters = merge(
+              prior?.signatureHelpTriggerCharacters,
+              facet.signatureHelpTriggerCharacters,
+            )
+            const onTypeFormattingTriggerCharacters = merge(
+              prior?.onTypeFormattingTriggerCharacters,
+              facet.onTypeFormattingTriggerCharacters,
+            )
+            const route: LanguageProviderRoute = Object.freeze({
+              ...identity,
+              ...(completionTriggerCharacters === undefined ? {} : { completionTriggerCharacters }),
+              ...(signatureHelpTriggerCharacters === undefined
+                ? {}
+                : { signatureHelpTriggerCharacters }),
+              ...(onTypeFormattingTriggerCharacters === undefined
+                ? {}
+                : { onTypeFormattingTriggerCharacters }),
             })
-            routes.set(canonicalJsonStringify(route), route)
+            routes.set(key, route)
           }
         }
       }
@@ -217,6 +310,15 @@ export function languageProviderRoutes(inventory: Inventory): readonly LanguageP
   )
 }
 
+/** Canonical union used by every editor protocol adapter. */
+export function languageProviderTriggerCharacters(
+  routes: readonly LanguageProviderRoute[],
+  feature: 'completion' | 'signatureHelp' | 'onTypeFormatting',
+): readonly string[] {
+  const field = `${feature}TriggerCharacters` as const
+  return Object.freeze([...new Set(routes.flatMap(route => route[field] ?? []))].sort(compareUtf8))
+}
+
 export interface LanguageWorkspaceOptions {
   readonly services: LanguageHostServices
   readonly grant: PermissionGrant
@@ -227,11 +329,21 @@ export interface LanguageWorkspaceOptions {
   readonly workspaceIncomplete?: boolean | (() => boolean)
   /** Optional host-owned source of read-only dependency documents for semantic feature snapshots. */
   readonly documentSource?: LanguageWorkspaceDocumentSource
+  /** Identity of an open document inside the selected mod/dependency context, when known. */
+  readonly documentOrigin?: (
+    document: LanguageDocument,
+  ) => LanguageWorkspaceDocumentOrigin | undefined
+  /** Host-selected locale, subject and other non-document semantic inputs. */
+  readonly semanticInputs?:
+    readonly LanguageWorkspaceSemanticInput[] | (() => readonly LanguageWorkspaceSemanticInput[])
+  /** Observe the exact immutable context sent to a provider, for transport snapshot identities. */
+  readonly observeWorkspaceContext?: (context: LanguageWorkspaceContext | undefined) => void
 }
 
 export interface LanguageWorkspaceDocumentSourceRequest {
   readonly document: LanguageDocument
   readonly workspaceDocuments: readonly LanguageDocument[]
+  readonly workspaceDocumentOrigins: readonly LanguageWorkspaceDocumentOrigin[]
   readonly workspaceLanguageIds: readonly string[]
   /** Maximum number of additional documents the source may return. */
   readonly maxDocuments: number
@@ -242,6 +354,8 @@ export interface LanguageWorkspaceDocumentSourceResult {
   readonly documents: readonly LanguageDocument[]
   /** False when more matching dependency documents exist outside this bounded result. */
   readonly isComplete: boolean
+  /** Present when the source can prove identity, precedence and revision of its snapshot. */
+  readonly workspaceContext?: LanguageWorkspaceContext
 }
 
 /**
@@ -275,6 +389,18 @@ export type LanguageWorkspaceAnalysisResult =
       hostDiagnostics: readonly Diagnostic[]
     }>
 
+/** A document version accepted by the host before provider analysis is requested. */
+export type LanguageWorkspaceSynchronizationResult =
+  | Readonly<{
+      state: 'resolved'
+      /** Host selection/activation diagnostics, never document diagnostics. */
+      hostDiagnostics: readonly Diagnostic[]
+    }>
+  | Readonly<{
+      state: 'unresolved'
+      hostDiagnostics: readonly Diagnostic[]
+    }>
+
 export interface LanguageWorkspaceFeatureRequest {
   readonly uri: string
   readonly documentVersion: number
@@ -285,6 +411,14 @@ export interface LanguageWorkspaceFeatureRequest {
 
 export interface LanguageWorkspacePositionRequest extends LanguageWorkspaceFeatureRequest {
   readonly position: LanguagePosition
+}
+
+export interface LanguageWorkspaceCompletionRequest extends LanguageWorkspacePositionRequest {
+  /**
+   * `cached` keeps editor completion responsive while a new resolved Data context is prepared for
+   * the current document version. The provider still receives the live document overlay.
+   */
+  readonly semanticContextPolicy?: 'fresh' | 'cached'
 }
 
 export interface LanguageWorkspaceReferencesRequest extends LanguageWorkspacePositionRequest {
@@ -298,6 +432,12 @@ export interface LanguageWorkspaceRenameRequest extends LanguageWorkspacePositio
 
 export interface LanguageWorkspaceFormattingRequest extends LanguageWorkspaceFeatureRequest {
   readonly options: LanguageFormattingOptions
+}
+
+export interface LanguageWorkspaceOnTypeFormattingRequest extends LanguageWorkspacePositionRequest {
+  readonly ch: string
+  readonly options: LanguageFormattingOptions
+  readonly semanticContextPolicy?: 'fresh' | 'cached'
 }
 
 export interface LanguageWorkspaceColorPresentationRequest extends LanguageWorkspaceFeatureRequest {
@@ -326,6 +466,7 @@ export type LanguageWorkspaceCapability =
   | 'prepare-rename'
   | 'rename'
   | 'formatting'
+  | 'on-type-formatting'
   | 'document-colors'
   | 'color-presentations'
   | 'code-actions'
@@ -341,6 +482,12 @@ export interface LanguageWorkspaceCapabilitySet {
 
 export interface LanguageWorkspace {
   initialize(): Promise<void>
+  /** Accept the newest full document snapshot without putting provider analysis ahead of UI work. */
+  synchronize(
+    request: LanguageWorkspaceDocumentRequest,
+  ): Promise<LanguageWorkspaceSynchronizationResult>
+  /** Analyze a document snapshot already accepted by `synchronize`. */
+  analyze(request: LanguageWorkspaceDocumentRequest): Promise<LanguageWorkspaceAnalysisResult>
   open(request: LanguageWorkspaceDocumentRequest): Promise<LanguageWorkspaceAnalysisResult>
   change(request: LanguageWorkspaceDocumentRequest): Promise<LanguageWorkspaceAnalysisResult>
   /** Await the newest analysis already requested for this URI. */
@@ -350,7 +497,9 @@ export interface LanguageWorkspace {
     uri: string,
     signal?: AbortSignal,
   ): Promise<LanguageWorkspaceCapabilitySet | undefined>
-  completion(request: LanguageWorkspacePositionRequest): Promise<LanguageCompletionList | undefined>
+  completion(
+    request: LanguageWorkspaceCompletionRequest,
+  ): Promise<LanguageCompletionList | undefined>
   hover(request: LanguageWorkspacePositionRequest): Promise<LanguageHover | undefined>
   signatureHelp(
     request: LanguageWorkspacePositionRequest,
@@ -362,6 +511,9 @@ export interface LanguageWorkspace {
   ): Promise<LanguageRenamePreparation | undefined>
   rename(request: LanguageWorkspaceRenameRequest): Promise<LanguageWorkspaceEdit | undefined>
   formatting(request: LanguageWorkspaceFormattingRequest): Promise<LanguageTextEditList | undefined>
+  onTypeFormatting(
+    request: LanguageWorkspaceOnTypeFormattingRequest,
+  ): Promise<LanguageOnTypeEditResult | undefined>
   documentColors(request: LanguageWorkspaceFeatureRequest): Promise<LanguageColorList | undefined>
   colorPresentations(
     request: LanguageWorkspaceColorPresentationRequest,
@@ -376,6 +528,8 @@ export interface LanguageWorkspace {
     request: LanguageWorkspaceSymbolsRequest,
   ): Promise<LanguageWorkspaceSymbolList | undefined>
   diagnostics(request: LanguageWorkspaceFeatureRequest): Promise<LanguageDiagnosticList | undefined>
+  /** Cancel in-flight features after dependency, schema, locale or transaction state changes. */
+  invalidate(reason?: string): void
   close(uri: string): Promise<void>
   shutdown(): Promise<void>
 }
@@ -446,6 +600,32 @@ function boundedInteger(
     )
   }
   return selected
+}
+
+function validatedFormattingOptions(
+  formatting: LanguageFormattingOptions,
+  uri: string,
+): LanguageFormattingOptions {
+  if (
+    typeof formatting !== 'object' ||
+    formatting === null ||
+    !Number.isSafeInteger(formatting.tabSize) ||
+    formatting.tabSize < 1 ||
+    formatting.tabSize > 8 ||
+    typeof formatting.insertSpaces !== 'boolean' ||
+    (formatting.finalNewline !== undefined && typeof formatting.finalNewline !== 'boolean')
+  ) {
+    throw workspaceError(
+      LANGUAGE_FEATURE_INVALID,
+      'formatting options need tabSize 1 through 8 and boolean indentation settings',
+      { uri },
+    )
+  }
+  return Object.freeze({
+    tabSize: formatting.tabSize,
+    insertSpaces: formatting.insertSpaces,
+    ...(formatting.finalNewline === undefined ? {} : { finalNewline: formatting.finalNewline }),
+  })
 }
 
 function validateFeatureRequest(
@@ -859,6 +1039,50 @@ function validateTextEditList(
   return list
 }
 
+function offsetAt(text: string, position: LanguagePosition): number {
+  const lines = text.split('\n')
+  let offset = 0
+  for (let line = 0; line < position.line; line += 1) offset += (lines[line]?.length ?? 0) + 1
+  return offset + position.character
+}
+
+function textAfterEdits(text: string, edits: readonly LanguageTextEdit[]): string {
+  let result = text
+  const descending = [...edits].sort(
+    (left, right) =>
+      comparePosition(right.range.start, left.range.start) ||
+      comparePosition(right.range.end, left.range.end),
+  )
+  for (const edit of descending) {
+    result = `${result.slice(0, offsetAt(text, edit.range.start))}${edit.newText}${result.slice(
+      offsetAt(text, edit.range.end),
+    )}`
+  }
+  return result
+}
+
+function validateOnTypeEditResult(
+  value: unknown,
+  request: LanguageFeatureRequest,
+): LanguageOnTypeEditResult {
+  const edits = validateTextEditList(value, request)
+  const result = value as LanguageOnTypeEditResult
+  if (
+    (result.requestCompletion !== undefined && typeof result.requestCompletion !== 'boolean') ||
+    (result.cursor !== undefined &&
+      !validPosition(
+        result.cursor,
+        lineLengths(textAfterEdits(request.document.text, edits.edits)),
+      ))
+  ) {
+    invalidFeature(
+      'language provider returned an invalid on-type editor action',
+      request.document.uri,
+    )
+  }
+  return result
+}
+
 function validateDocumentSymbols(
   value: unknown,
   request: LanguageFeatureRequest,
@@ -945,7 +1169,10 @@ function validateDiagnosticList(
       request.document.uri,
     )
   }
-  return list
+  return {
+    ...list,
+    isIncomplete: list.isIncomplete || languageWorkspaceIsSemanticallyIncomplete(request),
+  }
 }
 
 function validColor(value: LanguageColor | undefined): boolean {
@@ -1072,16 +1299,94 @@ async function waitWithSignal<Value>(
   })
 }
 
+const boundedContextText = (value: unknown): value is string =>
+  typeof value === 'string' && value.length > 0 && value.length <= 8_192 && !value.includes('\0')
+
+function validatedDocumentOrigin(
+  value: unknown,
+  expectedUri?: string,
+): LanguageWorkspaceDocumentOrigin {
+  const origin = value as LanguageWorkspaceDocumentOrigin
+  if (
+    typeof origin !== 'object' ||
+    origin === null ||
+    !boundedContextText(origin.uri) ||
+    (expectedUri !== undefined && origin.uri !== expectedUri) ||
+    !boundedContextText(origin.layerId) ||
+    !boundedContextText(origin.logicalId) ||
+    !Number.isSafeInteger(origin.precedence) ||
+    origin.precedence < 0 ||
+    !boundedContextText(origin.sourceRevision) ||
+    typeof origin.readOnly !== 'boolean' ||
+    (origin.overlay !== undefined && typeof origin.overlay !== 'boolean')
+  ) {
+    throw new TypeError('language workspace document origin is invalid')
+  }
+  return Object.freeze({ ...origin })
+}
+
+function validatedWorkspaceContext(
+  value: unknown,
+  allowedUris: ReadonlySet<string>,
+): LanguageWorkspaceContext {
+  const context = value as LanguageWorkspaceContext
+  if (
+    typeof context !== 'object' ||
+    context === null ||
+    !boundedContextText(context.id) ||
+    !boundedContextText(context.revision) ||
+    typeof context.semanticComplete !== 'boolean' ||
+    !Array.isArray(context.documentOrigins) ||
+    context.documentOrigins.length > allowedUris.size
+  ) {
+    throw new TypeError('language workspace context is invalid')
+  }
+  const seenUris = new Set<string>()
+  const origins = context.documentOrigins.map(value => {
+    const origin = validatedDocumentOrigin(value)
+    if (!allowedUris.has(origin.uri) || seenUris.has(origin.uri)) {
+      throw new TypeError('language workspace context contains an unknown or duplicate URI')
+    }
+    seenUris.add(origin.uri)
+    return origin
+  })
+  const semanticInputs = validatedLanguageWorkspaceSemanticInputs(context.semanticInputs ?? [])
+  return Object.freeze({ ...context, documentOrigins: Object.freeze(origins), semanticInputs })
+}
+
 /** Create a single-provider v1 document lifecycle coordinator. */
 export function createLanguageWorkspace(options: LanguageWorkspaceOptions): LanguageWorkspace {
   const documents = new Map<string, OpenDocument>()
+  const advertisedRoutes = languageProviderRoutes(options.services.inventory)
+  const referenceIndex = createWorkspaceReferenceIndex()
   const featureControllers = new Set<AbortController>()
+  const semanticContextCache = new Map<
+    string,
+    Readonly<{ value: ResolvedDataSemanticContextResult; bytes: number }>
+  >()
+  const pendingSemanticContexts = new Map<string, Promise<ResolvedDataSemanticContextResult>>()
+  const latestSemanticContextKeys = new Map<string, string>()
+  const semanticContextEncoder = new TextEncoder()
+  let semanticContextCacheBytes = 0
   let state: 'new' | 'ready' | 'shut-down' = 'new'
   let shutdownPromise: Promise<void> | undefined
   let workspaceGeneration = 0
 
+  const routeForRequest = (request: LanguageWorkspaceDocumentRequest): LanguageProviderRoute => {
+    const identity = routeOf(request)
+    return (
+      advertisedRoutes.find(
+        route =>
+          route.languageId === identity.languageId &&
+          route.documentKind === identity.documentKind &&
+          route.extension === identity.extension,
+      ) ?? identity
+    )
+  }
+
   const invalidateFeatures = (reason: string): void => {
     workspaceGeneration += 1
+    referenceIndex.clear()
     for (const controller of featureControllers) controller.abort(reason)
     featureControllers.clear()
   }
@@ -1102,6 +1407,135 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
     if (entry.released) return
     entry.released = true
     await entry.resolution.release()
+  }
+
+  const cachedSemanticContext = (key: string): ResolvedDataSemanticContextResult | undefined => {
+    const cached = semanticContextCache.get(key)
+    if (cached === undefined) return undefined
+    semanticContextCache.delete(key)
+    semanticContextCache.set(key, cached)
+    return cached.value
+  }
+
+  const rememberSemanticContext = (key: string, value: ResolvedDataSemanticContextResult): void => {
+    const bytes =
+      semanticContextEncoder.encode(key).byteLength +
+      semanticContextEncoder.encode(JSON.stringify(value)).byteLength
+    if (bytes > SEMANTIC_CONTEXT_CACHE_MAX_BYTES) return
+    const previous = semanticContextCache.get(key)
+    if (previous !== undefined) semanticContextCacheBytes -= previous.bytes
+    semanticContextCache.delete(key)
+    semanticContextCache.set(key, Object.freeze({ value, bytes }))
+    semanticContextCacheBytes += bytes
+    while (semanticContextCacheBytes > SEMANTIC_CONTEXT_CACHE_MAX_BYTES) {
+      const oldest = semanticContextCache.keys().next().value
+      if (oldest === undefined) break
+      const removed = semanticContextCache.get(oldest)
+      semanticContextCache.delete(oldest)
+      semanticContextCacheBytes -= removed?.bytes ?? 0
+    }
+  }
+
+  const rememberLatestSemanticContext = (scopeKey: string, key: string): void => {
+    latestSemanticContextKeys.delete(scopeKey)
+    latestSemanticContextKeys.set(scopeKey, key)
+    while (latestSemanticContextKeys.size > SEMANTIC_CONTEXT_SCOPE_MAX) {
+      const oldest = latestSemanticContextKeys.keys().next().value
+      if (oldest === undefined) break
+      latestSemanticContextKeys.delete(oldest)
+    }
+  }
+
+  const resolvedDataSemanticInputs = async (
+    provider: LanguageProvider,
+    routeLanguageId: string,
+    snapshotDocuments: readonly LanguageDocument[],
+    originsByUri: ReadonlyMap<string, LanguageWorkspaceDocumentOrigin>,
+    complete: boolean,
+    signal: AbortSignal,
+    preferCached = false,
+  ): Promise<
+    Readonly<{ inputs: readonly LanguageWorkspaceSemanticInput[]; complete: boolean }>
+  > => {
+    const requirements = validatedLanguageSemanticContextRequirements(
+      provider.semanticContextRequirements ?? [],
+    ).filter(requirement => requirement.languageIds.includes(routeLanguageId))
+    if (requirements.length === 0)
+      return Object.freeze({ inputs: Object.freeze([]), complete: true })
+    const inputs: LanguageWorkspaceSemanticInput[] = []
+    let contextsComplete = true
+    for (const requirement of requirements) {
+      const prepared = prepareResolvedDataSemanticContext({
+        requirement,
+        documents: snapshotDocuments,
+        origins: originsByUri,
+        complete,
+      })
+      let resolved = cachedSemanticContext(prepared.key)
+      let stale = false
+      if (resolved === undefined && preferCached) {
+        const latestKey = latestSemanticContextKeys.get(prepared.scopeKey)
+        resolved = latestKey === undefined ? undefined : cachedSemanticContext(latestKey)
+        stale = resolved !== undefined
+        if (latestKey !== undefined && resolved === undefined) {
+          latestSemanticContextKeys.delete(prepared.scopeKey)
+        }
+      }
+      if (resolved === undefined && preferCached) {
+        contextsComplete = false
+        continue
+      }
+      if (resolved === undefined) {
+        let pending = pendingSemanticContexts.get(prepared.key)
+        if (pending === undefined) {
+          if (pendingSemanticContexts.size >= SEMANTIC_CONTEXT_PENDING_MAX) {
+            pendingSemanticContexts.delete(pendingSemanticContexts.keys().next().value as string)
+          }
+          pending = analyzeResolvedDataSemanticContext({
+            services: options.services,
+            grant: options.grant,
+            budgets: options.budgets,
+            requirement,
+            prepared,
+            signal,
+          })
+          pendingSemanticContexts.set(prepared.key, pending)
+          void pending.then(
+            value => {
+              if (pendingSemanticContexts.get(prepared.key) !== pending) return
+              pendingSemanticContexts.delete(prepared.key)
+              rememberSemanticContext(prepared.key, value)
+              rememberLatestSemanticContext(prepared.scopeKey, prepared.key)
+            },
+            () => {
+              if (pendingSemanticContexts.get(prepared.key) === pending) {
+                pendingSemanticContexts.delete(prepared.key)
+              }
+            },
+          )
+        }
+        resolved = await waitWithSignal(pending, signal)
+      }
+      contextsComplete &&= resolved.complete && !stale
+      if (resolved.input !== undefined) inputs.push(resolved.input)
+      else if (resolved.failure !== undefined) {
+        inputs.push(
+          ...validatedLanguageWorkspaceSemanticInputs([
+            {
+              kind: 'semantic-context-status',
+              id: `resolved-data-snapshot:${requirement.gameId}`,
+              revision: languageWorkspaceContextToken(resolved.failure),
+              payload: {
+                state: 'unavailable',
+                requirement: requirement.kind,
+                message: resolved.failure,
+              },
+            },
+          ]),
+        )
+      }
+    }
+    return Object.freeze({ inputs: Object.freeze(inputs), complete: contextsComplete })
   }
 
   const requireFeatureEntry = (
@@ -1148,6 +1582,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
     ) => Promise<unknown> | undefined,
     validate: (value: unknown, request: LanguageFeatureRequest) => Value | Promise<Value>,
     additions: Readonly<Record<string, unknown>> = {},
+    preferCachedSemanticContext = false,
   ): Promise<Value | undefined> => {
     const entry = requireFeatureEntry(workspaceRequest, positioned)
     throwIfAborted(workspaceRequest.signal)
@@ -1189,8 +1624,15 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
     const unlink = linkedSignal(controller, workspaceRequest.signal)
     try {
       const snapshotDocuments = selected.map(candidate => candidate.document)
+      const originsByUri = new Map<string, LanguageWorkspaceDocumentOrigin>()
+      for (const document of snapshotDocuments) {
+        const origin = options.documentOrigin?.(document)
+        if (origin !== undefined)
+          originsByUri.set(document.uri, validatedDocumentOrigin(origin, document.uri))
+      }
       let sourceIncomplete = false
       let hasReadOnlyContext = false
+      let sourceContext: LanguageWorkspaceContext | undefined
       if (options.documentSource !== undefined) {
         let snapshot: LanguageWorkspaceDocumentSourceResult
         try {
@@ -1198,6 +1640,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
             Object.freeze({
               document: entry.document,
               workspaceDocuments: Object.freeze([...snapshotDocuments]),
+              workspaceDocumentOrigins: Object.freeze([...originsByUri.values()]),
               workspaceLanguageIds: Object.freeze([...acceptedLanguageIds].sort(compareUtf8)),
               maxDocuments: Math.max(0, maxDocuments - snapshotDocuments.length),
               signal: controller.signal,
@@ -1229,7 +1672,31 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
             entry.uri,
           )
         }
+        if (snapshot.workspaceContext !== undefined) {
+          const allowedUris = new Set([
+            ...snapshotDocuments.map(document => document.uri),
+            ...snapshot.documents.map(document => document.uri),
+          ])
+          try {
+            sourceContext = validatedWorkspaceContext(snapshot.workspaceContext, allowedUris)
+          } catch {
+            invalidFeature(
+              'language workspace document source returned an invalid context',
+              entry.uri,
+            )
+          }
+          // A composed source may rebase an open overlay after weaker dependency layers. Its
+          // context is the host-owned final precedence authority for this request.
+          for (const origin of sourceContext.documentOrigins) originsByUri.set(origin.uri, origin)
+        }
         const seenUris = new Set(snapshotDocuments.map(document => document.uri))
+        const overlayKey = (origin: LanguageWorkspaceDocumentOrigin): string =>
+          `${origin.layerId}\0${origin.logicalId}`
+        const openOverlayIds = new Set(
+          [...originsByUri.values()]
+            .filter(origin => origin.overlay === true && seenUris.has(origin.uri))
+            .map(overlayKey),
+        )
         for (const document of snapshot.documents) {
           if (
             typeof document !== 'object' ||
@@ -1249,26 +1716,139 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
             )
           }
           seenUris.add(document.uri)
+          const origin = originsByUri.get(document.uri)
+          if (origin !== undefined && openOverlayIds.has(overlayKey(origin))) {
+            originsByUri.delete(document.uri)
+            continue
+          }
           snapshotDocuments.push(Object.freeze({ ...document }))
         }
         sourceIncomplete = !snapshot.isComplete
         hasReadOnlyContext = snapshot.documents.length > 0
       }
+      const callerIncomplete =
+        typeof options.workspaceIncomplete === 'function'
+          ? options.workspaceIncomplete()
+          : options.workspaceIncomplete === true
+      const allDocumentsHaveOrigins = snapshotDocuments.every(document =>
+        originsByUri.has(document.uri),
+      )
+      if (allDocumentsHaveOrigins) {
+        snapshotDocuments.sort((left, right) => {
+          const leftOrigin = originsByUri.get(left.uri)!
+          const rightOrigin = originsByUri.get(right.uri)!
+          return (
+            leftOrigin.precedence - rightOrigin.precedence ||
+            compareUtf8(leftOrigin.logicalId, rightOrigin.logicalId) ||
+            compareUtf8(left.uri, right.uri)
+          )
+        })
+      }
+      const documentOrigins = Object.freeze(
+        snapshotDocuments.flatMap(document => {
+          const origin = originsByUri.get(document.uri)
+          return origin === undefined ? [] : [origin]
+        }),
+      )
+      const baseSemanticComplete =
+        candidates.length <= selected.length &&
+        !sourceIncomplete &&
+        !callerIncomplete &&
+        allDocumentsHaveOrigins &&
+        (sourceContext === undefined || sourceContext.semanticComplete)
+      let semanticInputs: readonly LanguageWorkspaceSemanticInput[]
+      let semanticContextsComplete = true
+      let baseSemanticInputs: readonly LanguageWorkspaceSemanticInput[]
+      let semanticContexts: Readonly<{
+        inputs: readonly LanguageWorkspaceSemanticInput[]
+        complete: boolean
+      }>
+      try {
+        const hostInputs =
+          typeof options.semanticInputs === 'function'
+            ? options.semanticInputs()
+            : (options.semanticInputs ?? [])
+        baseSemanticInputs = validatedLanguageWorkspaceSemanticInputs([
+          ...(sourceContext?.semanticInputs ?? []),
+          entry.resolution.semanticInput,
+          ...(entry.resolution.provider.semanticInputs ?? []),
+          ...hostInputs,
+        ])
+        semanticContexts = await resolvedDataSemanticInputs(
+          entry.resolution.provider,
+          entry.route.languageId,
+          snapshotDocuments,
+          originsByUri,
+          baseSemanticComplete,
+          controller.signal,
+          preferCachedSemanticContext,
+        )
+        semanticContextsComplete = semanticContexts.complete
+      } catch {
+        throwIfAborted(controller.signal)
+        invalidFeature('language workspace semantic inputs are invalid or conflicting', entry.uri)
+      }
+      try {
+        semanticInputs = validatedLanguageWorkspaceSemanticInputs([
+          ...baseSemanticInputs,
+          ...semanticContexts.inputs,
+        ])
+      } catch {
+        semanticInputs = baseSemanticInputs
+        semanticContextsComplete = false
+      }
+      const semanticComplete = baseSemanticComplete && semanticContextsComplete
+      const workspaceContext =
+        sourceContext === undefined && documentOrigins.length === 0 && semanticInputs.length === 0
+          ? undefined
+          : Object.freeze({
+              id: languageWorkspaceContextToken({
+                sourceContextId: sourceContext?.id,
+                documents: documentOrigins
+                  .map(origin => ({
+                    uri: origin.uri,
+                    layerId: origin.layerId,
+                    logicalId: origin.logicalId,
+                    precedence: origin.precedence,
+                  }))
+                  .sort((left, right) =>
+                    compareUtf8(canonicalJsonStringify(left), canonicalJsonStringify(right)),
+                  ),
+                semanticInputs: semanticInputs.map(input => ({
+                  kind: input.kind,
+                  id: input.id,
+                })),
+              }),
+              revision: languageWorkspaceContextToken({
+                sourceRevision: sourceContext?.revision,
+                semanticInputs,
+                semanticComplete,
+                documents: snapshotDocuments.map(document => ({
+                  uri: document.uri,
+                  version: document.version,
+                  contentRevision: languageWorkspaceContextToken(document.text),
+                  origin: originsByUri.get(document.uri),
+                })),
+              }),
+              semanticComplete,
+              documentOrigins,
+              semanticInputs,
+            } satisfies LanguageWorkspaceContext)
       const providerRequest = Object.freeze({
         document: entry.document,
         workspaceDocuments: Object.freeze(snapshotDocuments),
+        ...(workspaceContext === undefined ? {} : { workspaceContext }),
         workspaceIncomplete:
           candidates.length > selected.length ||
           sourceIncomplete ||
           hasReadOnlyContext ||
-          (typeof options.workspaceIncomplete === 'function'
-            ? options.workspaceIncomplete()
-            : options.workspaceIncomplete === true),
+          callerIncomplete,
         maxResults,
         maxDocuments,
         ...additions,
         signal: controller.signal,
       }) as LanguageFeatureRequest
+      options.observeWorkspaceContext?.(workspaceContext)
       const pending = call(entry.resolution.provider, providerRequest)
       if (pending === undefined) return undefined
       let candidate: unknown
@@ -1370,7 +1950,10 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
       list.actions.length > request.maxResults ||
       typeof list.isIncomplete !== 'boolean'
     ) {
-      invalidFeature('language provider returned invalid or unbounded code actions', request.document.uri)
+      invalidFeature(
+        'language provider returned invalid or unbounded code actions',
+        request.document.uri,
+      )
     }
     let editCount = 0
     for (const value of list.actions) {
@@ -1383,7 +1966,9 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
         diagnosticCodes === undefined ||
         (Array.isArray(diagnosticCodes) &&
           diagnosticCodes.length <= request.maxResults &&
-          diagnosticCodes.every(code => typeof code === 'string' && code.length > 0 && code.length <= 256))
+          diagnosticCodes.every(
+            code => typeof code === 'string' && code.length > 0 && code.length <= 256,
+          ))
       const edit = action['edit'] as LanguageWorkspaceEdit | undefined
       const disabledReason = action['disabledReason']
       const hasEdit = edit !== undefined
@@ -1398,19 +1983,27 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
         !validCodes ||
         hasEdit === hasDisabledReason ||
         (hasDisabledReason &&
-          (typeof disabledReason !== 'string' || disabledReason.length === 0 || disabledReason.length > 1_024))
+          (typeof disabledReason !== 'string' ||
+            disabledReason.length === 0 ||
+            disabledReason.length > 1_024))
       ) {
         invalidFeature('language provider returned an invalid code action', request.document.uri)
       }
       if (edit !== undefined) {
         if (!Array.isArray(edit.documentChanges)) {
-          invalidFeature('language provider returned an invalid code-action edit', request.document.uri)
+          invalidFeature(
+            'language provider returned an invalid code-action edit',
+            request.document.uri,
+          )
         }
         for (const change of edit.documentChanges) {
           editCount += Array.isArray(change.edits) ? change.edits.length : maxEdits + 1
         }
         if (editCount > maxEdits) {
-          invalidFeature('language provider returned too many code-action edits', request.document.uri)
+          invalidFeature(
+            'language provider returned too many code-action edits',
+            request.document.uri,
+          )
         }
         validateWorkspaceEdit(edit, request, maxEdits, true)
       }
@@ -1418,7 +2011,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
     return list
   }
 
-  const analyze = (
+  const analyzeEntry = (
     entry: OpenDocument,
     request: LanguageWorkspaceDocumentRequest,
   ): Promise<LanguageWorkspaceAnalysisResult> => {
@@ -1471,6 +2064,99 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
     return pending
   }
 
+  type SynchronizedDocument =
+    | Readonly<{
+        state: 'resolved'
+        entry: OpenDocument
+        hostDiagnostics: readonly Diagnostic[]
+      }>
+    | Readonly<{
+        state: 'unresolved'
+        hostDiagnostics: readonly Diagnostic[]
+      }>
+
+  const synchronizeOpen = async (
+    request: LanguageWorkspaceDocumentRequest,
+  ): Promise<SynchronizedDocument> => {
+    requireReady()
+    validateRequest(request)
+    throwIfAborted(request.signal)
+    if (documents.has(request.document.uri)) {
+      throw workspaceError(
+        LANGUAGE_DOCUMENT_ALREADY_OPEN,
+        `language document ${request.document.uri} is already open`,
+        { uri: request.document.uri },
+      )
+    }
+    const route = routeForRequest(request)
+    const resolution = await resolveLanguageProvider({
+      services: options.services,
+      ...route,
+      grant: options.grant,
+      budgets: options.budgets,
+      ...(request.signal === undefined ? {} : { signal: request.signal }),
+    })
+    if (resolution.state === 'unresolved') {
+      throwIfAborted(request.signal)
+      return Object.freeze({ state: 'unresolved', hostDiagnostics: resolution.diagnostics })
+    }
+    try {
+      throwIfAborted(request.signal)
+    } catch (error) {
+      await resolution.release()
+      throw error
+    }
+    const entry: OpenDocument = {
+      uri: request.document.uri,
+      route,
+      resolution,
+      version: request.document.version,
+      document: request.document,
+      released: false,
+    }
+    invalidateFeatures('language document opened')
+    documents.set(entry.uri, entry)
+    return Object.freeze({
+      state: 'resolved',
+      entry,
+      hostDiagnostics: resolution.diagnostics,
+    })
+  }
+
+  const synchronizeChange = (request: LanguageWorkspaceDocumentRequest): OpenDocument => {
+    requireReady()
+    validateRequest(request)
+    const entry = documents.get(request.document.uri)
+    if (entry === undefined) {
+      throw workspaceError(
+        LANGUAGE_DOCUMENT_NOT_OPEN,
+        `language document ${request.document.uri} is not open`,
+        { uri: request.document.uri },
+      )
+    }
+    const nextRoute = routeForRequest(request)
+    if (
+      routeKey(entry.route) !== routeKey(nextRoute) ||
+      request.document.version <= entry.version
+    ) {
+      throw workspaceError(
+        LANGUAGE_DOCUMENT_CHANGE_INVALID,
+        'a language document change must preserve its route and strictly increase its version',
+        {
+          uri: request.document.uri,
+          currentVersion: String(entry.version),
+          nextVersion: String(request.document.version),
+        },
+      )
+    }
+    invalidateFeatures('language document changed')
+    entry.analysisController?.abort('superseded by a newer document version')
+    entry.version = request.document.version
+    entry.document = request.document
+    delete entry.current
+    return entry
+  }
+
   const closeEntry = async (entry: OpenDocument): Promise<void> => {
     if (documents.get(entry.uri) === entry) documents.delete(entry.uri)
     entry.analysisController?.abort('language document closed')
@@ -1485,6 +2171,117 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
     await release(entry)
   }
 
+  const positionAtOffset = (text: string, rawOffset: number): LanguagePosition => {
+    const offset = Math.max(0, Math.min(rawOffset, text.length))
+    const before = text.slice(0, offset)
+    const line = before.split('\n').length - 1
+    const start = before.lastIndexOf('\n') + 1
+    return { line, character: offset - start }
+  }
+
+  const occurrenceRange = (
+    occurrence: ReferenceOccurrence,
+    document: LanguageDocument,
+  ): LanguageRange | undefined => {
+    const span = occurrence.source.span as Readonly<Record<string, unknown>>
+    if (!Number.isSafeInteger(span['utf16Offset']) || !Number.isSafeInteger(span['utf16Length'])) {
+      return undefined
+    }
+    const start = span['utf16Offset'] as number
+    const length = span['utf16Length'] as number
+    return {
+      start: positionAtOffset(document.text, start),
+      end: positionAtOffset(document.text, start + length),
+    }
+  }
+
+  const indexedReferenceLocations = async (
+    provider: LanguageProvider,
+    feature: LanguageFeatureRequest,
+    position: LanguagePosition,
+    mode: 'definition' | 'references',
+    includeDeclaration = false,
+  ): Promise<LanguageLocationList | undefined> => {
+    if (provider.referenceOccurrences === undefined || feature.workspaceContext === undefined) {
+      return undefined
+    }
+    const batches = await provider.referenceOccurrences(feature)
+    if (!Array.isArray(batches) || batches.length > feature.maxDocuments) {
+      invalidFeature(
+        'language provider returned invalid reference occurrence batches',
+        feature.document.uri,
+      )
+    }
+    const byUri = new Map(feature.workspaceDocuments.map(document => [document.uri, document]))
+    const origins = new Map(
+      feature.workspaceContext.documentOrigins.map(origin => [origin.uri, origin]),
+    )
+    for (const batch of batches) {
+      const document = byUri.get(batch.sourceUri)
+      const origin = origins.get(batch.sourceUri)
+      if (
+        batch.contextId !== feature.workspaceContext.id ||
+        batch.contextRevision !== feature.workspaceContext.revision ||
+        (batch.semanticComplete && !feature.workspaceContext.semanticComplete) ||
+        document === undefined ||
+        origin === undefined ||
+        batch.sourceRevision !== origin.sourceRevision
+      ) {
+        invalidFeature(
+          'language provider returned a reference batch for another snapshot',
+          feature.document.uri,
+        )
+      }
+      referenceIndex.replace(batch)
+    }
+    const sourceLines = feature.document.text.split('\n')
+    const cursorOffset =
+      sourceLines.slice(0, position.line).reduce((sum, line) => sum + line.length + 1, 0) +
+      position.character
+    const atCursor = referenceIndex
+      .occurrencesIn(feature.document.uri)
+      .flatMap(occurrence => {
+        const span = occurrence.source.span as Readonly<Record<string, unknown>>
+        const start = span['utf16Offset']
+        const length = span['utf16Length']
+        return Number.isSafeInteger(start) &&
+          Number.isSafeInteger(length) &&
+          cursorOffset >= (start as number) &&
+          cursorOffset <= (start as number) + (length as number)
+          ? [occurrence]
+          : []
+      })
+      .sort((left, right) => {
+        const l = (left.source.span as Readonly<Record<string, unknown>>)['utf16Length'] as number
+        const r = (right.source.span as Readonly<Record<string, unknown>>)['utf16Length'] as number
+        return l - r
+      })[0]
+    if (atCursor === undefined) return undefined
+    const occurrences = referenceIndex.occurrences(atCursor.target)
+    let selected: readonly Pick<ReferenceOccurrence, 'source' | 'role'>[]
+    if (mode === 'definition') {
+      const resolution = referenceIndex.resolveIndexed(atCursor.target)
+      // An occurrence index may recognize a cross-language reference before it owns the target's
+      // declaration. Let the provider's direct definition resolver answer that case.
+      if (resolution.state !== 'resolved') return undefined
+      selected = [...[resolution.declaration], ...resolution.shadowedDeclarations].map(item => ({
+        source: item.source,
+        role: 'declaration' as const,
+      }))
+    } else selected = occurrences.filter(item => includeDeclaration || item.role !== 'declaration')
+    const locations = selected.flatMap(item => {
+      const document = byUri.get(item.source.uri)
+      if (document === undefined) return []
+      const range = occurrenceRange(item as ReferenceOccurrence, document)
+      return range === undefined ? [] : [{ uri: item.source.uri, range }]
+    })
+    return {
+      locations: locations.slice(0, feature.maxResults),
+      isIncomplete:
+        locations.length > feature.maxResults || !referenceIndex.snapshot().semanticComplete,
+    }
+  }
+
   return Object.freeze({
     async initialize(): Promise<void> {
       if (state === 'shut-down') {
@@ -1493,54 +2290,77 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
       state = 'ready'
     },
 
-    async open(
+    async synchronize(
       request: LanguageWorkspaceDocumentRequest,
-    ): Promise<LanguageWorkspaceAnalysisResult> {
+    ): Promise<LanguageWorkspaceSynchronizationResult> {
       requireReady()
       validateRequest(request)
       throwIfAborted(request.signal)
-      if (documents.has(request.document.uri)) {
-        throw workspaceError(
-          LANGUAGE_DOCUMENT_ALREADY_OPEN,
-          `language document ${request.document.uri} is already open`,
-          { uri: request.document.uri },
-        )
-      }
-      const route = routeOf(request)
-      const resolution = await resolveLanguageProvider({
-        services: options.services,
-        ...route,
-        grant: options.grant,
-        budgets: options.budgets,
-        ...(request.signal === undefined ? {} : { signal: request.signal }),
-      })
-      if (resolution.state === 'unresolved') {
-        throwIfAborted(request.signal)
+      const current = documents.get(request.document.uri)
+      if (current === undefined) {
+        const synchronized = await synchronizeOpen(request)
         return Object.freeze({
-          state: 'unresolved',
-          hostDiagnostics: resolution.diagnostics,
+          state: synchronized.state,
+          hostDiagnostics: synchronized.hostDiagnostics,
         })
       }
-      try {
+      const nextRoute = routeForRequest(request)
+      if (
+        current.version === request.document.version &&
+        routeKey(current.route) === routeKey(nextRoute) &&
+        current.document.text === request.document.text
+      ) {
         throwIfAborted(request.signal)
-      } catch (error) {
-        await resolution.release()
-        throw error
+        return Object.freeze({
+          state: 'resolved',
+          hostDiagnostics: current.resolution.diagnostics,
+        })
       }
-      const entry: OpenDocument = {
-        uri: request.document.uri,
-        route,
-        resolution,
-        version: request.document.version,
-        document: request.document,
-        released: false,
+      const entry = synchronizeChange(request)
+      throwIfAborted(request.signal)
+      return Object.freeze({
+        state: 'resolved',
+        hostDiagnostics: entry.resolution.diagnostics,
+      })
+    },
+
+    analyze(request: LanguageWorkspaceDocumentRequest): Promise<LanguageWorkspaceAnalysisResult> {
+      requireReady()
+      validateRequest(request)
+      const entry = documents.get(request.document.uri)
+      const route = routeForRequest(request)
+      if (
+        entry === undefined ||
+        entry.version !== request.document.version ||
+        entry.document.text !== request.document.text ||
+        routeKey(entry.route) !== routeKey(route)
+      ) {
+        return Promise.reject(
+          workspaceError(
+            LANGUAGE_DOCUMENT_CHANGE_INVALID,
+            'language analysis needs the exact synchronized document version',
+            {
+              uri: request.document.uri,
+              requestedVersion: String(request.document.version),
+              currentVersion: entry === undefined ? 'closed' : String(entry.version),
+            },
+          ),
+        )
       }
-      invalidateFeatures('language document opened')
-      documents.set(entry.uri, entry)
+      return analyzeEntry(entry, request)
+    },
+
+    async open(
+      request: LanguageWorkspaceDocumentRequest,
+    ): Promise<LanguageWorkspaceAnalysisResult> {
+      const synchronized = await synchronizeOpen(request)
+      if (synchronized.state === 'unresolved') return synchronized
       try {
-        return await analyze(entry, request)
+        return await analyzeEntry(synchronized.entry, request)
       } catch (error) {
-        if (documents.get(entry.uri) === entry) await closeEntry(entry)
+        if (documents.get(synchronized.entry.uri) === synchronized.entry) {
+          await closeEntry(synchronized.entry)
+        }
         throw error
       }
     },
@@ -1548,36 +2368,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
     async change(
       request: LanguageWorkspaceDocumentRequest,
     ): Promise<LanguageWorkspaceAnalysisResult> {
-      requireReady()
-      validateRequest(request)
-      const entry = documents.get(request.document.uri)
-      if (entry === undefined) {
-        throw workspaceError(
-          LANGUAGE_DOCUMENT_NOT_OPEN,
-          `language document ${request.document.uri} is not open`,
-          { uri: request.document.uri },
-        )
-      }
-      const nextRoute = routeOf(request)
-      if (
-        routeKey(entry.route) !== routeKey(nextRoute) ||
-        request.document.version <= entry.version
-      ) {
-        throw workspaceError(
-          LANGUAGE_DOCUMENT_CHANGE_INVALID,
-          'a language document change must preserve its route and strictly increase its version',
-          {
-            uri: request.document.uri,
-            currentVersion: String(entry.version),
-            nextVersion: String(request.document.version),
-          },
-        )
-      }
-      invalidateFeatures('language document changed')
-      entry.version = request.document.version
-      entry.document = request.document
-      delete entry.current
-      return analyze(entry, request)
+      return analyzeEntry(synchronizeChange(request), request)
     },
 
     async current(
@@ -1610,6 +2401,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
         ['prepare-rename', 'prepareRename'],
         ['rename', 'rename'],
         ['formatting', 'formatting'],
+        ['on-type-formatting', 'onTypeFormatting'],
         ['document-colors', 'documentColors'],
         ['color-presentations', 'colorPresentations'],
         ['code-actions', 'codeActions'],
@@ -1631,8 +2423,19 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
     },
 
     completion(
-      request: LanguageWorkspacePositionRequest,
+      request: LanguageWorkspaceCompletionRequest,
     ): Promise<LanguageCompletionList | undefined> {
+      if (
+        request.semanticContextPolicy !== undefined &&
+        request.semanticContextPolicy !== 'fresh' &&
+        request.semanticContextPolicy !== 'cached'
+      ) {
+        throw workspaceError(
+          LANGUAGE_FEATURE_INVALID,
+          'language completion semantic context policy must be fresh or cached',
+          { uri: request.uri },
+        )
+      }
       return invokeFeature(
         request,
         true,
@@ -1643,6 +2446,12 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
           }),
         async (value, feature) => {
           const declared = validateProviderCompletionList(value, feature)
+          // Most completions are provider-owned syntax/schema items. Resolving a served subject can
+          // open a complete mod and its dependencies, so only pay that cost when the provider has
+          // explicitly asked the host to expand a subject reference marker.
+          if (!declared.items.some(item => item.kind === 'subject-ref')) {
+            return validateCompletionList(declared, feature)
+          }
           const candidateLease = await options.subjectCandidates?.open(
             { uri: feature.document.uri },
             feature.signal,
@@ -1660,6 +2469,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
           }
         },
         { position: request.position },
+        request.semanticContextPolicy === 'cached',
       )
     },
 
@@ -1691,7 +2501,17 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
       return invokeFeature(
         request,
         true,
-        (provider, feature) => provider.definition?.({ ...feature, position: request.position }),
+        async (provider, feature) => {
+          const indexed = await indexedReferenceLocations(
+            provider,
+            feature,
+            request.position,
+            'definition',
+          )
+          return indexed !== undefined && indexed.locations.length > 0
+            ? indexed
+            : provider.definition?.({ ...feature, position: request.position })
+        },
         validateLocationList,
         { position: request.position },
       )
@@ -1703,14 +2523,24 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
       return invokeFeature(
         request,
         true,
-        (provider, feature) =>
-          provider.references?.({
-            ...feature,
-            position: request.position,
-            ...(request.includeDeclaration === undefined
-              ? {}
-              : { includeDeclaration: request.includeDeclaration }),
-          }),
+        async (provider, feature) => {
+          const indexed = await indexedReferenceLocations(
+            provider,
+            feature,
+            request.position,
+            'references',
+            request.includeDeclaration === true,
+          )
+          return indexed !== undefined && indexed.locations.length > 0
+            ? indexed
+            : provider.references?.({
+                ...feature,
+                position: request.position,
+                ...(request.includeDeclaration === undefined
+                  ? {}
+                  : { includeDeclaration: request.includeDeclaration }),
+              })
+        },
         validateLocationList,
         {
           position: request.position,
@@ -1774,35 +2604,72 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
     formatting(
       request: LanguageWorkspaceFormattingRequest,
     ): Promise<LanguageTextEditList | undefined> {
-      const formatting = request.options
-      if (
-        typeof formatting !== 'object' ||
-        formatting === null ||
-        !Number.isSafeInteger(formatting.tabSize) ||
-        formatting.tabSize < 1 ||
-        formatting.tabSize > 8 ||
-        typeof formatting.insertSpaces !== 'boolean' ||
-        (formatting.finalNewline !== undefined && typeof formatting.finalNewline !== 'boolean')
-      ) {
-        return Promise.reject(
-          workspaceError(
-            LANGUAGE_FEATURE_INVALID,
-            'formatting options need tabSize 1 through 8 and boolean indentation settings',
-            { uri: request.uri },
-          ),
-        )
+      let providerOptions: LanguageFormattingOptions
+      try {
+        providerOptions = validatedFormattingOptions(request.options, request.uri)
+      } catch (error) {
+        return Promise.reject(error)
       }
-      const providerOptions = Object.freeze({
-        tabSize: formatting.tabSize,
-        insertSpaces: formatting.insertSpaces,
-        ...(formatting.finalNewline === undefined ? {} : { finalNewline: formatting.finalNewline }),
-      })
       return invokeFeature(
         request,
         false,
         (provider, feature) => provider.formatting?.({ ...feature, options: providerOptions }),
         validateTextEditList,
         { options: providerOptions },
+      )
+    },
+
+    onTypeFormatting(
+      request: LanguageWorkspaceOnTypeFormattingRequest,
+    ): Promise<LanguageOnTypeEditResult | undefined> {
+      if (
+        request.semanticContextPolicy !== undefined &&
+        request.semanticContextPolicy !== 'fresh' &&
+        request.semanticContextPolicy !== 'cached'
+      ) {
+        return Promise.reject(
+          workspaceError(
+            LANGUAGE_FEATURE_INVALID,
+            'on-type formatting semantic context policy must be fresh or cached',
+            { uri: request.uri },
+          ),
+        )
+      }
+      if (typeof request.ch !== 'string' || [...request.ch].length !== 1) {
+        return Promise.reject(
+          workspaceError(
+            LANGUAGE_FEATURE_INVALID,
+            'on-type formatting needs exactly one trigger character',
+            { uri: request.uri },
+          ),
+        )
+      }
+      if (
+        !requireFeatureEntry(request, true).route.onTypeFormattingTriggerCharacters?.includes(
+          request.ch,
+        )
+      ) {
+        return Promise.resolve(undefined)
+      }
+      let providerOptions: LanguageFormattingOptions
+      try {
+        providerOptions = validatedFormattingOptions(request.options, request.uri)
+      } catch (error) {
+        return Promise.reject(error)
+      }
+      return invokeFeature(
+        request,
+        true,
+        (provider, feature) =>
+          provider.onTypeFormatting?.({
+            ...feature,
+            position: request.position,
+            ch: request.ch,
+            options: providerOptions,
+          }),
+        validateOnTypeEditResult,
+        { position: request.position, ch: request.ch, options: providerOptions },
+        request.semanticContextPolicy === 'cached',
       )
     },
 
@@ -1856,12 +2723,13 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
         !validRange(request.range, lengths) ||
         !Array.isArray(request.diagnostics) ||
         request.diagnostics.length > (request.maxResults ?? LANGUAGE_DEFAULT_MAX_RESULTS) ||
-        !request.diagnostics.every(item =>
-          validRange(item.range, lengths) &&
-          typeof item.message === 'string' &&
-          ['error', 'warning', 'information', 'hint'].includes(item.severity) &&
-          (item.code === undefined || typeof item.code === 'string') &&
-          (item.source === undefined || typeof item.source === 'string'),
+        !request.diagnostics.every(
+          item =>
+            validRange(item.range, lengths) &&
+            typeof item.message === 'string' &&
+            ['error', 'warning', 'information', 'hint'].includes(item.severity) &&
+            (item.code === undefined || typeof item.code === 'string') &&
+            (item.source === undefined || typeof item.source === 'string'),
         )
       ) {
         return Promise.reject(
@@ -1886,12 +2754,13 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
       return invokeFeature(
         request,
         false,
-        (provider, feature) => provider.codeActions?.({
-          ...feature,
-          range,
-          diagnostics,
-          maxEdits,
-        }),
+        (provider, feature) =>
+          provider.codeActions?.({
+            ...feature,
+            range,
+            diagnostics,
+            maxEdits,
+          }),
         (value, feature) => validateCodeActionList(value, feature, maxEdits),
         { range, diagnostics, maxEdits },
       )
@@ -1955,11 +2824,16 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
           if (current?.state !== 'resolved') return { diagnostics: [], isIncomplete: true }
           return {
             diagnostics: current.analysis.diagnostics,
-            isIncomplete: feature.workspaceIncomplete,
+            isIncomplete: languageWorkspaceIsSemanticallyIncomplete(feature),
           }
         },
         validateDiagnosticList,
       )
+    },
+
+    invalidate(reason = 'language workspace context changed'): void {
+      requireReady()
+      invalidateFeatures(reason)
     },
 
     async close(uri: string): Promise<void> {
@@ -1976,6 +2850,10 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
       state = 'shut-down'
       shutdownPromise = (async () => {
         invalidateFeatures('language workspace shut down')
+        semanticContextCache.clear()
+        semanticContextCacheBytes = 0
+        pendingSemanticContexts.clear()
+        latestSemanticContextKeys.clear()
         const open = [...documents.values()]
         documents.clear()
         for (const entry of open) entry.analysisController?.abort('language workspace shut down')

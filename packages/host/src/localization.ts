@@ -13,30 +13,20 @@ import {
   type LocalizationCatalogResourceV1Wire,
   type LocalizationContributionSpecV1Wire,
 } from '@modkit/sdk'
-import {
-  DEFAULT_VFS_LIMITS,
-  normalizeVfsPath,
-  type VfsMount,
-  type VfsOpenOptions,
-} from '@modkit/vfs'
-
+import { readAttestedArtifactFile, type ArtifactVfsPort } from './artifact-files.js'
 import {
   CONTRIBUTION_DISABLED_CODE,
   EXTENSION_DISABLED_CODE,
-  inventoryRecordFor,
   type Inventory,
   type InventoryContribution,
   type InventoryExtension,
 } from './inventory.js'
-import { resolveContainedEntrypoint } from './security/entrypoint.js'
 
 /** Security ceiling shared with the UI catalog wire parser. Hosts may request a lower value. */
 export const LOCALIZATION_CATALOG_MAXIMUM_JSON_BYTES = 8 * 1024 * 1024
 
-export interface LocalizationVfsPort {
-  /** `VirtualFileSystem.openMount` satisfies this port without exposing a native filesystem path. */
-  openMount(uri: string, options?: VfsOpenOptions): Promise<VfsMount>
-}
+/** `VirtualFileSystem.openMount` satisfies this port without exposing a native filesystem path. */
+export type LocalizationVfsPort = ArtifactVfsPort
 
 export interface LocalizationCatalogLike {
   readonly locale: string
@@ -94,7 +84,6 @@ interface Candidate {
   readonly resource: LocalizationCatalogResourceV1Wire
 }
 
-const encoder = new TextEncoder()
 const decoder = new TextDecoder('utf-8', { fatal: true })
 
 function extensionCoordinate(extension: InventoryExtension): string {
@@ -146,29 +135,6 @@ function candidatesFrom(inventory: Inventory): readonly Candidate[] {
     return leftKey < rightKey ? -1 : leftKey > rightKey ? 1 : 0
   })
   return Object.freeze(candidates)
-}
-
-function confinedResourcePath(candidate: Candidate, artifactRoot: URL): string {
-  const authored = candidate.resource.path
-  if (authored.startsWith('/') || authored.startsWith('\\') || authored.includes('\\')) {
-    throw new TypeError('localization catalog path must be a portable relative POSIX path')
-  }
-  const normalized = normalizeVfsPath(authored)
-  if (normalized === '' || !normalized.toLowerCase().endsWith('.json')) {
-    throw new TypeError('localization catalog path must identify a JSON file')
-  }
-  // URL resolution catches encoded traversal (`%2e%2e`) in addition to normalizeVfsPath's
-  // literal `..` refusal. The returned URL is deliberately not handed to the catalog parser.
-  resolveContainedEntrypoint(artifactRoot, normalized)
-  return normalized
-}
-
-async function sha256(bytes: Uint8Array): Promise<string> {
-  const copy = Uint8Array.from(bytes)
-  const subtle = globalThis.crypto?.subtle
-  if (subtle === undefined) throw new TypeError('WebCrypto SHA-256 is unavailable')
-  const digest = new Uint8Array(await subtle.digest('SHA-256', copy.buffer))
-  return `sha256:${[...digest].map(byte => byte.toString(16).padStart(2, '0')).join('')}`
 }
 
 function maximumJsonBytes(requested: number | undefined): number {
@@ -227,60 +193,18 @@ async function authorizedPrefixes(
   )
 }
 
-async function readCatalogBytes(
+function readCatalogBytes(
   candidate: Candidate,
   options: LoadLocalizationCatalogsOptions<LocalizationCatalogLike>,
   maxBytes: number,
 ): Promise<Uint8Array> {
-  const record = inventoryRecordFor(candidate.contribution)
-  if (record === undefined)
-    throw new TypeError('localization contribution has no trusted inventory record')
-  const path = confinedResourcePath(candidate, record.artifactRoot)
-  const expectedDigest = record.fileDigests?.[path]
-  if (expectedDigest === undefined) {
-    throw new TypeError(
-      `localization catalog ${path} is absent from the attested artifact file map`,
-    )
-  }
-  const mount = await options.vfs.openMount(record.artifactRoot.href, {
-    limits: {
-      // Opening an artifact mount may account all of its files (a model pack can legitimately be
-      // much larger than one catalog), so retain the platform's artifact ceilings here. Exact
-      // catalog size and all bytes actually read remain capped to the localization ceiling.
-      maxEntries: DEFAULT_VFS_LIMITS.maxEntries,
-      maxMaterializedBytes: DEFAULT_VFS_LIMITS.maxMaterializedBytes,
-      maxFileBytes: DEFAULT_VFS_LIMITS.maxFileBytes,
-      maxReadBytes: BigInt(LOCALIZATION_CATALOG_MAXIMUM_JSON_BYTES),
-      maxReadRangeBytes: LOCALIZATION_CATALOG_MAXIMUM_JSON_BYTES,
-      maxStreamBytes: DEFAULT_VFS_LIMITS.maxStreamBytes,
-      maxPathBytes: Math.max(256, encoder.encode(path).byteLength),
-    },
+  return readAttestedArtifactFile(candidate.contribution, candidate.resource.path, {
+    vfs: options.vfs,
+    maxBytes,
+    label: 'localization catalog',
+    ...(options.digest === undefined ? {} : { digest: options.digest }),
     ...(options.signal === undefined ? {} : { signal: options.signal }),
   })
-  try {
-    const node = await mount.stat(path, options.signal)
-    if (node?.kind !== 'file') throw new TypeError(`localization catalog ${path} is not a file`)
-    if (node.size !== undefined && node.size > BigInt(maxBytes)) {
-      throw new TypeError(`localization catalog ${path} exceeds the ${maxBytes}-byte raw limit`)
-    }
-    const source = await mount.open(path, options.signal)
-    try {
-      const size = await source.size(options.signal)
-      if (!Number.isSafeInteger(size) || size < 0 || size > maxBytes) {
-        throw new TypeError(`localization catalog ${path} exceeds the ${maxBytes}-byte raw limit`)
-      }
-      const bytes = await source.readAt(0, size, options.signal)
-      const actualDigest = await (options.digest ?? sha256)(bytes)
-      if (actualDigest !== expectedDigest) {
-        throw new TypeError(`localization catalog ${path} does not match its attested SHA-256`)
-      }
-      return bytes
-    } finally {
-      await source.dispose()
-    }
-  } finally {
-    await mount.dispose()
-  }
 }
 
 /**

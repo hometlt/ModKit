@@ -1,4 +1,4 @@
-import { diagnostic, throwIfAborted, type Diagnostic } from '@modkit/core'
+import { compareUtf8, diagnostic, throwIfAborted, type Diagnostic } from '@modkit/core'
 import {
   isRevisionId,
   revisionId,
@@ -24,6 +24,7 @@ import type {
   LanguageWorkspaceDocumentSource,
   LanguageWorkspaceDocumentSourceRequest,
 } from './language/workspace.js'
+import { languageWorkspaceContextToken } from './language/context.js'
 import {
   analyzeResolvedDataWorkspace,
   type AnalyzedResolvedDataWorkspace,
@@ -104,10 +105,10 @@ function relativeEntry(mount: IndexedMount, entry: ContentSourceEntry): string |
   const path = normalizeOpaquePath(entry.path)
   if (mount.sourcePath === '') return path
   const prefix = `${mount.sourcePath}/`
-  return path.startsWith(prefix) ? path.slice(prefix.length) : undefined
+  return path.toLowerCase().startsWith(prefix.toLowerCase()) ? path.slice(prefix.length) : undefined
 }
 
-function entryRevision(mount: ContentDependencyMount): RevisionId {
+export function entryRevision(mount: ContentDependencyMount): RevisionId {
   return mount.fingerprint !== undefined && isRevisionId(mount.fingerprint)
     ? revisionId(mount.fingerprint)
     : revisionIdFromRef({
@@ -365,6 +366,23 @@ export function createContentDependencyLanguageDocumentSource(
     if (ids.size === 1) uniqueLanguageByExtension.set(extension, [...ids][0]!)
   }
   const revisions = new Map<string, { readonly signature: string; readonly version: number }>()
+  const contextId = languageWorkspaceContextToken({
+    gameId: options.resolution.gameId,
+    mounts: mounts.map(mount => ({
+      dependencyId: mount.dependencyId,
+      order: mount.order,
+      kind: mount.kind,
+    })),
+  })
+  const contextRevision = languageWorkspaceContextToken({
+    contextId,
+    complete: options.resolution.complete,
+    mounts: mounts.map(mount => ({
+      dependencyId: mount.dependencyId,
+      order: mount.order,
+      revision: mount.revision,
+    })),
+  })
   return Object.freeze({
     async snapshot(request: LanguageWorkspaceDocumentSourceRequest) {
       request.signal.throwIfAborted()
@@ -375,16 +393,24 @@ export function createContentDependencyLanguageDocumentSource(
         readonly path: string
         readonly relative: string
       }[] = []
+      const contentPaths = new Set<string>()
       let visited = 0
-      let complete = options.resolution.complete
+      // Without a provider-authored content fingerprint, bytes may change while the mount identity
+      // stays the same. Keep the documents usable, but never claim a complete/stable semantic
+      // snapshot that could be cached or globally renamed.
+      let complete =
+        options.resolution.complete &&
+        mounts.every(mount => mount.fingerprint !== undefined && isRevisionId(mount.fingerprint))
+      let pathIndexComplete = options.resolution.complete
       const walk = async (mount: IndexedMount, path: string): Promise<void> => {
-        if (candidates.length > request.maxDocuments || visited > maxEntries) return
+        if (visited > maxEntries) return
         request.signal.throwIfAborted()
         let entries: readonly ContentSourceEntry[]
         try {
           entries = await options.contentSources.list(mount.sourceId, path)
         } catch {
           complete = false
+          pathIndexComplete = false
           return
         }
         for (const entry of entries) {
@@ -392,17 +418,20 @@ export function createContentDependencyLanguageDocumentSource(
           visited += 1
           if (visited > maxEntries) {
             complete = false
+            pathIndexComplete = false
             return
           }
           const relative = relativeEntry(mount, entry)
           if (relative === undefined) {
             complete = false
+            pathIndexComplete = false
             continue
           }
           if (entry.directory) {
             await walk(mount, entry.path)
             continue
           }
+          contentPaths.add(relative)
           const extension = relative.slice(relative.lastIndexOf('.') + 1).toLowerCase()
           const languageId = uniqueLanguageByExtension.get(extension)
           if (languageId === undefined) {
@@ -414,18 +443,25 @@ export function createContentDependencyLanguageDocumentSource(
           if (!accepted.has(languageId)) continue
           const logicalId = joinPath(mount.logicalPrefix, relative)
           const uri = `content-source://${encodeURIComponent(mount.sourceId)}/${logicalId.split('/').map(encodeURIComponent).join('/')}`
-          if (!openUris.has(uri)) candidates.push({ mount, path: entry.path, relative })
-          if (candidates.length > request.maxDocuments) {
+          if (!openUris.has(uri) && candidates.length < request.maxDocuments) {
+            candidates.push({ mount, path: entry.path, relative })
+          } else if (!openUris.has(uri)) {
             complete = false
-            return
           }
         }
       }
       for (const mount of mounts) {
-        if (candidates.length > request.maxDocuments || visited > maxEntries) break
+        if (visited > maxEntries) break
         await walk(mount, mount.sourcePath)
       }
+      const indexedPaths = Object.freeze([...contentPaths].sort(compareUtf8))
+      const pathIndexRevision = languageWorkspaceContextToken({
+        contextRevision,
+        complete: pathIndexComplete,
+        paths: indexedPaths,
+      })
       const documents = []
+      const documentOrigins = []
       let totalBytes = 0
       for (const candidate of candidates.slice(0, request.maxDocuments)) {
         request.signal.throwIfAborted()
@@ -471,13 +507,73 @@ export function createContentDependencyLanguageDocumentSource(
               : previous.version + 1
         revisions.set(uri, { signature, version })
         documents.push(Object.freeze({ uri, languageId, version, text }))
+        documentOrigins.push(
+          Object.freeze({
+            uri,
+            layerId: `${contextId}:${candidate.mount.order}:${candidate.mount.dependencyId}`,
+            logicalId: candidate.relative,
+            precedence: candidate.mount.order,
+            sourceRevision: String(candidate.mount.revision),
+            readOnly: true,
+          }),
+        )
       }
-      return Object.freeze({ documents: Object.freeze(documents), isComplete: complete })
+      return Object.freeze({
+        documents: Object.freeze(documents),
+        isComplete: complete,
+        workspaceContext: Object.freeze({
+          id: contextId,
+          revision: contextRevision,
+          semanticComplete: complete,
+          documentOrigins: Object.freeze(documentOrigins),
+          semanticInputs: Object.freeze([
+            Object.freeze({
+              kind: 'dependency-closure',
+              id: `${options.resolution.gameId}:${contextId}`,
+              revision: contextRevision,
+            }),
+            Object.freeze({
+              kind: 'content-path-index',
+              id: `${options.resolution.gameId}:${contextId}`,
+              revision: pathIndexRevision,
+              payload: Object.freeze({
+                schemaVersion: 1,
+                isComplete: pathIndexComplete,
+                paths: indexedPaths,
+              }),
+            }),
+          ]),
+        }),
+      })
     },
   })
 }
 
 /** Bind provider-resolved content roots to a read-only workspace and revision-pinned resource port. */
+/**
+ * The resolved mounts of one dependency closure, as a place a subject's resources may be found.
+ *
+ * This is the same origin the resolved-Data workspace and the language sources read through — the
+ * mod, then what the mod depends on, in the order the provider resolved them. Handed to a subject
+ * open as an asset origin, it is what lets a model inside a mod reach a texture that the mod's
+ * dependency carries, without any part of the host knowing which game or which folders those are.
+ */
+export function createContentDependencyAssetOrigin(options: {
+  readonly contentSources: ContentSources
+  readonly resolution: ContentDependencyResolution
+  readonly maximumEntryBytes?: number
+}): CompanionOrigin | undefined {
+  const maximumEntryBytes = options.maximumEntryBytes ?? 64 * 1024 * 1024
+  if (!Number.isSafeInteger(maximumEntryBytes) || maximumEntryBytes <= 0) {
+    throw new TypeError('maximumEntryBytes must be a positive safe integer')
+  }
+  const mounts = validateMounts(options.resolution)
+  // No mount is not an empty origin: an origin that serves a scope and answers nothing would make
+  // "this provider resolved no layers" indistinguishable from "the layers hold no such file".
+  if (mounts.length === 0) return undefined
+  return createContentDependencyOrigin(options.contentSources, mounts, maximumEntryBytes)
+}
+
 export function createReadOnlyContentDependencyWorkspace(
   options: ReadOnlyContentDependencyWorkspaceOptions,
 ): ReadOnlyContentDependencyWorkspace {

@@ -16,6 +16,7 @@
 import { compareUtf8, ModkitError, type Diagnostic } from '@modkit/core'
 import type {
   ArtifactSource,
+  ContributionSettings,
   DefinitionInventoryResult,
   HostPolicy,
   OpenIntent,
@@ -103,6 +104,8 @@ export interface SubjectServices {
   readonly supportedExtensions: readonly string[]
   /** Definitions the sessions' service arms resolve against, when the host registered any. */
   readonly serviceDefinitions?: ServiceContractDefinitionRegistry
+  /** The host's settings for a contribution, for callers that open subjects themselves. */
+  readonly contributionSettings?: (contributionId: string) => ContributionSettings | undefined
   open(request: SubjectOpenRequest): Promise<OpenSubjectResult>
 }
 
@@ -111,6 +114,8 @@ export interface SubjectServicesOptions {
   readonly target: RuntimeTarget
   readonly executionBackends: ExecutionBackendRegistry
   readonly serviceDefinitions?: ServiceContractDefinitionRegistry
+  /** Answers what the user configured for one contribution; see {@link ContributionSettings}. */
+  readonly contributionSettings?: (contributionId: string) => ContributionSettings | undefined
   readonly policy?: HostPolicy
   readonly minimumConfidence?: number
   readonly maxCandidates?: number
@@ -217,6 +222,9 @@ export function createSubjectServices(options: SubjectServicesOptions): SubjectS
       ? {}
       : { minimumConfidence: options.minimumConfidence }),
     ...(options.maxCandidates === undefined ? {} : { maxCandidates: options.maxCandidates }),
+    ...(options.contributionSettings === undefined
+      ? {}
+      : { contributionSettings: options.contributionSettings }),
   }
   const services: SubjectServices = {
     inventory: options.inventory,
@@ -227,6 +235,9 @@ export function createSubjectServices(options: SubjectServicesOptions): SubjectS
     ...(options.serviceDefinitions === undefined
       ? {}
       : { serviceDefinitions: options.serviceDefinitions }),
+    ...(options.contributionSettings === undefined
+      ? {}
+      : { contributionSettings: options.contributionSettings }),
     open: request => openSubject({ ...fixed, ...request }),
   }
   return Object.freeze(services)

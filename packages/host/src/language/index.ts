@@ -15,6 +15,7 @@ import {
   type LanguageProvider,
   type LanguageProviderOfferFacet,
   type LanguageProviderRequestFacet,
+  type LanguageWorkspaceSemanticInput,
   type TranslationProviderOfferFacet,
   type TranslationProviderRequestFacet,
 } from '@modkit/sdk/language'
@@ -32,11 +33,23 @@ import type {
 import type { ExecutionBackendRegistry } from '../execution/backend.js'
 import type { Inventory } from '../inventory.js'
 import { createHostServiceResolver } from '../service-leases.js'
+import {
+  languageWorkspaceContextToken,
+  validatedLanguageWorkspaceSemanticInputs,
+} from './context.js'
+import { validatedLanguageSemanticContextRequirements } from './semantic-context.js'
 
 /** Owner id under which the platform definition is registered. */
 export const STANDARD_LANGUAGE_OWNER = 'modkit/language'
 
-const OFFER_KEYS = new Set(['languageIds', 'documentKinds', 'extensions'])
+const OFFER_KEYS = new Set([
+  'languageIds',
+  'documentKinds',
+  'extensions',
+  'completionTriggerCharacters',
+  'signatureHelpTriggerCharacters',
+  'onTypeFormattingTriggerCharacters',
+])
 const REQUEST_KEYS = new Set(['languageId', 'documentKind', 'extension'])
 
 function recordOf(value: unknown): Readonly<Record<string, unknown>> | undefined {
@@ -52,6 +65,13 @@ function stringList(value: unknown): readonly string[] | undefined {
   return new Set(strings).size === strings.length ? strings : undefined
 }
 
+function triggerCharacterList(value: unknown): readonly string[] | undefined {
+  if (!Array.isArray(value) || value.length === 0) return undefined
+  if (!value.every(item => typeof item === 'string' && [...item].length === 1)) return undefined
+  const strings = value as string[]
+  return new Set(strings).size === strings.length ? strings : undefined
+}
+
 function parseOffer(value: unknown): LanguageProviderOfferFacet | undefined {
   const record = recordOf(value)
   if (record === undefined || Object.keys(record).some(key => !OFFER_KEYS.has(key)))
@@ -60,11 +80,25 @@ function parseOffer(value: unknown): LanguageProviderOfferFacet | undefined {
   if (languageIds === undefined) return undefined
   const rawKinds = record['documentKinds']
   const rawExtensions = record['extensions']
+  const rawCompletionTriggers = record['completionTriggerCharacters']
+  const rawSignatureTriggers = record['signatureHelpTriggerCharacters']
+  const rawOnTypeFormattingTriggers = record['onTypeFormattingTriggerCharacters']
   const documentKinds = rawKinds === undefined ? undefined : stringList(rawKinds)
   const extensions = rawExtensions === undefined ? undefined : stringList(rawExtensions)
+  const completionTriggerCharacters =
+    rawCompletionTriggers === undefined ? undefined : triggerCharacterList(rawCompletionTriggers)
+  const signatureHelpTriggerCharacters =
+    rawSignatureTriggers === undefined ? undefined : triggerCharacterList(rawSignatureTriggers)
+  const onTypeFormattingTriggerCharacters =
+    rawOnTypeFormattingTriggers === undefined
+      ? undefined
+      : triggerCharacterList(rawOnTypeFormattingTriggers)
   if (
     (rawKinds !== undefined && documentKinds === undefined) ||
-    (rawExtensions !== undefined && extensions === undefined)
+    (rawExtensions !== undefined && extensions === undefined) ||
+    (rawCompletionTriggers !== undefined && completionTriggerCharacters === undefined) ||
+    (rawSignatureTriggers !== undefined && signatureHelpTriggerCharacters === undefined) ||
+    (rawOnTypeFormattingTriggers !== undefined && onTypeFormattingTriggerCharacters === undefined)
   ) {
     return undefined
   }
@@ -72,6 +106,11 @@ function parseOffer(value: unknown): LanguageProviderOfferFacet | undefined {
     languageIds,
     ...(documentKinds === undefined ? {} : { documentKinds }),
     ...(extensions === undefined ? {} : { extensions }),
+    ...(completionTriggerCharacters === undefined ? {} : { completionTriggerCharacters }),
+    ...(signatureHelpTriggerCharacters === undefined ? {} : { signatureHelpTriggerCharacters }),
+    ...(onTypeFormattingTriggerCharacters === undefined
+      ? {}
+      : { onTypeFormattingTriggerCharacters }),
   }
 }
 
@@ -175,7 +214,13 @@ export const LANGUAGE_DOCUMENT_CONTRACT_DEFINITION: ServiceContractDefinitionSpe
     matching: Object.freeze({ profile: LANGUAGE_DOCUMENT_MATCHER_PROFILE, major: 1 }),
     conformanceProfile: 'common.language/document-analysis-v1',
     surface: Object.freeze({
-      fields: Object.freeze(['contract', 'languageIds', 'workspaceLanguageIds']),
+      fields: Object.freeze([
+        'contract',
+        'languageIds',
+        'workspaceLanguageIds',
+        'semanticInputs',
+        'semanticContextRequirements',
+      ]),
       methods: Object.freeze({
         analyze: Object.freeze({
           kind: 'value',
@@ -221,6 +266,11 @@ export const LANGUAGE_DOCUMENT_CONTRACT_DEFINITION: ServiceContractDefinitionSpe
           optional: true,
           signal: Object.freeze({ arg: 0, key: 'signal' }),
         }),
+        onTypeFormatting: Object.freeze({
+          kind: 'value',
+          optional: true,
+          signal: Object.freeze({ arg: 0, key: 'signal' }),
+        }),
         documentColors: Object.freeze({
           kind: 'value',
           optional: true,
@@ -247,6 +297,11 @@ export const LANGUAGE_DOCUMENT_CONTRACT_DEFINITION: ServiceContractDefinitionSpe
           signal: Object.freeze({ arg: 0, key: 'signal' }),
         }),
         diagnostics: Object.freeze({
+          kind: 'value',
+          optional: true,
+          signal: Object.freeze({ arg: 0, key: 'signal' }),
+        }),
+        referenceOccurrences: Object.freeze({
           kind: 'value',
           optional: true,
           signal: Object.freeze({ arg: 0, key: 'signal' }),
@@ -410,6 +465,8 @@ export type LanguageProviderResolution =
       state: 'resolved'
       provider: LanguageProvider
       diagnostics: readonly Diagnostic[]
+      /** Host-attested selected offer and artifact identity; providers cannot forge this input. */
+      semanticInput: LanguageWorkspaceSemanticInput
       release(): Promise<void>
     }>
   | Readonly<{
@@ -420,6 +477,8 @@ export type LanguageProviderResolution =
 function isLanguageProvider(value: unknown): value is LanguageProvider {
   const record = recordOf(value)
   const workspaceLanguageIds = record?.['workspaceLanguageIds']
+  const semanticInputs = record?.['semanticInputs']
+  const semanticContextRequirements = record?.['semanticContextRequirements']
   return (
     record?.['contract'] === LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT &&
     Array.isArray(record['languageIds']) &&
@@ -430,8 +489,36 @@ function isLanguageProvider(value: unknown): value is LanguageProvider {
         workspaceLanguageIds.length <= 16 &&
         workspaceLanguageIds.every(item => typeof item === 'string' && item.trim().length > 0) &&
         new Set(workspaceLanguageIds).size === workspaceLanguageIds.length)) &&
+    (semanticInputs === undefined || validProviderSemanticInputs(semanticInputs)) &&
+    (semanticContextRequirements === undefined ||
+      validProviderSemanticContextRequirements(
+        semanticContextRequirements,
+        workspaceLanguageIds === undefined ? record['languageIds'] : workspaceLanguageIds,
+      )) &&
     typeof record['analyze'] === 'function'
   )
+}
+
+function validProviderSemanticContextRequirements(value: unknown, languageIds: unknown): boolean {
+  if (!Array.isArray(languageIds)) return false
+  try {
+    const allowed = new Set(languageIds)
+    return validatedLanguageSemanticContextRequirements(value).every(requirement =>
+      requirement.languageIds.every(languageId => allowed.has(languageId)),
+    )
+  } catch {
+    return false
+  }
+}
+
+function validProviderSemanticInputs(value: unknown): boolean {
+  if (!Array.isArray(value) || value.length === 0 || value.length > 64) return false
+  try {
+    validatedLanguageWorkspaceSemanticInputs(value)
+    return true
+  } catch {
+    return false
+  }
 }
 
 /** Resolve and activate the language provider for one document route. */
@@ -496,9 +583,22 @@ export async function resolveLanguageProvider(
     // Activation may complete concurrently with caller cancellation. Check while the resolver
     // still owns the lease so that this boundary can release it before cancellation escapes.
     throwIfAborted(request.signal)
+    const fact = resolver.activationFacts.at(-1)
+    if (fact === undefined || fact.contract !== LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT) {
+      throw new TypeError('resolved language provider has no activation attestation')
+    }
     return Object.freeze({
       state: 'resolved',
       provider: lease.value,
+      semanticInput: Object.freeze({
+        kind: 'provider-artifact',
+        id: `${fact.providerId}/${fact.offerId}/${fact.runtimeVariant}`,
+        revision: languageWorkspaceContextToken({
+          artifactDigest: fact.artifactDigest,
+          manifestDigest: fact.manifestDigest,
+          offerFingerprint: fact.offerFingerprint,
+        }),
+      }),
       diagnostics: Object.freeze([
         ...resolver.diagnostics,
         diagnostic(
@@ -536,6 +636,7 @@ export async function resolveLanguageProvider(
 export {
   createLanguageWorkspace,
   languageProviderRoutes,
+  languageProviderTriggerCharacters,
   LANGUAGE_ANALYSIS_INVALID,
   LANGUAGE_DEFAULT_MAX_DOCUMENTS,
   LANGUAGE_DEFAULT_MAX_EDITS,
@@ -563,6 +664,7 @@ export {
   type LanguageWorkspaceDocumentRequest,
   type LanguageWorkspaceFeatureRequest,
   type LanguageWorkspaceFormattingRequest,
+  type LanguageWorkspaceOnTypeFormattingRequest,
   type LanguageWorkspaceOptions,
   type LanguageWorkspacePositionRequest,
   type LanguageWorkspaceReferencesRequest,
@@ -570,3 +672,4 @@ export {
   type LanguageWorkspaceSymbolsRequest,
 } from './workspace.js'
 export { expandSubjectReferenceCompletions } from './subject-completion.js'
+export { languageWorkspaceContextToken } from './context.js'

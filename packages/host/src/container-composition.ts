@@ -99,6 +99,12 @@ function normalizePath(path: string, allowEmpty: boolean): string {
   return parts.join('/')
 }
 
+const sameNamespacePath = (left: string, right: string): boolean =>
+  left === right || left.toLowerCase() === right.toLowerCase()
+
+const insideNamespacePath = (path: string, prefix: string): boolean =>
+  sameNamespacePath(path, prefix) || path.toLowerCase().startsWith(`${prefix.toLowerCase()}/`)
+
 function childRef(root: AssetSourceRef, path: string): AssetSourceRef {
   const parentIds = Object.freeze([...(root.parentIds ?? []), root.id]) as readonly [
     string,
@@ -467,7 +473,7 @@ export async function createContainerNamespaceComposition(
     }
   }
 
-  const validateEntry = (entry: NamespaceEntry, requestedPrefix: string): NamespaceEntry => {
+  const validateEntry = (entry: NamespaceEntry): NamespaceEntry => {
     if (
       entry === null ||
       typeof entry !== 'object' ||
@@ -487,16 +493,6 @@ export async function createContainerNamespaceComposition(
       })
     }
     const normalized = normalizePath(entry.path, false)
-    if (
-      requestedPrefix !== '' &&
-      normalized !== requestedPrefix &&
-      !normalized.startsWith(`${requestedPrefix}/`)
-    ) {
-      throw new ModkitError({
-        code: 'x3.host/container-namespace-invalid',
-        message: `container namespace entry «${normalized}» escaped requested prefix «${requestedPrefix}»`,
-      })
-    }
     exposedEntries += 1
     if (exposedEntries > options.budget.maxNodes) {
       throw new ModkitError({
@@ -545,7 +541,12 @@ export async function createContainerNamespaceComposition(
       }
       for (const entry of page.items) {
         ensureLive(signal)
-        yield validateEntry(entry, prefix)
+        const validated = validateEntry(entry)
+        // `list` is a string-prefix API. A provider may therefore return `textures.db` while the
+        // namespace adapter asks for the directory prefix `textures`; only path-boundary matches
+        // belong to the subtree exposed to the semantic codec.
+        if (prefix !== '' && !insideNamespacePath(validated.path, prefix)) continue
+        yield validated
       }
       cursor = page.nextCursor
     } while (cursor !== undefined)
@@ -558,32 +559,12 @@ export async function createContainerNamespaceComposition(
     { readonly kind: 'file'; readonly entry: NamespaceEntry } | { readonly kind: 'directory' }
   > => {
     ensureLive(signal)
-    const page = await namespace.list(path, { limit: 1 }, signal)
-    ensureLive(signal)
-    if (
-      page === null ||
-      typeof page !== 'object' ||
-      !Array.isArray(page.items) ||
-      page.items.length > 1
-    ) {
-      throw new ModkitError({
-        code: 'x3.host/container-namespace-page-invalid',
-        message: 'container namespace returned a malformed exact-lookup page',
-      })
+    for await (const entry of pages(path, signal)) {
+      if (sameNamespacePath(entry.path, path)) {
+        return entry.kind === 'file' ? { kind: 'file', entry } : { kind: 'directory' }
+      }
+      return { kind: 'directory' }
     }
-    const raw = page.items[0]
-    if (raw === undefined) {
-      throw new ModkitError({
-        code: ENTRY_NOT_FOUND,
-        message: `namespace entry «${path}» does not exist`,
-        context: { path },
-      })
-    }
-    const entry = validateEntry(raw, path)
-    if (entry.path === path) {
-      return entry.kind === 'file' ? { kind: 'file', entry } : { kind: 'directory' }
-    }
-    if (entry.path.startsWith(`${path}/`)) return { kind: 'directory' }
     throw new ModkitError({
       code: ENTRY_NOT_FOUND,
       message: `namespace entry «${path}» does not exist`,
@@ -641,7 +622,7 @@ export async function createContainerNamespaceComposition(
               const suffix =
                 absolutePrefix === ''
                   ? entry.path
-                  : entry.path === absolutePrefix
+                  : sameNamespacePath(entry.path, absolutePrefix)
                     ? ''
                     : entry.path.slice(absolutePrefix.length + 1)
               if (suffix === '') continue

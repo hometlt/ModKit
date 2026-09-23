@@ -25,6 +25,9 @@ export const RESOLVED_DATA_WORKSPACE_CONTRACT = 'common.data/resolved-workspace'
 export const RESOLVED_DATA_WORKSPACE_MATCHER_PROFILE =
   'modkit/resolved-data-workspace-matcher' as const
 
+/** Bounded language-authoring projection produced by the selected resolved-data owner. */
+export const RESOLVED_DATA_AUTHORING_INDEX_KIND = 'resolved-data-authoring-index' as const
+
 export type DataFieldCardinality = 'scalar' | 'append' | 'indexed'
 
 /** One schema field. Nested fields describe structured values without naming them in the core. */
@@ -122,8 +125,18 @@ export interface DataEntityPatch {
   readonly typeId: string
   readonly entityId: string
   readonly parentEntityId?: string
+  /** Provider-owned class-default marker; it is metadata, not an inherited field. */
+  readonly defaultTemplate?: boolean
+  /** Entity token declarations. Later declarations win by id and children inherit them. */
+  readonly tokens?: readonly DataEntityToken[]
   readonly fields: Readonly<Record<string, JsonValue>>
   readonly source: DataEntitySource
+}
+
+export interface DataEntityToken {
+  readonly id: string
+  readonly type?: string
+  readonly value?: string
 }
 
 export type DataCatalogDiagnosticSeverity = 'error' | 'warning' | 'information'
@@ -145,6 +158,9 @@ export interface DataResolvedEntity {
   readonly typeId: string
   readonly entityId: string
   readonly parentEntityId?: string
+  readonly defaultTemplate?: boolean
+  /** Parent declarations first, with later/current declarations winning by token id. */
+  readonly tokens?: readonly DataEntityToken[]
   /** Root parent first and the queried entity last. */
   readonly inheritanceChain: readonly DataEntityRef[]
   readonly fields: Readonly<Record<string, JsonValue>>
@@ -200,6 +216,8 @@ export interface DataCatalogSnapshot {
   readonly relations?: readonly DataEntityRelation[]
   readonly localizedStrings?: readonly DataLocalizedString[]
   readonly diagnostics: readonly DataCatalogDiagnostic[]
+  /** Optional bounded game-owner metadata; core never assigns game-specific meaning to its keys. */
+  readonly ownerMetadata?: JsonValue
   /** Stable identity supplied by the provider from workspace/resource revisions. */
   readonly snapshotId?: string
   /** Live definition facets only. This is not a portable UVD artifact claim. */
@@ -219,6 +237,7 @@ export interface DataCatalogResolutionInput {
   readonly localePreferences?: readonly string[]
   readonly localizationKeys?: readonly string[]
   readonly diagnostics?: readonly DataCatalogDiagnostic[]
+  readonly ownerMetadata?: JsonValue
   readonly snapshotId?: string
   readonly projectionPlan?: ProjectionPlan
   readonly projectionReceipt?: ProjectionReceipt
@@ -230,11 +249,125 @@ export interface DataCatalogResolutionInput {
   readonly maxDepth: number
 }
 
+/** One top-level value changed by an entity relative to its parent chain. */
+export interface DataAuthoringFieldDelta {
+  readonly fieldId: string
+  readonly value: JsonValue
+  /** Index into {@link ResolvedDataAuthoringIndex.sourceTable}. */
+  readonly source: number
+  /** Entity whose declaration owns this value; defaults may materialize it on a child row. */
+  readonly originEntityId: string
+  /** Exact winning origin for each leaf path relative to this top-level field. */
+  readonly origins?: readonly DataAuthoringValueOrigin[]
+}
+
+export interface DataAuthoringValueOrigin {
+  /** Empty for a scalar leaf; indexed selectors and nested field ids form deeper paths. */
+  readonly path: readonly string[]
+  /** Index into {@link ResolvedDataAuthoringIndex.sourceTable}. */
+  readonly source: number
+  readonly originEntityId: string
+}
+
+/** An explicit indexed removal retained even after its effective value has been merged. */
+export interface DataAuthoringUnsetTombstone {
+  /** Schema path, with indexed selectors following their owning field. */
+  readonly path: readonly string[]
+  /** Index into {@link ResolvedDataAuthoringIndex.sourceTable}. */
+  readonly source: number
+}
+
+/** Compact entity identity and its parent-relative authoring values. */
+export interface DataAuthoringIndexEntity {
+  readonly identity: string
+  readonly namespace: string
+  readonly typeId: string
+  readonly entityId: string
+  readonly parentEntityId?: string
+  readonly defaultTemplate?: boolean
+  /** Effective inherited token declarations, winner per id. */
+  readonly tokens?: readonly DataEntityToken[]
+  /** Winning declaration source, indexed into the shared source table. */
+  readonly source: number
+  readonly complete: boolean
+  /** Omitted only when the output byte budget could not carry any values safely. */
+  readonly fields?: readonly DataAuthoringFieldDelta[]
+  /** Omitted with fields on byte-budget overflow. */
+  readonly tombstones?: readonly DataAuthoringUnsetTombstone[]
+}
+
+export interface DataAuthoringDiagnosticSummaryItem {
+  readonly severity: DataCatalogDiagnosticSeverity
+  readonly code: string
+  readonly message: string
+}
+
+export interface DataAuthoringDiagnosticSummary {
+  readonly errorCount: number
+  readonly warningCount: number
+  readonly informationCount: number
+  readonly items: readonly DataAuthoringDiagnosticSummaryItem[]
+  readonly truncated: boolean
+}
+
+/**
+ * Compact resolved-data projection for language features.
+ *
+ * Values are stored only on the entity that touched them. Each value is already merged against
+ * the closest parent value with the canonical schema rules, so consumers only walk the parent
+ * graph and never reimplement catalog merging.
+ */
+export interface ResolvedDataAuthoringIndex {
+  readonly schemaVersion: 1
+  readonly kind: typeof RESOLVED_DATA_AUTHORING_INDEX_KIND
+  readonly workspaceId: string
+  readonly gameId: string
+  readonly analyzerId: string
+  readonly snapshotId: string
+  readonly sourceTable: readonly DataEntitySource[]
+  readonly namespaces: readonly DataNamespaceSummary[]
+  readonly entityCount: number
+  readonly patchCount: number
+  readonly entities: readonly DataAuthoringIndexEntity[]
+  readonly diagnostics: DataAuthoringDiagnosticSummary
+  /** Optional bounded game-owner metadata shared with the full resolved snapshot. */
+  readonly ownerMetadata?: JsonValue
+  readonly complete: boolean
+  /** False means all identity/source rows are present but value/tombstone arrays were omitted. */
+  readonly valuesComplete: boolean
+}
+
+export interface DataAuthoringIndexResolutionInput {
+  readonly workspaceId: string
+  readonly gameId: string
+  readonly analyzerId: string
+  readonly snapshotId: string
+  readonly schemas: readonly DataTypeSchema[]
+  readonly patches: readonly DataEntityPatch[]
+  /** Provider-owned lowest-precedence fields, one optional synthetic patch per entity. */
+  readonly basePatches?: readonly DataEntityPatch[]
+  /** Provider-owned lowest-layer projection (for example SC2 structure defaults). */
+  readonly applyDefaults?: (
+    namespace: string,
+    typeId: string,
+    entityId: string,
+    fields: Readonly<Record<string, JsonValue>>,
+  ) => Readonly<Record<string, JsonValue>>
+  readonly diagnostics?: readonly DataCatalogDiagnostic[]
+  readonly ownerMetadata?: JsonValue
+  readonly complete?: boolean
+  readonly maxEntities: number
+  readonly maxDepth: number
+  readonly maxOutputBytes: number
+}
+
 interface WorkingEntity {
   readonly namespace: string
   readonly entityId: string
   typeId: string
   parentEntityId?: string
+  defaultTemplate: boolean
+  readonly tokens: Map<string, DataEntityToken>
   fields: Record<string, JsonValue>
   readonly fieldSources: Record<string, DataEntitySource>
   readonly sources: DataEntitySource[]
@@ -305,12 +438,6 @@ function recordOf(value: JsonValue): Readonly<Record<string, JsonValue>> | undef
     : undefined
 }
 
-function mergeAppend(previous: JsonValue | undefined, incoming: JsonValue): JsonValue {
-  const left = Array.isArray(previous) ? previous : previous === undefined ? [] : [previous]
-  const right = Array.isArray(incoming) ? incoming : [incoming]
-  return [...left.map(cloneJson), ...right.map(cloneJson)]
-}
-
 function indexedKey(value: JsonValue, indexKey: string): string | undefined {
   const record = recordOf(value)
   const index = record?.[indexKey]
@@ -322,10 +449,152 @@ function isRemoved(value: JsonValue): boolean {
   return removed === true || removed === 1 || removed === '1'
 }
 
+interface AuthoringOriginTracker {
+  readonly origins: Map<string, DataAuthoringValueOrigin>
+  originForPath(
+    path: readonly string[],
+  ): Pick<DataAuthoringValueOrigin, 'source' | 'originEntityId'>
+}
+
+const authoringOriginKey = (path: readonly string[]): string => JSON.stringify(path)
+
+const authoringPathStartsWith = (path: readonly string[], prefix: readonly string[]): boolean =>
+  prefix.length <= path.length && prefix.every((part, index) => path[index] === part)
+
+function clearAuthoringOrigins(tracker: AuthoringOriginTracker, path: readonly string[]): void {
+  for (const [key, origin] of tracker.origins) {
+    if (authoringPathStartsWith(origin.path, path)) tracker.origins.delete(key)
+  }
+}
+
+function setAuthoringOrigin(tracker: AuthoringOriginTracker, path: readonly string[]): void {
+  const origin = tracker.originForPath(path)
+  const immutablePath = Object.freeze([...path])
+  tracker.origins.set(
+    authoringOriginKey(path),
+    Object.freeze({
+      path: immutablePath,
+      source: origin.source,
+      originEntityId: origin.originEntityId,
+    }),
+  )
+}
+
+function visitStructuredOriginPaths(
+  value: JsonValue,
+  nestedFields: readonly DataSchemaField[] | undefined,
+  path: readonly string[],
+  visit: (path: readonly string[]) => void,
+  ignoredKeys: ReadonlySet<string> = new Set(),
+): void {
+  const record = recordOf(value)
+  if (record !== undefined) {
+    const nested = new Map((nestedFields ?? []).map(field => [field.fieldId, field]))
+    let visited = false
+    for (const [key, childValue] of Object.entries(record)) {
+      if (ignoredKeys.has(key)) continue
+      visited = true
+      const child = nested.get(key)
+      if (child === undefined) {
+        visitStructuredOriginPaths(childValue, undefined, [...path, key], visit)
+      } else {
+        visitFieldOriginPaths(childValue, child, [...path, key], visit)
+      }
+    }
+    if (!visited) visit(path)
+    return
+  }
+  if (Array.isArray(value)) {
+    if (value.length === 0) visit(path)
+    else
+      value.forEach((item, index) =>
+        visitStructuredOriginPaths(item, nestedFields, [...path, String(index)], visit),
+      )
+    return
+  }
+  visit(path)
+}
+
+function visitFieldOriginPaths(
+  value: JsonValue,
+  field: DataSchemaField,
+  path: readonly string[],
+  visit: (path: readonly string[]) => void,
+): void {
+  if (field.cardinality === 'indexed') {
+    const indexKey = field.indexKey ?? 'index'
+    let visited = false
+    for (const item of Array.isArray(value) ? value : [value]) {
+      const selector = indexedKey(item, indexKey)
+      if (selector === undefined || isRemoved(item)) continue
+      visited = true
+      const record = recordOf(item)
+      const wrapped = record?.['value']
+      visitStructuredOriginPaths(
+        wrapped === undefined ? item : wrapped,
+        field.fields,
+        [...path, selector],
+        visit,
+        wrapped === undefined ? new Set([indexKey, 'removed']) : new Set(),
+      )
+    }
+    if (!visited) visit(path)
+    return
+  }
+  if (field.cardinality === 'append') {
+    const values = Array.isArray(value) ? value : [value]
+    if (values.length === 0) visit(path)
+    else
+      values.forEach((item, index) =>
+        visitStructuredOriginPaths(item, field.fields, [...path, String(index)], visit),
+      )
+    return
+  }
+  visitStructuredOriginPaths(value, field.fields, path, visit)
+}
+
+function replaceStructuredAuthoringOrigins(
+  tracker: AuthoringOriginTracker | undefined,
+  value: JsonValue,
+  nestedFields: readonly DataSchemaField[] | undefined,
+  path: readonly string[],
+  ignoredKeys: ReadonlySet<string> = new Set(),
+): void {
+  if (tracker === undefined) return
+  clearAuthoringOrigins(tracker, path)
+  visitStructuredOriginPaths(
+    value,
+    nestedFields,
+    path,
+    item => setAuthoringOrigin(tracker, item),
+    ignoredKeys,
+  )
+}
+
+function mergeAppend(
+  previous: JsonValue | undefined,
+  incoming: JsonValue,
+  field: DataSchemaField,
+  tracker?: AuthoringOriginTracker,
+  path: readonly string[] = [],
+): JsonValue {
+  const left = Array.isArray(previous) ? previous : previous === undefined ? [] : [previous]
+  const right = Array.isArray(incoming) ? incoming : [incoming]
+  right.forEach((item, index) =>
+    replaceStructuredAuthoringOrigins(tracker, item, field.fields, [
+      ...path,
+      String(left.length + index),
+    ]),
+  )
+  return [...left.map(cloneJson), ...right.map(cloneJson)]
+}
+
 function mergeIndexed(
   previous: JsonValue | undefined,
   incoming: JsonValue,
   field: DataSchemaField,
+  tracker?: AuthoringOriginTracker,
+  path: readonly string[] = [],
 ): JsonValue {
   const indexKey = field.indexKey ?? 'index'
   const result = Array.isArray(previous) ? previous.map(cloneJson) : []
@@ -335,9 +604,19 @@ function mergeIndexed(
     if (key === undefined) continue
     const found = result.findIndex(candidate => indexedKey(candidate, indexKey) === key)
     if (isRemoved(item)) {
+      if (tracker !== undefined) clearAuthoringOrigins(tracker, [...path, key])
       if (found !== -1) result.splice(found, 1)
     } else if (found === -1) {
       result.push(cloneJson(item))
+      const record = recordOf(item)
+      const wrapped = record?.['value']
+      replaceStructuredAuthoringOrigins(
+        tracker,
+        wrapped === undefined ? item : wrapped,
+        field.fields,
+        [...path, key],
+        wrapped === undefined ? new Set([indexKey, 'removed']) : new Set(),
+      )
     } else {
       // Overriding one slot keeps the subfields it does not mention, as the game does. The nested
       // schema describes the slot's `value`, not the `{index, value}` wrapper around it.
@@ -350,9 +629,22 @@ function mergeIndexed(
         'value' in replacement
           ? {
               ...(mergeStructured(existing, item, undefined) as Record<string, JsonValue>),
-              value: mergeStructured(existing['value'], replacement['value']!, field.fields),
+              value: mergeStructured(
+                existing['value'],
+                replacement['value']!,
+                field.fields,
+                tracker,
+                [...path, key],
+              ),
             }
-          : mergeStructured(result[found], item, field.fields)
+          : mergeStructured(
+              result[found],
+              item,
+              field.fields,
+              tracker,
+              [...path, key],
+              new Set([indexKey, 'removed']),
+            )
     }
   }
   return result
@@ -369,20 +661,27 @@ function mergeStructured(
   previous: JsonValue | undefined,
   incoming: JsonValue,
   nestedFields: readonly DataSchemaField[] | undefined,
+  tracker?: AuthoringOriginTracker,
+  path: readonly string[] = [],
+  ignoredOriginKeys: ReadonlySet<string> = new Set(),
 ): JsonValue {
   const left = previous === undefined ? undefined : recordOf(previous)
   const right = recordOf(incoming)
-  if (left === undefined || right === undefined) return cloneJson(incoming)
+  if (left === undefined || right === undefined) {
+    replaceStructuredAuthoringOrigins(tracker, incoming, nestedFields, path, ignoredOriginKeys)
+    return cloneJson(incoming)
+  }
   const nested = new Map((nestedFields ?? []).map(child => [child.fieldId, child]))
   const merged: Record<string, JsonValue> = Object.fromEntries(
     Object.entries(left).map(([key, value]) => [key, cloneJson(value)]),
   )
   for (const [key, value] of Object.entries(right)) {
     const child = nested.get(key)
+    const childTracker = ignoredOriginKeys.has(key) ? undefined : tracker
     merged[key] =
       child === undefined
-        ? mergeStructured(merged[key], value, undefined)
-        : mergeFieldValue(merged[key], value, child)
+        ? mergeStructured(merged[key], value, undefined, childTracker, [...path, key])
+        : mergeFieldValue(merged[key], value, child, childTracker, [...path, key])
   }
   return merged
 }
@@ -391,10 +690,12 @@ function mergeFieldValue(
   previous: JsonValue | undefined,
   incoming: JsonValue,
   field: DataSchemaField,
+  tracker?: AuthoringOriginTracker,
+  path: readonly string[] = [],
 ): JsonValue {
-  if (field.cardinality === 'append') return mergeAppend(previous, incoming)
-  if (field.cardinality === 'indexed') return mergeIndexed(previous, incoming, field)
-  return mergeStructured(previous, incoming, field.fields)
+  if (field.cardinality === 'append') return mergeAppend(previous, incoming, field, tracker, path)
+  if (field.cardinality === 'indexed') return mergeIndexed(previous, incoming, field, tracker, path)
+  return mergeStructured(previous, incoming, field.fields, tracker, path)
 }
 
 function schemaFields(
@@ -497,6 +798,566 @@ function visitRelationField(
   }
 }
 
+interface WorkingAuthoringEntity {
+  readonly namespace: string
+  readonly entityId: string
+  readonly typeId: string
+  parentEntityId?: string
+  defaultTemplate: boolean
+  readonly tokens: Map<string, DataEntityToken>
+  readonly patches: DataEntityPatch[]
+  source: DataEntitySource
+}
+
+interface ResolvedAuthoringField {
+  readonly value: JsonValue
+  readonly source: number
+  readonly originEntityId: string
+  readonly origins: ReadonlyMap<string, DataAuthoringValueOrigin>
+}
+
+interface ResolvedWorkingAuthoringEntity {
+  readonly working: WorkingAuthoringEntity
+  readonly parent?: ResolvedWorkingAuthoringEntity
+  /** Values inherited by descendants; provider-owned per-entity defaults are deliberately absent. */
+  readonly authoredFields: ReadonlyMap<string, ResolvedAuthoringField>
+  readonly fields: ReadonlyMap<string, ResolvedAuthoringField>
+  readonly tokens: ReadonlyMap<string, DataEntityToken>
+  readonly tombstones: readonly DataAuthoringUnsetTombstone[]
+  readonly complete: boolean
+}
+
+const authoringSourceKey = (source: DataEntitySource): string =>
+  `${source.rootId}\u0000${source.path}\u0000${source.documentIndex}\u0000${String(source.revision ?? '')}`
+
+const immutableToken = (token: DataEntityToken): DataEntityToken => Object.freeze({ ...token })
+
+function mergeEntityTokens(
+  inherited: ReadonlyMap<string, DataEntityToken> | undefined,
+  declared: ReadonlyMap<string, DataEntityToken>,
+): ReadonlyMap<string, DataEntityToken> {
+  const tokens = new Map(inherited)
+  for (const [id, token] of declared) tokens.set(id, token)
+  return tokens
+}
+
+const fixedAuthoringOriginTracker = (
+  origins: Map<string, DataAuthoringValueOrigin>,
+  source: number,
+  originEntityId: string,
+): AuthoringOriginTracker => ({
+  origins,
+  originForPath: () => ({ source, originEntityId }),
+})
+
+const mappedAuthoringOriginTracker = (
+  origins: Map<string, DataAuthoringValueOrigin>,
+  incoming: ReadonlyMap<string, DataAuthoringValueOrigin>,
+  fallback: Pick<DataAuthoringValueOrigin, 'source' | 'originEntityId'>,
+): AuthoringOriginTracker => ({
+  origins,
+  originForPath: path => incoming.get(authoringOriginKey(path)) ?? fallback,
+})
+
+function normalizedAuthoringOrigins(
+  value: JsonValue,
+  field: DataSchemaField | undefined,
+  origins: ReadonlyMap<string, DataAuthoringValueOrigin>,
+  fallback: Pick<DataAuthoringValueOrigin, 'source' | 'originEntityId'>,
+): ReadonlyMap<string, DataAuthoringValueOrigin> {
+  const normalized = new Map<string, DataAuthoringValueOrigin>()
+  const visit = (path: readonly string[]): void => {
+    const origin = origins.get(authoringOriginKey(path)) ?? fallback
+    const immutablePath = Object.freeze([...path])
+    normalized.set(
+      authoringOriginKey(path),
+      Object.freeze({
+        path: immutablePath,
+        source: origin.source,
+        originEntityId: origin.originEntityId,
+      }),
+    )
+  }
+  if (field === undefined) visitStructuredOriginPaths(value, undefined, [], visit)
+  else visitFieldOriginPaths(value, field, [], visit)
+  return normalized
+}
+
+function collectAuthoringTombstones(
+  value: JsonValue,
+  field: DataSchemaField,
+  path: readonly string[],
+  source: number,
+  output: DataAuthoringUnsetTombstone[],
+): void {
+  const values = Array.isArray(value) ? value : [value]
+  if (field.cardinality === 'indexed') {
+    const indexKey = field.indexKey ?? 'index'
+    for (const item of values) {
+      const record = recordOf(item)
+      const selector = record === undefined ? undefined : indexedKey(item, indexKey)
+      if (selector === undefined) continue
+      if (isRemoved(item)) {
+        output.push(Object.freeze({ path: Object.freeze([...path, selector]), source }))
+        continue
+      }
+      const wrapped = record?.['value']
+      const nested = wrapped === undefined ? record : (recordOf(wrapped) ?? record)
+      if (nested === undefined || field.fields === undefined) continue
+      for (const child of field.fields) {
+        const childValue = nested[child.fieldId]
+        if (childValue !== undefined) {
+          collectAuthoringTombstones(
+            childValue,
+            child,
+            [...path, selector, child.fieldId],
+            source,
+            output,
+          )
+        }
+      }
+    }
+    return
+  }
+  if (field.fields === undefined) return
+  values.forEach((item, ordinal) => {
+    const record = recordOf(item)
+    if (record === undefined) return
+    const wrapped = record['value']
+    const nested = wrapped === undefined ? record : (recordOf(wrapped) ?? record)
+    const parentPath = field.cardinality === 'append' ? [...path, String(ordinal)] : path
+    for (const child of field.fields ?? []) {
+      const childValue = nested[child.fieldId]
+      if (childValue !== undefined) {
+        collectAuthoringTombstones(
+          childValue,
+          child,
+          [...parentPath, child.fieldId],
+          source,
+          output,
+        )
+      }
+    }
+  })
+}
+
+function authoringDiagnosticSummary(
+  diagnostics: readonly DataCatalogDiagnostic[],
+): DataAuthoringDiagnosticSummary {
+  const maximumItems = 64
+  const counts = { error: 0, warning: 0, information: 0 }
+  for (const diagnostic of diagnostics) counts[diagnostic.severity] += 1
+  const items = diagnostics
+    .slice(0, maximumItems)
+    .map((diagnostic): DataAuthoringDiagnosticSummaryItem =>
+      Object.freeze({
+        severity: diagnostic.severity,
+        code: diagnostic.code.slice(0, 256),
+        message: diagnostic.message.replaceAll('\0', '').slice(0, 2_048),
+      }),
+    )
+  return Object.freeze({
+    errorCount: counts.error,
+    warningCount: counts.warning,
+    informationCount: counts.information,
+    items: Object.freeze(items),
+    truncated: diagnostics.length > items.length,
+  })
+}
+
+/**
+ * Build a compact authoring index directly from parsed patches.
+ *
+ * This intentionally stops before full definition and relation materialization. A row carries only
+ * fields touched by the entity (plus provider-owned lowest defaults), already merged against the
+ * nearest parent value with the same schema functions used by {@link resolveDataCatalog}.
+ */
+export function resolveDataAuthoringIndex(
+  input: DataAuthoringIndexResolutionInput,
+): ResolvedDataAuthoringIndex {
+  const maxEntities = positiveLimit(input.maxEntities, 'maxEntities')
+  const maxDepth = positiveLimit(input.maxDepth, 'maxDepth')
+  const maxOutputBytes = positiveLimit(input.maxOutputBytes, 'maxOutputBytes')
+  if (input.patches.length > maxEntities) {
+    throw new TypeError(`patches exceeds maxEntities (${input.patches.length} > ${maxEntities})`)
+  }
+
+  const diagnostics: DataCatalogDiagnostic[] = [...(input.diagnostics ?? [])]
+  const schemas = new Map<string, DataTypeSchema>()
+  for (const schema of input.schemas) {
+    if (schemas.has(schema.typeId)) {
+      diagnostics.push({
+        severity: 'error',
+        code: 'common.data/schema-type-duplicate',
+        message: `catalog schema type is duplicated: ${schema.typeId}`,
+        typeId: schema.typeId,
+      })
+    } else schemas.set(schema.typeId, schema)
+  }
+  const fieldsByType = new Map<string, ReadonlyMap<string, DataSchemaField>>()
+  for (const schema of schemas.values()) {
+    fieldsByType.set(schema.typeId, schemaFields(schema, schemas, diagnostics))
+  }
+
+  const sources: DataEntitySource[] = []
+  const sourceIndexes = new Map<string, number>()
+  const sourceIndex = (source: DataEntitySource): number => {
+    const key = authoringSourceKey(source)
+    const existing = sourceIndexes.get(key)
+    if (existing !== undefined) return existing
+    const index = sources.length
+    sources.push(immutableSource(source))
+    sourceIndexes.set(key, index)
+    return index
+  }
+
+  const entities = new Map<string, WorkingAuthoringEntity>()
+  const unknownFields = new Set<string>()
+  for (const patch of input.patches) {
+    const key = entityKey(patch.namespace, patch.entityId)
+    let current = entities.get(key)
+    if (current === undefined) {
+      current = {
+        namespace: patch.namespace,
+        entityId: patch.entityId,
+        typeId: patch.typeId,
+        ...(patch.parentEntityId === undefined ? {} : { parentEntityId: patch.parentEntityId }),
+        defaultTemplate: false,
+        tokens: new Map(),
+        patches: [],
+        source: patch.source,
+      }
+      entities.set(key, current)
+    } else if (current.typeId !== patch.typeId) {
+      diagnostics.push({
+        severity: 'error',
+        code: 'common.data/entity-type-conflict',
+        message: `${patch.namespace}/${patch.entityId} changes type from ${current.typeId} to ${patch.typeId}`,
+        namespace: patch.namespace,
+        typeId: patch.typeId,
+        entityId: patch.entityId,
+        source: patch.source,
+      })
+      continue
+    }
+    current.source = patch.source
+    if (patch.parentEntityId !== undefined) current.parentEntityId = patch.parentEntityId
+    if (patch.defaultTemplate !== undefined) current.defaultTemplate = patch.defaultTemplate
+    for (const token of patch.tokens ?? []) current.tokens.set(token.id, immutableToken(token))
+    current.patches.push(patch)
+    sourceIndex(patch.source)
+    const typeFields = fieldsByType.get(patch.typeId)
+    if (typeFields === undefined) continue
+    for (const fieldId of Object.keys(patch.fields)) {
+      if (typeFields.has(fieldId)) continue
+      const diagnosticKey = `${patch.typeId}\u0000${fieldId}`
+      if (unknownFields.has(diagnosticKey)) continue
+      unknownFields.add(diagnosticKey)
+      diagnostics.push({
+        severity: 'information',
+        code: 'common.data/schema-field-unsupported',
+        message: `${patch.typeId}.${fieldId} is outside the active schema slice`,
+        namespace: patch.namespace,
+        typeId: patch.typeId,
+        entityId: patch.entityId,
+        fieldId,
+        source: patch.source,
+      })
+    }
+  }
+  if (entities.size > maxEntities) {
+    throw new TypeError(`entities exceeds maxEntities (${entities.size} > ${maxEntities})`)
+  }
+
+  const basePatches = new Map<string, DataEntityPatch>()
+  for (const patch of input.basePatches ?? []) {
+    const key = entityKey(patch.namespace, patch.entityId)
+    const entity = entities.get(key)
+    if (entity === undefined || entity.typeId !== patch.typeId) continue
+    basePatches.set(key, patch)
+    sourceIndex(patch.source)
+  }
+
+  const resolved = new Map<string, ResolvedWorkingAuthoringEntity>()
+  const resolving = new Set<string>()
+  const resolveEntity = (
+    current: WorkingAuthoringEntity,
+    depth: number,
+  ): ResolvedWorkingAuthoringEntity => {
+    const key = entityKey(current.namespace, current.entityId)
+    const cached = resolved.get(key)
+    if (cached !== undefined) return cached
+    let complete = true
+    let parent: ResolvedWorkingAuthoringEntity | undefined
+    if (depth > maxDepth || resolving.has(key)) {
+      diagnostics.push({
+        severity: 'error',
+        code:
+          depth > maxDepth
+            ? 'common.data/entity-inheritance-depth-exceeded'
+            : 'common.data/entity-inheritance-cycle',
+        message:
+          depth > maxDepth
+            ? `${current.namespace}/${current.entityId} exceeds inheritance depth ${maxDepth}`
+            : `entity inheritance cycle includes ${current.namespace}/${current.entityId}`,
+        namespace: current.namespace,
+        typeId: current.typeId,
+        entityId: current.entityId,
+      })
+      return {
+        working: current,
+        authoredFields: new Map(),
+        fields: new Map(),
+        tokens: new Map(),
+        tombstones: [],
+        complete: false,
+      }
+    }
+    resolving.add(key)
+    if (current.parentEntityId !== undefined) {
+      const parentWorking = entities.get(entityKey(current.namespace, current.parentEntityId))
+      if (parentWorking === undefined) {
+        complete = false
+        diagnostics.push({
+          severity: 'error',
+          code: 'common.data/entity-parent-unavailable',
+          message: `${current.namespace}/${current.entityId} names unavailable parent ${current.parentEntityId}`,
+          namespace: current.namespace,
+          typeId: current.typeId,
+          entityId: current.entityId,
+        })
+      } else {
+        parent = resolveEntity(parentWorking, depth + 1)
+        complete = parent.complete
+      }
+    }
+
+    const inheritedAuthoredField = (fieldId: string): ResolvedAuthoringField | undefined => {
+      let ancestor = parent
+      while (ancestor !== undefined) {
+        const field = ancestor.authoredFields.get(fieldId)
+        if (field !== undefined) return field
+        ancestor = ancestor.parent
+      }
+      return undefined
+    }
+    const typeFields = fieldsByType.get(current.typeId) ?? new Map<string, DataSchemaField>()
+    const tokens = mergeEntityTokens(parent?.tokens, current.tokens)
+    const authoredFields = new Map<string, ResolvedAuthoringField>()
+    for (const patch of current.patches) {
+      const patchSource = sourceIndex(patch.source)
+      for (const [fieldId, incoming] of Object.entries(patch.fields)) {
+        const field = typeFields.get(fieldId)
+        const previous = authoredFields.get(fieldId) ?? inheritedAuthoredField(fieldId)
+        const origins = new Map(previous?.origins)
+        const tracker = fixedAuthoringOriginTracker(origins, patchSource, current.entityId)
+        const value =
+          field === undefined
+            ? mergeStructured(previous?.value, incoming, undefined, tracker)
+            : mergeFieldValue(previous?.value, incoming, field, tracker)
+        authoredFields.set(fieldId, {
+          value,
+          source: patchSource,
+          originEntityId: current.entityId,
+          origins: normalizedAuthoringOrigins(value, field, origins, {
+            source: patchSource,
+            originEntityId: current.entityId,
+          }),
+        })
+      }
+    }
+    const fields = new Map<string, ResolvedAuthoringField>()
+    const tombstones: DataAuthoringUnsetTombstone[] = []
+    const basePatch = basePatches.get(key)
+    if (basePatch !== undefined) {
+      const baseSource = sourceIndex(basePatch.source)
+      for (const [fieldId, baseValue] of Object.entries(basePatch.fields)) {
+        const schemaField = typeFields.get(fieldId)
+        const origins = new Map<string, DataAuthoringValueOrigin>()
+        const tracker = fixedAuthoringOriginTracker(origins, baseSource, current.entityId)
+        const value =
+          schemaField === undefined
+            ? mergeStructured(undefined, baseValue, undefined, tracker)
+            : mergeFieldValue(undefined, baseValue, schemaField, tracker)
+        fields.set(fieldId, {
+          value,
+          source: baseSource,
+          originEntityId: current.entityId,
+          origins: normalizedAuthoringOrigins(value, schemaField, origins, {
+            source: baseSource,
+            originEntityId: current.entityId,
+          }),
+        })
+      }
+    }
+    const effectiveAuthoredFields = new Map<string, ResolvedAuthoringField>(authoredFields)
+    let ancestor = parent
+    while (ancestor !== undefined) {
+      for (const [fieldId, field] of ancestor.authoredFields) {
+        if (!effectiveAuthoredFields.has(fieldId)) effectiveAuthoredFields.set(fieldId, field)
+      }
+      ancestor = ancestor.parent
+    }
+    for (const [fieldId, authored] of effectiveAuthoredFields) {
+      const schemaField = typeFields.get(fieldId)
+      const base = fields.get(fieldId)
+      const origins = new Map(base?.origins)
+      const withoutDefaults = (() => {
+        if (base === undefined) {
+          for (const [path, origin] of authored.origins) origins.set(path, origin)
+          return authored.value
+        }
+        const tracker = mappedAuthoringOriginTracker(origins, authored.origins, authored)
+        return schemaField === undefined
+          ? mergeStructured(base.value, authored.value, undefined, tracker)
+          : mergeFieldValue(base.value, authored.value, schemaField, tracker)
+      })()
+      const holder = { [fieldId]: withoutDefaults }
+      const defaulted =
+        input.applyDefaults?.(current.namespace, current.typeId, current.entityId, holder) ?? holder
+      const value = defaulted[fieldId] ?? withoutDefaults
+      const changedByDefaults = value !== withoutDefaults
+      if (base !== undefined || authoredFields.has(fieldId) || changedByDefaults) {
+        fields.set(fieldId, {
+          value,
+          source: authored.source,
+          originEntityId: authored.originEntityId,
+          origins: normalizedAuthoringOrigins(value, schemaField, origins, authored),
+        })
+      }
+    }
+    for (const patch of current.patches) {
+      const patchSource = sourceIndex(patch.source)
+      for (const [fieldId, incoming] of Object.entries(patch.fields)) {
+        const field = typeFields.get(fieldId)
+        if (field !== undefined) {
+          collectAuthoringTombstones(incoming, field, [fieldId], patchSource, tombstones)
+        }
+      }
+    }
+    resolving.delete(key)
+    const result = Object.freeze({
+      working: current,
+      ...(parent === undefined ? {} : { parent }),
+      authoredFields,
+      fields,
+      tokens,
+      tombstones: Object.freeze(tombstones),
+      complete,
+    })
+    resolved.set(key, result)
+    return result
+  }
+
+  const rows = [...entities.values()]
+    .sort(
+      (left, right) =>
+        left.namespace.localeCompare(right.namespace) ||
+        left.entityId.localeCompare(right.entityId),
+    )
+    .map(current => {
+      const item = resolveEntity(current, 0)
+      const fields = [...item.fields.entries()]
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([fieldId, field]): DataAuthoringFieldDelta =>
+          Object.freeze({
+            fieldId,
+            value: immutableJson(field.value),
+            source: field.source,
+            originEntityId: field.originEntityId,
+            origins: Object.freeze(
+              [...field.origins.entries()]
+                .sort(([left], [right]) => left.localeCompare(right))
+                .map(([, origin]) => origin),
+            ),
+          }),
+        )
+      const tokens = Object.freeze(
+        [...item.tokens.values()].sort((left, right) => left.id.localeCompare(right.id)),
+      )
+      return Object.freeze({
+        identity: entityKey(current.namespace, current.entityId),
+        namespace: current.namespace,
+        typeId: current.typeId,
+        entityId: current.entityId,
+        ...(current.parentEntityId === undefined ? {} : { parentEntityId: current.parentEntityId }),
+        ...(current.defaultTemplate ? { defaultTemplate: true } : {}),
+        ...(tokens.length === 0 ? {} : { tokens }),
+        source: sourceIndex(current.source),
+        complete: item.complete,
+        fields: Object.freeze(fields),
+        tombstones: item.tombstones,
+      })
+    })
+
+  const namespaces = [...entities.values()].reduce((counts, entity) => {
+    counts.set(entity.namespace, (counts.get(entity.namespace) ?? 0) + 1)
+    return counts
+  }, new Map<string, number>())
+  const namespaceRows = Object.freeze(
+    [...namespaces.entries()]
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([namespace, entityCount]) => Object.freeze({ namespace, entityCount })),
+  )
+  const sourceTable = Object.freeze(sources)
+  const complete =
+    input.complete !== false &&
+    diagnostics.every(diagnostic => diagnostic.severity !== 'error') &&
+    rows.every(row => row.complete)
+  const createIndex = (
+    valueRows: readonly DataAuthoringIndexEntity[],
+    valueDiagnostics: readonly DataCatalogDiagnostic[],
+    valuesComplete: boolean,
+  ): ResolvedDataAuthoringIndex =>
+    Object.freeze({
+      schemaVersion: 1,
+      kind: RESOLVED_DATA_AUTHORING_INDEX_KIND,
+      workspaceId: input.workspaceId,
+      gameId: input.gameId,
+      analyzerId: input.analyzerId,
+      snapshotId: input.snapshotId,
+      sourceTable,
+      namespaces: namespaceRows,
+      entityCount: rows.length,
+      patchCount: input.patches.length,
+      entities: Object.freeze(valueRows),
+      diagnostics: authoringDiagnosticSummary(valueDiagnostics),
+      ...(input.ownerMetadata === undefined
+        ? {}
+        : { ownerMetadata: immutableJson(input.ownerMetadata) }),
+      complete,
+      valuesComplete,
+    })
+  const valued = createIndex(rows, diagnostics, true)
+  const encodedBytes = (value: unknown) =>
+    new TextEncoder().encode(JSON.stringify(value)).byteLength
+  if (encodedBytes(valued) <= maxOutputBytes) return valued
+
+  const overflowDiagnostic: DataCatalogDiagnostic = {
+    severity: 'warning',
+    code: 'common.data/authoring-index-values-truncated',
+    message: `authoring values exceed the ${maxOutputBytes} byte output budget; identity and source rows remain complete`,
+  }
+  const identityRows = rows.map(row =>
+    Object.freeze({
+      identity: row.identity,
+      namespace: row.namespace,
+      typeId: row.typeId,
+      entityId: row.entityId,
+      ...(row.parentEntityId === undefined ? {} : { parentEntityId: row.parentEntityId }),
+      ...(row.defaultTemplate === undefined ? {} : { defaultTemplate: row.defaultTemplate }),
+      ...(row.tokens === undefined ? {} : { tokens: row.tokens }),
+      source: row.source,
+      complete: row.complete,
+    }),
+  )
+  const identityOnly = createIndex(identityRows, [...diagnostics, overflowDiagnostic], false)
+  if (encodedBytes(identityOnly) > maxOutputBytes) {
+    throw new TypeError(`authoring identity index exceeds maxOutputBytes ${maxOutputBytes}`)
+  }
+  return identityOnly
+}
+
 /**
  * Resolve already-parsed catalog patches without knowing any game's types or field names.
  * Providers own parsing and schemas; this algorithm owns bounded deterministic merge/inheritance.
@@ -552,6 +1413,8 @@ export function resolveDataCatalog(input: DataCatalogResolutionInput): DataCatal
         entityId: patch.entityId,
         typeId: patch.typeId,
         ...(patch.parentEntityId === undefined ? {} : { parentEntityId: patch.parentEntityId }),
+        defaultTemplate: false,
+        tokens: new Map(),
         fields: {},
         fieldSources: {},
         sources: [],
@@ -570,6 +1433,8 @@ export function resolveDataCatalog(input: DataCatalogResolutionInput): DataCatal
       continue
     }
     if (patch.parentEntityId !== undefined) current.parentEntityId = patch.parentEntityId
+    if (patch.defaultTemplate !== undefined) current.defaultTemplate = patch.defaultTemplate
+    for (const token of patch.tokens ?? []) current.tokens.set(token.id, immutableToken(token))
     current.sources.push(patch.source)
     for (const fieldId of Object.keys(patch.fields)) {
       if (typeFields.has(fieldId)) {
@@ -635,6 +1500,7 @@ export function resolveDataCatalog(input: DataCatalogResolutionInput): DataCatal
     let fieldSources: Record<string, DataEntitySource> = {}
     let inheritanceChain: DataEntityRef[] = []
     let sources: DataEntitySource[] = []
+    let tokens = new Map<string, DataEntityToken>()
     if (current.parentEntityId !== undefined) {
       const parentRef = { namespace: current.namespace, entityId: current.parentEntityId }
       const parent = resolveEntity(parentRef, depth + 1, [...path, ref])
@@ -662,8 +1528,10 @@ export function resolveDataCatalog(input: DataCatalogResolutionInput): DataCatal
         )
         inheritanceChain = [...parent.inheritanceChain]
         sources = [...parent.sources]
+        for (const token of parent.tokens ?? []) tokens.set(token.id, token)
       }
     }
+    for (const [id, token] of current.tokens) tokens.set(id, token)
     fields = mergeFields(fields, current.fields, fieldsByType.get(current.typeId) ?? new Map())
     for (const [fieldId, source] of Object.entries(current.fieldSources)) {
       fieldSources[fieldId] = source
@@ -675,6 +1543,14 @@ export function resolveDataCatalog(input: DataCatalogResolutionInput): DataCatal
       typeId: current.typeId,
       entityId: current.entityId,
       ...(current.parentEntityId === undefined ? {} : { parentEntityId: current.parentEntityId }),
+      ...(current.defaultTemplate ? { defaultTemplate: true } : {}),
+      ...(tokens.size === 0
+        ? {}
+        : {
+            tokens: Object.freeze(
+              [...tokens.values()].sort((left, right) => left.id.localeCompare(right.id)),
+            ),
+          }),
       inheritanceChain: Object.freeze(inheritanceChain.map(immutableRef)),
       fields: Object.freeze(
         Object.fromEntries(
@@ -856,6 +1732,9 @@ export function resolveDataCatalog(input: DataCatalogResolutionInput): DataCatal
     patchCount: input.patches.length,
     entities: Object.freeze(results),
     diagnostics: immutableDiagnostics,
+    ...(input.ownerMetadata === undefined
+      ? {}
+      : { ownerMetadata: immutableJson(input.ownerMetadata) }),
     ...(extended
       ? {
           schemas: Object.freeze(input.schemas.map(immutableSchema)),
@@ -1082,6 +1961,11 @@ export interface ResolvedDataWorkspaceAnalysisRequest extends DataCatalogAnalysi
   readonly unresolvedRequirementIds: readonly string[]
 }
 
+export interface ResolvedDataAuthoringIndexRequest extends ResolvedDataWorkspaceAnalysisRequest {
+  /** Hard JSON transfer bound. Providers preserve identity/source rows before optional values. */
+  readonly maxOutputBytes: number
+}
+
 export interface ResolvedDataWorkspaceSnapshot extends DataCatalogSnapshot {
   readonly definitions: readonly DataResolvedEntity[]
   readonly relations: readonly DataEntityRelation[]
@@ -1098,6 +1982,10 @@ export interface ResolvedDataWorkspace {
   readonly gameIds: readonly string[]
   plan(request: DataWorkspacePlanRequest): Promise<DataWorkspacePlan>
   analyze(request: ResolvedDataWorkspaceAnalysisRequest): Promise<ResolvedDataWorkspaceSnapshot>
+  /** Optional compact language projection over the same parsed patches and parent graph. */
+  analyzeAuthoringIndex?(
+    request: ResolvedDataAuthoringIndexRequest,
+  ): Promise<ResolvedDataAuthoringIndex>
   openSchemaTree(request: DataFacetOpenRequest): Promise<Lease<TreeDataSource>>
   openDefinitionTable(request: DataFacetOpenRequest): Promise<Lease<TableDataSource>>
   openLocalizationTable(request: DataFacetOpenRequest): Promise<Lease<TableDataSource>>

@@ -91,6 +91,9 @@ const subjectEditingSurface: CapabilitySurface = {
     plan: { kind: 'value', signal: 'last', arity: 1 },
     prepare: { kind: 'value', signal: 'last', arity: 1 },
     commit: { kind: 'value', signal: 'last', arity: 1 },
+    undo: { kind: 'value', signal: 'last', arity: 1 },
+    redo: { kind: 'value', signal: 'last', arity: 1 },
+    discardHistory: { kind: 'value', arity: 1 },
     dispose: { kind: 'value' },
   },
 }
@@ -572,6 +575,7 @@ export function exposeSubjectRpc(options: ExposeSubjectRpcOptions): SubjectRpcEx
       // ids, not authority: the grant snapshot and the prepared commit never leave this side
       const issuedPlans = new Map<string, AssetEditPlan>()
       const prepared = new Map<string, Parameters<typeof editing.coordinator.commit>[0]>()
+      const historyIds = new Set<string>()
       let sequence = 0
       const arm = {
         state: (): SubjectEditingState => ({
@@ -674,11 +678,51 @@ export function exposeSubjectRpc(options: ExposeSubjectRpcOptions): SubjectRpcEx
           if (result.state === 'not-applied') {
             return { state: 'not-applied', reason: result.reason, diagnostics: result.diagnostics }
           }
+          historyIds.add(result.receipt.transactionId)
           return { state: result.state, receipt: result.receipt }
+        },
+        undo: async (
+          transactionId: unknown,
+          signal?: AbortSignal,
+        ): Promise<SubjectEditingCommitResult> => {
+          if (typeof transactionId !== 'string' || !historyIds.has(transactionId)) {
+            throw new TypeError('unknown editing transaction')
+          }
+          const result = await editing.coordinator.undo(transactionId, {
+            grant: editing.grantSnapshot,
+            ...(signal === undefined ? {} : { signal }),
+          })
+          if (result.state === 'not-applied') {
+            return { state: 'not-applied', reason: result.reason, diagnostics: result.diagnostics }
+          }
+          return { state: result.state, receipt: result.receipt }
+        },
+        redo: async (
+          transactionId: unknown,
+          signal?: AbortSignal,
+        ): Promise<SubjectEditingCommitResult> => {
+          if (typeof transactionId !== 'string' || !historyIds.has(transactionId)) {
+            throw new TypeError('unknown editing transaction')
+          }
+          const result = await editing.coordinator.redo(transactionId, {
+            grant: editing.grantSnapshot,
+            ...(signal === undefined ? {} : { signal }),
+          })
+          if (result.state === 'not-applied') {
+            return { state: 'not-applied', reason: result.reason, diagnostics: result.diagnostics }
+          }
+          return { state: result.state, receipt: result.receipt }
+        },
+        discardHistory: async (transactionId: unknown): Promise<boolean> => {
+          if (typeof transactionId !== 'string' || !historyIds.has(transactionId)) return false
+          const discarded = await editing.coordinator.discardHistory(transactionId)
+          if (discarded) historyIds.delete(transactionId)
+          return discarded
         },
         dispose: async (): Promise<void> => {
           issuedPlans.clear()
           prepared.clear()
+          historyIds.clear()
           await editing.session?.dispose()
         },
       }
@@ -780,6 +824,9 @@ export interface SubjectEditingArm {
   plan(change: ChangeSet): Promise<AssetEditPlan>
   prepare(plan: AssetEditPlan): Promise<SubjectEditingPrepareResult>
   commit(preparedId: string): Promise<SubjectEditingCommitResult>
+  undo(transactionId: string): Promise<SubjectEditingCommitResult>
+  redo(transactionId: string): Promise<SubjectEditingCommitResult>
+  discardHistory(transactionId: string): Promise<boolean>
   dispose(): Promise<void>
 }
 

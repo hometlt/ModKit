@@ -317,9 +317,14 @@ describe('NXT-103 — standard data-source surfaces', () => {
     ).toEqual([
       'common.view/world-scene-source',
       'common.view/model-socket-source',
+      'common.view/model-effect-source',
+      'common.view/model-light-source',
+      'common.view/model-camera-source',
+      'common.view/model-physics-source',
+      'common.view/model-node-behaviour-source',
       'common.view/slide-deck-source',
     ])
-    expect(ADMITTED_DATA_SOURCE_CONTRACTS.length).toBe(STANDARD_DATA_SOURCE_CONTRACTS.length - 3)
+    expect(ADMITTED_DATA_SOURCE_CONTRACTS.length).toBe(STANDARD_DATA_SOURCE_CONTRACTS.length - 8)
     // the base model contract is untouched: a facet beside a contract is not a change to it
     expect(dataSourceMaturity('common.view/model-scene-source')).toBe('admitted')
     for (const contract of ADMITTED_DATA_SOURCE_CONTRACTS) {
@@ -331,6 +336,9 @@ describe('NXT-103 — standard data-source surfaces', () => {
     )
     expect(standardDataSourceSurfaceFor('common.view/model-socket-source', 1)).toBe(
       STANDARD_DATA_SOURCE_SURFACES['common.view/model-socket-source'],
+    )
+    expect(standardDataSourceSurfaceFor('common.view/model-effect-source', 1)).toBe(
+      STANDARD_DATA_SOURCE_SURFACES['common.view/model-effect-source'],
     )
     expect(standardDataSourceSurfaceFor('common.view/world-scene-source', 1)).toBe(
       STANDARD_DATA_SOURCE_SURFACES['common.view/world-scene-source'],

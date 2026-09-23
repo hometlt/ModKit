@@ -11,6 +11,7 @@ export type { ModelBonePoseSample } from './model/skeleton.js'
 export { snapshotModelAnimations, createModelAnimationSampler } from './model/animation.js'
 export type { ModelAnimationValue } from './model/animation.js'
 export { modelPrimitiveByteLength } from './model/geometry.js'
+import { contributionSettingsFor } from '@modkit/sdk'
 import type { ArtifactSource, DataSourceRefWire } from '@modkit/sdk'
 import type {
   TransportEvent,
@@ -102,6 +103,11 @@ export interface InspectionTrait {
 }
 
 export interface InspectionContext {
+  /**
+   * The host's settings for this contribution, already narrowed to the source being opened.
+   * Empty when the host configured none; a codec supplies its own default for a missing key.
+   */
+  readonly settings: Readonly<Record<string, unknown>>
   /** Host-provided capability resolver; codecs never construct a provider inventory. */
   readonly contracts?: ContributionContext['contracts']
   readonly rasterResources?: ContributionContext['rasterResources']
@@ -153,6 +159,11 @@ export interface NamespaceMarker {
 }
 
 export interface NamespaceInspectionContext {
+  /**
+   * The host's settings for this contribution, already narrowed to the source being opened.
+   * Empty when the host configured none; a codec supplies its own default for a missing key.
+   */
+  readonly settings: Readonly<Record<string, unknown>>
   readonly contracts?: ContributionContext['contracts']
   readonly rasterResources?: ContributionContext['rasterResources']
   readonly modelResources?: ContributionContext['modelResources']
@@ -1067,6 +1078,7 @@ export function createInspectionCodec(
             budget,
             signal,
             intent,
+            settings: contributionSettingsFor(contributionContext?.settings, input.root.uri),
             namespace: namespaceLease.value,
             input,
           })
@@ -1206,6 +1218,7 @@ export function createInspectionCodec(
           budget,
           signal,
           intent,
+          settings: contributionSettingsFor(contributionContext?.settings, primary.source.uri),
           source: source as ArtifactByteSource,
           primary,
           byteSource,

@@ -844,20 +844,42 @@ const knowledgeEntrySchema = {
   },
 } as const
 
+const knowledgePackSpecCommonProperties = {
+  schemaVersion: { const: 1 },
+  sourceLocale: localeTag,
+  priority: { type: 'number' },
+  gameIds: { type: 'array', items: knowledgeShortText, maxItems: 32, uniqueItems: true },
+} as const
+
 /** Data-only knowledge pack: summaries and provenance, never executable authority. */
 export const knowledgePackSpecV1Schema = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',
   $id: 'https://schemas.modkit.org/x3/knowledge-pack-spec.v1.schema.json',
-  type: 'object',
-  additionalProperties: false,
-  required: ['schemaVersion', 'sourceLocale', 'priority', 'entries'],
-  properties: {
-    schemaVersion: { const: 1 },
-    sourceLocale: localeTag,
-    priority: { type: 'number' },
-    gameIds: { type: 'array', items: knowledgeShortText, maxItems: 32, uniqueItems: true },
-    entries: { type: 'array', items: knowledgeEntrySchema, minItems: 1, maxItems: 10_000 },
-  },
+  // Entries inline, or a file of the artifact the host reads when knowledge is first queried.
+  oneOf: [
+    {
+      type: 'object',
+      additionalProperties: false,
+      required: ['schemaVersion', 'sourceLocale', 'priority', 'entries'],
+      properties: {
+        ...knowledgePackSpecCommonProperties,
+        entries: { type: 'array', items: knowledgeEntrySchema, minItems: 1, maxItems: 10_000 },
+      },
+    },
+    {
+      type: 'object',
+      additionalProperties: false,
+      required: ['schemaVersion', 'sourceLocale', 'priority', 'entriesPath'],
+      properties: {
+        ...knowledgePackSpecCommonProperties,
+        entriesPath: {
+          type: 'string',
+          maxLength: 1024,
+          pattern: '^[A-Za-z0-9][A-Za-z0-9._-]*(?:/[A-Za-z0-9][A-Za-z0-9._-]*)*\\.json$',
+        },
+      },
+    },
+  ],
 } as const
 
 const localizationCatalogResourceV1Schema = {

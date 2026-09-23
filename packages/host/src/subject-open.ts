@@ -26,6 +26,7 @@ import {
   type CodecContributionSpecV1Wire,
   type SignatureRule,
   type ContributionContext,
+  type ContributionSettings,
   type ContractResolverPort,
   type DetectionResult,
   type DetectionResultWire,
@@ -139,6 +140,11 @@ export interface OpenSubjectOptions {
   readonly resourceLimits?: Partial<ResourceSessionLimits>
   /** Registered host-owned discovery closures; codecs receive only role/extension requests. */
   readonly logicalResourceDiscovery?: readonly HostLogicalResourceDiscoveryPolicy[]
+  /**
+   * The host's settings for a contribution, asked for by id when one is activated. A codec that
+   * knows a setting reads it from its context; one that does not is unaffected.
+   */
+  readonly contributionSettings?: (contributionId: string) => ContributionSettings | undefined
   /** Nested raster decoding cannot recursively acquire another subject raster decoder. */
   readonly provideRasterResources?: boolean
   readonly minimumConfidence?: number
@@ -261,7 +267,11 @@ interface DetectedCandidate extends RunnableCandidate {
   /** The pinned request that resolved this candidate; the open phase re-resolves with it. */
   readonly request: ProviderRequest
   /** Builds a ContributionContext bound to this candidate's *current* resource scope. */
-  readonly makeContext: (grant: PermissionGrant, chain: readonly string[]) => ContributionContext
+  readonly makeContext: (
+    grant: PermissionGrant,
+    chain: readonly string[],
+    contributionId?: string,
+  ) => ContributionContext
   /**
    * R5: the variant requests classes beyond the probe set, so the probe ran under a narrower
    * child grant and the winner must be re-activated under the caller grant before open.
@@ -1438,7 +1448,12 @@ async function openSubjectDirect(
         const makeContext = (
           grant: PermissionGrant,
           chain: readonly string[],
+          contributionId?: string,
         ): ContributionContext => {
+          const settings =
+            contributionId === undefined
+              ? undefined
+              : options.contributionSettings?.(contributionId)
           const contracts =
             options.serviceDefinitions === undefined
               ? noServiceResolver()
@@ -1472,7 +1487,12 @@ async function openSubjectDirect(
                       ...(options.policy === undefined ? {} : { policy: options.policy }),
                       ...(signal === undefined ? {} : { signal }),
                       diagnostics,
-                      contextFor: effectiveGrant => makeContext(effectiveGrant, [...chain, key]),
+                      contextFor: effectiveGrant =>
+                        makeContext(
+                          effectiveGrant,
+                          [...chain, key],
+                          result.selected.offer.providerId,
+                        ),
                     })
                     record.resources.add(() => nested.release())
                     return Object.freeze({
@@ -1483,6 +1503,7 @@ async function openSubjectDirect(
                 })
           return Object.freeze({
             contracts,
+            ...(settings === undefined ? {} : { settings }),
             logicalResources: createSubjectLogicalResources({
               state: record.logicalState,
               budget: effectiveBudget,
@@ -1561,7 +1582,7 @@ async function openSubjectDirect(
         }
         const codec = assertCodec(
           codecModule(activation.module, candidate.contributionId).createCodec(
-            makeContext(activation.effectiveGrant, [candidate.contributionId]),
+            makeContext(activation.effectiveGrant, [candidate.contributionId], candidate.contributionId),
           ),
           candidate.contributionId,
         )
@@ -1683,7 +1704,7 @@ async function openSubjectDirect(
         best.resources = openScope
         best.codec = assertCodec(
           codecModule(activation.module, best.contributionId).createCodec(
-            best.makeContext(activation.effectiveGrant, [best.contributionId]),
+            best.makeContext(activation.effectiveGrant, [best.contributionId], best.contributionId),
           ),
           best.contributionId,
         )

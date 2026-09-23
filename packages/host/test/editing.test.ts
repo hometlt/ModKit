@@ -24,6 +24,7 @@ import {
   createGrantSnapshot,
   createHostContributionContractRegistry,
   type EditingBackend,
+  type HostCommitCoordinatorOptions,
 } from '@modkit/host'
 
 const source = (id: string) => ({ id, uri: `memory://${id}` })
@@ -265,6 +266,7 @@ function coordinator(
     selectedEvidence?: FidelityEvidence
     recovery?: boolean
     verifyStaged?: boolean
+    onTransactionApplied?: HostCommitCoordinatorOptions['onTransactionApplied']
   } = {},
 ) {
   const validGrants = options.validGrants ?? new Set(['grant-1', 'grant-2'])
@@ -289,6 +291,9 @@ function coordinator(
       : {}),
     confirmationMatches: token => token === 'confirmed',
     now: () => '2026-08-15T00:00:00.000Z',
+    ...(options.onTransactionApplied === undefined
+      ? {}
+      : { onTransactionApplied: options.onTransactionApplied }),
   })
 }
 
@@ -402,6 +407,43 @@ describe('13D universal editing contracts and host transaction coordinator', () 
     })
     await session.dispose()
     expect(session.state()).toBe('disposed')
+  })
+
+  it('publishes commit, undo and redo invalidation events without weakening durable results', async () => {
+    const initial = revision('initial-events')
+    const editTarget = target('main', 'a', initial)
+    const backend = new MemoryEditingBackend(atomicCapability)
+    backend.seed('main', initial)
+    const operations: string[] = []
+    const commits = coordinator(
+      { a: backend },
+      {
+        onTransactionApplied(_receipt, operation) {
+          operations.push(operation)
+          if (operation === 'commit') throw new Error('fixture invalidator failed')
+        },
+      },
+    )
+    const ready = await commits.prepare(
+      plan([editTarget], [replaceEdit('main', 'a', 'after-events')]),
+      { grant: grant() },
+    )
+    expect(ready.state).toBe('ready')
+    if (ready.state !== 'ready') return
+    const committed = await commits.commit(ready.prepared, { grant: grant('grant-2') })
+    expect(committed.state).toBe('committed')
+    if (committed.state !== 'committed') return
+    expect(
+      await commits.undo(committed.receipt.transactionId, { grant: grant('grant-2') }),
+    ).toMatchObject({
+      state: 'committed',
+    })
+    expect(
+      await commits.redo(committed.receipt.transactionId, { grant: grant('grant-2') }),
+    ).toMatchObject({
+      state: 'committed',
+    })
+    expect(operations).toEqual(['commit', 'undo', 'redo'])
   })
 
   it('rechecks revoked grants and revisions immediately before side effects (D-14…D-17)', async () => {

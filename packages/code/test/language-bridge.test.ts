@@ -34,6 +34,7 @@ vi.mock('monaco-editor/editor/editor.main.js', () => {
       registerReferenceProvider: register('references'),
       registerRenameProvider: register('rename'),
       registerDocumentFormattingEditProvider: register('formatting'),
+      registerOnTypeFormattingEditProvider: register('onTypeFormatting'),
       registerCodeActionProvider: register('codeActions'),
       registerSignatureHelpProvider: register('signatureHelp'),
       registerDocumentSymbolProvider: register('documentSymbols'),
@@ -79,6 +80,12 @@ describe('Monaco language bridge', () => {
       isComplete: true as const,
       edits: [{ range: { start: { line: 0, character: 0 }, end: { line: 0, character: 11 } }, newText: 'call(next)' }],
     }))
+    const onTypeFormatting = vi.fn(async request => ({
+      isComplete: true as const,
+      edits: [{ range: { start: request.position, end: request.position }, newText: '""' }],
+      cursor: { line: request.position.line, character: request.position.character + 1 },
+      requestCompletion: true,
+    }))
     const signatureHelp = vi.fn(async () => ({
       signatures: [{ label: 'call(value)', documentation: 'Call it.', parameters: [{ label: 'value', documentation: 'Input.' }] }],
       activeSignature: 0,
@@ -109,10 +116,11 @@ describe('Monaco language bridge', () => {
         prepareRename,
         rename,
         formatting,
+        onTypeFormatting,
         signatureHelp,
         codeActions,
       },
-      { workspaceIncomplete: false },
+      { workspaceIncomplete: false, onTypeFormattingTriggerCharacters: ['='] },
     )
 
     const referenceResult = await harness.registered.get('references').provideReferences(
@@ -155,6 +163,29 @@ describe('Monaco language bridge', () => {
     }))
     expect(formatResult[0]).toMatchObject({ text: 'call(next)', range: { startColumn: 1 } })
 
+    const onTypeProvider = harness.registered.get('onTypeFormatting')
+    expect(onTypeProvider.autoFormatTriggerCharacters).toEqual(['='])
+    const onTypeResult = await onTypeProvider.provideOnTypeFormattingEdits(
+      model,
+      { lineNumber: 1, column: 7 },
+      '=',
+      { tabSize: 2, insertSpaces: true },
+      token,
+    )
+    expect(onTypeFormatting).toHaveBeenCalledWith(
+      expect.objectContaining({
+        position: { line: 0, character: 6 },
+        ch: '=',
+        options: { tabSize: 2, insertSpaces: true },
+      }),
+    )
+    expect(onTypeResult).toEqual([
+      {
+        text: '""',
+        range: { startLineNumber: 1, startColumn: 7, endLineNumber: 1, endColumn: 7 },
+      },
+    ])
+
     const signatures = await harness.registered.get('signatureHelp').provideSignatureHelp(
       model,
       { lineNumber: 1, column: 7 },
@@ -196,6 +227,6 @@ describe('Monaco language bridge', () => {
     actionList.dispose()
 
     disposable.dispose()
-    expect(harness.disposed).toHaveBeenCalledTimes(6)
+    expect(harness.disposed).toHaveBeenCalledTimes(7)
   })
 })

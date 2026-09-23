@@ -1,7 +1,7 @@
 import { expect, it } from 'vitest'
 import type { ArtifactByteSource, ResourceSessionPort } from '@modkit/sdk'
 import type { OpenSubjectResult } from '../src/subject-open.js'
-import { createSubjectModelResources } from '../src/model-resources.js'
+import { createSubjectModelResources, type ModelResourceProfile } from '../src/model-resources.js'
 
 const budget = {
   maxInputBytes: 100000n,
@@ -28,6 +28,16 @@ function fixture(
     uvmFacets?: boolean
     afterInvoke?: () => void
     omitUnits?: boolean
+    cacheable?: boolean
+    receiptConfidence?: string
+    companionRevision?: string
+    evidenceRevision?: string
+    companionUsesBinding?: boolean
+    units?: number
+    beforeInvoke?: (signal?: AbortSignal) => Promise<void>
+    beforeUvmOpen?: () => void
+    uvmBytes?: Uint8Array
+    exportWarning?: boolean
   } = {},
 ) {
   let nativeClosed = 0,
@@ -40,6 +50,7 @@ function fixture(
     sceneReleased = 0,
     facetReleased = 0
   const owned: (() => Promise<void>)[] = []
+  const profiles: ModelResourceProfile[] = []
   const source = {
     kind: 'bytes',
     ref: { id: 'child', uri: 'memory://child' },
@@ -93,6 +104,7 @@ function fixture(
     budget,
     isAuthorized: () => state.live,
     own: release => owned.push(release),
+    onProfile: profile => profiles.push(profile),
     ancestors: settings.cycle ? ['child@child-revision'] : ['root@revision'],
     async open(openedSource, path) {
       opens++
@@ -144,12 +156,14 @@ function fixture(
         } as unknown as OpenSubjectResult
       }
       if (path === 'Child.uvm') {
+        settings.beforeUvmOpen?.()
         expect(openedSource.ref.id).toBe('child#model.export-uvm')
         expect(openedSource.revision).toContain('model.export-uvm')
-        expect(await openedSource.read(0n, 8)).toEqual(Uint8Array.of(1, 2, 3))
+        const expected = settings.uvmBytes ?? Uint8Array.of(1, 2, 3)
+        expect(await openedSource.read(0n, 8)).toEqual(expected.slice(0, 8))
         const streamed: number[] = []
         for await (const chunk of openedSource.stream()) streamed.push(...chunk)
-        expect(streamed).toEqual([1, 2, 3])
+        expect(streamed).toEqual([...expected])
         return {
           state: 'opened',
           diagnostics: [],
@@ -342,12 +356,55 @@ function fixture(
       }
       expect(path).toBe('Child.m3')
       expect(openedSource).toBe(source)
+      let disposed = false
       return {
         state: 'opened',
         diagnostics: [],
-        resources,
+        resources: {
+          ...resources,
+          async resolve(...args: Parameters<ResourceSessionPort['resolve']>) {
+            if (disposed) throw new Error('native overlay disposed')
+            return resources.resolve(...args)
+          },
+        },
+        detectionSelectionText: 'test-model-codec@1',
+        lockText: 'test-codec-policy@1',
         descriptor: {
           revision: 'provider-token:native-composition',
+          ...(settings.cacheable
+            ? {
+                interpretation: 'codec',
+                origin: { kind: 'single', binding: { id: 'content', revision: source.revision } },
+                metadata: [
+                  {
+                    id: 'uv-projection-receipt',
+                    entries: [
+                      {
+                        key: 'receipt',
+                        value: {
+                          subjectRevision: 'provider-token:native-composition',
+                          confidence: settings.receiptConfidence ?? 'high',
+                          companions: [
+                            settings.companionUsesBinding
+                              ? { state: 'bound', bindingId: 'content' }
+                              : {
+                                  state: 'bound',
+                                  revision: settings.companionRevision ?? 'm3a-v1',
+                                },
+                          ],
+                          evidence: [
+                            {
+                              kind: 'observed',
+                              statement: `sidecar revision ${settings.evidenceRevision ?? 'v1'}`,
+                            },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                ],
+              }
+            : {}),
           operations: [
             {
               id: 'model.export-uvm',
@@ -359,23 +416,28 @@ function fixture(
         },
         session: {
           async dispose() {
+            disposed = true
             nativeClosed++
           },
           operations() {
             return {
-              async invoke(handler: string, input: unknown) {
+              async invoke(handler: string, input: unknown, options?: { signal?: AbortSignal }) {
                 invokes++
                 expect(handler).toBe('convert')
                 expect(input).toEqual(
                   settings.omitUnits
                     ? { schemaVersion: 1 }
-                    : { schemaVersion: 1, metersPerSourceUnit: 0.01 },
+                    : { schemaVersion: 1, metersPerSourceUnit: settings.units ?? 0.01 },
                 )
+                await settings.beforeInvoke?.(options?.signal)
+                options?.signal?.throwIfAborted()
                 settings.afterInvoke?.()
                 return {
                   state: 'ok',
-                  output: { kind: 'bytes', value: Uint8Array.of(1, 2, 3) },
-                  diagnostics: [],
+                  output: { kind: 'bytes', value: settings.uvmBytes ?? Uint8Array.of(1, 2, 3) },
+                  diagnostics: settings.exportWarning
+                    ? [{ severity: 'warning', code: 'test/partial', message: 'partial projection' }]
+                    : [],
                 }
               },
             }
@@ -392,6 +454,8 @@ function fixture(
     port,
     state,
     owned,
+    profiles,
+    source,
     counts: () => ({
       nativeClosed,
       uvmClosed,
@@ -565,5 +629,268 @@ it('cancels a queued conversion without leaking a byte reservation', async () =>
   await expect(queued).rejects.toMatchObject({ name: 'AbortError' })
   expect(f.state.reservedBytes).toBe(60_000)
   await first.release()
+  expect(f.state.reservedBytes).toBe(0)
+})
+
+it('reuses complete UVM bytes but reopens both codecs and keeps fresh native DDS resources', async () => {
+  const f = fixture({ cacheable: true, uvmScene: true, uvmFacets: true })
+  const first = await f.port.acquire(request)
+  expect(first.value.result.state).toBe('converted')
+  if (first.value.result.state === 'converted') first.value.result.bytes.fill(99)
+  await first.release()
+  const second = await f.port.acquire(request)
+  expect(second.value.result).toMatchObject({ state: 'converted', bytes: Uint8Array.of(1, 2, 3) })
+  expect(await second.value.nodes?.({ limit: 1 })).toMatchObject({ items: [{ id: 'root' }] })
+  expect(
+    await second.value.readRaster({
+      kind: 'logical',
+      requirement: {
+        id: 'texture',
+        logicalId: 'Assets/Marine_Diffuse.dds',
+        role: 'texture',
+        scopes: ['sibling-directory'],
+      },
+      maxBytes: 64,
+    }),
+  ).toMatchObject({ state: 'decoded', region: { pixels: Uint8Array.of(20, 40, 60, 255) } })
+  await second.release()
+  expect(f.counts()).toMatchObject({
+    invokes: 1,
+    nativeClosed: 2,
+    uvmClosed: 2,
+    sceneReleased: 2,
+    facetReleased: 10,
+  })
+  expect(f.profiles.map(profile => [profile.cache, profile.exportInvocations])).toEqual([
+    ['miss', 1],
+    ['hit', 0],
+  ])
+  expect(f.profiles[1]?.exportUvmMs).toBe(0)
+  for (const profile of f.profiles) {
+    for (const [key, value] of Object.entries(profile)) {
+      if (key.endsWith('Ms')) expect(value).toBeGreaterThanOrEqual(0)
+    }
+    expect(profile.totalMs).toBeGreaterThanOrEqual(profile.nativeOpenMs + profile.exportUvmMs)
+  }
+  expect(f.state.reservedBytes).toBeGreaterThan(0)
+  await f.owned[0]!()
+  expect(f.state.reservedBytes).toBe(0)
+  expect((await f.port.acquire(request)).value.result.state).toBe('unresolved')
+})
+
+it('misses when source revision, companion receipt, evidence or units change and isolates subject ports', async () => {
+  const settings = {
+    cacheable: true,
+    uvmScene: true,
+    companionRevision: 'm3a-v1',
+    evidenceRevision: 'v1',
+    units: 0.01,
+  }
+  const f = fixture(settings)
+  const acquireAndRelease = async () => {
+    const lease = await f.port.acquire({ ...request, metersPerSourceUnit: settings.units })
+    expect(lease.value.result.state).toBe('converted')
+    await lease.release()
+  }
+  await acquireAndRelease()
+  Object.assign(f.source, { revision: 'changed-native-revision' })
+  await acquireAndRelease()
+  settings.companionRevision = 'm3a-v2'
+  await acquireAndRelease()
+  settings.units = 0.02
+  await acquireAndRelease()
+  settings.evidenceRevision = 'v2'
+  await acquireAndRelease()
+  await acquireAndRelease()
+  expect(f.counts().invokes).toBe(5)
+  const other = fixture({ cacheable: true, uvmScene: true })
+  const lease = await other.port.acquire(request)
+  expect(other.counts().invokes).toBe(1)
+  await lease.release()
+  await f.owned[0]!()
+  await other.owned[0]!()
+})
+
+it('uses origin binding revisions and clears cached projections when the resource scope changes', async () => {
+  const f = fixture({ cacheable: true, uvmScene: true, companionUsesBinding: true })
+  await (await f.port.acquire(request)).release()
+  await (await f.port.acquire(request)).release()
+  expect(f.counts().invokes).toBe(1)
+  f.state.resources = { ...f.state.resources }
+  await (await f.port.acquire(request)).release()
+  expect(f.counts().invokes).toBe(2)
+  await f.owned[0]!()
+  expect(f.state.reservedBytes).toBe(0)
+})
+
+function deferred() {
+  let resolve!: () => void
+  const promise = new Promise<void>(done => {
+    resolve = done
+  })
+  return { promise, resolve }
+}
+const nextTurn = () => new Promise<void>(resolve => setTimeout(resolve, 0))
+
+it('single-flights equivalent concurrent exports with independent live leases', async () => {
+  const started = deferred(),
+    unblock = deferred()
+  const f = fixture({
+    cacheable: true,
+    uvmScene: true,
+    beforeInvoke: async () => {
+      started.resolve()
+      await unblock.promise
+    },
+  })
+  const first = f.port.acquire(request)
+  await started.promise
+  const second = f.port.acquire(request)
+  await nextTurn()
+  expect(f.counts().invokes).toBe(1)
+  unblock.resolve()
+  const leases = await Promise.all([first, second])
+  expect(leases.map(lease => lease.value.result.state)).toEqual(['converted', 'converted'])
+  expect(f.profiles.map(profile => profile.cache)).toEqual(['miss', 'shared-hit'])
+  await leases[0]!.release()
+  expect(await leases[1]!.value.nodes?.({ limit: 1 })).toMatchObject({ items: [{ id: 'root' }] })
+  await leases[1]!.release()
+  await f.owned[0]!()
+  expect(f.counts()).toMatchObject({ invokes: 1, nativeClosed: 2, uvmClosed: 2 })
+  expect(f.state.reservedBytes).toBe(0)
+})
+
+it.each(['leader', 'waiter'])(
+  'canceling the %s does not cancel the other consumer or poison reuse',
+  async canceled => {
+    const started = deferred(),
+      unblock = deferred(),
+      abort = new AbortController()
+    let conversions = 0
+    const f = fixture({
+      cacheable: true,
+      uvmScene: true,
+      beforeInvoke: async () => {
+        if (++conversions === 1) {
+          started.resolve()
+          await unblock.promise
+        }
+      },
+    })
+    const leader = f.port.acquire(request, canceled === 'leader' ? abort.signal : undefined)
+    await started.promise
+    const waiter = f.port.acquire(request, canceled === 'waiter' ? abort.signal : undefined)
+    await nextTurn()
+    const rejected = expect(canceled === 'leader' ? leader : waiter).rejects.toMatchObject({
+      name: 'AbortError',
+    })
+    abort.abort()
+    unblock.resolve()
+    await rejected
+    const survivor = await (canceled === 'leader' ? waiter : leader)
+    expect(survivor.value.result.state).toBe('converted')
+    await survivor.release()
+    const again = await f.port.acquire(request)
+    expect(again.value.result.state).toBe('converted')
+    expect(f.counts().invokes).toBe(canceled === 'leader' ? 2 : 1)
+    await again.release()
+    await f.owned[0]!()
+    expect(f.state.reservedBytes).toBe(0)
+  },
+)
+
+it('caches deterministic partial projections but not warned exports or unrenderable UVM', async () => {
+  const partial = fixture({ cacheable: true, uvmScene: true, receiptConfidence: 'partial' })
+  for (let i = 0; i < 2; i++) await (await partial.port.acquire(request)).release()
+  expect(partial.counts().invokes).toBe(1)
+  await partial.owned[0]!()
+  for (const overrides of [{ exportWarning: true }, { uvmScene: false }]) {
+    const f = fixture({ cacheable: true, uvmScene: true, ...overrides })
+    for (let i = 0; i < 2; i++) await (await f.port.acquire(request)).release()
+    expect(f.counts().invokes).toBe(2)
+    expect(f.state.reservedBytes).toBe(0)
+    await f.owned[0]!()
+  }
+  let attempts = 0
+  const f = fixture({
+    cacheable: true,
+    uvmScene: true,
+    beforeInvoke: async () => {
+      if (++attempts === 1) throw new Error('temporary export failure')
+    },
+  })
+  const first = await f.port.acquire(request)
+  expect(first.value.result.state).toBe('unresolved')
+  const second = await f.port.acquire(request)
+  expect(second.value.result.state).toBe('converted')
+  await second.release()
+  await (await f.port.acquire(request)).release()
+  expect(f.counts().invokes).toBe(2)
+  await f.owned[0]!()
+  expect(f.state.reservedBytes).toBe(0)
+})
+
+it('bounds retained bytes, evicts for new reservations and checks maxBytes again on a cache hit', async () => {
+  const f = fixture({ cacheable: true, uvmScene: true })
+  for (let i = 0; i < 20; i++) {
+    Object.assign(f.source, { revision: `revision-${i}` })
+    await (await f.port.acquire(request)).release()
+    expect(f.state.reservedBytes).toBeLessThanOrEqual(budget.maxScalarBytes / 8)
+  }
+  Object.assign(f.source, { revision: 'revision-0' })
+  await (await f.port.acquire(request)).release()
+  expect(f.counts().invokes).toBe(21)
+  const tooSmall = await f.port.acquire({ ...request, maxBytes: 2 })
+  expect(tooSmall.value.result.state).toBe('unresolved')
+  expect(f.counts().invokes).toBe(21)
+  const entireBudget = await f.port.acquire({ ...request, maxBytes: budget.maxScalarBytes })
+  expect(entireBudget.value.result.state).toBe('converted')
+  expect(f.state.reservedBytes).toBe(budget.maxScalarBytes)
+  await entireBudget.release()
+  expect(f.state.reservedBytes).toBe(0)
+  await f.owned[0]!()
+})
+
+it('rechecks authority and cancellation after reopening a cached UVM', async () => {
+  for (const revoke of [false, true]) {
+    const settings: Parameters<typeof fixture>[0] = { cacheable: true, uvmScene: true }
+    const f = fixture(settings),
+      abort = new AbortController()
+    await (await f.port.acquire(request)).release()
+    settings.beforeUvmOpen = () => {
+      if (revoke) f.state.live = false
+      else abort.abort()
+    }
+    const acquisition = f.port.acquire(request, abort.signal)
+    if (revoke) expect((await acquisition).value.result.state).toBe('unresolved')
+    else await expect(acquisition).rejects.toMatchObject({ name: 'AbortError' })
+    expect(f.counts().invokes).toBe(1)
+    await f.owned[0]!()
+    expect(f.state.reservedBytes).toBe(0)
+    expect(f.counts()).toMatchObject({ nativeClosed: 2, uvmClosed: 2 })
+  }
+})
+
+it('disposes a subject during single-flight work without retaining its completed bytes', async () => {
+  const started = deferred(),
+    unblock = deferred()
+  const f = fixture({
+    cacheable: true,
+    uvmScene: true,
+    beforeInvoke: async () => {
+      started.resolve()
+      await unblock.promise
+    },
+  })
+  const first = f.port.acquire(request)
+  await started.promise
+  const second = f.port.acquire(request)
+  await nextTurn()
+  await f.owned[0]!()
+  expect((await second).value.result.state).toBe('unresolved')
+  unblock.resolve()
+  const leases = await Promise.all([first, second])
+  expect(leases.map(lease => lease.value.result.state)).toEqual(['unresolved', 'unresolved'])
+  expect(f.counts()).toMatchObject({ invokes: 1, nativeClosed: 2 })
   expect(f.state.reservedBytes).toBe(0)
 })
