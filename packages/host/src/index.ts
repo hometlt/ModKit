@@ -155,6 +155,19 @@ export {
  * base filename. The adapter publishes only revision-pinned logical candidates; bytes still flow
  * through the caller's ResourceSessionPort and its lease/budget policy.
  */
+/**
+ * Mounting a container behind a subject so its assets are reachable as a dependency layer — the
+ * shape `createLayeredCompanionOrigin` composes with a filesystem origin, and the way a model on
+ * disk reaches a texture that ships inside the game.
+ */
+export {
+  createCompositeWorkspaceNamespaceCompanionOrigin,
+  createWorkspaceNamespaceCompanionOrigin,
+  type CompositeWorkspaceNamespaceCompanionOriginOptions,
+  type CompositeWorkspaceNamespaceRoot,
+  type WorkspaceNamespaceCompanionOriginOptions,
+} from './namespace-origin.js'
+export { createLayeredCompanionOrigin, type CompanionOrigin } from './input-resolution.js'
 export {
   createWorkspaceNamespaceCandidateDiscovery,
   type WorkspaceNamespaceCandidateDiscovery,
@@ -417,6 +430,12 @@ export type {
   HostLogicalResourceDiscoveryPolicy,
 } from './logical-resources.js'
 export {
+  createWorkspaceReferenceIndex,
+  type ReferenceTargetResolver,
+  type WorkspaceReferenceIndex,
+  type WorkspaceReferenceIndexSnapshot,
+} from './references.js'
+export {
   analyzeReadOnlyContentDependencies,
   createContentDependencyLanguageDocumentSource,
   contentDependencyDiagnostics,
@@ -426,3 +445,8 @@ export {
   type ReadOnlyContentDependencyWorkspace,
   type ReadOnlyContentDependencyWorkspaceOptions,
 } from './content-dependencies.js'
+export {
+  createContainerNamespaceComposition,
+  type ContainerNamespaceComposition,
+  type CreateContainerNamespaceCompositionOptions,
+} from './container-composition.js'

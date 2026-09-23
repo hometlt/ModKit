@@ -511,6 +511,64 @@ function validateRequirements(requirements: readonly AssetInputRequirement[]): v
 }
 
 /**
+ * One origin per scope: the subject's own place first, then whatever the product mounted behind it.
+ *
+ * A model on disk is served by the filesystem origin, which honestly knows only the directory the
+ * file sits in. A model whose textures ship inside the game — SC2 names
+ * `Assets/Textures/Foo.dds` and expects CASC to supply it — needs a second backend behind the
+ * first, and the scope vocabulary already has the word for "behind": `workspace-dependency-layer`.
+ * Layering them here rather than teaching either origin about the other keeps each backend the
+ * smallest honest answer to "what else is next to this", which is the whole point of block 9.
+ *
+ * Order is precedence. Every origin serving a scope is enumerated in the order given, so a texture
+ * beside the model still wins over the game's copy of the same name. `open` is answered by the
+ * origin that produced the id; an id nobody enumerated is offered to each in turn, because a
+ * resolver may open a companion it resolved from an earlier, now-evicted listing.
+ */
+export function createLayeredCompanionOrigin(origins: readonly CompanionOrigin[]): CompanionOrigin {
+  const first = origins[0]
+  if (first === undefined) throw new TypeError('a layered companion origin needs a backend')
+  const fold = (value: string): string =>
+    first.caseSensitivity === 'insensitive' ? value.toLowerCase() : value
+  const producedBy = new Map<string, CompanionOrigin>()
+  return Object.freeze({
+    primaryLogicalId: first.primaryLogicalId,
+    caseSensitivity: first.caseSensitivity,
+    scopes: Object.freeze([...new Set(origins.flatMap(origin => [...origin.scopes]))]),
+    async *enumerate(
+      scope: InputSearchScope,
+      options: CompanionEnumerationOptions,
+      signal?: AbortSignal,
+    ): AsyncIterable<CompanionOriginEntry> {
+      const seen = new Set<string>()
+      for (const origin of origins) {
+        if (!origin.scopes.includes(scope)) continue
+        for await (const entry of origin.enumerate(scope, options, signal)) {
+          const key = fold(entry.logicalId)
+          if (seen.has(key)) continue
+          seen.add(key)
+          producedBy.set(key, origin)
+          yield entry
+        }
+      }
+    },
+    async open(logicalId: string, signal?: AbortSignal): Promise<Lease<ArtifactSource>> {
+      const remembered = producedBy.get(fold(logicalId))
+      if (remembered !== undefined) return remembered.open(logicalId, signal)
+      let failure: unknown
+      for (const origin of origins) {
+        try {
+          return await origin.open(logicalId, signal)
+        } catch (error) {
+          failure ??= error
+        }
+      }
+      throw failure ?? new TypeError(`no layered origin holds «${logicalId}»`)
+    },
+  })
+}
+
+/**
  * Binds a host-private origin into the `SubjectInputResolver` hook of `openSubject`.
  *
  * The returned resolver is the *only* thing the open pipeline sees; the origin stays captured in

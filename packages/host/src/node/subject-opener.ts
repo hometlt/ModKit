@@ -24,7 +24,12 @@ import {
   type SubjectOpener,
   type SubjectOpenSnapshot,
 } from '../subject-rpc.js'
-import { createCompanionInputResolver, createSignatureTraitProbe } from '../input-resolution.js'
+import {
+  createCompanionInputResolver,
+  createLayeredCompanionOrigin,
+  createSignatureTraitProbe,
+  type CompanionOrigin,
+} from '../input-resolution.js'
 import { createFilesystemCompanionOrigin } from './companion-origin.js'
 import { openPathArtifactSource } from './directory-artifact-source.js'
 import type {
@@ -49,6 +54,8 @@ export interface PathSubjectOpenerOptions {
   onOpened?(opened: OpenedSubject, sessionId: string): void
   readonly onRead?: (event: FileArtifactReadTelemetry) => void
   readonly onStream?: (event: FileArtifactStreamTelemetry) => void
+  /** Sources mounted behind the subject's own directory; see `FilesystemInputResolverOptions`. */
+  readonly assetOrigins?: readonly CompanionOrigin[]
 }
 
 export const DEFAULT_SUBJECT_OPEN_BUDGET: ResourceBudget = Object.freeze({
@@ -78,6 +85,15 @@ export interface FilesystemInputResolverOptions {
   readonly deadlineMs?: number
   /** Where named non-fatal outcomes go — an absent optional companion, an unserved scope. */
   readonly onDiagnostic?: (item: Diagnostic) => void
+  /**
+   * Sources mounted behind the subject's own directory, in precedence order.
+   *
+   * These are the product's answer to "what else may this file reach" — a game installation it
+   * discovered, a mod the user mounted — and they serve `workspace-dependency-layer`, so a codec
+   * that did not ask for that scope never sees them. Without any, resolution is exactly what it
+   * was: the directory the file sits in.
+   */
+  readonly assetOrigins?: readonly CompanionOrigin[]
 }
 
 /**
@@ -96,13 +112,16 @@ export interface FilesystemInputResolverOptions {
 export function createFilesystemInputResolver(
   options: FilesystemInputResolverOptions,
 ): SubjectInputResolver {
+  const filesystem = createFilesystemCompanionOrigin({
+    primaryPath: options.primaryPath,
+    roots: options.roots.map(root => resolve(root)),
+    containerExtensions: containerExtensionsOf(options.inventory),
+    containerAssetRoots: containerAssetRootsOf(options.inventory),
+  })
   return createCompanionInputResolver(
-    createFilesystemCompanionOrigin({
-      primaryPath: options.primaryPath,
-      roots: options.roots.map(root => resolve(root)),
-      containerExtensions: containerExtensionsOf(options.inventory),
-      containerAssetRoots: containerAssetRootsOf(options.inventory),
-    }),
+    options.assetOrigins === undefined || options.assetOrigins.length === 0
+      ? filesystem
+      : createLayeredCompanionOrigin([filesystem, ...options.assetOrigins]),
     {
       traitProbe: createSignatureTraitProbe(options.inventory),
       ...(options.onDiagnostic === undefined ? {} : { onDiagnostic: options.onDiagnostic }),
@@ -179,6 +198,7 @@ export function createPathSubjectOpener(options: PathSubjectOpenerOptions): Subj
           roots,
           inventory: options.subjects.inventory,
           onDiagnostic: item => companionDiagnostics.push(item),
+          ...(options.assetOrigins === undefined ? {} : { assetOrigins: options.assetOrigins }),
           ...(budget.deadlineMs === undefined ? {} : { deadlineMs: budget.deadlineMs }),
         })
       : undefined
