@@ -319,6 +319,13 @@
         "default": "",
         "markdownDescription": "%configuration.contentSourceConfig.description%"
       },
+      "modkit.baseMods": {
+        "type": "object",
+        "default": {},
+        "scope": "resource",
+        "additionalProperties": { "type": "array", "items": { "type": "string" } },
+        "markdownDescription": "%configuration.baseMods.description%"
+      },
       "modkit.disabledContributions": {
         "type": "array",
         "default": [],
