@@ -541,8 +541,24 @@ async function runFocusedGaScenarios() {
       record.details.firstOpenMs = Date.now() - started
       record.details.stageTabs = stages
       record.details.expectedStage = row.stage
+      /*
+       * The page is read before the stage list is judged, not after it is accepted.
+       *
+       * An empty stage list has two very different meanings — the page could not be read at all,
+       * or it was read and is showing something that is not a viewer, usually an error. Capturing
+       * the text only on the way to a passing run threw that distinction away: a failure printed `[]` and
+       * nothing else, and two sessions spent an afternoon deciding between a broken harness and a
+       * broken product when the page had been saying which the whole time.
+       */
+      const first = await readWebviewText()
+      record.details.webviewReadable = first.trim() !== ''
+      record.details.pageExcerpt = excerpt(first, 900)
       if (!stages.includes(row.stage)) {
-        record.evidence = `${row.file} opened, but ${row.stage} was absent from ${JSON.stringify(stages)}`
+        record.evidence =
+          `${row.file} opened, but ${row.stage} was absent from ${JSON.stringify(stages)}` +
+          (first.trim() === ''
+            ? `, and the page could not be read (${cdp.note})`
+            : `; the page reads: ${excerpt(first, 300)}`)
         return false
       }
       const clicked = await clickStage(row.stage)
