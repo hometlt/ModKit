@@ -47,6 +47,7 @@ const {
   createExecutionBackendRegistry,
   createHostContributionContractRegistry,
   createSubjectServices,
+  createWorkspaceNamespaceCompanionOrigin,
 } = hostModule
 const { createPathSubjectOpener, loadExtensionDirectory } = nodeModule
 
@@ -135,11 +136,78 @@ const services = createSubjectServices({
     },
   ]),
 })
+/*
+ * `--asset-source <installation root>` mounts a game's own storage behind the model's directory.
+ *
+ * This is the product's decision — which installations a file may reach — expressed as a layer the
+ * codec's `workspace-dependency-layer` scope then searches. The codec still owns the rule and the
+ * order; a model whose textures sit beside it keeps resolving them there.
+ */
+const assetOrigins = []
+const assetSessions = []
+for (
+  let at = argv.indexOf('--asset-source');
+  at >= 0;
+  at = argv.indexOf('--asset-source', at + 1)
+) {
+  /*
+   * `<installation root>#<package>,<package>` — the second half is where inside that storage the
+   * assets live, and it is game knowledge: SC2 files a unit texture under
+   * `mods/liberty.sc2mod/base.sc2assets/assets/textures/`, while the model asks for
+   * `Assets/Textures/...`. Stated on the command line here because this is a capture tool; in the
+   * product it is the game extension that knows its own packages and their load order.
+   */
+  const [rootArgument, packageList] = (argv[at + 1] ?? '').split('#')
+  const root = resolve(rootArgument ?? '')
+  const packages = (packageList ?? '').split(',').filter(Boolean)
+  const mountOpener = createPathSubjectOpener({
+    subjects: services,
+    roots: [root],
+    grant: { id: 'capture-asset-source', classes: ['read-source'] },
+    budget,
+  })
+  const mount = await mountOpener(root)
+  if (mount.snapshot.state !== 'opened' || mount.session === undefined)
+    throw new Error(`asset source did not open: ${root}`)
+  assetSessions.push(mount.session)
+  const namespaceLease = await mount.session.dataSource('common.view/namespace-entry-source', 1)
+  const operations = mount.session.operations()
+  const descriptor = await mount.session.descriptor()
+  const extractOperation = descriptor.operations.find(
+    item => item.id === 'container.extract' && item.state === 'available',
+  )
+  if (extractOperation === undefined)
+    throw new Error(`asset source cannot extract entries: ${root}`)
+  assetOrigins.push(
+    createWorkspaceNamespaceCompanionOrigin({
+      namespace: namespaceLease.value,
+      primaryLogicalId: modelPath.split(/[\\/]/u).at(-1),
+      logicalRoots:
+        packages.length === 0
+          ? [{ rootId: 'installation', pathPrefix: '', logicalPrefix: '' }]
+          : packages.map(item => ({ rootId: item, pathPrefix: item, logicalPrefix: '' })),
+      containerRevision: descriptor.revision,
+      async extract(entryId, signal) {
+        const result = await operations.invoke(
+          extractOperation.handlerId,
+          { entryId },
+          signal === undefined ? {} : { signal },
+        )
+        if (result.state !== 'ok' || result.output.kind !== 'bytes')
+          throw new Error(`the asset source refused to extract ${entryId}`)
+        return result.output.value
+      },
+    }),
+  )
+  console.log(`mounted asset source ${root}`)
+}
+
 const opener = createPathSubjectOpener({
   subjects: services,
   roots: [dirname(modelPath)],
   grant: { id: 'capture-model-viewer', classes: ['read-source'] },
   budget,
+  ...(assetOrigins.length === 0 ? {} : { assetOrigins }),
 })
 const answer = await opener(modelPath)
 if (answer.snapshot.state !== 'opened' || answer.session === undefined)
@@ -236,6 +304,7 @@ const payload = encode({
 })
 await sceneLease.release()
 await session.dispose()
+for (const mounted of assetSessions) await mounted.dispose()
 console.log(
   `opened ${payload.name}: ${primitives.length} primitives, ${textures.length}/${facets['common.view/model-resource-refs-source']?.items.filter(item => item.role === 'texture').length ?? 0} textures, facets ${Object.keys(facets).length}`,
 )
@@ -490,7 +559,17 @@ await tab
 
 const evidence = await tab.evaluate(() => {
   const canvas = document.querySelector('[data-mk-part="model.canvas"]')
+  const box = canvas?.getBoundingClientRect()
+  const round = value => Math.round(value * 1000) / 1000
   return {
+    // A canvas whose backing store is not the shape of its CSS box is drawn stretched, and the
+    // amount depends on the panel size — so both aspects are reported, never one of them.
+    backing: canvas === null ? null : `${canvas.width}x${canvas.height}`,
+    css: box === undefined ? null : `${Math.round(box.width)}x${Math.round(box.height)}`,
+    stretch:
+      box === undefined || canvas === null || box.height === 0 || canvas.height === 0
+        ? null
+        : round(box.width / box.height / (canvas.width / canvas.height)),
     renderer: canvas?.getAttribute('data-model-renderer'),
     status: canvas?.getAttribute('data-model-renderer-status'),
     textures: canvas?.getAttribute('data-model-textures'),
