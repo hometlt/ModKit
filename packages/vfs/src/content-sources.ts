@@ -63,6 +63,69 @@ export interface ContentDependencyResolution {
   readonly dependencies: readonly unknown[]
   readonly diagnostics: readonly unknown[]
 }
+/**
+ * A file, folder or package opened inside the mods it belongs to — the one way a host loads a
+ * game's layered content.
+ *
+ * The game's loader resolves the dependencies in order, merges data and assets its own way, and
+ * keeps each layer's file list with every file's original path: a read is served only when the
+ * path is in that list. A file that belongs to no package is opened inside `baseMods` — a setting
+ * of the host (per folder or file), with the game's own default when absent.
+ */
+export interface ModContextRequest {
+  readonly schemaVersion: 1
+  /** Host path of the subject: a package root, a file inside one, or a file inside none. */
+  readonly target: string
+  /** Packages a file outside any package is read inside, as the game names them. */
+  readonly baseMods?: readonly string[]
+  /** Only these locales' string files, when the consumer reads one language. */
+  readonly locales?: readonly string[]
+}
+
+/** One layer of a context, in load order: where it came from and why it is there. */
+export interface ModContextLayer {
+  readonly id: string
+  readonly displayName: string
+  /** The content source holding it, and its original path there (`Mods/Core.SC2Mod`). */
+  readonly sourceId: string
+  readonly sourcePath: string
+  /** `primary` is the opened package, `base` a setting-chosen package under a loose file. */
+  readonly role: 'dependency' | 'base' | 'primary'
+  readonly provenance: 'declared' | 'implicit' | 'setting' | 'opened'
+}
+
+export interface ModContextPage<T> {
+  readonly items: readonly T[]
+  readonly nextCursor?: string
+}
+
+export interface ModContext {
+  readonly schemaVersion: 1
+  readonly gameId: string
+  /** Stable for the same target, settings and content; changes when any of them does. */
+  readonly contextId: string
+  /** Dependencies first, the opened package last. */
+  readonly layers: readonly ModContextLayer[]
+  /** Declared dependencies no source could provide. */
+  readonly unresolved: readonly string[]
+  readonly diagnostics: readonly unknown[]
+  /** One layer's files, by their paths relative to the layer, in a stable order. */
+  files(
+    layerId: string,
+    page: { readonly cursor?: string; readonly limit: number },
+  ): Promise<ModContextPage<string>>
+  /** Bytes of one listed file; a path the layer does not list is refused. */
+  read(layerId: string, path: string, maxBytes: number): Promise<Uint8Array>
+  /** The layer that serves a layer-relative path, the last layer that has it winning. */
+  locate(path: string): Promise<{ readonly layerId: string; readonly path: string } | undefined>
+  /**
+   * Game-defined questions over the merged content (an entity, the ids of a namespace, a string),
+   * answered where the merged state lives and paged, so no host ever carries it whole.
+   */
+  query?(request: unknown, signal?: AbortSignal): Promise<unknown>
+  dispose(): Promise<void>
+}
+
 /** Source identifiers remain opaque; only an explicit trusted provider may reveal a local target. */
 export interface ContentSources {
   snapshot(): Promise<ContentSourceSnapshot>
@@ -92,6 +155,8 @@ export interface ContentSources {
   resolveLocalPath?(sourceId: string, path: string): Promise<ContentSourceLocalPath | undefined>
   /** Resolve a codec-discovered dependency set to ordered, read-only roots owned by this source. */
   resolveDependencies?(request: ContentDependencyRequest): Promise<ContentDependencyResolution>
+  /** Open a subject inside the mods it belongs to — see {@link ModContextRequest}. */
+  openModContext?(request: ModContextRequest): Promise<ModContext>
   /**
    * Read-only roots a game loads regardless of the open subject (for example editor add-on folders),
    * as the same resolution shape a dependency closure uses so a host projects both identically.
@@ -147,7 +212,9 @@ function publicationOptions(raw: unknown, required: readonly string[]): Publicat
   for (const key of required) {
     if (options[key] === undefined) throw new TypeError(`Missing publication option: ${key}`)
   }
-  return Object.fromEntries(Object.entries(options).filter(([, value]) => value !== undefined)) as PublicationOptions
+  return Object.fromEntries(
+    Object.entries(options).filter(([, value]) => value !== undefined),
+  ) as PublicationOptions
 }
 
 export const CONTENT_SOURCE_METHODS = [
@@ -245,7 +312,10 @@ export async function callContentSources(
     }
     case 'prepareFirstPublication': {
       if (!source.prepareFirstPublication) throw new Error('Publishing is not configured')
-      return source.prepareFirstPublication(string(0), publicationOptions(args[1], ['archivePath', 'name']))
+      return source.prepareFirstPublication(
+        string(0),
+        publicationOptions(args[1], ['archivePath', 'name']),
+      )
     }
     case 'prepareRevision': {
       if (!source.prepareRevision) throw new Error('Publishing is not configured')
