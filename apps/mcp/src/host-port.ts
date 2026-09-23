@@ -20,12 +20,17 @@ import {
 import { discoverGameInstallations } from '@modkit/host/games'
 import {
   createLanguageWorkspace,
+  languageWorkspaceContextToken,
   languageProviderRoutes,
   type LanguageWorkspace,
   type LanguageWorkspaceAnalysisResult,
   type LanguageWorkspaceCapability,
   type LanguageWorkspaceDocumentSource,
 } from '@modkit/host/language'
+import type {
+  LanguageWorkspaceContext,
+  LanguageWorkspaceDocumentOrigin,
+} from '@modkit/sdk/language'
 import {
   createModkit,
   createNodeMapPreviewResourcePlanResolver,
@@ -48,6 +53,7 @@ import { VirtualFileSystem } from '@modkit/vfs'
 import type { ContentSources } from '@modkit/vfs/content-sources'
 import { loadContentSources } from '@modkit/vfs/content-sources/node'
 import { createFileVfsProvider } from '@modkit/vfs/providers/file'
+import { McpOperationError } from './runtime.js'
 import type { ModkitMcpConfiguration } from './config.js'
 
 export interface McpOpenedSubject {
@@ -110,6 +116,7 @@ export interface McpDiscoveryResult {
 
 export type McpLanguageFeature =
   | 'analyze'
+  | 'semantic-tokens'
   | 'completion'
   | 'hover'
   | 'signature-help'
@@ -118,6 +125,7 @@ export type McpLanguageFeature =
   | 'prepare-rename'
   | 'rename'
   | 'formatting'
+  | 'on-type-formatting'
   | 'code-actions'
   | 'document-colors'
   | 'color-presentations'
@@ -134,6 +142,7 @@ export interface McpLanguageRequest {
   readonly primaryIndex: number
   readonly feature: McpLanguageFeature
   readonly position?: { readonly line: number; readonly character: number }
+  readonly ch?: string
   readonly includeDeclaration?: boolean
   readonly newName?: string
   readonly query?: string
@@ -168,6 +177,7 @@ export interface McpLanguageRequest {
 
 export interface McpLanguageResult {
   readonly snapshotId: string
+  readonly workspaceContext?: Pick<LanguageWorkspaceContext, 'id' | 'revision' | 'semanticComplete'>
   readonly diagnostics: readonly Diagnostic[]
   readonly primaryUri: string
   readonly feature: McpLanguageFeature
@@ -185,10 +195,12 @@ export interface McpLanguageSessionDocument {
 
 export interface McpLanguageSessionOpenRequest {
   readonly documents: readonly McpLanguageSessionDocument[]
+  /** Ordered game-data locales used by localized semantic resolution. */
+  readonly locales?: readonly string[]
 }
 
 export interface McpLanguageSessionContext {
-  readonly descriptor: Pick<AnyDescriptor, 'operations'>
+  readonly descriptor: Pick<AnyDescriptor, 'operations' | 'subjectUri' | 'revision'>
   readonly operations: OperationSession
 }
 
@@ -429,8 +441,7 @@ export async function createHostMcpPort(
       ? { trustedExtensions: extensions }
       : { userExtensions: extensions }),
     roots,
-    // MCP exposes edit-plan calculation but no prepare/commit endpoint. Supplying the same bounded
-    // roots here lets mutating codec operations produce plans while the transport remains non-writing.
+    // Plans can target these bounded roots; committing still requires the MCP startup edit policy.
     writableRoots: roots,
     intent: 'inspect',
     ...(onDiagnostic === undefined ? {} : { onDiagnostic }),
@@ -457,7 +468,9 @@ export async function createHostMcpPort(
       throw error
     }
   }
-  const knowledge = createKnowledgeCatalog(modkit.services.inventory)
+  // A pack may keep its entries in a file of its extension; the catalog reads it on first query.
+  const knowledgeFiles = new VirtualFileSystem().registerProvider(createFileVfsProvider())
+  const knowledge = createKnowledgeCatalog(modkit.services.inventory, {}, { vfs: knowledgeFiles })
   const mapPreviewResources = createNodeMapPreviewResourcePlanResolver({
     subjects: modkit.services,
   })
@@ -471,6 +484,7 @@ export async function createHostMcpPort(
     readonly extension?: string
     readonly version: number
     readonly text: string
+    readonly origin: Omit<LanguageWorkspaceDocumentOrigin, 'sourceRevision'>
   }
   const sessionDocument = async (
     input: McpLanguageSessionDocument,
@@ -483,6 +497,8 @@ export async function createHostMcpPort(
     let uri: string
     let text: string
     let extension = ''
+    let logicalId: string
+    let precedence: number
     if (input.path !== undefined) {
       if (!isAbsolute(input.path)) throw new TypeError('language document path must be absolute')
       const canonical = await realpath(resolve(input.path))
@@ -490,6 +506,11 @@ export async function createHostMcpPort(
         throw new TypeError('language document path is outside configured roots')
       }
       uri = pathToFileURL(canonical).href
+      const rootIndex = roots.findIndex(root => inside([root], canonical))
+      const root = roots[rootIndex]
+      if (root === undefined) throw new TypeError('language document path has no configured root')
+      logicalId = relative(root, canonical).replaceAll('\\', '/')
+      precedence = Number.MAX_SAFE_INTEGER - roots.length + rootIndex
       extension = extname(canonical).replace(/^\./u, '').toLowerCase()
       text =
         input.text ??
@@ -497,13 +518,20 @@ export async function createHostMcpPort(
           await readBoundedLanguageFile(canonical, signal),
         )
     } else {
-      const parsed = new URL(input.uri!)
+      const inputUri = input.uri
+      if (inputUri === undefined) throw new TypeError('language session document URI is missing')
+      const parsed = new URL(inputUri)
       if (parsed.protocol === 'file:') {
         const canonical = await realpath(fileURLToPath(parsed))
         if (!inside(roots, canonical)) {
           throw new TypeError('language document URI is outside configured roots')
         }
         uri = pathToFileURL(canonical).href
+        const rootIndex = roots.findIndex(root => inside([root], canonical))
+        const root = roots[rootIndex]
+        if (root === undefined) throw new TypeError('language document URI has no configured root')
+        logicalId = relative(root, canonical).replaceAll('\\', '/')
+        precedence = Number.MAX_SAFE_INTEGER - roots.length + rootIndex
         extension = extname(canonical).replace(/^\./u, '').toLowerCase()
         text =
           input.text ??
@@ -522,6 +550,10 @@ export async function createHostMcpPort(
           throw new TypeError('language virtual URI needs host-held source text')
         }
         uri = parsed.href
+        logicalId = decodeURIComponent(parsed.pathname)
+          .replace(/^\/+content-dependencies\/\d+\//u, '')
+          .replace(/^\/+/, '')
+        precedence = Number.MAX_SAFE_INTEGER
         extension = extname(parsed.pathname).replace(/^\./u, '').toLowerCase()
         text = input.text
       }
@@ -541,15 +573,32 @@ export async function createHostMcpPort(
       ...(extension.length === 0 ? {} : { extension }),
       version,
       text,
+      origin: Object.freeze({
+        uri,
+        layerId: `mcp-session:${precedence}`,
+        logicalId,
+        precedence,
+        readOnly: false,
+        overlay: true,
+      }),
     })
   }
   const invokeLanguageFeature = async (
     workspace: LanguageWorkspace,
-    document: SessionDocument,
+    document: Pick<SessionDocument, 'uri' | 'version'>,
     request: Omit<McpLanguageSessionFeatureRequest, 'primaryUri'>,
     analysis: LanguageWorkspaceAnalysisResult | undefined,
     signal?: AbortSignal,
+    maxDocuments = LANGUAGE_SNAPSHOT_DOCUMENTS,
   ): Promise<unknown> => {
+    signal?.throwIfAborted()
+    const capabilities = await workspace.capabilities(document.uri, signal)
+    if (capabilities === undefined) {
+      throw new McpOperationError('x3.mcp/language-provider-unresolved', 'No language provider resolved for the primary document.')
+    }
+    if (!capabilities.features.includes(request.feature)) {
+      throw new McpOperationError('x3.mcp/language-feature-unsupported', `The primary document's provider does not support ${request.feature}.`)
+    }
     const common = {
       uri: document.uri,
       documentVersion: document.version,
@@ -563,7 +612,7 @@ export async function createHostMcpPort(
        * a template or a string key in the next file resolved nowhere, through the one route the
        * plan sanctions for completeness.
        */
-      maxDocuments: LANGUAGE_SNAPSHOT_DOCUMENTS,
+      maxDocuments,
       ...(signal === undefined ? {} : { signal }),
     }
     const positioned = () => {
@@ -573,6 +622,16 @@ export async function createHostMcpPort(
     switch (request.feature) {
       case 'analyze':
         return analysis ?? (await workspace.current(document.uri, signal))
+      case 'semantic-tokens': {
+        const current = analysis ?? (await workspace.current(document.uri, signal))
+        const tokens = current?.state === 'resolved' ? current.analysis.tokens : []
+        return {
+          documentUri: document.uri,
+          documentVersion: document.version,
+          tokens: tokens.slice(0, request.maxResults),
+          isIncomplete: current?.state !== 'resolved' || tokens.length > request.maxResults,
+        }
+      }
       case 'completion':
         return workspace.completion(positioned())
       case 'hover':
@@ -600,6 +659,11 @@ export async function createHostMcpPort(
       case 'formatting':
         if (request.formatting === undefined) throw new TypeError('formatting needs options')
         return workspace.formatting({ ...common, options: request.formatting })
+      case 'on-type-formatting':
+        if (request.formatting === undefined || request.ch === undefined) {
+          throw new TypeError('on-type-formatting needs formatting options and ch')
+        }
+        return workspace.onTypeFormatting({ ...positioned(), options: request.formatting, ch: request.ch })
       case 'code-actions':
         if (request.range === undefined) throw new TypeError('code-actions needs range')
         return workspace.codeActions({
@@ -627,17 +691,17 @@ export async function createHostMcpPort(
         return workspace.diagnostics(common)
     }
   }
-/**
- * What a dependency-backed snapshot may weigh.
- *
- * StarCraft II's core mod alone is 25 MiB of layouts, scripts, catalogs and string catalogs, so a
- * 16 MiB ceiling dropped whole languages out of a snapshot the resolver had already mounted — the
- * same ceiling the editor and the LSP raised for the same reason.
- */
-const MCP_LANGUAGE_MAX_WORKSPACE_BYTES = 67_108_864
+  /**
+   * What a dependency-backed snapshot may weigh.
+   *
+   * StarCraft II's core mod alone is 25 MiB of layouts, scripts, catalogs and string catalogs, so a
+   * 16 MiB ceiling dropped whole languages out of a snapshot the resolver had already mounted — the
+   * same ceiling the editor and the LSP raised for the same reason.
+   */
+  const MCP_LANGUAGE_MAX_WORKSPACE_BYTES = 67_108_864
 
-/** What the host may assemble for one language request, dependencies included. */
-const LANGUAGE_SNAPSHOT_DOCUMENTS = 1_024
+  /** What the host may assemble for one language request, dependencies included. */
+  const LANGUAGE_SNAPSHOT_DOCUMENTS = 1_024
 
   const openLanguageSession = async (
     request: McpLanguageSessionOpenRequest,
@@ -646,6 +710,15 @@ const LANGUAGE_SNAPSHOT_DOCUMENTS = 1_024
   ): Promise<McpLanguageSession> => {
     if (request.documents.length === 0 || request.documents.length > 32) {
       throw new TypeError('language session needs between 1 and 32 documents')
+    }
+    const locales = request.locales ?? ['enUS']
+    if (
+      locales.length === 0 ||
+      locales.length > 16 ||
+      new Set(locales).size !== locales.length ||
+      locales.some(locale => !/^[A-Za-z][A-Za-z0-9_-]{1,31}$/u.test(locale))
+    ) {
+      throw new TypeError('language session locales must be 1..16 unique bounded identifiers')
     }
     const documents = await Promise.all(
       request.documents.map(document => sessionDocument(document, signal)),
@@ -696,6 +769,7 @@ const LANGUAGE_SNAPSHOT_DOCUMENTS = 1_024
     const documentSource = composeLanguageDocumentSources(sources, complete => {
       dependencySnapshotComplete = complete
     })
+    let observedWorkspaceContext: LanguageWorkspaceContext | undefined
     const workspaceIncomplete = () =>
       context === undefined || !dependencyResolutionComplete || !dependencySnapshotComplete
     const workspace = createLanguageWorkspace({
@@ -703,7 +777,38 @@ const LANGUAGE_SNAPSHOT_DOCUMENTS = 1_024
       grant: { id: `modkit-mcp-language-session:${randomUUID()}`, classes: ['read-source'] },
       budgets: mapPreviewBudget,
       workspaceIncomplete,
+      semanticInputs: Object.freeze([
+        Object.freeze({
+          kind: 'locale-set',
+          id: `selected-game-locales:${locales.join(',')}`,
+          revision: languageWorkspaceContextToken(locales),
+        }),
+        ...(context === undefined
+          ? []
+          : [
+              Object.freeze({
+                kind: 'subject',
+                id: context.descriptor.subjectUri,
+                revision: String(context.descriptor.revision),
+              }),
+            ]),
+      ]),
       ...(documentSource === undefined ? {} : { documentSource }),
+      documentOrigin: document => {
+        const session = byUri.get(document.uri)
+        return session === undefined
+          ? undefined
+          : Object.freeze({
+              ...session.origin,
+              sourceRevision: languageWorkspaceContextToken({
+                version: document.version,
+                text: document.text,
+              }),
+            })
+      },
+      observeWorkspaceContext: context => {
+        observedWorkspaceContext = context
+      },
     })
     const analyses = new Map<string, LanguageWorkspaceAnalysisResult>()
     const featuresByUri = new Map<string, readonly LanguageWorkspaceCapability[]>()
@@ -724,7 +829,8 @@ const LANGUAGE_SNAPSHOT_DOCUMENTS = 1_024
           const detail = analysis.hostDiagnostics
             .map(diagnostic => `${diagnostic.code}: ${diagnostic.message}`)
             .join('; ')
-          throw new TypeError(
+          throw new McpOperationError(
+            'x3.mcp/language-provider-unresolved',
             `language provider unresolved for ${document.uri}${detail.length === 0 ? '' : `: ${detail}`}`,
           )
         }
@@ -745,6 +851,14 @@ const LANGUAGE_SNAPSHOT_DOCUMENTS = 1_024
       value: unknown,
     ): Promise<McpLanguageResult> => {
       const digest = createHash('sha256')
+      if (observedWorkspaceContext !== undefined) {
+        digest
+          .update(observedWorkspaceContext.id)
+          .update('\0')
+          .update(observedWorkspaceContext.revision)
+          .update('\0')
+          .update(String(observedWorkspaceContext.semanticComplete))
+      }
       for (const item of [...byUri.values()].sort((left, right) =>
         left.uri.localeCompare(right.uri),
       )) {
@@ -757,6 +871,15 @@ const LANGUAGE_SNAPSHOT_DOCUMENTS = 1_024
       }
       return Object.freeze({
         snapshotId: `language-session-v1:${digest.digest('hex')}`,
+        ...(observedWorkspaceContext === undefined
+          ? {}
+          : {
+              workspaceContext: Object.freeze({
+                id: observedWorkspaceContext.id,
+                revision: observedWorkspaceContext.revision,
+                semanticComplete: observedWorkspaceContext.semanticComplete,
+              }),
+            }),
         diagnostics: Object.freeze([
           ...dependencyDiagnostics,
           ...[...analyses.values()].flatMap(item => item.hostDiagnostics),
@@ -817,7 +940,7 @@ const LANGUAGE_SNAPSHOT_DOCUMENTS = 1_024
           const current = byUri.get(update.uri)
           if (current === undefined) throw new TypeError('language session document is unknown')
           if (!Number.isSafeInteger(update.version) || update.version <= current.version) {
-            throw new TypeError('language overlay version must strictly increase')
+            throw new McpOperationError('x3.mcp/language-version-stale', 'language overlay version must strictly increase')
           }
           const bytes = new TextEncoder().encode(update.text).byteLength
           const otherBytes = [...byUri.values()]
@@ -827,6 +950,7 @@ const LANGUAGE_SNAPSHOT_DOCUMENTS = 1_024
             throw new TypeError('language overlay exceeds session byte limits')
           }
           const next = Object.freeze({ ...current, version: update.version, text: update.text })
+          observedWorkspaceContext = undefined
           const analysis = await workspace.change({
             languageId: next.languageId,
             ...(next.documentKind === undefined ? {} : { documentKind: next.documentKind }),
@@ -846,6 +970,7 @@ const LANGUAGE_SNAPSHOT_DOCUMENTS = 1_024
         return run(async () => {
           const document = byUri.get(featureRequest.primaryUri)
           if (document === undefined) throw new TypeError('language session primary URI is unknown')
+          observedWorkspaceContext = undefined
           const value = await invokeLanguageFeature(
             workspace,
             document,
@@ -893,7 +1018,9 @@ const LANGUAGE_SNAPSHOT_DOCUMENTS = 1_024
           async openResolvedDataWorkspace(resolvedRequest, signal) {
             const directories = resolvedRequest.directories.map(directory => {
               if (!isAbsolute(directory) || !inside(roots, resolve(directory))) {
-                throw new TypeError('resolved workspace directories must be inside configured roots')
+                throw new TypeError(
+                  'resolved workspace directories must be inside configured roots',
+                )
               }
               return resolve(directory)
             })
@@ -1019,93 +1146,16 @@ const LANGUAGE_SNAPSHOT_DOCUMENTS = 1_024
           diagnostics.push(...analysis.hostDiagnostics)
           analyses.push(analysis)
         }
-        const primary = openedDocuments[request.primaryIndex]!
-        const common = {
-          uri: primary.uri,
-          documentVersion: 1,
-          maxResults: request.maxResults,
-          // Preserve capacity for an optional host-owned dependency source. Explicit documents
-          // remain primary and the language workspace enforces the same 32-document MCP bound.
-          maxDocuments: 32,
-          ...(signal === undefined ? {} : { signal }),
-        }
-        const positioned = () => {
-          if (request.position === undefined)
-            throw new TypeError(`${request.feature} needs position`)
-          return { ...common, position: request.position }
-        }
-        let result: unknown
-        switch (request.feature) {
-          case 'analyze':
-            result = analyses[request.primaryIndex]
-            break
-          case 'completion':
-            result = await workspace.completion(positioned())
-            break
-          case 'hover':
-            result = await workspace.hover(positioned())
-            break
-          case 'signature-help':
-            result = await workspace.signatureHelp(positioned())
-            break
-          case 'definition':
-            result = await workspace.definition(positioned())
-            break
-          case 'references':
-            result = await workspace.references({
-              ...positioned(),
-              ...(request.includeDeclaration === undefined
-                ? {}
-                : { includeDeclaration: request.includeDeclaration }),
-            })
-            break
-          case 'prepare-rename':
-            result = await workspace.prepareRename(positioned())
-            break
-          case 'rename':
-            if (request.newName === undefined) throw new TypeError('rename needs newName')
-            result = await workspace.rename({
-              ...positioned(),
-              newName: request.newName,
-              maxEdits: request.maxEdits,
-            })
-            break
-          case 'formatting':
-            if (request.formatting === undefined) throw new TypeError('formatting needs options')
-            result = await workspace.formatting({ ...common, options: request.formatting })
-            break
-          case 'code-actions':
-            if (request.range === undefined) throw new TypeError('code-actions needs range')
-            result = await workspace.codeActions({
-              ...common,
-              range: request.range,
-              diagnostics: request.languageDiagnostics ?? [],
-              maxEdits: request.maxEdits,
-            })
-            break
-          case 'document-colors':
-            result = await workspace.documentColors(common)
-            break
-          case 'color-presentations':
-            if (request.color === undefined || request.range === undefined) {
-              throw new TypeError('color-presentations needs color and range')
-            }
-            result = await workspace.colorPresentations({
-              ...common,
-              color: request.color,
-              range: request.range,
-            })
-            break
-          case 'document-symbols':
-            result = await workspace.documentSymbols(common)
-            break
-          case 'workspace-symbols':
-            result = await workspace.workspaceSymbols({ ...common, query: request.query ?? '' })
-            break
-          case 'diagnostics':
-            result = await workspace.diagnostics(common)
-            break
-        }
+        const primary = openedDocuments[request.primaryIndex]
+        if (primary === undefined) throw new RangeError('language primaryIndex is out of bounds')
+        const result = await invokeLanguageFeature(
+          workspace,
+          { uri: primary.uri, version: 1 },
+          request,
+          analyses[request.primaryIndex],
+          signal,
+          32,
+        )
         const digest = createHash('sha256')
         for (const document of openedDocuments) {
           digest.update(document.uri).update('\0').update(document.text).update('\0')
@@ -1417,7 +1467,7 @@ const LANGUAGE_SNAPSHOT_DOCUMENTS = 1_024
     async close(): Promise<void> {
       discoveredById.clear()
       discoveryIdByCoordinate.clear()
-      await Promise.all([modkit.close(), contentSources?.dispose()])
+      await Promise.all([modkit.close(), contentSources?.dispose(), knowledgeFiles.dispose()])
     },
   }
   return Object.freeze(port)

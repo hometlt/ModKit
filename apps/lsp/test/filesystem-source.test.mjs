@@ -10,6 +10,7 @@ const snapshot = (source, overrides = {}) =>
   source.snapshot({
     document: { uri: 'file:///primary.test', languageId: 'test', version: 1, text: '' },
     workspaceDocuments: [],
+    workspaceDocumentOrigins: [],
     workspaceLanguageIds: ['test'],
     maxDocuments: 8,
     signal: new AbortController().signal,
@@ -34,10 +35,25 @@ test('filesystem source reads unique routes, excludes open overlays, and advance
       first.documents.map(item => [item.languageId, item.text, item.version]),
       [['test', 'first', 1]],
     )
+    assert.equal(first.workspaceContext.semanticComplete, true)
+    assert.deepEqual(
+      first.workspaceContext.documentOrigins.map(item => item.logicalId),
+      ['nested/one.foo'],
+    )
+    assert.deepEqual(source.origin(first.documents[0]), {
+      uri: first.documents[0].uri,
+      layerId: first.workspaceContext.documentOrigins[0].layerId,
+      logicalId: 'nested/one.foo',
+      precedence: 0,
+      sourceRevision: '1',
+      readOnly: false,
+      overlay: true,
+    })
     const excluded = await snapshot(source, {
       workspaceDocuments: [
         { uri: pathToFileURL(path).href, languageId: 'test', version: 9, text: 'overlay' },
       ],
+      workspaceDocumentOrigins: [],
     })
     assert.deepEqual(excluded.documents, [])
     await writeFile(path, 'second version')

@@ -23,10 +23,15 @@ test('configuration deduplicates roots and enforces bounded snapshots', () => {
     '1024',
     '--max-workspace-bytes',
     '4096',
+    '--locale',
+    'ruRU',
+    '--locale',
+    'enUS',
   ])
   assert.deepEqual(value.roots, [root])
   assert.deepEqual(value.extensions, [extension])
   assert.equal(value.maxDocuments, 12)
+  assert.deepEqual(value.locales, ['ruRU', 'enUS'])
   assert.throws(
     () =>
       parseModkitLspConfiguration([

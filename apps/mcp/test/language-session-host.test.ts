@@ -17,14 +17,14 @@ const contentSources: ContentSources = {
   async snapshot() {
     return { label: 'test', regions: [], connections: [], roots: [] }
   },
-  async connect() {},
-  async disconnect() {},
+  connect: () => Promise.resolve(),
+  disconnect: () => Promise.resolve(),
   async search() {
     return []
   },
-  async add() {},
-  async remove() {},
-  async refresh() {},
+  add: () => Promise.resolve(),
+  remove: () => Promise.resolve(),
+  refresh: () => Promise.resolve(),
   async list(_sourceId, path) {
     return path === 'root'
       ? [{ path: 'root/Dependency.fixturelang', name: 'Dependency.fixturelang', directory: false }]
@@ -56,11 +56,13 @@ const contentSources: ContentSources = {
       diagnostics: [],
     }
   },
-  async dispose() {},
+  dispose: () => Promise.resolve(),
 }
 
 const dependencyContext: McpLanguageSessionContext = {
   descriptor: {
+    subjectUri: 'fixture://dependency-subject',
+    revision: 1,
     operations: [
       {
         id: 'content.resolve-dependencies',
@@ -86,7 +88,7 @@ const dependencyContext: McpLanguageSessionContext = {
         diagnostics: [],
       }
     },
-    async dispose() {},
+    dispose: () => Promise.resolve(),
   } as never,
 }
 
@@ -108,9 +110,18 @@ afterAll(async () => {
 }, 30_000)
 
 describe('host-held MCP language session', () => {
+  const openLanguageSession = (
+    target: ModkitMcpHostPort,
+    ...input: Parameters<NonNullable<ModkitMcpHostPort['openLanguageSession']>>
+  ) => {
+    const open = target.openLanguageSession
+    if (open === undefined) throw new Error('host did not expose language sessions')
+    return open.apply(target, input)
+  }
+
   it('retains virtual source overlays with exact revisions and releases the provider', async () => {
     const uri = 'modkit-source://fixture/Scripts/Main.fixturelang'
-    const session = await host.openLanguageSession!({
+    const session = await openLanguageSession(host, {
       documents: [
         {
           uri,
@@ -213,7 +224,7 @@ describe('host-held MCP language session', () => {
 
   it('refuses unowned network URIs before language activation', async () => {
     await expect(
-      host.openLanguageSession!({
+      openLanguageSession(host, {
         documents: [
           {
             uri: 'https://example.invalid/source.fixturelang',
@@ -227,7 +238,7 @@ describe('host-held MCP language session', () => {
 
   it('does not retain a session when no language provider resolves', async () => {
     await expect(
-      host.openLanguageSession!({
+      openLanguageSession(host, {
         documents: [
           {
             uri: 'modkit-source://fixture/Scripts/Main.unknown',
@@ -241,9 +252,47 @@ describe('host-held MCP language session', () => {
     ).rejects.toThrow(/language provider unresolved/u)
   })
 
+  it('keeps selected locales in the published semantic context identity', async () => {
+    const uri = 'modkit-source://fixture/Scripts/Locale.fixturelang'
+    const open = (locales: readonly string[]) =>
+      openLanguageSession(host, {
+        locales,
+        documents: [
+          {
+            uri,
+            languageId: 'fixture-language',
+            documentKind: 'fixture-source',
+            version: 1,
+            text: 'source',
+          },
+        ],
+      })
+    const en = await open(['enUS'])
+    const de = await open(['deDE', 'enUS'])
+    try {
+      const request = {
+        primaryUri: uri,
+        feature: 'hover' as const,
+        position: { line: 0, character: 1 },
+        maxResults: 20,
+        maxEdits: 20,
+      }
+      const [enResult, deResult] = await Promise.all([en.invoke(request), de.invoke(request)])
+      expect(enResult.workspaceContext).toMatchObject({
+        id: expect.stringMatching(/^language-context-v1:/u),
+        revision: expect.stringMatching(/^language-context-v1:/u),
+      })
+      expect(deResult.workspaceContext?.id).not.toBe(enResult.workspaceContext?.id)
+    } finally {
+      await Promise.all([en.close(), de.close()])
+    }
+    await expect(open(['enUS', 'enUS'])).rejects.toThrow(/unique bounded identifiers/u)
+  })
+
   it('projects a subject dependency closure into the retained language workspace', async () => {
     const uri = 'modkit-source://fixture/Scripts/Main.fixturelang'
-    const session = await host.openLanguageSession!(
+    const session = await openLanguageSession(
+      host,
       {
         documents: [
           {
@@ -272,6 +321,7 @@ describe('host-held MCP language session', () => {
         isIncomplete: true,
         locations: [{ uri: expect.stringMatching(/^content-source:\/\/fixture-source\//u) }],
       })
+      expect(definition.workspaceContext).toMatchObject({ semanticComplete: true })
       expect(session.workspaceIncomplete).toBe(false)
     } finally {
       await session.close()
@@ -292,7 +342,11 @@ describe('host-held MCP language session', () => {
           : []
       },
       async read(sourceId, path, maximum) {
-        if (sourceId !== 'standing-source' || path !== 'Dependency.fixturelang' || standingBytes.byteLength > maximum) {
+        if (
+          sourceId !== 'standing-source' ||
+          path !== 'Dependency.fixturelang' ||
+          standingBytes.byteLength > maximum
+        ) {
           throw new RangeError('standing document unavailable')
         }
         return standingBytes.slice()
@@ -327,9 +381,15 @@ describe('host-held MCP language session', () => {
     )
     const uri = 'modkit-source://fixture/Scripts/Standalone.fixturelang'
     try {
-      const session = await standingHost.openLanguageSession!({
+      const session = await openLanguageSession(standingHost, {
         documents: [
-          { uri, languageId: 'fixture-language', documentKind: 'fixture-source', version: 1, text: 'source' },
+          {
+            uri,
+            languageId: 'fixture-language',
+            documentKind: 'fixture-source',
+            version: 1,
+            text: 'source',
+          },
         ],
       })
       try {

@@ -1,11 +1,13 @@
 import { opendir, readFile, stat } from 'node:fs/promises'
-import { extname, join } from 'node:path'
-import { pathToFileURL } from 'node:url'
+import { extname, isAbsolute, join, relative, resolve } from 'node:path'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import type {
   LanguageProviderRoute,
   LanguageWorkspaceDocumentSource,
   LanguageWorkspaceDocumentSourceRequest,
 } from '@modkit/host/language'
+import { languageWorkspaceContextToken } from '@modkit/host/language'
+import type { LanguageDocument, LanguageWorkspaceDocumentOrigin } from '@modkit/sdk/language'
 
 export interface FilesystemLanguageDocumentSourceOptions {
   readonly roots: readonly string[]
@@ -15,14 +17,59 @@ export interface FilesystemLanguageDocumentSourceOptions {
   readonly maxVisitedEntries?: number
 }
 
+export interface FilesystemLanguageDocumentSource extends LanguageWorkspaceDocumentSource {
+  /** Identify an open file using the same overlay slots and precedence as filesystem snapshots. */
+  origin(document: LanguageDocument): LanguageWorkspaceDocumentOrigin | undefined
+}
+
 const ignoredDirectory = (name: string): boolean => name === '.git' || name === 'node_modules'
 
 export function createFilesystemLanguageDocumentSource(
   options: FilesystemLanguageDocumentSourceOptions,
-): LanguageWorkspaceDocumentSource {
+): FilesystemLanguageDocumentSource {
   const versions = new Map<string, { signature: string; version: number }>()
   const maxVisitedEntries = options.maxVisitedEntries ?? 16_384
+  const roots = options.roots.map(root => resolve(root))
+  const contextId = languageWorkspaceContextToken({
+    roots: roots.map(root => pathToFileURL(root).href),
+  })
+  const located = (path: string): { logicalId: string; precedence: number } | undefined => {
+    for (let precedence = roots.length - 1; precedence >= 0; precedence -= 1) {
+      const root = roots[precedence]
+      if (root === undefined) continue
+      const logicalPath = relative(root, path)
+      if (
+        logicalPath === '' ||
+        logicalPath === '..' ||
+        logicalPath.startsWith(`..${process.platform === 'win32' ? '\\' : '/'}`) ||
+        isAbsolute(logicalPath)
+      ) {
+        continue
+      }
+      return { logicalId: logicalPath.replaceAll('\\', '/'), precedence }
+    }
+    return undefined
+  }
   return Object.freeze({
+    origin(document: LanguageDocument) {
+      let path: string
+      try {
+        path = fileURLToPath(document.uri)
+      } catch {
+        return undefined
+      }
+      const location = located(resolve(path))
+      return location === undefined
+        ? undefined
+        : Object.freeze({
+            uri: document.uri,
+            layerId: `${contextId}:root:${location.precedence}`,
+            ...location,
+            sourceRevision: String(document.version),
+            readOnly: false,
+            overlay: true,
+          })
+    },
     async snapshot(request: LanguageWorkspaceDocumentSourceRequest) {
       request.signal.throwIfAborted()
       if (request.maxDocuments === 0) return { documents: Object.freeze([]), isComplete: false }
@@ -49,10 +96,10 @@ export function createFilesystemLanguageDocumentSource(
         request.document.uri,
         ...request.workspaceDocuments.map(document => document.uri),
       ])
-      const candidates: string[] = []
+      const candidates: { path: string; logicalId: string; precedence: number }[] = []
       let visited = 0
       let complete = true
-      const walk = async (directory: string): Promise<void> => {
+      const walk = async (directory: string, precedence: number): Promise<void> => {
         if (!complete && candidates.length >= request.maxDocuments) return
         request.signal.throwIfAborted()
         let handle
@@ -70,12 +117,23 @@ export function createFilesystemLanguageDocumentSource(
             return
           }
           const path = join(directory, entry.name)
-          if (entry.isDirectory() && !ignoredDirectory(entry.name)) await walk(path)
+          if (entry.isDirectory() && !ignoredDirectory(entry.name)) await walk(path, precedence)
           else if (entry.isFile()) {
             const extension = extname(entry.name).replace(/^\./u, '').toLowerCase()
             if (!uniqueLanguageByExtension.has(extension)) continue
             const uri = pathToFileURL(path).href
-            if (!openUris.has(uri)) candidates.push(path)
+            if (!openUris.has(uri)) {
+              const root = roots[precedence]
+              if (root === undefined) continue
+              const logicalPath = relative(root, path)
+              if (logicalPath !== '' && !logicalPath.startsWith('..') && !isAbsolute(logicalPath)) {
+                candidates.push({
+                  path,
+                  logicalId: logicalPath.replaceAll('\\', '/'),
+                  precedence,
+                })
+              }
+            }
             if (candidates.length > request.maxDocuments) {
               complete = false
               return
@@ -83,7 +141,7 @@ export function createFilesystemLanguageDocumentSource(
           }
         }
       }
-      for (const root of options.roots) await walk(root)
+      for (const [precedence, root] of roots.entries()) await walk(root, precedence)
       /*
        * The snapshot is bounded by bytes, so order decides what survives the budget. Documents of
        * the request's own language come first: a layout resolves its templates against other
@@ -93,23 +151,29 @@ export function createFilesystemLanguageDocumentSource(
        * Blizzard's core mod the scripts alphabetically precede the layouts and are nine megabytes.
        */
       const primaryLanguage = request.document.languageId
-      const languageOf = (path: string): string =>
-        uniqueLanguageByExtension.get(extname(path).replace(/^\./u, '').toLowerCase()) ?? ''
-      const byLanguage = new Map<string, string[]>()
-      for (const path of candidates.sort()) {
-        const language = languageOf(path)
-        byLanguage.set(language, [...(byLanguage.get(language) ?? []), path])
+      const languageOf = (candidate: (typeof candidates)[number]): string =>
+        uniqueLanguageByExtension.get(extname(candidate.path).replace(/^\./u, '').toLowerCase()) ??
+        ''
+      const byLanguage = new Map<string, typeof candidates>()
+      for (const candidate of candidates.sort((left, right) =>
+        left.path.localeCompare(right.path),
+      )) {
+        const language = languageOf(candidate)
+        byLanguage.set(language, [...(byLanguage.get(language) ?? []), candidate])
       }
       const ranked = byLanguage.get(primaryLanguage) ?? []
       const others = [...byLanguage.entries()]
         .filter(([language]) => language !== primaryLanguage)
         .map(([, paths]) => paths)
       for (let index = 0; others.some(paths => index < paths.length); index += 1)
-        for (const paths of others) if (index < paths.length) ranked.push(paths[index] as string)
+        for (const paths of others)
+          if (index < paths.length) ranked.push(paths[index] as (typeof candidates)[number])
       const documents = []
+      const documentOrigins: LanguageWorkspaceDocumentOrigin[] = []
       let totalBytes = 0
-      for (const path of ranked.slice(0, request.maxDocuments)) {
+      for (const candidate of ranked.slice(0, request.maxDocuments)) {
         request.signal.throwIfAborted()
+        const { path } = candidate
         const info = await stat(path)
         if (
           info.size > options.maxDocumentBytes ||
@@ -128,7 +192,7 @@ export function createFilesystemLanguageDocumentSource(
           continue
         }
         const uri = pathToFileURL(path).href
-        const signature = `${info.size}:${info.mtimeMs}`
+        const signature = languageWorkspaceContextToken(text)
         const previous = versions.get(uri)
         const version =
           previous === undefined
@@ -146,8 +210,47 @@ export function createFilesystemLanguageDocumentSource(
             text,
           }),
         )
+        documentOrigins.push(
+          Object.freeze({
+            uri,
+            layerId: `${contextId}:root:${candidate.precedence}`,
+            logicalId: candidate.logicalId,
+            precedence: candidate.precedence,
+            sourceRevision: signature,
+            readOnly: false,
+          }),
+        )
       }
-      return { documents: Object.freeze(documents), isComplete: complete }
+      const openOrigins = request.workspaceDocumentOrigins.filter(origin =>
+        origin.layerId.startsWith(`${contextId}:root:`),
+      )
+      const contextOrigins = Object.freeze([...openOrigins, ...documentOrigins])
+      return {
+        documents: Object.freeze(documents),
+        isComplete: complete,
+        workspaceContext: Object.freeze({
+          id: contextId,
+          revision: languageWorkspaceContextToken({
+            complete,
+            documents: contextOrigins.map(origin => ({
+              logicalId: origin.logicalId,
+              precedence: origin.precedence,
+              sourceRevision: origin.sourceRevision,
+            })),
+          }),
+          semanticComplete: complete,
+          documentOrigins: contextOrigins,
+          semanticInputs: Object.freeze([
+            Object.freeze({
+              kind: 'workspace-roots',
+              id: contextId,
+              revision: languageWorkspaceContextToken(
+                options.roots.map((root, precedence) => ({ root, precedence })),
+              ),
+            }),
+          ]),
+        }),
+      }
     },
   })
 }

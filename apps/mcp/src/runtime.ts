@@ -478,7 +478,7 @@ export class ModkitMcpRuntime {
         ),
       ),
       data: {
-        readOnly: this.host.editsEnabled !== true && this.host.invokeServiceOperation === undefined,
+        readOnly: this.host.editsEnabled !== true && this.host.effectfulServiceOperations !== true,
         edits: {
           enabled: this.host.editsEnabled === true,
           maxRetainedPlans: MCP_MAX_EDIT_PLANS,
@@ -501,6 +501,7 @@ export class ModkitMcpRuntime {
           'inventory',
           'capabilities',
           'open-subject',
+          'open-selection',
           'close-subject',
           'inspect',
           'list-subjects',
@@ -510,17 +511,27 @@ export class ModkitMcpRuntime {
           'subject-facts',
           'relation-graph',
           'subject-calculations',
+          'subject-edit-target',
+          'subject-isolation',
+          'subject-isolation-plan',
           'invoke-readonly',
           'propose-edit',
           'prepare-edit',
           ...(this.host.editsEnabled === true ? ['commit-edit', 'undo-edit', 'redo-edit'] : []),
           'edit-history',
           'discard-edit',
+          'release-output',
+          ...(this.host.openResolvedDataWorkspace === undefined
+            ? []
+            : ['open-resolved-workspace', 'propose-resolved-edit']),
           ...(this.host.serviceOperations === undefined ? [] : ['service-operations']),
           ...(this.host.invokeServiceOperation === undefined ? [] : ['invoke-service-operation']),
           'knowledge-search',
           'knowledge-resolve',
           ...(this.host.language === undefined ? [] : ['language']),
+          ...(this.host.openLanguageSession === undefined ? [] : [
+            'language-session-open', 'language-session-update', 'language-session-feature', 'language-session-close',
+          ]),
           ...(this.host.discoverInstallations === undefined ||
           this.host.openDiscovered === undefined
             ? []
@@ -690,7 +701,8 @@ export class ModkitMcpRuntime {
       if (opened.snapshot.state !== 'opened' || opened.session === undefined) {
         return envelope({
           snapshotId: `unresolved:${fingerprint([unresolvedIdentity])}`,
-          completeness: 'complete',
+          completeness: opened.snapshot.diagnostics.some(item => item.severity === 'error')
+            ? 'invalid' : 'complete',
           diagnostics: opened.snapshot.diagnostics,
           data: opened.snapshot,
         })
@@ -1245,7 +1257,7 @@ export class ModkitMcpRuntime {
       }
       const lease = await session.dataSource('common.view/subject-facts-source', 1)
       try {
-        return this.readFacts(entry.id, lease.value, query, scopedSignal)
+        return await this.readFacts(entry.id, lease.value, query, scopedSignal)
       } finally {
         await lease.release()
       }
@@ -1476,7 +1488,7 @@ export class ModkitMcpRuntime {
       }
       const lease = await session.dataSource('common.view/subject-calculations-source', 1)
       try {
-        return this.readCalculations(entry.id, lease.value, query, scopedSignal)
+        return await this.readCalculations(entry.id, lease.value, query, scopedSignal)
       } finally {
         await lease.release()
       }
@@ -1976,6 +1988,7 @@ export class ModkitMcpRuntime {
   ): Promise<McpEnvelope> {
     const retained = await this.retainedEditPlan(planHandle)
     signal.throwIfAborted()
+    retained.plan.prepared = undefined
     const prepared = await retained.editing.coordinator.prepare(retained.plan.plan, {
       grant: retained.editing.grantSnapshot,
       ...(confirmationToken === undefined ? {} : { confirmationToken }),
@@ -2145,7 +2158,10 @@ export class ModkitMcpRuntime {
         'This MCP host cannot open resolved-data workspaces.',
       )
     }
-    if (this.handles.size + this.entityHandles.size + this.resolvedWorkspaces.size >= MCP_MAX_OPEN_HANDLES) {
+    if (
+      this.handles.size + this.entityHandles.size + this.resolvedWorkspaces.size >=
+      MCP_MAX_OPEN_HANDLES
+    ) {
       throw new McpOperationError(
         'x3.mcp/handle-limit',
         `At most ${MCP_MAX_OPEN_HANDLES} subject handles may be open at once.`,
@@ -2273,7 +2289,12 @@ export class ModkitMcpRuntime {
         diagnostics: [
           { code: coded.code, message: String(coded.message ?? ''), severity: 'error' },
         ],
-        data: { state: 'refused', preview, context: (coded.context ?? null) as never, committed: false },
+        data: {
+          state: 'refused',
+          preview,
+          context: (coded.context ?? null) as never,
+          committed: false,
+        },
       })
     }
     const planHandle = randomUUID()
@@ -2342,6 +2363,7 @@ export class ModkitMcpRuntime {
         'This host does not publish persistent language sessions.',
       )
     }
+    const openLanguageSession = this.host.openLanguageSession.bind(this.host)
     const open = async (
       scopedSignal: AbortSignal,
       context?: McpLanguageSessionContext,
@@ -2354,7 +2376,7 @@ export class ModkitMcpRuntime {
       }
       this.languageSessionsOpening += 1
       try {
-        const session = await this.host.openLanguageSession!(request, scopedSignal, context)
+        const session = await openLanguageSession(request, scopedSignal, context)
         try {
           scopedSignal.throwIfAborted()
           const handle = randomUUID()
@@ -2410,6 +2432,9 @@ export class ModkitMcpRuntime {
       data: {
         sessionHandle: handle,
         workspaceIncomplete: session.workspaceIncomplete,
+        ...(result.workspaceContext === undefined
+          ? {}
+          : { workspaceContext: result.workspaceContext }),
         primaryUri: result.primaryUri,
         feature: result.feature,
         result: result.result ?? null,
@@ -2432,11 +2457,19 @@ export class ModkitMcpRuntime {
     const result = await session.invoke(request, signal)
     return envelope({
       snapshotId: result.snapshotId,
-      completeness: session.workspaceIncomplete ? 'partial' : 'complete',
+      completeness:
+        session.workspaceIncomplete ||
+        (typeof result.result === 'object' && result.result !== null &&
+          'isIncomplete' in result.result && result.result.isIncomplete === true) ||
+        result.workspaceContext?.semanticComplete === false
+          ? 'partial' : 'complete',
       diagnostics: result.diagnostics,
       data: {
         sessionHandle: handle,
         workspaceIncomplete: session.workspaceIncomplete,
+        ...(result.workspaceContext === undefined
+          ? {}
+          : { workspaceContext: result.workspaceContext }),
         primaryUri: result.primaryUri,
         feature: result.feature,
         result: result.result ?? null,

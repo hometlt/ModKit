@@ -81,6 +81,7 @@ const languageInput = z
     primaryIndex: z.number().int().min(0).max(31).default(0),
     feature: z.enum([
       'analyze',
+      'semantic-tokens',
       'completion',
       'hover',
       'signature-help',
@@ -89,6 +90,7 @@ const languageInput = z
       'prepare-rename',
       'rename',
       'formatting',
+      'on-type-formatting',
       'document-colors',
       'color-presentations',
       'code-actions',
@@ -97,6 +99,7 @@ const languageInput = z
       'diagnostics',
     ]),
     position: languagePositionSchema.optional(),
+    ch: z.string().length(1).optional(),
     includeDeclaration: z.boolean().optional(),
     newName: z.string().min(1).max(256).optional(),
     query: z.string().max(512).optional(),
@@ -143,6 +146,11 @@ const languageSessionDocument = z.union([
 const languageSessionOpenInput = z
   .object({
     documents: z.array(languageSessionDocument).min(1).max(32),
+    locales: z
+      .array(z.string().regex(/^[A-Za-z][A-Za-z0-9_-]{1,31}$/u))
+      .min(1)
+      .max(16)
+      .optional(),
     dependencySubjectHandle: handleSchema.optional(),
   })
   .strict()
@@ -529,6 +537,7 @@ export const encodeKnowledgeResourceTarget = (target: KnowledgeTarget): string =
 }
 
 const toolResult = (value: McpEnvelope): CallToolResult => ({
+  ...(value.completeness === 'invalid' ? { isError: true } : {}),
   content: [{ type: 'text', text: JSON.stringify(value) }],
   structuredContent: value,
 })
@@ -697,10 +706,13 @@ export function createModkitMcpServer(host: ModkitMcpHostPort): ModkitMcpServerR
       outputSchema: envelopeSchema,
       annotations: { ...readOnlyAnnotations, idempotentHint: false },
     },
-    ({ dependencySubjectHandle, documents }, context) =>
+    ({ dependencySubjectHandle, documents, locales }, context) =>
       safeTool(() =>
         runtime.openLanguageSession(
-          { documents } as McpLanguageSessionOpenRequest,
+          {
+            documents,
+            ...(locales === undefined ? {} : { locales }),
+          } as McpLanguageSessionOpenRequest,
           context.mcpReq.signal,
           dependencySubjectHandle,
         ),
@@ -1037,7 +1049,7 @@ export function createModkitMcpServer(host: ModkitMcpHostPort): ModkitMcpServerR
       /*
        * Annotated read-only, and that is not a technicality. The tool reads what a change would be;
        * a client that treats "may write" as "needs confirmation" should not prompt for a proposal,
-       * and should prompt for the commit that this adapter deliberately does not offer.
+       * and can treat the separately gated commit as the source-writing action.
        */
       annotations: { ...readOnlyAnnotations, idempotentHint: false },
     },

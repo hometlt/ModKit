@@ -84,29 +84,34 @@ const project = (value: unknown, state: ProjectionState, depth: number): McpJson
     return '[cycle omitted]'
   }
   state.seen.add(value)
-  if (Array.isArray(value)) {
-    if (value.length > MAX_PROJECTED_COLLECTION) state.capped = true
-    return value.slice(0, MAX_PROJECTED_COLLECTION).map(item => project(item, state, depth + 1))
-  }
-  const output = Object.create(null) as Record<string, McpJson>
-  let keys: readonly string[]
   try {
-    keys = Object.keys(value).sort().slice(0, MAX_PROJECTED_COLLECTION)
-    if (Object.keys(value).length > keys.length) state.capped = true
-  } catch {
-    state.capped = true
-    return '[unreadable object omitted]'
-  }
-  for (const key of keys) {
-    const safeKey = takeString(key, state)
+    if (Array.isArray(value)) {
+      if (value.length > MAX_PROJECTED_COLLECTION) state.capped = true
+      return value.slice(0, MAX_PROJECTED_COLLECTION).map(item => project(item, state, depth + 1))
+    }
+    const output = Object.create(null) as Record<string, McpJson>
+    let keys: readonly string[]
     try {
-      output[safeKey] = project((value as Record<string, unknown>)[key], state, depth + 1)
+      keys = Object.keys(value).sort().slice(0, MAX_PROJECTED_COLLECTION)
+      if (Object.keys(value).length > keys.length) state.capped = true
     } catch {
       state.capped = true
-      output[safeKey] = '[unreadable property omitted]'
+      return '[unreadable object omitted]'
     }
+    for (const key of keys) {
+      const safeKey = takeString(key, state)
+      try {
+        output[safeKey] = project((value as Record<string, unknown>)[key], state, depth + 1)
+      } catch {
+        state.capped = true
+        output[safeKey] = '[unreadable property omitted]'
+      }
+    }
+    return output
+  } finally {
+    // Only an ancestor is a cycle. Shared provenance in sibling facts is valid JSON.
+    state.seen.delete(value)
   }
-  return output
 }
 
 export interface BoundedProjection {

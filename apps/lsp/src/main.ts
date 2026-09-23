@@ -2,8 +2,14 @@
 
 import { realpath } from 'node:fs/promises'
 import { pathToFileURL } from 'node:url'
+import { compareUtf8 } from '@modkit/core'
+import type { AnyDescriptor } from '@modkit/sdk'
 import { composeLanguageDocumentSources, resolveContentLanguageSources } from '@modkit/host'
-import { createLanguageWorkspace, languageProviderRoutes } from '@modkit/host/language'
+import {
+  createLanguageWorkspace,
+  languageProviderRoutes,
+  languageWorkspaceContextToken,
+} from '@modkit/host/language'
 import {
   createModkit,
   loadContentSources,
@@ -71,6 +77,7 @@ export async function runModkitLsp(argv: readonly string[]) {
           throw error
         })
   const openedRoots: ModkitOpened[] = []
+  let openedSubjectDescriptors: AnyDescriptor[] = []
   const dependencySources = []
   if (contentSources !== undefined) {
     for (const root of roots) {
@@ -78,6 +85,13 @@ export async function runModkitLsp(argv: readonly string[]) {
       if (opened.session === undefined) continue
       openedRoots.push(opened)
     }
+    const openedRootSessions = openedRoots.map(opened => {
+      if (opened.session === undefined) throw new Error('opened root lost its subject session')
+      return opened.session
+    })
+    openedSubjectDescriptors = await Promise.all(
+      openedRootSessions.map(session => session.descriptor()),
+    )
     const projected = await resolveContentLanguageSources({
       contentSources,
       routes,
@@ -86,36 +100,57 @@ export async function runModkitLsp(argv: readonly string[]) {
         maxWorkspaceBytes: configuration.maxWorkspaceBytes,
         maxEntries: 65_536,
       },
-      subjects: await Promise.all(
-        openedRoots.map(async opened => ({
-          descriptor: await opened.session!.descriptor(),
-          operations: opened.session!.operations(),
-        })),
-      ),
+      subjects: openedRootSessions.map((session, index) => {
+        const descriptor = openedSubjectDescriptors[index]
+        if (descriptor === undefined) throw new Error('opened root descriptor is missing')
+        return { descriptor, operations: session.operations() }
+      }),
       standingMounts: true,
     })
     for (const item of projected.diagnostics)
       process.stderr.write(errorLine(item.code, item.message))
     dependencySources.push(...projected.sources)
   }
-  const documentSource = composeLanguageDocumentSources([
-    createFilesystemLanguageDocumentSource({
-      roots,
-      routes,
-      maxDocumentBytes: configuration.maxDocumentBytes,
-      maxWorkspaceBytes: configuration.maxWorkspaceBytes,
-    }),
-    ...dependencySources,
-  ])
+  const filesystemSource = createFilesystemLanguageDocumentSource({
+    roots,
+    routes,
+    maxDocumentBytes: configuration.maxDocumentBytes,
+    maxWorkspaceBytes: configuration.maxWorkspaceBytes,
+  })
+  const documentSource = composeLanguageDocumentSources([...dependencySources, filesystemSource])
   const workspace = createLanguageWorkspace({
     services: modkit.services,
     grant: { id: 'modkit.app.lsp/language', classes: ['read-source'] },
     budgets: LANGUAGE_BUDGET,
     ...(documentSource === undefined ? {} : { documentSource }),
+    semanticInputs: Object.freeze([
+      Object.freeze({
+        kind: 'locale-set',
+        id: `selected-game-locales:${configuration.locales.join(',')}`,
+        revision: languageWorkspaceContextToken(configuration.locales),
+      }),
+      ...(openedSubjectDescriptors.length === 0
+        ? []
+        : [
+            Object.freeze({
+              kind: 'subject-set',
+              id: languageWorkspaceContextToken(
+                openedSubjectDescriptors.map(item => item.subjectUri).sort(compareUtf8),
+              ),
+              revision: languageWorkspaceContextToken(
+                openedSubjectDescriptors
+                  .map(item => ({ subjectUri: item.subjectUri, revision: item.revision }))
+                  .sort((left, right) => compareUtf8(left.subjectUri, right.subjectUri)),
+              ),
+            }),
+          ]),
+    ]),
+    documentOrigin: document => filesystemSource.origin(document),
   })
   await workspace.initialize()
   const server = createModkitLanguageServer({
     workspace,
+    routes,
     roots,
     maxDocuments: configuration.maxDocuments,
     maxDocumentBytes: configuration.maxDocumentBytes,

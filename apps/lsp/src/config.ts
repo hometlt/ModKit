@@ -7,6 +7,8 @@ export interface ModkitLspConfiguration {
   readonly maxDocuments: number
   readonly maxDocumentBytes: number
   readonly maxWorkspaceBytes: number
+  /** Ordered game-data locales that affect localized semantic answers. */
+  readonly locales: readonly string[]
   /** Trusted content-source module configuration; packed dependencies resolve through it. */
   readonly contentSourceConfig?: string
   readonly contentSourceStorage?: string
@@ -38,6 +40,7 @@ export function modkitLspUsage(): string {
     '  --max-documents <count>       Semantic snapshot limit (default 64, maximum 256)',
     '  --max-document-bytes <bytes>  Per-file UTF-8 limit (default 4194304)',
     '  --max-workspace-bytes <bytes> Snapshot UTF-8 limit (default 67108864)',
+    '  --locale <id>                 Repeatable game-data locale (default enUS)',
     '  --content-source-config <path>  Trusted content-source JSON; resolves packed dependencies',
     '  --content-source-storage <path> Cache/state directory for that content source',
     '  --help                        Print this text',
@@ -58,6 +61,7 @@ export function parseModkitLspConfiguration(argv: readonly string[]): ModkitLspC
    * outside the snapshot and a reference search answered with the catalog alone.
    */
   let maxWorkspaceBytes = 67_108_864
+  const locales: string[] = []
   let contentSourceConfig: string | undefined
   let contentSourceStorage: string | undefined
   for (let index = 0; index < argv.length; index += 1) {
@@ -85,6 +89,12 @@ export function parseModkitLspConfiguration(argv: readonly string[]): ModkitLspC
         break
       case '--max-workspace-bytes':
         maxWorkspaceBytes = positiveInteger(value, option)
+        break
+      case '--locale':
+        if (!/^[A-Za-z][A-Za-z0-9_-]{1,31}$/u.test(value)) {
+          throw new ConfigurationError('--locale needs a bounded locale identifier')
+        }
+        locales.push(value)
         break
       case '--content-source-config':
         contentSourceConfig = absolute(value, option)
@@ -114,6 +124,7 @@ export function parseModkitLspConfiguration(argv: readonly string[]): ModkitLspC
     maxDocuments,
     maxDocumentBytes,
     maxWorkspaceBytes,
+    locales: Object.freeze(locales.length === 0 ? ['enUS'] : [...new Set(locales)]),
     ...(contentSourceConfig === undefined || contentSourceStorage === undefined
       ? {}
       : { contentSourceConfig, contentSourceStorage }),

@@ -6,15 +6,19 @@ import type {
   LanguageWorkspaceCapability,
   LanguageWorkspaceCapabilitySet,
   LanguageWorkspacePositionRequest,
-  LanguageWorkspaceAnalysisResult,
   LanguageWorkspaceDocumentRequest,
   LanguageWorkspaceRenameRequest,
   LanguageWorkspaceReferencesRequest,
   LanguageWorkspaceFormattingRequest,
+  LanguageWorkspaceOnTypeFormattingRequest,
   LanguageWorkspaceColorPresentationRequest,
   LanguageWorkspaceCodeActionsRequest,
   LanguageWorkspaceSymbolsRequest,
   LanguageWorkspace,
+} from '@modkit/host/language'
+import {
+  languageProviderTriggerCharacters,
+  type LanguageProviderRoute,
 } from '@modkit/host/language'
 import type {
   LanguageCodeAction,
@@ -48,10 +52,10 @@ import {
   type Diagnostic,
   type DocumentDiagnosticReport,
   type DocumentFormattingParams,
+  type DocumentOnTypeFormattingParams,
   type InitializeResult,
   type Location,
   type Position,
-  type Range,
   type SemanticTokens,
   type SemanticTokensDelta,
   type SemanticTokensDeltaParams,
@@ -194,6 +198,7 @@ const withSignal = async <T>(
 
 export interface ModkitLanguageServerOptions {
   readonly workspace: LanguageWorkspace
+  readonly routes: readonly LanguageProviderRoute[]
   readonly roots: readonly string[]
   readonly maxDocuments: number
   readonly maxDocumentBytes: number
@@ -215,7 +220,7 @@ export function createModkitLanguageServer(
     options.connection ?? createConnection(ProposedFeatures.all, process.stdin, process.stdout)
   const documents = new TextDocuments(TextDocument)
   const acceptedDocuments = new Map<string, TextDocument>()
-  const pending = new Map<string, Promise<void>>()
+  let pending: Promise<void> = Promise.resolve()
   const workspaceUris = new Set<string>()
   const diagnosticSnapshots = new Map<
     string,
@@ -235,6 +240,18 @@ export function createModkitLanguageServer(
   const encoder = new TextEncoder()
   let supportsDynamicWatchedFiles = false
   let shutDown = false
+  const completionTriggerCharacters = languageProviderTriggerCharacters(
+    options.routes,
+    'completion',
+  )
+  const signatureHelpTriggerCharacters = languageProviderTriggerCharacters(
+    options.routes,
+    'signatureHelp',
+  )
+  const onTypeFormattingTriggerCharacters = languageProviderTriggerCharacters(
+    options.routes,
+    'onTypeFormatting',
+  )
 
   const fileInsideRoots = (uri: string): boolean => {
     let parsed: URL
@@ -307,10 +324,7 @@ export function createModkitLanguageServer(
    * answered a cross-file definition from a workspace that did not yet contain the other file — an
    * empty result indistinguishable from "no definition".
    */
-  const awaitReady = async (uri: string): Promise<void> => {
-    await pending.get(uri)
-    await Promise.all(pending.values())
-  }
+  const awaitReady = async (): Promise<void> => pending
   /**
    * A method the selected provider does not implement is an explicit error, never an empty
    * success: an empty answer would claim "no references" where the truth is "not supported".
@@ -320,7 +334,7 @@ export function createModkitLanguageServer(
     feature: LanguageWorkspaceCapability,
     signal: AbortSignal,
   ): Promise<void> => {
-    await awaitReady(uri)
+    await awaitReady()
     const capabilities = await options.workspace.capabilities(uri, signal)
     if (capabilities === undefined && acceptedDocuments.has(uri)) {
       throw new ResponseError(
@@ -431,26 +445,24 @@ export function createModkitLanguageServer(
       feature?.diagnostics.map(diagnosticOf) ?? result.analysis.diagnostics.map(diagnosticOf),
     )
   }
-  const schedule = (document: TextDocument, mode: 'open' | 'change' | 'refresh'): void => {
-    const previous = pending.get(document.uri)
-    const task = (async () => {
-      await previous
-      await publish(document, mode)
-    })()
-      .catch(error => {
+  const enqueue = (operation: () => Promise<void>): void => {
+    if (shutDown) return
+    // Every mutation invalidates shared language state, including other documents' analyses.
+    pending = pending.then(operation).catch(error => {
         connection.console.error(error instanceof Error ? error.message : String(error))
       })
-      .finally(() => {
-        if (pending.get(document.uri) === task) pending.delete(document.uri)
-      })
-    pending.set(document.uri, task)
+  }
+  const schedule = (document: TextDocument, mode: 'open' | 'change' | 'refresh'): void => {
+    // TextDocuments mutates its instances in place on the next notification.
+    const snapshot = TextDocument.create(document.uri, document.languageId, document.version, document.getText())
+    enqueue(() => publish(snapshot, mode))
   }
 
   const semanticTokensFor = async (
     uri: string,
     signal: AbortSignal,
   ): Promise<SemanticTokens & { readonly resultId: string }> => {
-    await awaitReady(uri)
+    await awaitReady()
     const current = await options.workspace.current(uri, signal)
     const document = acceptedDocuments.get(uri)
     const data: number[] = []
@@ -505,6 +517,7 @@ export function createModkitLanguageServer(
     return { resultId: snapshot.resultId, data: [...snapshot.data] }
   }
 
+  const firstOnTypeFormattingTriggerCharacter = onTypeFormattingTriggerCharacters[0]
   connection.onInitialize(params => {
     supportsDynamicWatchedFiles =
       params.capabilities.workspace?.didChangeWatchedFiles?.dynamicRegistration === true
@@ -515,13 +528,21 @@ export function createModkitLanguageServer(
           change: TextDocumentSyncKind.Incremental,
           save: { includeText: true },
         },
-        completionProvider: { triggerCharacters: ['.', ':', '"', "'"] },
+        completionProvider: { triggerCharacters: [...completionTriggerCharacters] },
         hoverProvider: true,
-        signatureHelpProvider: { triggerCharacters: ['(', ','] },
+        signatureHelpProvider: { triggerCharacters: [...signatureHelpTriggerCharacters] },
         definitionProvider: true,
         referencesProvider: true,
         renameProvider: { prepareProvider: true },
         documentFormattingProvider: true,
+        ...(firstOnTypeFormattingTriggerCharacter === undefined
+          ? {}
+          : {
+              documentOnTypeFormattingProvider: {
+                firstTriggerCharacter: firstOnTypeFormattingTriggerCharacter,
+                moreTriggerCharacter: onTypeFormattingTriggerCharacters.slice(1),
+              },
+            }),
         colorProvider: true,
         codeActionProvider: true,
         documentSymbolProvider: true,
@@ -535,7 +556,20 @@ export function createModkitLanguageServer(
           interFileDependencies: true,
           workspaceDiagnostics: true,
         },
-        experimental: { modkitLanguageCapabilities: { version: 1 } },
+        experimental: {
+          modkitLanguageCapabilities: {
+            version: 1,
+            ...(onTypeFormattingTriggerCharacters.length === 0
+              ? {}
+              : {
+                  onTypeEdit: {
+                    requestMethod: 'modkit/onTypeEdit',
+                    cursor: true,
+                    requestCompletion: true,
+                  },
+                }),
+          },
+        },
       },
     } satisfies InitializeResult
   })
@@ -550,7 +584,7 @@ export function createModkitLanguageServer(
   connection.languages.diagnostics.on(async (params, token): Promise<DocumentDiagnosticReport> =>
     withSignal(token, async signal => {
       signal.throwIfAborted()
-      await awaitReady(params.textDocument.uri)
+      await awaitReady()
       signal.throwIfAborted()
       const snapshot = diagnosticSnapshots.get(params.textDocument.uri)
       if (snapshot === undefined) return { kind: 'full', items: [] }
@@ -571,13 +605,14 @@ export function createModkitLanguageServer(
       token: CancellationToken,
     ): Promise<WorkspaceDiagnosticReport> =>
       withSignal(token, async signal => {
+        await awaitReady()
         const previous = new Map(params.previousResultIds.map(item => [item.uri, item.value]))
         const items = []
         for (const document of [...acceptedDocuments.values()].sort((a, b) =>
           a.uri.localeCompare(b.uri),
         )) {
           signal.throwIfAborted()
-          await awaitReady(document.uri)
+          await awaitReady()
           signal.throwIfAborted()
           const snapshot = diagnosticSnapshots.get(document.uri)
           if (snapshot === undefined) continue
@@ -612,7 +647,7 @@ export function createModkitLanguageServer(
         if (typeof uri !== 'string' || uri.length === 0) {
           throw new TypeError('modkit/languageCapabilities needs a textDocument URI')
         }
-        await awaitReady(uri)
+        await awaitReady()
         return (await options.workspace.capabilities(uri, signal)) ?? null
       }),
   )
@@ -754,6 +789,45 @@ export function createModkitLanguageServer(
       return value?.edits.map(edit => TextEdit.replace(edit.range, edit.newText)) ?? null
     }),
   )
+  connection.onDocumentOnTypeFormatting((params: DocumentOnTypeFormattingParams, token) =>
+    withSignal(token, async signal => {
+      await requireFeature(params.textDocument.uri, 'on-type-formatting', signal)
+      const value = await options.workspace.onTypeFormatting({
+        ...positionRequest(params.textDocument.uri, params.position, signal),
+        ch: params.ch,
+        options: {
+          tabSize: params.options.tabSize,
+          insertSpaces: params.options.insertSpaces,
+          ...(params.options.insertFinalNewline === undefined
+            ? {}
+            : { finalNewline: params.options.insertFinalNewline }),
+        },
+      } satisfies LanguageWorkspaceOnTypeFormattingRequest)
+      return value?.edits.map(edit => TextEdit.replace(edit.range, edit.newText)) ?? null
+    }),
+  )
+  // Standard LSP can return only edits. Clients that read the advertised experimental capability
+  // use this request to preserve the post-edit caret and completion request as one Modkit action.
+  connection.onRequest(
+    'modkit/onTypeEdit',
+    (params: DocumentOnTypeFormattingParams, token: CancellationToken) =>
+      withSignal(token, async signal => {
+        await requireFeature(params.textDocument.uri, 'on-type-formatting', signal)
+        return (
+          (await options.workspace.onTypeFormatting({
+            ...positionRequest(params.textDocument.uri, params.position, signal),
+            ch: params.ch,
+            options: {
+              tabSize: params.options.tabSize,
+              insertSpaces: params.options.insertSpaces,
+              ...(params.options.insertFinalNewline === undefined
+                ? {}
+                : { finalNewline: params.options.insertFinalNewline }),
+            },
+          } satisfies LanguageWorkspaceOnTypeFormattingRequest)) ?? null
+        )
+      }),
+  )
   connection.onDocumentColor((params, token) =>
     withSignal(token, async signal => {
       await requireFeature(params.textDocument.uri, 'document-colors', signal)
@@ -810,7 +884,7 @@ export function createModkitLanguageServer(
   )
   connection.onDocumentSymbol((params, token) =>
     withSignal(token, async signal => {
-      await awaitReady(params.textDocument.uri)
+      await awaitReady()
       const value = await options.workspace.documentSymbols(
         request(params.textDocument.uri, signal),
       )
@@ -819,6 +893,7 @@ export function createModkitLanguageServer(
   )
   connection.onWorkspaceSymbol(async (params, token) =>
     withSignal(token, async signal => {
+      await awaitReady()
       // One query per open language: each provider answers only for its own documents.
       const byLanguage = new Map<string, string>()
       for (const document of [...acceptedDocuments.values()].sort((a, b) =>
@@ -830,7 +905,7 @@ export function createModkitLanguageServer(
       const seen = new Set<string>()
       let supported = byLanguage.size === 0
       for (const uri of byLanguage.values()) {
-        await awaitReady(uri)
+        await awaitReady()
         const capabilities = await options.workspace.capabilities(uri, signal)
         if (capabilities?.features.includes('workspace-symbols') !== true) continue
         supported = true
@@ -896,21 +971,21 @@ export function createModkitLanguageServer(
     for (const document of documents.all()) schedule(document, 'refresh')
   })
   documents.onDidClose(event => {
-    const previous = pending.get(event.document.uri)
-    pending.delete(event.document.uri)
-    void (async () => {
-      await previous
-      if (workspaceUris.delete(event.document.uri))
-        await options.workspace.close(event.document.uri)
-    })().finally(() => {
-      acceptedDocuments.delete(event.document.uri)
-      diagnosticSnapshots.delete(event.document.uri)
-      semanticTokenSnapshots.delete(event.document.uri)
-      connection.sendDiagnostics({ uri: event.document.uri, diagnostics: [] })
+    const uri = event.document.uri
+    enqueue(async () => {
+      try {
+        if (workspaceUris.delete(uri)) await options.workspace.close(uri)
+      } finally {
+        acceptedDocuments.delete(uri)
+        diagnosticSnapshots.delete(uri)
+        semanticTokenSnapshots.delete(uri)
+        connection.sendDiagnostics({ uri, diagnostics: [] })
+      }
     })
   })
   connection.onShutdown(async () => {
     shutDown = true
+    await awaitReady()
     await options.workspace.shutdown()
     return undefined
   })
@@ -925,6 +1000,8 @@ export function createModkitLanguageServer(
       connection.listen()
     },
     async close(): Promise<void> {
+      shutDown = true
+      await awaitReady()
       await options.workspace.shutdown()
       connection.dispose()
     },

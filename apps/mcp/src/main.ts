@@ -10,7 +10,9 @@ import { ConfigurationError, modkitMcpUsage, parseModkitMcpConfiguration } from 
 import { createHostMcpPort, type ModkitMcpHostPort } from './host-port.js'
 import { createModkitMcpServer, type ModkitMcpServerRuntime } from './server.js'
 
-const MAX_STDIO_MESSAGE_BYTES = 1024 * 1024
+// A language session admits 16 MiB of text; JSON can encode one byte as six (\uXXXX).
+// Leave bounded room for the document metadata and JSON-RPC envelope as well.
+const MAX_STDIO_MESSAGE_BYTES = 6 * 16_777_216 + 1_048_576
 
 export interface RunningModkitMcp {
   readonly handle: StdioServerHandle

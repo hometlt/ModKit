@@ -761,7 +761,7 @@ function fakeHost(
             async releasePlan() {
               editInvocations.push('release-plan')
             },
-            async dispose() {},
+            dispose: () => Promise.resolve(),
           } as never)
         : undefined
       return {
@@ -882,18 +882,22 @@ describe('MCP configuration', () => {
 
   it('requires paired absolute content source configuration', () => {
     const common = ['--root', 'C:\\one', '--extension', 'C:\\ext']
-    expect(() => parseModkitMcpConfiguration([
-      ...common,
-      '--content-source-config',
-      'C:\\config\\provider.json',
-    ], {})).toThrow(/supplied together/u)
-    const config = parseModkitMcpConfiguration([
-      ...common,
-      '--content-source-config',
-      'C:\\config\\provider.json',
-      '--content-source-storage',
-      'C:\\cache\\modkit',
-    ], {})
+    expect(() =>
+      parseModkitMcpConfiguration(
+        [...common, '--content-source-config', 'C:\\config\\provider.json'],
+        {},
+      ),
+    ).toThrow(/supplied together/u)
+    const config = parseModkitMcpConfiguration(
+      [
+        ...common,
+        '--content-source-config',
+        'C:\\config\\provider.json',
+        '--content-source-storage',
+        'C:\\cache\\modkit',
+      ],
+      {},
+    )
     expect(config).toMatchObject({
       contentSourceConfig: resolve('C:\\config\\provider.json'),
       contentSourceStorage: resolve('C:\\cache\\modkit'),
@@ -901,7 +905,150 @@ describe('MCP configuration', () => {
   })
 })
 
+describe('MCP adapter lease and preparation regressions', () => {
+  it('marks an unresolved open with host errors as a tool failure', async () => {
+    const fake = fakeHost()
+    const { client } = await connected({
+      ...fake.host,
+      open: async () =>
+        ({
+          snapshot: {
+            state: 'unresolved',
+            reason: 'input-unresolved',
+            candidates: [],
+            diagnostics: [
+              {
+                severity: 'error',
+                code: 'x3.host/artifact-digest-mismatch',
+                message: 'Artifact changed.',
+              },
+            ],
+          },
+          close: () => Promise.resolve(),
+        }) as McpOpenedSubject,
+    })
+    const response = await client.callTool({
+      name: 'modkit.open_subject',
+      arguments: { path: 'C:/allowed/fixture' },
+    })
+    expect(response.isError).toBe(true)
+    expect(structured(response).completeness).toBe('invalid')
+  })
+
+  it.each([
+    ['modkit.subject_facts', { view: 'groups', limit: 20 }],
+    ['modkit.subject_calculations', { view: 'calculations', limit: 20 }],
+  ] as const)('keeps the source lease alive through %s', async (tool, query) => {
+    const fake = fakeHost()
+    const { client } = await connected({
+      ...fake.host,
+      async open(...args) {
+        const opened = await fake.host.open(...args)
+        const session = opened.session
+        if (session === undefined) throw new Error('fixture did not expose a data session')
+        return {
+          ...opened,
+          session: {
+            ...session,
+            dataSource: (async (contract, major) => {
+              const lease = await session.dataSource(contract, major)
+              let released = false
+              return {
+                value: new Proxy(lease.value, {
+                  get(target, key) {
+                    if (key !== 'summary') return Reflect.get(target, key)
+                    return async (...input: unknown[]) => {
+                      await new Promise(resolve => setTimeout(resolve, 0))
+                      expect(released).toBe(false)
+                      return Reflect.apply(Reflect.get(target, key), target, input)
+                    }
+                  },
+                }),
+                release: async () => {
+                  released = true
+                  await lease.release()
+                },
+              }
+            }) as AssetSession['dataSource'],
+          },
+        }
+      },
+    })
+    const opened = structured(
+      await client.callTool({
+        name: 'modkit.open_subject',
+        arguments: { path: 'C:/allowed/fixture' },
+      }),
+    )
+    const response = await client.callTool({
+      name: tool,
+      arguments: { handle: handleFrom(opened), ...query },
+    })
+    expect(response.isError).not.toBe(true)
+    expect(structured(response).completeness).toBe('complete')
+  })
+
+  it('invalidates a previous preparation when revalidation rejects the plan', async () => {
+    const fake = fakeHost({ withEditing: true, editsEnabled: true })
+    let preparations = 0
+    const { client } = await connected({
+      ...fake.host,
+      async open(...args) {
+        const opened = await fake.host.open(...args)
+        const editing = opened.editing
+        if (editing === undefined) throw new Error('fixture did not expose editing')
+        return {
+          ...opened,
+          editing: {
+            ...editing,
+            coordinator: {
+              ...editing.coordinator,
+              prepare: (async (...input) =>
+                ++preparations === 1
+                  ? editing.coordinator.prepare(...input)
+                  : { state: 'rejected', diagnostics: [] }) as typeof editing.coordinator.prepare,
+            },
+          },
+        }
+      },
+    })
+    const opened = structured(
+      await client.callTool({
+        name: 'modkit.open_subject',
+        arguments: { path: 'C:/allowed/fixture' },
+      }),
+    )
+    const proposal = structured(
+      await client.callTool({
+        name: 'modkit.propose_edit',
+        arguments: {
+          handle: handleFrom(opened),
+          operationId: 'fixture/write',
+          input: {},
+        },
+      }),
+    )
+    const planHandle = (proposal.data as { planHandle: string }).planHandle
+    await client.callTool({ name: 'modkit.prepare_edit', arguments: { planHandle } })
+    const rejected = await client.callTool({
+      name: 'modkit.prepare_edit',
+      arguments: { planHandle },
+    })
+    expect(rejected.isError).toBe(true)
+    const commit = await client.callTool({ name: 'modkit.commit_edit', arguments: { planHandle } })
+    expect(commit.isError).toBe(true)
+    expect(structured(commit).diagnostics[0]?.code).toBe('x3.mcp/edit-not-prepared')
+    expect(fake.editInvocations()).not.toContain('commit')
+  })
+})
+
 describe('bounded protocol projection', () => {
+  it('preserves shared provenance without treating sibling references as cycles', () => {
+    const provenance = [{ label: 'dependency', semanticPath: ['LifeMax'] }]
+    const value = { inputs: [{ provenance }], provenance }
+    expect(boundedJson(value)).toEqual({ value, capped: false })
+  })
+
   it('caps cycles and oversized text before serialization', () => {
     const cyclic: { self?: unknown; text: string } = { text: 'x'.repeat(2_000_000) }
     cyclic.self = cyclic
@@ -1169,10 +1316,12 @@ describe('MCP v2 adapter', () => {
     const fake = fakeHost({ withLanguageSession: true })
     const { client } = await connected(fake.host)
     const uri = 'modkit-source://workspace/Scripts/Main.galaxy'
-    const subject = structured(await client.callTool({
-      name: 'modkit.open_subject',
-      arguments: { path: 'C:\\allowed\\fixture' },
-    }))
+    const subject = structured(
+      await client.callTool({
+        name: 'modkit.open_subject',
+        arguments: { path: 'C:\\allowed\\fixture' },
+      }),
+    )
     const opened = structured(
       await client.callTool({
         name: 'modkit.language_session_open',
@@ -1966,7 +2115,7 @@ describe('MCP v2 adapter', () => {
       },
     })
     const result = structured(response)
-    expect(response.isError).not.toBe(true)
+    expect(response.isError).toBe(true)
     expect(result.completeness).toBe('invalid')
     expect(result.diagnostics[0]?.code).toBe('fixture/dependency-required')
     expect(result.provenance).toHaveLength(2)

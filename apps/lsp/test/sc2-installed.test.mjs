@@ -25,7 +25,7 @@ const extension = resolve(
 const MAIN = 'include "Lib"\nvoid Init() {\n    int x = Helper(2);\n}\n'
 const LIB = 'int Helper(int amount) {\n    return amount;\n}\n'
 const DATA =
-  '<?xml version="1.0" encoding="utf-8"?>\n<Catalog>\n    <CUnit id="Marine">\n' +
+  '<?xml version="1.0" encoding="utf-8"?>\n<Catalog>\n    <\n    <CUnit id="Marine">\n' +
   '        <LifeMax value="45"/>\n    </CUnit>\n    <CUnit id="Hero" parent="Marine"/>\n</Catalog>\n'
 const STRINGS = 'Unit/Name/Marine=Marine\nUnit/Name/Hero=Hero\n'
 
@@ -86,6 +86,13 @@ test(
       ]) {
         assert.ok(initialized.capabilities[provider], `missing ${provider}`)
       }
+      for (const trigger of ['<', '"', ' ', '=', ',', ';', '.', '/', '@']) {
+        assert.ok(
+          initialized.capabilities.completionProvider.triggerCharacters.includes(trigger),
+          `missing completion trigger ${JSON.stringify(trigger)}`,
+        )
+      }
+      assert.deepEqual(initialized.capabilities.signatureHelpProvider.triggerCharacters, ['(', ','])
       server.notify('initialized', {})
 
       // Galaxy: only MapScript is opened; Lib.galaxy comes from the host workspace snapshot.
@@ -130,22 +137,27 @@ test(
       open('lib', 'galaxy', LIB)
       open('data', 'sc2-data', DATA)
       open('strings', 'sc2-strings', STRINGS)
-      const dataHover = await ok('textDocument/hover', at('data', 3, 10))
+      const dataRootCompletion = await ok('textDocument/completion', at('data', 2, 5))
+      assert.deepEqual(
+        dataRootCompletion.items.map(item => item.label),
+        ['CUnit', 'CUnitHero', 'const'],
+      )
+      const dataHover = await ok('textDocument/hover', at('data', 4, 10))
       assert.match(dataHover.contents.value, /LifeMax/u)
-      const parent = await ok('textDocument/definition', at('data', 5, 30))
+      const parent = await ok('textDocument/definition', at('data', 6, 30))
       assert.deepEqual(
         parent.map(item => [item.uri, item.range.start.line]),
-        [[uri('data'), 2]],
+        [[uri('data'), 3]],
       )
       const dataReferences = await ok('textDocument/references', {
-        ...at('data', 2, 19),
+        ...at('data', 3, 19),
         context: { includeDeclaration: true },
       })
       assert.equal(dataReferences.length, 2)
-      const fields = await ok('textDocument/completion', at('data', 3, 9))
+      const fields = await ok('textDocument/completion', at('data', 4, 9))
       assert.ok(fields.items.length > 0)
       const dataRename = await ok('textDocument/rename', {
-        ...at('data', 2, 19),
+        ...at('data', 3, 19),
         newName: 'Trooper',
       })
       assert.equal(dataRename.documentChanges.length, 1)
