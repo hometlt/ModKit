@@ -208,6 +208,11 @@
       "icon": "$(cloud-download)"
     },
     {
+      "command": "modkit.sources.editCopy",
+      "title": "%command.editCopySource%",
+      "icon": "$(edit)"
+    },
+    {
       "command": "modkit.sources.open",
       "title": "%command.openContentSource%",
       "icon": "$(plug)"
@@ -591,6 +596,11 @@
         "command": "modkit.sources.download",
         "when": "view == modkit.sources && viewItem == modkitSource.publication.notCached",
         "group": "inline@1"
+      },
+      {
+        "command": "modkit.sources.editCopy",
+        "when": "view == modkit.sources && viewItem =~ /^modkitSource\\.publication\\./",
+        "group": "inline@4"
       },
       {
         "command": "modkit.sources.open",

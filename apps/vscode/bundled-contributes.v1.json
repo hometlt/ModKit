@@ -167,6 +167,11 @@
       "icon": "$(folder)"
     },
     {
+      "command": "modkit.sources.editCopy",
+      "title": "%command.editCopySource%",
+      "icon": "$(edit)"
+    },
+    {
       "command": "modkit.showDiagnostics",
       "title": "%command.showDiagnostics%"
     },
@@ -728,6 +733,11 @@
         "command": "modkit.sources.detach",
         "when": "view == modkit.sources && viewItem =~ /^modkitSource\\.publication\\./",
         "group": "inline@3"
+      },
+      {
+        "command": "modkit.sources.editCopy",
+        "when": "view == modkit.sources && viewItem =~ /^modkitSource\\.publication\\./",
+        "group": "inline@4"
       },
       {
         "command": "modkit.sources.signIn",

@@ -127,6 +127,7 @@ import {
   OPERATION_OUTPUT_SCHEME,
 } from './operation-output.js'
 import { CustomDocumentState } from './custom-document.js'
+import { formatPublicationVersion, nextPublicationVersion } from './publication-revision.js'
 import {
   createExtensionCardCatalog,
   extensionCardBundle,
@@ -219,7 +220,12 @@ import {
 } from './workbench-workflows.js'
 import { createSourceTree, type SourceTreeNode } from './source-tree.js'
 import { runExplicitGameLaunch, VSCODE_GAME_LAUNCH_COMMAND } from './game-launch-workflow.js'
-import { planEditorAssociations, type AssociationPlan } from './editor-associations.js'
+import {
+  anchorAssociationPattern,
+  associationPattern,
+  planEditorAssociations,
+  type AssociationPlan,
+} from './editor-associations.js'
 import { createPhaseLog } from './timing.js'
 import { createViewerStatusBar } from './viewer-status.js'
 import {
@@ -1350,7 +1356,14 @@ class SourcesView implements vscode.TreeDataProvider<SourceTreeNode>, vscode.Dis
     }[] = () => [],
     private readonly listPublications: (
       sourceId: string,
-    ) => Promise<readonly { readonly name: string; readonly cached: boolean }[]> = async () => [],
+    ) => Promise<
+      readonly {
+        readonly name: string
+        readonly cached: boolean
+        /** Present only when this window holds a working copy of that publication. */
+        readonly copy?: 'clean' | 'edited'
+      }[]
+    > = async () => [],
     private readonly rememberedRoots: () => readonly {
       readonly id: string
       readonly label: string
@@ -1399,7 +1412,9 @@ class SourcesView implements vscode.TreeDataProvider<SourceTreeNode>, vscode.Dis
       item.collapsibleState = vscode.TreeItemCollapsibleState.None
       item.command = {
         command: node.cached === true ? 'modkit.sources.revealLocal' : 'modkit.sources.download',
-        title: this.localizer.text(node.cached === true ? 'vscode.sources.reveal' : 'vscode.sources.download'),
+        title: this.localizer.text(
+          node.cached === true ? 'vscode.sources.reveal' : 'vscode.sources.download',
+        ),
         arguments: [node],
       }
     } else if (node.offlineAccount !== undefined) {
@@ -1461,7 +1476,17 @@ class SourcesView implements vscode.TreeDataProvider<SourceTreeNode>, vscode.Dis
           kind: 'publication' as const,
           id: `publication:${sourceId}:${row.name}`,
           label: row.name,
-          icon: row.cached ? 'package' : 'cloud',
+          // A working copy is the most useful thing the row can say, so it takes the icon. The
+          // context value stays `cached`/`notCached`: the menus are keyed on exactly those two,
+          // and a third value would silently take every button off an edited row.
+          icon: row.copy === 'edited' ? 'edit' : row.cached ? 'package' : 'cloud',
+          ...(row.copy === undefined
+            ? {}
+            : {
+                description: this.localizer.text(
+                  row.copy === 'edited' ? 'vscode.sources.copyEdited' : 'vscode.sources.copyClean',
+                ),
+              }),
           contextValue: `modkitSource.publication.${row.cached ? 'cached' : 'notCached'}`,
           sourceId,
           cached: row.cached,
@@ -2555,7 +2580,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       item !== null &&
       typeof (item as { region?: unknown }).region === 'string' &&
       typeof (item as { accountId?: unknown }).accountId === 'string'
-        ? [{ region: (item as { region: string }).region, accountId: (item as { accountId: string }).accountId }]
+        ? [
+            {
+              region: (item as { region: string }).region,
+              accountId: (item as { accountId: string }).accountId,
+            },
+          ]
         : [],
     )
   }
@@ -2576,8 +2606,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     const kept = await context.secrets.get(key)
     const run = async (ticket?: string) =>
       (await callContentSources(source, 'connect', [region, accountId, ticket])) as
-        | { ticket?: string }
-        | undefined
+        { ticket?: string } | undefined
     let result: { ticket?: string } | undefined
     try {
       result = await run(kept)
@@ -2595,7 +2624,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     const snapshot = await source.snapshot()
     await context.globalState.update(
       BATTLENET_CONNECTIONS_KEY,
-      (snapshot.connections ?? []).map(item => ({ region: item.region, accountId: item.accountId })),
+      (snapshot.connections ?? []).map(item => ({
+        region: item.region,
+        accountId: item.accountId,
+      })),
     )
   }
   /** A row action arrives as the Explorer's URI; anything else is not a content-source row. */
@@ -2608,7 +2640,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         : typeof argument === 'object' &&
             argument !== null &&
             (argument as { readonly resourceUri?: unknown }).resourceUri instanceof vscode.Uri
-          ? ((argument as { readonly resourceUri: vscode.Uri }).resourceUri)
+          ? (argument as { readonly resourceUri: vscode.Uri }).resourceUri
           : undefined
     if (uri === undefined) {
       // A row action may arrive as a tree node instead of an Explorer URI.
@@ -2629,7 +2661,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     }
   }
   const sourceDecorations = new vscode.EventEmitter<vscode.Uri | vscode.Uri[] | undefined>()
-  const cacheStates = new Map<string, { readonly at: number; readonly rows: Map<string, boolean> }>()
+  const cacheStates = new Map<
+    string,
+    { readonly at: number; readonly rows: Map<string, boolean> }
+  >()
   const CACHE_STATE_TTL = 15_000
   const forgetCacheStates = (id?: string) => {
     if (id === undefined) cacheStates.clear()
@@ -2680,6 +2715,74 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     return rows
   }
   /*
+   * Editing a published document.
+   *
+   * What the cache holds is not editable: the archive is named by its own digest, shared with
+   * every other window, and replaced whenever the publication moves. Editing one therefore means
+   * a copy the author places and owns. This window remembers where that copy went and what it
+   * looked like when it was taken, which is the whole of what «changed» means on the row.
+   */
+  const WORKING_COPY_KEY = 'modkit.battlenet.workingCopies'
+  interface WorkingCopy {
+    readonly id: string
+    readonly name: string
+    readonly path: string
+    readonly size: number
+    readonly mtime: number
+  }
+  const workingCopyKey = (id: string, name: string): string => JSON.stringify([id, name])
+  const workingCopies = (): Record<string, WorkingCopy> => {
+    const stored = context.globalState.get<unknown>(WORKING_COPY_KEY)
+    if (typeof stored !== 'object' || stored === null || Array.isArray(stored)) return {}
+    const copies: Record<string, WorkingCopy> = {}
+    for (const [key, value] of Object.entries(stored as Record<string, unknown>)) {
+      const copy = value as Partial<WorkingCopy> | null
+      if (
+        typeof copy?.id === 'string' &&
+        typeof copy.name === 'string' &&
+        typeof copy.path === 'string' &&
+        typeof copy.size === 'number' &&
+        typeof copy.mtime === 'number'
+      ) {
+        copies[key] = copy as WorkingCopy
+      }
+    }
+    return copies
+  }
+  const rememberWorkingCopy = async (copy: WorkingCopy | undefined, key: string): Promise<void> => {
+    const kept = Object.fromEntries(
+      Object.entries(workingCopies()).filter(([held]) => held !== key),
+    )
+    await context.globalState.update(
+      WORKING_COPY_KEY,
+      copy === undefined ? kept : { ...kept, [key]: copy },
+    )
+  }
+  /*
+   * ponytail: a copy counts as edited when its size or its modification time no longer match the
+   * moment it was taken. Digesting the archive instead would read every working copy on every
+   * listing; compare digests here only if an editor that rewrites a file without moving either
+   * ever turns up. `undefined` means the file is no longer there.
+   */
+  const workingCopyEdited = async (copy: WorkingCopy): Promise<boolean | undefined> => {
+    try {
+      const stat = await vscode.workspace.fs.stat(vscode.Uri.file(copy.path))
+      return stat.size !== copy.size || stat.mtime !== copy.mtime
+    } catch {
+      return undefined
+    }
+  }
+  /** What a publication row should say about its working copy, if it has one at all. */
+  const workingCopyState = async (
+    id: string,
+    name: string,
+  ): Promise<'clean' | 'edited' | undefined> => {
+    const copy = workingCopies()[workingCopyKey(id, name)]
+    if (copy === undefined) return undefined
+    const edited = await workingCopyEdited(copy)
+    return edited === undefined ? undefined : edited ? 'edited' : 'clean'
+  }
+  /*
    * What each account's catalogue held when it was last read.
    *
    * A window that opens before any connection still has to show the account's mods: the folder was
@@ -2700,7 +2803,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
   const noteCatalogue = async (id: string, names: readonly string[]): Promise<void> => {
     if (!id.startsWith('mine:')) return
     const source = await contentSources?.catch(() => undefined)
-    const snapshot = source === undefined ? undefined : await source.snapshot().catch(() => undefined)
+    const snapshot =
+      source === undefined ? undefined : await source.snapshot().catch(() => undefined)
     const root = snapshot?.roots.find(item => item.id === id)
     const connection = snapshot?.connections.find(item => `mine:${item.id}` === id)
     if (root === undefined || connection === undefined) return
@@ -2755,6 +2859,24 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         location = sourceLocation(uri)
       } catch {
         return undefined
+      }
+      /*
+       * A working copy outranks «listed from the last session». Both can be true of one row, and
+       * of the two only the copy is something the reader can act on right now — the stale list is
+       * about the account, the copy is about this document.
+       */
+      if (location.path && !location.path.includes('/')) {
+        const copy = workingCopies()[workingCopyKey(location.id, location.path)]
+        const state = copy === undefined ? undefined : await workingCopyState(location.id, location.path)
+        if (copy !== undefined && state !== undefined) {
+          return state === 'edited'
+            ? {
+                badge: '●',
+                color: new vscode.ThemeColor('gitDecoration.modifiedResourceForeground'),
+                tooltip: localizer.text('vscode.sources.copyEditedTip', { path: copy.path }),
+              }
+            : { tooltip: localizer.text('vscode.sources.copyCleanTip', { path: copy.path }) }
+        }
       }
       // A root served from the last session says so, and says it about its rows too.
       if (staleRoots.has(location.id)) {
@@ -2823,11 +2945,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     // A publication row in the Sources view carries the same target as its Explorer URI.
     const row = argument instanceof vscode.Uri ? undefined : contentSourceRow(argument)
     if (row !== undefined) {
-      const target = (await callContentSources(
-        await requireContentSources(),
-        'resolveLocalPath',
-        [row.id, row.path],
-      )) as ContentSourceLocalPath | undefined
+      const target = (await callContentSources(await requireContentSources(), 'resolveLocalPath', [
+        row.id,
+        row.path,
+      ])) as ContentSourceLocalPath | undefined
       if (target !== undefined) return revealLocalPath(target)
     }
     if (argument instanceof vscode.Uri) {
@@ -2910,9 +3031,23 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
           sourceId,
           rows.map(row => row.name),
         )
-        return rows
-          .filter(row => row.directory)
-          .map(row => ({ name: row.name, cached: states.get(row.name) === true }))
+        // Only the few rows this window actually took a copy of are stat'ed, not the catalogue.
+        const copies = workingCopies()
+        return Promise.all(
+          rows
+            .filter(row => row.directory)
+            .map(async row => {
+              const copy =
+                copies[workingCopyKey(sourceId, row.name)] === undefined
+                  ? undefined
+                  : await workingCopyState(sourceId, row.name)
+              return {
+                name: row.name,
+                cached: states.get(row.name) === true,
+                ...(copy === undefined ? {} : { copy }),
+              }
+            }),
+        )
       } catch (error) {
         // Not connected: the account's mods are listed from the last session, and stay greyed.
         const remembered = catalogues()[sourceId]
@@ -2944,7 +3079,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         if (text === undefined) {
           const answer = (await callContentSources(source, 'storage', [connection.id]).catch(
             () => undefined,
-          )) as { usedBytes?: number; maxBytes?: number; usedSlots?: number; maxSlots?: number } | undefined
+          )) as
+            | { usedBytes?: number; maxBytes?: number; usedSlots?: number; maxSlots?: number }
+            | undefined
           if (answer?.usedBytes !== undefined && answer.maxBytes !== undefined) {
             const mib = (value: number) => Math.round(value / (1024 * 1024))
             text = localizer.text('vscode.sources.storage', {
@@ -2983,10 +3120,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       }
       const parts = location.path.split('/')
       const name = parts.pop()
-      const node = (await source.list(location.id, parts.join('/')).catch((error: unknown) => {
-        if (parts.length === 0 && catalogues()[location.id]?.names.includes(name ?? '')) return undefined
-        throw error
-      }))?.find(item => item.name === name)
+      const node = (
+        await source.list(location.id, parts.join('/')).catch((error: unknown) => {
+          if (parts.length === 0 && catalogues()[location.id]?.names.includes(name ?? ''))
+            return undefined
+          throw error
+        })
+      )?.find(item => item.name === name)
       if (!node) {
         if (parts.length === 0 && catalogues()[location.id]?.names.includes(name ?? '')) {
           staleRoots.add(location.id)
@@ -3040,11 +3180,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     async readFile(uri) {
       const location = sourceLocation(uri)
       const read = async (): Promise<Uint8Array> => {
-        const bytes = await (await requireContentSources()).read(
-          location.id,
-          location.path,
-          64 * 1024 * 1024,
-        )
+        const bytes = await (
+          await requireContentSources()
+        ).read(location.id, location.path, 64 * 1024 * 1024)
         publicationRead(location)
         return bytes
       }
@@ -3151,36 +3289,39 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
        * exactly the row it will delete, and that description — not the row that was clicked — is
        * what the reader confirms, so a stale tree cannot delete the wrong publication.
        */
-      vscode.commands.registerCommand('modkit.sources.deletePublication', async (argument: unknown) => {
-        const target = contentSourceRow(argument)
-        if (target === undefined) return false
-        const source = await requireContentSources()
-        const review = (await callContentSources(source, 'prepareDeletePublication', [
-          target.id,
-          target.path,
-        ])) as { id: string; label: string; description: string }
-        const confirmed = await vscode.window.showWarningMessage(
-          localizer.text('vscode.sources.confirmDelete', {
-            name: review.label,
-            detail: review.description,
-          }),
-          { modal: true },
-          localizer.text('vscode.sources.deleteAction'),
-        )
-        if (confirmed === undefined) return false
-        await vscode.window.withProgress(
-          {
-            location: vscode.ProgressLocation.Notification,
-            title: localizer.text('vscode.sources.deleting', { name: review.label }),
-          },
-          () => callContentSources(source, 'deletePublication', [review.id]),
-        )
-        rowChanged(target)
-        void vscode.window.showInformationMessage(
-          localizer.text('vscode.sources.deleted', { name: review.label }),
-        )
-        return true
-      }),
+      vscode.commands.registerCommand(
+        'modkit.sources.deletePublication',
+        async (argument: unknown) => {
+          const target = contentSourceRow(argument)
+          if (target === undefined) return false
+          const source = await requireContentSources()
+          const review = (await callContentSources(source, 'prepareDeletePublication', [
+            target.id,
+            target.path,
+          ])) as { id: string; label: string; description: string }
+          const confirmed = await vscode.window.showWarningMessage(
+            localizer.text('vscode.sources.confirmDelete', {
+              name: review.label,
+              detail: review.description,
+            }),
+            { modal: true },
+            localizer.text('vscode.sources.deleteAction'),
+          )
+          if (confirmed === undefined) return false
+          await vscode.window.withProgress(
+            {
+              location: vscode.ProgressLocation.Notification,
+              title: localizer.text('vscode.sources.deleting', { name: review.label }),
+            },
+            () => callContentSources(source, 'deletePublication', [review.id]),
+          )
+          rowChanged(target)
+          void vscode.window.showInformationMessage(
+            localizer.text('vscode.sources.deleted', { name: review.label }),
+          )
+          return true
+        },
+      ),
 
       /*
        * Publishing a document Battle.net has never seen.
@@ -3216,7 +3357,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
                     { title: localizer.text('vscode.sources.chooseConnection') },
                   )
                   .then(picked =>
-                    picked === undefined ? undefined : connections.find(item => item.id === picked.id),
+                    picked === undefined
+                      ? undefined
+                      : connections.find(item => item.id === picked.id),
                   )
         if (chosen === undefined) return false
         const picked = await vscode.window.showOpenDialog({
@@ -3230,8 +3373,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         const name = await vscode.window.showInputBox({
           title: localizer.text('vscode.sources.publishNewName'),
           placeHolder: localizer.text('vscode.sources.publishNewNamePlaceholder'),
-          value: archivePath.split(/[\\/]/u).at(-1)?.replace(/\.(SC2Map|SC2Mod|s2ma)$/iu, '') ?? '',
-          validateInput: value => (value.trim().length > 0 && value.trim().length <= 80 ? undefined : ''),
+          value:
+            archivePath
+              .split(/[\\/]/u)
+              .at(-1)
+              ?.replace(/\.(SC2Map|SC2Mod|s2ma)$/iu, '') ?? '',
+          validateInput: value =>
+            value.trim().length > 0 && value.trim().length <= 80 ? undefined : '',
         })
         if (name === undefined || name.trim().length === 0) return false
         const listing = await vscode.window.showQuickPick(
@@ -3244,15 +3392,30 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         if (listing === undefined) return false
         const lock = await vscode.window.showQuickPick(
           [
-            { label: localizer.text('vscode.sources.publishLockedProtected'), value: true, protect: true },
-            { label: localizer.text('vscode.sources.publishLockedYes'), value: true, protect: false },
-            { label: localizer.text('vscode.sources.publishLockedNo'), value: false, protect: false },
+            {
+              label: localizer.text('vscode.sources.publishLockedProtected'),
+              value: true,
+              protect: true,
+            },
+            {
+              label: localizer.text('vscode.sources.publishLockedYes'),
+              value: true,
+              protect: false,
+            },
+            {
+              label: localizer.text('vscode.sources.publishLockedNo'),
+              value: false,
+              protect: false,
+            },
           ],
           { title: localizer.text('vscode.sources.publishLocked') },
         )
         if (lock === undefined) return false
         const review = (await vscode.window.withProgress(
-          { location: vscode.ProgressLocation.Notification, title: localizer.text('vscode.sources.publishPreparing') },
+          {
+            location: vscode.ProgressLocation.Notification,
+            title: localizer.text('vscode.sources.publishPreparing'),
+          },
           () =>
             callContentSources(source, 'prepareFirstPublication', [
               chosen.id,
@@ -3264,13 +3427,22 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
                 protectHeader: lock.protect,
               },
             ]),
-        )) as { id: string; name: string; account: string; region: string; bytes: number; locked: boolean }
+        )) as {
+          id: string
+          name: string
+          account: string
+          region: string
+          bytes: number
+          locked: boolean
+        }
         const confirmed = await vscode.window.showWarningMessage(
           localizer.text('vscode.sources.publishNewConfirm', {
             name: review.name,
             region: review.region.toUpperCase(),
             visibility: localizer.text(
-              listing.value === 'public' ? 'vscode.sources.publishPublic' : 'vscode.sources.publishPrivate',
+              listing.value === 'public'
+                ? 'vscode.sources.publishPublic'
+                : 'vscode.sources.publishPrivate',
             ),
             locked: review.locked ? ` + ${localizer.text('vscode.sources.publishLockedYes')}` : '',
             account: review.account,
@@ -3300,6 +3472,96 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       }),
 
       /*
+       * Taking a published document out for editing.
+       *
+       * The cached archive is not the thing to edit: it is named by its digest, shared between
+       * windows, and thrown away when the publication moves. So the author says where the copy
+       * goes, keeps it, and this window only remembers the link — publishing a revision then
+       * offers that copy first, and the row says meanwhile whether it has been changed.
+       */
+      vscode.commands.registerCommand('modkit.sources.editCopy', async (argument: unknown) => {
+        const target = contentSourceRow(argument)
+        if (target === undefined) return false
+        const source = await requireContentSources()
+        const key = workingCopyKey(target.id, target.path)
+        const existing = workingCopies()[key]
+        if (existing !== undefined) {
+          const state = await workingCopyEdited(existing)
+          const chosen = await vscode.window.showQuickPick(
+            [
+              ...(state === undefined
+                ? []
+                : [{ label: localizer.text('vscode.sources.copyOpen'), action: 'open' as const }]),
+              { label: localizer.text('vscode.sources.copyReplace'), action: 'replace' as const },
+              { label: localizer.text('vscode.sources.copyForget'), action: 'forget' as const },
+            ],
+            { title: localizer.text('vscode.sources.copyExisting', { path: existing.path }) },
+          )
+          if (chosen === undefined) return false
+          if (chosen.action === 'open') {
+            await vscode.commands.executeCommand(
+              'vscode.openWith',
+              vscode.Uri.file(existing.path),
+              CUSTOM_EDITOR_TYPE,
+            )
+            return true
+          }
+          if (chosen.action === 'forget') {
+            // The author's file is theirs: the link goes, the copy stays where they put it.
+            await rememberWorkingCopy(undefined, key)
+            rowChanged(target)
+            return true
+          }
+        }
+        const cachedPath = async (): Promise<ContentSourceLocalPath | undefined> =>
+          (await callContentSources(source, 'resolveLocalPath', [target.id, target.path])) as
+            | ContentSourceLocalPath
+            | undefined
+        let local = await cachedPath()
+        if (local === undefined) {
+          // Nothing to copy until the archive is here; taking it is what the author just asked for.
+          await vscode.window.withProgress(
+            {
+              location: vscode.ProgressLocation.Notification,
+              title: localizer.text('vscode.sources.downloading', { name: target.name }),
+            },
+            () => callContentSources(source, 'download', [target.id, target.path]),
+          )
+          rowChanged(target)
+          local = await cachedPath()
+        }
+        if (local === undefined) {
+          void vscode.window.showWarningMessage(localizer.text('vscode.sources.copyUnavailable'))
+          return false
+        }
+        const folder = vscode.workspace.workspaceFolders?.[0]?.uri
+        const destination = await vscode.window.showSaveDialog({
+          title: localizer.text('vscode.sources.copyWhere', { name: target.name }),
+          saveLabel: localizer.text('vscode.sources.copySave'),
+          defaultUri:
+            folder === undefined
+              ? vscode.Uri.file(target.name)
+              : vscode.Uri.joinPath(folder, target.name),
+        })
+        if (destination === undefined) return false
+        await vscode.workspace.fs.copy(vscode.Uri.file(local.path), destination, { overwrite: true })
+        const stat = await vscode.workspace.fs.stat(destination)
+        await rememberWorkingCopy(
+          {
+            id: target.id,
+            name: target.path,
+            path: destination.fsPath,
+            size: stat.size,
+            mtime: stat.mtime,
+          },
+          key,
+        )
+        rowChanged(target)
+        await vscode.commands.executeCommand('vscode.openWith', destination, CUSTOM_EDITOR_TYPE)
+        return true
+      }),
+
+      /*
        * Publishing a revision of one of this account's publications.
        *
        * A revision is not a new publication: the name, the preview images and everything the
@@ -3315,15 +3577,30 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
           void vscode.window.showWarningMessage(localizer.text('vscode.sources.publishUnavailable'))
           return false
         }
+        // A working copy is what the author has been editing, so it is what a revision means here.
+        const copyKey = workingCopyKey(target.id, target.path)
+        const workingCopy = workingCopies()[copyKey]
+        const copyState = workingCopy === undefined ? undefined : await workingCopyEdited(workingCopy)
         const archive = await vscode.window.showQuickPick(
           [
-            { label: localizer.text('vscode.sources.publishArchiveCached'), pick: false },
-            { label: localizer.text('vscode.sources.publishArchivePick'), pick: true },
+            ...(workingCopy === undefined || copyState === undefined
+              ? []
+              : [
+                  {
+                    label: localizer.text('vscode.sources.publishArchiveCopy'),
+                    description: workingCopy.path,
+                    pick: false,
+                    copy: true,
+                  },
+                ]),
+            { label: localizer.text('vscode.sources.publishArchiveCached'), pick: false, copy: false },
+            { label: localizer.text('vscode.sources.publishArchivePick'), pick: true, copy: false },
           ],
           { title: localizer.text('vscode.sources.publishArchive') },
         )
         if (archive === undefined) return false
         let archivePath: string | undefined
+        if (archive.copy && workingCopy !== undefined) archivePath = workingCopy.path
         if (archive.pick) {
           const chosen = await vscode.window.showOpenDialog({
             canSelectMany: false,
@@ -3348,14 +3625,38 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
               value: true,
               protect: true,
             },
-            { label: localizer.text('vscode.sources.publishLockedYes'), value: true, protect: false },
-            { label: localizer.text('vscode.sources.publishLockedNo'), value: false, protect: false },
+            {
+              label: localizer.text('vscode.sources.publishLockedYes'),
+              value: true,
+              protect: false,
+            },
+            {
+              label: localizer.text('vscode.sources.publishLockedNo'),
+              value: false,
+              protect: false,
+            },
           ],
           { title: localizer.text('vscode.sources.publishLocked') },
         )
         if (lock === undefined) return false
+        /*
+         * Minor or major, the same question the Editor asks. The server allocates the number, so
+         * what is shown is what it is expected to allocate: minor keeps the major and adds one,
+         * major takes the next major and starts its minor at zero.
+         */
+        const revision = await vscode.window.showQuickPick(
+          [
+            { label: localizer.text('vscode.sources.publishRevisionMinor'), major: false },
+            { label: localizer.text('vscode.sources.publishRevisionMajor'), major: true },
+          ],
+          { title: localizer.text('vscode.sources.publishRevision') },
+        )
+        if (revision === undefined) return false
         const review = (await vscode.window.withProgress(
-          { location: vscode.ProgressLocation.Notification, title: localizer.text('vscode.sources.publishPreparing') },
+          {
+            location: vscode.ProgressLocation.Notification,
+            title: localizer.text('vscode.sources.publishPreparing'),
+          },
           () =>
             callContentSources(source, 'prepareRevision', [
               target.id,
@@ -3365,6 +3666,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
                 visibility: listing.value,
                 locked: lock.value,
                 protectHeader: lock.protect,
+                majorRevision: revision.major,
               },
             ]),
         )) as {
@@ -3383,12 +3685,15 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
             name: review.name,
             region: review.region.toUpperCase(),
             visibility: localizer.text(
-              review.visibility === 'public' ? 'vscode.sources.publishPublic' : 'vscode.sources.publishPrivate',
+              review.visibility === 'public'
+                ? 'vscode.sources.publishPublic'
+                : 'vscode.sources.publishPrivate',
             ),
             locked: review.locked ? ` + ${localizer.text('vscode.sources.publishLockedYes')}` : '',
             account: review.account,
             bytes: String(review.bytes),
-            version: `${version >>> 16}.${version & 0xffff}`,
+            version: formatPublicationVersion(version),
+            next: nextPublicationVersion(version, revision.major),
           }),
           { modal: true },
           localizer.text('vscode.sources.publishConfirmAction'),
@@ -3402,6 +3707,19 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
           () => callContentSources(source, 'publish', [review.id]),
         )) as { publication?: { version?: number } }
         const published = receipt.publication?.version ?? 0
+        /*
+         * What was just published is what the copy holds, so the row stops saying «changed». The
+         * baseline is re-read rather than kept from before: protection rewrites the bytes that are
+         * sent, not the author's file, and the file may have been touched while this ran.
+         */
+        if (archive.copy && workingCopy !== undefined) {
+          const stat = await vscode.workspace.fs
+            .stat(vscode.Uri.file(workingCopy.path))
+            .then(value => value, () => undefined)
+          if (stat !== undefined) {
+            await rememberWorkingCopy({ ...workingCopy, size: stat.size, mtime: stat.mtime }, copyKey)
+          }
+        }
         rowChanged(target)
         void vscode.window.showInformationMessage(
           localizer.text('vscode.sources.published', {
@@ -3615,10 +3933,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
             pick.busy = true
             void (async () => {
               try {
-                const rows = ((await callContentSources(source, 'search', [
-                  connectionId,
-                  query,
-                ])) ?? []) as readonly ContentSourceSearchResult[]
+                const rows = ((await callContentSources(source, 'search', [connectionId, query])) ??
+                  []) as readonly ContentSourceSearchResult[]
                 if (mine !== latest) return
                 found.clear()
                 for (const item of rows) found.set(item.id, item)
@@ -3626,7 +3942,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
                   rows.length > 0
                     ? rows.map(item => ({
                         label: item.label,
-                        ...(item.description === undefined ? {} : { description: item.description }),
+                        ...(item.description === undefined
+                          ? {}
+                          : { description: item.description }),
                         id: item.id,
                       }))
                     : [{ label: localizer.text('vscode.sources.noMatches', { query }) }]
@@ -11526,7 +11844,53 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       }
     }),
   )
-  void syncEditorAssociations('activation')
+  /*
+   * Editors that were already on screen when this activation claimed their format.
+   *
+   * `onStartupFinished` fires after the workbench has restored its tabs, and the association map is
+   * only written once the host has composed — so on a first run, and on any run where a model tab
+   * was restored, the file is already open in the text editor that `workbench.editorAssociations`
+   * would now have kept it out of. Reopening a folder fixed it because the second activation found
+   * the associations already written; nothing else about the window had changed.
+   *
+   * Only patterns this sync *added* are reopened. A pattern that was already ours, or that the user
+   * pointed somewhere else, is left exactly where it is: this repairs the race, it does not take
+   * editors over.
+   */
+  const reopenNewlyAssociatedTabs = async (plan: AssociationPlan): Promise<void> => {
+    if (plan.added.length === 0) return
+    const added = new Set(plan.added)
+    const claimed = (uri: vscode.Uri): boolean => {
+      const name = basename(uri.path)
+      const dot = name.lastIndexOf('.')
+      return (
+        added.has(anchorAssociationPattern(name)) ||
+        (dot > 0 && added.has(associationPattern(name.slice(dot + 1))))
+      )
+    }
+    const stale = vscode.window.tabGroups.all
+      .flatMap(group => group.tabs)
+      .filter(tab => tab.input instanceof vscode.TabInputText && claimed(tab.input.uri))
+    for (const tab of stale) {
+      const input = tab.input as vscode.TabInputText
+      try {
+        // Closed first: `vscode.openWith` on a resource that already has a text editor in the group
+        // adds a second tab for the same file rather than replacing the one that is there.
+        await vscode.window.tabGroups.close(tab, true)
+        await vscode.commands.executeCommand('vscode.openWith', input.uri, CUSTOM_EDITOR_TYPE, {
+          viewColumn: tab.group.viewColumn,
+          preserveFocus: !tab.isActive,
+          preview: tab.isPreview,
+        })
+      } catch (error) {
+        log(
+          `[associations] could not reopen ${input.uri.toString()}: ${error instanceof Error ? error.message : String(error)}`,
+        )
+      }
+    }
+    if (stale.length > 0) log(`[associations] reopened ${stale.length} tab(s) this sync claimed`)
+  }
+  void syncEditorAssociations('activation').then(reopenNewlyAssociatedTabs)
 
   // ---------------------------------------------------------------- views
   /*

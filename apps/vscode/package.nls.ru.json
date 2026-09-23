@@ -47,6 +47,7 @@
   "command.selectGameInstallation": "Modkit: Выбрать установку игры…",
   "command.openGameInstallation": "Modkit: Смонтировать установку игры",
   "command.revealLocalSource": "Modkit: Показать локальный источник в Проводнике",
+  "command.editCopySource": "Редактировать копию",
   "command.showDiagnostics": "Modkit: Показать диагностику",
   "command.unloadContentSource": "Modkit: Отключить источник содержимого…",
   "command.updateExtension": "Modkit: Обновить расширение…",

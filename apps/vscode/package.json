@@ -193,6 +193,11 @@
         "icon": "$(cloud-download)"
       },
       {
+        "command": "modkit.sources.editCopy",
+        "title": "%command.editCopySource%",
+        "icon": "$(edit)"
+      },
+      {
         "command": "modkit.sources.open",
         "title": "%command.openContentSource%",
         "icon": "$(plug)"
@@ -538,6 +543,11 @@
           "group": "inline@1"
         },
         {
+          "command": "modkit.sources.editCopy",
+          "when": "view == modkit.sources && viewItem =~ /^modkitSource\\.publication\\./",
+          "group": "inline@4"
+        },
+        {
           "command": "modkit.sources.open",
           "when": "view == modkit.sources && viewItem =~ /^modkitSource\\.(?:providerRoot|publicRoot|localRoot)$/",
           "group": "inline@1"
@@ -697,6 +707,7 @@
     "onCommand:modkit.sources.detach",
     "onCommand:modkit.sources.disconnect",
     "onCommand:modkit.sources.download",
+    "onCommand:modkit.sources.editCopy",
     "onCommand:modkit.sources.open",
     "onCommand:modkit.sources.openInstallation",
     "onCommand:modkit.sources.publish",

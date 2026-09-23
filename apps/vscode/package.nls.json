@@ -47,6 +47,7 @@
   "command.selectGameInstallation": "Modkit: Select Game Installation…",
   "command.openGameInstallation": "Modkit: Mount Game Installation",
   "command.revealLocalSource": "Modkit: Show Local Source in File Explorer",
+  "command.editCopySource": "Edit a Copy",
   "command.showDiagnostics": "Modkit: Show Diagnostics",
   "command.unloadContentSource": "Modkit: Unload Content Source…",
   "command.updateExtension": "Modkit: Update Extension…",
