@@ -47,7 +47,7 @@ const {
   createExecutionBackendRegistry,
   createHostContributionContractRegistry,
   createSubjectServices,
-  createWorkspaceNamespaceCompanionOrigin,
+  resolveContentAssetOrigins,
 } = hostModule
 const { createPathSubjectOpener, loadExtensionDirectory } = nodeModule
 
@@ -137,69 +137,35 @@ const services = createSubjectServices({
   ]),
 })
 /*
- * `--asset-source <installation root>` mounts a game's own storage behind the model's directory.
+ * `--content-sources <config.json>` loads the product's own source catalogue and asks it where this
+ * subject's resources live — the mod it belongs to, what that mod depends on, and the content the
+ * game loads whatever is open.
  *
- * This is the product's decision — which installations a file may reach — expressed as a layer the
- * codec's `workspace-dependency-layer` scope then searches. The codec still owns the rule and the
- * order; a model whose textures sit beside it keeps resolving them there.
+ * This is the product's decision expressed through the machinery the product already has, rather
+ * than a list of packages typed on a command line. A loose model belongs to no mod, so only the
+ * standing mounts apply to it; a model inside a mod picks up that mod's declared closure.
  */
 const assetOrigins = []
-const assetSessions = []
-for (
-  let at = argv.indexOf('--asset-source');
-  at >= 0;
-  at = argv.indexOf('--asset-source', at + 1)
-) {
-  /*
-   * `<installation root>#<package>,<package>` — the second half is where inside that storage the
-   * assets live, and it is game knowledge: SC2 files a unit texture under
-   * `mods/liberty.sc2mod/base.sc2assets/assets/textures/`, while the model asks for
-   * `Assets/Textures/...`. Stated on the command line here because this is a capture tool; in the
-   * product it is the game extension that knows its own packages and their load order.
-   */
-  const [rootArgument, packageList] = (argv[at + 1] ?? '').split('#')
-  const root = resolve(rootArgument ?? '')
-  const packages = (packageList ?? '').split(',').filter(Boolean)
-  const mountOpener = createPathSubjectOpener({
-    subjects: services,
-    roots: [root],
-    grant: { id: 'capture-asset-source', classes: ['read-source'] },
-    budget,
+let contentSources
+const configAt = argv.indexOf('--content-sources')
+if (configAt >= 0) {
+  const { loadContentSources } = await import(
+    pathToFileURL(`${coreRoot}/packages/vfs/dist/content-sources-node.js`).href
+  )
+  contentSources = await loadContentSources(
+    resolve(argv[configAt + 1] ?? ''),
+    `${coreRoot}/artifacts/model-screens/.content-source-state`,
+  )
+  if (contentSources === undefined) throw new Error('no content source module was configured')
+  const projected = await resolveContentAssetOrigins({
+    contentSources,
+    subjects: [],
+    standingMounts: true,
   })
-  const mount = await mountOpener(root)
-  if (mount.snapshot.state !== 'opened' || mount.session === undefined)
-    throw new Error(`asset source did not open: ${root}`)
-  assetSessions.push(mount.session)
-  const namespaceLease = await mount.session.dataSource('common.view/namespace-entry-source', 1)
-  const operations = mount.session.operations()
-  const descriptor = await mount.session.descriptor()
-  const extractOperation = descriptor.operations.find(
-    item => item.id === 'container.extract' && item.state === 'available',
-  )
-  if (extractOperation === undefined)
-    throw new Error(`asset source cannot extract entries: ${root}`)
-  assetOrigins.push(
-    createWorkspaceNamespaceCompanionOrigin({
-      namespace: namespaceLease.value,
-      primaryLogicalId: modelPath.split(/[\\/]/u).at(-1),
-      logicalRoots:
-        packages.length === 0
-          ? [{ rootId: 'installation', pathPrefix: '', logicalPrefix: '' }]
-          : packages.map(item => ({ rootId: item, pathPrefix: item, logicalPrefix: '' })),
-      containerRevision: descriptor.revision,
-      async extract(entryId, signal) {
-        const result = await operations.invoke(
-          extractOperation.handlerId,
-          { entryId },
-          signal === undefined ? {} : { signal },
-        )
-        if (result.state !== 'ok' || result.output.kind !== 'bytes')
-          throw new Error(`the asset source refused to extract ${entryId}`)
-        return result.output.value
-      },
-    }),
-  )
-  console.log(`mounted asset source ${root}`)
+  for (const item of projected.diagnostics)
+    console.log(`[sources] ${item.severity}: ${item.message}`)
+  assetOrigins.push(...projected.origins)
+  console.log(`mounted ${assetOrigins.length} asset origin(s) from ${argv[configAt + 1]}`)
 }
 
 const opener = createPathSubjectOpener({
@@ -304,7 +270,7 @@ const payload = encode({
 })
 await sceneLease.release()
 await session.dispose()
-for (const mounted of assetSessions) await mounted.dispose()
+await contentSources?.dispose?.()
 console.log(
   `opened ${payload.name}: ${primitives.length} primitives, ${textures.length}/${facets['common.view/model-resource-refs-source']?.items.filter(item => item.role === 'texture').length ?? 0} textures, facets ${Object.keys(facets).length}`,
 )

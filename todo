@@ -42,6 +42,7 @@ preload
 files -> files grouped by type
 dependencies
 
+i suggest to rename this tab to "Resources" and allow to load resources from user choice .напрмиер пользователь редактирует файл галакси или scdata вне мода, или мод не входит в workspace vscode тогда юзер может выбрать ру=есур и нужный мод чтобы погрузить его данные. либо выбрать стандартный мод из sc2 casc. пакеты рекрсов таже задаются в расширениях игр. надо сделать это универсально. также надо позволить одновременно работать с несколькими модами. в таком случае разные моды могут иметь разные наборы ресурсов. в том числе и с модами с разных игр. одновременно открыть мод sc2 и warzone 2100 например. скорее всего ресурсы работают для опредленных папок или файлов (в случае когда выбирает сам пользователь) 
 
 we need to keep it but in universal way. becouse we need to support multiple mod structures . sc2, warzone2100 , cnc3, red alert3 and others. so mod provider can make their own resources trees. wen clicking on items it shows item card ot redirect to the code where item defined
 we need to ensure that entity cards works 

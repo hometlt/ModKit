@@ -1,0 +1,224 @@
+{
+  "kind": "modkit.vscode-installed-sc2-language",
+  "version": 7,
+  "passed": false,
+  "vscodeVersion": "1.138.0",
+  "activationMs": 91657,
+  "extensionVersion": "0.1.0",
+  "activationMode": "full",
+  "languageRoutes": [
+    "galaxy:galaxy-source:galaxy",
+    "sc2-bank-list:sc2-bank-list-source:*",
+    "sc2-bank:sc2-bank-source:sc2bank",
+    "sc2-cutscene:sc2-cutscene-source:sc2cutscene",
+    "storm-cutscene:sc2-cutscene-source:sc2cutscene",
+    "sc2-cutscene:sc2-cutscene-source:stormcutscene",
+    "storm-cutscene:sc2-cutscene-source:stormcutscene",
+    "sc2-data:sc2-data-source:xml",
+    "sc2-layout:sc2-layout-source:sc2layout",
+    "sc2-strings:sc2-strings-catalog:txt",
+    "sc2-style:sc2-style-source:sc2style",
+    "sc2-triggers:sc2-triggers-source:sc2lib",
+    "sc2-triggers:sc2-triggers-source:triggerlib",
+    "sc2-triggers:sc2-triggers-source:triggers",
+    "sc2-wizard:sc2-wizard-source:blizwiz"
+  ],
+  "dataSyntaxGrammar": {
+    "scopeName": "text.xml.sc2-data",
+    "path": "./media/sc2-data.tmLanguage.json"
+  },
+  "sourcesView": {
+    "id": "modkit.sources",
+    "name": "Sources",
+    "refreshCommand": "modkit.sources.refresh",
+    "openCommand": "modkit.sources.open"
+  },
+  "resourcesView": {
+    "id": "modkit.resources",
+    "name": "Resources",
+    "refreshCommand": "modkit.resources.refresh",
+    "searchCommand": "modkit.resources.search",
+    "openCommand": "modkit.resources.open"
+  },
+  "documentLanguages": {
+    "galaxy": "galaxy",
+    "galaxyDependency": "galaxy",
+    "data": "sc2-data",
+    "actorData": "sc2-data",
+    "onTypeData": "sc2-data",
+    "attributeData": "sc2-data",
+    "nestedData": "sc2-data",
+    "documentRoot": "sc2-data",
+    "editedUnit": "sc2-data",
+    "emptyUnit": "sc2-data",
+    "emptyActor": "sc2-data",
+    "emptyCustom": "sc2-data",
+    "strings": "sc2-strings",
+    "style": "sc2-style",
+    "layout": "sc2-layout"
+  },
+  "advertisedLanguages": {
+    "galaxy": "galaxy",
+    "galaxyDependency": "galaxy",
+    "data": "sc2-data",
+    "actorData": "sc2-data",
+    "onTypeData": "sc2-data",
+    "attributeData": "sc2-data",
+    "nestedData": "sc2-data",
+    "documentRoot": "sc2-data",
+    "editedUnit": "sc2-data",
+    "emptyUnit": "sc2-data",
+    "emptyActor": "sc2-data",
+    "emptyCustom": "sc2-data",
+    "strings": "sc2-strings",
+    "style": "sc2-style",
+    "layout": "sc2-layout"
+  },
+  "languageModeGaps": {},
+  "mixedCaseDiscovery": [
+    "Base.SC2Data/UI/FontStyles.SC2Style",
+    "Base.SC2Data/UI/Layout/Hud.SC2Layout"
+  ],
+  "galaxyReferences": [
+    {
+      "uri": "Base.SC2Data/Lib.galaxy",
+      "fsPath": "c:/users/admin/appdata/local/temp/modkit-installed-sc2-language-pxup4q/probe.sc2mod/base.sc2data/lib.galaxy",
+      "range": [
+        {
+          "line": 0,
+          "character": 4
+        },
+        {
+          "line": 0,
+          "character": 10
+        }
+      ]
+    },
+    {
+      "uri": "Base.SC2Data/MapScript.galaxy",
+      "fsPath": "c:/users/admin/appdata/local/temp/modkit-installed-sc2-language-pxup4q/probe.sc2mod/base.sc2data/mapscript.galaxy",
+      "range": [
+        {
+          "line": 2,
+          "character": 6
+        },
+        {
+          "line": 2,
+          "character": 12
+        }
+      ]
+    }
+  ],
+  "resolvedDataContext": "[language-context] resolved revision=language-context-v1:7bfc4fa8115995004878e677b3472a13 complete=false inputs=content-path-index:blizzard/starcraft-2:language-context-v1:c973949a22367090429121a4949c5483,content-path-index:language-context-v1:b1f366d4a19aaa2a97ddceb0bbe5b649:local,dependency-closure:blizzard/starcraft-2:language-context-v1:c973949a22367090429121a4949c5483,locale-set:selected-game-locales:enUS,provider-artifact:blizzard/sc2-data-language/sc2-data-document-analysis-v1/portable,provider:blizzard/sc2-data-language,resolved-data-snapshot:blizzard/starcraft-2,schema:blizzard/sc2-data-schema@1,subject:language-context-v1:b1f366d4a19aaa2a97ddceb0bbe5b649 failures=",
+  "dataRootCompletion": [
+    "CUnit",
+    "CUnitHero",
+    "SAbilCmdButton",
+    "SAbilLearnInfo",
+    "SAddedOnData",
+    "SAttributePointsInfo",
+    "SCardLayout",
+    "SCardLayoutButton",
+    "SCharge",
+    "SCooldown",
+    "SCost",
+    "SFidget",
+    "SStockCharge",
+    "SUnitAbilData",
+    "SUnitArmorFormula",
+    "SUnitBehaviorData",
+    "SUnitEquipment",
+    "SUnitResourceRatio",
+    "SUnitReviveInfo",
+    "SUnitWeaponData",
+    "const"
+  ],
+  "verifiedCompletionTriggerCharacters": [
+    "<"
+  ],
+  "dataDocumentRootCompletion": {
+    "labels": [
+      "Catalog"
+    ],
+    "elapsedMs": 1157
+  },
+  "error": "Error: edited Data completion took 1819 ms (limit 1000 ms)\n\tat Object.run (c:\\FILES\\SC2Files\\coding\\modkit-core\\apps\\vscode\\test-e2e\\suite\\installed-language.cjs:407:13)",
+  "extensionDiagnostics": [
+    "[extensions] no local workspace catalog: no modkit.workspace.json exists at or above «c:\\Users\\Admin\\AppData\\Local\\Temp\\modkit-installed-sc2-language-PXUp4q»",
+    "[worker] information x3.host/renderer-selected: selected modkit/browser-webgl-renderer for rgba8 in browser-main",
+    "language routes configured: 15",
+    "[worker] information x3.host/worker-shared-process: blizzard/sc2-campaign-directory runs in a worker thread: failure and protocol isolation, not a security sandbox (SB-1)",
+    "[worker] information x3.host/worker-realm-ready: blizzard/sc2-campaign-directory realm 1 ready in 944 ms (spawn and module load)",
+    "[worker] information x3.host/worker-shared-process: blizzard/galaxy-language runs in a worker thread: failure and protocol isolation, not a security sandbox (SB-1)",
+    "[worker] information x3.host/worker-shared-process: blizzard/sc2-data-language runs in a worker thread: failure and protocol isolation, not a security sandbox (SB-1)",
+    "[worker] information x3.host/worker-shared-process: blizzard/sc2-style-language runs in a worker thread: failure and protocol isolation, not a security sandbox (SB-1)",
+    "[worker] information x3.host/worker-shared-process: blizzard/sc2-strings-language runs in a worker thread: failure and protocol isolation, not a security sandbox (SB-1)",
+    "[worker] information x3.host/worker-shared-process: blizzard/sc2-layout-language runs in a worker thread: failure and protocol isolation, not a security sandbox (SB-1)",
+    "[worker] information x3.host/worker-realm-reused: «blizzard/sc2-campaign-directory» reused a warm worker realm: its module graph was already loaded",
+    "[worker] information x3.host/worker-realm-ready: blizzard/galaxy-language realm 1 ready in 1233 ms (spawn and module load)",
+    "[worker] information x3.host/worker-realm-reused: «blizzard/galaxy-language» reused a warm worker realm: its module graph was already loaded",
+    "[worker] information x3.host/worker-realm-ready: blizzard/sc2-data-language realm 1 ready in 1267 ms (spawn and module load)",
+    "[worker] information x3.host/worker-realm-reused: «blizzard/sc2-data-language» reused a warm worker realm: its module graph was already loaded",
+    "[worker] information x3.host/worker-realm-ready: blizzard/sc2-strings-language realm 1 ready in 1230 ms (spawn and module load)",
+    "[worker] information x3.host/worker-realm-ready: blizzard/sc2-style-language realm 1 ready in 1287 ms (spawn and module load)",
+    "[worker] information x3.host/worker-shared-process: blizzard/sc2-map-directory runs in a worker thread: failure and protocol isolation, not a security sandbox (SB-1)",
+    "[worker] information x3.host/worker-realm-ready: blizzard/sc2-layout-language realm 1 ready in 1508 ms (spawn and module load)",
+    "[worker] information x3.host/worker-realm-ready: blizzard/sc2-map-directory realm 1 ready in 299 ms (spawn and module load)",
+    "[worker] information x3.host/worker-realm-reused: «blizzard/sc2-map-directory» reused a warm worker realm: its module graph was already loaded",
+    "[worker] information x3.host/worker-shared-process: blizzard/sc2-mod-directory runs in a worker thread: failure and protocol isolation, not a security sandbox (SB-1)",
+    "[language-host] file:///c%3A/Users/Admin/AppData/Local/Temp/modkit-installed-sc2-language-PXUp4q/Probe.SC2Mod/Base.SC2Data/Lib.galaxy: information x3.host/worker-shared-process: «blizzard/galaxy-language» runs worker-brokered: a crash, hang or protocol violation of this code is isolated from the host, but the worker shares the process — it is not a security sandbox (24 §6.1 SB-1).",
+    "[language-host] file:///c%3A/Users/Admin/AppData/Local/Temp/modkit-installed-sc2-language-PXUp4q/Probe.SC2Mod/Base.SC2Data/Lib.galaxy: information x3.host/language-provider-selected: selected a language provider for galaxy",
+    "[worker] information x3.host/worker-realm-ready: blizzard/sc2-mod-directory realm 1 ready in 523 ms (spawn and module load)",
+    "[worker] information x3.host/worker-realm-reused: «blizzard/sc2-mod-directory» reused a warm worker realm: its module graph was already loaded",
+    "[language-host] file:///c%3A/Users/Admin/AppData/Local/Temp/modkit-installed-sc2-language-PXUp4q/Probe.SC2Mod/Base.SC2Data/GameData/UnitData.xml: information x3.host/worker-shared-process: «blizzard/sc2-data-language» runs worker-brokered: a crash, hang or protocol violation of this code is isolated from the host, but the worker shares the process — it is not a security sandbox (24 §6.1 SB-1).",
+    "[language-host] file:///c%3A/Users/Admin/AppData/Local/Temp/modkit-installed-sc2-language-PXUp4q/Probe.SC2Mod/Base.SC2Data/GameData/UnitData.xml: information x3.host/language-provider-selected: selected a language provider for sc2-data",
+    "[language-host] file:///c%3A/Users/Admin/AppData/Local/Temp/modkit-installed-sc2-language-PXUp4q/Probe.SC2Mod/Base.SC2Data/GameData/ActorData.xml: information x3.host/worker-shared-process: «blizzard/sc2-data-language» runs worker-brokered: a crash, hang or protocol violation of this code is isolated from the host, but the worker shares the process — it is not a security sandbox (24 §6.1 SB-1).",
+    "[language-host] file:///c%3A/Users/Admin/AppData/Local/Temp/modkit-installed-sc2-language-PXUp4q/Probe.SC2Mod/Base.SC2Data/GameData/ActorData.xml: information x3.host/language-provider-selected: selected a language provider for sc2-data",
+    "[language-host] file:///c%3A/Users/Admin/AppData/Local/Temp/modkit-installed-sc2-language-PXUp4q/Probe.SC2Mod/Base.SC2Data/GameData/AttributeData.xml: information x3.host/worker-shared-process: «blizzard/sc2-data-language» runs worker-brokered: a crash, hang or protocol violation of this code is isolated from the host, but the worker shares the process — it is not a security sandbox (24 §6.1 SB-1).",
+    "[language-host] file:///c%3A/Users/Admin/AppData/Local/Temp/modkit-installed-sc2-language-PXUp4q/Probe.SC2Mod/Base.SC2Data/GameData/AttributeData.xml: information x3.host/language-provider-selected: selected a language provider for sc2-data",
+    "[language-host] file:///c%3A/Users/Admin/AppData/Local/Temp/modkit-installed-sc2-language-PXUp4q/Probe.SC2Mod/Base.SC2Data/GameData/OnTypeData.xml: information x3.host/worker-shared-process: «blizzard/sc2-data-language» runs worker-brokered: a crash, hang or protocol violation of this code is isolated from the host, but the worker shares the process — it is not a security sandbox (24 §6.1 SB-1).",
+    "[language-host] file:///c%3A/Users/Admin/AppData/Local/Temp/modkit-installed-sc2-language-PXUp4q/Probe.SC2Mod/Base.SC2Data/GameData/OnTypeData.xml: information x3.host/language-provider-selected: selected a language provider for sc2-data",
+    "[language-host] file:///c%3A/Users/Admin/AppData/Local/Temp/modkit-installed-sc2-language-PXUp4q/Probe.SC2Mod/RootOnly.SC2Data/GameData/RootData.xml: information x3.host/worker-shared-process: «blizzard/sc2-data-language» runs worker-brokered: a crash, hang or protocol violation of this code is isolated from the host, but the worker shares the process — it is not a security sandbox (24 §6.1 SB-1).",
+    "[language-host] file:///c%3A/Users/Admin/AppData/Local/Temp/modkit-installed-sc2-language-PXUp4q/Probe.SC2Mod/RootOnly.SC2Data/GameData/RootData.xml: information x3.host/language-provider-selected: selected a language provider for sc2-data",
+    "[language-host] file:///c%3A/Users/Admin/AppData/Local/Temp/modkit-installed-sc2-language-PXUp4q/Probe.SC2Mod/Base.SC2Data/GameData/NestedData.xml: information x3.host/worker-shared-process: «blizzard/sc2-data-language» runs worker-brokered: a crash, hang or protocol violation of this code is isolated from the host, but the worker shares the process — it is not a security sandbox (24 §6.1 SB-1).",
+    "[language-host] file:///c%3A/Users/Admin/AppData/Local/Temp/modkit-installed-sc2-language-PXUp4q/Probe.SC2Mod/Base.SC2Data/GameData/NestedData.xml: information x3.host/language-provider-selected: selected a language provider for sc2-data",
+    "[language-host] file:///c%3A/Users/Admin/AppData/Local/Temp/modkit-installed-sc2-language-PXUp4q/Probe.SC2Mod/Latency.SC2Data/GameData/UnitData.xml: information x3.host/worker-shared-process: «blizzard/sc2-data-language» runs worker-brokered: a crash, hang or protocol violation of this code is isolated from the host, but the worker shares the process — it is not a security sandbox (24 §6.1 SB-1).",
+    "[language-host] file:///c%3A/Users/Admin/AppData/Local/Temp/modkit-installed-sc2-language-PXUp4q/Probe.SC2Mod/Latency.SC2Data/GameData/UnitData.xml: information x3.host/language-provider-selected: selected a language provider for sc2-data",
+    "[language-host] file:///c%3A/Users/Admin/AppData/Local/Temp/modkit-installed-sc2-language-PXUp4q/Probe.SC2Mod/EmptyUnit.SC2Data/GameData/UnitData.xml: information x3.host/worker-shared-process: «blizzard/sc2-data-language» runs worker-brokered: a crash, hang or protocol violation of this code is isolated from the host, but the worker shares the process — it is not a security sandbox (24 §6.1 SB-1).",
+    "[language-host] file:///c%3A/Users/Admin/AppData/Local/Temp/modkit-installed-sc2-language-PXUp4q/Probe.SC2Mod/EmptyUnit.SC2Data/GameData/UnitData.xml: information x3.host/language-provider-selected: selected a language provider for sc2-data",
+    "[language-host] file:///c%3A/Users/Admin/AppData/Local/Temp/modkit-installed-sc2-language-PXUp4q/Probe.SC2Mod/EmptyActor.SC2Data/GameData/ActorData.xml: information x3.host/worker-shared-process: «blizzard/sc2-data-language» runs worker-brokered: a crash, hang or protocol violation of this code is isolated from the host, but the worker shares the process — it is not a security sandbox (24 §6.1 SB-1).",
+    "[language-host] file:///c%3A/Users/Admin/AppData/Local/Temp/modkit-installed-sc2-language-PXUp4q/Probe.SC2Mod/EmptyActor.SC2Data/GameData/ActorData.xml: information x3.host/language-provider-selected: selected a language provider for sc2-data",
+    "[language-host] file:///c%3A/Users/Admin/AppData/Local/Temp/modkit-installed-sc2-language-PXUp4q/Probe.SC2Mod/EmptyCustom.SC2Data/GameData/CustomData.xml: information x3.host/worker-shared-process: «blizzard/sc2-data-language» runs worker-brokered: a crash, hang or protocol violation of this code is isolated from the host, but the worker shares the process — it is not a security sandbox (24 §6.1 SB-1).",
+    "[language-host] file:///c%3A/Users/Admin/AppData/Local/Temp/modkit-installed-sc2-language-PXUp4q/Probe.SC2Mod/EmptyCustom.SC2Data/GameData/CustomData.xml: information x3.host/language-provider-selected: selected a language provider for sc2-data",
+    "[language-host] file:///c%3A/Users/Admin/AppData/Local/Temp/modkit-installed-sc2-language-PXUp4q/Probe.SC2Mod/enUS.SC2Data/LocalizedData/GameStrings.txt: information x3.host/worker-shared-process: «blizzard/sc2-strings-language» runs worker-brokered: a crash, hang or protocol violation of this code is isolated from the host, but the worker shares the process — it is not a security sandbox (24 §6.1 SB-1).",
+    "[language-host] file:///c%3A/Users/Admin/AppData/Local/Temp/modkit-installed-sc2-language-PXUp4q/Probe.SC2Mod/enUS.SC2Data/LocalizedData/GameStrings.txt: information x3.host/language-provider-selected: selected a language provider for sc2-strings",
+    "[language-host] file:///c%3A/Users/Admin/AppData/Local/Temp/modkit-installed-sc2-language-PXUp4q/Probe.SC2Mod/Base.SC2Data/UI/FontStyles.SC2Style: information x3.host/worker-shared-process: «blizzard/sc2-style-language» runs worker-brokered: a crash, hang or protocol violation of this code is isolated from the host, but the worker shares the process — it is not a security sandbox (24 §6.1 SB-1).",
+    "[language-host] file:///c%3A/Users/Admin/AppData/Local/Temp/modkit-installed-sc2-language-PXUp4q/Probe.SC2Mod/Base.SC2Data/UI/FontStyles.SC2Style: information x3.host/language-provider-selected: selected a language provider for sc2-style",
+    "[language-host] file:///c%3A/Users/Admin/AppData/Local/Temp/modkit-installed-sc2-language-PXUp4q/Probe.SC2Mod/Base.SC2Data/UI/Layout/Hud.SC2Layout: information x3.host/worker-shared-process: «blizzard/sc2-layout-language» runs worker-brokered: a crash, hang or protocol violation of this code is isolated from the host, but the worker shares the process — it is not a security sandbox (24 §6.1 SB-1).",
+    "[language-host] file:///c%3A/Users/Admin/AppData/Local/Temp/modkit-installed-sc2-language-PXUp4q/Probe.SC2Mod/Base.SC2Data/UI/Layout/Hud.SC2Layout: information x3.host/language-provider-selected: selected a language provider for sc2-layout",
+    "[language-host] file:///c%3A/Users/Admin/AppData/Local/Temp/modkit-installed-sc2-language-PXUp4q/Probe.SC2Mod/Base.SC2Data/MapScript.galaxy: information x3.host/worker-shared-process: «blizzard/galaxy-language» runs worker-brokered: a crash, hang or protocol violation of this code is isolated from the host, but the worker shares the process — it is not a security sandbox (24 §6.1 SB-1).",
+    "[language-host] file:///c%3A/Users/Admin/AppData/Local/Temp/modkit-installed-sc2-language-PXUp4q/Probe.SC2Mod/Base.SC2Data/MapScript.galaxy: information x3.host/language-provider-selected: selected a language provider for galaxy",
+    "[language-context] loaded package scope c:\\Users\\Admin\\AppData\\Local\\Temp\\modkit-installed-sc2-language-PXUp4q\\Probe.SC2Mod",
+    "[worker] information x3.host/worker-shared-process: blizzard/starcraft2-workspace runs in a worker thread: failure and protocol isolation, not a security sandbox (SB-1)",
+    "[worker] information x3.host/worker-realm-ready: blizzard/starcraft2-workspace realm 1 ready in 116 ms (spawn and module load)",
+    "[worker] information x3.host/worker-realm-reused: «blizzard/starcraft2-workspace» reused a warm worker realm: its module graph was already loaded",
+    "[language-context] warning blizzard/sc2-installation-dependency-missing: Mods/Core.SC2Mod needs a configured StarCraft II installation directory.",
+    "[language-context] warning blizzard/sc2-installation-dependency-missing: Mods/Liberty.SC2Mod needs a configured StarCraft II installation directory.",
+    "[language-context] workspace snapshot for file:///c%3A/Users/Admin/AppData/Local/Temp/modkit-installed-sc2-language-PXUp4q/Probe.SC2Mod/Base.SC2Data/MapScript.galaxy: accepted=galaxy,sc2-data,sc2-layout,sc2-strings,sc2-triggers open=galaxy:file:///c%3A/Users/Admin/AppData/Local/Temp/modkit-installed-sc2-language-PXUp4q/Probe.SC2Mod/Base.SC2Data/MapScript.galaxy,sc2-data:file:///c%3A/Users/Admin/AppData/Local/Temp/modkit-installed-sc2-language-PXUp4q/Probe.SC2Mod/Base.SC2Data/GameData/ActorData.xml,sc2-data:file:///c%3A/Users/Admin/AppData/Local/Temp/modkit-installed-sc2-language-PXUp4q/Probe.SC2Mod/Base.SC2Data/GameData/AttributeData.xml,sc2-data:file:///c%3A/Users/Admin/AppData/Local/Temp/modkit-installed-sc2-language-PXUp4q/Probe.SC2Mod/Base.SC2Data/GameData/NestedData.xml,sc2-data:file:///c%3A/Users/Admin/AppData/Local/Temp/modkit-installed-sc2-language-PXUp4q/Probe.SC2Mod/Base.SC2Data/GameData/OnTypeData.xml,sc2-data:file:///c%3A/Users/Admin/AppData/Local/Temp/modkit-installed-sc2-language-PXUp4q/Probe.SC2Mod/Base.SC2Data/GameData/UnitData.xml,galaxy:file:///c%3A/Users/Admin/AppData/Local/Temp/modkit-installed-sc2-language-PXUp4q/Probe.SC2Mod/Base.SC2Data/Lib.galaxy,sc2-layout:file:///c%3A/Users/Admin/AppData/Local/Temp/modkit-installed-sc2-language-PXUp4q/Probe.SC2Mod/Base.SC2Data/UI/Layout/Hud.SC2Layout,sc2-data:file:///c%3A/Users/Admin/AppData/Local/Temp/modkit-installed-sc2-language-PXUp4q/Probe.SC2Mod/EmptyActor.SC2Data/GameData/ActorData.xml,sc2-data:file:///c%3A/Users/Admin/AppData/Local/Temp/modkit-installed-sc2-language-PXUp4q/Probe.SC2Mod/EmptyCustom.SC2Data/GameData/CustomData.xml,sc2-data:file:///c%3A/Users/Admin/AppData/Local/Temp/modkit-installed-sc2-language-PXUp4q/Probe.SC2Mod/EmptyUnit.SC2Data/GameData/UnitData.xml,sc2-data:file:///c%3A/Users/Admin/AppData/Local/Temp/modkit-installed-sc2-language-PXUp4q/Probe.SC2Mod/Latency.SC2Data/GameData/UnitData.xml,sc2-data:file:///c%3A/Users/Admin/AppData/Local/Temp/modkit-installed-sc2-language-PXUp4q/Probe.SC2Mod/RootOnly.SC2Data/GameData/RootData.xml,sc2-strings:file:///c%3A/Users/Admin/AppData/Local/Temp/modkit-installed-sc2-language-PXUp4q/Probe.SC2Mod/enUS.SC2Data/LocalizedData/GameStrings.txt additional= origins=Base.SC2Data/MapScript.galaxy:file:///c%3A/Users/Admin/AppData/Local/Temp/modkit-installed-sc2-language-PXUp4q/Probe.SC2Mod/Base.SC2Data/MapScript.galaxy,Base.SC2Data/GameData/ActorData.xml:file:///c%3A/Users/Admin/AppData/Local/Temp/modkit-installed-sc2-language-PXUp4q/Probe.SC2Mod/Base.SC2Data/GameData/ActorData.xml,Base.SC2Data/GameData/AttributeData.xml:file:///c%3A/Users/Admin/AppData/Local/Temp/modkit-installed-sc2-language-PXUp4q/Probe.SC2Mod/Base.SC2Data/GameData/AttributeData.xml,Base.SC2Data/GameData/NestedData.xml:file:///c%3A/Users/Admin/AppData/Local/Temp/modkit-installed-sc2-language-PXUp4q/Probe.SC2Mod/Base.SC2Data/GameData/NestedData.xml,Base.SC2Data/GameData/OnTypeData.xml:file:///c%3A/Users/Admin/AppData/Local/Temp/modkit-installed-sc2-language-PXUp4q/Probe.SC2Mod/Base.SC2Data/GameData/OnTypeData.xml,Base.SC2Data/GameData/UnitData.xml:file:///c%3A/Users/Admin/AppData/Local/Temp/modkit-installed-sc2-language-PXUp4q/Probe.SC2Mod/Base.SC2Data/GameData/UnitData.xml,Base.SC2Data/Lib.galaxy:file:///c%3A/Users/Admin/AppData/Local/Temp/modkit-installed-sc2-language-PXUp4q/Probe.SC2Mod/Base.SC2Data/Lib.galaxy,Base.SC2Data/UI/Layout/Hud.SC2Layout:file:///c%3A/Users/Admin/AppData/Local/Temp/modkit-installed-sc2-language-PXUp4q/Probe.SC2Mod/Base.SC2Data/UI/Layout/Hud.SC2Layout,EmptyActor.SC2Data/GameData/ActorData.xml:file:///c%3A/Users/Admin/AppData/Local/Temp/modkit-installed-sc2-language-PXUp4q/Probe.SC2Mod/EmptyActor.SC2Data/GameData/ActorData.xml,EmptyCustom.SC2Data/GameData/CustomData.xml:file:///c%3A/Users/Admin/AppData/Local/Temp/modkit-installed-sc2-language-PXUp4q/Probe.SC2Mod/EmptyCustom.SC2Data/GameData/CustomData.xml,EmptyUnit.SC2Data/GameData/UnitData.xml:file:///c%3A/Users/Admin/AppData/Local/Temp/modkit-installed-sc2-language-PXUp4q/Probe.SC2Mod/EmptyUnit.SC2Data/GameData/UnitData.xml,Latency.SC2Data/GameData/UnitData.xml:file:///c%3A/Users/Admin/AppData/Local/Temp/modkit-installed-sc2-language-PXUp4q/Probe.SC2Mod/Latency.SC2Data/GameData/UnitData.xml,RootOnly.SC2Data/GameData/RootData.xml:file:///c%3A/Users/Admin/AppData/Local/Temp/modkit-installed-sc2-language-PXUp4q/Probe.SC2Mod/RootOnly.SC2Data/GameData/RootData.xml,enUS.SC2Data/LocalizedData/GameStrings.txt:file:///c%3A/Users/Admin/AppData/Local/Temp/modkit-installed-sc2-language-PXUp4q/Probe.SC2Mod/enUS.SC2Data/LocalizedData/GameStrings.txt",
+    "[language-context] resolved revision=language-context-v1:729310d5cc23909e505f30cd1d9c1bad complete=false inputs=content-path-index:blizzard/starcraft-2:language-context-v1:c973949a22367090429121a4949c5483,content-path-index:language-context-v1:b1f366d4a19aaa2a97ddceb0bbe5b649:local,dependency-closure:blizzard/starcraft-2:language-context-v1:c973949a22367090429121a4949c5483,language-spec:blizzard/sc2-galaxy-language-core@1,locale-set:selected-game-locales:enUS,provider-artifact:blizzard/galaxy-language/galaxy-document-analysis-v1/portable,provider:blizzard/sc2-galaxy-language,subject:language-context-v1:b1f366d4a19aaa2a97ddceb0bbe5b649 failures=",
+    "[language] file:///c%3A/Users/Admin/AppData/Local/Temp/modkit-installed-sc2-language-PXUp4q/Probe.SC2Mod/Base.SC2Data/MapScript.galaxy: information sc2-cross-language/host-workspace-incomplete: Cross-language catalog linking is partial: host-workspace-incomplete.",
+    "[language-context] resolved revision=language-context-v1:65999846c6eeade4bf994390b8a2148f complete=false inputs=content-path-index:blizzard/starcraft-2:language-context-v1:c973949a22367090429121a4949c5483,content-path-index:language-context-v1:b1f366d4a19aaa2a97ddceb0bbe5b649:local,dependency-closure:blizzard/starcraft-2:language-context-v1:c973949a22367090429121a4949c5483,language-spec:blizzard/sc2-galaxy-language-core@1,locale-set:selected-game-locales:enUS,provider-artifact:blizzard/galaxy-language/galaxy-document-analysis-v1/portable,provider:blizzard/sc2-galaxy-language,subject:language-context-v1:b1f366d4a19aaa2a97ddceb0bbe5b649 failures=",
+    "[language-context] resolved revision=language-context-v1:bcbb3991aad458f5b34644482aaf8fd0 complete=false inputs=content-path-index:blizzard/starcraft-2:language-context-v1:c973949a22367090429121a4949c5483,content-path-index:language-context-v1:b1f366d4a19aaa2a97ddceb0bbe5b649:local,dependency-closure:blizzard/starcraft-2:language-context-v1:c973949a22367090429121a4949c5483,language-spec:blizzard/sc2-galaxy-language-core@1,locale-set:selected-game-locales:enUS,provider-artifact:blizzard/galaxy-language/galaxy-document-analysis-v1/portable,provider:blizzard/sc2-galaxy-language,subject:language-context-v1:b1f366d4a19aaa2a97ddceb0bbe5b649 failures=",
+    "[worker] information x3.host/worker-shared-process: blizzard/starcraft2-resolved-data runs in a worker thread: failure and protocol isolation, not a security sandbox (SB-1)",
+    "[worker] information x3.host/worker-realm-ready: blizzard/starcraft2-resolved-data realm 1 ready in 222 ms (spawn and module load)",
+    "[language-context] resolved revision=language-context-v1:7bfc4fa8115995004878e677b3472a13 complete=false inputs=content-path-index:blizzard/starcraft-2:language-context-v1:c973949a22367090429121a4949c5483,content-path-index:language-context-v1:b1f366d4a19aaa2a97ddceb0bbe5b649:local,dependency-closure:blizzard/starcraft-2:language-context-v1:c973949a22367090429121a4949c5483,locale-set:selected-game-locales:enUS,provider-artifact:blizzard/sc2-data-language/sc2-data-document-analysis-v1/portable,provider:blizzard/sc2-data-language,resolved-data-snapshot:blizzard/starcraft-2,schema:blizzard/sc2-data-schema@1,subject:language-context-v1:b1f366d4a19aaa2a97ddceb0bbe5b649 failures=",
+    "[language-context] resolved revision=language-context-v1:618eedca45181402e773bb94a033a341 complete=false inputs=content-path-index:blizzard/starcraft-2:language-context-v1:c973949a22367090429121a4949c5483,content-path-index:language-context-v1:b1f366d4a19aaa2a97ddceb0bbe5b649:local,dependency-closure:blizzard/starcraft-2:language-context-v1:c973949a22367090429121a4949c5483,locale-set:selected-game-locales:enUS,provider-artifact:blizzard/sc2-data-language/sc2-data-document-analysis-v1/portable,provider:blizzard/sc2-data-language,resolved-data-snapshot:blizzard/starcraft-2,schema:blizzard/sc2-data-schema@1,subject:language-context-v1:b1f366d4a19aaa2a97ddceb0bbe5b649 failures=",
+    "[language-context] resolved revision=language-context-v1:9840a52e973d2a2e36edf69f58de17d1 complete=false inputs=content-path-index:blizzard/starcraft-2:language-context-v1:c973949a22367090429121a4949c5483,content-path-index:language-context-v1:b1f366d4a19aaa2a97ddceb0bbe5b649:local,dependency-closure:blizzard/starcraft-2:language-context-v1:c973949a22367090429121a4949c5483,locale-set:selected-game-locales:enUS,provider-artifact:blizzard/sc2-data-language/sc2-data-document-analysis-v1/portable,provider:blizzard/sc2-data-language,resolved-data-snapshot:blizzard/starcraft-2,schema:blizzard/sc2-data-schema@1,subject:language-context-v1:b1f366d4a19aaa2a97ddceb0bbe5b649 failures=",
+    "[worker] warning x3.host/rpc-late-reply-dropped: dropped late reply for cancelled call 25",
+    "[language-context] resolved revision=language-context-v1:2ae3c9d557eae0761a2f4d1c752c69a5 complete=false inputs=content-path-index:blizzard/starcraft-2:language-context-v1:c973949a22367090429121a4949c5483,content-path-index:language-context-v1:b1f366d4a19aaa2a97ddceb0bbe5b649:local,dependency-closure:blizzard/starcraft-2:language-context-v1:c973949a22367090429121a4949c5483,locale-set:selected-game-locales:enUS,provider-artifact:blizzard/sc2-data-language/sc2-data-document-analysis-v1/portable,provider:blizzard/sc2-data-language,resolved-data-snapshot:blizzard/starcraft-2,schema:blizzard/sc2-data-schema@1,subject:language-context-v1:b1f366d4a19aaa2a97ddceb0bbe5b649 failures=",
+    "[worker] warning x3.host/rpc-late-reply-dropped: dropped late reply for cancelled call 29"
+  ],
+  "artifact": "C:\\FILES\\SC2Files\\coding\\modkit-core\\artifacts\\modkit-sc2-completion-20260922.vsix",
+  "artifactSha256": "30462e3574c4e82e2448ceb1ca50a5e3fbd498cc212cbf223c263bdb3ceeb0a4",
+  "sc2Extension": "C:\\FILES\\SC2Files\\coding\\modkit-extensions-blizzard\\artifacts\\sc2-acceptance\\run-6X0aiz\\starcraft2"
+}

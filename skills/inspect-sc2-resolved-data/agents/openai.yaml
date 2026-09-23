@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Inspect and Author SC2 Through MK3'
+  short_description: 'Use public MK3 tools for SC2 data and authoring'
+  default_prompt: 'Use $inspect-sc2-resolved-data to inspect or author my selected SC2 context through public MK3 Modkit tools, preserving provenance, completeness, revisions, and edit receipts.'

@@ -34,20 +34,158 @@ function run(output = generated, packageManifest = manifest) {
 }
 
 describe('generated VS Code contributions', () => {
+  it('emits the manifest and contributions together without changing package identity', () => {
+    const output = tempPath('contributes.json')
+    const target = tempPath('package.json')
+    writeFileSync(
+      target,
+      JSON.stringify({ name: 'fixture', version: '2.0.0', scripts: { test: 'keep' } }),
+    )
+    const result = spawnSync(
+      process.execPath,
+      [generator, '--output', output, '--manifest', target],
+      { encoding: 'utf8' },
+    )
+    expect(result.status, result.stderr).toBe(0)
+    const manifestDocument = JSON.parse(readFileSync(target, 'utf8'))
+    expect(manifestDocument).toMatchObject({
+      name: 'fixture',
+      version: '2.0.0',
+      scripts: { test: 'keep' },
+    })
+    expect(manifestDocument.contributes).toEqual(JSON.parse(readFileSync(output, 'utf8')))
+    expect(run(output, target).status).toBe(0)
+  })
+
+  it('shows Verify only when the active document has a provider', () => {
+    const contributions = JSON.parse(readFileSync(generated, 'utf8'))
+    expect(contributions.commands).toContainEqual({
+      command: 'modkit.verifyDocument',
+      title: '%command.verifyDocument%',
+      icon: '$(check)',
+      enablement: 'modkit.canVerifyDocument',
+    })
+    expect(contributions.menus['editor/title']).toContainEqual({
+      command: 'modkit.verifyDocument',
+      when: 'modkit.canVerifyDocument',
+      group: 'navigation@4',
+    })
+  })
+
   it('pins generated contributions and their ordered activation events to package.json', () => {
     const authorityDocument = JSON.parse(readFileSync(authority, 'utf8'))
     const expectedActivationEventCount =
       authorityDocument.commands.length +
       authorityDocument.customEditors.length +
       Object.values(authorityDocument.views as Record<string, unknown[]>).flat().length +
-      authorityDocument.fileSystemSchemes.length
+      authorityDocument.fileSystemSchemes.length +
+      1 // onStartupFinished: language routes are composed dynamically.
     const result = run()
 
-    // Wave 2B added three stage-specific custom editors and two association commands.
-    expect(expectedActivationEventCount).toBe(44)
+    expect(
+      authorityDocument.commands.some(
+        (row: { command: string }) => row.command === 'modkit.verifyDocument',
+      ),
+    ).toBe(true)
     expect(result.status).toBe(0)
     expect(result.stderr).toBe('')
     expect(result.stdout).toContain(`${expectedActivationEventCount} activation events`)
+  })
+
+  it('publishes the persistent Sources view with shared source commands', () => {
+    const contributions = JSON.parse(readFileSync(generated, 'utf8')) as {
+      commands: readonly { command: string; icon?: string }[]
+      views: Readonly<Record<string, readonly { id: string; name: string }[]>>
+      menus: Readonly<Record<string, readonly { command: string; when: string; group: string }[]>>
+    }
+    const commands = new Map(contributions.commands.map(command => [command.command, command]))
+
+    expect(contributions.views.modkit).toContainEqual({
+      id: 'modkit.sources',
+      name: '%view.sources%',
+    })
+    expect(contributions.views.modkit).not.toContainEqual(
+      expect.objectContaining({ id: 'modkit.host' }),
+    )
+    expect(commands.get('modkit.sources.refresh')?.icon).toBe('$(refresh)')
+    expect(commands.get('modkit.sources.open')?.icon).toBe('$(plug)')
+    expect(commands.get('modkit.sources.openInstallation')?.icon).toBe('$(plug)')
+    expect(commands.get('modkit.sources.revealLocal')?.icon).toBe('$(folder)')
+    expect(contributions.menus['view/title']).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          command: 'modkit.contentSources',
+          when: 'view == modkit.sources',
+        }),
+        expect.objectContaining({
+          command: 'modkit.selectGameInstallation',
+          when: 'view == modkit.sources',
+        }),
+        expect.objectContaining({
+          command: 'modkit.sources.refresh',
+          when: 'view == modkit.sources',
+        }),
+      ]),
+    )
+    expect(contributions.menus['view/item/context']).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          command: 'modkit.sources.open',
+          when: 'view == modkit.sources && viewItem =~ /^modkitSource\\.(?:providerRoot|localRoot)$/',
+        }),
+        expect.objectContaining({
+          command: 'modkit.sources.openInstallation',
+          when: 'view == modkit.sources && viewItem == modkitSource.installation',
+        }),
+        expect.objectContaining({
+          command: 'modkit.unloadSource',
+          when: 'view == modkit.sources && viewItem =~ /^modkitSource\\.installation(?:\\.(?:mounted|mounting))?$/',
+        }),
+        expect.objectContaining({
+          command: 'modkit.sources.revealLocal',
+          when: 'view == modkit.sources && viewItem =~ /^modkitSource\\.localRoot(?:\\.(?:mounted|mounting))?$/',
+        }),
+      ]),
+    )
+    expect(contributions.menus['explorer/context']).toContainEqual(
+      expect.objectContaining({
+        command: 'modkit.sources.revealLocal',
+        when: 'resourceScheme == modkit-source || resourceScheme == modkit-container',
+      }),
+    )
+  })
+
+  it('publishes the generic active-subject Resources view', () => {
+    const contributions = JSON.parse(readFileSync(generated, 'utf8')) as {
+      commands: readonly { command: string; icon?: string }[]
+      views: Readonly<Record<string, readonly { id: string; name: string }[]>>
+      menus: Readonly<Record<string, readonly { command: string; when: string; group: string }[]>>
+    }
+    const commands = new Map(contributions.commands.map(command => [command.command, command]))
+    expect(contributions.views.modkit).toContainEqual({
+      id: 'modkit.resources',
+      name: '%view.resources%',
+    })
+    expect(commands.get('modkit.resources.search')?.icon).toBe('$(search)')
+    expect(commands.get('modkit.resources.refresh')?.icon).toBe('$(refresh)')
+    expect(contributions.menus['view/title']).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          command: 'modkit.resources.search',
+          when: 'view == modkit.resources',
+        }),
+        expect.objectContaining({
+          command: 'modkit.resources.refresh',
+          when: 'view == modkit.resources',
+        }),
+      ]),
+    )
+    expect(contributions.menus['view/item/context']).toContainEqual(
+      expect.objectContaining({
+        command: 'modkit.resources.open',
+        when: 'view == modkit.resources && viewItem == modkitResource.openable',
+      }),
+    )
   })
 
   it('pins codec toggles and mutable extension actions to inline tree menus', () => {
@@ -56,7 +194,9 @@ describe('generated VS Code contributions', () => {
       menus: Readonly<Record<string, readonly { command: string; when: string; group: string }[]>>
     }
     const commands = new Map(contributions.commands.map(command => [command.command, command]))
-    const inline = contributions.menus['view/item/context'] ?? []
+    const inline = (contributions.menus['view/item/context'] ?? []).filter(item =>
+      item.when.includes('view == modkit.extensions'),
+    )
 
     expect(commands.get('modkit.extensions.enableContribution')?.icon).toBe('$(check)')
     expect(commands.get('modkit.extensions.disableContribution')?.icon).toBe('$(circle-slash)')
