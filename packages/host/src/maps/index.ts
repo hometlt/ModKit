@@ -684,6 +684,53 @@ export type MapCatalogEntities = (
 /** Rounds of catalog questions one map analysis may ask: objects, then actors, then models. */
 const MAP_CATALOG_ROUNDS = 6
 
+/**
+ * Analyze a map with only the catalog entities it names. The map names what it places; each answer
+ * can name more (an actor's model), so it is asked again until nothing new is named or the rounds
+ * run out. Only the entities asked for ever reach the map provider.
+ */
+export async function analyzeWithCatalogEntities<
+  Snapshot extends { readonly semantic: { readonly catalogQueries: readonly DataEntityRef[] } },
+>(options: {
+  readonly workspace: Pick<ModWorkspaceLock, 'workspaceId' | 'gameId'>
+  readonly analyze: (catalog: DataCatalogSnapshot | undefined, round: number) => Promise<Snapshot>
+  readonly catalogEntities: MapCatalogEntities
+  readonly signal?: AbortSignal
+}): Promise<Snapshot> {
+  const key = (ref: DataEntityRef) => `${ref.namespace}\u0000${ref.entityId}`
+  const asked = new Set<string>()
+  const entities = new Map<string, DataResolvedEntity>()
+  let snapshot = await options.analyze(undefined, 0)
+  for (let round = 1; round <= MAP_CATALOG_ROUNDS; round += 1) {
+    const refs = snapshot.semantic.catalogQueries.filter(ref => !asked.has(key(ref)))
+    if (refs.length === 0) break
+    for (const ref of refs) asked.add(key(ref))
+    for (const entity of await options.catalogEntities(refs, options.signal)) {
+      entities.set(key(entity), entity)
+    }
+    options.signal?.throwIfAborted()
+    const answered = Object.freeze([...entities.values()])
+    snapshot = await options.analyze(
+      Object.freeze({
+        schemaVersion: 1,
+        workspaceId: options.workspace.workspaceId,
+        gameId: options.workspace.gameId,
+        analyzerId: 'x3.host/map-catalog-slice',
+        typeIds: Object.freeze([]),
+        namespaces: Object.freeze([]),
+        entityCount: answered.length,
+        patchCount: 0,
+        definitions: answered,
+        entities: answered,
+        diagnostics: Object.freeze([]),
+        complete: false,
+      }),
+      round,
+    )
+  }
+  return snapshot
+}
+
 export interface AnalyzeResolvedMapWorkspaceRequest {
   readonly services: MapHostServices
   readonly grant: PermissionGrant
@@ -1052,40 +1099,15 @@ export async function analyzeResolvedMapWorkspace(
         .map(item => item.requirementId),
       ...(request.signal === undefined ? {} : { signal: request.signal }),
     })
-    let snapshot = await analyze(request.catalog, 0)
-    if (request.catalog === undefined && request.catalogEntities !== undefined) {
-      // The map names what it places; each answer can name more (an actor's model), so ask again
-      // until nothing new is named. Only the entities asked for ever reach the map provider.
-      const key = (ref: DataEntityRef) => `${ref.namespace}\u0000${ref.entityId}`
-      const asked = new Set<string>()
-      const entities = new Map<string, DataResolvedEntity>()
-      for (let round = 1; round <= MAP_CATALOG_ROUNDS; round += 1) {
-        const refs = snapshot.semantic.catalogQueries.filter(ref => !asked.has(key(ref)))
-        if (refs.length === 0) break
-        for (const ref of refs) asked.add(key(ref))
-        for (const entity of await request.catalogEntities(refs, request.signal)) {
-          entities.set(key(entity), entity)
-        }
-        const answered = Object.freeze([...entities.values()])
-        snapshot = await analyze(
-          Object.freeze({
-            schemaVersion: 1,
-            workspaceId: request.workspace.workspaceId,
-            gameId: request.workspace.gameId,
-            analyzerId: 'x3.host/map-catalog-slice',
-            typeIds: Object.freeze([]),
-            namespaces: Object.freeze([]),
-            entityCount: answered.length,
-            patchCount: 0,
-            definitions: answered,
-            entities: answered,
-            diagnostics: Object.freeze([]),
-            complete: false,
-          }),
-          round,
-        )
-      }
-    }
+    const snapshot =
+      request.catalog === undefined && request.catalogEntities !== undefined
+        ? await analyzeWithCatalogEntities({
+            workspace: request.workspace,
+            analyze,
+            catalogEntities: request.catalogEntities,
+            ...(request.signal === undefined ? {} : { signal: request.signal }),
+          })
+        : await analyze(request.catalog, 0)
     if (request.resources.state() !== 'live') {
       throw new Error('resource session was disposed while workspace map was analyzed')
     }
