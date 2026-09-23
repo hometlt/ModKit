@@ -1401,9 +1401,19 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
             const rect = canvas.getBoundingClientRect()
             // No layout yet, or a detached document: the fallback size is the honest answer.
             if (rect.width <= 0 || rect.height <= 0) return false
+            /*
+             * One scale for both axes, so the backing store keeps the box's shape.
+             *
+             * Clamping each axis to 2048 on its own is what made the model stretch: a 1308x968 box
+             * at 2x wants 2616x1936, and capping only the width left a 2048x1936 buffer drawn into
+             * a 4:3 box. The frame was correct and the browser scaled it wrong — which is why the
+             * distortion followed the panel's shape and disappeared at small sizes. The cap is a
+             * cost ceiling on the longest edge, so it applies to the whole measurement at once.
+             */
             const density = Math.min(2, view?.devicePixelRatio ?? 1)
-            const width = Math.max(1, Math.min(2048, Math.round(rect.width * density)))
-            const height = Math.max(1, Math.min(2048, Math.round(rect.height * density)))
+            const scale = Math.min(density, 2048 / rect.width, 2048 / rect.height)
+            const width = Math.max(1, Math.round(rect.width * scale))
+            const height = Math.max(1, Math.round(rect.height * scale))
             if (viewport.width === width && viewport.height === height) return false
             viewport.width = width
             viewport.height = height
@@ -1593,6 +1603,9 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
               drawWireframe()
               return
             }
+            // Measured here as well as in the wireframe path: the first shaded frame used to be
+            // projected for the 720x480 fallback and only corrected once the observer fired.
+            measureViewport()
             const placement = modelCamera(framing(), camera.basis(), pose.distanceScale, viewport)
             const renderer = provider
             renderBusy = true
