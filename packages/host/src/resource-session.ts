@@ -158,6 +158,8 @@ function allowed(logicalId: string, allowlist: readonly string[] | undefined): b
 interface CacheEntry {
   /** The entry's own logical id as the backend spells it, or `undefined` for a proven miss. */
   readonly found: string | undefined
+  /** Which root of the origin's load order answered, when it named one. */
+  readonly rootId?: string
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -276,7 +278,11 @@ export function createResourceSession(options: ResourceSessionOptions): Resource
     normalized: string,
     scopes: readonly InputSearchScope[],
     signal: AbortSignal | undefined,
-  ): Promise<{ readonly found: string | undefined; readonly overBudget: boolean }> => {
+  ): Promise<{
+    readonly found: string | undefined
+    readonly rootId?: string
+    readonly overBudget: boolean
+  }> => {
     const wanted = fold(normalized, origin.caseSensitivity)
     /*
      * A name is matched by name; a path is matched as a path.
@@ -304,7 +310,11 @@ export function createResourceSession(options: ResourceSessionOptions): Resource
           ? (entry.logicalId.split('/').at(-1) ?? entry.logicalId)
           : entry.logicalId
         if (fold(candidate, origin.caseSensitivity) === wanted) {
-          return { found: entry.logicalId, overBudget: false }
+          return {
+            found: entry.logicalId,
+            ...(entry.rootId === undefined ? {} : { rootId: entry.rootId }),
+            overBudget: false,
+          }
         }
       }
     }
@@ -393,8 +403,10 @@ export function createResourceSession(options: ResourceSessionOptions): Resource
       const key = JSON.stringify([fold(normalized, origin.caseSensitivity), servedScopes])
       const cached = index.get(key)
       let found: string | undefined
+      let rootId: string | undefined
       if (cached !== undefined) {
         found = cached.found
+        rootId = cached.rootId
         if (found === undefined) {
           return unresolved(
             requirement,
@@ -421,8 +433,12 @@ export function createResourceSession(options: ResourceSessionOptions): Resource
             `locating «${requirement.logicalId}» exceeded the session entry budget of ${limits.maxEntries}`,
           )
         }
-        index.set(key, { found: located.found })
+        index.set(key, {
+          found: located.found,
+          ...(located.rootId === undefined ? {} : { rootId: located.rootId }),
+        })
         found = located.found
+        rootId = located.rootId
         if (found === undefined) {
           return unresolved(
             requirement,
@@ -545,6 +561,7 @@ export function createResourceSession(options: ResourceSessionOptions): Resource
           revision: lease.value.revision,
           bytes: size,
           cached: cached !== undefined,
+          ...(rootId === undefined ? {} : { rootId }),
         }),
       }
     },

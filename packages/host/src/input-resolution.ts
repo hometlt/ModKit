@@ -97,6 +97,15 @@ export interface CompanionOriginEntry {
   /** Confined logical name inside the origin; `/`-separated, never absolute. */
   readonly logicalId: string
   readonly size?: bigint
+  /**
+   * Which of the origin's own roots answered, when it has more than one.
+   *
+   * A layered origin is a load order — the map, then the mods it depends on, then the game's
+   * installed storage — and "the texture resolved" is a different fact from "the texture came out
+   * of Liberty rather than out of the map". Only the second one tells a reader whether a map is
+   * self-contained. Origins with a single place to look leave it absent.
+   */
+  readonly rootId?: string
 }
 
 /**

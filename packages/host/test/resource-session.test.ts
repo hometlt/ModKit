@@ -151,6 +151,50 @@ describe('resource session — resolution', () => {
     }
   })
 
+  /*
+   * Which layer answered, not merely that something did.
+   *
+   * A map's load order is the map, then the mods it depends on, then the game's installed storage,
+   * and "the texture resolved" hides the difference between a package that carries its own art and
+   * one that borrows all of it. The origin names the root; the session carries that name into the
+   * provenance, including when it answers the second request from its own cache — a cached hit that
+   * forgot where the bytes came from would report a self-contained map as soon as it was read twice.
+   */
+  it('records which root of the origin answered, and remembers it across a cached hit', async () => {
+    const origin = fakeOrigin([
+      { logicalId: 'assets/textures/hull.dds', rootId: 'installation' },
+      { logicalId: 'assets/textures/local.dds', rootId: 'map' },
+    ])
+    const session = createResourceSession({ origin, revision: SESSION_REVISION })
+    try {
+      const borrowed = await session.resolve(requirement('r1', 'assets/textures/hull.dds'))
+      const carried = await session.resolve(requirement('r2', 'assets/textures/local.dds'))
+      const again = await session.resolve(requirement('r3', 'assets/textures/hull.dds'))
+      expect([borrowed, carried, again].map(item => item.provenance.rootId)).toEqual([
+        'installation',
+        'map',
+        'installation',
+      ])
+      expect(again.provenance.cached).toBe(true)
+      for (const item of [borrowed, carried, again])
+        if (item.state === 'resolved') await item.lease.release()
+    } finally {
+      await session.dispose()
+    }
+  })
+
+  it('leaves the root unnamed for an origin with a single place to look', async () => {
+    const origin = fakeOrigin(['textures/hull.dds'])
+    const session = createResourceSession({ origin, revision: SESSION_REVISION })
+    try {
+      const result = await session.resolve(requirement('r1', 'textures/hull.dds'))
+      expect(result.provenance.rootId).toBeUndefined()
+      if (result.state === 'resolved') await result.lease.release()
+    } finally {
+      await session.dispose()
+    }
+  })
+
   it('locates one exact resource within budget despite thousands of adjacent entries', async () => {
     const origin = fakeOrigin([
       ...Array.from({ length: 5000 }, (_, index) => `textures/a-${index}.dds`),

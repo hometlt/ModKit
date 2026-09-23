@@ -575,8 +575,11 @@ export function createCompositeWorkspaceNamespaceCompanionOrigin(
           const bound = byLogicalId.get(fold(remembered))
           if (bound !== undefined) byLogicalId.set(fold(logicalId), bound)
           yielded.add(fold(logicalId))
+          // The root is named because the load order is the answer a reader wants: a texture that
+          // resolved out of the installed game is a different fact from one the map carries.
           yield Object.freeze({
             logicalId,
+            rootId: root.rootId,
             ...(entry.size === undefined ? {} : { size: entry.size }),
           })
         }

@@ -102,6 +102,14 @@ export interface ResourceProvenanceRecord {
   /** True when the session answered from its cache instead of enumerating again. */
   readonly cached: boolean
   readonly scopes: readonly InputSearchScope[]
+  /**
+   * Which root of the origin's load order answered, when it names one.
+   *
+   * "Resolved" and "resolved out of the installed game rather than out of the map" are different
+   * facts, and only the second says whether a package is self-contained. Absent for an origin with
+   * a single place to look, and for an unresolved requirement.
+   */
+  readonly rootId?: string
 }
 
 export type ResourceResolution =
