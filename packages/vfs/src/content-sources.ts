@@ -115,10 +115,14 @@ export interface ModContext {
   /** Declared dependencies no source could provide. */
   readonly unresolved: readonly string[]
   readonly diagnostics: readonly unknown[]
-  /** One layer's files, by their paths relative to the layer, in a stable order. */
+  /**
+   * One layer's files, by their paths relative to the layer's package root, components included
+   * (`Base.SC2Data/TriggerLibs/LibraryList.xml`), in a stable order; `prefix` keeps only paths that
+   * start with it, compared without case.
+   */
   files(
     layerId: string,
-    page: { readonly cursor?: string; readonly limit: number },
+    page: { readonly cursor?: string; readonly limit: number; readonly prefix?: string },
   ): Promise<ModContextPage<string>>
   /** Bytes of one listed file; a path the layer does not list is refused. */
   read(layerId: string, path: string, maxBytes: number): Promise<Uint8Array>
@@ -131,6 +135,22 @@ export interface ModContext {
   query?(request: unknown, signal?: AbortSignal): Promise<unknown>
   dispose(): Promise<void>
 }
+
+/**
+ * The one {@link ModContext.query} every game answers: resolved data entities by reference, a few
+ * at a time — so a map world asks for the units, actors and models it places instead of receiving
+ * a whole catalog. An entity the context does not define is left out of the answer.
+ */
+export interface ModContextEntitiesQuery {
+  readonly kind: 'data.entities'
+  readonly refs: readonly { readonly namespace: string; readonly entityId: string }[]
+}
+export interface ModContextEntitiesAnswer {
+  /** Resolved entities in the game's data-catalog shape (`namespace`, `entityId`, `fields`, …). */
+  readonly entities: readonly unknown[]
+}
+/** References one entities query may carry. */
+export const MOD_CONTEXT_MAX_QUERY_REFS = 1024
 
 /** Source identifiers remain opaque; only an explicit trusted provider may reveal a local target. */
 export interface ContentSources {

@@ -285,9 +285,12 @@ export async function resolveSubjectClosure(request: {
   readonly contentSources: ContentSources
   readonly subject: ContentSubject
   readonly baseMods?: BaseModSetting
+  /** Hand the opened mod context back (the caller disposes it) instead of closing it here. */
+  readonly keepContext?: boolean
   readonly signal?: AbortSignal
 }): Promise<{
   readonly resolution?: ContentDependencyResolution
+  readonly context?: ModContext
   readonly diagnostics: readonly Diagnostic[]
 }> {
   const { contentSources, subject, signal } = request
@@ -300,15 +303,18 @@ export async function resolveSubjectClosure(request: {
         target,
         ...(baseMods === undefined ? {} : { baseMods }),
       })
+      let kept = false
       try {
         signal?.throwIfAborted()
         const resolution = modContextResolution(context)
+        kept = request.keepContext === true
         return Object.freeze({
           resolution,
+          ...(kept ? { context } : {}),
           diagnostics: contentDependencyDiagnostics(resolution.diagnostics),
         })
       } finally {
-        await context.dispose()
+        if (!kept) await context.dispose()
       }
     } catch (error) {
       signal?.throwIfAborted()

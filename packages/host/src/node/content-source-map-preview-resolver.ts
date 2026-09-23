@@ -14,15 +14,19 @@ import {
   type NamespaceEntrySource,
   type RevisionId,
 } from '@modkit/sdk'
-import type {
-  ContentDependencyMount,
-  ContentDependencyResolution,
-  ContentSourceEntry,
-  ContentSources,
+import {
+  MOD_CONTEXT_MAX_QUERY_REFS,
+  type ContentDependencyMount,
+  type ContentDependencyResolution,
+  type ContentSourceEntry,
+  type ContentSources,
+  type ModContext,
 } from '@modkit/vfs/content-sources'
+import type { DataEntityRef, DataResolvedEntity } from '@modkit/sdk'
 import { entryRevision as contentDependencyMountRevision } from '../content-dependencies.js'
 import { resolveSubjectClosure } from '../content-dependency-operations.js'
 import type {
+  MapCatalogEntities,
   MapPreviewResourcePlanResolution,
   MapPreviewResourcePlanResolver,
   ResolveMapPreviewResourcePlanRequest,
@@ -41,6 +45,28 @@ export interface ContentSourceMapPreviewResourcePlanResolverOptions {
   readonly maximumEntryBytes?: number
   /** Entries one listing may walk below a mount; a larger subtree is refused, not truncated. */
   readonly maximumListingEntries?: number
+}
+
+/** The context's `data.entities` query, a bounded batch at a time; undefined if it has none. */
+function contextCatalogEntities(context: ModContext): MapCatalogEntities | undefined {
+  const query = context.query?.bind(context)
+  if (query === undefined) return undefined
+  return async (refs: readonly DataEntityRef[], signal?: AbortSignal) => {
+    const entities: DataResolvedEntity[] = []
+    for (let start = 0; start < refs.length; start += MOD_CONTEXT_MAX_QUERY_REFS) {
+      const answer = (await query(
+        { kind: 'data.entities', refs: refs.slice(start, start + MOD_CONTEXT_MAX_QUERY_REFS) },
+        signal,
+      )) as { readonly entities?: unknown } | undefined
+      if (!Array.isArray(answer?.entities)) throw new TypeError('data.entities answered no entity list')
+      for (const entity of answer.entities as readonly Partial<DataResolvedEntity>[]) {
+        if (typeof entity?.namespace === 'string' && typeof entity.entityId === 'string') {
+          entities.push(entity as DataResolvedEntity)
+        }
+      }
+    }
+    return entities
+  }
 }
 
 const fold = (value: string): string => value.replaceAll('\\', '/').replace(/^\/+|\/+$/gu, '').toLowerCase()
@@ -198,10 +224,25 @@ export function createContentSourceMapPreviewResourcePlanResolver(
       const closure = await resolveSubjectClosure({
         contentSources: sources,
         subject: { descriptor, operations: request.original.operations() },
+        keepContext: true,
         ...(request.signal === undefined ? {} : { signal: request.signal }),
       })
-      if (closure.resolution === undefined) return fallback(request, closure.diagnostics)
-      request.signal?.throwIfAborted()
+      // The map's context stays open for the preview's life: its catalog answers the map world.
+      const context = closure.context
+      const releaseContext = async () => {
+        await context?.dispose()
+      }
+      if (closure.resolution === undefined) {
+        await releaseContext()
+        return fallback(request, closure.diagnostics)
+      }
+      try {
+        request.signal?.throwIfAborted()
+      } catch (error) {
+        await releaseContext()
+        throw error
+      }
+      const catalogEntities = context === undefined ? undefined : contextCatalogEntities(context)
       const resolution: ContentDependencyResolution = closure.resolution
       const findings: Diagnostic[] = [...closure.diagnostics]
 
@@ -212,6 +253,7 @@ export function createContentSourceMapPreviewResourcePlanResolver(
       // bare map; the fallback can still find the game on its own.
       if (request.plan.roots.length > 0 && !request.plan.roots.some(root =>
         mountsByPath.has(fold(sourcePathOf(root.rootId) ?? root.rootId)))) {
+        await releaseContext()
         return fallback(request, [...findings, diagnostic('information',
           'x3.host/map-preview-content-sources-empty',
           'the configured content sources mounted none of the map dependencies')])
@@ -235,6 +277,7 @@ export function createContentSourceMapPreviewResourcePlanResolver(
         }
       } catch (error) {
         await subject?.namespaceRelease()
+        await releaseContext()
         return Object.freeze({
           state: 'unresolved' as const,
           diagnostics: Object.freeze([...findings, diagnostic('error',
@@ -300,8 +343,11 @@ export function createContentSourceMapPreviewResourcePlanResolver(
           kind: 'provider-token',
           value: JSON.stringify(originRoots.map(root => [root.rootId, String(root.containerRevision)])),
         }),
+        ...(catalogEntities === undefined ? {} : { catalogEntities }),
         diagnostics: Object.freeze(findings),
-        release: async () => { await subject?.namespaceRelease() },
+        release: async () => {
+          await Promise.allSettled([subject?.namespaceRelease(), releaseContext()])
+        },
       })
     },
   })

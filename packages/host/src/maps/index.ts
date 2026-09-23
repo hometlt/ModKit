@@ -50,6 +50,8 @@ import type {
   AssetDiagnosticWire,
   AssetSession,
   DataCatalogSnapshot,
+  DataEntityRef,
+  DataResolvedEntity,
   DataSourceMajor,
   DataSourceOf,
   DefinitionInventoryResult,
@@ -670,6 +672,18 @@ export interface ResolvedMapWorkspaceLimits {
   readonly maxDiagnostics: number
 }
 
+/**
+ * Resolved catalog entities by reference, from wherever the merged catalog lives — so a map world
+ * receives the units, actors and models it places, never a whole catalog through a worker frame.
+ */
+export type MapCatalogEntities = (
+  refs: readonly DataEntityRef[],
+  signal?: AbortSignal,
+) => Promise<readonly DataResolvedEntity[]>
+
+/** Rounds of catalog questions one map analysis may ask: objects, then actors, then models. */
+const MAP_CATALOG_ROUNDS = 6
+
 export interface AnalyzeResolvedMapWorkspaceRequest {
   readonly services: MapHostServices
   readonly grant: PermissionGrant
@@ -679,6 +693,8 @@ export interface AnalyzeResolvedMapWorkspaceRequest {
   /** Resolves bundle companions (for example M3A) from the same dependency overlay. */
   readonly inputResolver?: SubjectInputResolver
   readonly catalog?: DataCatalogSnapshot
+  /** Asked for what the map references when no `catalog` is given (see {@link MapCatalogEntities}). */
+  readonly catalogEntities?: MapCatalogEntities
   readonly limits: ResolvedMapWorkspaceLimits
   /** Host-only acquisition measurements; never forwarded to a game provider or worker. */
   readonly onModelResourceProfile?: (profile: ModelResourceProfile) => void
@@ -1013,12 +1029,13 @@ export async function analyzeResolvedMapWorkspace(
       `map=${encodeURIComponent(plan.mapId)}`,
       ...revisions,
     ].join('|')
-    const snapshot = await resolution.workspace.analyze({
+    const analyze = (catalog: DataCatalogSnapshot | undefined, round: number) =>
+      resolution.workspace.analyze({
       workspaceId: request.workspace.workspaceId,
       gameId: request.workspace.gameId,
       mapId: plan.mapId,
       documents,
-      ...(request.catalog === undefined ? {} : { catalog: request.catalog }),
+      ...(catalog === undefined ? {} : { catalog }),
       maxDocuments: limits.maxRequirements,
       maxDocumentBytes: limits.maxDocumentBytes,
       maxTotalBytes: limits.maxTotalBytes,
@@ -1028,13 +1045,47 @@ export async function analyzeResolvedMapWorkspace(
       maxTerrainSamples: limits.maxTerrainSamples,
       maxDepth: limits.maxDepth,
       maxDiagnostics: limits.maxDiagnostics,
-      snapshotId,
+      snapshotId: round === 0 ? snapshotId : `${snapshotId}|catalog-round=${round}`,
       unresolvedRequirementIds,
       requiredRequirementIds: plan.requirements
         .filter(item => item.required)
         .map(item => item.requirementId),
       ...(request.signal === undefined ? {} : { signal: request.signal }),
     })
+    let snapshot = await analyze(request.catalog, 0)
+    if (request.catalog === undefined && request.catalogEntities !== undefined) {
+      // The map names what it places; each answer can name more (an actor's model), so ask again
+      // until nothing new is named. Only the entities asked for ever reach the map provider.
+      const key = (ref: DataEntityRef) => `${ref.namespace}\u0000${ref.entityId}`
+      const asked = new Set<string>()
+      const entities = new Map<string, DataResolvedEntity>()
+      for (let round = 1; round <= MAP_CATALOG_ROUNDS; round += 1) {
+        const refs = snapshot.semantic.catalogQueries.filter(ref => !asked.has(key(ref)))
+        if (refs.length === 0) break
+        for (const ref of refs) asked.add(key(ref))
+        for (const entity of await request.catalogEntities(refs, request.signal)) {
+          entities.set(key(entity), entity)
+        }
+        const answered = Object.freeze([...entities.values()])
+        snapshot = await analyze(
+          Object.freeze({
+            schemaVersion: 1,
+            workspaceId: request.workspace.workspaceId,
+            gameId: request.workspace.gameId,
+            analyzerId: 'x3.host/map-catalog-slice',
+            typeIds: Object.freeze([]),
+            namespaces: Object.freeze([]),
+            entityCount: answered.length,
+            patchCount: 0,
+            definitions: answered,
+            entities: answered,
+            diagnostics: Object.freeze([]),
+            complete: false,
+          }),
+          round,
+        )
+      }
+    }
     if (request.resources.state() !== 'live') {
       throw new Error('resource session was disposed while workspace map was analyzed')
     }
@@ -1432,6 +1483,8 @@ export type MapPreviewResourcePlanResolution =
       state: 'resolved'
       origin: CompanionOrigin
       revision: RevisionId
+      /** Where the resolver found the map's merged catalog: the map asks it for what it places. */
+      catalogEntities?: MapCatalogEntities
       diagnostics: readonly Diagnostic[]
       /** Releases resolver-owned leases after the ResourceSession has been disposed. */
       release(): Promise<void>
@@ -2725,7 +2778,14 @@ export async function coordinateMapPreviewAssetSession(
       revision: resourceResolution.revision,
     })
     const inputResolver = createCompanionInputResolver(resourceResolution.origin)
-    const enrichment = await enrichMapPreviewCatalog(request, workspace, resources)
+    // A resolver that holds the merged catalog answers what the map places; the whole-catalog
+    // enrichment is only for a resolver that does not.
+    const catalogEntities =
+      request.catalog === undefined ? resourceResolution.catalogEntities : undefined
+    const enrichment =
+      catalogEntities === undefined
+        ? await enrichMapPreviewCatalog(request, workspace, resources)
+        : (Object.freeze({ diagnostics: Object.freeze([]) }) as MapPreviewCatalogEnrichment)
     const opened = await openMapPreviewAssetSession({
       services: request.services,
       grant: request.grant,
@@ -2738,6 +2798,7 @@ export async function coordinateMapPreviewAssetSession(
         ? {}
         : { onModelResourceProfile: request.onModelResourceProfile }),
       ...(enrichment.catalog === undefined ? {} : { catalog: enrichment.catalog }),
+      ...(catalogEntities === undefined ? {} : { catalogEntities }),
       ...(enrichment.sources === undefined ? {} : { catalogSources: enrichment.sources }),
       limits: request.limits,
       ...(request.signal === undefined ? {} : { signal: request.signal }),
