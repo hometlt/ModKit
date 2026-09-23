@@ -156,12 +156,12 @@ describe('what a host may hand a provider', () => {
     await callContentSources(source, 'prepareRevision', [
       'mine:1',
       'Mod.SC2Mod',
-      { visibility: 'private', locked: true, protectHeader: true },
+      { visibility: 'private', locked: true, protectHeader: true, majorRevision: true },
     ])
     expect(calls[0]).toEqual([
       'mine:1',
       'Mod.SC2Mod',
-      { visibility: 'private', locked: true, protectHeader: true },
+      { visibility: 'private', locked: true, protectHeader: true, majorRevision: true },
     ])
     for (const options of [{ visibility: 'secret' }, { locked: 'yes' }, { archivePath: '' }, null]) {
       await expect(

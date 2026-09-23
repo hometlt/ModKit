@@ -110,6 +110,8 @@ export interface PublicationOptions {
   readonly locked?: boolean
   /** Apply the "Locked By BadName" header protection to the archive that is sent. */
   readonly protectHeader?: boolean
+  /** Publish as a major revision (1.4 becomes 2.0) rather than the next minor one. */
+  readonly majorRevision?: boolean
 }
 
 const bounded = (value: unknown, limit: number): value is string =>
@@ -134,6 +136,7 @@ function publicationOptions(raw: unknown, required: readonly string[]): Publicat
     visibility: value => value === 'private' || value === 'public',
     locked: value => typeof value === 'boolean',
     protectHeader: value => typeof value === 'boolean',
+    majorRevision: value => typeof value === 'boolean',
   }
   for (const [key, value] of Object.entries(options)) {
     if (value === undefined) continue
