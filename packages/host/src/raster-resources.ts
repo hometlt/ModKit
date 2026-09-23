@@ -2,6 +2,7 @@ import { diagnostic, isModkitError } from '@modkit/core'
 import {
   revisionId,
   type ArtifactByteSource,
+  type InputSearchScope,
   type Lease,
   type RasterImageSource,
   type RasterResourcePort,
@@ -24,10 +25,44 @@ export interface SubjectRasterResourceState {
   resources?: ResourceSessionPort
 }
 
+/**
+ * Where a codec wants one role's resources looked for, and in what order.
+ *
+ * Derived from the requirements the codec's own `planInput` returned, so the search rule for a
+ * format lives in that format's codec and nowhere else. A viewer asking for a texture states the
+ * role and the name the document spells; it does not get to decide which mounts are searched, or
+ * that a model's textures may sit one directory down in `Textures/`.
+ */
+export interface RasterCompanionRule {
+  readonly scopes: readonly InputSearchScope[]
+  /** Directories the name is tried under, in order; `''` is the name on its own. */
+  readonly directories: readonly string[]
+}
+
+/**
+ * The spellings of one logical id, in the order the codec's rule wants them tried.
+ *
+ * The id as the document spells it comes first: a layout the format preserved is the answer when
+ * it is there. Everything after it re-files the *name* — a model carried out of its mod keeps
+ * naming `Assets/Textures/Foo.dds` while its textures now sit beside it, or one folder down.
+ */
+function rasterSpellings(logicalId: string, rule: RasterCompanionRule | undefined): string[] {
+  const spellings = [logicalId]
+  if (rule === undefined) return spellings
+  const name = logicalId.replaceAll('\\', '/').split('/').at(-1) ?? logicalId
+  for (const directory of rule.directories) {
+    const spelling = directory === '' ? name : `${directory}/${name}`
+    if (!spellings.includes(spelling)) spellings.push(spelling)
+  }
+  return spellings
+}
+
 export interface SubjectRasterResourceOptions {
   readonly state: SubjectRasterResourceState
   readonly budget: ResourceBudget
   readonly isAuthorized: () => boolean
+  /** The opened codec's own search rule per role; absent when it planned no companions. */
+  readonly companionRule?: (role: string) => RasterCompanionRule | undefined
   /** Ordinary host codec selection under read-only authority; not supplied by the extension. */
   readonly open: (
     source: ArtifactByteSource,
@@ -96,7 +131,28 @@ export function createSubjectRasterResources(
               'x3.host/raster-origin-unavailable',
               'The subject has no resource origin.',
             )
-          const resolution = await resources.resolve(request.requirement, signal)
+          /*
+           * The codec's rule, applied to the caller's request.
+           *
+           * A requirement arrives spelling one name and a scope list the caller guessed at. The
+           * codec that opened this subject already said where its own resources live — which
+           * scopes, in which order, and under which directories — so that answer replaces the
+           * guess. A spelling that carries a directory is matched as a path, which is why trying
+           * `Textures/Foo.dds` after `Foo.dds` finds the copy one level down that a bare-name
+           * sweep of the model's own directory never sees.
+           */
+          const rule = options.companionRule?.(request.requirement.role)
+          const requirement =
+            rule === undefined
+              ? request.requirement
+              : { ...request.requirement, scopes: rule.scopes }
+          const spellings = rasterSpellings(requirement.logicalId, rule)
+          let resolution = await resources.resolve(requirement, signal)
+          for (const spelling of spellings.slice(1)) {
+            if (resolution.state === 'resolved') break
+            signal?.throwIfAborted()
+            resolution = await resources.resolve({ ...requirement, logicalId: spelling }, signal)
+          }
           provenance = resolution.provenance
           if (resolution.state === 'unresolved')
             return { state: 'unresolved', diagnostics: [resolution.diagnostic], provenance }

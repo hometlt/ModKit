@@ -637,7 +637,14 @@ export function createCompanionInputResolver(
     for (const requirement of plan.requirements) {
       checkpoint(`requirement:${requirement.id}`)
       const patterns = compilePatterns(requirement.id, requirement.patterns, origin.caseSensitivity)
-      const requested = [...requirement.scopes].sort(compareUtf8)
+      /*
+       * The scopes in the order the codec listed them, which is the order it wants them searched.
+       *
+       * This used to sort them. A companion rule states a priority — a texture beside the model,
+       * then the mod layers it was opened under, then whatever else is mounted — and sorting threw
+       * that away, so the alphabet decided which copy of a shared texture name a model got.
+       */
+      const requested = [...new Set(requirement.scopes)]
       const usable = requested.filter(scope => served.has(scope))
       if (usable.length === 0) {
         const detail = {
@@ -670,10 +677,10 @@ export function createCompanionInputResolver(
         continue
       }
 
-      // stable candidate set: sort by the logical id itself, then fold for identity, so the
-      // outcome never depends on the order the backend happened to enumerate in
-      const matched: string[] = []
-      for (const scope of usable) {
+      // stable candidate set: the declaring scope first, then the logical id itself folded for
+      // identity, so the outcome never depends on the order the backend happened to enumerate in
+      const matched: { readonly rank: number; readonly logicalId: string }[] = []
+      for (const [rank, scope] of usable.entries()) {
         for (const prefix of patterns.prefixes) {
           for (const logicalId of await enumerateScope(scope, prefix)) {
             if (
@@ -686,14 +693,18 @@ export function createCompanionInputResolver(
             }
             if (fold(logicalId) === primaryKey) continue
             if (!patterns.test(logicalId)) continue
-            matched.push(logicalId)
+            matched.push({ rank, logicalId })
           }
         }
       }
-      matched.sort(compareUtf8)
+      matched.sort((left, right) =>
+        left.rank === right.rank
+          ? compareUtf8(left.logicalId, right.logicalId)
+          : left.rank - right.rank,
+      )
       const unique: string[] = []
       const seenKeys = new Set<string>()
-      for (const logicalId of matched) {
+      for (const { logicalId } of matched) {
         const key = fold(logicalId)
         if (seenKeys.has(key)) continue
         seenKeys.add(key)

@@ -73,6 +73,7 @@ import { matchesSignatures, signatureNeeds, type SignatureWindows } from './dete
 import { assembleSubjectDescriptor } from './session.js'
 import {
   createSubjectRasterResources,
+  type RasterCompanionRule,
   type SubjectRasterResourceState,
 } from './raster-resources.js'
 import {
@@ -1717,6 +1718,28 @@ async function openSubjectDirect(
             requirements: [] as const,
           }
     const plan = snapshotPlan(rawPlan)
+    /*
+     * The codec's own search rule, per role, taken from the plan it just returned.
+     *
+     * `planInput` states where a format's companions live: the scopes in the order it wants them
+     * tried, and — through any pattern that carries a directory — the subdirectories its resources
+     * sit in. The raster port applies this to every later logical read, so a viewer asking for a
+     * texture never decides which mounts are searched. A role the codec planned nothing for keeps
+     * the caller's own scopes.
+     */
+    const companionRule = (role: string): RasterCompanionRule | undefined => {
+      const requirement = ('requirements' in plan ? plan.requirements : []).find(
+        item => item.role === role,
+      )
+      if (requirement === undefined) return undefined
+      const directories = ['']
+      for (const pattern of requirement.patterns ?? []) {
+        const cut = pattern.replaceAll('\\', '/').lastIndexOf('/')
+        const directory = cut <= 0 ? '' : pattern.slice(0, cut)
+        if (!directories.includes(directory)) directories.push(directory)
+      }
+      return Object.freeze({ scopes: requirement.scopes, directories: Object.freeze(directories) })
+    }
     const input = await (options.resolveInput ?? defaultResolveInput)({
       source: options.source,
       plan,
@@ -1891,6 +1914,7 @@ async function openSubjectDirect(
         : createSubjectRasterResources({
             state: best.rasterState,
             budget: best.effectiveBudget,
+            companionRule,
             isAuthorized: () =>
               grantValidity(best.effectiveGrant).state === 'valid' &&
               best.effectiveGrant.classes.includes('read-source'),
@@ -1962,32 +1986,119 @@ interface MatchedContainerAlias {
   readonly spec: CodecContributionSpecV1Wire
 }
 
-function matchingContainerAliases(options: OpenSubjectOptions): readonly MatchedContainerAlias[] {
-  if (options.source.kind !== 'bytes') return Object.freeze([])
+/** Why an alias-shaped codec that claims this path never reached detection. */
+interface SkippedContainerAlias {
+  readonly contributionId: string
+  readonly extensionId: string
+  readonly reason: string
+}
+
+interface ContainerAliasScan {
+  readonly aliases: readonly MatchedContainerAlias[]
+  /** Alias-shaped codec contributions the inventory carried at this open, eligible or not. */
+  readonly aliasShaped: number
+  /** Codec contributions of any shape, to tell "inventory not ready" from "nothing matched". */
+  readonly codecs: number
+  readonly skipped: readonly SkippedContainerAlias[]
+}
+
+function scanContainerAliases(options: OpenSubjectOptions): ContainerAliasScan {
+  const empty = { aliases: Object.freeze([]), skipped: Object.freeze([]) }
+  if (options.source.kind !== 'bytes') {
+    return Object.freeze({ ...empty, aliasShaped: 0, codecs: 0 })
+  }
   const path = options.path ?? options.source.ref.uri
   const aliases: MatchedContainerAlias[] = []
+  const skipped: SkippedContainerAlias[] = []
+  let aliasShaped = 0
+  let codecs = 0
   for (const extension of options.inventory.extensions) {
     for (const contribution of extension.contributions) {
       const manifest = contribution.manifest
-      if (
-        !contribution.activationEligible ||
-        manifest?.contract.id !== CODEC_CONTRIBUTION_CONTRACT ||
-        manifest.contract.major !== 1
-      ) {
+      if (manifest?.contract.id !== CODEC_CONTRIBUTION_CONTRACT || manifest.contract.major !== 1) {
         continue
       }
-      const spec = manifest.spec as unknown as CodecContributionSpecV1Wire
-      if (
-        spec.sourceTopology === 'namespace' &&
-        spec.container !== undefined &&
-        spec.openIntents.includes(options.intent) &&
-        matchesSpec(spec, path, options.mediaType)
-      ) {
-        aliases.push(Object.freeze({ contributionId: manifest.id, spec }))
+      codecs += 1
+      const spec = manifest.spec as unknown as CodecContributionSpecV1Wire | undefined
+      if (spec?.container === undefined || spec.sourceTopology !== 'namespace') continue
+      aliasShaped += 1
+      // Past this point the codec's own name rules claimed the file, so every remaining
+      // rejection is a fact the user needs: silence here reads as "the file is just a carrier".
+      if (!matchesSpec(spec, path, options.mediaType)) continue
+      const entry = {
+        contributionId: manifest.id,
+        extensionId: extension.manifest?.id ?? extension.source,
       }
+      if (!contribution.activationEligible) {
+        const reasons = [...new Set(contribution.diagnostics.map(item => item.code))]
+        skipped.push(
+          Object.freeze({
+            ...entry,
+            reason: `not activation-eligible${reasons.length === 0 ? '' : `: ${reasons.join(', ')}`}`,
+          }),
+        )
+        continue
+      }
+      if (!spec.openIntents.includes(options.intent)) {
+        skipped.push(
+          Object.freeze({
+            ...entry,
+            reason: `open intent «${options.intent}» is not declared (${spec.openIntents.join(', ')})`,
+          }),
+        )
+        continue
+      }
+      aliases.push(Object.freeze({ contributionId: manifest.id, spec }))
     }
   }
-  return Object.freeze(aliases)
+  return Object.freeze({
+    aliases: Object.freeze(aliases),
+    aliasShaped,
+    codecs,
+    skipped: Object.freeze(skipped),
+  })
+}
+
+/**
+ * The carrier winning because no semantic alias ran is indistinguishable, from the outside, from
+ * the carrier winning on merit. These lines are the difference.
+ */
+function containerAliasAbsence(
+  scan: ContainerAliasScan,
+  options: OpenSubjectOptions,
+): readonly Diagnostic[] {
+  const path = options.path ?? options.source.ref.uri
+  const explained: Diagnostic[] = scan.skipped.map(item =>
+    diagnostic(
+      'warning',
+      'x3.host/container-alias-skipped',
+      `«${item.contributionId}» claims «${path}» but did not enter detection: ${item.reason}`,
+      [item.extensionId, item.contributionId],
+    ),
+  )
+  if (scan.aliasShaped === 0 && options.source.kind === 'bytes') {
+    // Inventory carried no semantic alias at all — the usual shape of "opened too early".
+    explained.push(
+      diagnostic(
+        'information',
+        'x3.host/container-alias-none',
+        `no container-alias codec was in the inventory when «${path}» was opened`,
+        [path],
+        { codecContributions: scan.codecs, extensions: options.inventory.extensions.length },
+      ),
+    )
+  }
+  return Object.freeze(explained)
+}
+
+function withDiagnostics(
+  result: OpenSubjectResult,
+  extra: readonly Diagnostic[],
+): OpenSubjectResult {
+  if (extra.length === 0) return result
+  const diagnostics = Object.freeze([...result.diagnostics, ...extra])
+  if (result.state === 'opened') return Object.freeze({ ...result, diagnostics })
+  return Object.freeze({ ...result, diagnostics })
 }
 
 async function disposeOpened(result: OpenSubjectResult): Promise<void> {
