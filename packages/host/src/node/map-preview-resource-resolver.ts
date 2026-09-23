@@ -738,7 +738,7 @@ export function createNodeMapPreviewResourcePlanResolver(
           mount = originalMount
         } else {
           const key = pathKey(resourcePath)
-          const sharedKey = `${request.grant.id} ${key}`
+          const sharedKey = `${request.grant.id}\u0000${key}`
           const existing = externalMounts.get(key)
           if (existing !== undefined) {
             mount = existing
