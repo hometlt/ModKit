@@ -2559,6 +2559,36 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         : [],
     )
   }
+  /**
+   * Connect an account, reusing the web ticket this machine kept for that server.
+   *
+   * The ticket is what lets a login answer Battle.net's challenge without a page: it lives in the
+   * editor's secret storage, never in a file or a command line. One that is no longer accepted is
+   * forgotten, and the login is retried the ordinary way, once.
+   */
+  const ticketKey = (region: string): string => `modkit.battlenet.ticket.${region}`
+  const connectAccount = async (
+    source: ContentSources,
+    region: string,
+    accountId?: string,
+  ): Promise<void> => {
+    const key = ticketKey(region)
+    const kept = await context.secrets.get(key)
+    const run = async (ticket?: string) =>
+      (await callContentSources(source, 'connect', [region, accountId, ticket])) as
+        | { ticket?: string }
+        | undefined
+    let result: { ticket?: string } | undefined
+    try {
+      result = await run(kept)
+    } catch (error) {
+      if (kept === undefined) throw error
+      await context.secrets.delete(key)
+      result = await run(undefined)
+    }
+    if (typeof result?.ticket === 'string') await context.secrets.store(key, result.ticket)
+    await rememberConnections(source)
+  }
   const rememberedAccount = (region: string): string | undefined =>
     knownConnections().find(item => item.region === region)?.accountId
   const rememberConnections = async (source: ContentSources): Promise<void> => {
@@ -2699,8 +2729,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       task = (async () => {
         const source = await requireContentSources()
         if ((await source.snapshot()).roots.some(root => root.id === id)) return true
-        await callContentSources(source, 'connect', [remembered.region, remembered.accountId])
-        await rememberConnections(source)
+        await connectAccount(source, remembered.region, remembered.accountId)
         staleRoots.delete(id)
         sourceDecorations.fire(undefined)
         sourcesView.refresh()
@@ -3075,8 +3104,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
                 .offlineAccount
             : undefined
         if (typeof offline?.region === 'string' && typeof offline.accountId === 'string') {
-          await callContentSources(source, 'connect', [offline.region, offline.accountId])
-          await rememberConnections(source)
+          await connectAccount(source, offline.region, offline.accountId)
           sourcesView.refresh()
           return true
         }
@@ -3113,8 +3141,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
               )
         const region = chosen === undefined ? undefined : 'id' in chosen ? chosen.id : undefined
         if (typeof region !== 'string') return false
-        await callContentSources(source, 'connect', [region, rememberedAccount(region)])
-        await rememberConnections(source)
+        await connectAccount(source, region, rememberedAccount(region))
         sourcesView.refresh()
         return true
       }),
@@ -3401,6 +3428,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         const snapshot = await source.snapshot()
         if (snapshot.roots.some(root => root.id === sourceId)) {
           await callContentSources(source, 'disconnect', [sourceId.slice('mine:'.length)])
+          const region = snapshot.roots.find(root => root.id === sourceId)?.region
+          if (region !== undefined) await context.secrets.delete(ticketKey(region))
           await rememberConnections(source)
           staleRoots.add(sourceId)
           sourceDecorations.fire(undefined)
@@ -3454,6 +3483,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         if (typeof chosen !== 'string') return false
         await callContentSources(source, 'disconnect', [chosen])
         // A signed-out account must not be taken back by the next window.
+        const region = connections.find(item => item.id === chosen)?.region
+        if (region !== undefined) await context.secrets.delete(ticketKey(region))
         await rememberConnections(source)
         sourcesView.refresh()
         return true
@@ -3553,8 +3584,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
           if (region === undefined) {
             await vscode.commands.executeCommand('modkit.sources.signIn')
           } else {
-            await callContentSources(source, 'connect', [region, rememberedAccount(region)])
-            await rememberConnections(source)
+            await connectAccount(source, region, rememberedAccount(region))
             sourcesView.refresh()
           }
           return ((await source.snapshot()).connections ?? []).find(
