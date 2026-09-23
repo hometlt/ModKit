@@ -326,14 +326,7 @@ describe('the Explorer can be answered from inside a container', () => {
     const modDescriptor = {
       identity: { formatId: 'sc2-mod' },
       dataSources: [],
-      operations: [
-        {
-          id: 'content.resolve-dependencies',
-          handlerId: 'resolve-dependencies',
-          state: 'available',
-          mutatesSource: false,
-        },
-      ],
+      operations: [],
     }
     let modDisposed = false
     const modSession = {

@@ -142,8 +142,8 @@ const services = createSubjectServices({
  * game loads whatever is open.
  *
  * This is the product's decision expressed through the machinery the product already has, rather
- * than a list of packages typed on a command line. A loose model belongs to no mod, so only the
- * standing mounts apply to it; a model inside a mod picks up that mod's declared closure.
+ * than a list of packages typed on a command line. A loose model opens over the game's base mods; a
+ * model inside a mod picks up that mod's declared closure.
  */
 const assetOrigins = []
 let contentSources
@@ -159,8 +159,7 @@ if (configAt >= 0) {
   if (contentSources === undefined) throw new Error('no content source module was configured')
   const projected = await resolveContentAssetOrigins({
     contentSources,
-    subjects: [],
-    standingMounts: true,
+    subjects: [{ descriptor: { subjectUri: pathToFileURL(modelPath).href } }],
   })
   for (const item of projected.diagnostics)
     console.log(`[sources] ${item.severity}: ${item.message}`)

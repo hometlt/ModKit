@@ -8,12 +8,9 @@ import {
   type InputSearchScope,
   type Lease,
   type ModWorkspaceDiagnostic,
-  type ModWorkspaceGraphRoot,
-  type ModWorkspaceLock,
   type RevisionId,
 } from '@modkit/sdk'
 import type {
-  ContentDependencyRequest,
   ContentDependencyMount,
   ContentDependencyResolution,
   ContentSourceEntry,
@@ -26,45 +23,13 @@ import type {
 } from './language/workspace.js'
 import { languageWorkspaceContextToken } from './language/context.js'
 import {
-  analyzeResolvedDataWorkspace,
-  type AnalyzedResolvedDataWorkspace,
-  type AnalyzeResolvedDataWorkspaceRequest,
-} from './data/index.js'
-import {
   normalizeCompanionLogicalId,
   type CompanionEnumerationOptions,
   type CompanionOrigin,
   type CompanionOriginEntry,
 } from './input-resolution.js'
-import { createResourceSession, type ResourceSessionLimits } from './resource-session.js'
 
 const DEPENDENCY_SCOPE = Object.freeze(['workspace-dependency-layer'] as const)
-
-export interface ReadOnlyContentDependencyWorkspaceOptions {
-  readonly contentSources: ContentSources
-  readonly resolution: ContentDependencyResolution
-  readonly workspaceId: string
-  readonly maximumEntryBytes?: number
-  readonly resourceLimits?: Partial<ResourceSessionLimits>
-  readonly signal?: AbortSignal
-}
-
-export interface ReadOnlyContentDependencyWorkspace {
-  readonly workspace: ModWorkspaceLock
-  readonly resources: ReturnType<typeof createResourceSession>
-  dispose(): Promise<void>
-}
-
-export interface AnalyzeReadOnlyContentDependenciesRequest extends Omit<
-  AnalyzeResolvedDataWorkspaceRequest,
-  'workspace' | 'resources' | 'writableRoots'
-> {
-  readonly contentSources: ContentSources
-  readonly dependencies: ContentDependencyRequest
-  readonly workspaceId: string
-  readonly maximumEntryBytes?: number
-  readonly resourceLimits?: Partial<ResourceSessionLimits>
-}
 
 export interface ContentDependencyLanguageDocumentSourceOptions {
   readonly contentSources: ContentSources
@@ -572,175 +537,4 @@ export function createContentDependencyAssetOrigin(options: {
   // "this provider resolved no layers" indistinguishable from "the layers hold no such file".
   if (mounts.length === 0) return undefined
   return createContentDependencyOrigin(options.contentSources, mounts, maximumEntryBytes)
-}
-
-export function createReadOnlyContentDependencyWorkspace(
-  options: ReadOnlyContentDependencyWorkspaceOptions,
-): ReadOnlyContentDependencyWorkspace {
-  throwIfAborted(options.signal)
-  const maximumEntryBytes = options.maximumEntryBytes ?? 64 * 1024 * 1024
-  if (!Number.isSafeInteger(maximumEntryBytes) || maximumEntryBytes <= 0) {
-    throw new TypeError('maximumEntryBytes must be a positive safe integer')
-  }
-  const mounts = validateMounts(options.resolution)
-  const roots: readonly ModWorkspaceGraphRoot[] = Object.freeze(
-    mounts.map(mount =>
-      Object.freeze({
-        rootId: mount.rootId,
-        sourceId: mount.sourceId,
-        sourcePath: mount.logicalPrefix,
-        displayName: mount.displayName,
-        kind: mount.kind,
-        ...(mount.fingerprint === undefined ? {} : { fingerprint: mount.fingerprint }),
-        dependencies: Object.freeze([]),
-      }),
-    ),
-  )
-  const active = roots.at(-1)!
-  const sources = [...new Set(roots.map(root => root.sourceId))].map(sourceId =>
-    Object.freeze({
-      sourceId,
-      kind: 'content-source',
-      location: `content-source:${sourceId}`,
-    }),
-  )
-  const workspace: ModWorkspaceLock = Object.freeze({
-    schemaVersion: 1,
-    workspaceId: nonEmpty(options.workspaceId, 'workspaceId'),
-    gameId: options.resolution.gameId,
-    // This is the read-only overlay head required by ModWorkspaceLock; no writable root is granted.
-    activeRootId: active.rootId,
-    sources: Object.freeze(sources),
-    loadOrder: roots,
-    dependencyOrder: Object.freeze(roots.slice(0, -1)),
-    logicalRoots: Object.freeze([...roots].reverse()),
-    diagnostics: Object.freeze(options.resolution.diagnostics.map(workspaceDiagnostic)),
-    complete: options.resolution.complete,
-  })
-  const sessionRevision = revisionIdFromRef({
-    kind: 'provider-token',
-    value: mounts.map(mount => `${mount.rootId}@${mount.revision}`).join('|'),
-  })
-  const resources = createResourceSession({
-    origin: createContentDependencyOrigin(options.contentSources, mounts, maximumEntryBytes),
-    revision: sessionRevision,
-    revisionPolicy: 'pin',
-    ...(options.resourceLimits === undefined ? {} : { limits: options.resourceLimits }),
-  })
-  return Object.freeze({
-    workspace,
-    resources,
-    dispose: () => resources.dispose(),
-  })
-}
-
-/** Resolve a dependency set through the configured content provider and run normal resolved Data. */
-export async function analyzeReadOnlyContentDependencies(
-  options: AnalyzeReadOnlyContentDependenciesRequest,
-): Promise<AnalyzedResolvedDataWorkspace> {
-  throwIfAborted(options.signal)
-  const resolve = options.contentSources.resolveDependencies
-  if (resolve === undefined) {
-    return Object.freeze({
-      state: 'unresolved',
-      diagnostics: Object.freeze([
-        diagnostic(
-          'information',
-          'x3.host/content-dependency-resolver-unavailable',
-          'the configured content source cannot resolve this dependency set',
-        ),
-      ]),
-    })
-  }
-  let resolution: ContentDependencyResolution
-  try {
-    resolution = await resolve.call(options.contentSources, options.dependencies)
-  } catch (error) {
-    options.signal?.throwIfAborted()
-    return Object.freeze({
-      state: 'unresolved',
-      diagnostics: Object.freeze([
-        diagnostic(
-          'warning',
-          'x3.host/content-dependency-resolution-failed',
-          error instanceof Error ? error.message : String(error),
-        ),
-      ]),
-    })
-  }
-  const dependencyDiagnostics = contentDependencyDiagnostics(resolution.diagnostics)
-  if (!resolution.complete || resolution.mounts.length === 0) {
-    return Object.freeze({
-      state: 'unresolved',
-      diagnostics:
-        dependencyDiagnostics.length > 0
-          ? dependencyDiagnostics
-          : Object.freeze([
-              diagnostic(
-                'warning',
-                'x3.host/content-dependency-workspace-incomplete',
-                'the content dependency set did not resolve to a complete workspace',
-              ),
-            ]),
-    })
-  }
-  let prepared: ReadOnlyContentDependencyWorkspace
-  try {
-    prepared = createReadOnlyContentDependencyWorkspace({
-      contentSources: options.contentSources,
-      resolution,
-      workspaceId: options.workspaceId,
-      ...(options.maximumEntryBytes === undefined
-        ? {}
-        : { maximumEntryBytes: options.maximumEntryBytes }),
-      ...(options.resourceLimits === undefined ? {} : { resourceLimits: options.resourceLimits }),
-      ...(options.signal === undefined ? {} : { signal: options.signal }),
-    })
-  } catch (error) {
-    options.signal?.throwIfAborted()
-    return Object.freeze({
-      state: 'unresolved',
-      diagnostics: Object.freeze([
-        ...dependencyDiagnostics,
-        diagnostic(
-          'warning',
-          'x3.host/content-dependency-workspace-invalid',
-          error instanceof Error ? error.message : String(error),
-        ),
-      ]),
-    })
-  }
-  const analysis = await analyzeResolvedDataWorkspace({
-    services: options.services,
-    grant: options.grant,
-    budgets: options.budgets,
-    workspace: prepared.workspace,
-    resources: prepared.resources,
-    locales: options.locales,
-    queries: options.queries,
-    ...(options.localizationKeys === undefined
-      ? {}
-      : { localizationKeys: options.localizationKeys }),
-    limits: options.limits,
-    ...(options.signal === undefined ? {} : { signal: options.signal }),
-  })
-  if (analysis.state === 'unresolved') {
-    await prepared.dispose()
-    return Object.freeze({
-      state: 'unresolved',
-      diagnostics: Object.freeze([...dependencyDiagnostics, ...analysis.diagnostics]),
-    })
-  }
-  let released = false
-  return Object.freeze({
-    ...analysis,
-    diagnostics: Object.freeze([...dependencyDiagnostics, ...analysis.diagnostics]),
-    async release() {
-      if (released) return
-      released = true
-      const results = await Promise.allSettled([analysis.release(), prepared.dispose()])
-      const failure = results.find(result => result.status === 'rejected')
-      if (failure?.status === 'rejected') throw failure.reason
-    },
-  })
 }

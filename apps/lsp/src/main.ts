@@ -61,9 +61,9 @@ export async function runModkitLsp(argv: readonly string[]) {
     throw new ConfigurationError('configured extensions advertise no language contributions')
   }
   /*
-   * Packed dependencies, the way MCP language sessions load them: every root that opens as a
-   * subject names its dependency closure (`content.resolve-dependencies`), the configured content
-   * provider resolves it, and its documents join the snapshot read-only after the loose files.
+   * Packed dependencies, the way MCP language sessions load them: the configured content provider
+   * opens every root that opens as a subject inside its mods (`openModContext`), and the layers'
+   * documents join the snapshot read-only after the loose files.
    */
   const contentSources =
     configuration.contentSourceConfig === undefined ||
@@ -103,10 +103,9 @@ export async function runModkitLsp(argv: readonly string[]) {
       subjects: openedRootSessions.map((session, index) => {
         const descriptor = openedSubjectDescriptors[index]
         if (descriptor === undefined) throw new Error('opened root descriptor is missing')
-        return { descriptor, operations: session.operations() }
+        return { descriptor }
       }),
       ...(configuration.baseMods.length === 0 ? {} : { baseMods: { '*': configuration.baseMods } }),
-      standingMounts: true,
     })
     for (const item of projected.diagnostics)
       process.stderr.write(errorLine(item.code, item.message))

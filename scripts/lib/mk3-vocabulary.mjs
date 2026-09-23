@@ -51,7 +51,8 @@ export const SHARED_OPERATION_IDS = [
   'asset.search',
   'asset.validate',
   'asset.compare',
-  'content.resolve-dependencies',
+  'subject.compare',
+  'subject.select',
   'content.mount',
 ]
 
@@ -103,7 +104,7 @@ export const CAPABILITY_MAPPING = {
   export: { home: 'operation', ids: ['export.raw', 'export.convert'] },
   extract: { home: 'operation', ids: ['container.extract'] },
   validate: { home: 'operation', ids: ['asset.validate'] },
-  references: { home: 'operation', ids: ['content.resolve-dependencies'] },
+  references: { home: 'implicit', note: 'the host opens the subject mod context (ContentSources.openModContext)' },
   write: {
     home: 'blocked',
     note: 'X3 v1 is read-only (BRIEF-13A acceptance 19); needs the 13D writer/service contract',

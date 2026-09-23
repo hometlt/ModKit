@@ -1,53 +1,21 @@
 import { describe, expect, it, vi } from 'vitest'
-import { operationId } from '@modkit/core'
-import type { AnyDescriptor, OperationSession } from '@modkit/sdk'
-import type { ContentSources, ModContext, ModContextRequest } from '@modkit/vfs/content-sources'
+import type {
+  ContentSources,
+  ModContext,
+  ModContextLayer,
+  ModContextRequest,
+} from '@modkit/vfs/content-sources'
 import type { LanguageWorkspaceDocumentSource } from '../src/language/workspace.js'
 import {
-  analyzeOperationContentDependencies,
   baseModsFor,
   composeLanguageDocumentSources,
-  readOperationContentDependencies,
   resolveContentAssetOrigins,
   resolveContentLanguageSources,
+  resolveSubjectClosure,
+  subjectTarget,
 } from '../src/content-dependency-operations.js'
 
-const dependencySet = Object.freeze({
-  schemaVersion: 1 as const,
-  gameId: 'example/game',
-  complete: true,
-  dependencies: Object.freeze([{ id: 'base' }]),
-})
-
-function descriptor(
-  state: 'available' | 'disabled' = 'available',
-): Pick<AnyDescriptor, 'operations'> {
-  const operation = {
-    id: operationId('content.resolve-dependencies', { contributionId: 'test/content' }),
-    handlerId: 'resolve-dependencies',
-    mutatesSource: false,
-  } as const
-  return {
-    operations: [
-      state === 'available'
-        ? { ...operation, state: 'available' }
-        : { ...operation, state: 'disabled', reason: 'initialization data unavailable' },
-    ],
-  }
-}
-
-function operations(value: unknown): OperationSession & { invoke: ReturnType<typeof vi.fn> } {
-  return {
-    invoke: vi.fn(async () => ({
-      state: 'ok' as const,
-      output: { kind: 'json' as const, value: value as never },
-      diagnostics: [],
-    })),
-    async dispose() {},
-  }
-}
-
-function sources(): ContentSources {
+function sources(openModContext?: ContentSources['openModContext']): ContentSources {
   return {
     async snapshot() {
       return { label: 'test', regions: [], connections: [], roots: [] }
@@ -66,138 +34,76 @@ function sources(): ContentSources {
     async read() {
       return new Uint8Array()
     },
+    ...(openModContext === undefined ? {} : { openModContext }),
     async dispose() {},
   }
 }
 
-describe('operation content dependency coordinator', () => {
-  it('reads the standard dependency operation as bounded inert data', async () => {
-    const session = operations(dependencySet)
-    await expect(
-      readOperationContentDependencies({
-        descriptor: descriptor(),
-        operations: session,
-      }),
-    ).resolves.toMatchObject({ state: 'resolved', dependencies: dependencySet })
-    expect(session.invoke).toHaveBeenCalledWith('resolve-dependencies', {}, undefined)
+/** A context whose layers are the given ones, then the opened subject. */
+function context(request: ModContextRequest, layers: readonly ModContextLayer[], dispose = vi.fn(async () => {})): ModContext {
+  const target = typeof request.target === 'string' ? request.target : request.target.path
+  return {
+    schemaVersion: 1,
+    gameId: 'example/game',
+    contextId: 'context',
+    layers: [
+      ...layers,
+      { id: 'primary', displayName: 'subject', sourceId: 'host', sourcePath: target, role: 'primary', provenance: 'opened' },
+    ],
+    unresolved: [],
+    diagnostics: [],
+    files: async () => ({ items: [] }),
+    read: async () => new Uint8Array(),
+    locate: async () => undefined,
+    dispose,
+  }
+}
+
+const core: ModContextLayer = { id: 'l0', displayName: 'Core', sourceId: 'casc', sourcePath: 'Mods/Core', role: 'dependency', provenance: 'implicit' }
+const base: ModContextLayer = { id: 'l1', displayName: 'Base', sourceId: 'casc', sourcePath: 'Mods/Base', role: 'base', provenance: 'setting' }
+const wizards: ModContextLayer = { id: 'l2', displayName: 'wizards', sourceId: 'wizards', sourcePath: '', role: 'dependency', provenance: 'setting' }
+const sibling: ModContextLayer = { id: 'l3', displayName: 'Assets', sourceId: 'host', sourcePath: 'C:/Work/Assets.SC2Mod', role: 'dependency', provenance: 'declared' }
+
+describe('subject closures through mod contexts', () => {
+  it('names a host path for file: URIs and a source path for content-source: URIs', () => {
+    expect(subjectTarget('file:///C:/Work/Scripts/My%20Script.galaxy')).toBe('C:/Work/Scripts/My Script.galaxy')
+    expect(subjectTarget('content-source://local%3Acasc/Mods/Liberty.SC2Mod/Base.SC2Data')).toEqual({
+      sourceId: 'local:casc',
+      path: 'Mods/Liberty.SC2Mod/Base.SC2Data',
+    })
+    expect(subjectTarget('memory://subject')).toBeUndefined()
+    expect(subjectTarget(undefined)).toBeUndefined()
   })
 
-  it('accepts the request carried beside a codec-owned workspace lock', async () => {
-    await expect(
-      readOperationContentDependencies({
-        descriptor: descriptor(),
-        operations: operations({
-          schemaVersion: 1,
-          loadOrder: [],
-          contentDependencies: dependencySet,
-        }),
-      }),
-    ).resolves.toMatchObject({ state: 'resolved', dependencies: dependencySet })
-  })
-
-  it('projects resolved closures into language sources and reports a failing operation', async () => {
-    const failing: OperationSession = {
-      invoke: async () => {
-        throw new Error('handler exploded')
-      },
-      async dispose() {},
-    }
-    const resolveDependencies = vi.fn(async () => ({
-      schemaVersion: 1 as const,
-      gameId: 'example/game',
-      complete: true,
-      dependencies: [],
-      diagnostics: [],
-      mounts: [
-        {
-          dependencyId: 'base',
-          order: 0,
-          sourceId: 'local',
-          sourcePath: 'Base',
-          displayName: 'Base',
-          kind: 'mod',
-        },
-      ],
-    }))
+  it('projects each subject context into language sources and reports one that fails to open', async () => {
+    const openModContext = vi.fn(async (request: ModContextRequest) => {
+      if (request.target === 'C:/broken') throw new Error('loader exploded')
+      return context(request, [core])
+    })
     const projected = await resolveContentLanguageSources({
-      contentSources: { ...sources(), resolveDependencies } as ContentSources,
+      contentSources: sources(openModContext),
       routes: [],
       limits: { maxDocumentBytes: 1024, maxWorkspaceBytes: 4096, maxEntries: 16 },
       subjects: [
-        { descriptor: descriptor(), operations: operations(dependencySet) },
-        { descriptor: descriptor(), operations: failing },
+        { descriptor: { subjectUri: 'file:///C:/good' } },
+        { descriptor: {}, target: 'C:/broken' },
       ],
     })
-    expect(resolveDependencies).toHaveBeenCalledWith(dependencySet)
+    expect(openModContext).toHaveBeenCalledTimes(2)
     expect(projected.sources).toHaveLength(1)
     expect(projected.dependenciesComplete).toBe(false)
     expect(projected.diagnostics).toMatchObject([
-      {
-        code: 'x3.host/content-dependency-operation-failed',
-        message: 'handler exploded',
-      },
+      { code: 'x3.host/mod-context-failed', message: 'loader exploded' },
     ])
   })
 
-  it('reports disabled and malformed dependency operations without consulting a source', async () => {
+  it('reports a subject no source can open and a provider without contexts', async () => {
     await expect(
-      readOperationContentDependencies({
-        descriptor: descriptor('disabled'),
-        operations: operations(dependencySet),
-      }),
-    ).resolves.toMatchObject({
-      state: 'unresolved',
-      diagnostics: [
-        {
-          code: 'x3.host/content-dependency-operation-unavailable',
-          message: 'initialization data unavailable',
-        },
-      ],
-    })
+      resolveSubjectClosure({ contentSources: sources(vi.fn()), subject: { descriptor: { subjectUri: 'memory://x' } } }),
+    ).resolves.toMatchObject({ diagnostics: [{ code: 'x3.host/mod-context-target-unavailable' }] })
     await expect(
-      readOperationContentDependencies({
-        descriptor: descriptor(),
-        operations: operations({ schemaVersion: 2 }),
-      }),
-    ).resolves.toMatchObject({
-      state: 'unresolved',
-      diagnostics: [
-        {
-          code: 'x3.host/content-dependency-operation-invalid',
-        },
-      ],
-    })
-  })
-
-  it('continues from the codec operation into the host content resolver', async () => {
-    await expect(
-      analyzeOperationContentDependencies({
-        descriptor: descriptor(),
-        operations: operations(dependencySet),
-        contentSources: sources(),
-        workspaceId: 'subject:example',
-        services: {} as never,
-        grant: {} as never,
-        budgets: {} as never,
-        locales: ['enUS'],
-        queries: [],
-        limits: {
-          maxRequirements: 1,
-          maxDocumentBytes: 1,
-          maxTextBytes: 1,
-          maxEntities: 1,
-          maxDepth: 1,
-          maxPageSize: 1,
-        },
-      }),
-    ).resolves.toMatchObject({
-      state: 'unresolved',
-      diagnostics: [
-        {
-          code: 'x3.host/content-dependency-resolver-unavailable',
-        },
-      ],
-    })
+      resolveSubjectClosure({ contentSources: sources(), subject: { descriptor: {}, target: 'C:/x' } }),
+    ).resolves.toMatchObject({ diagnostics: [{ code: 'x3.host/mod-context-unavailable' }] })
   })
 
   it('rebases an open overlay after weaker dependency layers', async () => {
@@ -269,57 +175,37 @@ describe('operation content dependency coordinator', () => {
     const dispose = vi.fn(async () => {})
     const openModContext = vi.fn(async (request: ModContextRequest): Promise<ModContext> => {
       opened.push(request)
-      return {
-        schemaVersion: 1,
-        gameId: 'example/game',
-        contextId: 'context',
-        layers: [
-          { id: 'l0', displayName: 'Core', sourceId: 'casc', sourcePath: 'Mods/Core', role: 'dependency', provenance: 'implicit' },
-          { id: 'l1', displayName: 'Base', sourceId: 'casc', sourcePath: 'Mods/Base', role: 'base', provenance: 'setting' },
-          { id: 'l2', displayName: 'script', sourceId: 'host', sourcePath: request.target, role: 'primary', provenance: 'opened' },
-        ],
-        unresolved: [],
-        diagnostics: [],
-        files: async () => ({ items: [] }),
-        read: async () => new Uint8Array(),
-        locate: async () => undefined,
-        dispose,
-      }
+      return context(request, [core, base, wizards, sibling], dispose)
     })
-    const resolveDependencies = vi.fn()
-    const languageMounts = vi.fn(async () => ({
-      schemaVersion: 1 as const,
-      gameId: 'example/game',
-      complete: true,
-      dependencies: [],
-      diagnostics: [],
-      mounts: [
-        { dependencyId: 'core', order: 0, sourceId: 'casc', sourcePath: 'mods/core', displayName: 'Core', kind: 'mod' },
-        { dependencyId: 'wizards', order: 1, sourceId: 'wizards', sourcePath: '', displayName: 'Wizards', kind: 'editor-wizards' },
-      ],
-    }))
-    const operationsSession = operations(dependencySet)
+    const baseMods = { '*': ['Mods/Void'], 'C:\\Work\\Scripts': ['Mods/Base'], 'C:/Work/Scripts2': ['Mods/Other'] }
     const origins = await resolveContentAssetOrigins({
-      contentSources: { ...sources(), openModContext, resolveDependencies, languageMounts } as ContentSources,
-      subjects: [
-        {
-          descriptor: { ...descriptor(), subjectUri: 'file:///C:/Work/Scripts/My%20Script.galaxy' },
-          operations: operationsSession,
-        },
-      ],
-      baseMods: { '*': ['Mods/Void'], 'C:\\Work\\Scripts': ['Mods/Base'], 'C:/Work/Scripts2': ['Mods/Other'] },
-      standingMounts: true,
+      contentSources: sources(openModContext),
+      subjects: [{ descriptor: { subjectUri: 'file:///C:/Work/Scripts/My%20Script.galaxy' } }],
+      baseMods,
     })
     expect(opened).toEqual([
       { schemaVersion: 1, target: 'C:/Work/Scripts/My Script.galaxy', baseMods: ['Mods/Base'] },
     ])
     expect(dispose).toHaveBeenCalledOnce()
-    // the codec operation and the old resolver are not consulted for a subject on disk
-    expect(operationsSession.invoke).not.toHaveBeenCalled()
-    expect(resolveDependencies).not.toHaveBeenCalled()
-    // the context's two content-source layers, then the standing wizards (Core is already held)
-    expect(origins.origins).toHaveLength(2)
+    // one origin over the context's content-source layers
+    expect(origins.origins).toHaveLength(1)
     expect(origins.dependenciesComplete).toBe(true)
+    const closure = await resolveSubjectClosure({
+      contentSources: sources(openModContext),
+      subject: { descriptor: {}, target: { sourceId: 'local:documents', path: 'Scripts/Tool.galaxy' } },
+      baseMods,
+    })
+    // a path inside a source takes only the '*' base; the subject and host layers are no mounts
+    expect(opened.at(-1)).toEqual({
+      schemaVersion: 1,
+      target: { sourceId: 'local:documents', path: 'Scripts/Tool.galaxy' },
+      baseMods: ['Mods/Void'],
+    })
+    expect(closure.resolution?.mounts.map(mount => [mount.sourceId, mount.sourcePath, mount.kind])).toEqual([
+      ['casc', 'Mods/Core', 'dependency'],
+      ['casc', 'Mods/Base', 'base'],
+      ['wizards', '', 'dependency'],
+    ])
   })
 
   it('picks the longest setting key that holds a path', () => {

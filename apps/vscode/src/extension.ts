@@ -32,10 +32,12 @@ import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:pat
 import { pathToFileURL } from 'node:url'
 import * as vscode from 'vscode'
 import { loadContentSources, callContentSources } from '@modkit/vfs/content-sources/node'
-import type {
-  ContentSourceLocalPath,
-  ContentSourceSearchResult,
-  ContentSources,
+import {
+  HOST_LAYER_SOURCE_ID,
+  type ContentSourceLocalPath,
+  type ContentSourceSearchResult,
+  type ContentSources,
+  type ModContextTarget,
 } from '@modkit/vfs/content-sources'
 import { chooseContentSource } from '@modkit/ui/content-sources'
 import type { CatalogSource, ExtensionManagerEntry } from '@modkit/extension-manager'
@@ -87,6 +89,7 @@ import {
   SERVICE_OPERATION_CATALOG_MAX_PAGE_ITEMS,
   loadLocalizationCatalogs,
   resolveContentLanguageSources,
+  resolveSubjectClosure,
   type BaseModSetting,
   type CommandInput,
   type CommandResult,
@@ -125,7 +128,6 @@ import {
   CONTAINER_ENTRY_NOT_FOUND,
   type ContainerRegistry,
 } from './containers.js'
-import { createContainerDependencyContentSources } from './container-content-sources.js'
 import {
   createOperationOutputStore,
   operationOutputName,
@@ -672,6 +674,30 @@ function readPackagedManagedRegistry(extensionRoot: string): PackagedManagedRegi
 function subjectPathOf(uri: vscode.Uri): string {
   if (uri.scheme === CONTAINER_SCHEME) return `${CONTAINER_SCHEME}:${uri.path}`
   return uri.scheme === 'modkit-source' ? uri.toString() : uri.fsPath
+}
+
+/**
+ * Where the content sources open a subject path: a `modkit-source:` URI is a path inside one of
+ * them, a member of a container on disk is the container's path joined with the member (a packed
+ * package opens as itself), anything else is a host path. A member of a nested container names
+ * nothing the sources can open.
+ */
+function modContextTargetOf(path: string): ModContextTarget | undefined {
+  if (path.startsWith('modkit-source:')) {
+    const uri = vscode.Uri.parse(path)
+    const [sourceId, ...parts] = uri.path.replace(/^\//u, '').split('/')
+    return uri.authority === 'battlenet' && sourceId
+      ? Object.freeze({ sourceId, path: parts.filter(Boolean).join('/') })
+      : undefined
+  }
+  const location = parseContainerUriText(path)
+  if (location === undefined) return path
+  const { file, members } = splitContainer(location.container)
+  return members.length > 0
+    ? undefined
+    : location.entry === ''
+      ? file
+      : `${file.replace(/[\\/]+$/u, '')}/${location.entry}`
 }
 
 /** The inverse: the URI a subject string names, for the editor surfaces that take one. */
@@ -7305,15 +7331,6 @@ async function activateModkit(
       if (answer.snapshot.state !== 'opened' || answer.session === undefined) return undefined
       const session = answer.session
       const descriptor = await session.descriptor()
-      if (
-        !descriptor.operations.some(
-          operation =>
-            operation.id === 'content.resolve-dependencies' && operation.state === 'available',
-        )
-      ) {
-        await session.dispose()
-        return undefined
-      }
       const contextId = languageWorkspaceContextToken({
         subject: subjectKey(candidate.path),
         root: candidate.root.toString(),
@@ -7385,72 +7402,53 @@ async function activateModkit(
     liveLanguageScope(uri) ?? resolvedLanguageScopesByDocument.get(uri.toString())
 
   /**
-   * The packages loaded under the active one, in load order, as this window can open them.
-   *
-   * The subject itself answers what it depends on — the same operation the host uses when it
-   * mounts dependencies for the language — so nothing here knows the SC2 engine graph. A
-   * dependency path is relative to whatever holds the active package: an entry of the same
-   * container, or a sibling directory on disk.
+   * The packages loaded under the active one, in load order, as this window can open them: the
+   * layers of the mod context the content sources open for it — the one loader every consumer
+   * uses. A layer in a content source opens as its `modkit-source:` URI, one on disk as its path.
    */
   const dependencyLayersOf = async (
     scope: LiveLanguageScope,
     signal?: AbortSignal,
   ): Promise<readonly LanguageSubjectCandidate[]> => {
-    if (
-      !scope.descriptor.operations.some(
-        operation =>
-          operation.id === 'content.resolve-dependencies' && operation.state === 'available',
-      )
-    ) {
-      return Object.freeze([])
-    }
-    let answer: Awaited<ReturnType<OperationSession['invoke']>>
+    const target = modContextTargetOf(scope.path)
+    if (target === undefined) return Object.freeze([])
+    let contentSources: ContentSources
     try {
-      answer = await scope.operations.invoke(
-        'resolve-dependencies',
-        {},
-        signal === undefined ? {} : { signal },
-      )
-    } catch (error) {
-      log(
-        `[resources] dependency chain unavailable for ${scope.path}: ${error instanceof Error ? error.message : String(error)}`,
-      )
+      contentSources = await requireContentSources()
+    } catch {
       return Object.freeze([])
     }
-    if (answer.state !== 'ok' || answer.output.kind !== 'json') return Object.freeze([])
-    const content = (answer.output.value as { contentDependencies?: unknown }).contentDependencies
-    const rows = (content as { dependencies?: unknown } | undefined)?.dependencies
-    if (!Array.isArray(rows)) return Object.freeze([])
-    const host = scope.root
-    const container =
-      host?.scheme === CONTAINER_SCHEME ? parseContainerUriPath(host.path) : undefined
-    const layers: LanguageSubjectCandidate[] = []
-    for (const row of rows) {
-      const path = (row as { path?: unknown })?.path
-      const order = (row as { order?: unknown })?.order
-      if (typeof path !== 'string' || path === '' || !Number.isSafeInteger(order)) continue
-      if (container !== undefined) {
-        const entry = containerUriText(container.container, path.replaceAll('\\', '/'))
-        layers.push(
-          Object.freeze({ path: entry, root: subjectUriOf(entry), order: order as number }),
-        )
-        continue
-      }
-      if (host?.scheme !== 'file') continue
-      // A file-backed package sits inside an installation: its dependencies are siblings of the
-      // `Mods`/`Campaigns` directory that holds it, not of the package itself.
-      const installation = host.fsPath.replace(/[\\/](?:Mods|Campaigns)[\\/][^\\/]+$/iu, '')
-      if (installation === host.fsPath) continue
-      const candidate = join(installation, ...path.split('/'))
-      layers.push(
-        Object.freeze({
-          path: candidate,
-          root: vscode.Uri.file(candidate),
-          order: order as number,
+    const baseMods = scope.root === undefined ? undefined : baseModsSetting(scope.root)
+    const closure = await resolveSubjectClosure({
+      contentSources,
+      subject: { descriptor: scope.descriptor, target },
+      ...(baseMods === undefined ? {} : { baseMods }),
+      keepContext: true,
+      ...(signal === undefined ? {} : { signal }),
+    })
+    const opened = closure.context
+    if (opened === undefined) {
+      for (const item of closure.diagnostics) log(`[resources] ${item.code}: ${item.message}`)
+      return Object.freeze([])
+    }
+    try {
+      return Object.freeze(
+        opened.layers.flatMap((layer, order) => {
+          if (layer.role === 'primary') return []
+          const path =
+            layer.sourceId === HOST_LAYER_SOURCE_ID
+              ? layer.sourcePath
+              : `modkit-source://battlenet/${encodeURIComponent(layer.sourceId)}/${layer.sourcePath
+                  .split('/')
+                  .filter(Boolean)
+                  .map(part => encodeURIComponent(part))
+                  .join('/')}`
+          return [Object.freeze({ path, root: subjectUriOf(path), order })]
         }),
       )
+    } finally {
+      await opened.dispose()
     }
-    return Object.freeze(layers.sort((left, right) => (left.order ?? 0) - (right.order ?? 0)))
   }
 
   /** Whether Resources shows the resolved chain or only what the active package declares. */
@@ -8025,18 +8023,6 @@ async function activateModkit(
     return entries.length === 0 ? undefined : Object.freeze(Object.fromEntries(entries))
   }
 
-  /** A file in no package: the provider opens it inside the base mods, with no operation of its own. */
-  const looseLanguageSubject = (path: string) =>
-    Object.freeze({
-      target: path,
-      descriptor: Object.freeze({ operations: Object.freeze([]) }),
-      operations: Object.freeze({
-        invoke: async () => {
-          throw new Error('a loose file has no operations')
-        },
-        dispose: async () => {},
-      }) as OperationSession,
-    })
 
   const dependencyFailureNotices = new Set<string>()
   const languageDocumentSource: LanguageWorkspaceDocumentSource = Object.freeze({
@@ -8050,7 +8036,10 @@ async function activateModkit(
       const scope = await resolveLanguageScope(uri, request.signal)
       const baseMods = baseModsSetting(uri)
       // A file that belongs to no package still opens inside mods: the setting's, or the game's own.
-      const loose = scope === undefined && uri.scheme === 'file' ? uri.fsPath : undefined
+      const loose =
+        scope === undefined && (uri.scheme === 'file' || uri.scheme === 'modkit-source')
+          ? subjectPathOf(uri)
+          : undefined
       const snapshotKey = languageSnapshotKey(scope, request, {
         ...(loose === undefined ? {} : { loose }),
         ...(baseMods === undefined ? {} : { baseMods }),
@@ -8064,20 +8053,9 @@ async function activateModkit(
       }
       let projected: Awaited<ReturnType<typeof resolveContentLanguageSources>> | undefined
       try {
-        const configuredContentSources = await requireContentSources()
-        const containerLocation =
-          scope?.root?.scheme === CONTAINER_SCHEME
-            ? parseContainerUriPath(scope.root.path)
-            : undefined
+        const target = modContextTargetOf(scope?.path ?? loose!)
         projected = await resolveContentLanguageSources({
-          contentSources:
-            containerLocation === undefined
-              ? configuredContentSources
-              : createContainerDependencyContentSources(
-                  configuredContentSources,
-                  containers,
-                  containerLocation.container,
-                ),
+          contentSources: await requireContentSources(),
           routes: languageRoutes,
           limits: {
             maxDocumentBytes: 4_194_304,
@@ -8085,11 +8063,10 @@ async function activateModkit(
             maxEntries: 65_536,
           },
           subjects:
-            scope === undefined
-              ? [looseLanguageSubject(loose!)]
-              : [{ descriptor: scope.descriptor, operations: scope.operations }],
+            target === undefined
+              ? []
+              : [{ descriptor: scope?.descriptor ?? Object.freeze({}), target }],
           ...(baseMods === undefined ? {} : { baseMods }),
-          standingMounts: true,
           signal: request.signal,
         })
         for (const item of projected.diagnostics) {

@@ -156,7 +156,7 @@ describe('MK2 operation audit', () => {
         }
         expect(result.state).toBe('ok')
         const diagnostics = result.output?.value?.diagnostics ?? []
-        return diagnostics.filter(item => item.code === 'unresolved-template').length
+        return diagnostics.filter(item => item.code === 'missing-template').length
       }
       const alone = await unresolved({})
       const withMod = await unresolved({ [GAME_TEMPLATE_WORKSPACE_INPUT]: layoutDocuments() })

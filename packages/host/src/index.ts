@@ -180,12 +180,11 @@ export {
   type WorkspaceNamespaceLogicalRoot,
 } from './namespace-origin.js'
 export {
-  analyzeOperationContentDependencies,
   baseModsFor,
   composeLanguageDocumentSources,
   modContextResolution,
-  readOperationContentDependencies,
   resolveSubjectClosure,
+  subjectTarget,
   resolveContentAssetOrigins,
   resolveContentLanguageSources,
   type BaseModSetting,
@@ -195,9 +194,6 @@ export {
   type ContentLanguageSourceLimits,
   type ContentLanguageSources,
   type ContentLanguageSourcesRequest,
-  type AnalyzeOperationContentDependenciesRequest,
-  type ReadOperationContentDependenciesRequest,
-  type ReadOperationContentDependenciesResult,
 } from './content-dependency-operations.js'
 export {
   createBundledServiceDefinitionRegistry,
@@ -444,14 +440,9 @@ export {
   type WorkspaceReferenceIndexSnapshot,
 } from './references.js'
 export {
-  analyzeReadOnlyContentDependencies,
   createContentDependencyLanguageDocumentSource,
   contentDependencyDiagnostics,
-  createReadOnlyContentDependencyWorkspace,
-  type AnalyzeReadOnlyContentDependenciesRequest,
   type ContentDependencyLanguageDocumentSourceOptions,
-  type ReadOnlyContentDependencyWorkspace,
-  type ReadOnlyContentDependencyWorkspaceOptions,
 } from './content-dependencies.js'
 export {
   createContainerNamespaceComposition,

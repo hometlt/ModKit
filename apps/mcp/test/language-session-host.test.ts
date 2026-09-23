@@ -36,24 +36,22 @@ const contentSources: ContentSources = {
     }
     return dependencyBytes.slice()
   },
-  async resolveDependencies(request) {
+  // The subject opens inside one read-only layer of the fixture source.
+  async openModContext(request) {
     return {
       schemaVersion: 1,
-      gameId: request.gameId,
-      complete: true,
-      mounts: [
-        {
-          dependencyId: 'fixture',
-          order: 0,
-          sourceId: 'fixture-source',
-          sourcePath: 'root',
-          displayName: 'Fixture dependency',
-          kind: 'content-archive',
-          fingerprint: 'content-hash.sha256:fixture',
-        },
+      gameId: 'fixture/game',
+      contextId: 'fixture',
+      layers: [
+        { id: 'dependency', displayName: 'Fixture dependency', sourceId: 'fixture-source', sourcePath: 'root', role: 'dependency', provenance: 'declared', fingerprint: 'content-hash.sha256:fixture' },
+        { id: 'subject', displayName: 'subject', sourceId: 'fixture-source', sourcePath: String(typeof request.target === 'string' ? request.target : request.target.path), role: 'primary', provenance: 'opened' },
       ],
-      dependencies: request.dependencies,
+      unresolved: [],
       diagnostics: [],
+      files: async () => ({ items: [] }),
+      read: async () => new Uint8Array(),
+      locate: async () => undefined,
+      dispose: async () => {},
     }
   },
   dispose: () => Promise.resolve(),
@@ -61,33 +59,12 @@ const contentSources: ContentSources = {
 
 const dependencyContext: McpLanguageSessionContext = {
   descriptor: {
-    subjectUri: 'fixture://dependency-subject',
+    subjectUri: 'content-source://fixture-source/Scripts/Main.fixturelang',
     revision: 1,
-    operations: [
-      {
-        id: 'content.resolve-dependencies',
-        handlerId: 'resolve-dependencies',
-        mutatesSource: false,
-        state: 'available',
-      },
-    ],
+    operations: [],
   } as never,
   operations: {
-    async invoke() {
-      return {
-        state: 'ok',
-        output: {
-          kind: 'json',
-          value: {
-            schemaVersion: 1,
-            gameId: 'fixture/game',
-            complete: true,
-            dependencies: [{ id: 'fixture' }],
-          },
-        },
-        diagnostics: [],
-      }
-    },
+    invoke: () => Promise.reject(new Error('the loader, not an operation, names dependencies')),
     dispose: () => Promise.resolve(),
   } as never,
 }
@@ -327,89 +304,4 @@ describe('host-held MCP language session', () => {
       await session.close()
     }
   })
-
-  /*
-   * A provider may name roots its game loads for every subject (editor add-on folders). They join a
-   * session without any subject context, read-only, and never turn it into a complete workspace.
-   */
-  it('joins provider-standing language mounts to a session without a subject', async () => {
-    const standingBytes = new TextEncoder().encode('standing')
-    const standingSources: ContentSources = {
-      ...contentSources,
-      async list(sourceId, path) {
-        return sourceId === 'standing-source' && path === ''
-          ? [{ path: 'Dependency.fixturelang', name: 'Dependency.fixturelang', directory: false }]
-          : []
-      },
-      async read(sourceId, path, maximum) {
-        if (
-          sourceId !== 'standing-source' ||
-          path !== 'Dependency.fixturelang' ||
-          standingBytes.byteLength > maximum
-        ) {
-          throw new RangeError('standing document unavailable')
-        }
-        return standingBytes.slice()
-      },
-      languageMounts() {
-        return {
-          schemaVersion: 1,
-          gameId: 'fixture/game',
-          complete: true,
-          mounts: [
-            {
-              dependencyId: 'standing:0',
-              order: 0,
-              sourceId: 'standing-source',
-              sourcePath: '',
-              displayName: 'Standing folder',
-              kind: 'editor-add-ons',
-            },
-          ],
-          dependencies: [],
-          diagnostics: [],
-        }
-      },
-    }
-    const standingHost = await createHostMcpPort(
-      {
-        roots: [root],
-        extensions: [resolve(import.meta.dirname, 'fixtures', 'language-session-extension')],
-      },
-      undefined,
-      { contentSources: standingSources },
-    )
-    const uri = 'modkit-source://fixture/Scripts/Standalone.fixturelang'
-    try {
-      const session = await openLanguageSession(standingHost, {
-        documents: [
-          {
-            uri,
-            languageId: 'fixture-language',
-            documentKind: 'fixture-source',
-            version: 1,
-            text: 'source',
-          },
-        ],
-      })
-      try {
-        const definition = await session.invoke({
-          primaryUri: uri,
-          feature: 'definition',
-          position: { line: 0, character: 1 },
-          maxResults: 20,
-          maxEdits: 20,
-        })
-        expect(definition.result).toMatchObject({
-          isIncomplete: true,
-          locations: [{ uri: expect.stringMatching(/^content-source:\/\/standing-source\//u) }],
-        })
-        expect(session.workspaceIncomplete).toBe(true)
-      } finally {
-        await session.close()
-      }
-    } finally {
-      await standingHost.close()
-    }
-  }, 30_000)
 })

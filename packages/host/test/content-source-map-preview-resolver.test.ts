@@ -22,14 +22,10 @@ import { resolvedDescriptorWire } from './fixtures/descriptor.js'
 
 const GAME_ID = 'example/game'
 const bytes = (text: string) => new TextEncoder().encode(text)
-const DEPENDENCIES = { schemaVersion: 1, gameId: GAME_ID, complete: true, dependencies: [] }
+const MAP_URI = 'file:///C:/Games/Maps/demo.map'
 
-/** An opened map: its own namespace, extraction, and (optionally) the dependency operation. */
-async function mapSession(
-  files: ReadonlyMap<string, Uint8Array>,
-  dependencies = true,
-  subjectUri = 'memory://maps/demo.map',
-) {
+/** An opened map: its own namespace and extraction. */
+async function mapSession(files: ReadonlyMap<string, Uint8Array>, subjectUri = MAP_URI) {
   const namespaceRelease = vi.fn(async () => undefined)
   const paths = [...files.keys()].sort()
   const namespace = Object.freeze({
@@ -50,9 +46,6 @@ async function mapSession(
   })
   const operations = [
     { id: CONTAINER_EXTRACT_OPERATION_ID, handlerId: 'extract', state: 'available' as const, mutatesSource: false },
-    ...(dependencies
-      ? [{ id: 'content.resolve-dependencies', handlerId: 'resolve-dependencies', state: 'available' as const, mutatesSource: false }]
-      : []),
   ]
   const wire = resolvedDescriptorWire(operations)
   const descriptor = await assembleSubjectDescriptor({
@@ -63,7 +56,6 @@ async function mapSession(
   })
   const handlers = new Map<string, (input: JsonValue) => Promise<OperationOutput>>([
     ['extract', async input => ({ kind: 'bytes', value: files.get((input as { entryId: string }).entryId)! })],
-    ['resolve-dependencies', async () => ({ kind: 'json', value: { contentDependencies: DEPENDENCIES } })],
   ])
   const managed = createAssetSession({
     revision: descriptor.revision,
@@ -79,17 +71,28 @@ async function mapSession(
   return { session: managed.session, namespaceRelease }
 }
 
-/** A catalogue with a CASC-like and a folder-like source, each a tree of immediate children. */
-function contentSources(trees: Readonly<Record<string, Readonly<Record<string, string>>>>) {
-  const resolveDependencies = vi.fn(async () => ({
-    schemaVersion: 1 as const, gameId: GAME_ID, complete: true,
-    // Dependency first, as the provider numbers them; `Mods/Extra.Pkg` is found beneath `mp`.
-    mounts: [
-      { dependencyId: 'installation:mods/base.pkg', order: 0, sourceId: 'casc', sourcePath: 'Mods/Base.Pkg', displayName: 'Base.Pkg', kind: 'installation-mod' },
-      { dependencyId: 'installation:mods/extra.pkg', order: 1, sourceId: 'disk', sourcePath: 'Mods/Extra.Pkg', displayName: 'Extra.Pkg', kind: 'installation-mod' },
-      { dependencyId: 'installation:mods/mp.pkg', order: 2, sourceId: 'disk', sourcePath: 'Mods/MP.Pkg', displayName: 'MP.Pkg', kind: 'installation-mod' },
+/**
+ * A catalogue with a CASC-like and a folder-like source, each a tree of immediate children, whose
+ * loader opens the map inside Base, Extra (found beneath MP) and MP — dependency first.
+ */
+function contentSources(
+  trees: Readonly<Record<string, Readonly<Record<string, string>>>>,
+  layers: readonly (readonly [sourceId: string, sourcePath: string])[] = [
+    ['casc', 'Mods/Base.Pkg'], ['disk', 'Mods/Extra.Pkg'], ['disk', 'Mods/MP.Pkg'],
+  ],
+) {
+  const openModContext = vi.fn(async (request: ModContextRequest): Promise<ModContext> => ({
+    schemaVersion: 1, gameId: GAME_ID, contextId: 'demo',
+    layers: [
+      ...layers.map(([sourceId, sourcePath], index) => ({
+        id: `l${index}`, displayName: sourcePath.split('/').at(-1)!, sourceId, sourcePath,
+        role: 'dependency' as const, provenance: 'declared' as const,
+      })),
+      { id: 'primary', displayName: 'demo.map', sourceId: 'host', sourcePath: String(request.target), role: 'primary', provenance: 'opened' },
     ],
-    dependencies: [], diagnostics: [],
+    unresolved: [], diagnostics: [],
+    files: async () => ({ items: [] }), read: async () => new Uint8Array(), locate: async () => undefined,
+    dispose: async () => {},
   }))
   const list = async (sourceId: string, path: string): Promise<readonly ContentSourceEntry[]> => {
     const files = Object.keys(trees[sourceId] ?? {})
@@ -108,13 +111,13 @@ function contentSources(trees: Readonly<Record<string, Readonly<Record<string, s
     if (text === undefined) throw new Error(`${sourceId} has no ${path}`)
     return bytes(text)
   })
-  return { resolveDependencies, read, sources: { resolveDependencies, list, read } as unknown as ContentSources }
+  return { openModContext, read, sources: { openModContext, list, read } as unknown as ContentSources }
 }
 
 function request(
   original: Awaited<ReturnType<typeof mapSession>>['session'],
   roots = ['mp', 'base'],
-  subjectUri = 'memory://maps/demo.map',
+  subjectUri = MAP_URI,
 ) {
   const workspace = resolveModWorkspaceGraph({
     workspaceId: 'fixture-preview', gameId: GAME_ID, activeRootId: 'map',
@@ -156,7 +159,7 @@ async function text(origin: Extract<Awaited<ReturnType<MapPreviewResourcePlanRes
 
 // The first case pays the host's cold module load, which alone nears the 5 s default under load.
 describe('content-source map preview resources', { timeout: 30_000 }, () => {
-  it('reads every layer through the mounts the map\'s own dependency closure resolved to', async () => {
+  it('reads every layer of the mod context the map opens in', async () => {
     const original = await mapSession(new Map([['Assets/Textures/Shared.dds', bytes('map')]]))
     const catalogue = contentSources({
       casc: {
@@ -174,7 +177,7 @@ describe('content-source map preview resources', { timeout: 30_000 }, () => {
     const result = await resolver.resolve(request(original.session))
     expect(result.state).toBe('resolved')
     if (result.state !== 'resolved') throw new Error(JSON.stringify(result.diagnostics))
-    expect(catalogue.resolveDependencies).toHaveBeenCalledWith(DEPENDENCIES)
+    expect(catalogue.openModContext).toHaveBeenCalledWith({ schemaVersion: 1, target: 'C:/Games/Maps/demo.map' })
 
     // Strongest first: the map, then MP over Base; a layer found beneath MP still serves its assets.
     expect(await text(result.origin, 'Assets/Textures/Shared.dds')).toBe('map')
@@ -195,40 +198,6 @@ describe('content-source map preview resources', { timeout: 30_000 }, () => {
     expect(original.namespaceRelease).toHaveBeenCalledOnce()
   })
 
-  it('reads the layers of the mod context a map on disk opens in, not its dependency operation', async () => {
-    const uri = 'file:///C:/Games/Maps/demo.map'
-    const original = await mapSession(new Map([['Assets/Textures/Shared.dds', bytes('map')]]), true, uri)
-    const catalogue = contentSources({
-      casc: { 'mods/base.pkg/assets/textures/shared.dds': 'base', 'mods/base.pkg/assets/textures/base-only.dds': 'base-only' },
-      disk: { 'Mods/MP.Pkg/Assets/Textures/Base-Only.dds': 'mp-override' },
-    })
-    const opened: ModContextRequest[] = []
-    const openModContext = vi.fn(async (request: ModContextRequest): Promise<ModContext> => {
-      opened.push(request)
-      return {
-        schemaVersion: 1, gameId: GAME_ID, contextId: 'demo',
-        layers: [
-          { id: 'l0', displayName: 'Base', sourceId: 'casc', sourcePath: 'mods/base.pkg', role: 'dependency', provenance: 'implicit' },
-          { id: 'l1', displayName: 'MP', sourceId: 'disk', sourcePath: 'Mods/MP.Pkg', role: 'dependency', provenance: 'declared' },
-          { id: 'l2', displayName: 'demo.map', sourceId: 'host', sourcePath: request.target, role: 'primary', provenance: 'opened' },
-        ],
-        unresolved: [], diagnostics: [],
-        files: async () => ({ items: [] }), read: async () => new Uint8Array(), locate: async () => undefined,
-        dispose: async () => {},
-      }
-    })
-    const sources = { ...catalogue.sources, openModContext } as ContentSources
-    const resolver = createContentSourceMapPreviewResourcePlanResolver({ contentSources: async () => sources })
-    const result = await resolver.resolve(request(original.session, ['mp', 'base'], uri))
-    if (result.state !== 'resolved') throw new Error(JSON.stringify(result.diagnostics))
-    expect(opened).toEqual([{ schemaVersion: 1, target: 'C:/Games/Maps/demo.map' }])
-    expect(catalogue.resolveDependencies).not.toHaveBeenCalled()
-    expect(await text(result.origin, 'Assets/Textures/Shared.dds')).toBe('map')
-    expect(await text(result.origin, 'Assets/Textures/Base-Only.dds')).toBe('mp-override')
-    expect(await text(result.origin, 'mods/base.pkg/assets/textures/shared.dds')).toBe('base')
-    await result.release()
-  })
-
   it('names a workspace root no source holds and keeps the rest', async () => {
     const original = await mapSession(new Map())
     const catalogue = contentSources({ casc: { 'mods/base.pkg/a.txt': 'a' }, disk: {} })
@@ -244,22 +213,20 @@ describe('content-source map preview resources', { timeout: 30_000 }, () => {
     }
   })
 
-  it('leaves a subject without the dependency operation, or without a catalogue, to the fallback', async () => {
+  it('leaves a subject no source can open, or no catalogue, or no mounted layer to the fallback', async () => {
     const fallback = { resolve: vi.fn(async () => ({ state: 'unresolved' as const, diagnostics: [] })) }
-    const plain = await mapSession(new Map(), false)
     const catalogue = contentSources({})
+    const inMemory = await mapSession(new Map(), 'memory://maps/demo.map')
     await createContentSourceMapPreviewResourcePlanResolver({ contentSources: async () => catalogue.sources, fallback })
-      .resolve(request(plain.session))
-    expect(catalogue.resolveDependencies).not.toHaveBeenCalled()
-    const declaring = await mapSession(new Map())
+      .resolve(request(inMemory.session, ['mp', 'base'], 'memory://maps/demo.map'))
+    expect(catalogue.openModContext).not.toHaveBeenCalled()
     await createContentSourceMapPreviewResourcePlanResolver({ contentSources: async () => undefined, fallback })
-      .resolve(request(declaring.session))
-    // Sources with no installation mount none of the layers: a bare map is worse than the fallback.
-    const unconfigured = {
-      resolveDependencies: async () => ({ schemaVersion: 1, gameId: GAME_ID, complete: false, mounts: [], dependencies: [], diagnostics: [] }),
-    } as unknown as ContentSources
-    const bare = await createContentSourceMapPreviewResourcePlanResolver({ contentSources: async () => unconfigured, fallback })
       .resolve(request((await mapSession(new Map())).session))
+    // Sources with no installation mount none of the layers: a bare map is worse than the fallback.
+    const bare = await createContentSourceMapPreviewResourcePlanResolver({
+      contentSources: async () => contentSources({}, []).sources,
+      fallback,
+    }).resolve(request((await mapSession(new Map())).session))
     expect(bare.diagnostics).toContainEqual(expect.objectContaining({ code: 'x3.host/map-preview-content-sources-empty' }))
     expect(fallback.resolve).toHaveBeenCalledTimes(3)
   })

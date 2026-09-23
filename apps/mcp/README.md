@@ -49,10 +49,10 @@ pnpm mcp:start -- `
 The equivalent environment variables are `MODKIT_MCP_CONTENT_SOURCE_CONFIG` and
 `MODKIT_MCP_CONTENT_SOURCE_STORAGE`. Provider module paths and credentials stay in the host.
 
-A provider may also implement `languageMounts()` for roots its game loads regardless of the open
-subject, such as StarCraft II Editor wizard folders. Every language session then projects those
-roots as read-only `content-source://` documents in the same way as a dependency closure; they never
-make a partial workspace complete.
+A provider that implements `openModContext()` opens a session's subject inside the content it
+depends on — its game's mods, and roots the game loads with every subject such as StarCraft II
+Editor wizard folders. Those layers join the session as read-only `content-source://` documents;
+they never make a partial workspace complete.
 
 ## Read-only surface
 
@@ -67,9 +67,8 @@ make a partial workspace complete.
   `modkit.language_session_feature`, and `modkit.language_session_close` retain a bounded
   `LanguageWorkspace` and exact overlay revisions in the host. Open accepts rooted files and
   `modkit-source:`, `modkit-container:`, `content-source:`, or `untitled:` virtual documents.
-  Passing `dependencySubjectHandle` reads that subject's standard `content.resolve-dependencies`
-  operation and projects the provider-resolved loose/MPQ/CASC closure as read-only
-  `content-source://` workspace documents. Missing or partial closure is reported through
+  Passing `dependencySubjectHandle` opens that subject's mod context through the provider and
+  projects its loose/MPQ/CASC layers as read-only `content-source://` workspace documents. Missing or partial closure is reported through
   diagnostics and completeness. Each opened document reports the exact activated `features`;
   `analyze`, `semantic-tokens`, `diagnostics`, and `document-symbols` are the baseline analysis
   surface, while optional provider methods are listed only when present.

@@ -1,10 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { ContentDependencyResolution, ContentSources } from '@modkit/vfs/content-sources'
-import {
-  analyzeReadOnlyContentDependencies,
-  createContentDependencyLanguageDocumentSource,
-  createReadOnlyContentDependencyWorkspace,
-} from '../src/content-dependencies.js'
+import { createContentDependencyLanguageDocumentSource } from '../src/content-dependencies.js'
 
 const encoder = new TextEncoder()
 const files = new Map([
@@ -73,7 +69,7 @@ const resolution: ContentDependencyResolution = {
   diagnostics: [],
 }
 
-describe('read-only content dependency workspace', () => {
+describe('content dependency language documents', () => {
   it('accepts provider-canonical casing beneath a case-insensitive dependency mount', async () => {
     const sources: ContentSources = {
       ...contentSources(),
@@ -227,54 +223,6 @@ describe('read-only content dependency workspace', () => {
     ])
   })
 
-  it('preserves semantic load order and resolves files through overlay precedence', async () => {
-    const prepared = createReadOnlyContentDependencyWorkspace({
-      contentSources: contentSources(),
-      resolution,
-      workspaceId: 'replay:test',
-    })
-    try {
-      expect(prepared.workspace.loadOrder.map(root => root.displayName)).toEqual([
-        'Base',
-        'Override',
-      ])
-      expect(prepared.workspace.logicalRoots?.map(root => root.displayName)).toEqual([
-        'Override',
-        'Base',
-      ])
-      expect(prepared.workspace.activeRootId).toBe('content-dependency:override')
-      expect(prepared.workspace.loadOrder.map(root => root.sourcePath)).toEqual([
-        'content-dependencies/0',
-        'content-dependencies/1',
-      ])
-      expect(JSON.stringify(prepared.workspace)).not.toContain('cache/base')
-      const units = await prepared.resources.resolve({
-        id: 'units',
-        logicalId: 'content-dependencies/1/Base.SC2Data/GameData/Units.xml',
-        role: 'buffer',
-        scopes: ['workspace-dependency-layer'],
-      })
-      expect(units.state).toBe('resolved')
-      if (units.state === 'resolved' && units.lease.value.kind === 'bytes') {
-        expect(new TextDecoder().decode(await units.lease.value.read(0n, 64))).toBe('<Override/>')
-        await units.lease.release()
-      }
-      const effects = await prepared.resources.resolve({
-        id: 'effects',
-        logicalId: 'content-dependencies/0/Base.SC2Data/GameData/Effects.xml',
-        role: 'buffer',
-        scopes: ['workspace-dependency-layer'],
-      })
-      expect(effects.state).toBe('resolved')
-      if (effects.state === 'resolved' && effects.lease.value.kind === 'bytes') {
-        expect(new TextDecoder().decode(await effects.lease.value.read(0n, 64))).toBe('<Effect/>')
-        await effects.lease.release()
-      }
-    } finally {
-      await prepared.dispose()
-    }
-  })
-
   it('revisions dependency fingerprints and load order and refuses completeness without fingerprints', async () => {
     const snapshot = async (value: ContentDependencyResolution) =>
       createContentDependencyLanguageDocumentSource({
@@ -323,84 +271,5 @@ describe('read-only content dependency workspace', () => {
     })
     expect(missingFingerprint.isComplete).toBe(false)
     expect(missingFingerprint.workspaceContext?.semanticComplete).toBe(false)
-  })
-
-  it('reports an absent dependency file through the normal resource outcome', async () => {
-    const prepared = createReadOnlyContentDependencyWorkspace({
-      contentSources: contentSources(),
-      resolution,
-      workspaceId: 'replay:test',
-    })
-    try {
-      const result = await prepared.resources.resolve({
-        id: 'missing',
-        logicalId: 'content-dependencies/1/Base.SC2Data/GameData/Missing.xml',
-        role: 'buffer',
-        scopes: ['workspace-dependency-layer'],
-      })
-      expect(result).toMatchObject({ state: 'unresolved', reason: 'not-found' })
-    } finally {
-      await prepared.dispose()
-    }
-  })
-
-  it('returns a typed outcome when dependency resolution is unavailable or incomplete', async () => {
-    const common = {
-      services: {} as never,
-      grant: {} as never,
-      budgets: {} as never,
-      dependencies: {
-        schemaVersion: 1 as const,
-        gameId: 'example/game',
-        complete: true,
-        dependencies: [],
-      },
-      workspaceId: 'replay:test',
-      locales: ['enUS'],
-      queries: [],
-      limits: {
-        maxRequirements: 1,
-        maxDocumentBytes: 1,
-        maxTextBytes: 1,
-        maxEntities: 1,
-        maxDepth: 1,
-        maxPageSize: 1,
-      },
-    }
-    await expect(
-      analyzeReadOnlyContentDependencies({
-        ...common,
-        contentSources: contentSources(),
-      }),
-    ).resolves.toMatchObject({
-      state: 'unresolved',
-      diagnostics: [
-        {
-          code: 'x3.host/content-dependency-resolver-unavailable',
-        },
-      ],
-    })
-    await expect(
-      analyzeReadOnlyContentDependencies({
-        ...common,
-        contentSources: {
-          ...contentSources(),
-          async resolveDependencies() {
-            return {
-              ...resolution,
-              complete: false,
-              mounts: [],
-              diagnostics: [
-                {
-                  severity: 'error',
-                  code: 'example/missing',
-                  message: 'missing dependency',
-                },
-              ],
-            }
-          },
-        },
-      }),
-    ).resolves.toMatchObject({ state: 'unresolved', diagnostics: [{ code: 'example/missing' }] })
   })
 })

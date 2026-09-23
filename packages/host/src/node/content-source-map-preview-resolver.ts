@@ -223,7 +223,7 @@ export function createContentSourceMapPreviewResourcePlanResolver(
       }
       const closure = await resolveSubjectClosure({
         contentSources: sources,
-        subject: { descriptor, operations: request.original.operations() },
+        subject: { descriptor },
         keepContext: true,
         ...(request.signal === undefined ? {} : { signal: request.signal }),
       })

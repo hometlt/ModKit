@@ -11,6 +11,7 @@ import {
   invokeServiceOperation,
   openSubject,
   resolveContentLanguageSources,
+  subjectTarget,
   subjectOpenSnapshot,
   type Inventory,
   type ServiceOperationCatalog,
@@ -743,9 +744,17 @@ export async function createHostMcpPort(
       )
     }
     /*
-     * The subject's dependency closure, then roots the configured provider loads regardless of the
-     * subject (editor add-on folders), through the same host projection the standalone LSP uses.
+     * The subject's mod context (its dependencies and the editor add-on folders the provider layers
+     * beneath it), through the same host projection the standalone LSP uses. Without a subject the
+     * first document opens on its own — a file in no package still opens inside its base mods.
      */
+    const primaryUri = documents[0]?.uri
+    const subjects =
+      context !== undefined
+        ? [context]
+        : primaryUri !== undefined && subjectTarget(primaryUri) !== undefined
+          ? [{ descriptor: { subjectUri: primaryUri } }]
+          : []
     const projected =
       contentSources === undefined
         ? undefined
@@ -757,11 +766,10 @@ export async function createHostMcpPort(
               maxWorkspaceBytes: MCP_LANGUAGE_MAX_WORKSPACE_BYTES,
               maxEntries: 16_384,
             },
-            subjects: context === undefined ? [] : [context],
+            subjects,
             ...(configuration.baseMods === undefined
               ? {}
               : { baseMods: { '*': configuration.baseMods } }),
-            standingMounts: true,
             ...(signal === undefined ? {} : { signal }),
           })
     dependencyDiagnostics.push(...(projected?.diagnostics ?? []))

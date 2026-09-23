@@ -40,12 +40,6 @@ export interface ContentSourceLocalPath {
   readonly path: string
   readonly kind: 'file' | 'directory'
 }
-export interface ContentDependencyRequest {
-  readonly schemaVersion: 1
-  readonly gameId: string
-  readonly complete: boolean
-  readonly dependencies: readonly unknown[]
-}
 export interface ContentDependencyMount {
   readonly dependencyId: string
   readonly order: number
@@ -70,17 +64,25 @@ export interface ContentDependencyResolution {
  * The game's loader resolves the dependencies in order, merges data and assets its own way, and
  * keeps each layer's file list with every file's original path: a read is served only when the
  * path is in that list. A file that belongs to no package is opened inside `baseMods` — a setting
- * of the host (per folder or file), with the game's own default when absent.
+ * of the host (per folder or file), with the game's own default when absent. Subjects that are no
+ * package but depend on content (a replay naming the archives it was played on) open inside what
+ * they name; the game's loader knows how.
  */
 export interface ModContextRequest {
   readonly schemaVersion: 1
-  /** Host path of the subject: a package root, a file inside one, or a file inside none. */
-  readonly target: string
+  /**
+   * The subject: a host path (a package root, a file inside one — also inside a packed package — or
+   * a file inside none), or a path inside one of this provider's content sources.
+   */
+  readonly target: ModContextTarget
   /** Packages a file outside any package is read inside, as the game names them. */
   readonly baseMods?: readonly string[]
   /** Only these locales' string files, when the consumer reads one language. */
   readonly locales?: readonly string[]
 }
+
+/** A host path, or a path inside one of the provider's content sources. */
+export type ModContextTarget = string | { readonly sourceId: string; readonly path: string }
 
 /** The `sourceId` of a layer that lives on the host's own disk rather than in a content source. */
 export const HOST_LAYER_SOURCE_ID = 'host'
@@ -98,6 +100,8 @@ export interface ModContextLayer {
   /** `primary` is the opened package, `base` a setting-chosen package under a loose file. */
   readonly role: 'dependency' | 'base' | 'primary'
   readonly provenance: 'declared' | 'implicit' | 'setting' | 'opened'
+  /** A revision identity of the layer's content (`content-hash.sha256:…`), when the game knows one. */
+  readonly fingerprint?: string
 }
 
 export interface ModContextPage<T> {
@@ -179,15 +183,8 @@ export interface ContentSources {
   prepareRevision?(sourceId: string, path: string, options: PublicationOptions): Promise<unknown>
   /** Resolve a local source row for an OS-native reveal action. Remote sources return undefined. */
   resolveLocalPath?(sourceId: string, path: string): Promise<ContentSourceLocalPath | undefined>
-  /** Resolve a codec-discovered dependency set to ordered, read-only roots owned by this source. */
-  resolveDependencies?(request: ContentDependencyRequest): Promise<ContentDependencyResolution>
   /** Open a subject inside the mods it belongs to — see {@link ModContextRequest}. */
   openModContext?(request: ModContextRequest): Promise<ModContext>
-  /**
-   * Read-only roots a game loads regardless of the open subject (for example editor add-on folders),
-   * as the same resolution shape a dependency closure uses so a host projects both identically.
-   */
-  languageMounts?(): Promise<ContentDependencyResolution> | ContentDependencyResolution
   dispose(): void | Promise<void>
 }
 
@@ -264,8 +261,6 @@ export const CONTENT_SOURCE_METHODS = [
   'prepareRevision',
   'storage',
   'resolveLocalPath',
-  'resolveDependencies',
-  'languageMounts',
 ] as const
 export type ContentSourceMethod = (typeof CONTENT_SOURCE_METHODS)[number]
 
@@ -368,28 +363,6 @@ export async function callContentSources(
       )
         throw new TypeError('Invalid local source path')
       return value
-    }
-    case 'languageMounts': {
-      if (!source.languageMounts) throw new Error('Language mounts are not configured')
-      return source.languageMounts()
-    }
-    case 'resolveDependencies': {
-      if (!source.resolveDependencies) throw new Error('Dependency resolution is not configured')
-      const value: unknown = args[0]
-      if (
-        typeof value !== 'object' ||
-        value === null ||
-        Array.isArray(value) ||
-        (value as { schemaVersion?: unknown }).schemaVersion !== 1 ||
-        typeof (value as { gameId?: unknown }).gameId !== 'string' ||
-        !(value as { gameId: string }).gameId ||
-        (value as { gameId: string }).gameId.length > 256 ||
-        typeof (value as { complete?: unknown }).complete !== 'boolean' ||
-        !Array.isArray((value as { dependencies?: unknown }).dependencies) ||
-        (value as { dependencies: unknown[] }).dependencies.length > 256
-      )
-        throw new TypeError('Invalid content dependency request')
-      return source.resolveDependencies(value as ContentDependencyRequest)
     }
     case 'list':
       return source.list(string(0), path(1))

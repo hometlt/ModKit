@@ -153,7 +153,6 @@ export const SHARED_OPERATION_IDS = Object.freeze([
   'asset.compare',
   'subject.compare',
   'subject.select',
-  'content.resolve-dependencies',
   'content.mount',
 ] as const)
 

@@ -1,17 +1,14 @@
-import { compareUtf8, diagnostic, type Diagnostic } from '@modkit/core'
-import type { AnyDescriptor, OperationSession } from '@modkit/sdk'
+import { diagnostic, type Diagnostic } from '@modkit/core'
 import {
   HOST_LAYER_SOURCE_ID,
-  type ContentDependencyRequest,
   type ContentDependencyResolution,
   type ContentSources,
   type ModContext,
+  type ModContextTarget,
 } from '@modkit/vfs/content-sources'
 import {
-  analyzeReadOnlyContentDependencies,
   contentDependencyDiagnostics,
   createContentDependencyLanguageDocumentSource,
-  type AnalyzeReadOnlyContentDependenciesRequest,
 } from './content-dependencies.js'
 import { createContentDependencyAssetOrigin } from './content-dependencies.js'
 import type { CompanionOrigin } from './input-resolution.js'
@@ -30,168 +27,16 @@ import {
   languageWorkspaceContextToken,
   validatedLanguageWorkspaceSemanticInputs,
 } from './language/context.js'
-import type { AnalyzedResolvedDataWorkspace } from './data/index.js'
-
-const DEFAULT_DEPENDENCY_OPERATION = 'content.resolve-dependencies'
-
-export interface ReadOperationContentDependenciesRequest {
-  readonly descriptor: Pick<AnyDescriptor, 'operations'> & { readonly subjectUri?: string }
-  readonly operations: OperationSession
-  readonly operationId?: string
-  readonly signal?: AbortSignal
-}
-
-export type ReadOperationContentDependenciesResult =
-  | Readonly<{
-      state: 'resolved'
-      dependencies: ContentDependencyRequest
-      diagnostics: readonly Diagnostic[]
-    }>
-  | Readonly<{
-      state: 'unresolved'
-      diagnostics: readonly Diagnostic[]
-    }>
-
-export interface AnalyzeOperationContentDependenciesRequest
-  extends
-    Omit<AnalyzeReadOnlyContentDependenciesRequest, 'dependencies'>,
-    ReadOperationContentDependenciesRequest {}
-
-function dependencyRequest(value: unknown): ContentDependencyRequest | undefined {
-  if (value === null || typeof value !== 'object' || Array.isArray(value)) return undefined
-  const record = value as Readonly<Record<string, unknown>>
-  if (
-    record['schemaVersion'] !== 1 ||
-    typeof record['gameId'] !== 'string' ||
-    record['gameId'].length === 0 ||
-    record['gameId'].length > 256 ||
-    typeof record['complete'] !== 'boolean' ||
-    !Array.isArray(record['dependencies']) ||
-    record['dependencies'].length > 256
-  ) {
-    return undefined
-  }
-  return value as ContentDependencyRequest
-}
-
-/** Invoke the standard dependency operation without granting the codec access to content sources. */
-export async function readOperationContentDependencies(
-  request: ReadOperationContentDependenciesRequest,
-): Promise<ReadOperationContentDependenciesResult> {
-  request.signal?.throwIfAborted()
-  const operationId = request.operationId ?? DEFAULT_DEPENDENCY_OPERATION
-  const declaration = request.descriptor.operations.find(operation => operation.id === operationId)
-  if (declaration === undefined || declaration.state !== 'available') {
-    return Object.freeze({
-      state: 'unresolved',
-      diagnostics: Object.freeze([
-        diagnostic(
-          'information',
-          'x3.host/content-dependency-operation-unavailable',
-          declaration?.reason ?? `the subject does not provide ${operationId}`,
-        ),
-      ]),
-    })
-  }
-  const result = await request.operations.invoke(
-    declaration.handlerId,
-    {},
-    request.signal === undefined ? undefined : { signal: request.signal },
-  )
-  if (result.state !== 'ok') {
-    return Object.freeze({
-      state: 'unresolved',
-      diagnostics: Object.freeze([
-        ...result.diagnostics,
-        diagnostic(
-          'warning',
-          'x3.host/content-dependency-operation-rejected',
-          `${operationId} was rejected: ${result.reason}`,
-        ),
-      ]),
-    })
-  }
-  // A codec whose operation answers with its own workspace lock carries the request beside it.
-  const output = result.output.kind === 'json' ? result.output.value : undefined
-  const dependencies =
-    dependencyRequest(output) ??
-    (output !== null && typeof output === 'object' && !Array.isArray(output)
-      ? dependencyRequest((output as Readonly<Record<string, unknown>>)['contentDependencies'])
-      : undefined)
-  if (dependencies === undefined) {
-    return Object.freeze({
-      state: 'unresolved',
-      diagnostics: Object.freeze([
-        ...result.diagnostics,
-        diagnostic(
-          'warning',
-          'x3.host/content-dependency-operation-invalid',
-          `${operationId} did not return a bounded schemaVersion 1 dependency request`,
-        ),
-      ]),
-    })
-  }
-  return Object.freeze({
-    state: 'resolved',
-    dependencies,
-    diagnostics: Object.freeze([...result.diagnostics]),
-  })
-}
-
-/**
- * Turn a subject-owned dependency operation into the normal host-owned resolved Data workspace.
- * Physical cache paths and source credentials remain inside ContentSources and ResourceSession.
- */
-export async function analyzeOperationContentDependencies(
-  request: AnalyzeOperationContentDependenciesRequest,
-): Promise<AnalyzedResolvedDataWorkspace> {
-  const discovered = await readOperationContentDependencies(request)
-  if (discovered.state === 'unresolved') return discovered
-  const analyzed = await analyzeReadOnlyContentDependencies({
-    contentSources: request.contentSources,
-    dependencies: discovered.dependencies,
-    workspaceId: request.workspaceId,
-    services: request.services,
-    grant: request.grant,
-    budgets: request.budgets,
-    locales: request.locales,
-    queries: request.queries,
-    ...(request.localizationKeys === undefined
-      ? {}
-      : { localizationKeys: request.localizationKeys }),
-    limits: request.limits,
-    ...(request.maximumEntryBytes === undefined
-      ? {}
-      : { maximumEntryBytes: request.maximumEntryBytes }),
-    ...(request.resourceLimits === undefined ? {} : { resourceLimits: request.resourceLimits }),
-    ...(request.signal === undefined ? {} : { signal: request.signal }),
-  })
-  if (analyzed.state === 'unresolved') {
-    return Object.freeze({
-      state: 'unresolved',
-      diagnostics: Object.freeze([...discovered.diagnostics, ...analyzed.diagnostics]),
-    })
-  }
-  let released = false
-  return Object.freeze({
-    ...analyzed,
-    diagnostics: Object.freeze([...discovered.diagnostics, ...analyzed.diagnostics]),
-    async release() {
-      if (released) return
-      released = true
-      await analyzed.release()
-    },
-  })
-}
 
 /** A subject whose content closure a host projects. */
-export interface ContentSubject extends Omit<ReadOperationContentDependenciesRequest, 'signal'> {
+export interface ContentSubject {
+  readonly descriptor: { readonly subjectUri?: string }
   /**
-   * Host path of the subject — a package, a file inside one, or a file inside none. Defaults to
-   * the descriptor's `file:` subject URI. With it, the closure comes from the provider's
-   * `openModContext`; without it, from the subject's `content.resolve-dependencies` operation.
+   * Where the subject is: a host path (a package, a file inside one, or a file inside none) or a
+   * path inside one of the content sources. Defaults to the descriptor's `file:` or
+   * `content-source://` subject URI; a host with its own schemes passes it.
    */
-  readonly target?: string
+  readonly target?: ModContextTarget
 }
 
 /**
@@ -222,15 +67,24 @@ export function baseModsFor(
   return best?.mods
 }
 
-/** The host path of a `file:` URI; undefined for any other scheme. */
-function hostPathOf(uri: string | undefined): string | undefined {
-  if (uri === undefined || !uri.startsWith('file:')) return undefined
+/**
+ * The target a subject URI names: the host path of a `file:` URI, or the source and path of a
+ * `content-source://<source>/<path>` URI; undefined for any other scheme.
+ */
+export function subjectTarget(uri: string | undefined): ModContextTarget | undefined {
+  if (uri === undefined) return undefined
   let url: URL
   try {
     url = new URL(uri)
   } catch {
     return undefined
   }
+  if (url.protocol === 'content-source:') {
+    const segments = url.pathname.split('/').filter(Boolean).map(decodeURIComponent)
+    const sourceId = decodeURIComponent(url.host)
+    return sourceId === '' ? undefined : Object.freeze({ sourceId, path: segments.join('/') })
+  }
+  if (url.protocol !== 'file:') return undefined
   const path = decodeURIComponent(url.pathname)
   if (url.host !== '') return `//${url.host}${path}`
   return /^\/[A-Za-z]:\//u.test(path) ? path.slice(1) : path
@@ -238,8 +92,8 @@ function hostPathOf(uri: string | undefined): string | undefined {
 
 /**
  * The layers of a mod context a host reads through its content sources, as the mounts of a
- * dependency closure — dependencies first. The opened package on the host's disk is left out: the
- * host already serves it as the subject itself.
+ * dependency closure — dependencies first. The opened subject is left out (the host already serves
+ * it), and so is anything on the host's own disk, which no content source reads.
  */
 export function modContextResolution(context: ModContext): ContentDependencyResolution {
   return Object.freeze({
@@ -248,7 +102,7 @@ export function modContextResolution(context: ModContext): ContentDependencyReso
     complete: context.unresolved.length === 0,
     mounts: Object.freeze(
       context.layers.flatMap((layer, order) =>
-        layer.sourceId === HOST_LAYER_SOURCE_ID
+        layer.role === 'primary' || layer.sourceId === HOST_LAYER_SOURCE_ID
           ? []
           : [
               Object.freeze({
@@ -258,6 +112,7 @@ export function modContextResolution(context: ModContext): ContentDependencyReso
                 sourcePath: layer.sourcePath,
                 displayName: layer.displayName,
                 kind: layer.role,
+                ...(layer.fingerprint === undefined ? {} : { fingerprint: layer.fingerprint }),
               }),
             ],
       ),
@@ -277,9 +132,8 @@ const failure = (code: string, error: unknown): Diagnostic =>
   diagnostic('warning', code, error instanceof Error ? error.message : String(error))
 
 /**
- * One subject's closure: its mod context when the subject is on disk and the provider opens
- * contexts, else its `content.resolve-dependencies` operation resolved by the provider. The one
- * place every projection — languages, assets, map previews — asks it.
+ * One subject's closure: the mod context the provider opens for it. The one place every
+ * projection — languages, assets, map previews — asks it.
  */
 export async function resolveSubjectClosure(request: {
   readonly contentSources: ContentSources
@@ -294,90 +148,61 @@ export async function resolveSubjectClosure(request: {
   readonly diagnostics: readonly Diagnostic[]
 }> {
   const { contentSources, subject, signal } = request
-  const target = subject.target ?? hostPathOf(subject.descriptor.subjectUri)
-  if (target !== undefined && contentSources.openModContext !== undefined) {
-    try {
-      const baseMods = baseModsFor(target, request.baseMods)
-      const context = await contentSources.openModContext({
-        schemaVersion: 1,
-        target,
-        ...(baseMods === undefined ? {} : { baseMods }),
-      })
-      let kept = false
-      try {
-        signal?.throwIfAborted()
-        const resolution = modContextResolution(context)
-        kept = request.keepContext === true
-        return Object.freeze({
-          resolution,
-          ...(kept ? { context } : {}),
-          diagnostics: contentDependencyDiagnostics(resolution.diagnostics),
-        })
-      } finally {
-        if (!kept) await context.dispose()
-      }
-    } catch (error) {
-      signal?.throwIfAborted()
-      return Object.freeze({ diagnostics: Object.freeze([failure('x3.host/mod-context-failed', error)]) })
-    }
-  }
-  let discovered: ReadOperationContentDependenciesResult
-  try {
-    discovered = await readOperationContentDependencies({
-      ...subject,
-      ...(signal === undefined ? {} : { signal }),
-    })
-  } catch (error) {
-    signal?.throwIfAborted()
-    discovered = Object.freeze({
-      state: 'unresolved',
-      diagnostics: Object.freeze([failure('x3.host/content-dependency-operation-failed', error)]),
-    })
-  }
-  if (discovered.state !== 'resolved') return Object.freeze({ diagnostics: discovered.diagnostics })
-  if (contentSources.resolveDependencies === undefined) {
+  const target = subject.target ?? subjectTarget(subject.descriptor.subjectUri)
+  if (target === undefined) {
     return Object.freeze({
       diagnostics: Object.freeze([
-        ...discovered.diagnostics,
         diagnostic(
           'information',
-          'x3.host/content-dependency-resolver-unavailable',
-          'the configured content source cannot resolve subject dependencies',
+          'x3.host/mod-context-target-unavailable',
+          `${subject.descriptor.subjectUri ?? 'the subject'} is neither a host path nor a content-source path`,
+        ),
+      ]),
+    })
+  }
+  if (contentSources.openModContext === undefined) {
+    return Object.freeze({
+      diagnostics: Object.freeze([
+        diagnostic(
+          'information',
+          'x3.host/mod-context-unavailable',
+          'the configured content sources do not open mod contexts',
         ),
       ]),
     })
   }
   try {
-    const resolution = await contentSources.resolveDependencies(discovered.dependencies)
-    signal?.throwIfAborted()
-    return Object.freeze({
-      resolution,
-      diagnostics: Object.freeze([
-        ...discovered.diagnostics,
-        ...contentDependencyDiagnostics(resolution.diagnostics),
-      ]),
+    // Only the `*` entry of the setting applies to a path inside a content source.
+    const baseMods = baseModsFor(typeof target === 'string' ? target : '', request.baseMods)
+    const context = await contentSources.openModContext({
+      schemaVersion: 1,
+      target,
+      ...(baseMods === undefined ? {} : { baseMods }),
     })
+    let kept = false
+    try {
+      signal?.throwIfAborted()
+      const resolution = modContextResolution(context)
+      kept = request.keepContext === true
+      return Object.freeze({
+        resolution,
+        ...(kept ? { context } : {}),
+        diagnostics: contentDependencyDiagnostics(resolution.diagnostics),
+      })
+    } finally {
+      if (!kept) await context.dispose()
+    }
   } catch (error) {
     signal?.throwIfAborted()
-    return Object.freeze({
-      diagnostics: Object.freeze([
-        ...discovered.diagnostics,
-        failure('x3.host/content-dependency-resolution-failed', error),
-      ]),
-    })
+    return Object.freeze({ diagnostics: Object.freeze([failure('x3.host/mod-context-failed', error)]) })
   }
 }
 
-/**
- * Each subject's dependency closure, then the provider's standing mounts — the two answers every
- * projection below is built from. Standing mounts a subject's closure already holds are dropped,
- * and they never make a partial closure complete.
- */
+/** Each subject's dependency closure — the answer every projection below is built from. */
 async function subjectClosures(request: {
   readonly contentSources: ContentSources
   readonly subjects: readonly ContentSubject[]
   readonly baseMods?: BaseModSetting
-  readonly standingMounts?: boolean
   readonly signal?: AbortSignal
 }): Promise<SubjectClosures> {
   const { contentSources, signal } = request
@@ -398,31 +223,6 @@ async function subjectClosures(request: {
       resolutions.push(closure.resolution)
     }
   }
-  if (request.standingMounts === true && contentSources.languageMounts !== undefined) {
-    try {
-      const standing = await contentSources.languageMounts()
-      signal?.throwIfAborted()
-      diagnostics.push(...contentDependencyDiagnostics(standing.diagnostics))
-      const held = new Set(
-        resolutions.flatMap(resolution =>
-          resolution.mounts.map(mount => `${mount.sourceId}\0${foldHostPath(mount.sourcePath)}`),
-        ),
-      )
-      resolutions.push(
-        Object.freeze({
-          ...standing,
-          mounts: Object.freeze(
-            standing.mounts.filter(
-              mount => !held.has(`${mount.sourceId}\0${foldHostPath(mount.sourcePath)}`),
-            ),
-          ),
-        }),
-      )
-    } catch (error) {
-      signal?.throwIfAborted()
-      diagnostics.push(failure('x3.host/content-language-mounts-failed', error))
-    }
-  }
   return Object.freeze({
     resolutions: Object.freeze(resolutions.filter(resolution => resolution.mounts.length > 0)),
     diagnostics: Object.freeze(diagnostics),
@@ -436,8 +236,6 @@ export interface ContentAssetOriginsRequest {
   readonly subjects: readonly ContentSubject[]
   /** Packages a subject outside any package opens inside, per host path. */
   readonly baseMods?: BaseModSetting
-  /** Also project the provider's standing mounts (content the game loads whatever is open). */
-  readonly standingMounts?: boolean
   readonly maximumEntryBytes?: number
   readonly signal?: AbortSignal
 }
@@ -493,8 +291,6 @@ export interface ContentLanguageSourcesRequest {
   readonly subjects: readonly ContentSubject[]
   /** Packages a subject outside any package opens inside, per host path. */
   readonly baseMods?: BaseModSetting
-  /** Also project the provider's standing mounts (content loaded regardless of the subject). */
-  readonly standingMounts?: boolean
   readonly signal?: AbortSignal
 }
 
@@ -506,8 +302,7 @@ export interface ContentLanguageSources {
 }
 
 /**
- * Read-only language documents from a content provider: each subject's closure, then the
- * provider's standing mounts. Shared by every host that serves language features over packed
+ * Read-only language documents from a content provider: each subject's closure. Shared by every host that serves language features over packed
  * dependencies (VS Code, MCP sessions, the standalone LSP), so they project them identically.
  */
 export async function resolveContentLanguageSources(

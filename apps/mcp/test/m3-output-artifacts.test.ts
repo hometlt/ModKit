@@ -29,7 +29,7 @@ function envelope(value: {
 
 it('real MCP host retrieves complete M3 UVM/native/PNG results and reuses owned UVM without a large JSON input', async () => {
   const models = resolve(import.meta.dirname, '../../../../modkit-extensions-blizzard/models')
-  const fixture = resolve(models, 'test/mk2/m3/test/fixtures/model.m3')
+  const fixture = resolve(models, 'test/fixtures/m3/model.m3')
   const source = await readFile(fixture)
   const outputRoot = await mkdtemp(resolve(tmpdir(), 'modkit-m3-mcp-output-'))
   expect(hash(source)).toBe('a9a126d0a2b7b54bc6ac70948a40bf34bd26260f063af498cc94ff3d9a528cda')
