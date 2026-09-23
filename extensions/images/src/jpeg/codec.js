@@ -5,6 +5,7 @@ import {
   editPlanFromInput,
   replaceBytes,
 } from '@modkit/codec-kit'
+import { decodeBaselineJpeg } from '@modkit/codec-kit/raster/jpeg'
 
 const SOF = new Set([0xc0, 0xc1, 0xc2, 0xc3, 0xc5, 0xc6, 0xc7, 0xc9, 0xca, 0xcb, 0xcd, 0xce, 0xcf])
 const latin1 = new TextDecoder('latin1')
@@ -301,6 +302,51 @@ function removeSegmentHandler(jpeg, input) {
   }
 }
 
+/**
+ * Decoded pixels for the sequential-DCT mode.
+ *
+ * The whole frame is decoded once and then windowed: JPEG is a block transform, so reaching one
+ * pixel means decoding at least the block around it, and usually the scan up to it.
+ */
+function regionReader(bytes, frame) {
+  let decoded
+  return async request => {
+    const values = [request.x, request.y, request.width, request.height, request.maxBytes]
+    if (!values.every(value => Number.isSafeInteger(value) && value >= 0))
+      throw new TypeError('JPEG region coordinates must be non-negative safe integers')
+    if (
+      request.pixelFormat !== 'rgba8' ||
+      (request.frame ?? 0) !== 0 ||
+      (request.mipLevel ?? 0) !== 0 ||
+      (request.layer ?? 0) !== 0 ||
+      (request.face ?? 0) !== 0 ||
+      (request.slice ?? 0) !== 0
+    )
+      throw new RangeError('JPEG exposes only frame/mip/layer/face/slice zero as rgba8')
+    if (request.x + request.width > frame.width || request.y + request.height > frame.height)
+      throw new RangeError('JPEG region is outside the image')
+    const outputBytes = request.width * request.height * 4
+    if (!Number.isSafeInteger(outputBytes) || outputBytes > request.maxBytes)
+      throw new RangeError('JPEG region exceeds maxBytes')
+    decoded ??= decodeBaselineJpeg(bytes, { maxBytes: frame.width * frame.height * 4 })
+    const pixels = new Uint8Array(outputBytes)
+    for (let row = 0; row < request.height; row += 1) {
+      const sourceRow = (request.y + row) * frame.width + request.x
+      pixels.set(
+        decoded.pixels.subarray(sourceRow * 4, (sourceRow + request.width) * 4),
+        row * request.width * 4,
+      )
+    }
+    return Object.freeze({
+      width: request.width,
+      height: request.height,
+      rowStride: request.width * 4,
+      pixelFormat: 'rgba8',
+      pixels,
+    })
+  }
+}
+
 const definition = Object.freeze({
   id: 'modkit/image-jpeg',
   operations: JPEG_EDIT_OPERATIONS,
@@ -311,6 +357,13 @@ const definition = Object.freeze({
   },
   async inspect(bytes, context) {
     const jpeg = parseJpeg(bytes, context.budget.maxNodes)
+    // Baseline sequential frames decode here; progressive and arithmetic ones stay metadata-only,
+    // which the shared decoder refuses by name rather than approximating.
+    const decodable =
+      !jpeg.frame.progressive &&
+      jpeg.frame.bitDepth === 8 &&
+      [1, 3].includes(jpeg.frame.components) &&
+      jpeg.frame.width * jpeg.frame.height * 4 <= context.budget.maxScalarBytes
     const raster = createRasterImageSource(bytes, 'image/jpeg', {
       width: jpeg.frame.width,
       height: jpeg.frame.height,
@@ -324,8 +377,10 @@ const definition = Object.freeze({
       colorSpace: 'unknown',
       alphaMode: 'none',
       orientation: 'top-left',
-      decodedAccess: false,
-    })
+      decodedAccess: decodable,
+    },
+    decodable ? regionReader(bytes, jpeg.frame) : undefined,
+    )
     const tree = createTreeDataSource({
       kind: 'image',
       label: 'JPEG',
