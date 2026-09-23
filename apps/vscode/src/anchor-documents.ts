@@ -47,15 +47,20 @@ export function anchorDocumentIndex(inventory: Inventory): AnchorDocumentIndex {
       const spec = contribution.manifest?.spec as
         | { anchorDocuments?: readonly string[]; match?: { extensions?: readonly string[] } }
         | undefined
+      // A manifest is data read off disk, so a malformed one must not take the window's page down
+      // with it: this runs while a subject view is being served, where a throw costs every stage.
       const anchors = spec?.anchorDocuments
       const extensions = spec?.match?.extensions
-      if (anchors === undefined || anchors.length === 0) continue
-      if (extensions === undefined || extensions.length === 0) continue
+      if (!Array.isArray(anchors) || anchors.length === 0) continue
+      if (!Array.isArray(extensions) || extensions.length === 0) continue
       for (const candidate of extensions) {
+        if (typeof candidate !== 'string') continue
         const key = candidate.replace(/^\./u, '').toLowerCase()
         if (key.length === 0) continue
         const names = index.get(key) ?? new Set<string>()
-        for (const anchor of anchors) names.add(anchor.replace(/^\//u, '').toLowerCase())
+        for (const anchor of anchors) {
+          if (typeof anchor === 'string') names.add(anchor.replace(/^\//u, '').toLowerCase())
+        }
         index.set(key, names)
       }
     }
