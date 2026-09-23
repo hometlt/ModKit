@@ -105,6 +105,7 @@ export async function runModkitLsp(argv: readonly string[]) {
         if (descriptor === undefined) throw new Error('opened root descriptor is missing')
         return { descriptor, operations: session.operations() }
       }),
+      ...(configuration.baseMods.length === 0 ? {} : { baseMods: { '*': configuration.baseMods } }),
       standingMounts: true,
     })
     for (const item of projected.diagnostics)

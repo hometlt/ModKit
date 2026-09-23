@@ -12,6 +12,8 @@ export interface ModkitLspConfiguration {
   /** Trusted content-source module configuration; packed dependencies resolve through it. */
   readonly contentSourceConfig?: string
   readonly contentSourceStorage?: string
+  /** Packages a root that belongs to no package opens inside; the game's own default when empty. */
+  readonly baseMods: readonly string[]
 }
 
 export class ConfigurationError extends Error {}
@@ -43,6 +45,8 @@ export function modkitLspUsage(): string {
     '  --locale <id>                 Repeatable game-data locale (default enUS)',
     '  --content-source-config <path>  Trusted content-source JSON; resolves packed dependencies',
     '  --content-source-storage <path> Cache/state directory for that content source',
+    '  --base-mod <package>          Repeatable package a root outside any mod opens inside',
+    '                                (default: the game default, Void for StarCraft II)',
     '  --help                        Print this text',
     '',
   ].join('\n')
@@ -64,6 +68,7 @@ export function parseModkitLspConfiguration(argv: readonly string[]): ModkitLspC
   const locales: string[] = []
   let contentSourceConfig: string | undefined
   let contentSourceStorage: string | undefined
+  const baseMods: string[] = []
   for (let index = 0; index < argv.length; index += 1) {
     const option = argv[index]
     if (option === '--help') throw new ConfigurationError('help requested')
@@ -102,6 +107,10 @@ export function parseModkitLspConfiguration(argv: readonly string[]): ModkitLspC
       case '--content-source-storage':
         contentSourceStorage = absolute(value, option)
         break
+      case '--base-mod':
+        if (value.length > 4096) throw new ConfigurationError('--base-mod is too long')
+        baseMods.push(value)
+        break
       default:
         throw new ConfigurationError(`unknown option ${option ?? ''}`)
     }
@@ -125,6 +134,7 @@ export function parseModkitLspConfiguration(argv: readonly string[]): ModkitLspC
     maxDocumentBytes,
     maxWorkspaceBytes,
     locales: Object.freeze(locales.length === 0 ? ['enUS'] : [...new Set(locales)]),
+    baseMods: Object.freeze([...new Set(baseMods)]),
     ...(contentSourceConfig === undefined || contentSourceStorage === undefined
       ? {}
       : { contentSourceConfig, contentSourceStorage }),

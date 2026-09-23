@@ -20,9 +20,11 @@ export interface ModkitMcpConfiguration {
   readonly trustExtensions?: boolean
   readonly contentSourceConfig?: string
   readonly contentSourceStorage?: string
+  /** Packages a root that belongs to no package opens inside; the game's own default when absent. */
+  readonly baseMods?: readonly string[]
 }
 
-const USAGE = `Usage: modkit-mcp --root <absolute-directory> --extension <absolute-directory> [--root ...] [--extension ...] [--output-artifacts] [--allow-edits] [--operation-permission <class> ...] [--allow-effectful-service-operations] [--trust-extensions] [--content-source-config <absolute-file> --content-source-storage <absolute-directory>]\n\nEnvironment fallback:\n  ${MODKIT_MCP_ROOTS_ENV}=<paths separated by ${JSON.stringify(delimiter)}>\n  ${MODKIT_MCP_EXTENSIONS_ENV}=<paths separated by ${JSON.stringify(delimiter)}>\n  ${MODKIT_MCP_OPERATION_PERMISSIONS_ENV}=<permission classes separated by ${JSON.stringify(delimiter)}>\n  ${MODKIT_MCP_ALLOW_EDITS_ENV}=true|false\n  ${MODKIT_MCP_CONTENT_SOURCE_CONFIG_ENV}=<absolute-file>\n  ${MODKIT_MCP_CONTENT_SOURCE_STORAGE_ENV}=<absolute-directory>\n`
+const USAGE = `Usage: modkit-mcp --root <absolute-directory> --extension <absolute-directory> [--root ...] [--extension ...] [--output-artifacts] [--allow-edits] [--operation-permission <class> ...] [--allow-effectful-service-operations] [--trust-extensions] [--content-source-config <absolute-file> --content-source-storage <absolute-directory>] [--base-mod <package> ...]\n\nEnvironment fallback:\n  ${MODKIT_MCP_ROOTS_ENV}=<paths separated by ${JSON.stringify(delimiter)}>\n  ${MODKIT_MCP_EXTENSIONS_ENV}=<paths separated by ${JSON.stringify(delimiter)}>\n  ${MODKIT_MCP_OPERATION_PERMISSIONS_ENV}=<permission classes separated by ${JSON.stringify(delimiter)}>\n  ${MODKIT_MCP_ALLOW_EDITS_ENV}=true|false\n  ${MODKIT_MCP_CONTENT_SOURCE_CONFIG_ENV}=<absolute-file>\n  ${MODKIT_MCP_CONTENT_SOURCE_STORAGE_ENV}=<absolute-directory>\n`
 
 export class ConfigurationError extends TypeError {
   readonly usage = USAGE
@@ -73,6 +75,7 @@ export function parseModkitMcpConfiguration(
   let trustExtensions = false
   let contentSourceConfig: string | undefined
   let contentSourceStorage: string | undefined
+  const baseMods: string[] = []
   for (let index = 0; index < argv.length; index += 1) {
     const option = argv[index]
     if (option === '--output-artifacts') {
@@ -97,7 +100,8 @@ export function parseModkitMcpConfiguration(
       option !== '--extension' &&
       option !== '--operation-permission' &&
       option !== '--content-source-config' &&
-      option !== '--content-source-storage'
+      option !== '--content-source-storage' &&
+      option !== '--base-mod'
     ) {
       throw new ConfigurationError(`unknown option: ${option ?? ''}`)
     }
@@ -109,6 +113,7 @@ export function parseModkitMcpConfiguration(
     else if (option === '--extension') extensions.push(value)
     else if (option === '--operation-permission') operationPermissions.push(value)
     else if (option === '--content-source-config') contentSourceConfig = value
+    else if (option === '--base-mod') baseMods.push(value)
     else contentSourceStorage = value
     index += 1
   }
@@ -152,6 +157,7 @@ export function parseModkitMcpConfiguration(
           contentSourceConfig: resolve(contentSourceConfig),
           contentSourceStorage: resolve(contentSourceStorage!),
         }),
+    ...(baseMods.length === 0 ? {} : { baseMods: Object.freeze([...new Set(baseMods)]) }),
   })
 }
 

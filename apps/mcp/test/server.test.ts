@@ -846,6 +846,12 @@ describe('MCP configuration', () => {
     })
     expect(config.roots).toEqual([resolve('C:\\one'), resolve('C:\\two')])
     expect(config.extensions).toEqual([resolve('C:\\ext-a'), resolve('C:\\ext-b')])
+    expect(config.baseMods).toBeUndefined()
+    expect(
+      parseModkitMcpConfiguration(['--root', 'C:\\one', '--base-mod', 'Mods/Liberty.SC2Mod'], {
+        MODKIT_MCP_EXTENSIONS: 'C:\\ext-a',
+      }).baseMods,
+    ).toEqual(['Mods/Liberty.SC2Mod'])
   })
 
   it('requires explicit permission and effect policy for effectful service operations', () => {

@@ -758,6 +758,9 @@ export async function createHostMcpPort(
               maxEntries: 16_384,
             },
             subjects: context === undefined ? [] : [context],
+            ...(configuration.baseMods === undefined
+              ? {}
+              : { baseMods: { '*': configuration.baseMods } }),
             standingMounts: true,
             ...(signal === undefined ? {} : { signal }),
           })

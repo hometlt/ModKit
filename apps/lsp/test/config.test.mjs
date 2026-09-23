@@ -32,6 +32,14 @@ test('configuration deduplicates roots and enforces bounded snapshots', () => {
   assert.deepEqual(value.extensions, [extension])
   assert.equal(value.maxDocuments, 12)
   assert.deepEqual(value.locales, ['ruRU', 'enUS'])
+  assert.deepEqual(value.baseMods, [])
+  assert.deepEqual(
+    parseModkitLspConfiguration([
+      '--root', root, '--extension', extension,
+      '--base-mod', 'Mods/Liberty.SC2Mod', '--base-mod', 'Mods/Liberty.SC2Mod', '--base-mod', 'C:/Mine.SC2Mod',
+    ]).baseMods,
+    ['Mods/Liberty.SC2Mod', 'C:/Mine.SC2Mod'],
+  )
   assert.throws(
     () =>
       parseModkitLspConfiguration([
