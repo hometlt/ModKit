@@ -156,13 +156,50 @@ describe('what a host may hand a provider', () => {
     await callContentSources(source, 'prepareRevision', [
       'mine:1',
       'Mod.SC2Mod',
-      { visibility: 'private', locked: true },
+      { visibility: 'private', locked: true, protectHeader: true },
     ])
-    expect(calls[0]).toEqual(['mine:1', 'Mod.SC2Mod', { visibility: 'private', locked: true }])
+    expect(calls[0]).toEqual([
+      'mine:1',
+      'Mod.SC2Mod',
+      { visibility: 'private', locked: true, protectHeader: true },
+    ])
     for (const options of [{ visibility: 'secret' }, { locked: 'yes' }, { archivePath: '' }, null]) {
       await expect(
         callContentSources(source, 'prepareRevision', ['mine:1', 'Mod.SC2Mod', options]),
-      ).rejects.toThrow(/Invalid revision/u)
+      ).rejects.toThrow(/publication option|Invalid publication options/u)
+    }
+    // A field this boundary does not know is refused, never dropped on the way through.
+    await expect(
+      callContentSources(source, 'prepareRevision', ['mine:1', 'Mod.SC2Mod', { previews: [] }]),
+    ).rejects.toThrow('Unknown publication option: previews')
+  })
+
+  it('requires an archive and a name for a first publication', async () => {
+    const calls: unknown[][] = []
+    const source = {
+      prepareFirstPublication: async (...args: unknown[]) => {
+        calls.push(args)
+        return { id: 'review' }
+      },
+      storage: async (...args: unknown[]) => {
+        calls.push(args)
+        return { used: 1 }
+      },
+    } as unknown as ContentSources
+
+    await callContentSources(source, 'prepareFirstPublication', [
+      'connection-1',
+      { archivePath: 'C:/mods/Test.SC2Mod', name: 'Test', protectHeader: true },
+    ])
+    expect(calls[0]).toEqual([
+      'connection-1',
+      { archivePath: 'C:/mods/Test.SC2Mod', name: 'Test', protectHeader: true },
+    ])
+    expect(await callContentSources(source, 'storage', ['connection-1'])).toEqual({ used: 1 })
+    for (const options of [{ name: 'Test' }, { archivePath: 'C:/mods/Test.SC2Mod' }]) {
+      await expect(
+        callContentSources(source, 'prepareFirstPublication', ['connection-1', options]),
+      ).rejects.toThrow(/Missing publication option/u)
     }
   })
 })

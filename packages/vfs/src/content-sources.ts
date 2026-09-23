@@ -82,12 +82,12 @@ export interface ContentSources {
   download?(sourceId: string, path: string): Promise<unknown>
   clearCache?(sourceId: string, path: string): Promise<unknown>
   prepareDeletePublication?(sourceId: string, path: string): Promise<unknown>
+  /** What this account has left to publish into, in the connection's region. */
+  storage?(connectionId: string): Promise<unknown>
+  /** Compile a document's first publication and return it for review. */
+  prepareFirstPublication?(connectionId: string, options: PublicationOptions): Promise<unknown>
   /** Compile the next revision of one of this account's publications and return it for review. */
-  prepareRevision?(sourceId: string, path: string, options: {
-    readonly archivePath?: string
-    readonly visibility?: 'private' | 'public'
-    readonly locked?: boolean
-  }): Promise<unknown>
+  prepareRevision?(sourceId: string, path: string, options: PublicationOptions): Promise<unknown>
   /** Resolve a local source row for an OS-native reveal action. Remote sources return undefined. */
   resolveLocalPath?(sourceId: string, path: string): Promise<ContentSourceLocalPath | undefined>
   /** Resolve a codec-discovered dependency set to ordered, read-only roots owned by this source. */
@@ -98,6 +98,53 @@ export interface ContentSources {
    */
   languageMounts?(): Promise<ContentDependencyResolution> | ContentDependencyResolution
   dispose(): void | Promise<void>
+}
+
+/** What a host may choose about a publication. Both publication calls take the same options. */
+export interface PublicationOptions {
+  readonly archivePath?: string
+  readonly name?: string
+  readonly description?: string
+  readonly locale?: string
+  readonly visibility?: 'private' | 'public'
+  readonly locked?: boolean
+  /** Apply the "Locked By BadName" header protection to the archive that is sent. */
+  readonly protectHeader?: boolean
+}
+
+const bounded = (value: unknown, limit: number): value is string =>
+  typeof value === 'string' && !!value && value.length <= limit && !/[\u0000-\u001f]/u.test(value)
+
+/**
+ * Check the options of a publication call.
+ *
+ * A field this boundary does not know is refused rather than dropped: a host that sends one is
+ * asking for something, and silently publishing without it is the worse answer.
+ */
+function publicationOptions(raw: unknown, required: readonly string[]): PublicationOptions {
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
+    throw new TypeError('Invalid publication options')
+  }
+  const options = raw as Record<string, unknown>
+  const checks: Record<string, (value: unknown) => boolean> = {
+    archivePath: value => bounded(value, 4096),
+    name: value => bounded(value, 80),
+    description: value => typeof value === 'string' && value.length <= 4096,
+    locale: value => typeof value === 'string' && /^[a-z]{2}[A-Z]{2}$/u.test(value),
+    visibility: value => value === 'private' || value === 'public',
+    locked: value => typeof value === 'boolean',
+    protectHeader: value => typeof value === 'boolean',
+  }
+  for (const [key, value] of Object.entries(options)) {
+    if (value === undefined) continue
+    const check = checks[key]
+    if (!check) throw new TypeError(`Unknown publication option: ${key}`)
+    if (!check(value)) throw new TypeError(`Invalid publication option: ${key}`)
+  }
+  for (const key of required) {
+    if (options[key] === undefined) throw new TypeError(`Missing publication option: ${key}`)
+  }
+  return Object.fromEntries(Object.entries(options).filter(([, value]) => value !== undefined)) as PublicationOptions
 }
 
 export const CONTENT_SOURCE_METHODS = [
@@ -117,7 +164,9 @@ export const CONTENT_SOURCE_METHODS = [
   'download',
   'clearCache',
   'prepareDeletePublication',
+  'prepareFirstPublication',
   'prepareRevision',
+  'storage',
   'resolveLocalPath',
   'resolveDependencies',
   'languageMounts',
@@ -187,29 +236,17 @@ export async function callContentSources(
       if (!source.clearCache) throw new Error('Cache removal is not configured')
       return source.clearCache(string(0), path(1))
     }
+    case 'storage': {
+      if (!source.storage) throw new Error('Publishing is not configured')
+      return source.storage(string(0))
+    }
+    case 'prepareFirstPublication': {
+      if (!source.prepareFirstPublication) throw new Error('Publishing is not configured')
+      return source.prepareFirstPublication(string(0), publicationOptions(args[1], ['archivePath', 'name']))
+    }
     case 'prepareRevision': {
       if (!source.prepareRevision) throw new Error('Publishing is not configured')
-      const raw: unknown = args[2]
-      if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
-        throw new TypeError('Invalid revision options')
-      }
-      const options = raw as { archivePath?: unknown; visibility?: unknown; locked?: unknown }
-      if (options.visibility !== undefined && options.visibility !== 'private' && options.visibility !== 'public') {
-        throw new TypeError('Invalid revision visibility')
-      }
-      if (options.locked !== undefined && typeof options.locked !== 'boolean') {
-        throw new TypeError('Invalid revision lock')
-      }
-      if (options.archivePath !== undefined &&
-        (typeof options.archivePath !== 'string' || !options.archivePath ||
-          options.archivePath.length > 4096 || /[\u0000-\u001f]/u.test(options.archivePath))) {
-        throw new TypeError('Invalid revision archive path')
-      }
-      return source.prepareRevision(string(0), path(1), {
-        ...(options.archivePath === undefined ? {} : { archivePath: options.archivePath as string }),
-        ...(options.visibility === undefined ? {} : { visibility: options.visibility }),
-        ...(options.locked === undefined ? {} : { locked: options.locked }),
-      })
+      return source.prepareRevision(string(0), path(1), publicationOptions(args[2], []))
     }
     case 'prepareDeletePublication': {
       if (!source.prepareDeletePublication)
