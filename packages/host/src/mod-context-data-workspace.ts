@@ -12,12 +12,22 @@ export interface ModContextDataWorkspaceInputs {
   readonly resources: ResourceSessionPort
 }
 
+export interface ModContextNestedRoot {
+  /** Existing package layer whose listed directory contains another package (for example a map in a campaign). */
+  readonly parentLayerId: string
+  /** Layer-relative confined directory of the nested package. */
+  readonly path: string
+}
+
 /**
  * The context owns dependency resolution and package reads. This adapter only gives the existing
  * Data analyzer its historical lock/resource-port shape; it never resolves dependencies itself.
  * The caller owns both the context and the returned resource session.
  */
-export function createModContextDataWorkspaceInputs(context: ModContext): ModContextDataWorkspaceInputs {
+export function createModContextDataWorkspaceInputs(
+  context: ModContext,
+  options?: { readonly nestedRoot?: ModContextNestedRoot },
+): ModContextDataWorkspaceInputs {
   if (context.schemaVersion !== 1 || context.layers.length === 0 || context.layers.length > 256) {
     throw new TypeError('Data workspace requires a nonempty ModContext v1')
   }
@@ -39,8 +49,26 @@ export function createModContextDataWorkspaceInputs(context: ModContext): ModCon
     const revision = layer.fingerprint !== undefined && isRevisionId(layer.fingerprint)
       ? revisionId(layer.fingerprint)
       : revisionId(`provider-token:${encodeURIComponent(`${context.contextId}/${layer.id}`)}`)
-    return { layer, prefix, revision }
+    return { layer, prefix, revision, readLayerId: layer.id, readPrefix: '' }
   })
+  if (options?.nestedRoot !== undefined) {
+    const parent = layers.find(item => item.layer.id === options.nestedRoot?.parentLayerId)
+    if (parent === undefined) throw new TypeError('nested ModContext root has no parent layer')
+    const readPrefix = normalizeCompanionLogicalId(options.nestedRoot.path)
+    const prefix = `${parent.prefix}/${readPrefix}`
+    if (prefixes.has(prefix.toLowerCase())) throw new TypeError(`ambiguous ModContext nested path ${prefix}`)
+    const layer = Object.freeze({
+      id: `${parent.layer.id}:${readPrefix}`,
+      sourceId: parent.layer.sourceId,
+      sourcePath: prefix,
+      displayName: readPrefix.split('/').at(-1)!,
+      role: 'primary' as const,
+      provenance: 'opened' as const,
+      ...(parent.layer.fingerprint === undefined ? {} : { fingerprint: parent.layer.fingerprint }),
+    })
+    layers.push({ layer, prefix, revision: parent.revision,
+      readLayerId: parent.layer.id, readPrefix })
+  }
   if (context.unresolved.length > 0) {
     throw new TypeError(`ModContext has unresolved dependencies: ${context.unresolved.join(', ')}`)
   }
@@ -89,7 +117,7 @@ export function createModContextDataWorkspaceInputs(context: ModContext): ModCon
     async *enumerate(scope: InputSearchScope, options: CompanionEnumerationOptions, signal?: AbortSignal) {
       if (scope !== 'workspace-dependency-layer') return
       const prefix = options.prefix === '' ? '' : normalizeCompanionLogicalId(options.prefix)
-      for (const item of layers) {
+      for (const item of [...layers].reverse()) {
         signal?.throwIfAborted()
         const root = item.prefix.toLowerCase()
         const wanted = prefix.toLowerCase()
@@ -97,14 +125,18 @@ export function createModContextDataWorkspaceInputs(context: ModContext): ModCon
         const relativePrefix = wanted.startsWith(`${root}/`) ? prefix.slice(item.prefix.length + 1) : ''
         let cursor: string | undefined
         do {
-          const page = await context.files(item.layer.id, {
+          const page = await context.files(item.readLayerId, {
             limit: PAGE_SIZE,
-            prefix: relativePrefix,
+            prefix: [item.readPrefix, relativePrefix].filter(Boolean).join('/'),
             ...(cursor === undefined ? {} : { cursor }),
           })
           for (const relative of page.items) {
             signal?.throwIfAborted()
-            const logicalId = `${item.prefix}/${normalizeCompanionLogicalId(relative)}`
+            const nativePath = normalizeCompanionLogicalId(relative)
+            if (item.readPrefix !== '' && !nativePath.toLowerCase().startsWith(`${item.readPrefix.toLowerCase()}/`)) continue
+            const logicalId = `${item.prefix}/${item.readPrefix === ''
+              ? nativePath
+              : nativePath.slice(item.readPrefix.length + 1)}`
             if (logicalId.toLowerCase().startsWith(wanted)) {
               yield { logicalId, rootId: item.layer.id }
             }
@@ -118,7 +150,8 @@ export function createModContextDataWorkspaceInputs(context: ModContext): ModCon
       const normalized = normalizeCompanionLogicalId(logicalId)
       const item = find(normalized)
       if (item === undefined) throw new RangeError(`ModContext has no layer for ${normalized}`)
-      const bytes = await context.read(item.layer.id, item.relative, MAX_ENTRY_BYTES)
+      const bytes = await context.read(item.readLayerId,
+        [item.readPrefix, item.relative].filter(Boolean).join('/'), MAX_ENTRY_BYTES)
       const uri = `mod-context://${encodeURIComponent(context.contextId)}/${encodeURIComponent(item.layer.id)}/${item.relative.split('/').map(encodeURIComponent).join('/')}`
       const source: ArtifactByteSource = Object.freeze({
         kind: 'bytes',

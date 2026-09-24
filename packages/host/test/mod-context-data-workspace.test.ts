@@ -72,4 +72,46 @@ describe('resolved Data inputs from ModContext', () => {
     const complete = context()
     expect(() => createModContextDataWorkspaceInputs({ ...complete, layers: [complete.layers[0]!, { ...complete.layers[1]!, sourcePath: 'MODS/CORE.SC2MOD' }] })).toThrow(/ambiguous ModContext layer path/u)
   })
+
+  it('projects a nested map directory through its campaign layer without a second reader', async () => {
+    const base = context()
+    const mapRelative = 'Base.SC2Maps/Maps/Campaign/TArcade.SC2Map/Objects'
+    const read = vi.fn(async (_layerId: string, path: string) => {
+      if (path.toLowerCase() !== mapRelative.toLowerCase()) throw new RangeError(path)
+      return encoder.encode('<Objects/>')
+    })
+    const nested: ModContext = {
+      ...base,
+      layers: [...base.layers, { id: 'campaign', displayName: 'Liberty campaign',
+        sourceId: 'local:casc', sourcePath: 'campaigns/liberty.sc2campaign',
+        role: 'primary', provenance: 'opened' }],
+      files: async (layerId, page) => ({ items: layerId === 'campaign' &&
+        mapRelative.toLowerCase().startsWith((page.prefix ?? '').toLowerCase()) ? [mapRelative] : [] }),
+      read,
+    }
+    const { workspace, resources } = createModContextDataWorkspaceInputs(nested, {
+      nestedRoot: { parentLayerId: 'campaign', path: 'Base.SC2Maps/Maps/Campaign/TArcade.SC2Map' },
+    })
+    try {
+      expect(workspace.loadOrder.at(-1)?.sourcePath).toBe(
+        'campaigns/liberty.sc2campaign/Base.SC2Maps/Maps/Campaign/TArcade.SC2Map',
+      )
+      const opened = await resources.resolve({ id: 'map-objects',
+        logicalId: `${workspace.loadOrder.at(-1)?.sourcePath}/Objects`, role: 'buffer',
+        scopes: ['workspace-dependency-layer'] })
+      expect(opened.state).toBe('resolved')
+      if (opened.state === 'resolved') await opened.lease.release()
+      expect(read).toHaveBeenCalledWith('campaign', mapRelative, expect.any(Number))
+    } finally { await resources.dispose() }
+  })
+
+  it('rejects an unknown or escaping nested root', () => {
+    const source = context()
+    expect(() => createModContextDataWorkspaceInputs(source, {
+      nestedRoot: { parentLayerId: 'missing', path: 'Maps/Example.SC2Map' },
+    })).toThrow(/no parent layer/u)
+    expect(() => createModContextDataWorkspaceInputs(source, {
+      nestedRoot: { parentLayerId: 'liberty', path: '../Example.SC2Map' },
+    })).toThrow()
+  })
 })
