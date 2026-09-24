@@ -1308,6 +1308,8 @@ function validateWorkspacePlan(
         `workspace data requirement ${requirement.requirementId} escapes its root`,
       )
     }
+    // A usage document only names entities: it takes no part in catalog or locale precedence.
+    if (requirement.kind === 'usage') continue
     if (requirement.kind === 'catalog') {
       if (localizationStarted) {
         throw new TypeError('catalog requirements must precede localization requirements')
@@ -1815,6 +1817,7 @@ export async function analyzeResolvedDataWorkspace(
     let textBytes = 0
     const documents: DataCatalogDocument[] = []
     const localizationDocuments: DataLocalizationDocument[] = []
+    const usageDocuments: DataCatalogDocument[] = []
     const documentTargets: ResolvedDataDocumentTarget[] = []
     const unresolvedRequirementIds: string[] = []
     const revisions: string[] = []
@@ -1854,7 +1857,8 @@ export async function analyzeResolvedDataWorkspace(
             loaded.revision,
           ),
         )
-      } else localizationDocuments.push({ ...document, locale: requirement.locale as string })
+      } else if (requirement.kind === 'usage') usageDocuments.push(document)
+      else localizationDocuments.push({ ...document, locale: requirement.locale as string })
     }
     if (documents.length === 0) {
       await resolution.release()
@@ -1878,11 +1882,15 @@ export async function analyzeResolvedDataWorkspace(
       gameId: request.workspace.gameId,
       documents,
       localizationDocuments,
+      ...(usageDocuments.length === 0 ? {} : { usageDocuments }),
       locales: request.locales,
       localizationKeys: request.localizationKeys ?? [],
       queries: request.queries,
       plannedDocumentCount:
-        documents.length + localizationDocuments.length + unresolvedRequirementIds.length,
+        documents.length +
+        localizationDocuments.length +
+        usageDocuments.length +
+        unresolvedRequirementIds.length,
       unresolvedRequirementIds,
       snapshotId: `${String(request.resources.revision)}:${revisions.join('|')}`,
       maxDocuments: limits.maxRequirements,

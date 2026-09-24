@@ -60,7 +60,11 @@ export interface DataLocalizationDocument extends DataCatalogDocument {
   readonly locale: string
 }
 
-export type DataWorkspaceDocumentKind = 'catalog' | 'localization'
+/**
+ * `usage` is a document that names catalog entities without declaring any — a map's placed objects,
+ * its preload list. The analyzer turns what it names into relations, so an entity knows its users.
+ */
+export type DataWorkspaceDocumentKind = 'catalog' | 'localization' | 'usage'
 
 /** A game provider's confined logical read request. The host resolves it; the provider never does I/O. */
 export interface DataWorkspaceDocumentRequirement {
@@ -111,6 +115,8 @@ export interface DataCatalogAnalysisRequest {
   readonly gameId: string
   readonly documents: readonly DataCatalogDocument[]
   readonly localizationDocuments?: readonly DataLocalizationDocument[]
+  /** Documents planned as `usage`, in plan order. */
+  readonly usageDocuments?: readonly DataCatalogDocument[]
   readonly locales?: readonly string[]
   readonly localizationKeys?: readonly string[]
   readonly snapshotId?: string
