@@ -81,5 +81,17 @@
   "command.sources.disconnect.title": "Отключить аккаунт",
   "command.sources.publish.title": "Опубликовать новую ревизию",
   "command.sources.deletePublication.title": "Удалить публикацию",
-  "command.sources.publishNew.title": "Опубликовать новый мод или карту"
+  "command.sources.publishNew.title": "Опубликовать новый мод или карту",
+  "command.launchActiveMod": "Modkit: Протестировать активный мод в игре…",
+  "configuration.launch.warnIfRunning.description": "Спрашивать перед закрытием запущенной игры для нового запуска.",
+  "configuration.launch.testMap.description": "Абсолютный путь карты для теста мода. Пусто — выбрать при запуске.",
+  "configuration.launch.documentsDirectory.description": "Папка «Документы», если игра пишет журналы не в `~/Documents` (перенесённая папка или OneDrive).",
+  "debugger.launch.label": "Modkit: запуск в игре",
+  "debugger.launch.resource": "Карта или мод для запуска; пусто — пакет активного файла.",
+  "debugger.launch.kind": "Запустить карту или протестировать мод на карте.",
+  "debugger.launch.options": "Параметры запуска игры. StarCraft II: map, triggerDebug, preload, noUserCheats, reloadCheck, meleeMod, difficulty, speed, testMod, testConfig.",
+  "debugger.launch.sc2Map": "Modkit: карта StarCraft II",
+  "debugger.launch.sc2Mod": "Modkit: тест мода StarCraft II",
+  "debugger.launch.sc2MapName": "StarCraft II: запуск карты",
+  "debugger.launch.sc2ModName": "StarCraft II: тест мода"
 }

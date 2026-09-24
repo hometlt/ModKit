@@ -43,7 +43,12 @@ export {
 } from './content-source-map-preview-resolver.js'
 export {
   launchNodeGameResource,
+  runningGameProcesses,
   spawnDetachedGameProcess,
+  stopGameProcesses,
+  watchGameLaunchLogs,
+  type GameLaunchLogWatch,
+  type WatchGameLaunchLogsRequest,
   type LaunchNodeGameResourceRequest,
   type NodeGameLaunchFilesystem,
   type NodeGameLaunchPathKind,

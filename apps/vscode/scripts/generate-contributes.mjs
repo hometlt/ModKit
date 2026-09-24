@@ -81,6 +81,18 @@ const viewsContainers = sortedGroups(input.viewsContainers, 'id')
 // What a view shows before its provider exists (VS Code shows it instead of "no data provider").
 const viewsWelcome = [...(input.viewsWelcome ?? [])].sort((a, b) => compareUtf8(a.view, b.view))
 const menus = sortedGroups(input.menus ?? {}, 'command')
+// Launch configuration types (`launch.json`): resolved by the extension, never a debug adapter.
+const debuggers = [...(input.debuggers ?? [])].sort((a, b) => compareUtf8(a.type, b.type))
+if (
+  debuggers.some(
+    (row, index) =>
+      typeof row.type !== 'string' ||
+      row.type.length === 0 ||
+      (index > 0 && row.type === debuggers[index - 1].type),
+  )
+) {
+  throw new TypeError('debuggers must contain unique non-empty types')
+}
 // The settings schema is authored as one object; only its property order is normalised, because a
 // JSON Schema's own keyword order carries no meaning but its nesting does.
 const configuration = {
@@ -92,6 +104,7 @@ const document = {
   commands,
   configuration,
   customEditors,
+  ...(debuggers.length === 0 ? {} : { debuggers }),
   grammars,
   languages,
   menus,
@@ -121,6 +134,7 @@ const activationEvents = [
     .flat()
     .map(row => `onView:${row.id}`),
   ...fileSystemSchemes.map(scheme => `onFileSystem:${scheme}`),
+  ...debuggers.map(row => `onDebugResolve:${row.type}`),
   /*
    * Language routes come from the configured extension directories at runtime, so no static
    * `onLanguage` event can name them. Activate once startup has finished so opening an SC2 or other

@@ -126,6 +126,7 @@
         "icon": "$(sync)"
       },
       { "command": "modkit.game.launchActiveMap", "title": "%command.launchActiveMap%" },
+      { "command": "modkit.game.launchActiveMod", "title": "%command.launchActiveMod%" },
       {
         "command": "modkit.materializeContainerEntry",
         "title": "%command.materializeContainerMember%"
@@ -321,6 +322,22 @@
           "markdownDescription": "%configuration.extensions.description%",
           "type": "array"
         },
+        "modkit.launch.documentsDirectory": {
+          "default": "",
+          "markdownDescription": "%configuration.launch.documentsDirectory.description%",
+          "type": "string"
+        },
+        "modkit.launch.testMap": {
+          "default": "",
+          "markdownDescription": "%configuration.launch.testMap.description%",
+          "scope": "resource",
+          "type": "string"
+        },
+        "modkit.launch.warnIfRunning": {
+          "default": true,
+          "markdownDescription": "%configuration.launch.warnIfRunning.description%",
+          "type": "boolean"
+        },
         "modkit.managedEditorAssociations": {
           "default": [],
           "items": { "type": "string" },
@@ -359,6 +376,52 @@
         "displayName": "%customEditor.imageViewer%",
         "selector": [{ "filenamePattern": "*" }],
         "priority": "option"
+      }
+    ],
+    "debuggers": [
+      {
+        "type": "modkit-launch",
+        "label": "%debugger.launch.label%",
+        "configurationAttributes": {
+          "launch": {
+            "properties": {
+              "resource": { "type": "string", "description": "%debugger.launch.resource%" },
+              "kind": {
+                "type": "string",
+                "enum": ["map", "mod"],
+                "default": "map",
+                "description": "%debugger.launch.kind%"
+              },
+              "options": {
+                "type": "object",
+                "default": {},
+                "description": "%debugger.launch.options%"
+              }
+            }
+          }
+        },
+        "configurationSnippets": [
+          {
+            "label": "%debugger.launch.sc2Map%",
+            "body": {
+              "type": "modkit-launch",
+              "request": "launch",
+              "name": "%debugger.launch.sc2MapName%",
+              "kind": "map",
+              "options": { "triggerDebug": false, "difficulty": 2, "speed": 2, "meleeMod": "Void" }
+            }
+          },
+          {
+            "label": "%debugger.launch.sc2Mod%",
+            "body": {
+              "type": "modkit-launch",
+              "request": "launch",
+              "name": "%debugger.launch.sc2ModName%",
+              "kind": "mod",
+              "options": { "map": "", "triggerDebug": false }
+            }
+          }
+        ]
       }
     ],
     "grammars": [
@@ -438,6 +501,16 @@
         }
       ],
       "explorer/context": [
+        {
+          "command": "modkit.game.launchActiveMap",
+          "when": "resourceExtname =~ /^\\.(sc2map|s2ma)$/i",
+          "group": "navigation@90"
+        },
+        {
+          "command": "modkit.game.launchActiveMod",
+          "when": "resourceExtname =~ /^\\.(sc2mod|s2mod)$/i",
+          "group": "navigation@90"
+        },
         {
           "command": "modkit.openExplorer",
           "when": "explorerResourceIsFolder",
@@ -721,6 +794,7 @@
     "onCommand:modkit.extensions.removeVendorSupport",
     "onCommand:modkit.extensions.update",
     "onCommand:modkit.game.launchActiveMap",
+    "onCommand:modkit.game.launchActiveMod",
     "onCommand:modkit.materializeContainerEntry",
     "onCommand:modkit.navigateResource",
     "onCommand:modkit.openArchiveEntry",
@@ -767,6 +841,7 @@
     "onView:modkit.sources",
     "onFileSystem:modkit-container",
     "onFileSystem:modkit-source",
+    "onDebugResolve:modkit-launch",
     "onStartupFinished"
   ],
   "icon": "media/icon-128.png"

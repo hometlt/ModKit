@@ -277,6 +277,10 @@
       "command": "modkit.sources.publishNew",
       "title": "%command.sources.publishNew.title%",
       "icon": "$(add)"
+    },
+    {
+      "command": "modkit.game.launchActiveMod",
+      "title": "%command.launchActiveMod%"
     }
   ],
   "configuration": {
@@ -325,6 +329,22 @@
         "scope": "resource",
         "additionalProperties": { "type": "array", "items": { "type": "string" } },
         "markdownDescription": "%configuration.baseMods.description%"
+      },
+      "modkit.launch.warnIfRunning": {
+        "type": "boolean",
+        "default": true,
+        "markdownDescription": "%configuration.launch.warnIfRunning.description%"
+      },
+      "modkit.launch.testMap": {
+        "type": "string",
+        "default": "",
+        "scope": "resource",
+        "markdownDescription": "%configuration.launch.testMap.description%"
+      },
+      "modkit.launch.documentsDirectory": {
+        "type": "string",
+        "default": "",
+        "markdownDescription": "%configuration.launch.documentsDirectory.description%"
       },
       "modkit.disabledContributions": {
         "type": "array",
@@ -621,6 +641,16 @@
         "command": "modkit.sources.deletePublication",
         "when": "resourceScheme == modkit-source",
         "group": "navigation@27"
+      },
+      {
+        "command": "modkit.game.launchActiveMap",
+        "when": "resourceExtname =~ /^\\.(sc2map|s2ma)$/i",
+        "group": "navigation@90"
+      },
+      {
+        "command": "modkit.game.launchActiveMod",
+        "when": "resourceExtname =~ /^\\.(sc2mod|s2mod)$/i",
+        "group": "navigation@90"
       }
     ],
     "view/title": [
@@ -831,5 +861,65 @@
   "fileSystemSchemes": [
     "modkit-container",
     "modkit-source"
+  ],
+  "debuggers": [
+    {
+      "type": "modkit-launch",
+      "label": "%debugger.launch.label%",
+      "configurationAttributes": {
+        "launch": {
+          "properties": {
+            "resource": {
+              "type": "string",
+              "description": "%debugger.launch.resource%"
+            },
+            "kind": {
+              "type": "string",
+              "enum": [
+                "map",
+                "mod"
+              ],
+              "default": "map",
+              "description": "%debugger.launch.kind%"
+            },
+            "options": {
+              "type": "object",
+              "default": {},
+              "description": "%debugger.launch.options%"
+            }
+          }
+        }
+      },
+      "configurationSnippets": [
+        {
+          "label": "%debugger.launch.sc2Map%",
+          "body": {
+            "type": "modkit-launch",
+            "request": "launch",
+            "name": "%debugger.launch.sc2MapName%",
+            "kind": "map",
+            "options": {
+              "triggerDebug": false,
+              "difficulty": 2,
+              "speed": 2,
+              "meleeMod": "Void"
+            }
+          }
+        },
+        {
+          "label": "%debugger.launch.sc2Mod%",
+          "body": {
+            "type": "modkit-launch",
+            "request": "launch",
+            "name": "%debugger.launch.sc2ModName%",
+            "kind": "mod",
+            "options": {
+              "map": "",
+              "triggerDebug": false
+            }
+          }
+        }
+      ]
+    }
   ]
 }

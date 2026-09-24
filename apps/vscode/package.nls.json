@@ -81,5 +81,17 @@
   "command.sources.disconnect.title": "Disconnect the account",
   "command.sources.publish.title": "Publish a new revision",
   "command.sources.deletePublication.title": "Delete the publication",
-  "command.sources.publishNew.title": "Publish a new mod or map"
+  "command.sources.publishNew.title": "Publish a new mod or map",
+  "command.launchActiveMod": "Modkit: Test Active Mod in Game…",
+  "configuration.launch.warnIfRunning.description": "Ask before closing a running game to launch again.",
+  "configuration.launch.testMap.description": "Absolute path of the map a mod is tested on. Empty: choose one when testing.",
+  "configuration.launch.documentsDirectory.description": "Your Documents folder, when the game logs somewhere other than `~/Documents` (a relocated or OneDrive folder).",
+  "debugger.launch.label": "Modkit: Launch in Game",
+  "debugger.launch.resource": "Map or mod to launch; empty launches the one the active file belongs to.",
+  "debugger.launch.kind": "Launch a map, or test a mod on a map.",
+  "debugger.launch.options": "The game's launch options. StarCraft II: map, triggerDebug, preload, noUserCheats, reloadCheck, meleeMod, difficulty, speed, testMod, testConfig.",
+  "debugger.launch.sc2Map": "Modkit: StarCraft II map",
+  "debugger.launch.sc2Mod": "Modkit: StarCraft II mod test",
+  "debugger.launch.sc2MapName": "StarCraft II: launch map",
+  "debugger.launch.sc2ModName": "StarCraft II: test mod"
 }

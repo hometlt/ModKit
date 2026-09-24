@@ -104,17 +104,27 @@ import {
   type LanguageWorkspaceDocumentSource,
   type LanguageWorkspaceDocumentSourceResult,
 } from '@modkit/host/language'
-import { discoverGameInstallations } from '@modkit/host/games'
+import {
+  discoverGameInstallations,
+  interpretGameLaunchLog,
+  planGameLaunch,
+} from '@modkit/host/games'
 import {
   createContentSourceMapPreviewResourcePlanResolver,
   createNodeMapPreviewResourcePlanResolver,
   flushArtifactDigestCache,
   launchNodeGameResource,
+  runningGameProcesses,
+  stopGameProcesses,
   useArtifactDigestCache,
+  watchGameLaunchLogs,
+  type GameLaunchLogWatch,
+  type NodeGameLaunchReceipt,
 } from '@modkit/host/node'
 import type {
   AnyDescriptor,
   AssetSession,
+  JsonValue,
   OperationSession,
   SubjectCandidateProviderSource,
   SubjectCandidateScope,
@@ -229,7 +239,20 @@ import {
   type SelectedContentSource,
 } from './workbench-workflows.js'
 import { createSourceTree, type SourceTreeNode } from './source-tree.js'
-import { runExplicitGameLaunch, VSCODE_GAME_LAUNCH_COMMAND } from './game-launch-workflow.js'
+import {
+  runExplicitGameLaunch,
+  VSCODE_GAME_LAUNCH_COMMAND,
+  type ExplicitGameLaunchRequest,
+} from './game-launch-workflow.js'
+import {
+  gameLaunchConfiguration,
+  gameLogFindingsByFile,
+  launchTargetOf,
+  VSCODE_GAME_LAUNCH_DEBUG_TYPE,
+  VSCODE_GAME_LAUNCH_MOD_COMMAND,
+  type GameLaunchConfiguration,
+  type GameLaunchKind,
+} from './game-launch-ui.js'
 import {
   anchorAssociationPattern,
   associationPattern,
@@ -10669,6 +10692,318 @@ async function activateModkit(
     }
   }
 
+  // ------------------------------------------------------------------------------------------
+  // Game launch: a map, or a mod tested on a map, through the selected installation's game provider
+
+  const launchDiagnostics = vscode.languages.createDiagnosticCollection('modkit-game-logs')
+  let launchWatch: GameLaunchLogWatch | undefined
+  context.subscriptions.push(launchDiagnostics, { dispose: () => launchWatch?.dispose() })
+
+  /** The map a mod is tested on: the `modkit.launch.testMap` setting, else one the user picks. */
+  const chooseTestMap = async (): Promise<string | undefined> => {
+    const configuredMap = vscode.workspace.getConfiguration('modkit').get<string>('launch.testMap', '').trim()
+    if (configuredMap !== '' && isAbsolute(configuredMap)) return configuredMap
+    const found = await vscode.workspace.findFiles(
+      '{**/*.[Ss][Cc]2[Mm][Aa][Pp],**/*.[Ss]2[Mm][Aa],**/*.[Ss][Cc]2[Mm][Aa][Pp]/[Mm]ap[Ii]nfo}',
+      '**/node_modules/**',
+      200,
+    )
+    const maps = [
+      ...new Set(
+        found.map(uri => launchTargetOf(uri.fsPath, 'map')?.path).filter((path): path is string => path !== undefined),
+      ),
+    ].sort()
+    const picked = await vscode.window.showQuickPick(
+      maps.map(path => ({ label: basename(path), detail: path })),
+      { title: localizer.text('vscode.game.chooseTestMap'), ignoreFocusOut: true },
+    )
+    return picked?.detail
+  }
+
+  /**
+   * Offer to close the game when it is already running; false when the user keeps it open. The
+   * process names come from the game's own plan; closing needs the same launch grant.
+   */
+  const closeRunningGame = async (
+    request: ExplicitGameLaunchRequest,
+    options: Readonly<Record<string, JsonValue>>,
+  ): Promise<boolean> => {
+    const planning = await planGameLaunch({
+      services: host.services,
+      gameId: request.gameId,
+      installation: request.installation,
+      resource: request.resource,
+      options,
+      grant: request.grant,
+      budgets: GAME_DISCOVERY_BUDGET,
+    })
+    const names = planning.state === 'planned' ? (planning.plan.runningProcessNames ?? []) : []
+    const running = await runningGameProcesses(names)
+    if (running.length === 0) return true
+    if (vscode.workspace.getConfiguration('modkit').get<boolean>('launch.warnIfRunning', true)) {
+      const action = localizer.text('vscode.game.closeRunningAction')
+      const choice = await vscode.window.showWarningMessage(
+        localizer.text('vscode.game.closeRunningTitle', { game: request.installation.displayName }),
+        { modal: true },
+        action,
+      )
+      if (choice !== action) return false
+    }
+    for (const item of await stopGameProcesses(running, request.grant)) {
+      log(`[game-launch] ${item.severity} ${item.code}: ${item.message}`)
+    }
+    return true
+  }
+
+  /** The launched run's logs (script errors, alerts) into Problems, as the game reads them. */
+  const watchLaunchLogs = async (receipt: NodeGameLaunchReceipt, gameId: string): Promise<void> => {
+    launchWatch?.dispose()
+    launchDiagnostics.clear()
+    const documentsDirectory = vscode.workspace
+      .getConfiguration('modkit')
+      .get<string>('launch.documentsDirectory', '')
+      .trim()
+    launchWatch = await watchGameLaunchLogs({
+      plan: receipt.plan,
+      ...(documentsDirectory === '' ? {} : { documentsDirectory }),
+      interpret: async (fileName, text) => {
+        const report = await interpretGameLaunchLog({
+          services: host.services,
+          gameId,
+          grant: { id: `vscode-game-log-${nonce()}`, classes: [] },
+          budgets: GAME_DISCOVERY_BUDGET,
+          resource: receipt.resource,
+          fileName,
+          text,
+        })
+        for (const item of report.hostDiagnostics) {
+          log(`[game-logs] ${item.severity} ${item.code}: ${item.message}`)
+        }
+        return report
+      },
+      onReport: async (fileName, report) => {
+        for (const item of report.diagnostics) {
+          log(`[game-logs] ${fileName}: ${item.severity} ${item.message}`)
+        }
+        const findings = report.diagnostics.filter(item => item.severity !== 'information')
+        if (findings.length === 0) return
+        const severity = {
+          error: vscode.DiagnosticSeverity.Error,
+          warning: vscode.DiagnosticSeverity.Warning,
+          information: vscode.DiagnosticSeverity.Information,
+        } as const
+        let first: { readonly uri: vscode.Uri; readonly range: vscode.Range } | undefined
+        for (const [path, items] of gameLogFindingsByFile(findings, receipt.resource.path)) {
+          const uri = vscode.Uri.file(path)
+          launchDiagnostics.set(
+            uri,
+            items.map(item => {
+              const line = item.line ?? 0
+              const diagnostic = new vscode.Diagnostic(
+                new vscode.Range(line, 0, line, Number.MAX_SAFE_INTEGER),
+                item.message,
+                severity[item.severity],
+              )
+              diagnostic.source = fileName
+              diagnostic.code = item.code
+              first ??= item.path === undefined ? undefined : { uri, range: diagnostic.range }
+              return diagnostic
+            }),
+          )
+        }
+        void vscode.window.showErrorMessage(
+          `Modkit: ${localizer.text('vscode.game.scriptErrors', { count: String(findings.length) })}`,
+        )
+        await vscode.commands.executeCommand('workbench.actions.view.problems')
+        if (first !== undefined) {
+          await vscode.window.showTextDocument(first.uri, { selection: first.range, preserveFocus: false })
+        }
+      },
+      onLog: message => log(`[game-logs] ${message}`),
+      onError: error => log(`[game-logs] ${error instanceof Error ? error.message : String(error)}`),
+    })
+  }
+
+  /**
+   * Launch a map, or test a mod on a map, after modal confirmation; offers to close a running
+   * game first and reads the run's logs afterwards — the MK2 launch surface over the host's plan.
+   */
+  const launchGame = async (
+    argument: unknown,
+    kind: GameLaunchKind,
+    configured: GameLaunchConfiguration = { options: {} },
+  ) => {
+        const argumentPath =
+          configured.resource ??
+          (argument instanceof vscode.Uri
+            ? argument.scheme === 'file'
+              ? argument.fsPath
+              : undefined
+            : typeof argument === 'string' && isAbsolute(argument)
+              ? argument
+              : (activeSubject ?? vscode.window.activeTextEditor?.document.uri.fsPath))
+        // The package the path is in: a script or data file launches its map (or tests its mod).
+        const target =
+          argumentPath === undefined || !isAbsolute(argumentPath)
+            ? undefined
+            : launchTargetOf(argumentPath, kind)
+        if (target === undefined) {
+          void vscode.window.showWarningMessage(
+            `Modkit: ${localizer.text(kind === 'mod' ? 'vscode.game.openModFirst' : 'vscode.game.openMapFirst')}`,
+          )
+          return undefined
+        }
+        const requestedPath = target.path
+        const options: Record<string, JsonValue> = { ...configured.options }
+        if (target.kind === 'mod' && options['map'] === undefined) {
+          const map = await chooseTestMap()
+          if (map === undefined) return undefined
+          options['map'] = map
+        }
+        if (selectedSources.length === 0) {
+          void vscode.window.showWarningMessage(
+            `Modkit: ${localizer.text('vscode.game.selectInstallationFirst')}`,
+          )
+          return undefined
+        }
+        const source =
+          selectedSources.length === 1
+            ? selectedSources[0]
+            : await vscode.window
+                .showQuickPick(
+                  selectedSources.map(item => ({
+                    label: item.displayName,
+                    description: item.gameId,
+                    detail: item.installPath,
+                    source: item,
+                  })),
+                  { title: localizer.text('vscode.game.chooseInstallation') },
+                )
+                .then(item => item?.source)
+        if (source === undefined) {
+          void vscode.window.showWarningMessage(
+            `Modkit: ${localizer.text('vscode.game.selectInstallationFirst')}`,
+          )
+          return undefined
+        }
+
+        // Persisted workspace state is never enough to launch a process: probe the selected root
+        // again and pass only the provider-confirmed installation to the host executor.
+        const discovery = await discoverGameInstallations({
+          services: host.services,
+          gameId: source.gameId,
+          configuredPaths: [source.installPath],
+          maxCandidates: 32,
+          grant: {
+            id: `vscode-game-launch-discovery-${nonce()}`,
+            classes:
+              process.platform === 'win32'
+                ? ['filesystem-read', 'process-launch']
+                : ['filesystem-read'],
+          },
+          budgets: GAME_DISCOVERY_BUDGET,
+        })
+        for (const item of discovery.diagnostics) {
+          log(`[game-launch] ${item.severity} ${item.code}: ${item.message}`)
+        }
+        const installation =
+          discovery.state === 'discovered'
+            ? discovery.result.installations.find(
+                item => item.normalizedPath === source.normalizedPath,
+              )
+            : undefined
+        if (installation === undefined) {
+          void vscode.window.showErrorMessage(
+            `Modkit: ${localizer.text('vscode.game.installationStale')}`,
+          )
+          return undefined
+        }
+
+        const workflow = await runExplicitGameLaunch(
+          {
+            grantId: `vscode-native-game-launch-${nonce()}`,
+            installation,
+            resourcePath: requestedPath,
+            resourceKind: target.kind,
+          },
+          {
+            localizer,
+            confirm: async request =>
+              (await vscode.window.showWarningMessage(
+                request.title,
+                { modal: true, detail: request.detail },
+                request.action,
+              )) === request.action,
+            execute: async request => {
+              if (!(await closeRunningGame(request, options))) {
+                return Object.freeze({ state: 'denied' as const, diagnostics: Object.freeze([]) })
+              }
+              return launchNodeGameResource({
+                services: host.services,
+                ...request,
+                options,
+                budgets: GAME_DISCOVERY_BUDGET,
+              })
+            },
+          },
+        )
+        if (workflow.state === 'cancelled') {
+          log(`native game launch cancelled for ${basename(requestedPath)}`)
+          return workflow
+        }
+        const launched = workflow.result
+        for (const item of launched.diagnostics) {
+          log(`[game-launch] ${item.severity} ${item.code}: ${item.message}`)
+        }
+        if (launched.state !== 'launched') {
+          void vscode.window.showErrorMessage(
+            `Modkit: ${localizer.text('vscode.game.launchFailed', { state: launched.state })}`,
+          )
+          return launched
+        }
+        try {
+          void vscode.window.showInformationMessage(
+            `Modkit: ${localizer.text('vscode.game.launched', {
+              game: installation.displayName,
+              map: basename(requestedPath),
+            })}`,
+          )
+          await watchLaunchLogs(launched.receipt, installation.gameId)
+          return launched.receipt
+        } finally {
+          await launched.release()
+        }
+  }
+
+  // An edited file's findings belong to the run that reported them, not to the new text.
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeTextDocument(event => {
+      if (event.contentChanges.length > 0) launchDiagnostics.delete(event.document.uri)
+    }),
+  )
+
+  // The launch button, shown while the active editor is in a map or mod (MK2's status item).
+  const launchStatus = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 45)
+  const updateLaunchStatus = (): void => {
+    const input = vscode.window.tabGroups.activeTabGroup.activeTab?.input as { uri?: vscode.Uri } | undefined
+    const uri = input?.uri ?? vscode.window.activeTextEditor?.document.uri
+    const target = uri?.scheme === 'file' ? launchTargetOf(uri.fsPath) : undefined
+    if (target === undefined) {
+      launchStatus.hide()
+      return
+    }
+    launchStatus.text = `$(run) ${localizer.text(target.kind === 'mod' ? 'vscode.game.statusTestMod' : 'vscode.game.statusLaunchMap')}`
+    launchStatus.tooltip = target.path
+    launchStatus.command = target.kind === 'mod' ? VSCODE_GAME_LAUNCH_MOD_COMMAND : VSCODE_GAME_LAUNCH_COMMAND
+    launchStatus.show()
+  }
+  updateLaunchStatus()
+  context.subscriptions.push(
+    launchStatus,
+    vscode.window.onDidChangeActiveTextEditor(updateLaunchStatus),
+    vscode.window.tabGroups.onDidChangeTabs(updateLaunchStatus),
+  )
+
   context.subscriptions.push(
     /*
      * Focuses the native view container rather than opening a panel of its own. What this command
@@ -11200,131 +11535,21 @@ async function activateModkit(
       })(),
     ),
 
-    /** Launch one active local map through a selected game provider, after modal confirmation. */
+    /** Launch the active map, or test the active mod on a map, in the game. */
     vscode.commands.registerCommand(VSCODE_GAME_LAUNCH_COMMAND, (argument: unknown) =>
-      (async () => {
-        const requestedPath =
-          argument instanceof vscode.Uri
-            ? argument.scheme === 'file'
-              ? argument.fsPath
-              : undefined
-            : typeof argument === 'string' && isAbsolute(argument)
-              ? argument
-              : activeSubject
-        if (requestedPath === undefined || !isAbsolute(requestedPath)) {
-          void vscode.window.showWarningMessage(
-            `Modkit: ${localizer.text('vscode.game.openMapFirst')}`,
-          )
-          return undefined
-        }
-        if (selectedSources.length === 0) {
-          void vscode.window.showWarningMessage(
-            `Modkit: ${localizer.text('vscode.game.selectInstallationFirst')}`,
-          )
-          return undefined
-        }
-        const source =
-          selectedSources.length === 1
-            ? selectedSources[0]
-            : await vscode.window
-                .showQuickPick(
-                  selectedSources.map(item => ({
-                    label: item.displayName,
-                    description: item.gameId,
-                    detail: item.installPath,
-                    source: item,
-                  })),
-                  { title: localizer.text('vscode.game.chooseInstallation') },
-                )
-                .then(item => item?.source)
-        if (source === undefined) {
-          void vscode.window.showWarningMessage(
-            `Modkit: ${localizer.text('vscode.game.selectInstallationFirst')}`,
-          )
-          return undefined
-        }
-
-        // Persisted workspace state is never enough to launch a process: probe the selected root
-        // again and pass only the provider-confirmed installation to the host executor.
-        const discovery = await discoverGameInstallations({
-          services: host.services,
-          gameId: source.gameId,
-          configuredPaths: [source.installPath],
-          maxCandidates: 32,
-          grant: {
-            id: `vscode-game-launch-discovery-${nonce()}`,
-            classes:
-              process.platform === 'win32'
-                ? ['filesystem-read', 'process-launch']
-                : ['filesystem-read'],
-          },
-          budgets: GAME_DISCOVERY_BUDGET,
-        })
-        for (const item of discovery.diagnostics) {
-          log(`[game-launch] ${item.severity} ${item.code}: ${item.message}`)
-        }
-        const installation =
-          discovery.state === 'discovered'
-            ? discovery.result.installations.find(
-                item => item.normalizedPath === source.normalizedPath,
-              )
-            : undefined
-        if (installation === undefined) {
-          void vscode.window.showErrorMessage(
-            `Modkit: ${localizer.text('vscode.game.installationStale')}`,
-          )
-          return undefined
-        }
-
-        const workflow = await runExplicitGameLaunch(
-          {
-            grantId: `vscode-native-game-launch-${nonce()}`,
-            installation,
-            resourcePath: requestedPath,
-          },
-          {
-            localizer,
-            confirm: async request =>
-              (await vscode.window.showWarningMessage(
-                request.title,
-                { modal: true, detail: request.detail },
-                request.action,
-              )) === request.action,
-            execute: request =>
-              launchNodeGameResource({
-                services: host.services,
-                ...request,
-                budgets: GAME_DISCOVERY_BUDGET,
-              }),
-          },
-        )
-        if (workflow.state === 'cancelled') {
-          log(`native game launch cancelled for ${basename(requestedPath)}`)
-          return workflow
-        }
-        const launched = workflow.result
-        for (const item of launched.diagnostics) {
-          log(`[game-launch] ${item.severity} ${item.code}: ${item.message}`)
-        }
-        if (launched.state !== 'launched') {
-          void vscode.window.showErrorMessage(
-            `Modkit: ${localizer.text('vscode.game.launchFailed', { state: launched.state })}`,
-          )
-          return launched
-        }
-        try {
-          void vscode.window.showInformationMessage(
-            `Modkit: ${localizer.text('vscode.game.launched', {
-              game: installation.displayName,
-              map: basename(requestedPath),
-            })}`,
-          )
-          return launched.receipt
-        } finally {
-          await launched.release()
-        }
-      })(),
+      launchGame(argument, 'map'),
     ),
+    vscode.commands.registerCommand(VSCODE_GAME_LAUNCH_MOD_COMMAND, (argument: unknown) =>
+      launchGame(argument, 'mod'),
+    ),
+    // A `modkit-launch` launch configuration (F5): its package, kind and game options.
+    vscode.debug.registerDebugConfigurationProvider(VSCODE_GAME_LAUNCH_DEBUG_TYPE, {
+      resolveDebugConfiguration(_folder, config) {
+        const configured = gameLaunchConfiguration(config)
+        void launchGame(undefined, configured.kind ?? 'map', configured)
+        return undefined
+      },
+    }),
 
     /** Re-run the active subject route; relation/tree stages refresh from the new descriptor. */
     vscode.commands.registerCommand('modkit.refreshRelations', () => {

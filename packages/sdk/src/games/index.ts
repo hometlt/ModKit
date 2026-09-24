@@ -1,5 +1,6 @@
 /** Protocol-neutral contracts for discovering installed games through extension providers. */
 
+import type { JsonValue } from '../asset-capabilities/types.js'
 import type { ServiceProviderModule } from '../runtime-abi.js'
 
 /** Standard service coordinate for bounded game-installation discovery. */
@@ -54,9 +55,12 @@ export interface GameInstallation {
   readonly evidence: readonly GameInstallationEvidence[]
 }
 
-/** The host has already resolved this resource to one concrete local path. */
+/**
+ * The host has already resolved this resource to one concrete local path: a map to play, or a mod
+ * to test (the game decides which map it runs the mod on, usually from the launch options).
+ */
 export interface GameLaunchResource {
-  readonly kind: 'map'
+  readonly kind: 'map' | 'mod'
   readonly path: string
 }
 
@@ -65,6 +69,45 @@ export interface GameLaunchPlanRequest {
   readonly gameId: string
   readonly installation: GameInstallation
   readonly resource: GameLaunchResource
+  /**
+   * The user's launch options for this game (a launch configuration), as the game names them —
+   * trigger debugger, difficulty, a test map. The planner validates them and refuses unknown ones.
+   */
+  readonly options?: Readonly<Record<string, JsonValue>>
+  readonly signal?: AbortSignal
+}
+
+/**
+ * Where a launched game writes logs the planner can read back: a folder below a base the host
+ * knows (the user's documents folder), and the file names worth reading (`*` matches any run).
+ */
+export interface GameLaunchLogLocation {
+  readonly base: 'user-documents'
+  readonly relativePath: string
+  readonly patterns: readonly string[]
+}
+
+/** One finding of a game log, placed in a source file when the log names one. */
+export interface GameLaunchLogDiagnostic {
+  readonly severity: 'error' | 'warning' | 'information'
+  readonly code: string
+  readonly message: string
+  /** Absolute path of the file the finding is about, when the log names one. */
+  readonly path?: string
+  /** 0-based line in that file. */
+  readonly line?: number
+}
+
+/** What one log file says; `final` when nothing later in the run can change the verdict. */
+export interface GameLaunchLogReport {
+  readonly diagnostics: readonly GameLaunchLogDiagnostic[]
+  readonly final: boolean
+}
+
+export interface GameLaunchLogRequest {
+  readonly resource: GameLaunchResource
+  readonly fileName: string
+  readonly text: string
   readonly signal?: AbortSignal
 }
 
@@ -85,6 +128,10 @@ export interface GameLaunchPlan {
   readonly resourceArgumentIndex: number
   readonly mode: 'detached'
   readonly stdio: 'ignore'
+  /** Process image names of the running game, so a host can offer to close it before a relaunch. */
+  readonly runningProcessNames?: readonly string[]
+  /** Where the game logs this run; the host watches it and asks the planner to read new files. */
+  readonly logs?: GameLaunchLogLocation
 }
 
 /** Activated pure planner. Actual process creation remains a host-owned side effect. */
@@ -93,6 +140,8 @@ export interface GameLaunchPlanner {
   readonly plannerId: string
   readonly gameIds: readonly string[]
   plan(request: GameLaunchPlanRequest): Promise<GameLaunchPlan>
+  /** Read one log file of a launched run (script errors, alerts); pure, like `plan`. */
+  interpretLog?(request: GameLaunchLogRequest): Promise<GameLaunchLogReport>
 }
 
 export type GameInstallationDiagnosticSeverity = 'error' | 'warning' | 'information'

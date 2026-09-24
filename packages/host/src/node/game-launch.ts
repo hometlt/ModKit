@@ -1,11 +1,24 @@
 /** Windows-native execution of a previously validated, game-owned launch plan. */
 
-import { spawn as spawnChildProcess } from 'node:child_process'
-import { realpath, stat } from 'node:fs/promises'
-import { isAbsolute, relative, resolve, sep } from 'node:path'
+import { execFile, spawn as spawnChildProcess } from 'node:child_process'
+import { watch, type FSWatcher } from 'node:fs'
+import { readdir, readFile, realpath, stat } from 'node:fs/promises'
+import { homedir } from 'node:os'
+import { isAbsolute, join, relative, resolve, sep } from 'node:path'
+import { promisify } from 'node:util'
 import { diagnostic, type Diagnostic } from '@modkit/core'
-import { grantValidity, type PermissionGrant, type ResourceBudget } from '@modkit/sdk'
-import type { GameInstallation, GameLaunchPlan, GameLaunchResource } from '@modkit/sdk/games'
+import {
+  grantValidity,
+  type JsonValue,
+  type PermissionGrant,
+  type ResourceBudget,
+} from '@modkit/sdk'
+import type {
+  GameInstallation,
+  GameLaunchLogReport,
+  GameLaunchPlan,
+  GameLaunchResource,
+} from '@modkit/sdk/games'
 import { planGameLaunch, type GamesHostServices, type GameLaunchPlanning } from '../games/index.js'
 
 export type NodeGameLaunchPathKind = 'file' | 'directory' | 'missing'
@@ -36,6 +49,8 @@ export interface LaunchNodeGameResourceRequest {
   readonly gameId: string
   readonly installation: GameInstallation
   readonly resource: GameLaunchResource
+  /** The user's launch options, passed to the game's planner. */
+  readonly options?: Readonly<Record<string, JsonValue>>
   readonly grant: PermissionGrant
   readonly budgets: ResourceBudget
   readonly signal?: AbortSignal
@@ -52,6 +67,8 @@ export interface NodeGameLaunchReceipt {
   readonly resource: GameLaunchResource
   readonly arguments: readonly string[]
   readonly pid?: number
+  /** The validated plan, for what follows a launch (its log location, its process names). */
+  readonly plan: GameLaunchPlan
 }
 
 export type NodeGameLaunchResult =
@@ -334,6 +351,7 @@ export async function launchNodeGameResource(
       resource: planning.plan.resource,
       arguments: planning.plan.arguments,
       ...(processLease.pid === undefined ? {} : { pid: processLease.pid }),
+      plan: planning.plan,
     }),
     diagnostics: planning.diagnostics,
     async release() {
@@ -342,4 +360,127 @@ export async function launchNodeGameResource(
       await processLease.release()
     },
   })
+}
+
+const execFileAsync = promisify(execFile)
+
+/** Which of these process image names are running now (Windows `tasklist`; none elsewhere). */
+export async function runningGameProcesses(names: readonly string[]): Promise<readonly string[]> {
+  if (process.platform !== 'win32' || names.length === 0) return []
+  const { stdout } = await execFileAsync('tasklist', ['/FO', 'CSV', '/NH']).catch(() => ({ stdout: '' }))
+  const running = new Set(
+    stdout
+      .split(/\r?\n/u)
+      .map(line => /^"([^"]+)"/u.exec(line)?.[1]?.toLowerCase())
+      .filter((name): name is string => name !== undefined),
+  )
+  return names.filter(name => running.has(name.toLowerCase()))
+}
+
+/**
+ * Close a running game before a relaunch. Process authority is the same explicit, live
+ * `process-launch` grant a launch needs; names come from the game's own plan.
+ */
+export async function stopGameProcesses(
+  names: readonly string[],
+  grant: PermissionGrant,
+): Promise<readonly Diagnostic[]> {
+  if (grantValidity(grant).state !== 'valid' || !grant.classes.includes('process-launch')) {
+    return [
+      diagnostic(
+        'error',
+        'x3.host/game-launch-permission-required',
+        'closing a running game requires an explicit, live process-launch PermissionGrant',
+      ),
+    ]
+  }
+  if (process.platform !== 'win32') return []
+  for (const name of names) {
+    await execFileAsync('taskkill', ['/IM', name, '/F']).catch(() => undefined)
+  }
+  // The game releases its files a moment after its process is gone.
+  await new Promise(resolveDelay => setTimeout(resolveDelay, 1_000))
+  return []
+}
+
+export interface WatchGameLaunchLogsRequest {
+  readonly plan: GameLaunchPlan
+  /** The user's documents folder; `~/Documents` when absent. */
+  readonly documentsDirectory?: string
+  /** Read one new log file (the game's planner, through `interpretGameLaunchLog`). */
+  readonly interpret: (fileName: string, text: string) => Promise<GameLaunchLogReport>
+  readonly onReport: (fileName: string, report: GameLaunchLogReport) => void | Promise<void>
+  readonly onLog?: (message: string) => void
+  readonly onError?: (error: unknown) => void
+  /** Stop after this long without a final report. */
+  readonly timeoutMs?: number
+  /** Let the game finish writing a file before it is read. */
+  readonly writeDelayMs?: number
+}
+
+export interface GameLaunchLogWatch {
+  readonly directory: string
+  dispose(): void
+}
+
+/** A file-name pattern where `*` matches anything, case-insensitive like every Windows name. */
+const patternExpression = (pattern: string): RegExp => {
+  const escaped = pattern.replace(/[.+^$(){}|[\]\\]/gu, '\\$&').replace(/\*/gu, '.*')
+  return new RegExp('^' + escaped + '$', 'iu')
+}
+
+/**
+ * Watch the folder a launched game logs to and hand each new matching file to the game's reader.
+ * Files already there are old runs and are ignored. Stops at the first final report, on
+ * `dispose`, or after the timeout. Undefined when the plan logs nowhere or the folder is missing.
+ */
+export async function watchGameLaunchLogs(
+  request: WatchGameLaunchLogsRequest,
+): Promise<GameLaunchLogWatch | undefined> {
+  const logs = request.plan.logs
+  if (logs === undefined) return undefined
+  const base = request.documentsDirectory?.trim() || join(homedir(), 'Documents')
+  const directory = resolve(base, logs.relativePath)
+  if (!containedBy(resolve(base), directory)) return undefined
+  const expressions = logs.patterns.map(patternExpression)
+  const matches = (name: string): boolean => expressions.some(expression => expression.test(name))
+  let existing: string[]
+  try {
+    existing = await readdir(directory)
+  } catch {
+    return undefined
+  }
+  const seen = new Set(existing.filter(matches).map(name => name.toLowerCase()))
+  let watcher: FSWatcher | undefined
+  let timer: ReturnType<typeof setTimeout> | undefined
+  let finished = false
+  const dispose = (): void => {
+    finished = true
+    watcher?.close()
+    watcher = undefined
+    if (timer !== undefined) clearTimeout(timer)
+    timer = undefined
+  }
+  const handle = async (name: string): Promise<void> => {
+    if (finished) return
+    const text = await readFile(join(directory, name), 'utf8')
+    const report = await request.interpret(name, text)
+    if (finished) return
+    if (report.final) dispose()
+    await request.onReport(name, report)
+  }
+  request.onLog?.(`watching ${directory} (${seen.size} earlier log files ignored)`)
+  watcher = watch(directory, (_event, fileName) => {
+    const name = fileName?.toString()
+    if (name === undefined || finished || !matches(name) || seen.has(name.toLowerCase())) return
+    seen.add(name.toLowerCase())
+    setTimeout(() => {
+      void handle(name).catch(error => request.onError?.(error))
+    }, request.writeDelayMs ?? 300)
+  })
+  timer = setTimeout(() => {
+    request.onLog?.('no new game log arrived; stopped watching')
+    dispose()
+  }, request.timeoutMs ?? 90_000)
+  return Object.freeze({ directory, dispose })
 }

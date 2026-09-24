@@ -11,12 +11,14 @@ import {
   type GameInstallationOfferFacet,
   type GameInstallationOrigin,
   type GameInstallationRequestFacet,
+  type GameLaunchLogReport,
   type GameLaunchPlan,
   type GameLaunchPlanner,
   type GameLaunchResource,
 } from '@modkit/sdk/games'
 import type {
   DefinitionInventoryResult,
+  JsonValue,
   PermissionGrant,
   ResourceBudget,
   RuntimeTarget,
@@ -480,6 +482,8 @@ export type GameLaunchPlannerResolution =
 export interface PlanGameLaunchRequest extends ResolveGameLaunchPlannerRequest {
   readonly installation: GameInstallation
   readonly resource: GameLaunchResource
+  /** The user's launch options, passed to the game's planner as they are. */
+  readonly options?: Readonly<Record<string, JsonValue>>
 }
 
 export type GameLaunchPlanning =
@@ -553,7 +557,35 @@ function validGameLaunchPlan(
     (argumentIndex as number) < argumentsValue.length &&
     argumentsValue[argumentIndex as number] === resource['path'] &&
     record['mode'] === 'detached' &&
-    record['stdio'] === 'ignore'
+    record['stdio'] === 'ignore' &&
+    validProcessNames(record['runningProcessNames']) &&
+    validLogLocation(record['logs'])
+  )
+}
+
+/** Bare executable image names (`Game_x64.exe`), never paths. */
+function validProcessNames(value: unknown): boolean {
+  return (
+    value === undefined ||
+    (Array.isArray(value) &&
+      value.length <= 8 &&
+      value.every(name => nonEmptyString(name) && name.length <= 260 && !/[\\/:\0*?]/u.test(name)))
+  )
+}
+
+/** A folder below the user's documents and plain file-name patterns (`*` only). */
+function validLogLocation(value: unknown): boolean {
+  if (value === undefined) return true
+  const record = recordOf(value)
+  const patterns = record?.['patterns']
+  return (
+    record !== undefined &&
+    record['base'] === 'user-documents' &&
+    validRelativeProcessPath(record['relativePath'], false) &&
+    Array.isArray(patterns) &&
+    patterns.length > 0 &&
+    patterns.length <= 8 &&
+    patterns.every(pattern => nonEmptyString(pattern) && pattern.length <= 260 && !/[\\/:\0?]/u.test(pattern))
   )
 }
 
@@ -634,11 +666,67 @@ export async function resolveGameLaunchPlanner(
   }
 }
 
+export interface InterpretGameLaunchLogRequest extends ResolveGameLaunchPlannerRequest {
+  readonly resource: GameLaunchResource
+  readonly fileName: string
+  readonly text: string
+}
+
+/**
+ * Ask the game's planner what one log file of a launched run says. A planner without a log
+ * reader, or one that fails, reports nothing rather than guessing.
+ */
+export async function interpretGameLaunchLog(
+  request: InterpretGameLaunchLogRequest,
+): Promise<GameLaunchLogReport & { readonly hostDiagnostics: readonly Diagnostic[] }> {
+  const empty = (hostDiagnostics: readonly Diagnostic[]) =>
+    Object.freeze({ diagnostics: Object.freeze([]), final: false, hostDiagnostics })
+  const resolution = await resolveGameLaunchPlanner(request)
+  if (resolution.state === 'unresolved') return empty(resolution.diagnostics)
+  try {
+    const interpret = resolution.planner.interpretLog?.bind(resolution.planner)
+    if (interpret === undefined) return empty(resolution.diagnostics)
+    const report = await interpret({
+      resource: request.resource,
+      fileName: request.fileName,
+      text: request.text,
+      ...(request.signal === undefined ? {} : { signal: request.signal }),
+    })
+    const diagnostics = Array.isArray(report?.diagnostics)
+      ? report.diagnostics.filter(
+          item =>
+            (item?.severity === 'error' || item?.severity === 'warning' || item?.severity === 'information') &&
+            nonEmptyString(item.code) &&
+            nonEmptyString(item.message) &&
+            (item.path === undefined || nonEmptyString(item.path)) &&
+            (item.line === undefined || (Number.isSafeInteger(item.line) && item.line >= 0)),
+        )
+      : []
+    return Object.freeze({
+      diagnostics: Object.freeze(diagnostics.slice(0, 1_000)),
+      final: report?.final === true,
+      hostDiagnostics: resolution.diagnostics,
+    })
+  } catch (error) {
+    request.signal?.throwIfAborted()
+    return empty([
+      ...resolution.diagnostics,
+      diagnostic(
+        'warning',
+        'x3.host/game-launch-log-unreadable',
+        `the game could not read ${request.fileName}: ${error instanceof Error ? error.message : String(error)}`,
+      ),
+    ])
+  } finally {
+    await resolution.release()
+  }
+}
+
 /** Resolve, validate and release one pure game-owned launch plan. */
 export async function planGameLaunch(request: PlanGameLaunchRequest): Promise<GameLaunchPlanning> {
   if (
     !validConfirmedInstallation(request.installation, request.gameId) ||
-    request.resource.kind !== 'map' ||
+    (request.resource.kind !== 'map' && request.resource.kind !== 'mod') ||
     !nonEmptyString(request.resource.path) ||
     request.resource.path.includes('\0')
   ) {
@@ -648,7 +736,7 @@ export async function planGameLaunch(request: PlanGameLaunchRequest): Promise<Ga
         diagnostic(
           'error',
           'x3.host/game-launch-request-invalid',
-          'game launch requires one confirmed installation and one non-empty map path',
+          'game launch requires one confirmed installation and one non-empty map or mod path',
         ),
       ]),
     })
@@ -661,6 +749,7 @@ export async function planGameLaunch(request: PlanGameLaunchRequest): Promise<Ga
       gameId: request.gameId,
       installation: request.installation,
       resource,
+      ...(request.options === undefined ? {} : { options: request.options }),
       ...(request.signal === undefined ? {} : { signal: request.signal }),
     })
     if (!validGameLaunchPlan(plan, { ...request, resource })) {

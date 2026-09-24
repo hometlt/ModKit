@@ -13,6 +13,8 @@ export interface ExplicitGameLaunchInput {
   readonly grantId: string
   readonly installation: GameInstallation
   readonly resourcePath: string
+  /** A map to play (default) or a mod to test. */
+  readonly resourceKind?: GameLaunchResource['kind']
 }
 
 export interface ExplicitGameLaunchRequest {
@@ -78,7 +80,7 @@ export async function runExplicitGameLaunch<Result>(
   const result = await ports.execute({
     gameId: input.installation.gameId,
     installation: input.installation,
-    resource: Object.freeze({ kind: 'map', path: resourcePath }),
+    resource: Object.freeze({ kind: input.resourceKind ?? 'map', path: resourcePath }),
     grant,
   })
   return Object.freeze({ state: 'executed' as const, result })
