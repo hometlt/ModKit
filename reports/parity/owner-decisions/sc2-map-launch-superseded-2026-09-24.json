@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "kind": "owner-decision/superseded",
+  "date": "2026-09-24",
+  "reason": "Owner decision 2026-09-24: bring back the MK2 map launch and the same launch surface for a map or a mod in VS Code. MK3 does it through the host launch plan (common.game/launch-plan): the StarCraft II planner builds the MK2 SC2Switcher arguments from launch options, tests a mod on a map, names the game's processes and its GameLogs folder, and reads ScriptError.txt/Alerts.txt back (the MK2 launch/errors.ts parsers); the host spawns, offers to close a running game and watches the logs; VS Code shows the findings in Problems. MK3 is the reference; no MK2 comparison is run.",
+  "rows": [
+    { "id": "legacy/codec-manifest/modkit/sc2-map/feature/1e0e96646216c581", "where": "modkit-extensions-blizzard/starcraft2/modules/game/providers/launch/src/launch.ts (createStarcraft2LaunchPlan); modkit-core/packages/host/src/node/game-launch.ts; modkit-core/apps/vscode (launch commands, status item, modkit-launch configuration)" },
+    { "id": "legacy/codec-manifest/modkit/sc2-map/operation/game.launch-map", "where": "common.game/launch-plan provider blizzard/starcraft2-native-map-launch; VS Code modkit.game.launchActiveMap / launchActiveMod" },
+    { "id": "legacy/codec-manifest/modkit/sc2-map/feature/34af3197f5731769", "where": "interpretSc2Log (ScriptError.txt, Alerts.txt) + host watchGameLaunchLogs" },
+    { "id": "legacy/codec-manifest/modkit/sc2-map/feature/b1f01880f97540ed", "where": "parseSc2ScriptErrors / parseSc2ScriptLoadFailures / parseSc2Alerts (the MK2 launch/errors.ts formats)" }
+  ],
+  "mk3Evidence": {
+    "commits": { "modkit-core": "2a670e53", "modkit-extensions-blizzard": "3e98a256" },
+    "files": [
+      { "path": "modkit-extensions-blizzard/starcraft2/modules/game/test/launch-plan.test.ts", "sha256": "6a935d16667ce12e5b9f57185607155a354e93fc92585b13f895d776ba35b124", "passed": 6 },
+      { "path": "modkit-core/packages/host/test/game-launch-logs.test.ts", "sha256": "53e2db0d83327a30e987f31e3443ac56b80382b03a90830337926ee683205ce7", "passed": 2 },
+      { "path": "modkit-core/apps/vscode/test/game-launch-ui.test.ts", "sha256": "920782f7d4aa696c8a45622394a407d07edc5fbeac40e199ec80e4369fe2f93c", "passed": 3 }
+    ]
+  }
+}

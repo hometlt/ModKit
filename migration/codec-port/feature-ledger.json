@@ -4442,9 +4442,21 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-map-launch-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24: bring back the MK2 map launch and the same launch surface for a map or a mod in VS Code. MK3 does it through the host launch plan (common.game/launch-plan): the StarCraft II planner builds the MK2 SC2Switcher arguments from launch options, tests a mod on a map, names the game's processes and its GameLogs folder, and reads ScriptError.txt/Alerts.txt back (the MK2 launch/errors.ts parsers); the host spawns, offers to close a running game and watches the logs; VS Code shows the findings in Problems. MK3 is the reference; no MK2 comparison is run.",
+        "sha256": "9b3f967a079b2422ceaa63fac7329c2b17950cdf48e8ebd149e3f41677eded3a"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-map-launch-superseded-2026-09-24.json",
+          "sha256": "9b3f967a079b2422ceaa63fac7329c2b17950cdf48e8ebd149e3f41677eded3a"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-map/feature/1e0e96646216c581",
-      "status": "pending"
+      "status": "superseded"
     },
     {
       "decision": {
@@ -4494,9 +4506,21 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-map-launch-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24: bring back the MK2 map launch and the same launch surface for a map or a mod in VS Code. MK3 does it through the host launch plan (common.game/launch-plan): the StarCraft II planner builds the MK2 SC2Switcher arguments from launch options, tests a mod on a map, names the game's processes and its GameLogs folder, and reads ScriptError.txt/Alerts.txt back (the MK2 launch/errors.ts parsers); the host spawns, offers to close a running game and watches the logs; VS Code shows the findings in Problems. MK3 is the reference; no MK2 comparison is run.",
+        "sha256": "9b3f967a079b2422ceaa63fac7329c2b17950cdf48e8ebd149e3f41677eded3a"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-map-launch-superseded-2026-09-24.json",
+          "sha256": "9b3f967a079b2422ceaa63fac7329c2b17950cdf48e8ebd149e3f41677eded3a"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-map/feature/34af3197f5731769",
-      "status": "pending"
+      "status": "superseded"
     },
     {
       "evidence": [],
@@ -4635,9 +4659,21 @@
       "status": "superseded"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-map-launch-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24: bring back the MK2 map launch and the same launch surface for a map or a mod in VS Code. MK3 does it through the host launch plan (common.game/launch-plan): the StarCraft II planner builds the MK2 SC2Switcher arguments from launch options, tests a mod on a map, names the game's processes and its GameLogs folder, and reads ScriptError.txt/Alerts.txt back (the MK2 launch/errors.ts parsers); the host spawns, offers to close a running game and watches the logs; VS Code shows the findings in Problems. MK3 is the reference; no MK2 comparison is run.",
+        "sha256": "9b3f967a079b2422ceaa63fac7329c2b17950cdf48e8ebd149e3f41677eded3a"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-map-launch-superseded-2026-09-24.json",
+          "sha256": "9b3f967a079b2422ceaa63fac7329c2b17950cdf48e8ebd149e3f41677eded3a"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-map/feature/b1f01880f97540ed",
-      "status": "pending"
+      "status": "superseded"
     },
     {
       "decision": {
@@ -4682,9 +4718,21 @@
       "status": "superseded"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-map-launch-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24: bring back the MK2 map launch and the same launch surface for a map or a mod in VS Code. MK3 does it through the host launch plan (common.game/launch-plan): the StarCraft II planner builds the MK2 SC2Switcher arguments from launch options, tests a mod on a map, names the game's processes and its GameLogs folder, and reads ScriptError.txt/Alerts.txt back (the MK2 launch/errors.ts parsers); the host spawns, offers to close a running game and watches the logs; VS Code shows the findings in Problems. MK3 is the reference; no MK2 comparison is run.",
+        "sha256": "9b3f967a079b2422ceaa63fac7329c2b17950cdf48e8ebd149e3f41677eded3a"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-map-launch-superseded-2026-09-24.json",
+          "sha256": "9b3f967a079b2422ceaa63fac7329c2b17950cdf48e8ebd149e3f41677eded3a"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-map/operation/game.launch-map",
-      "status": "pending"
+      "status": "superseded"
     },
     {
       "decision": {

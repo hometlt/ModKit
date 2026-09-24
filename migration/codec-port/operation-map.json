@@ -2181,7 +2181,7 @@
       "contribution": null,
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/sc2-map/operation/game.launch-map",
-      "status": "pending",
+      "status": "superseded",
       "targetOperation": null
     },
     {
