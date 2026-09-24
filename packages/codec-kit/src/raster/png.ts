@@ -123,6 +123,9 @@ export async function decodePngSamples(
     for (let y = 0; y < height; y += 1) {
       for (let x = 0; x < width; x += 1) {
         const entry = sampleAt(y, x)
+        if (entry * 3 + 2 >= palette!.byteLength) {
+          throw new TypeError(`indexed PNG pixel refers to absent palette entry ${entry}`)
+        }
         const out = (y * width + x) * channels
         for (let channel = 0; channel < 3; channel += 1) samples[out + channel] = palette![entry * 3 + channel] ?? 0
         if (alpha) samples[out + 3] = transparency![entry] ?? 255

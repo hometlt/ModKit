@@ -12,9 +12,8 @@ import {
   rasterEditContent,
   rasterEditContentOperation,
 } from '../ops/raster-transforms.js'
-import { encodePng } from '@modkit/codec-kit/raster'
+import { decodePngSamples, encodePng } from '@modkit/codec-kit/raster'
 import { crc32Range } from '@modkit/codec-kit/checksum'
-import { decompressBounded } from '@modkit/codec-kit/compression/bounded'
 
 const SIGNATURE = Object.freeze([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
 const ascii = new TextDecoder('latin1')
@@ -108,122 +107,32 @@ function parsePng(bytes, maxChunks) {
   })
 }
 
-function paeth(a, b, c) {
-  const value = a + b - c
-  const distanceA = Math.abs(value - a)
-  const distanceB = Math.abs(value - b)
-  const distanceC = Math.abs(value - c)
-  return distanceA <= distanceB && distanceA <= distanceC ? a : distanceB <= distanceC ? b : c
-}
-
-/** The concatenated IDAT stream, which must inflate to exactly the scanlines the header declares. */
-async function decompressIdat(compressed, expectedBytes, signal) {
-  const raw = await decompressBounded(compressed, 'deflate', {
-    maxOutputBytes: expectedBytes,
-    ...(signal === undefined ? {} : { signal }),
-    outputLimitError: () => new RangeError('PNG inflated data exceeds its declared dimensions'),
-  })
-  if (raw.byteLength !== expectedBytes) throw new TypeError('PNG inflated data is truncated')
-  return raw
-}
-
+/**
+ * PNG pixels as RGBA8. The samples come from the one PNG decoder of the shared raster layer
+ * (filters, palettes, 16-bit and sub-byte grey); this view only lays them out for display.
+ */
 async function decodeRgba8(bytes, png, signal) {
-  const idatChunks = png.chunks.filter(chunk => chunk.type === 'IDAT')
-  const compressed = new Uint8Array(idatChunks.reduce((total, chunk) => total + chunk.length, 0))
-  let compressedOffset = 0
-  for (const chunk of idatChunks) {
-    compressed.set(
-      bytes.subarray(chunk.dataOffset, chunk.dataOffset + chunk.length),
-      compressedOffset,
-    )
-    compressedOffset += chunk.length
-  }
-  const indexed = png.colorType === 3
-  const rowBytes = indexed ? Math.ceil((png.width * png.bitDepth) / 8) : png.width * png.channels
-  const filterBytesPerPixel = indexed ? 1 : png.channels
-  const expectedBytes = (rowBytes + 1) * png.height
-  if (!Number.isSafeInteger(expectedBytes)) throw new RangeError('PNG decoded size is unsafe')
-  const raw = await decompressIdat(compressed, expectedBytes, signal)
-  const unfiltered = new Uint8Array(rowBytes * png.height)
-  for (let y = 0; y < png.height; y += 1) {
-    const filter = raw[y * (rowBytes + 1)]
-    const rowIn = raw.subarray(y * (rowBytes + 1) + 1, (y + 1) * (rowBytes + 1))
-    const rowOut = unfiltered.subarray(y * rowBytes, (y + 1) * rowBytes)
-    const previous = y > 0 ? unfiltered.subarray((y - 1) * rowBytes, y * rowBytes) : undefined
-    for (let x = 0; x < rowBytes; x += 1) {
-      const a = x >= filterBytesPerPixel ? (rowOut[x - filterBytesPerPixel] ?? 0) : 0
-      const b = previous?.[x] ?? 0
-      const c = x >= filterBytesPerPixel ? (previous?.[x - filterBytesPerPixel] ?? 0) : 0
-      const input = rowIn[x] ?? 0
-      const value =
-        filter === 0
-          ? input
-          : filter === 1
-            ? input + a
-            : filter === 2
-              ? input + b
-              : filter === 3
-                ? input + Math.floor((a + b) / 2)
-                : filter === 4
-                  ? input + paeth(a, b, c)
-                  : undefined
-      if (value === undefined) throw new TypeError(`PNG filter ${filter} is unsupported`)
-      rowOut[x] = value & 0xff
-    }
-  }
-  const rgba = new Uint8Array(png.width * png.height * 4)
-  if (indexed) {
-    const paletteChunk = png.chunks.find(chunk => chunk.type === 'PLTE')
-    if (paletteChunk === undefined) throw new TypeError('indexed PNG palette is missing')
-    const palette = bytes.subarray(
-      paletteChunk.dataOffset,
-      paletteChunk.dataOffset + paletteChunk.length,
-    )
-    const transparencyChunk = png.chunks.find(chunk => chunk.type === 'tRNS')
-    const transparency =
-      transparencyChunk === undefined
-        ? undefined
-        : bytes.subarray(
-            transparencyChunk.dataOffset,
-            transparencyChunk.dataOffset + transparencyChunk.length,
-          )
-    const mask = (1 << png.bitDepth) - 1
-    for (let y = 0; y < png.height; y += 1) {
-      const rowStart = y * rowBytes
-      for (let x = 0; x < png.width; x += 1) {
-        const bitOffset = x * png.bitDepth
-        const packed = unfiltered[rowStart + Math.floor(bitOffset / 8)] ?? 0
-        const paletteIndex = (packed >>> (8 - png.bitDepth - (bitOffset % 8))) & mask
-        const paletteOffset = paletteIndex * 3
-        if (paletteOffset + 2 >= palette.length) {
-          throw new TypeError(`indexed PNG pixel refers to absent palette entry ${paletteIndex}`)
-        }
-        const output = (y * png.width + x) * 4
-        rgba[output] = palette[paletteOffset] ?? 0
-        rgba[output + 1] = palette[paletteOffset + 1] ?? 0
-        rgba[output + 2] = palette[paletteOffset + 2] ?? 0
-        rgba[output + 3] = transparency?.[paletteIndex] ?? 255
-      }
-    }
-    return rgba
-  }
-  for (
-    let pixel = 0, input = 0;
-    pixel < png.width * png.height;
-    pixel += 1, input += png.channels
-  ) {
+  const image = await decodePngSamples(bytes, {
+    maxPixels: png.width * png.height,
+    ...(signal === undefined ? {} : { signal }),
+  })
+  const shift = image.bitDepth === 16 ? 8 : 0
+  const rgba = new Uint8Array(image.width * image.height * 4)
+  for (let pixel = 0; pixel < image.width * image.height; pixel += 1) {
+    const at = pixel * image.channels
+    const sample = index => (image.samples[at + index] ?? 0) >> shift
     const output = pixel * 4
-    if (png.colorType === 0 || png.colorType === 4) {
-      const gray = unfiltered[input] ?? 0
-      rgba[output] = gray
-      rgba[output + 1] = gray
-      rgba[output + 2] = gray
-      rgba[output + 3] = png.colorType === 4 ? (unfiltered[input + 1] ?? 255) : 255
+    if (image.channels <= 2) {
+      const grey = sample(0)
+      rgba[output] = grey
+      rgba[output + 1] = grey
+      rgba[output + 2] = grey
+      rgba[output + 3] = image.channels === 2 ? sample(1) : 255
     } else {
-      rgba[output] = unfiltered[input] ?? 0
-      rgba[output + 1] = unfiltered[input + 1] ?? 0
-      rgba[output + 2] = unfiltered[input + 2] ?? 0
-      rgba[output + 3] = png.colorType === 6 ? (unfiltered[input + 3] ?? 255) : 255
+      rgba[output] = sample(0)
+      rgba[output + 1] = sample(1)
+      rgba[output + 2] = sample(2)
+      rgba[output + 3] = image.channels === 4 ? sample(3) : 255
     }
   }
   return rgba
