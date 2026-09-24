@@ -89,6 +89,8 @@ export const LANGUAGE_DOCUMENT_CHANGE_INVALID = 'x3.host/language-document-chang
 export const LANGUAGE_PROVIDER_FAILED = 'x3.host/language-provider-failed'
 export const LANGUAGE_ANALYSIS_INVALID = 'x3.host/language-analysis-invalid'
 export const LANGUAGE_FEATURE_INVALID = 'x3.host/language-feature-invalid'
+/** A workspace edit would change a document its origin marks read-only (an installed dependency). */
+export const LANGUAGE_EDIT_READ_ONLY = 'x3.host/language-edit-read-only'
 
 export const LANGUAGE_DEFAULT_MAX_RESULTS = 256
 export const LANGUAGE_MAX_RESULTS = 2_048
@@ -414,8 +416,10 @@ export interface LanguageWorkspaceDocumentSourceResult {
 /**
  * Supplies immutable semantic context that is not explicitly open in the editor.
  *
- * These documents may participate in lookup features, but are deliberately not writable through
- * workspace edits. Their presence therefore makes rename incomplete at the host boundary.
+ * These documents take part in lookup features. Each one's origin says whether it is writable: a
+ * project file (`readOnly: false`) may receive a rename edit although nobody opened it, a dependency
+ * layer (`readOnly: true`) never — an edit reaching one is refused whole. A document without an
+ * origin leaves the workspace incomplete, since nothing says what it is.
  */
 export interface LanguageWorkspaceDocumentSource {
   snapshot(
@@ -1891,10 +1895,15 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
         document: entry.document,
         workspaceDocuments: Object.freeze(snapshotDocuments),
         ...(workspaceContext === undefined ? {} : { workspaceContext }),
+        /*
+         * Incomplete means documents may be missing: more candidates than were taken, a source
+         * that said so, a caller that knows, or a document of unknown origin. Read-only layers are
+         * present, not missing — an edit that would change one is refused where edits are checked.
+         */
         workspaceIncomplete:
           candidates.length > selected.length ||
           sourceIncomplete ||
-          hasReadOnlyContext ||
+          (hasReadOnlyContext && !allDocumentsHaveOrigins) ||
           callerIncomplete,
         maxResults,
         maxDocuments,
@@ -1953,6 +1962,31 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
     if (value === undefined) return undefined
     if (request.workspaceIncomplete && !allowPrimaryOnlyWhenIncomplete) return undefined
     const edit = value as LanguageWorkspaceEdit
+    const origins = new Map(
+      (request.workspaceContext?.documentOrigins ?? []).map(origin => [origin.uri, origin]),
+    )
+    /*
+     * An edit reaching a read-only document — a dependency mounted from an installation — cannot
+     * be applied whole, and a part of a rename is worse than none: refused, with the documents named.
+     */
+    const locked =
+      typeof edit === 'object' && edit !== null && Array.isArray(edit.documentChanges)
+        ? edit.documentChanges
+            .map(change => change?.uri)
+            .filter(uri => typeof uri === 'string' && origins.get(uri)?.readOnly === true)
+        : []
+    if (locked.length > 0) {
+      throw workspaceError(
+        LANGUAGE_EDIT_READ_ONLY,
+        `the edit would change ${locked.length} read-only document(s): ${locked.slice(0, 4).join(', ')}`,
+        { uri: request.document.uri, readOnly: locked.slice(0, 32) },
+      )
+    }
+    /*
+     * A rename reaches files nobody opened: the snapshot carries them, and their origin says whether
+     * they are the project's own (writable) — a document of unknown origin stays out of reach.
+     */
+    const snapshot = new Map(request.workspaceDocuments.map(document => [document.uri, document]))
     let editCount = 0
     const seen = new Set<string>()
     const valid =
@@ -1963,19 +1997,25 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
       edit.documentChanges.length <= request.maxDocuments &&
       edit.documentChanges.every(change => {
         const open = documents.get(change.uri)
+        const target =
+          open !== undefined
+            ? { text: open.document.text, version: open.version }
+            : origins.get(change.uri)?.readOnly === false
+              ? snapshot.get(change.uri)
+              : undefined
         editCount += Array.isArray(change.edits) ? change.edits.length : maxEdits + 1
         if (
-          open === undefined ||
+          target === undefined ||
           (request.workspaceIncomplete && change.uri !== request.document.uri) ||
           seen.has(change.uri) ||
-          change.documentVersion !== open.version ||
+          change.documentVersion !== target.version ||
           !Array.isArray(change.edits) ||
           editCount > maxEdits
         ) {
           return false
         }
         seen.add(change.uri)
-        const lengths = lineLengths(open.document.text)
+        const lengths = lineLengths(target.text)
         return change.edits.every(
           (item: LanguageTextEdit) =>
             typeof item.newText === 'string' && validRange(item.range, lengths),

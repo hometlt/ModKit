@@ -297,8 +297,9 @@ describe('host-held MCP language session', () => {
         maxEdits: 20,
       })
       expect(definition.result).toMatchObject({
-        // The closure is complete, but dependency documents are read-only for workspace edits.
-        isIncomplete: true,
+        // The closure is complete; its dependency documents are read-only, which refuses an edit
+        // reaching them but does not make a lookup incomplete.
+        isIncomplete: false,
         locations: [{ uri: expect.stringMatching(/^content-source:\/\/fixture-source\//u) }],
       })
       expect(definition.workspaceContext).toMatchObject({ semanticComplete: true })

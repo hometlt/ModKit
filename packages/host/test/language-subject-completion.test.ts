@@ -35,6 +35,7 @@ import {
   languageProviderRoutes,
   languageProviderTriggerCharacters,
   LANGUAGE_DOCUMENT_CONTRACT_DEFINITION,
+  LANGUAGE_EDIT_READ_ONLY,
   type LanguageHostServices,
   type LanguageWorkspaceDocumentSource,
   type LanguageWorkspaceDocumentRequest,
@@ -981,7 +982,8 @@ describe('language subject completion lifecycle', () => {
     try {
       await workspace.completion(completionRequest())
       expect(observedWorkspaceDocuments).toEqual([baseUri, DOCUMENT_URI])
-      expect(observedWorkspaceIncomplete).toBe(true)
+      // Every document has an origin: read-only layers are present, not missing.
+      expect(observedWorkspaceIncomplete).toBe(false)
       expect(observedWorkspaceContext).toMatchObject({
         id: expect.stringMatching(/^language-context-v1:/u),
         semanticComplete: true,
@@ -1505,6 +1507,58 @@ describe('language subject completion lifecycle', () => {
       ).rejects.toThrow(/invalid or unbounded workspace edit/u)
     } finally {
       await workspace.shutdown()
+    }
+  })
+
+  it('renames into unopened project files and refuses a rename that reaches a read-only layer', async () => {
+    const projectUri = 'file:///workspace/project.lang'
+    const dependencyUri = 'content-source://fixture/installed/dependency.lang'
+    const origin = (uri: string, logicalId: string, readOnly: boolean, precedence: number) => ({
+      uri,
+      layerId: readOnly ? 'installed-layer' : 'project-layer',
+      logicalId,
+      precedence,
+      sourceRevision: `${logicalId}:1`,
+      readOnly,
+    })
+    const sourceWith = (dependency: boolean): LanguageWorkspaceDocumentSource => ({
+      snapshot: async () => ({
+        documents: [
+          { uri: projectUri, languageId: 'fixture-language', version: 1, text: 'value' },
+          ...(dependency
+            ? [{ uri: dependencyUri, languageId: 'fixture-language', version: 1, text: 'value' }]
+            : []),
+        ],
+        isComplete: true,
+        workspaceContext: {
+          id: 'rename-context',
+          revision: `rename-context:${String(dependency)}`,
+          semanticComplete: true,
+          documentOrigins: [
+            origin(projectUri, 'project.lang', false, 1),
+            ...(dependency ? [origin(dependencyUri, 'dependency.lang', true, 0)] : []),
+          ],
+        },
+      }),
+    })
+    const openDocument = (document: LanguageDocument) => ({
+      ...origin(document.uri, 'open.lang', false, 2),
+      overlay: true,
+    })
+    const project = await openWorkspace({ open: async () => undefined }, false, sourceWith(false), openDocument)
+    try {
+      const edit = await project.rename({ ...completionRequest(), newName: 'renamed' })
+      expect(edit?.documentChanges.map(change => change.uri)).toEqual([DOCUMENT_URI, projectUri])
+    } finally {
+      await project.shutdown()
+    }
+    const installed = await openWorkspace({ open: async () => undefined }, false, sourceWith(true), openDocument)
+    try {
+      await expect(
+        installed.rename({ ...completionRequest(), newName: 'renamed' }),
+      ).rejects.toMatchObject({ code: LANGUAGE_EDIT_READ_ONLY })
+    } finally {
+      await installed.shutdown()
     }
   })
 
