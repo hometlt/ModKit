@@ -4501,9 +4501,21 @@
       "status": "superseded"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-entity-rename-relations-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24: renaming catalog references in a map's Objects/Preload must work, Objects and Preload are indexed like data with relations to them from data subjects, and an entity rename covers every module with usage relations as in data. MK3 does it with one cross-language link index (Data declarations and GameData's own parent/link usages by the Data library's schema, Galaxy, TriggerData, Layout, Strings, a map's Objects and Preload by the map format's one link table) serving references and rename to every SC2 language provider, including a map language provider routed by file name; the Data provider's contract rename merges the other languages; the map world writer keeps its reference.rename on the same table. The resolved-data plan reads a map root's Objects and Preload.xml as usage documents, so their names become relations an entity lists among its users, and a name that resolves to nothing is a dead-link diagnostic (the MK2 findBroken). MK3 is the reference; no MK2 comparison is run.",
+        "sha256": "bd53da7fc09801a7b8e059caf90d473ec4c50e2039138cf3ab94e6e62f5904df"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-entity-rename-relations-superseded-2026-09-24.json",
+          "sha256": "bd53da7fc09801a7b8e059caf90d473ec4c50e2039138cf3ab94e6e62f5904df"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-map/feature/2582e66e0167dad7",
-      "status": "pending"
+      "status": "superseded"
     },
     {
       "decision": {
@@ -4523,9 +4535,21 @@
       "status": "superseded"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-entity-rename-relations-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24: renaming catalog references in a map's Objects/Preload must work, Objects and Preload are indexed like data with relations to them from data subjects, and an entity rename covers every module with usage relations as in data. MK3 does it with one cross-language link index (Data declarations and GameData's own parent/link usages by the Data library's schema, Galaxy, TriggerData, Layout, Strings, a map's Objects and Preload by the map format's one link table) serving references and rename to every SC2 language provider, including a map language provider routed by file name; the Data provider's contract rename merges the other languages; the map world writer keeps its reference.rename on the same table. The resolved-data plan reads a map root's Objects and Preload.xml as usage documents, so their names become relations an entity lists among its users, and a name that resolves to nothing is a dead-link diagnostic (the MK2 findBroken). MK3 is the reference; no MK2 comparison is run.",
+        "sha256": "bd53da7fc09801a7b8e059caf90d473ec4c50e2039138cf3ab94e6e62f5904df"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-entity-rename-relations-superseded-2026-09-24.json",
+          "sha256": "bd53da7fc09801a7b8e059caf90d473ec4c50e2039138cf3ab94e6e62f5904df"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-map/feature/3bc136e18a5c8264",
-      "status": "pending"
+      "status": "superseded"
     },
     {
       "decision": {
@@ -4819,9 +4843,21 @@
       "status": "superseded"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-entity-rename-relations-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24: renaming catalog references in a map's Objects/Preload must work, Objects and Preload are indexed like data with relations to them from data subjects, and an entity rename covers every module with usage relations as in data. MK3 does it with one cross-language link index (Data declarations and GameData's own parent/link usages by the Data library's schema, Galaxy, TriggerData, Layout, Strings, a map's Objects and Preload by the map format's one link table) serving references and rename to every SC2 language provider, including a map language provider routed by file name; the Data provider's contract rename merges the other languages; the map world writer keeps its reference.rename on the same table. The resolved-data plan reads a map root's Objects and Preload.xml as usage documents, so their names become relations an entity lists among its users, and a name that resolves to nothing is a dead-link diagnostic (the MK2 findBroken). MK3 is the reference; no MK2 comparison is run.",
+        "sha256": "bd53da7fc09801a7b8e059caf90d473ec4c50e2039138cf3ab94e6e62f5904df"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-entity-rename-relations-superseded-2026-09-24.json",
+          "sha256": "bd53da7fc09801a7b8e059caf90d473ec4c50e2039138cf3ab94e6e62f5904df"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-mod/feature/2d84560edaa04ec8",
-      "status": "pending"
+      "status": "superseded"
     },
     {
       "evidence": [],

@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "kind": "owner-decision/superseded",
+  "date": "2026-09-24",
+  "reason": "Owner decision 2026-09-24: renaming catalog references in a map's Objects/Preload must work, Objects and Preload are indexed like data with relations to them from data subjects, and an entity rename covers every module with usage relations as in data. MK3 does it with one cross-language link index (Data declarations and GameData's own parent/link usages by the Data library's schema, Galaxy, TriggerData, Layout, Strings, a map's Objects and Preload by the map format's one link table) serving references and rename to every SC2 language provider, including a map language provider routed by file name; the Data provider's contract rename merges the other languages; the map world writer keeps its reference.rename on the same table. The resolved-data plan reads a map root's Objects and Preload.xml as usage documents, so their names become relations an entity lists among its users, and a name that resolves to nothing is a dead-link diagnostic (the MK2 findBroken). MK3 is the reference; no MK2 comparison is run.",
+  "rows": [
+    { "id": "legacy/codec-manifest/modkit/sc2-map/feature/3bc136e18a5c8264", "where": "modkit-extensions-blizzard/starcraft2/modules/map/providers/language (rename in Objects/Preload), modules/galaxy/language/sc2-workspace-links.js, modules/map/codecs/package/src/world-writer.js (reference.rename) over OBJECT_CATALOG_ATTRIBUTES / PRELOAD_TAG_LINKS" },
+    { "id": "legacy/codec-manifest/modkit/sc2-mod/feature/2d84560edaa04ec8", "where": "createSc2WorkspaceLinkIndex renameAt across sc2-data, galaxy, sc2-triggers, sc2-layout, sc2-strings, sc2-map-objects, sc2-map-preload; Data provider renameAcrossLanguages" },
+    { "id": "legacy/codec-manifest/modkit/sc2-map/feature/2582e66e0167dad7", "where": "modules/data/services/catalog/provider.js (usage documents, withUsageRelations), modules/map/shared/format/catalog-usages.ts; modkit-core packages/sdk + packages/host data workspace kind usage" }
+  ],
+  "mk3Evidence": {
+    "commits": { "modkit-core": "1d6fd186", "modkit-extensions-blizzard": "253d82bf" },
+    "files": [
+      { "path": "modkit-extensions-blizzard/starcraft2/test/sc2-cross-language-rename.test.ts", "sha256": "a38652b967a81ce05503a314a7a6bbb09d12179ef797eca19b5cba3e0377fcad", "passed": 6 },
+      { "path": "modkit-extensions-blizzard/starcraft2/test/resolved-data-map-usages.test.ts", "sha256": "baa8d56cc02973269be6ebeb5c9465502d354a377d86f165e2660662954fb5b2", "passed": 2 },
+      { "path": "modkit-extensions-blizzard/starcraft2/test/sc2-cross-language.test.ts", "sha256": "a2d92e4dc31378d43de4ec57f030704f3c50a06c9d9c1e41fd4b59f35acce921", "passed": 10 }
+    ]
+  }
+}
