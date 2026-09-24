@@ -1,10 +1,10 @@
 {
  "date": "2026-09-24",
  "counts": {
-  "gap": 19,
-  "present": 70,
+  "gap": 20,
+  "present": 68,
   "obsolete": 9,
-  "partial": 18,
+  "partial": 19,
   "replaced": 9
  },
  "rows": [
@@ -412,8 +412,8 @@
    "id": "sc2-map/feature/1e0e96646216c581",
    "codec": "sc2-map",
    "kind": "feature",
-   "class": "present",
-   "where": "modkit-extensions-blizzard/starcraft2/modules/game/providers/launch (native-map-launch)",
+   "class": "partial",
+   "where": "modules/game/providers/launch builds the SC2Switcher launch plan (host planGameLaunch); no app executes a plan, so nothing launches the map or reads its GameLogs",
    "label": "game.launch-map (node runtime only): resolveLaunchConfig + launchSc2Map spawn of Support64/SC2Switcher_x64.exe with -run/-preload/-NoUserCheats/-meleeMod/-difficulty/-speed/-displaymode/-TrigDebug/-reloadcheck/-testmod/-testconfig, isAvailable gate on local-file+.sc2map"
   },
   {
@@ -516,8 +516,8 @@
    "id": "sc2-map/feature/b1f01880f97540ed",
    "codec": "sc2-map",
    "kind": "feature",
-   "class": "partial",
-   "where": "launch provider reports failures; taxonomy not compared",
+   "class": "gap",
+   "where": "no app executes a launch plan, so launch failures are never classified",
    "label": "launch error taxonomy"
   },
   {
@@ -540,8 +540,8 @@
    "id": "sc2-map/operation/game.launch-map",
    "codec": "sc2-map",
    "kind": "operation",
-   "class": "present",
-   "where": "blizzard/starcraft2-native-map-launch provider",
+   "class": "partial",
+   "where": "modules/game/providers/launch builds the SC2Switcher launch plan (host planGameLaunch); no app executes a plan, so nothing launches the map or reads its GameLogs",
    "label": "game.launch-map"
   },
   {
