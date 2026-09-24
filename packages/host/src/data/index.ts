@@ -1484,6 +1484,25 @@ function pathInsideWritableRoot(path: string, root: ResolvedDataWritableRoot): s
   return relative.join('/')
 }
 
+/**
+ * Logical data paths are case-folded ids; a person reads the file as the store spells it. For a
+ * replaced document that spelling is the tail of its source URI with the same folded segments.
+ */
+function storedSpelling(path: string, subjectUri: string): string {
+  const parts = path.replace(/\\/gu, '/').split('/').filter(part => part !== '')
+  let stored: string[]
+  try {
+    stored = decodeURIComponent(new URL(subjectUri).pathname).split('/').filter(part => part !== '')
+  } catch {
+    return path
+  }
+  const tail = stored.slice(-parts.length)
+  return tail.length === parts.length &&
+    tail.every((part, index) => part.toLowerCase() === parts[index]?.toLowerCase())
+    ? tail.join('/')
+    : path
+}
+
 function bindResolvedDataEditDestination(
   resolved: Extract<DataEditTargetResult, { readonly state: 'resolved' }>,
   documents: readonly ResolvedDataDocumentTarget[],
@@ -1500,11 +1519,15 @@ function bindResolvedDataEditDestination(
         : `active mod ${resolved.selectedRootId} has no writable namespace binding`,
     )
   }
+  const path =
+    resolved.target.mode === 'replace'
+      ? storedSpelling(resolved.target.path, binding.subjectUri)
+      : resolved.target.path
   return Object.freeze({
     rootId: resolved.target.rootId,
-    path: resolved.target.path,
+    path,
     mode: resolved.target.mode,
-    label: `Write: ${resolved.target.rootId} → ${resolved.target.path}`,
+    label: `Write: ${resolved.target.rootId} → ${path}`,
     targetId: binding.targetId,
     subjectUri: binding.subjectUri,
   })
@@ -1527,11 +1550,12 @@ function bindDataDocumentDestination(
         : `active mod ${selectedRootId} has no writable namespace binding`,
     )
   }
+  const path = target.mode === 'replace' ? storedSpelling(target.path, binding.subjectUri) : target.path
   return Object.freeze({
     rootId: target.rootId,
-    path: target.path,
+    path,
     mode: target.mode,
-    label: `Write: ${target.rootId} → ${target.path}`,
+    label: `Write: ${target.rootId} → ${path}`,
     targetId: binding.targetId,
     subjectUri: binding.subjectUri,
   })
