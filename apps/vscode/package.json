@@ -429,6 +429,16 @@
         "language": "sc2-data",
         "scopeName": "text.xml.sc2-data",
         "path": "./media/sc2-data.tmLanguage.json"
+      },
+      {
+        "language": "sc2-map-objects",
+        "scopeName": "text.xml.sc2-map-objects",
+        "path": "./media/sc2-map-objects.tmLanguage.json"
+      },
+      {
+        "language": "sc2-map-preload",
+        "scopeName": "text.xml.sc2-map-preload",
+        "path": "./media/sc2-map-preload.tmLanguage.json"
       }
     ],
     "languages": [
@@ -457,12 +467,14 @@
       {
         "id": "sc2-map-objects",
         "aliases": ["StarCraft II Map Objects"],
-        "filenames": ["Objects"]
+        "filenames": ["Objects"],
+        "configuration": "./media/sc2-data-language-configuration.json"
       },
       {
         "id": "sc2-map-preload",
         "aliases": ["StarCraft II Map Preload"],
-        "filenames": ["Preload.xml"]
+        "filenames": ["Preload.xml"],
+        "configuration": "./media/sc2-data-language-configuration.json"
       },
       {
         "id": "sc2-strings",
@@ -499,7 +511,7 @@
       {
         "id": "xml",
         "extensions": [".SC2Lighting", ".sc2lighting"],
-        "filenamePatterns": ["**/*.[Ss][Cc]2[Mm][Aa][Pp]/{Objects,Regions,Attributes}"]
+        "filenamePatterns": ["**/*.[Ss][Cc]2[Mm][Aa][Pp]/{Regions,Attributes}"]
       }
     ],
     "menus": {

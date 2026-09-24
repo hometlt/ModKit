@@ -1,0 +1,6 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "StarCraft II Map Objects",
+  "scopeName": "text.xml.sc2-map-objects",
+  "patterns": [{ "include": "text.xml" }]
+}

@@ -440,6 +440,16 @@
       "language": "sc2-data",
       "scopeName": "text.xml.sc2-data",
       "path": "./media/sc2-data.tmLanguage.json"
+    },
+    {
+      "language": "sc2-map-objects",
+      "scopeName": "text.xml.sc2-map-objects",
+      "path": "./media/sc2-map-objects.tmLanguage.json"
+    },
+    {
+      "language": "sc2-map-preload",
+      "scopeName": "text.xml.sc2-map-preload",
+      "path": "./media/sc2-map-preload.tmLanguage.json"
     }
   ],
   "languages": [
@@ -499,7 +509,8 @@
       ],
       "filenames": [
         "Objects"
-      ]
+      ],
+      "configuration": "./media/sc2-data-language-configuration.json"
     },
     {
       "id": "sc2-map-preload",
@@ -508,7 +519,8 @@
       ],
       "filenames": [
         "Preload.xml"
-      ]
+      ],
+      "configuration": "./media/sc2-data-language-configuration.json"
     },
     {
       "id": "sc2-strings",
@@ -570,7 +582,7 @@
         ".sc2lighting"
       ],
       "filenamePatterns": [
-        "**/*.[Ss][Cc]2[Mm][Aa][Pp]/{Objects,Regions,Attributes}"
+        "**/*.[Ss][Cc]2[Mm][Aa][Pp]/{Regions,Attributes}"
       ]
     }
   ],
