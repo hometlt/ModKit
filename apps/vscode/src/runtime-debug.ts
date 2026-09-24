@@ -70,10 +70,15 @@ export interface RuntimeDebugStartRequest {
   readonly action: 'start'
   readonly runtimeId: string
   readonly sessionId: string
+  /** Provider major 3 carries the exact replay/launch seed into the worker. */
+  readonly providerMajor?: 1 | 2 | 3
+  readonly seed?: string
   readonly requiredOffers?: readonly RuntimeSessionOffer[]
   readonly budget?: RuntimeBudget
   /** Neutral host-owned inputs for providers which require a workspace snapshot. */
   readonly providerInvocation?: RuntimeProviderInvocationContext
+  /** Dedicated host-owned resource session for a brokered provider open attempt. */
+  readonly resourceInvocation?: OpenRuntimeSessionRequest['resourceInvocation']
   readonly signal?: AbortSignal
 }
 
@@ -405,9 +410,14 @@ export function createRuntimeDebugController(
           budget: request.budget ?? options.sessionBudget,
           grant: options.grant,
           activationBudget: options.activationBudget,
+          ...(request.providerMajor === undefined ? {} : { providerMajor: request.providerMajor }),
+          ...(request.seed === undefined ? {} : { seed: request.seed }),
           ...(request.providerInvocation === undefined
             ? {}
             : { providerInvocation: request.providerInvocation }),
+          ...(request.resourceInvocation === undefined
+            ? {}
+            : { resourceInvocation: request.resourceInvocation }),
           ...(request.signal === undefined ? {} : { signal: request.signal }),
         })
         if (resolution.state === 'unresolved') {

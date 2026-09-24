@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import type { ResourceSessionPort } from '@modkit/sdk'
 import type { RuntimeSessionV2, RuntimeSnapshot } from '@modkit/sdk/runtime'
 import {
   createRuntimeDebugController,
@@ -117,6 +118,35 @@ function controllerWith(openSession: NonNullable<RuntimeDebugControllerOptions['
 }
 
 describe('generic VS Code runtime controller', () => {
+  it('passes major 3 seed and brokered inputs to the host unchanged', async () => {
+    let opened: Parameters<NonNullable<RuntimeDebugControllerOptions['openSession']>>[0] | undefined
+    const controller = controllerWith(async request => {
+      opened = request
+      return {
+        state: 'resolved', providerId: 'org.example/runtime-v2',
+        session: fakeSession(request.sessionId), diagnostics: [], async release() {},
+      }
+    })
+    const resourceInvocation = {
+      inputs: [
+        { id: 'kernel', logicalId: 'kernel.wasm', role: 'buffer' as const,
+          scopes: ['current-mount' as const] },
+        { id: 'bindings', logicalId: 'bindings.mvbc', role: 'buffer' as const,
+          scopes: ['current-mount' as const] },
+      ],
+      resources: {} as ResourceSessionPort,
+    }
+    try {
+      expect(await controller.dispatch({ action: 'start', runtimeId: 'multiverse.foundation-v1',
+        sessionId: 'major-three', providerMajor: 3, seed: '18446744073709551615',
+        resourceInvocation })).toMatchObject({ state: 'ok' })
+      expect(opened).toMatchObject({ providerMajor: 3, seed: '18446744073709551615' })
+      expect(opened?.resourceInvocation).toBe(resourceInvocation)
+    } finally {
+      await controller.dispose()
+    }
+  })
+
   it('drives frozen-v2 state through host-selected runtime identity and bounded breakpoints', async () => {
     let releases = 0
     const controller = controllerWith(async request => ({
