@@ -1,0 +1,1013 @@
+{
+ "date": "2026-09-24",
+ "counts": {
+  "gap": 19,
+  "present": 70,
+  "obsolete": 9,
+  "partial": 18,
+  "replaced": 9
+ },
+ "rows": [
+  {
+   "id": "authored/sc2-campaign/CMP1",
+   "codec": "sc2-campaign",
+   "kind": "authored",
+   "class": "gap",
+   "where": "no fixture research recorded",
+   "label": "Research real native campaign variants and record fixtures and unknown fields"
+  },
+  {
+   "id": "authored/sc2-campaign/CMP2",
+   "codec": "sc2-campaign",
+   "kind": "authored",
+   "class": "present",
+   "where": "modkit-extensions-blizzard/starcraft2/modules/campaign/codecs/{campaign,directory}",
+   "label": "Create and open packed and loose campaign documents through shared containers"
+  },
+  {
+   "id": "authored/sc2-campaign/CMP3",
+   "codec": "sc2-campaign",
+   "kind": "authored",
+   "class": "gap",
+   "where": "campaign codec is read-only",
+   "label": "Edit mission/map references and dependencies with validation"
+  },
+  {
+   "id": "authored/sc2-campaign/CMP4",
+   "codec": "sc2-campaign",
+   "kind": "authored",
+   "class": "gap",
+   "where": "campaign codec is read-only",
+   "label": "Preserving write, no-op round-trip and unknown data retention"
+  },
+  {
+   "id": "authored/sc2-campaign/CMP5",
+   "codec": "sc2-campaign",
+   "kind": "authored",
+   "class": "present",
+   "where": "inspect, validate, extract, inspect-missions; subject-facts and relation-graph sources",
+   "label": "Generic metadata, selector, facts, graph and operation surfaces"
+  },
+  {
+   "id": "authored/sc2-campaign/CMP6",
+   "codec": "sc2-campaign",
+   "kind": "authored",
+   "class": "gap",
+   "where": "no installed acceptance run",
+   "label": "Installed host acceptance with real campaign fixtures"
+  },
+  {
+   "id": "galaxy/feature/1a6a061f36dda7ca",
+   "codec": "galaxy",
+   "kind": "feature",
+   "class": "present",
+   "where": "modkit-extensions-blizzard/starcraft2/modules/galaxy/codecs/galaxy",
+   "label": "describe(): AssetDescriptor with traits (code.source partial-on-error, content.text, structure.nodes, source.dependencies, game.catalog), operation-state derivation, compile permanently disabled"
+  },
+  {
+   "id": "galaxy/feature/22933635ee31d568",
+   "codec": "galaxy",
+   "kind": "feature",
+   "class": "present",
+   "where": "modkit-extensions-blizzard/starcraft2/modules/galaxy/services/analysis/language-service.ts",
+   "label": "S2 metadata / trigger-catalog aware language service (data catalog + trigger element symbol resolution) via s2meta.ts, cross-referencing trigger-store package"
+  },
+  {
+   "id": "m3/feature/011d6e369f8c2eed",
+   "codec": "m3",
+   "kind": "feature",
+   "class": "obsolete",
+   "where": "MK3 runs codecs through execution profiles (worker/in-process); no per-platform entry files",
+   "label": "node/browser runtime split (codec.node.ts, codec.browser.ts, platform.node.ts, platform.ts, browser.ts) incl. embedded structures.xml for browser-main"
+  },
+  {
+   "id": "m3/feature/1f235e68cd31c2fa",
+   "codec": "m3",
+   "kind": "feature",
+   "class": "present",
+   "where": "modkit-extensions-blizzard/models/src/m3/native/lossless.ts",
+   "label": "lossless section inventory + metadata oracle comparison (m3MetadataOracle, compareM3MetadataOracle)"
+  },
+  {
+   "id": "m3/feature/2676d4dd33b49574",
+   "codec": "m3",
+   "kind": "feature",
+   "class": "present",
+   "where": "modkit-extensions-blizzard/models/src/m3/codec.js (edit.field: one native byte row, byte-identical round trip)",
+   "label": "legacy in-place texture/float byte patcher (patchTextureBytes, patchFloatBytes)"
+  },
+  {
+   "id": "m3/feature/26e692a10da6f8a4",
+   "codec": "m3",
+   "kind": "feature",
+   "class": "present",
+   "where": "modkit-extensions-blizzard/models/src/m3/codec.js (standalone M3A)",
+   "label": "standalone .m3a open strips to bundle-only geometry/materials, exposes only animations"
+  },
+  {
+   "id": "m3/feature/346084db443ea408",
+   "codec": "m3",
+   "kind": "feature",
+   "class": "present",
+   "where": "modkit-extensions-blizzard/models/src/m3/native (effects), scene.effects",
+   "label": "effects (ribbons, particles, projections, forces, billboards, warps) -> RenderModel effects, ribbon preview emission rate"
+  },
+  {
+   "id": "m3/feature/3664f80d62a5dfcd",
+   "codec": "m3",
+   "kind": "feature",
+   "class": "present",
+   "where": "modkit-extensions-blizzard/models/codecs/m3/codec.json (probe)",
+   "label": "magic/header detect (isM3Magic) for manifest registry"
+  },
+  {
+   "id": "m3/feature/4a8b314c6bed3147",
+   "codec": "m3",
+   "kind": "feature",
+   "class": "present",
+   "where": "modkit-extensions-blizzard/models/src/m3/native/model",
+   "label": "model.ts M3Model facade + metadata builders (attachments, materials, bone hierarchy, hit volumes, bounds, lights, turrets, cameras, ribbons, particles, projections, forces, billboards, warps, shadowboxes, rigid bodies, physics constraints/joints/cloths, IK)"
+  },
+  {
+   "id": "m3/feature/5e78c065d5fcb2ff",
+   "codec": "m3",
+   "kind": "feature",
+   "class": "partial",
+   "where": "byte-row edits (edit.field) + host edit history exist; ASCII rename in sections and rewriteSections relocation through an edit operation are not exposed",
+   "label": "lossless byte-patch editor: M3Document (patches, rewriteSections structural relocation, ASCII rename in sections, undo/redo)"
+  },
+  {
+   "id": "m3/feature/672bfac87be00c0f",
+   "codec": "m3",
+   "kind": "feature",
+   "class": "present",
+   "where": "modkit-extensions-blizzard/models/src/m3/native/render-model.ts (m3a_hash binding)",
+   "label": "M3A external animation sidecar discovery/attach: hash binding (m3a_hash/m3a_hashes), skeleton compatibility check, material-track rebinding with sequence offset, stem-based fallback association, bounded concurrency/timeouts"
+  },
+  {
+   "id": "m3/feature/99206020ab1ce4e9",
+   "codec": "m3",
+   "kind": "feature",
+   "class": "present",
+   "where": "modkit-extensions-blizzard/models/src/m3/native/binary, structures.xml",
+   "label": "schema-coverage / binary structures.xml field registry, config (getConfig/setConfig, embeddedStructuresXml)"
+  },
+  {
+   "id": "m3/feature/b2a1b78ef3e1041d",
+   "codec": "m3",
+   "kind": "feature",
+   "class": "present",
+   "where": "modkit-extensions-blizzard/models/src/m3/native/encoder.js",
+   "label": "RenderModel->M3 encode (round trip), texture request listing"
+  },
+  {
+   "id": "m3/feature/b5d28d944cda398d",
+   "codec": "m3",
+   "kind": "feature",
+   "class": "present",
+   "where": "modkit-extensions-blizzard/models/src/m3/native/render-model.ts",
+   "label": "M3->RenderModel projection (m3ModelToRenderModel), preview animation limitations constant"
+  },
+  {
+   "id": "m3/feature/b98cc5d4cc8ca98e",
+   "codec": "m3",
+   "kind": "feature",
+   "class": "present",
+   "where": "modkit-extensions-blizzard/models/src/m3/native/structural.ts",
+   "label": "structural section-graph writer: appendM3Section, replaceM3ReferencedRecords, appendM3ReferencedRecord, removeM3ReferencedRecord, pointM3ReferenceAtSection"
+  },
+  {
+   "id": "m3/feature/bc50fe9d083c47a8",
+   "codec": "m3",
+   "kind": "feature",
+   "class": "present",
+   "where": "modkit-extensions-blizzard/models/codecs/m3/codec.json (model.* operations, data sources)",
+   "label": "ModelCodec surface: parse, listTextureRequests, encode, openDocument, parseAnimationBundle; declared capabilities skeleton/animations/effects/externalAnimations/sidecars/encode"
+  },
+  {
+   "id": "m3/feature/dfad1b27ebd848e8",
+   "codec": "m3",
+   "kind": "feature",
+   "class": "present",
+   "where": "modkit-extensions-blizzard/models/src/m3/native/binary/sections.ts",
+   "label": "MD33/MD34 chunked container parse, unknown-section preservation"
+  },
+  {
+   "id": "m3/feature/efef1db50fad69fb",
+   "codec": "m3",
+   "kind": "feature",
+   "class": "present",
+   "where": "modkit-extensions-blizzard/models/src/m3/native (vertex, bones, textures)",
+   "label": "vertex layout decode, bone resolver, texture resolver/path resolution"
+  },
+  {
+   "id": "m3/operation/model.export",
+   "codec": "m3",
+   "kind": "operation",
+   "class": "present",
+   "where": "model.export-uvm, export.raw",
+   "label": "model.export"
+  },
+  {
+   "id": "m3/operation/model.read",
+   "codec": "m3",
+   "kind": "operation",
+   "class": "present",
+   "where": "model.geometry/materials/skeleton/textures/animations data",
+   "label": "model.read"
+  },
+  {
+   "id": "m3/operation/model.render",
+   "codec": "m3",
+   "kind": "operation",
+   "class": "present",
+   "where": "model.render (render-m3-scene)",
+   "label": "model.render"
+  },
+  {
+   "id": "m3/operation/model.write",
+   "codec": "m3",
+   "kind": "operation",
+   "class": "present",
+   "where": "model.write (model-write)",
+   "label": "model.write"
+  },
+  {
+   "id": "sc2-bank/feature/2accf19c17872afe",
+   "codec": "sc2-bank",
+   "kind": "feature",
+   "class": "present",
+   "where": "modkit-extensions-blizzard/starcraft2/tsconfig.sc2-banks.json, package exports",
+   "label": "browser-safe /core entrypoint vs Node-only /node entrypoint (statically guarded against node:* imports)"
+  },
+  {
+   "id": "sc2-data/feature/251819ce1738f4c1",
+   "codec": "sc2-data",
+   "kind": "feature",
+   "class": "present",
+   "where": "modkit-extensions-blizzard/starcraft2/modules/data (subject kinds)",
+   "label": "entity-subject: subject-kind classification (Unit/Weapon/Abil/Effect/...) for cards/wiki"
+  },
+  {
+   "id": "sc2-data/feature/35c0b55bf61c4bba",
+   "codec": "sc2-data",
+   "kind": "feature",
+   "class": "present",
+   "where": "modkit-extensions-blizzard/starcraft2/modules/data/shared/format/describe.ts",
+   "label": "describe(): AssetDescriptor incl. structure.hierarchy partial flag"
+  },
+  {
+   "id": "sc2-data/feature/3e721fdf60323bc0",
+   "codec": "sc2-data",
+   "kind": "feature",
+   "class": "obsolete",
+   "where": "downloaded pinned SC2GameData; owner decision: games are never bundled, installed copies are discovered (content sources)",
+   "label": "sc2-data.provision: provisioning/producer wiring for GameData artifacts"
+  },
+  {
+   "id": "sc2-data/feature/5afd5cea36668f71",
+   "codec": "sc2-data",
+   "kind": "feature",
+   "class": "obsolete",
+   "where": "MK3 wires codecs through manifests, not a Node entry file",
+   "label": "node.ts: Node runtime entrypoint wiring detect/codec/language"
+  },
+  {
+   "id": "sc2-data/feature/69adac86d5e8dfc2",
+   "codec": "sc2-data",
+   "kind": "feature",
+   "class": "present",
+   "where": "modkit-extensions-blizzard/starcraft2/modules/data/shared/format/wiki",
+   "label": "wiki export: cards, coercion, layout tree, mod producer/relation graphs, visuals, wiki index generation"
+  },
+  {
+   "id": "sc2-data/feature/d7535085f15f6864",
+   "codec": "sc2-data",
+   "kind": "feature",
+   "class": "present",
+   "where": "modkit-extensions-blizzard/starcraft2/modules/data/shared/format/edit.ts",
+   "label": "field-patch: ordered patch application over catalog fields"
+  },
+  {
+   "id": "sc2-data/feature/da559d406e79b116",
+   "codec": "sc2-data",
+   "kind": "feature",
+   "class": "replaced",
+   "where": "one mod loader + openCatalogFiles (openFromContent removed 2026-09-24)",
+   "label": "open: single source, pre-resolved file set (openCatalogFiles), or full GameContentResolver chain (openFromContent) with canonical SC2ModReader merge order via orderGameDataFilePaths"
+  },
+  {
+   "id": "sc2-data/feature/ef20d9871d1f4e6b",
+   "codec": "sc2-data",
+   "kind": "feature",
+   "class": "present",
+   "where": "modkit-extensions-blizzard/starcraft2/modules/data/providers/language",
+   "label": "language: completion, definition, diagnostics, docs, hover, references, usages, symbols, project-index, overlay-scan, xml-scan (offset-aware lenient XML scanner shared with detect)"
+  },
+  {
+   "id": "sc2-data/operation/sc2-data.provision",
+   "codec": "sc2-data",
+   "kind": "operation",
+   "class": "obsolete",
+   "where": "downloaded pinned SC2GameData; owner decision: games are never bundled, installed copies are discovered (content sources)",
+   "label": "sc2-data.provision"
+  },
+  {
+   "id": "sc2-document-metadata/feature/01d23a350ffb0b10",
+   "codec": "sc2-document-metadata",
+   "kind": "feature",
+   "class": "present",
+   "where": "modkit-extensions-blizzard/starcraft2/modules/mod/codecs/document-metadata (writer)",
+   "label": "createEditTransaction: full AssetEditTransaction — validate() structurally round-trips produced bytes through the real parser before allowing apply(); apply() commits; output() returns AssetOutput"
+  },
+  {
+   "id": "sc2-document-metadata/feature/2a03e2f8d2c16e36",
+   "codec": "sc2-document-metadata",
+   "kind": "feature",
+   "class": "obsolete",
+   "where": "README note about an MK2 package boundary",
+   "label": "@modkitx/export delegation: writeDocumentHeader re-export and writeSc2DocumentInfoDependencies now used by @modkitx/export instead of duplicating logic (README, not directly in this codec's src but a listed dependent)"
+  },
+  {
+   "id": "sc2-document-metadata/feature/62bb89b9e28d598b",
+   "codec": "sc2-document-metadata",
+   "kind": "feature",
+   "class": "present",
+   "where": "modkit-extensions-blizzard/starcraft2/modules/mod/codecs/document-metadata",
+   "label": "describe(): builds AssetDescriptor with format-conditional traits (content.metadata always; content.text+document.outline+structure.hierarchy for info; content.binary for header/version; source.dependencies count for header/info), identity (formatId per-format, mediaType, categories), constraints (readOnly true, unsupportedFeatures list per-format: source-edit for version-file, source-save always, byte-exact-xml-reserialization for info, checksum-recomputation for header), 3 viewer contributions (inspect panel, outline tree, diagnostics panel)"
+  },
+  {
+   "id": "sc2-layout/feature/0216af8d323d8c33",
+   "codec": "sc2-layout",
+   "kind": "feature",
+   "class": "present",
+   "where": "modkit-extensions-blizzard/starcraft2/modules/layout/shared/format/relations.ts",
+   "label": "relations: builds cross-codec reference graph (Shortcut/Texture/ClickSound/Text bindings) for sc2-mod"
+  },
+  {
+   "id": "sc2-layout/feature/1940be1e2f8edfe4",
+   "codec": "sc2-layout",
+   "kind": "feature",
+   "class": "replaced",
+   "where": "owner decision: one generic LSP adapter (apps/lsp) over the layout language provider",
+   "label": "language: LSP language server (S2LServer) wired via CodecLanguageContribution, shared WorkspaceHost substrate with galaxy codec"
+  },
+  {
+   "id": "sc2-layout/feature/5109d39f694a55ab",
+   "codec": "sc2-layout",
+   "kind": "feature",
+   "class": "present",
+   "where": "modkit-extensions-blizzard/starcraft2/modules/layout/providers/language",
+   "label": "language.diagnostics: schema + workspace-resolution diagnostics"
+  },
+  {
+   "id": "sc2-layout/feature/b1388f61ccf518e2",
+   "codec": "sc2-layout",
+   "kind": "feature",
+   "class": "partial",
+   "where": "layout codec publishes tree data; the Desc-tree protocol payload of the MK2 server is not reproduced",
+   "label": "language.descTreeData: custom protocol payload feeding a Desc structure tree view"
+  },
+  {
+   "id": "sc2-layout/feature/c84d66c380624fb6",
+   "codec": "sc2-layout",
+   "kind": "feature",
+   "class": "present",
+   "where": "modkit-extensions-blizzard/starcraft2/modules/layout/providers/language",
+   "label": "language.completion: tag/attribute/enum/template/constant completion incl. code abbreviations"
+  },
+  {
+   "id": "sc2-layout/feature/f3b803a24538e2ef",
+   "codec": "sc2-layout",
+   "kind": "feature",
+   "class": "partial",
+   "where": "symbols, completion, definition, hover, references, colors exist; executeCommand sc2layout.analyzeWorkspace not checked",
+   "label": "language server capabilities: documentSymbol, workspaceSymbol, completion(triggerChars), definition, hover, references, colorProvider, executeCommand(sc2layout.analyzeWorkspace)"
+  },
+  {
+   "id": "sc2-map/feature/12fe37c7d18dd0fe",
+   "codec": "sc2-map",
+   "kind": "feature",
+   "class": "present",
+   "where": "modkit-extensions-blizzard/starcraft2/modules/map/codecs/documents/*",
+   "label": "embedded subformats parsed via sc2-map-core: MapInfo, HeightMap(t3), SyncCliffLevel, PathingInfo, CellFlags, CellAttribute, TextureMasks, FluffDoodad, Water, Objects(PlacedObjects XML), Regions XML, SyncTextureInfo, BankList, Preload XML, ScenarioProperties, EditorCategories, Locales, Includes, FileHash, HardTile, PaintedPathing, TerrainBinary(t3TerrainBinary raw block), AIData, DataWizard, rawFiles passthrough for unknowns"
+  },
+  {
+   "id": "sc2-map/feature/1cbfd40144fe7b13",
+   "codec": "sc2-map",
+   "kind": "feature",
+   "class": "present",
+   "where": "modkit-extensions-blizzard/starcraft2/modules/map/codecs/package",
+   "label": "sc2MapDiagnostics + traits (game.map, container.entries, structure.layers, content.metadata, source.dependencies, scene.objects) + constraints.unsupportedFeatures (mpq-pack, source-save-as, map-3d-scene, semantic-content-contributions)"
+  },
+  {
+   "id": "sc2-map/feature/1daaa12f09de0595",
+   "codec": "sc2-map",
+   "kind": "feature",
+   "class": "partial",
+   "where": "folder and MPQ maps open and save through the container codecs; ZIP maps and a JSON save sink are absent",
+   "label": "Node-side container glue: loadMapEntries/openMap folder-vs-MPQ-vs-ZIP topology via openArchiveBytes, DocumentHeader + *.version sidecar metadata parsing, writeMapMpq/writeMapZip/saveMap sinks (mpq/zip/json)"
+  },
+  {
+   "id": "sc2-map/feature/1e0e96646216c581",
+   "codec": "sc2-map",
+   "kind": "feature",
+   "class": "present",
+   "where": "modkit-extensions-blizzard/starcraft2/modules/game/providers/launch (native-map-launch)",
+   "label": "game.launch-map (node runtime only): resolveLaunchConfig + launchSc2Map spawn of Support64/SC2Switcher_x64.exe with -run/-preload/-NoUserCheats/-meleeMod/-difficulty/-speed/-displaymode/-TrigDebug/-reloadcheck/-testmod/-testconfig, isAvailable gate on local-file+.sc2map"
+  },
+  {
+   "id": "sc2-map/feature/1f5ef30478b38f0b",
+   "codec": "sc2-map",
+   "kind": "feature",
+   "class": "gap",
+   "where": "no language contribution routes .SC2Lighting/Regions/Objects/Attributes to XML",
+   "label": "manifest declares languages: xml for .SC2Lighting/Regions/Objects/Attributes filenames"
+  },
+  {
+   "id": "sc2-map/feature/22af60ef3ba2ad4b",
+   "codec": "sc2-map",
+   "kind": "feature",
+   "class": "replaced",
+   "where": "container codecs + the one mod loader",
+   "label": "open/openEntrySources: mounted-root or resolver-backed entry collection, later-duplicate-path-wins merge, parseMapEntries aggregation"
+  },
+  {
+   "id": "sc2-map/feature/2582e66e0167dad7",
+   "codec": "sc2-map",
+   "kind": "feature",
+   "class": "partial",
+   "where": "the map world names the catalog entities it needs (catalog questions); a broken-reference report (findBroken*) is not surfaced",
+   "label": "relations: buildSc2MapObjectReferences/buildSc2MapPreloadReferences/findBroken* catalog cross-reference resolution against an injected catalog lookup"
+  },
+  {
+   "id": "sc2-map/feature/34af3197f5731769",
+   "codec": "sc2-map",
+   "kind": "feature",
+   "class": "gap",
+   "where": "ScriptError.txt / alert log parsing after a launch",
+   "label": "GameLogs parsing: ScriptError.txt compile-error extraction, script-load-failure lines, alert log parsing"
+  },
+  {
+   "id": "sc2-map/feature/3bc136e18a5c8264",
+   "codec": "sc2-map",
+   "kind": "feature",
+   "class": "gap",
+   "where": "no Objects/Preload catalog-reference rename in the map codec",
+   "label": "createReferenceRenameEditTransaction: codec-owned Objects/Preload catalog-reference rename (unit type, texture link, sound/model/soundActor, preload tag-linked attrs), rebuilds via writeObjects/writePreload, reports reserialized/no-op diagnostics, validate/apply/outputs transaction lifecycle"
+  },
+  {
+   "id": "sc2-map/feature/62a645cea8713979",
+   "codec": "sc2-map",
+   "kind": "feature",
+   "class": "present",
+   "where": "view.inspect (inspect)",
+   "label": "view.inspect handler returns descriptor.metadata"
+  },
+  {
+   "id": "sc2-map/feature/66cc0604ad75fdf6",
+   "codec": "sc2-map",
+   "kind": "feature",
+   "class": "present",
+   "where": "modkit-extensions-blizzard/starcraft2/modules/map/codecs/package (probe)",
+   "label": "detect: bounded structural detector using MAP_DOCUMENT_ROUTES basenames, extension .sc2map, sibling-ext negative evidence, max 128 listed children"
+  },
+  {
+   "id": "sc2-map/feature/974b61f46d425b92",
+   "codec": "sc2-map",
+   "kind": "feature",
+   "class": "present",
+   "where": "view.render (render-preview), view.thumbnail",
+   "label": "view.thumbnail/view.render: renderPreview dispatch over layers auto/overlay/height/cliff/pathing/cell-flags/painted-pathing/texture, each backed by a dedicated PNG encoder"
+  },
+  {
+   "id": "sc2-map/feature/9ecc335c41704d04",
+   "codec": "sc2-map",
+   "kind": "feature",
+   "class": "present",
+   "where": "modkit-extensions-blizzard/starcraft2/modules/map/codecs/package",
+   "label": "describe: identity/traits/operations/constraints/metadata/diagnostics AssetDescriptor incl. content-resolver-not-integrated, launch-unavailable, no-preview-data, edit-catalog-context-required diagnostics"
+  },
+  {
+   "id": "sc2-map/feature/9ff836268db8cc1c",
+   "codec": "sc2-map",
+   "kind": "feature",
+   "class": "partial",
+   "where": "layer previews render; PNG→height/cliff import (round-trip editing) is absent",
+   "label": "image/: PNG codec (16-bit gray for height/cliff round-trip, 8-bit RGB false-color for masks/overlay), heightToPng/pngToHeight, cliffLevelToPng/pngToCliffLevel, pathingToPng, cellFlagsToPng, paintedPathingToPng, vertexColorToPng, textureToPng, overlayToPng/composeOverlayToPng (objects+regions+water composite), custom PNG encode/decode incl. zlib via pako"
+  },
+  {
+   "id": "sc2-map/feature/ad3b909905d29a00",
+   "codec": "sc2-map",
+   "kind": "feature",
+   "class": "present",
+   "where": "container.extract (extract-entry), extract-modeled",
+   "label": "container.extract: raw or serialize=true re-encoded entries, optional path allowlist, preservesUnknownData+roundTripSafe"
+  },
+  {
+   "id": "sc2-map/feature/b05ee6b4bbe66773",
+   "codec": "sc2-map",
+   "kind": "feature",
+   "class": "present",
+   "where": "asset.validate (validate)",
+   "label": "asset.validate handler returns real malformed-category diagnostics (per-entry parse failures from parseMapEntries onError)"
+  },
+  {
+   "id": "sc2-map/feature/b1f01880f97540ed",
+   "codec": "sc2-map",
+   "kind": "feature",
+   "class": "partial",
+   "where": "launch provider reports failures; taxonomy not compared",
+   "label": "launch error taxonomy"
+  },
+  {
+   "id": "sc2-map/operation/asset.validate",
+   "codec": "sc2-map",
+   "kind": "operation",
+   "class": "present",
+   "where": "same operation id in blizzard/sc2-map",
+   "label": "asset.validate"
+  },
+  {
+   "id": "sc2-map/operation/container.extract",
+   "codec": "sc2-map",
+   "kind": "operation",
+   "class": "present",
+   "where": "same operation id in blizzard/sc2-map",
+   "label": "container.extract"
+  },
+  {
+   "id": "sc2-map/operation/game.launch-map",
+   "codec": "sc2-map",
+   "kind": "operation",
+   "class": "present",
+   "where": "blizzard/starcraft2-native-map-launch provider",
+   "label": "game.launch-map"
+  },
+  {
+   "id": "sc2-map/operation/view.inspect",
+   "codec": "sc2-map",
+   "kind": "operation",
+   "class": "present",
+   "where": "same operation id in blizzard/sc2-map",
+   "label": "view.inspect"
+  },
+  {
+   "id": "sc2-map/operation/view.render",
+   "codec": "sc2-map",
+   "kind": "operation",
+   "class": "present",
+   "where": "same operation id in blizzard/sc2-map",
+   "label": "view.render"
+  },
+  {
+   "id": "sc2-map/operation/view.thumbnail",
+   "codec": "sc2-map",
+   "kind": "operation",
+   "class": "present",
+   "where": "same operation id in blizzard/sc2-map",
+   "label": "view.thumbnail"
+  },
+  {
+   "id": "sc2-mod/feature/0f9f0dcbd4e44d35",
+   "codec": "sc2-mod",
+   "kind": "feature",
+   "class": "replaced",
+   "where": "one mod loader (openModContext); MCP modkit.mod_context",
+   "label": "content.mount: exposes ordered ContentMount[] for the resolved dependency chain"
+  },
+  {
+   "id": "sc2-mod/feature/2d84560edaa04ec8",
+   "codec": "sc2-mod",
+   "kind": "feature",
+   "class": "partial",
+   "where": "data codec renames entities; the composed data+layout+map rename is not checked",
+   "label": "createEntityRenameEditTransaction: concrete GameData+SC2Layout+Map entity-rename composition across sc2-data/sc2-layout/sc2-map children"
+  },
+  {
+   "id": "sc2-mod/feature/3ed6709802534e74",
+   "codec": "sc2-mod",
+   "kind": "feature",
+   "class": "partial",
+   "where": "one host commit coordinator and writers per format exist; a cross-codec combined transaction is not checked",
+   "label": "createEditTransaction: combine prepared edits from sc2-data/sc2-triggers/sc2-layout/sc2-map/sc2-document-metadata child codecs into one validate-then-apply cross-codec boundary; rejects overlapping source edits"
+  },
+  {
+   "id": "sc2-mod/feature/4c36e66efe11f1d0",
+   "codec": "sc2-mod",
+   "kind": "feature",
+   "class": "present",
+   "where": "export.convert (json-mod, sc2components); JSON mods read back as a loader source",
+   "label": "export.convert: exportJsonMod (modkit-json-mod@1 format) or exportSc2Components (real SC2Components/GameData XML + LocalizedData + opaque files); MPQ packing not implemented"
+  },
+  {
+   "id": "sc2-mod/feature/5030c905dd91a52c",
+   "codec": "sc2-mod",
+   "kind": "feature",
+   "class": "replaced",
+   "where": "one mod loader (modules/mod/shared/workspace)",
+   "label": "Workspace core: ModContextManager mod loading/config, GameData workspace merge, CASC source adapter, dependency resolver, parse cache, source-environment (env-driven source selection), string-catalog (locale strings), cache-stores"
+  },
+  {
+   "id": "sc2-mod/feature/619acf4170e25919",
+   "codec": "sc2-mod",
+   "kind": "feature",
+   "class": "obsolete",
+   "where": "MK2 helper module and a campaign placeholder",
+   "label": "identity constants + path helpers (modBasename/modStem/modExtension/isEngineDataMod), campaign.ts placeholder re-exporting SC2_CAMPAIGN_CODEC_ID only (explicit unsupported stub)"
+  },
+  {
+   "id": "sc2-mod/feature/8980821291a9fced",
+   "codec": "sc2-mod",
+   "kind": "feature",
+   "class": "present",
+   "where": "modkit-extensions-blizzard/starcraft2/modules/mod/codecs/mod",
+   "label": "describe(): AssetDescriptor traits/operation availability/metadata/diagnostics derived only from the loaded document; is the mod-card payload, no private webview needed"
+  },
+  {
+   "id": "sc2-mod/feature/8db147153d1b6d5b",
+   "codec": "sc2-mod",
+   "kind": "feature",
+   "class": "present",
+   "where": "modkit-extensions-blizzard/starcraft2/modules/mod/codecs/mod (detect)",
+   "label": "Structural detection of mod roots (directory/archive-entry/vfs-root/packed .SC2Mod file) via ComponentList/DocumentInfo/DocumentHeader/GameData markers, weighted confidence, negative evidence for sibling .sc2map/.sc2campaign roots"
+  },
+  {
+   "id": "sc2-mod/feature/ad7648f1077075d8",
+   "codec": "sc2-mod",
+   "kind": "feature",
+   "class": "present",
+   "where": "asset.compare (compare)",
+   "label": "asset.compare (compareOverrides): own-vs-inherited catalog entities per namespace via mods-processing/sc2-mod-core gameDataNamespaceSummaries + collectModEntities, same helpers the Mod Card/LSP resource tree use"
+  },
+  {
+   "id": "sc2-mod/feature/c3cd492746b62bd6",
+   "codec": "sc2-mod",
+   "kind": "feature",
+   "class": "replaced",
+   "where": "host openSubject + the one mod loader",
+   "label": "open(): detect() then loadModDocument() via injected ModWorkspaceHost -> Sc2ModDocument (detection+loaded mod+content+context); low confidence never blocks open"
+  },
+  {
+   "id": "sc2-mod/feature/c42282807588a848",
+   "codec": "sc2-mod",
+   "kind": "feature",
+   "class": "present",
+   "where": "asset.validate (validate)",
+   "label": "asset.validate: filtered non-info diagnostics from describe(), so validate and describe never disagree"
+  },
+  {
+   "id": "sc2-mod/feature/cee74bccc6bf8ca0",
+   "codec": "sc2-mod",
+   "kind": "feature",
+   "class": "replaced",
+   "where": "content sources (CASC, installation) + the one mod loader",
+   "label": "Node install-content-resolver: mounts a host-selected SC2 CASC install (via @modkitx/games openInstall) + optional explicit .SC2Map/.SC2Mod/.SC2Campaign artifact, reads stableid.json sidecar, validates confirmed SC2 evidence, produces disposable Sc2InstallContentResolverSession"
+  },
+  {
+   "id": "sc2-mod/feature/f8700c9dbcbb3984",
+   "codec": "sc2-mod",
+   "kind": "feature",
+   "class": "partial",
+   "where": "extract of one package exists; extraction across the mounted chain goes through the mod context reads",
+   "label": "container.extract: streams original bytes with relative paths preserved across the mounted chain, filterable by path/extensions/mountIds; unreadable entries skipped not aborted"
+  },
+  {
+   "id": "sc2-mod/feature/fe45e9ad4ab7d6f8",
+   "codec": "sc2-mod",
+   "kind": "feature",
+   "class": "present",
+   "where": "edit.structure (edit-structure)",
+   "label": "edit.structure add-locale: real AssetEditTransaction that inserts a DataComponent into ComponentList.SC2Components (locale.ts pure XML transform) plus creates the LocalizedData strings file"
+  },
+  {
+   "id": "sc2-mod/operation/asset.compare",
+   "codec": "sc2-mod",
+   "kind": "operation",
+   "class": "present",
+   "where": "same operation id in blizzard/sc2-mod",
+   "label": "asset.compare"
+  },
+  {
+   "id": "sc2-mod/operation/asset.validate",
+   "codec": "sc2-mod",
+   "kind": "operation",
+   "class": "present",
+   "where": "same operation id in blizzard/sc2-mod",
+   "label": "asset.validate"
+  },
+  {
+   "id": "sc2-mod/operation/container.extract",
+   "codec": "sc2-mod",
+   "kind": "operation",
+   "class": "present",
+   "where": "same operation id in blizzard/sc2-mod",
+   "label": "container.extract"
+  },
+  {
+   "id": "sc2-mod/operation/edit.structure",
+   "codec": "sc2-mod",
+   "kind": "operation",
+   "class": "present",
+   "where": "same operation id in blizzard/sc2-mod",
+   "label": "edit.structure"
+  },
+  {
+   "id": "sc2-mod/operation/export.convert",
+   "codec": "sc2-mod",
+   "kind": "operation",
+   "class": "present",
+   "where": "same operation id in blizzard/sc2-mod",
+   "label": "export.convert"
+  },
+  {
+   "id": "sc2-mod/operation/view.inspect",
+   "codec": "sc2-mod",
+   "kind": "operation",
+   "class": "present",
+   "where": "same operation id in blizzard/sc2-mod",
+   "label": "view.inspect"
+  },
+  {
+   "id": "sc2-replay/feature/07f57788363f21f8",
+   "codec": "sc2-replay",
+   "kind": "feature",
+   "class": "gap",
+   "where": "needs the simulation runtime (see sc2-runtime)",
+   "label": "Simulation-assistance tracker frame export (serializable complete frame of units for optional runtime prediction), decoupled from sc2-runtime import"
+  },
+  {
+   "id": "sc2-replay/feature/1c712da116e4b519",
+   "codec": "sc2-replay",
+   "kind": "feature",
+   "class": "replaced",
+   "where": "replay codec + the one mod loader (cache archives as layers)",
+   "label": "Document assembly: tracker monotonicity status, diagnostics, GameContentResolver mount/dependency integration"
+  },
+  {
+   "id": "sc2-replay/feature/25e69931895b3e23",
+   "codec": "sc2-replay",
+   "kind": "feature",
+   "class": "present",
+   "where": "modkit-extensions-blizzard/starcraft2/modules/replay/services/commands/semantic-resolver.js",
+   "label": "createSelectedContentSc2ReplayCommandResolver — resolves exact stable-id/catalog semantics from a host-selected stableid.json + merged catalog for command normalization"
+  },
+  {
+   "id": "sc2-replay/feature/39702b3ce0781acd",
+   "codec": "sc2-replay",
+   "kind": "feature",
+   "class": "obsolete",
+   "where": "nothing to port",
+   "label": "Editing / in-place saving / save-as — explicitly NOT implemented in MK2 either (operation ids 'edit'/'save'/'saveAs' reserved in shared REPLAY_OPERATION_IDS but never wired into Sc2ReplayCodec handlers)"
+  },
+  {
+   "id": "sc2-replay/feature/53eb67335e3124c7",
+   "codec": "sc2-replay",
+   "kind": "feature",
+   "class": "obsolete",
+   "where": "MK3 decodes in the codec through the s2protocol service",
+   "label": "Node decoder adapter wiring @modkitx/replay (parseReplay, analyze) with tracker events always requested"
+  },
+  {
+   "id": "sc2-replay/feature/61824309047f27a8",
+   "codec": "sc2-replay",
+   "kind": "feature",
+   "class": "present",
+   "where": "the loader layers the replay cache archives; analysis classifies and prices from catalog questions (2026-09-24)",
+   "label": "Multi-mod/expansion resolution by baseBuild (WoL/HotS/LotV) and mod-catalog-driven unit classification (worker/army/building) with unit costs, used for analysis and load classification"
+  },
+  {
+   "id": "sc2-replay/feature/91eeb1b97a42b1eb",
+   "codec": "sc2-replay",
+   "kind": "feature",
+   "class": "present",
+   "where": "modkit-extensions-blizzard/starcraft2/modules/replay/codecs/replay (initdata, load.info)",
+   "label": "replay.initData per-user lobby data (name+MMR) and replay.load.info loading-screen sidecar decode"
+  },
+  {
+   "id": "sc2-replay/feature/9d560db35b07fed9",
+   "codec": "sc2-replay",
+   "kind": "feature",
+   "class": "present",
+   "where": "modkit-extensions-blizzard/starcraft2/modules/replay/codecs/replay/runtime.js",
+   "label": "createSc2ReplayOperations/describeSc2Replay — builds AssetOperationDescriptor list gated by trackerAvailable/analysisAvailable, viewer contributions, diagnostics"
+  },
+  {
+   "id": "sc2-replay/feature/c6a8eeec407e8618",
+   "codec": "sc2-replay",
+   "kind": "feature",
+   "class": "present",
+   "where": "modkit-extensions-blizzard/starcraft2/modules/replay/services/commands/normalize.js",
+   "label": "Replay command normalization: reconstructs build-independent selection/movement/combat/train/build/research intents from tracker+game event control timeline"
+  },
+  {
+   "id": "sc2-replay/operation/export.convert",
+   "codec": "sc2-replay",
+   "kind": "operation",
+   "class": "gap",
+   "where": "MK2 exportJson of the decoded replay; MK3 has decode-stream per stream and analyze, no single JSON export",
+   "label": "export.convert"
+  },
+  {
+   "id": "sc2-runtime/feature/0081db0f0b5c60ff",
+   "codec": "sc2-runtime",
+   "kind": "feature",
+   "class": "partial",
+   "where": "playable-subset reads LifeMax/LifeStart/Speed/Food of units only",
+   "label": "Catalog-backed unit/upgrade/ability data source"
+  },
+  {
+   "id": "sc2-runtime/feature/07b88ebf17aef0de",
+   "codec": "sc2-runtime",
+   "kind": "feature",
+   "class": "gap",
+   "where": "MK3 runtime is galaxy-pure-bounded-v1 (zero-argument functions, literal returns) + playable-subset-v1 (spawn/move/stop at 16 Hz); the MK2 Galaxy VM (8.4k lines) and SimEngine (12.8k lines) are not ported",
+   "label": "Node host mounting (install/mods-processing bridge)"
+  },
+  {
+   "id": "sc2-runtime/feature/18f5e71cbe789f7a",
+   "codec": "sc2-runtime",
+   "kind": "feature",
+   "class": "obsolete",
+   "where": "deprecated MK2 world kernel shims",
+   "label": "world-v0: neutral world kernel adapters (canonical/compatibility/contracts/linker/sha256, deprecated shims re-exporting @modkitx/world), headless-ai-proof, replay-proof, mechanic-composition, neutral-artifact, resources, performance-statistics, browser-worker, editor schemas, oracle-passport/schedule, sc2-declarations, sc2-root-inputs, state-inventory"
+  },
+  {
+   "id": "sc2-runtime/feature/2f91387c1e6ed796",
+   "codec": "sc2-runtime",
+   "kind": "feature",
+   "class": "gap",
+   "where": "MK3 runtime is galaxy-pure-bounded-v1 (zero-argument functions, literal returns) + playable-subset-v1 (spawn/move/stop at 16 Hz); the MK2 Galaxy VM (8.4k lines) and SimEngine (12.8k lines) are not ported",
+   "label": "Simulation commands, orders, events, snapshot/hash, unit/upgrade state, terrain, field-map, spatial-map, editor-sc2, presentation-sc2, world facade"
+  },
+  {
+   "id": "sc2-runtime/feature/4067b4634d60cd45",
+   "codec": "sc2-runtime",
+   "kind": "feature",
+   "class": "gap",
+   "where": "MK3 runtime is galaxy-pure-bounded-v1 (zero-argument functions, literal returns) + playable-subset-v1 (spawn/move/stop at 16 Hz); the MK2 Galaxy VM (8.4k lines) and SimEngine (12.8k lines) are not ported",
+   "label": "AI: stock/waves/melee-ai/economy AI, players/ai natives"
+  },
+  {
+   "id": "sc2-runtime/feature/463b1476da476f2c",
+   "codec": "sc2-runtime",
+   "kind": "feature",
+   "class": "gap",
+   "where": "MK3 runtime is galaxy-pure-bounded-v1 (zero-argument functions, literal returns) + playable-subset-v1 (spawn/move/stop at 16 Hz); the MK2 Galaxy VM (8.4k lines) and SimEngine (12.8k lines) are not ported",
+   "label": "Galaxy VM/interpreter: control flow, expressions, calls, wait/yield, engine state"
+  },
+  {
+   "id": "sc2-runtime/feature/4e683df91a3c853c",
+   "codec": "sc2-runtime",
+   "kind": "feature",
+   "class": "gap",
+   "where": "MK3 runtime is galaxy-pure-bounded-v1 (zero-argument functions, literal returns) + playable-subset-v1 (spawn/move/stop at 16 Hz); the MK2 Galaxy VM (8.4k lines) and SimEngine (12.8k lines) are not ported",
+   "label": "Replay assistance: tracker-frame correction of predicted commands, backward-frame restore"
+  },
+  {
+   "id": "sc2-runtime/feature/5b5adec1f7a53d84",
+   "codec": "sc2-runtime",
+   "kind": "feature",
+   "class": "gap",
+   "where": "MK3 runtime is galaxy-pure-bounded-v1 (zero-argument functions, literal returns) + playable-subset-v1 (spawn/move/stop at 16 Hz); the MK2 Galaxy VM (8.4k lines) and SimEngine (12.8k lines) are not ported",
+   "label": "Combat/economy/production/movement/collision/regen systems"
+  },
+  {
+   "id": "sc2-runtime/feature/a81acca90857318d",
+   "codec": "sc2-runtime",
+   "kind": "feature",
+   "class": "gap",
+   "where": "MK3 runtime is galaxy-pure-bounded-v1 (zero-argument functions, literal returns) + playable-subset-v1 (spawn/move/stop at 16 Hz); the MK2 Galaxy VM (8.4k lines) and SimEngine (12.8k lines) are not ported",
+   "label": "Galaxy parser/AST"
+  },
+  {
+   "id": "sc2-runtime/feature/b01c0beb2f9d51d1",
+   "codec": "sc2-runtime",
+   "kind": "feature",
+   "class": "partial",
+   "where": "common.runtime/provider: execute/step/snapshot/restore/stateHash over the bounded and playable subsets",
+   "label": "RuntimeSession/RuntimeProvider lifecycle: execute, snapshot, restore, simulation-command/step/hash, native usage tracking, fallback prioritization"
+  },
+  {
+   "id": "sc2-runtime/feature/b2529756e676ad04",
+   "codec": "sc2-runtime",
+   "kind": "feature",
+   "class": "gap",
+   "where": "MK3 runtime is galaxy-pure-bounded-v1 (zero-argument functions, literal returns) + playable-subset-v1 (spawn/move/stop at 16 Hz); the MK2 Galaxy VM (8.4k lines) and SimEngine (12.8k lines) are not ported",
+   "label": "Galaxy native functions (host-native call surface)"
+  },
+  {
+   "id": "sc2-runtime/feature/bf614ef5cb0eadfc",
+   "codec": "sc2-runtime",
+   "kind": "feature",
+   "class": "gap",
+   "where": "MK3 runtime is galaxy-pure-bounded-v1 (zero-argument functions, literal returns) + playable-subset-v1 (spawn/move/stop at 16 Hz); the MK2 Galaxy VM (8.4k lines) and SimEngine (12.8k lines) are not ported",
+   "label": "SimEngine: fixed-step catalog-backed simulation core"
+  },
+  {
+   "id": "sc2-runtime/operation/runtime.execute",
+   "codec": "sc2-runtime",
+   "kind": "operation",
+   "class": "partial",
+   "where": "common.runtime/provider offers it over the bounded Galaxy and playable subsets only",
+   "label": "runtime.execute"
+  },
+  {
+   "id": "sc2-runtime/operation/runtime.replay-assist",
+   "codec": "sc2-runtime",
+   "kind": "operation",
+   "class": "gap",
+   "where": "MK3 runtime is galaxy-pure-bounded-v1 (zero-argument functions, literal returns) + playable-subset-v1 (spawn/move/stop at 16 Hz); the MK2 Galaxy VM (8.4k lines) and SimEngine (12.8k lines) are not ported",
+   "label": "runtime.replay-assist"
+  },
+  {
+   "id": "sc2-runtime/operation/runtime.restore",
+   "codec": "sc2-runtime",
+   "kind": "operation",
+   "class": "partial",
+   "where": "common.runtime/provider offers it over the bounded Galaxy and playable subsets only",
+   "label": "runtime.restore"
+  },
+  {
+   "id": "sc2-runtime/operation/runtime.simulation-command",
+   "codec": "sc2-runtime",
+   "kind": "operation",
+   "class": "partial",
+   "where": "common.runtime/provider offers it over the bounded Galaxy and playable subsets only",
+   "label": "runtime.simulation-command"
+  },
+  {
+   "id": "sc2-runtime/operation/runtime.simulation-hash",
+   "codec": "sc2-runtime",
+   "kind": "operation",
+   "class": "partial",
+   "where": "common.runtime/provider offers it over the bounded Galaxy and playable subsets only",
+   "label": "runtime.simulation-hash"
+  },
+  {
+   "id": "sc2-runtime/operation/runtime.simulation-step",
+   "codec": "sc2-runtime",
+   "kind": "operation",
+   "class": "partial",
+   "where": "common.runtime/provider offers it over the bounded Galaxy and playable subsets only",
+   "label": "runtime.simulation-step"
+  },
+  {
+   "id": "sc2-runtime/operation/runtime.snapshot",
+   "codec": "sc2-runtime",
+   "kind": "operation",
+   "class": "partial",
+   "where": "common.runtime/provider offers it over the bounded Galaxy and playable subsets only",
+   "label": "runtime.snapshot"
+  },
+  {
+   "id": "sc2-strings/feature/2ae0fad71087cc8e",
+   "codec": "sc2-strings",
+   "kind": "feature",
+   "class": "present",
+   "where": "modkit-extensions-blizzard/starcraft2/modules/strings/providers/language",
+   "label": "language contribution (sc2-strings.language / GameStringsModule): LSP-shaped module wired through language.ts + language/module.ts + providers/strings.ts"
+  },
+  {
+   "id": "sc2-strings/feature/66eaf6782f1ea833",
+   "codec": "sc2-strings",
+   "kind": "feature",
+   "class": "present",
+   "where": "modkit-extensions-blizzard/starcraft2/modules/strings/codecs/strings",
+   "label": "AssetDescriptor v1 build: per-document trait/operation states, single-locale and no-resolver honest degraded states, diagnostics for those gaps"
+  },
+  {
+   "id": "sc2-strings/feature/8ae8e29098587892",
+   "codec": "sc2-strings",
+   "kind": "feature",
+   "class": "present",
+   "where": "modkit-extensions-blizzard/starcraft2/modules/strings (protectMarkup/restoreMarkup)",
+   "label": "sc2-strings.translate: markup-safe machine translation via protectMarkup/restoreMarkup sentinel masking + google/openai/codex/anthropic/gemini providers"
+  },
+  {
+   "id": "sc2-strings/feature/bbd23e4ebde3eb02",
+   "codec": "sc2-strings",
+   "kind": "feature",
+   "class": "replaced",
+   "where": "strings codec + the one mod loader",
+   "label": "open one locale file / open pre-resolved locale set / open via GameContentResolver with same-(locale,catalog) override layers merged last-wins across mounts"
+  },
+  {
+   "id": "sc2-strings/feature/beed387a2fcaf6d1",
+   "codec": "sc2-strings",
+   "kind": "feature",
+   "class": "present",
+   "where": "view.inspect",
+   "label": "browse (view.inspect): case-insensitive key substring filter, limit, duplicate flag"
+  },
+  {
+   "id": "sc2-strings/operation/sc2-strings.translate",
+   "codec": "sc2-strings",
+   "kind": "operation",
+   "class": "present",
+   "where": "blizzard/sc2-strings.translate",
+   "label": "sc2-strings.translate"
+  }
+ ],
+ "method": "Each pending SC2 feature-ledger row was compared with MK3 sources (git grep of distinctive symbols, manifests, provider limitations) and the MK2 reference (references/modkitmk2). present: MK3 has it (pointer), only evidence is missing; replaced: MK3 does it another way; obsolete: MK2 plumbing with nothing to port; partial: the missing part is named; gap: not in MK3. No ledger status changes: closing rows needs an owner decision."
+}
