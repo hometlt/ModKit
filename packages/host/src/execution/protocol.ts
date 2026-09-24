@@ -66,6 +66,7 @@ const FRAME_TYPES = [
   'unsubscribe',
   'progress',
   'release',
+  'revoke',
   'terminate',
 ] as const
 
@@ -790,6 +791,8 @@ export type Frame =
       readonly progress: ProgressDto
     })
   | (Envelope & { readonly t: 'release'; readonly handle: string })
+  /** The owner let go of a handle it once sent; the peer drops its proxy. No reply. */
+  | (Envelope & { readonly t: 'revoke'; readonly handle: string })
   | (Envelope & { readonly t: 'terminate'; readonly reason: string })
 
 export type FrameOf<T extends FrameType> = Extract<Frame, { readonly t: T }>
@@ -814,6 +817,7 @@ const FRAME_KEYS: Readonly<
   unsubscribe: { required: ['subscription'], optional: [] },
   progress: { required: ['inReplyTo', 'progress'], optional: [] },
   release: { required: ['handle'], optional: [] },
+  revoke: { required: ['handle'], optional: [] },
   terminate: { required: ['reason'], optional: [] },
 }
 
@@ -1000,7 +1004,8 @@ export function validateFrame(
       break
     }
     case 'subscribe':
-    case 'release': {
+    case 'release':
+    case 'revoke': {
       const bad = str('handle', isHandleId, 'bad-handle')
       if (bad) return bad
       break

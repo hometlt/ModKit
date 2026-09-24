@@ -1252,6 +1252,12 @@ class EndpointImpl implements Endpoint {
         `release of ${id} failed: ${failure instanceof Error ? failure.message : String(failure)}`,
       )
     }
+    /*
+     * The peer keeps a proxy of every handle it was sent until it hears otherwise. Without this a
+     * source exposed for one probe, or a context port for one codec, stayed in the peer's table
+     * for good, and a realm kept warm across a map's models ran out of its 4096 handles.
+     */
+    if (result.released && this.state === 'open') this.trySend({ t: 'revoke', handle: id })
   }
 
   private decodeArgs(args: readonly WireValue[]): unknown[] {
@@ -1385,6 +1391,14 @@ class EndpointImpl implements Endpoint {
       }
       case 'release':
         return this.handleRelease(frame)
+      case 'revoke':
+        // Only a handle this side holds as a proxy can be revoked; unknown ids are already gone.
+        if (this.table.owns(frame.handle)) {
+          this.fail({ code: 'bad-handle', message: `peer revoked handle ${frame.handle} this side owns` })
+          return
+        }
+        this.markRemoteReleased(frame.handle)
+        return
       case 'terminate':
         if (this.state !== 'open') return
         this.state = 'closed'

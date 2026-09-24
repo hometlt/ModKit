@@ -31,8 +31,27 @@ import {
   ABI_LOGICAL_RESOURCES,
   ABI_SERVICE_PROVIDER_MODULE,
 } from './abi-surfaces.js'
-import type { Endpoint, RemoteCapability } from './endpoint.js'
+import type { Endpoint, LocalCapability, RemoteCapability } from './endpoint.js'
 import { wireLogicalResources } from './logical-resources.js'
+
+/*
+ * A leased remote codec and the context ports exposed for it live as long as the realm unless
+ * someone lets go. A realm is kept warm across opens, so every open used to leave one codec lease
+ * and five ports behind; after ~800 opens (a map's models and their textures) the realm's 4096
+ * handles were gone and every further open failed.
+ */
+const codecReleases = new WeakMap<Codec, () => Promise<void>>()
+
+/** Let go of what `createCodec` leased across a worker boundary; a no-op for an in-process codec. */
+export async function releaseCodec(codec: Codec): Promise<void> {
+  const release = codecReleases.get(codec)
+  codecReleases.delete(codec)
+  await release?.()
+}
+
+async function releaseAll(capabilities: readonly LocalCapability[]): Promise<void> {
+  await Promise.allSettled(capabilities.map(capability => capability.release()))
+}
 
 /** Everything the consumer adapters need from one live realm. */
 export interface ConsumerRealm {
@@ -57,39 +76,47 @@ export function moduleAdapter(
 ): Record<string, unknown> {
   const abiVersion = first.data['abiVersion']
   /** Context data plus host capabilities: diagnostics, contract resolution and optional raster reads. */
-  const wireContext = (endpoint: Endpoint, context: ContributionContext) => ({
-    budgets: context.budgets,
-    ...(context.providerIdentity === undefined
-      ? {}
-      : { providerIdentity: context.providerIdentity }),
-    // Settings are plain data, so they cross as a copy rather than as an exposed surface.
-    ...(context.settings === undefined ? {} : { settings: context.settings }),
-    diagnostics: endpoint.expose(
-      { report: (diagnostic: Diagnostic) => context.diagnostics.report(diagnostic) },
-      ABI_DIAGNOSTIC_SINK,
-    ),
-    // the host executes contract resolution; the worker gets a proxy whose leased providers
-    // carry the surface of the requested contract's definition
-    contracts: endpoint.expose(context.contracts, ABI_CONTRACT_RESOLVER),
-    ...(context.modelResources === undefined
-      ? {}
-      : {
-          modelResources: endpoint.expose(context.modelResources, ABI_MODEL_RESOURCES),
-        }),
-    ...(context.logicalResources === undefined
-      ? {}
-      : {
-          logicalResources: endpoint.expose(
-            wireLogicalResources(context.logicalResources),
-            ABI_LOGICAL_RESOURCES,
-          ),
-        }),
-    ...(context.rasterResources === undefined
-      ? {}
-      : {
-          rasterResources: endpoint.expose(context.rasterResources, ABI_RASTER_RESOURCES),
-        }),
-  })
+  /** The context as it crosses; every port it exposes is recorded so its owner can revoke it. */
+  const wireContext = (
+    endpoint: Endpoint,
+    context: ContributionContext,
+    exposed: LocalCapability[],
+  ) => {
+    const expose = (target: object, surface: { readonly contract: string; readonly major: number }) => {
+      const capability = endpoint.expose(target, surface)
+      exposed.push(capability)
+      return capability
+    }
+    return {
+      budgets: context.budgets,
+      ...(context.providerIdentity === undefined
+        ? {}
+        : { providerIdentity: context.providerIdentity }),
+      // Settings are plain data, so they cross as a copy rather than as an exposed surface.
+      ...(context.settings === undefined ? {} : { settings: context.settings }),
+      diagnostics: expose(
+        { report: (diagnostic: Diagnostic) => context.diagnostics.report(diagnostic) },
+        ABI_DIAGNOSTIC_SINK,
+      ),
+      // the host executes contract resolution; the worker gets a proxy whose leased providers
+      // carry the surface of the requested contract's definition
+      contracts: expose(context.contracts, ABI_CONTRACT_RESOLVER),
+      ...(context.modelResources === undefined
+        ? {}
+        : { modelResources: expose(context.modelResources, ABI_MODEL_RESOURCES) }),
+      ...(context.logicalResources === undefined
+        ? {}
+        : {
+            logicalResources: expose(
+              wireLogicalResources(context.logicalResources),
+              ABI_LOGICAL_RESOURCES,
+            ),
+          }),
+      ...(context.rasterResources === undefined
+        ? {}
+        : { rasterResources: expose(context.rasterResources, ABI_RASTER_RESOURCES) }),
+    }
+  }
   if (first.contract === ABI_SERVICE_PROVIDER_MODULE.contract) {
     // ServiceProviderModule ABI v1: the provider is leased by the contract the selection names
     return Object.freeze({
@@ -100,10 +127,15 @@ export function moduleAdapter(
         context: ContributionContext,
       ): Promise<Lease<unknown>> => {
         const live = await realm()
+        const exposed: LocalCapability[] = []
         const outcome = await watch(live, () =>
-          live.root.call('createProvider', [selection, wireContext(live.endpoint, context)]),
-        )
+          live.root.call('createProvider', [selection, wireContext(live.endpoint, context, exposed)]),
+        ).catch(async error => {
+          await releaseAll(exposed)
+          throw error
+        })
         if (outcome.kind !== 'lease') {
+          await releaseAll(exposed)
           throw new ModkitError({
             code: 'x3.host/invalid-service-provider-lease',
             message: `createProvider of ${contributionId} did not lease a provider`,
@@ -112,7 +144,13 @@ export function moduleAdapter(
         const remote = outcome.remote
         return {
           value: live.endpoint.materialize(remote),
-          release: () => remote.release(),
+          release: async () => {
+            try {
+              await remote.release()
+            } finally {
+              await releaseAll(exposed)
+            }
+          },
         }
       },
     })
@@ -120,9 +158,10 @@ export function moduleAdapter(
   return Object.freeze({
     abiVersion,
     createCodec: (context: ContributionContext): Codec => {
+      const exposed: LocalCapability[] = []
       const bound = realm().then(async live => {
         const outcome = await watch(live, () =>
-          live.root.call('createCodec', [wireContext(live.endpoint, context)]),
+          live.root.call('createCodec', [wireContext(live.endpoint, context, exposed)]),
         )
         if (outcome.kind !== 'lease') {
           throw new ModkitError({
@@ -133,7 +172,15 @@ export function moduleAdapter(
         return { realm: live, remote: outcome.remote } satisfies BoundCodec
       })
       bound.catch(() => undefined)
-      return codecAdapter(bound, watch)
+      const codec = codecAdapter(bound, watch)
+      codecReleases.set(codec, async () => {
+        try {
+          await (await bound.catch(() => undefined))?.remote.release()
+        } finally {
+          await releaseAll(exposed)
+        }
+      })
+      return codec
     },
   })
 }

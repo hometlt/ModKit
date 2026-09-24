@@ -1165,3 +1165,27 @@ describe('capability-rpc endpoints — signal and progress inside argument objec
     expect(p.host.state).toBe('open')
   })
 })
+
+describe('capability-rpc endpoints — owner revocation', () => {
+  it('tells the peer when the owner lets go of a handle it sent, so its table does not grow', async () => {
+    const p = pair()
+    const loaded = await p.host.load(loadRequest)
+    const created = await loaded.root.call('createCodec', [{ budgets: { maxNodes: 10 } }])
+    if (created.kind !== 'lease') throw new Error('createCodec must lease')
+    const codec = p.host.materialize(created.remote) as { probe(request: unknown): Promise<unknown> }
+    const before = p.worker.counters().remoteHandles
+    // A realm kept warm across a map's models sees one exposed source per probe or open.
+    for (let index = 0; index < 3; index += 1) {
+      const source = p.host.expose(
+        { size: async () => 4, read: async () => new Uint8Array([1, 2]) },
+        { contract: 'x3.demo/source', major: 1 },
+      )
+      await codec.probe({ source, plan: { kind: 'bytes' } })
+      await source.release()
+    }
+    await settle()
+    expect(p.worker.counters().remoteHandles).toBe(before)
+    expect(p.failures.worker).toEqual([])
+    expect(p.failures.host).toEqual([])
+  })
+})

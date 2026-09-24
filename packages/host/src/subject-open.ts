@@ -78,6 +78,7 @@ import {
   type ActivationTicket,
 } from './security/gate.js'
 import { DEFAULT_EXECUTION_BACKENDS, type ExecutionBackendRegistry } from './execution/backend.js'
+import { releaseCodec } from './execution/consumer-adapters.js'
 import { matchesSignatures, signatureNeeds, type SignatureWindows } from './detection-index.js'
 import { assembleSubjectDescriptor } from './session.js'
 import {
@@ -1649,6 +1650,8 @@ async function openSubjectDirect(
           ),
           candidate.contributionId,
         )
+        // Added before any session resource, so the scope lets the codec go after its sessions.
+        record.resources.add(() => releaseCodec(codec))
         const detection = snapshotDetection(
           await probeCodec(codec, options.source, candidate.spec.probe, options.signal),
           candidate.contributionId,
@@ -1765,12 +1768,14 @@ async function openSubjectDirect(
         })
         openScope.add(activation.release)
         best.resources = openScope
-        best.codec = assertCodec(
+        const reopened = assertCodec(
           codecModule(activation.module, best.contributionId).createCodec(
             best.makeContext(activation.effectiveGrant, [best.contributionId], best.contributionId),
           ),
           best.contributionId,
         )
+        openScope.add(() => releaseCodec(reopened))
+        best.codec = reopened
         best.ticket = reResolved.ticket
         best.effectiveGrant = activation.effectiveGrant
         best.activationDiagnostics = Object.freeze([
