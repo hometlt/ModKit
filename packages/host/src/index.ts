@@ -204,6 +204,7 @@ export {
   type ContentLanguageSourcesRequest,
 } from './content-dependency-operations.js'
 export { openModContextLayerSource } from './mod-context-layer-source.js'
+export { createModContextDataWorkspaceInputs, type ModContextDataWorkspaceInputs } from './mod-context-data-workspace.js'
 export {
   createBundledServiceDefinitionRegistry,
   createSubjectServices,

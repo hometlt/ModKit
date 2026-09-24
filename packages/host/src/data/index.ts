@@ -1355,15 +1355,28 @@ async function readResourceText(
     }
   | { readonly state: 'unresolved'; readonly diagnostic: Diagnostic }
 > {
-  const resolved = await resources.resolve(
-    {
-      id: requirement.requirementId,
-      logicalId: requirement.path,
-      role: 'buffer',
-      scopes: ['current-mount', 'enclosing-container', 'workspace-dependency-layer'],
-    },
-    signal,
-  )
+  let resolved: Awaited<ReturnType<ResourceSessionPort['resolve']>>
+  try {
+    resolved = await resources.resolve(
+      {
+        id: requirement.requirementId,
+        logicalId: requirement.path,
+        role: 'buffer',
+        scopes: ['current-mount', 'enclosing-container', 'workspace-dependency-layer'],
+      },
+      signal,
+    )
+  } catch (error) {
+    signal?.throwIfAborted()
+    return {
+      state: 'unresolved',
+      diagnostic: diagnostic(
+        'warning',
+        'x3.host/resolved-data-resource-open-failed',
+        `${requirement.path}: ${error instanceof Error ? error.message : String(error)}`,
+      ),
+    }
+  }
   if (resolved.state === 'unresolved') {
     return { state: 'unresolved', diagnostic: resolved.diagnostic }
   }
