@@ -77,7 +77,7 @@ beforeAll(async () => {
       ],
       spec: {
         provides: [
-          ...[1, 2].map(major => ({
+          ...[1, 2, 3].map(major => ({
             offerId: `runtime-v${major}`,
             contract: 'common.runtime/provider',
             major,
@@ -130,7 +130,8 @@ async function open(
     permission?: boolean
     maxMemoryBytes?: number
     abort?: boolean
-    major?: 1 | 2
+    major?: 1 | 2 | 3
+    seed?: string
     runtimeId?: string
   } = {},
 ) {
@@ -183,6 +184,7 @@ async function open(
     runtimeId: options.runtimeId ?? 'test.resources',
     sessionId: 'worker-runtime',
     providerMajor: options.major ?? 1,
+    ...(options.seed === undefined ? {} : { seed: options.seed }),
     budget: { maxWallTimeMs: 1000, maxTicks: 10, maxMemoryBytes: options.maxMemoryBytes ?? 1024 },
     activationBudget,
     grant: {
@@ -229,6 +231,34 @@ describe('Runtime inputs over the production worker resource broker', () => {
       await f.result.release()
     }
     expect(f.release).toHaveBeenCalledTimes(1)
+  })
+  it('transports the exact unsigned u64 replay seed through provider v3 without rounding', async () => {
+    const f = await open({ major: 3, seed: '18446744073709551615' })
+    expect(f.result.state, JSON.stringify(f.result.diagnostics)).toBe('resolved')
+    if (f.result.state !== 'resolved') return
+    try {
+      expect(await f.result.session.stateHash()).toMatchObject({
+        outcome: 'hashed', stateHash: 'test:seed:18446744073709551615:00',
+      })
+    } finally { await f.result.release() }
+    expect(f.resources.state()).toBe('disposed')
+  })
+  it.each(['01', '-1', '18446744073709551616', '9007199254740993.0'])(
+    'rejects noncanonical or overflowing seed %s before provider activation', async seed => {
+      const f = await open({ major: 3, seed })
+      expect(f.result.state).toBe('unresolved')
+      expect(f.result.diagnostics[0]?.code).toBe('x3.host/runtime-seed-invalid')
+      expect(f.opened).not.toHaveBeenCalled()
+      expect(f.resources.state()).toBe('disposed')
+    },
+  )
+  it('refuses missing v3 seed and seed on a legacy major', async () => {
+    for (const options of [{ major: 3 as const }, { major: 2 as const, seed: '1' }]) {
+      const f = await open(options)
+      expect(f.result.state).toBe('unresolved')
+      expect(f.result.diagnostics[0]?.code).toBe('x3.host/runtime-seed-invalid')
+      expect(f.resources.state()).toBe('disposed')
+    }
   })
   it('passes descriptors and reads bytes, then releases the owned resource session exactly once', async () => {
     const f = await open()

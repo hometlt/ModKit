@@ -182,6 +182,13 @@ export const RUNTIME_PROVIDER_V2_CONTRACT_DEFINITION: ServiceContractDefinitionS
   },
 }
 
+/** Explicit replay seed at provider creation; the nested session stays frozen at major 2. */
+export const RUNTIME_PROVIDER_V3_CONTRACT_DEFINITION: ServiceContractDefinitionSpecV1Wire = {
+  ...RUNTIME_PROVIDER_V2_CONTRACT_DEFINITION,
+  major: 3,
+  conformanceProfile: 'common.runtime/provider-v3',
+}
+
 export const RUNTIME_SESSION_V2_CONTRACT_DEFINITION: ServiceContractDefinitionSpecV1Wire = {
   ...RUNTIME_SESSION_CONTRACT_DEFINITION,
   major: 2,
@@ -206,6 +213,7 @@ export const STANDARD_RUNTIME_DEFINITIONS: readonly ServiceContractDefinitionSpe
     RUNTIME_PROVIDER_CONTRACT_DEFINITION,
     RUNTIME_SESSION_CONTRACT_DEFINITION,
     RUNTIME_PROVIDER_V2_CONTRACT_DEFINITION,
+    RUNTIME_PROVIDER_V3_CONTRACT_DEFINITION,
     RUNTIME_SESSION_V2_CONTRACT_DEFINITION,
   ])
 
@@ -259,10 +267,12 @@ export interface RuntimeProviderInvocationContext {
 
 export interface OpenRuntimeSessionRequest extends RuntimeProviderRequestFacet {
   /** Default is 1. Request 2 to negotiate the frozen snapshot/step/restore surface explicitly. */
-  readonly providerMajor?: 1 | 2
+  readonly providerMajor?: 1 | 2 | 3
   readonly services: RuntimeHostServices
   readonly sessionId: string
   readonly budget: RuntimeBudget
+  /** Required for provider major 3; canonical unsigned u64 decimal, identical to replay init.seed. */
+  readonly seed?: string
   readonly grant: PermissionGrant
   /** Host activation budget; distinct from the executable session's numeric budget. */
   readonly activationBudget: ResourceBudget
@@ -371,7 +381,8 @@ async function unresolvedAfterRelease(
 
 /** Resolve a runtime provider and open one resource-bounded executable session. */
 export async function openRuntimeSession(
-  request: OpenRuntimeSessionRequest & { providerMajor: 2 },
+  request: (OpenRuntimeSessionRequest & { providerMajor: 2 })
+    | (OpenRuntimeSessionRequest & { providerMajor: 3; seed: string }),
 ): Promise<RuntimeSessionResolution<RuntimeSessionV2>>
 export async function openRuntimeSession(
   request: OpenRuntimeSessionRequest,
@@ -443,14 +454,14 @@ async function resolveRuntimeSession(
   inputs?: readonly LogicalResourceRequirement[],
 ): Promise<RuntimeSessionResolution> {
   const providerMajor = request.providerMajor ?? 1
-  if (providerMajor !== 1 && providerMajor !== 2) {
+  if (providerMajor !== 1 && providerMajor !== 2 && providerMajor !== 3) {
     return {
       state: 'unresolved',
       diagnostics: [
         diagnostic(
           'error',
           'x3.host/runtime-version-unsupported',
-          'Runtime provider major must be 1 or 2',
+          'Runtime provider major must be 1, 2 or 3',
         ),
       ],
     }
@@ -477,6 +488,18 @@ async function resolveRuntimeSession(
           'runtime budgets must be non-negative safe integers',
         ),
       ],
+    }
+  }
+  if (providerMajor === 3
+    ? typeof request.seed !== 'string' || !/^(0|[1-9][0-9]{0,19})$/.test(request.seed)
+      || BigInt(request.seed) > 0xffff_ffff_ffff_ffffn
+    : request.seed !== undefined) {
+    return {
+      state: 'unresolved',
+      diagnostics: [diagnostic('error', 'x3.host/runtime-seed-invalid',
+        providerMajor === 3
+          ? 'runtime provider major 3 requires a canonical unsigned u64 decimal seed'
+          : 'explicit runtime seed requires provider major 3')],
     }
   }
   const definitions = request.services.serviceDefinitions
@@ -575,16 +598,18 @@ async function resolveRuntimeSession(
     const createRequest = {
       sessionId: request.sessionId,
       budget: request.budget,
+      ...(providerMajor === 3 ? { seed: request.seed } : {}),
       ...(inputs === undefined ? {} : { inputs }),
       ...(request.providerInvocation === undefined
         ? {}
         : { providerInvocation: request.providerInvocation }),
       ...(request.signal === undefined ? {} : { signal: request.signal }),
     }
-    const candidate: unknown = await provider.createSession(createRequest)
+    // The selected major and its required seed were validated before resolving this union.
+    const candidate: unknown = await (provider as RuntimeProvider).createSession(createRequest)
     if (
       !isRuntimeSessionLease(candidate) ||
-      (providerMajor === 2 && !isRuntimeSessionV2(candidate.value)) ||
+      (providerMajor >= 2 && !isRuntimeSessionV2(candidate.value)) ||
       candidate.value.sessionId !== request.sessionId ||
       candidate.value.providerId !== provider.providerId ||
       !sameBudget(candidate.value.budget, request.budget)

@@ -266,6 +266,19 @@ export interface RuntimeProviderV2 extends RuntimeProvider {
   createSession(request: RuntimeSessionCreateRequest): Promise<Lease<RuntimeSessionV2>>
 }
 
+/** Provider major 3 makes the initial RNG seed an explicit replayable invocation input.
+ * Decimal text survives every service transport without JS number rounding.
+ */
+export interface RuntimeSessionCreateRequestV3 extends RuntimeSessionCreateRequest {
+  /** Canonical unsigned u64 decimal: 0 or a nonzero number without leading zeroes. */
+  readonly seed: string
+}
+
+/** V3 changes provider creation only; the frozen v2 session remains the returned surface. */
+export interface RuntimeProviderV3 extends Omit<RuntimeProviderV2, 'createSession'> {
+  createSession(request: RuntimeSessionCreateRequestV3): Promise<Lease<RuntimeSessionV2>>
+}
+
 /** The frozen member list, so a conformance run checks the contract rather than one implementation. */
 export const RUNTIME_SESSION_V2_MEMBERS = Object.freeze([
   'offers',
@@ -279,7 +292,7 @@ export const RUNTIME_SESSION_V2_MEMBERS = Object.freeze([
 
 declare module '../service-contracts.js' {
   interface ContractMap {
-    'common.runtime/provider': { 1: RuntimeProvider; 2: RuntimeProviderV2 }
+    'common.runtime/provider': { 1: RuntimeProvider; 2: RuntimeProviderV2; 3: RuntimeProviderV3 }
     'common.runtime/session': { 1: RuntimeSession; 2: RuntimeSessionV2 }
   }
 
@@ -287,6 +300,7 @@ declare module '../service-contracts.js' {
     'common.runtime/provider': {
       1: { presence: 'required'; facet: RuntimeProviderRequestFacet }
       2: { presence: 'required'; facet: RuntimeProviderRequestFacet }
+      3: { presence: 'required'; facet: RuntimeProviderRequestFacet }
     }
     'common.runtime/session': { 1: { presence: 'forbidden' }; 2: { presence: 'forbidden' } }
   }
@@ -295,6 +309,7 @@ declare module '../service-contracts.js' {
     'common.runtime/provider': {
       1: { presence: 'required'; facet: RuntimeProviderOfferFacet }
       2: { presence: 'required'; facet: RuntimeProviderOfferFacet }
+      3: { presence: 'required'; facet: RuntimeProviderOfferFacet }
     }
     'common.runtime/session': { 1: { presence: 'forbidden' }; 2: { presence: 'forbidden' } }
   }

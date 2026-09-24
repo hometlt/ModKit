@@ -15,6 +15,9 @@ export function createProvider(_selection: SelectedServiceOffer, context: Contri
     runtimeIds: ['test.resources', 'test.legacy-resource'],
     ...(_selection.offerId === 'legacy' ? {} : { inputMode: 'logical-resources-v1' as const }),
     async createSession(request: RuntimeSessionCreateRequest) {
+      const seed = (request as RuntimeSessionCreateRequest & { seed?: string }).seed
+      if (_selection.offerId === 'runtime-v3' && seed === undefined)
+        throw new Error('Provider v3 did not receive the replay seed')
       const input = request.inputs?.[0]
       if (input === undefined || context.logicalResources === undefined)
         throw new Error('Missing brokered runtime inputs')
@@ -35,7 +38,9 @@ export function createProvider(_selection: SelectedServiceOffer, context: Contri
         memoryBytes: bytes.length,
       })
       const identity = async () => ({
-        contentDigest: `test:${tick.toString(16).padStart(2, '0')}`,
+        contentDigest: seed === undefined
+          ? `test:${tick.toString(16).padStart(2, '0')}`
+          : `test:seed:${seed}:${tick.toString(16).padStart(2, '0')}`,
         schemaId: 'test-runtime-transport',
         schemaVersion: 1,
       })
