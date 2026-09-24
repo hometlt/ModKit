@@ -7025,6 +7025,7 @@ async function activateModkit(
   let workspaceResourceOpening: Promise<ResourceTreeHost | undefined> | undefined
   let workspaceResourceOpeningRoot: string | undefined
   let activeDocumentResources: () => Promise<ResourceTreeHost | undefined> = async () => undefined
+  let activeSubjectResources: () => Promise<ResourceTreeHost | undefined> = async () => undefined
   let navigateWorkspaceResource: (
     root: string,
     subjectId: string,
@@ -7197,16 +7198,21 @@ async function activateModkit(
   })
   context.subscriptions.push({ dispose: () => resourceMemberTrees.reset() })
 
+  const activeServed = (): VsCodeServed | undefined => {
+    if (activeSubject === undefined) return undefined
+    for (const [served, path] of liveSubjects) {
+      if (path === activeSubject) return served
+    }
+    return undefined
+  }
   const resourcesView = new ResourcesView(
-    () => {
-      if (activeSubject === undefined) return undefined
-      for (const [served, path] of liveSubjects) {
-        if (path === activeSubject) return served
-      }
-      return undefined
-    },
+    // With the chain on, a package open in a Modkit editor shows the mods it loads with.
+    () => (resourcesShowChain ? undefined : activeServed()),
     localizer,
-    async () => (await activeDocumentResources()) ?? (await workspaceResources()),
+    async () =>
+      (await activeSubjectResources()) ??
+      (await activeDocumentResources()) ??
+      (await workspaceResources()),
     resetWorkspaceResources,
     resourceMemberTrees,
   )
@@ -7473,6 +7479,13 @@ async function activateModkit(
     return vscode.Uri.file(layer.sourcePath).toString()
   }
 
+  /** The opened package as this window serves it: its live tree carries unsaved edits. */
+  interface ChainPrimary {
+    readonly revision: string
+    readonly root?: vscode.Uri
+    readonly openTreeDataSource: ResourceTreeHost['openTreeDataSource']
+  }
+
   /** Whether Resources shows the chain of loaded mods or only the active package. */
   let resourcesShowChain = context.workspaceState.get<boolean>(RESOURCES_CHAIN_KEY) ?? true
   interface ResourceChain {
@@ -7503,9 +7516,11 @@ async function activateModkit(
    */
   const chainTreeFor = (
     subjectPath: string,
-    scope: LiveLanguageScope | undefined,
+    scope: ChainPrimary | undefined,
+    /** Only when the subject is itself a package of the chain (a Modkit editor on a mod). */
+    packageOnly = false,
   ): Promise<ResourceTreeHost['openTreeDataSource'] | undefined> => {
-    const key = `${subjectPath}|${scope?.revision ?? ''}`
+    const key = `${subjectPath}|${scope?.revision ?? ''}|${String(packageOnly)}`
     let opening = chainTrees.get(key)
     if (opening === undefined) {
       opening = (async (): Promise<ResourceChain | undefined> => {
@@ -7529,9 +7544,23 @@ async function activateModkit(
           for (const item of closure.diagnostics) log(`[resources] ${item.code}: ${item.message}`)
           return undefined
         }
+        // The subject is the package itself (not a file inside it) when the primary layer is it.
+        const isSubject = (layer: ModContextLayer): boolean =>
+          layer.role === 'primary' &&
+          (layer.sourceId === HOST_LAYER_SOURCE_ID
+            ? resolve(layer.sourcePath).toLowerCase() === resolve(subjectPath).toLowerCase()
+            : layerRootOf(layer).toLowerCase() === subjectPath.toLowerCase())
+        if (packageOnly && !opened.layers.some(isSubject)) {
+          await opened.dispose()
+          return undefined
+        }
         const layers: ResourceChainLayer[] = opened.layers.map(layer => {
           const live =
-            layer.role === 'primary' && layer.sourceId === HOST_LAYER_SOURCE_ID ? scope : undefined
+            layer.role === 'primary' &&
+            layer.sourceId === HOST_LAYER_SOURCE_ID &&
+            (!packageOnly || isSubject(layer))
+              ? scope
+              : undefined
           const root = layerRootOf(layer)
           return Object.freeze({
             label: layer.displayName,
@@ -7576,6 +7605,31 @@ async function activateModkit(
         : // The chain owns its layer leases for as long as the key lives; a reader's lease is a view.
           async () => Object.freeze({ value: chain.tree, release: async () => undefined }),
     )
+  }
+
+  activeSubjectResources = async () => {
+    const served = activeServed()
+    const path = activeSubject
+    if (served === undefined || path === undefined) return undefined
+    const chain = await chainTreeFor(
+      path,
+      {
+        revision: served.languageSubject()?.revision ?? '',
+        openTreeDataSource: signal => served.openTreeDataSource(signal),
+      },
+      true,
+    )
+    if (chain === undefined) return served
+    return Object.freeze({
+      openTreeDataSource: chain,
+      navigate(subjectId: string, range?: TreeNodeFacts['range']) {
+        void navigateWorkspaceResource(path, subjectId, range).catch(error =>
+          vscode.window.showErrorMessage(
+            `Modkit: ${error instanceof Error ? error.message : String(error)}`,
+          ),
+        )
+      },
+    })
   }
 
   activeDocumentResources = async () => {
