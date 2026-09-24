@@ -393,6 +393,20 @@ export const IMAGE_FALLBACK_MESSAGES = {
   'viewer.zoomOut': 'Zoom out',
 } as const satisfies UiMessageCatalog
 
+export const MAP_LAYERS_FALLBACK_MESSAGES = {
+  'viewer.mapLayers': 'Map layers',
+  'viewer.mapLayersEmpty': 'This map publishes no grid layers.',
+  'viewer.mapLayersExport': 'Export PNG',
+  'viewer.mapLayersExported': 'Exported {name}',
+  'viewer.mapLayersFailed': 'Failed: {reason}',
+  'viewer.mapLayersImport': 'Import PNG…',
+  'viewer.mapLayersImported': 'Imported {layer}: {message}',
+  'viewer.mapLayersNoEditing': 'This view cannot save edits to the map.',
+  'viewer.mapLayersNoWriter': 'This window cannot write files.',
+  'viewer.mapLayersReadOnly': 'The format cannot write this layer.',
+  'viewer.mapLayersSize': '{width} × {height}, values {minimum}–{maximum}',
+} as const satisfies UiMessageCatalog
+
 export const MEDIA_SHELL_FALLBACK_MESSAGES = {
   'mediaShell.gallery': 'Gallery',
   'mediaShell.galleryBig': 'Large icons',

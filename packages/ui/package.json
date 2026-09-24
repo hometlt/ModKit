@@ -142,6 +142,10 @@
       "types": "./dist/graph/index.d.ts",
       "default": "./dist/graph/index.js"
     },
+    "./map-layers": {
+      "types": "./dist/map-layers/index.d.ts",
+      "default": "./dist/map-layers/index.js"
+    },
     "./template": {
       "types": "./dist/template/index.d.ts",
       "default": "./dist/template/index.js"

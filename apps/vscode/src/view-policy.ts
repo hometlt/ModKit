@@ -24,6 +24,7 @@ export const STAGE_ORDER: readonly string[] = Object.freeze([
   'image',
   'vector',
   'world',
+  'map-layers',
   'model',
   'audio',
   'video',

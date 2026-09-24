@@ -23,6 +23,7 @@ import { createHexViewer } from '@modkit/ui/hex'
 import { lazyViewerModule } from '@modkit/ui/viewer'
 import { createHexEditor } from '@modkit/ui/hex-editor'
 import { createImageViewer } from '@modkit/ui/image'
+import { createMapLayersViewer } from '@modkit/ui/map-layers'
 import { createModelViewer } from '@modkit/ui/model'
 import { createPlaybackViewer } from '@modkit/ui/transport'
 import { createTableViewer } from '@modkit/ui/table'
@@ -208,6 +209,24 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
             }),
         ...(context.archiveGallery === undefined ? {} : { gallery: context.archiveGallery }),
         reload: descriptor => context.reopen(descriptor as unknown as Record<string, unknown>),
+      }),
+    },
+    {
+      // Any map that declares the common layer operations: heights, cliffs, … as grey PNGs.
+      id: 'map-layers',
+      label: context.localizer.text('stage.mapLayers'),
+      operation: 'map.layers',
+      module: createMapLayersViewer({
+        localizer: context.localizer,
+        ...(context.exportFiles === undefined ? {} : { exportBytes: context.exportFiles }),
+        exportBaseName: descriptor => context.exportBaseName?.(descriptor) ?? 'map',
+        // The write is the ordinary one: the codec's plan through this subject's editing arm.
+        applyPlan: async (descriptor, plan) =>
+          (await context.portsFor(descriptor as unknown as Record<string, unknown>)?.applyPlan(plan)) ?? {
+            failed: true,
+            message: context.localizer.text('vscode.edit.noArm'),
+          },
+        reopen: descriptor => context.reopen(descriptor as unknown as Record<string, unknown>),
       }),
     },
     {
