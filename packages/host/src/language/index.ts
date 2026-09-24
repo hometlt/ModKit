@@ -46,11 +46,12 @@ const OFFER_KEYS = new Set([
   'languageIds',
   'documentKinds',
   'extensions',
+  'fileNames',
   'completionTriggerCharacters',
   'signatureHelpTriggerCharacters',
   'onTypeFormattingTriggerCharacters',
 ])
-const REQUEST_KEYS = new Set(['languageId', 'documentKind', 'extension'])
+const REQUEST_KEYS = new Set(['languageId', 'documentKind', 'extension', 'fileName'])
 
 function recordOf(value: unknown): Readonly<Record<string, unknown>> | undefined {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -80,6 +81,8 @@ function parseOffer(value: unknown): LanguageProviderOfferFacet | undefined {
   if (languageIds === undefined) return undefined
   const rawKinds = record['documentKinds']
   const rawExtensions = record['extensions']
+  const rawFileNames = record['fileNames']
+  const fileNames = rawFileNames === undefined ? undefined : stringList(rawFileNames)
   const rawCompletionTriggers = record['completionTriggerCharacters']
   const rawSignatureTriggers = record['signatureHelpTriggerCharacters']
   const rawOnTypeFormattingTriggers = record['onTypeFormattingTriggerCharacters']
@@ -96,6 +99,7 @@ function parseOffer(value: unknown): LanguageProviderOfferFacet | undefined {
   if (
     (rawKinds !== undefined && documentKinds === undefined) ||
     (rawExtensions !== undefined && extensions === undefined) ||
+    (rawFileNames !== undefined && fileNames === undefined) ||
     (rawCompletionTriggers !== undefined && completionTriggerCharacters === undefined) ||
     (rawSignatureTriggers !== undefined && signatureHelpTriggerCharacters === undefined) ||
     (rawOnTypeFormattingTriggers !== undefined && onTypeFormattingTriggerCharacters === undefined)
@@ -106,6 +110,7 @@ function parseOffer(value: unknown): LanguageProviderOfferFacet | undefined {
     languageIds,
     ...(documentKinds === undefined ? {} : { documentKinds }),
     ...(extensions === undefined ? {} : { extensions }),
+    ...(fileNames === undefined ? {} : { fileNames }),
     ...(completionTriggerCharacters === undefined ? {} : { completionTriggerCharacters }),
     ...(signatureHelpTriggerCharacters === undefined ? {} : { signatureHelpTriggerCharacters }),
     ...(onTypeFormattingTriggerCharacters === undefined
@@ -121,7 +126,11 @@ function parseRequest(value: unknown): LanguageProviderRequestFacet | undefined 
   const languageId = record['languageId']
   const documentKind = record['documentKind']
   const extension = record['extension']
+  const fileName = record['fileName']
   if (typeof languageId !== 'string' || languageId.trim().length === 0) return undefined
+  if (fileName !== undefined && (typeof fileName !== 'string' || fileName.length === 0)) {
+    return undefined
+  }
   if (
     documentKind !== undefined &&
     (typeof documentKind !== 'string' || documentKind.length === 0)
@@ -135,6 +144,7 @@ function parseRequest(value: unknown): LanguageProviderRequestFacet | undefined 
     languageId,
     ...(documentKind === undefined ? {} : { documentKind }),
     ...(extension === undefined ? {} : { extension }),
+    ...(fileName === undefined ? {} : { fileName }),
   }
 }
 
@@ -158,6 +168,18 @@ function matchLanguageFacets(context: ServiceFacetMatchContext): ServiceFacetMat
   if (!offer.languageIds.includes(request.languageId)) return { state: 'no-match' }
   if (request.documentKind !== undefined && !offer.documentKinds?.includes(request.documentKind)) {
     return { state: 'no-match' }
+  }
+  if (request.fileName !== undefined) {
+    const wanted = request.fileName.toLowerCase()
+    if (!offer.fileNames?.some(name => name.toLowerCase() === wanted)) return { state: 'no-match' }
+    return {
+      state: 'match',
+      selectionKey: [
+        `language=${request.languageId}`,
+        `document=${request.documentKind ?? '*'}`,
+        `file=${wanted}`,
+      ].join(';'),
+    }
   }
   const requestExtension = request.extension
   /*
@@ -635,7 +657,10 @@ export async function resolveLanguageProvider(
 
 export {
   createLanguageWorkspace,
+  classifyLanguageFile,
+  languageFileExtension,
   languageProviderRoutes,
+  languageRouteServesFile,
   languageProviderTriggerCharacters,
   LANGUAGE_ANALYSIS_INVALID,
   LANGUAGE_DEFAULT_MAX_DOCUMENTS,

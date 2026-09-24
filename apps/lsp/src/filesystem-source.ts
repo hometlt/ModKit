@@ -1,12 +1,12 @@
 import { opendir, readFile, stat } from 'node:fs/promises'
-import { extname, isAbsolute, join, relative, resolve } from 'node:path'
+import { isAbsolute, join, relative, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import type {
   LanguageProviderRoute,
   LanguageWorkspaceDocumentSource,
   LanguageWorkspaceDocumentSourceRequest,
 } from '@modkit/host/language'
-import { languageWorkspaceContextToken } from '@modkit/host/language'
+import { classifyLanguageFile, languageWorkspaceContextToken } from '@modkit/host/language'
 import type { LanguageDocument, LanguageWorkspaceDocumentOrigin } from '@modkit/sdk/language'
 
 export interface FilesystemLanguageDocumentSourceOptions {
@@ -74,22 +74,25 @@ export function createFilesystemLanguageDocumentSource(
       request.signal.throwIfAborted()
       if (request.maxDocuments === 0) return { documents: Object.freeze([]), isComplete: false }
       const accepted = new Set(request.workspaceLanguageIds)
-      const languageIdsByExtension = new Map<string, Set<string>>()
-      for (const route of options.routes) {
-        if (route.extension === undefined) continue
-        const ids = languageIdsByExtension.get(route.extension) ?? new Set<string>()
-        ids.add(route.languageId)
-        languageIdsByExtension.set(route.extension, ids)
+      // A file-name route (a game's `Objects`) wins over extension routes; an extension more than
+      // one language claims decides nothing.
+      const languageOf = (path: string): string | undefined => {
+        const { languageId } = classifyLanguageFile(options.routes, path)
+        return languageId !== undefined && accepted.has(languageId) ? languageId : undefined
       }
-      const uniqueLanguageByExtension = new Map(
-        [...languageIdsByExtension].flatMap(([extension, ids]) =>
-          ids.size === 1 && accepted.has([...ids][0] as string)
-            ? [[extension, [...ids][0] as string] as const]
-            : [],
-        ),
+      const fileRoutes = options.routes.filter(
+        route => route.extension !== undefined || route.fileName !== undefined,
       )
-      if (uniqueLanguageByExtension.size === 0) {
-        return { documents: Object.freeze([]), isComplete: languageIdsByExtension.size === 0 }
+      const routable = fileRoutes.filter(
+        route =>
+          accepted.has(route.languageId) &&
+          (route.fileName !== undefined ||
+            classifyLanguageFile(options.routes, `x.${route.extension}`).languageId === route.languageId),
+      )
+      // Nothing this snapshot wants can be told apart: an honest empty snapshot, incomplete when
+      // files of those kinds may exist.
+      if (routable.length === 0) {
+        return { documents: Object.freeze([]), isComplete: fileRoutes.length === 0 }
       }
       // The document under the cursor is open too, and the host rejects a snapshot that repeats it.
       const openUris = new Set([
@@ -119,8 +122,7 @@ export function createFilesystemLanguageDocumentSource(
           const path = join(directory, entry.name)
           if (entry.isDirectory() && !ignoredDirectory(entry.name)) await walk(path, precedence)
           else if (entry.isFile()) {
-            const extension = extname(entry.name).replace(/^\./u, '').toLowerCase()
-            if (!uniqueLanguageByExtension.has(extension)) continue
+            if (languageOf(entry.name) === undefined) continue
             const uri = pathToFileURL(path).href
             if (!openUris.has(uri)) {
               const root = roots[precedence]
@@ -151,14 +153,13 @@ export function createFilesystemLanguageDocumentSource(
        * Blizzard's core mod the scripts alphabetically precede the layouts and are nine megabytes.
        */
       const primaryLanguage = request.document.languageId
-      const languageOf = (candidate: (typeof candidates)[number]): string =>
-        uniqueLanguageByExtension.get(extname(candidate.path).replace(/^\./u, '').toLowerCase()) ??
-        ''
+      const languageOfCandidate = (candidate: (typeof candidates)[number]): string =>
+        languageOf(candidate.path) ?? ''
       const byLanguage = new Map<string, typeof candidates>()
       for (const candidate of candidates.sort((left, right) =>
         left.path.localeCompare(right.path),
       )) {
-        const language = languageOf(candidate)
+        const language = languageOfCandidate(candidate)
         byLanguage.set(language, [...(byLanguage.get(language) ?? []), candidate])
       }
       const ranked = byLanguage.get(primaryLanguage) ?? []
@@ -201,11 +202,10 @@ export function createFilesystemLanguageDocumentSource(
               ? previous.version
               : previous.version + 1
         versions.set(uri, { signature, version })
-        const extension = extname(path).replace(/^\./u, '').toLowerCase()
         documents.push(
           Object.freeze({
             uri,
-            languageId: uniqueLanguageByExtension.get(extension) as string,
+            languageId: languageOf(path) as string,
             version,
             text,
           }),

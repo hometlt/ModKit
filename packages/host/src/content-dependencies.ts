@@ -22,6 +22,7 @@ import type {
   LanguageWorkspaceDocumentSourceRequest,
 } from './language/workspace.js'
 import { languageWorkspaceContextToken } from './language/context.js'
+import { classifyLanguageFile } from './language/workspace.js'
 import {
   normalizeCompanionLogicalId,
   type CompanionEnumerationOptions,
@@ -319,17 +320,6 @@ export function createContentDependencyLanguageDocumentSource(
   if (maxDocumentBytes > maxWorkspaceBytes) {
     throw new TypeError('maxDocumentBytes cannot exceed maxWorkspaceBytes')
   }
-  const languageIdsByExtension = new Map<string, Set<string>>()
-  for (const route of options.routes) {
-    if (route.extension === undefined) continue
-    const ids = languageIdsByExtension.get(route.extension) ?? new Set<string>()
-    ids.add(route.languageId)
-    languageIdsByExtension.set(route.extension, ids)
-  }
-  const uniqueLanguageByExtension = new Map<string, string>()
-  for (const [extension, ids] of languageIdsByExtension) {
-    if (ids.size === 1) uniqueLanguageByExtension.set(extension, [...ids][0]!)
-  }
   const revisions = new Map<string, { readonly signature: string; readonly version: number }>()
   const contextId = languageWorkspaceContextToken({
     gameId: options.resolution.gameId,
@@ -397,12 +387,9 @@ export function createContentDependencyLanguageDocumentSource(
             continue
           }
           contentPaths.add(relative)
-          const extension = relative.slice(relative.lastIndexOf('.') + 1).toLowerCase()
-          const languageId = uniqueLanguageByExtension.get(extension)
+          const { languageId, candidates: claimants } = classifyLanguageFile(options.routes, relative)
           if (languageId === undefined) {
-            if ([...(languageIdsByExtension.get(extension) ?? [])].some(id => accepted.has(id))) {
-              complete = false
-            }
+            if (claimants.some(id => accepted.has(id))) complete = false
             continue
           }
           if (!accepted.has(languageId)) continue
@@ -430,10 +417,7 @@ export function createContentDependencyLanguageDocumentSource(
       let totalBytes = 0
       for (const candidate of candidates.slice(0, request.maxDocuments)) {
         request.signal.throwIfAborted()
-        const extension = candidate.relative
-          .slice(candidate.relative.lastIndexOf('.') + 1)
-          .toLowerCase()
-        const languageId = uniqueLanguageByExtension.get(extension)!
+        const languageId = classifyLanguageFile(options.routes, candidate.relative).languageId!
         let bytes: Uint8Array
         try {
           bytes = await options.contentSources.read(

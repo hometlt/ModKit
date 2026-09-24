@@ -44,6 +44,7 @@ import type {
   LanguageWorkspaceAnalysisResult,
   LanguageWorkspaceDocumentRequest,
 } from '@modkit/host/language'
+import { languageRouteServesFile } from '@modkit/host/language'
 
 export const LANGUAGE_TOKEN_TYPES: readonly LanguageTokenKind[] = Object.freeze([
   'comment',
@@ -276,8 +277,12 @@ const normalizedExtension = (value: string): string => value.replace(/^\./u, '')
 
 /** VS Code glob matching is case-sensitive even on Windows; SC2 uses mixed-case suffixes. */
 export function caseInsensitiveExtensionPattern(extension: string): string {
-  return extension
-    .replace(/^\./u, '')
+  return caseInsensitiveNamePattern(extension.replace(/^\./u, ''))
+}
+
+/** A glob for one exact file name, whatever its case (`Objects`, `preload.xml`). */
+export function caseInsensitiveNamePattern(name: string): string {
+  return name
     .split('')
     .map(character => {
       const lower = character.toLowerCase()
@@ -298,8 +303,14 @@ function selectRoute(
   routes: readonly LanguageProviderRoute[],
   document: Pick<EditorLanguageDocument, 'fileName' | 'languageId'>,
 ): RouteSelection {
+  const named = routes.filter(
+    route => route.fileName !== undefined && languageRouteServesFile(route, document.fileName),
+  )
+  if (named.length === 1) return { state: 'selected', route: named[0]! }
+  if (named.length > 1) return { state: 'ambiguous', routes: Object.freeze([...named]) }
   const extension = extensionOf(document.fileName)
   const candidates = routes.filter(route => {
+    if (route.fileName !== undefined) return false
     const languageMatches = route.languageId === document.languageId
     if (route.extension === undefined) return languageMatches
     const extensionMatches = normalizedExtension(route.extension) === extension
@@ -320,7 +331,8 @@ function selectRoute(
 const sameRoute = (left: LanguageProviderRoute, right: LanguageProviderRoute): boolean =>
   left.languageId === right.languageId &&
   left.documentKind === right.documentKind &&
-  left.extension === right.extension
+  left.extension === right.extension &&
+  left.fileName === right.fileName
 
 const languageDocument = (
   editor: EditorLanguageDocument,

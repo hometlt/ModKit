@@ -118,6 +118,7 @@ const ROUTE_KEYS = new Set([
   'languageIds',
   'documentKinds',
   'extensions',
+  'fileNames',
   'completionTriggerCharacters',
   'signatureHelpTriggerCharacters',
   'onTypeFormattingTriggerCharacters',
@@ -199,6 +200,8 @@ function languageOfferFacet(value: unknown): LanguageProviderOfferFacet {
     record['documentKinds'] === undefined ? undefined : nonBlankStrings(record['documentKinds'])
   const extensions =
     record['extensions'] === undefined ? undefined : nonBlankStrings(record['extensions'])
+  const fileNames =
+    record['fileNames'] === undefined ? undefined : nonBlankStrings(record['fileNames'])
   const completionTriggerCharacters =
     record['completionTriggerCharacters'] === undefined
       ? undefined
@@ -215,6 +218,7 @@ function languageOfferFacet(value: unknown): LanguageProviderOfferFacet {
     languageIds === undefined ||
     (record['documentKinds'] !== undefined && documentKinds === undefined) ||
     (record['extensions'] !== undefined && extensions === undefined) ||
+    (record['fileNames'] !== undefined && fileNames === undefined) ||
     (record['completionTriggerCharacters'] !== undefined &&
       completionTriggerCharacters === undefined) ||
     (record['signatureHelpTriggerCharacters'] !== undefined &&
@@ -228,6 +232,7 @@ function languageOfferFacet(value: unknown): LanguageProviderOfferFacet {
     languageIds,
     ...(documentKinds === undefined ? {} : { documentKinds }),
     ...(extensions === undefined ? {} : { extensions }),
+    ...(fileNames === undefined ? {} : { fileNames }),
     ...(completionTriggerCharacters === undefined ? {} : { completionTriggerCharacters }),
     ...(signatureHelpTriggerCharacters === undefined ? {} : { signatureHelpTriggerCharacters }),
     ...(onTypeFormattingTriggerCharacters === undefined
@@ -237,6 +242,42 @@ function languageOfferFacet(value: unknown): LanguageProviderOfferFacet {
 }
 
 const normalizedExtension = (value: string): string => value.replace(/^\./u, '').toLowerCase()
+
+const baseNameOf = (path: string): string => {
+  const normalized = path.replaceAll('\\', '/')
+  return normalized.slice(normalized.lastIndexOf('/') + 1)
+}
+
+/** The extension of a file name or path, lower-case and without the dot; none for `Objects`. */
+export function languageFileExtension(path: string): string | undefined {
+  const name = baseNameOf(path)
+  const dot = name.lastIndexOf('.')
+  return dot <= 0 || dot === name.length - 1 ? undefined : name.slice(dot + 1).toLowerCase()
+}
+
+/** Whether a route serves this file: by its exact name, else by its extension. */
+export function languageRouteServesFile(route: LanguageProviderRequestFacet, path: string): boolean {
+  if (route.fileName !== undefined) return route.fileName.toLowerCase() === baseNameOf(path).toLowerCase()
+  return route.extension !== undefined && route.extension === languageFileExtension(path)
+}
+
+/**
+ * The language of a file in a workspace snapshot, by the advertised routes. A route that names the
+ * file wins over extension routes; an extension more than one language claims decides nothing
+ * (`candidates` lists them, so a snapshot that wanted one can report itself incomplete).
+ */
+export function classifyLanguageFile(
+  routes: readonly LanguageProviderRequestFacet[],
+  path: string,
+): Readonly<{ languageId?: string; candidates: readonly string[] }> {
+  const named = routes.filter(route => route.fileName !== undefined && languageRouteServesFile(route, path))
+  const matching = named.length > 0 ? named : routes.filter(route => route.fileName === undefined && languageRouteServesFile(route, path))
+  const candidates = [...new Set(matching.map(route => route.languageId))].sort(compareUtf8)
+  return Object.freeze({
+    ...(candidates.length === 1 ? { languageId: candidates[0] as string } : {}),
+    candidates: Object.freeze(candidates),
+  })
+}
 
 /**
  * Return the active inventory's validated, expanded language routes.
@@ -252,19 +293,31 @@ export function languageProviderRoutes(inventory: Inventory): readonly LanguageP
       if (offer.contract !== LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT || offer.major !== 1) continue
       const facet = languageOfferFacet(offer.facet)
       const kinds = facet.documentKinds ?? [undefined]
-      const extensions = facet.extensions ?? [undefined]
+      // A file-name-only offer adds no catch-all extension route: its files are known by name.
+      const extensions =
+        facet.extensions ?? (facet.fileNames === undefined ? [undefined] : [])
+      const targets: readonly (
+        | { readonly extension?: string; readonly fileName?: undefined }
+        | { readonly fileName: string; readonly extension?: undefined }
+      )[] = [
+        ...extensions.map(rawExtension => {
+          const extension =
+            rawExtension === undefined ? undefined : normalizedExtension(rawExtension)
+          if (extension !== undefined && extension.length === 0) {
+            throw new TypeError('language provider extension route must not be only a dot')
+          }
+          return extension === undefined ? {} : { extension }
+        }),
+        ...(facet.fileNames ?? []).map(fileName => ({ fileName })),
+      ]
       for (const languageId of facet.languageIds) {
         for (const documentKind of kinds) {
-          for (const rawExtension of extensions) {
-            const extension =
-              rawExtension === undefined ? undefined : normalizedExtension(rawExtension)
-            if (extension !== undefined && extension.length === 0) {
-              throw new TypeError('language provider extension route must not be only a dot')
-            }
+          for (const target of targets) {
             const identity: LanguageProviderRequestFacet = {
               languageId,
               ...(documentKind === undefined ? {} : { documentKind }),
-              ...(extension === undefined ? {} : { extension }),
+              ...(target.extension === undefined ? {} : { extension: target.extension }),
+              ...(target.fileName === undefined ? {} : { fileName: target.fileName }),
             }
             const key = canonicalJsonStringify(identity)
             const prior = routes.get(key)

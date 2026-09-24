@@ -449,6 +449,12 @@ export interface LanguageProviderOfferFacet {
   readonly languageIds: readonly string[]
   readonly documentKinds?: readonly string[]
   readonly extensions?: readonly string[]
+  /**
+   * Files the provider serves by their exact name (case-insensitive), for documents a game knows
+   * by name rather than extension (`Objects`, `Preload.xml`). A file-name route wins over an
+   * extension route for that file.
+   */
+  readonly fileNames?: readonly string[]
   /** Characters that should automatically request completion in editor and LSP adapters. */
   readonly completionTriggerCharacters?: readonly string[]
   /** Characters that should automatically request signature help in editor and LSP adapters. */
@@ -462,6 +468,8 @@ export interface LanguageProviderRequestFacet {
   readonly languageId: string
   readonly documentKind?: string
   readonly extension?: string
+  /** The exact file name, when the route is a file-name route. */
+  readonly fileName?: string
 }
 
 declare module '../service-contracts.js' {

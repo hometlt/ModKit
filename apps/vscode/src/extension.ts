@@ -96,7 +96,9 @@ import {
   type CommandResult,
 } from '@modkit/host'
 import {
+  classifyLanguageFile,
   createLanguageWorkspace,
+  languageFileExtension,
   languageWorkspaceContextToken,
   languageProviderRoutes,
   languageProviderTriggerCharacters,
@@ -216,6 +218,7 @@ import { createVscodeLocalizer, VSCODE_UI_CATALOGS } from './localization.js'
 import {
   applyEditorOnTypeEditResult,
   caseInsensitiveExtensionPattern,
+  caseInsensitiveNamePattern,
   createLanguageSessionController,
   LANGUAGE_TOKEN_MODIFIERS,
   LANGUAGE_TOKEN_TYPES,
@@ -7571,6 +7574,8 @@ async function activateModkit(
     extensions: ReadonlySet<string> | undefined,
     maxEntries: number,
     signal?: AbortSignal,
+    /** Exact file names (lower-case) wanted besides the extensions. */
+    names: ReadonlySet<string> = new Set(),
   ): Promise<EnumeratedScopeFiles> => {
     const queue: { readonly uri: vscode.Uri; readonly logicalId: string }[] = [
       { uri: root, logicalId: '' },
@@ -7593,8 +7598,12 @@ async function activateModkit(
           continue
         }
         if ((type & vscode.FileType.File) === 0) continue
-        const extension = name.split('.').at(-1)?.toLowerCase()
-        if (extensions !== undefined && (extension === undefined || !extensions.has(extension))) {
+        const extension = languageFileExtension(name)
+        if (
+          extensions !== undefined &&
+          !names.has(name.toLowerCase()) &&
+          (extension === undefined || !extensions.has(extension))
+        ) {
           continue
         }
         files.push(Object.freeze({ uri, logicalId }))
@@ -7796,8 +7805,25 @@ async function activateModkit(
             ),
           ),
         ].sort()
-        if (extensions.length === 0 || request.maxDocuments === 0) {
-          return { documents: Object.freeze([]), isComplete: extensions.length === 0 }
+        // Files a game knows by name (`Objects`, `Preload.xml`) route by that name.
+        const fileNames = [
+          ...new Set(
+            languageRoutes.flatMap(route =>
+              accepted.has(route.languageId) && route.fileName !== undefined
+                ? [route.fileName.toLowerCase()]
+                : [],
+            ),
+          ),
+        ].sort()
+        const kindOf = (path: string): string | undefined => {
+          const name = path.slice(path.replaceAll('\\', '/').lastIndexOf('/') + 1).toLowerCase()
+          return fileNames.includes(name) ? `name:${name}` : languageFileExtension(path)
+        }
+        if ((extensions.length === 0 && fileNames.length === 0) || request.maxDocuments === 0) {
+          return {
+            documents: Object.freeze([]),
+            isComplete: extensions.length === 0 && fileNames.length === 0,
+          }
         }
         // The document under the cursor is open too, and the host rejects a snapshot that repeats it.
         const openUris = new Set([
@@ -7815,11 +7841,12 @@ async function activateModkit(
             new Set(extensions),
             request.maxDocuments + 1,
             request.signal,
+            new Set(fileNames),
           )
           isComplete = enumerated.complete
           for (const item of enumerated.files.slice(0, request.maxDocuments)) {
             if (openUris.has(item.uri.toString())) continue
-            const extension = item.logicalId.split('.').at(-1)?.toLowerCase()
+            const extension = kindOf(item.logicalId)
             if (extension !== undefined) {
               candidates.set(item.uri.toString(), { uri: item.uri, extension })
             }
@@ -7844,13 +7871,31 @@ async function activateModkit(
               candidates.set(uri.toString(), { uri, extension })
             }
           }
+          for (const fileName of fileNames) {
+            request.signal.throwIfAborted()
+            const remaining = request.maxDocuments - candidates.size
+            if (remaining <= 0) {
+              isComplete = false
+              break
+            }
+            const uris = await vscode.workspace.findFiles(
+              `**/${caseInsensitiveNamePattern(fileName)}`,
+              '**/{node_modules,.git}/**',
+              remaining + 1,
+            )
+            if (uris.length > remaining) isComplete = false
+            for (const uri of uris.slice(0, remaining)) {
+              if (openUris.has(uri.toString())) continue
+              candidates.set(uri.toString(), { uri, extension: `name:${fileName}` })
+            }
+          }
         }
         /*
          * Order decides what survives the byte budget. Files of the edited document's own kind come
          * first — a layout resolves its templates against other layouts — and the rest are interleaved
          * by extension so one large kind cannot spend the remainder alone.
          */
-        const primaryExtension = request.document.uri.split('.').at(-1)?.toLowerCase()
+        const primaryExtension = kindOf(vscode.Uri.parse(request.document.uri).path)
         const byExtension = new Map<
           string,
           { readonly uri: vscode.Uri; readonly extension: string }[]
@@ -7885,15 +7930,10 @@ async function activateModkit(
         for (const candidate of ranked.slice(0, request.maxDocuments)) {
           request.signal.throwIfAborted()
           const document = await vscode.workspace.openTextDocument(candidate.uri)
-          const routedLanguageIds = [
-            ...new Set(
-              languageRoutes.flatMap(route =>
-                accepted.has(route.languageId) && route.extension === candidate.extension
-                  ? [route.languageId]
-                  : [],
-              ),
-            ),
-          ]
+          const routedLanguageIds = classifyLanguageFile(
+            languageRoutes,
+            candidate.uri.path,
+          ).candidates.filter(languageId => accepted.has(languageId))
           const languageId = accepted.has(document.languageId)
             ? document.languageId
             : routedLanguageIds.length === 1
@@ -8396,6 +8436,13 @@ async function activateModkit(
         pattern: `**/*.${extensionPattern}`,
       }
       selectorEntries.set(JSON.stringify(byExtension), byExtension)
+    }
+    if (route.fileName !== undefined) {
+      const byName: vscode.DocumentFilter = {
+        scheme: 'file',
+        pattern: `**/${caseInsensitiveNamePattern(route.fileName)}`,
+      }
+      selectorEntries.set(JSON.stringify(byName), byName)
     }
   }
   const languageSelector: vscode.DocumentSelector = [...selectorEntries.values()]
