@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "kind": "owner-decision/superseded",
+  "date": "2026-09-24",
+  "reason": "Owner decision 2026-09-24: maps need import and export of height, cliff, water and other layers, for maps of any format, in the core map module. MK3 does it with the common map-layer operations (map.layers, map.layer-read, map.layer-write in @modkit/sdk/maps): a map codec speaks numbers, the application carries them through a grey 8/16-bit PNG with the one PNG decoder of @modkit/codec-kit/raster (greyGridToPng/greyGridFromPng), and the @modkit/ui/map-layers panel (VS Code stage) exports and imports them; a write is the codec's edit plan. StarCraft II publishes height, cliff level and pathing; layer previews keep rendering through view.render. MK3 is the reference; no MK2 comparison is run.",
+  "rows": [
+    { "id": "legacy/codec-manifest/modkit/sc2-map/feature/9ff836268db8cc1c", "where": "modkit-core packages/sdk/src/maps (map-layer contract), packages/codec-kit/src/raster/png.ts, packages/ui/src/map-layers; modkit-extensions-blizzard starcraft2/modules/map/codecs/package/src/codec.ts (mapLayers) and world-writer.js (grid.set)" }
+  ],
+  "mk3Evidence": {
+    "commits": { "modkit-core": "788051d6", "modkit-extensions-blizzard": "6a79e028" },
+    "files": [
+      { "path": "modkit-extensions-blizzard/starcraft2/modules/map/test/sc2-map-layers-host.test.ts", "sha256": "9c2b1c2c563f36493b93890b8292b39d64f7de6e2f7a1a45a3d48013f2958a5b", "passed": 2 },
+      { "path": "modkit-core/packages/codec-kit/test/raster-png.test.ts", "sha256": "7290e70583f65626723c818d7372848e69501d974d0d22129b00f93266e50409", "passed": 4 },
+      { "path": "modkit-core/packages/ui/test/map-layers.test.ts", "sha256": "7b8fca12703ad1f6b8fd6769fd677eb37da5860b92dd3fca42616f2a7fa06522", "passed": 3 }
+    ]
+  }
+}
