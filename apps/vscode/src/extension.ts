@@ -2278,7 +2278,7 @@ async function activateModkit(
   })
   const runtimeDebug = createRuntimeDebugController({
     services: host.services,
-    grant: Object.freeze({ id: 'vscode-runtime', classes: Object.freeze([]) }),
+    grant: Object.freeze({ id: 'vscode-runtime', classes: Object.freeze(['read-source'] as const) }),
     activationBudget: RUNTIME_ACTIVATION_BUDGET,
     sessionBudget: RUNTIME_SESSION_BUDGET,
   })
