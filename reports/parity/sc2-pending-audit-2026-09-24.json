@@ -1,8 +1,8 @@
 {
  "date": "2026-09-24",
  "counts": {
-  "gap": 20,
-  "present": 68,
+  "gap": 18,
+  "present": 70,
   "obsolete": 9,
   "partial": 19,
   "replaced": 9
@@ -420,8 +420,8 @@
    "id": "sc2-map/feature/1f5ef30478b38f0b",
    "codec": "sc2-map",
    "kind": "feature",
-   "class": "gap",
-   "where": "no language contribution routes .SC2Lighting/Regions/Objects/Attributes to XML",
+   "class": "present",
+   "where": "apps/vscode bundled-contributes: xml for .SC2Lighting and .SC2Map/{Objects,Regions,Attributes} (core 99b01f8c)",
    "label": "manifest declares languages: xml for .SC2Lighting/Regions/Objects/Attributes filenames"
   },
   {
@@ -804,8 +804,8 @@
    "id": "sc2-replay/operation/export.convert",
    "codec": "sc2-replay",
    "kind": "operation",
-   "class": "gap",
-   "where": "MK2 exportJson of the decoded replay; MK3 has decode-stream per stream and analyze, no single JSON export",
+   "class": "present",
+   "where": "blizzard/sc2-replay export.convert (export-convert), blizzard f5b67de9",
    "label": "export.convert"
   },
   {
