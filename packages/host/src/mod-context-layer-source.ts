@@ -102,23 +102,25 @@ export async function openModContextLayerSource(options: {
   const join = (prefix: string, path: string): string =>
     [prefix, path].filter(part => part !== '').join('/')
 
-  const fileSource = (path: string): ArtifactByteSource => {
-    let bytes: Promise<Uint8Array> | undefined
-    const load = () => (bytes ??= context.read(layerId, path, MAX_ENTRY_BYTES))
+  /*
+   * The listing carries no sizes, and a reader sizes its buffer from the source (SC2's namespace
+   * reader refuses an unsized file): an opened file is read once, whole, and answers its size.
+   */
+  const fileSource = async (path: string): Promise<ArtifactByteSource> => {
+    const all = await context.read(layerId, path, MAX_ENTRY_BYTES)
     return Object.freeze({
       kind: 'bytes' as const,
       ref: nestedRef(ref, path),
       revision,
+      size: BigInt(all.length),
       async read(offset: bigint, length: number, readSignal?: AbortSignal) {
         throwIfAborted(readSignal)
-        const all = await load()
         if (offset < 0n || length < 0 || offset + BigInt(length) > BigInt(all.length)) {
           throw refused('x3.host/mod-context-read-out-of-bounds', 'read out of bounds', path)
         }
         return all.slice(Number(offset), Number(offset) + length)
       },
       async *stream(range?: { readonly offset: bigint; readonly length?: bigint }) {
-        const all = await load()
         const start = Number(range?.offset ?? 0n)
         const end = range?.length === undefined ? all.length : start + Number(range.length)
         yield all.slice(start, end)
@@ -159,7 +161,7 @@ export async function openModContextLayerSource(options: {
             const value = folders.has(path)
               ? namespaceAt(path, nestedRef(ref, path))
               : files.has(path)
-                ? fileSource(path)
+                ? await fileSource(path)
                 : undefined
             if (value === undefined) {
               throw refused(

@@ -215,3 +215,35 @@ export function createChainTreeDataSource(
   })
   return source
 }
+
+/**
+ * A layer no package codec opens (the editor's wizard folder): its files as a flat list, each
+ * naming its own subject so a click opens it.
+ */
+export function createFileListTree(
+  paths: readonly string[],
+  subjectIdOf: (path: string) => string,
+): TreeDataSource {
+  const sorted = [...paths].sort((left, right) => left.localeCompare(right))
+  const ROOT_ID = 'files:root'
+  const refs = sorted.map((_path, index) => Object.freeze({ id: String(index), hasChildren: false }))
+  return Object.freeze({
+    async root(): Promise<TreeNodeRef> {
+      return Object.freeze({ id: ROOT_ID, hasChildren: refs.length > 0 })
+    },
+    async children(node: TreeNodeRef, request: PageRequest) {
+      return page(node.id === ROOT_ID ? refs : [], request)
+    },
+    async facts(node: TreeNodeRef): Promise<TreeNodeFacts> {
+      const path = sorted[Number(node.id)]
+      if (path === undefined) throw new TypeError('unknown file node ' + node.id)
+      return Object.freeze({ kind: 'file', label: path, subjectId: subjectIdOf(path) })
+    },
+    async *search(query: TreeQuery): AsyncIterable<TreeNodeRef> {
+      const needle = query.pattern.toLocaleLowerCase()
+      for (const [index, path] of sorted.entries()) {
+        if (path.toLocaleLowerCase().includes(needle)) yield refs[index] as TreeNodeRef
+      }
+    },
+  })
+}

@@ -85,6 +85,8 @@ describe('a mod context layer as a namespace subject', () => {
       'modkit-source://battlenet/casc/mods/liberty.sc2mod?vfs-path=Base.SC2Data%2FGameData%2FUnitData.xml',
     )
     expect(await text(unit)).toContain('Marine')
+    // Readers size their buffers from the source; SC2's refuses an unsized file.
+    expect(unit.kind === 'bytes' && unit.size).toBe(BigInt(FILES['Base.SC2Data/GameData/UnitData.xml']!.length))
 
     // A folder opens as a namespace whose listing is relative to it.
     const data = (await namespace.open('Base.SC2Data')).value

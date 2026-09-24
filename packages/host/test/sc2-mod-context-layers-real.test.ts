@@ -109,7 +109,18 @@ describe.skipIf(!existsSync(installation) || !existsSync(sourcesModule))(
             try {
               const lease = await opened.session.dataSource('common.view/tree-data-source', 1)
               try {
-                const labels = await rootLabels(lease.value as TreeDataSource)
+                const tree = lease.value as TreeDataSource
+                const labels = await rootLabels(tree)
+                // The sections hold what the codec read: the unit catalog of a stock mod.
+                const namespaces = await tree.children(
+                  { id: 'category/gamedata', hasChildren: true },
+                  { limit: 200 },
+                )
+                const facts = await Promise.all(namespaces.items.map(item => tree.facts(item)))
+                console.log(`${layer.displayName} GameData: ${facts.map(item => item.label).join(', ')}`)
+                if (/(core|liberty)\.sc2mod$/iu.test(layer.sourcePath)) {
+                  expect(facts.some(item => /^Unit\b/u.test(item.label)), layer.displayName).toBe(true)
+                }
                 console.log(
                   `${layer.displayName}: ${labels.join(' | ')} (${Date.now() - started} ms)`,
                 )

@@ -83,6 +83,7 @@ import {
 import { advertisesSubjectCandidates, SUBJECT_SELECTOR_SOURCE } from './subject-candidates.js'
 import {
   createChainTreeDataSource,
+  createFileListTree,
   LAYER_KIND,
   OPENED_LAYER_KIND,
   type ResourceChainLayer,
@@ -7337,6 +7338,18 @@ async function activateModkit(
     if (uri.scheme === CONTAINER_SCHEME) {
       const location = parseContainerUriPath(uri.path)
       if (location === undefined) return Object.freeze([])
+      /*
+       * A container whose file is a folder is a storage (the game's CASC). A package inside it is
+       * the mod loader's: it lists and reads it already, as a layer of the document's chain.
+       * Opening it again through the storage's codec walked 192 000 entries a second time.
+       */
+      try {
+        if (statSync(splitContainer(location.container).file).isDirectory()) {
+          return Object.freeze([])
+        }
+      } catch {
+        // A container this window cannot stat is a packed file it opened some other way.
+      }
       const segments = location.entry.split('/').filter(Boolean)
       const candidates: LanguageSubjectCandidate[] = []
       for (let count = segments.length - 1; count > 0; count -= 1) {
@@ -7486,6 +7499,25 @@ async function activateModkit(
     readonly openTreeDataSource: ResourceTreeHost['openTreeDataSource']
   }
 
+  const layerFileTree = async (
+    context: ModContext,
+    layerId: string,
+    root: string,
+  ): Promise<TreeDataSource> => {
+    const paths: string[] = []
+    let cursor: string | undefined
+    do {
+      const page = await context.files(layerId, {
+        limit: 4096,
+        ...(cursor === undefined ? {} : { cursor }),
+      })
+      paths.push(...page.items)
+      cursor = page.nextCursor
+    } while (cursor !== undefined)
+    const separator = root.includes('?') ? '&' : '?'
+    return createFileListTree(paths, path => `${root}${separator}vfs-path=${encodeURIComponent(path)}`)
+  }
+
   /** Whether Resources shows the chain of loaded mods or only the active package. */
   let resourcesShowChain = context.workspaceState.get<boolean>(RESOURCES_CHAIN_KEY) ?? true
   interface ResourceChain {
@@ -7564,7 +7596,12 @@ async function activateModkit(
           const root = layerRootOf(layer)
           return Object.freeze({
             label: layer.displayName,
-            detail: layer.role === 'primary' ? 'opened' : layer.role,
+            detail:
+              layer.role === 'primary'
+                ? 'opened'
+                : layer.provenance === 'setting' && layer.role === 'dependency'
+                  ? 'add-on'
+                  : layer.role,
             opened: layer.role === 'primary',
             open: async (openSignal?: AbortSignal) => {
               if (live !== undefined) return live.openTreeDataSource(openSignal)
@@ -7575,7 +7612,13 @@ async function activateModkit(
                 ...(openSignal === undefined ? {} : { signal: openSignal }),
               })
               const subject = await host.openTreeSource(source, root, openSignal)
-              if (subject === undefined) return undefined
+              // Not a package (the editor's wizard folder): its files, each opening on click.
+              if (subject === undefined) {
+                return Object.freeze({
+                  value: await layerFileTree(opened, layer.id, root),
+                  release: async () => undefined,
+                })
+              }
               const lease = await subject.openTreeDataSource(openSignal)
               if (lease === undefined) {
                 await subject.dispose()
@@ -7640,7 +7683,9 @@ async function activateModkit(
     // still shows the mods it loads with; it just has no live package of its own.
     const subjectPath =
       scope?.path ??
-      (uri.scheme === 'modkit-source' || uri.scheme === 'file' ? subjectPathOf(uri) : undefined)
+      (uri.scheme === 'modkit-source' || uri.scheme === 'file' || uri.scheme === CONTAINER_SCHEME
+        ? subjectPathOf(uri)
+        : undefined)
     if (subjectPath === undefined) return undefined
     const chain =
       resourcesShowChain || scope === undefined
@@ -8217,26 +8262,51 @@ async function activateModkit(
    * CASC document is the projected one rather than a second copy of it, and a reference into Core
    * opens in the editor.
    */
-  const editorUriOfProjected = (uri: string): string => {
+  const editorUriOfProjected = (uri: string, open: ReadonlyMap<string, string>): string => {
     const target = uri.startsWith('content-source:') ? subjectTarget(uri) : undefined
     return target === undefined || typeof target === 'string'
       ? uri
-      : vscode.Uri.from({
-          scheme: 'modkit-source',
-          authority: 'battlenet',
-          path: `/${target.sourceId}/${target.path}`,
-        }).toString()
+      : (open.get(target.path.toLowerCase()) ??
+          vscode.Uri.from({
+            scheme: 'modkit-source',
+            authority: 'battlenet',
+            path: `/${target.sourceId}/${target.path}`,
+          }).toString())
+  }
+  /*
+   * An open member of the game's storage mounted as a container (`CASC: StarCraft II`) is the same
+   * file the projection names by its storage path; it keeps the editor's URI, or the unit a reader
+   * looks at is declared twice.
+   */
+  const openStorageMembers = (request: {
+    readonly document: { readonly uri: string }
+    readonly workspaceDocuments: readonly { readonly uri: string }[]
+  }): ReadonlyMap<string, string> => {
+    const members = new Map<string, string>()
+    for (const document of [request.document, ...request.workspaceDocuments]) {
+      let parsed: vscode.Uri
+      try {
+        parsed = vscode.Uri.parse(document.uri, true)
+      } catch {
+        continue
+      }
+      if (parsed.scheme !== CONTAINER_SCHEME) continue
+      const entry = parseContainerUriPath(parsed.path)?.entry
+      if (entry !== undefined && entry !== '') members.set(entry.toLowerCase(), document.uri)
+    }
+    return members
   }
   const withEditorUris = (source: LanguageWorkspaceDocumentSource): LanguageWorkspaceDocumentSource =>
     Object.freeze({
       async snapshot(request: Parameters<LanguageWorkspaceDocumentSource['snapshot']>[0]) {
         const result = await source.snapshot(request)
+        const open = openStorageMembers(request)
         const context = result.workspaceContext
         return Object.freeze({
           ...result,
           documents: Object.freeze(
             result.documents.map(item =>
-              Object.freeze({ ...item, uri: editorUriOfProjected(item.uri) }),
+              Object.freeze({ ...item, uri: editorUriOfProjected(item.uri, open) }),
             ),
           ),
           ...(context === undefined
@@ -8246,7 +8316,7 @@ async function activateModkit(
                   ...context,
                   documentOrigins: Object.freeze(
                     context.documentOrigins.map(origin =>
-                      Object.freeze({ ...origin, uri: editorUriOfProjected(origin.uri) }),
+                      Object.freeze({ ...origin, uri: editorUriOfProjected(origin.uri, open) }),
                     ),
                   ),
                 }),
@@ -8268,7 +8338,8 @@ async function activateModkit(
       const baseMods = baseModsSetting(uri)
       // A file that belongs to no package still opens inside mods: the setting's, or the game's own.
       const loose =
-        scope === undefined && (uri.scheme === 'file' || uri.scheme === 'modkit-source')
+        scope === undefined &&
+        (uri.scheme === 'file' || uri.scheme === 'modkit-source' || uri.scheme === CONTAINER_SCHEME)
           ? subjectPathOf(uri)
           : undefined
       const snapshotKey = languageSnapshotKey(scope, request, {

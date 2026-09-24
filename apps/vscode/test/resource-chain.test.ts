@@ -8,6 +8,7 @@ import type { TreeDataSource, TreeNodeFacts, TreeNodeRef } from '@modkit/sdk'
 
 import {
   createChainTreeDataSource,
+  createFileListTree,
   LAYER_KIND,
   OPENED_LAYER_KIND,
   type ResourceChainLayer,
@@ -187,6 +188,16 @@ describe('Resources as the chain of loaded mods', () => {
     expect(new Set(found.map(node => node.id)).size).toBe(2)
     for (const node of found) expect((await tree.facts(node)).label).toBe('Marine')
     await tree.dispose()
+  })
+
+  it('lists the files of a layer no package codec opens, each opening its own subject', async () => {
+    const tree = createFileListTree(['b/Tool.BlizWiz', 'A.BlizWiz'], path => `root?vfs-path=${path}`)
+    const page = await tree.children(await tree.root(), { limit: 10 })
+    const facts = await Promise.all(page.items.map(item => tree.facts(item)))
+    expect(facts.map(item => [item.label, item.subjectId])).toEqual([
+      ['A.BlizWiz', 'root?vfs-path=A.BlizWiz'],
+      ['b/Tool.BlizWiz', 'root?vfs-path=b/Tool.BlizWiz'],
+    ])
   })
 
   it('surfaces operational failure and retries instead of caching it', async () => {
