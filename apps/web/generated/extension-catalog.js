@@ -6589,7 +6589,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:7ed6a4b070b82770ada5039451a338df565bfbe1733cda1116e7d16fa6f6c302',
+        artifactDigest: 'sha256:6fdc1398477077b7f70a798a5a636d9d4570f85eeb24217abf8ed0f365d016d9',
         fileDigests: {
           'MIGRATION-NOTES-common-images.json':
             'sha256:44c30ea45aaceceff66d53f72e5e0d0ec8efb1a7f2afbc2f9913849720632e93',
@@ -6681,7 +6681,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:e1922a8c7f1c6ea0cd1cdb8101ae4610aaf7b00af7ef6679ce7188ff7cebe1b8',
           'src/index.js': 'sha256:bcbc40812fa5dcdb2937b0ff5b617c1483725570302b99f569249ac3c441ce41',
           'src/jpeg/codec.js':
-            'sha256:a88284f59e5072c44e8352f772dd3de9342c06418e035f92fb9bd26c0b13d44e',
+            'sha256:92f1265e5790c4e36ab3de69ec9c695d7d0395ee37a43b880edb5483bd605d7a',
           'src/ktx/codec.js':
             'sha256:9d24a991d8a64e241895849cc43305babfc20647d4226f5bea8fc6cb44e92903',
           'src/ktx2/codec.js':
@@ -6699,7 +6699,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'src/pkm/etc.js':
             'sha256:99c4f4ab06d944e71e0993f671e3af6904c37bb5eb2bc0a65fdf1e6de265db7f',
           'src/png/codec.js':
-            'sha256:d4c68121b468f9b60c4e349b68e7d814c2e478bcb23c98714e174a54258c52e4',
+            'sha256:73328ae6c5741bbda2bb40ac5e6e3a3e8a583615fc2f3a8d7099e062ec8b31ad',
           'src/pvr/codec.js':
             'sha256:3c02b42c1d6963dcb8e38a8bbfcc49ccf9b115118180835d59eb4ada15de7fea',
           'src/tga/codec.js':
@@ -6742,7 +6742,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:8b819b0622cce57f809b369081bdd6eca09d1c1793da7f82192db39229356c1d',
         },
         inventoryRecordId:
-          'artifact:sha256:7ed6a4b070b82770ada5039451a338df565bfbe1733cda1116e7d16fa6f6c302',
+          'artifact:sha256:6fdc1398477077b7f70a798a5a636d9d4570f85eeb24217abf8ed0f365d016d9',
       },
       artifactRoot: 'extensions/images/',
       containers: {
