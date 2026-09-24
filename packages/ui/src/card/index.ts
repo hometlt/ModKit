@@ -1341,7 +1341,11 @@ export function createSubjectCardViewer(options: SubjectCardViewerOptions = {}):
               sections,
               ...(options.header === undefined ? {} : { header: options.header }),
               ...(args.knowledge === undefined ? {} : { knowledge: args.knowledge }),
-              onNavigate: navigate,
+              // A link goes somewhere only through the host's navigation or this session's own
+              // subjects; without either it stays text rather than a button that does nothing.
+              ...(args.subjectNavigation === undefined && selector === undefined
+                ? {}
+                : { onNavigate: navigate }),
               ...(resolveImage === undefined ? {} : { resolveImage }),
             })
             commit?.()

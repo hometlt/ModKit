@@ -649,7 +649,12 @@ describe('13C real-browser viewer host', () => {
               async descriptor() {
                 return descriptor
               },
-              async dataSource() {
+              // Only the facts source exists: a session that published no subject selector
+              // must not look as if it had one.
+              async dataSource(contract: string) {
+                if (contract !== 'common.view/subject-facts-source') {
+                  throw new Error(`no ${contract} in this session`)
+                }
                 return { value: facts }
               },
               ...(rpc?.subjectNavigation === undefined
@@ -670,11 +675,12 @@ describe('13C real-browser viewer host', () => {
         return { container, handle }
       }
       const relation = (container: HTMLElement, label: string): HTMLElement => {
+        // One kind of link reads as "Related subjects" (collapsed); several read as open lists
+        // titled by their role.
         const heading = [...container.querySelectorAll('button')].find(button =>
           button.textContent?.includes('Related subjects'),
         )
-        if (heading === undefined) throw new Error('related subjects section is unavailable')
-        if (heading.getAttribute('aria-expanded') !== 'true') heading.click()
+        if (heading !== undefined && heading.getAttribute('aria-expanded') !== 'true') heading.click()
         const found = [...container.querySelectorAll('[data-mk-part="card.ref"]')].find(
           item => item.textContent === label,
         )
@@ -1300,10 +1306,11 @@ describe('13C real-browser viewer host', () => {
       }
     })
 
+    // Focus reads the cell once even without a knowledge port: it names the cell's edit target.
     expect(result.noPort).toEqual({
       state: 'missing',
       text: 'Description is not available yet.',
-      cellCalls: 0,
+      cellCalls: 1,
       resolveCalls: 0,
     })
     expect(result.noTarget).toEqual({
