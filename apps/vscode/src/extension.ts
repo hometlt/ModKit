@@ -7742,11 +7742,20 @@ async function activateModkit(
     readonly path?: string
     readonly changed: boolean
   }> => {
-    const uri = vscode.window.activeTextEditor?.document.uri
-    const path = activeSubject ?? (uri === undefined ? undefined :
-      (await resolveLanguageScope(uri))?.path ??
+    const editor = vscode.window.activeTextEditor
+    const uri = editor?.document.uri
+    const scope = uri === undefined ? undefined : await resolveLanguageScope(uri)
+    const candidate = activeSubject ?? (uri === undefined ? undefined :
+      scope?.path ??
       (uri.scheme === 'file' || uri.scheme === 'modkit-source' || uri.scheme === CONTAINER_SCHEME
         ? subjectPathOf(uri) : undefined))
+    // A loose SC2 language document may use the configured base mod. An unrelated model, source
+    // file or generic XML document must not silently load Void merely because a tab has focus.
+    const sc2Language = editor !== undefined &&
+      (editor.document.languageId === 'galaxy' || editor.document.languageId.startsWith('sc2-'))
+    const path = candidate !== undefined &&
+      ((scope !== undefined && sc2Language) || /\.sc2(?:mod|map|campaign)(?:[\\/]|$)/iu.test(candidate))
+        ? candidate : undefined
     const sessions = await resourceSessions().catch(() => undefined)
     if (sessions === undefined) return { changed: false }
     if (path !== undefined && !activatedResourcePaths.has(path)) {
