@@ -524,6 +524,16 @@
         ".StormCutscene",
         ".stormcutscene"
       ]
+    },
+    {
+      "id": "xml",
+      "extensions": [
+        ".SC2Lighting",
+        ".sc2lighting"
+      ],
+      "filenamePatterns": [
+        "**/*.[Ss][Cc]2[Mm][Aa][Pp]/{Objects,Regions,Attributes}"
+      ]
     }
   ],
   "viewsWelcome": [
