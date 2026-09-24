@@ -30,6 +30,7 @@ const REPOSITORIES = [
   'modkit-extensions-ea',
   'modkit-extensions-spring',
   'modkit-extensions-other',
+  'multiverse',
 ]
 
 const argument = name => {
