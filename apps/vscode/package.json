@@ -455,6 +455,16 @@
         "extensions": [".SC2Layout", ".sc2layout"]
       },
       {
+        "id": "sc2-map-objects",
+        "aliases": ["StarCraft II Map Objects"],
+        "filenames": ["Objects"]
+      },
+      {
+        "id": "sc2-map-preload",
+        "aliases": ["StarCraft II Map Preload"],
+        "filenames": ["Preload.xml"]
+      },
+      {
         "id": "sc2-strings",
         "aliases": ["StarCraft II Strings"],
         "filenamePatterns": ["**/[Ll]ocalized[Dd]ata/*.[tT][xX][tT]"]
