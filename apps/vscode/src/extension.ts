@@ -7596,6 +7596,7 @@ async function activateModkit(
           const root = layerRootOf(layer)
           return Object.freeze({
             label: layer.displayName,
+            includeInResolved: /\.sc2(?:mod|map|campaign)$/iu.test(layer.sourcePath),
             detail:
               layer.role === 'primary'
                 ? 'opened'
@@ -7634,7 +7635,7 @@ async function activateModkit(
             },
           })
         })
-        return Object.freeze({ tree: createChainTreeDataSource(layers), context: opened })
+        return Object.freeze({ tree: createChainTreeDataSource(layers, { includeResolved: true }), context: opened })
       })().catch((error: unknown) => {
         chainTrees.delete(key)
         log(`[resources] ${subjectPath}: ${error instanceof Error ? error.message : String(error)}`)

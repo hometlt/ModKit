@@ -1,8 +1,7 @@
 /**
  * Resources as the chain of loaded mods: one node per package in load order (Core → … → the opened
- * one), each expanding into that package's own tree as its codec publishes it — GameData by
- * namespace, strings by locale, Galaxy, layouts, files. Nothing is merged: a node belongs to exactly
- * one package, so where a unit, a string or a file comes from is where it is shown.
+ * one), each expanding into that package's own tree as its codec publishes it. The optional
+ * resolved view merges those trees on demand; package nodes retain their exact provenance.
  */
 import type {
   PageRequest,
@@ -18,6 +17,8 @@ export interface ResourceChainLayer {
   readonly detail: string
   /** The package the active document belongs to; the view opens it expanded. */
   readonly opened?: boolean
+  /** False for auxiliary folders (such as editor wizards) that are not mod resource layers. */
+  readonly includeInResolved?: boolean
   /** Return undefined for an unavailable layer; operational errors remain visible. */
   open(
     signal?: AbortSignal,
@@ -27,10 +28,13 @@ export interface ResourceChainLayer {
 /** The kind of a layer node; the opened package's node uses {@link OPENED_LAYER_KIND}. */
 export const LAYER_KIND = 'mod-layer'
 export const OPENED_LAYER_KIND = 'mod-layer-opened'
+export const RESOLVED_KIND = 'mod-resolved'
 
 const LAYER_SEPARATOR = '\u0001'
 const ROOT = 'chain:root'
 const LAYER = 'chain:layer:'
+const RESOLVED = 'chain:resolved'
+const RESOLVED_NODE = 'chain:resolved-node:'
 
 interface OpenLayer {
   readonly tree: TreeDataSource
@@ -54,11 +58,24 @@ function page(items: readonly TreeNodeRef[], request: PageRequest) {
 /** Open layer leases on first use and retain them only for the lifetime of this chain. */
 export function createChainTreeDataSource(
   layers: readonly ResourceChainLayer[],
+  options: { readonly includeResolved?: boolean } = {},
 ): TreeDataSource & { dispose(): Promise<void> } {
   const lifetime = new AbortController()
   const opened = new Map<number, Promise<OpenLayer | undefined>>()
   const unavailable = new Set<number>()
   let disposing: Promise<void> | undefined
+  const resolvedIndexes = layers.flatMap((layer, index) =>
+    layer.includeInResolved === false ? [] : [index],
+  )
+  const showResolved = options.includeResolved === true && resolvedIndexes.length > 1
+  type ResolvedMember = { readonly index: number; readonly ref: TreeNodeRef }
+  type ResolvedNode = {
+    readonly members: readonly ResolvedMember[]
+    children?: Promise<readonly TreeNodeRef[]>
+  }
+  const resolvedNodes = new Map<string, ResolvedNode>()
+  let resolvedSerial = 0
+  let resolvedRoot: Promise<ResolvedNode> | undefined
 
   const assertLive = (signal?: AbortSignal): void => {
     lifetime.signal.throwIfAborted()
@@ -105,6 +122,73 @@ export function createChainTreeDataSource(
       : undefined
   }
 
+  const resolvedAt = async (id: string): Promise<ResolvedNode> => {
+    if (id === RESOLVED) {
+      resolvedRoot ??= Promise.all(
+        resolvedIndexes.map(async index => {
+          const opened = await layerAt(index)
+          return opened === undefined ? undefined : { index, ref: await opened.tree.root() }
+        }),
+      )
+        .then(members => ({
+          members: members.filter((item): item is ResolvedMember => item !== undefined),
+        }))
+        .catch(error => {
+          resolvedRoot = undefined
+          throw error
+        })
+      return resolvedRoot
+    }
+    const known = resolvedNodes.get(id)
+    if (known === undefined) throw new TypeError('unknown resolved resource ' + id)
+    return known
+  }
+
+  const resolvedChildren = async (
+    node: ResolvedNode,
+    signal?: AbortSignal,
+  ): Promise<readonly TreeNodeRef[]> => {
+    if (node.children !== undefined) return node.children
+    node.children = (async () => {
+      const groups = new Map<string, ResolvedMember[]>()
+      for (const member of node.members) {
+        assertLive(signal)
+        const layer = await layerAt(member.index)
+        if (layer === undefined) continue
+        let cursor: string | undefined
+        do {
+          const result = await layer.tree.children(
+            member.ref,
+            cursor === undefined ? { limit: 500 } : { cursor, limit: 500 },
+            signal,
+          )
+          for (const ref of result.items) {
+            // Galaxy symbol ordinals are local to each package; equal ordinals are not equal symbols.
+            // Editor category values are keyed by their value, not their document-order position.
+            const key = ref.id.startsWith('galaxy-symbol/')
+              ? `${member.index}:${ref.id}`
+              : ref.id.startsWith('editor-value/')
+                ? `editor-value:${(await layer.tree.facts(ref)).label}`
+                : ref.id
+            const group = groups.get(key) ?? []
+            group.push({ index: member.index, ref })
+            groups.set(key, group)
+          }
+          cursor = result.nextCursor
+        } while (cursor !== undefined)
+      }
+      return [...groups.values()].map(members => {
+        const id = `${RESOLVED_NODE}${resolvedSerial++}`
+        resolvedNodes.set(id, { members })
+        return Object.freeze({ id, hasChildren: members.some(item => item.ref.hasChildren) })
+      })
+    })().catch(error => {
+      delete node.children
+      throw error
+    })
+    return node.children
+  }
+
   const children = async (
     node: TreeNodeRef,
     request: PageRequest,
@@ -113,9 +197,18 @@ export function createChainTreeDataSource(
     assertLive(signal)
     if (node.id === ROOT) {
       return page(
-        layers.map((_layer, index) => Object.freeze({ id: LAYER + index, hasChildren: true })),
+        [
+          ...(showResolved ? [Object.freeze({ id: RESOLVED, hasChildren: true })] : []),
+          ...layers.map((_layer, index) => Object.freeze({ id: LAYER + index, hasChildren: true })),
+        ],
         request,
       )
+    }
+    if (node.id === RESOLVED || node.id.startsWith(RESOLVED_NODE)) {
+      const resolved = await resolvedAt(node.id)
+      const items = await resolvedChildren(resolved, signal)
+      assertLive(signal)
+      return page(items, request)
     }
     const layerIndex = layerIndexOf(node.id)
     const target =
@@ -165,6 +258,36 @@ export function createChainTreeDataSource(
             (unavailable.size === 0 ? '' : ' · ' + unavailable.size + ' unavailable'),
         })
       }
+      if (node.id === RESOLVED) {
+        return Object.freeze({
+          kind: RESOLVED_KIND,
+          label: 'Resolved resources',
+          preview: `${resolvedIndexes.length} mod layers`,
+        })
+      }
+      if (node.id.startsWith(RESOLVED_NODE)) {
+        const resolved = await resolvedAt(node.id)
+        const members = await Promise.all(
+          resolved.members.map(async member => {
+            const layer = await layerAt(member.index)
+            return layer === undefined ? undefined : layer.tree.facts(member.ref)
+          }),
+        )
+        const facts = members.filter((item): item is TreeNodeFacts => item !== undefined)
+        const last = facts.at(-1)
+        if (last === undefined) throw new TypeError('unavailable resolved resource ' + node.id)
+        if (facts.length === 1) return last
+        const values = facts.map(item => item.value)
+        if (values.every(value => typeof value === 'number')) {
+          const total = values.reduce<number>((sum, value) => sum + (value as number), 0)
+          return Object.freeze({
+            ...last,
+            value: total,
+            preview: `${total} declarations in ${facts.length} layers`,
+          })
+        }
+        return last
+      }
       const layerIndex = layerIndexOf(node.id)
       if (layerIndex !== undefined) {
         const layer = layers[layerIndex]
@@ -209,6 +332,7 @@ export function createChainTreeDataSource(
         }),
       ).then(() => {
         unavailable.clear()
+        resolvedNodes.clear()
       })
       return disposing
     },
@@ -226,7 +350,9 @@ export function createFileListTree(
 ): TreeDataSource {
   const sorted = [...paths].sort((left, right) => left.localeCompare(right))
   const ROOT_ID = 'files:root'
-  const refs = sorted.map((_path, index) => Object.freeze({ id: String(index), hasChildren: false }))
+  const refs = sorted.map((_path, index) =>
+    Object.freeze({ id: String(index), hasChildren: false }),
+  )
   return Object.freeze({
     async root(): Promise<TreeNodeRef> {
       return Object.freeze({ id: ROOT_ID, hasChildren: refs.length > 0 })

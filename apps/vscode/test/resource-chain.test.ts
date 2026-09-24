@@ -11,6 +11,7 @@ import {
   createFileListTree,
   LAYER_KIND,
   OPENED_LAYER_KIND,
+  RESOLVED_KIND,
   type ResourceChainLayer,
 } from '../src/resource-chain.js'
 
@@ -94,6 +95,103 @@ async function labels(
 }
 
 describe('Resources as the chain of loaded mods', () => {
+  it('offers a lazy resolved view while retaining each package and its source', async () => {
+    const opened = vi.fn()
+    const tree = createChainTreeDataSource(
+      [
+        layerOf(
+          'Core',
+          [
+            {
+              id: 'category/font-styles',
+              label: 'FontStyles',
+              children: [{ id: 'style-item/styles/Title', label: 'Title', preview: 'Core' }],
+            },
+            {
+              id: 'category/gamedata',
+              label: 'GameData',
+              children: [
+                {
+                  id: 'namespace/Unit',
+                  label: 'Unit',
+                  children: [{ id: 'entity/Unit/Marine', label: 'Marine', preview: 'Core' }],
+                },
+              ],
+            },
+            {
+              id: 'category/editor-categories',
+              label: 'EditorCategories',
+              children: [
+                {
+                  id: 'editor-category/Race',
+                  label: 'Race',
+                  children: [{ id: 'editor-value/Race/0', label: 'Terr' }],
+                },
+              ],
+            },
+          ],
+          opened,
+        ),
+        layerOf(
+          'Mine',
+          [
+            {
+              id: 'category/gamedata',
+              label: 'GameData',
+              children: [
+                {
+                  id: 'namespace/Unit',
+                  label: 'Unit',
+                  children: [{ id: 'entity/Unit/Marine', label: 'Marine', preview: 'Mine' }],
+                },
+              ],
+            },
+            {
+              id: 'category/editor-categories',
+              label: 'EditorCategories',
+              children: [
+                {
+                  id: 'editor-category/Race',
+                  label: 'Race',
+                  children: [{ id: 'editor-value/Race/0', label: 'Zerg' }],
+                },
+              ],
+            },
+          ],
+          opened,
+        ),
+      ],
+      { includeResolved: true },
+    )
+    const root = await tree.root()
+    const [resolved, core, mine] = (await tree.children(root, { limit: 10 })).items
+    expect(opened).not.toHaveBeenCalled()
+    expect(await tree.facts(required(resolved))).toMatchObject({
+      kind: RESOLVED_KIND,
+      label: 'Resolved resources',
+    })
+    expect(await labels(tree, required(resolved))).toEqual([
+      'FontStyles',
+      'GameData',
+      'EditorCategories',
+    ])
+    expect(opened).toHaveBeenCalledTimes(2)
+    const categories = (await tree.children(required(resolved), { limit: 10 })).items
+    const data = required(categories[1])
+    const [unit] = (await tree.children(data, { limit: 10 })).items
+    const [marine] = (await tree.children(required(unit), { limit: 10 })).items
+    expect(await tree.facts(required(marine))).toMatchObject({ label: 'Marine', preview: 'Mine' })
+    const [race] = (await tree.children(required(categories[2]), { limit: 10 })).items
+    expect(await labels(tree, required(race))).toEqual(['Terr', 'Zerg'])
+    expect(await labels(tree, required(core))).toEqual([
+      'FontStyles',
+      'GameData',
+      'EditorCategories',
+    ])
+    expect(await labels(tree, required(mine))).toEqual(['GameData', 'EditorCategories'])
+    await tree.dispose()
+  })
+
   it('lists the mods in load order and marks the opened one', async () => {
     const tree = createChainTreeDataSource([
       layerOf('Core', [{ id: 'data', label: 'GameData' }]),
@@ -191,7 +289,10 @@ describe('Resources as the chain of loaded mods', () => {
   })
 
   it('lists the files of a layer no package codec opens, each opening its own subject', async () => {
-    const tree = createFileListTree(['b/Tool.BlizWiz', 'A.BlizWiz'], path => `root?vfs-path=${path}`)
+    const tree = createFileListTree(
+      ['b/Tool.BlizWiz', 'A.BlizWiz'],
+      path => `root?vfs-path=${path}`,
+    )
     const page = await tree.children(await tree.root(), { limit: 10 })
     const facts = await Promise.all(page.items.map(item => tree.facts(item)))
     expect(facts.map(item => [item.label, item.subjectId])).toEqual([
