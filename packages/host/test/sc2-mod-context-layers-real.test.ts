@@ -18,7 +18,8 @@ import { openModContextLayerSource } from '../src/mod-context-layer-source.js'
 import { resolveSubjectClosure } from '../src/content-dependency-operations.js'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
-const blizzard = join(repoRoot, '..', 'modkit-extensions-blizzard')
+const blizzard =
+  process.env['MODKIT_TEST_BLIZZARD_ROOT'] ?? join(repoRoot, '..', 'modkit-extensions-blizzard')
 const sourcesModule = join(
   blizzard,
   'starcraft2',

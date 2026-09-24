@@ -17,7 +17,8 @@
  * for it.
  */
 import { spawnSync } from 'node:child_process'
-import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { createHash } from 'node:crypto'
+import { existsSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -46,12 +47,26 @@ const run = (command, args, cwd, capture = false) => {
     stdio: capture ? ['ignore', 'pipe', 'pipe'] : 'inherit',
   })
   if (result.status !== 0) {
-    throw new Error(`${command} ${args.join(' ')} failed in ${cwd}${capture ? `: ${result.stderr}` : ''}`)
+    throw new Error(
+      `${command} ${args.join(' ')} failed in ${cwd}${capture ? `: ${result.stderr}` : ''}`,
+    )
   }
   return capture ? result.stdout.trim() : ''
 }
 const git = (cwd, ...args) => run('git', args, cwd, true)
 const readText = path => (existsSync(path) ? readFileSync(path, 'utf8') : undefined)
+const installFingerprint = (target, lock) => {
+  const digest = createHash('sha256').update(lock)
+  const vendor = join(target, 'vendor')
+  if (existsSync(vendor)) {
+    for (const name of readdirSync(vendor)
+      .filter(item => item.endsWith('.tgz'))
+      .sort()) {
+      digest.update(name).update(readFileSync(join(vendor, name)))
+    }
+  }
+  return digest.digest('hex')
+}
 
 const failed = []
 for (const repository of REPOSITORIES) {
@@ -73,13 +88,18 @@ for (const repository of REPOSITORIES) {
 
     const lock = readText(join(target, 'pnpm-lock.yaml'))
     const installed = readText(join(target, 'node_modules', '.acceptance-lock'))
-    if (lock !== undefined && (installed !== lock || !existsSync(join(target, 'node_modules')))) {
-      run('pnpm', ['install', '--frozen-lockfile', '--prefer-offline'], target)
-      writeFileSync(join(target, 'node_modules', '.acceptance-lock'), lock)
+    const fingerprint = lock === undefined ? undefined : installFingerprint(target, lock)
+    const needsInstall =
+      fingerprint !== undefined &&
+      (installed !== fingerprint || !existsSync(join(target, 'node_modules')))
+    if (needsInstall) {
+      // pnpm may retain the old extraction of a file: vendor archive at the same path.
+      run('pnpm', ['install', '--force', '--frozen-lockfile', '--prefer-offline'], target)
+      writeFileSync(join(target, 'node_modules', '.acceptance-lock'), fingerprint)
     }
 
     const scripts = JSON.parse(readText(join(target, 'package.json')) ?? '{}').scripts ?? {}
-    if (scripts.build !== undefined && (rebuild || readText(marker) !== head)) {
+    if (scripts.build !== undefined && (rebuild || needsInstall || readText(marker) !== head)) {
       run('pnpm', ['run', 'build'], target)
     }
     writeFileSync(marker, head)
