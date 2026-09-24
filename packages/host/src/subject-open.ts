@@ -2174,6 +2174,27 @@ function containerAliasAbsence(
   return Object.freeze(explained)
 }
 
+/**
+ * What the alias explanation is about: an open that failed, or a subject that lists entries — a
+ * container carrier that may have won only because no semantic alias ran. A texture or a model
+ * that opened as itself has nothing to explain, and saying so on every open is noise.
+ */
+function carrierShaped(result: OpenSubjectResult): boolean {
+  if (result.state !== 'opened') return true
+  const descriptor = result.descriptor as {
+    readonly traits?: readonly { readonly id?: unknown }[]
+    readonly dataSources?: readonly { readonly contract?: unknown }[]
+  }
+  return (
+    (descriptor.traits ?? []).some(
+      trait => typeof trait.id === 'string' && trait.id.startsWith('container.'),
+    ) ||
+    (descriptor.dataSources ?? []).some(
+      source => source.contract === 'common.view/namespace-entry-source',
+    )
+  )
+}
+
 function withDiagnostics(
   result: OpenSubjectResult,
   extra: readonly Diagnostic[],
@@ -2208,7 +2229,8 @@ export async function openSubject(request: OpenSubjectOptions): Promise<OpenSubj
   const scan = scanContainerAliases(options)
   const aliases = scan.aliases
   if (aliases.length === 0) {
-    return withDiagnostics(await openSubjectDirect(options), containerAliasAbsence(scan, options))
+    const direct = await openSubjectDirect(options)
+    return withDiagnostics(direct, carrierShaped(direct) ? containerAliasAbsence(scan, options) : [])
   }
   const formats = [
     ...new Set(aliases.map(alias => alias.spec.container?.formatId).filter(Boolean)),
