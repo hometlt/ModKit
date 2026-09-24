@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { diagnostic } from '@modkit/core'
 import type {
   CandidateWorldSceneInfo,
   CandidateWorldSceneSource,
@@ -461,7 +462,7 @@ describe('generic publisher-candidate world harness', () => {
     expect(acquisitions).toBe(3)
   })
 
-  it('bounds aggregate model bytes, acquisition concurrency and resource count', async () => {
+  it('bounds per-model bytes, acquisition concurrency and resource count', async () => {
     const resourceLayer: WorldSceneLayerItem = {
       facet: 'layers',
       id: 'resources',
@@ -533,7 +534,8 @@ describe('generic publisher-candidate world harness', () => {
       maxConcurrentModelAcquisitions: 1,
     })
     expect(requestedIds).toEqual(['b', 'c'])
-    expect(requestedBytes).toEqual([50, 50])
+    // A model is never asked for more than the whole budget.
+    expect(requestedBytes).toEqual([100, 100])
     expect(maximumActive).toBe(1)
     expect(bounded.models?.get('a')).toMatchObject({ state: 'unresolved' })
     expect(bounded.models?.get('a')?.diagnostics[0]?.code).toBe(
@@ -541,15 +543,16 @@ describe('generic publisher-candidate world harness', () => {
     )
   })
 
-  it('admits models by the bytes they deliver, not a fixed count', async () => {
-    // A real map names hundreds of models; the old count of 64 left Amphion's doodads unloaded.
+  it('loads every model; past the byte budget only their textures shrink', async () => {
+    // A count of 64 left Amphion's doodads unloaded; a budget that left models out dropped half of
+    // them across VS Code's webview channel, where shared textures arrive once per model.
     const ids = Array.from({ length: 100 }, (_, index) => `m${String(index).padStart(3, '0')}`)
     const resourceLayer: WorldSceneLayerItem = {
       facet: 'layers', id: 'resources', layerId: 'resources', kind: 'resources',
       state: 'available', itemCount: ids.length, lods: ['exact'],
     }
-    const shared = new Uint8Array(1000)
-    const requested: string[] = []
+    const shared = new Uint8Array(1024 * 1024)
+    const textureBudgets: number[] = []
     const source: CandidateWorldSceneSource = {
       contract,
       major: 1,
@@ -568,31 +571,105 @@ describe('generic publisher-candidate world harness', () => {
           })),
         }
       },
-      async model(resourceId) {
-        requested.push(resourceId)
-        // Each model carries 100 bytes of its own and a texture every model shares.
+      async model(_resourceId, request) {
+        textureBudgets.push(request.maxTextureTotalBytes ?? 0)
+        // Each model carries 100 KiB of its own and a 1 MiB texture every model shares.
         return {
           state: 'converted', sourceKey: 'revision', meshes: [], diagnostics: [], complete: true,
-          primitives: [{ id: 'p', topology: 'triangles', positions: new Float32Array(25) }],
-          textures: [{ id: 't', width: 10, height: 25, rgba: shared }],
+          primitives: [{ id: 'p', topology: 'triangles', positions: new Float32Array(25_600) }],
+          textures: [{ id: 't', width: 512, height: 512, rgba: shared }],
         }
       },
     }
     const everything = await inspectCandidateWorld(source, {
       maxLayers: 2, maxItemsPerLayer: 256, maxConcurrentModelAcquisitions: 1,
     })
-    expect(requested).toHaveLength(100)
     expect(worldModelAssetStatus(everything)).toEqual({ total: 100, converted: 100, partial: false })
+    expect(new Set(textureBudgets)).toEqual(new Set([2 * 1024 * 1024]))
 
-    // 1,000 shared bytes once, then 100 per model: 5,000 are spent after the 40th model.
-    requested.length = 0
+    // 1 MiB shared once, then 100 KiB per model: 8 MiB are spent after the 72nd model.
+    textureBudgets.length = 0
     const spent = await inspectCandidateWorld(source, {
-      maxLayers: 2, maxItemsPerLayer: 256, maxConcurrentModelAcquisitions: 1, maxModelBytes: 5000,
+      maxLayers: 2, maxItemsPerLayer: 256, maxConcurrentModelAcquisitions: 1,
+      maxModelBytes: 8 * 1024 * 1024,
     })
-    expect(requested).toHaveLength(40)
-    expect(spent.models?.get(ids[40]!)?.diagnostics[0]).toMatchObject({
-      code: 'x3.ui/world-model-budget-exhausted',
-      message: expect.stringContaining('5000 bytes was spent before'),
+    expect(worldModelAssetStatus(spent)).toEqual({ total: 100, converted: 100, partial: false })
+    expect(textureBudgets.slice(0, 72)).toEqual(Array(72).fill(2 * 1024 * 1024))
+    expect(textureBudgets.slice(72)).toEqual(Array(28).fill(256 * 1024))
+    expect(spent.models?.get(ids[72]!)?.diagnostics.at(-1)).toMatchObject({
+      severity: 'information',
+      code: 'x3.ui/world-model-textures-reduced',
+    })
+  })
+
+  it('asks a model that needs more for what it needs; one that throws does not stop the rest', async () => {
+    const ids = ['big', 'broken', 'huge', 'plain', 'textured']
+    const resourceLayer: WorldSceneLayerItem = {
+      facet: 'layers', id: 'resources', layerId: 'resources', kind: 'resources',
+      state: 'available', itemCount: ids.length, lods: ['exact'],
+    }
+    const asked: [string, number][] = []
+    const tooLarge = (maxBytes: number, requiredBytes: number) => ({
+      state: 'unresolved' as const,
+      diagnostics: [
+        diagnostic('warning', 'x3.host/model-resource-too-large', 'needs more', undefined, {
+          maxBytes,
+          requiredBytes,
+        }),
+      ],
+    })
+    const source: CandidateWorldSceneSource = {
+      contract,
+      major: 1,
+      snapshotId,
+      info: async () => info,
+      async page(request) {
+        if (request.facet === 'layers') {
+          return { snapshotId, facet: 'layers', state: 'available', items: [resourceLayer] }
+        }
+        return {
+          snapshotId, facet: 'resources', state: 'available',
+          items: ids.map(id => ({
+            facet: 'resources' as const, id, layerId: resourceLayer.layerId, namespace: 'Model',
+            entityId: id, resolved: true, objectIds: [`${id}:0`],
+            modelResource: { id, logicalId: `${id}.m3`, role: 'sidecar' as const, scopes: ['current-mount'] as const },
+          })),
+        }
+      },
+      async model(resourceId, request) {
+        asked.push([resourceId, request.maxBytes])
+        // DefendersCity_Biker_Bar is 4.07 MiB: just over the first ask.
+        if (resourceId === 'big' && request.maxBytes < 4_270_000) return tooLarge(request.maxBytes, 4_270_000)
+        if (resourceId === 'huge') return tooLarge(request.maxBytes, 64 * 1024 * 1024)
+        if (resourceId === 'broken') throw new RangeError('model primitive exceeds maxBytes budget')
+        // Its UVM fits the first ask, its textures then do not: both share maxBytes.
+        if (resourceId === 'textured' && request.maxBytes < 3_000_000 + 2 * 1024 * 1024)
+          return {
+            state: 'converted', sourceKey: 'revision', uvmBytes: new Uint8Array(3_000_000),
+            meshes: [], primitives: [], complete: true,
+            diagnostics: [diagnostic('warning', 'x3.host/resource-budget-exceeded', 'Raster reads exceed the budget.')],
+          }
+        return { state: 'converted', sourceKey: 'revision', meshes: [], primitives: [], diagnostics: [], complete: true }
+      },
+    }
+    const world = await inspectCandidateWorld(source, {
+      maxLayers: 2, maxItemsPerLayer: 8, maxConcurrentModelAcquisitions: 1,
+    })
+    const first = 4 * 1024 * 1024
+    expect(asked).toEqual([
+      ['big', first], ['big', 4_270_000 + 2 * 1024 * 1024],
+      ['broken', first], ['broken', 24 * 1024 * 1024],
+      ['huge', first],
+      ['plain', first],
+      ['textured', first], ['textured', 3_000_000 + 2 * 1024 * 1024],
+    ])
+    expect(world.models?.get('textured')?.diagnostics).toEqual([])
+    expect(world.models?.get('big')?.state).toBe('converted')
+    expect(world.models?.get('plain')?.state).toBe('converted')
+    expect(world.models?.get('huge')?.diagnostics[0]?.code).toBe('x3.host/model-resource-too-large')
+    expect(world.models?.get('broken')?.diagnostics[0]).toMatchObject({
+      code: 'x3.ui/world-model-failed',
+      message: expect.stringContaining('model primitive exceeds maxBytes budget'),
     })
   })
 

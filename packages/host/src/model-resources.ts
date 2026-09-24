@@ -152,11 +152,15 @@ export function createSubjectModelResources(options: Options): ModelResourcePort
     if (failed?.status === 'rejected') throw failed.reason
   })
   const available = () => !closed && options.state.live && options.isAuthorized()
-  const refuse = (message: string): Lease<ModelResourceAsset> => ({
+  const refuse = (
+    message: string,
+    code: 'x3.host/model-resource-unavailable' | 'x3.host/model-resource-too-large' = 'x3.host/model-resource-unavailable',
+    data?: { readonly maxBytes: number; readonly requiredBytes: number },
+  ): Lease<ModelResourceAsset> => ({
     value: {
       result: {
         state: 'unresolved',
-        diagnostics: [diagnostic('warning', 'x3.host/model-resource-unavailable', message)],
+        diagnostics: [diagnostic('warning', code, message, undefined, data)],
       },
       async acquire() {
         throw new TypeError('model resource is unavailable')
@@ -332,17 +336,23 @@ export function createSubjectModelResources(options: Options): ModelResourcePort
           if (
             converted.state !== 'ok' ||
             converted.output.kind !== 'bytes' ||
-            !(converted.output.value instanceof Uint8Array) ||
-            converted.output.value.length > maxBytes
+            !(converted.output.value instanceof Uint8Array)
           )
-            throw new RangeError('model resource conversion did not return bounded UVM bytes')
+            throw new RangeError('model resource conversion did not return UVM bytes')
           uvmBytes = converted.output.value.slice()
           conversionDiagnostics = converted.diagnostics
         }
         signal?.throwIfAborted()
         if (!available()) throw new TypeError('model resource authority expired')
-        if (uvmBytes.length > maxBytes)
-          throw new RangeError('model resource conversion did not return bounded UVM bytes')
+        // The model is fine; the caller asked for less than it takes. Say how much, so it can ask again.
+        if (uvmBytes.length > maxBytes) {
+          await release()
+          return refuse(
+            `Model conversion needs ${String(uvmBytes.length)} bytes; ${String(maxBytes)} were requested.`,
+            'x3.host/model-resource-too-large',
+            { maxBytes, requiredBytes: uvmBytes.length },
+          )
+        }
         profile.uvmBytes = uvmBytes.byteLength
         let scene: Lease<ModelSceneSource> | undefined
         let skeleton: Lease<ModelSkeletonSource> | undefined

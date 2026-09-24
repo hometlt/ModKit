@@ -59,21 +59,32 @@ export { createWorldLatticePlan, drawWorldLattice, worldLatticeColor } from './l
 export const WORLD_VIEWER_MAX_LAYERS = 16
 export const WORLD_VIEWER_MAX_ITEMS_PER_LAYER = 100_000
 export const WORLD_VIEWER_MAX_PAGE_ITEMS = 1_024
-/** Resources one preview may admit; on a real map the byte budget ends admission long before. */
+/** Resources one preview may admit; a real map names a few hundred (Amphion 527). */
 export const WORLD_VIEWER_MAX_MODELS = 4096
-export const WORLD_VIEWER_MAX_MODEL_BYTES = 256 * 1024 * 1024
 /**
- * How many models one request's cap assumes share `maxModelBytes` (4 MiB each by default).
+ * What the models may hold before the rest load with the smallest textures. No model is left out
+ * for bytes: past this only textures shrink.
  *
- * It used to be the admission count too, and a map outgrows it at once: Amphion names 527 models,
- * its 276 cliff pieces sort first, and 64 slots left none of its 9,502 doodads and units. What a
- * converted model carries is measured instead — all 527 come to about 150 MB at this cap — so
- * admission stops on the bytes actually delivered.
+ * Amphion's 527 models hold 227.5 MiB in one process and 627 MiB across VS Code's JSON webview
+ * channel, where a texture several models share arrives once for each of them.
  */
-export const WORLD_VIEWER_MODEL_BUDGET_SHARE = 64
-export const WORLD_VIEWER_MAX_BYTES_PER_MODEL = 16 * 1024 * 1024
+export const WORLD_VIEWER_MAX_MODEL_BYTES = 1024 * 1024 * 1024
+/**
+ * What a model is first asked for. Each conversion holds this much of the session's byte budget
+ * (64 MiB in VS Code) while it runs, so a small ask keeps the acquisitions running in parallel.
+ */
+export const WORLD_VIEWER_MODEL_REQUEST_BYTES = 4 * 1024 * 1024
+/**
+ * The most a model that needs more is asked for again. Its UVM and its primitives come back in one
+ * capability-RPC frame of at most 64 MiB, so both must fit. DefendersCity_Biker_Bar takes 4.07 MiB.
+ */
+export const WORLD_VIEWER_MAX_BYTES_PER_MODEL = 24 * 1024 * 1024
+/** All textures of one model, each at the largest mip that fits. */
+export const WORLD_VIEWER_TEXTURE_BYTES_PER_MODEL = 2 * 1024 * 1024
+/** One model's textures once `maxModelBytes` is spent. */
+export const WORLD_VIEWER_SPENT_TEXTURE_BYTES_PER_MODEL = 256 * 1024
 export const WORLD_VIEWER_MAX_CONCURRENT_MODEL_ACQUISITIONS = 4
-export const WORLD_VIEWER_MAX_TERRAIN_TEXTURES = 64
+export const WORLD_VIEWER_MAX_TERRAIN_TEXTURES = 256
 
 export interface CandidateWorldViewerOptions {
   readonly maxLayers: number
@@ -363,24 +374,10 @@ export async function inspectCandidateWorld(
       ? resourceItems
       : resourceItems.filter(item => options.modelResourceFilter!(item.id))
   const admittedResources = requestedResources.slice(0, maxModels)
-  const perModelBytes = Math.max(
-    1,
-    Math.min(
-      WORLD_VIEWER_MAX_BYTES_PER_MODEL,
-      Math.floor(
-        maxModelBytes /
-          Math.max(1, Math.min(admittedResources.length, WORLD_VIEWER_MODEL_BUDGET_SHARE)),
-      ),
-    ),
-  )
-  const maxTextureTotalBytes = Math.max(
-    1,
-    Math.min(32 * 1024 * 1024, Math.floor(perModelBytes / 2)),
-  )
-  const maxTextureBytes = Math.max(
-    1,
-    Math.min(16 * 1024 * 1024, Math.floor(perModelBytes / 2), maxTextureTotalBytes),
-  )
+  const perModelBytes = Math.min(WORLD_VIEWER_MODEL_REQUEST_BYTES, maxModelBytes)
+  const maxTextureTotalBytes = Math.min(WORLD_VIEWER_TEXTURE_BYTES_PER_MODEL, perModelBytes)
+  const maxTextureBytes = maxTextureTotalBytes
+  const spentTextureBytes = Math.min(WORLD_VIEWER_SPENT_TEXTURE_BYTES_PER_MODEL, perModelBytes)
   const modelRequestKey = JSON.stringify({
     // Admission count, aggregate budget and worker count do not change an individual result.
     // Only actual per-resource limits belong here, so Load more can retain previous projections.
@@ -439,34 +436,91 @@ export async function inspectCandidateWorld(
       }
     }
   }
+  const requestModel = async (
+    item: WorldSceneResourceItem,
+    maxBytes: number,
+    textureBytes: number,
+  ): Promise<WorldSceneModelResult> => {
+    modelRequests += 1
+    try {
+      return await source.model!(
+        item.id,
+        {
+          maxBytes,
+          maxNodes: Math.min(1_024, maxItemsPerLayer),
+          maxMeshes: Math.min(256, maxItemsPerLayer),
+          maxPrimitives: Math.min(512, maxItemsPerLayer),
+          maxPrimitiveBytes: Math.min(16 * 1024 * 1024, maxBytes),
+          maxResources: Math.min(64, maxItemsPerLayer),
+          maxTextureBytes: textureBytes,
+          maxTextureTotalBytes: textureBytes,
+        },
+        options.signal,
+      )
+    } catch (error) {
+      // One model that cannot be read must not cost the map all the others.
+      options.signal?.throwIfAborted()
+      return Object.freeze({
+        state: 'unresolved' as const,
+        diagnostics: Object.freeze([
+          diagnostic(
+            'warning',
+            'x3.ui/world-model-failed',
+            `World preview could not load ${item.id}: ${error instanceof Error ? error.message : String(error)}`,
+          ),
+        ]),
+      })
+    }
+  }
+  const largestModelBytes = Math.min(WORLD_VIEWER_MAX_BYTES_PER_MODEL, maxModelBytes)
+  /**
+   * What a model that did not fit its first ask is asked for again, if anything. Its UVM stays
+   * reserved while each texture decodes, so both share `maxBytes`: a model whose UVM alone fits
+   * can still come back without textures.
+   */
+  const retryBytes = (result: WorldSceneModelResult, textureBytes: number): number | undefined => {
+    let uvmBytes: number | undefined
+    for (const item of result.diagnostics) {
+      const required = (item.data as { readonly requiredBytes?: unknown } | undefined)?.requiredBytes
+      if (item.code === 'x3.host/model-resource-too-large' && typeof required === 'number')
+        uvmBytes = required
+      else if (item.code === 'x3.host/resource-budget-exceeded' && result.state === 'converted')
+        uvmBytes = result.uvmBytes?.byteLength
+      // A read that threw (a primitive over its share, say) is tried once with the most a reply carries.
+      else if (item.code === 'x3.ui/world-model-failed')
+        return perModelBytes < largestModelBytes ? largestModelBytes : undefined
+    }
+    if (uvmBytes === undefined || uvmBytes > largestModelBytes) return undefined
+    const bytes = Math.min(largestModelBytes, uvmBytes + textureBytes)
+    return bytes > perModelBytes ? bytes : undefined
+  }
   const acquireModel = async (item: WorldSceneResourceItem) => {
     options.signal?.throwIfAborted()
     if (models.get(item.id)?.state === 'converted') return
-    if (deliveredModelBytes >= maxModelBytes) {
-      models.set(
-        item.id,
-        omitted(item, `World preview model budget of ${String(maxModelBytes)} bytes was spent before`),
-      )
-      return
-    }
-    modelRequests += 1
-    const result = await source.model!(
-      item.id,
-      {
-        maxBytes: perModelBytes,
-        maxNodes: Math.min(1_024, maxItemsPerLayer),
-        maxMeshes: Math.min(256, maxItemsPerLayer),
-        maxPrimitives: Math.min(512, maxItemsPerLayer),
-        maxPrimitiveBytes: Math.min(16 * 1024 * 1024, perModelBytes),
-        maxResources: Math.min(64, maxItemsPerLayer),
-        maxTextureBytes,
-        maxTextureTotalBytes,
-      },
-      options.signal,
-    )
+    // Past the byte budget a model still loads; only its textures shrink.
+    const spent = deliveredModelBytes >= maxModelBytes
+    const textureBytes = spent ? spentTextureBytes : maxTextureTotalBytes
+    let result = await requestModel(item, perModelBytes, textureBytes)
+    const retry = retryBytes(result, textureBytes)
+    if (retry !== undefined) result = await requestModel(item, retry, textureBytes)
     options.signal?.throwIfAborted()
     deliveredModelBytes += deliveredBytes(result)
-    models.set(item.id, result)
+    models.set(
+      item.id,
+      spent && result.state === 'converted'
+        ? Object.freeze({
+            ...result,
+            diagnostics: Object.freeze([
+              ...result.diagnostics,
+              diagnostic(
+                'information',
+                'x3.ui/world-model-textures-reduced',
+                `World preview model budget of ${String(maxModelBytes)} bytes was spent; ${item.id} has ${String(textureBytes)} bytes of textures.`,
+              ),
+            ]),
+          })
+        : result,
+    )
   }
   const terrainTextures = new Map<string, SceneRendererTexture>()
   const terrainTextureDiagnostics: Diagnostic[] = []

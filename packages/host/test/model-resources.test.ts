@@ -842,6 +842,11 @@ it('bounds retained bytes, evicts for new reservations and checks maxBytes again
   expect(f.counts().invokes).toBe(21)
   const tooSmall = await f.port.acquire({ ...request, maxBytes: 2 })
   expect(tooSmall.value.result.state).toBe('unresolved')
+  // The caller learns what the model takes, so it can ask again.
+  expect(tooSmall.value.result.diagnostics[0]).toMatchObject({
+    code: 'x3.host/model-resource-too-large',
+    data: { maxBytes: 2, requiredBytes: expect.any(Number) },
+  })
   expect(f.counts().invokes).toBe(21)
   const entireBudget = await f.port.acquire({ ...request, maxBytes: budget.maxScalarBytes })
   expect(entireBudget.value.result.state).toBe('converted')
