@@ -792,11 +792,13 @@ function memberUriOf(root: string, entry: string): vscode.Uri {
   }
   const location = parseContainerUriText(root)
   if (location === undefined) {
+    const filesystemRoot = root.startsWith('file:') ? vscode.Uri.parse(root).fsPath : root
     // A packed mod's resource address carries the package file as its root.
     try {
-      if (statSync(root).isFile()) return subjectUriOf(containerUriText(root, entry))
+      if (statSync(filesystemRoot).isFile())
+        return subjectUriOf(containerUriText(filesystemRoot, entry))
     } catch { /* A directory or an unavailable source still uses the ordinary file route. */ }
-    return vscode.Uri.file(join(root, entry))
+    return vscode.Uri.file(join(filesystemRoot, entry))
   }
   return subjectUriOf(
         containerUriText(
