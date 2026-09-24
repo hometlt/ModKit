@@ -19,6 +19,7 @@ import {
   rejectWorldObjectMove,
   selectWorldObject,
   watchTransportedWorld,
+  worldModelAssetStatus,
 } from '@modkit/ui/world'
 
 const contract = 'example.publisher/world-source'
@@ -538,6 +539,61 @@ describe('generic publisher-candidate world harness', () => {
     expect(bounded.models?.get('a')?.diagnostics[0]?.code).toBe(
       'x3.ui/world-model-budget-exhausted',
     )
+  })
+
+  it('admits models by the bytes they deliver, not a fixed count', async () => {
+    // A real map names hundreds of models; the old count of 64 left Amphion's doodads unloaded.
+    const ids = Array.from({ length: 100 }, (_, index) => `m${String(index).padStart(3, '0')}`)
+    const resourceLayer: WorldSceneLayerItem = {
+      facet: 'layers', id: 'resources', layerId: 'resources', kind: 'resources',
+      state: 'available', itemCount: ids.length, lods: ['exact'],
+    }
+    const shared = new Uint8Array(1000)
+    const requested: string[] = []
+    const source: CandidateWorldSceneSource = {
+      contract,
+      major: 1,
+      snapshotId,
+      info: async () => info,
+      async page(request) {
+        if (request.facet === 'layers') {
+          return { snapshotId, facet: 'layers', state: 'available', items: [resourceLayer] }
+        }
+        return {
+          snapshotId, facet: 'resources', state: 'available',
+          items: ids.map(id => ({
+            facet: 'resources' as const, id, layerId: resourceLayer.layerId, namespace: 'Model',
+            entityId: id, resolved: true, objectIds: [`${id}:0`],
+            modelResource: { id, logicalId: `${id}.m3`, role: 'sidecar' as const, scopes: ['current-mount'] as const },
+          })),
+        }
+      },
+      async model(resourceId) {
+        requested.push(resourceId)
+        // Each model carries 100 bytes of its own and a texture every model shares.
+        return {
+          state: 'converted', sourceKey: 'revision', meshes: [], diagnostics: [], complete: true,
+          primitives: [{ id: 'p', topology: 'triangles', positions: new Float32Array(25) }],
+          textures: [{ id: 't', width: 10, height: 25, rgba: shared }],
+        }
+      },
+    }
+    const everything = await inspectCandidateWorld(source, {
+      maxLayers: 2, maxItemsPerLayer: 256, maxConcurrentModelAcquisitions: 1,
+    })
+    expect(requested).toHaveLength(100)
+    expect(worldModelAssetStatus(everything)).toEqual({ total: 100, converted: 100, partial: false })
+
+    // 1,000 shared bytes once, then 100 per model: 5,000 are spent after the 40th model.
+    requested.length = 0
+    const spent = await inspectCandidateWorld(source, {
+      maxLayers: 2, maxItemsPerLayer: 256, maxConcurrentModelAcquisitions: 1, maxModelBytes: 5000,
+    })
+    expect(requested).toHaveLength(40)
+    expect(spent.models?.get(ids[40]!)?.diagnostics[0]).toMatchObject({
+      code: 'x3.ui/world-model-budget-exhausted',
+      message: expect.stringContaining('5000 bytes was spent before'),
+    })
   })
 
   it('draws terrain and placed objects from the admitted common source without game branches', async () => {

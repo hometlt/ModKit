@@ -59,8 +59,18 @@ export { createWorldLatticePlan, drawWorldLattice, worldLatticeColor } from './l
 export const WORLD_VIEWER_MAX_LAYERS = 16
 export const WORLD_VIEWER_MAX_ITEMS_PER_LAYER = 100_000
 export const WORLD_VIEWER_MAX_PAGE_ITEMS = 1_024
-export const WORLD_VIEWER_MAX_MODELS = 64
+/** Resources one preview may admit; on a real map the byte budget ends admission long before. */
+export const WORLD_VIEWER_MAX_MODELS = 4096
 export const WORLD_VIEWER_MAX_MODEL_BYTES = 256 * 1024 * 1024
+/**
+ * How many models one request's cap assumes share `maxModelBytes` (4 MiB each by default).
+ *
+ * It used to be the admission count too, and a map outgrows it at once: Amphion names 527 models,
+ * its 276 cliff pieces sort first, and 64 slots left none of its 9,502 doodads and units. What a
+ * converted model carries is measured instead — all 527 come to about 150 MB at this cap — so
+ * admission stops on the bytes actually delivered.
+ */
+export const WORLD_VIEWER_MODEL_BUDGET_SHARE = 64
 export const WORLD_VIEWER_MAX_BYTES_PER_MODEL = 16 * 1024 * 1024
 export const WORLD_VIEWER_MAX_CONCURRENT_MODEL_ACQUISITIONS = 4
 export const WORLD_VIEWER_MAX_TERRAIN_TEXTURES = 64
@@ -357,7 +367,10 @@ export async function inspectCandidateWorld(
     1,
     Math.min(
       WORLD_VIEWER_MAX_BYTES_PER_MODEL,
-      Math.floor(maxModelBytes / Math.max(1, admittedResources.length)),
+      Math.floor(
+        maxModelBytes /
+          Math.max(1, Math.min(admittedResources.length, WORLD_VIEWER_MODEL_BUDGET_SHARE)),
+      ),
     ),
   )
   const maxTextureTotalBytes = Math.max(
@@ -381,23 +394,34 @@ export async function inspectCandidateWorld(
     maxTextureTotalBytes,
     metersPerSourceUnit: undefined,
   })
+  const omitted = (item: WorldSceneResourceItem, reason: string): WorldSceneModelResult =>
+    Object.freeze({
+      state: 'unresolved' as const,
+      diagnostics: Object.freeze([
+        diagnostic('warning', 'x3.ui/world-model-budget-exhausted', `${reason} ${item.id}.`),
+      ]),
+    })
   for (const item of [
     ...requestedResources.slice(maxModels),
     ...resourceItems.filter(item => !requestedResources.includes(item)),
   ]) {
-    models.set(
-      item.id,
-      Object.freeze({
-        state: 'unresolved' as const,
-        diagnostics: Object.freeze([
-          diagnostic(
-            'warning',
-            'x3.ui/world-model-budget-exhausted',
-            `World preview model limit ${String(maxModels)} omitted resource ${item.id}.`,
-          ),
-        ]),
-      }),
-    )
+    models.set(item.id, omitted(item, `World preview model limit ${String(maxModels)} omitted resource`))
+  }
+  // What converted models actually hold; a texture that several cliff pieces share counts once.
+  const counted = new WeakSet<ArrayBufferView>()
+  let deliveredModelBytes = 0
+  const deliveredBytes = (value: unknown, depth = 0): number => {
+    if (ArrayBuffer.isView(value)) {
+      if (counted.has(value)) return 0
+      counted.add(value)
+      return value.byteLength
+    }
+    if (depth > 6 || value === null || typeof value !== 'object') return 0
+    let total = 0
+    for (const child of Array.isArray(value) ? value : Object.values(value)) {
+      total += deliveredBytes(child, depth + 1)
+    }
+    return total
   }
   let modelRequests = 0
   let reusedModels = 0
@@ -410,6 +434,7 @@ export async function inspectCandidateWorld(
       const previous = options.previous.models?.get(item.id)
       if (previous?.state === 'converted') {
         models.set(item.id, previous)
+        deliveredModelBytes += deliveredBytes(previous)
         reusedModels++
       }
     }
@@ -417,6 +442,13 @@ export async function inspectCandidateWorld(
   const acquireModel = async (item: WorldSceneResourceItem) => {
     options.signal?.throwIfAborted()
     if (models.get(item.id)?.state === 'converted') return
+    if (deliveredModelBytes >= maxModelBytes) {
+      models.set(
+        item.id,
+        omitted(item, `World preview model budget of ${String(maxModelBytes)} bytes was spent before`),
+      )
+      return
+    }
     modelRequests += 1
     const result = await source.model!(
       item.id,
@@ -433,6 +465,7 @@ export async function inspectCandidateWorld(
       options.signal,
     )
     options.signal?.throwIfAborted()
+    deliveredModelBytes += deliveredBytes(result)
     models.set(item.id, result)
   }
   const terrainTextures = new Map<string, SceneRendererTexture>()
