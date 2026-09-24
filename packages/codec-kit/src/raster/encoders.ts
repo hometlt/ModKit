@@ -26,28 +26,25 @@ function pngChunk(type: string, data: Uint8Array): Uint8Array {
   return out
 }
 
-/**
- * RGBA8 → PNG: colour type 6, 8 bits per channel, filter 0 on every scanline, one zlib IDAT from
- * the platform's `CompressionStream`. Exact pixels; nothing else about a source file survives.
- */
-export async function encodePng(
+/** One PNG from unfiltered scanlines: filter 0 on every row, one zlib IDAT from the platform. */
+async function writePng(
   width: number,
   height: number,
-  pixels: Uint8Array,
+  bitDepth: 8 | 16,
+  colorType: 0 | 6,
+  rowBytes: number,
+  row: (y: number, into: Uint8Array) => void,
   signal?: AbortSignal,
 ): Promise<Uint8Array> {
-  const rowBytes = width * 4
   const raw = new Uint8Array((rowBytes + 1) * height)
-  for (let row = 0; row < height; row += 1) {
-    // filter 0 (None) on every scanline: the filter byte is already zero
-    raw.set(pixels.subarray(row * rowBytes, (row + 1) * rowBytes), row * (rowBytes + 1) + 1)
-  }
+  // filter 0 (None) on every scanline: the filter byte is already zero
+  for (let y = 0; y < height; y += 1) row(y, raw.subarray(y * (rowBytes + 1) + 1, (y + 1) * (rowBytes + 1)))
   const header = new Uint8Array(13)
   const view = new DataView(header.buffer)
   view.setUint32(0, width, false)
   view.setUint32(4, height, false)
-  header[8] = 8 // bit depth
-  header[9] = 6 // colour type: truecolour with alpha
+  header[8] = bitDepth
+  header[9] = colorType
   const parts = [
     Uint8Array.from(PNG_SIGNATURE),
     pngChunk('IHDR', header),
@@ -61,6 +58,50 @@ export async function encodePng(
     offset += part.byteLength
   }
   return png
+}
+
+/**
+ * RGBA8 → PNG: colour type 6, 8 bits per channel, filter 0 on every scanline, one zlib IDAT from
+ * the platform's `CompressionStream`. Exact pixels; nothing else about a source file survives.
+ */
+export async function encodePng(
+  width: number,
+  height: number,
+  pixels: Uint8Array,
+  signal?: AbortSignal,
+): Promise<Uint8Array> {
+  const rowBytes = width * 4
+  return writePng(width, height, 8, 6, rowBytes, (y, into) => into.set(pixels.subarray(y * rowBytes, (y + 1) * rowBytes)), signal)
+}
+
+/**
+ * Grey samples → PNG: colour type 0 at 8 or 16 bits, row-major, top row first. For grids that are
+ * not colours (heights, levels, masks): every sample survives exactly at its depth.
+ */
+export async function encodeGreyPng(
+  width: number,
+  height: number,
+  samples: ArrayLike<number>,
+  bitDepth: 8 | 16,
+  signal?: AbortSignal,
+): Promise<Uint8Array> {
+  if (samples.length !== width * height) {
+    throw new RangeError(`grey PNG needs ${width * height} samples, got ${samples.length}`)
+  }
+  const maximum = bitDepth === 16 ? 0xffff : 0xff
+  const bytes = bitDepth / 8
+  return writePng(width, height, bitDepth, 0, width * bytes, (y, into) => {
+    for (let x = 0; x < width; x += 1) {
+      const value = samples[y * width + x] as number
+      if (!Number.isInteger(value) || value < 0 || value > maximum) {
+        throw new RangeError(`grey sample ${value} at ${x},${y} is outside 0..${maximum}`)
+      }
+      if (bitDepth === 16) {
+        into[x * 2] = value >> 8
+        into[x * 2 + 1] = value & 0xff
+      } else into[x] = value
+    }
+  }, signal)
 }
 
 /** RGBA8 → uncompressed 32-bit TGA with a top-left origin — MK2 `encodeTgaRgba`, unchanged. */

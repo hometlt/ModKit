@@ -41,6 +41,55 @@ export const MAP_PREVIEW_PREPARATION_CONTRACT = 'common.map/preview-preparation'
  */
 export const WORLD_SCENE_SOURCE_CONTRACT = 'common.view/world-scene-source' as const
 
+/**
+ * Grid layers of a map — heights, cliff levels, water, pathing, texture weights — in any game's
+ * format. A map codec lists its layers (`map.layers`), reads one as numbers (`map.layer-read`)
+ * and turns numbers back into an edit plan (`map.layer-write`). A codec never sees an image: the
+ * application turns a layer into a grey PNG and back (`@modkit/codec-kit/raster` grey grids), so a
+ * heightmap exports and imports the same way for every game.
+ */
+export const MAP_LAYERS_OPERATION = 'map.layers' as const
+export const MAP_LAYER_READ_OPERATION = 'map.layer-read' as const
+export const MAP_LAYER_WRITE_OPERATION = 'map.layer-write' as const
+
+/** What a layer's numbers mean; `other` for a game's own grid. */
+export type MapLayerMeaning =
+  | 'height'
+  | 'cliff-level'
+  | 'water'
+  | 'pathing'
+  | 'texture-weight'
+  | 'flags'
+  | 'other'
+
+export interface MapLayerDescriptor {
+  readonly id: string
+  readonly label: string
+  readonly meaning: MapLayerMeaning
+  readonly width: number
+  readonly height: number
+  /** Inclusive bounds of a sample; `maximum` at most 65535, so a layer fits a 16-bit image. */
+  readonly minimum: number
+  readonly maximum: number
+  readonly editable: boolean
+}
+
+/** `map.layers` output. */
+export interface MapLayerList {
+  readonly layers: readonly MapLayerDescriptor[]
+}
+
+/**
+ * `map.layer-read` output and `map.layer-write` input: row-major samples, row 0 at the map's north
+ * edge (image order), `width * height` integers within the descriptor's bounds.
+ */
+export interface MapLayerGrid {
+  readonly layer: string
+  readonly width: number
+  readonly height: number
+  readonly values: readonly number[]
+}
+
 /** Host-owned matcher profile for exact game-id routing. */
 export const MAP_SEMANTIC_MATCHER_PROFILE = 'modkit/map-semantic-matcher' as const
 

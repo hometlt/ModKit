@@ -1,5 +1,14 @@
-/** Raster algorithms every image codec shares: encoders for the simple formats and pixel operations. */
-export { encodeIconDib, encodePng, encodeTga } from './encoders.js'
+/** Raster algorithms every image codec shares: encoders for the simple formats, the PNG decoder and pixel operations. */
+export { encodeGreyPng, encodeIconDib, encodePng, encodeTga } from './encoders.js'
+export {
+  decodePngSamples,
+  greyDepthFor,
+  greyGridFromPng,
+  greyGridToPng,
+  type GreyGrid,
+  type PngDecodeOptions,
+  type PngSamples,
+} from './png.js'
 export {
   applyColorKeyTransparency,
   applyRoundedAlpha,
