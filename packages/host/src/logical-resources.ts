@@ -184,6 +184,32 @@ function copyProvenance(record: ResourceProvenanceRecord): ResourceProvenanceRec
   return Object.freeze({ ...record, scopes: Object.freeze([...record.scopes]) })
 }
 
+/** Capture host-declared inputs using the same validation as broker requests. */
+export function snapshotLogicalResourceRequirements(
+  inputs: readonly LogicalResourceRequirement[],
+  budget: ResourceBudget,
+): readonly LogicalResourceRequirement[] {
+  if (!Array.isArray(inputs) || inputs.length > budget.maxNodes)
+    throw new TypeError('Logical inputs exceed the host resource budget.')
+  const count = inputs.length
+  const captured = Array.from({ length: count }, (_, index) => {
+    const input = inputs[index]
+    if (input === undefined) throw new TypeError('Logical inputs cannot contain empty entries.')
+    return captureRequirement(input, budget.maxScalarBytes)
+  })
+  if (new Set(captured.map(input => input.id)).size !== captured.length)
+    throw new TypeError('Logical input ids must be unique.')
+  let textBytes = 0
+  const encoder = new TextEncoder()
+  for (const input of captured) {
+    normalizeCompanionLogicalId(input.logicalId)
+    textBytes += encoder.encode(input.id + input.logicalId + (input.parentResourceId ?? '')).length
+    if (textBytes > budget.maxScalarBytes)
+      throw new TypeError('Logical input descriptors exceed the host scalar budget.')
+  }
+  return Object.freeze(captured)
+}
+
 function captureCandidateScopes(
   scopes: readonly InputSearchScope[] | undefined,
 ): readonly InputSearchScope[] | undefined {

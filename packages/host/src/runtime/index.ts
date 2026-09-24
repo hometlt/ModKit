@@ -10,25 +10,33 @@ import {
   type RuntimeProviderOfferFacet,
   type RuntimeProviderRequestFacet,
   type RuntimeSession,
+  type RuntimeSessionV2,
 } from '@modkit/sdk/runtime'
-import type {
-  DefinitionInventoryResult,
-  InputSearchScope,
-  Lease,
-  PermissionGrant,
-  ResourceSessionPort,
-  ResourceBudget,
-  RuntimeTarget,
-  ServiceContractDefinitionRegistry,
-  ServiceContractDefinitionSpecV1Wire,
-  ServiceFacetMatchContext,
-  ServiceFacetMatchResult,
-  ServiceFacetMatcherProfile,
+import {
+  grantValidity,
+  type LogicalResourceRequirement,
+  type DefinitionInventoryResult,
+  type InputSearchScope,
+  type Lease,
+  type PermissionGrant,
+  type ResourceSessionPort,
+  type ResourceBudget,
+  type RuntimeTarget,
+  type ServiceContractDefinitionRegistry,
+  type ServiceContractDefinitionSpecV1Wire,
+  type ServiceFacetMatchContext,
+  type ServiceFacetMatchResult,
+  type ServiceFacetMatcherProfile,
 } from '@modkit/sdk'
 import type { ExecutionBackendRegistry } from '../execution/backend.js'
 import type { Inventory } from '../inventory.js'
 import { createHostServiceResolver, type HostServiceResolver } from '../service-leases.js'
 import { FACETLESS_SERVICE_MATCHER_PROFILE } from '../service-definitions.js'
+import {
+  createSubjectLogicalResources,
+  snapshotLogicalResourceRequirements,
+  type SubjectLogicalResourceState,
+} from '../logical-resources.js'
 
 /** Owner id under which both standard runtime definitions are registered. */
 export const STANDARD_RUNTIME_OWNER = 'modkit/runtime'
@@ -122,7 +130,7 @@ export const RUNTIME_PROVIDER_CONTRACT_DEFINITION: ServiceContractDefinitionSpec
     matching: Object.freeze({ profile: RUNTIME_PROVIDER_MATCHER_PROFILE, major: 1 }),
     conformanceProfile: 'common.runtime/provider-v1',
     surface: Object.freeze({
-      fields: Object.freeze(['contract', 'providerId', 'runtimeIds']),
+      fields: Object.freeze(['contract', 'providerId', 'runtimeIds', 'inputMode']),
       methods: Object.freeze({
         createSession: Object.freeze({
           kind: 'lease',
@@ -157,8 +165,49 @@ export const RUNTIME_SESSION_CONTRACT_DEFINITION: ServiceContractDefinitionSpecV
     }),
   }) as ServiceContractDefinitionSpecV1Wire
 
+export const RUNTIME_PROVIDER_V2_CONTRACT_DEFINITION: ServiceContractDefinitionSpecV1Wire = {
+  ...RUNTIME_PROVIDER_CONTRACT_DEFINITION,
+  major: 2,
+  conformanceProfile: 'common.runtime/provider-v2',
+  surface: {
+    fields: ['contract', 'providerId', 'runtimeIds', 'inputMode'],
+    methods: {
+      createSession: {
+        kind: 'lease',
+        wrapper: 'lease',
+        result: { contract: RUNTIME_SESSION_CONTRACT, major: 2 },
+        signal: { arg: 0, key: 'signal' },
+      },
+    },
+  },
+}
+
+export const RUNTIME_SESSION_V2_CONTRACT_DEFINITION: ServiceContractDefinitionSpecV1Wire = {
+  ...RUNTIME_SESSION_CONTRACT_DEFINITION,
+  major: 2,
+  conformanceProfile: 'common.runtime/session-v2',
+  surface: {
+    fields: ['contract', 'sessionId', 'providerId', 'budget', 'offers'],
+    methods: {
+      execute: { kind: 'value', signal: { arg: 0, key: 'signal' } },
+      status: { kind: 'value' },
+      identity: { kind: 'value' },
+      step: { kind: 'value', signal: 'last' },
+      events: { kind: 'iterable' },
+      snapshot: { kind: 'value', signal: 'last' },
+      restore: { kind: 'value', signal: 'last' },
+      stateHash: { kind: 'value', signal: 'last' },
+    },
+  },
+}
+
 export const STANDARD_RUNTIME_DEFINITIONS: readonly ServiceContractDefinitionSpecV1Wire[] =
-  Object.freeze([RUNTIME_PROVIDER_CONTRACT_DEFINITION, RUNTIME_SESSION_CONTRACT_DEFINITION])
+  Object.freeze([
+    RUNTIME_PROVIDER_CONTRACT_DEFINITION,
+    RUNTIME_SESSION_CONTRACT_DEFINITION,
+    RUNTIME_PROVIDER_V2_CONTRACT_DEFINITION,
+    RUNTIME_SESSION_V2_CONTRACT_DEFINITION,
+  ])
 
 /** Register the standard runtime factory and nested session definitions. */
 export function registerStandardRuntimeDefinitions(
@@ -209,6 +258,8 @@ export interface RuntimeProviderInvocationContext {
 }
 
 export interface OpenRuntimeSessionRequest extends RuntimeProviderRequestFacet {
+  /** Default is 1. Request 2 to negotiate the frozen snapshot/step/restore surface explicitly. */
+  readonly providerMajor?: 1 | 2
   readonly services: RuntimeHostServices
   readonly sessionId: string
   readonly budget: RuntimeBudget
@@ -217,14 +268,23 @@ export interface OpenRuntimeSessionRequest extends RuntimeProviderRequestFacet {
   readonly activationBudget: ResourceBudget
   /** Only trusted in-process providers may receive this non-serializable context. */
   readonly providerInvocation?: RuntimeProviderInvocationContext
+  /**
+   * Portable input route. Ownership of this dedicated resource session transfers to the host
+   * for this open attempt (including failure); never pass a parent subject's borrowed session.
+   * Only descriptors cross createSession; resources use the existing logical-resource broker.
+   */
+  readonly resourceInvocation?: Readonly<{
+    inputs: readonly LogicalResourceRequirement[]
+    resources: ResourceSessionPort
+  }>
   readonly signal?: AbortSignal
 }
 
-export type RuntimeSessionResolution =
+export type RuntimeSessionResolution<T extends RuntimeSession = RuntimeSession> =
   | Readonly<{
       state: 'resolved'
       providerId: string
-      session: RuntimeSession
+      session: T
       diagnostics: readonly Diagnostic[]
       release(): Promise<void>
     }>
@@ -280,6 +340,22 @@ function isRuntimeSessionLease(value: unknown): value is Lease<RuntimeSession> {
   return isRuntimeSession(record?.['value']) && typeof record?.['release'] === 'function'
 }
 
+function isRuntimeSessionV2(value: RuntimeSession): value is RuntimeSessionV2 {
+  const record = recordOf(value)
+  if (record === undefined) return false
+  const offers = record['offers']
+  return (
+    Array.isArray(offers) &&
+    offers.every(offer =>
+      ['step', 'events', 'snapshot', 'restore', 'state-hash'].includes(offer),
+    ) &&
+    new Set(offers).size === offers.length &&
+    ['identity', 'step', 'events', 'snapshot', 'restore', 'stateHash'].every(
+      key => typeof record[key] === 'function',
+    )
+  )
+}
+
 async function releaseUnknownLease(value: unknown): Promise<void> {
   const release = recordOf(value)?.['release']
   if (typeof release === 'function') await release.call(value)
@@ -295,8 +371,90 @@ async function unresolvedAfterRelease(
 
 /** Resolve a runtime provider and open one resource-bounded executable session. */
 export async function openRuntimeSession(
+  request: OpenRuntimeSessionRequest & { providerMajor: 2 },
+): Promise<RuntimeSessionResolution<RuntimeSessionV2>>
+export async function openRuntimeSession(
+  request: OpenRuntimeSessionRequest,
+): Promise<RuntimeSessionResolution>
+export async function openRuntimeSession(
   request: OpenRuntimeSessionRequest,
 ): Promise<RuntimeSessionResolution> {
+  request = {
+    ...request,
+    budget: Object.freeze({ ...request.budget }),
+    activationBudget: Object.freeze({ ...request.activationBudget }),
+  }
+  const invocation = request.resourceInvocation
+  if (invocation === undefined) return resolveRuntimeSession(request)
+  const state: SubjectLogicalResourceState = {
+    live: true,
+    reservedBytes: 0,
+    resolveCalls: 0,
+    discoveryCalls: 0,
+    resources: invocation.resources,
+  }
+  let closed = false
+  const close = async (): Promise<void> => {
+    if (closed) return
+    closed = true
+    state.live = false
+    await invocation.resources.dispose()
+  }
+  try {
+    if (request.providerInvocation !== undefined)
+      throw new TypeError('Runtime accepts one input route per session.')
+    const inputs = snapshotLogicalResourceRequirements(invocation.inputs, request.activationBudget)
+    const result = await resolveRuntimeSession(request, state, inputs)
+    if (result.state === 'unresolved') {
+      await close()
+      return result
+    }
+    return Object.freeze({
+      ...result,
+      async release() {
+        if (closed) return
+        // Invalidate reads before shutting down the remote provider and its outstanding leases.
+        state.live = false
+        try {
+          await result.release()
+        } finally {
+          await close()
+        }
+      },
+    })
+  } catch (error) {
+    await close()
+    return {
+      state: 'unresolved',
+      diagnostics: [
+        diagnostic(
+          'error',
+          'x3.host/runtime-input-invalid',
+          error instanceof Error ? error.message : String(error),
+        ),
+      ],
+    }
+  }
+}
+
+async function resolveRuntimeSession(
+  request: OpenRuntimeSessionRequest,
+  resourceState?: SubjectLogicalResourceState,
+  inputs?: readonly LogicalResourceRequirement[],
+): Promise<RuntimeSessionResolution> {
+  const providerMajor = request.providerMajor ?? 1
+  if (providerMajor !== 1 && providerMajor !== 2) {
+    return {
+      state: 'unresolved',
+      diagnostics: [
+        diagnostic(
+          'error',
+          'x3.host/runtime-version-unsupported',
+          'Runtime provider major must be 1 or 2',
+        ),
+      ],
+    }
+  }
   if (!nonEmptyString(request.runtimeId) || !nonEmptyString(request.sessionId)) {
     return {
       state: 'unresolved',
@@ -342,12 +500,29 @@ export async function openRuntimeSession(
     definitions,
     grant: request.grant,
     budgets: request.activationBudget,
+    ...(resourceState === undefined
+      ? {}
+      : {
+          logicalResourcesFor: (grant: PermissionGrant) =>
+            createSubjectLogicalResources({
+              state: resourceState,
+              budget: {
+                ...request.activationBudget,
+                maxInputBytes:
+                  request.activationBudget.maxInputBytes < BigInt(request.budget.maxMemoryBytes)
+                    ? request.activationBudget.maxInputBytes
+                    : BigInt(request.budget.maxMemoryBytes),
+              },
+              isAuthorized: () =>
+                grantValidity(grant).state === 'valid' && grant.classes.includes('read-source'),
+            }),
+        }),
     ...(request.signal === undefined ? {} : { signal: request.signal }),
   })
   try {
     const providerLease = await resolver.port.resolve({
       contract: RUNTIME_PROVIDER_CONTRACT,
-      major: 1,
+      major: providerMajor,
       facet: { runtimeId: request.runtimeId },
       ...(request.signal === undefined ? {} : { signal: request.signal }),
     })
@@ -358,7 +533,7 @@ export async function openRuntimeSession(
         diagnostic(
           'error',
           'x3.host/runtime-provider-invalid',
-          `the selected provider does not implement ${RUNTIME_PROVIDER_CONTRACT}@1 for ${request.runtimeId}`,
+          `the selected provider does not implement ${RUNTIME_PROVIDER_CONTRACT}@${providerMajor} for ${request.runtimeId}`,
         ),
       ])
     }
@@ -367,8 +542,17 @@ export async function openRuntimeSession(
       fact =>
         fact.providerId === provider.providerId &&
         fact.contract === RUNTIME_PROVIDER_CONTRACT &&
-        fact.major === 1,
+        fact.major === providerMajor,
     )
+    if (inputs !== undefined && provider.inputMode !== 'logical-resources-v1') {
+      return unresolvedAfterRelease(resolver, [
+        diagnostic(
+          'error',
+          'x3.host/runtime-input-mode-unsupported',
+          `runtime provider ${provider.providerId} does not accept logical resource inputs`,
+        ),
+      ])
+    }
     if (
       request.providerInvocation !== undefined &&
       providerActivation?.executionProfile !== 'trusted-in-process'
@@ -391,6 +575,7 @@ export async function openRuntimeSession(
     const createRequest = {
       sessionId: request.sessionId,
       budget: request.budget,
+      ...(inputs === undefined ? {} : { inputs }),
       ...(request.providerInvocation === undefined
         ? {}
         : { providerInvocation: request.providerInvocation }),
@@ -399,6 +584,7 @@ export async function openRuntimeSession(
     const candidate: unknown = await provider.createSession(createRequest)
     if (
       !isRuntimeSessionLease(candidate) ||
+      (providerMajor === 2 && !isRuntimeSessionV2(candidate.value)) ||
       candidate.value.sessionId !== request.sessionId ||
       candidate.value.providerId !== provider.providerId ||
       !sameBudget(candidate.value.budget, request.budget)

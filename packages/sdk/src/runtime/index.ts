@@ -10,6 +10,7 @@
 import type { Lease } from '../asset-capabilities/data-sources.js'
 import type { JsonValue } from '../asset-capabilities/types.js'
 import type { ServiceProviderModule } from '../runtime-abi.js'
+import type { LogicalResourceRequirement } from '../resource-session.js'
 
 /** Resolver-visible provider factory contract. */
 export const RUNTIME_PROVIDER_CONTRACT = 'common.runtime/provider' as const
@@ -115,6 +116,8 @@ export interface RuntimeSession {
 export interface RuntimeSessionCreateRequest {
   readonly sessionId: string
   readonly budget: RuntimeBudget
+  /** Logical inputs read through ContributionContext.logicalResources, never ambient paths. */
+  readonly inputs?: readonly LogicalResourceRequirement[]
   readonly signal?: AbortSignal
 }
 
@@ -123,6 +126,8 @@ export interface RuntimeProvider {
   readonly contract: typeof RUNTIME_PROVIDER_CONTRACT
   readonly providerId: string
   readonly runtimeIds: readonly string[]
+  /** Explicit opt-in; hosts refuse resource inputs when a provider does not advertise this. */
+  readonly inputMode?: 'logical-resources-v1'
   createSession(request: RuntimeSessionCreateRequest): Promise<Lease<RuntimeSession>>
 }
 
@@ -256,6 +261,11 @@ export interface RuntimeSessionV2 extends RuntimeSession {
   stateHash(signal?: AbortSignal): Promise<RuntimeStateHashResult | RuntimeRefusal>
 }
 
+/** Provider major 2 returns the frozen v2 session surface over every execution backend. */
+export interface RuntimeProviderV2 extends RuntimeProvider {
+  createSession(request: RuntimeSessionCreateRequest): Promise<Lease<RuntimeSessionV2>>
+}
+
 /** The frozen member list, so a conformance run checks the contract rather than one implementation. */
 export const RUNTIME_SESSION_V2_MEMBERS = Object.freeze([
   'offers',
@@ -269,22 +279,24 @@ export const RUNTIME_SESSION_V2_MEMBERS = Object.freeze([
 
 declare module '../service-contracts.js' {
   interface ContractMap {
-    'common.runtime/provider': { 1: RuntimeProvider }
-    'common.runtime/session': { 1: RuntimeSession }
+    'common.runtime/provider': { 1: RuntimeProvider; 2: RuntimeProviderV2 }
+    'common.runtime/session': { 1: RuntimeSession; 2: RuntimeSessionV2 }
   }
 
   interface ContractRequestMap {
     'common.runtime/provider': {
       1: { presence: 'required'; facet: RuntimeProviderRequestFacet }
+      2: { presence: 'required'; facet: RuntimeProviderRequestFacet }
     }
-    'common.runtime/session': { 1: { presence: 'forbidden' } }
+    'common.runtime/session': { 1: { presence: 'forbidden' }; 2: { presence: 'forbidden' } }
   }
 
   interface ContractOfferMap {
     'common.runtime/provider': {
       1: { presence: 'required'; facet: RuntimeProviderOfferFacet }
+      2: { presence: 'required'; facet: RuntimeProviderOfferFacet }
     }
-    'common.runtime/session': { 1: { presence: 'forbidden' } }
+    'common.runtime/session': { 1: { presence: 'forbidden' }; 2: { presence: 'forbidden' } }
   }
 }
 

@@ -17,6 +17,7 @@ import type {
   ExecutionProfile,
   HostPolicy,
   Lease,
+  LogicalResourcePort,
   PermissionGrant,
   ProviderOffer,
   ProviderPolicyLockEntry,
@@ -156,6 +157,8 @@ export interface HostServiceResolverOptions {
   readonly signal?: AbortSignal
   /** Offers to resolve against; defaults to the inventory's projection. */
   readonly offers?: readonly ProviderOffer[]
+  /** Root provider only; build authority from its gate-narrowed grant, never inherit into children. */
+  readonly logicalResourcesFor?: (grant: PermissionGrant) => LogicalResourcePort
 }
 
 export interface HostServiceResolver {
@@ -232,6 +235,9 @@ export function createHostServiceResolver(
             Object.freeze({
               contracts: makePort(effectiveGrant, [...chain, key]),
               budgets: options.budgets,
+              ...(chain.length !== 0 || options.logicalResourcesFor === undefined
+                ? {}
+                : { logicalResources: options.logicalResourcesFor(effectiveGrant) }),
               diagnostics: {
                 report(item: Diagnostic) {
                   diagnostics.push(item)
