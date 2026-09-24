@@ -1187,28 +1187,28 @@
       "contribution": "modkit-extensions-blizzard/models/contributions/codec-m3.json",
       "handlerId": "export-raw",
       "id": "legacy/codec-manifest/modkit/m3/operation/model.export",
-      "status": "pending",
+      "status": "superseded",
       "targetOperation": "export.raw"
     },
     {
       "contribution": "modkit-extensions-blizzard/models/contributions/codec-m3.json",
       "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/m3/operation/model.read",
-      "status": "pending",
+      "status": "superseded",
       "targetOperation": "view.inspect"
     },
     {
       "contribution": "modkit-extensions-blizzard/models/contributions/codec-m3.json",
       "handlerId": "render-m3-scene",
       "id": "legacy/codec-manifest/modkit/m3/operation/model.render",
-      "status": "pending",
+      "status": "superseded",
       "targetOperation": "model.render"
     },
     {
       "contribution": "modkit-extensions-blizzard/models/contributions/codec-m3.json",
       "handlerId": "model-write",
       "id": "legacy/codec-manifest/modkit/m3/operation/model.write",
-      "status": "pending",
+      "status": "superseded",
       "targetOperation": "model.write"
     },
     {
@@ -2069,7 +2069,7 @@
       "contribution": null,
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/sc2-data/operation/sc2-data.provision",
-      "status": "pending",
+      "status": "owner-dropped",
       "targetOperation": null
     },
     {
@@ -2167,14 +2167,14 @@
       "contribution": null,
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/sc2-map/operation/asset.validate",
-      "status": "pending",
+      "status": "superseded",
       "targetOperation": null
     },
     {
       "contribution": null,
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/sc2-map/operation/container.extract",
-      "status": "pending",
+      "status": "superseded",
       "targetOperation": null
     },
     {
@@ -2188,42 +2188,42 @@
       "contribution": null,
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/sc2-map/operation/view.inspect",
-      "status": "pending",
+      "status": "superseded",
       "targetOperation": null
     },
     {
       "contribution": null,
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/sc2-map/operation/view.render",
-      "status": "pending",
+      "status": "superseded",
       "targetOperation": null
     },
     {
       "contribution": null,
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/sc2-map/operation/view.thumbnail",
-      "status": "pending",
+      "status": "superseded",
       "targetOperation": null
     },
     {
       "contribution": null,
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/sc2-mod/operation/asset.compare",
-      "status": "pending",
+      "status": "superseded",
       "targetOperation": null
     },
     {
       "contribution": null,
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/sc2-mod/operation/asset.validate",
-      "status": "pending",
+      "status": "superseded",
       "targetOperation": null
     },
     {
       "contribution": null,
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/sc2-mod/operation/container.extract",
-      "status": "pending",
+      "status": "superseded",
       "targetOperation": null
     },
     {
@@ -2244,21 +2244,21 @@
       "contribution": null,
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/sc2-mod/operation/edit.structure",
-      "status": "pending",
+      "status": "superseded",
       "targetOperation": null
     },
     {
       "contribution": null,
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/sc2-mod/operation/export.convert",
-      "status": "pending",
+      "status": "superseded",
       "targetOperation": null
     },
     {
       "contribution": null,
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/sc2-mod/operation/view.inspect",
-      "status": "pending",
+      "status": "superseded",
       "targetOperation": null
     },
     {
@@ -2272,7 +2272,7 @@
       "contribution": null,
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/sc2-replay/operation/export.convert",
-      "status": "pending",
+      "status": "superseded",
       "targetOperation": null
     },
     {
@@ -2398,7 +2398,7 @@
       "contribution": null,
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/sc2-strings/operation/sc2-strings.translate",
-      "status": "pending",
+      "status": "superseded",
       "targetOperation": null
     },
     {

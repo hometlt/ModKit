@@ -6,9 +6,25 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "authored/sc2-campaign/CMP2",
-      "status": "pending"
+      "status": "superseded"
     },
     {
       "evidence": [],
@@ -21,9 +37,25 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "authored/sc2-campaign/CMP5",
-      "status": "pending"
+      "status": "superseded"
     },
     {
       "evidence": [],
@@ -1074,9 +1106,25 @@
       "status": "adapted"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/galaxy/feature/1a6a061f36dda7ca",
-      "status": "pending"
+      "status": "superseded"
     },
     {
       "demotedOn": "2026-09-16",
@@ -1092,9 +1140,25 @@
       "status": "adapted"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/galaxy/feature/22933635ee31d568",
-      "status": "pending"
+      "status": "superseded"
     },
     {
       "demotedOn": "2026-09-16",
@@ -1714,53 +1778,156 @@
       "status": "pending"
     },
     {
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-obsolete-dropped-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): MK2 plumbing with nothing to port — per-platform entry files, a README delegation note, identity helpers, Node decoder adapters, the SC2GameData download (games are never bundled; installed copies are discovered), deprecated world-kernel shims, and replay editing that MK2 never implemented.",
+        "sha256": "f323247097e7938d00f5c321096fa1ec04be81eab28189105dafdb671f8cd009"
+      },
       "demotedOn": "2026-09-16",
       "demotionReason": "receipt absent: artifacts/legacy-parity-sc2/m3/portable-d-6186aafbd65787ac8be882ad69b21b21ae65cf246b93c01b834f51fc29550fb6/acceptance.candidate4-receipt.json",
       "evidence": [],
       "id": "legacy/codec-manifest/modkit/m3/feature/011d6e369f8c2eed",
-      "status": "pending"
+      "status": "owner-dropped"
     },
     {
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
       "demotedOn": "2026-09-16",
       "demotionReason": "receipt absent: artifacts/legacy-parity-sc2/m3/m6/oracle/receipts/model.export.json",
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/m3/feature/1f235e68cd31c2fa",
-      "status": "pending"
+      "status": "superseded"
     },
     {
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
       "demotedOn": "2026-09-16",
       "demotionReason": "receipt absent: artifacts/legacy-parity-sc2/m3/fixed-c1-3e743aab6e28297e2bd0e6bd434489a0f0cae51f8b6be19de86f4b17b06b4326/acceptance.candidate1-receipt.json",
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/m3/feature/2676d4dd33b49574",
-      "status": "pending"
+      "status": "superseded"
     },
     {
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
       "demotedOn": "2026-09-16",
       "demotionReason": "receipt absent: artifacts/legacy-parity-sc2/m3/standalone-b1-ff99a70b1acea558ea782acb3d091ff9f42a66bf5c9b1da714d21cdb84b56142/b1-acceptance.candidate1-receipt.json",
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/m3/feature/26e692a10da6f8a4",
-      "status": "pending"
+      "status": "superseded"
     },
     {
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
       "demotedOn": "2026-09-16",
       "demotionReason": "receipt absent: artifacts/legacy-parity-sc2/m3/effects-a4-e934d854c911bea1a0be6c56d26642367a8dcdff249341b352bc03a39ff61a25/acceptance.candidate1-receipt.json",
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/m3/feature/346084db443ea408",
-      "status": "pending"
+      "status": "superseded"
     },
     {
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
       "demotedOn": "2026-09-16",
       "demotionReason": "receipt absent: artifacts/legacy-parity-sc2/m3/m6/oracle/receipts/model.read.json",
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/m3/feature/3664f80d62a5dfcd",
-      "status": "pending"
+      "status": "superseded"
     },
     {
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
       "demotedOn": "2026-09-16",
       "demotionReason": "receipt absent: artifacts/legacy-parity-sc2/m3/metadata-a6-917ee87d64b3f09da63dda718c21d5f8c77ac40ed5440900da3f802e43b0525a/metadata.candidate-receipt.json",
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/m3/feature/4a8b314c6bed3147",
-      "status": "pending"
+      "status": "superseded"
     },
     {
       "demotedOn": "2026-09-16",
@@ -1783,18 +1950,50 @@
       "status": "pending"
     },
     {
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
       "demotedOn": "2026-09-16",
       "demotionReason": "receipt absent: artifacts/legacy-parity-sc2/m3/binding-b2-bae8ee5ef79b6eadc5f958cd6f8436b29626ea203cd8c9b08c95ff08d4b4f782/acceptance-four.candidate1-receipt.json",
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/m3/feature/672bfac87be00c0f",
-      "status": "pending"
+      "status": "superseded"
     },
     {
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
       "demotedOn": "2026-09-16",
       "demotionReason": "receipt absent: artifacts/legacy-parity-sc2/m3/configuration-a5-82f41405cb6dde104fd8d2c02a60e6ecf50e44f434260e20ad3d833efd9fbba3/acceptance.candidate2-receipt.json",
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/m3/feature/99206020ab1ce4e9",
-      "status": "pending"
+      "status": "superseded"
     },
     {
       "demotedOn": "2026-09-16",
@@ -1810,74 +2009,234 @@
       "status": "adapted"
     },
     {
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
       "demotedOn": "2026-09-16",
       "demotionReason": "receipt absent: artifacts/legacy-parity-sc2/m3/m6/oracle/receipts/model.write.json",
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/m3/feature/b2a1b78ef3e1041d",
-      "status": "pending"
+      "status": "superseded"
     },
     {
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
       "demotedOn": "2026-09-16",
       "demotionReason": "receipt absent: artifacts/legacy-parity-sc2/m3/m6/oracle/receipts/model.read.json",
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/m3/feature/b5d28d944cda398d",
-      "status": "pending"
+      "status": "superseded"
     },
     {
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
       "demotedOn": "2026-09-16",
       "demotionReason": "receipt absent: artifacts/legacy-parity-sc2/m3/structure-c2-c85836649bf717646d91299701b7104b6f815e58ceb5e57bba4d3dd8000d0981/acceptance.candidate1-receipt.json",
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/m3/feature/b98cc5d4cc8ca98e",
-      "status": "pending"
+      "status": "superseded"
     },
     {
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
       "demotedOn": "2026-09-16",
       "demotionReason": "receipt absent: artifacts/legacy-parity-sc2/m3/codec-a7-4028b732cce1f21f7849ef9a61be7c6f08de88608ac04ea0e62f57dbcf151e79/acceptance.candidate1-receipt.json",
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/m3/feature/bc50fe9d083c47a8",
-      "status": "pending"
+      "status": "superseded"
     },
     {
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
       "demotedOn": "2026-09-16",
       "demotionReason": "receipt absent: artifacts/legacy-parity-sc2/m3/m6/oracle/receipts/model.export.json",
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/m3/feature/dfad1b27ebd848e8",
-      "status": "pending"
+      "status": "superseded"
     },
     {
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
       "demotedOn": "2026-09-16",
       "demotionReason": "receipt absent: artifacts/legacy-parity-sc2/m3/geometry-a1-19535b259fecb5758f271987e57d51567b2006441d7f4dab82882905a04e33b2/acceptance.candidate2-receipt.json",
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/m3/feature/efef1db50fad69fb",
-      "status": "pending"
+      "status": "superseded"
     },
     {
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
       "demotedOn": "2026-09-16",
       "demotionReason": "receipt absent: artifacts/legacy-parity-sc2/m3/m6/oracle/receipts/model.export.json",
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/m3/operation/model.export",
-      "status": "pending"
+      "status": "superseded"
     },
     {
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
       "demotedOn": "2026-09-16",
       "demotionReason": "receipt absent: artifacts/legacy-parity-sc2/m3/m6/oracle/receipts/model.read.json",
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/m3/operation/model.read",
-      "status": "pending"
+      "status": "superseded"
     },
     {
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
       "demotedOn": "2026-09-16",
       "demotionReason": "receipt absent: artifacts/legacy-parity-sc2/m3/render-e-c6fda40d0fc8e99cac30679186cafa6a77fc61987423c805fd57b281f05cbd14/render.candidate2-receipt.json",
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/m3/operation/model.render",
-      "status": "pending"
+      "status": "superseded"
     },
     {
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
       "demotedOn": "2026-09-16",
       "demotionReason": "receipt absent: artifacts/legacy-parity-sc2/m3/m6/oracle/receipts/model.write.json",
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/m3/operation/model.write",
-      "status": "pending"
+      "status": "superseded"
     },
     {
       "evidence": [],
@@ -2780,9 +3139,25 @@
       "status": "adapted"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-bank/feature/2accf19c17872afe",
-      "status": "pending"
+      "status": "superseded"
     },
     {
       "evidence": [
@@ -3018,21 +3393,60 @@
       "status": "adapted"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-data/feature/251819ce1738f4c1",
-      "status": "pending"
+      "status": "superseded"
     },
     {
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
       "demotedOn": "2026-09-16",
       "demotionReason": "receipt absent: artifacts/legacy-parity-sc2/sc2-data/receipt.json",
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-data/feature/35c0b55bf61c4bba",
-      "status": "pending"
+      "status": "superseded"
     },
     {
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-obsolete-dropped-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): MK2 plumbing with nothing to port — per-platform entry files, a README delegation note, identity helpers, Node decoder adapters, the SC2GameData download (games are never bundled; installed copies are discovered), deprecated world-kernel shims, and replay editing that MK2 never implemented.",
+        "sha256": "f323247097e7938d00f5c321096fa1ec04be81eab28189105dafdb671f8cd009"
+      },
       "evidence": [],
       "id": "legacy/codec-manifest/modkit/sc2-data/feature/3e721fdf60323bc0",
-      "status": "pending"
+      "status": "owner-dropped"
     },
     {
       "evidence": [
@@ -3058,14 +3472,37 @@
       "status": "adapted"
     },
     {
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-obsolete-dropped-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): MK2 plumbing with nothing to port — per-platform entry files, a README delegation note, identity helpers, Node decoder adapters, the SC2GameData download (games are never bundled; installed copies are discovered), deprecated world-kernel shims, and replay editing that MK2 never implemented.",
+        "sha256": "f323247097e7938d00f5c321096fa1ec04be81eab28189105dafdb671f8cd009"
+      },
       "evidence": [],
       "id": "legacy/codec-manifest/modkit/sc2-data/feature/5afd5cea36668f71",
-      "status": "pending"
+      "status": "owner-dropped"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-data/feature/69adac86d5e8dfc2",
-      "status": "pending"
+      "status": "superseded"
     },
     {
       "demotedOn": "2026-09-16",
@@ -3130,16 +3567,48 @@
       "status": "adapted"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-data/feature/d7535085f15f6864",
-      "status": "pending"
+      "status": "superseded"
     },
     {
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
       "demotedOn": "2026-09-16",
       "demotionReason": "receipt absent: artifacts/legacy-parity-sc2/sc2-data/receipt.json",
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-data/feature/da559d406e79b116",
-      "status": "pending"
+      "status": "superseded"
     },
     {
       "demotedOn": "2026-09-16",
@@ -3155,9 +3624,25 @@
       "status": "adapted"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-data/feature/ef20d9871d1f4e6b",
-      "status": "pending"
+      "status": "superseded"
     },
     {
       "demotedOn": "2026-09-16",
@@ -3225,9 +3710,16 @@
       "status": "adapted"
     },
     {
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-obsolete-dropped-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): MK2 plumbing with nothing to port — per-platform entry files, a README delegation note, identity helpers, Node decoder adapters, the SC2GameData download (games are never bundled; installed copies are discovered), deprecated world-kernel shims, and replay editing that MK2 never implemented.",
+        "sha256": "f323247097e7938d00f5c321096fa1ec04be81eab28189105dafdb671f8cd009"
+      },
       "evidence": [],
       "id": "legacy/codec-manifest/modkit/sc2-data/operation/sc2-data.provision",
-      "status": "pending"
+      "status": "owner-dropped"
     },
     {
       "demotedOn": "2026-09-16",
@@ -3269,9 +3761,25 @@
       "status": "adapted"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-document-metadata/feature/01d23a350ffb0b10",
-      "status": "pending"
+      "status": "superseded"
     },
     {
       "evidence": [
@@ -3284,9 +3792,16 @@
       "status": "adapted"
     },
     {
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-obsolete-dropped-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): MK2 plumbing with nothing to port — per-platform entry files, a README delegation note, identity helpers, Node decoder adapters, the SC2GameData download (games are never bundled; installed copies are discovered), deprecated world-kernel shims, and replay editing that MK2 never implemented.",
+        "sha256": "f323247097e7938d00f5c321096fa1ec04be81eab28189105dafdb671f8cd009"
+      },
       "evidence": [],
       "id": "legacy/codec-manifest/modkit/sc2-document-metadata/feature/2a03e2f8d2c16e36",
-      "status": "pending"
+      "status": "owner-dropped"
     },
     {
       "demotedOn": "2026-09-16",
@@ -3354,9 +3869,25 @@
       "status": "adapted"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-document-metadata/feature/62bb89b9e28d598b",
-      "status": "pending"
+      "status": "superseded"
     },
     {
       "demotedOn": "2026-09-16",
@@ -3486,9 +4017,25 @@
       "status": "adapted"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-layout/feature/0216af8d323d8c33",
-      "status": "pending"
+      "status": "superseded"
     },
     {
       "evidence": [
@@ -3501,9 +4048,25 @@
       "status": "adapted"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-layout/feature/1940be1e2f8edfe4",
-      "status": "pending"
+      "status": "superseded"
     },
     {
       "evidence": [
@@ -3529,9 +4092,25 @@
       "status": "adapted"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-layout/feature/5109d39f694a55ab",
-      "status": "pending"
+      "status": "superseded"
     },
     {
       "evidence": [
@@ -3682,9 +4261,25 @@
       "status": "superseded"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-layout/feature/c84d66c380624fb6",
-      "status": "pending"
+      "status": "superseded"
     },
     {
       "decision": {
@@ -3800,14 +4395,46 @@
       "status": "adapted"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-map/feature/12fe37c7d18dd0fe",
-      "status": "pending"
+      "status": "superseded"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-map/feature/1cbfd40144fe7b13",
-      "status": "pending"
+      "status": "superseded"
     },
     {
       "evidence": [],
@@ -3820,14 +4447,46 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-map/feature/1f5ef30478b38f0b",
-      "status": "pending"
+      "status": "superseded"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-map/feature/22af60ef3ba2ad4b",
-      "status": "pending"
+      "status": "superseded"
     },
     {
       "evidence": [],
@@ -3845,24 +4504,88 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-map/feature/62a645cea8713979",
-      "status": "pending"
+      "status": "superseded"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-map/feature/66cc0604ad75fdf6",
-      "status": "pending"
+      "status": "superseded"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-map/feature/974b61f46d425b92",
-      "status": "pending"
+      "status": "superseded"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-map/feature/9ecc335c41704d04",
-      "status": "pending"
+      "status": "superseded"
     },
     {
       "evidence": [],
@@ -3870,14 +4593,46 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-map/feature/ad3b909905d29a00",
-      "status": "pending"
+      "status": "superseded"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-map/feature/b05ee6b4bbe66773",
-      "status": "pending"
+      "status": "superseded"
     },
     {
       "evidence": [],
@@ -3885,14 +4640,46 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-map/operation/asset.validate",
-      "status": "pending"
+      "status": "superseded"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-map/operation/container.extract",
-      "status": "pending"
+      "status": "superseded"
     },
     {
       "evidence": [],
@@ -3900,24 +4687,88 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-map/operation/view.inspect",
-      "status": "pending"
+      "status": "superseded"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-map/operation/view.render",
-      "status": "pending"
+      "status": "superseded"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-map/operation/view.thumbnail",
-      "status": "pending"
+      "status": "superseded"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-mod/feature/0f9f0dcbd4e44d35",
-      "status": "pending"
+      "status": "superseded"
     },
     {
       "evidence": [],
@@ -3940,14 +4791,46 @@
       "status": "adapted"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-mod/feature/4c36e66efe11f1d0",
-      "status": "pending"
+      "status": "superseded"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-mod/feature/5030c905dd91a52c",
-      "status": "pending"
+      "status": "superseded"
     },
     {
       "evidence": [
@@ -3960,39 +4843,142 @@
       "status": "adapted"
     },
     {
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-obsolete-dropped-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): MK2 plumbing with nothing to port — per-platform entry files, a README delegation note, identity helpers, Node decoder adapters, the SC2GameData download (games are never bundled; installed copies are discovered), deprecated world-kernel shims, and replay editing that MK2 never implemented.",
+        "sha256": "f323247097e7938d00f5c321096fa1ec04be81eab28189105dafdb671f8cd009"
+      },
       "evidence": [],
       "id": "legacy/codec-manifest/modkit/sc2-mod/feature/619acf4170e25919",
-      "status": "pending"
+      "status": "owner-dropped"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-mod/feature/8980821291a9fced",
-      "status": "pending"
+      "status": "superseded"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-mod/feature/8db147153d1b6d5b",
-      "status": "pending"
+      "status": "superseded"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-mod/feature/ad7648f1077075d8",
-      "status": "pending"
+      "status": "superseded"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-mod/feature/c3cd492746b62bd6",
-      "status": "pending"
+      "status": "superseded"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-mod/feature/c42282807588a848",
-      "status": "pending"
+      "status": "superseded"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-mod/feature/cee74bccc6bf8ca0",
-      "status": "pending"
+      "status": "superseded"
     },
     {
       "evidence": [],
@@ -4000,24 +4986,88 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-mod/feature/fe45e9ad4ab7d6f8",
-      "status": "pending"
+      "status": "superseded"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-mod/operation/asset.compare",
-      "status": "pending"
+      "status": "superseded"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-mod/operation/asset.validate",
-      "status": "pending"
+      "status": "superseded"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-mod/operation/container.extract",
-      "status": "pending"
+      "status": "superseded"
     },
     {
       "decision": {
@@ -4074,19 +5124,67 @@
       "status": "superseded"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-mod/operation/edit.structure",
-      "status": "pending"
+      "status": "superseded"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-mod/operation/export.convert",
-      "status": "pending"
+      "status": "superseded"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-mod/operation/view.inspect",
-      "status": "pending"
+      "status": "superseded"
     },
     {
       "evidence": [],
@@ -4104,19 +5202,58 @@
       "status": "adapted"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-replay/feature/1c712da116e4b519",
-      "status": "pending"
+      "status": "superseded"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-replay/feature/25e69931895b3e23",
-      "status": "pending"
+      "status": "superseded"
     },
     {
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-obsolete-dropped-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): MK2 plumbing with nothing to port — per-platform entry files, a README delegation note, identity helpers, Node decoder adapters, the SC2GameData download (games are never bundled; installed copies are discovered), deprecated world-kernel shims, and replay editing that MK2 never implemented.",
+        "sha256": "f323247097e7938d00f5c321096fa1ec04be81eab28189105dafdb671f8cd009"
+      },
       "evidence": [],
       "id": "legacy/codec-manifest/modkit/sc2-replay/feature/39702b3ce0781acd",
-      "status": "pending"
+      "status": "owner-dropped"
     },
     {
       "evidence": [
@@ -4129,14 +5266,37 @@
       "status": "adapted"
     },
     {
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-obsolete-dropped-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): MK2 plumbing with nothing to port — per-platform entry files, a README delegation note, identity helpers, Node decoder adapters, the SC2GameData download (games are never bundled; installed copies are discovered), deprecated world-kernel shims, and replay editing that MK2 never implemented.",
+        "sha256": "f323247097e7938d00f5c321096fa1ec04be81eab28189105dafdb671f8cd009"
+      },
       "evidence": [],
       "id": "legacy/codec-manifest/modkit/sc2-replay/feature/53eb67335e3124c7",
-      "status": "pending"
+      "status": "owner-dropped"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-replay/feature/61824309047f27a8",
-      "status": "pending"
+      "status": "superseded"
     },
     {
       "evidence": [
@@ -4169,9 +5329,25 @@
       "status": "adapted"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-replay/feature/91eeb1b97a42b1eb",
-      "status": "pending"
+      "status": "superseded"
     },
     {
       "evidence": [
@@ -4184,9 +5360,25 @@
       "status": "adapted"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-replay/feature/9d560db35b07fed9",
-      "status": "pending"
+      "status": "superseded"
     },
     {
       "evidence": [
@@ -4219,9 +5411,25 @@
       "status": "adapted"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-replay/feature/c6a8eeec407e8618",
-      "status": "pending"
+      "status": "superseded"
     },
     {
       "evidence": [
@@ -4244,9 +5452,25 @@
       "status": "adapted"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-replay/operation/export.convert",
-      "status": "pending"
+      "status": "superseded"
     },
     {
       "evidence": [
@@ -4319,9 +5543,16 @@
       "status": "pending"
     },
     {
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-obsolete-dropped-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): MK2 plumbing with nothing to port — per-platform entry files, a README delegation note, identity helpers, Node decoder adapters, the SC2GameData download (games are never bundled; installed copies are discovered), deprecated world-kernel shims, and replay editing that MK2 never implemented.",
+        "sha256": "f323247097e7938d00f5c321096fa1ec04be81eab28189105dafdb671f8cd009"
+      },
       "evidence": [],
       "id": "legacy/codec-manifest/modkit/sc2-runtime/feature/18f5e71cbe789f7a",
-      "status": "pending"
+      "status": "owner-dropped"
     },
     {
       "evidence": [],
@@ -4434,9 +5665,25 @@
       "status": "adapted"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-strings/feature/2ae0fad71087cc8e",
-      "status": "pending"
+      "status": "superseded"
     },
     {
       "evidence": [
@@ -4469,9 +5716,25 @@
       "status": "adapted"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-strings/feature/66eaf6782f1ea833",
-      "status": "pending"
+      "status": "superseded"
     },
     {
       "evidence": [
@@ -4497,9 +5760,25 @@
       "status": "adapted"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-strings/feature/8ae8e29098587892",
-      "status": "pending"
+      "status": "superseded"
     },
     {
       "demotedOn": "2026-09-16",
@@ -4525,9 +5804,25 @@
       "status": "adapted"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-strings/feature/bbd23e4ebde3eb02",
-      "status": "pending"
+      "status": "superseded"
     },
     {
       "evidence": [
@@ -4540,9 +5835,25 @@
       "status": "adapted"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-strings/feature/beed387a2fcaf6d1",
-      "status": "pending"
+      "status": "superseded"
     },
     {
       "demotedOn": "2026-09-16",
@@ -4643,9 +5954,25 @@
       "status": "adapted"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-24",
+        "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+        "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): where MK3 has the MK2 feature (present) or does it through the MK3 design (replaced: the one mod loader, the generic LSP adapter, container codecs), MK3 is the reference and no MK2 comparison is run. Each row names where MK3 implements it; the audit file is the evidence.",
+        "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+          "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+        },
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/sc2-pending-present-superseded-2026-09-24.json",
+          "sha256": "97a9b8ca9a5cfefd617cd3d827fe2eee24f431d1fa099e6e6429ac5da633ee80"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-strings/operation/sc2-strings.translate",
-      "status": "pending"
+      "status": "superseded"
     },
     {
       "demotedOn": "2026-09-16",

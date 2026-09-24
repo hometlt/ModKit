@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "kind": "owner-decision/owner-dropped",
+  "date": "2026-09-24",
+  "reason": "Owner decision 2026-09-24 (closing the pending SC2 rows after the audit): MK2 plumbing with nothing to port — per-platform entry files, a README delegation note, identity helpers, Node decoder adapters, the SC2GameData download (games are never bundled; installed copies are discovered), deprecated world-kernel shims, and replay editing that MK2 never implemented.",
+  "audit": {
+    "path": "modkit-core/reports/parity/sc2-pending-audit-2026-09-24.json",
+    "sha256": "0426ea41b2c20c87498c2022a073526d0d3466a3792c61ab74effe3e81da95b7"
+  },
+  "rows": [
+    {
+      "id": "legacy/codec-manifest/modkit/m3/feature/011d6e369f8c2eed",
+      "class": "obsolete",
+      "where": "MK3 runs codecs through execution profiles (worker/in-process); no per-platform entry files",
+      "label": "node/browser runtime split (codec.node.ts, codec.browser.ts, platform.node.ts, platform.ts, browser.ts) incl. embedded structures.xml for browser-main"
+    },
+    {
+      "id": "legacy/codec-manifest/modkit/sc2-data/feature/3e721fdf60323bc0",
+      "class": "obsolete",
+      "where": "downloaded pinned SC2GameData; owner decision: games are never bundled, installed copies are discovered (content sources)",
+      "label": "sc2-data.provision: provisioning/producer wiring for GameData artifacts"
+    },
+    {
+      "id": "legacy/codec-manifest/modkit/sc2-data/feature/5afd5cea36668f71",
+      "class": "obsolete",
+      "where": "MK3 wires codecs through manifests, not a Node entry file",
+      "label": "node.ts: Node runtime entrypoint wiring detect/codec/language"
+    },
+    {
+      "id": "legacy/codec-manifest/modkit/sc2-data/operation/sc2-data.provision",
+      "class": "obsolete",
+      "where": "downloaded pinned SC2GameData; owner decision: games are never bundled, installed copies are discovered (content sources)",
+      "label": "sc2-data.provision"
+    },
+    {
+      "id": "legacy/codec-manifest/modkit/sc2-document-metadata/feature/2a03e2f8d2c16e36",
+      "class": "obsolete",
+      "where": "README note about an MK2 package boundary",
+      "label": "@modkitx/export delegation: writeDocumentHeader re-export and writeSc2DocumentInfoDependencies now used by @modkitx/export instead of duplicating logic (README, not directly in this codec's src but a listed dependent)"
+    },
+    {
+      "id": "legacy/codec-manifest/modkit/sc2-mod/feature/619acf4170e25919",
+      "class": "obsolete",
+      "where": "MK2 helper module and a campaign placeholder",
+      "label": "identity constants + path helpers (modBasename/modStem/modExtension/isEngineDataMod), campaign.ts placeholder re-exporting SC2_CAMPAIGN_CODEC_ID only (explicit unsupported stub)"
+    },
+    {
+      "id": "legacy/codec-manifest/modkit/sc2-replay/feature/39702b3ce0781acd",
+      "class": "obsolete",
+      "where": "nothing to port",
+      "label": "Editing / in-place saving / save-as — explicitly NOT implemented in MK2 either (operation ids 'edit'/'save'/'saveAs' reserved in shared REPLAY_OPERATION_IDS but never wired into Sc2ReplayCodec handlers)"
+    },
+    {
+      "id": "legacy/codec-manifest/modkit/sc2-replay/feature/53eb67335e3124c7",
+      "class": "obsolete",
+      "where": "MK3 decodes in the codec through the s2protocol service",
+      "label": "Node decoder adapter wiring @modkitx/replay (parseReplay, analyze) with tracker events always requested"
+    },
+    {
+      "id": "legacy/codec-manifest/modkit/sc2-runtime/feature/18f5e71cbe789f7a",
+      "class": "obsolete",
+      "where": "deprecated MK2 world kernel shims",
+      "label": "world-v0: neutral world kernel adapters (canonical/compatibility/contracts/linker/sha256, deprecated shims re-exporting @modkitx/world), headless-ai-proof, replay-proof, mechanic-composition, neutral-artifact, resources, performance-statistics, browser-worker, editor schemas, oracle-passport/schedule, sc2-declarations, sc2-root-inputs, state-inventory"
+    }
+  ]
+}
