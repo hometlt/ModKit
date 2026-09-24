@@ -92,8 +92,10 @@ export function subjectTarget(uri: string | undefined): ModContextTarget | undef
 
 /**
  * The layers of a mod context a host reads through its content sources, as the mounts of a
- * dependency closure — dependencies first. The opened subject is left out (the host already serves
- * it), and so is anything on the host's own disk, which no content source reads.
+ * dependency closure — dependencies first. Anything on the host's own disk is left out: no content
+ * source reads it, and the host serves it (the opened package among it). An opened package inside a
+ * content source (a CASC mod) stays: no host serves it, and without it a document of that mod sees
+ * none of its siblings — no references to `Marine` from Liberty's own data.
  */
 export function modContextResolution(context: ModContext): ContentDependencyResolution {
   return Object.freeze({
@@ -102,7 +104,7 @@ export function modContextResolution(context: ModContext): ContentDependencyReso
     complete: context.unresolved.length === 0,
     mounts: Object.freeze(
       context.layers.flatMap((layer, order) =>
-        layer.role === 'primary' || layer.sourceId === HOST_LAYER_SOURCE_ID
+        layer.sourceId === HOST_LAYER_SOURCE_ID
           ? []
           : [
               Object.freeze({

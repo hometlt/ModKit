@@ -1,6 +1,8 @@
 /**
- * Navigation overlay, NOT a calculated model. Equal node ids share one visible node, whose
- * facts come from the last contributor. Domain owners still resolve inheritance and defaults.
+ * Resources as the chain of loaded mods: one node per package in load order (Core → … → the opened
+ * one), each expanding into that package's own tree as its codec publishes it — GameData by
+ * namespace, strings by locale, Galaxy, layouts, files. Nothing is merged: a node belongs to exactly
+ * one package, so where a unit, a string or a file comes from is where it is shown.
  */
 import type {
   PageRequest,
@@ -12,18 +14,25 @@ import type {
 
 export interface ResourceChainLayer {
   readonly label: string
+  /** Its place in the chain and where it was loaded from, shown beside the label. */
+  readonly detail: string
+  /** The package the active document belongs to; the view opens it expanded. */
+  readonly opened?: boolean
   /** Return undefined for an unavailable layer; operational errors remain visible. */
   open(
     signal?: AbortSignal,
   ): Promise<{ readonly value: TreeDataSource; release(): Promise<void> } | undefined>
 }
 
+/** The kind of a layer node; the opened package's node uses {@link OPENED_LAYER_KIND}. */
+export const LAYER_KIND = 'mod-layer'
+export const OPENED_LAYER_KIND = 'mod-layer-opened'
+
 const LAYER_SEPARATOR = '\u0001'
 const ROOT = 'chain:root'
-const UNAVAILABLE = 'chain:unavailable:'
+const LAYER = 'chain:layer:'
 
 interface OpenLayer {
-  readonly label: string
   readonly tree: TreeDataSource
   release(): Promise<void>
 }
@@ -42,15 +51,13 @@ function page(items: readonly TreeNodeRef[], request: PageRequest) {
   })
 }
 
-/** Open layer leases on first use and retain them only for the lifetime of this overlay. */
+/** Open layer leases on first use and retain them only for the lifetime of this chain. */
 export function createChainTreeDataSource(
   layers: readonly ResourceChainLayer[],
 ): TreeDataSource & { dispose(): Promise<void> } {
   const lifetime = new AbortController()
   const opened = new Map<number, Promise<OpenLayer | undefined>>()
   const unavailable = new Set<number>()
-  const childrenCache = new Map<string, readonly TreeNodeRef[]>()
-  const contributorsOf = new Map<string, ReadonlyMap<number, TreeNodeRef>>()
   let disposing: Promise<void> | undefined
 
   const assertLive = (signal?: AbortSignal): void => {
@@ -73,11 +80,7 @@ export function createChainTreeDataSource(
           return undefined
         }
         unavailable.delete(index)
-        return Object.freeze({
-          label: layer.label,
-          tree: lease.value,
-          release: () => lease.release(),
-        })
+        return Object.freeze({ tree: lease.value, release: () => lease.release() })
       })
       .catch((error: unknown) => {
         opened.delete(index) // Retry transient failures rather than caching an empty layer.
@@ -85,6 +88,12 @@ export function createChainTreeDataSource(
       })
     opened.set(index, opening)
     return opening
+  }
+
+  const layerIndexOf = (id: string): number | undefined => {
+    if (!id.startsWith(LAYER)) return undefined
+    const index = Number(id.slice(LAYER.length))
+    return Number.isSafeInteger(index) && index >= 0 && index < layers.length ? index : undefined
   }
 
   const split = (id: string): { index: number; nodeId: string } | undefined => {
@@ -96,101 +105,53 @@ export function createChainTreeDataSource(
       : undefined
   }
 
-  const layerChildren = async (
-    layer: OpenLayer,
+  const children = async (
     node: TreeNodeRef,
+    request: PageRequest,
     signal?: AbortSignal,
-  ): Promise<readonly TreeNodeRef[]> => {
-    if (!node.hasChildren) return []
-    const collected: TreeNodeRef[] = []
-    const cursors = new Set<string>()
+  ): Promise<{ readonly items: readonly TreeNodeRef[]; readonly nextCursor?: string }> => {
+    assertLive(signal)
+    if (node.id === ROOT) {
+      return page(
+        layers.map((_layer, index) => Object.freeze({ id: LAYER + index, hasChildren: true })),
+        request,
+      )
+    }
+    const layerIndex = layerIndexOf(node.id)
+    const target =
+      layerIndex === undefined ? split(node.id) : { index: layerIndex, nodeId: undefined }
+    if (target === undefined) throw new TypeError('unknown chain node ' + node.id)
+    const layer = await layerAt(target.index)
+    assertLive(signal)
+    if (layer === undefined) return page([], request)
+    const local =
+      target.nodeId === undefined
+        ? await layer.tree.root()
+        : { id: target.nodeId, hasChildren: node.hasChildren }
     const readSignal =
       signal === undefined ? lifetime.signal : AbortSignal.any([lifetime.signal, signal])
-    let cursor: string | undefined
-    do {
-      assertLive(signal)
-      const answer = await layer.tree.children(
-        node,
-        { limit: 200, ...(cursor === undefined ? {} : { cursor }) },
-        readSignal,
-      )
-      assertLive(signal)
-      collected.push(...answer.items)
-      cursor = answer.nextCursor
-      if (cursor !== undefined) {
-        if (cursors.has(cursor))
-          throw new Error('resource tree pagination did not advance: ' + layer.label)
-        cursors.add(cursor)
-      }
-    } while (cursor !== undefined)
-    return collected
+    const answer = await layer.tree.children(local, request, readSignal)
+    assertLive(signal)
+    return Object.freeze({
+      items: Object.freeze(
+        answer.items.map(item =>
+          Object.freeze({
+            id: String(target.index) + LAYER_SEPARATOR + item.id,
+            hasChildren: item.hasChildren,
+          }),
+        ),
+      ),
+      ...(answer.nextCursor === undefined ? {} : { nextCursor: answer.nextCursor }),
+    })
   }
 
-  const joinedChildren = async (
-    node: TreeNodeRef,
-    signal?: AbortSignal,
-  ): Promise<readonly TreeNodeRef[]> => {
-    assertLive(signal)
-    const cached = childrenCache.get(node.id)
-    if (cached !== undefined) return cached
-    const target = split(node.id)
-    const contributors =
-      contributorsOf.get(node.id) ??
-      new Map(
-        target === undefined
-          ? []
-          : [[target.index, { id: target.nodeId, hasChildren: node.hasChildren }]],
-      )
-    const members = new Map<string, Map<number, TreeNodeRef>>()
-    for (let index = 0; index < layers.length; index += 1) {
-      assertLive(signal)
-      if (node.id !== ROOT && !contributors.has(index)) continue
-      const layer = await layerAt(index)
-      assertLive(signal)
-      if (layer === undefined) continue
-      const local = node.id === ROOT ? await layer.tree.root() : contributors.get(index)
-      if (local === undefined) continue
-      for (const item of await layerChildren(layer, local, signal)) {
-        const found = members.get(item.id) ?? new Map<number, TreeNodeRef>()
-        found.set(index, item)
-        members.set(item.id, found)
-      }
-    }
-    assertLive(signal)
-    const joined: TreeNodeRef[] = []
-    for (const [localId, definitions] of members) {
-      const last = [...definitions.keys()].at(-1)
-      if (last === undefined) continue
-      const id = String(last) + LAYER_SEPARATOR + localId
-      contributorsOf.set(id, definitions)
-      joined.push(
-        Object.freeze({
-          id,
-          hasChildren: [...definitions.values()].some(item => item.hasChildren),
-        }),
-      )
-    }
-    if (node.id === ROOT) {
-      for (const index of unavailable) {
-        joined.push(Object.freeze({ id: UNAVAILABLE + index, hasChildren: false }))
-      }
-    }
-    const result = Object.freeze(joined)
-    childrenCache.set(node.id, result)
-    return result
-  }
-
-  const completeness = (): string =>
-    unavailable.size === 0 ? '' : ' · incomplete: ' + unavailable.size + ' unavailable layers'
   const source = Object.freeze({
     async root(): Promise<TreeNodeRef> {
       assertLive()
       return Object.freeze({ id: ROOT, hasChildren: layers.length > 0 })
     },
 
-    async children(node: TreeNodeRef, request: PageRequest, signal?: AbortSignal) {
-      return page(await joinedChildren(node, signal), request)
-    },
+    children,
 
     async facts(node: TreeNodeRef): Promise<TreeNodeFacts> {
       assertLive()
@@ -198,62 +159,40 @@ export function createChainTreeDataSource(
         return Object.freeze({
           kind: 'resources',
           label: 'Resources',
-          preview: layers.length + ' layers' + completeness(),
+          preview:
+            layers.length +
+            ' mods' +
+            (unavailable.size === 0 ? '' : ' · ' + unavailable.size + ' unavailable'),
         })
       }
-      if (node.id.startsWith(UNAVAILABLE)) {
-        const index = Number(node.id.slice(UNAVAILABLE.length))
-        const layer = layers[index]
-        if (layer === undefined || !unavailable.has(index))
-          throw new TypeError('unknown chain node ' + node.id)
+      const layerIndex = layerIndexOf(node.id)
+      if (layerIndex !== undefined) {
+        const layer = layers[layerIndex]
+        if (layer === undefined) throw new TypeError('unknown chain node ' + node.id)
         return Object.freeze({
-          kind: 'unavailable-layer',
+          kind: layer.opened === true ? OPENED_LAYER_KIND : LAYER_KIND,
           label: layer.label,
-          preview: 'Unavailable — dependency chain is incomplete',
+          preview: unavailable.has(layerIndex) ? layer.detail + ' · unavailable' : layer.detail,
         })
       }
       const target = split(node.id)
       if (target === undefined) throw new TypeError('unknown chain node ' + node.id)
       const layer = await layerAt(target.index)
       if (layer === undefined) throw new TypeError('chain layer ' + target.index + ' is not open')
-      const contributors = contributorsOf.get(node.id)
-      const local = contributors?.get(target.index) ?? {
-        id: target.nodeId,
-        hasChildren: node.hasChildren,
-      }
-      const facts = await layer.tree.facts(local)
-      assertLive()
-      // Numeric values may be stats or descendant counts. Never sum them: count unique children.
-      const preview =
-        node.hasChildren && contributors !== undefined && contributors.size > 1
-          ? (await joinedChildren(node)).length + ' children · ' + contributors.size + ' layers'
-          : facts.preview === undefined || facts.preview === ''
-            ? layer.label
-            : facts.preview + ' · ' + layer.label
-      return Object.freeze({ ...facts, preview: preview + completeness() })
+      return layer.tree.facts({ id: target.nodeId, hasChildren: node.hasChildren })
     },
 
     async *search(query: TreeQuery, signal?: AbortSignal): AsyncIterable<TreeNodeRef> {
-      const needle = query.pattern.toLocaleLowerCase()
-      const pending = [...(await joinedChildren(await source.root(), signal))].reverse()
-      const seen = new Set<string>()
-      while (pending.length > 0) {
+      for (let index = 0; index < layers.length; index += 1) {
         assertLive(signal)
-        const node = pending.pop()
-        if (node === undefined) break
-        if (seen.has(node.id)) continue
-        seen.add(node.id)
-        const facts = await source.facts(node)
-        assertLive(signal)
-        if (
-          [facts.label, facts.kind, facts.preview ?? ''].some(value =>
-            value.toLocaleLowerCase().includes(needle),
-          )
-        )
-          yield node
-        if (node.hasChildren) {
-          for (const child of [...(await joinedChildren(node, signal))].reverse())
-            pending.push(child)
+        const layer = await layerAt(index)
+        if (layer === undefined) continue
+        for await (const found of layer.tree.search(query, signal)) {
+          assertLive(signal)
+          yield Object.freeze({
+            id: String(index) + LAYER_SEPARATOR + found.id,
+            hasChildren: found.hasChildren,
+          })
         }
       }
     },
@@ -263,8 +202,6 @@ export function createChainTreeDataSource(
       lifetime.abort(new Error('resource chain disposed'))
       const pending = [...opened.values()]
       opened.clear()
-      childrenCache.clear()
-      contributorsOf.clear()
       disposing = Promise.all(
         pending.map(async opening => {
           const layer = await opening.catch(() => undefined)

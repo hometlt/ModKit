@@ -31,6 +31,7 @@ import { sceneModule } from '@modkit/scene/module'
 import {
   createSubjectCandidateProvider,
   type AnyDescriptor,
+  type ArtifactSource,
   type AssetSession,
   type Lease,
   type OperationSession,
@@ -308,6 +309,12 @@ export interface VsCodeSubjectHost {
   openTreeSubject(
     path: string,
     roots: readonly string[],
+    signal?: AbortSignal,
+  ): Promise<VsCodeTreeSubject | undefined>
+  /** The same, for a source the caller already holds (a layer of a mod context), named `path`. */
+  openTreeSource(
+    source: ArtifactSource,
+    path: string,
     signal?: AbortSignal,
   ): Promise<VsCodeTreeSubject | undefined>
 }
@@ -635,37 +642,55 @@ export async function createVsCodeSubjectHost(
       })
       const answer = await opener(path, signal)
       if (answer.snapshot.state !== 'opened' || answer.session === undefined) return undefined
-      const session = answer.session
-      const descriptor = await session.descriptor()
-      if (
-        !descriptor.dataSources.some(
-          item => item.contract === 'common.view/tree-data-source' && item.major === 1,
-        )
-      ) {
-        await session.dispose()
+      return treeSubjectOf(answer.session, resolve(path))
+    },
+    async openTreeSource(source: ArtifactSource, path: string, signal?: AbortSignal) {
+      const result = await services.open({
+        source,
+        path,
+        intent: 'full',
+        grant: DEFAULT_OPEN_GRANT,
+        budget: DEFAULT_OPEN_BUDGET,
+        ...(signal === undefined ? {} : { signal }),
+      })
+      return result.state === 'opened' ? treeSubjectOf(result.session, path) : undefined
+    },
+  })
+}
+
+/** A subject's standard tree, or nothing (the session closed) when it publishes none. */
+async function treeSubjectOf(
+  session: AssetSession,
+  path: string,
+): Promise<VsCodeTreeSubject | undefined> {
+  const descriptor = await session.descriptor()
+  if (
+    !descriptor.dataSources.some(
+      item => item.contract === 'common.view/tree-data-source' && item.major === 1,
+    )
+  ) {
+    await session.dispose()
+    return undefined
+  }
+  return Object.freeze({
+    path,
+    async openTreeDataSource(openSignal?: AbortSignal) {
+      throwIfAborted(openSignal)
+      if (session.state() !== 'live') return undefined
+      const lease = await session.dataSource('common.view/tree-data-source', 1)
+      try {
+        throwIfAborted(openSignal)
+      } catch (error) {
+        await lease.release()
+        throw error
+      }
+      if (session.state() !== 'live') {
+        await lease.release()
         return undefined
       }
-      return Object.freeze({
-        path: resolve(path),
-        async openTreeDataSource(openSignal?: AbortSignal) {
-          throwIfAborted(openSignal)
-          if (session.state() !== 'live') return undefined
-          const lease = await session.dataSource('common.view/tree-data-source', 1)
-          try {
-            throwIfAborted(openSignal)
-          } catch (error) {
-            await lease.release()
-            throw error
-          }
-          if (session.state() !== 'live') {
-            await lease.release()
-            return undefined
-          }
-          return lease
-        },
-        dispose: () => session.dispose(),
-      })
+      return lease
     },
+    dispose: () => session.dispose(),
   })
 }
 
@@ -1711,7 +1736,9 @@ function serveVsCode(
         const container = containerOfSubject(request.path)
         if (!withinRoots(roots, splitContainer(container).file))
           throw new Error('that archive is outside the granted folders')
-        return (await options.thumbnail?.(containerUriText(container, request.entry), maxEdge)) ?? null
+        return (
+          (await options.thumbnail?.(containerUriText(container, request.entry), maxEdge)) ?? null
+        )
       }
       case 'explorer-children':
         if (options.explorer === undefined) throw new Error('this page is not a Modkit Explorer')

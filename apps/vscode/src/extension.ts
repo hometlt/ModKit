@@ -37,6 +37,8 @@ import {
   type ContentSourceLocalPath,
   type ContentSourceSearchResult,
   type ContentSources,
+  type ModContext,
+  type ModContextLayer,
   type ModContextTarget,
 } from '@modkit/vfs/content-sources'
 import { chooseContentSource } from '@modkit/ui/content-sources'
@@ -79,7 +81,12 @@ import {
   type ContainerNode,
 } from './container-uri.js'
 import { advertisesSubjectCandidates, SUBJECT_SELECTOR_SOURCE } from './subject-candidates.js'
-import { createChainTreeDataSource, type ResourceChainLayer } from './resource-chain.js'
+import {
+  createChainTreeDataSource,
+  LAYER_KIND,
+  OPENED_LAYER_KIND,
+  type ResourceChainLayer,
+} from './resource-chain.js'
 import {
   commandSubjectsFrom,
   composeLanguageDocumentSources,
@@ -89,7 +96,9 @@ import {
   SERVICE_OPERATION_CATALOG_MAX_PAGE_ITEMS,
   loadLocalizationCatalogs,
   resolveContentLanguageSources,
+  openModContextLayerSource,
   resolveSubjectClosure,
+  subjectTarget,
   baseModsFor,
   type BaseModSetting,
   type CommandInput,
@@ -765,7 +774,7 @@ function namespaceEntryRootOf(subjectId: string): string | undefined {
   const cut = subjectId.search(/[?&]vfs-path=/u)
   if (cut <= 0) return undefined
   const head = subjectId.slice(0, cut)
-  if (parseContainerUriText(head) !== undefined) return head
+  if (parseContainerUriText(head) !== undefined || head.startsWith('modkit-source:')) return head
   if (!head.startsWith('file:')) return undefined
   try {
     return vscode.Uri.parse(head, true).fsPath
@@ -776,6 +785,9 @@ function namespaceEntryRootOf(subjectId: string): string | undefined {
 
 /** The URI of one entry inside a package subject, for a directory package or a container member. */
 function memberUriOf(root: string, entry: string): vscode.Uri {
+  if (root.startsWith('modkit-source:')) {
+    return vscode.Uri.joinPath(vscode.Uri.parse(root), ...entry.split('/'))
+  }
   const location = parseContainerUriText(root)
   return location === undefined
     ? vscode.Uri.file(join(root, entry))
@@ -1851,11 +1863,15 @@ class ResourcesView implements vscode.TreeDataProvider<ResourceTreeNode>, vscode
     }
     const item = new vscode.TreeItem(
       node.facts.label,
-      // A file whose format publishes a tree is expandable even though the package's own tree
-      // calls it a leaf — the children come from that file's codec, not from the package.
-      node.ref.hasChildren || (node.kind === 'resource' && this.memberSubjectOf(node) !== undefined)
-        ? vscode.TreeItemCollapsibleState.Collapsed
-        : vscode.TreeItemCollapsibleState.None,
+      // The package the active document belongs to opens expanded under the mods it loads with.
+      node.facts.kind === OPENED_LAYER_KIND
+        ? vscode.TreeItemCollapsibleState.Expanded
+        : // A file whose format publishes a tree is expandable even though the package's own tree
+          // calls it a leaf — the children come from that file's codec, not from the package.
+          node.ref.hasChildren ||
+            (node.kind === 'resource' && this.memberSubjectOf(node) !== undefined)
+          ? vscode.TreeItemCollapsibleState.Collapsed
+          : vscode.TreeItemCollapsibleState.None,
     )
     item.id = node.kind === 'member' ? `${node.subject}|${node.ref.id}` : node.ref.id
     if (node.facts.preview !== undefined) item.description = node.facts.preview
@@ -1863,11 +1879,13 @@ class ResourcesView implements vscode.TreeDataProvider<ResourceTreeNode>, vscode
     item.contextValue =
       node.facts.subjectId === undefined ? 'modkitResource.node' : 'modkitResource.openable'
     item.iconPath = new vscode.ThemeIcon(
-      node.ref.hasChildren
-        ? 'symbol-folder'
-        : /file|document|script|layout|string|style/iu.test(node.facts.kind)
-          ? 'file'
-          : 'symbol-field',
+      node.facts.kind === LAYER_KIND || node.facts.kind === OPENED_LAYER_KIND
+        ? 'package'
+        : node.ref.hasChildren
+          ? 'symbol-folder'
+          : /file|document|script|layout|string|style/iu.test(node.facts.kind)
+            ? 'file'
+            : 'symbol-field',
     )
     if (node.facts.subjectId !== undefined) {
       item.command = {
@@ -7434,106 +7452,152 @@ async function activateModkit(
     liveLanguageScope(uri) ?? resolvedLanguageScopesByDocument.get(uri.toString())
 
   /**
-   * The packages loaded under the active one, in load order, as this window can open them: the
-   * layers of the mod context the content sources open for it — the one loader every consumer
-   * uses. A layer in a content source opens as its `modkit-source:` URI, one on disk as its path.
+   * Where a layer's entries are named, as this window opens them: a package in a content source as
+   * its `modkit-source:` URI, a folder on this disk as its `file:` URI, a packed one as the
+   * container. Resource nodes carry it in their subject ids, so a click opens the file of the layer
+   * that holds it.
    */
-  const dependencyLayersOf = async (
-    scope: LiveLanguageScope,
-    signal?: AbortSignal,
-  ): Promise<readonly LanguageSubjectCandidate[]> => {
-    const target = modContextTargetOf(scope.path)
-    if (target === undefined) return Object.freeze([])
-    let contentSources: ContentSources
+  const layerRootOf = (layer: ModContextLayer): string => {
+    if (layer.sourceId !== HOST_LAYER_SOURCE_ID) {
+      return vscode.Uri.from({
+        scheme: 'modkit-source',
+        authority: 'battlenet',
+        path: `/${layer.sourceId}/${layer.sourcePath}`,
+      }).toString()
+    }
     try {
-      contentSources = await requireContentSources()
+      if (statSync(layer.sourcePath).isFile()) return containerUriText(layer.sourcePath)
     } catch {
-      return Object.freeze([])
+      // A layer the loader could open but this window cannot stat is still named by its path.
     }
-    const baseMods = scope.root === undefined ? undefined : baseModsSetting(scope.root)
-    const closure = await resolveSubjectClosure({
-      contentSources,
-      subject: { descriptor: scope.descriptor, target },
-      ...(baseMods === undefined ? {} : { baseMods }),
-      keepContext: true,
-      ...(signal === undefined ? {} : { signal }),
-    })
-    const opened = closure.context
-    if (opened === undefined) {
-      for (const item of closure.diagnostics) log(`[resources] ${item.code}: ${item.message}`)
-      return Object.freeze([])
-    }
-    try {
-      return Object.freeze(
-        opened.layers.flatMap((layer, order) => {
-          if (layer.role === 'primary') return []
-          const path =
-            layer.sourceId === HOST_LAYER_SOURCE_ID
-              ? layer.sourcePath
-              : `modkit-source://battlenet/${encodeURIComponent(layer.sourceId)}/${layer.sourcePath
-                  .split('/')
-                  .filter(Boolean)
-                  .map(part => encodeURIComponent(part))
-                  .join('/')}`
-          return [Object.freeze({ path, root: subjectUriOf(path), order })]
-        }),
-      )
-    } finally {
-      await opened.dispose()
-    }
+    return vscode.Uri.file(layer.sourcePath).toString()
   }
 
-  /** Whether Resources shows the resolved chain or only what the active package declares. */
+  /** Whether Resources shows the chain of loaded mods or only the active package. */
   let resourcesShowChain = context.workspaceState.get<boolean>(RESOURCES_CHAIN_KEY) ?? true
-  const chainTrees = new Map<string, ReturnType<typeof createChainTreeDataSource>>()
+  interface ResourceChain {
+    readonly tree: ReturnType<typeof createChainTreeDataSource>
+    readonly context: ModContext
+  }
+  const chainTrees = new Map<string, Promise<ResourceChain | undefined>>()
   const disposeChainTrees = (): void => {
     const pending = [...chainTrees.values()]
     chainTrees.clear()
-    for (const tree of pending) void tree.dispose().catch(() => undefined)
+    for (const opening of pending) {
+      void opening
+        .then(async chain => {
+          await chain?.tree.dispose()
+          await chain?.context.dispose()
+        })
+        .catch(() => undefined)
+    }
   }
   context.subscriptions.push({ dispose: disposeChainTrees })
 
-  const chainTreeFor = async (
-    scope: LiveLanguageScope,
-    signal?: AbortSignal,
+  /**
+   * The chain of loaded mods for a subject — the active package, or a document in no package this
+   * window opened (a file of a CASC mod) — as the one loader opens it: every layer in load order,
+   * each opened by its own codec over the loader's listing, so Core and Liberty from the game's
+   * storage show the same sections as a mod folder. The opened package on this disk shows its live
+   * subject instead: that one carries unsaved edits.
+   */
+  const chainTreeFor = (
+    subjectPath: string,
+    scope: LiveLanguageScope | undefined,
   ): Promise<ResourceTreeHost['openTreeDataSource'] | undefined> => {
-    const dependencies = await dependencyLayersOf(scope, signal)
-    if (dependencies.length === 0) return undefined
-    const key = `${scope.path}|${scope.revision}`
-    const known = chainTrees.get(key)
-    if (known === undefined) {
-      const layers: ResourceChainLayer[] = [
-        ...dependencies.map(candidate => ({
-          label: basename(candidate.path),
-          open: async (openSignal?: AbortSignal) => {
-            const layer = await openAutomaticLanguageScope(candidate, openSignal)
-            return layer === undefined ? undefined : layer.openTreeDataSource(openSignal)
-          },
-        })),
-        {
-          label: basename(scope.path),
-          open: (openSignal?: AbortSignal) => scope.openTreeDataSource(openSignal),
-        },
-      ]
-      chainTrees.set(key, createChainTreeDataSource(layers))
+    const key = `${subjectPath}|${scope?.revision ?? ''}`
+    let opening = chainTrees.get(key)
+    if (opening === undefined) {
+      opening = (async (): Promise<ResourceChain | undefined> => {
+        const target = modContextTargetOf(subjectPath)
+        if (target === undefined) return undefined
+        let contentSources: ContentSources
+        try {
+          contentSources = await requireContentSources()
+        } catch {
+          return undefined
+        }
+        const baseMods = baseModsSetting(scope?.root ?? subjectUriOf(subjectPath))
+        const closure = await resolveSubjectClosure({
+          contentSources,
+          subject: { descriptor: {}, target },
+          ...(baseMods === undefined ? {} : { baseMods }),
+          keepContext: true,
+        })
+        const opened = closure.context
+        if (opened === undefined) {
+          for (const item of closure.diagnostics) log(`[resources] ${item.code}: ${item.message}`)
+          return undefined
+        }
+        const layers: ResourceChainLayer[] = opened.layers.map(layer => {
+          const live =
+            layer.role === 'primary' && layer.sourceId === HOST_LAYER_SOURCE_ID ? scope : undefined
+          const root = layerRootOf(layer)
+          return Object.freeze({
+            label: layer.displayName,
+            detail: layer.role === 'primary' ? 'opened' : layer.role,
+            opened: layer.role === 'primary',
+            open: async (openSignal?: AbortSignal) => {
+              if (live !== undefined) return live.openTreeDataSource(openSignal)
+              const source = await openModContextLayerSource({
+                context: opened,
+                layerId: layer.id,
+                ref: { id: root, uri: root },
+                ...(openSignal === undefined ? {} : { signal: openSignal }),
+              })
+              const subject = await host.openTreeSource(source, root, openSignal)
+              if (subject === undefined) return undefined
+              const lease = await subject.openTreeDataSource(openSignal)
+              if (lease === undefined) {
+                await subject.dispose()
+                return undefined
+              }
+              return Object.freeze({
+                value: lease.value,
+                release: async () => {
+                  await lease.release()
+                  await subject.dispose()
+                },
+              })
+            },
+          })
+        })
+        return Object.freeze({ tree: createChainTreeDataSource(layers), context: opened })
+      })().catch((error: unknown) => {
+        chainTrees.delete(key)
+        log(`[resources] ${subjectPath}: ${error instanceof Error ? error.message : String(error)}`)
+        return undefined
+      })
+      chainTrees.set(key, opening)
     }
-    const tree = chainTrees.get(key)
-    if (tree === undefined) return undefined
-    // The chain owns its layer leases for as long as the scope lives; a reader's lease is a view.
-    return async () => Object.freeze({ value: tree, release: async () => undefined })
+    return opening.then(chain =>
+      chain === undefined
+        ? undefined
+        : // The chain owns its layer leases for as long as the key lives; a reader's lease is a view.
+          async () => Object.freeze({ value: chain.tree, release: async () => undefined }),
+    )
   }
 
   activeDocumentResources = async () => {
     const uri = vscode.window.activeTextEditor?.document.uri
     if (uri === undefined) return undefined
     const scope = await resolveLanguageScope(uri)
-    if (scope === undefined) return undefined
-    const chain = resourcesShowChain ? await chainTreeFor(scope) : undefined
+    // A document of a package no editor opened — a unit file of Liberty in the game's storage —
+    // still shows the mods it loads with; it just has no live package of its own.
+    const subjectPath =
+      scope?.path ??
+      (uri.scheme === 'modkit-source' || uri.scheme === 'file' ? subjectPathOf(uri) : undefined)
+    if (subjectPath === undefined) return undefined
+    const chain =
+      resourcesShowChain || scope === undefined
+        ? await chainTreeFor(subjectPath, scope)
+        : undefined
+    if (chain === undefined && scope === undefined) return undefined
     return Object.freeze({
       openTreeDataSource: (signal?: AbortSignal) =>
-        chain === undefined ? scope.openTreeDataSource(signal) : chain(signal),
+        chain !== undefined ? chain(signal) : scope!.openTreeDataSource(signal),
       navigate(subjectId: string, range?: TreeNodeFacts['range']) {
-        void navigateWorkspaceResource(scope.path, subjectId, range).catch(error =>
+        void navigateWorkspaceResource(subjectPath, subjectId, range).catch(error =>
           vscode.window.showErrorMessage(
             `Modkit: ${error instanceof Error ? error.message : String(error)}`,
           ),
@@ -8093,6 +8157,50 @@ async function activateModkit(
   }
 
 
+  /*
+   * The projection names a file of a content source `content-source://<source>/<path>`; this window
+   * opens the same file as `modkit-source://battlenet/<source>/<path>`. One name per file: an open
+   * CASC document is the projected one rather than a second copy of it, and a reference into Core
+   * opens in the editor.
+   */
+  const editorUriOfProjected = (uri: string): string => {
+    const target = uri.startsWith('content-source:') ? subjectTarget(uri) : undefined
+    return target === undefined || typeof target === 'string'
+      ? uri
+      : vscode.Uri.from({
+          scheme: 'modkit-source',
+          authority: 'battlenet',
+          path: `/${target.sourceId}/${target.path}`,
+        }).toString()
+  }
+  const withEditorUris = (source: LanguageWorkspaceDocumentSource): LanguageWorkspaceDocumentSource =>
+    Object.freeze({
+      async snapshot(request: Parameters<LanguageWorkspaceDocumentSource['snapshot']>[0]) {
+        const result = await source.snapshot(request)
+        const context = result.workspaceContext
+        return Object.freeze({
+          ...result,
+          documents: Object.freeze(
+            result.documents.map(item =>
+              Object.freeze({ ...item, uri: editorUriOfProjected(item.uri) }),
+            ),
+          ),
+          ...(context === undefined
+            ? {}
+            : {
+                workspaceContext: Object.freeze({
+                  ...context,
+                  documentOrigins: Object.freeze(
+                    context.documentOrigins.map(origin =>
+                      Object.freeze({ ...origin, uri: editorUriOfProjected(origin.uri) }),
+                    ),
+                  ),
+                }),
+              }),
+        })
+      },
+    })
+
   const dependencyFailureNotices = new Set<string>()
   const languageDocumentSource: LanguageWorkspaceDocumentSource = Object.freeze({
     async snapshot(request: Parameters<LanguageWorkspaceDocumentSource['snapshot']>[0]) {
@@ -8153,7 +8261,10 @@ async function activateModkit(
         }
       }
       const local = workspaceLanguageDocumentSource(scope, projected?.dependenciesComplete === true)
-      const composed = composeLanguageDocumentSources([...(projected?.sources ?? []), local])
+      const composed = composeLanguageDocumentSources([
+        ...(projected?.sources ?? []).map(withEditorUris),
+        local,
+      ])
       const snapshot = await composed!.snapshot(request)
       rememberLanguageSnapshot(snapshotKey, snapshot)
       log(

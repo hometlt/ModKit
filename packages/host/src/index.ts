@@ -203,6 +203,7 @@ export {
   type ContentLanguageSources,
   type ContentLanguageSourcesRequest,
 } from './content-dependency-operations.js'
+export { openModContextLayerSource } from './mod-context-layer-source.js'
 export {
   createBundledServiceDefinitionRegistry,
   createSubjectServices,
