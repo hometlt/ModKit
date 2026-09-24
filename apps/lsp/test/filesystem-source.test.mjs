@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import test from 'node:test'
-import { createFilesystemLanguageDocumentSource } from '../dist/filesystem-source.js'
+import { createFilesystemLanguageDocumentSource } from '@modkit/host/node'
 
 const snapshot = (source, overrides = {}) =>
   source.snapshot({

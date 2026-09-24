@@ -6,6 +6,11 @@ export {
 } from './artifact-digest-cache.js'
 export { openFileSource } from './file-source.js'
 export {
+  createFilesystemLanguageDocumentSource,
+  type FilesystemLanguageDocumentSource,
+  type FilesystemLanguageDocumentSourceOptions,
+} from './language-filesystem-source.js'
+export {
   openFileArtifactSource,
   type FileArtifactReadTelemetry,
   type FileArtifactSourceOptions,

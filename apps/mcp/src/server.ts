@@ -701,7 +701,7 @@ export function createModkitMcpServer(host: ModkitMcpHostPort): ModkitMcpServerR
     {
       title: 'Open a host-held language workspace',
       description:
-        'Open up to 32 rooted files or bounded virtual source overlays in one retained language workspace. Source text and provider leases remain in the host; each returned document lists the exact activated feature surface.',
+        'Open up to 32 rooted files or bounded virtual source overlays in one retained language workspace. With dependencySubjectHandle naming a package folder on disk, the other files of the package and its dependency closure join the workspace, so references and rename cover the whole mod; installed dependencies stay read-only and a rename reaching them is refused. Source text and provider leases remain in the host; each returned document lists the exact activated feature surface.',
       inputSchema: languageSessionOpenInput,
       outputSchema: envelopeSchema,
       annotations: { ...readOnlyAnnotations, idempotentHint: false },

@@ -5,8 +5,8 @@ import type {
   LanguageProviderRoute,
   LanguageWorkspaceDocumentSource,
   LanguageWorkspaceDocumentSourceRequest,
-} from '@modkit/host/language'
-import { classifyLanguageFile, languageWorkspaceContextToken } from '@modkit/host/language'
+} from '../language/index.js'
+import { classifyLanguageFile, languageWorkspaceContextToken } from '../language/index.js'
 import type { LanguageDocument, LanguageWorkspaceDocumentOrigin } from '@modkit/sdk/language'
 
 export interface FilesystemLanguageDocumentSourceOptions {

@@ -17,7 +17,7 @@ import {
   type ModkitOpened,
 } from '@modkit/host/node'
 import { ConfigurationError, modkitLspUsage, parseModkitLspConfiguration } from './config.js'
-import { createFilesystemLanguageDocumentSource } from './filesystem-source.js'
+import { createFilesystemLanguageDocumentSource } from '@modkit/host/node'
 import { createModkitLanguageServer } from './server.js'
 
 const LANGUAGE_BUDGET = Object.freeze({

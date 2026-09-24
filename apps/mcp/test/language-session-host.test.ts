@@ -296,14 +296,17 @@ describe('host-held MCP language session', () => {
         maxResults: 20,
         maxEdits: 20,
       })
+      /*
+       * The dependency closure resolves, but the subject is a content-source file, not a package
+       * folder on this disk: nothing serves the package's own files, so the session stays
+       * incomplete and a rename is refused rather than missing them.
+       */
       expect(definition.result).toMatchObject({
-        // The closure is complete; its dependency documents are read-only, which refuses an edit
-        // reaching them but does not make a lookup incomplete.
-        isIncomplete: false,
+        isIncomplete: true,
         locations: [{ uri: expect.stringMatching(/^content-source:\/\/fixture-source\//u) }],
       })
-      expect(definition.workspaceContext).toMatchObject({ semanticComplete: true })
-      expect(session.workspaceIncomplete).toBe(false)
+      expect(definition.workspaceContext).toMatchObject({ semanticComplete: false })
+      expect(session.workspaceIncomplete).toBe(true)
     } finally {
       await session.close()
     }

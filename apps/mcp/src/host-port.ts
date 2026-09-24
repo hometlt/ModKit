@@ -33,6 +33,7 @@ import type {
   LanguageWorkspaceDocumentOrigin,
 } from '@modkit/sdk/language'
 import {
+  createFilesystemLanguageDocumentSource,
   createModkit,
   createNodeMapPreviewResourcePlanResolver,
   type ModkitOpened,
@@ -72,6 +73,17 @@ export interface McpOpenedSubject {
 }
 
 const MCP_LANGUAGE_MAX_DOCUMENT_BYTES = 4_194_304
+
+/** The folder a `file:` subject names on this disk, when it is one. */
+async function hostFolderOf(uri: string | undefined): Promise<string | undefined> {
+  if (uri === undefined || !uri.startsWith('file:')) return undefined
+  try {
+    const path = fileURLToPath(uri)
+    return (await stat(path)).isDirectory() ? path : undefined
+  } catch {
+    return undefined
+  }
+}
 
 async function readBoundedLanguageFile(path: string, signal?: AbortSignal): Promise<Uint8Array> {
   signal?.throwIfAborted()
@@ -812,15 +824,37 @@ export async function createHostMcpPort(
           })
     dependencyDiagnostics.push(...(projected?.diagnostics ?? []))
     const dependencyResolutionComplete = projected?.dependenciesComplete === true
-    const sources = [...(projected?.sources ?? []), options.languageDocumentSource].filter(
-      (source): source is LanguageWorkspaceDocumentSource => source !== undefined,
-    )
+    /*
+     * The package itself. The closure leaves the opened subject to the host that serves it, as the
+     * LSP and VS Code serve their roots from disk; this session did not, so a rename could claim to
+     * be whole while the package's unopened files went unseen. A package folder on this disk is
+     * served from it (writable); one that is not (a packed archive, a content source) keeps the
+     * session incomplete, and rename is refused instead of missing files.
+     */
+    const packageFolder = await hostFolderOf(context?.descriptor.subjectUri)
+    const packageSource =
+      packageFolder === undefined
+        ? undefined
+        : createFilesystemLanguageDocumentSource({
+            roots: [packageFolder],
+            routes: languageProviderRoutes(modkit.services.inventory),
+            maxDocumentBytes: MCP_LANGUAGE_MAX_DOCUMENT_BYTES,
+            maxWorkspaceBytes: MCP_LANGUAGE_MAX_WORKSPACE_BYTES,
+          })
+    const sources = [
+      ...(projected?.sources ?? []),
+      packageSource,
+      options.languageDocumentSource,
+    ].filter((source): source is LanguageWorkspaceDocumentSource => source !== undefined)
     const documentSource = composeLanguageDocumentSources(sources, complete => {
       dependencySnapshotComplete = complete
     })
     let observedWorkspaceContext: LanguageWorkspaceContext | undefined
     const workspaceIncomplete = () =>
-      context === undefined || !dependencyResolutionComplete || !dependencySnapshotComplete
+      context === undefined ||
+      packageSource === undefined ||
+      !dependencyResolutionComplete ||
+      !dependencySnapshotComplete
     const workspace = createLanguageWorkspace({
       services: modkit.services,
       grant: { id: `modkit-mcp-language-session:${randomUUID()}`, classes: ['read-source'] },
