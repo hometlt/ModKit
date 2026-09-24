@@ -182,6 +182,8 @@ export interface DataResolvedEntity {
   readonly fields: Readonly<Record<string, JsonValue>>
   /** Winning source for each resolved top-level field, including inherited fields when requested. */
   readonly fieldSources?: Readonly<Record<string, DataEntitySource>>
+  /** Exact source decimal after provider constant substitution for scalar numeric fields, when available. */
+  readonly fieldLexemes?: Readonly<Record<string, string>>
   readonly sources: readonly DataEntitySource[]
   readonly complete: boolean
 }
