@@ -194,7 +194,7 @@ const artifactSourceSurface = {
 const assetNamespaceSurface = {
   ...ABI_ASSET_NAMESPACE,
   methods: {
-    list: { kind: 'iterable', ...sig },
+    list: { kind: 'iterable', batchItems: 512, ...sig },
     readPreamble: { kind: 'value', optional: true, ...sig },
     open: { kind: 'lease', result: ABI_ARTIFACT_SOURCE, wrapper: 'lease', ...sig },
   },

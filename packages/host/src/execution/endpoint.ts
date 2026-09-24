@@ -1104,7 +1104,10 @@ class EndpointImpl implements Endpoint {
   }
 
   private remoteIterable(id: string, decl: MethodSurface): AsyncIterable<WireValue> {
-    const batch = this.limits.iteratorBatchItems
+    const batch = Math.min(
+      Math.max(this.limits.iteratorBatchItems, decl.batchItems ?? 1),
+      this.limits.maxArrayLength,
+    )
     return {
       [Symbol.asyncIterator]: (): AsyncIterator<WireValue> => {
         let finished = false

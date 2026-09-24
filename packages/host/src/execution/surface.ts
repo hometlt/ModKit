@@ -59,6 +59,12 @@ export interface MethodSurface {
   /** The ABI declares the method with `?`; an implementation may lack it (v1: proxies still define it). */
   readonly optional?: boolean
   /**
+   * `iterable` of small records (namespace entries): the consuming side pulls up to this many per
+   * round trip. A listing of 190 000 entries otherwise crosses the worker boundary one message at
+   * a time. Byte streams keep one item per pull, whose size the frame limits already bound.
+   */
+  readonly batchItems?: number
+  /**
    * ABI shape of a `lease` result on the consuming side: `'lease'` materializes as
    * `{ value, release }` (`AssetSession.dataSource()`), `'bare'` (default) as the capability
    * object itself whose `releaseVia` method releases the handle (`Codec.open()` → session).
@@ -161,6 +167,7 @@ function snapshotMethod(
   const progress = raw.progress
   const arity = raw.arity
   const optional = raw.optional
+  const batchItems = raw.batchItems
   const validateArgs = raw.validateArgs
   const validateReturn = raw.validateReturn
   if (
@@ -177,6 +184,12 @@ function snapshotMethod(
   }
   if (optional !== undefined && typeof optional !== 'boolean') {
     return invalidSurface(`method «${name}» has a non-boolean optional flag`, { surface })
+  }
+  if (
+    batchItems !== undefined &&
+    (kind !== 'iterable' || !Number.isSafeInteger(batchItems) || batchItems < 1)
+  ) {
+    return invalidSurface(`method «${name}» has an invalid batchItems`, { surface })
   }
   if (
     resultFromArgs !== undefined &&
@@ -256,6 +269,7 @@ function snapshotMethod(
     ...(progress === undefined ? {} : { progress: Object.freeze({ ...progress }) }),
     ...(arity === undefined ? {} : { arity }),
     ...(optional === undefined ? {} : { optional }),
+    ...(batchItems === undefined ? {} : { batchItems }),
     ...(validateArgs === undefined ? {} : { validateArgs }),
     ...(validateReturn === undefined ? {} : { validateReturn }),
   })

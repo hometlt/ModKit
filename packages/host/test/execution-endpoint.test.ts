@@ -120,6 +120,7 @@ const surfaces = createSurfaceRegistry([
         wrapper: 'lease',
       },
       search: { kind: 'iterable' },
+      listing: { kind: 'iterable', batchItems: 2 },
       events: { kind: 'events' },
       dispose: { kind: 'value' },
       readRegion: { kind: 'value', optional: true, signal: 'last' },
@@ -216,6 +217,9 @@ function workerWorld(): WorkerWorld {
     },
     search: async function* (query: string) {
       for (const item of ['alpha', 'beta', 'gamma']) if (item.includes(query)) yield item
+    },
+    listing: async function* () {
+      yield* ['alpha', 'beta', 'gamma']
     },
     events: async function* () {
       for (let i = 0; i < eventsControl.count; i += 1) {
@@ -599,6 +603,19 @@ describe('capability-rpc endpoints — events, cancellation, deadlines, releases
     ])
     expect(batched.host.state).toBe('open')
     expect(batched.failures.worker).toEqual([])
+  })
+
+  it('an iterable declared with batchItems is pulled in batches under default limits', async () => {
+    const p = pair()
+    const { session } = await openSession(p)
+    const listing = session['listing'] as () => Promise<AsyncIterable<string>>
+    const items: string[] = []
+    for await (const item of await listing()) items.push(item)
+    expect(items).toEqual(['alpha', 'beta', 'gamma'])
+    const nexts = p.wire.log.filter(e => e.from === 'a' && e.frame.t === 'next')
+    expect(nexts[0]?.frame.t === 'next' && nexts[0].frame.max).toBe(2)
+    expect(nexts.length).toBeLessThan(4)
+    expect(p.failures.worker).toEqual([])
   })
 
   it('a lease produced after cancellation is released on the worker instead of leaking', async () => {
