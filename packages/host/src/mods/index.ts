@@ -1,4 +1,5 @@
 /** Host definition, exact game-id matcher and activation adapter for mod workspaces. */
+export { LoadedModResourceSessions } from './resource-sessions.js'
 
 import { contractId, diagnostic, type Diagnostic } from '@modkit/core'
 import {

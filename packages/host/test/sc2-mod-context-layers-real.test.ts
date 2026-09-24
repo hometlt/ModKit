@@ -16,6 +16,7 @@ import { createModkit } from '@modkit/host/node'
 
 import { openModContextLayerSource } from '../src/mod-context-layer-source.js'
 import { resolveSubjectClosure } from '../src/content-dependency-operations.js'
+import { LoadedModResourceSessions } from '../src/mods/resource-sessions.js'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const blizzard =
@@ -42,6 +43,50 @@ async function rootLabels(tree: TreeDataSource): Promise<string[]> {
 describe.skipIf(!existsSync(installation) || !existsSync(sourcesModule))(
   'SC2 mod context layers as package subjects',
   () => {
+    it('keeps the installed Liberty mod and its Core dependency after the document closes',
+      { timeout: 300_000 }, async () => {
+        const config = join(scratch, 'resources-source.json')
+        writeFileSync(config, JSON.stringify({
+          module: sourcesModule,
+          options: { installationDirectory: installation, stateDirectory: scratch },
+        }))
+        const sources = await loadContentSources(config, scratch)
+        if (sources === undefined) throw new Error('content sources did not load')
+        const sessions = new LoadedModResourceSessions(sources, path => /\.sc2mod$/iu.test(path))
+        try {
+          expect(await sessions.load({
+            sourceId: 'local:casc',
+            path: 'mods/liberty.sc2mod/base.sc2data/gamedata/unitdata.xml',
+          })).toBe(true)
+          expect(sessions.list().map(mod => mod.label.toLowerCase())).toEqual(
+            expect.arrayContaining(['core.sc2mod', 'liberty.sc2mod']),
+          )
+          const tree = sessions.tree()
+          const roots = await tree.children(await tree.root(), { limit: 20 })
+          expect(roots.items.length).toBeGreaterThanOrEqual(2)
+          const liberty = roots.items.at(-1)!
+          const categories = await tree.children(liberty, { limit: 20 })
+          const facts = await Promise.all(categories.items.map(node => tree.facts(node)))
+          for (const name of ['GameData', 'Strings', 'Galaxy', 'Layouts', 'FontStyles']) {
+            expect(Number(facts.find(item => item.label === name)?.value), name).toBeGreaterThan(0)
+          }
+          const units = await tree.children(
+            { id: `${liberty.id.replace(/^mod\//u, 'node/')}/${encodeURIComponent('namespace/Unit')}`, hasChildren: true },
+            { limit: 5 },
+          )
+          expect(units.items.length).toBeGreaterThan(0)
+          // No editor document or live codec session owns this tree. A second file reuses it.
+          expect(await sessions.load({
+            sourceId: 'local:casc',
+            path: 'mods/liberty.sc2mod/base.sc2data/gamedata/actordata.xml',
+          })).toBe(false)
+          expect((await tree.children(await tree.root(), { limit: 20 })).items).toHaveLength(roots.items.length)
+        } finally {
+          await sessions.dispose()
+          await sources.dispose()
+        }
+      })
+
     it('opens Core and Liberty from CASC with the mod codec', { timeout: 300_000 }, async () => {
       const config = join(scratch, 'sources.json')
       writeFileSync(

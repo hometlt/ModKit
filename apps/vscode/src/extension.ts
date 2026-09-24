@@ -32,6 +32,7 @@ import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:pat
 import { pathToFileURL } from 'node:url'
 import * as vscode from 'vscode'
 import { loadContentSources, callContentSources } from '@modkit/vfs/content-sources/node'
+import { LoadedModResourceSessions } from '@modkit/host/mods'
 import {
   HOST_LAYER_SOURCE_ID,
   type ContentSourceLocalPath,
@@ -790,9 +791,14 @@ function memberUriOf(root: string, entry: string): vscode.Uri {
     return vscode.Uri.joinPath(vscode.Uri.parse(root), ...entry.split('/'))
   }
   const location = parseContainerUriText(root)
-  return location === undefined
-    ? vscode.Uri.file(join(root, entry))
-    : subjectUriOf(
+  if (location === undefined) {
+    // A packed mod's resource address carries the package file as its root.
+    try {
+      if (statSync(root).isFile()) return subjectUriOf(containerUriText(root, entry))
+    } catch { /* A directory or an unavailable source still uses the ordinary file route. */ }
+    return vscode.Uri.file(join(root, entry))
+  }
+  return subjectUriOf(
         containerUriText(
           location.container,
           location.entry === '' ? entry : `${location.entry}/${entry}`,
@@ -1664,7 +1670,7 @@ type ResourceMemberTrees = Readonly<{
   reset(): void
 }>
 
-/** Native projection of the active subject's standard tree data source. */
+/** Native projection of the host's persistent loaded-mod resource tree. */
 class ResourcesView implements vscode.TreeDataProvider<ResourceTreeNode>, vscode.Disposable {
   private readonly changed = new vscode.EventEmitter<ResourceTreeNode | undefined>()
   readonly onDidChangeTreeData = this.changed.event
@@ -1880,7 +1886,7 @@ class ResourcesView implements vscode.TreeDataProvider<ResourceTreeNode>, vscode
     item.contextValue =
       node.facts.subjectId === undefined ? 'modkitResource.node' : 'modkitResource.openable'
     item.iconPath = new vscode.ThemeIcon(
-      node.facts.kind === LAYER_KIND || node.facts.kind === OPENED_LAYER_KIND
+      node.facts.kind === 'mod' || node.facts.kind === LAYER_KIND || node.facts.kind === OPENED_LAYER_KIND
         ? 'package'
         : node.ref.hasChildren
           ? 'symbol-folder'
@@ -1919,7 +1925,10 @@ class ResourcesView implements vscode.TreeDataProvider<ResourceTreeNode>, vscode
       }
       try {
         const root = await lease.value.root()
-        return await this.loadPage(lease.value, root)
+        const items = await this.loadPage(lease.value, root)
+        return items.length === 0
+          ? [this.notice(this.localizer.text('vscode.resources.noActiveSubject'))]
+          : items
       } finally {
         await lease.release()
       }
@@ -4227,6 +4236,9 @@ async function activateModkit(
           for (const id of roots) {
             await callContentSources(source, 'refresh', [id]).catch(() => undefined)
           }
+          activatedResourcePaths.clear()
+          await loadedSessions?.then(sessions => sessions.reloadAll())
+          resourcesView.refresh()
         }
         forgetCacheStates(selected)
         sourcesView.refresh()
@@ -4235,7 +4247,9 @@ async function activateModkit(
       vscode.workspace.onDidChangeConfiguration(event => {
         if (!event.affectsConfiguration('modkit.contentSourceConfig')) return
         resetContentSources()
+        activatedResourcePaths.clear()
         sourcesView.refresh()
+        resourcesView.refresh()
       }),
       vscode.commands.registerCommand('modkit.sources.open', async (argument: unknown) => {
         const row =
@@ -7027,6 +7041,7 @@ async function activateModkit(
   let workspaceResourceOpeningRoot: string | undefined
   let activeDocumentResources: () => Promise<ResourceTreeHost | undefined> = async () => undefined
   let activeSubjectResources: () => Promise<ResourceTreeHost | undefined> = async () => undefined
+  let loadedModResources: () => Promise<ResourceTreeHost | undefined> = async () => undefined
   let navigateWorkspaceResource: (
     root: string,
     subjectId: string,
@@ -7207,13 +7222,10 @@ async function activateModkit(
     return undefined
   }
   const resourcesView = new ResourcesView(
-    // With the chain on, a package open in a Modkit editor shows the mods it loads with.
-    () => (resourcesShowChain ? undefined : activeServed()),
+    // Resources belongs to loaded mods, never to whichever model or document has focus.
+    () => undefined,
     localizer,
-    async () =>
-      (await activeSubjectResources()) ??
-      (await activeDocumentResources()) ??
-      (await workspaceResources()),
+    () => loadedModResources(),
     resetWorkspaceResources,
     resourceMemberTrees,
   )
@@ -7701,6 +7713,70 @@ async function activateModkit(
           vscode.window.showErrorMessage(
             `Modkit: ${error instanceof Error ? error.message : String(error)}`,
           ),
+        )
+      },
+    })
+  }
+
+  let loadedSessions: Promise<LoadedModResourceSessions> | undefined
+  let loadedSessionSource: ContentSources | undefined
+  const resourceSessions = async (): Promise<LoadedModResourceSessions> => {
+    const source = await requireContentSources()
+    if (loadedSessions === undefined || loadedSessionSource !== source) {
+      const previous = loadedSessions
+      loadedSessionSource = source
+      loadedSessions = Promise.resolve(new LoadedModResourceSessions(
+        source,
+        path => /\.sc2(?:mod|map|campaign)$/iu.test(path),
+      ))
+      await previous?.then(sessions => sessions.dispose())
+    }
+    return loadedSessions
+  }
+  const activatedResourcePaths = new Set<string>()
+  context.subscriptions.push({
+    dispose: () => { void loadedSessions?.then(sessions => sessions.dispose()).catch(() => undefined) },
+  })
+  const discoverActiveResourceMod = async (): Promise<{
+    readonly sessions?: LoadedModResourceSessions
+    readonly path?: string
+    readonly changed: boolean
+  }> => {
+    const uri = vscode.window.activeTextEditor?.document.uri
+    const path = activeSubject ?? (uri === undefined ? undefined :
+      (await resolveLanguageScope(uri))?.path ??
+      (uri.scheme === 'file' || uri.scheme === 'modkit-source' || uri.scheme === CONTAINER_SCHEME
+        ? subjectPathOf(uri) : undefined))
+    const sessions = await resourceSessions().catch(() => undefined)
+    if (sessions === undefined) return { changed: false }
+    if (path !== undefined && !activatedResourcePaths.has(path)) {
+      const target = modContextTargetOf(path)
+      if (target !== undefined) {
+        try {
+          const baseMods = baseModsSetting(subjectUriOf(path))
+          const changed = await sessions.load(target, baseMods === undefined ? undefined : baseModsFor(path, baseMods))
+          activatedResourcePaths.add(path)
+          return { sessions, path, changed }
+        } catch (error) {
+          log(`[resources] ${path}: ${error instanceof Error ? error.message : String(error)}`)
+        }
+      }
+    }
+    return { sessions, ...(path === undefined ? {} : { path }), changed: false }
+  }
+  const refreshForActiveResource = (): void => {
+    void discoverActiveResourceMod().then(({ changed }) => {
+      if (changed) resourcesView.refresh()
+    }).catch(error => log(`[resources] ${error instanceof Error ? error.message : String(error)}`))
+  }
+  loadedModResources = async () => {
+    const { sessions, path } = await discoverActiveResourceMod()
+    if (sessions === undefined) return undefined
+    return Object.freeze({
+      openTreeDataSource: async () => Object.freeze({ value: sessions.tree(resourcesShowChain), release: async () => undefined }),
+      navigate(subjectId: string, range?: TreeNodeFacts['range']) {
+        void navigateWorkspaceResource(path ?? '', subjectId, range).catch(error =>
+          vscode.window.showErrorMessage(`Modkit: ${error instanceof Error ? error.message : String(error)}`),
         )
       },
     })
@@ -12257,11 +12333,10 @@ async function activateModkit(
         if (panel.active) {
           activeSubject = key
           viewerStatusBar.setActive(key)
-          resourcesView.refresh()
+          refreshForActiveResource()
         } else if (activeSubject === key) {
           activeSubject = undefined
           viewerStatusBar.setActive(undefined)
-          resourcesView.refresh()
         }
       }
       followActive()
@@ -12277,7 +12352,6 @@ async function activateModkit(
         viewerStatusBar.remove(subjectKey(target.path))
         if (activeSubject === subjectKey(target.path)) {
           activeSubject = undefined
-          resourcesView.refresh()
         }
         subjectFacts.delete(subjectKey(target.path))
         document.state.detach(served)
@@ -12568,9 +12642,16 @@ async function activateModkit(
       sourcesView.refresh()
       resourcesView.refresh()
     }),
-    vscode.window.onDidChangeActiveTextEditor(() => resourcesView.refresh()),
+    vscode.window.onDidChangeActiveTextEditor(refreshForActiveResource),
     vscode.workspace.onDidSaveTextDocument(document => {
-      if (document.uri.scheme === 'file') resourcesView.refresh()
+      if (document.uri.scheme !== 'file') return
+      activatedResourcePaths.clear()
+      void resourceSessions().then(async sessions => {
+        if (sessions.list().length === 0) return
+        await (await requireContentSources()).refresh('host')
+        await sessions.reloadAll()
+        resourcesView.refresh()
+      }).catch(error => log(`[resources] reload: ${error instanceof Error ? error.message : String(error)}`))
     }),
   )
 
