@@ -266,6 +266,49 @@ const contentSourceModule = join(
 const freshWriter = join(blizzard, 'mpq', 'src', 'mpq', 'fresh-writer.js')
 const encoder = new TextEncoder()
 
+/** An installation whose Liberty is packed over a loose Core, and the content-source config over it. */
+async function installationFixture(root) {
+  const { encodeFreshMpq } = await import(pathToFileURL(freshWriter).href)
+  const installation = join(root, 'install')
+  // Liberty is packed; Core, which Liberty loads beneath itself, is a loose directory.
+  await mkdir(join(installation, 'Mods', 'Core.SC2Mod', 'Base.SC2Data', 'GameData'), {
+    recursive: true,
+  })
+  await writeFile(
+    join(installation, 'Mods', 'Liberty.SC2Mod'),
+    encodeFreshMpq(
+      [
+        {
+          path: 'Base.SC2Data/GameData/UnitData.xml',
+          bytes: encoder.encode(
+            '<?xml version="1.0" encoding="utf-8"?>\n<Catalog>\n    <CUnit id="Marine" parent="CoreUnit">\n' +
+              '        <LifeMax value="45"/>\n    </CUnit>\n</Catalog>\n',
+          ),
+        },
+      ],
+      1024 * 1024,
+    ),
+  )
+  await writeFile(
+    join(installation, 'Mods', 'Core.SC2Mod', 'Base.SC2Data', 'GameData', 'UnitData.xml'),
+    '<?xml version="1.0" encoding="utf-8"?>\n<Catalog>\n    <CUnit id="CoreUnit"/>\n</Catalog>\n',
+  )
+  const config = join(root, 'content-source.json')
+  await writeFile(
+    config,
+    JSON.stringify({
+      module: contentSourceModule,
+      options: {
+        installationDirectory: installation,
+        battleNetCacheDirectory: join(root, 'cache'),
+        documentsDirectory: join(root, 'documents'),
+        wizardDirectories: [],
+      },
+    }),
+  )
+  return config
+}
+
 test(
   'installed LSP resolves a mod against packed dependencies of a StarCraft II installation',
   {
@@ -276,34 +319,16 @@ test(
         : `missing ${contentSourceModule}`,
   },
   async () => {
-    const { encodeFreshMpq } = await import(pathToFileURL(freshWriter).href)
     const root = await mkdtemp(join(tmpdir(), 'modkit-lsp-sc2-deps-'))
-    const installation = join(root, 'install')
     const mod = join(root, 'Probe.SC2Mod')
     const data = join(mod, 'Base.SC2Data', 'GameData', 'UnitData.xml')
-    // Liberty is packed; Core, which Liberty loads beneath itself, is a loose directory.
-    await mkdir(join(installation, 'Mods', 'Core.SC2Mod', 'Base.SC2Data', 'GameData'), {
-      recursive: true,
-    })
     await mkdir(join(mod, 'Base.SC2Data', 'GameData'), { recursive: true })
+    const config = await installationFixture(root)
+    // Only Core loads on its own; Liberty comes from the mod's own declaration.
     await writeFile(
-      join(installation, 'Mods', 'Liberty.SC2Mod'),
-      encodeFreshMpq(
-        [
-          {
-            path: 'Base.SC2Data/GameData/UnitData.xml',
-            bytes: encoder.encode(
-              '<?xml version="1.0" encoding="utf-8"?>\n<Catalog>\n    <CUnit id="Marine" parent="CoreUnit">\n' +
-                '        <LifeMax value="45"/>\n    </CUnit>\n</Catalog>\n',
-            ),
-          },
-        ],
-        1024 * 1024,
-      ),
-    )
-    await writeFile(
-      join(installation, 'Mods', 'Core.SC2Mod', 'Base.SC2Data', 'GameData', 'UnitData.xml'),
-      '<?xml version="1.0" encoding="utf-8"?>\n<Catalog>\n    <CUnit id="CoreUnit"/>\n</Catalog>\n',
+      join(mod, 'DocumentInfo'),
+      '<?xml version="1.0" encoding="utf-8"?>\n<DocInfo><Dependencies>' +
+        '<Value>bnet:Liberty/0.0/999,file:Mods/Liberty.SC2Mod</Value></Dependencies></DocInfo>\n',
     )
     await writeFile(
       join(mod, 'ComponentList.SC2Components'),
@@ -313,19 +338,6 @@ test(
     const text =
       '<?xml version="1.0" encoding="utf-8"?>\n<Catalog>\n    <CUnit id="Hero" parent="Marine"/>\n</Catalog>\n'
     await writeFile(data, text)
-    const config = join(root, 'content-source.json')
-    await writeFile(
-      config,
-      JSON.stringify({
-        module: contentSourceModule,
-        options: {
-          installationDirectory: installation,
-          battleNetCacheDirectory: join(root, 'cache'),
-          documentsDirectory: join(root, 'documents'),
-          wizardDirectories: [],
-        },
-      }),
-    )
     const server = startLanguageServer(
       [
         '--root',
@@ -373,6 +385,70 @@ test(
         `Core must join the snapshot beneath Liberty: ${JSON.stringify(symbols.result)}`,
       )
       assert.doesNotMatch(server.stderr(), /installation-dependency-missing/u)
+      assert.equal(await server.shutdown(), 0)
+    } finally {
+      server.child.kill()
+      await rm(root, { recursive: true, force: true })
+    }
+  },
+)
+
+test(
+  'installed LSP opens a folder in no package inside the base mod it names',
+  {
+    timeout: 300_000,
+    skip:
+      existsSync(contentSourceModule) && existsSync(freshWriter)
+        ? false
+        : `missing ${contentSourceModule}`,
+  },
+  async () => {
+    const root = await mkdtemp(join(tmpdir(), 'modkit-lsp-sc2-loose-'))
+    const folder = join(root, 'Loose')
+    const data = join(folder, 'UnitData.xml')
+    await mkdir(folder, { recursive: true })
+    const config = await installationFixture(root)
+    const text =
+      '<?xml version="1.0" encoding="utf-8"?>\n<Catalog>\n    <CUnit id="Hero" parent="Marine"/>\n</Catalog>\n'
+    await writeFile(data, text)
+    const server = startLanguageServer(
+      [
+        '--root',
+        folder,
+        '--extension',
+        extension,
+        '--content-source-config',
+        config,
+        '--content-source-storage',
+        join(root, 'storage'),
+        '--base-mod',
+        'Mods/Liberty.SC2Mod',
+      ],
+      { timeoutMs: 120_000 },
+    )
+    const uri = pathToFileURL(data).href
+    try {
+      const initialized = await server.request('initialize', {
+        processId: null,
+        rootUri: pathToFileURL(folder).href,
+        capabilities: {},
+      })
+      assert.equal(initialized.error, undefined, server.stderr())
+      server.notify('initialized', {})
+      server.notify('textDocument/didOpen', {
+        textDocument: { uri, languageId: 'sc2-data', version: 1, text },
+      })
+      const parent = await server.request('textDocument/definition', {
+        textDocument: { uri },
+        position: { line: 2, character: 35 },
+      })
+      assert.equal(parent.error, undefined, server.stderr())
+      const [location] = parent.result ?? []
+      assert.match(
+        location?.uri ?? '',
+        /^content-source:\/\/local%3Ainstallation\/content-dependencies\/\d+\/Base\.SC2Data\/GameData\/UnitData\.xml$/u,
+        `a loose folder must see Liberty through its base mod: ${JSON.stringify(parent.result)}\n${server.stderr()}`,
+      )
       assert.equal(await server.shutdown(), 0)
     } finally {
       server.child.kill()

@@ -1092,6 +1092,7 @@ describe('MCP v2 adapter', () => {
       'modkit.open_discovered',
       'modkit.open_subject',
       'modkit.close_subject',
+      'modkit.mod_context',
       'modkit.open_selection',
       'modkit.inspect',
       'modkit.list_subjects',

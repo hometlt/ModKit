@@ -23,6 +23,7 @@ import type {
 import { createHostComposition, type HostComposition } from '../composition.js'
 import type { ExecutionBackendRegistry } from '../execution/backend.js'
 import type { WorkerBackendPolicy } from '../execution/worker-policy.js'
+import type { SubjectCatalogOptions } from '../catalog-questions.js'
 import type { ExtensionInput } from '../inventory.js'
 import {
   createBundledServiceDefinitionRegistry,
@@ -67,6 +68,8 @@ export interface NodeSubjectServicesOptions {
   readonly contributionSettings?: (contributionId: string) => ContributionSettings | undefined
   /** Contribution ids the user switched off; they stay listed and lose activation eligibility. */
   readonly disabledContributions?: readonly string[]
+  /** Where an opened subject's catalog questions are answered (its mod context). */
+  readonly subjectCatalog?: SubjectCatalogOptions
 }
 
 export interface NodeSubjectServices extends SubjectServices {
@@ -128,6 +131,7 @@ export async function createNodeSubjectServices(
     ...(options.contributionSettings === undefined
       ? {}
       : { contributionSettings: options.contributionSettings }),
+    ...(options.subjectCatalog === undefined ? {} : { subjectCatalog: options.subjectCatalog }),
   })
   return Object.freeze({ ...services, host, workers })
 }

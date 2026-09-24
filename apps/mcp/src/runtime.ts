@@ -1264,6 +1264,32 @@ export class ModkitMcpRuntime {
     })
   }
 
+  /** The open subject's mod context: layers in load order, then the declared packages none holds. */
+  async modContext(handle: string, signal: AbortSignal): Promise<McpEnvelope> {
+    const open = this.host.modContext
+    if (open === undefined) {
+      throw new McpOperationError(
+        'x3.mcp/content-sources-unavailable',
+        'The MCP host has no configured content source to open a mod context.',
+      )
+    }
+    return this.withHandle(handle, signal, async entry => {
+      const session = entry.opened.session
+      if (session === undefined) throw new McpOperationError('x3.mcp/no-session', 'No session exists.')
+      const context = await open((await session.descriptor()).subjectUri)
+      return envelope({
+        snapshotId: context.contextId,
+        completeness: context.unresolved.length === 0 ? 'complete' : 'partial',
+        diagnostics: context.unresolved.map(name => ({
+          code: 'x3.mcp/mod-context-unresolved',
+          message: `No content source holds the declared dependency ${name}.`,
+          severity: 'warning' as const,
+        })),
+        data: { layers: context.layers, unresolved: context.unresolved },
+      })
+    })
+  }
+
   async preview(handle: string, signal: AbortSignal): Promise<McpEnvelope> {
     const facts = await this.facts(handle, { view: 'summary' }, signal)
     const summary = facts.data as {

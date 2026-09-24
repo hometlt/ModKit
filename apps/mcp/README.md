@@ -68,7 +68,9 @@ they never make a partial workspace complete.
   `LanguageWorkspace` and exact overlay revisions in the host. Open accepts rooted files and
   `modkit-source:`, `modkit-container:`, `content-source:`, or `untitled:` virtual documents.
   Passing `dependencySubjectHandle` opens that subject's mod context through the provider and
-  projects its loose/MPQ/CASC layers as read-only `content-source://` workspace documents. Missing or partial closure is reported through
+  projects its loose/MPQ/CASC layers as read-only `content-source://` workspace documents. Without
+  one, the first document is the subject; a virtual document opens as a file not yet saved into
+  the first root (that root's mod, else the base mods). Missing or partial closure is reported through
   diagnostics and completeness. Each opened document reports the exact activated `features`;
   `analyze`, `semantic-tokens`, `diagnostics`, and `document-symbols` are the baseline analysis
   surface, while optional provider methods are listed only when present.
@@ -81,6 +83,10 @@ they never make a partial workspace complete.
 - `modkit.open_selection` continues one exact candidate on the same handle, so a large CASC index
   is not opened a second time.
 - `modkit.close_subject` cancels pending reads and releases a handle.
+- `modkit.mod_context` opens the subject's mod context through the configured content provider
+  (the game's one mod loader): its layers in load order — dependencies first, the subject last —
+  with source, role, provenance and content fingerprint, and the declared packages no source holds
+  (`completeness: partial`). A file in no package opens inside the base mods (`--base-mod`).
 - `modkit.inspect` returns the current subject descriptor, including advertised operations.
 - `modkit.list_subjects` pages publisher-parsed entities and accepts exact `kind`, exact `type`, and
   case-insensitive `text` filters; cursors are bound to the same handle, snapshot, and filters.

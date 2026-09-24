@@ -96,6 +96,16 @@ export interface DataEntityRef {
   readonly entityId: string
 }
 
+/**
+ * Catalog questions of an operation. Its JSON output names the resolved entities it needs under
+ * `catalogQueries` (`DataEntityRef[]`); a host that knows the subject's mod context invokes it
+ * again with those entities under `catalogEntities` (`DataResolvedEntity[]`) in the same input,
+ * until nothing new is named. Named once here so a game's codec and a generic host agree without
+ * either knowing the other.
+ */
+export const DATA_CATALOG_QUERIES_OUTPUT = 'catalogQueries' as const
+export const DATA_CATALOG_ENTITIES_INPUT = 'catalogEntities' as const
+
 export interface DataCatalogAnalysisRequest {
   readonly workspaceId: string
   readonly gameId: string

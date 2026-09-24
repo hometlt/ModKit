@@ -68,6 +68,7 @@ import {
   registerStandardMapDefinitions,
 } from './maps/index.js'
 import { openSubject, type OpenSubjectResult, type SubjectInputResolver } from './subject-open.js'
+import type { SubjectCatalogOptions } from './catalog-questions.js'
 import type { ResourceSessionLimits } from './resource-session.js'
 
 // ---------------------------------------------------------------------------------------------
@@ -116,6 +117,8 @@ export interface SubjectServicesOptions {
   readonly serviceDefinitions?: ServiceContractDefinitionRegistry
   /** Answers what the user configured for one contribution; see {@link ContributionSettings}. */
   readonly contributionSettings?: (contributionId: string) => ContributionSettings | undefined
+  /** Where an opened subject's catalog questions are answered; see {@link SubjectCatalogOptions}. */
+  readonly subjectCatalog?: SubjectCatalogOptions
   readonly policy?: HostPolicy
   readonly minimumConfidence?: number
   readonly maxCandidates?: number
@@ -225,6 +228,7 @@ export function createSubjectServices(options: SubjectServicesOptions): SubjectS
     ...(options.contributionSettings === undefined
       ? {}
       : { contributionSettings: options.contributionSettings }),
+    ...(options.subjectCatalog === undefined ? {} : { subjectCatalog: options.subjectCatalog }),
   }
   const services: SubjectServices = {
     inventory: options.inventory,

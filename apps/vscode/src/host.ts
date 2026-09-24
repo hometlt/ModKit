@@ -67,6 +67,7 @@ import {
   type SubjectEditing,
   type SubjectOpener,
   type SubjectRpcExposure,
+  type SubjectCatalogOptions,
   type SubjectServices,
 } from '@modkit/host'
 import {
@@ -335,6 +336,8 @@ export interface VsCodeSubjectHostOptions {
    * that contains any extension wins, so a packaged build never picks up a checkout above it.
    */
   readonly catalogCandidates: readonly string[]
+  /** Where an opened subject's catalog questions are answered (its mod context). */
+  readonly subjectCatalog?: SubjectCatalogOptions
   /** Workspace folders; scanned one level deep for workspace-local extensions. */
   readonly workspaceFolders?: readonly string[]
   /** Raw value of the `modkit.extensions` setting, exactly as the editor returned it. */
@@ -507,6 +510,7 @@ export async function createVsCodeSubjectHost(
     disabledExtensions: switchedOffExtensions.ids,
     disabledContributions: switchedOff.ids,
     contributionSettings: contributionSettings.settingsFor,
+    ...(options.subjectCatalog === undefined ? {} : { subjectCatalog: options.subjectCatalog }),
     /*
      * Where this host shipped the worker bootstrap.
      *

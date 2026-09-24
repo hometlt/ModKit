@@ -180,6 +180,14 @@ export {
   type WorkspaceNamespaceLogicalRoot,
 } from './namespace-origin.js'
 export {
+  answerCatalogQueries,
+  modContextCatalogEntities,
+  operationCatalogQueries,
+  subjectCatalogEntities,
+  type CatalogEntities,
+  type SubjectCatalogOptions,
+} from './catalog-questions.js'
+export {
   baseModsFor,
   composeLanguageDocumentSources,
   modContextResolution,

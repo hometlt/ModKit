@@ -90,6 +90,7 @@ import {
   loadLocalizationCatalogs,
   resolveContentLanguageSources,
   resolveSubjectClosure,
+  baseModsFor,
   type BaseModSetting,
   type CommandInput,
   type CommandResult,
@@ -678,9 +679,9 @@ function subjectPathOf(uri: vscode.Uri): string {
 
 /**
  * Where the content sources open a subject path: a `modkit-source:` URI is a path inside one of
- * them, a member of a container on disk is the container's path joined with the member (a packed
- * package opens as itself), anything else is a host path. A member of a nested container names
- * nothing the sources can open.
+ * them, a member of a container — nested or not — is the container's path joined with every member
+ * on the way (the loader opens a packed package or the game's storage it lands in, and anything
+ * else inside its base mods), anything else is a host path.
  */
 function modContextTargetOf(path: string): ModContextTarget | undefined {
   if (path.startsWith('modkit-source:')) {
@@ -693,11 +694,7 @@ function modContextTargetOf(path: string): ModContextTarget | undefined {
   const location = parseContainerUriText(path)
   if (location === undefined) return path
   const { file, members } = splitContainer(location.container)
-  return members.length > 0
-    ? undefined
-    : location.entry === ''
-      ? file
-      : `${file.replace(/[\\/]+$/u, '')}/${location.entry}`
+  return [file.replace(/[\\/]+$/u, ''), ...members, location.entry].filter(Boolean).join('/')
 }
 
 /** The inverse: the URI a subject string names, for the editor surfaces that take one. */
@@ -2096,6 +2093,15 @@ async function activateModkit(
   context.subscriptions.push({ dispose: () => flushArtifactDigestCache() })
   const composing = timing.phase('compose host (catalog roots, inventory, realms)')
   const host = await createVsCodeSubjectHost({
+    // An operation that names catalog entities (a replay's units) is answered from its subject's mod
+    // context, inside the base mods the `modkit.baseMods` setting names for the subject's path.
+    subjectCatalog: {
+      contentSources: () => requireContentSources().catch(() => undefined),
+      baseMods: target =>
+        typeof target === 'string'
+          ? baseModsFor(target, baseModsSetting(vscode.Uri.file(target)))
+          : undefined,
+    },
     bundledCatalog: BUNDLED_CATALOG.roots,
     catalogCandidates: catalogCandidates(extensionRoot, repositoryRoot),
     workspaceFolders: workspaceFolders(),

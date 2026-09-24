@@ -73,6 +73,7 @@ import type {
   ServiceFacetMatcherProfile,
   SubjectSelectorSource,
 } from '@modkit/sdk'
+import { answerCatalogQueries, type CatalogEntities } from '../catalog-questions.js'
 import type { ExecutionBackendRegistry } from '../execution/backend.js'
 import { createCompanionInputResolver, type CompanionOrigin } from '../input-resolution.js'
 import type { Inventory } from '../inventory.js'
@@ -672,15 +673,6 @@ export interface ResolvedMapWorkspaceLimits {
   readonly maxDiagnostics: number
 }
 
-/**
- * Resolved catalog entities by reference, from wherever the merged catalog lives — so a map world
- * receives the units, actors and models it places, never a whole catalog through a worker frame.
- */
-export type MapCatalogEntities = (
-  refs: readonly DataEntityRef[],
-  signal?: AbortSignal,
-) => Promise<readonly DataResolvedEntity[]>
-
 /** Rounds of catalog questions one map analysis may ask: objects, then actors, then models. */
 const MAP_CATALOG_ROUNDS = 6
 
@@ -694,41 +686,35 @@ export async function analyzeWithCatalogEntities<
 >(options: {
   readonly workspace: Pick<ModWorkspaceLock, 'workspaceId' | 'gameId'>
   readonly analyze: (catalog: DataCatalogSnapshot | undefined, round: number) => Promise<Snapshot>
-  readonly catalogEntities: MapCatalogEntities
+  readonly catalogEntities: CatalogEntities
   readonly signal?: AbortSignal
 }): Promise<Snapshot> {
-  const key = (ref: DataEntityRef) => `${ref.namespace}\u0000${ref.entityId}`
-  const asked = new Set<string>()
-  const entities = new Map<string, DataResolvedEntity>()
-  let snapshot = await options.analyze(undefined, 0)
-  for (let round = 1; round <= MAP_CATALOG_ROUNDS; round += 1) {
-    const refs = snapshot.semantic.catalogQueries.filter(ref => !asked.has(key(ref)))
-    if (refs.length === 0) break
-    for (const ref of refs) asked.add(key(ref))
-    for (const entity of await options.catalogEntities(refs, options.signal)) {
-      entities.set(key(entity), entity)
-    }
-    options.signal?.throwIfAborted()
-    const answered = Object.freeze([...entities.values()])
-    snapshot = await options.analyze(
-      Object.freeze({
-        schemaVersion: 1,
-        workspaceId: options.workspace.workspaceId,
-        gameId: options.workspace.gameId,
-        analyzerId: 'x3.host/map-catalog-slice',
-        typeIds: Object.freeze([]),
-        namespaces: Object.freeze([]),
-        entityCount: answered.length,
-        patchCount: 0,
-        definitions: answered,
-        entities: answered,
-        diagnostics: Object.freeze([]),
-        complete: false,
-      }),
-      round,
-    )
-  }
-  return snapshot
+  return answerCatalogQueries({
+    run: (answered, round) =>
+      options.analyze(
+        answered === undefined
+          ? undefined
+          : Object.freeze({
+              schemaVersion: 1,
+              workspaceId: options.workspace.workspaceId,
+              gameId: options.workspace.gameId,
+              analyzerId: 'x3.host/map-catalog-slice',
+              typeIds: Object.freeze([]),
+              namespaces: Object.freeze([]),
+              entityCount: answered.length,
+              patchCount: 0,
+              definitions: answered,
+              entities: answered,
+              diagnostics: Object.freeze([]),
+              complete: false,
+            }),
+        round,
+      ),
+    queriesOf: snapshot => snapshot.semantic.catalogQueries,
+    catalogEntities: options.catalogEntities,
+    rounds: MAP_CATALOG_ROUNDS,
+    ...(options.signal === undefined ? {} : { signal: options.signal }),
+  })
 }
 
 export interface AnalyzeResolvedMapWorkspaceRequest {
@@ -740,8 +726,8 @@ export interface AnalyzeResolvedMapWorkspaceRequest {
   /** Resolves bundle companions (for example M3A) from the same dependency overlay. */
   readonly inputResolver?: SubjectInputResolver
   readonly catalog?: DataCatalogSnapshot
-  /** Asked for what the map references when no `catalog` is given (see {@link MapCatalogEntities}). */
-  readonly catalogEntities?: MapCatalogEntities
+  /** Asked for what the map references when no `catalog` is given (see {@link CatalogEntities}). */
+  readonly catalogEntities?: CatalogEntities
   readonly limits: ResolvedMapWorkspaceLimits
   /** Host-only acquisition measurements; never forwarded to a game provider or worker. */
   readonly onModelResourceProfile?: (profile: ModelResourceProfile) => void
@@ -1506,7 +1492,7 @@ export type MapPreviewResourcePlanResolution =
       origin: CompanionOrigin
       revision: RevisionId
       /** Where the resolver found the map's merged catalog: the map asks it for what it places. */
-      catalogEntities?: MapCatalogEntities
+      catalogEntities?: CatalogEntities
       diagnostics: readonly Diagnostic[]
       /** Releases resolver-owned leases after the ResourceSession has been disposed. */
       release(): Promise<void>

@@ -15,18 +15,15 @@ import {
   type RevisionId,
 } from '@modkit/sdk'
 import {
-  MOD_CONTEXT_MAX_QUERY_REFS,
   type ContentDependencyMount,
   type ContentDependencyResolution,
   type ContentSourceEntry,
   type ContentSources,
-  type ModContext,
 } from '@modkit/vfs/content-sources'
-import type { DataEntityRef, DataResolvedEntity } from '@modkit/sdk'
 import { entryRevision as contentDependencyMountRevision } from '../content-dependencies.js'
 import { resolveSubjectClosure } from '../content-dependency-operations.js'
+import { modContextCatalogEntities } from '../catalog-questions.js'
 import type {
-  MapCatalogEntities,
   MapPreviewResourcePlanResolution,
   MapPreviewResourcePlanResolver,
   ResolveMapPreviewResourcePlanRequest,
@@ -45,28 +42,6 @@ export interface ContentSourceMapPreviewResourcePlanResolverOptions {
   readonly maximumEntryBytes?: number
   /** Entries one listing may walk below a mount; a larger subtree is refused, not truncated. */
   readonly maximumListingEntries?: number
-}
-
-/** The context's `data.entities` query, a bounded batch at a time; undefined if it has none. */
-function contextCatalogEntities(context: ModContext): MapCatalogEntities | undefined {
-  const query = context.query?.bind(context)
-  if (query === undefined) return undefined
-  return async (refs: readonly DataEntityRef[], signal?: AbortSignal) => {
-    const entities: DataResolvedEntity[] = []
-    for (let start = 0; start < refs.length; start += MOD_CONTEXT_MAX_QUERY_REFS) {
-      const answer = (await query(
-        { kind: 'data.entities', refs: refs.slice(start, start + MOD_CONTEXT_MAX_QUERY_REFS) },
-        signal,
-      )) as { readonly entities?: unknown } | undefined
-      if (!Array.isArray(answer?.entities)) throw new TypeError('data.entities answered no entity list')
-      for (const entity of answer.entities as readonly Partial<DataResolvedEntity>[]) {
-        if (typeof entity?.namespace === 'string' && typeof entity.entityId === 'string') {
-          entities.push(entity as DataResolvedEntity)
-        }
-      }
-    }
-    return entities
-  }
 }
 
 const fold = (value: string): string => value.replaceAll('\\', '/').replace(/^\/+|\/+$/gu, '').toLowerCase()
@@ -242,7 +217,7 @@ export function createContentSourceMapPreviewResourcePlanResolver(
         await releaseContext()
         throw error
       }
-      const catalogEntities = context === undefined ? undefined : contextCatalogEntities(context)
+      const catalogEntities = context === undefined ? undefined : modContextCatalogEntities(context)
       const resolution: ContentDependencyResolution = closure.resolution
       const findings: Diagnostic[] = [...closure.diagnostics]
 

@@ -819,6 +819,18 @@ export function createModkitMcpServer(host: ModkitMcpHostPort): ModkitMcpServerR
     ({ handle }) => safeTool(() => runtime.close(handle)),
   )
   server.registerTool(
+    'modkit.mod_context',
+    {
+      title: 'Read a subject mod context',
+      description:
+        "Open the subject's mod context through the game's loader: its layers in load order (dependencies first, the subject last) and the declared packages no content source holds.",
+      inputSchema: handleInput,
+      outputSchema: envelopeSchema,
+      annotations: { ...readOnlyAnnotations, idempotentHint: true },
+    },
+    ({ handle }, context) => safeTool(() => runtime.modContext(handle, context.mcpReq.signal)),
+  )
+  server.registerTool(
     'modkit.open_selection',
     {
       title: 'Open a selected container subject',

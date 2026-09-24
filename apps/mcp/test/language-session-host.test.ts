@@ -12,6 +12,8 @@ import {
 let root: string
 let host: ModkitMcpHostPort
 const dependencyBytes = new TextEncoder().encode('dependency')
+/** Every target the loader was asked to open, in order. */
+const opened: unknown[] = []
 
 const contentSources: ContentSources = {
   async snapshot() {
@@ -38,6 +40,7 @@ const contentSources: ContentSources = {
   },
   // The subject opens inside one read-only layer of the fixture source.
   async openModContext(request) {
+    opened.push(request.target)
     return {
       schemaVersion: 1,
       gameId: 'fixture/game',
@@ -300,6 +303,32 @@ describe('host-held MCP language session', () => {
       })
       expect(definition.workspaceContext).toMatchObject({ semanticComplete: true })
       expect(session.workspaceIncomplete).toBe(false)
+    } finally {
+      await session.close()
+    }
+  })
+
+  it('reads a subject mod context: its layers in load order and what is missing', async () => {
+    const read = host.modContext
+    if (read === undefined) throw new Error('host did not expose mod contexts')
+    const context = await read.call(host, 'content-source://fixture-source/Scripts/Main.fixturelang')
+    expect(context.layers.map(layer => [layer.sourcePath, layer.role, layer.fingerprint])).toEqual([
+      ['root', 'dependency', 'content-hash.sha256:fixture'],
+      ['Scripts/Main.fixturelang', 'primary', undefined],
+    ])
+    expect(context.unresolved).toEqual([])
+    await expect(read.call(host, 'untitled:Scratch')).rejects.toThrow('neither a file')
+  })
+
+  it('opens a virtual document as a file not yet saved into the first root', async () => {
+    const uri = 'untitled:Scratch.fixturelang'
+    const before = opened.length
+    const session = await openLanguageSession(host, {
+      documents: [{ uri, languageId: 'fixture-language', documentKind: 'fixture-source', version: 1, text: 'source' }],
+    })
+    try {
+      // Roots are canonical (realpath), so only the saved-into name is fixed.
+      expect(opened.slice(before)).toEqual([expect.stringMatching(/\/Scratch\.fixturelang$/u)])
     } finally {
       await session.close()
     }

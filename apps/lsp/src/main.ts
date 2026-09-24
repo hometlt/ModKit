@@ -62,7 +62,8 @@ export async function runModkitLsp(argv: readonly string[]) {
   }
   /*
    * Packed dependencies, the way MCP language sessions load them: the configured content provider
-   * opens every root that opens as a subject inside its mods (`openModContext`), and the layers'
+   * opens every root inside its mods (`openModContext`) — a package over what it declares, any
+   * other folder over the base mods (`--base-mod`, else the game's default) — and the layers'
    * documents join the snapshot read-only after the loose files.
    */
   const contentSources =
@@ -80,9 +81,14 @@ export async function runModkitLsp(argv: readonly string[]) {
   let openedSubjectDescriptors: AnyDescriptor[] = []
   const dependencySources = []
   if (contentSources !== undefined) {
+    // A root that opens as no subject (a folder of scripts) still opens inside its base mods.
+    const looseRoots: string[] = []
     for (const root of roots) {
       const opened = await modkit.open(root)
-      if (opened.session === undefined) continue
+      if (opened.session === undefined) {
+        looseRoots.push(root)
+        continue
+      }
       openedRoots.push(opened)
     }
     const openedRootSessions = openedRoots.map(opened => {
@@ -100,11 +106,14 @@ export async function runModkitLsp(argv: readonly string[]) {
         maxWorkspaceBytes: configuration.maxWorkspaceBytes,
         maxEntries: 65_536,
       },
-      subjects: openedRootSessions.map((session, index) => {
-        const descriptor = openedSubjectDescriptors[index]
-        if (descriptor === undefined) throw new Error('opened root descriptor is missing')
-        return { descriptor }
-      }),
+      subjects: [
+        ...openedRootSessions.map((_session, index) => {
+          const descriptor = openedSubjectDescriptors[index]
+          if (descriptor === undefined) throw new Error('opened root descriptor is missing')
+          return { descriptor }
+        }),
+        ...looseRoots.map(root => ({ descriptor: { subjectUri: pathToFileURL(root).href } })),
+      ],
       ...(configuration.baseMods.length === 0 ? {} : { baseMods: { '*': configuration.baseMods } }),
     })
     for (const item of projected.diagnostics)

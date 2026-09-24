@@ -49,6 +49,14 @@ import {
   type ServiceContractDefinitionRegistry,
   type SelectedServiceOffer,
 } from '@modkit/sdk'
+import { DATA_CATALOG_ENTITIES_INPUT, type JsonValue } from '@modkit/sdk'
+import {
+  answerCatalogQueries,
+  operationCatalogQueries,
+  subjectCatalogEntities,
+  type CatalogEntities,
+  type SubjectCatalogOptions,
+} from './catalog-questions.js'
 import { inventoryRecordFor, type Inventory, type InventoryContribution } from './inventory.js'
 import { activateServiceProvider } from './service-leases.js'
 import { offersFromInventory } from './offers.js'
@@ -147,6 +155,12 @@ export interface OpenSubjectOptions {
   readonly contributionSettings?: (contributionId: string) => ContributionSettings | undefined
   /** Nested raster decoding cannot recursively acquire another subject raster decoder. */
   readonly provideRasterResources?: boolean
+  /**
+   * Where the subject's catalog questions are answered: an operation that names the entities it
+   * needs (`catalogQueries`) is invoked again with them from the subject's mod context. Absent, an
+   * operation answers with what it has.
+   */
+  readonly subjectCatalog?: SubjectCatalogOptions
   readonly minimumConfidence?: number
   readonly maxCandidates?: number
   readonly signal?: AbortSignal
@@ -334,6 +348,7 @@ function gatedOperations(
   session: AssetSession,
   spec: CodecContributionSpecV1Wire,
   grant: PermissionGrant,
+  catalog?: CatalogEntities,
 ): OperationSession {
   const inner = session.operations()
   const required = new Map<string, readonly PermissionClass[]>()
@@ -365,23 +380,71 @@ function gatedOperations(
           ],
         }
       }
-      return inner.invoke(handlerId, input, invokeOptions)
+      const first = await inner.invoke(handlerId, input, invokeOptions)
+      const options = input === null || input === undefined ? {} : input
+      if (
+        catalog === undefined ||
+        typeof options !== 'object' ||
+        Array.isArray(options) ||
+        operationCatalogQueries(first).length === 0
+      ) {
+        return first
+      }
+      try {
+        return await answerCatalogQueries({
+          run: (entities, round) =>
+            round === 0 || entities === undefined
+              ? Promise.resolve(first)
+              : inner.invoke(
+                  handlerId,
+                  { ...options, [DATA_CATALOG_ENTITIES_INPUT]: entities as unknown as JsonValue },
+                  invokeOptions,
+                ),
+          queriesOf: operationCatalogQueries,
+          catalogEntities: catalog,
+          rounds: OPERATION_CATALOG_ROUNDS,
+          ...(invokeOptions?.signal === undefined ? {} : { signal: invokeOptions.signal }),
+        })
+      } catch (error) {
+        invokeOptions?.signal?.throwIfAborted()
+        return {
+          ...first,
+          diagnostics: [
+            ...first.diagnostics,
+            diagnostic(
+              'warning',
+              'x3.host/subject-catalog-unavailable',
+              `the subject's catalog could not answer ${handlerId}: ${error instanceof Error ? error.message : String(error)}`,
+              [handlerId],
+            ),
+          ],
+        }
+      }
     },
     dispose: () => inner.dispose(),
   }
   return Object.freeze(gated)
 }
 
+/** Rounds of catalog questions one operation may ask. */
+const OPERATION_CATALOG_ROUNDS = 4
+
 function sessionWithResources(
   session: AssetSession,
   resources: AsyncReleaseScope,
-  gating?: { readonly spec: CodecContributionSpecV1Wire; readonly grant: PermissionGrant },
+  gating?: {
+    readonly spec: CodecContributionSpecV1Wire
+    readonly grant: PermissionGrant
+    readonly catalog?: CatalogEntities
+  },
   beforeDispose?: () => void,
   models?: ModelResourcePort,
 ): AssetSession {
   let disposed = false
   const operations =
-    gating === undefined ? undefined : gatedOperations(session, gating.spec, gating.grant)
+    gating === undefined
+      ? undefined
+      : gatedOperations(session, gating.spec, gating.grant, gating.catalog)
   return Object.freeze({
     revision: session.revision,
     state: () => session.state(),
@@ -1911,12 +1974,18 @@ async function openSubjectDirect(
                 ...(signal === undefined ? {} : { signal }),
               }),
           })
+    const catalog =
+      options.subjectCatalog === undefined
+        ? undefined
+        : subjectCatalogEntities(options.subjectCatalog, async () => (await session.descriptor()).subjectUri)
+    if (catalog !== undefined) best.resources.add(() => catalog.release())
     const managedSession = sessionWithResources(
       session,
       best.resources,
       {
         spec: best.spec,
         grant: best.effectiveGrant,
+        ...(catalog === undefined ? {} : { catalog: catalog.entities }),
       },
       () => {
         best.logicalState.live = false

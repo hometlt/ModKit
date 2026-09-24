@@ -245,8 +245,24 @@ export interface McpResolvedWorkspaceRequest {
   readonly maxRequirements: number
 }
 
+/** A subject's mod context as the game's loader opens it: layers in load order, and what is missing. */
+export interface McpModContext {
+  readonly contextId: string
+  readonly layers: readonly Readonly<{
+    displayName: string
+    sourceId: string
+    sourcePath: string
+    role: 'dependency' | 'base' | 'primary'
+    provenance: 'declared' | 'implicit' | 'setting' | 'opened'
+    fingerprint?: string
+  }>[]
+  readonly unresolved: readonly string[]
+}
+
 /** Minimal host-injected seam; all authority remains in the public Modkit host. */
 export interface ModkitMcpHostPort {
+  /** Present when content sources are configured. */
+  modContext?(subjectUri: string): Promise<McpModContext>
   openResolvedDataWorkspace?(
     request: McpResolvedWorkspaceRequest,
     signal?: AbortSignal,
@@ -446,6 +462,11 @@ export async function createHostMcpPort(
     writableRoots: roots,
     intent: 'inspect',
     ...(onDiagnostic === undefined ? {} : { onDiagnostic }),
+    // An operation that names catalog entities is answered from its subject's mod context.
+    subjectCatalog: {
+      contentSources: async () => contentSources,
+      baseMods: () => configuration.baseMods,
+    },
   })
   if (modkit.extensionFailures.length > 0) {
     await modkit.close()
@@ -749,11 +770,28 @@ export async function createHostMcpPort(
      * first document opens on its own — a file in no package still opens inside its base mods.
      */
     const primaryUri = documents[0]?.uri
+    /*
+     * A virtual document (`untitled:`, a container member) is on no disk: it opens as a file not yet
+     * saved into the first root, which puts it in that root's mod or inside the base mods.
+     */
+    const looseUri =
+      primaryUri === undefined || subjectTarget(primaryUri) !== undefined || roots[0] === undefined
+        ? primaryUri
+        : pathToFileURL(
+            resolve(
+              roots[0],
+              basename(
+                decodeURIComponent(
+                  primaryUri.replace(/^[a-z][a-z0-9+.-]*:/iu, '').split(/[?#]/u)[0] ?? '',
+                ),
+              ) || 'Untitled',
+            ),
+          ).href
     const subjects =
       context !== undefined
         ? [context]
-        : primaryUri !== undefined && subjectTarget(primaryUri) !== undefined
-          ? [{ descriptor: { subjectUri: primaryUri } }]
+        : looseUri !== undefined && subjectTarget(looseUri) !== undefined
+          ? [{ descriptor: { subjectUri: looseUri } }]
           : []
     const projected =
       contentSources === undefined
@@ -1012,7 +1050,46 @@ export async function createHostMcpPort(
     ...modkit.services,
     target: modkit.services.host.target,
   })
+  const openModContext = contentSources?.openModContext?.bind(contentSources)
   const port: ModkitMcpHostPort = {
+    ...(openModContext === undefined
+      ? {}
+      : {
+          async modContext(subjectUri: string): Promise<McpModContext> {
+            const target = subjectTarget(subjectUri)
+            if (target === undefined) {
+              throw new McpOperationError(
+                'x3.mcp/mod-context-target-unavailable',
+                'The subject is neither a file nor a path inside a content source.',
+              )
+            }
+            const context = await openModContext({
+              schemaVersion: 1,
+              target,
+              ...(configuration.baseMods === undefined ? {} : { baseMods: configuration.baseMods }),
+            })
+            try {
+              return Object.freeze({
+                contextId: context.contextId,
+                layers: Object.freeze(
+                  context.layers.map(layer =>
+                    Object.freeze({
+                      displayName: layer.displayName,
+                      sourceId: layer.sourceId,
+                      sourcePath: layer.sourcePath,
+                      role: layer.role,
+                      provenance: layer.provenance,
+                      ...(layer.fingerprint === undefined ? {} : { fingerprint: layer.fingerprint }),
+                    }),
+                  ),
+                ),
+                unresolved: Object.freeze([...context.unresolved]),
+              })
+            } finally {
+              await context.dispose()
+            }
+          },
+        }),
     ...(configuration.outputArtifacts === true ? { outputArtifacts: true } : {}),
     ...(configuration.allowEdits === true ? { editsEnabled: true } : {}),
     inventory: modkit.services.inventory,

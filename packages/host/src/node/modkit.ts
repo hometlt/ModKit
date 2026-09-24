@@ -39,6 +39,7 @@ import {
 import type { SubjectOpenSnapshot } from '../subject-rpc.js'
 import { createSubjectEditing, type SubjectEditing } from '../subject-editing.js'
 import { createSubjectServices } from '../subject-services.js'
+import type { SubjectCatalogOptions } from '../catalog-questions.js'
 import { resolveFormatWriter } from '../format-writer.js'
 import { DEFAULT_SUBJECT_OPEN_BUDGET } from './subject-opener.js'
 import { linkedExtensionInputs, type LinkedExtension } from '../linked.js'
@@ -107,6 +108,8 @@ export interface ModkitOptions {
    * preserved independently for a later re-enable.
    */
   readonly disabledExtensions?: readonly string[]
+  /** Where an opened subject's catalog questions are answered (its mod context). */
+  readonly subjectCatalog?: SubjectCatalogOptions
   readonly onDiagnostic?: (diagnostic: Diagnostic) => void
 }
 
@@ -219,6 +222,7 @@ export async function createModkit(options: ModkitOptions): Promise<Modkit> {
       : { disabledExtensions: options.disabledExtensions }),
     ...(options.bootstrapUrl === undefined ? {} : { bootstrapUrl: options.bootstrapUrl }),
     ...(options.onDiagnostic === undefined ? {} : { onDiagnostic: options.onDiagnostic }),
+    ...(options.subjectCatalog === undefined ? {} : { subjectCatalog: options.subjectCatalog }),
   })
 
   /*
@@ -239,6 +243,7 @@ export async function createModkit(options: ModkitOptions): Promise<Modkit> {
           ...(services.serviceDefinitions === undefined
             ? {}
             : { serviceDefinitions: services.serviceDefinitions }),
+          ...(options.subjectCatalog === undefined ? {} : { subjectCatalog: options.subjectCatalog }),
         })
   const subjects =
     trustedLane === undefined
