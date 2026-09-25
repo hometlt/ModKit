@@ -45,6 +45,16 @@ export class RuntimeSourceBudgetError extends Error {
   }
 }
 
+export class RuntimeSourceUntrackedQueryError extends Error {
+  readonly code = 'x3.host/runtime-source-untracked-query'
+  constructor() {
+    super(
+      'Runtime composition cannot use ModContext.query: its internal source reads are not captured',
+    )
+    this.name = 'RuntimeSourceUntrackedQueryError'
+  }
+}
+
 function validAddress(layerId: string, path: string): boolean {
   return (
     layerId.length > 0 &&
@@ -62,7 +72,6 @@ export function captureRuntimeSourceReads(context: ModContext): RuntimeSourceSna
   let totalBytes = 0
   let verifying = false
   let inFlight = 0
-  const query = context.query?.bind(context)
   const wrapped: ModContext = Object.freeze({
     schemaVersion: context.schemaVersion,
     gameId: context.gameId,
@@ -72,7 +81,13 @@ export function captureRuntimeSourceReads(context: ModContext): RuntimeSourceSna
     diagnostics: context.diagnostics,
     files: (...args: Parameters<ModContext['files']>) => context.files(...args),
     locate: (...args: Parameters<ModContext['locate']>) => context.locate(...args),
-    ...(query === undefined ? {} : { query }),
+    ...(context.query === undefined
+      ? {}
+      : {
+          async query() {
+            throw new RuntimeSourceUntrackedQueryError()
+          },
+        }),
     dispose: () => context.dispose(),
     async read(layerId: string, path: string, maxBytes: number) {
       if (verifying)

@@ -42,6 +42,7 @@ export {
   captureRuntimeSourceReads,
   RuntimeSourceBudgetError,
   RuntimeSourceChangedError,
+  RuntimeSourceUntrackedQueryError,
   type RuntimeSourceSnapshot,
 } from './source-snapshot.js'
 import { FACETLESS_SERVICE_MATCHER_PROFILE } from '../service-definitions.js'

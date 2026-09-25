@@ -64,4 +64,12 @@ describe('Runtime source read snapshot', () => {
     files.delete('base/a.xml')
     await expect(second.verify()).rejects.toMatchObject({ code: 'x3.host/runtime-source-changed' })
   })
+
+  it('refuses opaque queries whose internal reads cannot enter the source digest', async () => {
+    const snapshot = captureRuntimeSourceReads(source(new Map()))
+    await expect(snapshot.context.query?.({ kind: 'entities' })).rejects.toMatchObject({
+      code: 'x3.host/runtime-source-untracked-query',
+    })
+    expect((await snapshot.verify()).fileCount).toBe(0)
+  })
 })
