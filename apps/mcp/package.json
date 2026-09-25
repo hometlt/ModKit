@@ -27,6 +27,7 @@
     "@modkit/host": "workspace:*",
     "@modkit/scene": "workspace:*",
     "@modkit/sdk": "workspace:*",
+    "@modkit/ui": "workspace:*",
     "@modkit/vfs": "workspace:*",
     "@modkit/uv": "workspace:*",
     "zod": "^4.4.3"

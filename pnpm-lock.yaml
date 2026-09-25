@@ -171,6 +171,9 @@ importers:
       '@modkit/sdk':
         specifier: workspace:*
         version: link:../../packages/sdk
+      '@modkit/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
       '@modkit/uv':
         specifier: workspace:*
         version: link:../../packages/uv
