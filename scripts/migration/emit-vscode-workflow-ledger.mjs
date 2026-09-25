@@ -4,7 +4,7 @@
 // contains classification rules and owner-decision state, never copied inventory rows.
 
 import { createHash } from 'node:crypto'
-import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { mkdir } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
@@ -672,6 +672,24 @@ function readRegisteredCommands(source, file) {
       if (value !== undefined) importedStrings.set(element.name.text, value)
     }
   }
+  // A command id may also be a constant of the registering module itself (viewer-status.ts).
+  for (const statement of sourceFile.statements) {
+    if (
+      !ts.isVariableStatement(statement) ||
+      (statement.declarationList.flags & ts.NodeFlags.Const) === 0
+    ) {
+      continue
+    }
+    for (const declaration of statement.declarationList.declarations) {
+      if (
+        ts.isIdentifier(declaration.name) &&
+        declaration.initializer !== undefined &&
+        ts.isStringLiteral(declaration.initializer)
+      ) {
+        importedStrings.set(declaration.name.text, declaration.initializer.text)
+      }
+    }
+  }
   const commands = new Map()
   const visit = node => {
     if (
@@ -702,7 +720,19 @@ function readRegisteredCommands(source, file) {
   return commands
 }
 
-const registeredCommands = readRegisteredCommands(extensionSource, extensionSourcePath)
+// Commands register in extension.ts and in the modules it activates (verify-document.ts, …).
+const registeredCommands = new Map()
+const extensionSourceDirectory = path.dirname(extensionSourcePath)
+for (const name of readdirSync(extensionSourceDirectory)
+  .filter(name => name.endsWith('.ts') && !name.endsWith('.d.ts'))
+  .sort()) {
+  const file = path.join(extensionSourceDirectory, name)
+  const source = file === extensionSourcePath ? extensionSource : readFileSync(file, 'utf8')
+  for (const [command, start] of readRegisteredCommands(source, file)) {
+    if (registeredCommands.has(command)) fail(`runtime command ${command} is registered more than once`)
+    registeredCommands.set(command, start)
+  }
+}
 for (const command of currentCommands) {
   if (!registeredCommands.has(command)) fail(`contributed command ${command} is not registered`)
 }
@@ -763,8 +793,8 @@ const legacyKeybindings = inventory.units.filter(unit => unit.kind === 'vscode-k
 if (legacyKeybindings !== 0) {
   fail(`legacy VS Code keybinding ratchet drifted: expected 0, found ${legacyKeybindings}`)
 }
-if (menuCommands.length !== 12) {
-  fail(`current X3 menu ratchet drifted: expected 12, found ${menuCommands.length}`)
+if (menuCommands.length !== 50) {
+  fail(`current X3 menu ratchet drifted: expected 50, found ${menuCommands.length}`)
 }
 if (keybindingCommands.length !== 0) {
   fail(`current X3 keybinding ratchet drifted: expected 0, found ${keybindingCommands.length}`)

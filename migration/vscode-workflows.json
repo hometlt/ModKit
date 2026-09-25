@@ -96,7 +96,7 @@
       "replacementWorkflowId": "game/starcraft-2/discover-open",
       "sourceUnitIds": ["legacy/cli/modkit/install"],
       "evidence": [
-        "extensions/blizzard/starcraft2/test/installation-candidates.test.ts",
+        "extensions/blizzard/starcraft2/modules/game/test/installation-candidates.test.ts",
         "extensions/opensource/warzone-2100/test/installation-provider.test.ts"
       ],
       "reason": "Focused games use auto-discovery plus environment and settings overrides; legacy data provisioning is not a Product GA command."
@@ -335,7 +335,7 @@
         "legacy/vscode/command/modkit.unloadMod"
       ],
       "evidence": [
-        "extensions/blizzard/starcraft2/test/installation-candidates.test.ts",
+        "extensions/blizzard/starcraft2/modules/game/test/installation-candidates.test.ts",
         "extensions/opensource/warzone-2100/test/installation-provider.test.ts",
         "apps/vscode/test/workbench-workflows.test.ts",
         "reports/vscode-smoke/lifecycle-receipt.json"
@@ -846,6 +846,10 @@
       {
         "commandId": "modkit.openResource",
         "reason": "Internal URI bridge invoked by the container and resource-opening paths; it is intentionally absent from the public command palette."
+      },
+      {
+        "commandId": "modkit.viewerStatusChoose",
+        "reason": "Callback of the viewer status-bar items: it receives the item key and the chosen value as arguments, so it has no meaning from the command palette."
       }
     ],
     "externalOrBuiltinCommands": []
