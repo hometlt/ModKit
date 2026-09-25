@@ -171,7 +171,30 @@ function snapshotGrant(grant: GrantSnapshot): GrantSnapshot {
     snapshotId: String(grant.snapshotId),
     permissions: Object.freeze([...grant.permissions]),
     sourceIds: Object.freeze([...grant.sourceIds]),
+    ...(grant.namespaceRoots === undefined
+      ? {}
+      : { namespaceRoots: Object.freeze([...grant.namespaceRoots]) }),
   }) as GrantSnapshot
+}
+
+/** A `?vfs-path=` file strictly inside one of the grant's host-issued directory-namespace roots. */
+function withinGrantedNamespace(uri: string, grant: GrantSnapshot): boolean {
+  if (grant.namespaceRoots === undefined) return false
+  try {
+    const url = new URL(uri)
+    const path = url.searchParams.get('vfs-path')
+    if (path === null || path.split('/').some(part => part === '' || part === '.' || part === '..')) return false
+    url.search = ''
+    url.hash = ''
+    return grant.namespaceRoots.some(root => {
+      const granted = new URL(root)
+      granted.search = ''
+      granted.hash = ''
+      return granted.href === url.href
+    })
+  } catch {
+    return false
+  }
 }
 
 function grantIsValid(options: HostCommitCoordinatorOptions, grant: GrantSnapshot): boolean {
@@ -186,6 +209,7 @@ export function createGrantSnapshot(value: {
   readonly snapshotId: string
   readonly permissions: readonly GrantSnapshot['permissions'][number][]
   readonly sourceIds: readonly string[]
+  readonly namespaceRoots?: readonly string[]
 }): GrantSnapshot {
   if (
     !isNonBlank(value.snapshotId) ||
@@ -194,7 +218,9 @@ export function createGrantSnapshot(value: {
       (PERMISSION_CLASSES as readonly string[]).includes(permission),
     ) ||
     !Array.isArray(value.sourceIds) ||
-    !value.sourceIds.every(isNonBlank)
+    !value.sourceIds.every(isNonBlank) ||
+    (value.namespaceRoots !== undefined &&
+      (!Array.isArray(value.namespaceRoots) || !value.namespaceRoots.every(isNonBlank)))
   ) {
     throw new TypeError('grant snapshot is malformed')
   }
@@ -202,6 +228,9 @@ export function createGrantSnapshot(value: {
     snapshotId: value.snapshotId,
     permissions: Object.freeze([...new Set(value.permissions)].sort(compareUtf8)),
     sourceIds: Object.freeze([...new Set(value.sourceIds)].sort(compareUtf8)),
+    ...(value.namespaceRoots === undefined || value.namespaceRoots.length === 0
+      ? {}
+      : { namespaceRoots: Object.freeze([...new Set(value.namespaceRoots)].sort(compareUtf8)) }),
   }) as GrantSnapshot
   issuedGrantSnapshots.add(snapshot)
   return snapshot
@@ -557,7 +586,10 @@ function derive(
   const requiredPermissions =
     plan.semantics.mutationMode === 'mutate' ? ['write-source' as const] : []
   const missing = requiredPermissions.filter(permission => !grant.permissions.includes(permission))
-  const scopeSatisfied = entries.every(entry => grant.sourceIds.includes(entry.source.id))
+  const scopeSatisfied = entries.every(
+    entry =>
+      grant.sourceIds.includes(entry.source.id) || withinGrantedNamespace(entry.source.uri, grant),
+  )
   const achievableGuarantee = strongestGuarantee([...backends.values()])
   const writeSet = Object.freeze({
     entries: Object.freeze(entries),

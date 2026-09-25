@@ -199,7 +199,6 @@ function namespaceEntryTargetOf(
   if (bindingIds.length !== 1 || revision === undefined) return undefined
   // Rebuilt from the opened root and revision; only the entry revision is taken from the plan.
   const rebuilt = namespaceEntryEditTarget({
-    subjectUri: descriptor.subjectUri,
     root: origin.root,
     namespaceRevision: origin.revision,
     entry: { path, size: 0 },
@@ -439,6 +438,8 @@ export function createSubjectEditing(options: SubjectEditingOptions): SubjectEdi
             'owned',
       )
       .map(target => target.ownerSource.id),
+    // A folder subject's files are named per plan, so its root is granted as a namespace.
+    ...(descriptor.origin.kind === 'namespace' ? { namespaceRoots: [descriptor.origin.root.uri] } : {}),
   })
   const issued = new Set([grantSnapshot.snapshotId])
   const payloads = options.payloads ?? NO_STAGED_PAYLOADS

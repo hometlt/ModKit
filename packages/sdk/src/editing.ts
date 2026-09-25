@@ -213,6 +213,11 @@ export interface GrantSnapshot {
   readonly snapshotId: string
   readonly permissions: readonly PermissionClass[]
   readonly sourceIds: readonly string[]
+  /**
+   * Directory-namespace roots (their URIs) whose `?vfs-path=` files are in scope too: a folder
+   * subject's file entries are not known when the grant is issued. Host-issued, never plan-claimed.
+   */
+  readonly namespaceRoots?: readonly string[]
   readonly [GRANT_SNAPSHOT_BRAND]: true
 }
 
@@ -551,11 +556,11 @@ export function containerEntryRevision(
 
 /**
  * The edit target of one file inside a directory-namespace subject, at the namespace revision it
- * was opened at: `root.uri?vfs-path=<path>`, pinned by {@link containerEntryRevision}. The host
- * accepts it in a plan for that subject; the file backend re-derives the same revision at commit.
+ * was opened at: `root.uri?vfs-path=<path>`, pinned by {@link containerEntryRevision}; the file is
+ * the target's subject. The host accepts it in a plan for that namespace subject and grants its
+ * root; the file backend re-derives the same revision at commit.
  */
 export function namespaceEntryEditTarget(input: {
-  readonly subjectUri: string
   readonly root: AssetSourceRef
   readonly namespaceRevision: RevisionId
   readonly entry: { readonly path: string; readonly size: number | bigint }
@@ -568,7 +573,7 @@ export function namespaceEntryEditTarget(input: {
   const revision = containerEntryRevision(input.namespaceRevision, input.entry.path, input.entry.size)
   return deepFreeze({
     targetId: source.id,
-    subjectUri: input.subjectUri,
+    subjectUri: source.uri,
     ownerSource: source,
     semanticPath: [],
     expectedRevision: {
