@@ -729,7 +729,8 @@ for (const name of readdirSync(extensionSourceDirectory)
   const file = path.join(extensionSourceDirectory, name)
   const source = file === extensionSourcePath ? extensionSource : readFileSync(file, 'utf8')
   for (const [command, start] of readRegisteredCommands(source, file)) {
-    if (registeredCommands.has(command)) fail(`runtime command ${command} is registered more than once`)
+    if (registeredCommands.has(command))
+      fail(`runtime command ${command} is registered more than once`)
     registeredCommands.set(command, start)
   }
 }
