@@ -39,6 +39,27 @@ export interface ContentSourceEntry {
   /** Optional row actions; hosts render these only when their explorer supports actions. */
   readonly actions?: readonly ContentSourceEntryAction[]
 }
+/** One file of a {@link ContentSources.files} page. */
+export interface ContentSourceFile {
+  /** The path inside the source, spelled as {@link ContentSources.list} spells it. */
+  readonly path: string
+  readonly size?: number
+}
+/** What a workspace search asks a source for; every field narrows, none widens. */
+export interface ContentSourceFilesQuery {
+  /** Characters the path holds in this order, case-insensitively — a quick-open query. */
+  readonly pattern?: string
+  /** Lower-case extensions without the dot: only files that have one of them; `''` is none. */
+  readonly extensions?: readonly string[]
+  /** Where the previous page stopped. */
+  readonly cursor?: string
+  /** Files one page may hold (1..10000). A page may hold fewer and still have a next one. */
+  readonly limit: number
+}
+export interface ContentSourceFilesPage {
+  readonly items: readonly ContentSourceFile[]
+  readonly nextCursor?: string
+}
 export interface ContentSourceEntryAction {
   readonly id: 'download' | 'clear-cache' | 'delete-publication'
 }
@@ -192,6 +213,17 @@ export interface ContentSources {
   refresh(sourceId: string): Promise<void>
   list(sourceId: string, path: string): Promise<readonly ContentSourceEntry[]>
   read(sourceId: string, path: string, maxBytes: number): Promise<Uint8Array>
+  /**
+   * Every file beneath `path`, in pages, narrowed inside the source: what a workspace search walks
+   * instead of listing folder after folder. The installed StarCraft II storage names 666k files in
+   * 37k folders; a source that holds them indexed scans the index and makes no string for a file
+   * the query rules out. `undefined` means this root cannot list in bulk — walk {@link list}.
+   */
+  files?(
+    sourceId: string,
+    path: string,
+    query: ContentSourceFilesQuery,
+  ): Promise<ContentSourceFilesPage | undefined>
   preparePublish?(connectionId: string, filePath: string, packagePath: string): Promise<unknown>
   publish?(reviewId: string): Promise<unknown>
   deletionCandidates?(connectionId: string): Promise<unknown>
@@ -290,8 +322,38 @@ export const CONTENT_SOURCE_METHODS = [
   'prepareRevision',
   'storage',
   'resolveLocalPath',
+  'files',
 ] as const
 export type ContentSourceMethod = (typeof CONTENT_SOURCE_METHODS)[number]
+
+/** Check a {@link ContentSources.files} query crossing the IPC boundary. */
+function filesQuery(raw: unknown): ContentSourceFilesQuery {
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
+    throw new TypeError('Invalid source file query')
+  }
+  const { pattern, extensions, cursor, limit, ...rest } = raw as Record<string, unknown>
+  if (
+    Object.keys(rest).length > 0 ||
+    (pattern !== undefined && (typeof pattern !== 'string' || pattern.length > 512)) ||
+    (extensions !== undefined &&
+      (!Array.isArray(extensions) ||
+        extensions.length > 256 ||
+        !extensions.every(item => typeof item === 'string' && /^[a-z0-9_-]{0,32}$/u.test(item)))) ||
+    (cursor !== undefined && (typeof cursor !== 'string' || cursor.length > 256)) ||
+    typeof limit !== 'number' ||
+    !Number.isSafeInteger(limit) ||
+    limit < 1 ||
+    limit > 10_000
+  ) {
+    throw new TypeError('Invalid source file query')
+  }
+  return {
+    limit,
+    ...(pattern === undefined ? {} : { pattern: pattern as string }),
+    ...(extensions === undefined ? {} : { extensions: extensions as string[] }),
+    ...(cursor === undefined ? {} : { cursor: cursor as string }),
+  }
+}
 
 /** Validate the small IPC surface before invoking a trusted host-owned provider. */
 export async function callContentSources(
@@ -395,6 +457,10 @@ export async function callContentSources(
     }
     case 'list':
       return source.list(string(0), path(1))
+    case 'files': {
+      if (!source.files) return undefined
+      return source.files(string(0), path(1), filesQuery(args[2]))
+    }
     case 'read': {
       const max: unknown = args[2]
       if (

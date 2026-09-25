@@ -140,6 +140,7 @@ import {
   CONTAINER_ENTRY_NOT_FOUND,
   type ContainerRegistry,
 } from './containers.js'
+import { registerWorkspaceSearch, type SearchFolderFile } from './workspace-search.js'
 import {
   createOperationOutputStore,
   operationOutputName,
@@ -1972,6 +1973,26 @@ interface DeferredModkitViews {
   readonly sources: DeferredTreeDataProvider<SourceTreeNode>
   readonly resources: DeferredTreeDataProvider<ResourceTreeNode>
   readonly extensions: DeferredTreeDataProvider<ExtensionNode>
+}
+
+/**
+ * `workspace.findFiles` over the folders on disk. Modkit's own folders (a mounted game storage, an
+ * archive) answer VS Code's search too, but these callers mean the files of the project: its
+ * language documents, a map to test on.
+ */
+async function findDiskFiles(include: string, exclude: string, maximum: number): Promise<vscode.Uri[]> {
+  const found: vscode.Uri[] = []
+  for (const folder of vscode.workspace.workspaceFolders ?? []) {
+    if (folder.uri.scheme !== 'file' || found.length >= maximum) continue
+    found.push(
+      ...(await vscode.workspace.findFiles(
+        new vscode.RelativePattern(folder, include),
+        exclude,
+        maximum - found.length,
+      )),
+    )
+  }
+  return found
 }
 
 export async function activate(context: vscode.ExtensionContext): Promise<ModkitExtensionApi> {
@@ -4472,6 +4493,96 @@ async function activateModkit(
         isCaseSensitive: true,
       }),
     )
+
+  // ---------------------------------------------------------------- workspace search
+  /*
+   * Quick open and Find in Files inside mounted sources and containers, as in a folder on disk. A
+   * source that keeps its files indexed (the game's CASC storage) answers a page at a time from the
+   * index; one that does not is walked folder by folder. See `workspace-search.ts`.
+   */
+  if (!languageOnly) {
+    const relativeTo = (path: string, folder: string): string =>
+      folder === '' ? path : path.slice(folder.length + 1)
+    async function* walkSource(
+      sources: ContentSources,
+      id: string,
+      root: string,
+      signal: AbortSignal,
+    ): AsyncGenerator<readonly SearchFolderFile[]> {
+      const folders = [root]
+      for (let folder = folders.pop(); folder !== undefined; folder = folders.pop()) {
+        signal.throwIfAborted()
+        const files: SearchFolderFile[] = []
+        for (const entry of await sources.list(id, folder)) {
+          if (entry.directory) folders.push(entry.path)
+          else
+            files.push({
+              path: relativeTo(entry.path, root),
+              ...(entry.size === undefined ? {} : { size: entry.size }),
+            })
+        }
+        yield files
+      }
+    }
+    const searches = [
+      registerWorkspaceSearch(
+        'modkit-source',
+        {
+          async *files(folder, query, signal) {
+            const { id, path } = sourceLocation(folder)
+            const sources = await requireContentSources()
+            let cursor: string | undefined
+            do {
+              signal.throwIfAborted()
+              const page = await sources.files?.(id, path, {
+                ...query,
+                limit: 2000,
+                ...(cursor === undefined ? {} : { cursor }),
+              })
+              if (page === undefined) {
+                yield* walkSource(sources, id, path, signal)
+                return
+              }
+              yield page.items.map(item => ({
+                path: relativeTo(item.path, path),
+                ...(item.size === undefined ? {} : { size: item.size }),
+              }))
+              cursor = page.nextCursor
+            } while (cursor !== undefined)
+          },
+          read: (folder, path, maxBytes, signal) =>
+            readContentSource(
+              vscode.Uri.joinPath(folder, ...path.split('/')).toString(),
+              maxBytes,
+              signal,
+            ),
+        },
+        log,
+      ),
+      registerWorkspaceSearch(
+        CONTAINER_SCHEME,
+        {
+          async *files(folder, _query, signal) {
+            const { container, entry } = containerLocation(folder)
+            const root = entry.replace(/^\/+|\/+$/gu, '')
+            const members = await containers.walk(container, root, 1_000_000, signal)
+            yield members.map(member => ({
+              path: relativeTo(member.path.replace(/^\/+/u, ''), root),
+              ...(member.size === undefined ? {} : { size: Number(member.size) }),
+            }))
+          },
+          read: (folder, path, _maxBytes, signal) => {
+            const { container, entry } = containerLocation(
+              vscode.Uri.joinPath(folder, ...path.split('/')),
+            )
+            return containers.read(container, entry, signal)
+          },
+        },
+        log,
+      ),
+    ]
+    for (const search of searches) if (search !== undefined) context.subscriptions.push(search)
+  }
 
   // ---------------------------------------------------------------- configuration
   /*
@@ -7690,7 +7801,7 @@ async function activateModkit(
       let complete = true
       let uris: readonly vscode.Uri[] = []
       try {
-        uris = await vscode.workspace.findFiles('**/*', '**/{node_modules,.git}/**', maxEntries + 1)
+        uris = await findDiskFiles('**/*', '**/{node_modules,.git}/**', maxEntries + 1)
       } catch {
         complete = false
       }
@@ -7871,7 +7982,7 @@ async function activateModkit(
               break
             }
             const extensionPattern = caseInsensitiveExtensionPattern(extension)
-            const uris = await vscode.workspace.findFiles(
+            const uris = await findDiskFiles(
               `**/*.${extensionPattern}`,
               '**/{node_modules,.git}/**',
               remaining + 1,
@@ -7889,7 +8000,7 @@ async function activateModkit(
               isComplete = false
               break
             }
-            const uris = await vscode.workspace.findFiles(
+            const uris = await findDiskFiles(
               `**/${caseInsensitiveNamePattern(fileName)}`,
               '**/{node_modules,.git}/**',
               remaining + 1,
@@ -10834,7 +10945,7 @@ async function activateModkit(
   const chooseTestMap = async (): Promise<string | undefined> => {
     const configuredMap = vscode.workspace.getConfiguration('modkit').get<string>('launch.testMap', '').trim()
     if (configuredMap !== '' && isAbsolute(configuredMap)) return configuredMap
-    const found = await vscode.workspace.findFiles(
+    const found = await findDiskFiles(
       '{**/*.[Ss][Cc]2[Mm][Aa][Pp],**/*.[Ss]2[Mm][Aa],**/*.[Ss][Cc]2[Mm][Aa][Pp]/[Mm]ap[Ii]nfo}',
       '**/node_modules/**',
       200,

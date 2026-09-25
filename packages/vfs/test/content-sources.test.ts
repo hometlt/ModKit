@@ -38,6 +38,34 @@ describe('desktop source IPC boundary', () => {
       new Uint8Array([1]),
     )
   })
+  it('forwards a well-formed bulk file query, and none to a source that cannot list in bulk', async () => {
+    const asked: unknown[] = []
+    const indexed = {
+      ...source,
+      files: async (...args: unknown[]) => {
+        asked.push(args)
+        return { items: [{ path: 'Mods/a.xml', size: 1 }] }
+      },
+    } as unknown as ContentSources
+    const query = { pattern: 'unitdata', extensions: ['xml', ''], cursor: '42', limit: 100 }
+    expect(await callContentSources(indexed, 'files', ['local:casc', 'Mods', query])).toEqual({
+      items: [{ path: 'Mods/a.xml', size: 1 }],
+    })
+    expect(asked).toEqual([['local:casc', 'Mods', query]])
+    for (const malformed of [
+      { limit: 0 },
+      { limit: 10_001 },
+      { limit: 1, extensions: ['.xml'] },
+      { limit: 1, pattern: 'x'.repeat(513) },
+      { limit: 1, script: 'unexpected' },
+    ]) {
+      await expect(callContentSources(indexed, 'files', ['local:casc', '', malformed])).rejects.toThrow(
+        'Invalid source file query',
+      )
+    }
+    expect(await callContentSources(source, 'files', ['local:casc', '', { limit: 1 }])).toBeUndefined()
+  })
+
   it('forwards only a well-formed provider-owned local reveal target', async () => {
     const configured = {
       ...source,

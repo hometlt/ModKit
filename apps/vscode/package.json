@@ -48,6 +48,7 @@
   "description": "%extension.description%",
   "publisher": "modkit",
   "engines": { "vscode": "^1.125.0" },
+  "enabledApiProposals": ["fileSearchProvider", "textSearchProvider"],
   "main": "./dist-app/extension.cjs",
   "categories": ["Other"],
   "contributes": {
