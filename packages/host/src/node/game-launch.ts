@@ -407,6 +407,8 @@ export interface WatchGameLaunchLogsRequest {
   readonly plan: GameLaunchPlan
   /** The user's documents folder; `~/Documents` when absent. */
   readonly documentsDirectory?: string
+  /** The per-user local application data folder; `%LOCALAPPDATA%` (or `~/AppData/Local`) when absent. */
+  readonly localAppDataDirectory?: string
   /** Read one new log file (the game's planner, through `interpretGameLaunchLog`). */
   readonly interpret: (fileName: string, text: string) => Promise<GameLaunchLogReport>
   readonly onReport: (fileName: string, report: GameLaunchLogReport) => void | Promise<void>
@@ -439,7 +441,12 @@ export async function watchGameLaunchLogs(
 ): Promise<GameLaunchLogWatch | undefined> {
   const logs = request.plan.logs
   if (logs === undefined) return undefined
-  const base = request.documentsDirectory?.trim() || join(homedir(), 'Documents')
+  const base =
+    logs.base === 'user-local-app-data'
+      ? request.localAppDataDirectory?.trim() ||
+        process.env['LOCALAPPDATA'] ||
+        join(homedir(), 'AppData', 'Local')
+      : request.documentsDirectory?.trim() || join(homedir(), 'Documents')
   const directory = resolve(base, logs.relativePath)
   if (!containedBy(resolve(base), directory)) return undefined
   const expressions = logs.patterns.map(patternExpression)

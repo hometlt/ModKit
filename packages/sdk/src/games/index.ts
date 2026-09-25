@@ -79,10 +79,11 @@ export interface GameLaunchPlanRequest {
 
 /**
  * Where a launched game writes logs the planner can read back: a folder below a base the host
- * knows (the user's documents folder), and the file names worth reading (`*` matches any run).
+ * knows (the user's documents folder, or the per-user local application data folder —
+ * `%LOCALAPPDATA%` on Windows), and the file names worth reading (`*` matches any run).
  */
 export interface GameLaunchLogLocation {
-  readonly base: 'user-documents'
+  readonly base: 'user-documents' | 'user-local-app-data'
   readonly relativePath: string
   readonly patterns: readonly string[]
 }

@@ -573,14 +573,14 @@ function validProcessNames(value: unknown): boolean {
   )
 }
 
-/** A folder below the user's documents and plain file-name patterns (`*` only). */
+/** A folder below a known per-user base and plain file-name patterns (`*` only). */
 function validLogLocation(value: unknown): boolean {
   if (value === undefined) return true
   const record = recordOf(value)
   const patterns = record?.['patterns']
   return (
     record !== undefined &&
-    record['base'] === 'user-documents' &&
+    (record['base'] === 'user-documents' || record['base'] === 'user-local-app-data') &&
     validRelativeProcessPath(record['relativePath'], false) &&
     Array.isArray(patterns) &&
     patterns.length > 0 &&

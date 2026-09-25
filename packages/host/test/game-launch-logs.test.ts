@@ -51,6 +51,23 @@ describe('watching where a launched game logs', () => {
     watch?.dispose()
   })
 
+  it('watches below the local application data folder when the plan names that base', async () => {
+    const localAppData = join(documents, 'LocalAppData')
+    const folder = join(localAppData, 'Game', 'logs')
+    await mkdir(folder, { recursive: true })
+    const watch = await watchGameLaunchLogs({
+      plan: {
+        logs: { base: 'user-local-app-data', relativePath: 'Game/logs', patterns: ['*.log'] },
+      } as unknown as GameLaunchPlan,
+      documentsDirectory: documents,
+      localAppDataDirectory: localAppData,
+      interpret: async () => ({ diagnostics: [], final: true }),
+      onReport: () => undefined,
+    })
+    expect(watch?.directory).toBe(folder)
+    watch?.dispose()
+  })
+
   it('watches nothing when the plan logs nowhere or the folder is missing', async () => {
     const options = { interpret: async () => ({ diagnostics: [], final: true }), onReport: () => undefined }
     expect(await watchGameLaunchLogs({ plan: {} as GameLaunchPlan, ...options })).toBeUndefined()
