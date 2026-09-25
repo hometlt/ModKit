@@ -33,6 +33,7 @@ import {
 import {
   createModkit,
   createPathSubjectOpener,
+  DEFAULT_SUBJECT_OPEN_BUDGET,
   loadExtensionDirectory,
 } from '@modkit/host/node'
 import { sceneModule } from '@modkit/scene/module'
@@ -43,7 +44,21 @@ import type { JsonValue } from '@modkit/sdk'
 
 export const RUN_USAGE =
   'usage: modkit run <command> <file> --ext <dir> [--ext <dir>...] [--entry <path>] ' +
-  '[--target <id>] [--operation <id>] [--input <json-file>] [--commit] [--out <file>] [--trust] [--format text|json|protocol-json]\n'
+  '[--target <id>] [--operation <id>] [--input <json-file>] [--commit] [--out <file>] ' +
+  '[--max-input-bytes <n|nKiB|nMiB|nGiB>] [--trust] [--format text|json|protocol-json]\n'
+
+/**
+ * A `--max-input-bytes` value: bytes, or a whole number of KiB, MiB or GiB (`512MiB`, `4GiB`).
+ * It bounds what one open materializes in memory — one read, one entry — not the file's size;
+ * a codec's own manifest budget still caps it.
+ */
+export function parseByteSize(text: string | undefined): bigint | undefined {
+  const match = /^(\d+)(KiB|MiB|GiB)?$/u.exec(text ?? '')
+  if (match === null) return undefined
+  const unit = { KiB: 1n << 10n, MiB: 1n << 20n, GiB: 1n << 30n }[match[2] ?? ''] ?? 1n
+  const bytes = BigInt(match[1] as string) * unit
+  return bytes > 0n ? bytes : undefined
+}
 
 export type RunOutputFormat = 'text' | 'json' | 'protocol-json'
 
@@ -58,6 +73,8 @@ export interface RunArguments {
   readonly inputFile?: string
   /** `subject.edit` only: apply the plan through the host commit coordinator. */
   readonly commit?: boolean
+  /** Raises the open budget's `maxInputBytes` above the CLI default (not for `subject.edit`). */
+  readonly maxInputBytes?: bigint
   readonly trust: boolean
   readonly format: RunOutputFormat
 }
@@ -84,6 +101,7 @@ export function parseRunArguments(
   let out: string | undefined
   let operation: string | undefined
   let inputFile: string | undefined
+  let maxInputBytes: bigint | undefined
   let trust = false
   let commit = false
   let format: RunOutputFormat = 'text'
@@ -118,6 +136,10 @@ export function parseRunArguments(
       out = value(index + 1)
       if (out === undefined) return undefined
       index += 1
+    } else if (argument === '--max-input-bytes') {
+      maxInputBytes = parseByteSize(value(index + 1))
+      if (maxInputBytes === undefined) return undefined
+      index += 1
     } else if (argument === '--format') {
       const next = value(index + 1)
       if (next !== 'text' && next !== 'json' && next !== 'protocol-json') return undefined
@@ -137,6 +159,8 @@ export function parseRunArguments(
   )
     return undefined
   if (commit && command !== SUBJECT_EDIT_COMMAND) return undefined
+  // `subject.edit` opens through its own editing host; a budget flag there would be silently ignored.
+  if (maxInputBytes !== undefined && command === SUBJECT_EDIT_COMMAND) return undefined
   return {
     command,
     file: target,
@@ -147,6 +171,7 @@ export function parseRunArguments(
     ...(operation === undefined ? {} : { operation }),
     ...(inputFile === undefined ? {} : { inputFile }),
     ...(commit ? { commit } : {}),
+    ...(maxInputBytes === undefined ? {} : { maxInputBytes }),
     trust,
     format,
   }
@@ -274,6 +299,11 @@ export async function runCommand(
       // beside it. Nothing is discovered, which is the CLI profile's own limit (§4.1).
       roots: [dirname(file)],
       grant: { id: 'modkit-cli', classes: ['read-source'] },
+      ...(arguments_.maxInputBytes === undefined
+        ? {}
+        : {
+            budget: { ...DEFAULT_SUBJECT_OPEN_BUDGET, maxInputBytes: arguments_.maxInputBytes },
+          }),
     })
     const input: CommandInput = {
       subject: file,

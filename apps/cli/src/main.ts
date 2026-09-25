@@ -30,18 +30,19 @@ import {
   type Inventory,
   type OpenSubjectResult,
 } from '@modkit/host'
-import { loadExtensionDirectory, openPathArtifactSource } from '@modkit/host/node'
+import {
+  DEFAULT_SUBJECT_OPEN_BUDGET,
+  loadExtensionDirectory,
+  openPathArtifactSource,
+} from '@modkit/host/node'
 import {
   createModkitCliComposition,
   createModkitCliSubjectServices,
   createModkitCliTopology,
 } from './profile.js'
-import { parseRunArguments, runCommand } from './commands.js'
+import { parseByteSize, parseRunArguments, runCommand } from './commands.js'
 import { parseProjectValidationArguments, validateProject } from './project-validation.js'
-import {
-  parseServiceOperationArguments,
-  runServiceOperationCommand,
-} from './service-operations.js'
+import { parseServiceOperationArguments, runServiceOperationCommand } from './service-operations.js'
 
 export {
   createModkitCliComposition,
@@ -50,7 +51,7 @@ export {
 } from './profile.js'
 
 const USAGE =
-  'usage: modkit validate <dir> [--json] | modkit explain <fixture.json> [--json] | modkit host-profile [--json] | modkit create codec <dir> --id <qualified-id> | modkit open <file> --ext <dir> [--ext <dir>...] [--intent inspect|full] [--trust] [--json] | modkit commands [--json|--protocol-json] | modkit operations --ext <dir> [--permission <class>...] [--trust] [--no-activate] [--format text|json|protocol-json] | modkit invoke <operation-id> --ext <dir> --input <json-file> [--permission <class>...] [--allow-effectful] [--trust] [--format text|json|protocol-json] | modkit run <command> <file> --ext <dir> [--ext <dir>...] [--entry <path>] [--target <id>] [--operation <id>] [--input <json-file>] [--commit] [--out <file>] [--trust] [--format text|json|protocol-json] | modkit project.validate <dir> --ext <dir> [--ext <dir>...] [--trust] [--format text|json|protocol-json]\n'
+  'usage: modkit validate <dir> [--json] | modkit explain <fixture.json> [--json] | modkit host-profile [--json] | modkit create codec <dir> --id <qualified-id> | modkit open <file> --ext <dir> [--ext <dir>...] [--intent inspect|full] [--max-input-bytes <n|nKiB|nMiB|nGiB>] [--trust] [--json] | modkit commands [--json|--protocol-json] | modkit operations --ext <dir> [--permission <class>...] [--trust] [--no-activate] [--format text|json|protocol-json] | modkit invoke <operation-id> --ext <dir> --input <json-file> [--permission <class>...] [--allow-effectful] [--trust] [--format text|json|protocol-json] | modkit run <command> <file> --ext <dir> [--ext <dir>...] [--entry <path>] [--target <id>] [--operation <id>] [--input <json-file>] [--commit] [--out <file>] [--max-input-bytes <n|nKiB|nMiB|nGiB>] [--trust] [--format text|json|protocol-json] | modkit project.validate <dir> --ext <dir> [--ext <dir>...] [--trust] [--format text|json|protocol-json]\n'
 
 type CliOpenIntent = Exclude<OpenIntent, 'probe'>
 const OPEN_INTENTS: readonly CliOpenIntent[] = ['inspect', 'full']
@@ -63,6 +64,7 @@ interface OpenArguments {
   readonly file: string
   readonly roots: readonly string[]
   readonly intent: CliOpenIntent
+  readonly maxInputBytes?: bigint
   readonly trust: boolean
   readonly json: boolean
 }
@@ -70,6 +72,7 @@ interface OpenArguments {
 function parseOpenArguments(target: string, rest: readonly string[]): OpenArguments | undefined {
   const roots: string[] = []
   let intent: CliOpenIntent = 'full'
+  let maxInputBytes: bigint | undefined
   let trust = false
   let json = false
   for (let index = 0; index < rest.length; index += 1) {
@@ -85,12 +88,23 @@ function parseOpenArguments(target: string, rest: readonly string[]): OpenArgume
       if (known === undefined) return undefined
       intent = known
       index += 1
+    } else if (argument === '--max-input-bytes') {
+      maxInputBytes = parseByteSize(rest[index + 1])
+      if (maxInputBytes === undefined) return undefined
+      index += 1
     } else if (argument === '--trust') trust = true
     else if (argument === '--json') json = true
     else return undefined
   }
   if (roots.length === 0) return undefined
-  return { file: target, roots, intent, trust, json }
+  return {
+    file: target,
+    roots,
+    intent,
+    ...(maxInputBytes === undefined ? {} : { maxInputBytes }),
+    trust,
+    json,
+  }
 }
 
 function renderOpen(result: OpenSubjectResult, file: string, json: boolean): string {
@@ -187,12 +201,10 @@ async function openCommand(arguments_: OpenArguments): Promise<number> {
       intent: arguments_.intent,
       grant: { id: `cli:${randomUUID()}`, classes: ['read-source'] },
       budget: {
-        maxInputBytes: BigInt(64 * 1024 * 1024),
-        maxDepth: 256,
-        maxNodes: 1_000_000,
-        maxScalarBytes: 64 * 1024 * 1024,
-        maxDiagnostics: 10_000,
-        deadlineMs: 30_000,
+        ...DEFAULT_SUBJECT_OPEN_BUDGET,
+        ...(arguments_.maxInputBytes === undefined
+          ? {}
+          : { maxInputBytes: arguments_.maxInputBytes }),
       },
     })
     try {
@@ -339,7 +351,9 @@ async function main(argv: readonly string[]): Promise<number> {
     const parsed = parseServiceOperationArguments(
       command === 'operations' ? 'catalog' : 'invoke',
       command === 'invoke' ? target : undefined,
-      command === 'operations' ? [target, ...rest].filter((item): item is string => item !== undefined) : rest,
+      command === 'operations'
+        ? [target, ...rest].filter((item): item is string => item !== undefined)
+        : rest,
     )
     if (parsed === undefined) {
       process.stderr.write(USAGE)
