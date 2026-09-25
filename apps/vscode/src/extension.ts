@@ -2638,8 +2638,8 @@ async function activateModkit(
     selectedSources.find(item => item.gameId === 'blizzard/starcraft-2')?.installPath
   /*
    * ponytail: StarCraft II's extension does not declare `modkit.contentSources` yet, so its module
-   * is still found by path and handed over as the one configuration — which keeps every other
-   * extension's declared sources out of the window. Delete this once blizzard declares it; the
+   * is still found by path and handed over as a configuration that stands in for that extension
+   * (`extension`), beside every other declared module. Delete this once blizzard declares it; the
    * installation then reaches the module through `moduleOptions`.
    */
   const automaticContentSourceConfig = (storage: string): string | undefined => {
@@ -2673,6 +2673,8 @@ async function activateModkit(
         `${JSON.stringify(
           {
             module,
+            // Stands in for StarCraft II only; other extensions' declared sources still compose.
+            extension: 'blizzard/starcraft2',
             options: {
               ...(installationDirectory === undefined ? {} : { installationDirectory }),
               // With a state directory the provider can also offer the public Battle.net
