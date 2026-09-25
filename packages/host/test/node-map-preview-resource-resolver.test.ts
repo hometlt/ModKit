@@ -548,6 +548,24 @@ describe('Node game-installation map-preview resource resolver', () => {
         expect.objectContaining({ code: 'x3.host/map-preview-installation-ambiguous' }),
       ]),
     })
+
+    // The installation the user configured is their choice, not an ambiguity.
+    const configuredResolver = createNodeMapPreviewResourcePlanResolver({
+      installationRetentionMs: 0,
+      configuredPaths: { [GAME_ID]: [root] },
+      subjects: { open: vi.fn() } as unknown as Pick<SubjectServices, 'open'>,
+    })
+    mocks.discover.mockResolvedValueOnce({
+      state: 'discovered',
+      result: discovery(root, { secondRoot: second }),
+      diagnostics: [],
+    })
+    const chosen = await configuredResolver.resolve(
+      await requestFixture(plan(), originalPath, original.session),
+    )
+    expect(
+      (chosen.diagnostics ?? []).some(item => item.code === 'x3.host/map-preview-installation-ambiguous'),
+    ).toBe(false)
   })
 
   it('refuses two existing exact archive alternatives', async () => {

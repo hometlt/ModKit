@@ -593,14 +593,25 @@ export function createNodeMapPreviewResourcePlanResolver(
           findings,
         )
       }
-      if (discovery.result.installations.length > 1) {
+      // A configured path is the user's choice: among confirmed installations, one they named wins.
+      // Ambiguity remains only when several are configured, or none is and several were found.
+      const samePath = (left: string, right: string) =>
+        process.platform === 'win32'
+          ? resolve(left).toLowerCase() === resolve(right).toLowerCase()
+          : resolve(left) === resolve(right)
+      const configured = options.configuredPaths?.[request.workspace.gameId] ?? []
+      const chosen = discovery.result.installations.filter(installation =>
+        configured.some(path => samePath(path, installation.installPath)),
+      )
+      const candidates = chosen.length > 0 ? chosen : discovery.result.installations
+      if (candidates.length > 1) {
         return fail(
           'x3.host/map-preview-installation-ambiguous',
-          `${discovery.result.installations.length} confirmed installations were found; choose one in settings`,
+          `${candidates.length} confirmed installations were found; choose one in settings`,
           findings,
         )
       }
-      const installation = discovery.result.installations[0] as GameInstallation
+      const installation = candidates[0] as GameInstallation
 
       const descriptor = await request.original.descriptor()
       if (
