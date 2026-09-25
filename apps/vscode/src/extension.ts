@@ -31,7 +31,7 @@ import {
 import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import * as vscode from 'vscode'
-import { loadContentSources, callContentSources } from '@modkit/vfs/content-sources/node'
+import { callContentSources } from '@modkit/vfs/content-sources/node'
 import { LoadedModResourceSessions } from '@modkit/host/mods'
 import {
   type ContentSourceLocalPath,
@@ -116,6 +116,7 @@ import {
   createNodeMapPreviewResourcePlanResolver,
   flushArtifactDigestCache,
   launchNodeGameResource,
+  resolveContentSources,
   runningGameProcesses,
   stopGameProcesses,
   useArtifactDigestCache,
@@ -2615,24 +2616,34 @@ async function activateModkit(
   context.subscriptions.push(containerChanges)
   // The same Explorer accepts local containers and remote VFS roots. This adapter owns no login protocol.
   let contentSources: Promise<ContentSources | undefined> | undefined
-  const automaticContentSourceConfig = (storage: string): string | undefined => {
-    const roots = [
-      ...managedExtensionState.roots
-        .filter(item => item.expectedId === 'blizzard/starcraft2')
-        .map(item => item.root),
-      ...localExtensionCandidates.flatMap(item =>
-        item.id === 'blizzard/starcraft2' && item.root !== undefined ? [item.root] : [],
-      ),
+  /** Every extension root of this window once, for the content-source modules they declare. */
+  const extensionRootPaths = (): string[] => {
+    const seen = new Set<string>()
+    return [
+      ...managedExtensionState.roots.map(item => item.root),
+      ...localExtensionCandidates.flatMap(item => (item.root === undefined ? [] : [item.root])),
       ...configuredExtensionRoots(rawConfiguredExtensions, path => resolve(path)).roots.map(
         item => item.root,
       ),
-    ]
-    const checked = new Set<string>()
-    for (const root of roots) {
+    ].flatMap(root => {
       const absolute = resolve(root)
       const key = process.platform === 'win32' ? absolute.toLowerCase() : absolute
-      if (checked.has(key)) continue
-      checked.add(key)
+      if (seen.has(key)) return []
+      seen.add(key)
+      return [absolute]
+    })
+  }
+  /** The StarCraft II installation the user chose, which its content sources read. */
+  const selectedStarcraft2 = (): string | undefined =>
+    selectedSources.find(item => item.gameId === 'blizzard/starcraft-2')?.installPath
+  /*
+   * ponytail: StarCraft II's extension does not declare `modkit.contentSources` yet, so its module
+   * is still found by path and handed over as the one configuration — which keeps every other
+   * extension's declared sources out of the window. Delete this once blizzard declares it; the
+   * installation then reaches the module through `moduleOptions`.
+   */
+  const automaticContentSourceConfig = (storage: string): string | undefined => {
+    for (const absolute of extensionRootPaths()) {
       const declaration = join(absolute, 'package.json')
       const module = join(
         absolute,
@@ -2656,9 +2667,7 @@ async function activateModkit(
       }
       mkdirSync(storage, { recursive: true })
       const generated = join(storage, 'local-provider.generated.json')
-      const installationDirectory = selectedSources.find(
-        item => item.gameId === 'blizzard/starcraft-2',
-      )?.installPath
+      const installationDirectory = selectedStarcraft2()
       writeFileSync(
         generated,
         `${JSON.stringify(
@@ -2701,10 +2710,18 @@ async function activateModkit(
       process.env['MODKIT_CONTENT_SOURCE_CONFIG'] ??
       configuredPath ??
       (existsSync(defaultConfig) ? defaultConfig : automaticContentSourceConfig(storage))
-    contentSources ??= loadContentSources(configured, storage)
+    contentSources ??= resolveContentSources({
+      extensionRoots: extensionRootPaths(),
+      ...(configured === undefined ? {} : { configPath: configured }),
+      storage,
+      moduleOptions: extension => {
+        const installationDirectory =
+          extension === 'blizzard/starcraft2' ? selectedStarcraft2() : undefined
+        return installationDirectory === undefined ? undefined : { installationDirectory }
+      },
+    })
     const source = await contentSources
-    if (!source)
-      throw new Error('Battle.net source runtime is not configured for this installation')
+    if (!source) throw new Error('No extension of this window offers content sources')
     return source
   }
   const sourceChanges = new vscode.EventEmitter<vscode.FileChangeEvent[]>()
