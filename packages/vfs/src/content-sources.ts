@@ -10,6 +10,13 @@ export interface ContentSourceRoot {
   readonly label: string
   readonly region: string
   readonly kind: 'mine' | 'public' | 'local'
+  /**
+   * The installed game whose storage this root reads (its absolute directory), when it reads one
+   * — an installation's CASC, say. A client about to open that directory as a container opens
+   * this root instead: the storage is then indexed and held once, by the source, not a second
+   * time by a container codec.
+   */
+  readonly storageOf?: string
 }
 export interface ContentSourceSnapshot {
   readonly label: string

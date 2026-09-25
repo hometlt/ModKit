@@ -154,6 +154,10 @@
       "types": "./dist/compression/bounded.d.ts",
       "default": "./dist/compression/bounded.js"
     },
+    "./compression/inflate": {
+      "types": "./dist/compression/inflate.d.ts",
+      "default": "./dist/compression/inflate.js"
+    },
     "./checksum": {
       "types": "./dist/checksum/index.d.ts",
       "default": "./dist/checksum/index.js"

@@ -218,6 +218,14 @@ const workerBuild = await build({
       'compression',
       'bounded.js',
     ),
+    'vendor/codec-kit/compression/inflate': join(
+      repoRoot,
+      'packages',
+      'codec-kit',
+      'dist',
+      'compression',
+      'inflate.js',
+    ),
     'vendor/codec-kit/raster/index': join(
       repoRoot,
       'packages',

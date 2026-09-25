@@ -3050,6 +3050,16 @@ async function activateModkit(
           }
     },
   }
+  /** The content-source root that reads `directory`'s storage (`storageOf`), if one does. */
+  const sourceServingInstallation = async (directory: string) => {
+    const snapshot = await requireContentSources()
+      .then(sources => sources.snapshot())
+      .catch(() => undefined)
+    const wanted = normalizedSourcePath(directory)
+    return snapshot?.roots.find(
+      root => root.storageOf !== undefined && normalizedSourcePath(root.storageOf) === wanted,
+    )
+  }
   const openContentSourceRoot = async (source: {
     readonly id: string
     readonly label: string
@@ -4258,6 +4268,10 @@ async function activateModkit(
             throw new TypeError('A selected game installation must be provided')
           }
           try {
+            // A content source that already reads this installation's storage answers for it:
+            // mounting it as a container would index and hold the same storage a second time.
+            const served = await sourceServingInstallation(row.uri)
+            if (served !== undefined) return await openContentSourceRoot(served)
             return await openContainerPath(row.uri, row.label)
           } catch (error) {
             const message = error instanceof Error ? error.message : String(error)
