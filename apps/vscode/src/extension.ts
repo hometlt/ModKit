@@ -7489,10 +7489,7 @@ async function activateModkit(
     if (loadedSessions === undefined || loadedSessionSource !== source) {
       const previous = loadedSessions
       loadedSessionSource = source
-      loadedSessions = Promise.resolve(new LoadedModResourceSessions(
-        source,
-        path => /\.sc2(?:mod|map|campaign)$/iu.test(path),
-      ))
+      loadedSessions = Promise.resolve(new LoadedModResourceSessions(source))
       await previous?.then(sessions => sessions.dispose())
     }
     return loadedSessions
