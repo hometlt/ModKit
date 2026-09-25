@@ -4,6 +4,7 @@ import {
   gameTemplateTextRuns,
   isGameTemplateDisplayItem,
   isGameTemplatePreviewResult,
+  isGameTemplateTextRun,
 } from '../src/templates/index.js'
 
 describe('game template preview contract', () => {
@@ -68,6 +69,14 @@ describe('game template display items', () => {
     // A glyph height is the producer's, in template units, and never zero or negative.
     expect(isGameTemplateDisplayItem({ ...box, text: [{ text: 'Title', size: 24 }] })).toBe(true)
     expect(isGameTemplateDisplayItem({ ...box, text: [{ text: 'Title', size: 0 }] })).toBe(false)
+  })
+
+  it('accepts an inline image run only when it draws no text, and an unresolved run', () => {
+    expect(isGameTemplateTextRun({ text: '', asset: 'Assets/Icons/Mineral.dds' })).toBe(true)
+    expect(isGameTemplateTextRun({ text: 'Mineral', asset: 'Assets/Icons/Mineral.dds' })).toBe(false)
+    expect(isGameTemplateTextRun({ text: '', asset: 7 })).toBe(false)
+    expect(isGameTemplateTextRun({ text: '?', unresolved: 'no catalog' })).toBe(true)
+    expect(isGameTemplateTextRun({ text: '?', unresolved: true })).toBe(false)
   })
 
   it('reads a plain string as one unstyled run', () => {

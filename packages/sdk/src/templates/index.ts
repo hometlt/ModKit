@@ -70,6 +70,16 @@ export interface GameTemplateTextRun {
   readonly underline?: boolean
   /** Glyph height in the template's own units, when the producer's style sheet says one. */
   readonly size?: number
+  /**
+   * An inline image in place of text: a logical id, like `GameTemplateDisplayItem.asset`, that only
+   * the host turns into pixels. Such a run draws nothing else, so its `text` is empty.
+   */
+  readonly asset?: string
+  /**
+   * Why the producer could not resolve this run — a catalog reference with no catalog at hand, say.
+   * `text` is what it shows instead; a viewer marks the run rather than passing it off as resolved.
+   */
+  readonly unresolved?: string
 }
 
 /**
@@ -102,7 +112,8 @@ const finite = (value: unknown): value is number =>
 const optionalBoolean = (value: unknown): boolean =>
   value === undefined || typeof value === 'boolean'
 
-function isTextRun(value: unknown): value is GameTemplateTextRun {
+/** Runtime guard for one run, for surfaces that receive runs outside a display item. */
+export function isGameTemplateTextRun(value: unknown): value is GameTemplateTextRun {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) return false
   const run = value as Record<string, unknown>
   return (
@@ -111,7 +122,9 @@ function isTextRun(value: unknown): value is GameTemplateTextRun {
     optionalBoolean(run['bold']) &&
     optionalBoolean(run['italic']) &&
     optionalBoolean(run['underline']) &&
-    (run['size'] === undefined || (finite(run['size']) && run['size'] > 0))
+    (run['size'] === undefined || (finite(run['size']) && run['size'] > 0)) &&
+    (run['asset'] === undefined || (typeof run['asset'] === 'string' && run['text'] === '')) &&
+    (run['unresolved'] === undefined || typeof run['unresolved'] === 'string')
   )
 }
 
@@ -134,7 +147,7 @@ export function isGameTemplateDisplayItem(value: unknown): value is GameTemplate
     optionalBoolean(item['visible']) &&
     (text === undefined ||
       typeof text === 'string' ||
-      (Array.isArray(text) && text.every(isTextRun))) &&
+      (Array.isArray(text) && text.every(isGameTemplateTextRun))) &&
     (item['asset'] === undefined || typeof item['asset'] === 'string') &&
     (item['frameType'] === undefined || typeof item['frameType'] === 'string')
   )
