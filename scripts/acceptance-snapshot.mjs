@@ -18,12 +18,23 @@
  */
 import { spawnSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { existsSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, rmSync,
+  symlinkSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const coding = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const snapshotRoot = join(coding, '.acceptance')
+// pnpm's workspace links in sibling snapshots resolve through `.acceptance/modkit-core`.
+// Keep that one link pointed at the shared, already-built core rather than silently falling
+// back to live extension roots when TypeScript cannot resolve @modkit/* packages.
+mkdirSync(snapshotRoot, { recursive: true })
+const coreRoot = join(coding, 'modkit-core')
+const coreLink = join(snapshotRoot, 'modkit-core')
+if (existsSync(coreLink)) {
+  if (realpathSync(coreLink).toLowerCase() !== realpathSync(coreRoot).toLowerCase())
+    throw new Error(`${coreLink} must point at ${coreRoot}`)
+} else symlinkSync(coreRoot, coreLink, process.platform === 'win32' ? 'junction' : 'dir')
 const REPOSITORIES = [
   'modkit-extensions-blizzard',
   'modkit-extensions-warzone',
