@@ -2627,9 +2627,9 @@ async function activateModkit(
       ...managedExtensionState.roots
         .filter(item => item.expectedId === 'blizzard/starcraft2')
         .map(item => item.root),
-      ...localExtensionCandidates
-        .filter(item => item.id === 'blizzard/starcraft2' && item.root !== undefined)
-        .map(item => item.root!),
+      ...localExtensionCandidates.flatMap(item =>
+        item.id === 'blizzard/starcraft2' && item.root !== undefined ? [item.root] : [],
+      ),
       ...configuredExtensionRoots(rawConfiguredExtensions, path => resolve(path)).roots.map(
         item => item.root,
       ),
@@ -3950,8 +3950,10 @@ async function activateModkit(
           localizer.text('vscode.sources.forget'),
         )
         if (confirmed === undefined) return false
-        const { [sourceId]: _dropped, ...rest } = catalogues()
-        await context.globalState.update(CATALOGUE_KEY, rest)
+        await context.globalState.update(
+          CATALOGUE_KEY,
+          Object.fromEntries(Object.entries(catalogues()).filter(([id]) => id !== sourceId)),
+        )
         await context.globalState.update(
           BATTLENET_CONNECTIONS_KEY,
           knownConnections().filter(item => item.accountId !== remembered.accountId),
@@ -7706,9 +7708,8 @@ async function activateModkit(
     ]
     const files: { readonly uri: vscode.Uri; readonly logicalId: string }[] = []
     let complete = true
-    while (queue.length > 0) {
+    for (let directory = queue.shift(); directory !== undefined; directory = queue.shift()) {
       signal?.throwIfAborted()
-      const directory = queue.shift()!
       const entries = [...(await vscode.workspace.fs.readDirectory(directory.uri))].sort(
         ([left], [right]) => left.localeCompare(right),
       )
@@ -8316,7 +8317,8 @@ async function activateModkit(
       }
       let projected: Awaited<ReturnType<typeof resolveContentLanguageSources>> | undefined
       try {
-        const target = modContextTargetOf(scope?.path ?? loose!)
+        const targetPath = scope?.path ?? loose
+        const target = targetPath === undefined ? undefined : modContextTargetOf(targetPath)
         projected = await resolveContentLanguageSources({
           contentSources: await requireContentSources(),
           routes: languageRoutes,
@@ -8347,11 +8349,10 @@ async function activateModkit(
         }
       }
       const local = workspaceLanguageDocumentSource(scope, projected?.dependenciesComplete === true)
-      const composed = composeLanguageDocumentSources([
-        ...(projected?.sources ?? []).map(withEditorUris),
-        local,
-      ])
-      const snapshot = await composed!.snapshot(request)
+      const composed =
+        composeLanguageDocumentSources([...(projected?.sources ?? []).map(withEditorUris), local]) ??
+        local
+      const snapshot = await composed.snapshot(request)
       rememberLanguageSnapshot(snapshotKey, snapshot)
       log(
         `[language-context] workspace snapshot for ${request.document.uri}: accepted=${request.workspaceLanguageIds.join(',')} open=${request.workspaceDocuments.map(document => `${document.languageId}:${document.uri}`).join(',')} additional=${snapshot.documents.map(document => `${document.languageId}:${document.uri}`).join(',')} origins=${snapshot.workspaceContext?.documentOrigins.map(origin => `${origin.logicalId}:${origin.uri}`).join(',') ?? ''}`,
