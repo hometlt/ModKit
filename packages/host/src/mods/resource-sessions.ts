@@ -48,10 +48,7 @@ export class LoadedModResourceSessions {
   private readonly pending = new Map<string, Promise<boolean>>()
   private disposed = false
 
-  constructor(
-    private readonly sources: ContentSources,
-    private readonly isPackage: (path: string) => boolean,
-  ) {}
+  constructor(private readonly sources: ContentSources) {}
 
   list(): readonly { id: string; label: string; contextId: string }[] {
     return [...this.mods.values()].map(mod => ({ id: mod.id, label: mod.label, contextId: mod.context.contextId }))
@@ -65,7 +62,7 @@ export class LoadedModResourceSessions {
       const context = await open({ schemaVersion: 1, target, ...(baseMods ? { baseMods } : {}) })
       let changed = false
       for (const layer of context.layers.slice(0, -1)) {
-        if (!this.isPackage(layer.sourcePath)) continue
+        if (layer.kind !== 'package') continue
         const id = `${context.gameId}|${layer.sourceId}|${layer.sourcePath.toLowerCase()}`
         if (this.mods.has(id)) continue
         const dependencyTarget: ModContextTarget = layer.sourceId === 'host'
@@ -87,7 +84,7 @@ export class LoadedModResourceSessions {
 
   private async register(context: ModContext, target: ModContextTarget, baseMods?: readonly string[], opened = true): Promise<boolean> {
     const primary = context.layers.at(-1)
-    if (primary === undefined || !this.isPackage(primary.sourcePath)) {
+    if (primary?.kind !== 'package') {
       await context.dispose()
       return false
     }
@@ -117,7 +114,7 @@ export class LoadedModResourceSessions {
   /** Reopen all loaded contexts after their shared content source invalidated a package. */
   async reloadAll(): Promise<void> {
     const opened = [...this.mods.values()]
-    const replacement = new LoadedModResourceSessions(this.sources, this.isPackage)
+    const replacement = new LoadedModResourceSessions(this.sources)
     try {
       for (const mod of opened) {
         if (mod.opened) await replacement.load(mod.target, mod.baseMods)

@@ -52,7 +52,7 @@ describe.skipIf(!existsSync(installation) || !existsSync(sourcesModule))(
         }))
         const sources = await loadContentSources(config, scratch)
         if (sources === undefined) throw new Error('content sources did not load')
-        const sessions = new LoadedModResourceSessions(sources, path => /\.sc2mod$/iu.test(path))
+        const sessions = new LoadedModResourceSessions(sources)
         try {
           expect(await sessions.load({
             sourceId: 'local:casc',

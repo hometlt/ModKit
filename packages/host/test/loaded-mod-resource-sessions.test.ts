@@ -12,12 +12,12 @@ describe('loaded mod resources', () => {
       layers: [
         ...(String(typeof target === 'string' ? target : target.path).includes('Liberty')
           ? [{ id: 'core', displayName: 'Core.SC2Mod', sourceId: 'local:casc',
-              sourcePath: 'Mods/Core.SC2Mod', role: 'dependency' as const, provenance: 'implicit' as const }]
+              sourcePath: 'Mods/Core.SC2Mod', role: 'dependency' as const, provenance: 'implicit' as const, kind: 'package' as const }]
           : []),
         { id: 'primary', displayName: String(typeof target === 'string' ? target : target.path).includes('Core')
             ? 'Core.SC2Mod' : 'Liberty.SC2Mod', sourceId: 'local:casc',
           sourcePath: String(typeof target === 'string' ? target : target.path).includes('Core')
-            ? 'Mods/Core.SC2Mod' : 'Mods/Liberty.SC2Mod', role: 'primary', provenance: 'opened' },
+            ? 'Mods/Core.SC2Mod' : 'Mods/Liberty.SC2Mod', role: 'primary', provenance: 'opened', kind: 'package' },
       ],
       unresolved: [], diagnostics: [],
       files: async () => ({ items: [] }), read: async () => new Uint8Array(),
@@ -33,7 +33,7 @@ describe('loaded mod resources', () => {
       dispose: async () => { released += 1 },
     })
     const source = { openModContext: async (request: { target: ModContextTarget }) => context(request.target) } as ContentSources
-    const sessions = new LoadedModResourceSessions(source, path => /\.sc2mod$/iu.test(path))
+    const sessions = new LoadedModResourceSessions(source)
     expect(await sessions.load({ sourceId: 'local:casc', path: 'Mods/Liberty.SC2Mod/Base.SC2Data/GameData/UnitData.xml' })).toBe(true)
     expect(await sessions.load({ sourceId: 'local:casc', path: 'Mods/Liberty.SC2Mod/Base.SC2Data/TriggerLibs/Liberty.galaxy' })).toBe(false)
     expect(sessions.list()).toHaveLength(2)
@@ -55,7 +55,7 @@ describe('loaded mod resources', () => {
   it('opens a mod once when the editor and the tree ask for it at the same time', async () => {
     const opened: string[] = []
     const layer = (path: string, role: 'dependency' | 'primary') => ({ id: path, displayName: path, sourceId: 'local:casc',
-      sourcePath: path, role, provenance: role === 'primary' ? 'opened' as const : 'implicit' as const })
+      sourcePath: path, role, provenance: role === 'primary' ? 'opened' as const : 'implicit' as const, kind: 'package' as const })
     const source = { openModContext: async (request: { target: ModContextTarget }) => {
       const path = typeof request.target === 'string' ? request.target : request.target.path
       opened.push(path)
@@ -66,7 +66,7 @@ describe('loaded mod resources', () => {
         unresolved: [], diagnostics: [], files: async () => ({ items: [] }), read: async () => new Uint8Array(),
         locate: async () => undefined, dispose: async () => {} } satisfies ModContext
     } } as ContentSources
-    const sessions = new LoadedModResourceSessions(source, path => /\.sc2mod$/iu.test(path))
+    const sessions = new LoadedModResourceSessions(source)
     const target = { sourceId: 'local:casc', path: 'Mods/Liberty.SC2Mod' }
     expect(await Promise.all([sessions.load(target), sessions.load({ ...target })])).toEqual([true, true])
     expect(opened).toEqual(['Mods/Liberty.SC2Mod', 'Mods/Core.SC2Mod'])
