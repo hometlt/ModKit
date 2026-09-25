@@ -29,6 +29,8 @@ const codeCli = join(codeHome, 'bin', 'code.cmd')
 if (!existsSync(codeExe)) throw new Error(`VS Code not found at ${codeExe}`)
 
 const scenarios = JSON.parse(await readFile(scenarioFile, 'utf8'))
+// A relative `folder` is inside the workspace (the directory holding modkit-core), so moving it breaks nothing.
+for (const scenario of scenarios) scenario.folder = resolve(coreRoot, '..', scenario.folder)
 const profile = join(outDir, '.profile')
 const userData = join(profile, 'user-data')
 const extensionsDir = join(profile, 'extensions')

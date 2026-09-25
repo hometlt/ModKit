@@ -356,7 +356,7 @@
  {
   "id": "replay-tokamak",
   "title": "Реплей Tokamak-LE",
-  "folder": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/fixtures/replays",
+  "folder": "modkit-extensions-blizzard/starcraft2/test/fixtures/replays",
   "path": [
    "Tokamak-LE.SC2Replay"
   ],

@@ -19,6 +19,8 @@ const [scenarioFile, outDir] = process.argv.slice(2)
 if (scenarioFile === undefined || outDir === undefined)
   throw new Error('usage: capture-electron.mjs <scenarios.json> <out-dir>')
 const scenarios = JSON.parse(await readFile(scenarioFile, 'utf8'))
+// A relative `folder` is inside the workspace (the directory holding modkit-core), so moving it breaks nothing.
+for (const scenario of scenarios) scenario.folder = resolve(import.meta.dirname, '..', '..', '..', scenario.folder)
 await mkdir(outDir, { recursive: true })
 // A profile of our own that loads every local extension repository (the user's settings stay untouched).
 const profile = resolve(process.env.MODKIT_ELECTRON_USER_DATA_DIR ?? join(outDir, '.profile'))

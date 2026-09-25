@@ -93,7 +93,7 @@ for (const repository of REPOSITORIES) {
   try {
     if (!existsSync(target)) {
       git(live, 'worktree', 'prune')
-      git(live, 'worktree', 'add', '--detach', target, head)
+      git(live, 'worktree', 'add', '--relative-paths', '--detach', target, head)
     } else if (git(target, 'rev-parse', 'HEAD') !== head) {
       // Only this script writes here; build outputs are untracked and survive the move.
       git(target, 'checkout', '--detach', '--force', head)
