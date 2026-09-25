@@ -162,6 +162,10 @@
       "types": "./dist/compression/lz4.d.ts",
       "default": "./dist/compression/lz4.js"
     },
+    "./compression/refpack": {
+      "types": "./dist/compression/refpack.d.ts",
+      "default": "./dist/compression/refpack.js"
+    },
     "./compression/zstd": {
       "types": "./dist/compression/zstd.d.ts",
       "default": "./dist/compression/zstd.js"
