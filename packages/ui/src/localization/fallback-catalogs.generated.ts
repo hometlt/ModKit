@@ -545,6 +545,7 @@ export const PARTS_FALLBACK_MESSAGES = {
   'table.columns': 'Columns',
   'table.compare': 'Compare locales',
   'table.group': 'Key group',
+  'table.suggestions': 'Suggestions',
 } as const satisfies UiMessageCatalog
 
 export const PRIMITIVES_FILE_TREE_FALLBACK_MESSAGES = {
@@ -621,9 +622,14 @@ export const TABLE_FALLBACK_MESSAGES = {
   'card.descriptionUnavailable': 'Description is not available yet.',
   'card.loadingDescription': 'Loading description…',
   'table.stale': 'Saved. Reopen the file to make further changes.',
+  'table.suggestions': 'Suggestions',
   'viewer.nextRows': 'Next rows',
   'viewer.table': 'Table viewer',
   'viewer.tableShape': '{rows} rows, {columns} columns',
+} as const satisfies UiMessageCatalog
+
+export const TABLE_VALUE_ASSIST_FALLBACK_MESSAGES = {
+  'table.suggestions': 'Suggestions',
 } as const satisfies UiMessageCatalog
 
 export const TABLE_VARIANTS_FALLBACK_MESSAGES = {

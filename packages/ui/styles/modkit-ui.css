@@ -1804,6 +1804,46 @@
     border-radius: var(--mk-radius-md);
   }
 
+  [data-mk-part='table.assist'] {
+    margin: var(--mk-space-1) 0 0;
+    padding: 0;
+    font-size: var(--mk-font-size-sm);
+    white-space: pre-wrap;
+    list-style: none;
+  }
+
+  [data-mk-part='table.assist'] li[data-severity='error'] {
+    color: var(--mk-status-error);
+  }
+
+  [data-mk-part='table.assist'] li[data-severity='warning'] {
+    color: var(--mk-status-warn);
+  }
+
+  [data-mk-part='table.suggestions'] {
+    position: absolute;
+    z-index: 3;
+    max-height: 16em;
+    margin: 0;
+    padding: var(--mk-space-1) 0;
+    overflow-y: auto;
+    font-size: var(--mk-font-size-sm);
+    white-space: nowrap;
+    list-style: none;
+    background: var(--mk-color-raised);
+    border: 1px solid var(--mk-color-border);
+    border-radius: var(--mk-radius-md);
+  }
+
+  [data-mk-part='table.suggestions'] li {
+    padding-inline: var(--mk-space-2);
+    cursor: pointer;
+  }
+
+  [data-mk-part='table.suggestions'] li[aria-selected='true'] {
+    background: var(--mk-color-separator);
+  }
+
   [data-mk-part='table.asset'],
   [data-mk-part='table.unresolved'] {
     color: var(--mk-color-fg-muted);

@@ -1,12 +1,17 @@
 import type {
   AnyDescriptor,
+  AssetOperationId,
   CellCoord,
+  JsonValue,
   KnowledgeHit,
   Page,
   Row,
   SubjectCandidateProvider,
   TableDataSource,
+  TableValueCompletion,
+  TableValueHighlight,
   ViewerModule,
+  ViewerWorkspaceDocument,
 } from '@modkit/sdk'
 import { createToolbar, type ToolbarHandle, type ToolbarSpec } from '../toolbar/index.js'
 import {
@@ -15,10 +20,12 @@ import {
   setPart,
   defineViewerModule,
   element,
+  invokeOperation,
   setViewerText,
   unknownSourceLease,
   ViewerMountScope,
 } from '../viewer/index.js'
+import { attachValueAssist } from './value-assist.js'
 import { type FieldEditorRegistry } from '../field-editor/index.js'
 import { fieldWriteRefusal, mountFieldEditTarget, mountInlineField } from '../field-write/index.js'
 import { renderValueWithSpans } from '../spans/index.js'
@@ -163,6 +170,29 @@ export function createTableViewer(options: TableViewerOptions = {}): ViewerModul
       const committed = async (): Promise<void> => {
         const reopened = (await options.onCommitted?.(args.descriptor)) === true
         if (!reopened) stale = localizer.text('table.stale')
+      }
+      /** The documents around the subject, read once and passed to the codec's value operations. */
+      let surroundings: Promise<readonly ViewerWorkspaceDocument[] | undefined> | undefined
+      const documents = () =>
+        (surroundings ??=
+          args.workspaceDocuments === undefined
+            ? Promise.resolve(undefined)
+            : args.workspaceDocuments.read({ signal: scope.signal }).then(
+                answer => answer.documents,
+                () => undefined,
+              ))
+      /** A codec's JSON answer, or nothing when it refuses; value help is never worth an error. */
+      const answer = async <T>(
+        operation: AssetOperationId,
+        input: JsonValue,
+        signal: AbortSignal,
+      ): Promise<T | undefined> => {
+        const result = await invokeOperation(args.descriptor, args.operations, operation, input, {
+          signal,
+        })
+        return result.state === 'ok' && result.output.kind === 'json'
+          ? (result.output.value as unknown as T)
+          : undefined
       }
       let lookupRevision = 0
       let lookupController: AbortController | undefined
@@ -310,11 +340,53 @@ export function createTableViewer(options: TableViewerOptions = {}): ViewerModul
             written = value === null || value === undefined ? '' : String(value)
           },
         })
+        // A locale value gets the codec's syntax, problems and suggestions while it is typed.
+        const { highlightValue, completeValue } = shape.actions ?? {}
+        const control = cell.querySelector<HTMLInputElement | HTMLTextAreaElement>(
+          'input[type="text"], textarea',
+        )
+        const assist =
+          shape.columnInfo?.[coord.column]?.role === 'variant' &&
+          control !== null &&
+          (highlightValue !== undefined || completeValue !== undefined)
+            ? attachValueAssist(cell, control, {
+                label: localizer.text('table.suggestions'),
+                ...(highlightValue === undefined
+                  ? {}
+                  : {
+                      highlight: (text: string, signal: AbortSignal) =>
+                        answer<TableValueHighlight>(
+                          highlightValue,
+                          { column: coord.column, text },
+                          signal,
+                        ),
+                    }),
+                ...(completeValue === undefined
+                  ? {}
+                  : {
+                      complete: async (text: string, offset: number, signal: AbortSignal) => {
+                        const workspaceDocuments = await documents()
+                        return answer<TableValueCompletion>(
+                          completeValue,
+                          {
+                            row: coord.row,
+                            column: coord.column,
+                            text,
+                            offset,
+                            ...(workspaceDocuments === undefined ? {} : { workspaceDocuments }),
+                          } as unknown as JsonValue,
+                          signal,
+                        )
+                      },
+                    }),
+              })
+            : undefined
         let finished = false
         let finishing = false
         const dispose = async () => {
           if (finished) return
           finished = true
+          assist?.dispose()
           activeEdits.delete(dispose)
           cell.removeEventListener('keydown', onKey)
           delete cell.dataset['editing']
@@ -449,9 +521,7 @@ export function createTableViewer(options: TableViewerOptions = {}): ViewerModul
           ...(args.authorization === undefined ? {} : { authorization: args.authorization }),
           signal: scope.signal,
           ...(options.localizer === undefined ? {} : { localizer: options.localizer }),
-          ...(args.workspaceDocuments === undefined
-            ? {}
-            : { workspaceDocuments: args.workspaceDocuments }),
+          documents,
           ...(options.images === undefined ? {} : { images: options.images }),
           render,
           committed,

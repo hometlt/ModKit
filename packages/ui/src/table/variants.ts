@@ -19,7 +19,6 @@ import type {
   CommitCoordinator,
   EditAuthorizationPort,
   ViewerWorkspaceDocument,
-  ViewerWorkspaceDocuments,
 } from '@modkit/sdk'
 import { isGameTemplateTextRun, type GameTemplateTextRun } from '@modkit/sdk/templates'
 import type { GameTemplateImageResolver } from '../template/index.js'
@@ -75,7 +74,7 @@ export interface VariantTableArgs {
   /** The rows' own element; the controls are placed above it. */
   readonly before: HTMLElement
   /** The documents around the subject, for the codec's render operation (its style sheet, say). */
-  readonly workspaceDocuments?: ViewerWorkspaceDocuments
+  readonly documents?: () => Promise<readonly ViewerWorkspaceDocument[] | undefined>
   /** Pixels for the inline images a rendered value names. */
   readonly images?: GameTemplateImageResolver
 }
@@ -382,7 +381,6 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
   }
 
   let renderPass = 0
-  let surroundings: Promise<readonly ViewerWorkspaceDocument[] | undefined> | undefined
   /** The page's values as the game shows them, asked for in batches; a newer draw drops the answer. */
   const renderPage = async (
     drawn: readonly HTMLTableRowElement[],
@@ -401,14 +399,7 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
         if (value !== '' && cell !== undefined) cells.push({ cell, column: column.index, text: value })
       }
     })
-    surroundings ??=
-      args.workspaceDocuments === undefined
-        ? Promise.resolve(undefined)
-        : args.workspaceDocuments.read({ signal: args.signal }).then(
-            answer => answer.documents,
-            () => undefined,
-          )
-    const workspaceDocuments = await surroundings
+    const workspaceDocuments = await args.documents?.()
     for (let from = 0; from < cells.length; from += RENDER_BATCH) {
       const batch = cells.slice(from, from + RENDER_BATCH)
       const result = await invokeOperation(

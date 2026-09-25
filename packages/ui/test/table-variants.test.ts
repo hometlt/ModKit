@@ -107,6 +107,8 @@ beforeAll(async () => {
               compareVariants: 'asset.compare',
               translateVariant: 'x/strings.translate',
               renderValues: 'x/strings.render',
+              highlightValue: 'x/strings.highlight',
+              completeValue: 'x/strings.complete',
             },
             keySeparator: '/',
           }
@@ -150,6 +152,8 @@ beforeAll(async () => {
           operation('asset.compare', 'compare-locales'),
           operation('x/strings.translate', 'translate'),
           operation('x/strings.render', 'render'),
+          operation('x/strings.highlight', 'highlight'),
+          operation('x/strings.complete', 'complete'),
         ],
       }
       const operations = {
@@ -172,6 +176,41 @@ beforeAll(async () => {
                         changed: options.changed !== false,
                       },
               },
+            }
+          }
+          if (handler === 'highlight') {
+            const text = input['text'] as string
+            const open = text.lastIndexOf('<') > text.lastIndexOf('>')
+            return {
+              state: 'ok',
+              output: {
+                kind: 'json',
+                value: {
+                  spans: [{ from: 0, to: 1, kind: 'keyword' }],
+                  diagnostics: open ? [{ from: 0, to: 1, message: 'Unclosed tag' }] : [],
+                },
+              },
+            }
+          }
+          if (handler === 'complete') {
+            const text = input['text'] as string
+            const offset = input['offset'] as number
+            const items =
+              text[offset - 1] === '<'
+                ? [
+                    {
+                      label: 's',
+                      kind: 'keyword',
+                      detail: 'style',
+                      insertText: 's val="$0"/>',
+                      insertTextFormat: 'snippet',
+                    },
+                    { label: 'n/', kind: 'keyword', insertText: 'n/>' },
+                  ]
+                : []
+            return {
+              state: 'ok',
+              output: { kind: 'json', value: { from: offset, to: offset, items } },
             }
           }
           if (handler === 'render') {
@@ -474,5 +513,42 @@ describe('variant table surface', () => {
     )
     await page.click('button[aria-label="As in game"]')
     expect(await page.textContent('[data-mk-part="table.row"] td:nth-child(3)')).toBe('Alpha')
+  })
+
+  it('shows problems and suggestions while a value is typed, without saving on Enter', async () => {
+    await page.evaluate(() => (globalThis as unknown as Probe).mountTable())
+    const cell = '[data-mk-part="table.row"] td:nth-child(3)'
+    await page.dblclick(cell)
+    const field = `${cell} input`
+    await page.focus(field)
+    await page.press(field, 'End')
+    await page.keyboard.type('<')
+    const list = '[data-mk-part="table.suggestions"]:not([hidden])'
+    await page.waitForSelector(list)
+    expect(await page.$$eval(`${list} li`, items => items.map(item => item.textContent))).toEqual([
+      's — style',
+      'n/',
+    ])
+    expect(await page.textContent(`${cell} [data-mk-part="table.assist"] li`)).toBe('Unclosed tag')
+    expect(await page.getAttribute(field, 'aria-invalid')).toBe('true')
+    // Enter takes the suggestion, puts the caret where the snippet says, and saves nothing.
+    await page.keyboard.press('Enter')
+    expect(await page.inputValue(field)).toBe('Alpha<s val=""/>')
+    expect(await page.$eval(field, input => (input as HTMLInputElement).selectionStart)).toBe(13)
+    await page.waitForFunction(
+      selector => document.querySelector(selector)?.getAttribute('aria-invalid') === null,
+      field,
+    )
+    const calls = await page.evaluate(() => (globalThis as unknown as Probe).calls)
+    expect(calls).toContainEqual({
+      handler: 'complete',
+      input: { row: 0, column: 1, text: 'Alpha<', offset: 6 },
+    })
+    expect(calls.some(call => call.handler === 'edit-field')).toBe(false)
+    // With the list closed, Escape drops the edit and the cell shows what it showed before.
+    await page.keyboard.press('Escape')
+    await page.waitForFunction(selector => !document.querySelector(selector), field)
+    expect(await page.textContent(cell)).toBe('Alpha')
+    expect(await page.evaluate(() => (globalThis as unknown as Probe).commits.length)).toBe(0)
   })
 })
