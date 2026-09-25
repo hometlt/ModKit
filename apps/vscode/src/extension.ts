@@ -63,6 +63,7 @@ import {
 } from '@modkit/ui/localization'
 
 import type { CloseAnswer, WebviewChannel } from './bridge.js'
+import { ActiveModLoads } from './active-mod-loads.js'
 import {
   createA7AcceptanceReceipt,
   createModkitAcceptanceReceipt,
@@ -1647,6 +1648,8 @@ type ResourceTreeNode =
     }>
 
 interface ResourceTreeHost extends Pick<VsCodeServed, 'openTreeDataSource'> {
+  /** Why the focused document's mod did not load; the mods already loaded are still shown. */
+  readonly failure?: string
   /** A resource opens at its declaration when the node carries one. */
   navigate(subjectId: string, range?: TreeNodeFacts['range']): void
 }
@@ -1913,9 +1916,12 @@ class ResourcesView implements vscode.TreeDataProvider<ResourceTreeNode>, vscode
       try {
         const root = await lease.value.root()
         const items = await this.loadPage(lease.value, root)
-        return items.length === 0
+        const failed = served.failure === undefined
+          ? []
+          : [this.notice(this.localizer.text('vscode.resources.failed'), served.failure)]
+        return items.length === 0 && failed.length === 0
           ? [this.notice(this.localizer.text('vscode.resources.noActiveSubject'))]
-          : items
+          : [...failed, ...items]
       } finally {
         await lease.release()
       }
@@ -4253,7 +4259,7 @@ async function activateModkit(
           for (const id of roots) {
             await callContentSources(source, 'refresh', [id]).catch(() => undefined)
           }
-          activatedResourcePaths.clear()
+          forgetResourcePaths()
           await loadedSessions?.then(sessions => sessions.reloadAll())
           resourcesView.refresh()
         }
@@ -4264,7 +4270,6 @@ async function activateModkit(
       vscode.workspace.onDidChangeConfiguration(event => {
         if (!event.affectsConfiguration('modkit.contentSourceConfig')) return
         resetContentSources()
-        activatedResourcePaths.clear()
         sourcesView.refresh()
         resourcesView.refresh()
       }),
@@ -7595,56 +7600,52 @@ async function activateModkit(
   let resourcesShowChain = context.workspaceState.get<boolean>(RESOURCES_CHAIN_KEY) ?? true
   let loadedSessions: Promise<LoadedModResourceSessions> | undefined
   let loadedSessionSource: ContentSources | undefined
+  const activeModLoads = new ActiveModLoads()
+  const forgetResourcePaths = (): void => activeModLoads.forget()
   const resourceSessions = async (): Promise<LoadedModResourceSessions> => {
     const source = await requireContentSources()
     if (loadedSessions === undefined || loadedSessionSource !== source) {
       const previous = loadedSessions
       loadedSessionSource = source
       loadedSessions = Promise.resolve(new LoadedModResourceSessions(source))
+      // The new sessions start empty: every document must load its mod again.
+      forgetResourcePaths()
       await previous?.then(sessions => sessions.dispose())
     }
     return loadedSessions
   }
-  const activatedResourcePaths = new Set<string>()
   context.subscriptions.push({
     dispose: () => { void loadedSessions?.then(sessions => sessions.dispose()).catch(() => undefined) },
   })
   const discoverActiveResourceMod = async (): Promise<{
     readonly sessions?: LoadedModResourceSessions
     readonly path?: string
+    readonly failure?: string
     readonly changed: boolean
   }> => {
-    const editor = vscode.window.activeTextEditor
-    const uri = editor?.document.uri
-    const scope = uri === undefined ? undefined : await resolveLanguageScope(uri)
-    const candidate = activeSubject ?? (uri === undefined ? undefined :
-      scope?.path ??
+    const uri = vscode.window.activeTextEditor?.document.uri
+    const path = activeSubject ?? (uri === undefined ? undefined :
+      (await resolveLanguageScope(uri))?.path ??
       (uri.scheme === 'file' || uri.scheme === 'modkit-source' || uri.scheme === CONTAINER_SCHEME
         ? subjectPathOf(uri) : undefined))
-    // A loose SC2 language document may use the configured base mod. An unrelated model, source
-    // file or generic XML document must not silently load Void merely because a tab has focus.
-    const sc2Language = editor !== undefined &&
-      (editor.document.languageId === 'galaxy' || editor.document.languageId.startsWith('sc2-'))
-    const path = candidate !== undefined &&
-      ((scope !== undefined && sc2Language) || /\.sc2(?:mod|map|campaign)(?:[\\/]|$)/iu.test(candidate))
-        ? candidate : undefined
     const sessions = await resourceSessions().catch(() => undefined)
     if (sessions === undefined) return { changed: false }
-    if (path !== undefined && !activatedResourcePaths.has(path)) {
-      const target = modContextTargetOf(path)
-      if (target !== undefined) {
-        try {
-          const baseMods = baseModsSetting(subjectUriOf(path))
-          const changed = await sessions.load(target, baseMods === undefined ? undefined : baseModsFor(path, baseMods))
-          activatedResourcePaths.add(path)
-          return { sessions, path, changed }
-        } catch (error) {
-          log(`[resources] ${path}: ${error instanceof Error ? error.message : String(error)}`)
-          throw error
-        }
-      }
-    }
-    return { sessions, ...(path === undefined ? {} : { path }), changed: false }
+    const target = path === undefined ? undefined : modContextTargetOf(path)
+    if (path === undefined || target === undefined) return { sessions, changed: false }
+    const result = await activeModLoads.ensure(
+      path,
+      // Only a document inside a mod package loads that mod. A loose file, a model or any other
+      // tab that merely has focus loads nothing — the game's loader decides, not a file pattern.
+      async () => (await (await requireContentSources()).locateModPackage?.(target))?.kind === 'package',
+      async () => {
+        const baseMods = baseModsSetting(subjectUriOf(path))
+        return sessions.load(target, baseMods === undefined ? undefined : baseModsFor(path, baseMods))
+      },
+    )
+    if (result.state === 'none') return { sessions, changed: false }
+    if (result.state === 'loaded') return { sessions, path, changed: result.changed }
+    if (result.changed) log(`[resources] ${path}: ${result.failure}`)
+    return { sessions, path, failure: result.failure, changed: result.changed }
   }
   const refreshForActiveResource = (): void => {
     void discoverActiveResourceMod().then(({ changed }) => {
@@ -7652,9 +7653,10 @@ async function activateModkit(
     }).catch(error => log(`[resources] ${error instanceof Error ? error.message : String(error)}`))
   }
   loadedModResources = async () => {
-    const { sessions, path } = await discoverActiveResourceMod()
+    const { sessions, path, failure } = await discoverActiveResourceMod()
     if (sessions === undefined) return undefined
     return Object.freeze({
+      ...(failure === undefined ? {} : { failure }),
       openTreeDataSource: async () => Object.freeze({ value: sessions.tree(resourcesShowChain), release: async () => undefined }),
       navigate(subjectId: string, range?: TreeNodeFacts['range']) {
         void navigateWorkspaceResource(path ?? '', subjectId, range).catch(error =>
@@ -12526,10 +12528,15 @@ async function activateModkit(
     vscode.window.onDidChangeActiveTextEditor(refreshForActiveResource),
     vscode.workspace.onDidSaveTextDocument(document => {
       if (document.uri.scheme !== 'file') return
-      activatedResourcePaths.clear()
       void resourceSessions().then(async sessions => {
         if (sessions.list().length === 0) return
-        await (await requireContentSources()).refresh('host')
+        const source = await requireContentSources()
+        // ponytail: any saved file of a mod package reloads every loaded mod; narrow it to the mods
+        // whose chain holds the file once the host lists each loaded mod's layer sources.
+        const placement = await source.locateModPackage?.(document.uri.fsPath)
+        if (placement?.kind !== 'package') return
+        forgetResourcePaths()
+        await source.refresh('host')
         await sessions.reloadAll()
         resourcesView.refresh()
       }).catch(error => log(`[resources] reload: ${error instanceof Error ? error.message : String(error)}`))
