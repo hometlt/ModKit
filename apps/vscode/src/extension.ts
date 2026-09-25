@@ -4282,6 +4282,103 @@ async function activateModkit(
        * must not ask Battle.net again for the list. Refresh is the one place that does, for the
        * selected root or for every one of them.
        */
+      /*
+       * The assets an open file names, fetched by the content source whose root declares their
+       * scheme (Roblox's `rbxassetid`, say). A codec spells a reference as a path — `rbxassetid/123`
+       * — and it goes to `download` as `rbxassetid://123`. The report says what came, what was
+       * already here and why the rest did not; a second run finds them present, offline.
+       */
+      vscode.commands.registerCommand(
+        'modkit.sources.downloadReferences',
+        async (argument: unknown) => {
+          const tab = vscode.window.tabGroups.activeTabGroup.activeTab?.input
+          const uri =
+            argument instanceof vscode.Uri
+              ? argument
+              : tab instanceof vscode.TabInputCustom || tab instanceof vscode.TabInputText
+                ? tab.uri
+                : undefined
+          if (uri === undefined) {
+            void vscode.window.showInformationMessage(localizer.text('vscode.references.noFile'))
+            return
+          }
+          const source = await requireContentSources()
+          const downloaders = (await source.snapshot()).roots.filter(
+            root => (root.referenceSchemes?.length ?? 0) > 0,
+          )
+          const references =
+            downloaders.length === 0
+              ? []
+              : ((await host.resourceReferences(subjectPathOf(uri), roots())) ?? [])
+          const wanted = new Map<string, { readonly sourceId: string; readonly reference: string }>()
+          for (const id of references) {
+            for (const root of downloaders) {
+              const scheme = root.referenceSchemes?.find(
+                item => id.startsWith(`${item}://`) || id.startsWith(`${item}/`),
+              )
+              if (scheme === undefined) continue
+              const reference = id.startsWith(`${scheme}://`)
+                ? id
+                : `${scheme}://${id.slice(scheme.length + 1)}`
+              wanted.set(`${root.id}\n${reference}`, { sourceId: root.id, reference })
+              break
+            }
+          }
+          if (wanted.size === 0) {
+            void vscode.window.showInformationMessage(
+              localizer.text(
+                downloaders.length === 0 ? 'vscode.references.noSource' : 'vscode.references.none',
+              ),
+            )
+            return
+          }
+          let downloaded = 0
+          let present = 0
+          const failed = new Map<string, number>()
+          // ponytail: one request at a time; a few parallel downloads if places name thousands.
+          await vscode.window.withProgress(
+            {
+              location: vscode.ProgressLocation.Notification,
+              title: localizer.text('vscode.references.progress', { count: wanted.size }),
+              cancellable: true,
+            },
+            async (progress, token) => {
+              for (const item of wanted.values()) {
+                if (token.isCancellationRequested) break
+                try {
+                  const result = (await callContentSources(source, 'download', [
+                    item.sourceId,
+                    item.reference,
+                  ])) as { readonly state?: unknown } | undefined
+                  if (result?.state === 'present') present += 1
+                  else downloaded += 1
+                } catch (error) {
+                  const code = (error as { readonly code?: unknown } | null)?.code
+                  const reason =
+                    typeof code === 'string'
+                      ? code
+                      : error instanceof Error
+                        ? error.message
+                        : String(error)
+                  failed.set(reason, (failed.get(reason) ?? 0) + 1)
+                  log(`[references] ${item.reference}: ${reason}`)
+                }
+                progress.report({ increment: 100 / wanted.size })
+              }
+            },
+          )
+          const notDownloaded = [...failed.values()].reduce((sum, count) => sum + count, 0)
+          const summary = localizer.text('vscode.references.done', {
+            downloaded,
+            present,
+            failed: notDownloaded,
+          })
+          const reasons = [...failed].map(([reason, count]) => `${reason} ×${count}`).join(', ')
+          if (notDownloaded === 0) void vscode.window.showInformationMessage(summary)
+          else void vscode.window.showWarningMessage(`${summary} ${reasons}`)
+          if (downloaded > 0) sourcesView.refresh()
+        },
+      ),
       vscode.commands.registerCommand('modkit.sources.refresh', async (argument: unknown) => {
         const row =
           typeof argument === 'object' && argument !== null

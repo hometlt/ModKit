@@ -196,6 +196,11 @@
       "icon": "$(refresh)"
     },
     {
+      "command": "modkit.sources.downloadReferences",
+      "title": "%command.downloadReferences%",
+      "icon": "$(cloud-download)"
+    },
+    {
       "command": "modkit.resources.refresh",
       "title": "%command.refreshResources%",
       "icon": "$(refresh)"

@@ -217,6 +217,11 @@
       "icon": "$(cloud-download)"
     },
     {
+      "command": "modkit.sources.downloadReferences",
+      "title": "%command.downloadReferences%",
+      "icon": "$(cloud-download)"
+    },
+    {
       "command": "modkit.sources.editCopy",
       "title": "%command.editCopySource%",
       "icon": "$(edit)"

@@ -200,6 +200,11 @@
         "icon": "$(cloud-download)"
       },
       {
+        "command": "modkit.sources.downloadReferences",
+        "title": "%command.downloadReferences%",
+        "icon": "$(cloud-download)"
+      },
+      {
         "command": "modkit.sources.editCopy",
         "title": "%command.editCopySource%",
         "icon": "$(edit)"
@@ -843,6 +848,7 @@
     "onCommand:modkit.sources.detach",
     "onCommand:modkit.sources.disconnect",
     "onCommand:modkit.sources.download",
+    "onCommand:modkit.sources.downloadReferences",
     "onCommand:modkit.sources.editCopy",
     "onCommand:modkit.sources.open",
     "onCommand:modkit.sources.openInstallation",

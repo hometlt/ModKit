@@ -3,6 +3,7 @@
   "command.contentSources": "Modkit: Content Sources (local / providers)…",
   "command.openContentSource": "Mount Content Source",
   "command.refreshSources": "Refresh Sources",
+  "command.downloadReferences": "Download the Assets This File References",
   "command.signInBattleNet": "Sign in to Battle.net",
   "command.signOutBattleNet": "Sign out",
   "command.unmountContentSource": "Unmount",

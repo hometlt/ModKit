@@ -34,6 +34,7 @@ import {
   type ArtifactSource,
   type AssetSession,
   type Lease,
+  type ModelResourceRefsSource,
   type OperationSession,
   type PermissionGrant,
   type ResourceBudget,
@@ -317,6 +318,15 @@ export interface VsCodeSubjectHost {
     path: string,
     signal?: AbortSignal,
   ): Promise<VsCodeTreeSubject | undefined>
+  /**
+   * The resources one subject names (`common.view/model-resource-refs-source`), as it spells them;
+   * undefined when it publishes none. The subject is opened for the question and closed again.
+   */
+  resourceReferences(
+    path: string,
+    roots: readonly string[],
+    signal?: AbortSignal,
+  ): Promise<readonly string[] | undefined>
 }
 
 export interface VsCodeTreeSubject {
@@ -654,6 +664,50 @@ export async function createVsCodeSubjectHost(
         ...(signal === undefined ? {} : { signal }),
       })
       return result.state === 'opened' ? treeSubjectOf(result.session, path) : undefined
+    },
+    async resourceReferences(path: string, roots: readonly string[], signal?: AbortSignal) {
+      const opener = createPathSubjectOpener({
+        subjects: services,
+        roots,
+        grant: DEFAULT_OPEN_GRANT,
+        budget: DEFAULT_OPEN_BUDGET,
+      })
+      const answer = await opener(path, signal)
+      if (answer.snapshot.state !== 'opened' || answer.session === undefined) return undefined
+      const session = answer.session
+      try {
+        const descriptor = await session.descriptor()
+        if (
+          !descriptor.dataSources.some(
+            item => item.contract === 'common.view/model-resource-refs-source' && item.major === 1,
+          )
+        ) {
+          return undefined
+        }
+        const lease = (await session.dataSource(
+          'common.view/model-resource-refs-source',
+          1,
+        )) as Lease<ModelResourceRefsSource>
+        try {
+          const ids: string[] = []
+          let cursor: string | undefined
+          // ponytail: one place's worth; a publisher that names more is cut at this many.
+          while (ids.length < 100_000) {
+            const page = await lease.value.references(
+              { limit: 1000, ...(cursor === undefined ? {} : { cursor }) },
+              signal,
+            )
+            ids.push(...page.items.map(item => item.id))
+            cursor = page.nextCursor
+            if (cursor === undefined) break
+          }
+          return ids
+        } finally {
+          await lease.release()
+        }
+      } finally {
+        await session.dispose()
+      }
     },
   })
 }
