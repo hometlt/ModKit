@@ -15,7 +15,12 @@ const nativeManifest = path.join(luaRoot, 'native', 'Cargo.toml')
 // Same folder as native/.cargo/config.toml: outside the extension root, whose every file is part
 // of the extension's digest.
 const targetDir = path.resolve(luaRoot, '..', '..', 'node_modules', '.cache', 'modkit-lua-syntax')
-const builtWasm = path.join(targetDir, 'wasm32-unknown-unknown', 'release', 'modkit_lua_syntax.wasm')
+const builtWasm = path.join(
+  targetDir,
+  'wasm32-unknown-unknown',
+  'release',
+  'modkit_lua_syntax.wasm',
+)
 const wasmOutDir = path.join(luaRoot, 'wasm')
 const wasmOutFile = path.join(wasmOutDir, 'modkit-lua-syntax.wasm')
 
