@@ -2770,9 +2770,11 @@ export function createWorldWebGlPlan(
       const sampled = sampleFor(component.resourceId)
       if (sampled === undefined) continue
       const { result } = sampled
-      resolved = true
       const componentTransform = componentTransforms.get(component.id)
+      // A child whose parent model is not loaded cannot be placed: it resolves nothing, so the object
+      // keeps its placeholder instead of vanishing.
       if (componentTransform === undefined) continue
+      resolved = true
       // Cliff meshes follow the painted base height (see `baseOffsetAt`).
       const primitives: typeof sampled.primitives =
         item.derivedFrom === 'cliffs'

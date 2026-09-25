@@ -1075,6 +1075,52 @@ describe('common world WebGL plan', () => {
     )
   })
 
+  it('keeps a placeholder for an object whose only loaded component waits for an unloaded parent', () => {
+    const tool = {
+      state: 'converted',
+      sourceKey: 'tool',
+      diagnostics: [],
+      complete: true,
+      meshes: [],
+      primitives: [
+        {
+          id: 'tool-triangle',
+          topology: 'triangles',
+          positions: Float32Array.from([0, 0, 0, 1, 0, 0, 0, 1, 0]),
+        },
+      ],
+    }
+    const plan = createWorldWebGlPlan({
+      items: [
+        {
+          facet: 'objects',
+          id: 'attached',
+          layerId: 'objects',
+          coordinateSpaceId: 'uvw',
+          kind: 'structure',
+          objectId: 11,
+          position: { x: 0, y: 0, z: 0 },
+          uvwPosition: { x: 0, y: 0, z: 0 },
+          resourceIds: ['body', 'tool'],
+          modelComponents: [
+            { id: 'body-instance', resourceId: 'body' },
+            {
+              id: 'tool-instance',
+              resourceId: 'tool',
+              parentId: 'body-instance',
+              parentSocketId: 'connector-1',
+            },
+          ],
+        },
+      ],
+      // The parent model was not admitted (budget), only the attached child was converted.
+      models: new Map([['tool', tool]]),
+    })
+    assert.equal(plan.stats.modelTriangles, 0)
+    assert.equal(plan.stats.diagnosticPlaceholders, 1)
+    assert.equal(plan.picking.objects[0].placeholder, true)
+  })
+
   it('renders terrain from host-decoded material textures and authored tile UV transforms', () => {
     const terrain = [
       [0, 0],

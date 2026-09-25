@@ -355,6 +355,24 @@ export async function inspectCandidateWorld(
       ),
     ),
   )
+  // A resource used only as a socket child cannot be placed without its parent's model, so under a
+  // model limit it must not take the place of a model that can be drawn on its own.
+  const rootResources = new Set<string>()
+  const childResources = new Set<string>()
+  for (const { page } of inspected) {
+    for (const item of page.items) {
+      if (item.facet !== 'objects') continue
+      if (item.modelComponents === undefined) {
+        if (item.resourceId !== undefined) rootResources.add(item.resourceId)
+        for (const resourceId of item.resourceIds ?? []) rootResources.add(resourceId)
+        continue
+      }
+      for (const component of item.modelComponents) {
+        ;(component.parentId === undefined ? rootResources : childResources).add(component.resourceId)
+      }
+    }
+  }
+  const childOnly = (id: string) => childResources.has(id) && !rootResources.has(id)
   const resourceItems = inspected
     .flatMap(item => item.page.items)
     .filter(
@@ -365,6 +383,7 @@ export async function inspectCandidateWorld(
     .sort(
       (left, right) =>
         Number(cliffResources.has(right.id)) - Number(cliffResources.has(left.id)) ||
+        Number(childOnly(left.id)) - Number(childOnly(right.id)) ||
         right.objectIds.length - left.objectIds.length ||
         left.id.localeCompare(right.id),
     )

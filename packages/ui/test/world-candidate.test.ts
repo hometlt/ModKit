@@ -543,6 +543,90 @@ describe('generic publisher-candidate world harness', () => {
     )
   })
 
+  it('does not admit a socket-only child ahead of a model that can be placed on its own', async () => {
+    const resourceLayer: WorldSceneLayerItem = {
+      facet: 'layers',
+      id: 'resources',
+      layerId: 'resources',
+      kind: 'resources',
+      state: 'available',
+      itemCount: 2,
+      lods: ['exact'],
+    }
+    const requestedIds: string[] = []
+    const source: CandidateWorldSceneSource = {
+      contract,
+      major: 1,
+      snapshotId,
+      info: async () => info,
+      async page(request) {
+        if (request.facet === 'layers') {
+          return { snapshotId, facet: 'layers', state: 'available', items: [layer, resourceLayer] }
+        }
+        if (request.facet === 'objects') {
+          return {
+            snapshotId,
+            facet: 'objects',
+            state: 'available',
+            // The child is attached to more objects than the parent, yet cannot be drawn without it.
+            items: ['1', '2', '3'].map(id => ({
+              facet: 'objects' as const,
+              id: `object:${id}`,
+              layerId: layer.layerId,
+              coordinateSpaceId: 'map-native',
+              kind: 'structure',
+              objectId: Number(id),
+              position: { x: 0, y: 0, z: 0 },
+              resourceIds: id === '1' ? ['body', 'tool'] : ['tool'],
+              modelComponents: [
+                ...(id === '1' ? [{ id: 'body-instance', resourceId: 'body' }] : []),
+                {
+                  id: 'tool-instance',
+                  resourceId: 'tool',
+                  parentId: 'body-instance',
+                  parentSocketId: 'connector-1',
+                },
+              ],
+            })),
+          }
+        }
+        return {
+          snapshotId,
+          facet: 'resources',
+          state: 'available',
+          items: ['body', 'tool'].map(id => ({
+            facet: 'resources' as const,
+            id,
+            layerId: resourceLayer.layerId,
+            namespace: 'Model',
+            entityId: id,
+            resolved: true,
+            objectIds: id === 'body' ? ['object:1'] : ['object:1', 'object:2', 'object:3'],
+            modelResource: {
+              id,
+              logicalId: `${id}.m3`,
+              role: 'sidecar' as const,
+              scopes: ['current-mount'] as const,
+            },
+          })),
+        }
+      },
+      async model(resourceId) {
+        requestedIds.push(resourceId)
+        return {
+          state: 'converted',
+          sourceKey: 'revision',
+          meshes: [],
+          primitives: [],
+          diagnostics: [],
+          complete: true,
+        }
+      },
+    }
+    await inspectCandidateWorld(source, { maxLayers: 2, maxItemsPerLayer: 8, maxModels: 1 })
+    expect(requestedIds).toEqual(['body'])
+  })
+
   it('loads every model; past the byte budget only their textures shrink', async () => {
     // A count of 64 left Amphion's doodads unloaded; a budget that left models out dropped half of
     // them across VS Code's webview channel, where shared textures arrive once per model.
