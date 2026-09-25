@@ -254,6 +254,15 @@ describe('MCP edit lifecycle over installed SC2 writers', () => {
       (result.content as { type: string; mimeType?: string; data?: string }[]).find(item => item.type === 'image')
     const layer = await layerOf(handle)
     expect(layer).toMatchObject({ id: 'main/terrain', meaning: 'height', editable: true, unit: 'm', sampling: 'vertex' })
+    // A client learns the window and value fields from the descriptor, not from Modkit's sources.
+    const inspection = await client.callTool({ name: 'modkit.inspect', arguments: { handle } })
+    expect(envelope(inspection).completeness).toBe('complete')
+    const inspected = data(inspection)
+    const operations = (inspected['descriptor'] as { operations: { id: string; inputSchema?: { $ref: string; document?: unknown } }[] }).operations
+    expect(operations.find(item => item.id === 'map.layer-read')?.inputSchema).toMatchObject({
+      $ref: 'modkit://map/layer-read.v1',
+      document: { required: ['layer'] },
+    })
     const world = (on: MapLayerDescriptor, n: number) => (on.valueOffset ?? 0) + n * (on.valueScale ?? 1)
     const sample = (height: number) => Math.round((height - (layer.valueOffset ?? 0)) / (layer.valueScale ?? 1))
 

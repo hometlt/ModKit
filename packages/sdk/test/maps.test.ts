@@ -6,10 +6,18 @@ import {
   MAP_SEMANTIC_MATCHER_PROFILE,
   RESOLVED_MAP_WORKSPACE_CONTRACT,
   WORLD_SCENE_SOURCE_CONTRACT,
+  MAP_LAYERS_INPUT_SCHEMA,
+  MAP_LAYERS_REPRESENTATION,
+  MAP_LAYER_READ_INPUT_SCHEMA,
+  MAP_LAYER_WRITE_INPUT_SCHEMA,
   mapLayerWindow,
   type MapLayerDescriptor,
+  type MapLayerGrid,
+  type MapLayerReadRequest,
   type MapSemanticSnapshot,
 } from '@modkit/sdk/maps'
+// The host's validator for operation schemas: the one that would check these inputs.
+import { createServiceOperationSchemaValidator } from '../../host/src/service-operation-schema.js'
 
 describe('game-neutral semantic map contract', () => {
   it('publishes stable service and matcher coordinates without game-specific ids', () => {
@@ -63,5 +71,43 @@ describe('map layer windows', () => {
     expect(() => mapLayerWindow(layer, { layer: 'height', width: 1, height: 1, values: [10] })).toThrow(/from 0 to 9/u)
     expect(() => mapLayerWindow(layer, { layer: 'height', width: 1, height: 1, values: [0.5] })).toThrow(/from 0 to 9/u)
     expect(() => mapLayerWindow({ ...layer, editable: false }, { layer: 'height', width: 1, height: 1, values: [0] })).toThrow(/read-only/u)
+  })
+
+  it('publishes input schemas that accept and refuse what mapLayerWindow does', () => {
+    const read = createServiceOperationSchemaValidator(MAP_LAYER_READ_INPUT_SCHEMA.document)
+    const write = createServiceOperationSchemaValidator(MAP_LAYER_WRITE_INPUT_SCHEMA.document)
+    const list = createServiceOperationSchemaValidator(MAP_LAYERS_INPUT_SCHEMA.document)
+    if (!read.valid || !write.valid || !list.valid) throw new Error('a map layer input schema does not compile')
+    const accepts = (input: MapLayerReadRequest | MapLayerGrid) => {
+      try {
+        mapLayerWindow(layer, input)
+        return true
+      } catch {
+        return false
+      }
+    }
+    const reads: readonly MapLayerReadRequest[] = [
+      { layer: 'height' },
+      { layer: 'height', x: 1, y: 2, width: 3, height: 1 },
+      { layer: 'height', x: 1, y: 1 },
+      { layer: 'height', width: 2 },
+      { layer: 'height', x: -1, y: 0, width: 1, height: 1 },
+      { layer: 'height', x: 0, y: 0, width: 0, height: 1 },
+    ]
+    for (const input of reads) expect(read.validate(input) === undefined, JSON.stringify(input)).toBe(accepts(input))
+    const writes: readonly MapLayerGrid[] = [
+      { layer: 'height', width: 4, height: 3, values: Array(12).fill(0) },
+      { layer: 'height', x: 3, y: 1, width: 1, height: 2, values: [9, 0] },
+      { layer: 'height', x: 1, width: 1, height: 1, values: [0] },
+      { layer: 'height', y: 1, width: 1, height: 1, values: [0] },
+      { layer: 'height', width: 1, height: 1, values: [0.5] },
+      { layer: 'height', width: 1, height: 1, values: [-1] },
+    ]
+    for (const input of writes) expect(write.validate(input) === undefined, JSON.stringify(input)).toBe(accepts(input))
+    expect(write.validate({ layer: 'height', width: 1, height: 1, values: [0], expectedSourceRevision: 'r1' })).toBeUndefined()
+    expect(read.validate({ layer: 'height', scale: 2 })).toBeDefined()
+    expect(list.validate(null)).toBeUndefined()
+    expect(list.validate({})).toBeUndefined()
+    expect(MAP_LAYERS_REPRESENTATION).toEqual({ id: 'map-layers', contract: 'common.map/layers', major: 1 })
   })
 })

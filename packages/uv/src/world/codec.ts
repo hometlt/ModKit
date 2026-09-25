@@ -11,8 +11,11 @@ import { snapshotJson } from '@modkit/codec-kit/json-snapshot'
 import { operationId } from '@modkit/core'
 import type { JsonObject, JsonValue } from '@modkit/sdk'
 import {
+  MAP_LAYERS_INPUT_SCHEMA,
   MAP_LAYERS_OPERATION,
+  MAP_LAYER_READ_INPUT_SCHEMA,
   MAP_LAYER_READ_OPERATION,
+  MAP_LAYER_WRITE_INPUT_SCHEMA,
   MAP_LAYER_WRITE_OPERATION,
   WORLD_SCENE_SOURCE_CONTRACT,
   mapLayerWindow,
@@ -424,6 +427,7 @@ const definition = Object.freeze({
     Object.freeze({
       id: operationId(MAP_LAYERS_OPERATION, { contributionId: 'modkit/world-uvw' }),
       handlerId: 'map-layers',
+      inputSchema: MAP_LAYERS_INPUT_SCHEMA,
       mutatesSource: false,
       requiredPermissions: Object.freeze(['read-source'] as const),
       outputKinds: Object.freeze(['json'] as const),
@@ -431,6 +435,7 @@ const definition = Object.freeze({
     Object.freeze({
       id: operationId(MAP_LAYER_READ_OPERATION, { contributionId: 'modkit/world-uvw' }),
       handlerId: 'map-layer-read',
+      inputSchema: MAP_LAYER_READ_INPUT_SCHEMA,
       mutatesSource: false,
       requiredPermissions: Object.freeze(['read-source'] as const),
       outputKinds: Object.freeze(['json'] as const),
@@ -438,6 +443,7 @@ const definition = Object.freeze({
     Object.freeze({
       id: operationId(MAP_LAYER_WRITE_OPERATION, { contributionId: 'modkit/world-uvw' }),
       handlerId: 'map-layer-write',
+      inputSchema: MAP_LAYER_WRITE_INPUT_SCHEMA,
       mutatesSource: true,
       requiredPermissions: Object.freeze(['read-source', 'write-source'] as const),
       outputKinds: Object.freeze(['edit-plan'] as const),

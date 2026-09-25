@@ -6,7 +6,7 @@ import type { ProjectionBasis } from '../asset-capabilities/uv-projection.js'
 import type { ModWorkspaceGraphInput, ModWorkspaceLock } from '../mods/index.js'
 import type { LogicalResourceRequirement, ResourceProvenanceRecord } from '../resource-session.js'
 import type { ServiceProviderModule } from '../runtime-abi.js'
-import type { JsonValue } from '../asset-capabilities/types.js'
+import type { JsonSchemaRef, JsonValue } from '../asset-capabilities/types.js'
 import type { NamespaceEntrySearchQuery } from '../asset-capabilities/data-sources.js'
 import type { ModelResourceRequest, ModelResourceResult } from '../model-resources.js'
 import type {
@@ -119,6 +119,80 @@ export interface MapLayerWindow {
   readonly width: number
   readonly height: number
 }
+
+/** The representation a map codec's layer-write fidelity proof names. */
+export const MAP_LAYERS_REPRESENTATION = Object.freeze({
+  id: 'map-layers',
+  contract: 'common.map/layers',
+  major: 1,
+} as const)
+
+const sampleOrigin = {
+  x: { type: 'integer', minimum: 0, description: 'Column of the first sample, counted from the west edge.' },
+  y: { type: 'integer', minimum: 0, description: 'Row of the first sample, counted from the north edge (row 0).' },
+} as const
+const windowSize = {
+  width: { type: 'integer', minimum: 1, description: 'Columns in the window; x + width stays within the layer.' },
+  height: { type: 'integer', minimum: 1, description: 'Rows in the window; y + height stays within the layer.' },
+} as const
+const layerId = {
+  type: 'string',
+  minLength: 1,
+  description: 'A layer id from map.layers of the same subject revision.',
+} as const
+const anyNamed = (...names: readonly string[]) => ({ anyOf: names.map(name => ({ required: [name] })) })
+
+/** `map.layers` input: none. */
+export const MAP_LAYERS_INPUT_SCHEMA: JsonSchemaRef = Object.freeze({
+  $ref: 'modkit://map/layers.v1',
+  document: {
+    $id: 'modkit://map/layers.v1',
+    description:
+      'Lists the grid layers of a map. Each layer names its size, integer sample bounds, whether it is editable, and optionally what a sample means in the world: world value = valueOffset + sample * valueScale, in unit, sampled at grid vertices or in cells.',
+    anyOf: [{ type: 'null' }, { type: 'object', properties: {}, additionalProperties: false }],
+  },
+})
+
+/** `map.layer-read` input; `mapLayerWindow` checks the same rules against the layer. */
+export const MAP_LAYER_READ_INPUT_SCHEMA: JsonSchemaRef = Object.freeze({
+  $ref: 'modkit://map/layer-read.v1',
+  document: {
+    $id: 'modkit://map/layer-read.v1',
+    description:
+      'Reads a layer as row-major integer samples, row 0 at the north edge. Without x, y, width and height the whole layer is read; a window names all four. World value = valueOffset + sample * valueScale from map.layers.',
+    type: 'object',
+    required: ['layer'],
+    additionalProperties: false,
+    properties: { layer: layerId, ...sampleOrigin, ...windowSize },
+    anyOf: [{ not: anyNamed('x', 'y', 'width', 'height') }, { required: ['x', 'y', 'width', 'height'] }],
+  },
+})
+
+/** `map.layer-write` input; the answer is an edit plan, applied only by prepare and commit. */
+export const MAP_LAYER_WRITE_INPUT_SCHEMA: JsonSchemaRef = Object.freeze({
+  $ref: 'modkit://map/layer-write.v1',
+  document: {
+    $id: 'modkit://map/layer-write.v1',
+    description:
+      "Plans writing width x height integer samples, row-major, row 0 at the north edge, into an editable layer. x and y place the window and go together; without them the grid is the whole layer. Every value stays within the layer's minimum and maximum; world value = valueOffset + sample * valueScale. expectedSourceRevision, when given, must be the subject revision the samples were read from.",
+    type: 'object',
+    required: ['layer', 'width', 'height', 'values'],
+    additionalProperties: false,
+    properties: {
+      layer: layerId,
+      ...sampleOrigin,
+      ...windowSize,
+      values: {
+        type: 'array',
+        minItems: 1,
+        items: { type: 'integer', minimum: 0, maximum: 0xffff },
+        description: "width * height samples, row-major, within the layer's minimum and maximum.",
+      },
+      expectedSourceRevision: { type: 'string', minLength: 1, description: 'Revision the window was read from.' },
+    },
+    anyOf: [{ required: ['x', 'y'] }, { not: anyNamed('x', 'y') }],
+  },
+})
 
 /**
  * The one bounds check of `map.layer-read` requests and `map.layer-write` grids against a layer.

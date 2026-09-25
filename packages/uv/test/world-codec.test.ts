@@ -10,7 +10,7 @@ import {
   type ResourceBudget,
   type WorldSceneSource,
 } from '@modkit/sdk'
-import type { MapLayerDescriptor, MapLayerGrid } from '@modkit/sdk/maps'
+import { MAP_LAYER_WRITE_INPUT_SCHEMA, type MapLayerDescriptor, type MapLayerGrid } from '@modkit/sdk/maps'
 import { createCodec } from '../src/world/codec.js'
 import { parseUvwProfile } from '../src/world/index.js'
 
@@ -266,6 +266,10 @@ describe('UVW height as a map layer', () => {
     const descriptor = await session.descriptor()
     expect(descriptor.operations.map(item => item.id)).toEqual(
       expect.arrayContaining(['map.layers', 'map.layer-read', 'map.layer-write']),
+    )
+    // The input shape is the SDK's one schema.
+    expect(descriptor.operations.find(item => item.id === 'map.layer-write')?.inputSchema).toEqual(
+      MAP_LAYER_WRITE_INPUT_SCHEMA,
     )
     const listed = await invoke('map-layers', null)
     if (listed.kind !== 'json') throw new Error('map.layers is not JSON')

@@ -63,7 +63,9 @@ interface ProjectionState {
   readonly seen: WeakSet<object>
 }
 
-const MAX_PROJECTED_DEPTH = 8
+// An operation's input schema sits at depth 5 of an inspection (data → descriptor → operations →
+// item → inputSchema → document) and nests a few levels more; nodes and characters still bound size.
+const MAX_PROJECTED_DEPTH = 12
 const MAX_PROJECTED_NODES = 2_000
 const MAX_PROJECTED_CHARACTERS = 16 * 1_024
 const MAX_PROJECTED_COLLECTION = 200
