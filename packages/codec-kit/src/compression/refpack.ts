@@ -71,6 +71,11 @@ export function decodeRefPack(input: Uint8Array, maxOutputBytes: number): Uint8A
   const literals = (length: number): void => {
     if (length > input.length - ip) throw malformed('literal run overruns the input')
     if (length > output.length - op) throw malformed('literal run overruns the output')
+    if (length < 16) {
+      // Most runs are 0–3 bytes, where a subarray costs more than the copy.
+      for (let index = 0; index < length; index += 1) output[op++] = input[ip++] ?? 0
+      return
+    }
     output.set(input.subarray(ip, ip + length), op)
     ip += length
     op += length
@@ -79,37 +84,42 @@ export function decodeRefPack(input: Uint8Array, maxOutputBytes: number): Uint8A
     if (distance > op) throw malformed(`has a match distance ${distance} before the output start`)
     if (length > output.length - op) throw malformed('match overruns the output')
     const from = op - distance
-    if (distance >= length) {
+    if (distance >= length && length >= 32) {
       output.copyWithin(op, from, from + length)
       op += length
       return
     }
-    // An overlapping match repeats the last `distance` bytes; it must run byte by byte.
+    // Byte by byte: short matches copy faster so, and an overlapping match (distance < length)
+    // must, since it repeats the last `distance` bytes.
     for (let index = 0; index < length; index += 1) {
       output[op] = output[from + index] ?? 0
       op += 1
     }
   }
-  const operand = (count: number): number[] => {
+  // Operand bytes are read in place: a stream has millions of commands.
+  const operands = (count: number): void => {
     if (count > input.length - ip) throw malformed('ends inside a command')
-    const bytes = Array.from(input.subarray(ip, ip + count))
-    ip += count
-    return bytes
   }
 
   for (;;) {
     if (ip >= input.length) throw malformed('ends without its stop code')
     const control = input[ip++] ?? 0
     if (control < 0x80) {
-      const [b1 = 0] = operand(1)
+      operands(1)
+      const b1 = input[ip++] ?? 0
       literals(control & 0x03)
       match(((control & 0x60) << 3) + b1 + 1, ((control & 0x1c) >>> 2) + 3)
     } else if (control < 0xc0) {
-      const [b1 = 0, b2 = 0] = operand(2)
+      operands(2)
+      const b1 = input[ip++] ?? 0
+      const b2 = input[ip++] ?? 0
       literals(b1 >>> 6)
       match(((b1 & 0x3f) << 8) + b2 + 1, (control & 0x3f) + 4)
     } else if (control < 0xe0) {
-      const [b1 = 0, b2 = 0, b3 = 0] = operand(3)
+      operands(3)
+      const b1 = input[ip++] ?? 0
+      const b2 = input[ip++] ?? 0
+      const b3 = input[ip++] ?? 0
       literals(control & 0x03)
       match(((control & 0x10) << 12) + (b1 << 8) + b2 + 1, ((control & 0x0c) << 6) + b3 + 5)
     } else if (control < 0xfc) {
