@@ -42,6 +42,7 @@ import {
   environmentCompletion,
   environmentDefinition,
   environmentHover,
+  LUA_ENVIRONMENT_FILE,
   luaEnvironmentOf,
   LuaEnvironmentView,
   type DocumentView,
@@ -865,6 +866,10 @@ export function createLuaLanguageProvider(): LanguageProvider {
     semanticInputs: Object.freeze([
       Object.freeze({ kind: 'language-spec', id: 'modkit/lua-ast@1', revision: '1' }),
       Object.freeze({ kind: 'provider', id: 'modkit/lua-language', revision: PROVIDER_REVISION }),
+    ]),
+    // What a game knows about its Lua comes from its content context as data (environment.ts).
+    semanticContextRequirements: Object.freeze([
+      Object.freeze({ kind: 'language-knowledge' as const, fileNames: Object.freeze([LUA_ENVIRONMENT_FILE]) }),
     ]),
     analyze: analyzeLua,
     completion: luaCompletion,
