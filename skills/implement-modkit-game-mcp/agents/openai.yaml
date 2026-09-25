@@ -1,0 +1,4 @@
+interface:
+  display_name: "Implement Modkit Game MCP"
+  short_description: "Build game adapters through shared Modkit contracts"
+  default_prompt: "Use $implement-modkit-game-mcp to add this game's authoring workflow through existing Modkit owners and verify its public MCP route."
