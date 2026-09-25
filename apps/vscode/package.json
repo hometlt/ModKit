@@ -444,6 +444,7 @@
     ],
     "languages": [
       { "id": "galaxy", "aliases": ["Galaxy"], "extensions": [".galaxy"] },
+      { "id": "luau", "aliases": ["Luau"], "extensions": [".luau"] },
       {
         "id": "sc2-bank",
         "aliases": ["StarCraft II Bank"],

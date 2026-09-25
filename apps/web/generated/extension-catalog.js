@@ -6,7 +6,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
   extensions: [
     {
       artifact: {
-        artifactDigest: 'sha256:5a943143f0704167f7fe423d83d4468c1712df37a2db052f9482ba319e5af39d',
+        artifactDigest: 'sha256:8cc092873972825d2d07ec213d0943d7cf40beaeb1aad5fbac3a294ae52edda0',
         fileDigests: {
           'MIGRATION-NOTES-common-archives.json':
             'sha256:4e1d77808583a26fb61d65d660ef09c3f4c222915c2e3581d793b202cbde4b44',
@@ -38,7 +38,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-zip.json':
             'sha256:e630932c734c8af9534c84f03623a20bb62b8e58683b14e002bc58b8e4192465',
           'contributions/codec-zstd.json':
-            'sha256:04f0c3c2fbad4b0f3f31f14ef33da92e4e2fa8957be84ddc0aa16ca4b007765f',
+            'sha256:79c03b955edaea1e248258cbe2429c8c7923e9301b824eed67d6e6672e6c3591',
           'package.json': 'sha256:0f450dab994733b1f04493efbe9a07bb0f7f702969fbf9350675f2d425600c04',
           'src/7z/codec.js':
             'sha256:bf31052ad1be7de6b9ef0f880f6a2c2f4ddaab72c0c6b46d065c98c71f8daae2',
@@ -70,7 +70,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'src/zip/codec.js':
             'sha256:992502f9adde2a8c6195f2cf800ac3ddb9da6f61ebe86de7b8d7e99a73b20808',
           'src/zstd/codec.js':
-            'sha256:6266e084d92f68329bb8ea89d24977a809e59d6db68fb03c4af97f43660231ca',
+            'sha256:b52c70fa49264a57782e3927e3d0f86ac5ec08a2df44cb000f5f558612b75240',
           'test/fixtures/7z/bcj.7z':
             'sha256:3b4a91035aa6af04c382d596879fce7c18971cbcc935305ba1d3786798929fb6',
           'test/fixtures/7z/bcj2.7z':
@@ -95,9 +95,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:57143f60a3776ae9c9599db8b4c58ad56802ba21555af17eacfa8a3b7b1c7fce',
           'test/seven-zip-rar.test.ts':
             'sha256:ba910f659d74ec19eec62ac888ce88f34cc9cabce16624368c2fc972c70cbe65',
+          'test/zstd.test.ts':
+            'sha256:74a5cab68793e3872c97feb5c564e0c4c0eae69d1f49df96d60239407ceccda8',
         },
         inventoryRecordId:
-          'artifact:sha256:5a943143f0704167f7fe423d83d4468c1712df37a2db052f9482ba319e5af39d',
+          'artifact:sha256:8cc092873972825d2d07ec213d0943d7cf40beaeb1aad5fbac3a294ae52edda0',
       },
       artifactRoot: 'extensions/archives/',
       containers: {
@@ -201,7 +203,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         ],
         [
           'contributions/codec-zstd.json',
-          'sha256:04f0c3c2fbad4b0f3f31f14ef33da92e4e2fa8957be84ddc0aa16ca4b007765f',
+          'sha256:79c03b955edaea1e248258cbe2429c8c7923e9301b824eed67d6e6672e6c3591',
         ],
       ],
       documents: [
@@ -2120,8 +2122,8 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             displayName: 'Zstandard compressed payload',
             id: 'modkit/zstd',
             limitations: [
-              'Portable extraction is intentionally bounded to single-segment frames containing raw or RLE blocks.',
-              'Compressed blocks, dictionaries, content checksums, concatenated frames, and writing are not implemented.',
+              'Decoding goes through the shared @modkit/codec-kit/compression/zstd decoder: every block type, concatenated frames and content checksums; output is bounded by maxScalarBytes.',
+              'Dictionaries and writing are not implemented.',
             ],
             runtimeVariants: [
               {
@@ -2289,6 +2291,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         'test/fixtures/7z/lzma2.7z',
         'test/fixtures/7z/plain-header.7z',
         'test/seven-zip-rar.test.ts',
+        'test/zstd.test.ts',
       ],
       name: 'archives',
       source: 'extensions/archives',
