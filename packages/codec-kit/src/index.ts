@@ -206,6 +206,8 @@ export interface InspectionCodecDefinition {
   }
   readonly operations?: readonly OperationDecl[]
   readonly namespace?: never
+  /** `bytes` (the default): the whole source is read into memory within `budget.maxInputBytes`. */
+  readonly access?: 'bytes'
   planInput?(
     source: CodecCandidateSource,
     evidence: DetectionResult,
@@ -223,6 +225,21 @@ export interface InspectionCodecDefinition {
   inspect(bytes: Uint8Array, context: InspectionContext): Promise<InspectionResult>
 }
 
+/**
+ * An inspection codec for a source too large to hold in memory — a container or archive of any
+ * size, offsets past 4 GiB included. `detect` gets the first bytes (at most 64 KiB); `inspect` never
+ * receives the file and reads what it needs through `context.byteSource`, one range at a time. A
+ * read starting past the end of the source or longer than `budget.maxInputBytes` is refused; one
+ * that runs past the end is cut there. `export.raw` is not published: it would hold the source.
+ */
+export interface RangeInspectionCodecDefinition extends Omit<
+  InspectionCodecDefinition,
+  'access' | 'inspect'
+> {
+  readonly access: 'ranges'
+  inspect(context: InspectionContext): Promise<InspectionResult>
+}
+
 export interface NamespaceInspectionCodecDefinition {
   readonly deferInspection?: boolean
   readonly id: string
@@ -235,6 +252,7 @@ export interface NamespaceInspectionCodecDefinition {
   readonly operations?: readonly OperationDecl[]
   readonly namespace: NamespaceInspectionDefinition
   readonly planInput?: InspectionCodecDefinition['planInput']
+  readonly access?: never
   readonly detect?: never
   readonly inspect?: never
 }
@@ -850,6 +868,68 @@ async function readAll(source: ArtifactSource, budget: ResourceBudget, signal?: 
   return result
 }
 
+/** What a byte-mode codec reads: the source already held in memory. */
+function memoryByteSource(bytes: Uint8Array): ByteRangeSource {
+  return Object.freeze<ByteRangeSource>({
+    size: async () => BigInt(bytes.byteLength),
+    async read(offset, length, readSignal) {
+      if (readSignal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
+      if (offset < 0n || offset > BigInt(bytes.byteLength) || length < 0) {
+        throw new RangeError('byte range is outside the source')
+      }
+      return bytes.slice(Number(offset), Math.min(bytes.byteLength, Number(offset) + length))
+    },
+  })
+}
+
+/** The first bytes a range-mode codec's `detect` sees when a session opens. */
+const RANGE_DETECT_PREFIX_BYTES = 64 * 1024
+/** One `ArtifactByteSource.read` at most — well inside a worker RPC frame. */
+const RANGE_READ_CHUNK_BYTES = 8 * 1024 * 1024
+
+/**
+ * What a range-mode codec reads: the opened source itself, one bounded range at a time. Memory
+ * follows the ranges asked for, never the size of the source.
+ */
+function rangeByteSource(source: ArtifactSource, budget: ResourceBudget): ByteRangeSource {
+  if (source.kind !== 'bytes' || source.size === undefined) {
+    throw new TypeError('range inspection codecs require a sized byte source')
+  }
+  const size = source.size
+  const maximum = BigInt(budget.maxInputBytes)
+  return Object.freeze<ByteRangeSource>({
+    size: async () => size,
+    async read(offset, length, readSignal) {
+      if (readSignal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
+      if (
+        typeof offset !== 'bigint' ||
+        offset < 0n ||
+        offset > size ||
+        !Number.isSafeInteger(length) ||
+        length < 0
+      ) {
+        throw new RangeError('byte range is outside the source')
+      }
+      if (BigInt(length) > maximum) {
+        throw new RangeError('byte range exceeds the inspection budget')
+      }
+      const end = offset + BigInt(length) < size ? offset + BigInt(length) : size
+      const result = new Uint8Array(Number(end - offset))
+      let filled = 0
+      while (filled < result.byteLength) {
+        if (readSignal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
+        const wanted = Math.min(RANGE_READ_CHUNK_BYTES, result.byteLength - filled)
+        const chunk = await source.read(offset + BigInt(filled), wanted, readSignal)
+        if (chunk.byteLength === 0) throw new RangeError('source ended before its declared size')
+        const taken = Math.min(chunk.byteLength, wanted)
+        result.set(chunk.subarray(0, taken), filled)
+        filled += taken
+      }
+      return result
+    },
+  })
+}
+
 function originFrom(
   input: AssetInput,
   primary?: ResolvedAssetInputBinding,
@@ -905,7 +985,8 @@ function probeLength(plan: Extract<ProbePlan, { kind: 'bytes' }>, size?: bigint)
  * operations. Optional custom operations remain format-owned.
  */
 export function createInspectionCodec(
-  definition: InspectionCodecDefinition | NamespaceInspectionCodecDefinition,
+  definition:
+    InspectionCodecDefinition | RangeInspectionCodecDefinition | NamespaceInspectionCodecDefinition,
   contributionContext?: ContributionContext,
 ): Codec {
   if (definition.deferInspection === true) {
@@ -928,9 +1009,11 @@ export function createInspectionCodec(
     })
   }
   const namespaceDefinition = definition.namespace
+  const rangeDefinition = definition.access === 'ranges' ? definition : undefined
   const customOperations = Object.freeze([...(definition.operations ?? [])])
+  // `export.raw` hands out the whole source: a namespace has none, a range codec never holds it.
   const sharedOperations =
-    namespaceDefinition === undefined
+    namespaceDefinition === undefined && rangeDefinition === undefined
       ? INSPECTION_OPERATIONS
       : INSPECTION_OPERATIONS.filter(operation => operation.handlerId !== 'export-raw')
   const customIds = new Set<string>()
@@ -1173,7 +1256,17 @@ export function createInspectionCodec(
       const sourceLease = await input.openBinding(primary.bindingId, signal)
       const source = sourceLease.value
       try {
-        const bytes = await readAll(source, budget, signal)
+        // A range codec never holds the source: no `readAll`, so no size ceiling on the file.
+        const bytes =
+          rangeDefinition === undefined ? await readAll(source, budget, signal) : undefined
+        const byteSource =
+          bytes === undefined ? rangeByteSource(source, budget) : memoryByteSource(bytes)
+        const sourceSize = await byteSource.size()
+        const readable =
+          BigInt(budget.maxInputBytes) < sourceSize ? BigInt(budget.maxInputBytes) : sourceSize
+        const prefix =
+          bytes ??
+          (await byteSource.read(0n, Math.min(RANGE_DETECT_PREFIX_BYTES, Number(readable)), signal))
         const detected = await (
           definition.detect as (
             prefix: Uint8Array,
@@ -1184,23 +1277,8 @@ export function createInspectionCodec(
               'magic' | 'structure' | 'companion' | 'context' | 'extension' | 'user-override'
             readonly note?: string
           }>
-        )(bytes, primary.source.uri)
-        const byteSource = Object.freeze<ByteRangeSource>({
-          size: async () => BigInt(bytes.byteLength),
-          async read(offset, length, readSignal) {
-            if (readSignal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
-            if (offset < 0n || offset > BigInt(bytes.byteLength) || length < 0) {
-              throw new RangeError('byte range is outside the source')
-            }
-            return bytes.slice(Number(offset), Math.min(bytes.byteLength, Number(offset) + length))
-          },
-        })
-        const inspection = await (
-          definition.inspect as (
-            bytes: Uint8Array,
-            context: InspectionContext,
-          ) => Promise<InspectionResult>
-        )(bytes, {
+        )(prefix, primary.source.uri)
+        const inspectionContext: InspectionContext = {
           ...(contributionContext === undefined
             ? {}
             : {
@@ -1223,7 +1301,16 @@ export function createInspectionCodec(
           primary,
           byteSource,
           input,
-        })
+        }
+        const inspection =
+          rangeDefinition !== undefined
+            ? await rangeDefinition.inspect(inspectionContext)
+            : await (
+                definition.inspect as (
+                  bytes: Uint8Array,
+                  context: InspectionContext,
+                ) => Promise<InspectionResult>
+              )(bytes as Uint8Array, inspectionContext)
         const dataSources = new Map([
           ['common.view/byte-range-source', byteSource],
           ...Object.entries(inspection.dataSources ?? {}),
@@ -1283,7 +1370,7 @@ export function createInspectionCodec(
             seekable: true,
             randomAccess: true,
             trusted: false,
-            maxDecodedBytes: String(inspection.maxDecodedBytes ?? bytes.byteLength),
+            maxDecodedBytes: String(inspection.maxDecodedBytes ?? sourceSize),
             ...(inspection.unsupportedFeatures === undefined
               ? {}
               : { unsupportedFeatures: inspection.unsupportedFeatures }),
@@ -1299,7 +1386,14 @@ export function createInspectionCodec(
         const handlers = new Map<string, HostOperationHandler>([
           ['inspect', async () => ({ kind: 'json', value: inspection.summary })],
           ['validate', async () => ({ kind: 'none' })],
-          ['export-raw', async () => ({ kind: 'bytes', value: bytes })],
+          ...(bytes === undefined
+            ? []
+            : [
+                ['export-raw', async () => ({ kind: 'bytes', value: bytes }) as const] satisfies [
+                  string,
+                  HostOperationHandler,
+                ],
+              ]),
           ...Object.entries(inspection.handlers ?? {}),
         ])
         return createAssetSession({
