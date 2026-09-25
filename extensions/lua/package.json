@@ -21,6 +21,10 @@
       "types": "./dist/binder.d.ts",
       "default": "./dist/binder.js"
     },
+    "./literal": {
+      "types": "./dist/literal.d.ts",
+      "default": "./dist/literal.js"
+    },
     "./provider": {
       "types": "./dist/provider.d.ts",
       "default": "./dist/provider.js"
