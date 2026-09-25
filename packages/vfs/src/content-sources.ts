@@ -91,6 +91,16 @@ export interface ModContextRequest {
 /** A host path, or a path inside one of the provider's content sources. */
 export type ModContextTarget = string | { readonly sourceId: string; readonly path: string }
 
+/**
+ * `package` — the target lies in this package (its primary layer's source and path);
+ * `loose` — it exists outside any package and opens over `baseMods`;
+ * `missing` — nothing exists under it, so `openModContext` would refuse it.
+ */
+export type ModPackagePlacement =
+  | { readonly kind: 'package'; readonly sourceId: string; readonly path: string; readonly displayName: string }
+  | { readonly kind: 'loose' }
+  | { readonly kind: 'missing' }
+
 /** The `sourceId` of a layer that lives on the host's own disk rather than in a content source. */
 export const HOST_LAYER_SOURCE_ID = 'host'
 
@@ -198,6 +208,11 @@ export interface ContentSources {
   resolveLocalPath?(sourceId: string, path: string): Promise<ContentSourceLocalPath | undefined>
   /** Open a subject inside the mods it belongs to — see {@link ModContextRequest}. */
   openModContext?(request: ModContextRequest): Promise<ModContext>
+  /**
+   * Where `openModContext` would place a target, without opening a context: the same loader
+   * decides both. Asynchronous because it checks the sources.
+   */
+  locateModPackage?(target: ModContextTarget, signal?: AbortSignal): Promise<ModPackagePlacement>
   dispose(): void | Promise<void>
 }
 
