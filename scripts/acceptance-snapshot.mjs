@@ -41,6 +41,7 @@ const REPOSITORIES = [
   'modkit-extensions-ea',
   'modkit-extensions-spring',
   'modkit-extensions-other',
+  'modkit-extensions-roblox',
   'multiverse',
 ]
 
