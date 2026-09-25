@@ -542,6 +542,7 @@ export const PARTS_FALLBACK_MESSAGES = {
   'settings.add': 'Add',
   'settings.close': 'Close settings (Esc)',
   'settings.groups': 'Settings groups',
+  'table.columns': 'Columns',
   'table.compare': 'Compare locales',
   'table.group': 'Key group',
 } as const satisfies UiMessageCatalog
@@ -630,6 +631,7 @@ export const TABLE_VARIANTS_FALLBACK_MESSAGES = {
   'table.addKeyName': 'New key',
   'table.addKeySubmit': 'Add',
   'table.addKeyValue': 'Value ({variant})',
+  'table.columns': 'Columns',
   'table.compare': 'Compare locales',
   'table.compareEmpty': 'Empty',
   'table.compareLine':

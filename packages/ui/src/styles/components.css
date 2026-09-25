@@ -366,6 +366,23 @@
     font-size: var(--mk-font-size-sm);
   }
 
+  [data-mk-part='table.columns'] {
+    position: relative;
+    font-size: var(--mk-font-size-sm);
+  }
+
+  [data-mk-part='table.columns'] > div {
+    position: absolute;
+    z-index: 2;
+    display: grid;
+    gap: var(--mk-space-1);
+    padding: var(--mk-space-2);
+    white-space: nowrap;
+    background: var(--mk-color-raised);
+    border: 1px solid var(--mk-color-border);
+    border-radius: var(--mk-radius-md);
+  }
+
   [data-mk-part='table.note'] {
     color: var(--mk-color-fg-muted);
     font-size: var(--mk-font-size-sm);

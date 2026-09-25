@@ -77,6 +77,8 @@ interface FilterState {
   search: string
   group: string
   statuses: string[]
+  /** Headers of the columns the reader hid; a dozen locales do not fit side by side. */
+  hidden: string[]
 }
 const remembered = new Map<string, FilterState>()
 
@@ -113,6 +115,7 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
     search: '',
     group: '',
     statuses: [],
+    hidden: [],
   }
   remembered.set(args.descriptor.subjectUri, state)
 
@@ -226,6 +229,37 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
   }
   target.hidden = actions.translateVariant === undefined || variants.length < 2
 
+  // Every column but the key can be hidden; the choice follows the subject across reopens.
+  const columns = element(bar, 'details', { part: 'table.columns' })
+  element(columns, 'summary', { text: text('table.columns') })
+  const choices = element(columns, 'div', {})
+  const isHidden = (column: number): boolean => state.hidden.includes(header[column] ?? '')
+  const showColumns = (): void => {
+    const head = (args.before as HTMLTableElement).tHead?.rows[0]
+    // Each drawn row and the head start with the selection cell, so column c sits at c + 1.
+    for (const tr of [...(head === undefined ? [] : [head]), ...drawnRows]) {
+      header.forEach((_, column) => {
+        const cell = tr.cells[column + 1]
+        if (cell !== undefined) cell.hidden = isHidden(column)
+      })
+    }
+  }
+  header.forEach((label, column) => {
+    if (column === keyColumn) return
+    const line = element(choices, 'label', {})
+    const box = element(line, 'input', {}) as HTMLInputElement
+    box.type = 'checkbox'
+    box.checked = !isHidden(column)
+    line.append(line.ownerDocument.createTextNode(` ${label}`))
+    box.addEventListener('change', () => {
+      state.hidden = box.checked
+        ? state.hidden.filter(item => item !== label)
+        : [...state.hidden, label]
+      showColumns()
+    })
+  })
+  columns.hidden = header.length < 3
+
   const more = element(args.root, 'button', {
     part: 'table.next',
     text: text('table.more'),
@@ -234,6 +268,7 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
   let visible: Row[] = []
   let shown = 0
   let keyFilter: ReadonlySet<string> | undefined
+  let drawnRows: readonly HTMLTableRowElement[] = []
 
   const matches = (row: Row): boolean => {
     const key = row.cells[keyColumn] ?? ''
@@ -264,6 +299,8 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
       })
       cell.append(box)
     })
+    drawnRows = drawn
+    showColumns()
     more.hidden = shown >= visible.length
     say(text('table.shown', { shown: Math.min(shown, visible.length), total: rows.length }))
   }

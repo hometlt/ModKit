@@ -278,6 +278,29 @@ describe('variant table surface', () => {
     expect(await keys()).toHaveLength(3)
   })
 
+  it('hides a column in the head and in every drawn row, across redraws', async () => {
+    const ruRU = '[data-mk-part="table.columns"] label:has-text("ruRU") input'
+    const visibleHead = () =>
+      page.$$eval('[data-mk-part="table.head"] th', cells =>
+        cells.filter(cell => !cell.hidden).map(cell => cell.textContent),
+      )
+    const visibleCells = () =>
+      page.$$eval('[data-mk-part="table.row"]', rows =>
+        rows.map(row => [...row.querySelectorAll('td')].filter(cell => !cell.hidden).length),
+      )
+    await page.click('[data-mk-part="table.columns"] summary')
+    await page.uncheck(ruRU)
+    expect(await visibleHead()).toEqual(['', 'Key', 'enUS', 'Preview', 'Status'])
+    expect(await visibleCells()).toEqual([5, 5, 5])
+    await page.fill('[data-mk-part="toolbar.search-input"]', 'Beta')
+    expect(await visibleCells()).toEqual([5])
+    await page.fill('[data-mk-part="toolbar.search-input"]', '')
+    await page.check(ruRU)
+    expect(await visibleHead()).toEqual(['', 'Key', 'enUS', 'ruRU', 'Preview', 'Status'])
+    expect(await visibleCells()).toEqual([6, 6, 6])
+    await page.click('[data-mk-part="table.columns"] summary')
+  })
+
   it('explains why translation is disabled before anything is sent', async () => {
     expect(await page.isDisabled('button[aria-label="Translate empty cells"]')).toBe(true)
     expect(await page.textContent('[data-mk-part="table.note"]')).toContain(
