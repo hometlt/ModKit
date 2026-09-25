@@ -131,7 +131,60 @@ export type InspectionOperationState =
       'id' | 'state' | 'reason'
     >
 
+/**
+ * S3 DRAFT — not yet consumed by `createInspectionCodec`. How one container entry's bytes are stored,
+ * so the host, not every codec, can list, extract and open it. `offset`/`length` are absolute byte
+ * positions in the container source. For the decoding kinds the host inflates with the one owner in
+ * `codec-kit/compression`, bounded by the entry's decoded `size`. `custom` is for what no shared
+ * decoder covers (Halo ERA `decryptRange`, a proprietary codec): the format opens the entry itself.
+ */
+export type ContainerEntryStorage =
+  | { readonly kind: 'stored'; readonly offset: bigint; readonly length: bigint }
+  | {
+      readonly kind: 'deflate' | 'zlib' | 'gzip' | 'zstd' | 'lz4-block' | 'refpack'
+      readonly offset: bigint
+      readonly compressedLength: bigint
+    }
+  | {
+      readonly kind: 'custom'
+      /** A range source of the decoded entry, or its decoded bytes as a stream (read once). */
+      open(signal?: AbortSignal): Promise<ByteRangeSource | AsyncIterable<Uint8Array>>
+    }
+
+/**
+ * S3 DRAFT. One entry of a container: what the codec's `index → entries` function returns. The
+ * host derives the entry's id, name and revision (`containerEntryRevision(container, path, size)`).
+ */
+export interface ContainerEntry {
+  /** `/`-separated, relative, no empty, `.` or `..` segment; unique under `caseSensitivity`. */
+  readonly path: string
+  /** Decoded size — what extraction produces and what the host bounds decoding by. */
+  readonly size: bigint
+  readonly storage: ContainerEntryStorage
+  readonly modifiedAt?: number
+  readonly checksum?: { readonly algorithm: string; readonly value: string }
+}
+
+/**
+ * S3 DRAFT. A range-access container's entry table, returned from `inspect` as `containerEntries`.
+ * From it the host will build, with no code in the codec: `namespace-entry-source` (paged, with a
+ * cursor, `batchItems` across the worker boundary), `container.extract` for entries within budget,
+ * a leased entry source for `openNestedSubject` without materialising it (a range of the container
+ * for `stored`, a bounded decoding stream otherwise), chunked `subject.extract --out`, and the
+ * `maxDecodedBytes` guard. A codec keeps only `detect`, reading its index by ranges, and mapping
+ * each record to an entry.
+ */
+export interface ContainerEntryTable {
+  readonly entries: readonly ContainerEntry[]
+  readonly caseSensitivity: 'sensitive' | 'insensitive'
+  /** False when the index was cut short (budget, damage); `diagnostics` say why. */
+  readonly complete: boolean
+  readonly diagnostics?: readonly AssetDiagnostic[]
+}
+
 export interface InspectionResult {
+  /** S3 DRAFT — only for `access: 'ranges'`; ignored until the host builds on it. */
+  readonly containerEntries?: ContainerEntryTable
   readonly summary: JsonValue
   readonly metadata: readonly MetadataGroup[]
   readonly traits: readonly InspectionTrait[]
