@@ -144,9 +144,18 @@ export function createSourceTree(input: SourceTreeInput): readonly SourceTreeNod
       const mounting =
         includesPath(input.mountingIds, source.normalizedPath) ||
         includesPath(input.mountingIds, source.installPath)
+      // Opening an installation mounts the content-source root that reads its storage, when one
+      // does (`storageOf`); that root being mounted is this installation being mounted.
+      const servedBy = input.providerSnapshot?.roots.find(
+        root =>
+          root.storageOf !== undefined &&
+          (samePath(root.storageOf, source.installPath) ||
+            samePath(root.storageOf, source.normalizedPath)),
+      )
       const mounted =
         includesPath(input.mountedInstallationPaths, source.normalizedPath) ||
-        includesPath(input.mountedInstallationPaths, source.installPath)
+        includesPath(input.mountedInstallationPaths, source.installPath) ||
+        (servedBy !== undefined && input.mountedProviderRootIds.has(servedBy.id))
       const state = mounting
         ? input.text.mounting
         : mounted

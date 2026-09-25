@@ -101,6 +101,35 @@ describe('VS Code Sources tree', () => {
    * Mount and unmount are one action per state, so the row carries which state it is in: a mount
    * in flight says so before its folder can list anything, and only then offers to cancel.
    */
+  it('marks an installation mounted when the source reading its storage is', () => {
+    const snapshot = {
+      ...providerSnapshot,
+      roots: [
+        ...providerSnapshot.roots,
+        {
+          id: 'local:casc',
+          label: 'StarCraft II — CASC',
+          region: 'local',
+          kind: 'local' as const,
+          storageOf: 'C:\\Games\\StarCraft II',
+        },
+      ],
+    }
+    const installationRow = (mounted: ReadonlySet<string>) =>
+      createSourceTree({
+        workspaceFolders: [],
+        selectedInstallations: [installation],
+        mountedProviderRootIds: mounted,
+        providerSnapshot: snapshot,
+        text,
+      })[1]?.children?.[0]?.children?.[0]
+    expect(installationRow(new Set())?.description).toBe('blizzard.starcraft2 · selected')
+    expect(installationRow(new Set(['local:casc']))).toMatchObject({
+      description: 'blizzard.starcraft2 · mounted',
+      contextValue: 'modkitSource.installation.mounted',
+    })
+  })
+
   it('marks a mount in flight and marks a mounted installation', () => {
     const tree = createSourceTree({
       workspaceFolders: [],

@@ -58,7 +58,8 @@ const DEFAULT_PREVIEW = { matchLines: 100, charsPerLine: 10_000 }
  * 29 GB of textures, and reading them only to find they are binary is not a search.
  */
 export function textFileExtensions(): readonly string[] {
-  const extensions = new Set([''])
+  // Plain text is VS Code's own language, not one an extension contributes.
+  const extensions = new Set(['', 'txt'])
   for (const extension of vscode.extensions.all) {
     const contributes = (extension.packageJSON as { contributes?: { languages?: unknown } })
       .contributes
