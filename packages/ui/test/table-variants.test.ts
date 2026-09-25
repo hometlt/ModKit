@@ -106,6 +106,7 @@ beforeAll(async () => {
               addRow: 'edit.content',
               compareVariants: 'asset.compare',
               translateVariant: 'x/strings.translate',
+              renderValues: 'x/strings.render',
             },
             keySeparator: '/',
           }
@@ -148,6 +149,7 @@ beforeAll(async () => {
           operation('edit.field', 'edit-field', true),
           operation('asset.compare', 'compare-locales'),
           operation('x/strings.translate', 'translate'),
+          operation('x/strings.render', 'render'),
         ],
       }
       const operations = {
@@ -169,6 +171,26 @@ beforeAll(async () => {
                         translated: options.changed === false ? 'Beta' : 'Бета',
                         changed: options.changed !== false,
                       },
+              },
+            }
+          }
+          if (handler === 'render') {
+            const items = input['items'] as { text: string }[]
+            return {
+              state: 'ok',
+              output: {
+                kind: 'json',
+                value: {
+                  items: items.map(item => ({
+                    runs: [
+                      { text: item.text.toUpperCase(), color: '#ff0000', bold: true },
+                      { text: 'x', color: 'red; background: url(//evil)' },
+                      { text: '', asset: 'Assets/Icons/Mineral.dds' },
+                      { text: '?', unresolved: 'no catalog' },
+                      { text: 'drawn', asset: 'Assets/Icons/Gas.dds' },
+                    ],
+                  })),
+                },
               },
             }
           }
@@ -410,5 +432,47 @@ describe('variant table surface', () => {
     )
     expect(await page.locator('[data-mk-part="table.panel"] button').count()).toBe(0)
     expect(await page.evaluate(() => (globalThis as unknown as Probe).commits.length)).toBe(0)
+  })
+
+  it('draws locale values as in game in one batch, only through safe text and colours', async () => {
+    await page.evaluate(() => (globalThis as unknown as Probe).mountTable())
+    await page.click('button[aria-label="As in game"]')
+    await page.waitForSelector('[data-mk-part="table.body"] td[data-rendered="true"]')
+    const calls = await page.evaluate(() =>
+      (globalThis as unknown as Probe).calls.filter(call => call.handler === 'render'),
+    )
+    // Empty values are not sent: five of the six locale cells hold text.
+    expect(calls).toHaveLength(1)
+    expect((calls[0]?.input as { items: unknown[] }).items).toEqual([
+      { column: 1, text: 'Alpha' },
+      { column: 2, text: 'Альфа' },
+      { column: 1, text: 'Beta' },
+      { column: 1, text: 'Gamma' },
+      { column: 2, text: 'Gamma' },
+    ])
+    const first = await page.$eval('[data-mk-part="table.row"] td:nth-child(3)', cell => ({
+      text: cell.textContent,
+      spans: [...cell.children].map(child => ({
+        part: child.getAttribute('data-mk-part'),
+        color: (child as HTMLElement).style.color,
+        weight: (child as HTMLElement).style.fontWeight,
+        title: (child as HTMLElement).title,
+      })),
+    }))
+    // The run carrying both an image and text is refused whole; the unsafe colour is dropped.
+    expect(first.text).toBe('ALPHAxMineral.dds?')
+    expect(first.spans).toEqual([
+      { part: null, color: 'rgb(255, 0, 0)', weight: 'bold', title: '' },
+      { part: null, color: '', weight: '', title: '' },
+      { part: 'table.asset', color: '', weight: '', title: 'Assets/Icons/Mineral.dds' },
+      { part: 'table.unresolved', color: '', weight: '', title: 'no catalog' },
+    ])
+    // Hovering a drawn cell must not paint the stored text's syntax runs over it.
+    await page.hover('[data-mk-part="table.row"] td:nth-child(3)')
+    expect(await page.textContent('[data-mk-part="table.row"] td:nth-child(3)')).toBe(
+      'ALPHAxMineral.dds?',
+    )
+    await page.click('button[aria-label="As in game"]')
+    expect(await page.textContent('[data-mk-part="table.row"] td:nth-child(3)')).toBe('Alpha')
   })
 })

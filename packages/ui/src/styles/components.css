@@ -383,6 +383,12 @@
     border-radius: var(--mk-radius-md);
   }
 
+  [data-mk-part='table.asset'],
+  [data-mk-part='table.unresolved'] {
+    color: var(--mk-color-fg-muted);
+    text-decoration: underline dotted;
+  }
+
   [data-mk-part='table.note'] {
     color: var(--mk-color-fg-muted);
     font-size: var(--mk-font-size-sm);

@@ -14,10 +14,15 @@ import type {
   TableActions,
   TableColumnInfo,
   TableDataSource,
+  TableValueRendering,
   TableVariantComparison,
   CommitCoordinator,
   EditAuthorizationPort,
+  ViewerWorkspaceDocument,
+  ViewerWorkspaceDocuments,
 } from '@modkit/sdk'
+import { isGameTemplateTextRun, type GameTemplateTextRun } from '@modkit/sdk/templates'
+import type { GameTemplateImageResolver } from '../template/index.js'
 import { createToolbar } from '../toolbar/index.js'
 import { element, invokeOperation, setPart, setViewerText } from '../viewer/index.js'
 import { commitOperationWrite } from '../field-write/index.js'
@@ -32,6 +37,10 @@ export const VARIANT_PAGE_ROWS = 200
 const LOAD_PAGE_ROWS = 1000
 /** Cells one translate click sends; the rest wait for the next click. */
 export const TRANSLATE_BATCH = 50
+/** Values one render request carries: a page of a dozen locales is a few requests, not one per cell. */
+export const RENDER_BATCH = 400
+/** A run's colour is drawn only in this form; anything else stays the default colour. */
+const RUN_COLOR = /^#[0-9a-f]{6}$/iu
 
 const FILTER_LABELS = {
   missing: 'table.filterMissing',
@@ -65,11 +74,55 @@ export interface VariantTableArgs {
   readonly writeRefusal?: () => string | undefined
   /** The rows' own element; the controls are placed above it. */
   readonly before: HTMLElement
+  /** The documents around the subject, for the codec's render operation (its style sheet, say). */
+  readonly workspaceDocuments?: ViewerWorkspaceDocuments
+  /** Pixels for the inline images a rendered value names. */
+  readonly images?: GameTemplateImageResolver
 }
 
 export interface VariantTable {
   /** A cell write the table committed, so filters and status follow it. */
   written(row: number, column: number, value: string): void
+}
+
+/**
+ * One value as runs. Text goes in through `textContent` and a colour only as `#rrggbb`; an image is
+ * a named slot the host's pixels replace later, and an unresolved run is marked with why.
+ */
+function drawRuns(cell: HTMLTableCellElement, runs: readonly GameTemplateTextRun[]): void {
+  const document = cell.ownerDocument
+  cell.dataset['rendered'] = 'true'
+  cell.replaceChildren()
+  for (const run of runs) {
+    if (run.asset !== undefined) {
+      const slot = document.createElement('span')
+      setPart(slot, 'table.asset')
+      slot.dataset['asset'] = run.asset
+      slot.title = run.asset
+      setViewerText(slot, run.asset.split(/[\\/]/u).pop() ?? run.asset)
+      cell.append(slot)
+      continue
+    }
+    run.text.split('\n').forEach((line, index) => {
+      if (index > 0) cell.append(document.createElement('br'))
+      if (line === '') return
+      const span = document.createElement('span')
+      setViewerText(span, line)
+      if (run.color !== undefined && RUN_COLOR.test(run.color)) span.style.color = run.color
+      if (run.bold === true) span.style.fontWeight = 'bold'
+      if (run.italic === true) span.style.fontStyle = 'italic'
+      if (run.underline === true) span.style.textDecoration = 'underline'
+      // A style sheet's glyph height, relative to a 16-unit body and kept readable in a row.
+      if (run.size !== undefined) {
+        span.style.fontSize = `${Math.min(2, Math.max(0.75, run.size / 16))}em`
+      }
+      if (run.unresolved !== undefined) {
+        setPart(span, 'table.unresolved')
+        span.title = run.unresolved
+      }
+      cell.append(span)
+    })
+  }
 }
 
 /** Filter state kept across a reopen of the same subject. */
@@ -79,6 +132,8 @@ interface FilterState {
   statuses: string[]
   /** Headers of the columns the reader hid; a dozen locales do not fit side by side. */
   hidden: string[]
+  /** Values drawn as the game shows them rather than as stored. */
+  render: boolean
 }
 const remembered = new Map<string, FilterState>()
 
@@ -116,6 +171,7 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
     group: '',
     statuses: [],
     hidden: [],
+    render: false,
   }
   remembered.set(args.descriptor.subjectUri, state)
 
@@ -155,6 +211,21 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
         },
       })),
       { kind: 'separator' },
+      ...(actions.renderValues === undefined
+        ? []
+        : [
+            {
+              kind: 'toggle' as const,
+              id: 'render',
+              label: text('table.render'),
+              active: state.render,
+              onToggle: (active: boolean) => {
+                state.render = active
+                toolbar.setActive('render', active)
+                draw()
+              },
+            },
+          ]),
       ...(actions.addRow === undefined || base === undefined
         ? []
         : [
@@ -303,6 +374,85 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
     showColumns()
     more.hidden = shown >= visible.length
     say(text('table.shown', { shown: Math.min(shown, visible.length), total: rows.length }))
+    void renderPage(drawn, page).catch(error => {
+      if (!args.signal.aborted) {
+        say(text('table.renderRefused', { reason: error instanceof Error ? error.message : String(error) }))
+      }
+    })
+  }
+
+  let renderPass = 0
+  let surroundings: Promise<readonly ViewerWorkspaceDocument[] | undefined> | undefined
+  /** The page's values as the game shows them, asked for in batches; a newer draw drops the answer. */
+  const renderPage = async (
+    drawn: readonly HTMLTableRowElement[],
+    page: readonly Row[],
+  ): Promise<void> => {
+    const pass = ++renderPass
+    if (!state.render || actions.renderValues === undefined) return
+    const cells: { cell: HTMLTableCellElement; column: number; text: string }[] = []
+    drawn.forEach((tr, position) => {
+      const row = page[position]
+      if (row === undefined) return
+      for (const column of variants) {
+        const value = row.cells[column.index] ?? ''
+        // Each drawn row starts with the selection cell, so column c sits at c + 1.
+        const cell = tr.cells[column.index + 1]
+        if (value !== '' && cell !== undefined) cells.push({ cell, column: column.index, text: value })
+      }
+    })
+    surroundings ??=
+      args.workspaceDocuments === undefined
+        ? Promise.resolve(undefined)
+        : args.workspaceDocuments.read({ signal: args.signal }).then(
+            answer => answer.documents,
+            () => undefined,
+          )
+    const workspaceDocuments = await surroundings
+    for (let from = 0; from < cells.length; from += RENDER_BATCH) {
+      const batch = cells.slice(from, from + RENDER_BATCH)
+      const result = await invokeOperation(
+        args.descriptor,
+        args.operations,
+        actions.renderValues,
+        {
+          items: batch.map(({ column, text }) => ({ column, text })),
+          ...(workspaceDocuments === undefined ? {} : { workspaceDocuments }),
+        } as unknown as JsonValue,
+        { signal: args.signal },
+      )
+      if (pass !== renderPass || args.signal.aborted) return
+      if (result.state !== 'ok' || result.output.kind !== 'json') {
+        const reason = result.state === 'ok' ? result.output.kind : invokeRefusalMessage(result)
+        say(text('table.renderRefused', { reason }))
+        return
+      }
+      const answer = result.output.value as unknown as Partial<TableValueRendering>
+      const assets = new Set<string>()
+      batch.forEach((item, index) => {
+        const runs = answer.items?.[index]?.runs
+        if (!Array.isArray(runs) || item.cell.dataset['editing'] === 'true') return
+        const valid = runs.filter(isGameTemplateTextRun)
+        drawRuns(item.cell, valid)
+        for (const run of valid) if (run.asset !== undefined) assets.add(run.asset)
+      })
+      if (assets.size === 0 || args.images === undefined) continue
+      const pixels = await args.images(args.descriptor, [...assets], args.signal)
+      if (pass !== renderPass || args.signal.aborted) return
+      for (const { cell } of batch) {
+        for (const slot of cell.querySelectorAll<HTMLElement>('[data-asset]')) {
+          const url = pixels.get(slot.dataset['asset'] ?? '')
+          if (url === undefined) continue
+          const image = slot.ownerDocument.createElement('img')
+          image.src = url
+          image.alt = slot.title
+          image.title = slot.title
+          image.style.height = '1.2em'
+          image.style.verticalAlign = 'text-bottom'
+          slot.replaceWith(image)
+        }
+      }
+    }
   }
 
   const refresh = (): void => {

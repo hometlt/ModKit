@@ -647,6 +647,8 @@ export const TABLE_VARIANTS_FALLBACK_MESSAGES = {
   'table.keyExists': '{key} already exists',
   'table.more': 'Show more rows',
   'table.refused': 'Not saved: {reason}',
+  'table.render': 'As in game',
+  'table.renderRefused': 'Values are not drawn: {reason}',
   'table.saved': 'Saved.',
   'table.search': 'Search keys and values',
   'table.selectRow': 'Select row {key}',

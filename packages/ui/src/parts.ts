@@ -82,6 +82,8 @@ export const PARTS = Object.freeze([
   'table.controls',
   'table.group',
   'table.columns',
+  'table.asset',
+  'table.unresolved',
   'table.note',
   'table.panel',
   'table.add',

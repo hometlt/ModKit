@@ -276,6 +276,8 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
       module: createTableViewer({
         localizer: context.localizer,
         onCommitted: descriptor => context.reopen(descriptor as unknown as Record<string, unknown>),
+        // Inline images of a value drawn as in game, through the template stage's raster port.
+        ...(context.templateImages === undefined ? {} : { images: context.templateImages }),
       }),
     },
     {

@@ -26,6 +26,7 @@ import { type UiLocalizationOptions } from '../localization/index.js'
 import { TABLE_FALLBACK_MESSAGES } from '../localization/fallback-catalogs.generated.js'
 import { withEnglishUiFallback } from '../localization/fallback.js'
 import { mountVariantTable, type VariantTable } from './variants.js'
+import type { GameTemplateImageResolver } from '../template/index.js'
 
 export const TABLE_PAGE_ROWS = 200
 export const TABLE_KNOWLEDGE_SUMMARY_CHARACTERS = 512
@@ -86,6 +87,8 @@ export interface TableViewerOptions extends UiLocalizationOptions {
    * writes and says why, instead of letting the next one fail as a conflict.
    */
   readonly onCommitted?: (descriptor: AnyDescriptor) => boolean | Promise<boolean>
+  /** Pixels for the inline images a rendered value names; the host resolves the logical ids. */
+  readonly images?: GameTemplateImageResolver
 }
 
 export function createTableViewer(options: TableViewerOptions = {}): ViewerModule {
@@ -279,7 +282,8 @@ export function createTableViewer(options: TableViewerOptions = {}): ViewerModul
           cell.title = refusal
           return
         }
-        const previous = cell.textContent ?? ''
+        // What was drawn — highlighted or rendered — comes back as it was when the edit is dropped.
+        const previous = [...cell.childNodes]
         let written: string | undefined
         cell.dataset['editing'] = 'true'
         cell.replaceChildren()
@@ -323,10 +327,11 @@ export function createTableViewer(options: TableViewerOptions = {}): ViewerModul
             const accepted = write ? await mount.commit() : false
             if (!accepted && write) return // the field explains the refusal; stay open
             await dispose()
-            const shown = written ?? previous
-            setViewerText(cell, shown)
-            if (written !== undefined) {
-              variants?.written(coord.row, coord.column, shown)
+            if (written === undefined) {
+              cell.replaceChildren(...previous)
+            } else {
+              setViewerText(cell, written)
+              variants?.written(coord.row, coord.column, written)
               await committed()
             }
           } catch (error) {
@@ -379,7 +384,11 @@ export function createTableViewer(options: TableViewerOptions = {}): ViewerModul
               // Once per cell: the runs do not change until the value does, and a re-render replaces
               // the whole body anyway.
               const highlight = () => {
-                if (cell.dataset['highlighted'] === 'true' || cell.dataset['editing'] === 'true') {
+                if (
+                  cell.dataset['highlighted'] === 'true' ||
+                  cell.dataset['editing'] === 'true' ||
+                  cell.dataset['rendered'] === 'true'
+                ) {
                   return
                 }
                 cell.dataset['highlighted'] = 'true'
@@ -391,7 +400,8 @@ export function createTableViewer(options: TableViewerOptions = {}): ViewerModul
                       !body.contains(cell) ||
                       facts.value !== value ||
                       facts.spans === undefined ||
-                      cell.dataset['editing'] === 'true'
+                      cell.dataset['editing'] === 'true' ||
+                      cell.dataset['rendered'] === 'true'
                     )
                       return
                     renderValueWithSpans(cell, facts.value, facts.spans)
@@ -439,6 +449,10 @@ export function createTableViewer(options: TableViewerOptions = {}): ViewerModul
           ...(args.authorization === undefined ? {} : { authorization: args.authorization }),
           signal: scope.signal,
           ...(options.localizer === undefined ? {} : { localizer: options.localizer }),
+          ...(args.workspaceDocuments === undefined
+            ? {}
+            : { workspaceDocuments: args.workspaceDocuments }),
+          ...(options.images === undefined ? {} : { images: options.images }),
           render,
           committed,
           writeRefusal: () => stale,
