@@ -2155,7 +2155,8 @@ function containerAliasAbsence(
   scan: ContainerAliasScan,
   options: OpenSubjectOptions,
 ): readonly Diagnostic[] {
-  const path = options.path ?? options.source.ref.uri
+  // The file name, never where it lives: a diagnostic must not disclose the local directory layout.
+  const path = (options.path ?? options.source.ref.uri).split(/[\\/]/u).at(-1) ?? ''
   const explained: Diagnostic[] = scan.skipped.map(item =>
     diagnostic(
       'warning',
