@@ -103,7 +103,10 @@ they never make a partial workspace complete.
   explicit root IDs; incomplete source scans and result caps are always disclosed.
 - `modkit.subject_calculations` returns bounded formulas, inputs, values, and warnings.
 - `modkit.invoke_readonly` invokes an exact operation ID only when the current descriptor marks it
-  available and `mutatesSource: false`.
+  available and `mutatesSource: false`. A byte output whose signature is an image (PNG, JPEG, GIF,
+  WebP, at most 4 MiB) also comes back as an MCP image block. `render: "image"` draws a
+  `map.layer-read` grid as a grey PNG, black to white over its lowest to highest sample; that range
+  is in `data.render`, the numbers stay in the JSON.
 - `modkit.knowledge_search` searches the single inventory-backed knowledge catalog.
 - `modkit.knowledge_resolve` resolves knowledge for one exact target and locale order.
 
@@ -129,6 +132,25 @@ did not publish one.
 
 Responses carry an explicit snapshot, completeness, diagnostics, provenance, and bounded data.
 Handles and cursors are opaque and scoped to the running server.
+
+## Map layers
+
+A map codec of any game publishes `map.layers`, `map.layer-read` and `map.layer-write`; the
+subject descriptor carries each operation's input schema from `@modkit/sdk/maps`. A layer names its
+size, integer sample bounds, whether it is editable, and what a sample means in the world
+(`valueOffset + sample * valueScale`, in `unit`, at grid vertices or in cells). Rows are
+row-major with row 0 at the north edge. JSON arrays in a response are capped at 200 items, so read
+and write a window (`x`, `y`, `width`, `height`) rather than a whole layer; `render: "image"` on a
+whole-layer read shows all of it. A write is proposed with `modkit.propose_edit` on
+`map.layer-write` and applied only by `modkit.prepare_edit` and `modkit.commit_edit`; a plan made
+against an older revision is refused at prepare, and `modkit.undo_edit` restores the prior bytes.
+
+Committing needs `--allow-edits`. It also needs a fidelity proof for the codec's writer, and the
+host accepts a codec's own proof only from an extension it trusts: an extension root added with
+`--extension` loads as installed and its self-declared proof does not count, so a map write is
+refused as `fidelity-unproven`. To write SC2 or Warzone maps, name the game extension root and add
+`--trust-extensions`, which loads the roots as bundled; that is an explicit decision to run and
+trust that code.
 
 SC2 installation directories are opened through the ordinary VFS and CASC codec. After an exact
 map candidate is selected, the host performs bounded `DocumentInfo` reads itself and gives the game
