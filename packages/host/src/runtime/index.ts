@@ -31,6 +31,13 @@ import {
 import type { ExecutionBackendRegistry } from '../execution/backend.js'
 import type { Inventory } from '../inventory.js'
 import { createHostServiceResolver, type HostServiceResolver } from '../service-leases.js'
+export {
+  RUNTIME_PREPARER_MAJOR,
+  resolveContentRuntimePreparer,
+  type RuntimeCompositionPreparer,
+  type RuntimePreparationRequest,
+  type RuntimePreparerResolution,
+} from './preparer.js'
 import { FACETLESS_SERVICE_MATCHER_PROFILE } from '../service-definitions.js'
 import {
   createSubjectLogicalResources,
@@ -381,7 +388,8 @@ async function unresolvedAfterRelease(
 
 /** Resolve a runtime provider and open one resource-bounded executable session. */
 export async function openRuntimeSession(
-  request: (OpenRuntimeSessionRequest & { providerMajor: 2 })
+  request:
+    | (OpenRuntimeSessionRequest & { providerMajor: 2 })
     | (OpenRuntimeSessionRequest & { providerMajor: 3; seed: string }),
 ): Promise<RuntimeSessionResolution<RuntimeSessionV2>>
 export async function openRuntimeSession(
@@ -490,16 +498,24 @@ async function resolveRuntimeSession(
       ],
     }
   }
-  if (providerMajor === 3
-    ? typeof request.seed !== 'string' || !/^(0|[1-9][0-9]{0,19})$/.test(request.seed)
-      || BigInt(request.seed) > 0xffff_ffff_ffff_ffffn
-    : request.seed !== undefined) {
+  if (
+    providerMajor === 3
+      ? typeof request.seed !== 'string' ||
+        !/^(0|[1-9][0-9]{0,19})$/.test(request.seed) ||
+        BigInt(request.seed) > 0xffff_ffff_ffff_ffffn
+      : request.seed !== undefined
+  ) {
     return {
       state: 'unresolved',
-      diagnostics: [diagnostic('error', 'x3.host/runtime-seed-invalid',
-        providerMajor === 3
-          ? 'runtime provider major 3 requires a canonical unsigned u64 decimal seed'
-          : 'explicit runtime seed requires provider major 3')],
+      diagnostics: [
+        diagnostic(
+          'error',
+          'x3.host/runtime-seed-invalid',
+          providerMajor === 3
+            ? 'runtime provider major 3 requires a canonical unsigned u64 decimal seed'
+            : 'explicit runtime seed requires provider major 3',
+        ),
+      ],
     }
   }
   const definitions = request.services.serviceDefinitions
