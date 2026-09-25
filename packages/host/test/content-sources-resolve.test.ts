@@ -58,6 +58,20 @@ describe('the content sources extensions declare', () => {
     await expect(resolveContentSources({ extensionRoots: [escaping], storage: join(work, 'storage') })).rejects.toThrow(/inside the extension root/)
   })
 
+  it('lets a configuration stand in for one extension while the others still compose', async () => {
+    const configured = await extension('scoped-config', undefined)
+    const declared = await extension('scoped', 'dist/sources.mjs')
+    const other = await extension('scoped-other', 'dist/sources.mjs')
+    const configPath = join(work, 'scoped-provider.json')
+    await writeFile(
+      configPath,
+      JSON.stringify({ module: join(configured, 'dist', 'sources.mjs'), options: {}, extension: 'example/scoped' }),
+    )
+    const sources = await resolveContentSources({ extensionRoots: [declared, other], configPath, storage: join(work, 'storage') })
+    expect((await sources?.snapshot())?.roots.map(root => root.id)).toEqual(['scoped-config:root', 'scoped-other:root'])
+    await sources?.dispose()
+  })
+
   it('uses only the configured module when a configuration is given', async () => {
     const configured = await extension('configured', undefined)
     const configPath = join(work, 'provider.json')

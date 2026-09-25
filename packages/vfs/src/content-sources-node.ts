@@ -7,15 +7,35 @@ export { callContentSources } from './content-sources.js'
 
 export async function loadContentSources(configPath: string | undefined, storage: string): Promise<ContentSources | undefined> {
   if (!configPath) return undefined
+  const config = await readContentSourceConfig(configPath)
+  return loadContentSourceModule(config.module, config.options, storage)
+}
+
+/**
+ * A trusted `{ module, options, extension? }` configuration. `extension` (`publisher/id`) says which
+ * extension's declared module it stands in for; without it the configuration is the only source.
+ */
+export async function readContentSourceConfig(configPath: string): Promise<{
+  readonly module: string
+  readonly options: Readonly<Record<string, unknown>>
+  readonly extension?: string
+}> {
   if (!isAbsolute(configPath)) throw new TypeError('Content source configuration must be an absolute trusted path')
   const raw = await readFile(configPath, 'utf8')
   if (raw.length > 65536) throw new TypeError('Content source configuration is too large')
-  const config = JSON.parse(raw) as { module?: unknown; options?: unknown }
+  const config = JSON.parse(raw) as { module?: unknown; options?: unknown; extension?: unknown }
   if (typeof config.module !== 'string' || !isAbsolute(config.module)) throw new TypeError('Expected an absolute source module path')
   if (config.options !== undefined && (config.options === null || typeof config.options !== 'object' || Array.isArray(config.options))) {
     throw new TypeError('Invalid content source options')
   }
-  return loadContentSourceModule(config.module, (config.options ?? {}) as Record<string, unknown>, storage)
+  if (config.extension !== undefined && (typeof config.extension !== 'string' || !/^[^/\s]+\/[^/\s]+$/u.test(config.extension))) {
+    throw new TypeError('Invalid content source extension (expected publisher/id)')
+  }
+  return {
+    module: config.module,
+    options: (config.options ?? {}) as Record<string, unknown>,
+    ...(config.extension === undefined ? {} : { extension: config.extension }),
+  }
 }
 
 /** Load one trusted module's `createContentSources` and check it implements the catalogue. */

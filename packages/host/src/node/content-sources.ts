@@ -1,12 +1,19 @@
 import { readFile, realpath } from 'node:fs/promises'
 import { isAbsolute, join, relative, resolve } from 'node:path'
 import { composeContentSources, type ContentSources } from '@modkit/vfs/content-sources'
-import { loadContentSourceModule, loadContentSources } from '@modkit/vfs/content-sources/node'
+import {
+  loadContentSourceModule,
+  loadContentSources,
+  readContentSourceConfig,
+} from '@modkit/vfs/content-sources/node'
 
 export interface ResolveContentSourcesOptions {
   /** Every extension root the host loaded; each may declare `modkit.contentSources`. */
   readonly extensionRoots: readonly string[]
-  /** An explicit trusted `{ module, options }` configuration; when given it is the only source. */
+  /**
+   * An explicit trusted `{ module, options, extension? }` configuration. With `extension` it stands in
+   * for that extension's declared module and the others still compose; without it, it is the only one.
+   */
   readonly configPath?: string
   /** Host storage; modules get `<storage>/cache` and `<storage>/state`. */
   readonly storage: string
@@ -21,13 +28,17 @@ export interface ResolveContentSourcesOptions {
 export async function resolveContentSources(
   options: ResolveContentSourcesOptions,
 ): Promise<ContentSources | undefined> {
-  if (options.configPath) return loadContentSources(options.configPath, options.storage)
+  const config = options.configPath ? await readContentSourceConfig(options.configPath) : undefined
+  if (config !== undefined && config.extension === undefined) {
+    return loadContentSources(options.configPath, options.storage)
+  }
   const seen = new Set<string>()
   const parts: ContentSources[] = []
   try {
+    if (config !== undefined) parts.push(await loadContentSourceModule(config.module, config.options, options.storage))
     for (const root of options.extensionRoots) {
       const declared = await declaredModule(root)
-      if (declared === undefined) continue
+      if (declared === undefined || declared.extension === config?.extension) continue
       const key = (await realpath(declared.module)).toLowerCase()
       if (seen.has(key)) continue
       seen.add(key)
