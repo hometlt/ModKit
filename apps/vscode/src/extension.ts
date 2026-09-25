@@ -2784,24 +2784,64 @@ async function activateModkit(
    * editor's secret storage, never in a file or a command line. One that is no longer accepted is
    * forgotten, and the login is retried the ordinary way, once.
    */
-  const ticketKey = (region: string): string => `modkit.battlenet.ticket.${region}`
+  const ticketKey = (region: string): string => `modkit.contentSources.ticket.${region}`
+  /** Where Battle.net tickets were kept before any other game had a region. */
+  const earlierTicketKey = (region: string): string => `modkit.battlenet.ticket.${region}`
+  /** A signed-out account must not be taken back, from either name. */
+  const forgetTicket = async (region: string): Promise<void> => {
+    await context.secrets.delete(ticketKey(region))
+    await context.secrets.delete(earlierTicketKey(region))
+  }
+  /** The ticket kept for a region; one kept under the Battle.net-only name moves to the shared one. */
+  const keptTicket = async (region: string): Promise<string | undefined> => {
+    const kept = await context.secrets.get(ticketKey(region))
+    if (kept !== undefined) return kept
+    const earlier = earlierTicketKey(region)
+    const moved = await context.secrets.get(earlier)
+    if (moved === undefined) return undefined
+    await context.secrets.store(ticketKey(region), moved)
+    await context.secrets.delete(earlier)
+    return moved
+  }
+  /**
+   * The key a region without a sign-in page needs (Roblox Open Cloud's API key, say), typed into a
+   * password box. Undefined when the region needs none or the user cancels.
+   */
+  const askCredential = async (credential: {
+    readonly label: string
+  }): Promise<string | undefined> => {
+    const typed = await vscode.window.showInputBox({
+      title: credential.label,
+      prompt: localizer.text('vscode.sources.credential', { label: credential.label }),
+      password: true,
+      ignoreFocusOut: true,
+    })
+    return typed === undefined || typed.trim() === '' ? undefined : typed.trim()
+  }
   const connectAccount = async (
     source: ContentSources,
     region: string,
     accountId?: string,
   ): Promise<void> => {
     const key = ticketKey(region)
-    const kept = await context.secrets.get(key)
+    const kept = await keptTicket(region)
+    const credential = (await source.snapshot()).regions.find(item => item.id === region)?.credential
     const run = async (ticket?: string) =>
       (await callContentSources(source, 'connect', [region, accountId, ticket])) as
         { ticket?: string } | undefined
+    // A region that takes a typed key is not connected without one: cancelling leaves it as it was.
+    const first = kept ?? (credential === undefined ? undefined : await askCredential(credential))
+    if (credential !== undefined && first === undefined) return
     let result: { ticket?: string } | undefined
     try {
-      result = await run(kept)
+      result = await run(first)
     } catch (error) {
       if (kept === undefined) throw error
-      await context.secrets.delete(key)
-      result = await run(undefined)
+      // The kept ticket or key is no longer accepted: forget it and ask the ordinary way, once.
+      await forgetTicket(region)
+      const again = credential === undefined ? undefined : await askCredential(credential)
+      if (credential !== undefined && again === undefined) return
+      result = await run(again)
     }
     if (typeof result?.ticket === 'string') await context.secrets.store(key, result.ticket)
     await rememberConnections(source)
@@ -3945,7 +3985,7 @@ async function activateModkit(
         if (snapshot.roots.some(root => root.id === sourceId)) {
           await callContentSources(source, 'disconnect', [sourceId.slice('mine:'.length)])
           const region = snapshot.roots.find(root => root.id === sourceId)?.region
-          if (region !== undefined) await context.secrets.delete(ticketKey(region))
+          if (region !== undefined) await forgetTicket(region)
           await rememberConnections(source)
           staleRoots.add(sourceId)
           sourceDecorations.fire(undefined)
@@ -4002,7 +4042,7 @@ async function activateModkit(
         await callContentSources(source, 'disconnect', [chosen])
         // A signed-out account must not be taken back by the next window.
         const region = connections.find(item => item.id === chosen)?.region
-        if (region !== undefined) await context.secrets.delete(ticketKey(region))
+        if (region !== undefined) await forgetTicket(region)
         await rememberConnections(source)
         sourcesView.refresh()
         return true
