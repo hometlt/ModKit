@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { luaStaticField, luaStaticToJson, readLuaModule } from '../src/literal.js'
+import {
+  luaDecimalSpelling,
+  luaStaticField,
+  luaStaticToJson,
+  readLuaModule,
+} from '../src/literal.js'
 import { luaSyntax } from '../src/syntax.js'
 
 async function read(text: string) {
@@ -108,5 +113,15 @@ describe('static reading of Lua data modules', () => {
       return base
     `)
     expect(luaStaticToJson(reading.value)).toEqual({ hp: 20 })
+  })
+
+  it('spells Lua numbers as exact decimals', () => {
+    expect(luaDecimalSpelling('1_000')).toBe('1000')
+    expect(luaDecimalSpelling('0x1F')).toBe('31')
+    expect(luaDecimalSpelling('-0b101')).toBe('-5')
+    expect(luaDecimalSpelling('0.35')).toBe('0.35')
+    expect(luaDecimalSpelling('3.25e2')).toBe('3.25e2')
+    expect(luaDecimalSpelling('0x1p4')).toBeUndefined()
+    expect(luaDecimalSpelling('12LL')).toBeUndefined()
   })
 })

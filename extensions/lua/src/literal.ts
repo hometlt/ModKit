@@ -674,3 +674,19 @@ export function luaStaticToJson(value: LuaStaticValue, seen = new Set<LuaStaticV
     }
   }
 }
+
+/**
+ * The plain decimal spelling of a Lua number literal, for exact decimal consumers such as the
+ * UVD Q32.32 quantizer — never through a double. Luau digit separators are dropped and hex or
+ * binary integers become decimal integers; hex floats (`0x1p4`) and LuaJIT suffixes (`12LL`,
+ * `3i`) give `undefined`.
+ */
+export function luaDecimalSpelling(raw: string): string | undefined {
+  const text = raw.replace(/_/gu, '')
+  const sign = text.startsWith('-') ? '-' : ''
+  const body = sign === '' ? text : text.slice(1)
+  if (/^0[xX][0-9a-fA-F]+$/u.test(body) || /^0[bB][01]+$/u.test(body)) {
+    return `${sign}${BigInt(body).toString()}`
+  }
+  return /^(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/u.test(body) ? `${sign}${body}` : undefined
+}

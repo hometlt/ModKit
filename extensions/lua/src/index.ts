@@ -8,6 +8,7 @@ export {
 } from './binder.js'
 export { LuaLineIndex } from './line-index.js'
 export {
+  luaDecimalSpelling,
   luaStaticField,
   luaStaticToJson,
   readLuaModule,
