@@ -72,6 +72,16 @@ export interface MapLayerDescriptor {
   readonly minimum: number
   readonly maximum: number
   readonly editable: boolean
+  /**
+   * What a sample means in the world: `valueOffset + sample * valueScale`, in `unit`. Without them
+   * the samples are the format's own numbers with no declared world meaning.
+   */
+  readonly valueScale?: number
+  readonly valueOffset?: number
+  /** Unit of the world value, for example `world-unit` or `m`. */
+  readonly unit?: string
+  /** Samples on the grid's vertices (a heightfield) or inside its cells. */
+  readonly sampling?: 'vertex' | 'cell'
 }
 
 /** `map.layers` output. */
@@ -81,13 +91,80 @@ export interface MapLayerList {
 
 /**
  * `map.layer-read` output and `map.layer-write` input: row-major samples, row 0 at the map's north
- * edge (image order), `width * height` integers within the descriptor's bounds.
+ * edge (image order), `width * height` integers within the descriptor's bounds. `x`/`y` place a
+ * window: its first sample's column from the west edge and row from the north edge. Without them
+ * the grid is the whole layer.
  */
 export interface MapLayerGrid {
   readonly layer: string
+  readonly x?: number
+  readonly y?: number
   readonly width: number
   readonly height: number
   readonly values: readonly number[]
+}
+
+/** `map.layer-read` input: the whole layer, or a window given by all four of `x`, `y`, `width`, `height`. */
+export interface MapLayerReadRequest {
+  readonly layer: string
+  readonly x?: number
+  readonly y?: number
+  readonly width?: number
+  readonly height?: number
+}
+
+export interface MapLayerWindow {
+  readonly x: number
+  readonly y: number
+  readonly width: number
+  readonly height: number
+}
+
+/**
+ * The one bounds check of `map.layer-read` requests and `map.layer-write` grids against a layer.
+ * A read names all four of `x`, `y`, `width`, `height` or none (the whole layer); a grid (it has
+ * `values`) names `x` and `y` both or neither, and holds `width * height` integers within the
+ * layer's bounds, and its layer must be editable. Throws `RangeError`; returns the window.
+ */
+export function mapLayerWindow(
+  layer: MapLayerDescriptor,
+  input: MapLayerReadRequest | MapLayerGrid,
+): MapLayerWindow {
+  const fail = (message: string): never => {
+    throw new RangeError(`map layer ${layer.id}: ${message}`)
+  }
+  if (input.layer !== layer.id) fail(`request names layer ${String(input.layer)}`)
+  const grid = 'values' in input
+  const given = (['x', 'y', 'width', 'height'] as const).filter(name => input[name] !== undefined)
+  if (grid ? (input.x === undefined) !== (input.y === undefined) : given.length !== 0 && given.length !== 4) {
+    fail(grid ? 'x and y go together' : 'a window needs all of x, y, width and height')
+  }
+  const number = (value: unknown, name: string, minimum: number): number => {
+    if (!Number.isSafeInteger(value) || (value as number) < minimum) fail(`${name} must be an integer of at least ${minimum}`)
+    return value as number
+  }
+  const whole = !grid && given.length === 0
+  const window = Object.freeze({
+    x: whole ? 0 : number(input.x ?? 0, 'x', 0),
+    y: whole ? 0 : number(input.y ?? 0, 'y', 0),
+    width: whole ? layer.width : number(input.width, 'width', 1),
+    height: whole ? layer.height : number(input.height, 'height', 1),
+  })
+  if (window.x + window.width > layer.width || window.y + window.height > layer.height) {
+    fail(`window ${window.x},${window.y} ${window.width}x${window.height} leaves the ${layer.width}x${layer.height} layer`)
+  }
+  if (!grid) return window
+  if (!layer.editable) fail('the layer is read-only')
+  const values: unknown = input.values
+  if (!Array.isArray(values) || values.length !== window.width * window.height) {
+    fail(`a ${window.width}x${window.height} grid needs ${window.width * window.height} values`)
+  }
+  for (const [index, value] of (values as readonly unknown[]).entries()) {
+    if (!Number.isSafeInteger(value) || (value as number) < layer.minimum || (value as number) > layer.maximum) {
+      fail(`value ${index} must be an integer from ${layer.minimum} to ${layer.maximum}`)
+    }
+  }
+  return window
 }
 
 /** Host-owned matcher profile for exact game-id routing. */

@@ -10,13 +10,23 @@ import { applyJsonEdit, type JsonEdit } from '@modkit/codec-kit/json-edit'
 import { snapshotJson } from '@modkit/codec-kit/json-snapshot'
 import { operationId } from '@modkit/core'
 import type { JsonObject, JsonValue } from '@modkit/sdk'
-import { WORLD_SCENE_SOURCE_CONTRACT } from '@modkit/sdk/maps'
+import {
+  MAP_LAYERS_OPERATION,
+  MAP_LAYER_READ_OPERATION,
+  MAP_LAYER_WRITE_OPERATION,
+  WORLD_SCENE_SOURCE_CONTRACT,
+  mapLayerWindow,
+  type MapLayerDescriptor,
+  type MapLayerGrid,
+  type MapLayerReadRequest,
+} from '@modkit/sdk/maps'
 
 import {
   canonicalizeUvwProfile,
   createUvwWorldSceneSource,
   parseUvwProfile,
   serializeUvwProfile,
+  type UvwHeightfieldLayer,
 } from './index.js'
 
 const decoder = new TextDecoder('utf-8', { fatal: false })
@@ -253,6 +263,140 @@ function editHandler(
   }
 }
 
+const SAMPLE_MAXIMUM = 0xffff
+
+interface HeightGrid {
+  readonly descriptor: MapLayerDescriptor
+  readonly spaceIndex: number
+  readonly layerIndex: number
+  readonly layer: UvwHeightfieldLayer
+}
+
+/**
+ * Every heightfield as a `map.layers` grid of integers n, height = valueOffset + n · valueScale.
+ * The scale is the finest power of two, at most 1/256 unless the heights need a finer one, that
+ * fits the layer's range in 16 bits; the offset centres the heights so a write can raise or lower
+ * them. Both belong to the revision: a write that widens the range changes them. A layer whose
+ * heights are not exact on that grid, or that has missing ground, reads rounded and is not editable.
+ */
+function heightGrids(document: ReturnType<typeof parseUvwProfile>): ReadonlyMap<string, HeightGrid> {
+  const grids = new Map<string, HeightGrid>()
+  document.spaces.forEach((space, spaceIndex) =>
+    space.layers.forEach((layer, layerIndex) => {
+      if (layer.kind !== 'heightfield') return
+      let minimum = Infinity
+      let maximum = -Infinity
+      let missing = false
+      // The coarsest power of two on which every height is an integer; 17 means none up to 2^16.
+      let exponent = -16
+      for (const row of layer.samples) {
+        for (const value of row) {
+          if (value === layer.noDataValue) {
+            missing = true
+            continue
+          }
+          minimum = Math.min(minimum, value)
+          maximum = Math.max(maximum, value)
+          while (exponent <= 16 && !Number.isInteger(value * 2 ** exponent)) exponent += 1
+        }
+      }
+      if (minimum === Infinity) minimum = maximum = 0
+      let fit = Math.max(8, Math.min(exponent, 16))
+      while (fit > -16 && (maximum - minimum) * 2 ** fit > SAMPLE_MAXIMUM) fit -= 1
+      const valueScale = 2 ** -fit
+      const headroom = SAMPLE_MAXIMUM - Math.round((maximum - minimum) * 2 ** fit)
+      const id = `${space.id}/${layer.id}`
+      grids.set(id, {
+        descriptor: Object.freeze({
+          id,
+          label: layer.label ?? layer.id,
+          meaning: 'height',
+          width: layer.columns,
+          height: layer.rows,
+          minimum: 0,
+          maximum: SAMPLE_MAXIMUM,
+          editable: !missing && exponent <= fit,
+          valueScale,
+          valueOffset: minimum - Math.floor(headroom / 2) * valueScale,
+          unit: space.basis.unit === 'meter' ? 'm' : (space.basis.sourceUnit ?? 'source-unit'),
+          sampling: 'vertex',
+        }),
+        spaceIndex,
+        layerIndex,
+        layer,
+      })
+    }),
+  )
+  return grids
+}
+
+function heightGrid(grids: ReadonlyMap<string, HeightGrid>, id: unknown): HeightGrid {
+  const grid = typeof id === 'string' ? grids.get(id) : undefined
+  if (grid === undefined) throw new RangeError(`the UVW world has no height layer ${String(id)}`)
+  return grid
+}
+
+function readHeightGrid(grids: ReadonlyMap<string, HeightGrid>, input: unknown): JsonValue {
+  const request = editObject(input, 'map.layer-read request') as unknown as MapLayerReadRequest
+  const { descriptor, layer } = heightGrid(grids, request.layer)
+  const window = mapLayerWindow(descriptor, request)
+  const scale = descriptor.valueScale ?? 1
+  const offset = descriptor.valueOffset ?? 0
+  const values: number[] = []
+  for (let y = window.y; y < window.y + window.height; y += 1) {
+    const row = layer.samples[y] ?? []
+    for (let x = window.x; x < window.x + window.width; x += 1) {
+      const n = Math.round(((row[x] ?? offset) - offset) / scale)
+      values.push(Math.min(SAMPLE_MAXIMUM, Math.max(0, n)))
+    }
+  }
+  return {
+    layer: descriptor.id,
+    ...(request.x === undefined ? {} : { x: window.x, y: window.y }),
+    width: window.width,
+    height: window.height,
+    values,
+  }
+}
+
+/** One `replace` per touched row; the heights of a write are exact by construction of the scale. */
+function heightGridEdits(
+  grids: ReadonlyMap<string, HeightGrid>,
+  input: unknown,
+  context: InspectionContext,
+): readonly JsonEdit[] {
+  const request = editObject(input, 'map.layer-write request')
+  if (
+    request['expectedSourceRevision'] !== undefined &&
+    request['expectedSourceRevision'] !== context.input.revisions.revision
+  )
+    throw new TypeError('stale UVW source revision')
+  const grid = request as unknown as MapLayerGrid
+  const { descriptor, layer, spaceIndex, layerIndex } = heightGrid(grids, grid.layer)
+  const window = mapLayerWindow(descriptor, grid)
+  const scale = descriptor.valueScale ?? 1
+  const offset = descriptor.valueOffset ?? 0
+  const edits: JsonEdit[] = []
+  for (let row = 0; row < window.height; row += 1) {
+    const y = window.y + row
+    const samples = [...(layer.samples[y] ?? [])]
+    for (let column = 0; column < window.width; column += 1) {
+      const height = offset + (grid.values[row * window.width + column] ?? 0) * scale
+      if (height === layer.noDataValue)
+        throw new RangeError(`height ${String(height)} at ${String(window.x + column)},${String(y)} is the layer's noDataValue`)
+      samples[window.x + column] = height
+    }
+    edits.push(
+      Object.freeze({
+        op: 'replace' as const,
+        path: jsonPointer(['spaces', String(spaceIndex), 'layers', String(layerIndex), 'samples', String(y)]),
+        value: Object.freeze(samples),
+      }),
+    )
+  }
+  return Object.freeze(edits)
+}
+
 const definition = Object.freeze({
   id: 'modkit/world-uvw',
   operations: Object.freeze([
@@ -276,6 +420,27 @@ const definition = Object.freeze({
       mutatesSource: false,
       requiredPermissions: Object.freeze(['read-source'] as const),
       outputKinds: Object.freeze(['bytes'] as const),
+    }),
+    Object.freeze({
+      id: operationId(MAP_LAYERS_OPERATION, { contributionId: 'modkit/world-uvw' }),
+      handlerId: 'map-layers',
+      mutatesSource: false,
+      requiredPermissions: Object.freeze(['read-source'] as const),
+      outputKinds: Object.freeze(['json'] as const),
+    }),
+    Object.freeze({
+      id: operationId(MAP_LAYER_READ_OPERATION, { contributionId: 'modkit/world-uvw' }),
+      handlerId: 'map-layer-read',
+      mutatesSource: false,
+      requiredPermissions: Object.freeze(['read-source'] as const),
+      outputKinds: Object.freeze(['json'] as const),
+    }),
+    Object.freeze({
+      id: operationId(MAP_LAYER_WRITE_OPERATION, { contributionId: 'modkit/world-uvw' }),
+      handlerId: 'map-layer-write',
+      mutatesSource: true,
+      requiredPermissions: Object.freeze(['read-source', 'write-source'] as const),
+      outputKinds: Object.freeze(['edit-plan'] as const),
     }),
   ]),
   format: Object.freeze({
@@ -320,6 +485,7 @@ const definition = Object.freeze({
         ? {}
         : { rasterResources: context.rasterResources }),
     })
+    const grids = heightGrids(document)
     const tree = createTreeDataSource({
       kind: 'world',
       label: 'UVW world',
@@ -385,7 +551,28 @@ const definition = Object.freeze({
             ...(context.signal === undefined ? {} : { signal: context.signal }),
           }),
         }),
+        'map-layers': async () => ({
+          kind: 'json' as const,
+          value: { layers: [...grids.values()].map(grid => grid.descriptor) } as unknown as JsonValue,
+        }),
+        'map-layer-read': async (input: unknown) => ({
+          kind: 'json' as const,
+          value: readHeightGrid(grids, input),
+        }),
+        'map-layer-write': editHandler(bytes, document, context, (input, operationContext) =>
+          heightGridEdits(grids, input, operationContext),
+        ),
       },
+      diagnostics: [...grids.values()]
+        .filter(grid => !grid.descriptor.editable)
+        .map(grid => ({
+          id: `uvw.height-layer-inexact.${grid.descriptor.id}`,
+          code: 'modkit/uvw-height-layer-inexact',
+          category: 'fidelity' as const,
+          severity: 'information' as const,
+          message: `Height layer ${grid.descriptor.id} has missing ground or heights off a 16-bit power-of-two grid: map.layer-read rounds it, map.layer-write refuses it`,
+          data: { layer: grid.descriptor.id },
+        })),
       maxDecodedBytes: bytes.byteLength + sampleCount * 8,
       unsupportedFeatures: [
         'UVW 1.0 connections are reserved',

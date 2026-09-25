@@ -10,6 +10,7 @@ import {
   type ResourceBudget,
   type WorldSceneSource,
 } from '@modkit/sdk'
+import type { MapLayerDescriptor, MapLayerGrid } from '@modkit/sdk/maps'
 import { createCodec } from '../src/world/codec.js'
 import { parseUvwProfile } from '../src/world/index.js'
 
@@ -234,6 +235,91 @@ describe('UVW host codec', () => {
       }),
     ).rejects.toThrow(/stale.*revision/iu)
     await lease.release()
+    await session.dispose()
+  }, 20_000)
+})
+
+describe('UVW height as a map layer', () => {
+  const fixtureUrl = new URL(
+    '../../../vendor/multiverse-specs/specs/world/fixtures/uvw-profile-single-space.uvw.json',
+    import.meta.url,
+  )
+  // The fixture's heights are quarters of a metre, and one sample is missing ground (-9999).
+  async function open(fill?: number) {
+    const fixture = JSON.parse(await readFile(fileURLToPath(fixtureUrl), 'utf8')) as {
+      spaces: { layers: { samples?: number[][] }[] }[]
+    }
+    const samples = fixture.spaces[0]?.layers[0]?.samples
+    if (fill !== undefined && samples?.[2] !== undefined) samples[2][3] = fill
+    const asset = source(new TextEncoder().encode(JSON.stringify(fixture)))
+    const session = await createCodec(context).open(inputFor(asset), 'full', budget)
+    const invoke = async (handler: string, input: unknown) => {
+      const result = await session.operations().invoke(handler, input as never)
+      if (result.state !== 'ok') throw new Error(JSON.stringify(result))
+      return result.output
+    }
+    return { asset, session, invoke }
+  }
+
+  it('reads and writes a window of heights exactly on a power-of-two grid', async () => {
+    const { asset, session, invoke } = await open(2)
+    const descriptor = await session.descriptor()
+    expect(descriptor.operations.map(item => item.id)).toEqual(
+      expect.arrayContaining(['map.layers', 'map.layer-read', 'map.layer-write']),
+    )
+    const listed = await invoke('map-layers', null)
+    if (listed.kind !== 'json') throw new Error('map.layers is not JSON')
+    const [layer] = (listed.value as unknown as { layers: MapLayerDescriptor[] }).layers
+    expect(layer).toMatchObject({
+      id: 'main/terrain', meaning: 'height', width: 5, height: 4, minimum: 0, maximum: 0xffff,
+      editable: true, valueScale: 1 / 256, unit: 'm', sampling: 'vertex',
+    })
+    if (layer === undefined) throw new Error('the height layer is missing')
+    const world = (n: number) => (layer.valueOffset ?? 0) + n * (layer.valueScale ?? 1)
+    const sample = (height: number) => Math.round((height - (layer.valueOffset ?? 0)) / (layer.valueScale ?? 1))
+
+    const read = await invoke('map-layer-read', { layer: layer.id, x: 1, y: 1, width: 2, height: 2 })
+    if (read.kind !== 'json') throw new Error('map.layer-read is not JSON')
+    const grid = read.value as unknown as MapLayerGrid
+    expect(grid).toMatchObject({ layer: 'main/terrain', x: 1, y: 1, width: 2, height: 2 })
+    expect(grid.values.map(world)).toEqual([0.75, 1.25, 1, 1.5])
+
+    const written = await invoke('map-layer-write', {
+      layer: layer.id, x: 1, y: 2, width: 2, height: 1, values: [sample(3.5), sample(-1)],
+      expectedSourceRevision: asset.revision,
+    })
+    if (written.kind !== 'edit-plan') throw new Error('map.layer-write did not plan an edit')
+    const replacement = written.plan.edits[0]
+    if (replacement?.operation !== 'replace' || replacement.payload.kind !== 'inline')
+      throw new Error('the height write did not replace the source bytes')
+    const terrain = parseUvwProfile(replacement.payload.bytes).spaces[0]?.layers[0]
+    if (terrain?.kind !== 'heightfield') throw new Error('the edited heightfield is missing')
+    expect(terrain.samples).toEqual([
+      [0, 0.5, 1, 1.5, 2],
+      [0.25, 0.75, 1.25, 1.75, 2.25],
+      [0.5, 3.5, -1, 2, 2.5],
+      [0.75, 1.25, 1.75, 2.25, 2.75],
+    ])
+
+    await expect(invoke('map-layer-write', { layer: layer.id, x: 4, y: 3, width: 2, height: 1, values: [0, 0] }))
+      .rejects.toThrow(/leaves the 5x4 layer/u)
+    await expect(invoke('map-layer-write', { layer: layer.id, x: 0, y: 0, width: 1, height: 1, values: [0.5] }))
+      .rejects.toThrow(/from 0 to 65535/u)
+    await expect(invoke('map-layer-write', {
+      layer: layer.id, x: 0, y: 0, width: 1, height: 1, values: [0], expectedSourceRevision: 'content-hash.sha256:stale',
+    })).rejects.toThrow(/stale UVW source revision/u)
+    await session.dispose()
+  }, 20_000)
+
+  it('keeps a layer with missing ground readable but not writable', async () => {
+    const { session, invoke } = await open()
+    const listed = await invoke('map-layers', null)
+    if (listed.kind !== 'json') throw new Error('map.layers is not JSON')
+    expect((listed.value as unknown as { layers: MapLayerDescriptor[] }).layers[0]?.editable).toBe(false)
+    const descriptor = await session.descriptor()
+    expect(descriptor.diagnostics.map(item => item.code)).toContain('modkit/uvw-height-layer-inexact')
+    await expect(invoke('map-layer-write', { layer: 'main/terrain', width: 1, height: 1, x: 0, y: 0, values: [0] }))
+      .rejects.toThrow(/read-only/u)
     await session.dispose()
   }, 20_000)
 })
