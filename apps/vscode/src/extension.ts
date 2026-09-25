@@ -7518,6 +7518,7 @@ async function activateModkit(
           return { sessions, path, changed }
         } catch (error) {
           log(`[resources] ${path}: ${error instanceof Error ? error.message : String(error)}`)
+          throw error
         }
       }
     }
