@@ -22,7 +22,12 @@ import type {
   SubjectFactsSource,
   SubjectSelectorSource,
 } from '@modkit/sdk'
-import { MAP_LAYER_READ_OPERATION, type MapLayerGrid } from '@modkit/sdk/maps'
+import {
+  MAP_LAYER_READ_OPERATION,
+  WORLD_SCENE_SOURCE_CONTRACT,
+  type MapLayerGrid,
+  type WorldSceneSource,
+} from '@modkit/sdk/maps'
 import { greyGridToPng } from '@modkit/codec-kit/raster'
 import type {
   McpLanguageRequest,
@@ -178,6 +183,16 @@ export type GraphQuery =
 export type CalculationsQuery =
   | { readonly view: 'summary' }
   | { readonly view: 'calculations'; readonly cursor?: string; readonly limit: number }
+
+export type WorldSceneQuery =
+  | { readonly view: 'info' }
+  | {
+      readonly view: 'page'
+      readonly facet: 'layers' | 'objects' | 'regions'
+      readonly layerId?: string
+      readonly cursor?: string
+      readonly limit: number
+    }
 
 const combinedSignal = (request: AbortSignal, handle: AbortSignal): AbortSignal =>
   AbortSignal.any([request, handle])
@@ -1382,6 +1397,63 @@ export class ModkitMcpRuntime {
       diagnostics,
       provenance: sourceProvenance(page.items),
       data: { view: query.view, items: page.items },
+    })
+  }
+
+  /**
+   * The subject's map world as it publishes it: `info` (coordinate spaces, facets, and `edit` —
+   * the operation and object edit kind `propose_edit` takes) or one bounded page of a facet.
+   */
+  async worldScene(handle: string, query: WorldSceneQuery, signal: AbortSignal): Promise<McpEnvelope> {
+    return this.withHandle(handle, signal, async (entry, scopedSignal) => {
+      const session = entry.opened.session
+      if (session === undefined)
+        throw new McpOperationError('x3.mcp/no-session', 'No session exists.')
+      const descriptor = await session.descriptor()
+      if (
+        !descriptor.dataSources.some(
+          offer => offer.contract === WORLD_SCENE_SOURCE_CONTRACT && offer.major === 1,
+        )
+      ) {
+        throw new McpOperationError(
+          'x3.mcp/world-scene-unavailable',
+          'This subject does not publish a map world.',
+        )
+      }
+      const lease = await session.dataSource(WORLD_SCENE_SOURCE_CONTRACT, 1)
+      try {
+        const source = lease.value as unknown as WorldSceneSource
+        if (query.view === 'info') {
+          const { provenance, ...info } = await source.info(scopedSignal)
+          return envelope({
+            snapshotId: info.snapshotId,
+            completeness: info.complete ? 'complete' : 'partial',
+            provenance,
+            data: info,
+          })
+        }
+        const binding = `world:${handle}:${query.facet}:${query.layerId ?? ''}`
+        const request = boundPageRequest(this.cursorSecret, query, source.snapshotId, binding)
+        const page = await source.page(
+          { facet: query.facet, ...(query.layerId === undefined ? {} : { layerId: query.layerId }), ...request },
+          scopedSignal,
+        )
+        const diagnostics: unknown[] =
+          page.reason === undefined
+            ? []
+            : [{ code: `x3.mcp/world-scene-${page.state}`, message: page.reason, severity: 'information' }]
+        const cursor = sourceCursor(this.cursorSecret, page.nextCursor, page.snapshotId, binding, diagnostics)
+        return envelope({
+          snapshotId: page.snapshotId,
+          ...(cursor.cursor === undefined ? {} : { nextCursor: cursor.cursor }),
+          completeness:
+            page.state === 'available' ? pageCompleteness(page as Page<unknown>, cursor.capped) : 'partial',
+          diagnostics,
+          data: { facet: page.facet, state: page.state, items: page.items },
+        })
+      } finally {
+        await lease.release()
+      }
     })
   }
 

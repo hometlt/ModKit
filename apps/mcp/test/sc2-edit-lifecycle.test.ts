@@ -27,8 +27,9 @@ let app: ReturnType<typeof createModkitMcpServer>
 let client: Client
 let readOnlyApp: ReturnType<typeof createModkitMcpServer>
 let readOnlyClient: Client
-const paths = { data: '', strings: '', layout: '', bank: '', uvw: '' }
-const uvwFixture = resolve(coreRoot, 'vendor', 'multiverse-specs', 'specs', 'world', 'fixtures', 'uvw-profile-single-space.uvw.json')
+const paths = { data: '', strings: '', layout: '', bank: '', uvw: '', uvwWorld: '' }
+const uvwFixtures = resolve(coreRoot, 'vendor', 'multiverse-specs', 'specs', 'world', 'fixtures')
+const uvwFixture = resolve(uvwFixtures, 'uvw-profile-single-space.uvw.json')
 
 type CallResult = Awaited<ReturnType<Client['callTool']>>
 const envelope = (value: CallResult) => value.structuredContent as McpEnvelope
@@ -52,7 +53,9 @@ beforeAll(async () => {
   paths.layout = join(mod, 'Base.SC2Data', 'UI', 'Layout', 'TechTreePanel_CNC.SC2Layout')
   paths.bank = join(root, 'Banks', 'endofdreamsbank2.SC2Bank')
   paths.uvw = join(root, 'World', 'terrain.uvw.json')
+  paths.uvwWorld = join(root, 'World', 'objects.uvw.json')
   for (const path of Object.values(paths)) await mkdir(join(path, '..'), { recursive: true })
+  await copyFile(resolve(uvwFixtures, 'uvw-profile-renderable-world.uvw.json'), paths.uvwWorld)
   // The specification fixture has one missing-ground sample; ground there makes the layer writable.
   const world = JSON.parse(await readFile(uvwFixture, 'utf8')) as { spaces: { layers: { samples: number[][] }[] }[] }
   world.spaces[0]!.layers[0]!.samples[2]![3] = 2
@@ -296,6 +299,51 @@ describe('MCP edit lifecycle over installed SC2 writers', () => {
     expect(imageOf(after.result)?.data).not.toBe(imageOf(before.result)?.data)
     await client.callTool({ name: 'modkit.close_subject', arguments: { handle: reopened } })
 
+    const undone = data(await client.callTool({ name: 'modkit.undo_edit', arguments: { transactionId } }))
+    expect(undone['result']).toMatchObject({ state: 'committed' })
+    expect(await readFile(path, 'utf8')).toBe(original)
+    await client.callTool({ name: 'modkit.close_subject', arguments: { handle } })
+  }, 180_000)
+
+  it('map objects: list them, move one through the world edit, commit, reopen, undo', async () => {
+    const path = paths.uvwWorld
+    const original = await readFile(path, 'utf8')
+    const handle = await openSubject(path, 'modkit/world-uvw')
+    const world = async (on: string, query: Record<string, unknown>) => {
+      const result = await client.callTool({ name: 'modkit.world_scene', arguments: { handle: on, ...query } })
+      if (result.isError === true) throw new Error(`world_scene failed: ${JSON.stringify(result.structuredContent)}`)
+      return data(result)
+    }
+    // The world names its facet layers and the edit that moves an object; the client takes both as given.
+    const info = (await world(handle, { view: 'info' })) as {
+      snapshotId: string
+      facets: { facet: string; layerId: string }[]
+      edit?: { operationId: string; moveObjectKind: string }
+    }
+    expect(info.edit).toEqual({ operationId: 'edit.structure', moveObjectKind: 'object.update' })
+    const layerOf = (facet: string) => info.facets.find(item => item.facet === facet)?.layerId
+    type WorldObject = { id: string; objectId: number; position: { x: number; y: number; z: number } }
+    const objectsOf = async (on: string) =>
+      (await world(on, { view: 'page', facet: 'objects', layerId: layerOf('objects'), limit: 20 }))[
+        'items'
+      ] as WorldObject[]
+    const regions = await world(handle, { view: 'page', facet: 'regions', layerId: layerOf('regions'), limit: 20 })
+    expect(regions).toMatchObject({ state: 'available' })
+    expect((regions['items'] as unknown[]).length).toBeGreaterThan(0)
+    const [first] = await objectsOf(handle)
+    if (first === undefined || info.edit === undefined) throw new Error('the world lists no movable object')
+    const moved = { x: first.position.x + 1.5, y: first.position.y, z: first.position.z - 0.25 }
+    const planHandle = await propose(handle, info.edit.operationId, {
+      expectedSourceRevision: info.snapshotId,
+      edits: [{ kind: info.edit.moveObjectKind, objectId: first.objectId, patch: { position: moved } }],
+    })
+    expect(await readFile(path, 'utf8')).toBe(original)
+    const transactionId = await prepareAndCommit(planHandle)
+
+    const reopened = await openSubject(path, 'modkit/world-uvw')
+    const after = await objectsOf(reopened)
+    expect(after.find(item => item.id === first.id)?.position).toEqual(moved)
+    await client.callTool({ name: 'modkit.close_subject', arguments: { handle: reopened } })
     const undone = data(await client.callTool({ name: 'modkit.undo_edit', arguments: { transactionId } }))
     expect(undone['result']).toMatchObject({ state: 'committed' })
     expect(await readFile(path, 'utf8')).toBe(original)

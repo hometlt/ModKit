@@ -102,6 +102,10 @@ they never make a partial workspace complete.
 - `modkit.relation_graph` returns bounded graph summaries, pages, or depth-limited chains from
   explicit root IDs; incomplete source scans and result caps are always disclosed.
 - `modkit.subject_calculations` returns bounded formulas, inputs, values, and warnings.
+- `modkit.world_scene` reads the map world a subject publishes: `info` (coordinate spaces, facet
+  layers, and `edit` — the operation and object edit kind that `modkit.propose_edit` takes to move
+  an object) or one bounded page of the `layers`, `objects` or `regions` facet of a `layerId` from
+  `info.facets`. Objects carry a stable `id` and the `objectId` an edit names.
 - `modkit.invoke_readonly` invokes an exact operation ID only when the current descriptor marks it
   available and `mutatesSource: false`. A byte output whose signature is an image (PNG, JPEG, GIF,
   WebP, at most 4 MiB) also comes back as an MCP image block. `render: "image"` draws a

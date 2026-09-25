@@ -22,6 +22,7 @@ import {
   type FactsQuery,
   type GraphQuery,
   type SubjectsQuery,
+  type WorldSceneQuery,
 } from './runtime.js'
 import { MCP_MAX_CURSOR_LENGTH, MCP_MAX_PAGE_ITEMS, type McpEnvelope } from './protocol.js'
 
@@ -413,6 +414,20 @@ const proposeResolvedEditInput = z
 const editHistoryInput = z.object({ limit: z.number().int().min(1).max(100).default(50) }).strict()
 const editTransactionInput = z.object({ transactionId: z.string().min(1).max(256) }).strict()
 const discardEditInput = z.object({ id: z.string().min(1).max(256) }).strict()
+
+const worldSceneInput = z.discriminatedUnion('view', [
+  z.object({ handle: handleSchema, view: z.literal('info') }).strict(),
+  z
+    .object({
+      handle: handleSchema,
+      view: z.literal('page'),
+      facet: z.enum(['layers', 'objects', 'regions']),
+      layerId: z.string().min(1).max(256).optional(),
+      cursor: cursorSchema,
+      limit: limitSchema,
+    })
+    .strict(),
+])
 
 const factsInput = z.discriminatedUnion('view', [
   z.object({ handle: handleSchema, view: z.literal('summary') }).strict(),
@@ -948,6 +963,19 @@ export function createModkitMcpServer(host: ModkitMcpHostPort): ModkitMcpServerR
       safeTool(() =>
         runtime.calculations(handle, query as CalculationsQuery, context.mcpReq.signal),
       ),
+  )
+  server.registerTool(
+    'modkit.world_scene',
+    {
+      title: 'Read a map world',
+      description:
+        'Read the map world a subject publishes: info (coordinate spaces, facets and edit — the operationId and moveObjectKind that modkit.propose_edit takes to change an object, with expectedSourceRevision and edits [{ kind, objectId, patch }]) or one bounded page of the layers, objects or regions facet.',
+      inputSchema: worldSceneInput,
+      outputSchema: envelopeSchema,
+      annotations: { ...readOnlyAnnotations, idempotentHint: true },
+    },
+    ({ handle, ...query }, context) =>
+      safeTool(() => runtime.worldScene(handle, query as WorldSceneQuery, context.mcpReq.signal)),
   )
   server.registerTool(
     'modkit.invoke_readonly',
