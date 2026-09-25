@@ -6,7 +6,7 @@
 import { compareUtf8, isQualifiedId, type SourceSpan, type SourceSpanWire } from '@modkit/core'
 import type { FieldEditable, FieldType } from '../fields/index.js'
 import type { KnowledgeTarget } from '../knowledge/index.js'
-import type { LanguageTokenKind } from '../language/index.js'
+import type { LanguageCompletionItem, LanguageTokenKind } from '../language/index.js'
 import { snapshotJsonWireData } from '../manifest/validate.js'
 import { validateWithSchema } from '../manifest/validate.js'
 import { dataSourceContractDefinitionSpecV1Schema } from '../schemas/contribution-specs.js'
@@ -70,6 +70,8 @@ import type {
   ModelSocketSource,
 } from './model-facet-sources.js'
 import type { WorldSceneSource } from '../maps/index.js'
+import type { GameTemplateTextRun } from '../templates/index.js'
+import type { ViewerWorkspaceDocument } from './presentation.js'
 export {
   isReservedModelFacetSource,
   RESERVED_MODEL_FACET_SOURCES,
@@ -381,6 +383,67 @@ export interface TableActions {
    * `{ probe: true }`, answering `TableTranslateAvailability` before anything is sent anywhere.
    */
   readonly translateVariant?: AssetOperationId
+  /** Invoked with `TableValueRenderRequest`; answers with `TableValueRendering`. */
+  readonly renderValues?: AssetOperationId
+  /** Invoked with `TableValueHighlightRequest`; answers with `TableValueHighlight`. */
+  readonly highlightValue?: AssetOperationId
+  /** Invoked with `TableValueCompleteRequest`; answers with `TableValueCompletion`. */
+  readonly completeValue?: AssetOperationId
+}
+
+/**
+ * Values to draw the way a reader of the game sees them, one answer per item in the same order.
+ *
+ * Text is sent rather than a cell coordinate: the surface already holds the values, and the same
+ * call then draws what an editor holds before it is saved. Style sheets and the like arrive in
+ * `workspaceDocuments` — the key `view.template` reads (`GAME_TEMPLATE_WORKSPACE_INPUT`).
+ */
+export interface TableValueRenderRequest {
+  readonly items: readonly { readonly column: number; readonly text: string }[]
+  readonly workspaceDocuments?: readonly ViewerWorkspaceDocument[]
+}
+
+export interface TableValueRendering {
+  readonly items: readonly { readonly runs: readonly GameTemplateTextRun[] }[]
+}
+
+/** Syntax runs and problems of a value while it is being typed. */
+export interface TableValueHighlightRequest {
+  readonly column: number
+  readonly text: string
+}
+
+/** One problem in a value; offsets count characters of that value, like `ValueSpan`. */
+export interface TableValueDiagnostic {
+  readonly from: number
+  readonly to: number
+  readonly message: string
+  readonly severity?: 'error' | 'warning' | 'information' | 'hint'
+  readonly code?: string
+}
+
+export interface TableValueHighlight {
+  readonly spans: readonly ValueSpan[]
+  readonly diagnostics?: readonly TableValueDiagnostic[]
+}
+
+export interface TableValueCompleteRequest {
+  readonly row: number
+  readonly column: number
+  readonly text: string
+  /** Caret position, in characters of `text`. */
+  readonly offset: number
+  readonly workspaceDocuments?: readonly ViewerWorkspaceDocument[]
+}
+
+/**
+ * Suggestions at the caret. Accepting one replaces `from`..`to` of the value; an item's own
+ * `replacementRange` (a document range) does not apply inside a single value.
+ */
+export interface TableValueCompletion {
+  readonly from: number
+  readonly to: number
+  readonly items: readonly LanguageCompletionItem[]
 }
 
 export interface TableRowAddRequest {
