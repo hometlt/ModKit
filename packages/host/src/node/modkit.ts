@@ -44,6 +44,7 @@ import { resolveFormatWriter } from '../format-writer.js'
 import { DEFAULT_SUBJECT_OPEN_BUDGET } from './subject-opener.js'
 import { linkedExtensionInputs, type LinkedExtension } from '../linked.js'
 import {
+  codecFidelityEvidenceRecords,
   createEvidenceRegistry,
   createRawWriter,
   serviceProviderFidelityEvidenceRecord,
@@ -290,6 +291,8 @@ export async function createModkit(options: ModkitOptions): Promise<Modkit> {
   const lastOpened: { value: Parameters<typeof createSubjectEditing>[0]['opened'] | undefined } = {
     value: undefined,
   }
+  // Read through a call: the opener callback sets it, which control-flow narrowing cannot see.
+  const readLastOpened = () => lastOpened.value
   const opener = createPathSubjectOpener({
     subjects,
     roots,
@@ -319,12 +322,12 @@ export async function createModkit(options: ModkitOptions): Promise<Modkit> {
       }
       const session = result.session
       let editing: SubjectEditing | undefined
-      const opened = lastOpened.value
+      const opened = readLastOpened()
       let releaseWriter: (() => Promise<void>) | undefined
       if (
         editingBackend !== undefined &&
         payloads !== undefined &&
-        opened !== undefined &&
+        opened?.state === 'opened' &&
         inside(writableRoots, resolve(path))
       ) {
         const editingPayloads = payloads
@@ -351,8 +354,18 @@ export async function createModkit(options: ModkitOptions): Promise<Modkit> {
               : serviceProviderFidelityEvidenceRecord(services.inventory, {
                   writer: resolution.writer,
                 })
-          const sessionEvidence =
-            selectedEvidence === undefined ? evidence : evidence.with(selectedEvidence)
+          // The opened codec's own declared proofs, as the VS Code containers path cites them. A
+          // user-installed extension cannot vouch for itself; bundled and linked code can.
+          const sessionEvidence = [
+            ...(selectedEvidence === undefined ? [] : [selectedEvidence]),
+            ...(opened.descriptor.interpretation === 'none'
+              ? []
+              : codecFidelityEvidenceRecords(services.inventory, {
+                  codecId: opened.descriptor.identity.codecId,
+                  formatId: opened.descriptor.identity.formatId,
+                  acceptedOrigins: ['bundled', 'linked'],
+                })),
+          ].reduce((registry, record) => registry.with(record), evidence)
           editing = createSubjectEditing({
             opened,
             grant,
