@@ -385,14 +385,19 @@ function scanCorpus(label, dir, files) {
   }
 }
 
-const rtsDir = 'C:\\FILES\\SC2Files\\coding\\Roblox\\RTS\\src'
-const rtsFiles = walkFiles(rtsDir, ['.lua', '.luau'])
-scanCorpus('Roblox RTS corpus', rtsDir, rtsFiles)
+// Corpora come from the same variables as the Roblox corpus tests: a Rojo project folder and a
+// Studio version folder.
+const rtsRoot = process.env.MODKIT_ROBLOX_CORPUS
+if (rtsRoot) {
+  const rtsDir = path.join(rtsRoot, 'src')
+  scanCorpus('Roblox project corpus', rtsDir, walkFiles(rtsDir, ['.lua', '.luau']))
+}
 
-const luaPackagesDir =
-  'C:\\Users\\Admin\\AppData\\Local\\Roblox\\Versions\\version-3afcc74cf8b04b5d\\ExtraContent\\LuaPackages'
-const luaPackagesFiles = walkFiles(luaPackagesDir, ['.lua']).slice(0, 300)
-scanCorpus('Roblox LuaPackages corpus (first 300)', luaPackagesDir, luaPackagesFiles)
+const studioRoot = process.env.MODKIT_ROBLOX_STUDIO
+if (studioRoot) {
+  const luaPackagesDir = path.join(studioRoot, 'ExtraContent', 'LuaPackages')
+  scanCorpus('Roblox LuaPackages corpus (first 300)', luaPackagesDir, walkFiles(luaPackagesDir, ['.lua']).slice(0, 300))
+}
 
 // -----------------------------------------------------------------------------------------
 
