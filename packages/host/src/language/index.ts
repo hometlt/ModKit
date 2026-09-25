@@ -525,8 +525,10 @@ function validProviderSemanticContextRequirements(value: unknown, languageIds: u
   if (!Array.isArray(languageIds)) return false
   try {
     const allowed = new Set(languageIds)
-    return validatedLanguageSemanticContextRequirements(value).every(requirement =>
-      requirement.languageIds.every(languageId => allowed.has(languageId)),
+    return validatedLanguageSemanticContextRequirements(value).every(
+      requirement =>
+        requirement.kind !== 'resolved-data-snapshot' ||
+        requirement.languageIds.every(languageId => allowed.has(languageId)),
     )
   } catch {
     return false

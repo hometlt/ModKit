@@ -10,6 +10,7 @@ import {
 import type {
   LanguageDocument,
   LanguageResolvedDataSemanticContextRequirement,
+  LanguageSemanticContextRequirement,
   LanguageWorkspaceDocumentOrigin,
   LanguageWorkspaceSemanticInput,
 } from '@modkit/sdk/language'
@@ -30,22 +31,44 @@ const boundedText = (value: unknown): value is string =>
 /** Validate and copy provider declarations before the host acts on them. */
 export function validatedLanguageSemanticContextRequirements(
   value: unknown,
-): readonly LanguageResolvedDataSemanticContextRequirement[] {
+): readonly LanguageSemanticContextRequirement[] {
   if (!Array.isArray(value) || value.length > MAX_SEMANTIC_CONTEXT_REQUIREMENTS) {
     throw new TypeError('language semantic context requirements are invalid')
   }
-  const requirements: LanguageResolvedDataSemanticContextRequirement[] = []
+  const requirements: LanguageSemanticContextRequirement[] = []
   const seen = new Set<string>()
   for (const item of value) {
     const keys = typeof item === 'object' && item !== null ? Reflect.ownKeys(item) : []
+    const knowledge =
+      typeof item === 'object' && item !== null && (item as { kind?: unknown }).kind === 'language-knowledge'
+    const allowed = knowledge ? ['kind', 'fileNames'] : ['kind', 'gameId', 'languageIds']
     if (
       typeof item !== 'object' ||
       item === null ||
       Array.isArray(item) ||
       (Object.getPrototypeOf(item) !== Object.prototype && Object.getPrototypeOf(item) !== null) ||
-      keys.some(key => typeof key !== 'string' || !['kind', 'gameId', 'languageIds'].includes(key))
+      keys.some(key => typeof key !== 'string' || !allowed.includes(key))
     ) {
       throw new TypeError('language semantic context requirement is invalid')
+    }
+    if (knowledge) {
+      const fileNames = Object.getOwnPropertyDescriptor(item, 'fileNames')?.value
+      // Plain file names at a layer root: no separators, one requirement per provider.
+      if (
+        seen.has('\0language-knowledge') ||
+        !Array.isArray(fileNames) ||
+        fileNames.length === 0 ||
+        fileNames.length > 8 ||
+        !fileNames.every(
+          name => boundedText(name) && name.length <= 255 && !/[\\/:*?"<>|]/u.test(name) && name !== '.' && name !== '..',
+        ) ||
+        new Set(fileNames.map(name => (name as string).toLowerCase())).size !== fileNames.length
+      ) {
+        throw new TypeError('language semantic context requirement is invalid')
+      }
+      seen.add('\0language-knowledge')
+      requirements.push(Object.freeze({ kind: 'language-knowledge', fileNames: Object.freeze([...fileNames]) }))
+      continue
     }
     const descriptors = Object.getOwnPropertyDescriptors(item)
     if (

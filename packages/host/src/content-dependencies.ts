@@ -1,4 +1,5 @@
-import { compareUtf8, diagnostic, throwIfAborted, type Diagnostic } from '@modkit/core'
+import { compareUtf8, diagnostic, isCancellation, throwIfAborted, type Diagnostic } from '@modkit/core'
+import type { LanguageWorkspaceSemanticInput } from '@modkit/sdk/language'
 import {
   isRevisionId,
   revisionId,
@@ -31,6 +32,9 @@ import {
 } from './input-resolution.js'
 
 const DEPENDENCY_SCOPE = Object.freeze(['workspace-dependency-layer'] as const)
+/** A language-knowledge file (an API dump) and all of them together; beyond this, a status, not a cut. */
+const KNOWLEDGE_FILE_MAX_BYTES = 8 * 1024 * 1024
+const KNOWLEDGE_TOTAL_MAX_BYTES = 32 * 1024 * 1024
 
 export interface ContentDependencyLanguageDocumentSourceOptions {
   readonly contentSources: ContentSources
@@ -358,6 +362,9 @@ export function createContentDependencyLanguageDocumentSource(
         readonly relative: string
       }[] = []
       const contentPaths = new Set<string>()
+      // Knowledge files the provider asked for, at a layer's root, in layer order (weaker first).
+      const wantedKnowledge = new Set((request.knowledgeFileNames ?? []).map(name => name.toLowerCase()))
+      const knowledge: { readonly mount: IndexedMount; readonly path: string; readonly fileName: string }[] = []
       let visited = 0
       // Without a provider-authored content fingerprint, bytes may change while the mount identity
       // stays the same. Keep the documents usable, but never claim a complete/stable semantic
@@ -396,6 +403,10 @@ export function createContentDependencyLanguageDocumentSource(
             continue
           }
           contentPaths.add(relative)
+          if (path === mount.sourcePath && wantedKnowledge.has(relative.toLowerCase())) {
+            knowledge.push({ mount, path: entry.path, fileName: relative })
+            continue
+          }
           const { languageId, candidates: claimants } = classifyLanguageFile(options.routes, relative)
           if (languageId === undefined) {
             if (claimants.some(id => accepted.has(id))) complete = false
@@ -476,6 +487,44 @@ export function createContentDependencyLanguageDocumentSource(
           }),
         )
       }
+      const knowledgeInputs: object[] = []
+      let knowledgeBytes = 0
+      for (const file of knowledge) {
+        request.signal.throwIfAborted()
+        const layerId = `${contextId}:${file.mount.order}:${file.mount.dependencyId}`
+        const id = `${layerId}/${file.fileName}`
+        const unavailable = (message: string) =>
+          knowledgeInputs.push(
+            Object.freeze({
+              kind: 'semantic-context-status',
+              id: `language-knowledge:${id}`,
+              revision: languageWorkspaceContextToken({ id, message }),
+              payload: Object.freeze({ state: 'unavailable', requirement: 'language-knowledge', message }),
+            }),
+          )
+        let text: string
+        try {
+          const bytes = await options.contentSources.read(file.mount.sourceId, file.path, KNOWLEDGE_FILE_MAX_BYTES)
+          if (bytes.byteLength > KNOWLEDGE_FILE_MAX_BYTES || knowledgeBytes + bytes.byteLength > KNOWLEDGE_TOTAL_MAX_BYTES) {
+            unavailable(`${file.fileName} exceeds the knowledge budget (8 MiB a file, 32 MiB in all)`)
+            continue
+          }
+          text = new TextDecoder('utf-8', { fatal: true }).decode(bytes)
+          knowledgeBytes += bytes.byteLength
+        } catch (error) {
+          if (isCancellation(error)) throw error
+          unavailable(`${file.fileName} could not be read as UTF-8 within 8 MiB`)
+          continue
+        }
+        knowledgeInputs.push(
+          Object.freeze({
+            kind: 'language-knowledge',
+            id,
+            revision: languageWorkspaceContextToken({ layer: String(file.mount.revision), text }),
+            payload: Object.freeze({ fileName: file.fileName, layerId, text }),
+          }),
+        )
+      }
       return Object.freeze({
         documents: Object.freeze(documents),
         isComplete: complete,
@@ -485,6 +534,7 @@ export function createContentDependencyLanguageDocumentSource(
           semanticComplete: complete,
           documentOrigins: Object.freeze(documentOrigins),
           semanticInputs: Object.freeze([
+            ...(knowledgeInputs as LanguageWorkspaceSemanticInput[]),
             Object.freeze({
               kind: 'dependency-closure',
               id: `${options.resolution.gameId}:${contextId}`,

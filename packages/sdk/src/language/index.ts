@@ -324,7 +324,20 @@ export interface LanguageResolvedDataSemanticContextRequirement {
   readonly languageIds: readonly string[]
 }
 
-export type LanguageSemanticContextRequirement = LanguageResolvedDataSemanticContextRequirement
+/**
+ * Provider-declared request for game knowledge files the subject's context carries (an API dump,
+ * a module map). The host finds a file with one of these names at the root of any context layer
+ * and supplies each as a `language-knowledge` semantic input
+ * (`payload: { fileName, layerId, text }`), weaker layers first. They never become documents.
+ */
+export interface LanguageKnowledgeSemanticContextRequirement {
+  readonly kind: 'language-knowledge'
+  readonly fileNames: readonly string[]
+}
+
+export type LanguageSemanticContextRequirement =
+  | LanguageResolvedDataSemanticContextRequirement
+  | LanguageKnowledgeSemanticContextRequirement
 
 /** Versioned host-owned mod/dependency context shared by every language provider. */
 export interface LanguageWorkspaceContext {

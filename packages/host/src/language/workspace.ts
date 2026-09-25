@@ -41,6 +41,7 @@ import {
   type LanguageProviderRequestFacet,
   type LanguageRange,
   type LanguageRenamePreparation,
+  type LanguageResolvedDataSemanticContextRequirement,
   type LanguageSignatureHelp,
   type LanguageSignatureParameter,
   type LanguageSymbol,
@@ -104,6 +105,18 @@ export const LANGUAGE_DEFAULT_MAX_DOCUMENTS = 32
 export const LANGUAGE_MAX_DOCUMENTS = 4_096
 export const LANGUAGE_DEFAULT_MAX_EDITS = 1_024
 export const LANGUAGE_MAX_EDITS = 4_096
+
+/** The knowledge files a provider asked for, as a document source request field (or nothing). */
+function knowledgeFileNamesOf(provider: LanguageProvider): { readonly knowledgeFileNames?: readonly string[] } {
+  try {
+    const requirement = validatedLanguageSemanticContextRequirements(
+      provider.semanticContextRequirements ?? [],
+    ).find(item => item.kind === 'language-knowledge')
+    return requirement?.kind === 'language-knowledge' ? { knowledgeFileNames: requirement.fileNames } : {}
+  } catch {
+    return {}
+  }
+}
 
 const SEMANTIC_CONTEXT_CACHE_MAX_BYTES = 64 * 1_024 * 1_024
 const SEMANTIC_CONTEXT_PENDING_MAX = 16
@@ -402,6 +415,8 @@ export interface LanguageWorkspaceDocumentSourceRequest {
   readonly workspaceLanguageIds: readonly string[]
   /** Maximum number of additional documents the source may return. */
   readonly maxDocuments: number
+  /** Knowledge files the provider requested (`language-knowledge`), found at context layer roots. */
+  readonly knowledgeFileNames?: readonly string[]
   readonly signal: AbortSignal
 }
 
@@ -1516,7 +1531,11 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
   > => {
     const requirements = validatedLanguageSemanticContextRequirements(
       provider.semanticContextRequirements ?? [],
-    ).filter(requirement => requirement.languageIds.includes(routeLanguageId))
+    ).filter(
+      (requirement): requirement is LanguageResolvedDataSemanticContextRequirement =>
+        requirement.kind === 'resolved-data-snapshot' &&
+        requirement.languageIds.includes(routeLanguageId),
+    )
     if (requirements.length === 0)
       return Object.freeze({ inputs: Object.freeze([]), complete: true })
     const inputs: LanguageWorkspaceSemanticInput[] = []
@@ -1700,6 +1719,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
               workspaceDocumentOrigins: Object.freeze([...originsByUri.values()]),
               workspaceLanguageIds: Object.freeze([...acceptedLanguageIds].sort(compareUtf8)),
               maxDocuments: Math.max(0, maxDocuments - snapshotDocuments.length),
+              ...knowledgeFileNamesOf(entry.resolution.provider),
               signal: controller.signal,
             }),
           )
