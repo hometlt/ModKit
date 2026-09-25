@@ -533,3 +533,11 @@ async function scaffoldCodec(root: string, contributionId: string): Promise<read
 }
 
 process.exitCode = await main(process.argv.slice(2))
+// A worker realm stays warm for reuse by a later open, and its captured stdout/stderr keep the
+// event loop alive until that realm times out (60 s). A command is done here: flush and leave.
+await Promise.all(
+  [process.stdout, process.stderr].map(
+    stream => new Promise<void>(resolve => stream.write('', () => resolve())),
+  ),
+)
+process.exit()
