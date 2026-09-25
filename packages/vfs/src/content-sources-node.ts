@@ -15,12 +15,22 @@ export async function loadContentSources(configPath: string | undefined, storage
   if (config.options !== undefined && (config.options === null || typeof config.options !== 'object' || Array.isArray(config.options))) {
     throw new TypeError('Invalid content source options')
   }
+  return loadContentSourceModule(config.module, (config.options ?? {}) as Record<string, unknown>, storage)
+}
+
+/** Load one trusted module's `createContentSources` and check it implements the catalogue. */
+export async function loadContentSourceModule(
+  modulePath: string,
+  options: Readonly<Record<string, unknown>>,
+  storage: string,
+): Promise<ContentSources> {
+  if (!isAbsolute(modulePath)) throw new TypeError('Expected an absolute source module path')
   await mkdir(storage, { recursive: true })
-  const module = await import(pathToFileURL(config.module).href) as {
+  const module = await import(pathToFileURL(modulePath).href) as {
     createContentSources?: (options: Record<string, unknown>) => Promise<ContentSources>
   }
   if (typeof module.createContentSources !== 'function') throw new TypeError('Source module has no createContentSources export')
-  const source = await module.createContentSources({ ...config.options as Record<string, unknown>,
+  const source = await module.createContentSources({ ...options,
     cacheDirectory: join(storage, 'cache'), stateDirectory: join(storage, 'state') })
   const required = ['snapshot', 'connect', 'disconnect', 'search', 'add', 'remove', 'refresh', 'list', 'read', 'dispose'] as const
   if (required.some(key => typeof source[key] !== 'function') ||

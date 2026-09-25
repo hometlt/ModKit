@@ -149,6 +149,7 @@ export const extensionManifestSchema = {
     contributionManifests: contributionManifestsSchema,
     dependsOn: { type: 'array', items: extensionRequirementSchema },
     presentation: extensionPresentationSchema,
+    contentSources: { type: 'string', pattern: EXTENSION_VFS_PATH_PATTERN },
   },
 } as const
 
@@ -171,6 +172,7 @@ export const modkitBlockSchema = {
     contributionManifests: contributionManifestsSchema,
     dependsOn: { type: 'array', items: extensionRequirementSchema },
     presentation: extensionPresentationSchema,
+    contentSources: { type: 'string', pattern: EXTENSION_VFS_PATH_PATTERN },
   },
 } as const
 

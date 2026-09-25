@@ -41,8 +41,14 @@ export function resolveContentRuntimePreparer(
   contentSources: ContentSources,
   gameId: string,
 ): RuntimePreparerResolution {
-  const candidate = (contentSources as ContentSources & { runtimePreparer?: unknown })
-    .runtimePreparer
+  // A composed catalogue carries every game's preparer (`runtimePreparers`); take this game's.
+  const sources = contentSources as ContentSources & {
+    readonly runtimePreparer?: unknown
+    readonly runtimePreparers?: readonly unknown[]
+  }
+  const candidates = sources.runtimePreparers ?? (sources.runtimePreparer === undefined ? [] : [sources.runtimePreparer])
+  const candidate =
+    candidates.find(item => (item as { readonly gameId?: unknown } | null)?.gameId === gameId) ?? candidates[0]
   if (candidate === undefined)
     return {
       state: 'unavailable',

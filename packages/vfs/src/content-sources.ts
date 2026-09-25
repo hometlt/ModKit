@@ -17,10 +17,21 @@ export interface ContentSourceRoot {
    * time by a container codec.
    */
   readonly storageOf?: string
+  /**
+   * Schemes of subject references this root can download (`['rbxassetid']`): a client asked to
+   * fetch what a subject references finds the root by scheme and calls {@link ContentSources.download}.
+   */
+  readonly referenceSchemes?: readonly string[]
+}
+/** A region; `credential` says what the user must supply before {@link ContentSources.connect}. */
+export interface ContentSourceRegion {
+  readonly id: string
+  readonly label: string
+  readonly credential?: { readonly kind: 'api-key'; readonly label: string }
 }
 export interface ContentSourceSnapshot {
   readonly label: string
-  readonly regions: readonly { readonly id: string; readonly label: string }[]
+  readonly regions: readonly ContentSourceRegion[]
   readonly publishing?: boolean
   readonly deletion?: boolean
   readonly connections: readonly ContentSourceConnection[]
@@ -477,3 +488,181 @@ export async function callContentSources(
       throw new TypeError('Unknown source operation')
   }
 }
+
+/**
+ * Several extensions' sources as one catalogue. Each part owns the regions, connections and roots
+ * its snapshot names — an id two parts both name is refused — and every call keyed by one of them
+ * goes to its owner. A host-path mod context goes to the first part whose `locateModPackage`
+ * places it in a package, else to the first part that opens contexts (a loose file opens inside
+ * that game's base mods, as a single provider did). One part is returned unchanged.
+ */
+export function composeContentSources(parts: readonly ContentSources[]): ContentSources {
+  if (parts.length === 1) return parts[0]!
+  const owners = { region: new Map<string, ContentSources>(), connection: new Map<string, ContentSources>(),
+    source: new Map<string, ContentSources>(), result: new Map<string, ContentSources>() }
+  // ponytail: a review id is not in any snapshot; it belongs to the part that last prepared one.
+  let publisher: ContentSources | undefined
+  const snapshot = async (): Promise<ContentSourceSnapshot> => {
+    const taken = await Promise.all(parts.map(async part => ({ part, snapshot: await part.snapshot() })))
+    for (const map of [owners.region, owners.connection, owners.source]) map.clear()
+    const claim = (map: Map<string, ContentSources>, kind: string, id: string, part: ContentSources) => {
+      if (map.has(id) && map.get(id) !== part) throw new TypeError(`two content source modules name the ${kind} «${id}»`)
+      map.set(id, part)
+    }
+    for (const { part, snapshot } of taken) {
+      for (const region of snapshot.regions) claim(owners.region, 'region', region.id, part)
+      for (const connection of snapshot.connections) claim(owners.connection, 'connection', connection.id, part)
+      for (const root of snapshot.roots) claim(owners.source, 'source', root.id, part)
+    }
+    return {
+      label: taken.map(item => item.snapshot.label).join(' · '),
+      regions: taken.flatMap(item => item.snapshot.regions),
+      ...(taken.some(item => item.snapshot.publishing) ? { publishing: true } : {}),
+      ...(taken.some(item => item.snapshot.deletion) ? { deletion: true } : {}),
+      connections: taken.flatMap(item => item.snapshot.connections),
+      roots: taken.flatMap(item => item.snapshot.roots),
+    }
+  }
+  const owner = async (map: Map<string, ContentSources>, id: string): Promise<ContentSources> => {
+    if (!map.has(id) && map !== owners.result) await snapshot()
+    const part = map.get(id)
+    if (part === undefined) throw new RangeError(`no content source module owns «${id}»`)
+    return part
+  }
+  const bySource = (id: string) => owner(owners.source, id)
+  const byConnection = (id: string) => owner(owners.connection, id)
+  const optional = <K extends keyof ContentSources>(part: ContentSources, key: K) => {
+    const method = part[key]
+    if (typeof method !== 'function') throw new TypeError(`this content source module does not support ${String(key)}`)
+    return (method as (...args: unknown[]) => unknown).bind(part)
+  }
+  const hostTarget = async (target: string): Promise<ContentSources | undefined> => {
+    for (const part of parts) {
+      if ((await part.locateModPackage?.(target))?.kind === 'package') return part
+    }
+    return parts.find(part => part.openModContext !== undefined)
+  }
+  const composed: ContentSources = {
+    snapshot,
+    async connect(region, accountId, ticket) {
+      return (await owner(owners.region, region)).connect(region, accountId, ticket)
+    },
+    async disconnect(connectionId) {
+      return (await byConnection(connectionId)).disconnect(connectionId)
+    },
+    async search(connectionId, name) {
+      const part = await byConnection(connectionId)
+      const results = await part.search(connectionId, name)
+      for (const result of results) owners.result.set(result.id, part)
+      return results
+    },
+    async add(resultId) {
+      return (await owner(owners.result, resultId)).add(resultId)
+    },
+    async remove(sourceId, path) {
+      return (await bySource(sourceId)).remove(sourceId, path)
+    },
+    async refresh(sourceId) {
+      return (await bySource(sourceId)).refresh(sourceId)
+    },
+    async list(sourceId, path) {
+      return (await bySource(sourceId)).list(sourceId, path)
+    },
+    async read(sourceId, path, maxBytes) {
+      return (await bySource(sourceId)).read(sourceId, path, maxBytes)
+    },
+    async files(sourceId, path, query) {
+      const part = await bySource(sourceId)
+      return part.files === undefined ? undefined : part.files(sourceId, path, query)
+    },
+    async preparePublish(connectionId, filePath, packagePath) {
+      publisher = await byConnection(connectionId)
+      return optional(publisher, 'preparePublish')(connectionId, filePath, packagePath)
+    },
+    async publish(reviewId) {
+      if (publisher === undefined) throw new RangeError(`no publication «${reviewId}» was prepared`)
+      return optional(publisher, 'publish')(reviewId)
+    },
+    async deletionCandidates(connectionId) {
+      return optional(await byConnection(connectionId), 'deletionCandidates')(connectionId)
+    },
+    async deletePublication(reviewId) {
+      if (publisher === undefined) throw new RangeError(`no deletion «${reviewId}» was prepared`)
+      return optional(publisher, 'deletePublication')(reviewId)
+    },
+    async download(sourceId, path) {
+      return optional(await bySource(sourceId), 'download')(sourceId, path)
+    },
+    async clearCache(sourceId, path) {
+      return optional(await bySource(sourceId), 'clearCache')(sourceId, path)
+    },
+    async prepareDeletePublication(sourceId, path) {
+      publisher = await bySource(sourceId)
+      return optional(publisher, 'prepareDeletePublication')(sourceId, path)
+    },
+    async storage(connectionId) {
+      return optional(await byConnection(connectionId), 'storage')(connectionId)
+    },
+    async prepareFirstPublication(connectionId, options) {
+      publisher = await byConnection(connectionId)
+      return optional(publisher, 'prepareFirstPublication')(connectionId, options)
+    },
+    async prepareRevision(sourceId, path, options) {
+      publisher = await bySource(sourceId)
+      return optional(publisher, 'prepareRevision')(sourceId, path, options)
+    },
+    async resolveLocalPath(sourceId, path) {
+      const part = await bySource(sourceId)
+      return part.resolveLocalPath === undefined ? undefined : part.resolveLocalPath(sourceId, path)
+    },
+    async openModContext(request) {
+      const part =
+        typeof request.target === 'string' ? await hostTarget(request.target) : await bySource(request.target.sourceId)
+      if (part?.openModContext === undefined) throw new TypeError('no content source module opens mod contexts')
+      return part.openModContext(request)
+    },
+    async locateModPackage(target, signal) {
+      if (typeof target !== 'string') {
+        const part = await bySource(target.sourceId)
+        return part.locateModPackage === undefined ? { kind: 'missing' } : part.locateModPackage(target, signal)
+      }
+      let loose = false
+      for (const part of parts) {
+        const placement = await part.locateModPackage?.(target, signal)
+        if (placement?.kind === 'package') return placement
+        if (placement?.kind === 'loose') loose = true
+      }
+      return loose ? { kind: 'loose' } : { kind: 'missing' }
+    },
+    async dispose() {
+      await Promise.all(parts.map(part => part.dispose()))
+    },
+  }
+  // A client offers a command only when the method exists: keep just what some part supports.
+  for (const key of OPTIONAL_CONTENT_SOURCE_METHODS) {
+    if (!parts.some(part => part[key] !== undefined)) delete (composed as Partial<ContentSources>)[key]
+  }
+  // Each game's Runtime preparer; the host picks the one for the opened context's game.
+  const runtimePreparers = parts.flatMap(part => {
+    const preparer = (part as { readonly runtimePreparer?: unknown }).runtimePreparer
+    return preparer === undefined ? [] : [preparer]
+  })
+  return runtimePreparers.length === 0 ? composed : Object.assign(composed, { runtimePreparers })
+}
+
+const OPTIONAL_CONTENT_SOURCE_METHODS = [
+  'files',
+  'preparePublish',
+  'publish',
+  'deletionCandidates',
+  'deletePublication',
+  'download',
+  'clearCache',
+  'prepareDeletePublication',
+  'storage',
+  'prepareFirstPublication',
+  'prepareRevision',
+  'resolveLocalPath',
+  'openModContext',
+  'locateModPackage',
+] as const satisfies readonly (keyof ContentSources)[]

@@ -77,6 +77,12 @@ export interface ExtensionManifest {
   readonly contributionManifests: readonly string[]
   readonly dependsOn?: readonly ExtensionRequirement[]
   readonly presentation?: ExtensionPresentation
+  /**
+   * The built module (relative to the extension root) exporting `createContentSources(options)`:
+   * the installed-game and online sources this extension provides. A trusted host loads it in
+   * process and composes it with every other extension's (`@modkit/host/node` `resolveContentSources`).
+   */
+  readonly contentSources?: string
 }
 
 /** Authored `package.json#modkit` block: no version/license by construction (Q76). */
@@ -87,6 +93,7 @@ export interface ModkitBlock {
   readonly contributionManifests: readonly string[]
   readonly dependsOn?: readonly ExtensionRequirement[]
   readonly presentation?: ExtensionPresentation
+  readonly contentSources?: string
 }
 
 export type AuthoredContainerKind = 'package-json' | 'standalone'

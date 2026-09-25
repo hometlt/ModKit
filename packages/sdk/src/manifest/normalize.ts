@@ -301,6 +301,9 @@ async function normalizeExtensionManifestUncached(
               ExtensionManifest['presentation']
             >,
           }),
+      ...(blockRecord['contentSources'] === undefined
+        ? {}
+        : { contentSources: blockRecord['contentSources'] as string }),
     }) as ExtensionManifest,
   )
   const all = [
