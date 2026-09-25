@@ -1,3 +1,8 @@
+[build]
+# Outside the extension root: the host and the app catalogs digest every file under
+# extensions/lua, so build caches there would change the extension's identity per machine.
+target-dir = "../../../node_modules/.cache/modkit-lua-syntax"
+
 [target.wasm32-unknown-unknown]
 # 16 MiB (the commonly-suggested value) was not enough for 2000 levels of nested parentheses:
 # both full-moon's recursive-descent parser and this crate's own recursive JSON writer (a

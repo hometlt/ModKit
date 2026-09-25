@@ -12,14 +12,10 @@ import { fileURLToPath } from 'node:url'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const luaRoot = path.resolve(__dirname, '..')
 const nativeManifest = path.join(luaRoot, 'native', 'Cargo.toml')
-const builtWasm = path.join(
-  luaRoot,
-  'native',
-  'target',
-  'wasm32-unknown-unknown',
-  'release',
-  'modkit_lua_syntax.wasm',
-)
+// Same folder as native/.cargo/config.toml: outside the extension root, whose every file is part
+// of the extension's digest.
+const targetDir = path.resolve(luaRoot, '..', '..', 'node_modules', '.cache', 'modkit-lua-syntax')
+const builtWasm = path.join(targetDir, 'wasm32-unknown-unknown', 'release', 'modkit_lua_syntax.wasm')
 const wasmOutDir = path.join(luaRoot, 'wasm')
 const wasmOutFile = path.join(wasmOutDir, 'modkit-lua-syntax.wasm')
 
@@ -40,6 +36,8 @@ const args = [
   '--target',
   'wasm32-unknown-unknown',
   '--locked',
+  '--target-dir',
+  targetDir,
 ]
 
 console.log(`Using cargo: ${cargo}`)

@@ -3,6 +3,7 @@
   "compilerOptions": {
     "outDir": "dist",
     "rootDir": "src",
+    "tsBuildInfoFile": "../../node_modules/.cache/tsbuildinfo/extensions-lua.tsbuildinfo",
     "lib": ["ES2023", "DOM"]
   },
   "include": ["src/**/*.ts"],
