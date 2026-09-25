@@ -1,5 +1,9 @@
 # Opus handoff: SC2 MK3 audit and bounded parity fixes
 
+> **Устарело (2026-09-25).** Снимок на дату аудита. `apps/vscode/src/resource-chain.ts` и его тесты
+> удалены в core `a9c0a84a`; «Ресурсы» теперь строит `@modkit/host/mods` (`LoadedModResourceSessions`).
+> Текущие правила и владельцы — `coding/AGENTS.md`.
+
 Date: 2026-09-22  
 Core baseline: `fe330f425c84f5a04bca86381e615d223dcc591a`  
 Blizzard baseline: `7dbb3afd2aae4d220e1cb441278976565cc2c736`
