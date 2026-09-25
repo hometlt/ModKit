@@ -1,28 +1,815 @@
 import {
-  ModkitError,
-  OPERATION_DOMAINS,
-  SHARED_OPERATION_IDS,
-  UINT64_DECIMAL_PATTERN,
-  canonicalJsonStringify,
-  compareUtf8,
-  contractId,
-  deepFreeze,
-  diagnostic,
-  hasErrors,
-  isQualifiedId,
-  isSegment,
-  isUInt64String,
-  operationId,
-  parseSemver,
-  parseVersionRange,
-  sourceSpanSchema,
-  traitId,
-  uint64,
-  uniqueSortedUtf8,
-  versionRangeTargetsMajor
-} from "./chunk-6CZX3ZS4.js";
+  init_define_MODKIT_EMBED_EXTENSION_ORIGINS
+} from "./chunk-BLWUC7LO.js";
+
+// packages/core/dist/ids.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var SEGMENT = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+var DOTTED = /^[a-z0-9]+(?:-[a-z0-9]+)*(?:\.[a-z0-9]+(?:-[a-z0-9]+)*)*$/;
+var QUALIFIED = /^[a-z0-9]+(?:-[a-z0-9]+)*(?:\.[a-z0-9]+(?:-[a-z0-9]+)*)*\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\.[a-z0-9]+(?:-[a-z0-9]+)*)*$/;
+function isSegment(value2) {
+  return SEGMENT.test(value2);
+}
+function isDottedId(value2) {
+  return DOTTED.test(value2);
+}
+function isQualifiedId(value2) {
+  return QUALIFIED.test(value2);
+}
+function isErrorCode(value2) {
+  return isQualifiedId(value2);
+}
+function isTraitId(value2) {
+  return value2.includes(".") && isDottedId(value2);
+}
+function contractId(value2) {
+  if (!isQualifiedId(value2))
+    throw new TypeError(`invalid contract id: ${value2}`);
+  return value2;
+}
+function errorCode(value2) {
+  if (!isErrorCode(value2))
+    throw new TypeError(`invalid diagnostic/error code: ${value2}`);
+  return value2;
+}
+function traitId(value2) {
+  if (!isTraitId(value2))
+    throw new TypeError(`invalid trait id: ${value2}`);
+  return value2;
+}
+var OPERATION_DOMAINS = Object.freeze([
+  "archive",
+  "model",
+  "image",
+  "audio",
+  "video",
+  "vector",
+  "document",
+  "game",
+  "map",
+  "mod",
+  "data",
+  "script",
+  "layout",
+  "localization",
+  "replay",
+  "save",
+  "runtime"
+]);
+var CONTAINER_EXTRACT_OPERATION_ID = "container.extract";
+var SHARED_OPERATION_IDS = Object.freeze([
+  "view.render",
+  "view.inspect",
+  "view.thumbnail",
+  "view.hex",
+  "view.template",
+  "media.play",
+  "media.play-pause",
+  "media.seek",
+  "media.set-rate",
+  "media.select-track",
+  "edit.content",
+  "edit.structure",
+  "edit.field",
+  "edit.undo-redo",
+  "source.save",
+  "source.save-as",
+  "export.raw",
+  "export.convert",
+  CONTAINER_EXTRACT_OPERATION_ID,
+  "container.pack",
+  "asset.search",
+  "asset.validate",
+  "asset.compare",
+  "subject.compare",
+  "subject.select",
+  "content.mount"
+]);
+function operationId(value2, owner) {
+  if (!isQualifiedId(owner.contributionId)) {
+    throw new TypeError(`invalid contribution id for operation ownership: ${owner.contributionId}`);
+  }
+  const codecPrefix = owner.contributionId;
+  const localSuffix = value2.startsWith(`${codecPrefix}.`) ? value2.slice(codecPrefix.length + 1) : void 0;
+  const canonicalDomain = OPERATION_DOMAINS.some((domain) => {
+    const prefix = `${domain}.`;
+    return value2.startsWith(prefix) && isSegment(value2.slice(prefix.length));
+  });
+  if (SHARED_OPERATION_IDS.includes(value2) || canonicalDomain || localSuffix !== void 0 && isSegment(localSuffix)) {
+    return value2;
+  }
+  throw new TypeError(`operation id ${value2} is outside shared, canonical domain, and ${codecPrefix} namespaces`);
+}
+
+// packages/core/dist/ordering.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var encoder = new TextEncoder();
+function compareUtf8(a, b) {
+  let ascii = true;
+  const shorter = Math.min(a.length, b.length);
+  for (let i = 0; i < shorter; i += 1) {
+    if (a.charCodeAt(i) > 127 || b.charCodeAt(i) > 127) {
+      ascii = false;
+      break;
+    }
+  }
+  if (ascii && /^[\x00-\x7F]*$/.test(a) && /^[\x00-\x7F]*$/.test(b)) {
+    return a < b ? -1 : a > b ? 1 : 0;
+  }
+  const ab = encoder.encode(a);
+  const bb = encoder.encode(b);
+  const length = Math.min(ab.length, bb.length);
+  for (let i = 0; i < length; i += 1) {
+    const x = ab[i];
+    const y = bb[i];
+    if (x !== y)
+      return x < y ? -1 : 1;
+  }
+  if (ab.length !== bb.length)
+    return ab.length < bb.length ? -1 : 1;
+  if (a === b)
+    return 0;
+  return a < b ? -1 : 1;
+}
+function sortedUtf8(values) {
+  return [...values].sort(compareUtf8);
+}
+function uniqueSortedUtf8(values) {
+  return sortedUtf8([...new Set(values)]);
+}
+
+// packages/core/dist/index.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
+// packages/core/dist/version.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var SEMVER = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/;
+function parseSafeInteger(value2) {
+  const parsed = Number(value2);
+  return Number.isSafeInteger(parsed) ? parsed : void 0;
+}
+function parseSemver(value2) {
+  const m = SEMVER.exec(value2);
+  if (!m)
+    return void 0;
+  const major = parseSafeInteger(m[1] ?? "");
+  const minor = parseSafeInteger(m[2] ?? "");
+  const patch = parseSafeInteger(m[3] ?? "");
+  if (major === void 0 || minor === void 0 || patch === void 0)
+    return void 0;
+  const prerelease = (m[4] ?? "").split(".").filter((part) => part.length > 0).map((part) => /^\d+$/.test(part) ? parseSafeInteger(part) : part);
+  if (prerelease.some((part) => part === void 0))
+    return void 0;
+  const build = (m[5] ?? "").split(".").filter((part) => part.length > 0);
+  return {
+    major,
+    minor,
+    patch,
+    prerelease,
+    build
+  };
+}
+function comparePrerelease(a, b) {
+  const ap = a.prerelease;
+  const bp = b.prerelease;
+  if (ap.length === 0 && bp.length === 0)
+    return 0;
+  if (ap.length === 0)
+    return 1;
+  if (bp.length === 0)
+    return -1;
+  const length = Math.min(ap.length, bp.length);
+  for (let i = 0; i < length; i += 1) {
+    const x = ap[i];
+    const y = bp[i];
+    if (x === y)
+      continue;
+    if (typeof x === "number" && typeof y === "number")
+      return x < y ? -1 : 1;
+    if (typeof x === "number")
+      return -1;
+    if (typeof y === "number")
+      return 1;
+    return x < y ? -1 : 1;
+  }
+  return ap.length === bp.length ? 0 : ap.length < bp.length ? -1 : 1;
+}
+function compareSemver(a, b) {
+  if (a.major !== b.major)
+    return a.major < b.major ? -1 : 1;
+  if (a.minor !== b.minor)
+    return a.minor < b.minor ? -1 : 1;
+  if (a.patch !== b.patch)
+    return a.patch < b.patch ? -1 : 1;
+  return comparePrerelease(a, b);
+}
+function formatSemver(version) {
+  const prerelease = version.prerelease.length === 0 ? "" : `-${version.prerelease.map(String).join(".")}`;
+  const build = version.build.length === 0 ? "" : `+${version.build.join(".")}`;
+  return `${version.major}.${version.minor}.${version.patch}${prerelease}${build}`;
+}
+function canonicalComparatorConjunction(comparators) {
+  const unique = /* @__PURE__ */ new Map();
+  for (const comparator of comparators) {
+    const rendered = `${comparator.op}${formatSemver(comparator.version)}`;
+    unique.set(rendered, comparator);
+  }
+  const operatorOrder = {
+    ">": 0,
+    ">=": 1,
+    "=": 2,
+    "<=": 3,
+    "<": 4
+  };
+  return [...unique.entries()].sort(([, a], [, b]) => {
+    const byVersion = compareSemver(a.version, b.version);
+    return byVersion === 0 ? operatorOrder[a.op] - operatorOrder[b.op] : byVersion;
+  }).map(([rendered]) => rendered).join(" ");
+}
+function caretUpperBound(v) {
+  if (v.major > 0) {
+    return Number.isSafeInteger(v.major + 1) ? { major: v.major + 1, minor: 0, patch: 0, prerelease: [], build: [] } : void 0;
+  }
+  if (v.minor > 0) {
+    return Number.isSafeInteger(v.minor + 1) ? { major: 0, minor: v.minor + 1, patch: 0, prerelease: [], build: [] } : void 0;
+  }
+  return Number.isSafeInteger(v.patch + 1) ? { major: 0, minor: 0, patch: v.patch + 1, prerelease: [], build: [] } : void 0;
+}
+function parsePartial(value2) {
+  const m = /^(0|[1-9]\d*)(?:\.(0|[1-9]\d*|x|\*))?(?:\.(0|[1-9]\d*|x|\*))?$/.exec(value2);
+  if (!m)
+    return void 0;
+  const major = parseSafeInteger(m[1] ?? "");
+  if (major === void 0)
+    return void 0;
+  const minorRaw = m[2];
+  const patchRaw = m[3];
+  const wild = (s) => s === "x" || s === "*";
+  if (minorRaw === void 0 || wild(minorRaw)) {
+    if (wild(minorRaw) && patchRaw !== void 0)
+      return void 0;
+    return { v: { major, minor: 0, patch: 0, prerelease: [], build: [] }, precision: 1 };
+  }
+  if (patchRaw === void 0 || wild(patchRaw)) {
+    const minor2 = parseSafeInteger(minorRaw);
+    if (minor2 === void 0)
+      return void 0;
+    return {
+      v: { major, minor: minor2, patch: 0, prerelease: [], build: [] },
+      precision: 2
+    };
+  }
+  const minor = parseSafeInteger(minorRaw);
+  const patch = parseSafeInteger(patchRaw);
+  if (minor === void 0 || patch === void 0)
+    return void 0;
+  return {
+    v: { major, minor, patch, prerelease: [], build: [] },
+    precision: 3
+  };
+}
+function parseSingle(token) {
+  const opMatch = /^(>=|<=|>|<|=|\^)?(.+)$/.exec(token);
+  if (!opMatch)
+    return void 0;
+  const op = opMatch[1];
+  const rest = (opMatch[2] ?? "").trim();
+  const hasWildcard = /(?:^|\.)(?:x|\*)(?:\.|$)/.test(rest);
+  if (op === "^") {
+    if (hasWildcard)
+      return void 0;
+    const partial2 = parsePartial(rest);
+    if (!partial2 || partial2.precision === 1)
+      return void 0;
+    const upper = caretUpperBound(partial2.v);
+    if (upper === void 0)
+      return void 0;
+    return [
+      { op: ">=", version: partial2.v },
+      { op: "<", version: upper }
+    ];
+  }
+  const partial = parsePartial(rest);
+  if (!partial)
+    return void 0;
+  if (hasWildcard && op !== void 0)
+    return void 0;
+  if (op === void 0 || op === "=") {
+    if (!hasWildcard && partial.precision !== 3)
+      return void 0;
+    if (partial.precision === 3)
+      return [{ op: "=", version: partial.v }];
+    const next = partial.precision === 1 ? partial.v.major + 1 : partial.v.minor + 1;
+    if (!Number.isSafeInteger(next))
+      return void 0;
+    const upper = partial.precision === 1 ? { major: partial.v.major + 1, minor: 0, patch: 0, prerelease: [], build: [] } : {
+      major: partial.v.major,
+      minor: partial.v.minor + 1,
+      patch: 0,
+      prerelease: [],
+      build: []
+    };
+    return [
+      { op: ">=", version: partial.v },
+      { op: "<", version: upper }
+    ];
+  }
+  return [{ op, version: partial.v }];
+}
+function parseVersionRange(raw) {
+  const trimmed = raw.trim();
+  if (trimmed === "" || trimmed === "*" || trimmed === "x") {
+    return { raw, normalized: "*", comparators: [[]] };
+  }
+  const tokens = trimmed.split(/\s+/);
+  const comparators = [];
+  for (const token of tokens) {
+    const parsed = parseSingle(token);
+    if (!parsed)
+      return void 0;
+    comparators.push(...parsed);
+  }
+  return {
+    raw,
+    normalized: canonicalComparatorConjunction(comparators),
+    comparators: [comparators]
+  };
+}
+function versionRangeTargetsMajor(range, major) {
+  if (!Number.isSafeInteger(major) || major < 0)
+    return false;
+  const start = { major, minor: 0, patch: 0, prerelease: [], build: [] };
+  return range.comparators.every((conjunction) => {
+    if (conjunction.length === 0)
+      return true;
+    const exact = conjunction.find((comparator) => comparator.op === "=");
+    if (exact !== void 0) {
+      return exact.version.major === major && conjunction.every((comparator) => matches(exact.version, comparator));
+    }
+    const nextMajor = major + 1;
+    if (!Number.isSafeInteger(nextMajor))
+      return false;
+    const end = { major: nextMajor, minor: 0, patch: 0, prerelease: [], build: [] };
+    const crossesUpperBoundary = conjunction.some((comparator) => {
+      if (comparator.op !== "<" && comparator.op !== "<=")
+        return false;
+      const boundary = compareSemver(comparator.version, end);
+      return boundary > 0 || boundary === 0 && comparator.op === "<=";
+    });
+    if (crossesUpperBoundary)
+      return false;
+    const lowers = [
+      { op: ">=", version: start },
+      ...conjunction.filter((comparator) => comparator.op === ">" || comparator.op === ">=")
+    ];
+    const uppers = [
+      { op: "<", version: end },
+      ...conjunction.filter((comparator) => comparator.op === "<" || comparator.op === "<=")
+    ];
+    const lower = lowers.reduce((best, candidate) => {
+      const comparison = compareSemver(candidate.version, best.version);
+      if (comparison > 0 || comparison === 0 && candidate.op === ">")
+        return candidate;
+      return best;
+    });
+    const upper = uppers.reduce((best, candidate) => {
+      const comparison = compareSemver(candidate.version, best.version);
+      if (comparison < 0 || comparison === 0 && candidate.op === "<")
+        return candidate;
+      return best;
+    });
+    const lowerInside = compareSemver(lower.version, start) >= 0;
+    const upperVsEnd = compareSemver(upper.version, end);
+    const upperInside = upperVsEnd < 0 || upperVsEnd === 0 && upper.op === "<";
+    const boundsOrder = compareSemver(lower.version, upper.version);
+    const nonEmpty3 = boundsOrder < 0 || boundsOrder === 0 && lower.op === ">=" && upper.op === "<=";
+    return lowerInside && upperInside && nonEmpty3;
+  });
+}
+function matches(version, comparator) {
+  const cmp = compareSemver(version, comparator.version);
+  switch (comparator.op) {
+    case "=":
+      return cmp === 0;
+    case ">":
+      return cmp > 0;
+    case ">=":
+      return cmp >= 0;
+    case "<":
+      return cmp < 0;
+    case "<=":
+      return cmp <= 0;
+  }
+}
+function satisfiesRange(version, range) {
+  return range.comparators.some((conjunction) => conjunction.every((c) => matches(version, c)));
+}
+
+// packages/core/dist/errors.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var ModkitError = class extends Error {
+  code;
+  context;
+  retryability;
+  constructor(options) {
+    super(options.message, options.cause === void 0 ? void 0 : { cause: options.cause });
+    this.name = "ModkitError";
+    if (!isQualifiedId(options.code)) {
+      throw new TypeError(`ModkitError code must be a qualified id, got \xAB${options.code}\xBB`);
+    }
+    this.code = options.code;
+    if (options.context !== void 0)
+      this.context = options.context;
+    this.retryability = options.retryability ?? "never";
+  }
+  toJSON() {
+    return {
+      code: this.code,
+      message: this.message,
+      retryability: this.retryability,
+      ...this.context === void 0 ? {} : { context: this.context }
+    };
+  }
+};
+function isModkitError(value2) {
+  return value2 instanceof ModkitError;
+}
+
+// packages/core/dist/diagnostics.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+function diagnostic(severity, code, message, path, data, range) {
+  return {
+    code: errorCode(code),
+    severity,
+    message,
+    ...path === void 0 ? {} : { path },
+    ...range === void 0 ? {} : { range },
+    ...data === void 0 ? {} : { data }
+  };
+}
+function hasErrors(diagnostics) {
+  return diagnostics.some((d) => d.severity === "error");
+}
+
+// packages/core/dist/source-span.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
+// packages/core/dist/immutability.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+function deepFreeze(value2) {
+  const seen = /* @__PURE__ */ new WeakSet();
+  const visit = (candidate) => {
+    if (typeof candidate !== "object" || candidate === null || seen.has(candidate))
+      return;
+    seen.add(candidate);
+    for (const key2 of Reflect.ownKeys(candidate)) {
+      visit(candidate[key2]);
+    }
+    Object.freeze(candidate);
+  };
+  visit(value2);
+  return value2;
+}
+
+// packages/core/dist/source-span.js
+var UINT64_MAX_DECIMAL = "18446744073709551615";
+function fixedWidthDecimalAtMost(maximum) {
+  const alternatives = [maximum];
+  for (let index = 1; index < maximum.length; index += 1) {
+    const maximumDigit = Number(maximum[index]);
+    if (maximumDigit === 0)
+      continue;
+    const prefix = maximum.slice(0, index);
+    const lowerDigit = maximumDigit === 1 ? "0" : `[0-${maximumDigit - 1}]`;
+    const remaining = maximum.length - index - 1;
+    const suffix = remaining === 0 ? "" : `[0-9]{${remaining}}`;
+    alternatives.push(`${prefix}${lowerDigit}${suffix}`);
+  }
+  return `(?:${alternatives.join("|")})`;
+}
+var UINT64_DECIMAL_PATTERN = `^(?:0|[1-9][0-9]{0,18}|${fixedWidthDecimalAtMost(UINT64_MAX_DECIMAL)})$`;
+var byteCoordinateProperties = {
+  byteOffset: { type: "string", pattern: UINT64_DECIMAL_PATTERN },
+  byteLength: { type: "string", pattern: UINT64_DECIMAL_PATTERN }
+};
+var textCoordinateProperties = {
+  utf16Offset: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+  utf16Length: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+  line: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+  column: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER }
+};
+var sourceSpanSchema = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkit.org/x3/source-span.v1.schema.json",
+  oneOf: [
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["byteOffset", "byteLength"],
+      properties: byteCoordinateProperties
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["utf16Offset", "utf16Length", "line", "column"],
+      properties: textCoordinateProperties
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["byteOffset", "byteLength", "utf16Offset", "utf16Length", "line", "column"],
+      properties: {
+        ...byteCoordinateProperties,
+        ...textCoordinateProperties
+      }
+    }
+  ]
+};
+deepFreeze(sourceSpanSchema);
+var uint64DecimalPattern = new RegExp(UINT64_DECIMAL_PATTERN);
+function isUInt64String(value2) {
+  return typeof value2 === "string" && uint64DecimalPattern.test(value2);
+}
+function uint64(value2) {
+  const decimal = typeof value2 === "bigint" ? value2.toString(10) : value2;
+  if (!isUInt64String(decimal)) {
+    throw new RangeError(`expected canonical decimal u64, received: ${decimal}`);
+  }
+  return decimal;
+}
+
+// packages/core/dist/canonical-json.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+function render(value2, indent, depth, path) {
+  if (value2 === null)
+    return "null";
+  switch (typeof value2) {
+    case "boolean":
+      return value2 ? "true" : "false";
+    case "number":
+      if (!Number.isFinite(value2)) {
+        throw new ModkitError({
+          code: "x3.core/non-canonical-value",
+          message: `non-finite number at ${path}`
+        });
+      }
+      return JSON.stringify(value2);
+    case "string":
+      return JSON.stringify(value2);
+    case "object":
+      break;
+    default:
+      throw new ModkitError({
+        code: "x3.core/non-canonical-value",
+        message: `${typeof value2} is not canonical-JSON serializable at ${path}`
+      });
+  }
+  const pad = indent.repeat(depth + 1);
+  const closePad = indent.repeat(depth);
+  if (Array.isArray(value2)) {
+    if (value2.length === 0)
+      return "[]";
+    const items = Array.from(value2, (item, i) => pad + render(item, indent, depth + 1, `${path}[${i}]`));
+    return `[
+${items.join(",\n")}
+${closePad}]`;
+  }
+  const record = value2;
+  const keys = Object.keys(record).filter((key2) => record[key2] !== void 0).sort(compareUtf8);
+  if (keys.length === 0)
+    return "{}";
+  const entries = keys.map((key2) => `${pad}${JSON.stringify(key2)}: ${render(record[key2], indent, depth + 1, `${path}.${key2}`)}`);
+  return `{
+${entries.join(",\n")}
+${closePad}}`;
+}
+function canonicalJsonStringify(value2) {
+  return `${render(value2, "  ", 0, "$")}
+`;
+}
+
+// packages/core/dist/cancellation.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var CANCELLED_CODE = "x3.core/operation-cancelled";
+var OperationCancelledError = class extends ModkitError {
+  constructor(reason) {
+    super({
+      code: CANCELLED_CODE,
+      message: "operation cancelled",
+      retryability: "safe",
+      ...reason === void 0 ? {} : { cause: reason }
+    });
+    this.name = "OperationCancelledError";
+  }
+};
+function throwIfAborted(signal) {
+  if (signal?.aborted)
+    throw new OperationCancelledError(signal.reason);
+}
+function isCancellation(value2) {
+  return value2 instanceof OperationCancelledError;
+}
+
+// packages/core/dist/lifecycle.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
+// packages/core/dist/reference-index.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
+// packages/sdk/dist/subjects/refs.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var REVISION_KINDS = Object.freeze([
+  "content-hash",
+  "git-object",
+  "etag",
+  "database-version",
+  "provider-token",
+  "overlay-generation"
+]);
+var REVISION_KIND_PATTERN = REVISION_KINDS.join("|");
+var REVISION_ALGORITHM_PATTERN = "[a-z0-9]+(?:-[a-z0-9]+)*";
+var REVISION_VALUE_PATTERN = "(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+";
+var REVISION_ID_PATTERN = `^(?:${REVISION_KIND_PATTERN})(?:\\.${REVISION_ALGORITHM_PATTERN})?:${REVISION_VALUE_PATTERN}$`;
+var REVISION_ID = new RegExp(REVISION_ID_PATTERN);
+function serializeRevisionRef(ref) {
+  if (!REVISION_KINDS.includes(ref.kind)) {
+    throw new TypeError(`invalid revision kind: ${String(ref.kind)}`);
+  }
+  if (ref.value.length === 0)
+    throw new TypeError("revision value must be non-empty");
+  if (ref.algorithm !== void 0 && !new RegExp(`^${REVISION_ALGORITHM_PATTERN}$`).test(ref.algorithm)) {
+    throw new TypeError(`invalid revision algorithm: ${ref.algorithm}`);
+  }
+  return `${ref.kind}${ref.algorithm === void 0 ? "" : `.${ref.algorithm}`}:${encodeURIComponent(ref.value)}`;
+}
+function parseRevisionRef(value2) {
+  if (!REVISION_ID.test(value2))
+    return void 0;
+  const colon = value2.indexOf(":");
+  const coordinate = value2.slice(0, colon);
+  const dot = coordinate.indexOf(".");
+  const kind = dot === -1 ? coordinate : coordinate.slice(0, dot);
+  const algorithm = dot === -1 ? void 0 : coordinate.slice(dot + 1);
+  const encoded = value2.slice(colon + 1);
+  try {
+    const decoded = decodeURIComponent(encoded);
+    if (decoded.length === 0 || encodeURIComponent(decoded) !== encoded)
+      return void 0;
+    return Object.freeze({
+      kind,
+      value: decoded,
+      ...algorithm === void 0 ? {} : { algorithm }
+    });
+  } catch {
+    return void 0;
+  }
+}
+function assertSourceChain(source) {
+  for (let current = source; current !== void 0; current = current.parent) {
+    if (typeof current.id !== "string" || current.id.length === 0) {
+      throw new TypeError("subject source id must be non-empty");
+    }
+  }
+}
+function assertSubjectIdentity(identity) {
+  if (typeof identity.kind !== "string" || typeof identity.key !== "string") {
+    throw new TypeError("subject identity kind and key must be strings");
+  }
+  if (identity.kind === "" && identity.key === "")
+    return;
+  if (!isQualifiedId(identity.kind)) {
+    throw new TypeError(`nested subject kind must be a qualified id: ${identity.kind}`);
+  }
+  if (identity.key.length === 0) {
+    throw new TypeError("nested subject key must be non-empty");
+  }
+}
+function rootSubject(source, workspace) {
+  assertSourceChain(source);
+  return {
+    ...workspace === void 0 ? {} : { workspace },
+    source,
+    identity: { kind: "", key: "" }
+  };
+}
+function nestedSubject(owner, kind, key2) {
+  assertSourceChain(owner.source);
+  assertSubjectIdentity({ kind, key: key2 });
+  return { ...owner, identity: { kind, key: key2 } };
+}
+function sourceChainEquals(a, b) {
+  if (a === void 0 || b === void 0)
+    return a === b;
+  return a.id === b.id && sourceChainEquals(a.parent, b.parent);
+}
+function subjectRefEquals(a, b) {
+  return a.workspace === b.workspace && sourceChainEquals(a.source, b.source) && a.identity.kind === b.identity.kind && a.identity.key === b.identity.key;
+}
+var EXTENDED_SUBJECT_PREFIX = "x3-subject:";
+function sourceIdChain(source) {
+  const chain = [];
+  for (let current = source; current !== void 0; current = current.parent) {
+    chain.push(current.id);
+  }
+  return chain.reverse();
+}
+function sourceFromIdChain(chain) {
+  if (chain.length === 0)
+    throw new TypeError("subject source chain must be non-empty");
+  let source;
+  for (const id2 of chain) {
+    if (typeof id2 !== "string" || id2.length === 0) {
+      throw new TypeError("subject source id must be non-empty");
+    }
+    source = { id: id2, ...source === void 0 ? {} : { parent: source } };
+  }
+  return source;
+}
+function serializeSubjectRef(ref) {
+  assertSourceChain(ref.source);
+  assertSubjectIdentity(ref.identity);
+  if (ref.workspace !== void 0 || ref.source.parent !== void 0 || ref.source.id.includes("#") || ref.source.id.startsWith(EXTENDED_SUBJECT_PREFIX)) {
+    const payload = [
+      1,
+      ref.workspace ?? null,
+      sourceIdChain(ref.source),
+      ref.identity.kind,
+      ref.identity.key
+    ];
+    return `${EXTENDED_SUBJECT_PREFIX}${encodeURIComponent(JSON.stringify(payload))}`;
+  }
+  if (ref.identity.key === "" && ref.identity.kind === "")
+    return ref.source.id;
+  return `${ref.source.id}#${encodeURIComponent(ref.identity.kind)}/${encodeURIComponent(ref.identity.key)}`;
+}
+function parseSubjectRef(uri, workspace) {
+  if (uri.startsWith(EXTENDED_SUBJECT_PREFIX)) {
+    try {
+      const payload = JSON.parse(decodeURIComponent(uri.slice(EXTENDED_SUBJECT_PREFIX.length)));
+      if (!Array.isArray(payload) || payload.length !== 5 || payload[0] !== 1) {
+        throw new TypeError("invalid extended subject reference");
+      }
+      const encodedWorkspace = payload[1];
+      const chain = payload[2];
+      const kind = payload[3];
+      const key2 = payload[4];
+      if (encodedWorkspace !== null && typeof encodedWorkspace !== "string" || !Array.isArray(chain) || typeof kind !== "string" || typeof key2 !== "string") {
+        throw new TypeError("invalid extended subject reference");
+      }
+      const identity = { kind, key: key2 };
+      assertSubjectIdentity(identity);
+      return {
+        ...encodedWorkspace === null ? {} : { workspace: encodedWorkspace },
+        source: sourceFromIdChain(chain),
+        identity
+      };
+    } catch (error) {
+      throw new TypeError(`invalid extended subject reference: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+  const hash = uri.indexOf("#");
+  if (hash === -1)
+    return rootSubject({ id: uri }, workspace);
+  const fragment = uri.slice(hash + 1);
+  const slash = fragment.indexOf("/");
+  if (slash === -1)
+    throw new TypeError("nested subject reference must include a non-empty key");
+  try {
+    const kind = decodeURIComponent(fragment.slice(0, slash));
+    const key2 = decodeURIComponent(fragment.slice(slash + 1));
+    return nestedSubject(rootSubject({ id: uri.slice(0, hash) }, workspace), kind, key2);
+  } catch (error) {
+    throw new TypeError(`invalid nested subject reference: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+// packages/sdk/dist/asset-capabilities/types.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+function contributionId(value2) {
+  if (!isQualifiedId(value2))
+    throw new TypeError(`invalid contribution id: ${value2}`);
+  return value2;
+}
+function isRevisionId(value2) {
+  return parseRevisionRef(value2) !== void 0;
+}
+function revisionId(value2) {
+  if (!isRevisionId(value2))
+    throw new TypeError("revision id must be a canonical kind-tagged value");
+  return value2;
+}
+function revisionIdFromRef(ref) {
+  return revisionId(serializeRevisionRef(ref));
+}
+
+// packages/sdk/dist/index.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
+// packages/sdk/dist/schemas/extension-manifest.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
 // packages/sdk/dist/schemas/patterns.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var DOTTED_PATTERN = "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$";
 var NAMESPACED_DOTTED_PATTERN = "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$";
 var OPERATION_PATTERN = "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$";
@@ -155,7 +942,8 @@ var extensionManifestSchema = {
     license: { type: "string", minLength: 1 },
     contributionManifests: contributionManifestsSchema,
     dependsOn: { type: "array", items: extensionRequirementSchema },
-    presentation: extensionPresentationSchema
+    presentation: extensionPresentationSchema,
+    contentSources: { type: "string", pattern: EXTENSION_VFS_PATH_PATTERN }
   }
 };
 var modkitBlockSchema = {
@@ -170,7 +958,8 @@ var modkitBlockSchema = {
     id: { type: "string", pattern: DOTTED_PATTERN },
     contributionManifests: contributionManifestsSchema,
     dependsOn: { type: "array", items: extensionRequirementSchema },
-    presentation: extensionPresentationSchema
+    presentation: extensionPresentationSchema,
+    contentSources: { type: "string", pattern: EXTENSION_VFS_PATH_PATTERN }
   }
 };
 deepFreeze(requirementScopeSchema);
@@ -184,6 +973,7 @@ deepFreeze(extensionManifestSchema);
 deepFreeze(modkitBlockSchema);
 
 // packages/sdk/dist/identity.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var QUALIFIED_RULES = [
   ["org.modkitx/starcraft-2", "blizzard/starcraft-2", true],
   ["org.modkitx/warzone-2100", "wz2100project/warzone-2100", true],
@@ -194,16 +984,6 @@ var QUALIFIED_RULES = [
   ["org.modkitx/", "modkit/"],
   ["org.modkitx.", "modkit."],
   ["org.modkitx", "modkit", true]
-];
-var SOURCE_RULES = [
-  ["org.modkitx.blizzard", "blizzard", true],
-  ["org.modkitx.ea", "ea", true],
-  ["org.modkitx.opensource", "opensource", true],
-  ["org.modkitx", "modkit", true]
-];
-var PACKAGE_RULES = [
-  ["@modkitx-x3/", "@modkit/"],
-  ["@modkitx/", "@modkit/"]
 ];
 function normalizeByRules(value2, rules) {
   for (const [from, to, exact] of rules) {
@@ -216,14 +996,9 @@ function normalizeByRules(value2, rules) {
 function normalizeModkitIdentifier(value2) {
   return normalizeByRules(value2, QUALIFIED_RULES).value;
 }
-function normalizeModkitPackageSpecifier(value2) {
-  return normalizeByRules(value2, PACKAGE_RULES).value;
-}
-function normalizeModkitSourceIdentifier(value2) {
-  return normalizeByRules(value2, SOURCE_RULES).value;
-}
 
 // packages/sdk/dist/schemas/contribution-manifest.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var EXECUTION_PROFILES = Object.freeze([
   "browser-sandbox",
   "worker-brokered",
@@ -342,7 +1117,11 @@ deepFreeze(runtimeVariantDeclarationSchema);
 deepFreeze(scopedContractRequirementSchema);
 deepFreeze(contributionManifestSchema);
 
+// packages/sdk/dist/schemas/contribution-specs.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
 // packages/sdk/dist/asset-capabilities/data-source-ids.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var STANDARD_DATA_SOURCE_CONTRACTS = Object.freeze([
   "common.view/text-data-source",
   "common.view/byte-range-source",
@@ -363,6 +1142,11 @@ var STANDARD_DATA_SOURCE_CONTRACTS = Object.freeze([
   "common.view/model-collision-source",
   "common.view/model-material-source",
   "common.view/model-socket-source",
+  "common.view/model-effect-source",
+  "common.view/model-light-source",
+  "common.view/model-camera-source",
+  "common.view/model-physics-source",
+  "common.view/model-node-behaviour-source",
   "common.view/relation-graph-source",
   "common.view/subject-selector-source",
   "common.view/subject-facts-source",
@@ -388,6 +1172,11 @@ var DATA_SOURCE_MATURITY = Object.freeze({
   "common.view/model-collision-source": "admitted",
   "common.view/model-material-source": "admitted",
   "common.view/model-socket-source": "publisher-candidate",
+  "common.view/model-effect-source": "publisher-candidate",
+  "common.view/model-light-source": "publisher-candidate",
+  "common.view/model-camera-source": "publisher-candidate",
+  "common.view/model-physics-source": "publisher-candidate",
+  "common.view/model-node-behaviour-source": "publisher-candidate",
   "common.view/relation-graph-source": "admitted",
   "common.view/subject-selector-source": "admitted",
   "common.view/subject-facts-source": "admitted",
@@ -395,15 +1184,11 @@ var DATA_SOURCE_MATURITY = Object.freeze({
   "common.view/slide-deck-source": "publisher-candidate"
 });
 var ADMITTED_DATA_SOURCE_CONTRACTS = Object.freeze(STANDARD_DATA_SOURCE_CONTRACTS.filter((contract) => DATA_SOURCE_MATURITY[contract] === "admitted"));
-function dataSourceMaturity(contract) {
-  return STANDARD_DATA_SOURCE_CONTRACTS.includes(contract) ? DATA_SOURCE_MATURITY[contract] : void 0;
-}
 
 // packages/sdk/dist/knowledge/index.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var KNOWLEDGE_LOCALE_PATTERN = "^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$";
 var knowledgeLocalePattern = new RegExp(KNOWLEDGE_LOCALE_PATTERN, "u");
-var isKnowledgeLocaleTag = (value2) => typeof value2 === "string" && value2.length <= 64 && knowledgeLocalePattern.test(value2);
-var localeKey = (locale) => locale.toLowerCase();
 var isBoundedString = (value2, maximum) => typeof value2 === "string" && value2.length > 0 && value2.length <= maximum;
 var isRecord = (value2) => typeof value2 === "object" && value2 !== null && !Array.isArray(value2);
 var hasOnlyKeys = (value2, allowed) => {
@@ -436,33 +1221,6 @@ function isKnowledgeTarget(value2) {
   } catch {
     return false;
   }
-}
-function knowledgeLocaleFallbacks(requested, userFallbacks, sourceLocale) {
-  const candidates = [];
-  const append = (locale) => {
-    const trimmed = locale.trim();
-    if (trimmed === "")
-      return;
-    const subtags = trimmed.split("-");
-    while (subtags.length > 0) {
-      candidates.push(subtags.join("-"));
-      subtags.pop();
-      if (subtags.length > 1 && subtags[subtags.length - 1]?.length === 1)
-        subtags.pop();
-    }
-  };
-  append(requested);
-  for (const locale of userFallbacks)
-    append(locale);
-  append(sourceLocale);
-  const seen = /* @__PURE__ */ new Set();
-  return Object.freeze(candidates.filter((locale) => {
-    const key2 = localeKey(locale);
-    if (seen.has(key2))
-      return false;
-    seen.add(key2);
-    return true;
-  }));
 }
 function knowledgeTargetKey(target) {
   if (!isKnowledgeTarget(target))
@@ -846,6 +1604,17 @@ var codecContributionProperties = {
     minItems: 1
   },
   match: matchRulesSchema,
+  /*
+   * Entries that stand for the whole source, so opening one opens the source.
+   *
+   * MapInfo names a map and carries little else; a person who opened it came for the map. The
+   * names belong to the format, so the codec declares them and no common code learns them.
+   */
+  anchorDocuments: {
+    type: "array",
+    items: { type: "string", minLength: 1, maxLength: 256 },
+    maxItems: 8
+  },
   companions: { type: "array", items: companionRuleSchema },
   representations: { type: "array", items: representationDeclSchema, minItems: 1 },
   publishesDataSources: { type: "array", items: dataSourceRefWireSchema },
@@ -886,7 +1655,10 @@ var codecContributionSpecV1Schema = {
           type: "object",
           additionalProperties: false,
           required: ["formatId"],
-          properties: { formatId: nonEmptyString }
+          properties: {
+            formatId: nonEmptyString,
+            assetRoots: { type: "array", maxItems: 16, items: { type: "string", maxLength: 256 } }
+          }
         },
         probe: probePlanSchema.oneOf[1]
       }
@@ -1238,19 +2010,40 @@ var knowledgeEntrySchema = {
     sources: { type: "array", items: knowledgeSourceSchema, minItems: 1, maxItems: 16 }
   }
 };
+var knowledgePackSpecCommonProperties = {
+  schemaVersion: { const: 1 },
+  sourceLocale: localeTag,
+  priority: { type: "number" },
+  gameIds: { type: "array", items: knowledgeShortText, maxItems: 32, uniqueItems: true }
+};
 var knowledgePackSpecV1Schema = {
   $schema: "https://json-schema.org/draft/2020-12/schema",
   $id: "https://schemas.modkit.org/x3/knowledge-pack-spec.v1.schema.json",
-  type: "object",
-  additionalProperties: false,
-  required: ["schemaVersion", "sourceLocale", "priority", "entries"],
-  properties: {
-    schemaVersion: { const: 1 },
-    sourceLocale: localeTag,
-    priority: { type: "number" },
-    gameIds: { type: "array", items: knowledgeShortText, maxItems: 32, uniqueItems: true },
-    entries: { type: "array", items: knowledgeEntrySchema, minItems: 1, maxItems: 1e4 }
-  }
+  // Entries inline, or a file of the artifact the host reads when knowledge is first queried.
+  oneOf: [
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["schemaVersion", "sourceLocale", "priority", "entries"],
+      properties: {
+        ...knowledgePackSpecCommonProperties,
+        entries: { type: "array", items: knowledgeEntrySchema, minItems: 1, maxItems: 1e4 }
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["schemaVersion", "sourceLocale", "priority", "entriesPath"],
+      properties: {
+        ...knowledgePackSpecCommonProperties,
+        entriesPath: {
+          type: "string",
+          maxLength: 1024,
+          pattern: "^[A-Za-z0-9][A-Za-z0-9._-]*(?:/[A-Za-z0-9][A-Za-z0-9._-]*)*\\.json$"
+        }
+      }
+    }
+  ]
 };
 var localizationCatalogResourceV1Schema = {
   type: "object",
@@ -1515,7 +2308,6 @@ var contractDefinitionSpecV1Schema = {
   $id: "https://schemas.modkit.org/x3/contract-definition-spec.v1.schema.json",
   oneOf: [serviceContractDefinitionSpecV1Schema, dataSourceContractDefinitionSpecV1Schema]
 };
-var dataSourceContributionSpecV1Schema = dataSourceContractDefinitionSpecV1Schema;
 deepFreeze(jsonSchemaRefSchema);
 deepFreeze(resourceBudgetWireSchema);
 deepFreeze(dataSourceRefWireSchema);
@@ -1533,6 +2325,7 @@ deepFreeze(dataSourceContractDefinitionSpecV1Schema);
 deepFreeze(contractDefinitionSpecV1Schema);
 
 // packages/sdk/dist/editing.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var WRITER_CONTRACT_ID = "common.edit/writer";
 var WRITER_FACET_MATCHER_PROFILE = "modkit/writer-facet-matcher";
 var writerSurface = {
@@ -1557,7 +2350,11 @@ function writerSelectionKey(request) {
   return `writer:${request.formatId}:${request.representationId}:${request.mutationMode}:${request.minimumRoundTrip}`;
 }
 
+// packages/sdk/dist/fields/index.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
 // packages/sdk/dist/subjects/candidates.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var nonEmptyStrings = (value2) => value2 === void 0 || value2.every((item) => typeof item === "string" && item.length > 0) && new Set(value2).size === value2.length;
 function validCandidate(candidate) {
   return typeof candidate === "object" && candidate !== null && typeof candidate.subjectId === "string" && candidate.subjectId.length > 0 && typeof candidate.label === "string" && candidate.label.length > 0 && typeof candidate.kind === "string" && candidate.kind.length > 0 && (candidate.type === void 0 || typeof candidate.type === "string" && candidate.type.length > 0) && nonEmptyStrings(candidate.tags) && (candidate.asset === void 0 || typeof candidate.asset === "object" && candidate.asset !== null && typeof candidate.asset.formatId === "string" && candidate.asset.formatId.length > 0 && nonEmptyStrings(candidate.asset.traits));
@@ -1616,6 +2413,7 @@ function createSubjectCandidateProvider(source) {
 }
 
 // packages/sdk/dist/schemas/fields.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var text = { type: "string" };
 var id = { type: "string", minLength: 1 };
 var strings = { type: "array", items: id };
@@ -1966,6 +2764,7 @@ deepFreeze(fieldEditInputSchemaV1Schema);
 deepFreeze(fieldEditorContributionSpecV1Schema);
 
 // packages/sdk/dist/manifest/operation-permissions.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 function operationScopedPermissionClasses(operations) {
   const out = /* @__PURE__ */ new Set();
   for (const operation of operations ?? []) {
@@ -1982,173 +2781,8 @@ function activationRequiredPermissionClasses(requested, operations) {
   return Object.freeze(requested.filter((item) => !scoped.has(item)));
 }
 
-// packages/sdk/dist/subjects/refs.js
-var REVISION_KINDS = Object.freeze([
-  "content-hash",
-  "git-object",
-  "etag",
-  "database-version",
-  "provider-token",
-  "overlay-generation"
-]);
-var REVISION_KIND_PATTERN = REVISION_KINDS.join("|");
-var REVISION_ALGORITHM_PATTERN = "[a-z0-9]+(?:-[a-z0-9]+)*";
-var REVISION_VALUE_PATTERN = "(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+";
-var REVISION_ID_PATTERN = `^(?:${REVISION_KIND_PATTERN})(?:\\.${REVISION_ALGORITHM_PATTERN})?:${REVISION_VALUE_PATTERN}$`;
-var REVISION_ID = new RegExp(REVISION_ID_PATTERN);
-function serializeRevisionRef(ref) {
-  if (!REVISION_KINDS.includes(ref.kind)) {
-    throw new TypeError(`invalid revision kind: ${String(ref.kind)}`);
-  }
-  if (ref.value.length === 0)
-    throw new TypeError("revision value must be non-empty");
-  if (ref.algorithm !== void 0 && !new RegExp(`^${REVISION_ALGORITHM_PATTERN}$`).test(ref.algorithm)) {
-    throw new TypeError(`invalid revision algorithm: ${ref.algorithm}`);
-  }
-  return `${ref.kind}${ref.algorithm === void 0 ? "" : `.${ref.algorithm}`}:${encodeURIComponent(ref.value)}`;
-}
-function parseRevisionRef(value2) {
-  if (!REVISION_ID.test(value2))
-    return void 0;
-  const colon = value2.indexOf(":");
-  const coordinate = value2.slice(0, colon);
-  const dot = coordinate.indexOf(".");
-  const kind = dot === -1 ? coordinate : coordinate.slice(0, dot);
-  const algorithm = dot === -1 ? void 0 : coordinate.slice(dot + 1);
-  const encoded = value2.slice(colon + 1);
-  try {
-    const decoded = decodeURIComponent(encoded);
-    if (decoded.length === 0 || encodeURIComponent(decoded) !== encoded)
-      return void 0;
-    return Object.freeze({
-      kind,
-      value: decoded,
-      ...algorithm === void 0 ? {} : { algorithm }
-    });
-  } catch {
-    return void 0;
-  }
-}
-function assertSourceChain(source) {
-  for (let current = source; current !== void 0; current = current.parent) {
-    if (typeof current.id !== "string" || current.id.length === 0) {
-      throw new TypeError("subject source id must be non-empty");
-    }
-  }
-}
-function assertSubjectIdentity(identity) {
-  if (typeof identity.kind !== "string" || typeof identity.key !== "string") {
-    throw new TypeError("subject identity kind and key must be strings");
-  }
-  if (identity.kind === "" && identity.key === "")
-    return;
-  if (!isQualifiedId(identity.kind)) {
-    throw new TypeError(`nested subject kind must be a qualified id: ${identity.kind}`);
-  }
-  if (identity.key.length === 0) {
-    throw new TypeError("nested subject key must be non-empty");
-  }
-}
-function rootSubject(source, workspace) {
-  assertSourceChain(source);
-  return {
-    ...workspace === void 0 ? {} : { workspace },
-    source,
-    identity: { kind: "", key: "" }
-  };
-}
-function nestedSubject(owner, kind, key2) {
-  assertSourceChain(owner.source);
-  assertSubjectIdentity({ kind, key: key2 });
-  return { ...owner, identity: { kind, key: key2 } };
-}
-function sourceChainEquals(a, b) {
-  if (a === void 0 || b === void 0)
-    return a === b;
-  return a.id === b.id && sourceChainEquals(a.parent, b.parent);
-}
-function subjectRefEquals(a, b) {
-  return a.workspace === b.workspace && sourceChainEquals(a.source, b.source) && a.identity.kind === b.identity.kind && a.identity.key === b.identity.key;
-}
-var EXTENDED_SUBJECT_PREFIX = "x3-subject:";
-function sourceIdChain(source) {
-  const chain = [];
-  for (let current = source; current !== void 0; current = current.parent) {
-    chain.push(current.id);
-  }
-  return chain.reverse();
-}
-function sourceFromIdChain(chain) {
-  if (chain.length === 0)
-    throw new TypeError("subject source chain must be non-empty");
-  let source;
-  for (const id2 of chain) {
-    if (typeof id2 !== "string" || id2.length === 0) {
-      throw new TypeError("subject source id must be non-empty");
-    }
-    source = { id: id2, ...source === void 0 ? {} : { parent: source } };
-  }
-  return source;
-}
-function serializeSubjectRef(ref) {
-  assertSourceChain(ref.source);
-  assertSubjectIdentity(ref.identity);
-  if (ref.workspace !== void 0 || ref.source.parent !== void 0 || ref.source.id.includes("#") || ref.source.id.startsWith(EXTENDED_SUBJECT_PREFIX)) {
-    const payload = [
-      1,
-      ref.workspace ?? null,
-      sourceIdChain(ref.source),
-      ref.identity.kind,
-      ref.identity.key
-    ];
-    return `${EXTENDED_SUBJECT_PREFIX}${encodeURIComponent(JSON.stringify(payload))}`;
-  }
-  if (ref.identity.key === "" && ref.identity.kind === "")
-    return ref.source.id;
-  return `${ref.source.id}#${encodeURIComponent(ref.identity.kind)}/${encodeURIComponent(ref.identity.key)}`;
-}
-function parseSubjectRef(uri, workspace) {
-  if (uri.startsWith(EXTENDED_SUBJECT_PREFIX)) {
-    try {
-      const payload = JSON.parse(decodeURIComponent(uri.slice(EXTENDED_SUBJECT_PREFIX.length)));
-      if (!Array.isArray(payload) || payload.length !== 5 || payload[0] !== 1) {
-        throw new TypeError("invalid extended subject reference");
-      }
-      const encodedWorkspace = payload[1];
-      const chain = payload[2];
-      const kind = payload[3];
-      const key2 = payload[4];
-      if (encodedWorkspace !== null && typeof encodedWorkspace !== "string" || !Array.isArray(chain) || typeof kind !== "string" || typeof key2 !== "string") {
-        throw new TypeError("invalid extended subject reference");
-      }
-      const identity = { kind, key: key2 };
-      assertSubjectIdentity(identity);
-      return {
-        ...encodedWorkspace === null ? {} : { workspace: encodedWorkspace },
-        source: sourceFromIdChain(chain),
-        identity
-      };
-    } catch (error) {
-      throw new TypeError(`invalid extended subject reference: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  }
-  const hash = uri.indexOf("#");
-  if (hash === -1)
-    return rootSubject({ id: uri }, workspace);
-  const fragment = uri.slice(hash + 1);
-  const slash = fragment.indexOf("/");
-  if (slash === -1)
-    throw new TypeError("nested subject reference must include a non-empty key");
-  try {
-    const kind = decodeURIComponent(fragment.slice(0, slash));
-    const key2 = decodeURIComponent(fragment.slice(slash + 1));
-    return nestedSubject(rootSubject({ id: uri.slice(0, hash) }, workspace), kind, key2);
-  } catch (error) {
-    throw new TypeError(`invalid nested subject reference: ${error instanceof Error ? error.message : String(error)}`);
-  }
-}
-
 // packages/sdk/dist/schemas/subject-descriptor.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var sourceSpanValueSchema = { oneOf: sourceSpanSchema.oneOf };
 var nonEmptyString2 = { type: "string", minLength: 1 };
 var nonWhitespaceString = { type: "string", pattern: "\\S" };
@@ -2393,6 +3027,8 @@ var metadataEntrySchema = {
   properties: {
     key: nonEmptyString2,
     value: jsonValueRef,
+    // One sentence about what the value is, when the value alone misleads.
+    note: { type: "string" },
     type: { $ref: "#/$defs/fieldType" },
     unit: { type: "string" },
     diagnosticIds: stringArray,
@@ -2660,14 +3296,17 @@ var subjectDescriptorV2InferenceSchema = {
     fieldType: { title: "FieldType" }
   }
 };
-var anyDescriptorV2Schema = subjectDescriptorV2Schema;
 deepFreeze(subjectDescriptorV2Schema);
 deepFreeze(subjectDescriptorV2InferenceSchema);
 
+// packages/sdk/dist/manifest/spec-registry.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
 // packages/sdk/dist/manifest/validate.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var platformValidatorsPromise;
 function platformValidators() {
-  platformValidatorsPromise ??= import("./validators.generated-Y4DUUWE3.js").then((module) => module.PRECOMPILED_SCHEMA_VALIDATORS);
+  platformValidatorsPromise ??= import("./validators.generated-SJ7J2TWN.js").then((module) => module.PRECOMPILED_SCHEMA_VALIDATORS);
   return platformValidatorsPromise;
 }
 function toPath(error) {
@@ -2832,6 +3471,15 @@ function snapshotJsonWireData(value2) {
 function snapshotJsonWireObject(value2) {
   return snapshotJsonWireData(value2);
 }
+var schemaKeys = /* @__PURE__ */ new WeakMap();
+function schemaKeyOf(schema) {
+  const known = schemaKeys.get(schema);
+  if (known !== void 0)
+    return known;
+  const key2 = canonicalJsonStringify(snapshotJsonWireObject(schema));
+  schemaKeys.set(schema, key2);
+  return key2;
+}
 async function validateWithSchema(schema, value2, code = "x3.sdk/schema-violation", suppliedValidator) {
   let valueSnapshot;
   try {
@@ -2843,11 +3491,9 @@ async function validateWithSchema(schema, value2, code = "x3.sdk/schema-violatio
   }
   if (valueSnapshot.diagnostics.length > 0)
     return [...valueSnapshot.diagnostics];
-  let schemaSnapshot;
   let schemaCacheKey;
   try {
-    schemaSnapshot = snapshotJsonWireObject(schema);
-    schemaCacheKey = canonicalJsonStringify(schemaSnapshot);
+    schemaCacheKey = schemaKeyOf(schema);
   } catch (error) {
     return [
       diagnostic("error", "x3.sdk/invalid-schema-authority", "the selected JSON Schema is not inert JSON data", [], { error: error instanceof Error ? error.message : String(error) })
@@ -2877,53 +3523,19 @@ async function validateWithSchema(schema, value2, code = "x3.sdk/schema-violatio
       diagnostic("error", "x3.sdk/schema-evaluation-failed", `the selected JSON Schema failed while evaluating inert wire data: ${reason}`, [], { error: reason })
     ];
   }
-  return schemaDiagnostics(validate.errors, code);
+  const reported = schemaDiagnostics(validate.errors, code);
+  if (reported.length > 0)
+    return reported;
+  return [
+    diagnostic("error", code, "the schema validator rejected the value without reporting a reason", [], { reason: "validator-returned-false" })
+  ];
 }
 
-// packages/sdk/dist/asset-capabilities/types.js
-function contributionId(value2) {
-  if (!isQualifiedId(value2))
-    throw new TypeError(`invalid contribution id: ${value2}`);
-  return value2;
-}
-function isRevisionId(value2) {
-  return parseRevisionRef(value2) !== void 0;
-}
-function revisionId(value2) {
-  if (!isRevisionId(value2))
-    throw new TypeError("revision id must be a canonical kind-tagged value");
-  return value2;
-}
-function revisionIdFromRef(ref) {
-  return revisionId(serializeRevisionRef(ref));
-}
-function revisionRefFromId(value2) {
-  const parsed = parseRevisionRef(value2);
-  if (parsed === void 0)
-    throw new TypeError("invalid branded revision id");
-  return parsed;
-}
-function assetSourceRefFromSourceRef(source, uri) {
-  const ancestors = [];
-  for (let current = source.parent; current !== void 0; current = current.parent) {
-    ancestors.push(current.id);
-  }
-  ancestors.reverse();
-  return Object.freeze({
-    id: source.id,
-    uri,
-    ...ancestors.length === 0 ? {} : { parentIds: Object.freeze(ancestors) }
-  });
-}
-function sourceRefFromAssetSourceRef(ref) {
-  let parent;
-  for (const id2 of ref.parentIds ?? []) {
-    parent = Object.freeze({ id: id2, ...parent === void 0 ? {} : { parent } });
-  }
-  return Object.freeze({ id: ref.id, ...parent === void 0 ? {} : { parent } });
-}
+// packages/sdk/dist/host-profile.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
 // packages/sdk/dist/host-facilities.generated.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var STANDARD_HOST_FACILITY_IDS = Object.freeze([
   "clipboard.write",
   "credential.broker",
@@ -3088,7 +3700,7 @@ function createHostRealmProfile(profile) {
     maxTransferBytes: bytes(snapshot.budgets.maxTransferBytes, "budgets.maxTransferBytes"),
     defaultDeadlineMs: count2(snapshot.budgets.defaultDeadlineMs, "budgets.defaultDeadlineMs")
   });
-  const policy2 = Object.freeze({
+  const policy = Object.freeze({
     id: nonEmpty(snapshot.policy.id, "policy.id"),
     revision: nonEmpty(snapshot.policy.revision, "policy.revision"),
     ...snapshot.policy.digest === void 0 ? {} : { digest: nonEmpty(snapshot.policy.digest, "policy.digest") }
@@ -3100,7 +3712,7 @@ function createHostRealmProfile(profile) {
     target,
     facilities: Object.freeze(facilities),
     budgets,
-    policy: policy2
+    policy
   });
 }
 function createHostTopology(topology) {
@@ -3484,7 +4096,11 @@ async function validateContributionManifest(value2, registry) {
   };
 }
 
+// packages/sdk/dist/manifest/contribution-contract-registry.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
 // packages/sdk/dist/asset-capabilities/standard-traits.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var TRAIT_IDS = Object.freeze([
   "content.metadata",
   "content.binary",
@@ -3967,11 +4583,12 @@ var validateServiceProviderContributionSemantics = (manifest) => {
 };
 var validateKnowledgePackSemantics = (manifest) => {
   const spec = manifest.spec;
-  const diagnostics = duplicateFieldDiagnostics(spec.entries.map((entry) => `${entry.id}\0${entry.locale.toLowerCase()}`), ["spec", "entries"], "knowledge entry and locale");
+  const entries = spec.entries ?? [];
+  const diagnostics = duplicateFieldDiagnostics(entries.map((entry) => `${entry.id}\0${entry.locale.toLowerCase()}`), ["spec", "entries"], "knowledge entry and locale");
   const targetLocales = /* @__PURE__ */ new Set();
   const targetByLogicalId = /* @__PURE__ */ new Map();
   const localesByLogicalId = /* @__PURE__ */ new Map();
-  spec.entries.forEach((entry, index) => {
+  entries.forEach((entry, index) => {
     const targetKey = knowledgeTargetKey(entry.target);
     const coordinate = `${targetKey}\0${entry.locale.toLowerCase()}`;
     if (targetLocales.has(coordinate)) {
@@ -4141,15 +4758,15 @@ function createContributionContractRegistry(entries) {
       mode: "executable",
       moduleAbi: validatedRegistrationModuleAbi(authoredEntry.moduleAbi, coordinate.id, coordinate.major)
     }) : Object.freeze({ ...base, mode: "data-only" });
-    const registrationKey2 = key(entry.contract.id, entry.contract.major);
-    if (map.has(registrationKey2)) {
+    const registrationKey = key(entry.contract.id, entry.contract.major);
+    if (map.has(registrationKey)) {
       throw new ModkitError({
         code: "x3.sdk/duplicate-contribution-contract",
-        message: `duplicate contribution contract registration: ${registrationKey2}`,
+        message: `duplicate contribution contract registration: ${registrationKey}`,
         context: { contract: entry.contract.id, major: entry.contract.major }
       });
     }
-    map.set(registrationKey2, entry);
+    map.set(registrationKey, entry);
   }
   const list = Object.freeze([...map.values()].sort((left, right) => compareUtf8(left.contract.id, right.contract.id) || left.contract.major - right.contract.major));
   const validationRegistry = createSpecSchemaRegistry(list.map((entry) => ({
@@ -4284,20 +4901,27 @@ var A1_SPEC_SCHEMA_ENTRIES = [
 ];
 
 // packages/sdk/dist/service-contracts.js
-function foreignServiceContractId(contract) {
-  if (!isQualifiedId(contract))
-    throw new TypeError(`invalid foreign service contract: ${contract}`);
-  return contract;
-}
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
+// packages/sdk/dist/model-encoding.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var NATIVE_MODEL_ENCODER_CONTRACT = "common.model/native-encoder";
+var NATIVE_MODEL_ENCODER_MATCHER_PROFILE = "modkit/native-model-encoder-matcher";
+
+// packages/sdk/dist/language/index.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
+// packages/sdk/dist/language/translation.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var TRANSLATION_CONTRACT = "common.language/translation";
+var TRANSLATION_MATCHER_PROFILE = "modkit/translation-matcher";
 
 // packages/sdk/dist/language/index.js
 var LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT = "common.language/document-analysis";
 var LANGUAGE_DOCUMENT_MATCHER_PROFILE = "modkit/language-document-matcher";
 
-// packages/sdk/dist/language/translation.js
-var TRANSLATION_CONTRACT = "common.language/translation";
-
 // packages/sdk/dist/runtime/index.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var RUNTIME_PROVIDER_CONTRACT = "common.runtime/provider";
 var RUNTIME_SESSION_CONTRACT = "common.runtime/session";
 var RUNTIME_PROVIDER_MATCHER_PROFILE = "modkit/runtime-provider-matcher";
@@ -4311,12 +4935,24 @@ var RUNTIME_SESSION_V2_MEMBERS = Object.freeze([
   "stateHash"
 ]);
 
+// packages/sdk/dist/service-operations.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var SERVICE_OPERATION_PROVIDER_CONTRACT = "common.runtime/operation-provider";
+var SERVICE_OPERATION_MATCHER_PROFILE = "modkit/service-operation-matcher";
+
+// packages/sdk/dist/renderer/index.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var SCENE_RENDERER_CONTRACT = "common.render/scene-3d";
+var SCENE_RENDERER_MATCHER_PROFILE = "modkit/scene-renderer-matcher";
+
 // packages/sdk/dist/games/index.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var GAME_INSTALLATION_DISCOVERY_CONTRACT = "common.game/installation-discovery";
 var GAME_LAUNCH_PLAN_CONTRACT = "common.game/launch-plan";
 var GAME_INSTALLATION_MATCHER_PROFILE = "modkit/game-installation-matcher";
 
 // packages/sdk/dist/mods/index.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var MOD_WORKSPACE_COMPOSITION_CONTRACT = "common.mod/workspace-composition";
 var MOD_WORKSPACE_MATCHER_PROFILE = "modkit/mod-workspace-matcher";
 function positiveLimit(value2, name) {
@@ -4474,501 +5110,140 @@ function resolveModWorkspaceGraph(input) {
 }
 
 // packages/sdk/dist/data/index.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var DATA_CATALOG_ANALYSIS_CONTRACT = "common.data/catalog-analysis";
 var DATA_CATALOG_MATCHER_PROFILE = "modkit/data-catalog-matcher";
 var RESOLVED_DATA_WORKSPACE_CONTRACT = "common.data/resolved-workspace";
 var RESOLVED_DATA_WORKSPACE_MATCHER_PROFILE = "modkit/resolved-data-workspace-matcher";
-function positiveLimit2(value2, name) {
-  if (!Number.isSafeInteger(value2) || value2 <= 0) {
-    throw new TypeError(`${name} must be a positive safe integer`);
-  }
-  return value2;
-}
-function entityKey(namespace, entityId) {
-  return `${namespace}\0${entityId}`;
-}
-function cloneJson(value2) {
-  if (Array.isArray(value2))
-    return value2.map(cloneJson);
-  if (typeof value2 === "object" && value2 !== null) {
-    return Object.fromEntries(Object.entries(value2).map(([key2, item]) => [key2, cloneJson(item)]));
-  }
-  return value2;
-}
-function immutableJson(value2) {
-  if (Array.isArray(value2))
-    return Object.freeze(value2.map(immutableJson));
-  if (typeof value2 === "object" && value2 !== null) {
-    return Object.freeze(Object.fromEntries(Object.entries(value2).map(([key2, item]) => [key2, immutableJson(item)])));
-  }
-  return value2;
-}
-function immutableSource2(value2) {
-  return Object.freeze({ ...value2 });
-}
-function immutableRef(value2) {
-  return Object.freeze({ ...value2 });
-}
-function immutableDiagnostic2(value2) {
-  return Object.freeze({
-    ...value2,
-    ...value2.source === void 0 ? {} : { source: immutableSource2(value2.source) },
-    ...value2.chain === void 0 ? {} : { chain: Object.freeze(value2.chain.map(immutableRef)) }
-  });
-}
-function immutableSchema(value2) {
-  const immutableField = (field2) => Object.freeze({
-    ...field2,
-    ...field2.type === void 0 ? {} : { type: immutableJson(field2.type) },
-    ...field2.fields === void 0 ? {} : { fields: Object.freeze(field2.fields.map(immutableField)) }
-  });
-  return Object.freeze({ ...value2, fields: Object.freeze(value2.fields.map(immutableField)) });
-}
-function recordOf(value2) {
-  return typeof value2 === "object" && value2 !== null && !Array.isArray(value2) ? value2 : void 0;
-}
-function mergeAppend(previous, incoming) {
-  const left = Array.isArray(previous) ? previous : previous === void 0 ? [] : [previous];
-  const right = Array.isArray(incoming) ? incoming : [incoming];
-  return [...left.map(cloneJson), ...right.map(cloneJson)];
-}
-function indexedKey(value2, indexKey) {
-  const record = recordOf(value2);
-  const index = record?.[indexKey];
-  return typeof index === "string" || typeof index === "number" ? String(index) : void 0;
-}
-function isRemoved(value2) {
-  const removed = recordOf(value2)?.["removed"];
-  return removed === true || removed === 1 || removed === "1";
-}
-function mergeIndexed(previous, incoming, indexKey) {
-  const result = Array.isArray(previous) ? previous.map(cloneJson) : [];
-  const additions = Array.isArray(incoming) ? incoming : [incoming];
-  for (const item of additions) {
-    const key2 = indexedKey(item, indexKey);
-    if (key2 === void 0)
-      continue;
-    const found = result.findIndex((candidate) => indexedKey(candidate, indexKey) === key2);
-    if (isRemoved(item)) {
-      if (found !== -1)
-        result.splice(found, 1);
-    } else if (found === -1) {
-      result.push(cloneJson(item));
-    } else {
-      result[found] = cloneJson(item);
-    }
-  }
-  return result;
-}
-function schemaFields(schema, schemas, diagnostics, visiting = /* @__PURE__ */ new Set()) {
-  if (visiting.has(schema.typeId)) {
-    diagnostics.push({
-      severity: "error",
-      code: "common.data/schema-inheritance-cycle",
-      message: `schema inheritance cycle includes ${schema.typeId}`,
-      typeId: schema.typeId
-    });
-    return /* @__PURE__ */ new Map();
-  }
-  const fields = /* @__PURE__ */ new Map();
-  if (schema.parentTypeId !== void 0) {
-    const parent = schemas.get(schema.parentTypeId);
-    if (parent === void 0) {
-      diagnostics.push({
-        severity: "error",
-        code: "common.data/schema-parent-unavailable",
-        message: `${schema.typeId} names unavailable schema parent ${schema.parentTypeId}`,
-        typeId: schema.typeId
-      });
-    } else {
-      const next = new Set(visiting);
-      next.add(schema.typeId);
-      for (const [fieldId, field2] of schemaFields(parent, schemas, diagnostics, next)) {
-        fields.set(fieldId, field2);
-      }
-    }
-  }
-  for (const field2 of schema.fields)
-    fields.set(field2.fieldId, field2);
-  return fields;
-}
-function mergeFields(base, patch, fields) {
-  const merged = Object.fromEntries(Object.entries(base).map(([key2, value2]) => [key2, cloneJson(value2)]));
-  for (const [fieldId, incoming] of Object.entries(patch)) {
-    const field2 = fields.get(fieldId);
-    if (field2 === void 0)
-      continue;
-    if (field2.cardinality === "append") {
-      merged[fieldId] = mergeAppend(merged[fieldId], incoming);
-    } else if (field2.cardinality === "indexed") {
-      merged[fieldId] = mergeIndexed(merged[fieldId], incoming, field2.indexKey ?? "index");
-    } else {
-      merged[fieldId] = cloneJson(incoming);
-    }
-  }
-  return merged;
-}
-function relationScalarValues(value2) {
-  if (typeof value2 === "string" || typeof value2 === "number")
-    return [String(value2)];
-  if (Array.isArray(value2))
-    return value2.flatMap(relationScalarValues);
-  const record = recordOf(value2);
-  if (record === void 0)
-    return [];
-  return record["value"] === void 0 ? [] : relationScalarValues(record["value"]);
-}
-function visitRelationField(value2, field2, path, visit) {
-  if (Array.isArray(value2) && (field2.cardinality === "indexed" || field2.cardinality === "append")) {
-    value2.forEach((item, ordinal) => {
-      const record = recordOf(item);
-      const indexKey = field2.indexKey ?? "index";
-      const explicitIndex = field2.cardinality === "indexed" ? record?.[indexKey] : void 0;
-      const selector = typeof explicitIndex === "string" || typeof explicitIndex === "number" ? String(explicitIndex) : String(ordinal);
-      visitRelationField(item, { ...field2, cardinality: "scalar" }, `${path}.${selector}`, visit);
-    });
-    return;
-  }
-  if (field2.linkNamespace !== void 0 && field2.linkNamespace !== "") {
-    for (const entityId of relationScalarValues(value2)) {
-      if (entityId.length > 0)
-        visit(field2.linkNamespace, entityId, path);
-    }
-  }
-  if (field2.fields === void 0)
-    return;
-  const values = Array.isArray(value2) ? value2 : [value2];
-  for (const item of values) {
-    const record = recordOf(item);
-    if (record === void 0)
-      continue;
-    const wrapped = record["value"];
-    const nested = wrapped === void 0 ? record : recordOf(wrapped) ?? record;
-    for (const child of field2.fields) {
-      const childValue = nested[child.fieldId];
-      if (childValue === void 0)
-        continue;
-      visitRelationField(childValue, child, `${path}.${child.fieldId}`, visit);
-    }
-  }
-}
-function resolveDataCatalog(input) {
-  const maxEntities = positiveLimit2(input.maxEntities, "maxEntities");
-  const maxDepth = positiveLimit2(input.maxDepth, "maxDepth");
-  if (input.patches.length > maxEntities) {
-    throw new TypeError(`patches exceeds maxEntities (${input.patches.length} > ${maxEntities})`);
-  }
-  const extended = input.includeWorkspaceFacets === true;
-  const diagnostics = [...extended ? input.diagnostics ?? [] : []];
-  const schemas = /* @__PURE__ */ new Map();
-  for (const schema of input.schemas) {
-    if (schemas.has(schema.typeId)) {
-      diagnostics.push({
-        severity: "error",
-        code: "common.data/schema-type-duplicate",
-        message: `catalog schema type is duplicated: ${schema.typeId}`,
-        typeId: schema.typeId
-      });
-    } else {
-      schemas.set(schema.typeId, schema);
-    }
-  }
-  const fieldsByType = /* @__PURE__ */ new Map();
-  for (const schema of schemas.values()) {
-    fieldsByType.set(schema.typeId, schemaFields(schema, schemas, diagnostics));
-  }
-  const entities = /* @__PURE__ */ new Map();
-  const unknownFields = /* @__PURE__ */ new Set();
-  for (const patch of input.patches) {
-    const typeFields = fieldsByType.get(patch.typeId);
-    if (typeFields === void 0) {
-      diagnostics.push({
-        severity: "warning",
-        code: "common.data/schema-type-unsupported",
-        message: `no catalog schema is available for ${patch.typeId}`,
-        namespace: patch.namespace,
-        typeId: patch.typeId,
-        entityId: patch.entityId,
-        source: patch.source
-      });
-      continue;
-    }
-    const key2 = entityKey(patch.namespace, patch.entityId);
-    let current = entities.get(key2);
-    if (current === void 0) {
-      current = {
-        namespace: patch.namespace,
-        entityId: patch.entityId,
-        typeId: patch.typeId,
-        ...patch.parentEntityId === void 0 ? {} : { parentEntityId: patch.parentEntityId },
-        fields: {},
-        sources: []
-      };
-      entities.set(key2, current);
-    } else if (current.typeId !== patch.typeId) {
-      diagnostics.push({
-        severity: "error",
-        code: "common.data/entity-type-conflict",
-        message: `${patch.namespace}/${patch.entityId} changes type from ${current.typeId} to ${patch.typeId}`,
-        namespace: patch.namespace,
-        typeId: patch.typeId,
-        entityId: patch.entityId,
-        source: patch.source
-      });
-      continue;
-    }
-    if (patch.parentEntityId !== void 0)
-      current.parentEntityId = patch.parentEntityId;
-    current.sources.push(patch.source);
-    for (const fieldId of Object.keys(patch.fields)) {
-      if (typeFields.has(fieldId))
-        continue;
-      const diagnosticKey = `${patch.typeId}\0${fieldId}`;
-      if (unknownFields.has(diagnosticKey))
-        continue;
-      unknownFields.add(diagnosticKey);
-      diagnostics.push({
-        severity: "information",
-        code: "common.data/schema-field-unsupported",
-        message: `${patch.typeId}.${fieldId} is outside the active schema slice`,
-        namespace: patch.namespace,
-        typeId: patch.typeId,
-        entityId: patch.entityId,
-        fieldId,
-        source: patch.source
-      });
-    }
-    current.fields = mergeFields(current.fields, patch.fields, typeFields);
-  }
-  const resolvedCache = /* @__PURE__ */ new Map();
-  const resolveEntity = (ref, depth, path) => {
-    const key2 = entityKey(ref.namespace, ref.entityId);
-    const cached = resolvedCache.get(key2);
-    if (cached !== void 0)
-      return cached;
-    const current = entities.get(key2);
-    if (current === void 0)
-      return void 0;
-    if (depth > maxDepth) {
-      diagnostics.push({
-        severity: "error",
-        code: "common.data/entity-inheritance-depth-exceeded",
-        message: `${ref.namespace}/${ref.entityId} exceeds inheritance depth ${maxDepth}`,
-        namespace: ref.namespace,
-        typeId: current.typeId,
-        entityId: ref.entityId,
-        chain: [...path, ref]
-      });
-      return void 0;
-    }
-    const cycleAt = path.findIndex((item) => entityKey(item.namespace, item.entityId) === key2);
-    if (cycleAt !== -1) {
-      diagnostics.push({
-        severity: "error",
-        code: "common.data/entity-inheritance-cycle",
-        message: `entity inheritance cycle includes ${ref.namespace}/${ref.entityId}`,
-        namespace: ref.namespace,
-        typeId: current.typeId,
-        entityId: ref.entityId,
-        chain: [...path.slice(cycleAt), ref]
-      });
-      return void 0;
-    }
-    let complete = true;
-    let fields = {};
-    let inheritanceChain = [];
-    let sources = [];
-    if (current.parentEntityId !== void 0) {
-      const parentRef = { namespace: current.namespace, entityId: current.parentEntityId };
-      const parent = resolveEntity(parentRef, depth + 1, [...path, ref]);
-      if (parent === void 0) {
-        complete = false;
-        diagnostics.push({
-          severity: "error",
-          code: "common.data/entity-parent-unavailable",
-          message: `${current.namespace}/${current.entityId} names unavailable parent ${current.parentEntityId}`,
-          namespace: current.namespace,
-          typeId: current.typeId,
-          entityId: current.entityId,
-          chain: [...path, ref, parentRef]
-        });
-      } else {
-        complete = parent.complete;
-        fields = Object.fromEntries(Object.entries(parent.fields).map(([fieldId, value2]) => [fieldId, cloneJson(value2)]));
-        inheritanceChain = [...parent.inheritanceChain];
-        sources = [...parent.sources];
-      }
-    }
-    fields = mergeFields(fields, current.fields, fieldsByType.get(current.typeId) ?? /* @__PURE__ */ new Map());
-    inheritanceChain.push(ref);
-    sources.push(...current.sources);
-    const resolved = Object.freeze({
-      namespace: current.namespace,
-      typeId: current.typeId,
-      entityId: current.entityId,
-      ...current.parentEntityId === void 0 ? {} : { parentEntityId: current.parentEntityId },
-      inheritanceChain: Object.freeze(inheritanceChain.map(immutableRef)),
-      fields: Object.freeze(Object.fromEntries(Object.entries(fields).map(([fieldId, value2]) => [fieldId, immutableJson(value2)]))),
-      sources: Object.freeze(sources.map(immutableSource2)),
-      complete
-    });
-    resolvedCache.set(key2, resolved);
-    return resolved;
-  };
-  const definitions = [];
-  if (extended) {
-    for (const current of entities.values()) {
-      const entity = resolveEntity({ namespace: current.namespace, entityId: current.entityId }, 0, []);
-      if (entity !== void 0)
-        definitions.push(entity);
-    }
-    definitions.sort((left, right) => left.namespace.localeCompare(right.namespace) || left.entityId.localeCompare(right.entityId));
-  }
-  const results = [];
-  for (const query of input.queries) {
-    const entity = resolveEntity(query, 0, []);
-    if (entity === void 0) {
-      diagnostics.push({
-        severity: "error",
-        code: "common.data/entity-query-unresolved",
-        message: `catalog query did not resolve ${query.namespace}/${query.entityId}`,
-        namespace: query.namespace,
-        entityId: query.entityId
-      });
-    } else {
-      results.push(entity);
-    }
-  }
-  const resolvedKeys = new Set(definitions.map((item) => entityKey(item.namespace, item.entityId)));
-  const relationKeys = /* @__PURE__ */ new Set();
-  const relations = [];
-  for (const entity of extended ? definitions : []) {
-    const fields = fieldsByType.get(entity.typeId) ?? /* @__PURE__ */ new Map();
-    for (const [fieldId, value2] of Object.entries(entity.fields)) {
-      const field2 = fields.get(fieldId);
-      if (field2 === void 0)
-        continue;
-      visitRelationField(value2, field2, fieldId, (namespace, entityId, role) => {
-        const key2 = `${entity.namespace}\0${entity.entityId}\0${namespace}\0${entityId}\0${role}`;
-        if (relationKeys.has(key2))
-          return;
-        relationKeys.add(key2);
-        const dead = !resolvedKeys.has(entityKey(namespace, entityId));
-        const relation = Object.freeze({
-          from: immutableRef({ namespace: entity.namespace, entityId: entity.entityId }),
-          to: immutableRef({ namespace, entityId }),
-          role,
-          dead,
-          ...entity.sources.at(-1) === void 0 ? {} : { source: immutableSource2(entity.sources.at(-1)) }
-        });
-        relations.push(relation);
-        if (dead) {
-          diagnostics.push({
-            severity: "warning",
-            code: "common.data/relation-target-unavailable",
-            message: `${entity.namespace}/${entity.entityId} ${role} names unavailable ${namespace}/${entityId}`,
-            namespace: entity.namespace,
-            typeId: entity.typeId,
-            entityId: entity.entityId,
-            fieldId: role,
-            ...relation.source === void 0 ? {} : { source: relation.source }
-          });
-        }
-      });
-    }
-  }
-  relations.sort((left, right) => left.from.namespace.localeCompare(right.from.namespace) || left.from.entityId.localeCompare(right.from.entityId) || left.role.localeCompare(right.role) || left.to.namespace.localeCompare(right.to.namespace) || left.to.entityId.localeCompare(right.to.entityId));
-  const localizationPatches = extended ? input.localizationPatches ?? [] : [];
-  const localePreferences = input.localePreferences ?? [];
-  const localizedByLocale = /* @__PURE__ */ new Map();
-  for (const patch of localizationPatches) {
-    let entries = localizedByLocale.get(patch.locale);
-    if (entries === void 0) {
-      entries = /* @__PURE__ */ new Map();
-      localizedByLocale.set(patch.locale, entries);
-    }
-    if (!entries.has(patch.key))
-      entries.set(patch.key, patch);
-  }
-  const requestedLocales = localePreferences.length > 0 ? localePreferences : [...localizedByLocale.keys()];
-  const localizedStrings = [];
-  for (const key2 of [...new Set(extended ? input.localizationKeys ?? [] : [])].sort()) {
-    let found;
-    let resolvedLocale;
-    for (const locale of requestedLocales) {
-      const candidate = localizedByLocale.get(locale)?.get(key2);
-      if (candidate === void 0)
-        continue;
-      found = candidate;
-      resolvedLocale = locale;
-      break;
-    }
-    if (found === void 0 || resolvedLocale === void 0) {
-      diagnostics.push({
-        severity: "warning",
-        code: "common.data/localization-key-unavailable",
-        message: `no requested locale resolves localization key ${key2}`,
-        fieldId: key2
-      });
-      continue;
-    }
-    const requestedLocale = requestedLocales[0] ?? resolvedLocale;
-    localizedStrings.push(Object.freeze({
-      key: key2,
-      requestedLocale,
-      resolvedLocale,
-      value: found.value,
-      source: immutableSource2(found.source),
-      fallback: resolvedLocale !== requestedLocale
-    }));
-    if (resolvedLocale !== requestedLocale) {
-      diagnostics.push({
-        severity: "information",
-        code: "common.data/localization-fallback",
-        message: `${key2} fell back from ${requestedLocale} to ${resolvedLocale}`,
-        fieldId: key2,
-        source: found.source
-      });
-    }
-  }
-  const namespaceCounts = /* @__PURE__ */ new Map();
-  for (const entity of entities.values()) {
-    namespaceCounts.set(entity.namespace, (namespaceCounts.get(entity.namespace) ?? 0) + 1);
-  }
-  const immutableDiagnostics = Object.freeze(diagnostics.map(immutableDiagnostic2));
-  return Object.freeze({
-    schemaVersion: 1,
-    workspaceId: input.workspaceId,
-    gameId: input.gameId,
-    analyzerId: input.analyzerId,
-    typeIds: Object.freeze([...schemas.keys()].sort()),
-    namespaces: Object.freeze([...namespaceCounts.entries()].sort(([left], [right]) => left.localeCompare(right)).map(([namespace, entityCount]) => Object.freeze({ namespace, entityCount }))),
-    entityCount: entities.size,
-    patchCount: input.patches.length,
-    entities: Object.freeze(results),
-    diagnostics: immutableDiagnostics,
-    ...extended ? {
-      schemas: Object.freeze(input.schemas.map(immutableSchema)),
-      definitions: Object.freeze(definitions),
-      relations: Object.freeze(relations),
-      localizedStrings: Object.freeze(localizedStrings),
-      snapshotId: input.snapshotId ?? `${input.gameId}:${input.workspaceId}:${input.patches.length}:${localizationPatches.length}`,
-      ...input.projectionPlan === void 0 ? {} : { projectionPlan: input.projectionPlan },
-      ...input.projectionReceipt === void 0 ? {} : { projectionReceipt: input.projectionReceipt }
-    } : {},
-    complete: immutableDiagnostics.every((item) => item.severity !== "error") && results.every((item) => item.complete)
-  });
-}
+var DATA_CATALOG_QUERIES_OUTPUT = "catalogQueries";
+var DATA_CATALOG_ENTITIES_INPUT = "catalogEntities";
 
 // packages/sdk/dist/maps/index.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var MAP_SEMANTIC_ANALYSIS_CONTRACT = "common.map/semantic-analysis";
 var RESOLVED_MAP_WORKSPACE_CONTRACT = "common.map/resolved-workspace";
 var MAP_PREVIEW_PREPARATION_CONTRACT = "common.map/preview-preparation";
 var WORLD_SCENE_SOURCE_CONTRACT = "common.view/world-scene-source";
+var MAP_LAYERS_OPERATION = "map.layers";
+var MAP_LAYER_READ_OPERATION = "map.layer-read";
+var MAP_LAYER_WRITE_OPERATION = "map.layer-write";
+var MAP_LAYERS_REPRESENTATION = Object.freeze({
+  id: "map-layers",
+  contract: "common.map/layers",
+  major: 1
+});
+var sampleOrigin = {
+  x: { type: "integer", minimum: 0, description: "Column of the first sample, counted from the west edge." },
+  y: { type: "integer", minimum: 0, description: "Row of the first sample, counted from the north edge (row 0)." }
+};
+var windowSize = {
+  width: { type: "integer", minimum: 1, description: "Columns in the window; x + width stays within the layer." },
+  height: { type: "integer", minimum: 1, description: "Rows in the window; y + height stays within the layer." }
+};
+var layerId = {
+  type: "string",
+  minLength: 1,
+  description: "A layer id from map.layers of the same subject revision."
+};
+var anyOf = (...names) => ({ anyOf: names.map((name) => ({ required: [name] })) });
+var MAP_LAYERS_INPUT_SCHEMA = Object.freeze({
+  $ref: "modkit://map/layers.v1",
+  document: {
+    $id: "modkit://map/layers.v1",
+    description: "Lists the grid layers of a map. Each layer names its size, integer sample bounds, whether it is editable, and optionally what a sample means in the world: world value = valueOffset + sample * valueScale, in unit, sampled at grid vertices or in cells.",
+    anyOf: [{ type: "null" }, { type: "object", properties: {}, additionalProperties: false }]
+  }
+});
+var MAP_LAYER_READ_INPUT_SCHEMA = Object.freeze({
+  $ref: "modkit://map/layer-read.v1",
+  document: {
+    $id: "modkit://map/layer-read.v1",
+    description: "Reads a layer as row-major integer samples, row 0 at the north edge. Without x, y, width and height the whole layer is read; a window names all four. World value = valueOffset + sample * valueScale from map.layers.",
+    type: "object",
+    required: ["layer"],
+    additionalProperties: false,
+    properties: { layer: layerId, ...sampleOrigin, ...windowSize },
+    anyOf: [{ not: anyOf("x", "y", "width", "height") }, { required: ["x", "y", "width", "height"] }]
+  }
+});
+var MAP_LAYER_WRITE_INPUT_SCHEMA = Object.freeze({
+  $ref: "modkit://map/layer-write.v1",
+  document: {
+    $id: "modkit://map/layer-write.v1",
+    description: "Plans writing width x height integer samples, row-major, row 0 at the north edge, into an editable layer. x and y place the window and go together; without them the grid is the whole layer. Every value stays within the layer's minimum and maximum; world value = valueOffset + sample * valueScale. expectedSourceRevision, when given, must be the subject revision the samples were read from.",
+    type: "object",
+    required: ["layer", "width", "height", "values"],
+    additionalProperties: false,
+    properties: {
+      layer: layerId,
+      ...sampleOrigin,
+      ...windowSize,
+      values: {
+        type: "array",
+        minItems: 1,
+        items: { type: "integer", minimum: 0, maximum: 65535 },
+        description: "width * height samples, row-major, within the layer's minimum and maximum."
+      },
+      expectedSourceRevision: { type: "string", minLength: 1, description: "Revision the window was read from." }
+    },
+    anyOf: [{ required: ["x", "y"] }, { not: anyOf("x", "y") }]
+  }
+});
+function mapLayerWindow(layer, input) {
+  const fail = (message) => {
+    throw new RangeError(`map layer ${layer.id}: ${message}`);
+  };
+  if (input.layer !== layer.id)
+    fail(`request names layer ${String(input.layer)}`);
+  const grid = "values" in input;
+  const given = ["x", "y", "width", "height"].filter((name) => input[name] !== void 0);
+  if (grid ? input.x === void 0 !== (input.y === void 0) : given.length !== 0 && given.length !== 4) {
+    fail(grid ? "x and y go together" : "a window needs all of x, y, width and height");
+  }
+  const number = (value2, name, minimum) => {
+    if (!Number.isSafeInteger(value2) || value2 < minimum)
+      fail(`${name} must be an integer of at least ${minimum}`);
+    return value2;
+  };
+  const whole = !grid && given.length === 0;
+  const window = Object.freeze({
+    x: whole ? 0 : number(input.x ?? 0, "x", 0),
+    y: whole ? 0 : number(input.y ?? 0, "y", 0),
+    width: whole ? layer.width : number(input.width, "width", 1),
+    height: whole ? layer.height : number(input.height, "height", 1)
+  });
+  if (window.x + window.width > layer.width || window.y + window.height > layer.height) {
+    fail(`window ${window.x},${window.y} ${window.width}x${window.height} leaves the ${layer.width}x${layer.height} layer`);
+  }
+  if (!grid)
+    return window;
+  if (!layer.editable)
+    fail("the layer is read-only");
+  const values = input.values;
+  if (!Array.isArray(values) || values.length !== window.width * window.height) {
+    fail(`a ${window.width}x${window.height} grid needs ${window.width * window.height} values`);
+  }
+  for (const [index, value2] of values.entries()) {
+    if (!Number.isSafeInteger(value2) || value2 < layer.minimum || value2 > layer.maximum) {
+      fail(`value ${index} must be an integer from ${layer.minimum} to ${layer.maximum}`);
+    }
+  }
+  return window;
+}
 var MAP_SEMANTIC_MATCHER_PROFILE = "modkit/map-semantic-matcher";
 var MAP_PREVIEW_PREPARATION_MATCHER_PROFILE = "modkit/map-preview-preparation-matcher";
 
+// packages/sdk/dist/runtime-abi.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+function contributionSettingsFor(settings, sourceUri) {
+  if (settings === void 0)
+    return Object.freeze({});
+  const override = sourceUri === void 0 ? void 0 : settings.bySource?.[sourceUri];
+  return Object.freeze(override === void 0 ? { ...settings.values } : { ...settings.values, ...override });
+}
+
 // packages/sdk/dist/manifest/patterns.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 function normalize(path) {
   return path.startsWith("./") ? path.slice(2) : path;
 }
@@ -5027,6 +5302,7 @@ function expandContributionManifests(patterns, files) {
 }
 
 // packages/sdk/dist/manifest/normalize.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 function isRecord2(value2) {
   return typeof value2 === "object" && value2 !== null && !Array.isArray(value2);
 }
@@ -5084,7 +5360,32 @@ function normalizeExtensionManifestIdentities(manifest) {
     }
   });
 }
+var normalizedManifests = /* @__PURE__ */ new Map();
+var NORMALIZED_MANIFEST_CACHE_LIMIT = 256;
 async function normalizeExtensionManifest(input) {
+  let cacheKey;
+  try {
+    cacheKey = JSON.stringify(input);
+  } catch {
+    cacheKey = void 0;
+  }
+  if (cacheKey !== void 0) {
+    const cached = normalizedManifests.get(cacheKey);
+    if (cached !== void 0)
+      return cached;
+  }
+  const result = await normalizeExtensionManifestUncached(input);
+  if (cacheKey !== void 0) {
+    if (normalizedManifests.size >= NORMALIZED_MANIFEST_CACHE_LIMIT) {
+      const oldest = normalizedManifests.keys().next();
+      if (!oldest.done)
+        normalizedManifests.delete(oldest.value);
+    }
+    normalizedManifests.set(cacheKey, result);
+  }
+  return result;
+}
+async function normalizeExtensionManifestUncached(input) {
   let packageInput;
   let standaloneInput;
   try {
@@ -5172,7 +5473,8 @@ async function normalizeExtensionManifest(input) {
     },
     ...blockRecord["presentation"] === void 0 ? {} : {
       presentation: blockRecord["presentation"]
-    }
+    },
+    ...blockRecord["contentSources"] === void 0 ? {} : { contentSources: blockRecord["contentSources"] }
   }));
   const all = [
     ...diagnostics,
@@ -5185,6 +5487,7 @@ async function normalizeExtensionManifest(input) {
 }
 
 // packages/sdk/dist/security/grant.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 function grantValidity(grant, now = Date.now()) {
   if (grant.expiresAt === void 0)
     return { state: "valid" };
@@ -5229,12 +5532,12 @@ function narrowGrant(parent, request) {
     };
   }
   let allowed = intersectClasses(request.requestedClasses, parent.classes);
-  const policy2 = request.policy;
-  if (policy2?.allowedClasses !== void 0) {
-    allowed = intersectClasses(allowed, policy2.allowedClasses);
+  const policy = request.policy;
+  if (policy?.allowedClasses !== void 0) {
+    allowed = intersectClasses(allowed, policy.allowedClasses);
   }
-  if (request.operation !== void 0 && policy2?.operationClasses !== void 0) {
-    const ceiling = policy2.operationClasses[request.operation];
+  if (request.operation !== void 0 && policy?.operationClasses !== void 0) {
+    const ceiling = policy.operationClasses[request.operation];
     if (ceiling !== void 0)
       allowed = intersectClasses(allowed, ceiling);
   }
@@ -5255,18 +5558,12 @@ function narrowGrant(parent, request) {
   };
   return { child, missing };
 }
-function assertNotWider(parent, child) {
-  const widened = child.classes.filter((cls) => !parent.classes.includes(cls));
-  if (widened.length > 0) {
-    throw new ModkitError({
-      code: "x3.sdk/grant-widened",
-      message: `child grant \xAB${child.id}\xBB adds classes its parent \xAB${parent.id}\xBB does not hold: ${widened.join(", ")}`,
-      context: { widened }
-    });
-  }
-}
+
+// packages/sdk/dist/asset-capabilities/data-sources.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
 // packages/sdk/dist/asset-capabilities/model-facet-sources.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var RESERVED_MODEL_FACET_SOURCES = Object.freeze([
   Object.freeze({
     contract: "common.view/model-lod-source",
@@ -5285,33 +5582,10 @@ var RESERVED_MODEL_FACET_SOURCES = Object.freeze([
       "variants(page): { id, name, kind, targets }"
     ]),
     blockedBy: "no codec publishes named variants today: UV_game_variants exists in the schema and no reader surfaces it"
-  }),
-  Object.freeze({
-    contract: "common.view/model-effect-source",
-    major: 1,
-    minimalShape: Object.freeze([
-      "info(): { effects, byKind, profile? }",
-      "effects(page): { id, kind, nodeId?, materialId? }"
-    ]),
-    blockedBy: "the UVM reader publishes effect *counts* by kind, which fills info() and nothing else; per-emitter records have no publisher, and a page method no publisher can fill is not a contract"
   })
 ]);
-function isReservedModelFacetSource(contract) {
-  return RESERVED_MODEL_FACET_SOURCES.some((entry) => entry.contract === contract);
-}
 
 // packages/sdk/dist/asset-capabilities/data-sources.js
-function foreignDataSource(contract, major) {
-  if (!isQualifiedId(contract))
-    throw new TypeError(`invalid foreign data-source id: ${contract}`);
-  if (STANDARD_DATA_SOURCE_CONTRACTS.includes(contract)) {
-    throw new TypeError(`known data-source contract must use its typed reference: ${contract}`);
-  }
-  if (!Number.isSafeInteger(major) || major < 0) {
-    throw new TypeError(`invalid foreign data-source major: ${major}`);
-  }
-  return Object.freeze({ contract, major, opaque: true });
-}
 function dataSourceRefFromWire(ref) {
   if (!isQualifiedId(ref.contract) || !Number.isSafeInteger(ref.major) || ref.major < 0) {
     throw new TypeError(`invalid data-source reference: ${ref.contract}@${ref.major}`);
@@ -5327,205 +5601,9 @@ function dataSourceRefFromWire(ref) {
   }
   return Object.freeze({ ...ref });
 }
-function registrationKey(contract, major) {
-  return `${contract}@${major}`;
-}
-function contractNamespace(contract) {
-  const slash = contract.indexOf("/");
-  return slash === -1 ? contract : contract.slice(0, slash);
-}
-function compareRegistration(a, b) {
-  return compareUtf8(a.contract, b.contract) || a.major - b.major || compareUtf8(a.ownerExtensionId, b.ownerExtensionId);
-}
-function rejection(reason, spec, index) {
-  const diagnostic2 = {
-    id: `data-source-registration-${index}`,
-    code: `x3.sdk/data-source-${reason}`,
-    category: reason === "reserved-namespace" ? "security" : "structure",
-    severity: "error",
-    message: `data-source contract ${spec.contract}@${spec.major} rejected: ${reason}`
-  };
-  return { state: "rejected", reason, diagnostics: [diagnostic2] };
-}
-function malformedBatchDiagnostic(message) {
-  return {
-    id: "data-source-registration-batch",
-    code: "x3.sdk/data-source-schema-invalid",
-    category: "structure",
-    severity: "error",
-    message
-  };
-}
-var PROVENANCE_KEYS = [
-  "ownerExtensionId",
-  "extensionVersion",
-  "inventoryRecordId",
-  "manifestDigest",
-  "artifactDigest",
-  "artifactRoot",
-  "manifestPath"
-];
-function hasExactStringKeys(value2, keys) {
-  if (typeof value2 !== "object" || value2 === null || Array.isArray(value2))
-    return false;
-  const record = value2;
-  const own = Object.keys(record).sort(compareUtf8);
-  const expected = [...keys].sort(compareUtf8);
-  return own.length === expected.length && own.every((key2, index) => key2 === expected[index]) && keys.every((key2) => typeof record[key2] === "string" && record[key2].trim() !== "");
-}
-function isInventoryEntry(value2) {
-  if (typeof value2 !== "object" || value2 === null || Array.isArray(value2))
-    return false;
-  const record = value2;
-  const keys = Object.keys(record).sort(compareUtf8);
-  return keys.length === 2 && keys[0] === "definition" && keys[1] === "provenance" && hasExactStringKeys(record["provenance"], PROVENANCE_KEYS);
-}
-function createDataSourceRegistry(options) {
-  if (typeof options !== "object" || options === null || typeof options.isNamespaceOwner !== "function" || typeof options.validateDefinition !== "function") {
-    throw new TypeError("data-source registry requires namespace and definition validators");
-  }
-  const isNamespaceOwner = options.isNamespaceOwner;
-  const validateDefinition = options.validateDefinition;
-  let registrations = /* @__PURE__ */ new Map();
-  const ownerGenerations = /* @__PURE__ */ new Map();
-  const beginOwnerUpdate = (ownerExtensionId) => {
-    const generation = (ownerGenerations.get(ownerExtensionId) ?? 0) + 1;
-    ownerGenerations.set(ownerExtensionId, generation);
-    return generation;
-  };
-  const list = () => Object.freeze([...registrations.values()].sort(compareRegistration));
-  return {
-    async replaceOwnerInventory(ownerExtensionId, entries) {
-      const generation = beginOwnerUpdate(ownerExtensionId);
-      let ownedEntries;
-      try {
-        const snapshot = snapshotJsonWireData(entries);
-        if (!Array.isArray(snapshot))
-          throw new TypeError("data-source inventory must be an array");
-        const checks = await Promise.all(snapshot.map((entry) => {
-          if (!isInventoryEntry(entry)) {
-            return Promise.resolve([
-              malformedBatchDiagnostic("data-source inventory entry must bind definition and provenance")
-            ]);
-          }
-          return validateWithSchema(dataSourceContractDefinitionSpecV1Schema, entry.definition);
-        }));
-        const invalid = checks.findIndex((diagnostics2) => diagnostics2.length > 0);
-        if (invalid !== -1) {
-          throw new TypeError(`data-source inventory item ${invalid} violates its schema authority`);
-        }
-        ownedEntries = snapshot;
-      } catch (error) {
-        const diagnostic2 = malformedBatchDiagnostic(`data-source inventory rejected before policy evaluation: ${error instanceof Error ? error.message : String(error)}`);
-        return {
-          state: "rejected",
-          results: [
-            {
-              state: "rejected",
-              reason: "schema-invalid",
-              diagnostics: [diagnostic2]
-            }
-          ],
-          diagnostics: [diagnostic2]
-        };
-      }
-      const counts = /* @__PURE__ */ new Map();
-      for (const { definition: spec } of ownedEntries) {
-        const key2 = registrationKey(spec.contract, spec.major);
-        counts.set(key2, (counts.get(key2) ?? 0) + 1);
-      }
-      const results = await Promise.all(ownedEntries.map(async ({ definition: spec, provenance }, index) => {
-        const key2 = registrationKey(spec.contract, spec.major);
-        if ((counts.get(key2) ?? 0) > 1)
-          return rejection("duplicate", spec, index);
-        if (!isQualifiedId(spec.contract) || !Number.isSafeInteger(spec.major) || spec.major < 0 || spec.schema.$ref.trim() === "") {
-          return rejection("schema-invalid", spec, index);
-        }
-        try {
-          if (isNamespaceOwner(contractNamespace(spec.contract), ownerExtensionId) !== true) {
-            return rejection("reserved-namespace", spec, index);
-          }
-        } catch {
-          return rejection("reserved-namespace", spec, index);
-        }
-        if (spec.conformanceProfile.trim() === "") {
-          return rejection("conformance-missing", spec, index);
-        }
-        if (provenance.ownerExtensionId !== ownerExtensionId || provenance.artifactRoot.trim() === "" || provenance.manifestPath.trim() === "" || provenance.manifestDigest.trim() === "" || provenance.artifactDigest.trim() === "") {
-          return rejection("schema-invalid", spec, index);
-        }
-        const definition = Object.freeze({ ...spec, ownerExtensionId, provenance });
-        let validation;
-        try {
-          validation = await validateDefinition(definition);
-        } catch {
-          return rejection("schema-invalid", spec, index);
-        }
-        if (validation?.state !== "valid") {
-          const reason = validation?.state === "invalid" && (validation.reason === "schema-invalid" || validation.reason === "conformance-missing") ? validation.reason : "schema-invalid";
-          return rejection(reason, spec, index);
-        }
-        return { state: "registered" };
-      }));
-      const diagnostics = results.flatMap((result) => result.state === "rejected" ? result.diagnostics : []);
-      if (diagnostics.length > 0)
-        return { state: "rejected", results, diagnostics };
-      if (ownerGenerations.get(ownerExtensionId) !== generation) {
-        const staleResults = ownedEntries.map(({ definition }, index) => rejection("stale-update", definition, index));
-        const staleDiagnostics = staleResults.flatMap((result) => result.state === "rejected" ? result.diagnostics : []);
-        const diagnostics2 = staleDiagnostics.length > 0 ? staleDiagnostics : [malformedBatchDiagnostic("data-source inventory update was superseded")];
-        return { state: "rejected", results: staleResults, diagnostics: diagnostics2 };
-      }
-      const retained = new Map([...registrations].filter(([, registration]) => registration.ownerExtensionId !== ownerExtensionId));
-      const conflictResults = ownedEntries.map(({ definition }, index) => retained.has(registrationKey(definition.contract, definition.major)) ? rejection("major-conflict", definition, index) : { state: "registered" });
-      const conflictDiagnostics = conflictResults.flatMap((result) => result.state === "rejected" ? result.diagnostics : []);
-      if (conflictDiagnostics.length > 0) {
-        return {
-          state: "rejected",
-          results: conflictResults,
-          diagnostics: conflictDiagnostics
-        };
-      }
-      const committed = ownedEntries.map(({ definition: spec, provenance }) => Object.freeze({
-        ...spec,
-        schema: Object.freeze({ ...spec.schema }),
-        ownerExtensionId,
-        provenance: Object.freeze({ ...provenance })
-      }));
-      registrations = retained;
-      for (const registration of committed) {
-        registrations.set(registrationKey(registration.contract, registration.major), registration);
-      }
-      return {
-        state: "committed",
-        registrations: Object.freeze([...committed].sort(compareRegistration))
-      };
-    },
-    unregisterOwner(ownerExtensionId) {
-      beginOwnerUpdate(ownerExtensionId);
-      registrations = new Map([...registrations].filter(([, registration]) => registration.ownerExtensionId !== ownerExtensionId));
-    },
-    lookup(contract, major) {
-      return registrations.get(registrationKey(contract, major));
-    },
-    majors(contract) {
-      return list().filter((registration) => registration.contract === contract).map((registration) => registration.major);
-    },
-    list,
-    resolveRef(ref) {
-      if (!isQualifiedId(ref.contract) || !Number.isSafeInteger(ref.major) || ref.major < 0) {
-        return void 0;
-      }
-      const isStandard = STANDARD_DATA_SOURCE_CONTRACTS.includes(ref.contract);
-      if (isStandard && (ref.major !== 1 || "opaque" in ref && ref.opaque === true)) {
-        return void 0;
-      }
-      return registrations.get(registrationKey(ref.contract, ref.major));
-    }
-  };
-}
 
 // packages/sdk/dist/asset-capabilities/data-source-surfaces.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var ENCODED_MEDIA_SURFACE_ID = "common.view/encoded-media";
 var ENCODED_MEDIA = Object.freeze({
   contract: contractId(ENCODED_MEDIA_SURFACE_ID),
@@ -5574,12 +5652,14 @@ var transportSourceSurface = {
   methods: {
     snapshot: cancellableValue,
     /** A live stream, not a finite listing: `subscribe` → `event…` → `done`. */
-    events: { kind: "events", ...sig }
+    events: { kind: "events", ...sig },
+    timeline: { kind: "value", optional: true, ...sig }
   }
 };
 var namespaceEntrySourceSurface = {
   methods: {
     list: cancellableValue,
+    children: { kind: "value", optional: true, ...sig },
     readPreamble: { kind: "value", optional: true, ...sig },
     search: { kind: "value", optional: true, ...sig },
     /** `Lease<AssetSourceRef>`: the ref crosses by copy, the lease is a release-only handle. */
@@ -5666,6 +5746,36 @@ var modelSocketSourceSurface = {
     sockets: cancellableValue
   }
 };
+var modelEffectSourceSurface = {
+  methods: {
+    info: cancellableValue,
+    effects: cancellableValue
+  }
+};
+var modelLightSourceSurface = {
+  methods: {
+    info: cancellableValue,
+    lights: cancellableValue
+  }
+};
+var modelCameraSourceSurface = {
+  methods: {
+    info: cancellableValue,
+    cameras: cancellableValue
+  }
+};
+var modelPhysicsSourceSurface = {
+  methods: {
+    info: cancellableValue,
+    bodies: cancellableValue
+  }
+};
+var modelNodeBehaviourSourceSurface = {
+  methods: {
+    info: cancellableValue,
+    behaviours: cancellableValue
+  }
+};
 var relationGraphSourceSurface = {
   methods: {
     summary: cancellableValue,
@@ -5684,7 +5794,28 @@ var subjectFactsSourceSurface = {
     summary: cancellableValue,
     groups: cancellableValue,
     facts: cancellableValue,
-    relations: cancellableValue
+    relations: cancellableValue,
+    openModel: {
+      kind: "lease",
+      result: { contract: contractId("common.view/model-scene-source"), major: 1 },
+      wrapper: "lease",
+      optional: true,
+      ...sig
+    },
+    openModelMaterials: {
+      kind: "lease",
+      result: { contract: contractId("common.view/model-material-source"), major: 1 },
+      wrapper: "lease",
+      optional: true,
+      ...sig
+    },
+    openModelResources: {
+      kind: "lease",
+      result: { contract: contractId("common.view/model-resource-refs-source"), major: 1 },
+      wrapper: "lease",
+      optional: true,
+      ...sig
+    }
   }
 };
 var subjectCalculationsSourceSurface = {
@@ -5732,6 +5863,11 @@ var STANDARD_DATA_SOURCE_SURFACES = deepFreeze({
   "common.view/model-animation-source": modelAnimationSourceSurface,
   "common.view/model-collision-source": modelCollisionSourceSurface,
   "common.view/model-material-source": modelMaterialSourceSurface,
+  "common.view/model-effect-source": modelEffectSourceSurface,
+  "common.view/model-light-source": modelLightSourceSurface,
+  "common.view/model-camera-source": modelCameraSourceSurface,
+  "common.view/model-physics-source": modelPhysicsSourceSurface,
+  "common.view/model-node-behaviour-source": modelNodeBehaviourSourceSurface,
   "common.view/model-socket-source": modelSocketSourceSurface,
   "common.view/relation-graph-source": relationGraphSourceSurface,
   "common.view/subject-selector-source": subjectSelectorSourceSurface,
@@ -5742,29 +5878,10 @@ var STANDARD_DATA_SOURCE_SURFACES = deepFreeze({
 var AUXILIARY_DATA_SOURCE_SURFACES = deepFreeze({
   [ENCODED_MEDIA_SURFACE_ID]: encodedMediaSurface
 });
-function standardDataSourceSurfaceFor(contract, major) {
-  if (major !== 1)
-    return void 0;
-  if (STANDARD_DATA_SOURCE_CONTRACTS.includes(contract)) {
-    return STANDARD_DATA_SOURCE_SURFACES[contract];
-  }
-  if (contract === ENCODED_MEDIA_SURFACE_ID)
-    return AUXILIARY_DATA_SOURCE_SURFACES[contract];
-  return void 0;
-}
 var ENCODED_MEDIA_SURFACE_CONTRACT = contractId(ENCODED_MEDIA_SURFACE_ID);
 
 // packages/sdk/dist/asset-capabilities/uv-projection.js
-var QUALIFIED_DIGEST = /^[a-z][a-z0-9-]*:[0-9a-f]{32,128}$/u;
-function isAlgorithmQualifiedDigest(value2) {
-  return QUALIFIED_DIGEST.test(value2);
-}
-function algorithmQualifiedDigest(value2) {
-  if (!isAlgorithmQualifiedDigest(value2)) {
-    throw new TypeError("a UV digest must be algorithm-qualified as \xAB<algorithm>:<lowercase hex>\xBB; a bare hex string is refused");
-  }
-  return value2;
-}
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 function toPortableProjectionReceipt(receipt, identity) {
   const { form, sourceUri, ...rest } = receipt;
   void form;
@@ -5773,6 +5890,7 @@ function toPortableProjectionReceipt(receipt, identity) {
 }
 
 // packages/sdk/dist/asset-capabilities/validate-descriptor.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 function normalizeSourceSpan(span) {
   if (typeof span.byteOffset === "string" && typeof span.byteLength === "string") {
     return Object.freeze({
@@ -6119,6 +6237,7 @@ async function validateSubjectDescriptorV2(value2) {
 }
 
 // packages/sdk/dist/asset-capabilities/presentation.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 function bindingId(value2) {
   if (!isSegment(value2))
     throw new TypeError(`invalid binding id: ${value2}`);
@@ -6149,402 +6268,129 @@ function definePresentationPlan(plan) {
 }
 
 // packages/sdk/dist/asset-capabilities/visual-composition.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var MIXED_VISUAL_STAGE_ID = presentationSlotId("mixed-visual");
 var MIXED_VISUAL_WORLD_BINDING_ID = bindingId("mixed-world");
 var MIXED_VISUAL_MODEL_BINDING_ID = bindingId("mixed-model");
-function nonEmpty2(value2, label) {
-  if (value2.trim().length === 0)
-    throw new TypeError(`${label} must not be empty`);
-}
-function finiteTuple(value2, label, positive = false) {
-  if (value2.length !== 3 || value2.some((item) => !Number.isFinite(item) || positive && item <= 0)) {
-    throw new TypeError(`${label} must contain three ${positive ? "positive " : ""}finite numbers`);
-  }
-}
-function basis(value2, label) {
-  if (value2.unit === "meter") {
-    if (value2.sourceUnit !== void 0) {
-      throw new TypeError(`${label}.sourceUnit is only valid for source-unit coordinates`);
-    }
-  } else {
-    nonEmpty2(value2.sourceUnit ?? "", `${label}.sourceUnit`);
-  }
-  if (value2.metersPerUnit !== void 0 && (!Number.isFinite(value2.metersPerUnit) || value2.metersPerUnit <= 0)) {
-    throw new TypeError(`${label}.metersPerUnit must be positive and finite`);
-  }
-  if (value2.unitsPerCell !== void 0 && (!Number.isFinite(value2.unitsPerCell) || value2.unitsPerCell <= 0)) {
-    throw new TypeError(`${label}.unitsPerCell must be positive and finite`);
-  }
-}
-function frame(value2, label) {
-  nonEmpty2(value2.coordinateSpaceId, `${label}.coordinateSpaceId`);
-  basis(value2.basis, `${label}.basis`);
-  finiteTuple(value2.origin, `${label}.origin`);
-}
-function subject(value2, label) {
-  nonEmpty2(value2.subjectUri, `${label}.subjectUri`);
-  nonEmpty2(value2.revision, `${label}.revision`);
-}
-function digest(value2, label) {
-  if (value2 !== void 0 && !/^sha256:[0-9a-f]{64}$/u.test(value2)) {
-    throw new TypeError(`${label} must be a lowercase SHA-256 digest`);
-  }
-}
-function policy(value2, label) {
-  nonEmpty2(value2.provenance.sourceIdentity, `${label}.provenance.sourceIdentity`);
-  subject(value2.provenance.subject, `${label}.provenance.subject`);
-  nonEmpty2(value2.provenance.originUri, `${label}.provenance.originUri`);
-  digest(value2.provenance.contentDigest, `${label}.provenance.contentDigest`);
-  if (value2.license.state === "declared")
-    nonEmpty2(value2.license.expression, `${label}.license.expression`);
-  else
-    nonEmpty2(value2.license.reason, `${label}.license.reason`);
-  if (value2.redistribution.state === "allowed")
-    nonEmpty2(value2.redistribution.basis, `${label}.redistribution.basis`);
-  else
-    nonEmpty2(value2.redistribution.reason, `${label}.redistribution.reason`);
-}
-function sameSubject(left, right) {
-  return left.subjectUri === right.subjectUri && left.revision === right.revision;
-}
-function sameJson(left, right) {
-  return JSON.stringify(left) === JSON.stringify(right);
-}
-function sameFrame(left, right) {
-  return sameJson(left, right);
-}
-function validateTransform(value2, worldFrame) {
-  if (value2.schemaVersion !== 1)
-    throw new TypeError("overlay transform schemaVersion must be 1");
-  frame(value2.source, "overlay transform source");
-  frame(value2.target, "overlay transform target");
-  if (!sameFrame(value2.target, worldFrame)) {
-    throw new TypeError("overlay transform target must exactly match the workspace world frame");
-  }
-  const sourceAxes = Object.values(value2.axes).map((item) => item.sourceAxis);
-  if (new Set(sourceAxes).size !== 3) {
-    throw new TypeError("overlay transform must map each source axis exactly once");
-  }
-  const indices = sourceAxes.map((axis) => axis === "x" ? 0 : axis === "y" ? 1 : 2);
-  let inversions = 0;
-  for (let left = 0; left < indices.length; left += 1) {
-    for (let right = left + 1; right < indices.length; right += 1) {
-      if (indices[left] > indices[right])
-        inversions += 1;
-    }
-  }
-  const permutationDirection = inversions % 2 === 0 ? 1 : -1;
-  const mappedDirection = permutationDirection * value2.axes.x.direction * value2.axes.y.direction * value2.axes.z.direction;
-  const expectedDirection = value2.source.basis.handedness === value2.target.basis.handedness ? 1 : -1;
-  if (mappedDirection !== expectedDirection) {
-    throw new TypeError("overlay transform axis directions do not preserve the declared handedness");
-  }
-  finiteTuple(value2.scale, "overlay transform scale", true);
-  finiteTuple(value2.translation, "overlay transform translation");
-  nonEmpty2(value2.evidence.reference, "overlay transform evidence reference");
-  digest(value2.evidence.receiptDigest, "overlay transform evidence receiptDigest");
-}
-function validateDocument(document) {
-  if (document.schemaVersion !== 1)
-    throw new TypeError("mixed visual schemaVersion must be 1");
-  nonEmpty2(document.workspaceId, "workspaceId");
-  frame(document.worldFrame, "worldFrame");
-  if (document.sources.length !== 2)
-    throw new TypeError("mixed visual workspace needs two sources");
-  const world = document.sources.find((source) => source.role === "world-base");
-  const model = document.sources.find((source) => source.role === "model-overlay");
-  if (world === void 0 || model === void 0) {
-    throw new TypeError("mixed visual workspace needs one world source and one model source");
-  }
-  if (world.originGroup === model.originGroup) {
-    throw new TypeError("mixed visual sources must declare different origin groups");
-  }
-  if (sameSubject(world.subject, model.subject)) {
-    throw new TypeError("mixed visual sources must retain two distinct subject snapshots");
-  }
-  for (const source of document.sources) {
-    if (!isSegment(source.sourceId))
-      throw new TypeError(`invalid mixed visual source id: ${source.sourceId}`);
-    nonEmpty2(source.originGroup, `source ${source.sourceId} originGroup`);
-    subject(source.subject, `source ${source.sourceId} subject`);
-  }
-  if (world.binding.contract !== "common.view/world-scene-source" || world.binding.major !== 1) {
-    throw new TypeError("world source must use common.view/world-scene-source@1");
-  }
-  if (model.binding.contract !== "common.view/model-scene-source" || model.binding.major !== 1) {
-    throw new TypeError("model source must use common.view/model-scene-source@1");
-  }
-  if (!isSegment(world.binding.bindingId) || !isSegment(model.binding.bindingId)) {
-    throw new TypeError("mixed visual binding ids must be portable segments");
-  }
-  if (world.binding.bindingId === model.binding.bindingId) {
-    throw new TypeError("mixed visual world/model binding ids must be distinct");
-  }
-  const sourceIds = new Set(document.sources.map((source) => source.sourceId));
-  if (sourceIds.size !== document.sources.length)
-    throw new TypeError("mixed visual source ids must be unique");
-  const resources = /* @__PURE__ */ new Map();
-  for (const resource of document.resources) {
-    if (!isSegment(resource.resourceId))
-      throw new TypeError(`invalid mixed visual resource id: ${resource.resourceId}`);
-    if (resources.has(resource.resourceId))
-      throw new TypeError(`duplicate mixed visual resource id: ${resource.resourceId}`);
-    const source = document.sources.find((candidate) => candidate.sourceId === resource.sourceId);
-    if (source === void 0)
-      throw new TypeError(`unknown resource source: ${resource.sourceId}`);
-    nonEmpty2(resource.logicalId, `resource ${resource.resourceId} logicalId`);
-    if (!sameSubject(resource.provenance.subject, source.subject)) {
-      throw new TypeError(`resource ${resource.resourceId} provenance does not match its source snapshot`);
-    }
-    policy(resource, `resource ${resource.resourceId}`);
-    resources.set(resource.resourceId, resource);
-  }
-  const objects = /* @__PURE__ */ new Map();
-  for (const object of document.objects) {
-    if (!isSegment(object.objectId))
-      throw new TypeError(`invalid mixed visual object id: ${object.objectId}`);
-    if (objects.has(object.objectId))
-      throw new TypeError(`duplicate mixed visual object id: ${object.objectId}`);
-    const source = document.sources.find((candidate) => candidate.sourceId === object.sourceId);
-    if (source === void 0)
-      throw new TypeError(`unknown object source: ${object.sourceId}`);
-    if (source.role !== object.role)
-      throw new TypeError(`object ${object.objectId} role does not match its source`);
-    if (!sameSubject(object.provenance.subject, source.subject)) {
-      throw new TypeError(`object ${object.objectId} provenance does not match its source snapshot`);
-    }
-    if (new Set(object.resourceIds).size !== object.resourceIds.length) {
-      throw new TypeError(`object ${object.objectId} resource ids must be unique`);
-    }
-    for (const resourceId of object.resourceIds) {
-      const resource = resources.get(resourceId);
-      if (resource === void 0)
-        throw new TypeError(`object ${object.objectId} references unknown resource ${resourceId}`);
-      if (resource.sourceId !== object.sourceId) {
-        throw new TypeError(`object ${object.objectId} cannot claim a resource from another source`);
-      }
-    }
-    policy(object, `object ${object.objectId}`);
-    objects.set(object.objectId, object);
-  }
-  if (![...objects.values()].some((object) => object.role === "world-base")) {
-    throw new TypeError("mixed visual workspace needs a world-base object");
-  }
-  if (![...objects.values()].some((object) => object.role === "model-overlay")) {
-    throw new TypeError("mixed visual workspace needs a model-overlay object");
-  }
-  const placementIds = /* @__PURE__ */ new Set();
-  for (const placement of document.overlayPlacements) {
-    if (!isSegment(placement.placementId))
-      throw new TypeError(`invalid overlay placement id: ${placement.placementId}`);
-    if (placementIds.has(placement.placementId))
-      throw new TypeError(`duplicate overlay placement id: ${placement.placementId}`);
-    const object = objects.get(placement.objectId);
-    if (object?.role !== "model-overlay") {
-      throw new TypeError(`overlay placement ${placement.placementId} must reference a model-overlay object`);
-    }
-    validateTransform(placement.transform, document.worldFrame);
-    placementIds.add(placement.placementId);
-  }
-  const placedObjects = new Set(document.overlayPlacements.map((placement) => placement.objectId));
-  for (const object of objects.values()) {
-    if (object.role === "model-overlay" && !placedObjects.has(object.objectId)) {
-      throw new TypeError(`model-overlay object ${object.objectId} has no separate placement`);
-    }
-  }
-  if (document.compatibility.mode !== "visual-only" || document.compatibility.definitionCompatible !== false || document.compatibility.runtimeCompatible !== false || document.compatibility.nativeExportable !== false) {
-    throw new TypeError("mixed visual compatibility must remain visual-only");
-  }
-  if (document.compatibility.reasons.length < 3 || document.compatibility.reasons.some((reason) => reason.trim().length === 0) || !sameJson(document.compatibility.requiredEvidence, [
-    "definition-mapping",
-    "runtime-conformance",
-    "native-export"
-  ])) {
-    throw new TypeError("mixed visual compatibility must name every missing promotion evidence");
-  }
-}
-function defineMixedVisualWorkspace(input) {
-  const world = {
-    ...input.world,
-    binding: input.world.binding ?? {
-      bindingId: MIXED_VISUAL_WORLD_BINDING_ID,
-      contract: "common.view/world-scene-source",
-      major: 1
-    }
-  };
-  const model = {
-    ...input.model,
-    binding: input.model.binding ?? {
-      bindingId: MIXED_VISUAL_MODEL_BINDING_ID,
-      contract: "common.view/model-scene-source",
-      major: 1
-    }
-  };
-  const document = {
-    schemaVersion: 1,
-    workspaceId: input.workspaceId,
-    worldFrame: input.worldFrame,
-    sources: [world, model],
-    objects: input.objects,
-    resources: input.resources,
-    overlayPlacements: input.overlayPlacements,
-    compatibility: {
-      mode: "visual-only",
-      definitionCompatible: false,
-      runtimeCompatible: false,
-      nativeExportable: false,
-      reasons: [
-        "visual placement does not prove definition compatibility",
-        "no runtime conformance evidence is attached",
-        "no native writer or export fidelity evidence is attached"
-      ],
-      requiredEvidence: ["definition-mapping", "runtime-conformance", "native-export"]
-    }
-  };
-  validateDocument(document);
-  const frozenDocument = snapshotJsonWireData(document);
-  const slot = {
-    slotId: MIXED_VISUAL_STAGE_ID,
-    kind: "stage",
-    contributionId: "modkit.ui/mixed-visual-stage",
-    extensionId: "modkit/ui",
-    priority: 390,
-    singletonGroup: "center-stage",
-    bindings: [world.binding, model.binding],
-    composition: frozenDocument
-  };
-  const presentation = definePresentationPlan({
-    subjectUri: input.workspaceUri,
-    revision: input.workspaceRevision,
-    slots: [slot],
-    unsatisfied: [],
-    activeStage: MIXED_VISUAL_STAGE_ID,
-    alternateStages: []
-  });
-  return Object.freeze({ document: frozenDocument, presentation });
-}
-function isMixedVisualPresentationSlot(slot) {
-  const candidate = slot;
-  if (slot.slotId !== MIXED_VISUAL_STAGE_ID || candidate.composition === void 0)
-    return false;
-  try {
-    validateDocument(candidate.composition);
-    const expectedBindings = candidate.composition.sources.map((source) => source.binding);
-    return slot.kind === "stage" && slot.bindings.length === expectedBindings.length && slot.bindings.every((binding, index) => {
-      const expected = expectedBindings[index];
-      return expected !== void 0 && "contract" in binding && binding.bindingId === expected.bindingId && binding.contract === expected.contract && binding.major === expected.major;
-    });
-  } catch {
-    return false;
-  }
-}
 
 // packages/sdk/dist/asset-capabilities/v1-projection.js
-var V1_PROJECTION_UNAVAILABLE_CODE = "modkit/compat-v1-projection-unavailable";
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
+// packages/sdk/dist/templates/index.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var GAME_TEMPLATE_PREVIEW_OPERATION_ID = "view.template";
+var GAME_TEMPLATE_PREVIEW_SCHEMA_VERSION = 1;
+var GAME_TEMPLATE_WORKSPACE_INPUT = "workspaceDocuments";
+var finite = (value2) => typeof value2 === "number" && Number.isFinite(value2);
+var optionalBoolean = (value2) => value2 === void 0 || typeof value2 === "boolean";
+function isGameTemplateTextRun(value2) {
+  if (typeof value2 !== "object" || value2 === null || Array.isArray(value2))
+    return false;
+  const run = value2;
+  return typeof run["text"] === "string" && (run["color"] === void 0 || typeof run["color"] === "string") && optionalBoolean(run["bold"]) && optionalBoolean(run["italic"]) && optionalBoolean(run["underline"]) && (run["size"] === void 0 || finite(run["size"]) && run["size"] > 0) && (run["asset"] === void 0 || typeof run["asset"] === "string" && run["text"] === "") && (run["unresolved"] === void 0 || typeof run["unresolved"] === "string");
+}
+function isGameTemplateDisplayItem(value2) {
+  if (typeof value2 !== "object" || value2 === null || Array.isArray(value2))
+    return false;
+  const item = value2;
+  const rect = item["rect"];
+  const text2 = item["text"];
+  return ["box", "text", "image"].includes(String(item["kind"])) && Array.isArray(item["path"]) && item["path"].every((part) => typeof part === "string") && typeof rect === "object" && rect !== null && finite(rect["x"]) && finite(rect["y"]) && finite(rect["width"]) && finite(rect["height"]) && optionalBoolean(item["visible"]) && (text2 === void 0 || typeof text2 === "string" || Array.isArray(text2) && text2.every(isGameTemplateTextRun)) && (item["asset"] === void 0 || typeof item["asset"] === "string") && (item["frameType"] === void 0 || typeof item["frameType"] === "string");
+}
+function gameTemplateTextRuns(item) {
+  if (item.text === void 0)
+    return [];
+  return typeof item.text === "string" ? [{ text: item.text }] : item.text;
+}
+var optionalString = (value2) => value2 === void 0 || typeof value2 === "string";
+function isValueSource(value2) {
+  if (value2 === void 0)
+    return true;
+  if (typeof value2 !== "object" || value2 === null || Array.isArray(value2))
+    return false;
+  const source = value2;
+  return optionalString(source["uri"]) && optionalString(source["origin"]) && optionalString(source["frame"]) && (source["start"] === void 0 || finite(source["start"])) && (source["end"] === void 0 || finite(source["end"]));
+}
+var recordsOk = (list, check) => list === void 0 || Array.isArray(list) && list.every((item) => typeof item === "object" && item !== null && !Array.isArray(item) && check(item));
+function isNodeShallow(value2) {
+  if (typeof value2 !== "object" || value2 === null || Array.isArray(value2))
+    return false;
+  const node = value2;
+  return typeof node["name"] === "string" && optionalString(node["type"]) && optionalString(node["template"]) && Array.isArray(node["path"]) && node["path"].every((part) => typeof part === "string") && Array.isArray(node["children"]) && recordsOk(node["properties"], (item) => typeof item["name"] === "string" && optionalString(item["val"]) && optionalString(item["resolved"]) && isValueSource(item["source"])) && recordsOk(node["anchors"], (item) => typeof item["side"] === "string" && optionalString(item["relative"]) && optionalString(item["pos"]) && optionalString(item["offset"]) && isValueSource(item["source"]));
+}
+function isGameTemplateTreeNode(value2, maximumNodes = 1e5) {
+  const pending = [value2];
+  let seen = 0;
+  while (pending.length > 0) {
+    const node = pending.pop();
+    if (!isNodeShallow(node) || ++seen > maximumNodes)
+      return false;
+    for (const child of node.children)
+      pending.push(child);
+  }
+  return true;
+}
+var nonEmpty2 = (value2) => typeof value2 === "string" && value2.trim().length > 0;
+function isGameTemplatePreviewResult(value2) {
+  if (typeof value2 !== "object" || value2 === null || Array.isArray(value2))
+    return false;
+  const result = value2;
+  const fidelity = result["fidelity"];
+  return result["schemaVersion"] === GAME_TEMPLATE_PREVIEW_SCHEMA_VERSION && result["operationId"] === GAME_TEMPLATE_PREVIEW_OPERATION_ID && nonEmpty2(result["templateKind"]) && nonEmpty2(result["entryUri"]) && (result["rootPath"] === void 0 || typeof result["rootPath"] === "string") && (result["roots"] === void 0 || Array.isArray(result["roots"]) && result["roots"].every((root) => typeof root === "string")) && typeof result["resolvedTree"] === "object" && result["resolvedTree"] !== null && Array.isArray(result["displayItems"]) && Array.isArray(result["diagnostics"]) && ["complete", "partial", "capped", "invalid"].includes(String(result["completeness"])) && typeof fidelity === "object" && fidelity !== null && !Array.isArray(fidelity) && fidelity["comparison"] === "semantic" && Array.isArray(fidelity["unsupported"]) && result["provenance"] !== void 0 && result["digest"] !== void 0;
+}
+
+// packages/sdk/dist/references.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
 export {
-  DOTTED_PATTERN,
-  QUALIFIED_PATTERN,
-  SEGMENT_PATTERN,
-  SEMVER_PATTERN,
-  REQUIREMENT_SCOPE_KINDS,
-  requirementScopeSchema,
-  extensionRequirementSchema,
-  EXTENSION_VFS_PATH_PATTERN,
-  extensionVendorDescriptorSchema,
-  extensionGameDescriptorSchema,
-  extensionAssetReferenceSchema,
-  extensionSourceDetailsSchema,
-  extensionPresentationSchema,
-  extensionManifestSchema,
-  modkitBlockSchema,
+  isSegment,
+  isQualifiedId,
+  isTraitId,
+  contractId,
+  errorCode,
+  CONTAINER_EXTRACT_OPERATION_ID,
+  operationId,
+  parseSemver,
+  parseVersionRange,
+  satisfiesRange,
+  ModkitError,
+  isModkitError,
+  diagnostic,
+  hasErrors,
+  uint64,
+  compareUtf8,
+  canonicalJsonStringify,
+  OperationCancelledError,
+  throwIfAborted,
+  isCancellation,
   normalizeModkitIdentifier,
-  normalizeModkitPackageSpecifier,
-  normalizeModkitSourceIdentifier,
-  EXECUTION_PROFILES,
   PERMISSION_CLASSES,
-  RUNTIME_ENVIRONMENTS,
-  OPERATING_SYSTEMS,
-  ARCHITECTURES,
-  runtimeTargetConstraintSchema,
-  runtimeVariantDeclarationSchema,
-  scopedContractRequirementSchema,
-  contributionManifestSchema,
-  STANDARD_DATA_SOURCE_CONTRACTS,
-  DATA_SOURCE_MATURITY,
-  ADMITTED_DATA_SOURCE_CONTRACTS,
-  dataSourceMaturity,
-  KNOWLEDGE_LOCALE_PATTERN,
-  isKnowledgeLocaleTag,
   isKnowledgeTarget,
-  knowledgeLocaleFallbacks,
-  knowledgeTargetKey,
-  jsonSchemaRefSchema,
-  resourceBudgetWireSchema,
-  dataSourceRefWireSchema,
-  codecContributionSpecV1Schema,
-  serviceProviderContributionSpecV1Schema,
-  viewerContributionSpecV1Schema,
-  writerRequirementV1Schema,
-  writerOfferV1Schema,
-  editorContributionSpecV1Schema,
-  knowledgePackSpecV1Schema,
-  localizationContributionSpecV1Schema,
-  traitDefinitionSpecV1Schema,
-  dataSourceMethodSurfaceV1Schema,
-  dataSourceSurfaceV1Schema,
-  serviceContractDefinitionSpecV1Schema,
-  dataSourceContractDefinitionSpecV1Schema,
-  contractDefinitionSpecV1Schema,
-  dataSourceContributionSpecV1Schema,
   WRITER_CONTRACT_ID,
   WRITER_FACET_MATCHER_PROFILE,
   WRITER_SURFACE,
   STANDARD_EDITING_SURFACES,
-  ROUND_TRIP_RANK,
   writerOfferSatisfies,
   writerSelectionKey,
   loadSubjectCandidatePage,
   createSubjectCandidateProvider,
-  fieldTypeV1Schema,
-  fieldSchemaV1Schema,
-  fieldWriteRequestV1Schema,
-  subjectKindDefinitionSpecV1Schema,
-  fieldEditInputSchemaV1Schema,
-  fieldEditorContributionSpecV1Schema,
   operationScopedPermissionClasses,
   activationRequiredPermissionClasses,
   rootSubject,
+  nestedSubject,
   subjectRefEquals,
   serializeSubjectRef,
   parseSubjectRef,
-  subjectDescriptorV2Schema,
-  anyDescriptorV2Schema,
-  validateWithSchema,
   contributionId,
   isRevisionId,
   revisionId,
   revisionIdFromRef,
-  revisionRefFromId,
-  assetSourceRefFromSourceRef,
-  sourceRefFromAssetSourceRef,
-  STANDARD_HOST_FACILITY_IDS,
-  LEGACY_HOST_FACILITY_ALIASES,
-  HOST_TRANSPORT_KINDS,
-  isStandardHostFacilityId,
-  isHostFacilityId,
-  hostFacilityId,
-  hostFacilityDiagnostics,
-  createHostRealmProfile,
   createHostTopology,
   runtimeTargetForHostRealm,
   hostRealmCacheKey,
-  createSpecSchemaRegistry,
   validateContributionManifest,
-  TRAIT_IDS,
   isStandardTraitId,
   SUBJECT_KIND_DEFINITION_CONTRIBUTION_CONTRACT,
-  SUBJECT_KIND_DEFINITION_FACT,
   CODEC_CONTRIBUTION_CONTRACT,
   SERVICE_PROVIDER_CONTRIBUTION_CONTRACT,
   VIEWER_CONTRIBUTION_CONTRACT,
@@ -6554,26 +6400,24 @@ export {
   CONTRACT_DEFINITION_CONTRIBUTION_CONTRACT,
   KNOWLEDGE_PACK_CONTRIBUTION_CONTRACT,
   LOCALIZATION_CONTRIBUTION_CONTRACT,
-  TRAIT_DEFINITION_FACT,
   CONTRACT_DEFINITION_FACT,
   EDITOR_CONTRIBUTION_FACT,
   FIELD_EDITOR_CONTRIBUTION_FACT,
-  KNOWLEDGE_PACK_FACT,
-  LOCALIZATION_CONTRIBUTION_FACT,
-  validateEditorContributionSemantics,
-  validateKnowledgePackSemantics,
-  validateLocalizationContributionSemantics,
-  validateFieldEditorContributionSemantics,
   createContributionContractRegistry,
   A1_SPEC_SCHEMA_ENTRIES,
-  foreignServiceContractId,
+  NATIVE_MODEL_ENCODER_CONTRACT,
+  NATIVE_MODEL_ENCODER_MATCHER_PROFILE,
+  TRANSLATION_CONTRACT,
+  TRANSLATION_MATCHER_PROFILE,
   LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT,
   LANGUAGE_DOCUMENT_MATCHER_PROFILE,
-  TRANSLATION_CONTRACT,
   RUNTIME_PROVIDER_CONTRACT,
   RUNTIME_SESSION_CONTRACT,
   RUNTIME_PROVIDER_MATCHER_PROFILE,
-  RUNTIME_SESSION_V2_MEMBERS,
+  SERVICE_OPERATION_PROVIDER_CONTRACT,
+  SERVICE_OPERATION_MATCHER_PROFILE,
+  SCENE_RENDERER_CONTRACT,
+  SCENE_RENDERER_MATCHER_PROFILE,
   GAME_INSTALLATION_DISCOVERY_CONTRACT,
   GAME_LAUNCH_PLAN_CONTRACT,
   GAME_INSTALLATION_MATCHER_PROFILE,
@@ -6584,40 +6428,35 @@ export {
   DATA_CATALOG_MATCHER_PROFILE,
   RESOLVED_DATA_WORKSPACE_CONTRACT,
   RESOLVED_DATA_WORKSPACE_MATCHER_PROFILE,
-  resolveDataCatalog,
+  DATA_CATALOG_QUERIES_OUTPUT,
+  DATA_CATALOG_ENTITIES_INPUT,
   MAP_SEMANTIC_ANALYSIS_CONTRACT,
   RESOLVED_MAP_WORKSPACE_CONTRACT,
   MAP_PREVIEW_PREPARATION_CONTRACT,
   WORLD_SCENE_SOURCE_CONTRACT,
+  MAP_LAYERS_OPERATION,
+  MAP_LAYER_READ_OPERATION,
+  MAP_LAYER_WRITE_OPERATION,
+  mapLayerWindow,
   MAP_SEMANTIC_MATCHER_PROFILE,
   MAP_PREVIEW_PREPARATION_MATCHER_PROFILE,
-  validateContributionPattern,
+  contributionSettingsFor,
   expandContributionManifests,
   normalizeExtensionManifest,
   grantValidity,
   narrowGrant,
-  assertNotWider,
-  RESERVED_MODEL_FACET_SOURCES,
-  isReservedModelFacetSource,
-  foreignDataSource,
-  dataSourceRefFromWire,
-  createDataSourceRegistry,
-  ENCODED_MEDIA_SURFACE_ID,
   STANDARD_DATA_SOURCE_SURFACES,
   AUXILIARY_DATA_SOURCE_SURFACES,
-  standardDataSourceSurfaceFor,
-  ENCODED_MEDIA_SURFACE_CONTRACT,
-  isAlgorithmQualifiedDigest,
-  algorithmQualifiedDigest,
   toPortableProjectionReceipt,
   validateSubjectDescriptorV2,
   bindingId,
   presentationSlotId,
   definePresentationPlan,
-  MIXED_VISUAL_STAGE_ID,
-  MIXED_VISUAL_WORLD_BINDING_ID,
-  MIXED_VISUAL_MODEL_BINDING_ID,
-  defineMixedVisualWorkspace,
-  isMixedVisualPresentationSlot,
-  V1_PROJECTION_UNAVAILABLE_CODE
+  GAME_TEMPLATE_PREVIEW_OPERATION_ID,
+  GAME_TEMPLATE_WORKSPACE_INPUT,
+  isGameTemplateTextRun,
+  isGameTemplateDisplayItem,
+  gameTemplateTextRuns,
+  isGameTemplateTreeNode,
+  isGameTemplatePreviewResult
 };

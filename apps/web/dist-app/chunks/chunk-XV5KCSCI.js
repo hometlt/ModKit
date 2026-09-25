@@ -1,9 +1,9 @@
 import {
-  ModkitError
-} from "./chunk-ZP6SGJCF.js";
-import {
   snapshotJson
 } from "./chunk-3YDGNEY2.js";
+import {
+  ModkitError
+} from "./chunk-6M7FDQ66.js";
 
 // packages/uv/dist/model/legacy/container-kernels.js
 var GLB_MAGIC = 1179937895;

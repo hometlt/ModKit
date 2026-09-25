@@ -1,20 +1,18 @@
+import "../../../chunks/chunk-OVW5EXOM.js";
 import {
   assembleSubjectDescriptor,
   createAssetSession,
   createUtf8TextDataSource
-} from "../../../chunks/chunk-GKYVVDGF.js";
-import "../../../chunks/chunk-PHI3IBXS.js";
+} from "../../../chunks/chunk-5GA6R5US.js";
+import "../../../chunks/chunk-JHPOUH6S.js";
 import {
   revisionId
-} from "../../../chunks/chunk-3VS5UF7D.js";
-import "../../../chunks/chunk-GGIVOOBZ.js";
-import "../../../chunks/chunk-YYQ3QKXM.js";
-import "../../../chunks/chunk-YRQVWMJF.js";
+} from "../../../chunks/chunk-NMXLVS6H.js";
 import {
   diagnostic,
   throwIfAborted,
   uint64
-} from "../../../chunks/chunk-6CZX3ZS4.js";
+} from "../../../chunks/chunk-HUU44HII.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 
 // packages/codec-kit/src/text/codec-runtime.ts

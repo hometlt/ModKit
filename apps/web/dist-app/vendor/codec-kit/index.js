@@ -1,21 +1,26 @@
+import "../../chunks/chunk-OVW5EXOM.js";
 import {
   assembleSubjectDescriptor,
   createAssetSession,
   createUtf8TextDataSource
-} from "../../chunks/chunk-GKYVVDGF.js";
-import "../../chunks/chunk-PHI3IBXS.js";
+} from "../../chunks/chunk-5GA6R5US.js";
+import "../../chunks/chunk-JHPOUH6S.js";
+import {
+  contributionSettingsFor
+} from "../../chunks/chunk-SCKD5U6H.js";
+import "../../chunks/chunk-GGIVOOBZ.js";
+import "../../chunks/chunk-YYQ3QKXM.js";
+import "../../chunks/chunk-KL23KRQT.js";
 import {
   revisionId,
   toPortableProjectionReceipt
-} from "../../chunks/chunk-3VS5UF7D.js";
-import "../../chunks/chunk-GGIVOOBZ.js";
-import "../../chunks/chunk-YYQ3QKXM.js";
-import "../../chunks/chunk-YRQVWMJF.js";
+} from "../../chunks/chunk-NMXLVS6H.js";
 import {
   ModkitError,
   canonicalJsonStringify,
+  createReferenceIndex,
   diagnostic
-} from "../../chunks/chunk-6CZX3ZS4.js";
+} from "../../chunks/chunk-HUU44HII.js";
 import "../../chunks/chunk-CQ52GEHY.js";
 
 // packages/codec-kit/src/paging.ts
@@ -835,6 +840,72 @@ function applyJsonEdit(root, edit, maxDepth) {
   return result;
 }
 
+// packages/codec-kit/src/json.ts
+var DEFAULT_MAX_DEPTH = 64;
+function isPlainObject(value) {
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === null || prototype === Object.prototype;
+}
+function isJsonSerializable(value, maxDepth = DEFAULT_MAX_DEPTH) {
+  return check(value, maxDepth, /* @__PURE__ */ new Set(), false);
+}
+function check(value, depth, seen, insideArray) {
+  if (depth < 0) return false;
+  if (value === null) return true;
+  switch (typeof value) {
+    case "string":
+    case "boolean":
+      return true;
+    case "number":
+      return Number.isFinite(value);
+    case "undefined":
+      return !insideArray;
+    case "bigint":
+    case "symbol":
+    case "function":
+      return false;
+    default:
+      break;
+  }
+  const object = value;
+  if (seen.has(object)) return false;
+  seen.add(object);
+  try {
+    if (Array.isArray(object)) {
+      return object.every((entry) => check(entry, depth - 1, seen, true));
+    }
+    if (!isPlainObject(object)) return false;
+    return Object.values(object).every(
+      (entry) => check(entry, depth - 1, seen, false)
+    );
+  } finally {
+    seen.delete(object);
+  }
+}
+
+// packages/codec-kit/src/logging.ts
+var loggerFactory;
+function installLoggerFactory(factory) {
+  loggerFactory = factory;
+}
+function getLogger(category = []) {
+  const invoke = (property, args) => {
+    const target = loggerFactory?.(category);
+    if (target === void 0) return void 0;
+    const member = Reflect.get(target, property);
+    return typeof member === "function" ? Reflect.apply(member, target, args) : member;
+  };
+  return new Proxy(
+    {},
+    {
+      get(_target, property) {
+        if (property === "isEnabledFor" && loggerFactory === void 0) return () => false;
+        return (...args) => invoke(property, args);
+      }
+    }
+  );
+}
+
 // packages/codec-kit/src/model/materials.ts
 var DEFAULT_MODEL_MATERIAL_BUDGET = Object.freeze({
   maxDepth: 64,
@@ -1084,6 +1155,103 @@ function createModelMaterialSource({
   });
   return facetSource(info, "materials", items);
 }
+function createModelEffectSource({
+  effects,
+  profile
+}) {
+  const items = effects.map((effect) => ({
+    ...effect,
+    ...effect.properties === void 0 ? {} : { properties: Object.freeze(effect.properties.map((one) => Object.freeze({ ...one }))) }
+  }));
+  const byKind = {};
+  for (const effect of items) byKind[effect.kind] = (byKind[effect.kind] ?? 0) + 1;
+  return facetSource(
+    Object.freeze({
+      effects: items.length,
+      byKind: Object.freeze(byKind),
+      ...profile === void 0 ? {} : { profile }
+    }),
+    "effects",
+    items
+  );
+}
+function createModelLightSource({
+  lights
+}) {
+  const items = lights.map((light) => ({
+    ...light,
+    ...light.color === void 0 ? {} : { color: Object.freeze([...light.color]) },
+    ...light.properties === void 0 ? {} : {
+      properties: Object.freeze(
+        light.properties.map((one) => Object.freeze({ ...one }))
+      )
+    }
+  }));
+  const byKind = {};
+  for (const light of items) byKind[light.kind] = (byKind[light.kind] ?? 0) + 1;
+  return facetSource(
+    Object.freeze({ lights: items.length, byKind: Object.freeze(byKind) }),
+    "lights",
+    items
+  );
+}
+function createModelCameraSource({
+  cameras
+}) {
+  const items = cameras.map((camera) => ({
+    ...camera,
+    ...camera.properties === void 0 ? {} : {
+      properties: Object.freeze(
+        camera.properties.map((one) => Object.freeze({ ...one }))
+      )
+    }
+  }));
+  return facetSource(
+    Object.freeze({ cameras: items.length }),
+    "cameras",
+    items
+  );
+}
+function createModelPhysicsSource({
+  bodies
+}) {
+  const items = bodies.map((body) => ({
+    ...body,
+    ...body.properties === void 0 ? {} : {
+      properties: Object.freeze(
+        body.properties.map((one) => Object.freeze({ ...one }))
+      )
+    }
+  }));
+  const byKind = {};
+  for (const body of items) byKind[body.kind] = (byKind[body.kind] ?? 0) + 1;
+  return facetSource(
+    Object.freeze({ bodies: items.length, byKind: Object.freeze(byKind) }),
+    "bodies",
+    items
+  );
+}
+function createModelNodeBehaviourSource({
+  behaviours
+}) {
+  const items = behaviours.map((behaviour) => ({
+    ...behaviour,
+    ...behaviour.nodeIds === void 0 ? {} : { nodeIds: Object.freeze([...behaviour.nodeIds]) },
+    ...behaviour.properties === void 0 ? {} : {
+      properties: Object.freeze(
+        behaviour.properties.map((one) => Object.freeze({ ...one }))
+      )
+    }
+  }));
+  const byKind = {};
+  for (const behaviour of items)
+    byKind[behaviour.kind] = (byKind[behaviour.kind] ?? 0) + 1;
+  return facetSource(
+    Object.freeze({ behaviours: items.length, byKind: Object.freeze(byKind) }),
+    "behaviours",
+    items
+  );
+}
 function createModelSocketSource({
   sockets
 }) {
@@ -1274,57 +1442,6 @@ function pathTo(els, offset, acc) {
 }
 function attrAt(el, offset) {
   return el.attrs.find((a) => offset >= a.valueStart && offset <= a.valueEnd);
-}
-
-// packages/codec-kit/src/reference-index.ts
-function createReferenceIndex(options = {}) {
-  const normalize = options.normalizeDocumentId ?? ((id) => id);
-  const byTarget = /* @__PURE__ */ new Map();
-  const byDocument = /* @__PURE__ */ new Map();
-  const detach = (documentId) => {
-    for (const target of byDocument.get(documentId) ?? []) {
-      const documents = byTarget.get(target);
-      documents?.delete(documentId);
-      if (documents !== void 0 && documents.size === 0) byTarget.delete(target);
-    }
-  };
-  return {
-    set(documentId, targets) {
-      const id = normalize(documentId);
-      detach(id);
-      const set = new Set(targets);
-      byDocument.set(id, set);
-      for (const target of set) {
-        let documents = byTarget.get(target);
-        if (documents === void 0) {
-          documents = /* @__PURE__ */ new Set();
-          byTarget.set(target, documents);
-        }
-        documents.add(id);
-      }
-    },
-    remove(documentId) {
-      const id = normalize(documentId);
-      detach(id);
-      byDocument.delete(id);
-    },
-    referencing(target) {
-      return [...byTarget.get(target) ?? []];
-    },
-    targetsOf(documentId) {
-      return [...byDocument.get(normalize(documentId)) ?? []];
-    },
-    documents() {
-      return [...byDocument.keys()];
-    },
-    snapshot() {
-      return { documents: byDocument.size, targets: byTarget.size };
-    },
-    clear() {
-      byTarget.clear();
-      byDocument.clear();
-    }
-  };
 }
 
 // packages/codec-kit/src/graph-isolation.ts
@@ -1658,6 +1775,7 @@ function createTreeDataSource(rootNode) {
         kind: value.kind,
         label: value.label,
         ...value.preview === void 0 ? {} : { preview: value.preview },
+        ...value.subjectId === void 0 ? {} : { subjectId: value.subjectId },
         ...value.semanticPath === void 0 ? {} : { semanticPath: Object.freeze([...value.semanticPath]) },
         ...value.value === void 0 ? {} : { value: value.value },
         ...value.type === void 0 ? {} : { type: value.type },
@@ -2020,6 +2138,52 @@ async function readAll(source, budget, signal) {
   }
   return result;
 }
+function memoryByteSource(bytes) {
+  return Object.freeze({
+    size: async () => BigInt(bytes.byteLength),
+    async read(offset, length, readSignal) {
+      if (readSignal?.aborted) throw new DOMException("operation cancelled", "AbortError");
+      if (offset < 0n || offset > BigInt(bytes.byteLength) || length < 0) {
+        throw new RangeError("byte range is outside the source");
+      }
+      return bytes.slice(Number(offset), Math.min(bytes.byteLength, Number(offset) + length));
+    }
+  });
+}
+var RANGE_DETECT_PREFIX_BYTES = 64 * 1024;
+var RANGE_READ_CHUNK_BYTES = 8 * 1024 * 1024;
+function rangeByteSource(source, budget) {
+  if (source.kind !== "bytes" || source.size === void 0) {
+    throw new TypeError("range inspection codecs require a sized byte source");
+  }
+  const size = source.size;
+  const maximum = BigInt(budget.maxInputBytes);
+  return Object.freeze({
+    size: async () => size,
+    async read(offset, length, readSignal) {
+      if (readSignal?.aborted) throw new DOMException("operation cancelled", "AbortError");
+      if (typeof offset !== "bigint" || offset < 0n || offset > size || !Number.isSafeInteger(length) || length < 0) {
+        throw new RangeError("byte range is outside the source");
+      }
+      if (BigInt(length) > maximum) {
+        throw new RangeError("byte range exceeds the inspection budget");
+      }
+      const end = offset + BigInt(length) < size ? offset + BigInt(length) : size;
+      const result = new Uint8Array(Number(end - offset));
+      let filled = 0;
+      while (filled < result.byteLength) {
+        if (readSignal?.aborted) throw new DOMException("operation cancelled", "AbortError");
+        const wanted = Math.min(RANGE_READ_CHUNK_BYTES, result.byteLength - filled);
+        const chunk = await source.read(offset + BigInt(filled), wanted, readSignal);
+        if (chunk.byteLength === 0) throw new RangeError("source ended before its declared size");
+        const taken = Math.min(chunk.byteLength, wanted);
+        result.set(chunk.subarray(0, taken), filled);
+        filled += taken;
+      }
+      return result;
+    }
+  });
+}
 function originFrom(input, primary, companions = []) {
   const requiredCompanionBindings = new Set(
     companions.flatMap(
@@ -2075,8 +2239,9 @@ function createInspectionCodec(definition, contributionContext) {
     });
   }
   const namespaceDefinition = definition.namespace;
+  const rangeDefinition = definition.access === "ranges" ? definition : void 0;
   const customOperations = Object.freeze([...definition.operations ?? []]);
-  const sharedOperations = namespaceDefinition === void 0 ? INSPECTION_OPERATIONS : INSPECTION_OPERATIONS.filter((operation) => operation.handlerId !== "export-raw");
+  const sharedOperations = namespaceDefinition === void 0 && rangeDefinition === void 0 ? INSPECTION_OPERATIONS : INSPECTION_OPERATIONS.filter((operation) => operation.handlerId !== "export-raw");
   const customIds = /* @__PURE__ */ new Set();
   for (const operation of customOperations) {
     if (customIds.has(operation.id))
@@ -2200,6 +2365,7 @@ function createInspectionCodec(definition, contributionContext) {
             budget,
             signal,
             intent,
+            settings: contributionSettingsFor(contributionContext?.settings, input.root.uri),
             namespace: namespaceLease.value,
             input
           });
@@ -2283,19 +2449,13 @@ function createInspectionCodec(definition, contributionContext) {
       const sourceLease = await input.openBinding(primary.bindingId, signal);
       const source = sourceLease.value;
       try {
-        const bytes = await readAll(source, budget, signal);
-        const detected = await definition.detect(bytes, primary.source.uri);
-        const byteSource = Object.freeze({
-          size: async () => BigInt(bytes.byteLength),
-          async read(offset, length, readSignal) {
-            if (readSignal?.aborted) throw new DOMException("operation cancelled", "AbortError");
-            if (offset < 0n || offset > BigInt(bytes.byteLength) || length < 0) {
-              throw new RangeError("byte range is outside the source");
-            }
-            return bytes.slice(Number(offset), Math.min(bytes.byteLength, Number(offset) + length));
-          }
-        });
-        const inspection = await definition.inspect(bytes, {
+        const bytes = rangeDefinition === void 0 ? await readAll(source, budget, signal) : void 0;
+        const byteSource = bytes === void 0 ? rangeByteSource(source, budget) : memoryByteSource(bytes);
+        const sourceSize = await byteSource.size();
+        const readable = BigInt(budget.maxInputBytes) < sourceSize ? BigInt(budget.maxInputBytes) : sourceSize;
+        const prefix = bytes ?? await byteSource.read(0n, Math.min(RANGE_DETECT_PREFIX_BYTES, Number(readable)), signal);
+        const detected = await definition.detect(prefix, primary.source.uri);
+        const inspectionContext = {
           ...contributionContext === void 0 ? {} : {
             contracts: contributionContext.contracts,
             ...contributionContext.modelResources === void 0 ? {} : { modelResources: contributionContext.modelResources },
@@ -2305,11 +2465,13 @@ function createInspectionCodec(definition, contributionContext) {
           budget,
           signal,
           intent,
+          settings: contributionSettingsFor(contributionContext?.settings, primary.source.uri),
           source,
           primary,
           byteSource,
           input
-        });
+        };
+        const inspection = rangeDefinition !== void 0 ? await rangeDefinition.inspect(inspectionContext) : await definition.inspect(bytes, inspectionContext);
         const dataSources = new Map([
           ["common.view/byte-range-source", byteSource],
           ...Object.entries(inspection.dataSources ?? {})
@@ -2367,7 +2529,7 @@ function createInspectionCodec(definition, contributionContext) {
             seekable: true,
             randomAccess: true,
             trusted: false,
-            maxDecodedBytes: String(inspection.maxDecodedBytes ?? bytes.byteLength),
+            maxDecodedBytes: String(inspection.maxDecodedBytes ?? sourceSize),
             ...inspection.unsupportedFeatures === void 0 ? {} : { unsupportedFeatures: inspection.unsupportedFeatures }
           },
           dataSources: [...dataSources.keys()].map(
@@ -2381,7 +2543,9 @@ function createInspectionCodec(definition, contributionContext) {
         const handlers = new Map([
           ["inspect", async () => ({ kind: "json", value: inspection.summary })],
           ["validate", async () => ({ kind: "none" })],
-          ["export-raw", async () => ({ kind: "bytes", value: bytes })],
+          ...bytes === void 0 ? [] : [
+            ["export-raw", async () => ({ kind: "bytes", value: bytes })]
+          ],
           ...Object.entries(inspection.handlers ?? {})
         ]);
         return createAssetSession({
@@ -2490,8 +2654,13 @@ export {
   createInspectionCodec,
   createModelAnimationSampler,
   createModelAnimationSource,
+  createModelCameraSource,
   createModelCollisionSource,
+  createModelEffectSource,
+  createModelLightSource,
   createModelMaterialSource,
+  createModelNodeBehaviourSource,
+  createModelPhysicsSource,
   createModelPoseSampler,
   createModelResourceRefsSource,
   createModelSceneSource,
@@ -2519,6 +2688,9 @@ export {
   encodeXmlText,
   fact,
   getAttr,
+  getLogger,
+  installLoggerFactory,
+  isJsonSerializable,
   modelPrimitiveByteLength,
   pageOf,
   parseSubjectId,

@@ -1,4 +1,6 @@
 import { createRasterImageSource, createTreeDataSource } from '@modkit/codec-kit'
+import { rasterEditContent, rasterEditContentOperation } from '../ops/raster-transforms.js'
+import { replaceIconEntry } from './encode.js'
 
 const PNG_SIGNATURE = Object.freeze([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
 
@@ -303,6 +305,7 @@ export function createIconDefinition({ id, formatId, label, type }) {
   return Object.freeze({
     id,
     format: Object.freeze({ id: formatId, label, mediaType: 'image/x-icon' }),
+    operations: Object.freeze([rasterEditContentOperation('transform')]),
     async detect(prefix) {
       return hasPlausibleDirectory(prefix, type)
         ? { confidence: 0.99, kind: 'magic', note: cursor ? 'cur-signature' : 'ico-signature' }
@@ -391,12 +394,41 @@ export function createIconDefinition({ id, formatId, label, type }) {
           'common.view/raster-image-source': raster,
         },
         ...(decodedAccess ? { maxDecodedBytes: dib.decodedBytes } : {}),
+        handlers: {
+          /*
+           * The shown picture is re-encoded in its own storage; every other size is copied byte
+           * for byte, so nothing this codec does not understand is lost.
+           */
+          transform: rasterEditContent({
+            codecId: id,
+            input: context.input,
+            bytes,
+            decode: async () => {
+              if (!decodedAccess) {
+                throw new TypeError('this icon picture can only be replaced, not transformed')
+              }
+              const region = await regionReader(
+                bytes,
+                dib,
+              )({
+                x: 0,
+                y: 0,
+                width: selected.width,
+                height: selected.height,
+                maxBytes: selected.width * selected.height * 4,
+                pixelFormat: 'rgba8',
+              })
+              return { width: region.width, height: region.height, pixels: region.pixels }
+            },
+            encode: (image, signal) =>
+              replaceIconEntry(bytes, entries, selected, image, cursor, signal),
+            fidelity: { roundTrip: 'semantic', preservesUnknownData: true },
+          }),
+        },
         unsupportedFeatures: [
           ...(decodedAccess ? [] : ['decoded-region-provider']),
           'png-backed-region-decoding',
           'indexed-dib-region-decoding',
-          `${formatId}-writing`,
-          'pixel-editing',
         ],
       }
     },

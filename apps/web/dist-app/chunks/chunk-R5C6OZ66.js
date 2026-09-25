@@ -1,4 +1,9 @@
 import {
+  DEFAULT_UVM_CONTAINER_BUDGET,
+  checkUvmContainerBudget,
+  writeUvmContainer
+} from "./chunk-XV5KCSCI.js";
+import {
   array as array2,
   field,
   object as object2,
@@ -14,11 +19,6 @@ import {
 import {
   sampleTrackValue
 } from "./chunk-4IC3253U.js";
-import {
-  DEFAULT_UVM_CONTAINER_BUDGET,
-  checkUvmContainerBudget,
-  writeUvmContainer
-} from "./chunk-U4G5FYYR.js";
 import {
   snapshotJson
 } from "./chunk-3YDGNEY2.js";
@@ -721,6 +721,7 @@ var RENDER_MATERIAL_SHADER = "modkit.render-material.v1";
 function activeLayers(material) {
   return Object.values(material.layers).filter((layer) => layer.slot !== "normalBlend2Mask" || material.normalBlendPolicy?.secondMask !== false);
 }
+var PRESENTATIONS = ["surface", "screen-distortion", "terrain-projection"];
 var record = (value, path) => {
   if (value === null || typeof value !== "object" || Array.isArray(value))
     throw new TypeError(`${path} must be an object`);
@@ -916,6 +917,10 @@ function createRenderMaterialSampler(parameters, budget, signal) {
   const model = record(params["renderModel"], "material params.renderModel");
   if (model["version"] !== 1)
     throw new TypeError("unsupported render material version");
+  const presentation = model["presentation"] ?? "surface";
+  if (typeof presentation !== "string" || !PRESENTATIONS.includes(presentation))
+    throw new TypeError("unsupported render material presentation");
+  const colorless = presentation !== "surface";
   const worldToMaterial = model["worldToMaterial"] === void 0 ? void 0 : materialFrame(model["worldToMaterial"]);
   let priority;
   let passes;
@@ -941,11 +946,12 @@ function createRenderMaterialSampler(parameters, budget, signal) {
       }
     ];
   }
-  const resources = Object.freeze([
+  const resources = Object.freeze(colorless ? [] : [
     ...new Set(passes.flatMap((pass) => activeLayers(pass.material).flatMap((layer) => layer.texturePath === null ? [] : [layer.texturePath])))
   ]);
   return Object.freeze({
     resources,
+    presentation,
     ...worldToMaterial === void 0 ? {} : { worldToMaterial },
     usesWorldProjection: passes.some((pass) => (
       // Rebasing preserves authored coordinates even for a layer that may be enabled later.
@@ -959,6 +965,8 @@ function createRenderMaterialSampler(parameters, budget, signal) {
       if (time.sequenceIndex !== void 0)
         integer(time.sequenceIndex, "material sequenceIndex", 0, 4294967295);
       sampleSignal?.throwIfAborted();
+      if (colorless)
+        return Object.freeze([]);
       return Object.freeze(passes.map((pass, index) => {
         sampleSignal?.throwIfAborted();
         return Object.freeze({

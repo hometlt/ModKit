@@ -11,11 +11,16 @@ import {
   readUvmModelStates,
   readUvmShadowMeshBindings,
   snapshotModelBillboards
-} from "../../../chunks/chunk-VUET23GH.js";
+} from "../../../chunks/chunk-R5C6OZ66.js";
 import {
+  readUvmContainer
+} from "../../../chunks/chunk-XV5KCSCI.js";
+import {
+  prepareUvmTextureImages,
   readCollisionMesh,
-  readUvmModel
-} from "../../../chunks/chunk-EUI2U3I2.js";
+  readUvmModel,
+  uvmImageTexels
+} from "../../../chunks/chunk-RD3KQHOX.js";
 import {
   createModelAnimationSampler,
   createModelPoseBlendSampler,
@@ -45,18 +50,21 @@ import {
 } from "../../../chunks/chunk-4IC3253U.js";
 import "../../../chunks/chunk-4FJ6AE2N.js";
 import {
-  readUvmContainer
-} from "../../../chunks/chunk-U4G5FYYR.js";
-import "../../../chunks/chunk-ZP6SGJCF.js";
-import {
-  SCENE_RENDERER_CONTRACT
-} from "../../../chunks/chunk-GGIVOOBZ.js";
+  encodePng
+} from "../../../chunks/chunk-C7BE5LFD.js";
 import {
   snapshotJson
 } from "../../../chunks/chunk-3YDGNEY2.js";
 import {
+  SCENE_RENDERER_CONTRACT
+} from "../../../chunks/chunk-GGIVOOBZ.js";
+import {
   diagnostic
-} from "../../../chunks/chunk-6CZX3ZS4.js";
+} from "../../../chunks/chunk-HUU44HII.js";
+import "../../../chunks/chunk-6M7FDQ66.js";
+import "../../../chunks/chunk-NUFRM6SI.js";
+import "../../../chunks/chunk-GZXTFMPE.js";
+import "../../../chunks/chunk-JVAXQGJ2.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 
 // packages/scene/dist/uvm/pose-samples.js
@@ -3247,12 +3255,13 @@ function buildMaterialDefines(material, options = {}) {
     uvSetCount: maxUvSet + 1,
     ...options.gpuSkinning === true ? { gpuSkinning: true } : {},
     ...options.hardwareInstancing === true ? { hardwareInstancing: true } : {},
-    ...options.bakedPoseInstancing === true && options.gpuSkinning === true && options.hardwareInstancing === true ? { bakedPoseInstancing: true } : {}
+    ...options.bakedPoseInstancing === true && options.gpuSkinning === true && options.hardwareInstancing === true ? { bakedPoseInstancing: true } : {},
+    ...options.sceneLighting === true ? { sceneLighting: true } : {}
   };
 }
 function canonicalDefineKey(defines) {
   const layerKeys = defines.layers.map((layer) => `${layer.slot}:${layer.hasTexture ? "t" : "c"}${layer.uvSource}.${layer.channels}.${layer.op}.${layer.teamColorMode}${layer.invert ? "i" : ""}${layer.clampResult ? "k" : ""}${layer.hasColorMultiply ? "m" : ""}${layer.hasColorAdd ? "a" : ""}${layer.hasAlphaFactor ? "f" : ""}${layer.hasUvTransform ? "u" : ""}${layer.fresnel ? `;fr=${layer.fresnel.mode},${layer.fresnel.exponent},${layer.fresnel.min},${layer.fresnel.maxOffset},${layer.fresnel.transformMode},${layer.fresnel.localTransform ? 1 : 0},${layer.fresnel.doNotMirror ? 1 : 0},${layer.fresnel.translation.join(",")},${layer.fresnel.invertMask.join(",")},${layer.fresnel.rotation.join(",")}` : ""}`).join("|");
-  return `layers[${layerKeys}];n=${defines.normalMapFormat}.${defines.normalMapSpace};spec=${defines.specMode};${defines.unshaded ? "U" : ""}${defines.doubleLambert ? "D" : ""}${defines.clampOutput ? "C" : ""}${defines.usesVertexColor ? "vc" : ""}${defines.usesVertexAlpha ? "va" : ""}${defines.alphaTest ? "at" : ""};uv=${defines.uvSetCount};${defines.gpuSkinning ? "skin" : ""}${defines.hardwareInstancing ? "inst" : ""}${defines.bakedPoseInstancing ? "baked" : ""}`;
+  return `layers[${layerKeys}];n=${defines.normalMapFormat}.${defines.normalMapSpace};spec=${defines.specMode};${defines.unshaded ? "U" : ""}${defines.doubleLambert ? "D" : ""}${defines.clampOutput ? "C" : ""}${defines.usesVertexColor ? "vc" : ""}${defines.usesVertexAlpha ? "va" : ""}${defines.alphaTest ? "at" : ""};uv=${defines.uvSetCount};${defines.gpuSkinning ? "skin" : ""}${defines.hardwareInstancing ? "inst" : ""}${defines.bakedPoseInstancing ? "baked" : ""}${defines.sceneLighting ? ";scene" : ""}`;
 }
 function standardBlendModeName(blendMode, alphaTestThreshold) {
   switch (blendMode) {
@@ -3411,9 +3420,10 @@ function composeStandardPixelCpu(input) {
     const detail = layers[detailSlot];
     if (!detail)
       continue;
-    const mask = layers[maskSlot] ? computeLayerColorCpu(layers[maskSlot], teamColor) : [1, 0, 0, 0];
+    const maskLayer = layers[maskSlot];
+    const mask = maskLayer ? computeLayerColorCpu(maskLayer, teamColor) : [1, 0, 0, 0];
     const factorOffset = blendIndex === 1 ? 0 : 4;
-    const factor = mask[0] * normalBlendFactors[factorOffset] + mask[1] * normalBlendFactors[factorOffset + 1] + mask[2] * normalBlendFactors[factorOffset + 2] + mask[3] * normalBlendFactors[factorOffset + 3];
+    const factor = mask[0] * (normalBlendFactors[factorOffset] ?? 0) + mask[1] * (normalBlendFactors[factorOffset + 1] ?? 0) + mask[2] * (normalBlendFactors[factorOffset + 2] ?? 0) + mask[3] * (normalBlendFactors[factorOffset + 3] ?? 0);
     normal = blendNormalCpu(normal, decodeNormalCpu(detail.texel, input.normalMapFormat ?? "dxt5nm"), factor);
   }
   let color = [0, 0, 0];
@@ -3512,9 +3522,23 @@ function composeStandardPixelCpu(input) {
     }
     return base;
   };
-  let final = [ambient[0], ambient[1], ambient[2], ambient[3]];
+  const scene = input.sceneLighting;
+  let final = scene === void 0 ? [ambient[0], ambient[1], ambient[2], ambient[3]] : [0, 0, 0, 0];
   if (input.unshaded) {
     const rgb = applyEmissive(applyEnvironment(color, 0, [0, 0, 0]));
+    final = [final[0] + rgb[0], final[1] + rgb[1], final[2] + rgb[2], final[3]];
+  } else if (scene !== void 0) {
+    const nl = dot3(normal, lightDir);
+    const lambert = input.doubleLambert ? clamp012(-1 + 2 * nl) : Math.max(nl, 0);
+    let spec = [0, 0, 0];
+    if (layers.specular && lambert > 0) {
+      const specColor = computeLayerColorCpu(layers.specular, teamColor);
+      const gloss = layers.gloss ? Math.max(computeLayerColorCpu(layers.gloss, teamColor)[0], 1e-3) : 1;
+      const factor = Math.pow(Math.max(-dot3(halfVec, normal), 0), Math.max(input.specularity * gloss, 1)) * input.specMult;
+      spec = input.specMode === 1 ? [specColor[3] * factor, specColor[3] * factor, specColor[3] * factor] : [specColor[0] * factor, specColor[1] * factor, specColor[2] * factor];
+    }
+    const lit = (channel) => color[channel] * (scene.ambientColor[channel] + scene.lightColor[channel] * lambert) + spec[channel] * scene.lightColor[channel] * lambert;
+    const rgb = applyEmissive(applyEnvironment([lit(0), lit(1), lit(2)], lambert, spec));
     final = [final[0] + rgb[0], final[1] + rgb[1], final[2] + rgb[2], final[3]];
   } else {
     const nl = dot3(normal, lightDir);
@@ -3868,6 +3892,10 @@ function buildStandardFragmentSource(defines, options = {}) {
     parts.push("uniform vec3 u_teamColor;");
   }
   parts.push("uniform vec4 u_ambient;");
+  if (defines.sceneLighting) {
+    parts.push("uniform vec3 u_sceneAmbientColor;");
+    parts.push("uniform vec3 u_sceneLightColor;");
+  }
   parts.push("uniform float u_specularity;");
   parts.push("uniform float u_specMult;");
   parts.push("uniform float u_emisMult;");
@@ -3892,7 +3920,7 @@ function buildStandardFragmentSource(defines, options = {}) {
     parts.push(layerFunction(layer));
   const body = [];
   body.push("void main() {");
-  body.push("  vec4 final = u_ambient;");
+  body.push(defines.sceneLighting ? "  vec4 final = vec4(0.0);" : "  vec4 final = u_ambient;");
   if (layerBySlot.has("height")) {
     body.push("  float parallaxSample = computeLayer_height().r - 0.5;");
     body.push("  vec3 parallaxView = normalize(v_viewDir);");
@@ -3995,6 +4023,21 @@ function buildStandardFragmentSource(defines, options = {}) {
   if (defines.unshaded) {
     body.push("  vec3 shaded = color;");
     body.push(...environmentBlock("  ", "shaded", "0.0", "vec3(0.0)"));
+    body.push(...emissiveBlock("  ", "shaded"));
+    body.push("  final.rgb += shaded;");
+  } else if (defines.sceneLighting) {
+    body.push(defines.doubleLambert ? "  float lambert = clamp(-1.0 + 2.0 * dot(normal, v_lightDir), 0.0, 1.0);" : "  float lambert = max(dot(normal, v_lightDir), 0.0);");
+    const specular = layerBySlot.get("specular");
+    if (specular) {
+      body.push("  vec4 specColor = computeLayer_specular();");
+      body.push(layerBySlot.has("gloss") ? "  float gloss = max(computeLayer_gloss().r, 0.001);" : "  float gloss = 1.0;");
+      body.push("  float specFactor = lambert > 0.0 ? pow(max(-dot(v_halfVec, normal), 0.0), max(u_specularity * gloss, 1.0)) * u_specMult : 0.0;");
+      body.push(defines.specMode === 1 ? "  vec3 spec = vec3(specColor.a) * specFactor;" : "  vec3 spec = specColor.rgb * specFactor;");
+    } else {
+      body.push("  vec3 spec = vec3(0.0);");
+    }
+    body.push("  vec3 shaded = color * (u_sceneAmbientColor + u_sceneLightColor * lambert) + spec * u_sceneLightColor * lambert;");
+    body.push(...environmentBlock("  ", "shaded", "lambert", "spec"));
     body.push(...emissiveBlock("  ", "shaded"));
     body.push("  final.rgb += shaded;");
   } else {
@@ -4191,7 +4234,63 @@ void main() {
 }
 
 // packages/scene/dist/uvm/projector-material.js
-function projectorMaterial(base, id, alpha, maxNodes, maxBytes, signal) {
+function effectSurfaceMaterial(base, id, maxNodes, maxBytes, texturePath, signal) {
+  const simple = () => {
+    const material = simpleEffectMaterial(base, id, 1, maxNodes, maxBytes, signal);
+    return material && {
+      ...material,
+      simpleEffect: {
+        ...material.simpleEffect,
+        doubleSided: true,
+        ...texturePath === void 0 ? {} : { textureResource: texturePath }
+      }
+    };
+  };
+  if (base.shader?.id !== "modkit.render-material.v1")
+    return simple();
+  const sampler = createRenderMaterialSampler(base.shader.parameters, { maxNodes, maxDepth: 128, maxBytes }, signal);
+  if (sampler.presentation !== "surface")
+    return void 0;
+  if (texturePath !== void 0 && !sampler.resources.includes(texturePath))
+    return simple();
+  const model = object(base.shader.parameters["renderModel"], "render model");
+  const twoSided = (material) => {
+    const standard = object(material, "standard");
+    const layers = standard["layers"];
+    return {
+      ...standard,
+      twoSided: true,
+      ...layers === void 0 ? {} : {
+        layers: Object.fromEntries(Object.entries(object(layers, "standard layers")).map(([slot, raw]) => {
+          const layer = object(raw, `standard layer ${slot}`);
+          return [slot, layer["uvSource"] === 6 ? { ...layer, uvSource: 0 } : layer];
+        }))
+      }
+    };
+  };
+  const renderModel = {
+    ...model,
+    ...model["standard"] === void 0 ? {} : { standard: twoSided(model["standard"]) },
+    ...model["composite"] === void 0 ? {} : {
+      composite: {
+        ...object(model["composite"], "composite"),
+        passes: array(object(model["composite"], "composite"), "passes").map((pass) => ({
+          ...object(pass, "pass"),
+          material: twoSided(object(pass, "pass")["material"])
+        }))
+      }
+    }
+  };
+  const { simpleEffect, ...rest } = base;
+  void simpleEffect;
+  return {
+    ...rest,
+    id,
+    doubleSided: true,
+    shader: { ...base.shader, parameters: { ...base.shader.parameters, renderModel } }
+  };
+}
+function simpleEffectMaterial(base, id, alpha, maxNodes, maxBytes, signal) {
   if (base.shader === void 0)
     return {
       ...base,
@@ -4210,7 +4309,9 @@ function projectorMaterial(base, id, alpha, maxNodes, maxBytes, signal) {
     };
   if (base.shader.id !== "modkit.render-material.v1")
     throw new TypeError("projector requires an explicit simple material projection for this shader vocabulary");
-  createRenderMaterialSampler(base.shader.parameters, { maxNodes, maxDepth: 128, maxBytes }, signal);
+  const sampler = createRenderMaterialSampler(base.shader.parameters, { maxNodes, maxDepth: 128, maxBytes }, signal);
+  if (sampler.presentation !== "surface")
+    return void 0;
   const model = object(base.shader.parameters["renderModel"], "render model");
   const standards = model["standard"] === void 0 ? array(object(model["composite"], "composite"), "passes").map((pass) => object(pass, "pass")["material"]) : [model["standard"]];
   const standard = object(standards[0], "primary standard");
@@ -4234,6 +4335,25 @@ function projectorMaterial(base, id, alpha, maxNodes, maxBytes, signal) {
   };
   return { ...base, id, baseColor: [1, 1, 1, alpha], shading: "unlit", simpleEffect };
 }
+function projectorMaterial(base, id, alpha, maxNodes, maxBytes, signal) {
+  if (base.shader?.id === "modkit.render-material.v1") {
+    const model = object(base.shader.parameters["renderModel"], "render model");
+    const standard = model["standard"];
+    if (standard !== void 0) {
+      const layers = object(object(standard, "standard")["layers"] ?? {}, "standard layers");
+      const animatedAlpha = ["alpha1", "alpha2"].some((slot) => {
+        const raw = layers[slot];
+        if (raw === void 0)
+          return false;
+        const layer = object(raw, `standard layer ${slot}`);
+        return ["colorAdd", "colorMultiply", "uvOffset", "uvAngle", "uvTiling"].some((key) => Array.isArray(object(layer[key] ?? {}, `${slot} ${key}`)["sequenceTracks"]));
+      });
+      if (animatedAlpha)
+        return effectSurfaceMaterial(base, id, maxNodes, maxBytes, void 0, signal);
+    }
+  }
+  return simpleEffectMaterial(base, id, alpha, maxNodes, maxBytes, signal);
+}
 
 // packages/scene/dist/uvm/projector-receivers.js
 var component = (values, index) => {
@@ -4244,6 +4364,8 @@ var component = (values, index) => {
 };
 var dot = (x, y, z, v) => x * v[0] + y * v[1] + z * v[2];
 var clamp = (value) => Math.min(1, Math.max(0, value));
+var finiteReceiverPositions = /* @__PURE__ */ new WeakSet();
+var highestReceiverIndex = /* @__PURE__ */ new WeakMap();
 function clipProjectorReceivers(frame, receivers, options) {
   for (const value of [options.maxBytes, options.maxTriangles])
     if (!Number.isSafeInteger(value) || value < 0)
@@ -4276,14 +4398,43 @@ function clipProjectorReceivers(frame, receivers, options) {
     const count = primitive.indices?.length ?? primitive.positions.length / 3;
     if (count % 3 !== 0 || (triangles += count / 3) > options.maxTriangles)
       throw new RangeError("projector receiver work exceeds budget");
-    for (const index of primitive.indices ?? [])
-      if (index >= primitive.positions.length / 3)
+    if (primitive.indices !== void 0) {
+      let highest = highestReceiverIndex.get(primitive.indices);
+      if (highest === void 0) {
+        highest = -1;
+        for (const index of primitive.indices)
+          if (index > highest)
+            highest = index;
+        highestReceiverIndex.set(primitive.indices, highest);
+      }
+      if (highest >= primitive.positions.length / 3)
         throw new RangeError("projector receiver index absent");
-    for (const value of primitive.positions)
-      if (!Number.isFinite(value))
-        throw new TypeError("nonfinite projector receiver");
+    }
+    if (!finiteReceiverPositions.has(primitive.positions)) {
+      for (const value of primitive.positions)
+        if (!Number.isFinite(value))
+          throw new TypeError("nonfinite projector receiver");
+      finiteReceiverPositions.add(primitive.positions);
+    }
   }
   const first = new Float32Array(60), second = new Float32Array(60);
+  const bounded = receivers.map((receiver) => {
+    const inverse = invertMaterialFrame(receiver.transform);
+    const minimum = [Infinity, Infinity, Infinity], maximum = [-Infinity, -Infinity, -Infinity];
+    for (const depth of [frame.near, frame.far]) {
+      for (const x of frame.projectionType === "perspective" ? [-depth * frame.tangentX, depth * frame.tangentX] : [frame.left, frame.rightExtent]) {
+        for (const y of frame.projectionType === "perspective" ? [-depth * frame.tangentY, depth * frame.tangentY] : [frame.bottom, frame.top]) {
+          const point = frame.origin.map((value, axis) => value + frame.rightAxis[axis] * x + frame.upAxis[axis] * y + frame.forwardAxis[axis] * depth);
+          for (let axis = 0; axis < 3; axis++) {
+            const value = inverse[axis] * point[0] + inverse[4 + axis] * point[1] + inverse[8 + axis] * point[2] + inverse[12 + axis];
+            minimum[axis] = Math.min(minimum[axis], value - 1e-5);
+            maximum[axis] = Math.max(maximum[axis], value + 1e-5);
+          }
+        }
+      }
+    }
+    return { ...receiver, minimum, maximum };
+  });
   const distance = (vertices2, vertex, plane) => {
     const x = component(vertices2, vertex * 6 + 3), y = component(vertices2, vertex * 6 + 4), z = component(vertices2, vertex * 6 + 5);
     if (plane === 0)
@@ -4345,10 +4496,23 @@ function clipProjectorReceivers(frame, receivers, options) {
   };
   const visit = (write) => {
     let vertices2 = 0;
-    for (const { primitive, transform: m } of receivers) {
+    for (const { primitive, transform: m, minimum, maximum } of bounded) {
       const count = primitive.indices?.length ?? primitive.positions.length / 3;
       for (let triangle = 0; triangle < count; triangle += 3) {
         options.signal?.throwIfAborted();
+        const a = (primitive.indices?.[triangle] ?? triangle) * 3;
+        const b = (primitive.indices?.[triangle + 1] ?? triangle + 1) * 3;
+        const c = (primitive.indices?.[triangle + 2] ?? triangle + 2) * 3;
+        const p = primitive.positions;
+        let outside = false;
+        for (let axis = 0; axis < 3; axis++) {
+          if (Math.max(p[a + axis], p[b + axis], p[c + axis]) < minimum[axis] || Math.min(p[a + axis], p[b + axis], p[c + axis]) > maximum[axis]) {
+            outside = true;
+            break;
+          }
+        }
+        if (outside)
+          continue;
         for (let vertex = 0; vertex < 3; vertex++) {
           const index = primitive.indices?.[triangle + vertex] ?? triangle + vertex;
           const x = component(primitive.positions, index * 3), y = component(primitive.positions, index * 3 + 1), z = component(primitive.positions, index * 3 + 2);
@@ -4519,10 +4683,16 @@ function createUvmProjectorFrame(document2, options) {
       valueAt(matrix, 13) + basis[0][1] * offset[0] + basis[1][1] * offset[1] + basis[2][1] * offset[2],
       valueAt(matrix, 14) + basis[0][2] * offset[0] + basis[1][2] * offset[1] + basis[2][2] * offset[2]
     ];
-    const projectionType = entry["projectionType"];
-    if (projectionType !== "orthographic" && projectionType !== "perspective")
+    const authoredProjectionType = entry["projectionType"];
+    if (authoredProjectionType !== "orthographic" && authoredProjectionType !== "perspective")
       throw new TypeError("unknown projector type");
+    let projectionType = authoredProjectionType;
     const near = scalar(entry["near"]), far = scalar(entry["far"]), tangentY = Math.tan(fov(scalar(entry["fieldOfView"])) * 0.5);
+    const zBottom = scalar(entry["boxOffsetZBottom"]), zTop = scalar(entry["boxOffsetZTop"]);
+    const boxed = near === 0 && far === 0 && zTop > zBottom;
+    if (boxed)
+      projectionType = "orthographic";
+    const forwardAxis = rotate([0, 0, 1]);
     let left = Math.min(scalar(entry["boxOffsetXLeft"]), scalar(entry["boxOffsetXRight"])), rightExtent = Math.max(scalar(entry["boxOffsetXLeft"]), scalar(entry["boxOffsetXRight"]));
     let bottom = Math.min(scalar(entry["boxOffsetYBack"]), scalar(entry["boxOffsetYFront"])), top = Math.max(scalar(entry["boxOffsetYBack"]), scalar(entry["boxOffsetYFront"]));
     const aspect = Math.max(1e-3, Math.abs(scalar(entry["aspectRatio"])) || 1), distance = Math.max(1e-3, Math.abs(near) || 0.01);
@@ -4538,12 +4708,12 @@ function createUvmProjectorFrame(document2, options) {
     }
     const frame = {
       projectionType,
-      origin,
+      origin: boxed ? [origin[0] + forwardAxis[0] * zBottom, origin[1] + forwardAxis[1] * zBottom, origin[2] + forwardAxis[2] * zBottom] : origin,
       rightAxis: rotate([1, 0, 0]),
       upAxis: rotate([0, 1, 0]),
-      forwardAxis: rotate([0, 0, 1]),
+      forwardAxis,
       near: Math.max(1e-4, Math.min(Math.abs(near), Math.abs(far))),
-      far: Math.max(1e-3, Math.max(Math.abs(near), Math.abs(far))),
+      far: boxed ? zTop - zBottom : Math.max(1e-3, Math.max(Math.abs(near), Math.abs(far))),
       left,
       rightExtent,
       bottom,
@@ -4566,7 +4736,10 @@ function createUvmProjectorFrame(document2, options) {
     if (geometry.indices.length === 0)
       continue;
     const id = `uvm-projector-${index}`;
-    materials.push(projectorMaterial(base, id, alpha, options.maxNodes - work, options.maxBytes - bytes, options.signal));
+    const material = projectorMaterial(base, id, alpha, options.maxNodes - work, options.maxBytes - bytes, options.signal);
+    if (material === void 0)
+      continue;
+    materials.push(material);
     primitives.push({
       id,
       materialId: id,
@@ -4575,7 +4748,8 @@ function createUvmProjectorFrame(document2, options) {
       indices: geometry.indices,
       textureCoordinates: geometry.textureCoordinates,
       transform: Float32Array.from(toWorld),
-      depthBias: { slopeScale: -1, units: -1 }
+      depthBias: { slopeScale: -1, units: -1 },
+      ...material.simpleEffect === void 0 ? { tint: [1, 1, 1, alpha] } : {}
     });
     for (const key of [
       "falloff",
@@ -4614,7 +4788,10 @@ function createUvmProjectorFrame(document2, options) {
       if (geometry.indices.length === 0)
         continue;
       const id = `uvm-projector-impact-${splat.slot}`;
-      materials.push(projectorMaterial(base, id, splat.alpha, options.maxNodes - work, options.maxBytes - bytes, options.signal));
+      const material = projectorMaterial(base, id, splat.alpha, options.maxNodes - work, options.maxBytes - bytes, options.signal);
+      if (material === void 0)
+        continue;
+      materials.push(material);
       primitives.push({
         id,
         materialId: id,
@@ -4623,7 +4800,8 @@ function createUvmProjectorFrame(document2, options) {
         indices: geometry.indices,
         textureCoordinates: geometry.textureCoordinates,
         transform: Float32Array.from(toWorld),
-        depthBias: { slopeScale: -1, units: -1 }
+        depthBias: { slopeScale: -1, units: -1 },
+        ...material.simpleEffect === void 0 ? { tint: [1, 1, 1, splat.alpha] } : {}
       });
     }
   }
@@ -18146,6 +18324,37 @@ var reversedFuncs = {
   [GreaterEqualDepth]: LessEqualDepth
 };
 
+// packages/scene/dist/materials/environment.js
+function vector2(value, length, name) {
+  if (!Array.isArray(value) || value.length !== length)
+    throw new TypeError(`${name} requires ${length} finite float32 components`);
+  const captured = [];
+  for (let index = 0; index < length; index++) {
+    const item = value[index];
+    if (typeof item !== "number" || !Number.isFinite(item) || !Number.isFinite(Math.fround(item)))
+      throw new TypeError(`${name} requires ${length} finite float32 components`);
+    captured.push(Math.fround(item));
+  }
+  return Object.freeze(captured);
+}
+function snapshotEnvironment(value) {
+  if (value === void 0)
+    return void 0;
+  if (value === null || typeof value !== "object" || Array.isArray(value) || Object.keys(value).some((key) => key !== "worldToEnvironment"))
+    throw new TypeError("invalid environment frame");
+  const worldToEnvironment = vector2(Reflect.get(value, "worldToEnvironment"), 16, "worldToEnvironment");
+  if ([3, 7, 11].some((index) => worldToEnvironment[index] !== 0) || worldToEnvironment[15] !== 1)
+    throw new TypeError("worldToEnvironment must be affine");
+  const envelope = Math.max(...[0, 1, 2].map((row) => [0, 4, 8, 12].reduce((sum, column) => sum + Math.abs(worldToEnvironment[row + column] ?? 0), 0)));
+  if (envelope + 6 * envelope ** 3 > 34028234663852886e22 / 2)
+    throw new TypeError("worldToEnvironment exceeds safe float32 reflection arithmetic");
+  return Object.freeze({ worldToEnvironment });
+}
+function snapshotEyePosition(value) {
+  return value === void 0 ? void 0 : vector2(value, 3, "eyePosition");
+}
+var isEnvironmentBinding = (binding) => binding.dimension === "cube" && (binding.slot === "envi" || binding.slot === "enviMask");
+
 // packages/scene/dist/uvm/cameras.js
 function numbers(value, count, label) {
   if (!Array.isArray(value) && !(value instanceof Float32Array) || value.length !== count || !Array.from(value).every((component2) => typeof component2 === "number" && Number.isFinite(component2)))
@@ -18191,7 +18400,7 @@ function resolveUvmCamera(document2, input, options) {
       throw new TypeError("camera matrix request contains an unsupported field");
     const viewProjection = Float32Array.from(numbers(request["viewProjection"], 16, "viewProjection"));
     const view2 = request["viewMatrix"] === void 0 ? void 0 : Float32Array.from(numbers(request["viewMatrix"], 16, "viewMatrix"));
-    const eye = request["eyePosition"] === void 0 ? void 0 : numbers(request["eyePosition"], 3, "eyePosition");
+    const eye = snapshotEyePosition(request["eyePosition"]);
     if (view2 !== void 0 && (view2[3] !== 0 || view2[7] !== 0 || view2[11] !== 0 || view2[15] !== 1))
       throw new TypeError("camera viewMatrix must be affine");
     if (!viewProjection.every(Number.isFinite) || view2 !== void 0 && !view2.every(Number.isFinite))
@@ -18886,81 +19095,11 @@ function createModelSceneSampler(projection2, options = {}) {
 }
 
 // packages/scene/dist/output/png.js
-var SIGNATURE = Object.freeze([137, 80, 78, 71, 13, 10, 26, 10]);
-var ascii = new TextEncoder();
-function crc32(bytes, start, end) {
-  let crc = 4294967295;
-  for (let offset = start; offset < end; offset += 1) {
-    crc ^= bytes[offset] ?? 0;
-    for (let bit = 0; bit < 8; bit += 1)
-      crc = crc >>> 1 ^ (crc & 1 ? 3988292384 : 0);
-  }
-  return (crc ^ 4294967295) >>> 0;
-}
-function chunkBytes(type, data) {
-  const out = new Uint8Array(12 + data.byteLength);
-  const view = new DataView(out.buffer);
-  view.setUint32(0, data.byteLength, false);
-  out.set(ascii.encode(type), 4);
-  out.set(data, 8);
-  view.setUint32(8 + data.byteLength, crc32(out, 4, 8 + data.byteLength), false);
-  return out;
-}
-async function deflate(bytes, signal) {
-  if (typeof CompressionStream !== "function") {
-    throw new TypeError("no portable zlib encoder is available");
-  }
-  const reader = new Blob([bytes]).stream().pipeThrough(new CompressionStream("deflate")).getReader();
-  const chunks = [];
-  let total = 0;
-  try {
-    while (true) {
-      signal?.throwIfAborted();
-      const chunk = await reader.read();
-      if (chunk.done)
-        break;
-      chunks.push(chunk.value);
-      total += chunk.value.byteLength;
-    }
-  } finally {
-    reader.releaseLock();
-  }
-  const out = new Uint8Array(total);
-  let offset = 0;
-  for (const chunk of chunks) {
-    out.set(chunk, offset);
-    offset += chunk.byteLength;
-  }
-  return out;
-}
 async function encodeRgbaPng(frame, signal) {
   if (!Number.isSafeInteger(frame.width) || frame.width <= 0 || !Number.isSafeInteger(frame.height) || frame.height <= 0 || !(frame.rgba instanceof Uint8Array) || frame.rgba.byteLength !== frame.width * frame.height * 4) {
     throw new TypeError("PNG input must be a tightly packed positive RGBA8 frame");
   }
-  const rowBytes = frame.width * 4;
-  const raw = new Uint8Array((rowBytes + 1) * frame.height);
-  for (let row = 0; row < frame.height; row += 1) {
-    raw.set(frame.rgba.subarray(row * rowBytes, (row + 1) * rowBytes), row * (rowBytes + 1) + 1);
-  }
-  const header = new Uint8Array(13);
-  const view = new DataView(header.buffer);
-  view.setUint32(0, frame.width, false);
-  view.setUint32(4, frame.height, false);
-  header[8] = 8;
-  header[9] = 6;
-  const parts = [
-    Uint8Array.from(SIGNATURE),
-    chunkBytes("IHDR", header),
-    chunkBytes("IDAT", await deflate(raw, signal)),
-    chunkBytes("IEND", new Uint8Array(0))
-  ];
-  const out = new Uint8Array(parts.reduce((total, part) => total + part.byteLength, 0));
-  let offset = 0;
-  for (const part of parts) {
-    out.set(part, offset);
-    offset += part.byteLength;
-  }
-  return out;
+  return encodePng(frame.width, frame.height, frame.rgba, signal);
 }
 
 // node_modules/.pnpm/three@0.180.0/node_modules/three/examples/jsm/math/ConvexHull.js
@@ -20076,7 +20215,7 @@ function finite2(value, label) {
     throw new TypeError(`invalid spline ${label}`);
   return value;
 }
-function vector2(value, label) {
+function vector5(value, label) {
   if (!Array.isArray(value) || value.length !== 3)
     throw new TypeError(`spline ${label} requires a three-component vector`);
   return value.map((component2) => finite2(component2, label));
@@ -20154,7 +20293,7 @@ function readUvmEffectSplines(entry, kind, options) {
     if (points !== void 0) {
       if (!Array.isArray(points))
         throw new TypeError("spline points must be an array");
-      values["emitShapePoints"] = points.map((point) => vector2(point, "point"));
+      values["emitShapePoints"] = points.map((point) => vector5(point, "point"));
       particleWork = points.length * 32;
     }
     if (entry["emitShape"] === "spline" && (!Array.isArray(points) || points.length === 0))
@@ -20179,7 +20318,7 @@ function readUvmEffectSplines(entry, kind, options) {
       values["emitShapeCutoutRadius"] = radius;
     }
     if (owned["emitShapeCutoutSize"] !== void 0) {
-      const size = vector2(owned["emitShapeCutoutSize"], "cutout size");
+      const size = vector5(owned["emitShapeCutoutSize"], "cutout size");
       if (size.some((value) => value < 0))
         throw new TypeError("negative cutout size");
       values["emitShapeCutoutSize"] = size;
@@ -20187,7 +20326,7 @@ function readUvmEffectSplines(entry, kind, options) {
   } else {
     for (const key of ["emissionOffset", "emissionVector"])
       if (owned[key] !== void 0)
-        values[key] = vector2(owned[key], key);
+        values[key] = vector5(owned[key], key);
     if (owned["lengthAndTime"] !== void 0) {
       if (typeof owned["lengthAndTime"] !== "boolean")
         throw new TypeError("ribbon lengthAndTime must be boolean");
@@ -20225,8 +20364,8 @@ function readUvmEffectSplines(entry, kind, options) {
         nodeIndices.push(node);
         const result = {
           boneIndex: node,
-          emissionOffset: vector2(endpoint["emissionOffset"], "endpoint offset"),
-          emissionVector: vector2(endpoint["emissionVector"], "endpoint vector")
+          emissionOffset: vector5(endpoint["emissionOffset"], "endpoint offset"),
+          emissionVector: vector5(endpoint["emissionVector"], "endpoint vector")
         };
         for (const key of scalars)
           result[key] = finite2(endpoint[key], key);
@@ -20862,7 +21001,7 @@ function scalar2(emitter, key, sequence, time, fallback) {
   const legacy = emitter.animation?.[key];
   return sampleEffectSequenceScalar(tracks(emitter, key), legacy, sequence, time, fallback);
 }
-function vector5(emitter, key, sequence, time, fallback) {
+function vector6(emitter, key, sequence, time, fallback) {
   const value = sampleEffectSequenceVector(tracks(emitter, key), sequence, time, fallback);
   return [finite4(value[0]), finite4(value[1]), finite4(value[2])];
 }
@@ -20903,8 +21042,8 @@ function createUvmRibbonGeometry(state, emitters, options) {
       return (finite4(state.vertices[offset]) + finite4(state.vertices[offset + 3])) * 0.5;
     };
     const rows = Math.max(1, Math.trunc(emitter.rows ?? 1)), columns = Math.max(1, Math.trunc(emitter.columns ?? 1));
-    const fallback = vector5(emitter, "color", sequence, options.time, emitter.color ?? [0.45, 0.85, 1]), fallbackAlpha = scalar2(emitter, "alpha", sequence, options.time, emitter.alpha ?? 1);
-    const colorStages = ["Start", "Middle", "End"].map((suffix, index) => vector5(emitter, `segmentColor${suffix}`, sequence, options.time, emitter.segmentColors?.[index] ?? fallback));
+    const fallback = vector6(emitter, "color", sequence, options.time, emitter.color ?? [0.45, 0.85, 1]), fallbackAlpha = scalar2(emitter, "alpha", sequence, options.time, emitter.alpha ?? 1);
+    const colorStages = ["Start", "Middle", "End"].map((suffix, index) => vector6(emitter, `segmentColor${suffix}`, sequence, options.time, emitter.segmentColors?.[index] ?? fallback));
     const alphaStages = ["Start", "Middle", "End"].map((suffix, index) => scalar2(emitter, `segmentAlpha${suffix}`, sequence, options.time, emitter.segmentAlphas?.[index] ?? fallbackAlpha));
     const fallbackWidth = scalar2(emitter, "heightAbove", sequence, options.time, emitter.heightAbove ?? 0.5) + scalar2(emitter, "heightBelow", sequence, options.time, emitter.heightBelow ?? 0.5);
     const widthStages = ["Start", "Middle", "End"].map((suffix, index) => scalar2(emitter, `width${suffix}`, sequence, options.time, emitter.widths?.[index] ?? fallbackWidth));
@@ -21437,7 +21576,7 @@ function number(value, fallback) {
     throw new TypeError("effect scalar must be finite");
   return value;
 }
-function vector6(value, fallback) {
+function vector7(value, fallback) {
   if (value === void 0)
     return fallback;
   if (!Array.isArray(value) || value.length !== 3)
@@ -21540,6 +21679,10 @@ function createUvmEffectFrame(document2, options) {
           if (!Array.isArray(value2) || value2.some((path) => typeof path !== "string" || !path || path.includes("\0")))
             throw new TypeError("model particle paths must be nonempty logical strings");
           output[key] = [...value2];
+        } else if (key === "texturePath") {
+          if (typeof value2 !== "string" || value2.trim() === "" || value2.includes("\0"))
+            throw new TypeError(`${label}.texturePath must be a nonempty logical string`);
+          output[key] = value2;
         } else if (numeric.has(key)) {
           if ([
             "maxCollisionEvents",
@@ -21564,7 +21707,7 @@ function createUvmEffectFrame(document2, options) {
             throw new TypeError(`${label}.${key} must be boolean`);
           output[key] = value2;
         } else if (key === "gravity")
-          output[key] = kind === "particles" ? number(value2, 0) : [...vector6(value2, [0, 0, 0])];
+          output[key] = kind === "particles" ? number(value2, 0) : [...vector7(value2, [0, 0, 0])];
         else if (key === "emitShape" && typeof value2 === "string" && shapeNames.has(value2))
           output[key] = value2;
         else if (key === "orientationMode" && typeof value2 === "string" && orientationNames.has(value2))
@@ -21602,16 +21745,16 @@ function createUvmEffectFrame(document2, options) {
           output[key] = {
             offset: pair(uv["offset"]),
             tiling: pair(uv["tiling"]),
-            angle: [...vector6(uv["angle"], [0, 0, 0])],
+            angle: [...vector7(uv["angle"], [0, 0, 0])],
             threshold: number(uv["threshold"], 0)
           };
         } else if (structures.has(key)) {
           if (key === "emitShapeSize")
-            output[key] = [...vector6(value2, [0, 0, 0])];
+            output[key] = [...vector7(value2, [0, 0, 0])];
           if (key === "segmentColors" || key === "segmentColorsRandom") {
             if (!Array.isArray(value2) || value2.length !== 3)
               throw new TypeError("effect colors require three stages");
-            output[key] = value2.map((item) => [...vector6(item, [1, 1, 1])]);
+            output[key] = value2.map((item) => [...vector7(item, [1, 1, 1])]);
           }
           if ([
             "segmentAlphas",
@@ -21622,9 +21765,9 @@ function createUvmEffectFrame(document2, options) {
             "tailUvAnim",
             "tailDecayUvAnim"
           ].includes(key))
-            output[key] = [...vector6(value2, [1, 1, 1])];
+            output[key] = [...vector7(value2, [1, 1, 1])];
           if (key === "widths" || key === "color")
-            output[key] = [...vector6(value2, [1, 1, 1])];
+            output[key] = [...vector7(value2, [1, 1, 1])];
           if ([
             "lifecycleSize",
             "lifecycleSizeRandom",
@@ -21633,9 +21776,9 @@ function createUvmEffectFrame(document2, options) {
           ].includes(key)) {
             const size = object(value2, "effect lifecycle size");
             output[key] = {
-              start: [...vector6(size["start"], [1, 1, 1])],
-              middle: [...vector6(size["middle"], [1, 1, 1])],
-              end: [...vector6(size["end"], [1, 1, 1])],
+              start: [...vector7(size["start"], [1, 1, 1])],
+              middle: [...vector7(size["middle"], [1, 1, 1])],
+              end: [...vector7(size["end"], [1, 1, 1])],
               timeMiddle: number(size["timeMiddle"], 0.5)
             };
           }
@@ -21845,20 +21988,10 @@ function createUvmEffectFrame(document2, options) {
     const base = materialById.get(`material-${emitter.materialIndex}`);
     if (base === void 0)
       throw new TypeError("particle geometry material absent");
-    const id = `uvm-effect-particle-${geometry.slot}`, material = projectorMaterial(base, id, 1, options.maxNodes - emitterCount - meshNodes - primitives.length, options.maxBytes - bytes, signal), uv = emitter.screenSpaceUv;
-    materials.push(uv === void 0 ? material : {
-      ...material,
-      simpleEffect: {
-        ...material.simpleEffect,
-        screenUv: {
-          offset: uv.offset,
-          tiling: uv.tiling,
-          angle: uv.angle[2],
-          threshold: Math.max(0, uv.threshold)
-        }
-      }
-    });
-    primitives.push({
+    const id = `uvm-effect-particle-${geometry.slot}`, material = effectSurfaceMaterial(base, id, options.maxNodes - emitterCount - meshNodes - primitives.length, options.maxBytes - bytes, emitter.texturePath, signal), uv = emitter.screenSpaceUv;
+    if (material === void 0)
+      continue;
+    const geometryPrimitive = {
       id,
       materialId: id,
       topology: "triangles",
@@ -21867,7 +22000,40 @@ function createUvmEffectFrame(document2, options) {
       textureCoordinates: geometry.textureCoordinates,
       colors: geometry.colors,
       transform: Float32Array.from(toWorld)
+    };
+    if (material.simpleEffect === void 0) {
+      const c = geometry.colors;
+      materials.push(material);
+      primitives.push({
+        ...geometryPrimitive,
+        textureCoordinateSets: [1, 2, 3].map((set) => ({
+          set,
+          coordinates: geometry.textureCoordinates
+        })),
+        tint: [c[0] ?? 1, c[1] ?? 1, c[2] ?? 1, c[3] ?? 1]
+      });
+      continue;
+    }
+    const texturedMaterial = {
+      ...material,
+      simpleEffect: {
+        ...material.simpleEffect,
+        ...emitter.texturePath === void 0 ? {} : { textureResource: emitter.texturePath }
+      }
+    };
+    materials.push(uv === void 0 ? texturedMaterial : {
+      ...texturedMaterial,
+      simpleEffect: {
+        ...texturedMaterial.simpleEffect,
+        screenUv: {
+          offset: uv.offset,
+          tiling: uv.tiling,
+          angle: uv.angle[2],
+          threshold: Math.max(0, uv.threshold)
+        }
+      }
     });
+    primitives.push(geometryPrimitive);
   }
   const ribbonGeometry = createUvmRibbonGeometry(simulation.ribbons, ribbons, {
     cameraPosition: cameraLocal,
@@ -21888,7 +22054,37 @@ function createUvmEffectFrame(document2, options) {
     if (base === void 0)
       throw new TypeError("ribbon material absent");
     const id = `uvm-effect-ribbon-${ribbonOrdinals[geometry.emitter]}`;
-    materials.push(projectorMaterial(base, id, 1, options.maxNodes - emitterCount - meshNodes - primitives.length, options.maxBytes - bytes, signal));
+    const material = effectSurfaceMaterial(base, id, options.maxNodes - emitterCount - meshNodes - primitives.length, options.maxBytes - bytes, emitter.texturePath, signal);
+    if (material === void 0)
+      continue;
+    if (material.simpleEffect === void 0) {
+      const c = geometry.colors;
+      materials.push(material);
+      primitives.push({
+        id,
+        materialId: id,
+        topology: "triangles",
+        positions: geometry.positions,
+        indices: geometry.indices,
+        textureCoordinates: geometry.textureCoordinates,
+        textureCoordinateSets: [1, 2, 3].map((set) => ({
+          set,
+          coordinates: geometry.textureCoordinates
+        })),
+        colors: geometry.colors,
+        tint: [c[0] ?? 1, c[1] ?? 1, c[2] ?? 1, c[3] ?? 1],
+        transform: Float32Array.from(toWorld)
+      });
+      continue;
+    }
+    materials.push({
+      ...material,
+      simpleEffect: {
+        ...material.simpleEffect,
+        doubleSided: true,
+        ...emitter.texturePath === void 0 ? {} : { textureResource: emitter.texturePath }
+      }
+    });
     primitives.push({
       id,
       materialId: id,
@@ -21902,123 +22098,6 @@ function createUvmEffectFrame(document2, options) {
   }
   collisionSplats = captureCollisionSplats(simulation.projectorSplats, options.maxNodes - emitterCount - meshNodes - primitives.length, options.maxBytes - bytes, signal);
   return { primitives, materials, diagnostics, collisionSplats, modelParticles };
-}
-
-// packages/scene/dist/uvm/images.js
-function prepareUvmTextureImages(document2, binary, indices, maxEmbeddedBytes, signal) {
-  if (!Number.isSafeInteger(maxEmbeddedBytes) || maxEmbeddedBytes < 0)
-    throw new TypeError("invalid image budget");
-  const textures = array(document2, "textures"), images = array(document2, "images"), views = array(document2, "bufferViews");
-  const captured = /* @__PURE__ */ new Map();
-  let remaining = maxEmbeddedBytes;
-  return indices.map((textureIndex) => {
-    signal?.throwIfAborted();
-    const texture = object(textures[safeIndex(textureIndex, textures.length, "texture")], "texture");
-    const imageIndex = safeIndex(texture["source"], images.length, "texture image");
-    let source = captured.get(imageIndex);
-    if (source === void 0) {
-      const image = object(images[imageIndex], "image");
-      const mediaType = image["mimeType"] === void 0 ? void 0 : string(image["mimeType"], "image mimeType");
-      if (image["uri"] === void 0 === (image["bufferView"] === void 0))
-        throw new TypeError("UVM image requires exactly one URI or bufferView");
-      if (image["uri"] !== void 0) {
-        const uri = string(image["uri"], "image URI");
-        if (uri.startsWith("data:")) {
-          const comma = uri.indexOf(",");
-          if (comma < 0)
-            throw new TypeError("invalid image data URI");
-          const declaration = uri.slice(5, comma), payload = uri.slice(comma + 1);
-          const declaredType = declaration.split(";")[0];
-          if (mediaType !== void 0 && declaredType !== "" && declaredType !== mediaType)
-            throw new TypeError("image data URI and mimeType disagree");
-          let bytes;
-          if (declaration.endsWith(";base64")) {
-            if (!/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/u.test(payload))
-              throw new TypeError("invalid image base64");
-            const length = payload.length / 4 * 3 - (payload.endsWith("==") ? 2 : payload.endsWith("=") ? 1 : 0);
-            if (length > remaining)
-              throw new RangeError("embedded images exceed budget");
-            bytes = Uint8Array.from(atob(payload), (char) => char.charCodeAt(0));
-          } else {
-            let length = 0;
-            for (let i = 0; i < payload.length; i++, length++) {
-              if (payload[i] === "%") {
-                if (!/^[0-9a-f]{2}$/iu.test(payload.slice(i + 1, i + 3)))
-                  throw new TypeError("invalid image URI escape");
-                i += 2;
-              } else if (payload.charCodeAt(i) > 127)
-                throw new TypeError("image URI bytes must be percent encoded");
-            }
-            if (length > remaining)
-              throw new RangeError("embedded images exceed budget");
-            bytes = new Uint8Array(length);
-            for (let i = 0, j = 0; i < payload.length; i++, j++) {
-              if (payload[i] === "%") {
-                bytes[j] = parseInt(payload.slice(i + 1, i + 3), 16);
-                i += 2;
-              } else
-                bytes[j] = payload.charCodeAt(i);
-            }
-          }
-          remaining -= bytes.length;
-          const type = mediaType ?? declaredType;
-          source = { kind: "embedded", bytes, ...type ? { mediaType: type } : {} };
-        } else
-          source = {
-            kind: "logical",
-            requirement: {
-              id: `uvm-image-${imageIndex}`,
-              logicalId: decodeURIComponent(uri),
-              role: "texture",
-              scopes: [
-                "sibling-directory",
-                "workspace-dependency-layer",
-                "current-mount",
-                "enclosing-container"
-              ]
-            }
-          };
-      } else {
-        const view = object(views[safeIndex(image["bufferView"], views.length, "image bufferView")], "image bufferView");
-        const offset = view["byteOffset"] ?? 0, length = view["byteLength"];
-        if (view["buffer"] !== 0 || view["byteStride"] !== void 0 || typeof offset !== "number" || typeof length !== "number" || !Number.isSafeInteger(offset) || !Number.isSafeInteger(length) || offset < 0 || length < 0 || offset > binary.length || length > binary.length - offset)
-          throw new TypeError("image bufferView must name a bounded slice of the UVM BIN chunk");
-        if (length > remaining)
-          throw new RangeError("embedded images exceed budget");
-        remaining -= length;
-        source = {
-          kind: "embedded",
-          bytes: binary.slice(offset, offset + length),
-          ...mediaType === void 0 ? {} : { mediaType }
-        };
-      }
-      captured.set(imageIndex, source);
-    }
-    return Object.freeze({ texture: textureIndex, image: imageIndex, source });
-  });
-}
-function uvmImageTexels(result, options = {}) {
-  if (options.channels !== void 0 && options.channels !== "color" && options.channels !== "data")
-    throw new TypeError("invalid image channel interpretation");
-  const { info, region } = result;
-  if (!["top-left", "bottom-left"].includes(info.orientation))
-    throw new TypeError("image orientation is unknown");
-  if (options.channels !== "data" && !["none", "straight", "premultiplied"].includes(info.alphaMode))
-    throw new TypeError("image alpha mode is unknown");
-  if (!(region.pixels instanceof Uint8Array) || region.pixelFormat !== "rgba8" || region.width !== info.width || region.height !== info.height || !Number.isSafeInteger(info.width) || !Number.isSafeInteger(info.height) || info.width <= 0 || info.height <= 0 || !Number.isSafeInteger(region.rowStride) || region.rowStride < info.width * 4 || region.rowStride * (info.height - 1) + info.width * 4 > region.pixels.length)
-    throw new TypeError("invalid image region");
-  const rgba = new Uint8Array(info.width * info.height * 4);
-  for (let y = 0; y < info.height; y++) {
-    const sourceY = info.orientation === "top-left" ? y : info.height - 1 - y;
-    rgba.set(region.pixels.subarray(sourceY * region.rowStride, sourceY * region.rowStride + info.width * 4), y * info.width * 4);
-  }
-  if (options.channels !== "data" && info.alphaMode === "premultiplied")
-    for (let i = 0; i < rgba.length; i += 4) {
-      const alpha = rgba[i + 3] ?? 0;
-      for (let channel = 0; channel < 3; channel++)
-        rgba[i + channel] = alpha === 0 ? 0 : Math.min(255, Math.round((rgba[i + channel] ?? 0) * 255 / alpha));
-    }
-  return rgba;
 }
 
 // packages/scene/dist/materials/normal-maps.js
@@ -22068,34 +22147,6 @@ function normalLayerShader(source, formats) {
   return source.replace("void main() {", `${helpers.join("\n")}
 void main() {`);
 }
-
-// packages/scene/dist/materials/environment.js
-function vector7(value, length, name) {
-  if (!Array.isArray(value) || value.length !== length)
-    throw new TypeError(`${name} requires ${length} finite float32 components`);
-  const captured = [];
-  for (let index = 0; index < length; index++) {
-    const item = value[index];
-    if (typeof item !== "number" || !Number.isFinite(item) || !Number.isFinite(Math.fround(item)))
-      throw new TypeError(`${name} requires ${length} finite float32 components`);
-    captured.push(Math.fround(item));
-  }
-  return Object.freeze(captured);
-}
-function snapshotEnvironment(value) {
-  if (value === void 0)
-    return void 0;
-  if (value === null || typeof value !== "object" || Array.isArray(value) || Object.keys(value).some((key) => key !== "worldToEnvironment"))
-    throw new TypeError("invalid environment frame");
-  const worldToEnvironment = vector7(Reflect.get(value, "worldToEnvironment"), 16, "worldToEnvironment");
-  if ([3, 7, 11].some((index) => worldToEnvironment[index] !== 0) || worldToEnvironment[15] !== 1)
-    throw new TypeError("worldToEnvironment must be affine");
-  const envelope = Math.max(...[0, 1, 2].map((row) => [0, 4, 8, 12].reduce((sum, column) => sum + Math.abs(worldToEnvironment[row + column] ?? 0), 0)));
-  if (envelope + 6 * envelope ** 3 > 34028234663852886e22 / 2)
-    throw new TypeError("worldToEnvironment exceeds safe float32 reflection arithmetic");
-  return Object.freeze({ worldToEnvironment });
-}
-var isEnvironmentBinding = (binding) => binding.dimension === "cube" && (binding.slot === "envi" || binding.slot === "enviMask");
 
 // packages/scene/dist/materials/cube-maps.js
 var UnsupportedCubeCoordinatesError = class extends TypeError {
@@ -22160,6 +22211,7 @@ precision highp float;
 uniform mat4 u_model, u_modelView, u_viewProjection, u_materialWorld;
 uniform mat3 u_worldNormalMatrix, u_viewNormalMatrix;
 uniform vec3 u_lightDirection;
+${defines.sceneLighting ? "uniform vec3 u_sceneFillViewDirection0, u_sceneFillViewDirection1;\nout vec3 v_sceneFillDir0, v_sceneFillDir1;" : ""}
 ${worldGeometry ? "uniform mat3 u_sceneWorldNormalMatrix;\nuniform float u_sceneWorldOrientation;\n" : ""}uniform float u_orientation, u_orthographic;
 in vec3 a_position, a_normal; in vec4 a_tangent;
 ${Array.from({ length: defines.uvSetCount }, (_, i) => `in vec2 a_uv${i}; out vec2 v_uv${i};`).join("\n")}
@@ -22179,6 +22231,7 @@ void main(){
   mat3 tbn=transpose(mat3(t,b,n));
   vec3 eye=u_orthographic>0.5?vec3(0.0,0.0,1.0):unit(-view,vec3(0.0,0.0,1.0));
   v_normal=vec3(0.0,0.0,1.0); v_lightDir=tbn*u_lightDirection;
+${defines.sceneLighting ? "  v_sceneFillDir0=tbn*u_sceneFillViewDirection0; v_sceneFillDir1=tbn*u_sceneFillViewDirection1;" : ""}
   v_halfVec=tbn*(-unit(eye+u_lightDirection,vec3(0.0,0.0,1.0))); v_viewDir=tbn*eye;
   v_viewPosition=u_orthographic>0.5?vec3(0.0,0.0,-1.0):view; v_viewNormal=n;
 ${worldGeometry ? `  vec3 sceneN=unit(u_sceneWorldNormalMatrix*a_normal,vec3(0.0,0.0,1.0));
@@ -22301,6 +22354,18 @@ vec3 sceneSignedHalfVector() {
 }
 
 // packages/scene/dist/materials/standard-program.js
+function withoutDiffuseTeamColor(material) {
+  if (!Object.values(material.layers).some((layer) => layer.teamColorMode === 1))
+    return material;
+  const layers = {};
+  for (const [slot, layer] of Object.entries(material.layers))
+    layers[slot] = layer.teamColorMode !== 1 ? layer : (
+      // ponytail: RGBA → RGB restores the forced alpha of 1; AAAA/RRRR/GGGG/BBBB team-colored
+      // layers would keep their selected alpha. Add an explicit intensity uniform if one appears.
+      { ...layer, teamColorMode: 0, channels: layer.channels === 1 ? 0 : layer.channels }
+    );
+  return Object.freeze({ ...material, layers: Object.freeze(layers) });
+}
 function finiteVector(value, size, name) {
   if (!Array.isArray(value) || value.length !== size || value.some((component2) => typeof component2 !== "number" || !Number.isFinite(component2) || !Number.isFinite(Math.fround(component2))))
     throw new TypeError(`${name} requires ${size} finite float32 components`);
@@ -22324,15 +22389,21 @@ function createStandardMaterialPrograms(parameters, options) {
       for (const value of textureDimensions.values())
         if (value !== "2d" && value !== "cube")
           throw new TypeError("invalid material texture dimension");
-      return Object.freeze(sampler.sample(time, signal).map((pass) => compilePass(pass, { teamColor, ambient }, sources, normalFormats, sampler.worldToMaterial, textureDimensions, environment)));
+      const intensity = lighting.teamColorIntensity ?? 1;
+      if (intensity !== 0 && intensity !== 1)
+        throw new TypeError("team color intensity must be 0 or 1");
+      return Object.freeze(sampler.sample(time, signal).map((pass) => compilePass(intensity === 0 ? { ...pass, material: withoutDiffuseTeamColor(pass.material) } : pass, { teamColor, ambient }, sources, normalFormats, sampler.worldToMaterial, textureDimensions, environment, lighting.sceneLighting === true)));
     }
   });
 }
-function compilePass(pass, lighting, sources, bindings, worldToMaterial, textureDimensions = /* @__PURE__ */ new Map(), environment) {
+function compilePass(pass, lighting, sources, bindings, worldToMaterial, textureDimensions = /* @__PURE__ */ new Map(), environment, sceneLighting = false) {
   const { material, alpha } = pass;
   const normalFormats = materialNormalFormats(material, bindings);
   const objectSpaceNormal = material.normalMapSpace === "object";
-  const defines = buildMaterialDefines(material, normalFormats === void 0 ? {} : { normalMapFormat: "rgb8" });
+  const defines = buildMaterialDefines(material, {
+    ...normalFormats === void 0 ? {} : { normalMapFormat: "rgb8" },
+    ...sceneLighting ? { sceneLighting: true } : {}
+  });
   const uniforms = {
     u_teamColor: lighting.teamColor,
     u_ambient: lighting.ambient,
@@ -22464,10 +22535,10 @@ ${WORLD_NORMAL_VARYINGS}`);
     ...policy === void 0 ? {} : { normalBlendPolicy: policy },
     ...material.tangentGeneration === void 0 ? {} : { tangentGeneration: material.tangentGeneration },
     sampleNormal: (pixel = {}, basis) => sampleNormal(material, lighting, pixel, normalFormats, basis),
-    shade: (pixel = {}) => shade(material, alpha, lighting, pixel, normalFormats)
+    shade: (pixel = {}) => shade(material, alpha, lighting, pixel, normalFormats, sceneLighting)
   });
 }
-function shade(material, alpha, lighting, pixel, normalFormats) {
+function shade(material, alpha, lighting, pixel, normalFormats, sceneLighting = false) {
   const teamColor = pixel.teamColor ?? lighting.teamColor, ambient = pixel.ambient ?? lighting.ambient;
   finiteVector(teamColor, 3, "team color");
   finiteVector(ambient, 4, "material ambient");
@@ -22496,6 +22567,12 @@ function shade(material, alpha, lighting, pixel, normalFormats) {
     layers,
     teamColor,
     ambient,
+    ...sceneLighting ? {
+      sceneLighting: pixel.sceneLighting ?? {
+        ambientColor: [ambient[0], ambient[1], ambient[2]],
+        lightColor: [1, 1, 1]
+      }
+    } : {},
     materialAlpha: alpha,
     specularity: material.specularity,
     specMult: material.specMult,
@@ -22616,15 +22693,62 @@ function sampleNormal(material, lighting, pixel, formats, basis) {
 }
 
 // packages/scene/dist/uvm/materials.js
+var MATERIAL_LAYERS_SHADER = "modkit.material-layers.v1";
+function layerList(material) {
+  const extras = field(material["extras"], "modkit");
+  const native = extras === void 0 ? void 0 : field(extras, "material");
+  const fields = native === void 0 ? void 0 : field(native, "fields");
+  const layers = fields === void 0 ? void 0 : field(fields, "layers");
+  if (!Array.isArray(layers))
+    return [];
+  const out = [];
+  for (const entry of layers) {
+    if (typeof entry !== "object" || entry === null)
+      continue;
+    const record = entry;
+    const path = record["resourceId"];
+    const slot = record["slot"];
+    if (typeof path !== "string" || path === "")
+      continue;
+    out.push({ label: typeof slot === "string" && slot !== "" ? slot : "diffuse", path });
+  }
+  return out;
+}
 function uvmMaterialShader(material) {
   const extension = field(material["extensions"], "UV_game_material");
-  if (extension === void 0)
-    return void 0;
+  if (extension === void 0) {
+    const layers = layerList(material);
+    return layers.length === 0 ? void 0 : { id: MATERIAL_LAYERS_SHADER, parameters: { renderModel: { layers } } };
+  }
   const data = object(extension, "game material");
+  const parameters = object(data["params"] ?? {}, "game material parameters");
   return {
     id: string(data["shader"], "game material shader"),
-    parameters: object(data["params"] ?? {}, "game material parameters")
+    parameters: withLayerList(parameters, material)
   };
+}
+function withLayerList(parameters, material) {
+  const renderModel = field(parameters, "renderModel");
+  if (renderModel !== void 0 && field(renderModel, "layers") !== void 0)
+    return parameters;
+  const layers = layerList(material);
+  if (layers.length === 0)
+    return parameters;
+  return {
+    ...parameters,
+    renderModel: {
+      ...renderModel === void 0 ? {} : object(renderModel, "render model parameters"),
+      layers
+    }
+  };
+}
+function materialLayerResources(shader) {
+  const params = shader.parameters;
+  const seen = /* @__PURE__ */ new Set();
+  for (const layer of params?.renderModel?.layers ?? [])
+    if (typeof layer.path === "string" && layer.path !== "")
+      seen.add(layer.path);
+  return [...seen];
 }
 function uvmMaterialResources(materials, maxBytes, signal) {
   const result = /* @__PURE__ */ new Map();
@@ -22636,6 +22760,8 @@ function uvmMaterialResources(materials, maxBytes, signal) {
         budget: { maxDepth: 128, maxNodes: 1e6, maxBytes },
         ...signal === void 0 ? {} : { signal }
       }).resources);
+    else if (material.shader?.id === MATERIAL_LAYERS_SHADER)
+      result.set(material.id, materialLayerResources(material.shader));
   return result;
 }
 async function acquireUvmMaterialTextures(resources, port, maxBytes, diagnostics, signal) {
@@ -22766,9 +22892,11 @@ async function prepareUvmRender(bytes, value, options, depth = 0) {
     throw new TypeError("UVM render dimensions must be integers in 1..4096");
   const materialInput = object(input["materialContext"] ?? {}, "material context");
   const environment = snapshotEnvironment(materialInput["environment"]);
-  if (Object.keys(materialInput).some((key) => !["teamColor", "ambient", "environment"].includes(key)))
+  if (Object.keys(materialInput).some((key) => !["teamColor", "teamColorIntensity", "ambient", "environment"].includes(key)))
     throw new TypeError("invalid material context field");
-  const team = materialInput["teamColor"], ambient = materialInput["ambient"];
+  const team = materialInput["teamColor"], teamIntensity = materialInput["teamColorIntensity"], ambient = materialInput["ambient"];
+  if (teamIntensity !== void 0 && teamIntensity !== 0 && teamIntensity !== 1)
+    throw new TypeError("team color intensity must be 0 or 1");
   if (team !== void 0 && (!finiteArray(team, 3) || team.some((value2) => value2 < 0 || value2 > 1)))
     throw new TypeError("team color must contain three components in 0..1");
   if (ambient !== void 0 && (!finiteArray(ambient, 4) || ambient.some((value2) => value2 < 0 || value2 > 1)))
@@ -22808,10 +22936,14 @@ async function prepareUvmRender(bytes, value, options, depth = 0) {
   const modelStates = readUvmModelStates(document2, budget.maxScalarBytes, signal);
   const selectedModelState = modelState === "base" ? void 0 : modelStates.find((candidate) => candidate.state === modelState);
   const textureDeclarations = array(document2, "textures");
+  const effectDeclarations = field(document2["extensions"], "UV_game_effects");
+  const hasEffectTextures = ["particles", "ribbons"].some((kind) => array(effectDeclarations, kind).some((emitter) => typeof field(emitter, "texturePath") === "string"));
   const hasNestedModels = selectedModelState !== void 0 || array(field(document2["extensions"], "UV_game_effects"), "particles").some((emitter) => Array.isArray(field(emitter, "modelPaths")) && field(emitter, "modelPaths").length > 0);
   const nestedBudget = options.modelResources !== void 0 && hasNestedModels ? Math.floor(available / 4) : 0;
   const sceneAvailable = available - nestedBudget;
-  const rasterBudget = rasterResources === void 0 || textureDeclarations.length === 0 && !array(document2, "materials").some((material) => field(field(material, "extensions"), "UV_game_material") !== void 0) ? 0 : Math.floor(sceneAvailable / 3);
+  const rasterBudget = rasterResources === void 0 || textureDeclarations.length === 0 && !hasEffectTextures && // A material states its textures either as a game material or as the neutral layer list
+  // every model facet writes; both need the raster budget, and neither is a glTF texture.
+  !array(document2, "materials").some((material) => uvmMaterialShader(object(material, "material")) !== void 0) ? 0 : Math.floor(sceneAvailable / 3);
   const stageBytes = Math.floor((sceneAvailable - rasterBudget) / 4);
   const samplers = array(document2, "samplers");
   const samplerDiagnostics = [];
@@ -22878,10 +23010,12 @@ async function prepareUvmRender(bytes, value, options, depth = 0) {
   if (sequence !== void 0 && (typeof sequence !== "number" || !Number.isSafeInteger(sequence) || sequence < 0))
     throw new TypeError("invalid material source sequence index");
   const materialContext = {
+    sceneLighting: true,
     time,
     sequenceTime: time,
     ...sequence === void 0 ? {} : { sequenceIndex: sequence },
     ...team === void 0 ? {} : { teamColor: [team[0] ?? 0, team[1] ?? 0, team[2] ?? 0] },
+    ...teamIntensity === void 0 ? {} : { teamColorIntensity: teamIntensity },
     ...ambient === void 0 ? {} : { ambient: vector4(ambient) },
     ...environment === void 0 ? {} : { environment }
   };
@@ -23191,6 +23325,7 @@ async function prepareUvmRender(bytes, value, options, depth = 0) {
     },
     scene: {
       ...sceneLights ?? {},
+      light: previewKeyLight(viewMatrix),
       primitives,
       materials: materials.filter((material) => activeMaterials.has(material.id)).map((material) => ({
         ...material,
@@ -23237,6 +23372,18 @@ async function prepareUvmRender(bytes, value, options, depth = 0) {
     },
     diagnostics: [...diagnostics, ...modelStateNested.diagnostics, ...nested.diagnostics],
     ...rendererId === void 0 ? {} : { rendererId }
+  };
+}
+function previewKeyLight(viewMatrix) {
+  const local = [-0.35, 0.75, 0.55];
+  const direction = viewMatrix === void 0 ? [0.35, 0.85, 0.4] : (
+    // Inverse of the view rotation is its transpose (column-major rows become columns).
+    [0, 1, 2].map((axis) => local.reduce((sum, value, row) => sum + value * (viewMatrix[axis * 4 + row] ?? 0), 0))
+  );
+  return {
+    direction,
+    ambient: 0.55,
+    color: [0.8, 0.8, 0.8, 1]
   };
 }
 async function renderUvm(bytes, value, options) {

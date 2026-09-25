@@ -4,6 +4,8 @@ import {
   editPlanFromInput,
   simpleLease,
 } from '@modkit/codec-kit'
+import { crc32 } from '@modkit/codec-kit/checksum'
+import { decompressBounded } from '@modkit/codec-kit/compression/bounded'
 
 const ZIP_LOCAL = 0x04034b50
 const ZIP_CENTRAL = 0x02014b50
@@ -38,16 +40,6 @@ function u32(bytes, offset) {
   if (offset < 0 || offset + 4 > bytes.byteLength) throw new RangeError('truncated ZIP u32')
   return new DataView(bytes.buffer, bytes.byteOffset + offset, 4).getUint32(0, true)
 }
-
-const CRC_TABLE = (() => {
-  const table = new Uint32Array(256)
-  for (let index = 0; index < 256; index += 1) {
-    let value = index
-    for (let bit = 0; bit < 8; bit += 1) value = (value >>> 1) ^ (value & 1 ? 0xedb88320 : 0)
-    table[index] = value >>> 0
-  }
-  return table
-})()
 
 /**
  * ZIP's method numbers, for the ones a reader can name honestly.
@@ -90,14 +82,6 @@ function dosTimestamp(dosDate, dosTime) {
   if (month < 1 || month > 12 || day < 1 || day > 31) return undefined
   if (hour > 23 || minute > 59 || second > 59) return undefined
   return Date.UTC(year, month - 1, day, hour, minute, second)
-}
-
-function crc32(bytes) {
-  let crc = 0xffffffff
-  for (let index = 0; index < bytes.byteLength; index += 1) {
-    crc = (crc >>> 8) ^ (CRC_TABLE[(crc ^ (bytes[index] ?? 0)) & 0xff] ?? 0)
-  }
-  return (crc ^ 0xffffffff) >>> 0
 }
 
 function findEocd(bytes) {
@@ -185,14 +169,6 @@ export function parseZipArchive(bytes, maxEntries) {
   return Object.freeze(entries)
 }
 
-async function inflateRaw(bytes) {
-  if (typeof DecompressionStream !== 'function') {
-    throw new TypeError('deflate extraction is unavailable in this runtime')
-  }
-  const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'))
-  return new Uint8Array(await new Response(stream).arrayBuffer())
-}
-
 export async function extractZipArchiveEntry(bytes, entry) {
   if (entry.kind !== 'file') throw new TypeError('directories have no byte payload')
   if ((entry.flags & FLAG_ENCRYPTED) !== 0)
@@ -209,7 +185,7 @@ export async function extractZipArchiveEntry(bytes, entry) {
     entry.method === 0
       ? compressed
       : entry.method === 8
-        ? await inflateRaw(compressed)
+        ? await decompressBounded(compressed, 'deflate-raw', { maxOutputBytes: entry.size })
         : (() => {
             throw new TypeError(`unsupported ZIP compression method ${entry.method}`)
           })()
@@ -914,6 +890,119 @@ function editContentHandler(bytes, entries, model, budget, input) {
   }
 }
 
+/**
+ * `container.pack`: the host's standard way to write a member back — entries named by id, pinned
+ * to the revision the host read them at — so an application saves an edited entry without knowing
+ * this codec's own `edit.content` input. The assembly is the one `edit.content` uses: every other
+ * entry is copied verbatim, which is what the verbatim-reassembly evidence proves.
+ */
+const CONTAINER_PACK_OPERATION = Object.freeze({
+  id: 'container.pack',
+  handlerId: 'container-pack',
+  mutatesSource: true,
+  requiredPermissions: Object.freeze(['read-source', 'write-source']),
+  outputKinds: Object.freeze(['edit-plan']),
+})
+
+function containerPackHandler(bytes, entries, model, budget, input, source) {
+  return async value => {
+    const usableModel = usable(model)
+    const request = requireRecord(value, 'container.pack')
+    if (request.mode === 'create') {
+      throw new TypeError('container.pack creates no ZIP archive here; it edits an existing one')
+    }
+    const byId = new Map(entries.map(entry => [entry.id, entry]))
+    const touched = new Set()
+    /** A listed member, pinned to the revision the host read, named at most once per request. */
+    const member = (item, label) => {
+      const change = requireRecord(item, label)
+      const entry = byId.get(change.entryId)
+      if (entry === undefined) {
+        throw new TypeError(`ZIP entry id «${String(change.entryId)}» was not found`)
+      }
+      if (change.expectedRevision !== source.revision) {
+        throw new TypeError(`«${entry.name}» changed since it was read`)
+      }
+      if (touched.has(entry.id)) throw new TypeError(`«${entry.name}» is changed twice`)
+      touched.add(entry.id)
+      return { change, entry }
+    }
+    const replaced = new Map()
+    for (const item of requireList(request.replacements, 'container.pack replacements')) {
+      const { change, entry } = member(item, 'container.pack replacement')
+      if (entry.kind !== 'file') throw new TypeError(`«${entry.name}» is a folder, not content`)
+      replaced.set(
+        entry.id,
+        decodeBase64(change.bytesBase64, budget.maxScalarBytes, `bytes for «${entry.name}»`),
+      )
+    }
+    const removed = new Set()
+    for (const item of requireList(request.remove, 'container.pack remove')) {
+      removed.add(member(item, 'container.pack remove').entry.id)
+    }
+    const renamed = new Map()
+    for (const item of requireList(request.rename, 'container.pack rename')) {
+      const { change, entry } = member(item, 'container.pack rename')
+      const name = safePath(String(change.name ?? ''))
+      if (name === '') throw new TypeError('a rename target cannot be empty')
+      if (entry.name.endsWith('/') !== name.endsWith('/')) {
+        throw new TypeError(`renaming «${entry.name}» to «${name}» would change its kind`)
+      }
+      renamed.set(entry.id, name)
+    }
+    const added = requireList(request.add, 'container.pack add').map(item => {
+      const change = requireRecord(item, 'container.pack add')
+      const name = safePath(String(change.name ?? ''))
+      if (name === '') throw new TypeError('an added member needs a name')
+      return {
+        name,
+        bytes: decodeBase64(change.bytesBase64, budget.maxScalarBytes, `bytes for «${name}»`),
+      }
+    })
+    if (touched.size + added.length === 0) throw new TypeError('container.pack names no change')
+
+    const names = new Set()
+    const claim = name => {
+      if (names.has(name)) throw new TypeError(`«${name}» would appear twice in the archive`)
+      names.add(name)
+    }
+    const planned = []
+    for (const entry of entries) {
+      if (removed.has(entry.id)) continue
+      const range = usableModel.ranges.get(entry.id)
+      if (range === undefined) throw new TypeError(`«${entry.name}» has no readable local block`)
+      const data = replaced.get(entry.id)
+      const to = renamed.get(entry.id)
+      claim(to ?? entry.name)
+      planned.push(
+        data !== undefined
+          ? restoredEntry(bytes, entry, range, data)
+          : to !== undefined
+            ? renamedEntry(bytes, entry, range, to)
+            : verbatimEntry(bytes, entry, range),
+      )
+    }
+    for (const item of added) {
+      claim(item.name)
+      planned.push(storedEntry(item.name, item.bytes))
+    }
+    if (planned.length === 0) throw new TypeError('container.pack would leave an empty archive')
+    const summary = [
+      ...[...replaced.keys()].map(id => `replace ${byId.get(id).name}`),
+      ...added.map(item => `add ${item.name}`),
+      ...[...removed].map(id => `remove ${byId.get(id).name}`),
+      ...[...renamed].map(([id, name]) => `rename ${byId.get(id).name} → ${name}`),
+    ]
+    return editPlanOutput(
+      input,
+      assembleArchive(planned, usableModel.comment, budget),
+      usableModel,
+      `zip-container-pack:${summary.join(';')}`,
+      summary.join(', '),
+    )
+  }
+}
+
 function namespaceSource(entries, source) {
   const byId = new Map(entries.map(entry => [entry.id, entry]))
   return Object.freeze({
@@ -990,6 +1079,7 @@ const definition = Object.freeze({
     }),
     EDIT_STRUCTURE_OPERATION,
     EDIT_CONTENT_OPERATION,
+    CONTAINER_PACK_OPERATION,
   ]),
   async detect(bytes) {
     const signature = bytes.byteLength >= 4 ? u32(bytes, 0) : 0
@@ -1095,6 +1185,14 @@ const definition = Object.freeze({
           context.input,
         ),
         'edit-content': editContentHandler(bytes, entries, model, context.budget, context.input),
+        'container-pack': containerPackHandler(
+          bytes,
+          entries,
+          model,
+          context.budget,
+          context.input,
+          context.source,
+        ),
       },
     }
   },

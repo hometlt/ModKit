@@ -8,7 +8,13 @@ import {
   readUvmBillboards,
   readUvmModelStates,
   readUvmShadowMeshBindings
-} from "../../../chunks/chunk-VUET23GH.js";
+} from "../../../chunks/chunk-R5C6OZ66.js";
+import {
+  DEFAULT_UVM_CONTAINER_BUDGET,
+  checkUvmContainerBudget,
+  readUvmContainer,
+  writeUvmContainer
+} from "../../../chunks/chunk-XV5KCSCI.js";
 import {
   array,
   field,
@@ -28,18 +34,13 @@ import {
 import "../../../chunks/chunk-4IC3253U.js";
 import "../../../chunks/chunk-4FJ6AE2N.js";
 import {
-  DEFAULT_UVM_CONTAINER_BUDGET,
-  checkUvmContainerBudget,
-  readUvmContainer,
-  writeUvmContainer
-} from "../../../chunks/chunk-U4G5FYYR.js";
-import "../../../chunks/chunk-ZP6SGJCF.js";
+  snapshotJson
+} from "../../../chunks/chunk-3YDGNEY2.js";
+import "../../../chunks/chunk-6M7FDQ66.js";
+import "../../../chunks/chunk-NUFRM6SI.js";
 import {
   applyJsonEdit
 } from "../../../chunks/chunk-L5WKTLBK.js";
-import {
-  snapshotJson
-} from "../../../chunks/chunk-3YDGNEY2.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 
 // packages/scene/dist/uvm/json-edit.js

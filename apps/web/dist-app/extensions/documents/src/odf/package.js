@@ -19,6 +19,9 @@
  * evaluator and no network here; the counts are reported so a reader can see what was skipped.
  */
 
+import { crc32 } from '@modkit/codec-kit/checksum'
+import { decompressBounded } from '@modkit/codec-kit/compression/bounded'
+
 const utf8 = new TextDecoder('utf-8', { fatal: true })
 
 const ZIP_LOCAL = 0x04034b50
@@ -91,24 +94,6 @@ function u32(bytes, offset) {
       (bytes[offset + 3] << 24)) >>>
     0
   )
-}
-
-const CRC_TABLE = (() => {
-  const table = new Uint32Array(256)
-  for (let index = 0; index < 256; index += 1) {
-    let value = index
-    for (let bit = 0; bit < 8; bit += 1) value = (value >>> 1) ^ (value & 1 ? 0xedb88320 : 0)
-    table[index] = value >>> 0
-  }
-  return table
-})()
-
-function crc32(bytes) {
-  let crc = 0xffffffff
-  for (let index = 0; index < bytes.byteLength; index += 1) {
-    crc = (crc >>> 8) ^ (CRC_TABLE[(crc ^ bytes[index]) & 0xff] ?? 0)
-  }
-  return (crc ^ 0xffffffff) >>> 0
 }
 
 function throwIfCancelled(signal) {
@@ -286,36 +271,6 @@ function readCentralDirectory(bytes, budget, signal) {
   return { entries: Object.freeze(entries), declaredBytes }
 }
 
-async function inflateRaw(compressed, expectedBytes) {
-  if (typeof DecompressionStream !== 'function') {
-    throw new TypeError('deflate extraction is unavailable in this runtime')
-  }
-  const stream = new Blob([compressed.slice().buffer])
-    .stream()
-    .pipeThrough(new DecompressionStream('deflate-raw'))
-  const reader = stream.getReader()
-  const chunks = []
-  let length = 0
-  for (;;) {
-    const result = await reader.read()
-    if (result.done === true) break
-    length += result.value.byteLength
-    // the declared size is the contract; a stream that outgrows it is a bomb, not a document
-    if (length > expectedBytes) {
-      await reader.cancel('ODF package entry expanded past its declared size')
-      throw new RangeError('ODF package entry expanded past its declared size')
-    }
-    chunks.push(result.value)
-  }
-  const output = new Uint8Array(length)
-  let offset = 0
-  for (const chunk of chunks) {
-    output.set(chunk, offset)
-    offset += chunk.byteLength
-  }
-  return output
-}
-
 /** Bytes of one entry, with the local header re-checked against the central directory. */
 async function extractEntry(bytes, entry, signal) {
   throwIfCancelled(signal)
@@ -345,7 +300,12 @@ async function extractEntry(bytes, entry, signal) {
   const output =
     entry.method === STORED
       ? compressed.slice()
-      : await inflateRaw(compressed, entry.uncompressedSize)
+      : await decompressBounded(compressed, 'deflate-raw', {
+          maxOutputBytes: entry.uncompressedSize,
+          // the declared size is the contract; a stream that outgrows it is a bomb, not a document
+          outputLimitError: () =>
+            new RangeError('ODF package entry expanded past its declared size'),
+        })
   if (output.byteLength !== entry.uncompressedSize || crc32(output) !== entry.checksum) {
     throw new TypeError(`ODF package entry size or CRC is invalid: ${entry.name}`)
   }

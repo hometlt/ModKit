@@ -22,7 +22,8 @@
   ],
   "limitations": [
     "The MK3 port validates the KTX2 header, complete level index, DFD/KVD/SGD ranges, dimensions, layers, faces, and supercompression declaration and publishes metadata plus encoded payload access.",
-    "Vulkan-format pixel decoding, Basis transcoding, zlib/zstd supercompression decoding, writing, metadata mutation, and pixel editing remain unsupported."
+    "Single 2D images in BC1–BC5 VkFormats (131–142), plain or Zstandard-supercompressed, decode to rgba8 per mip level through codec-kit texture/bc and compression/zstd.",
+    "Other Vulkan formats, arrays, cube maps and volumes, Basis transcoding, zlib supercompression, writing, metadata mutation, and pixel editing remain unsupported."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "ktx2", "label": "Khronos Texture v2" }],

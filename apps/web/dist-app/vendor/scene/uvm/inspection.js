@@ -6,11 +6,12 @@ import {
   createModelSkeletonSource,
   createModelSocketSource,
   createProjectionReceipt
-} from "../../../chunks/chunk-P62TCZHN.js";
+} from "../../../chunks/chunk-A26CPHMT.js";
 import {
   readCollisionMesh,
-  readUvmModel
-} from "../../../chunks/chunk-EUI2U3I2.js";
+  readUvmModel,
+  uvmImageResourceId
+} from "../../../chunks/chunk-RD3KQHOX.js";
 import "../../../chunks/chunk-W5HVUYW4.js";
 import {
   array,
@@ -18,6 +19,7 @@ import {
   nonBlank,
   object,
   required,
+  safeIndex,
   string
 } from "../../../chunks/chunk-B5TWMJRH.js";
 import {
@@ -110,6 +112,29 @@ function extensionRole(extension) {
   const role = object(extension, "UV_game_collision")["role"];
   return typeof role === "string" ? role : void 0;
 }
+function materialImageLayers(document, material) {
+  const pbr = material["pbrMetallicRoughness"] === void 0 ? {} : object(material["pbrMetallicRoughness"], "PBR material");
+  const textures = array(document, "textures"), images = array(document, "images");
+  const layers = [];
+  for (const [slot, reference] of [
+    ["baseColor", pbr["baseColorTexture"]],
+    ["metallicRoughness", pbr["metallicRoughnessTexture"]],
+    ["normal", material["normalTexture"]],
+    ["emissive", material["emissiveTexture"]],
+    ["occlusion", material["occlusionTexture"]]
+  ]) {
+    if (reference === void 0)
+      continue;
+    const binding = object(reference, `${slot} texture`);
+    const texture = object(textures[safeIndex(binding["index"], textures.length, "texture")], "texture");
+    const image = safeIndex(texture["source"], images.length, "texture image");
+    const uvSource = binding["texCoord"] ?? 0;
+    if (typeof uvSource !== "number" || !Number.isSafeInteger(uvSource) || uvSource < 0)
+      throw new TypeError("material texture texCoord must be a nonnegative integer");
+    layers.push(Object.freeze({ slot, resourceId: uvmImageResourceId(document, image), uvSource }));
+  }
+  return Object.freeze(layers);
+}
 function decodeMaterialRefs(document) {
   return array(document, "materials").map((candidate, index) => {
     const material = object(candidate, `material ${index}`);
@@ -142,8 +167,10 @@ function decodeMaterialRefs(document) {
     if (alphaCutoff !== void 0 && (typeof alphaCutoff !== "number" || !Number.isFinite(alphaCutoff) || alphaCutoff < 0)) {
       throw new TypeError(`material ${index} alphaCutoff must be finite and nonnegative`);
     }
+    const layers = fields["layers"] === void 0 ? materialImageLayers(document, material) : [];
     return Object.freeze({
       ...fields,
+      ...layers.length === 0 ? {} : { layers },
       // the identity the artifact binding fixes, so a primitive and its material can be joined
       id: `material-${index}`,
       ...typeof material["name"] === "string" ? { name: material["name"] } : {},

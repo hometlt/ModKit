@@ -36,7 +36,7 @@
     "Writing is a separate contribution: modkit/dds-encoder-writer (common.edit/writer@1) encodes RGBA8 pixels as rgba8, dxt1, dxt3 or dxt5.",
     "The compressed-texture view of a DDS (GPU blocks handed over undecoded, with block geometry, colour space, alpha mode and per-subresource byte ranges) is implemented in src/dds/compressed.js but is not published: MK3 has no common.view contract for compressed textures yet.",
     "Manifest v1 cannot express the legacy extension-or-signature fallback without turning it into a conjunction; generated routing intentionally uses the extension while the handwritten compatibility registry retains global signature sniffing.",
-    "edit.content applies one named pixel transform (resize, normal-map, combine-normal-specular, rounded-alpha, button-icon, color-key) and re-encodes the whole surface: mip levels, array layers and cube faces past the first are not carried over."
+    "edit.content applies one named pixel transform (resize, combine-normal-specular, rounded-alpha, colour key, whole-image replace) and re-encodes the whole surface: mip levels, array layers and cube faces past the first are not carried over."
   ],
   "spec": {
     "formatRefs": [
@@ -119,7 +119,424 @@
         "handlerId": "transform",
         "mutatesSource": true,
         "requiredPermissions": ["read-source", "write-source"],
-        "outputKinds": ["edit-plan"]
+        "outputKinds": ["edit-plan"],
+        "inputSchema": {
+          "$ref": "modkit://images/dds-edit-content.v1",
+          "document": {
+            "schemaVersion": 1,
+            "forms": [
+              {
+                "id": "dds-recompress",
+                "label": "Change the DDS encoding",
+                "summary": "Re-encodes the base surface; DXT1 is refused while any texel is partially transparent.",
+                "baseInput": {
+                  "transform": "recompress"
+                },
+                "fields": [
+                  {
+                    "key": "format",
+                    "label": "Encoding",
+                    "type": {
+                      "kind": "enum",
+                      "members": [
+                        {
+                          "id": "keep",
+                          "label": "Keep the source encoding"
+                        },
+                        {
+                          "id": "dxt1",
+                          "label": "DXT1 / BC1 (binary alpha)"
+                        },
+                        {
+                          "id": "dxt3",
+                          "label": "DXT3 / BC2"
+                        },
+                        {
+                          "id": "dxt5",
+                          "label": "DXT5 / BC3"
+                        },
+                        {
+                          "id": "rgba8",
+                          "label": "Uncompressed RGBA8"
+                        },
+                        {
+                          "id": "auto",
+                          "label": "DXT5 if any texel is partially transparent, else DXT1"
+                        }
+                      ]
+                    },
+                    "inputPath": ["format"],
+                    "initial": "dxt1"
+                  }
+                ]
+              },
+              {
+                "id": "dds-resize",
+                "label": "Resize",
+                "summary": "Bilinear resample of the base surface.",
+                "baseInput": {
+                  "transform": "resize"
+                },
+                "fields": [
+                  {
+                    "key": "width",
+                    "label": "Width",
+                    "type": {
+                      "kind": "number",
+                      "integer": true,
+                      "min": 1
+                    },
+                    "inputPath": ["width"],
+                    "required": true,
+                    "initial": 64
+                  },
+                  {
+                    "key": "height",
+                    "label": "Height",
+                    "type": {
+                      "kind": "number",
+                      "integer": true,
+                      "min": 1
+                    },
+                    "inputPath": ["height"],
+                    "required": true,
+                    "initial": 64
+                  },
+                  {
+                    "key": "format",
+                    "label": "Encoding",
+                    "type": {
+                      "kind": "enum",
+                      "members": [
+                        {
+                          "id": "keep",
+                          "label": "Keep the source encoding"
+                        },
+                        {
+                          "id": "dxt1",
+                          "label": "DXT1 / BC1 (binary alpha)"
+                        },
+                        {
+                          "id": "dxt3",
+                          "label": "DXT3 / BC2"
+                        },
+                        {
+                          "id": "dxt5",
+                          "label": "DXT5 / BC3"
+                        },
+                        {
+                          "id": "rgba8",
+                          "label": "Uncompressed RGBA8"
+                        },
+                        {
+                          "id": "auto",
+                          "label": "DXT5 if any texel is partially transparent, else DXT1"
+                        }
+                      ]
+                    },
+                    "inputPath": ["format"],
+                    "initial": "keep"
+                  }
+                ]
+              },
+              {
+                "id": "dds-color-key",
+                "label": "Make one colour transparent",
+                "summary": "Every texel within the tolerance of the colour becomes fully transparent.",
+                "baseInput": {
+                  "transform": "color-key"
+                },
+                "fields": [
+                  {
+                    "key": "r",
+                    "label": "Red",
+                    "type": {
+                      "kind": "number",
+                      "integer": true,
+                      "min": 0,
+                      "max": 255
+                    },
+                    "inputPath": ["target", "r"],
+                    "required": true,
+                    "initial": 255
+                  },
+                  {
+                    "key": "g",
+                    "label": "Green",
+                    "type": {
+                      "kind": "number",
+                      "integer": true,
+                      "min": 0,
+                      "max": 255
+                    },
+                    "inputPath": ["target", "g"],
+                    "required": true,
+                    "initial": 0
+                  },
+                  {
+                    "key": "b",
+                    "label": "Blue",
+                    "type": {
+                      "kind": "number",
+                      "integer": true,
+                      "min": 0,
+                      "max": 255
+                    },
+                    "inputPath": ["target", "b"],
+                    "required": true,
+                    "initial": 255
+                  },
+                  {
+                    "key": "tolerance",
+                    "label": "Tolerance",
+                    "type": {
+                      "kind": "number",
+                      "integer": true,
+                      "min": 0,
+                      "max": 255
+                    },
+                    "inputPath": ["tolerance"],
+                    "required": true,
+                    "initial": 0
+                  },
+                  {
+                    "key": "format",
+                    "label": "Encoding",
+                    "type": {
+                      "kind": "enum",
+                      "members": [
+                        {
+                          "id": "keep",
+                          "label": "Keep the source encoding"
+                        },
+                        {
+                          "id": "dxt1",
+                          "label": "DXT1 / BC1 (binary alpha)"
+                        },
+                        {
+                          "id": "dxt3",
+                          "label": "DXT3 / BC2"
+                        },
+                        {
+                          "id": "dxt5",
+                          "label": "DXT5 / BC3"
+                        },
+                        {
+                          "id": "rgba8",
+                          "label": "Uncompressed RGBA8"
+                        },
+                        {
+                          "id": "auto",
+                          "label": "DXT5 if any texel is partially transparent, else DXT1"
+                        }
+                      ]
+                    },
+                    "inputPath": ["format"],
+                    "initial": "keep"
+                  }
+                ]
+              },
+              {
+                "id": "dds-rounded-alpha",
+                "label": "Round the alpha corners",
+                "summary": "Cuts the corners to transparent.",
+                "baseInput": {
+                  "transform": "rounded-alpha"
+                },
+                "fields": [
+                  {
+                    "key": "radius",
+                    "label": "Radius",
+                    "type": {
+                      "kind": "number",
+                      "min": 0
+                    },
+                    "inputPath": ["radius"],
+                    "required": true,
+                    "initial": 8
+                  },
+                  {
+                    "key": "format",
+                    "label": "Encoding",
+                    "type": {
+                      "kind": "enum",
+                      "members": [
+                        {
+                          "id": "keep",
+                          "label": "Keep the source encoding"
+                        },
+                        {
+                          "id": "dxt1",
+                          "label": "DXT1 / BC1 (binary alpha)"
+                        },
+                        {
+                          "id": "dxt3",
+                          "label": "DXT3 / BC2"
+                        },
+                        {
+                          "id": "dxt5",
+                          "label": "DXT5 / BC3"
+                        },
+                        {
+                          "id": "rgba8",
+                          "label": "Uncompressed RGBA8"
+                        },
+                        {
+                          "id": "auto",
+                          "label": "DXT5 if any texel is partially transparent, else DXT1"
+                        }
+                      ]
+                    },
+                    "inputPath": ["format"],
+                    "initial": "keep"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "export.convert",
+        "handlerId": "convert",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"],
+        "inputSchema": {
+          "$ref": "modkit://images/dds-export-convert.v1",
+          "document": {
+            "schemaVersion": 1,
+            "forms": [
+              {
+                "id": "png",
+                "label": "PNG",
+                "summary": "Writes the base mip as a PNG file.",
+                "baseInput": {
+                  "target": "png"
+                },
+                "fields": [],
+                "writes": {
+                  "format": {
+                    "id": "png",
+                    "label": "PNG"
+                  },
+                  "extension": ".png",
+                  "mediaType": "image/png"
+                }
+              },
+              {
+                "id": "dds-dxt1",
+                "label": "DDS · DXT1 / BC1 (binary alpha)",
+                "summary": "Writes a DXT1 copy; refused while any texel is partially transparent.",
+                "baseInput": {
+                  "target": "dds",
+                  "format": "dxt1"
+                },
+                "fields": [],
+                "writes": {
+                  "format": {
+                    "id": "dds",
+                    "label": "DDS"
+                  },
+                  "encoding": {
+                    "id": "dxt1",
+                    "label": "DXT1 / BC1 (binary alpha)"
+                  },
+                  "extension": ".dds",
+                  "mediaType": "image/vnd-ms.dds"
+                }
+              },
+              {
+                "id": "dds-dxt3",
+                "label": "DDS · DXT3 / BC2",
+                "summary": "Writes a DXT3 copy.",
+                "baseInput": {
+                  "target": "dds",
+                  "format": "dxt3"
+                },
+                "fields": [],
+                "writes": {
+                  "format": {
+                    "id": "dds",
+                    "label": "DDS"
+                  },
+                  "encoding": {
+                    "id": "dxt3",
+                    "label": "DXT3 / BC2"
+                  },
+                  "extension": ".dds",
+                  "mediaType": "image/vnd-ms.dds"
+                }
+              },
+              {
+                "id": "dds-dxt5",
+                "label": "DDS · DXT5 / BC3",
+                "summary": "Writes a DXT5 copy.",
+                "baseInput": {
+                  "target": "dds",
+                  "format": "dxt5"
+                },
+                "fields": [],
+                "writes": {
+                  "format": {
+                    "id": "dds",
+                    "label": "DDS"
+                  },
+                  "encoding": {
+                    "id": "dxt5",
+                    "label": "DXT5 / BC3"
+                  },
+                  "extension": ".dds",
+                  "mediaType": "image/vnd-ms.dds"
+                }
+              },
+              {
+                "id": "dds-rgba8",
+                "label": "DDS · Uncompressed RGBA8",
+                "summary": "Writes an uncompressed copy.",
+                "baseInput": {
+                  "target": "dds",
+                  "format": "rgba8"
+                },
+                "fields": [],
+                "writes": {
+                  "format": {
+                    "id": "dds",
+                    "label": "DDS"
+                  },
+                  "encoding": {
+                    "id": "rgba8",
+                    "label": "Uncompressed RGBA8"
+                  },
+                  "extension": ".dds",
+                  "mediaType": "image/vnd-ms.dds"
+                }
+              },
+              {
+                "id": "dds-auto",
+                "label": "DDS · Automatic",
+                "summary": "DXT5 if any texel is partially transparent, else DXT1.",
+                "baseInput": {
+                  "target": "dds",
+                  "format": "auto"
+                },
+                "fields": [],
+                "writes": {
+                  "format": {
+                    "id": "dds",
+                    "label": "DDS"
+                  },
+                  "encoding": {
+                    "id": "auto",
+                    "label": "Automatic"
+                  },
+                  "extension": ".dds",
+                  "mediaType": "image/vnd-ms.dds"
+                }
+              }
+            ]
+          }
+        }
       }
     ],
     "traitDeclarations": [
@@ -138,6 +555,23 @@
       "maxNodes": 100000,
       "maxScalarBytes": 104857600,
       "maxDiagnostics": 1000
-    }
+    },
+    "fidelityEvidence": [
+      {
+        "formatId": "dds",
+        "representationId": "raster-metadata",
+        "claim": {
+          "roundTrip": "lossy",
+          "preservesUnknownData": false
+        },
+        "evidenceId": "dds-edit-content-v1",
+        "corpusId": "modkit/extensions/images/test/raster-edit-content.test.ts",
+        "corpusDigest": "none:proof-suite",
+        "conformanceProfile": "modkit/codec-contribution-v1",
+        "optionsFingerprint": "options:replace-pixels",
+        "inputClass": "dds-rgba8",
+        "provenAt": "2026-09-18T00:00:00Z"
+      }
+    ]
   }
 }

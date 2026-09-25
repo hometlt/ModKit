@@ -4,59 +4,21 @@ import {
   createEndpoint,
   createStandardSurfaceRegistry,
   framePortFromMessagePort,
+  logicalResourcesFromWire,
   protocolLimits
-} from "./chunks/chunk-PHI3IBXS.js";
-import "./chunks/chunk-3VS5UF7D.js";
+} from "./chunks/chunk-GC3F5TEI.js";
+import "./chunks/chunk-SCKD5U6H.js";
 import "./chunks/chunk-GGIVOOBZ.js";
 import "./chunks/chunk-YYQ3QKXM.js";
-import "./chunks/chunk-YRQVWMJF.js";
+import "./chunks/chunk-KL23KRQT.js";
+import "./chunks/chunk-NMXLVS6H.js";
 import {
   ModkitError
-} from "./chunks/chunk-6CZX3ZS4.js";
+} from "./chunks/chunk-HUU44HII.js";
 import "./chunks/chunk-CQ52GEHY.js";
 
 // packages/host/dist/execution/frame-json.js
 var LITTLE_ENDIAN = new Uint8Array(new Uint16Array([1]).buffer)[0] === 1;
-
-// packages/host/dist/execution/logical-resources.js
-function logicalResourcesFromWire(wire) {
-  return Object.freeze({
-    discover: wire.discover.bind(wire),
-    readBatch: wire.readBatch.bind(wire),
-    provenance: wire.provenance.bind(wire),
-    async resolve(requirement, signal) {
-      const handle = await wire.resolve(requirement, signal);
-      try {
-        const result = handle.value.result;
-        if (result.state === "unresolved") {
-          await handle.release();
-          return result;
-        }
-        const source = await handle.value.openSource(signal);
-        let released = false;
-        return {
-          ...result,
-          lease: {
-            value: source.value,
-            async release() {
-              if (released)
-                return;
-              released = true;
-              try {
-                await source.release();
-              } finally {
-                await handle.release();
-              }
-            }
-          }
-        };
-      } catch (error) {
-        await handle.release();
-        throw error;
-      }
-    }
-  });
-}
 
 // packages/host/dist/execution/module-reassembly.js
 var unavailableResolver = {
@@ -83,7 +45,8 @@ function contributionContext(wire) {
     ...wire.modelResources === void 0 ? {} : { modelResources: wire.modelResources },
     ...wire.logicalResources === void 0 ? {} : { logicalResources: logicalResourcesFromWire(wire.logicalResources) },
     ...wire.rasterResources === void 0 ? {} : { rasterResources: wire.rasterResources },
-    ...wire.providerIdentity === void 0 ? {} : { providerIdentity: Object.freeze({ ...wire.providerIdentity }) }
+    ...wire.providerIdentity === void 0 ? {} : { providerIdentity: Object.freeze({ ...wire.providerIdentity }) },
+    ...wire.settings === void 0 ? {} : { settings: wire.settings }
   };
 }
 function assetInput(wire) {

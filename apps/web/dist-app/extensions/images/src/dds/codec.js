@@ -5,16 +5,15 @@ import {
   editPlanFromInput,
   replaceBytes,
 } from '@modkit/codec-kit'
+import { decodeBcSurface } from '@modkit/codec-kit/texture/bc'
 import { decodeBc6h, decodeBc7 } from './bptc.js'
-import { ENCODABLE_FORMATS, encodeDds } from './encode.js'
+import { ENCODABLE_FORMATS } from './encode.js'
 import {
-  applyColorKeyTransparency,
-  applyRoundedAlpha,
-  combineNormalSpecular,
-  convertNormalMapToSc2,
-  prepareSc2ButtonIcon,
-  resizeRgba,
-} from '../ops/raster-ops.js'
+  DDS_EDIT_CONTENT_SCHEMA,
+  DDS_EXPORT_SCHEMA,
+  exportRaster,
+  transformNamed,
+} from '../ops/raster-transforms.js'
 import {
   blockBytesFor,
   levelDimensions,
@@ -255,198 +254,10 @@ export function parseDds(bytes) {
   return info
 }
 
-/**
- * Expand a 565 endpoint to 8 bits per channel by bit replication.
- *
- * The high bits are repeated into the low bits, which is what D3D specifies and what the GPU does.
- * Rational rounding (v * 255 / 31) is off by one for some inputs, so it would put the viewer's
- * pixels a step away from both the hardware and the legacy decoder this codec is held against.
+/*
+ * BC1–BC5 blocks decode through `@modkit/codec-kit/texture/bc` (`decodeBcSurface`), the decoder
+ * every codec storing those blocks shares; what stays here is the uncompressed path.
  */
-function expand565(value) {
-  const red = (value >>> 11) & 0x1f
-  const green = (value >>> 5) & 0x3f
-  const blue = value & 0x1f
-  return [(red << 3) | (red >>> 2), (green << 2) | (green >>> 4), (blue << 3) | (blue >>> 2), 255]
-}
-
-function colorPalette(first, second, allowTransparent) {
-  const a = expand565(first)
-  const b = expand565(second)
-  if (first > second || !allowTransparent) {
-    return [
-      a,
-      b,
-      [
-        Math.round((2 * a[0] + b[0]) / 3),
-        Math.round((2 * a[1] + b[1]) / 3),
-        Math.round((2 * a[2] + b[2]) / 3),
-        255,
-      ],
-      [
-        Math.round((a[0] + 2 * b[0]) / 3),
-        Math.round((a[1] + 2 * b[1]) / 3),
-        Math.round((a[2] + 2 * b[2]) / 3),
-        255,
-      ],
-    ]
-  }
-  return [
-    a,
-    b,
-    [
-      Math.round((a[0] + b[0]) / 2),
-      Math.round((a[1] + b[1]) / 2),
-      Math.round((a[2] + b[2]) / 2),
-      255,
-    ],
-    [0, 0, 0, 0],
-  ]
-}
-
-function alphaPalette(first, second) {
-  const values = [first, second]
-  if (first > second) {
-    for (let index = 1; index <= 6; index += 1) {
-      values.push(Math.round(((7 - index) * first + index * second) / 7))
-    }
-  } else {
-    for (let index = 1; index <= 4; index += 1) {
-      values.push(Math.round(((5 - index) * first + index * second) / 5))
-    }
-    values.push(0, 255)
-  }
-  return values
-}
-
-function writeBlockPixel(output, width, height, blockX, blockY, pixel, color) {
-  const x = blockX * 4 + (pixel & 3)
-  const y = blockY * 4 + (pixel >>> 2)
-  if (x >= width || y >= height) return
-  output.set(color, (y * width + x) * 4)
-}
-
-function decodeColorBlock(view, offset, output, surface, blockX, blockY, allowTransparent, alphas) {
-  const palette = colorPalette(
-    view.getUint16(offset, true),
-    view.getUint16(offset + 2, true),
-    allowTransparent,
-  )
-  const indices = view.getUint32(offset + 4, true)
-  for (let pixel = 0; pixel < 16; pixel += 1) {
-    const color = [...palette[(indices >>> (pixel * 2)) & 3]]
-    if (alphas !== undefined) color[3] = alphas[pixel]
-    writeBlockPixel(output, surface.width, surface.height, blockX, blockY, pixel, color)
-  }
-}
-
-function dxt3Alphas(view, offset) {
-  const values = []
-  for (let pixel = 0; pixel < 16; pixel += 1) {
-    const packed = view.getUint8(offset + (pixel >>> 1))
-    const nibble = (packed >>> ((pixel & 1) * 4)) & 0xf
-    values.push(nibble * 17)
-  }
-  return values
-}
-
-function dxt5Alphas(view, offset) {
-  const palette = alphaPalette(view.getUint8(offset), view.getUint8(offset + 1))
-  let packed = 0n
-  for (let index = 0; index < 6; index += 1) {
-    packed |= BigInt(view.getUint8(offset + 2 + index)) << BigInt(index * 8)
-  }
-  return Array.from({ length: 16 }, (_, pixel) => {
-    const index = Number((packed >> BigInt(pixel * 3)) & 7n)
-    return palette[index]
-  })
-}
-
-/**
- * BC4/BC5 signed endpoint block.
- *
- * The endpoints are signed bytes reconstructed over [-1,1]; the rgba8 view they are projected into
- * is unsigned, so the reconstructed value is mapped through (v * 0.5 + 0.5). That projection is
- * lossy by construction — a signed-normalized channel has no exact rgba8 spelling.
- */
-function signedInterpolatedValues(view, offset) {
-  const toSigned = byte => Math.max(-127, byte >= 128 ? byte - 256 : byte) / 127
-  const raw0 = view.getUint8(offset)
-  const raw1 = view.getUint8(offset + 1)
-  const first = toSigned(raw0)
-  const second = toSigned(raw1)
-  const signedFirst = raw0 >= 128 ? raw0 - 256 : raw0
-  const signedSecond = raw1 >= 128 ? raw1 - 256 : raw1
-  const palette =
-    signedFirst > signedSecond
-      ? [
-          first,
-          second,
-          (6 * first + second) / 7,
-          (5 * first + 2 * second) / 7,
-          (4 * first + 3 * second) / 7,
-          (3 * first + 4 * second) / 7,
-          (2 * first + 5 * second) / 7,
-          (first + 6 * second) / 7,
-        ]
-      : [
-          first,
-          second,
-          (4 * first + second) / 5,
-          (3 * first + 2 * second) / 5,
-          (2 * first + 3 * second) / 5,
-          (first + 4 * second) / 5,
-          -1,
-          1,
-        ]
-  let packed = 0n
-  for (let index = 0; index < 6; index += 1) {
-    packed |= BigInt(view.getUint8(offset + 2 + index)) << BigInt(index * 8)
-  }
-  return Array.from({ length: 16 }, (_, pixel) => {
-    const index = Number((packed >> BigInt(pixel * 3)) & 7n)
-    return Math.round((palette[index] * 0.5 + 0.5) * 255)
-  })
-}
-
-/** One interpolated 8-byte channel block, unsigned or signed. */
-function interpolatedValues(view, offset, snorm) {
-  return snorm ? signedInterpolatedValues(view, offset) : dxt5Alphas(view, offset)
-}
-
-/** BC4 (ATI1): a single interpolated channel replicated across RGB, alpha opaque. */
-function decodeBc4Block(view, offset, output, surface, blockX, blockY, snorm) {
-  const red = interpolatedValues(view, offset, snorm)
-  for (let pixel = 0; pixel < 16; pixel += 1) {
-    const value = red[pixel]
-    writeBlockPixel(output, surface.width, surface.height, blockX, blockY, pixel, [
-      value,
-      value,
-      value,
-      255,
-    ])
-  }
-}
-
-/**
- * BC5 (ATI2): two interpolated channels into red and green.
- *
- * Blue is left at zero rather than reconstructed. SC2 stores tangent-space normal maps here and the
- * third component is implied, but rebuilding it would be a rendering decision this codec does not
- * get to make — the viewer sees exactly the two channels the file stores.
- */
-function decodeBc5Block(view, offset, output, surface, blockX, blockY, snorm) {
-  const red = interpolatedValues(view, offset, snorm)
-  const green = interpolatedValues(view, offset + 8, snorm)
-  for (let pixel = 0; pixel < 16; pixel += 1) {
-    writeBlockPixel(output, surface.width, surface.height, blockX, blockY, pixel, [
-      red[pixel],
-      green[pixel],
-      0,
-      255,
-    ])
-  }
-}
-
 function maskShift(mask) {
   if (mask === 0) return 0
   let shift = 0
@@ -507,47 +318,17 @@ async function decodeSurface(bytes, info, surface) {
     const decode = info.format === 'BC6H' ? decodeBc6h : decodeBc7
     return decode(blocks, surface.width, surface.height)
   }
-  const view = viewOf(bytes)
-  const blockBytes = blockBytesFor(info.format)
-  if (blockBytes === 0) throw new TypeError(`DDS format ${info.format} is not supported`)
-  let offset = surface.offset
-  for (let blockY = 0; blockY < Math.ceil(surface.height / 4); blockY += 1) {
-    for (let blockX = 0; blockX < Math.ceil(surface.width / 4); blockX += 1) {
-      if (info.format === 'DXT1') {
-        decodeColorBlock(view, offset, output, surface, blockX, blockY, true)
-      } else if (info.format === 'DXT3') {
-        decodeColorBlock(
-          view,
-          offset + 8,
-          output,
-          surface,
-          blockX,
-          blockY,
-          false,
-          dxt3Alphas(view, offset),
-        )
-      } else if (info.format === 'DXT5') {
-        decodeColorBlock(
-          view,
-          offset + 8,
-          output,
-          surface,
-          blockX,
-          blockY,
-          false,
-          dxt5Alphas(view, offset),
-        )
-      } else if (info.format === 'BC4') {
-        decodeBc4Block(view, offset, output, surface, blockX, blockY, info.snorm)
-      } else if (info.format === 'BC5') {
-        decodeBc5Block(view, offset, output, surface, blockX, blockY, info.snorm)
-      } else {
-        throw new TypeError(`DDS format ${info.format} is not supported`)
-      }
-      offset += blockBytes
-    }
+  if (blockBytesFor(info.format) === 0) {
+    throw new TypeError(`DDS format ${info.format} is not supported`)
   }
-  return output
+  return decodeBcSurface(
+    bytes,
+    surface.offset,
+    surface.width,
+    surface.height,
+    info.format,
+    info.snorm === true,
+  )
 }
 
 /** Human-facing name of the stored encoding, keeping the FourCC the file actually carries. */
@@ -660,111 +441,6 @@ function regionReader(bytes, info) {
   }
 }
 
-/**
- * The pixel transforms MK2 shipped, as one operation.
- *
- * `ops/raster-ops.js` holds six of them — resize, the SC2 normal-map conversion, the normal and
- * specular combine, rounded alpha, the button-icon preparation and colour-key transparency — ported
- * and, until now, imported by nothing. MK2 reached them from VS Code commands; MK3 puts them behind
- * an operation instead, so the app, the editor and a script all reach the same code rather than the
- * editor owning a capability the others cannot have.
- *
- * Each entry states what it needs, because the failures are silent otherwise: `combineNormalSpecular`
- * wants a second image and produces nonsense from one, and `prepareSc2ButtonIcon` assumes a square
- * icon. Checking here means a caller gets told; checking nowhere means a modder gets a wrong texture.
- */
-const TRANSFORMS = Object.freeze({
-  resize: {
-    label: 'Resize',
-    apply: (image, request) => {
-      const width = Number(request.width)
-      const height = Number(request.height)
-      if (
-        !Number.isSafeInteger(width) ||
-        !Number.isSafeInteger(height) ||
-        width <= 0 ||
-        height <= 0
-      ) {
-        throw new TypeError('resize requires a positive integer width and height')
-      }
-      return resizeRgba(image, width, height)
-    },
-  },
-  'normal-map': {
-    label: 'Convert normal map to the SC2 channel layout',
-    apply: image => convertNormalMapToSc2(image),
-  },
-  'combine-normal-specular': {
-    label: 'Combine a normal map with a specular map',
-    apply: (image, request) => {
-      const specular = imageFromRequest(request.specular)
-      if (specular === undefined) {
-        throw new TypeError('combine-normal-specular requires a specular image')
-      }
-      if (specular.width !== image.width || specular.height !== image.height) {
-        throw new TypeError('combine-normal-specular requires both images at the same size')
-      }
-      return combineNormalSpecular(image, specular)
-    },
-  },
-  'rounded-alpha': {
-    label: 'Round the alpha corners',
-    apply: (image, request) => {
-      const radius = Number(request.radius ?? 0)
-      if (!Number.isFinite(radius) || radius < 0) {
-        throw new TypeError('rounded-alpha requires a non-negative radius')
-      }
-      return applyRoundedAlpha(image, radius)
-    },
-  },
-  'button-icon': {
-    label: 'Prepare an SC2 button icon',
-    apply: (image, request) => {
-      if (image.width !== image.height) {
-        throw new TypeError(
-          `button-icon requires a square image, got ${image.width} x ${image.height}`,
-        )
-      }
-      return prepareSc2ButtonIcon(image, request.options ?? {})
-    },
-  },
-  'color-key': {
-    label: 'Make one colour transparent',
-    apply: (image, request) => {
-      // The library's own option names, so a caller reads one vocabulary rather than two.
-      const target = request.target
-      if (target === null || typeof target !== 'object') {
-        throw new TypeError('color-key requires a target colour as { r, g, b }')
-      }
-      for (const channel of ['r', 'g', 'b']) {
-        if (!Number.isFinite(Number(target[channel]))) {
-          throw new TypeError(`color-key target is missing ${channel}`)
-        }
-      }
-      return applyColorKeyTransparency(image, {
-        target,
-        ...(request.tolerance === undefined ? {} : { tolerance: Number(request.tolerance) }),
-        ...(request.replacement === undefined ? {} : { replacement: request.replacement }),
-      })
-    },
-  },
-})
-
-/** An `{ width, height, pixels }` image supplied in a request, with pixels as a number array. */
-function imageFromRequest(value) {
-  if (value === null || typeof value !== 'object') return undefined
-  const width = Number(value.width)
-  const height = Number(value.height)
-  const pixels = Array.isArray(value.pixels) ? Uint8Array.from(value.pixels) : undefined
-  if (!Number.isSafeInteger(width) || !Number.isSafeInteger(height) || pixels === undefined) {
-    return undefined
-  }
-  if (pixels.length !== width * height * 4) {
-    throw new TypeError('a supplied image needs width * height * 4 RGBA bytes')
-  }
-  return { width, height, pixels }
-}
-
 const definition = Object.freeze({
   id: ID,
   version: '1.0.0',
@@ -774,7 +450,20 @@ const definition = Object.freeze({
       handlerId: 'transform',
       mutatesSource: true,
       requiredPermissions: Object.freeze(['read-source', 'write-source']),
+      inputSchema: DDS_EDIT_CONTENT_SCHEMA,
       outputKinds: Object.freeze(['edit-plan']),
+    }),
+    /*
+     * MK2's DDS file commands (export PNG, DXT5 → DXT1, SC2 button icon) as one export: the
+     * transforms of `edit.content` plus a target encoding, returned as bytes for a new file.
+     */
+    Object.freeze({
+      id: 'export.convert',
+      handlerId: 'convert',
+      mutatesSource: false,
+      requiredPermissions: Object.freeze(['read-source']),
+      inputSchema: DDS_EXPORT_SCHEMA,
+      outputKinds: Object.freeze(['bytes']),
     }),
   ]),
   format: Object.freeze({ id: 'dds', label: 'DirectDraw Surface', mediaType: 'image/vnd-ms.dds' }),
@@ -875,6 +564,29 @@ const definition = Object.freeze({
         { kind: 'group', label: 'Mip chain', children: mipChain },
       ],
     })
+    /** Mip 0 of layer 0, face 0 as RGBA8: the one surface every transform and export reads. */
+    const baseSurface = async () => {
+      const region = await regionReader(
+        bytes,
+        info,
+      )({
+        x: 0,
+        y: 0,
+        width: info.width,
+        height: info.height,
+        frame: 0,
+        mipLevel: 0,
+        layer: 0,
+        face: 0,
+        slice: 0,
+        pixelFormat: 'rgba8',
+        maxBytes: decodedBytes,
+      })
+      return { width: region.width, height: region.height, pixels: region.pixels }
+    }
+    // The parser names block formats in upper case (`DXT5`); the encoder takes them in lower case.
+    const lowered = String(info.format).toLowerCase()
+    const sourceFormat = ENCODABLE_FORMATS.includes(lowered) ? lowered : 'rgba8'
     return {
       summary: {
         format: 'dds',
@@ -938,6 +650,14 @@ const definition = Object.freeze({
        */
       unsupportedFeatures: ['dds-transform-writes-a-single-surface'],
       handlers: {
+        /** Export the base surface as PNG, raw RGBA8 or a re-encoded DDS, optionally transformed. */
+        convert: async (input, options) => ({
+          kind: 'bytes',
+          value: await exportRaster(await baseSurface(), input ?? {}, {
+            defaultDdsFormat: sourceFormat,
+            signal: options?.signal,
+          }),
+        }),
         /**
          * Apply one named pixel transform and hand back the re-encoded file.
          *
@@ -946,37 +666,19 @@ const definition = Object.freeze({
          * "the image" in a block-compressed payload. The plan says so through its fidelity, and the
          * output format defaults to what the source used when that format can be written back.
          */
-        transform: async input => {
+        transform: async (input, options) => {
           const request = input ?? {}
-          const name = typeof request.transform === 'string' ? request.transform : undefined
-          const transform = name === undefined ? undefined : TRANSFORMS[name]
-          if (transform === undefined) {
-            throw new TypeError(
-              `DDS transform must be one of ${Object.keys(TRANSFORMS).join(', ')}`,
-            )
-          }
-          const region = await regionReader(
-            bytes,
-            info,
-          )({
-            x: 0,
-            y: 0,
-            width: info.width,
-            height: info.height,
-            frame: 0,
-            mipLevel: 0,
-            layer: 0,
-            face: 0,
-            slice: 0,
-            pixelFormat: 'rgba8',
-            maxBytes: decodedBytes,
-          })
-          const source = { width: region.width, height: region.height, pixels: region.pixels }
-          const result = transform.apply(source, request)
-          const requested = typeof request.format === 'string' ? request.format : undefined
+          const name = request.transform
+          const transform = transformNamed(name)
           const format =
-            requested ?? (ENCODABLE_FORMATS.includes(info.format) ? info.format : 'rgba8')
-          const encoded = encodeDds(result, { format })
+            request.format === undefined || request.format === 'keep'
+              ? sourceFormat
+              : request.format
+          const encoded = await exportRaster(
+            await baseSurface(),
+            { target: 'dds', format, transform: name, transformInput: request },
+            { defaultDdsFormat: sourceFormat, signal: options?.signal },
+          )
           return {
             kind: 'edit-plan',
             plan: editPlanFromInput(context.input, {

@@ -10,22 +10,34 @@ import {
   createWebPreviewStages,
   createWebSubjectServices,
   describeEditability,
-  element,
   isWritableHandle,
   nestedSubjectServices,
   openNestedSubjectRef,
-  parseSubjectRef,
   requestWriteAccess,
   resolveFormatWriter,
-  revisionId,
-  serializeSubjectRef,
-  setPart,
-  setState,
-  setViewerText,
   sourceRevisionToken,
   sourceUriFor,
   stageIdOf
-} from "./chunks/chunk-QBFLB2HN.js";
+} from "./chunks/chunk-CATIUVBH.js";
+import "./chunks/chunk-3TK45GO7.js";
+import "./chunks/chunk-NRZMIBZ5.js";
+import "./chunks/chunk-WPREPMVL.js";
+import "./chunks/chunk-XYGFUUGH.js";
+import "./chunks/chunk-4NP7CN3Z.js";
+import "./chunks/chunk-QDB3CCKD.js";
+import "./chunks/chunk-T7WKIGHN.js";
+import "./chunks/chunk-BJE5PUXA.js";
+import {
+  element,
+  setPart,
+  setState,
+  setViewerText
+} from "./chunks/chunk-EYZUVLIL.js";
+import {
+  parseSubjectRef,
+  revisionId,
+  serializeSubjectRef
+} from "./chunks/chunk-BPQKZDVH.js";
 import {
   define_MODKIT_EMBED_EXTENSION_ORIGINS_default,
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS

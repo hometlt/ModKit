@@ -11,6 +11,7 @@ import {
   compareSemver,
   compareUtf8,
   contractId,
+  createReferenceIndex,
   deepFreeze,
   diagnostic,
   errorCode,
@@ -36,7 +37,7 @@ import {
   uint64,
   uniqueSortedUtf8,
   versionRangeTargetsMajor
-} from "../../chunks/chunk-6CZX3ZS4.js";
+} from "../../chunks/chunk-HUU44HII.js";
 import "../../chunks/chunk-CQ52GEHY.js";
 export {
   CANCELLED_CODE,
@@ -51,6 +52,7 @@ export {
   compareSemver,
   compareUtf8,
   contractId,
+  createReferenceIndex,
   deepFreeze,
   diagnostic,
   errorCode,

@@ -21,8 +21,8 @@
     }
   ],
   "limitations": [
-    "Portable extraction is intentionally bounded to single-segment frames containing raw or RLE blocks.",
-    "Compressed blocks, dictionaries, content checksums, concatenated frames, and writing are not implemented."
+    "Decoding goes through the shared @modkit/codec-kit/compression/zstd decoder: every block type, concatenated frames and content checksums; output is bounded by maxScalarBytes.",
+    "Dictionaries and writing are not implemented."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "zstd", "label": "Zstandard compressed payload" }],

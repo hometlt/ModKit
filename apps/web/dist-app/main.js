@@ -1,12 +1,7 @@
 import {
-  CONTAINER_EXTRACT_OPERATION_ID,
-  DEFAULT_UI_LOCALIZER,
   EXPLORER_MAXIMUM_BYTES,
   EXTENSION_ROOT_FAILURE_CODES,
-  PANELS_FALLBACK_MESSAGES,
-  SETTINGS_FALLBACK_MESSAGES,
   SubjectNavigationHistory,
-  ViewerMountScope,
   WEB_EXTENSION_CATALOG,
   WEB_SOURCE_FACILITY_UNAVAILABLE,
   WEB_SOURCE_FILESYSTEM_READ_RANDOM,
@@ -15,9 +10,7 @@ import {
   applyTheme,
   catalogCoordinates,
   combineLoadedExtensionRoots,
-  compareUtf8,
   containerCoordinate,
-  contributionContractLabel,
   coordinateMapPreviewAssetSession,
   createBrowserExtensionManager,
   createCodecPreview,
@@ -28,8 +21,6 @@ import {
   createManagedExtensionsController,
   createSingleFileAccess,
   createSubjectCard,
-  createSurface,
-  createViewerMount,
   createWebEditingArm,
   createWebExtensionSubjectCatalog,
   createWebLocalizer,
@@ -37,51 +28,75 @@ import {
   createWebPreviewStages,
   createWebSubjectServices,
   createWebTopology,
-  declaredMutatingOperations,
-  defineViewerModule,
   describeEditability,
   describeFileCapability,
-  diagnostic,
-  diagnosticsBySeverity,
-  editOffer,
-  element,
-  fidelityNote,
-  invokeOperation,
-  invokeRefusalMessage,
-  isModkitError,
-  isQualifiedId,
-  isRejected,
   isWritableHandle,
   loadManagedExtensionRoots,
   loadSubjectCardSections,
   loadUserExtensionRoots,
   loadWebLocalizationCatalogs,
-  mountFieldEditor,
   mountWebWorkbench,
   nestedSubjectServices,
-  normalizeModkitIdentifier,
   openNestedSubject,
-  presentationSlotId,
   probeWebFacilities,
   requestUserExtensionPermission,
   requestWriteAccess,
   resolveCommonPresentationPlan,
   resolveFormatWriter,
-  resolveModelViewerTextures,
   resolveModuleMap,
-  revisionId,
+  sourceRevisionToken,
+  sourceUriFor,
+  stageIdOf,
+  subjectFactsSourceFromWire,
+  webExtensionSubjectCardBundle
+} from "./chunks/chunk-CATIUVBH.js";
+import "./chunks/chunk-3TK45GO7.js";
+import "./chunks/chunk-NRZMIBZ5.js";
+import "./chunks/chunk-WPREPMVL.js";
+import "./chunks/chunk-XYGFUUGH.js";
+import "./chunks/chunk-4NP7CN3Z.js";
+import {
+  resolveModelViewerTextures
+} from "./chunks/chunk-QDB3CCKD.js";
+import {
+  declaredMutatingOperations,
+  editOffer,
+  fidelityNote,
+  invokeRefusalMessage,
+  isRejected,
+  mountFieldEditor,
+  subjectCandidateProviderLease
+} from "./chunks/chunk-T7WKIGHN.js";
+import {
+  DEFAULT_UI_LOCALIZER,
+  contributionContractLabel
+} from "./chunks/chunk-BJE5PUXA.js";
+import {
+  PANELS_FALLBACK_MESSAGES,
+  SETTINGS_FALLBACK_MESSAGES,
+  ViewerMountScope,
+  createSurface,
+  createViewerMount,
+  defineViewerModule,
+  diagnosticsBySeverity,
+  element,
+  invokeOperation,
   safeViewerText,
   setPart,
   setState,
   setViewerText,
-  sourceRevisionToken,
-  sourceUriFor,
-  stageIdOf,
-  subjectCandidateProviderLease,
-  subjectFactsSourceFromWire,
-  webExtensionSubjectCardBundle,
   withEnglishUiFallback
-} from "./chunks/chunk-QBFLB2HN.js";
+} from "./chunks/chunk-EYZUVLIL.js";
+import {
+  CONTAINER_EXTRACT_OPERATION_ID,
+  compareUtf8,
+  diagnostic,
+  isModkitError,
+  isQualifiedId,
+  normalizeModkitIdentifier,
+  presentationSlotId,
+  revisionId
+} from "./chunks/chunk-BPQKZDVH.js";
 import {
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
 } from "./chunks/chunk-BLWUC7LO.js";
@@ -3576,7 +3591,7 @@ async function boot() {
   if (pageUrl.searchParams.has("format-smoke")) {
     const loaded = await loadPwaFormatSmokeAuthority(
       new URL("./format-smoke.v1.json", document.baseURI).href,
-      "sha256:509e7d874da85925a5e4d560dfcafe39501c917a3915123b9024d0d9309f6bee"
+      "sha256:c796c511b72d434e37a5c1c5c3e99824fbddc169bad7c0e4f89f41c1c13e0ed8"
     );
     const control = createPwaFormatSmokeAcceptance({
       authority: loaded.authority,

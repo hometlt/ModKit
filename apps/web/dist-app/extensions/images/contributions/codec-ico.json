@@ -1,6 +1,9 @@
 {
   "schemaVersion": 1,
-  "contract": { "id": "modkit/codec-contribution", "major": 1 },
+  "contract": {
+    "id": "modkit/codec-contribution",
+    "major": 1
+  },
   "id": "modkit/ico",
   "displayName": "Windows Icon",
   "status": "partial",
@@ -8,33 +11,57 @@
     {
       "variantId": "trusted-node",
       "entrypoint": "./src/ico/codec.js",
-      "target": { "environments": ["node"] },
+      "target": {
+        "environments": ["node"]
+      },
       "executionProfile": "trusted-in-process",
-      "requestedPermissionClasses": ["read-source"]
+      "requestedPermissionClasses": ["read-source", "write-source"]
     },
     {
       "variantId": "portable",
       "entrypoint": "./src/ico/codec.js",
-      "target": { "environments": ["browser-worker", "node-worker"] },
+      "target": {
+        "environments": ["browser-worker", "node-worker"]
+      },
       "executionProfile": "worker-brokered",
-      "requestedPermissionClasses": ["read-source"]
+      "requestedPermissionClasses": ["read-source", "write-source"]
     }
   ],
   "limitations": [
     "The MK3 port validates every directory range, inspects PNG-backed and DIB entries, and decodes the selected uncompressed 24-bit or 32-bit DIB plus its AND mask to RGBA8.",
-    "PNG-backed pixel-region decoding, indexed/bitfield/compressed DIB decoding, writing, and pixel editing remain unsupported."
+    "PNG-backed pixel-region decoding, indexed/bitfield/compressed DIB decoding remain unsupported; a pixel edit rewrites only the shown picture."
   ],
   "spec": {
-    "formatRefs": [{ "formatId": "ico", "label": "Windows Icon" }],
+    "formatRefs": [
+      {
+        "formatId": "ico",
+        "label": "Windows Icon"
+      }
+    ],
     "roles": ["media"],
     "sourceTopology": "single",
     "artifactStages": ["authored", "compiled", "runtime"],
     "openIntents": ["probe", "inspect", "thumbnail", "full", "export"],
     "match": {
       "extensions": ["ico"],
-      "signatures": [{ "from": "start", "offset": 0, "bytesHex": "00000100" }]
+      "signatures": [
+        {
+          "from": "start",
+          "offset": 0,
+          "bytesHex": "00000100"
+        }
+      ]
     },
-    "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
+    "probe": {
+      "kind": "bytes",
+      "ranges": [
+        {
+          "from": "start",
+          "length": 4096
+        }
+      ],
+      "maxBytes": 4096
+    },
     "representations": [
       {
         "id": "raster-metadata",
@@ -45,9 +72,18 @@
       }
     ],
     "publishesDataSources": [
-      { "contract": "common.view/raster-image-source", "major": 1 },
-      { "contract": "common.view/tree-data-source", "major": 1 },
-      { "contract": "common.view/byte-range-source", "major": 1 }
+      {
+        "contract": "common.view/raster-image-source",
+        "major": 1
+      },
+      {
+        "contract": "common.view/tree-data-source",
+        "major": 1
+      },
+      {
+        "contract": "common.view/byte-range-source",
+        "major": 1
+      }
     ],
     "operations": [
       {
@@ -70,15 +106,132 @@
         "mutatesSource": false,
         "requiredPermissions": ["read-source"],
         "outputKinds": ["bytes"]
+      },
+      {
+        "id": "edit.content",
+        "handlerId": "transform",
+        "mutatesSource": true,
+        "requiredPermissions": ["read-source", "write-source"],
+        "inputSchema": {
+          "$ref": "modkit://images/raster-edit-content.v1",
+          "document": {
+            "schemaVersion": 1,
+            "forms": [
+              {
+                "id": "raster-color-key",
+                "label": "Make one colour transparent",
+                "summary": "Every pixel within the tolerance of the colour becomes fully transparent.",
+                "baseInput": {
+                  "transform": "color-key"
+                },
+                "fields": [
+                  {
+                    "key": "r",
+                    "label": "Red",
+                    "type": {
+                      "kind": "number",
+                      "integer": true,
+                      "min": 0,
+                      "max": 255
+                    },
+                    "inputPath": ["target", "r"],
+                    "required": true,
+                    "initial": 255
+                  },
+                  {
+                    "key": "g",
+                    "label": "Green",
+                    "type": {
+                      "kind": "number",
+                      "integer": true,
+                      "min": 0,
+                      "max": 255
+                    },
+                    "inputPath": ["target", "g"],
+                    "required": true,
+                    "initial": 0
+                  },
+                  {
+                    "key": "b",
+                    "label": "Blue",
+                    "type": {
+                      "kind": "number",
+                      "integer": true,
+                      "min": 0,
+                      "max": 255
+                    },
+                    "inputPath": ["target", "b"],
+                    "required": true,
+                    "initial": 255
+                  },
+                  {
+                    "key": "tolerance",
+                    "label": "Tolerance",
+                    "type": {
+                      "kind": "number",
+                      "integer": true,
+                      "min": 0,
+                      "max": 255
+                    },
+                    "inputPath": ["tolerance"],
+                    "required": true,
+                    "initial": 0
+                  }
+                ]
+              },
+              {
+                "id": "raster-rounded-alpha",
+                "label": "Round the alpha corners",
+                "summary": "Cuts the corners to transparent.",
+                "baseInput": {
+                  "transform": "rounded-alpha"
+                },
+                "fields": [
+                  {
+                    "key": "radius",
+                    "label": "Radius",
+                    "type": {
+                      "kind": "number",
+                      "min": 0
+                    },
+                    "inputPath": ["radius"],
+                    "required": true,
+                    "initial": 8
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "outputKinds": ["edit-plan"]
       }
     ],
-    "implementationTier": { "claimed": 1 },
+    "implementationTier": {
+      "claimed": 1
+    },
     "budgets": {
       "maxInputBytes": "1073741824",
       "maxDepth": 64,
       "maxNodes": 100000,
       "maxScalarBytes": 104857600,
       "maxDiagnostics": 1000
-    }
+    },
+    "fidelityEvidence": [
+      {
+        "formatId": "ico",
+        "representationId": "raster-metadata",
+        "claim": {
+          "roundTrip": "semantic",
+          "preservesUnknownData": true
+        },
+        "evidenceId": "ico-edit-content-v1",
+        "corpusId": "modkit/extensions/images/test/raster-edit-content.test.ts",
+        "corpusDigest": "none:proof-suite",
+        "conformanceProfile": "modkit/codec-contribution-v1",
+        "optionsFingerprint": "options:replace-pixels",
+        "inputClass": "ico-rgba8",
+        "provenAt": "2026-09-18T00:00:00Z"
+      }
+    ]
   }
 }

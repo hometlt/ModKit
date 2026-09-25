@@ -81,7 +81,6 @@ var SHARED_OPERATION_IDS = Object.freeze([
   "asset.compare",
   "subject.compare",
   "subject.select",
-  "content.resolve-dependencies",
   "content.mount"
 ]);
 function operationId(value, owner) {
@@ -643,6 +642,47 @@ var DisposableStore = class {
   }
 };
 
+// packages/core/dist/reference-index.js
+function createReferenceIndex(options = {}) {
+  const normalize = options.normalizeDocumentId ?? ((id) => id);
+  const byTarget = /* @__PURE__ */ new Map();
+  const byDocument = /* @__PURE__ */ new Map();
+  const detach = (documentId) => {
+    for (const target of byDocument.get(documentId) ?? []) {
+      const documents = byTarget.get(target);
+      documents?.delete(documentId);
+      if (documents?.size === 0)
+        byTarget.delete(target);
+    }
+  };
+  return {
+    set(documentId, targets) {
+      const id = normalize(documentId);
+      detach(id);
+      const set = new Set(targets);
+      byDocument.set(id, set);
+      for (const target of set) {
+        const documents = byTarget.get(target) ?? /* @__PURE__ */ new Set();
+        documents.add(id);
+        byTarget.set(target, documents);
+      }
+    },
+    remove(documentId) {
+      const id = normalize(documentId);
+      detach(id);
+      byDocument.delete(id);
+    },
+    referencing: (target) => [...byTarget.get(target) ?? []],
+    targetsOf: (documentId) => [...byDocument.get(normalize(documentId)) ?? []],
+    documents: () => [...byDocument.keys()],
+    snapshot: () => ({ documents: byDocument.size, targets: byTarget.size }),
+    clear() {
+      byTarget.clear();
+      byDocument.clear();
+    }
+  };
+}
+
 export {
   isSegment,
   isDottedId,
@@ -680,5 +720,6 @@ export {
   OperationCancelledError,
   throwIfAborted,
   isCancellation,
-  DisposableStore
+  DisposableStore,
+  createReferenceIndex
 };

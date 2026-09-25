@@ -21,8 +21,8 @@
     }
   ],
   "limitations": [
-    "Portable extraction is intentionally bounded to one regular file in one raw-header folder using the official Copy coder.",
-    "Compressed or encrypted coders, encoded headers, solid and multi-volume archives, multiple files or folders, and writing are not implemented."
+    "Portable reading covers plain and encoded headers, solid and non-solid folders, empty files and directories, and the Copy, LZMA, LZMA2, BCJ (x86), BCJ2, Delta, Deflate and BZip2 coders; one decoded folder is cached per session and every folder output is bounded by maxScalarBytes.",
+    "Encrypted archives list their entries (unless headers are encrypted) and refuse extraction with archives/password-required; PPMd, Deflate64, ARM/ARMT/ARM64/PPC/SPARC/IA64/RISC-V filters, multi-volume archives and writing are not implemented."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "7z", "label": "7-Zip archive" }],

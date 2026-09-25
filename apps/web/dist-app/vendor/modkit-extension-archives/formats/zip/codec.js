@@ -1,32 +1,43 @@
 import {
   PROJECTION_RECEIPT_METADATA_ID,
   pageStart
-} from "../../../../chunks/chunk-P62TCZHN.js";
+} from "../../../../chunks/chunk-A26CPHMT.js";
 import "../../../../chunks/chunk-W5HVUYW4.js";
 import "../../../../chunks/chunk-4IC3253U.js";
 import "../../../../chunks/chunk-4FJ6AE2N.js";
-import "../../../../chunks/chunk-L5WKTLBK.js";
+import {
+  snapshotJson
+} from "../../../../chunks/chunk-3YDGNEY2.js";
+import "../../../../chunks/chunk-OVW5EXOM.js";
 import {
   assembleSubjectDescriptor,
   createAssetSession,
   createUtf8TextDataSource
-} from "../../../../chunks/chunk-GKYVVDGF.js";
-import "../../../../chunks/chunk-PHI3IBXS.js";
+} from "../../../../chunks/chunk-5GA6R5US.js";
+import "../../../../chunks/chunk-JHPOUH6S.js";
+import {
+  contributionSettingsFor
+} from "../../../../chunks/chunk-SCKD5U6H.js";
+import "../../../../chunks/chunk-GGIVOOBZ.js";
+import "../../../../chunks/chunk-YYQ3QKXM.js";
+import "../../../../chunks/chunk-KL23KRQT.js";
 import {
   revisionId,
   toPortableProjectionReceipt
-} from "../../../../chunks/chunk-3VS5UF7D.js";
-import "../../../../chunks/chunk-GGIVOOBZ.js";
-import "../../../../chunks/chunk-YYQ3QKXM.js";
-import "../../../../chunks/chunk-YRQVWMJF.js";
-import {
-  snapshotJson
-} from "../../../../chunks/chunk-3YDGNEY2.js";
+} from "../../../../chunks/chunk-NMXLVS6H.js";
 import {
   ModkitError,
   canonicalJsonStringify,
   diagnostic
-} from "../../../../chunks/chunk-6CZX3ZS4.js";
+} from "../../../../chunks/chunk-HUU44HII.js";
+import "../../../../chunks/chunk-NUFRM6SI.js";
+import "../../../../chunks/chunk-L5WKTLBK.js";
+import {
+  crc32
+} from "../../../../chunks/chunk-GZXTFMPE.js";
+import {
+  decompressBounded
+} from "../../../../chunks/chunk-JVAXQGJ2.js";
 import "../../../../chunks/chunk-CQ52GEHY.js";
 
 // packages/codec-kit/dist/deferred-session.js
@@ -295,6 +306,7 @@ function createTreeDataSource(rootNode) {
         kind: value.kind,
         label: value.label,
         ...value.preview === void 0 ? {} : { preview: value.preview },
+        ...value.subjectId === void 0 ? {} : { subjectId: value.subjectId },
         ...value.semanticPath === void 0 ? {} : { semanticPath: Object.freeze([...value.semanticPath]) },
         ...value.value === void 0 ? {} : { value: value.value },
         ...value.type === void 0 ? {} : { type: value.type },
@@ -429,6 +441,56 @@ async function readAll(source, budget, signal) {
   }
   return result;
 }
+function memoryByteSource(bytes) {
+  return Object.freeze({
+    size: async () => BigInt(bytes.byteLength),
+    async read(offset, length, readSignal) {
+      if (readSignal?.aborted)
+        throw new DOMException("operation cancelled", "AbortError");
+      if (offset < 0n || offset > BigInt(bytes.byteLength) || length < 0) {
+        throw new RangeError("byte range is outside the source");
+      }
+      return bytes.slice(Number(offset), Math.min(bytes.byteLength, Number(offset) + length));
+    }
+  });
+}
+var RANGE_DETECT_PREFIX_BYTES = 64 * 1024;
+var RANGE_READ_CHUNK_BYTES = 8 * 1024 * 1024;
+function rangeByteSource(source, budget) {
+  if (source.kind !== "bytes" || source.size === void 0) {
+    throw new TypeError("range inspection codecs require a sized byte source");
+  }
+  const size = source.size;
+  const maximum = BigInt(budget.maxInputBytes);
+  return Object.freeze({
+    size: async () => size,
+    async read(offset, length, readSignal) {
+      if (readSignal?.aborted)
+        throw new DOMException("operation cancelled", "AbortError");
+      if (typeof offset !== "bigint" || offset < 0n || offset > size || !Number.isSafeInteger(length) || length < 0) {
+        throw new RangeError("byte range is outside the source");
+      }
+      if (BigInt(length) > maximum) {
+        throw new RangeError("byte range exceeds the inspection budget");
+      }
+      const end = offset + BigInt(length) < size ? offset + BigInt(length) : size;
+      const result = new Uint8Array(Number(end - offset));
+      let filled = 0;
+      while (filled < result.byteLength) {
+        if (readSignal?.aborted)
+          throw new DOMException("operation cancelled", "AbortError");
+        const wanted = Math.min(RANGE_READ_CHUNK_BYTES, result.byteLength - filled);
+        const chunk = await source.read(offset + BigInt(filled), wanted, readSignal);
+        if (chunk.byteLength === 0)
+          throw new RangeError("source ended before its declared size");
+        const taken = Math.min(chunk.byteLength, wanted);
+        result.set(chunk.subarray(0, taken), filled);
+        filled += taken;
+      }
+      return result;
+    }
+  });
+}
 function originFrom(input, primary, companions = []) {
   const requiredCompanionBindings = new Set(companions.flatMap((companion) => companion.required === true && companion.state === "resolved" ? companion.bindingIds : []));
   const toBinding = (binding) => ({
@@ -472,8 +534,9 @@ function createInspectionCodec(definition2, contributionContext) {
     });
   }
   const namespaceDefinition = definition2.namespace;
+  const rangeDefinition = definition2.access === "ranges" ? definition2 : void 0;
   const customOperations = Object.freeze([...definition2.operations ?? []]);
-  const sharedOperations = namespaceDefinition === void 0 ? INSPECTION_OPERATIONS : INSPECTION_OPERATIONS.filter((operation) => operation.handlerId !== "export-raw");
+  const sharedOperations = namespaceDefinition === void 0 && rangeDefinition === void 0 ? INSPECTION_OPERATIONS : INSPECTION_OPERATIONS.filter((operation) => operation.handlerId !== "export-raw");
   const customIds = /* @__PURE__ */ new Set();
   for (const operation of customOperations) {
     if (customIds.has(operation.id))
@@ -589,6 +652,7 @@ function createInspectionCodec(definition2, contributionContext) {
             budget,
             signal,
             intent,
+            settings: contributionSettingsFor(contributionContext?.settings, input.root.uri),
             namespace: namespaceLease.value,
             input
           });
@@ -671,20 +735,13 @@ function createInspectionCodec(definition2, contributionContext) {
       const sourceLease = await input.openBinding(primary.bindingId, signal);
       const source = sourceLease.value;
       try {
-        const bytes = await readAll(source, budget, signal);
-        const detected = await definition2.detect(bytes, primary.source.uri);
-        const byteSource = Object.freeze({
-          size: async () => BigInt(bytes.byteLength),
-          async read(offset, length, readSignal) {
-            if (readSignal?.aborted)
-              throw new DOMException("operation cancelled", "AbortError");
-            if (offset < 0n || offset > BigInt(bytes.byteLength) || length < 0) {
-              throw new RangeError("byte range is outside the source");
-            }
-            return bytes.slice(Number(offset), Math.min(bytes.byteLength, Number(offset) + length));
-          }
-        });
-        const inspection = await definition2.inspect(bytes, {
+        const bytes = rangeDefinition === void 0 ? await readAll(source, budget, signal) : void 0;
+        const byteSource = bytes === void 0 ? rangeByteSource(source, budget) : memoryByteSource(bytes);
+        const sourceSize = await byteSource.size();
+        const readable = BigInt(budget.maxInputBytes) < sourceSize ? BigInt(budget.maxInputBytes) : sourceSize;
+        const prefix = bytes ?? await byteSource.read(0n, Math.min(RANGE_DETECT_PREFIX_BYTES, Number(readable)), signal);
+        const detected = await definition2.detect(prefix, primary.source.uri);
+        const inspectionContext = {
           ...contributionContext === void 0 ? {} : {
             contracts: contributionContext.contracts,
             ...contributionContext.modelResources === void 0 ? {} : { modelResources: contributionContext.modelResources },
@@ -694,11 +751,13 @@ function createInspectionCodec(definition2, contributionContext) {
           budget,
           signal,
           intent,
+          settings: contributionSettingsFor(contributionContext?.settings, primary.source.uri),
           source,
           primary,
           byteSource,
           input
-        });
+        };
+        const inspection = rangeDefinition !== void 0 ? await rangeDefinition.inspect(inspectionContext) : await definition2.inspect(bytes, inspectionContext);
         const dataSources = new Map([
           ["common.view/byte-range-source", byteSource],
           ...Object.entries(inspection.dataSources ?? {})
@@ -754,7 +813,7 @@ function createInspectionCodec(definition2, contributionContext) {
             seekable: true,
             randomAccess: true,
             trusted: false,
-            maxDecodedBytes: String(inspection.maxDecodedBytes ?? bytes.byteLength),
+            maxDecodedBytes: String(inspection.maxDecodedBytes ?? sourceSize),
             ...inspection.unsupportedFeatures === void 0 ? {} : { unsupportedFeatures: inspection.unsupportedFeatures }
           },
           dataSources: [...dataSources.keys()].map((contract) => ({ contract, major: 1 })),
@@ -766,7 +825,9 @@ function createInspectionCodec(definition2, contributionContext) {
         const handlers = new Map([
           ["inspect", async () => ({ kind: "json", value: inspection.summary })],
           ["validate", async () => ({ kind: "none" })],
-          ["export-raw", async () => ({ kind: "bytes", value: bytes })],
+          ...bytes === void 0 ? [] : [
+            ["export-raw", async () => ({ kind: "bytes", value: bytes })]
+          ],
           ...Object.entries(inspection.handlers ?? {})
         ]);
         return createAssetSession({
@@ -836,15 +897,6 @@ function u32(bytes, offset) {
   if (offset < 0 || offset + 4 > bytes.byteLength) throw new RangeError("truncated ZIP u32");
   return new DataView(bytes.buffer, bytes.byteOffset + offset, 4).getUint32(0, true);
 }
-var CRC_TABLE = (() => {
-  const table = new Uint32Array(256);
-  for (let index = 0; index < 256; index += 1) {
-    let value = index;
-    for (let bit = 0; bit < 8; bit += 1) value = value >>> 1 ^ (value & 1 ? 3988292384 : 0);
-    table[index] = value >>> 0;
-  }
-  return table;
-})();
 function compressionName(method) {
   if (method === 0) return "stored";
   if (method === 8) return "deflate";
@@ -866,13 +918,6 @@ function dosTimestamp(dosDate, dosTime) {
   if (month < 1 || month > 12 || day < 1 || day > 31) return void 0;
   if (hour > 23 || minute > 59 || second > 59) return void 0;
   return Date.UTC(year, month - 1, day, hour, minute, second);
-}
-function crc32(bytes) {
-  let crc = 4294967295;
-  for (let index = 0; index < bytes.byteLength; index += 1) {
-    crc = crc >>> 8 ^ (CRC_TABLE[(crc ^ (bytes[index] ?? 0)) & 255] ?? 0);
-  }
-  return (crc ^ 4294967295) >>> 0;
 }
 function findEocd(bytes) {
   const first = Math.max(0, bytes.byteLength - 65557);
@@ -951,13 +996,6 @@ function parseZipArchive(bytes, maxEntries) {
   }
   return Object.freeze(entries);
 }
-async function inflateRaw(bytes) {
-  if (typeof DecompressionStream !== "function") {
-    throw new TypeError("deflate extraction is unavailable in this runtime");
-  }
-  const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
-  return new Uint8Array(await new Response(stream).arrayBuffer());
-}
 async function extractZipArchiveEntry(bytes, entry) {
   if (entry.kind !== "file") throw new TypeError("directories have no byte payload");
   if ((entry.flags & FLAG_ENCRYPTED) !== 0)
@@ -970,7 +1008,7 @@ async function extractZipArchiveEntry(bytes, entry) {
   const end = dataOffset + entry.compressedSize;
   if (end > bytes.byteLength) throw new TypeError("ZIP entry data is truncated");
   const compressed = bytes.slice(dataOffset, end);
-  const result = entry.method === 0 ? compressed : entry.method === 8 ? await inflateRaw(compressed) : (() => {
+  const result = entry.method === 0 ? compressed : entry.method === 8 ? await decompressBounded(compressed, "deflate-raw", { maxOutputBytes: entry.size }) : (() => {
     throw new TypeError(`unsupported ZIP compression method ${entry.method}`);
   })();
   if (result.byteLength !== entry.size)
@@ -1595,6 +1633,105 @@ function editContentHandler(bytes, entries, model, budget, input) {
     );
   };
 }
+var CONTAINER_PACK_OPERATION = Object.freeze({
+  id: "container.pack",
+  handlerId: "container-pack",
+  mutatesSource: true,
+  requiredPermissions: Object.freeze(["read-source", "write-source"]),
+  outputKinds: Object.freeze(["edit-plan"])
+});
+function containerPackHandler(bytes, entries, model, budget, input, source) {
+  return async (value) => {
+    const usableModel = usable(model);
+    const request = requireRecord(value, "container.pack");
+    if (request.mode === "create") {
+      throw new TypeError("container.pack creates no ZIP archive here; it edits an existing one");
+    }
+    const byId = new Map(entries.map((entry) => [entry.id, entry]));
+    const touched = /* @__PURE__ */ new Set();
+    const member = (item, label) => {
+      const change = requireRecord(item, label);
+      const entry = byId.get(change.entryId);
+      if (entry === void 0) {
+        throw new TypeError(`ZIP entry id \xAB${String(change.entryId)}\xBB was not found`);
+      }
+      if (change.expectedRevision !== source.revision) {
+        throw new TypeError(`\xAB${entry.name}\xBB changed since it was read`);
+      }
+      if (touched.has(entry.id)) throw new TypeError(`\xAB${entry.name}\xBB is changed twice`);
+      touched.add(entry.id);
+      return { change, entry };
+    };
+    const replaced = /* @__PURE__ */ new Map();
+    for (const item of requireList(request.replacements, "container.pack replacements")) {
+      const { change, entry } = member(item, "container.pack replacement");
+      if (entry.kind !== "file") throw new TypeError(`\xAB${entry.name}\xBB is a folder, not content`);
+      replaced.set(
+        entry.id,
+        decodeBase64(change.bytesBase64, budget.maxScalarBytes, `bytes for \xAB${entry.name}\xBB`)
+      );
+    }
+    const removed = /* @__PURE__ */ new Set();
+    for (const item of requireList(request.remove, "container.pack remove")) {
+      removed.add(member(item, "container.pack remove").entry.id);
+    }
+    const renamed = /* @__PURE__ */ new Map();
+    for (const item of requireList(request.rename, "container.pack rename")) {
+      const { change, entry } = member(item, "container.pack rename");
+      const name = safePath(String(change.name ?? ""));
+      if (name === "") throw new TypeError("a rename target cannot be empty");
+      if (entry.name.endsWith("/") !== name.endsWith("/")) {
+        throw new TypeError(`renaming \xAB${entry.name}\xBB to \xAB${name}\xBB would change its kind`);
+      }
+      renamed.set(entry.id, name);
+    }
+    const added = requireList(request.add, "container.pack add").map((item) => {
+      const change = requireRecord(item, "container.pack add");
+      const name = safePath(String(change.name ?? ""));
+      if (name === "") throw new TypeError("an added member needs a name");
+      return {
+        name,
+        bytes: decodeBase64(change.bytesBase64, budget.maxScalarBytes, `bytes for \xAB${name}\xBB`)
+      };
+    });
+    if (touched.size + added.length === 0) throw new TypeError("container.pack names no change");
+    const names = /* @__PURE__ */ new Set();
+    const claim = (name) => {
+      if (names.has(name)) throw new TypeError(`\xAB${name}\xBB would appear twice in the archive`);
+      names.add(name);
+    };
+    const planned = [];
+    for (const entry of entries) {
+      if (removed.has(entry.id)) continue;
+      const range = usableModel.ranges.get(entry.id);
+      if (range === void 0) throw new TypeError(`\xAB${entry.name}\xBB has no readable local block`);
+      const data = replaced.get(entry.id);
+      const to = renamed.get(entry.id);
+      claim(to ?? entry.name);
+      planned.push(
+        data !== void 0 ? restoredEntry(bytes, entry, range, data) : to !== void 0 ? renamedEntry(bytes, entry, range, to) : verbatimEntry(bytes, entry, range)
+      );
+    }
+    for (const item of added) {
+      claim(item.name);
+      planned.push(storedEntry(item.name, item.bytes));
+    }
+    if (planned.length === 0) throw new TypeError("container.pack would leave an empty archive");
+    const summary = [
+      ...[...replaced.keys()].map((id) => `replace ${byId.get(id).name}`),
+      ...added.map((item) => `add ${item.name}`),
+      ...[...removed].map((id) => `remove ${byId.get(id).name}`),
+      ...[...renamed].map(([id, name]) => `rename ${byId.get(id).name} \u2192 ${name}`)
+    ];
+    return editPlanOutput(
+      input,
+      assembleArchive(planned, usableModel.comment, budget),
+      usableModel,
+      `zip-container-pack:${summary.join(";")}`,
+      summary.join(", ")
+    );
+  };
+}
 function namespaceSource(entries, source) {
   const byId = new Map(entries.map((entry) => [entry.id, entry]));
   return Object.freeze({
@@ -1658,7 +1795,8 @@ var definition = Object.freeze({
       outputKinds: Object.freeze(["bytes"])
     }),
     EDIT_STRUCTURE_OPERATION,
-    EDIT_CONTENT_OPERATION
+    EDIT_CONTENT_OPERATION,
+    CONTAINER_PACK_OPERATION
   ]),
   async detect(bytes) {
     const signature = bytes.byteLength >= 4 ? u32(bytes, 0) : 0;
@@ -1746,7 +1884,15 @@ var definition = Object.freeze({
           context.budget,
           context.input
         ),
-        "edit-content": editContentHandler(bytes, entries, model, context.budget, context.input)
+        "edit-content": editContentHandler(bytes, entries, model, context.budget, context.input),
+        "container-pack": containerPackHandler(
+          bytes,
+          entries,
+          model,
+          context.budget,
+          context.input,
+          context.source
+        )
       }
     };
   }

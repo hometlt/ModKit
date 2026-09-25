@@ -2,14 +2,14 @@ import {
   AUXILIARY_DATA_SOURCE_SURFACES,
   STANDARD_DATA_SOURCE_SURFACES,
   STANDARD_EDITING_SURFACES
-} from "./chunk-3VS5UF7D.js";
+} from "./chunk-SCKD5U6H.js";
 import {
   ModkitError,
   OperationCancelledError,
   isModkitError,
   isQualifiedId,
   isSegment
-} from "./chunk-6CZX3ZS4.js";
+} from "./chunk-HUU44HII.js";
 
 // packages/host/dist/execution/message-port.js
 function framePortFromMessagePort(port, options = {}) {
@@ -59,6 +59,7 @@ var FRAME_TYPES = [
   "unsubscribe",
   "progress",
   "release",
+  "revoke",
   "terminate"
 ];
 var HANDLE_KINDS = ["lease", "iterator", "events"];
@@ -455,6 +456,7 @@ var FRAME_KEYS = {
   unsubscribe: { required: ["subscription"], optional: [] },
   progress: { required: ["inReplyTo", "progress"], optional: [] },
   release: { required: ["handle"], optional: [] },
+  revoke: { required: ["handle"], optional: [] },
   terminate: { required: ["reason"], optional: [] }
 };
 function isMessageId(value) {
@@ -606,7 +608,8 @@ function validateFrame(input, limits, expect) {
       break;
     }
     case "subscribe":
-    case "release": {
+    case "release":
+    case "revoke": {
       const bad = str("handle", isHandleId, "bad-handle");
       if (bad)
         return bad;
@@ -721,6 +724,7 @@ function snapshotMethod(name, raw, surface) {
   const progress = raw.progress;
   const arity = raw.arity;
   const optional = raw.optional;
+  const batchItems = raw.batchItems;
   const validateArgs = raw.validateArgs;
   const validateReturn = raw.validateReturn;
   if (kind !== "value" && kind !== "lease" && kind !== "leased-value" && kind !== "iterable" && kind !== "events") {
@@ -731,6 +735,9 @@ function snapshotMethod(name, raw, surface) {
   }
   if (optional !== void 0 && typeof optional !== "boolean") {
     return invalidSurface(`method \xAB${name}\xBB has a non-boolean optional flag`, { surface });
+  }
+  if (batchItems !== void 0 && (kind !== "iterable" || !Number.isSafeInteger(batchItems) || batchItems < 1)) {
+    return invalidSurface(`method \xAB${name}\xBB has an invalid batchItems`, { surface });
   }
   if (resultFromArgs !== void 0 && (typeof resultFromArgs !== "object" || resultFromArgs === null || !isArgRef(resultFromArgs.contract) || !isArgRef(resultFromArgs.major) || argRefKey(resultFromArgs.contract) === argRefKey(resultFromArgs.major))) {
     return invalidSurface(`method \xAB${name}\xBB has invalid resultFromArgs positions`, { surface });
@@ -786,6 +793,7 @@ function snapshotMethod(name, raw, surface) {
     ...progress === void 0 ? {} : { progress: Object.freeze({ ...progress }) },
     ...arity === void 0 ? {} : { arity },
     ...optional === void 0 ? {} : { optional },
+    ...batchItems === void 0 ? {} : { batchItems },
     ...validateArgs === void 0 ? {} : { validateArgs },
     ...validateReturn === void 0 ? {} : { validateReturn }
   });
@@ -1332,7 +1340,7 @@ function isAsyncIterable(value) {
 function isLeaseLike(value) {
   return typeof value === "object" && value !== null && "value" in value && typeof value.release === "function";
 }
-var EndpointImpl = class {
+var EndpointImpl = class _EndpointImpl {
   role;
   session;
   generation;
@@ -1353,6 +1361,13 @@ var EndpointImpl = class {
   subscriptions;
   remote = /* @__PURE__ */ new Map();
   remoteProxies = /* @__PURE__ */ new Map();
+  /**
+   * The highest peer sequence released per `<owner><generation>`. A released handle leaves the
+   * live tables entirely — it must not hold a slot under `maxHandles` or keep its proxy alive for
+   * the life of the session — and the peer allocates sequences monotonically, so one watermark
+   * per generation still refuses a reused id without retaining anything per handle.
+   */
+  retiredRemote = /* @__PURE__ */ new Map();
   pumps = /* @__PURE__ */ new Map();
   pumpSequence = 0;
   outboundId = 0;
@@ -1390,7 +1405,7 @@ var EndpointImpl = class {
       pendingCalls: this.pending.size,
       activeCalls: this.active.size,
       localHandles: this.table.counts().live,
-      remoteHandles: [...this.remote.values()].filter((item) => !item.released).length,
+      remoteHandles: this.remote.size,
       subscriptions: this.subscriptions.size,
       droppedLateReplies: this.pending.droppedLateReplies,
       droppedEvents: this.droppedEvents,
@@ -1456,6 +1471,9 @@ var EndpointImpl = class {
     const existing = this.remoteProxies.get(inner.id);
     if (existing !== void 0)
       return existing;
+    if (this.retiredRemoteHandle(inner.id)) {
+      throw this.failWith({ code: "bad-handle", message: `handle ${inner.id} was released` });
+    }
     if (!this.remote.has(inner.id))
       this.remote.set(inner.id, { ref, released: false, children: /* @__PURE__ */ new Set() });
     const capability = new RemoteCapabilityImpl(this, ref, inner.contract, inner.major, Object.freeze({ ...inner.data ?? {} }));
@@ -1625,6 +1643,8 @@ var EndpointImpl = class {
     this.pumps.clear();
     for (const state of this.remote.values())
       state.released = true;
+    this.remote.clear();
+    this.remoteProxies.clear();
     const { failures } = await this.table.invalidate();
     for (const failure of failures)
       this.report("x3.host/rpc-release-failed", `release failed during teardown: ${failure instanceof Error ? failure.message : String(failure)}`);
@@ -1918,7 +1938,7 @@ var EndpointImpl = class {
     const inner = ref[HANDLE_MARKER];
     if (this.table.owns(inner.id))
       throw this.failWith({ code: "bad-handle", message: "peer returned a handle this side owns" });
-    if (this.remote.has(inner.id))
+    if (this.remote.has(inner.id) || this.retiredRemoteHandle(inner.id))
       throw this.failWith({ code: "bad-handle", message: `peer reused handle ${inner.id}` });
     if (expectKind !== void 0 && inner.kind !== expectKind)
       throw this.failWith({ code: "bad-handle", message: `expected a ${expectKind} handle` });
@@ -1932,6 +1952,21 @@ var EndpointImpl = class {
     this.remote.get(parent)?.children.add(inner.id);
     return inner.id;
   }
+  /** Splits a validated handle id into its `<owner><generation>` prefix and sequence. */
+  static parseRemoteId(id) {
+    const cut = id.lastIndexOf("-");
+    if (cut <= 0)
+      return void 0;
+    const sequence = Number(id.slice(cut + 1));
+    return Number.isSafeInteger(sequence) ? { prefix: id.slice(0, cut), sequence } : void 0;
+  }
+  retiredRemoteHandle(id) {
+    const parsed = _EndpointImpl.parseRemoteId(id);
+    if (parsed === void 0)
+      return false;
+    const watermark = this.retiredRemote.get(parsed.prefix);
+    return watermark !== void 0 && parsed.sequence <= watermark;
+  }
   markRemoteReleased(id) {
     const state = this.remote.get(id);
     if (state === void 0 || state.released)
@@ -1941,6 +1976,15 @@ var EndpointImpl = class {
       this.markRemoteReleased(child);
     if (state.parent !== void 0)
       this.remote.get(state.parent)?.children.delete(id);
+    this.remote.delete(id);
+    this.remoteProxies.delete(id);
+    const parsed = _EndpointImpl.parseRemoteId(id);
+    if (parsed === void 0)
+      return;
+    const watermark = this.retiredRemote.get(parsed.prefix);
+    if (watermark === void 0 || parsed.sequence > watermark) {
+      this.retiredRemote.set(parsed.prefix, parsed.sequence);
+    }
   }
   async releaseRemote(id) {
     const state = this.remote.get(id);
@@ -1956,7 +2000,7 @@ var EndpointImpl = class {
       throw fromErrorDto(outcome.error);
   }
   remoteIterable(id, decl) {
-    const batch = this.limits.iteratorBatchItems;
+    const batch = Math.min(Math.max(this.limits.iteratorBatchItems, decl.batchItems ?? 1), this.limits.maxArrayLength);
     return {
       [Symbol.asyncIterator]: () => {
         let finished = false;
@@ -2095,6 +2139,8 @@ var EndpointImpl = class {
     for (const failure of result.failures) {
       this.report("x3.host/rpc-release-failed", `release of ${id} failed: ${failure instanceof Error ? failure.message : String(failure)}`);
     }
+    if (result.released && this.state === "open")
+      this.trySend({ t: "revoke", handle: id });
   }
   decodeArgs(args) {
     const decode = (value) => {
@@ -2212,6 +2258,13 @@ var EndpointImpl = class {
       }
       case "release":
         return this.handleRelease(frame);
+      case "revoke":
+        if (this.table.owns(frame.handle)) {
+          this.fail({ code: "bad-handle", message: `peer revoked handle ${frame.handle} this side owns` });
+          return;
+        }
+        this.markRemoteReleased(frame.handle);
+        return;
       case "terminate":
         if (this.state !== "open")
           return;
@@ -2967,7 +3020,7 @@ var artifactSourceSurface = {
 var assetNamespaceSurface = {
   ...ABI_ASSET_NAMESPACE,
   methods: {
-    list: { kind: "iterable", ...sig },
+    list: { kind: "iterable", batchItems: 512, ...sig },
     readPreamble: { kind: "value", optional: true, ...sig },
     open: { kind: "lease", result: ABI_ARTIFACT_SOURCE, wrapper: "lease", ...sig }
   }
@@ -3232,6 +3285,46 @@ function createStandardSurfaceRegistry(options = {}) {
   return createSurfaceRegistry([...byKey.values()]);
 }
 
+// packages/host/dist/execution/logical-resources.js
+function logicalResourcesFromWire(wire) {
+  return Object.freeze({
+    discover: wire.discover.bind(wire),
+    readBatch: wire.readBatch.bind(wire),
+    provenance: wire.provenance.bind(wire),
+    async resolve(requirement, signal) {
+      const handle = await wire.resolve(requirement, signal);
+      try {
+        const result = handle.value.result;
+        if (result.state === "unresolved") {
+          await handle.release();
+          return result;
+        }
+        const source = await handle.value.openSource(signal);
+        let released = false;
+        return {
+          ...result,
+          lease: {
+            value: source.value,
+            async release() {
+              if (released)
+                return;
+              released = true;
+              try {
+                await source.release();
+              } finally {
+                await handle.release();
+              }
+            }
+          }
+        };
+      } catch (error) {
+        await handle.release();
+        throw error;
+      }
+    }
+  });
+}
+
 export {
   protocolLimits,
   createEndpoint,
@@ -3239,5 +3332,6 @@ export {
   ABI_CODEC_MODULE,
   ABI_SERVICE_PROVIDER_MODULE,
   ABI_ASSET_SESSION,
-  createStandardSurfaceRegistry
+  createStandardSurfaceRegistry,
+  logicalResourcesFromWire
 };

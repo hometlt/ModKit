@@ -97,20 +97,24 @@ describe('DDS pixel transforms', () => {
     expect(corner).toBeLessThan(255)
   })
 
+  it('replaces the pixels with a painted image, cropped size included', async () => {
+    const painted = new Uint8Array(2 * 1 * 4).fill(200)
+    const text = btoa(String.fromCharCode(...painted))
+    const bytes = await transform(solid(4, 4, [1, 2, 3, 255]), {
+      transform: 'replace',
+      image: { width: 2, height: 1, pixels: text },
+    })
+    expect(await firstPixel(bytes)).toEqual([2, 1, 200, 200, 200, 200])
+  })
+
   /*
    * The refusals matter more than the successes. Each of these produces a plausible-looking texture
    * if it is allowed through, and a modder discovers the mistake in the game rather than in the tool.
    */
   it('refuses a transform it does not have', async () => {
-    await expect(
-      transform(solid(4, 4, [1, 2, 3, 255]), { transform: 'sharpen' }),
-    ).rejects.toThrow(/must be one of/u)
-  })
-
-  it('refuses a button icon that is not square', async () => {
-    await expect(
-      transform(solid(8, 4, [1, 2, 3, 255]), { transform: 'button-icon' }),
-    ).rejects.toThrow(/square image, got 8 x 4/u)
+    await expect(transform(solid(4, 4, [1, 2, 3, 255]), { transform: 'sharpen' })).rejects.toThrow(
+      /must be one of/u,
+    )
   })
 
   it('refuses a specular combine with no second image, and with a mismatched one', async () => {

@@ -5,6 +5,15 @@ import {
   editPlanFromInput,
   replaceBytes,
 } from '@modkit/codec-kit'
+import {
+  EXPORT_TARGETS,
+  PNG_EXPORT_SCHEMA,
+  exportRaster,
+  rasterEditContent,
+  rasterEditContentOperation,
+} from '../ops/raster-transforms.js'
+import { decodePngSamples, encodePng } from '@modkit/codec-kit/raster'
+import { crc32Range } from '@modkit/codec-kit/checksum'
 
 const SIGNATURE = Object.freeze([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
 const ascii = new TextDecoder('latin1')
@@ -16,17 +25,6 @@ function matchesSignature(bytes) {
 function u32(bytes, offset) {
   if (offset < 0 || offset + 4 > bytes.byteLength) throw new RangeError('truncated PNG u32')
   return new DataView(bytes.buffer, bytes.byteOffset + offset, 4).getUint32(0, false)
-}
-
-function crc32(bytes, start, end) {
-  let crc = 0xffffffff
-  for (let offset = start; offset < end; offset += 1) {
-    crc ^= bytes[offset] ?? 0
-    for (let bit = 0; bit < 8; bit += 1) {
-      crc = (crc >>> 1) ^ (crc & 1 ? 0xedb88320 : 0)
-    }
-  }
-  return (crc ^ 0xffffffff) >>> 0
 }
 
 function parsePng(bytes, maxChunks) {
@@ -43,7 +41,7 @@ function parsePng(bytes, maxChunks) {
     if (!/^[A-Za-z]{4}$/u.test(type) || end > bytes.byteLength) {
       throw new TypeError('PNG chunk is malformed or truncated')
     }
-    if (u32(bytes, offset + 8 + length) !== crc32(bytes, offset + 4, offset + 8 + length)) {
+    if (u32(bytes, offset + 8 + length) !== crc32Range(bytes, offset + 4, offset + 8 + length)) {
       throw new TypeError(`PNG ${type} chunk CRC is invalid`)
     }
     chunks.push(Object.freeze({ type, length, offset, dataOffset: offset + 8 }))
@@ -109,138 +107,32 @@ function parsePng(bytes, maxChunks) {
   })
 }
 
-function paeth(a, b, c) {
-  const value = a + b - c
-  const distanceA = Math.abs(value - a)
-  const distanceB = Math.abs(value - b)
-  const distanceC = Math.abs(value - c)
-  return distanceA <= distanceB && distanceA <= distanceC ? a : distanceB <= distanceC ? b : c
-}
-
-async function inflateBounded(compressed, expectedBytes, signal) {
-  if (typeof DecompressionStream !== 'function') {
-    throw new TypeError('no portable deflate decoder is available')
-  }
-  const result = new Uint8Array(expectedBytes)
-  const stream = new Blob([compressed]).stream().pipeThrough(new DecompressionStream('deflate'))
-  const reader = stream.getReader()
-  let offset = 0
-  try {
-    while (true) {
-      if (signal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
-      const chunk = await reader.read()
-      if (chunk.done) break
-      if (offset + chunk.value.byteLength > expectedBytes) {
-        throw new RangeError('PNG inflated data exceeds its declared dimensions')
-      }
-      result.set(chunk.value, offset)
-      offset += chunk.value.byteLength
-    }
-  } finally {
-    reader.releaseLock()
-  }
-  if (offset !== expectedBytes) throw new TypeError('PNG inflated data is truncated')
-  return result
-}
-
+/**
+ * PNG pixels as RGBA8. The samples come from the one PNG decoder of the shared raster layer
+ * (filters, palettes, 16-bit and sub-byte grey); this view only lays them out for display.
+ */
 async function decodeRgba8(bytes, png, signal) {
-  const idatChunks = png.chunks.filter(chunk => chunk.type === 'IDAT')
-  const compressed = new Uint8Array(idatChunks.reduce((total, chunk) => total + chunk.length, 0))
-  let compressedOffset = 0
-  for (const chunk of idatChunks) {
-    compressed.set(
-      bytes.subarray(chunk.dataOffset, chunk.dataOffset + chunk.length),
-      compressedOffset,
-    )
-    compressedOffset += chunk.length
-  }
-  const indexed = png.colorType === 3
-  const rowBytes = indexed
-    ? Math.ceil((png.width * png.bitDepth) / 8)
-    : png.width * png.channels
-  const filterBytesPerPixel = indexed ? 1 : png.channels
-  const expectedBytes = (rowBytes + 1) * png.height
-  if (!Number.isSafeInteger(expectedBytes)) throw new RangeError('PNG decoded size is unsafe')
-  const raw = await inflateBounded(compressed, expectedBytes, signal)
-  const unfiltered = new Uint8Array(rowBytes * png.height)
-  for (let y = 0; y < png.height; y += 1) {
-    const filter = raw[y * (rowBytes + 1)]
-    const rowIn = raw.subarray(y * (rowBytes + 1) + 1, (y + 1) * (rowBytes + 1))
-    const rowOut = unfiltered.subarray(y * rowBytes, (y + 1) * rowBytes)
-    const previous = y > 0 ? unfiltered.subarray((y - 1) * rowBytes, y * rowBytes) : undefined
-    for (let x = 0; x < rowBytes; x += 1) {
-      const a = x >= filterBytesPerPixel ? (rowOut[x - filterBytesPerPixel] ?? 0) : 0
-      const b = previous?.[x] ?? 0
-      const c = x >= filterBytesPerPixel ? (previous?.[x - filterBytesPerPixel] ?? 0) : 0
-      const input = rowIn[x] ?? 0
-      const value =
-        filter === 0
-          ? input
-          : filter === 1
-            ? input + a
-            : filter === 2
-              ? input + b
-              : filter === 3
-                ? input + Math.floor((a + b) / 2)
-                : filter === 4
-                  ? input + paeth(a, b, c)
-                  : undefined
-      if (value === undefined) throw new TypeError(`PNG filter ${filter} is unsupported`)
-      rowOut[x] = value & 0xff
-    }
-  }
-  const rgba = new Uint8Array(png.width * png.height * 4)
-  if (indexed) {
-    const paletteChunk = png.chunks.find(chunk => chunk.type === 'PLTE')
-    if (paletteChunk === undefined) throw new TypeError('indexed PNG palette is missing')
-    const palette = bytes.subarray(
-      paletteChunk.dataOffset,
-      paletteChunk.dataOffset + paletteChunk.length,
-    )
-    const transparencyChunk = png.chunks.find(chunk => chunk.type === 'tRNS')
-    const transparency = transparencyChunk === undefined
-      ? undefined
-      : bytes.subarray(
-          transparencyChunk.dataOffset,
-          transparencyChunk.dataOffset + transparencyChunk.length,
-        )
-    const mask = (1 << png.bitDepth) - 1
-    for (let y = 0; y < png.height; y += 1) {
-      const rowStart = y * rowBytes
-      for (let x = 0; x < png.width; x += 1) {
-        const bitOffset = x * png.bitDepth
-        const packed = unfiltered[rowStart + Math.floor(bitOffset / 8)] ?? 0
-        const paletteIndex = (packed >>> (8 - png.bitDepth - (bitOffset % 8))) & mask
-        const paletteOffset = paletteIndex * 3
-        if (paletteOffset + 2 >= palette.length) {
-          throw new TypeError(`indexed PNG pixel refers to absent palette entry ${paletteIndex}`)
-        }
-        const output = (y * png.width + x) * 4
-        rgba[output] = palette[paletteOffset] ?? 0
-        rgba[output + 1] = palette[paletteOffset + 1] ?? 0
-        rgba[output + 2] = palette[paletteOffset + 2] ?? 0
-        rgba[output + 3] = transparency?.[paletteIndex] ?? 255
-      }
-    }
-    return rgba
-  }
-  for (
-    let pixel = 0, input = 0;
-    pixel < png.width * png.height;
-    pixel += 1, input += png.channels
-  ) {
+  const image = await decodePngSamples(bytes, {
+    maxPixels: png.width * png.height,
+    ...(signal === undefined ? {} : { signal }),
+  })
+  const shift = image.bitDepth === 16 ? 8 : 0
+  const rgba = new Uint8Array(image.width * image.height * 4)
+  for (let pixel = 0; pixel < image.width * image.height; pixel += 1) {
+    const at = pixel * image.channels
+    const sample = index => (image.samples[at + index] ?? 0) >> shift
     const output = pixel * 4
-    if (png.colorType === 0 || png.colorType === 4) {
-      const gray = unfiltered[input] ?? 0
-      rgba[output] = gray
-      rgba[output + 1] = gray
-      rgba[output + 2] = gray
-      rgba[output + 3] = png.colorType === 4 ? (unfiltered[input + 1] ?? 255) : 255
+    if (image.channels <= 2) {
+      const grey = sample(0)
+      rgba[output] = grey
+      rgba[output + 1] = grey
+      rgba[output + 2] = grey
+      rgba[output + 3] = image.channels === 2 ? sample(1) : 255
     } else {
-      rgba[output] = unfiltered[input] ?? 0
-      rgba[output + 1] = unfiltered[input + 1] ?? 0
-      rgba[output + 2] = unfiltered[input + 2] ?? 0
-      rgba[output + 3] = png.colorType === 6 ? (unfiltered[input + 3] ?? 255) : 255
+      rgba[output] = sample(0)
+      rgba[output + 1] = sample(1)
+      rgba[output + 2] = sample(2)
+      rgba[output + 3] = image.channels === 4 ? sample(3) : 255
     }
   }
   return rgba
@@ -360,23 +252,37 @@ const EDIT_FIELD_OPERATION = Object.freeze({
 /**
  * A real, deterministic conversion owned by the PNG codec rather than by a CLI/UI adapter.
  * `subject.convert --target rgba8` routes here in every host and returns tightly packed pixels in
- * top-left row order. Other target formats need their own writer/provider and are refused by name.
+ * top-left row order. `--target dds` (and `png`, after an optional transform) goes through the
+ * shared raster export; `{ target: 'dds', icon: true }` is MK2's "Convert PNG Icon to DDS".
  */
 const CONVERT_RGBA8_OPERATION = Object.freeze({
   id: 'export.convert',
   handlerId: 'convert-rgba8',
   mutatesSource: false,
   requiredPermissions: Object.freeze(['read-source']),
+  inputSchema: PNG_EXPORT_SCHEMA,
   outputKinds: Object.freeze(['bytes']),
 })
 
 function convertRgba8Handler(bytes, png) {
   return async (value, options) => {
-    if (value?.target !== 'rgba8') throw new TypeError('PNG conversion target must be rgba8')
-    if (png.bitDepth !== 8 || ![0, 2, 4, 6].includes(png.colorType) || png.interlace !== 0) {
-      throw new TypeError('PNG rgba8 conversion requires non-interlaced 8-bit direct pixels')
+    if (!EXPORT_TARGETS.includes(value?.target)) {
+      throw new TypeError(`PNG conversion target must be one of ${EXPORT_TARGETS.join(', ')}`)
     }
-    return { kind: 'bytes', value: await decodeRgba8(bytes, png, options?.signal) }
+    const palette = png.colorType === 3 && [1, 2, 4, 8].includes(png.bitDepth)
+    const direct = png.bitDepth === 8 && [0, 2, 4, 6].includes(png.colorType)
+    if (!(direct || palette) || png.interlace !== 0) {
+      throw new TypeError(
+        'PNG conversion requires non-interlaced 8-bit direct or 1/2/4/8-bit palette pixels',
+      )
+    }
+    const pixels = await decodeRgba8(bytes, png, options?.signal)
+    return {
+      kind: 'bytes',
+      value: await exportRaster({ width: png.width, height: png.height, pixels }, value, {
+        signal: options?.signal,
+      }),
+    }
   }
 }
 
@@ -403,7 +309,7 @@ function textChunkBytes(keyword, text) {
   chunk.set(key, 8)
   chunk[8 + key.byteLength] = 0
   chunk.set(value, 9 + key.byteLength)
-  new DataView(chunk.buffer).setUint32(8 + length, crc32(chunk, 4, 8 + length), false)
+  new DataView(chunk.buffer).setUint32(8 + length, crc32Range(chunk, 4, 8 + length), false)
   return chunk
 }
 
@@ -453,7 +359,11 @@ function setTextHandler(bytes, png, input) {
 
 const definition = Object.freeze({
   id: 'modkit/image-png',
-  operations: Object.freeze([CONVERT_RGBA8_OPERATION, EDIT_FIELD_OPERATION]),
+  operations: Object.freeze([
+    CONVERT_RGBA8_OPERATION,
+    EDIT_FIELD_OPERATION,
+    rasterEditContentOperation('transform'),
+  ]),
   format: Object.freeze({ id: 'png', label: 'PNG image', mediaType: 'image/png' }),
   async detect(bytes) {
     const match = matchesSignature(bytes)
@@ -465,7 +375,8 @@ const definition = Object.freeze({
   async inspect(bytes, context) {
     const png = parsePng(bytes, context.budget.maxNodes)
     const hasAlpha =
-      png.colorType === 4 || png.colorType === 6 ||
+      png.colorType === 4 ||
+      png.colorType === 6 ||
       (png.colorType === 3 && png.chunks.some(chunk => chunk.type === 'tRNS'))
     const hasPalette = png.colorType === 3
     const decodedDirect =
@@ -584,9 +495,30 @@ const definition = Object.freeze({
       handlers: {
         'convert-rgba8': convertRgba8Handler(bytes, png),
         'set-text': setTextHandler(bytes, png, context.input),
+        /*
+         * Pixels written back as an 8-bit RGBA PNG. The pixels are exact; ancillary chunks (text,
+         * gamma, ICC) and the source's bit depth and palette are not carried over, which is what
+         * `preservesUnknownData: false` says.
+         */
+        transform: rasterEditContent({
+          codecId: 'modkit/image-png',
+          input: context.input,
+          bytes,
+          decode: async signal => ({
+            width: png.width,
+            height: png.height,
+            pixels: await decodeRgba8(bytes, png, signal),
+          }),
+          encode: (image, signal) => encodePng(image.width, image.height, image.pixels, signal),
+          fidelity: {
+            roundTrip: 'semantic',
+            preservesUnknownData: false,
+            notes: ['Written as 8-bit RGBA; text, gamma and colour-profile chunks are dropped.'],
+          },
+        }),
       },
       maxDecodedBytes: BigInt(png.width) * BigInt(png.height) * 4n,
-      unsupportedFeatures: [...(decodedAccess ? [] : ['decoded-region-provider']), 'pixel-editing'],
+      unsupportedFeatures: [...(decodedAccess ? [] : ['decoded-region-provider'])],
     }
   },
 })
