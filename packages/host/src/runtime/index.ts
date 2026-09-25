@@ -38,6 +38,12 @@ export {
   type RuntimePreparationRequest,
   type RuntimePreparerResolution,
 } from './preparer.js'
+export {
+  captureRuntimeSourceReads,
+  RuntimeSourceBudgetError,
+  RuntimeSourceChangedError,
+  type RuntimeSourceSnapshot,
+} from './source-snapshot.js'
 import { FACETLESS_SERVICE_MATCHER_PROFILE } from '../service-definitions.js'
 import {
   createSubjectLogicalResources,
