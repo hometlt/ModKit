@@ -94,7 +94,8 @@ export type ModContextTarget = string | { readonly sourceId: string; readonly pa
 /**
  * `package` — the target lies in this package (its primary layer's source and path);
  * `loose` — it exists outside any package and opens over `baseMods`;
- * `missing` — nothing exists under it, so `openModContext` would refuse it.
+ * `missing` — `openModContext` would refuse it: a host path under which nothing exists. A path
+ * absent inside a content source still opens loose and fails only on read, so it is `loose`.
  */
 export type ModPackagePlacement =
   | { readonly kind: 'package'; readonly sourceId: string; readonly path: string; readonly displayName: string }
