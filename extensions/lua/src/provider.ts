@@ -12,6 +12,7 @@ import {
   type LanguageLocationList,
   type LanguagePositionRequest,
   type LanguageProvider,
+  type LanguageProviderCompletionList,
   type LanguageReferencesRequest,
   type LanguageRenamePreparation,
   type LanguageRenameRequest,
@@ -36,12 +37,21 @@ import type {
 } from './ast.js'
 import { LUA_TOKEN_CLASSES } from './ast.js'
 import { bindLuaChunk, type LuaBinding, type LuaBindResult } from './binder.js'
+import {
+  documentPathOf,
+  environmentCompletion,
+  environmentDefinition,
+  environmentHover,
+  luaEnvironmentOf,
+  LuaEnvironmentView,
+  type DocumentView,
+} from './environment.js'
 import { LuaLineIndex } from './line-index.js'
 import { luaSyntax, type LuaSyntax } from './syntax.js'
 
 export const LUA_LANGUAGE_IDS = Object.freeze(['lua', 'luau'] as const)
 
-const PROVIDER_REVISION = '1'
+const PROVIDER_REVISION = '2'
 
 /** A parsed, bound document version. */
 export interface LuaDocumentState {
@@ -634,10 +644,23 @@ function location(state: LuaDocumentState, range: LuaRange): LanguageLocation {
   return { uri: state.document.uri, range: state.lines.range(range) }
 }
 
+function documentView(state: LuaDocumentState): DocumentView {
+  return { chunk: state.parse.chunk, binding: state.binding, lines: state.lines, text: state.document.text }
+}
+
+/** The game environment's view of this document, when the host handed one. */
+function environmentView(request: LanguageFeatureRequest, state: LuaDocumentState) {
+  const environment = luaEnvironmentOf(request)
+  return environment === undefined ? undefined : new LuaEnvironmentView(environment, documentView(state), documentPathOf(request))
+}
+
 export async function luaDefinition(
   request: LanguagePositionRequest,
 ): Promise<LanguageLocationList> {
   const state = await luaDocumentState(request.document)
+  const view = environmentView(request, state)
+  const file = view === undefined ? undefined : environmentDefinition(view, request)
+  if (file !== undefined) return { locations: [file], isIncomplete: false }
   const found = occurrenceAtPosition(state, request)
   if (found === undefined) return { locations: [], isIncomplete: false }
   if (found.binding.declaration !== undefined) {
@@ -737,6 +760,9 @@ export async function luaHover(
   request: LanguagePositionRequest,
 ): Promise<LanguageHover | undefined> {
   const state = await luaDocumentState(request.document)
+  const view = environmentView(request, state)
+  const known = view === undefined ? undefined : environmentHover(view, request)
+  if (known !== undefined) return known
   const found = occurrenceAtPosition(state, request)
   if (found === undefined) return undefined
   const { binding } = found
@@ -779,6 +805,39 @@ export async function luaHover(
   }
 }
 
+/**
+ * After `.` or `:`, the members of the receiver as the game environment knows them; elsewhere the
+ * environment's globals and the names this document declares before the position.
+ */
+export async function luaCompletion(
+  request: LanguagePositionRequest,
+): Promise<LanguageProviderCompletionList> {
+  const state = await luaDocumentState(request.document)
+  const completion = await environmentCompletion(
+    luaEnvironmentOf(request),
+    request,
+    documentView(state),
+    async text =>
+      documentView(
+        await luaDocumentState({ ...request.document, uri: `${request.document.uri}#modkit-complete`, text }, state.dialect),
+      ),
+  )
+  const items = new Map(completion.items.map(item => [item.label, item]))
+  if (!completion.member) {
+    const offset = state.lines.offset(request.position)
+    for (const binding of state.binding.bindings) {
+      if (items.has(binding.name) || binding.kind === 'self' || binding.kind === 'label') continue
+      if (binding.declaration !== undefined && binding.declaration[0] > offset) continue
+      items.set(binding.name, {
+        label: binding.name,
+        kind: binding.kind === 'function' ? 'function' : binding.kind === 'type' || binding.kind === 'generic' ? 'type' : 'variable',
+      })
+    }
+  }
+  const all = [...items.values()]
+  return { items: all.slice(0, request.maxResults), isIncomplete: all.length > request.maxResults }
+}
+
 // ---------------------------------------------------------------------------------------------
 // Provider
 // ---------------------------------------------------------------------------------------------
@@ -808,6 +867,7 @@ export function createLuaLanguageProvider(): LanguageProvider {
       Object.freeze({ kind: 'provider', id: 'modkit/lua-language', revision: PROVIDER_REVISION }),
     ]),
     analyze: analyzeLua,
+    completion: luaCompletion,
     hover: luaHover,
     definition: luaDefinition,
     references: luaReferences,

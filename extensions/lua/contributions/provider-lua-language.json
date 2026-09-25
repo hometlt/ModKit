@@ -36,7 +36,8 @@
         "facet": {
           "languageIds": ["lua", "luau"],
           "documentKinds": ["lua-source"],
-          "extensions": ["lua", "luau"]
+          "extensions": ["lua", "luau"],
+          "completionTriggerCharacters": [".", ":"]
         }
       }
     ],
