@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "contract": {
+    "id": "modkit/service-provider-contribution",
+    "major": 1
+  },
+  "id": "modkit/lua-language",
+  "displayName": "Lua and Luau language analysis",
+  "runtimeVariants": [
+    {
+      "variantId": "trusted-node",
+      "entrypoint": "./dist/provider.js",
+      "target": {
+        "environments": ["node"]
+      },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": []
+    },
+    {
+      "variantId": "portable",
+      "entrypoint": "./dist/provider.js",
+      "target": {
+        "environments": ["browser-worker", "node-worker"]
+      },
+      "executionProfile": "worker-brokered",
+      "requestedPermissionClasses": []
+    }
+  ],
+  "spec": {
+    "provides": [
+      {
+        "offerId": "lua-document-analysis-v1",
+        "contract": "common.language/document-analysis",
+        "major": 1,
+        "version": "1.0.0",
+        "facet": {
+          "languageIds": ["lua", "luau"],
+          "documentKinds": ["lua-source"],
+          "extensions": ["lua", "luau"]
+        }
+      }
+    ],
+    "lifecycleScope": "session"
+  }
+}

@@ -6,6 +6,7 @@
     { "path": "packages/uv" },
     { "path": "packages/extension-manager" },
     { "path": "packages/code" },
+    { "path": "extensions/lua" },
     {
       "path": "packages/core"
     },

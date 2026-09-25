@@ -1,0 +1,63 @@
+{
+  "name": "modkit-extension-lua",
+  "version": "1.0.0",
+  "license": "MIT",
+  "type": "module",
+  "description": "Lua-family language for MK3: Lua 5.1-5.4, LuaJIT, Luau and CfxLua through one syntax tree.",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./ast": {
+      "types": "./dist/ast.d.ts",
+      "default": "./dist/ast.js"
+    },
+    "./syntax": {
+      "types": "./dist/syntax.d.ts",
+      "default": "./dist/syntax.js"
+    },
+    "./binder": {
+      "types": "./dist/binder.d.ts",
+      "default": "./dist/binder.js"
+    },
+    "./provider": {
+      "types": "./dist/provider.d.ts",
+      "default": "./dist/provider.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "contributions",
+    "dist",
+    "wasm",
+    "README.md",
+    "THIRD_PARTY_NOTICES.md"
+  ],
+  "scripts": {
+    "build": "tsc -b tsconfig.json",
+    "build:wasm": "node scripts/build-wasm.mjs"
+  },
+  "modkit": {
+    "schemaVersion": 1,
+    "publisher": "modkit",
+    "id": "lua",
+    "presentation": {
+      "displayName": "Modkit Lua",
+      "description": "Lua 5.1-5.4, LuaJIT, Luau and CfxLua language analysis.",
+      "vendor": {
+        "id": "modkit",
+        "displayName": "Modkit"
+      }
+    },
+    "contributionManifests": [
+      "./contributions/*.json"
+    ]
+  },
+  "peerDependencies": {
+    "@modkit/sdk": "workspace:*"
+  },
+  "devDependencies": {
+    "@modkit/sdk": "workspace:*"
+  }
+}

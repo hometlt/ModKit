@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.port-strict.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "lib": ["ES2023", "DOM"]
+  },
+  "include": ["src/**/*.ts"],
+  "references": [{ "path": "../../packages/sdk" }]
+}
