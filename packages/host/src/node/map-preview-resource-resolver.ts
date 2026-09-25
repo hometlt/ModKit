@@ -114,7 +114,10 @@ export interface NodeMapPreviewResourcePlanResolverOptions {
   /** Ordinary subject services; archive format selection remains inventory-owned. */
   readonly subjects: Pick<SubjectServices, 'open'> &
     Partial<
-      Pick<SubjectServices, 'inventory' | 'target' | 'executionBackends' | 'serviceDefinitions'>
+      Pick<
+        SubjectServices,
+        'inventory' | 'target' | 'executionBackends' | 'serviceDefinitions' | 'contributionSettings'
+      >
     >
   /** User/app settings, keyed by the same extension-owned game id used for discovery routing. */
   readonly configuredPaths?: Readonly<Record<string, readonly string[]>>
@@ -788,6 +791,9 @@ export function createNodeMapPreviewResourcePlanResolver(
                           ...(options.subjects.serviceDefinitions === undefined
                             ? {}
                             : { serviceDefinitions: options.subjects.serviceDefinitions }),
+                          ...(options.subjects.contributionSettings === undefined
+                            ? {}
+                            : { contributionSettings: options.subjects.contributionSettings }),
                           ...(request.signal === undefined ? {} : { signal: request.signal }),
                         })
                       } catch (error) {

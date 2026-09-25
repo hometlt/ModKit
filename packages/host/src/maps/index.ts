@@ -49,6 +49,7 @@ import type {
   AnyDescriptor,
   AssetDiagnosticWire,
   AssetSession,
+  ContributionSettings,
   DataCatalogSnapshot,
   DataEntityRef,
   DataResolvedEntity,
@@ -349,6 +350,7 @@ export interface MapHostServices {
   readonly target: RuntimeTarget
   readonly executionBackends: ExecutionBackendRegistry
   readonly serviceDefinitions?: ServiceContractDefinitionRegistry
+  readonly contributionSettings?: (contributionId: string) => ContributionSettings | undefined
 }
 
 export interface ResolveMapSemanticRequest extends MapSemanticRequestFacet {
@@ -1125,6 +1127,9 @@ export async function analyzeResolvedMapWorkspace(
           ...(request.services.serviceDefinitions === undefined
             ? {}
             : { serviceDefinitions: request.services.serviceDefinitions }),
+          ...(request.services.contributionSettings === undefined
+            ? {}
+            : { contributionSettings: request.services.contributionSettings }),
           resourceSession: request.resources,
           ...(request.inputResolver === undefined ? {} : { resolveInput: request.inputResolver }),
           ...(signal === undefined ? {} : { signal }),
@@ -1154,6 +1159,9 @@ export async function analyzeResolvedMapWorkspace(
           ...(request.services.serviceDefinitions === undefined
             ? {}
             : { serviceDefinitions: request.services.serviceDefinitions }),
+          ...(request.services.contributionSettings === undefined
+            ? {}
+            : { contributionSettings: request.services.contributionSettings }),
           resourceSession: request.resources,
           ...(request.inputResolver === undefined ? {} : { resolveInput: request.inputResolver }),
           ...(signal === undefined ? {} : { signal }),
