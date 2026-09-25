@@ -51,4 +51,26 @@ describe('loaded mod resources', () => {
     await sessions.dispose()
     expect(released).toBe(5)
   })
+
+  it('opens a mod once when the editor and the tree ask for it at the same time', async () => {
+    const opened: string[] = []
+    const layer = (path: string, role: 'dependency' | 'primary') => ({ id: path, displayName: path, sourceId: 'local:casc',
+      sourcePath: path, role, provenance: role === 'primary' ? 'opened' as const : 'implicit' as const })
+    const source = { openModContext: async (request: { target: ModContextTarget }) => {
+      const path = typeof request.target === 'string' ? request.target : request.target.path
+      opened.push(path)
+      await new Promise(resolve => setTimeout(resolve, 5))
+      return { schemaVersion: 1, gameId: 'blizzard/starcraft-2', contextId: path,
+        layers: path === 'Mods/Core.SC2Mod' ? [layer(path, 'primary')]
+          : [layer('Mods/Core.SC2Mod', 'dependency'), layer('Mods/Liberty.SC2Mod', 'primary')],
+        unresolved: [], diagnostics: [], files: async () => ({ items: [] }), read: async () => new Uint8Array(),
+        locate: async () => undefined, dispose: async () => {} } satisfies ModContext
+    } } as ContentSources
+    const sessions = new LoadedModResourceSessions(source, path => /\.sc2mod$/iu.test(path))
+    const target = { sourceId: 'local:casc', path: 'Mods/Liberty.SC2Mod' }
+    expect(await Promise.all([sessions.load(target), sessions.load({ ...target })])).toEqual([true, true])
+    expect(opened).toEqual(['Mods/Liberty.SC2Mod', 'Mods/Core.SC2Mod'])
+    expect(await sessions.load(target)).toBe(false)
+    await sessions.dispose()
+  })
 })

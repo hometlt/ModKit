@@ -107,6 +107,12 @@ export interface ModContextLayer {
   /** `primary` is the opened package, `base` a setting-chosen package under a loose file. */
   readonly role: 'dependency' | 'base' | 'primary'
   readonly provenance: 'declared' | 'implicit' | 'setting' | 'opened'
+  /**
+   * What the game loader knows the layer to be: `package` — a mod or map loaded as a unit, with
+   * its own context; `files` — a plain folder of files (editor wizards). Clients decide by this,
+   * never by file extensions.
+   */
+  readonly kind?: 'package' | 'files'
   /** A revision identity of the layer's content (`content-hash.sha256:…`), when the game knows one. */
   readonly fingerprint?: string
 }

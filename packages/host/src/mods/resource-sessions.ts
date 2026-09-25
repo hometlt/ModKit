@@ -44,6 +44,8 @@ function treeFacts(value: unknown): TreeNodeFacts {
 /** Host-owned loaded mods. Editor tabs borrow the tree; they never own or unload its contexts. */
 export class LoadedModResourceSessions {
   private readonly mods = new Map<string, Loaded>()
+  /** Loads in flight: concurrent callers for the same target share one `openModContext`. */
+  private readonly pending = new Map<string, Promise<boolean>>()
   private disposed = false
 
   constructor(
@@ -57,19 +59,30 @@ export class LoadedModResourceSessions {
 
   async load(target: ModContextTarget, baseMods?: readonly string[]): Promise<boolean> {
     if (this.disposed) throw new Error('mod resources are disposed')
-    if (this.sources.openModContext === undefined) return false
-    const context = await this.sources.openModContext({ schemaVersion: 1, target, ...(baseMods ? { baseMods } : {}) })
-    let changed = false
-    for (const layer of context.layers.slice(0, -1)) {
-      if (!this.isPackage(layer.sourcePath)) continue
-      const id = `${context.gameId}|${layer.sourceId}|${layer.sourcePath.toLowerCase()}`
-      if (this.mods.has(id)) continue
-      const dependencyTarget: ModContextTarget = layer.sourceId === 'host'
-        ? layer.sourcePath : { sourceId: layer.sourceId, path: layer.sourcePath }
-      const dependency = await this.sources.openModContext({ schemaVersion: 1, target: dependencyTarget })
-      changed = (await this.register(dependency, dependencyTarget, undefined, false)) || changed
-    }
-    return (await this.register(context, target, baseMods, true)) || changed
+    const open = this.sources.openModContext?.bind(this.sources)
+    if (open === undefined) return false
+    return this.once(`load|${JSON.stringify([target, baseMods ?? []])}`, async () => {
+      const context = await open({ schemaVersion: 1, target, ...(baseMods ? { baseMods } : {}) })
+      let changed = false
+      for (const layer of context.layers.slice(0, -1)) {
+        if (!this.isPackage(layer.sourcePath)) continue
+        const id = `${context.gameId}|${layer.sourceId}|${layer.sourcePath.toLowerCase()}`
+        if (this.mods.has(id)) continue
+        const dependencyTarget: ModContextTarget = layer.sourceId === 'host'
+          ? layer.sourcePath : { sourceId: layer.sourceId, path: layer.sourcePath }
+        changed = (await this.once(`dependency|${id}`, async () =>
+          this.register(await open({ schemaVersion: 1, target: dependencyTarget }), dependencyTarget, undefined, false))) || changed
+      }
+      return (await this.register(context, target, baseMods, true)) || changed
+    })
+  }
+
+  private once(key: string, run: () => Promise<boolean>): Promise<boolean> {
+    const current = this.pending.get(key)
+    if (current !== undefined) return current
+    const next = run().finally(() => this.pending.delete(key))
+    this.pending.set(key, next)
+    return next
   }
 
   private async register(context: ModContext, target: ModContextTarget, baseMods?: readonly string[], opened = true): Promise<boolean> {
