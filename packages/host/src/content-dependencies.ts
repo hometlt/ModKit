@@ -217,10 +217,16 @@ function createContentDependencyOrigin(
       for (const mount of overlay) {
         const rootScoped = relativeRequest(mount, prefix) !== undefined
         const query = rootScoped ? prefix : joinPath(mount.logicalPrefix, prefix)
-        for (const entry of await findEntries(mount, query, signal)) {
+        for (const found of await findEntries(mount, query, signal)) {
+          // A path that names no layer is a lookup through the overlay, as ModContext.locate does:
+          // it is answered in the caller's spelling, by the strongest layer that holds it.
+          const entry = rootScoped
+            ? found
+            : Object.freeze({ ...found, logicalId: found.logicalId.slice(mount.logicalPrefix.length + 1) })
           const key = fold(entry.logicalId)
           if (emitted.has(key)) continue
           emitted.add(key)
+          if (!rootScoped) locations.set(key, mount)
           yield entry
         }
       }
@@ -228,21 +234,24 @@ function createContentDependencyOrigin(
     async open(logicalId: string, signal?: AbortSignal): Promise<Lease<ArtifactSource>> {
       throwIfAborted(signal)
       const normalized = normalizeCompanionLogicalId(logicalId)
+      // A layer-qualified id names its layer; any other path is relative to every layer (overlay).
+      const qualifiedIn = (candidate: IndexedMount) =>
+        relativeRequest(candidate, normalized) === undefined
+          ? joinPath(candidate.logicalPrefix, normalized)
+          : normalized
       let mount = locations.get(fold(normalized))
       if (mount === undefined) {
         for (const candidate of overlay) {
-          if (
-            (await findEntries(candidate, normalized, signal)).some(
-              entry => fold(entry.logicalId) === fold(normalized),
-            )
-          ) {
+          const qualified = qualifiedIn(candidate)
+          const found = await findEntries(candidate, qualified, signal)
+          if (found.some(entry => fold(entry.logicalId) === fold(qualified))) {
             mount = candidate
             break
           }
         }
       }
       if (mount === undefined) throw new RangeError(`content dependency has no entry ${normalized}`)
-      const relative = relativeRequest(mount, normalized)
+      const relative = relativeRequest(mount, qualifiedIn(mount))
       if (relative === undefined || relative === '')
         throw new RangeError(`content dependency has no file ${normalized}`)
       const bytes = await contentSources.read(
