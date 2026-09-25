@@ -63,6 +63,11 @@ export type LuaStaticValue =
   | {
       readonly kind: 'table'
       readonly entries: readonly LuaStaticEntry[]
+      /**
+       * Set by `setmetatable(t, mt)`: the listed entries are exact, but a key missing here may
+       * still answer at run time through the metatable.
+       */
+      readonly metatable?: true
       readonly range: LuaRange
     }
   /**
@@ -116,6 +121,7 @@ interface TableBuilder {
   readonly kind: 'table'
   readonly range: LuaRange
   readonly entries: { key: LuaStaticKey; value: Value; range: LuaRange }[]
+  metatable?: true
 }
 
 type Value = Exclude<LuaStaticValue, { kind: 'table' }> | TableBuilder
@@ -246,8 +252,26 @@ class Reader {
         if (key === undefined) return this.unresolved('unresolved-operand', expr.range)
         return lookup(base, key) ?? this.unresolved('missing-field', expr.range)
       }
-      case 'AstExprCall':
+      case 'AstExprCall': {
+        // `setmetatable(t, mt)` returns `t`; the metatable only answers keys `t` lacks.
+        const first = expr.args[0]
+        if (
+          expr.func.type === 'AstExprName' &&
+          expr.func.name === 'setmetatable' &&
+          first !== undefined
+        ) {
+          const table = this.evaluate(first)
+          const declared = this.bindingOf(expr.func.range)
+          if (
+            table.kind === 'table' &&
+            (declared === undefined || this.#binding.bindings[declared]?.kind === 'global')
+          ) {
+            table.metatable = true
+            return table
+          }
+        }
         return this.unresolved('call', expr.range)
+      }
       case 'AstExprFunction':
         return this.unresolved('function', expr.range)
       case 'AstExprVarargs':
@@ -581,7 +605,12 @@ function freeze(value: Value, seen = new Map<TableBuilder, LuaStaticValue>()): L
   const done = seen.get(value)
   if (done !== undefined) return done
   const entries: LuaStaticEntry[] = []
-  const table: LuaStaticValue = { kind: 'table', entries, range: value.range }
+  const table: LuaStaticValue = {
+    kind: 'table',
+    entries,
+    ...(value.metatable === true ? { metatable: true as const } : {}),
+    range: value.range,
+  }
   seen.set(value, table)
   for (const entry of value.entries)
     entries.push({ key: entry.key, value: freeze(entry.value, seen), range: entry.range })

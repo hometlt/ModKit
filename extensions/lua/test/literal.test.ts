@@ -86,6 +86,20 @@ describe('static reading of Lua data modules', () => {
     expect(luaStaticToJson(reading.value)).toEqual({ menu: ['a'], fallback: 5, gated: null })
   })
 
+  it('reads setmetatable(t, mt) as t, marked', async () => {
+    const reading = await read(`
+      local module = {}
+      module.typeName = setmetatable({ [7] = "footman" }, { __index = function(_, k) return tostring(k) end })
+      return module
+    `)
+    expect(luaStaticField(reading.value, 'typeName')).toMatchObject({
+      kind: 'table',
+      metatable: true,
+    })
+    expect(luaStaticToJson(reading.value)).toEqual({ typeName: { 7: 'footman' } })
+    expect(reading.unappliedWrites).toEqual([])
+  })
+
   it('follows table references like Lua does', async () => {
     const reading = await read(`
       local base = { hp = 10 }
