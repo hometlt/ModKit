@@ -210,6 +210,14 @@ const workerBuild = await build({
       'checksum',
       'index.js',
     ),
+    'vendor/codec-kit/audio/index': join(
+      repoRoot,
+      'packages',
+      'codec-kit',
+      'dist',
+      'audio',
+      'index.js',
+    ),
     'vendor/codec-kit/compression/bounded': join(
       repoRoot,
       'packages',
