@@ -8,11 +8,10 @@ export type InflateFormat = 'zlib' | 'deflate-raw' | 'gzip'
 /** Inflate one whole stream; throws `codec-kit/compression-output-limit` past `maxOutputBytes`. */
 export type InflateSync = (payload: Uint8Array, maxOutputBytes: number) => Uint8Array
 
-type NativeOptions = { maxOutputLength: number; chunkSize: number }
 interface NodeZlib {
-  inflateSync(payload: Uint8Array, options: NativeOptions): Uint8Array
-  inflateRawSync(payload: Uint8Array, options: NativeOptions): Uint8Array
-  gunzipSync(payload: Uint8Array, options: NativeOptions): Uint8Array
+  inflateSync(payload: Uint8Array, options: { maxOutputLength: number }): Uint8Array
+  inflateRawSync(payload: Uint8Array, options: { maxOutputLength: number }): Uint8Array
+  gunzipSync(payload: Uint8Array, options: { maxOutputLength: number }): Uint8Array
 }
 
 // A variable specifier, so a browser bundle does not try to resolve it.
@@ -56,16 +55,8 @@ async function resolveInflate(format: InflateFormat): Promise<InflateSync> {
           : zlib.inflateRawSync.bind(zlib)
     return (payload, maximum) => {
       try {
-        const out = run(payload, {
-          maxOutputLength: Math.max(1, maximum),
-          // An exact bound (a BLTE chunk) is inflated into one buffer, without a join.
-          chunkSize: Math.min(Math.max(maximum, 64), 1 << 20),
-        })
-        // A Node Buffer may be a slice of a shared pool or of a larger chunk; the result owns
-        // its whole buffer, as the host's worker RPC requires of anything a codec returns.
-        return out.byteOffset === 0 && out.byteLength === out.buffer.byteLength
-          ? new Uint8Array(out.buffer)
-          : new Uint8Array(out)
+        const out = run(payload, { maxOutputLength: Math.max(1, maximum) })
+        return new Uint8Array(out.buffer, out.byteOffset, out.byteLength)
       } catch (error) {
         if ((error as { code?: unknown }).code === 'ERR_BUFFER_TOO_LARGE') {
           throw outputLimit(maximum)
