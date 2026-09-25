@@ -134,6 +134,15 @@ const nodeModuleMap = {
   '@modkit/codec-kit/compression/inflate': pathToFileURL(
     join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'compression', 'inflate.js'),
   ).href,
+  '@modkit/codec-kit/compression/lz4': pathToFileURL(
+    join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'compression', 'lz4.js'),
+  ).href,
+  '@modkit/codec-kit/compression/zstd': pathToFileURL(
+    join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'compression', 'zstd.js'),
+  ).href,
+  '@modkit/codec-kit/model/draco': pathToFileURL(
+    join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'model', 'draco.js'),
+  ).href,
   '@modkit/codec-kit/raster': pathToFileURL(
     join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'raster', 'index.js'),
   ).href,

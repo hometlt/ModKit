@@ -158,9 +158,21 @@
       "types": "./dist/compression/inflate.d.ts",
       "default": "./dist/compression/inflate.js"
     },
+    "./compression/lz4": {
+      "types": "./dist/compression/lz4.d.ts",
+      "default": "./dist/compression/lz4.js"
+    },
+    "./compression/zstd": {
+      "types": "./dist/compression/zstd.d.ts",
+      "default": "./dist/compression/zstd.js"
+    },
     "./checksum": {
       "types": "./dist/checksum/index.d.ts",
       "default": "./dist/checksum/index.js"
+    },
+    "./model/draco": {
+      "types": "./dist/model/draco.d.ts",
+      "default": "./dist/model/draco.js"
     },
     "./model/sources": {
       "types": "./dist/model/sources.d.ts",
@@ -182,6 +194,8 @@
     "README.md"
   ],
   "dependencies": {
+    "draco3d": "1.5.7",
+    "fzstd": "0.1.1",
     "pako": "2.1.0",
     "seek-bzip": "2.0.0",
     "texture2ddecoder-wasm": "1.2.2",

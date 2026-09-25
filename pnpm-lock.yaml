@@ -422,9 +422,15 @@ importers:
       '@modkit/sdk':
         specifier: workspace:*
         version: link:../sdk
+      draco3d:
+        specifier: 1.5.7
+        version: 1.5.7
       fast-xml-parser:
         specifier: 4.5.6
         version: 4.5.6
+      fzstd:
+        specifier: 0.1.1
+        version: 0.1.1
       pako:
         specifier: 2.1.0
         version: 2.1.0
@@ -1681,6 +1687,9 @@ packages:
   domutils@3.2.2:
     resolution: {integrity: sha512-6kZKyUajlDuqlHKVX1w7gyslj9MPIXzIFiz/rGu35uC1wMi+kMhQwGhl4lt9unC9Vb9INnY9Z3/ZA3+FhASLaw==}
 
+  draco3d@1.5.7:
+    resolution: {integrity: sha512-m6WCKt/erDXcw+70IJXnG7M3awwQPAsZvJGX5zY7beBqpELw6RDGkYVU0W43AFxye4pDZ5i2Lbyc/NNGqwjUVQ==}
+
   dunder-proto@1.0.1:
     resolution: {integrity: sha512-KIN/nDJBQRcXw0MLVhZE9iQHmG68qAVIBg9CqmUYjmQIhgij9U5MFvrqkUL5FbtyyzZuOeOt0zdeRe4UY7ct+A==}
     engines: {node: '>= 0.4'}
@@ -1900,6 +1909,9 @@ packages:
 
   function-bind@1.1.2:
     resolution: {integrity: sha512-7XHNxH7qX9xG5mIwxkhumTox/MIRNcOgDrxWsMt2pAr23WHp6MrRlN7FBSFpCpr+oVO0F744iUgR82nJMfG2SA==}
+
+  fzstd@0.1.1:
+    resolution: {integrity: sha512-dkuVSOKKwh3eas5VkJy1AW1vFpet8TA/fGmVA5krThl8YcOVE/8ZIoEA1+U1vEn5ckxxhLirSdY837azmbaNHA==}
 
   get-east-asian-width@1.6.0:
     resolution: {integrity: sha512-QRbvDIbx6YklUe6RxeTeleMR0yv3cYH6PsPZHcnVn7xv7zO1BHN8r0XETu8n6Ye3Q+ahtSarc3WgtNWmehIBfA==}
@@ -3997,6 +4009,8 @@ snapshots:
       domelementtype: 2.3.0
       domhandler: 5.0.3
 
+  draco3d@1.5.7: {}
+
   dunder-proto@1.0.1:
     dependencies:
       call-bind-apply-helpers: 1.0.2
@@ -4271,6 +4285,8 @@ snapshots:
     optional: true
 
   function-bind@1.1.2: {}
+
+  fzstd@0.1.1: {}
 
   get-east-asian-width@1.6.0: {}
 
