@@ -1672,10 +1672,8 @@ class ResourcesView implements vscode.TreeDataProvider<ResourceTreeNode>, vscode
   private generation = 0
 
   constructor(
-    private readonly active: () => ResourceTreeHost | undefined,
     private readonly localizer: UiLocalizer,
-    private readonly fallback?: () => Promise<ResourceTreeHost | undefined>,
-    private readonly onRefresh?: () => void,
+    private readonly loaded: () => Promise<ResourceTreeHost | undefined>,
     private readonly members?: ResourceMemberTrees,
   ) {}
 
@@ -1686,13 +1684,8 @@ class ResourcesView implements vscode.TreeDataProvider<ResourceTreeNode>, vscode
   refresh(): void {
     this.generation += 1
     this.searchResults = undefined
-    this.onRefresh?.()
     this.members?.reset()
     this.changed.fire(undefined)
-  }
-
-  private async current(): Promise<ResourceTreeHost | undefined> {
-    return this.active() ?? (await this.fallback?.())
   }
 
   async open(node?: ResourceTreeNode): Promise<boolean> {
@@ -1705,7 +1698,7 @@ class ResourcesView implements vscode.TreeDataProvider<ResourceTreeNode>, vscode
       return true
     }
     if (node.facts.subjectId === undefined) return false
-    const served = await this.current()
+    const served = await this.loaded()
     if (served === undefined) return false
     served.navigate(node.facts.subjectId, node.facts.range)
     return true
@@ -1800,7 +1793,7 @@ class ResourcesView implements vscode.TreeDataProvider<ResourceTreeNode>, vscode
   }
 
   private async load(parent: TreeNodeRef, cursor?: string): Promise<ResourceTreeNode[]> {
-    const served = await this.current()
+    const served = await this.loaded()
     if (served === undefined) {
       return [this.notice(this.localizer.text('vscode.resources.noActiveSubject'))]
     }
@@ -1821,7 +1814,7 @@ class ResourcesView implements vscode.TreeDataProvider<ResourceTreeNode>, vscode
       this.refresh()
       return
     }
-    const served = await this.current()
+    const served = await this.loaded()
     const lease = await served?.openTreeDataSource()
     if (lease === undefined) {
       this.searchResults = [this.notice(this.localizer.text('vscode.resources.unavailable'))]
@@ -1905,7 +1898,7 @@ class ResourcesView implements vscode.TreeDataProvider<ResourceTreeNode>, vscode
         return subject === undefined ? this.load(node.ref) : this.loadMember(subject)
       }
       if (this.searchResults !== undefined) return [...this.searchResults]
-      const served = await this.current()
+      const served = await this.loaded()
       if (served === undefined) {
         return [this.notice(this.localizer.text('vscode.resources.noActiveSubject'))]
       }
@@ -7153,10 +7146,6 @@ async function activateModkit(
   const supportedDirectorySubjects = new Set(
     host.supportedExtensions.map(extension => extension.replace(/^\./u, '').toLowerCase()),
   )
-  let workspaceResourceSubject: VsCodeTreeSubject | undefined
-  let workspaceResourceRoot: string | undefined
-  let workspaceResourceOpening: Promise<ResourceTreeHost | undefined> | undefined
-  let workspaceResourceOpeningRoot: string | undefined
   let loadedModResources: () => Promise<ResourceTreeHost | undefined> = async () => undefined
   let navigateWorkspaceResource: (
     root: string,
@@ -7164,88 +7153,6 @@ async function activateModkit(
     range?: TreeNodeFacts['range'],
   ) => Promise<boolean> = async () => false
 
-  const workspaceResourcePath = (): string | undefined => {
-    const folders = (vscode.workspace.workspaceFolders ?? []).filter(
-      folder => folder.uri.scheme === 'file',
-    )
-    if (folders.length === 0) return undefined
-    const activeUri = vscode.window.activeTextEditor?.document.uri
-    const folder =
-      (activeUri?.scheme === 'file' ? vscode.workspace.getWorkspaceFolder(activeUri) : undefined) ??
-      folders[0]
-    if (folder === undefined) return undefined
-    const boundary = resolve(folder.uri.fsPath)
-    let candidate =
-      activeUri?.scheme === 'file' && vscode.workspace.getWorkspaceFolder(activeUri) === folder
-        ? dirname(activeUri.fsPath)
-        : boundary
-    for (;;) {
-      const extension = basename(candidate).split('.').at(-1)?.toLowerCase()
-      if (extension !== undefined && supportedDirectorySubjects.has(extension)) return candidate
-      if (candidate === boundary) return undefined
-      const parent = dirname(candidate)
-      if (parent === candidate || relative(boundary, parent).startsWith('..')) return undefined
-      candidate = parent
-    }
-  }
-
-  const resetWorkspaceResources = (): void => {
-    workspaceResourceOpening = undefined
-    workspaceResourceOpeningRoot = undefined
-    workspaceResourceRoot = undefined
-    const previous = workspaceResourceSubject
-    workspaceResourceSubject = undefined
-    if (previous !== undefined) void previous.dispose().catch(() => undefined)
-  }
-
-  const workspaceResources = async (): Promise<ResourceTreeHost | undefined> => {
-    const root = workspaceResourcePath()
-    if (root === undefined) return undefined
-    if (workspaceResourceSubject !== undefined && workspaceResourceRoot === root) {
-      const subject = workspaceResourceSubject
-      return Object.freeze({
-        openTreeDataSource: (signal?: AbortSignal) => subject.openTreeDataSource(signal),
-        navigate(subjectId: string, range?: TreeNodeFacts['range']) {
-          void navigateWorkspaceResource(root, subjectId, range).catch(error =>
-            vscode.window.showErrorMessage(
-              `Modkit: ${error instanceof Error ? error.message : String(error)}`,
-            ),
-          )
-        },
-      })
-    }
-    if (workspaceResourceOpening !== undefined && workspaceResourceOpeningRoot === root) {
-      return workspaceResourceOpening
-    }
-    resetWorkspaceResources()
-    workspaceResourceOpeningRoot = root
-    workspaceResourceOpening = (async () => {
-      const subject = await host.openTreeSubject(root, roots())
-      if (subject === undefined) return undefined
-      if (workspaceResourceOpeningRoot !== root) {
-        await subject.dispose()
-        return undefined
-      }
-      workspaceResourceSubject = subject
-      workspaceResourceRoot = root
-      return Object.freeze({
-        openTreeDataSource: (signal?: AbortSignal) => subject.openTreeDataSource(signal),
-        navigate(subjectId: string, range?: TreeNodeFacts['range']) {
-          void navigateWorkspaceResource(root, subjectId, range).catch(error =>
-            vscode.window.showErrorMessage(
-              `Modkit: ${error instanceof Error ? error.message : String(error)}`,
-            ),
-          )
-        },
-      })
-    })().finally(() => {
-      if (workspaceResourceOpeningRoot === root) {
-        workspaceResourceOpening = undefined
-        workspaceResourceOpeningRoot = undefined
-      }
-    })
-    return workspaceResourceOpening
-  }
   /**
    * Resource files opened as subjects of their own, so their codec can answer what is inside.
    *
@@ -7330,22 +7237,8 @@ async function activateModkit(
   })
   context.subscriptions.push({ dispose: () => resourceMemberTrees.reset() })
 
-  const activeServed = (): VsCodeServed | undefined => {
-    if (activeSubject === undefined) return undefined
-    for (const [served, path] of liveSubjects) {
-      if (path === activeSubject) return served
-    }
-    return undefined
-  }
-  const resourcesView = new ResourcesView(
-    // Resources belongs to loaded mods, never to whichever model or document has focus.
-    () => undefined,
-    localizer,
-    () => loadedModResources(),
-    resetWorkspaceResources,
-    resourceMemberTrees,
-  )
-  context.subscriptions.push({ dispose: resetWorkspaceResources })
+  // Resources belongs to loaded mods, never to whichever model or document has focus.
+  const resourcesView = new ResourcesView(localizer, () => loadedModResources(), resourceMemberTrees)
   const languageSubjectCandidates: SubjectCandidateProviderSource = Object.freeze({
     async open(scope: SubjectCandidateScope, signal?: AbortSignal) {
       let requested: VsCodeSubjectCandidateScope
