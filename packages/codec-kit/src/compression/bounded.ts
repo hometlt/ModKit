@@ -9,13 +9,52 @@ export interface BoundedDecompressionOptions {
   readonly outputLimitError?: (maximum: number) => Error
 }
 
+interface NativeResult {
+  readonly buffer: Uint8Array
+  readonly engine: { readonly bytesWritten: number }
+}
+type NativeDecompress = (
+  payload: Uint8Array,
+  options: { info: true; maxOutputLength: number; chunkSize: number },
+  callback: (error: (Error & { code?: unknown }) | null, result: NativeResult) => void,
+) => void
+interface NodeZlib {
+  readonly inflate: NativeDecompress
+  readonly inflateRaw: NativeDecompress
+  readonly gunzip: NativeDecompress
+}
+
+// A variable specifier, so a browser bundle does not try to resolve it.
+const NODE_ZLIB = 'node:zlib'
+let nodeZlib: Promise<NodeZlib | undefined> | undefined
+function loadNodeZlib(): Promise<NodeZlib | undefined> {
+  nodeZlib ??= import(/* @vite-ignore */ NODE_ZLIB).then(
+    zlib => (typeof (zlib as Partial<NodeZlib>).inflate === 'function' ? (zlib as NodeZlib) : undefined),
+    () => undefined,
+  )
+  return nodeZlib
+}
+
+/** What `DecompressionStream` answers for bytes after the end of the compressed stream. */
+function trailingJunkError(): Error {
+  const error = new TypeError('Trailing junk found after the end of the compressed stream')
+  Object.defineProperty(error, 'code', { value: 'ERR_TRAILING_JUNK_AFTER_STREAM_END', enumerable: true })
+  return error
+}
+
 function defaultOutputLimitError(maximum: number): Error {
   const error = new RangeError(`decompressed output exceeds its ${maximum}-byte bound`)
   Object.defineProperty(error, 'code', { value: COMPRESSION_OUTPUT_LIMIT, enumerable: true })
   return error
 }
 
-/** Collect one browser-native decompression stream while enforcing an output-byte ceiling. */
+/**
+ * Decompress one stream while enforcing an output-byte ceiling: with the platform's zlib where the
+ * realm has one (Node, a Node worker, Electron — one call on the libuv thread pool instead of a
+ * stream per payload), with `DecompressionStream` otherwise. Both answer the same inputs the same
+ * way: bytes after the end of the stream, a truncated stream and an empty one are errors, several
+ * gzip members are one output.
+ */
 export async function decompressBounded(
   payload: Uint8Array,
   format: PortableDecompressionFormat,
@@ -27,6 +66,8 @@ export async function decompressBounded(
     throw new RangeError('maxOutputBytes must be a non-negative safe integer')
   }
   options.signal?.throwIfAborted()
+  const zlib = await loadNodeZlib()
+  if (zlib !== undefined) return decompressNative(zlib, payload, format, maximum, options)
   if (typeof DecompressionStream !== 'function') {
     throw new TypeError('portable decompression requires DecompressionStream')
   }
@@ -61,6 +102,48 @@ export async function decompressBounded(
     offset += chunk.byteLength
   }
   return output
+}
+
+async function decompressNative(
+  zlib: NodeZlib,
+  payload: Uint8Array,
+  format: PortableDecompressionFormat,
+  maximum: number,
+  options: BoundedDecompressionOptions,
+): Promise<Uint8Array> {
+  const run = format === 'gzip' ? zlib.gunzip : format === 'deflate-raw' ? zlib.inflateRaw : zlib.inflate
+  let result: NativeResult
+  try {
+    result = await new Promise<NativeResult>((resolve, reject) =>
+      run(
+        payload,
+        {
+          info: true,
+          // zlib takes 1..2^31-1 here; no single output this module hands back is larger.
+          maxOutputLength: Math.min(Math.max(1, maximum), 0x7fffffff),
+          // An exact bound (a sector, a chunk) is inflated into one buffer, without a join.
+          chunkSize: Math.min(Math.max(maximum, 64), 1 << 20),
+        },
+        (error, value) => (error === null ? resolve(value) : reject(error)),
+      ),
+    )
+  } catch (error) {
+    if ((error as { code?: unknown }).code === 'ERR_BUFFER_TOO_LARGE') {
+      throw (options.outputLimitError ?? defaultOutputLimitError)(maximum)
+    }
+    throw error
+  }
+  options.signal?.throwIfAborted()
+  // zlib stops at the end of the stream and ignores what follows; the stream decoder refuses it.
+  if (result.engine.bytesWritten !== payload.byteLength) throw trailingJunkError()
+  const output = result.buffer
+  if (output.byteLength > maximum) throw (options.outputLimitError ?? defaultOutputLimitError)(maximum)
+  options.onChunk?.(output.byteLength)
+  // A Node Buffer may be a slice of a shared pool; the result owns its whole buffer, as the
+  // stream decoder's does (and as the host's worker RPC requires of anything it moves).
+  return output.byteOffset === 0 && output.byteLength === output.buffer.byteLength
+    ? new Uint8Array(output.buffer)
+    : new Uint8Array(output)
 }
 
 export type PortableCompressionFormat = PortableDecompressionFormat
