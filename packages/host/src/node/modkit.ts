@@ -230,8 +230,11 @@ export async function createModkit(options: ModkitOptions): Promise<Modkit> {
    * different execution environments. Directory extensions activate for the worker realm
    * (`node-worker`) — isolation is the point of loading by directory. Linked contributions declare
    * `trusted-in-process` for the host realm (`node`), because the import was the trust decision.
-   * A subject is opened through the worker lane first; only when nothing there claims it does the
-   * trusted lane answer — so a codec available both ways still runs isolated.
+   * The codec is chosen by probe confidence across both lanes; isolation only breaks a tie, so a
+   * codec available both ways still runs in the worker. The worker lane goes first, and a certain
+   * claim there (confidence 1) is final. Otherwise the trusted lane is asked too, and the less
+   * confident of two opened subjects is disposed: a generic worker codec (text-json at 0.78) must not
+   * win a `.uvw.json` from the trusted UVW codec (0.995) merely by answering first.
    */
   const trustedLane =
     linked.inputs.length === 0
@@ -252,9 +255,16 @@ export async function createModkit(options: ModkitOptions): Promise<Modkit> {
           ...services,
           open: async (request: Parameters<typeof services.open>[0]) => {
             const viaWorkers = await services.open(request)
-            if (viaWorkers.state === 'opened') return viaWorkers
+            if (viaWorkers.state === 'opened' && viaWorkers.selected.confidence >= 1) return viaWorkers
             const viaTrusted = await trustedLane.open(request)
-            return viaTrusted.state === 'opened' ? viaTrusted : viaWorkers
+            if (viaTrusted.state !== 'opened') return viaWorkers
+            if (viaWorkers.state !== 'opened') return viaTrusted
+            const [winner, loser] =
+              viaTrusted.selected.confidence > viaWorkers.selected.confidence
+                ? [viaTrusted, viaWorkers]
+                : [viaWorkers, viaTrusted]
+            await loser.session.dispose()
+            return winner
           },
         }
 

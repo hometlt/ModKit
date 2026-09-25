@@ -22,6 +22,7 @@
   ],
   "dependencies": {
     "@modelcontextprotocol/server": "2.0.0",
+    "@modkit/codec-kit": "workspace:*",
     "@modkit/core": "workspace:*",
     "@modkit/host": "workspace:*",
     "@modkit/scene": "workspace:*",

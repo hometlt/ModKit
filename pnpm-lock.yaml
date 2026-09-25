@@ -156,6 +156,9 @@ importers:
       '@modelcontextprotocol/server':
         specifier: 2.0.0
         version: 2.0.0
+      '@modkit/codec-kit':
+        specifier: workspace:*
+        version: link:../../packages/codec-kit
       '@modkit/core':
         specifier: workspace:*
         version: link:../../packages/core
