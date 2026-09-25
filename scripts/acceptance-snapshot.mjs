@@ -69,7 +69,8 @@ const run = (command, args, cwd, capture = false) => {
 const git = (cwd, ...args) => run('git', args, cwd, true)
 const readText = path => (existsSync(path) ? readFileSync(path, 'utf8') : undefined)
 const installFingerprint = (target, lock) => {
-  const digest = createHash('sha256').update(lock)
+  // pnpm links are absolute junctions: a snapshot that moved with the workspace must reinstall.
+  const digest = createHash('sha256').update(target).update(lock)
   const vendor = join(target, 'vendor')
   if (existsSync(vendor)) {
     for (const name of readdirSync(vendor)
@@ -107,7 +108,8 @@ for (const repository of REPOSITORIES) {
       (installed !== fingerprint || !existsSync(join(target, 'node_modules')))
     if (needsInstall) {
       // pnpm may retain the old extraction of a file: vendor archive at the same path.
-      run('pnpm', ['install', '--force', '--frozen-lockfile', '--prefer-offline'], target)
+      // Without a TTY pnpm refuses to purge an existing modules directory unless told not to ask.
+      run('pnpm', ['install', '--force', '--frozen-lockfile', '--prefer-offline', '--config.confirmModulesPurge=false'], target)
       writeFileSync(join(target, 'node_modules', '.acceptance-lock'), fingerprint)
     }
 
