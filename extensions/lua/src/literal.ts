@@ -330,6 +330,11 @@ class Reader {
   }
 
   binary(op: string, left: Value, right: Value, range: LuaRange): Value {
+    // `flag and a or b`: Lua picks an operand by the left one's truthiness, whatever the other is.
+    if ((op === 'And' || op === 'Or') && left.kind !== 'unresolved' && left.kind !== 'symbol') {
+      const truthy = !(left.kind === 'nil' || (left.kind === 'boolean' && !left.value))
+      return op === 'And' ? (truthy ? right : left) : truthy ? left : right
+    }
     if (left.kind === 'unresolved' || right.kind === 'unresolved') {
       return this.unresolved('unresolved-operand', range)
     }

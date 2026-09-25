@@ -77,6 +77,15 @@ describe('static reading of Lua data modules', () => {
     ])
   })
 
+  it('picks `flag and a or b` by a known flag, whatever the other operand is', async () => {
+    const reading = await read(`
+      local newMenu = true
+      local oldMenu = nil
+      return { menu = newMenu and { "a" } or { "b" }, fallback = oldMenu or 5, gated = oldMenu and require("x") }
+    `)
+    expect(luaStaticToJson(reading.value)).toEqual({ menu: ['a'], fallback: 5, gated: null })
+  })
+
   it('follows table references like Lua does', async () => {
     const reading = await read(`
       local base = { hp = 10 }
