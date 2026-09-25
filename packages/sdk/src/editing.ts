@@ -1,4 +1,5 @@
-import { deepFreeze, type Diagnostic, type UInt64String } from '@modkit/core'
+import { canonicalJsonStringify, deepFreeze, type Diagnostic, type UInt64String } from '@modkit/core'
+import { revisionIdFromRef } from './asset-capabilities/types.js'
 import type { SurfaceOf } from './asset-capabilities/data-source-surfaces.js'
 import type { DataSourceSurfaceV1 } from './definitions.js'
 import type { DataSourceRef, DataSourceRefWire, Lease } from './asset-capabilities/data-sources.js'
@@ -528,4 +529,57 @@ export function writerOfferSatisfies(request: WriterRequirement, offer: WriterOf
 /** Canonical, non-secret selection key of a matched writer request (safe for policy locks). */
 export function writerSelectionKey(request: WriterRequirement): string {
   return `writer:${request.formatId}:${request.representationId}:${request.mutationMode}:${request.minimumRoundTrip}`
+}
+
+/**
+ * The revision of one entry of a container or directory namespace: the container's revision, the
+ * entry and its size. A nested subject opened from the entry, an edit target naming it and the file
+ * backend's conditional-write check all use this one rule.
+ */
+export function containerEntryRevision(
+  containerRevision: RevisionId,
+  entryId: string,
+  byteLength: number | bigint,
+): RevisionId {
+  // through the ref builder, not by string concatenation: a revision id is a kind-tagged token
+  // whose value is percent-encoded, and the container's own revision is itself one of those
+  return revisionIdFromRef({
+    kind: 'provider-token',
+    value: `${String(containerRevision)}!${entryId}:${byteLength}`,
+  })
+}
+
+/**
+ * The edit target of one file inside a directory-namespace subject, at the namespace revision it
+ * was opened at: `root.uri?vfs-path=<path>`, pinned by {@link containerEntryRevision}. The host
+ * accepts it in a plan for that subject; the file backend re-derives the same revision at commit.
+ */
+export function namespaceEntryEditTarget(input: {
+  readonly subjectUri: string
+  readonly root: AssetSourceRef
+  readonly namespaceRevision: RevisionId
+  readonly entry: { readonly path: string; readonly size: number | bigint }
+}): SubjectEditTarget {
+  const url = new URL(input.root.uri)
+  url.search = ''
+  url.hash = ''
+  url.searchParams.set('vfs-path', input.entry.path)
+  const source: AssetSourceRef = { id: url.href, uri: url.href, parentIds: [input.root.id] }
+  const revision = containerEntryRevision(input.namespaceRevision, input.entry.path, input.entry.size)
+  return deepFreeze({
+    targetId: source.id,
+    subjectUri: input.subjectUri,
+    ownerSource: source,
+    semanticPath: [],
+    expectedRevision: {
+      bindings: { [source.id]: revision },
+      namespaceRevision: input.namespaceRevision,
+      compositionFingerprint: canonicalJsonStringify({
+        topology: 'single',
+        bindingId: source.id,
+        source: { id: source.id, uri: source.uri },
+        revision,
+      }),
+    },
+  })
 }

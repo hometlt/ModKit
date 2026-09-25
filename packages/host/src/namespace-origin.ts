@@ -16,6 +16,7 @@
 
 import { ModkitError, throwIfAborted } from '@modkit/core'
 import {
+  containerEntryRevision,
   revisionIdFromRef,
   type ArtifactByteSource,
   type ArtifactSource,
@@ -51,20 +52,10 @@ export const NESTED_ENTRY_NOT_FOUND = 'x3.host/nested-entry-not-found'
  * and its extracted length in keeps each entry its own artifact while still naming the container
  * snapshot it was cut from — so reopening the archive changes every entry's revision, exactly as it
  * should. The nested-subject route and the companion backend both call this, so a primary entry and
- * a companion entry of the same archive are pinned the same way.
+ * a companion entry of the same archive are pinned the same way. The rule lives in the sdk
+ * (`containerEntryRevision`) so a codec naming an entry as an edit target pins it identically.
  */
-export function containerEntryRevision(
-  containerRevision: RevisionId,
-  entryId: string,
-  byteLength: number | bigint,
-): RevisionId {
-  // through the ref builder, not by string concatenation: a revision id is a kind-tagged token
-  // whose value is percent-encoded, and the container's own revision is itself one of those
-  return revisionIdFromRef({
-    kind: 'provider-token',
-    value: `${String(containerRevision)}!${entryId}:${byteLength}`,
-  })
-}
+export { containerEntryRevision }
 
 export interface NamespaceCompanionOriginOptions {
   /** The parent container's own entry listing, leased and retained by the caller. */

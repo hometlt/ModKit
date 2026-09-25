@@ -33,6 +33,7 @@ import type {
   Writer,
   WriterIdentity,
 } from '@modkit/sdk'
+import { namespaceEntryEditTarget } from '@modkit/sdk'
 import {
   createCommitCoordinator,
   createEditSession,
@@ -172,6 +173,53 @@ export function subjectEditTargetsFromDescriptor(
 }
 
 /**
+ * The entry target a directory-namespace subject admits for `target`: a `?vfs-path=` file strictly
+ * inside the opened root, pinned at the namespace revision the subject was opened at, in the exact
+ * shape `namespaceEntryEditTarget` builds. The entry's own revision (its size) is re-derived and
+ * checked by the editing backend at commit, so a stale one is refused there, never written.
+ */
+function namespaceEntryTargetOf(
+  descriptor: AnyDescriptor,
+  target: SubjectEditTarget,
+): SubjectEditTarget | undefined {
+  const origin = descriptor.origin
+  if (origin.kind !== 'namespace') return undefined
+  let path: string | null
+  try {
+    const url = new URL(target.ownerSource.uri)
+    path = url.searchParams.get('vfs-path')
+  } catch {
+    return undefined
+  }
+  if (path === null || path.split('/').some(segment => segment === '' || segment === '.' || segment === '..')) {
+    return undefined
+  }
+  const bindingIds = Object.keys(target.expectedRevision.bindings)
+  const revision = target.expectedRevision.bindings[target.ownerSource.id]
+  if (bindingIds.length !== 1 || revision === undefined) return undefined
+  // Rebuilt from the opened root and revision; only the entry revision is taken from the plan.
+  const rebuilt = namespaceEntryEditTarget({
+    subjectUri: descriptor.subjectUri,
+    root: origin.root,
+    namespaceRevision: origin.revision,
+    entry: { path, size: 0 },
+  })
+  return Object.freeze({
+    ...rebuilt,
+    expectedRevision: Object.freeze({
+      bindings: Object.freeze({ [rebuilt.ownerSource.id]: revision }),
+      namespaceRevision: origin.revision,
+      compositionFingerprint: canonicalJsonStringify({
+        topology: 'single',
+        bindingId: rebuilt.ownerSource.id,
+        source: { id: rebuilt.ownerSource.id, uri: rebuilt.ownerSource.uri },
+        revision,
+      }),
+    }),
+  })
+}
+
+/**
  * Accept an operation edit plan only when every target and edit belongs to the application-owned
  * source bindings at the revision captured by `openSubject`.
  */
@@ -191,6 +239,11 @@ export function editPlanFromOperationForDescriptor(
   const plan = output.plan
   const declaredTargetIds = new Set<string>()
   for (const target of plan.targets) {
+    // A file inside a directory namespace is a target of its own, as namespaceEntryEditTarget names it.
+    if (!expectedTargets.has(target.targetId)) {
+      const entry = namespaceEntryTargetOf(descriptor, target)
+      if (entry !== undefined) expectedTargets.set(target.targetId, entry)
+    }
     const expectedTarget = expectedTargets.get(target.targetId)
     if (
       expectedTarget === undefined ||
