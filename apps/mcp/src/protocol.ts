@@ -6,8 +6,33 @@ export const MCP_MAX_OPEN_HANDLES = 16
 export const MCP_MAX_DIAGNOSTICS = 50
 export const MCP_MAX_PROVENANCE_ITEMS = 100
 export const MCP_MAX_OUTPUT_BYTES = 128 * 1_024
+export const MCP_MAX_IMAGE_BYTES = 4 * 1_024 * 1_024
 
 export type McpCompleteness = 'complete' | 'partial' | 'capped' | 'invalid'
+
+/** An image for the client to see; the server sends it as an MCP image block, never inside the JSON. */
+export interface McpImage {
+  readonly mimeType: 'image/png' | 'image/jpeg' | 'image/gif' | 'image/webp'
+  /** Base64 of the image bytes. */
+  readonly data: string
+}
+
+/** `bytes` as an image block when their signature is an image a client shows and they fit the limit. */
+export function mcpImage(bytes: Uint8Array): McpImage | undefined {
+  const starts = (...signature: number[]) => signature.every((byte, index) => bytes[index] === byte)
+  const mimeType: McpImage['mimeType'] | undefined = starts(0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a)
+    ? 'image/png'
+    : starts(0xff, 0xd8, 0xff)
+      ? 'image/jpeg'
+      : starts(0x47, 0x49, 0x46, 0x38)
+        ? 'image/gif'
+        : starts(0x52, 0x49, 0x46, 0x46) && bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50
+          ? 'image/webp'
+          : undefined
+  return mimeType === undefined || bytes.byteLength > MCP_MAX_IMAGE_BYTES
+    ? undefined
+    : Object.freeze({ mimeType, data: Buffer.from(bytes).toString('base64') })
+}
 export type McpJson = null | boolean | number | string | McpJson[] | { [key: string]: McpJson }
 
 export interface McpDiagnostic {
@@ -27,6 +52,8 @@ export interface McpEnvelope {
   readonly diagnostics: readonly McpDiagnostic[]
   readonly provenance: readonly McpJson[]
   readonly data: McpJson
+  /** Not structured content: the server turns these into image blocks next to the JSON. */
+  readonly images?: readonly McpImage[]
 }
 
 interface ProjectionState {
@@ -156,6 +183,7 @@ export interface EnvelopeInput {
   readonly diagnostics?: readonly unknown[]
   readonly provenance?: readonly unknown[]
   readonly data: unknown
+  readonly images?: readonly McpImage[]
 }
 
 export function envelope(input: EnvelopeInput): McpEnvelope {
@@ -206,7 +234,7 @@ export function envelope(input: EnvelopeInput): McpEnvelope {
       data: null,
     })
   }
-  return Object.freeze(result)
+  return Object.freeze(input.images?.length ? { ...result, images: Object.freeze([...input.images]) } : result)
 }
 
 export const fingerprint = (values: readonly string[]): string => {

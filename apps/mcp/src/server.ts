@@ -338,11 +338,12 @@ const invokeReadonlyInput = z
     input: z.unknown().refine(value => value !== undefined, 'input is required'),
     retainOutput: z.boolean().optional(),
     inputArtifact: inputArtifactSchema.optional(),
+    render: z.literal('image').optional(),
   })
   .strict()
 
 /** Same shape; the operation named here is a mutating one and the answer is a plan, not a write. */
-const proposeEditInput = invokeReadonlyInput.omit({ retainOutput: true, inputArtifact: true })
+const proposeEditInput = invokeReadonlyInput.omit({ retainOutput: true, inputArtifact: true, render: true })
 const editPlanHandleSchema = z.string().uuid()
 const prepareEditInput = z
   .object({
@@ -536,9 +537,12 @@ export const encodeKnowledgeResourceTarget = (target: KnowledgeTarget): string =
   return Buffer.from(JSON.stringify(canonical), 'utf8').toString('base64url')
 }
 
-const toolResult = (value: McpEnvelope): CallToolResult => ({
+const toolResult = ({ images = [], ...value }: McpEnvelope): CallToolResult => ({
   ...(value.completeness === 'invalid' ? { isError: true } : {}),
-  content: [{ type: 'text', text: JSON.stringify(value) }],
+  content: [
+    { type: 'text', text: JSON.stringify(value) },
+    ...images.map(image => ({ type: 'image' as const, data: image.data, mimeType: image.mimeType })),
+  ],
   structuredContent: value,
 })
 
@@ -950,16 +954,17 @@ export function createModkitMcpServer(host: ModkitMcpHostPort): ModkitMcpServerR
     {
       title: 'Invoke an advertised read-only operation',
       description:
-        'Invoke an exact available operation ID only when the descriptor declares mutatesSource=false. With host output artifacts enabled, retainOutput returns complete bytes as retrievable resources; inputArtifact inserts an owned retained output as hex into one absent input field.',
+        'Invoke an exact available operation ID only when the descriptor declares mutatesSource=false. With host output artifacts enabled, retainOutput returns complete bytes as retrievable resources; inputArtifact inserts an owned retained output as hex into one absent input field. An image byte output (PNG, JPEG, GIF, WebP) also comes back as an image block; render "image" draws a map.layer-read grid as a grey image, black to white over its lowest to highest sample.',
       inputSchema: invokeReadonlyInput,
       outputSchema: envelopeSchema,
       annotations: { ...readOnlyAnnotations, idempotentHint: false },
     },
-    ({ handle, operationId, input, retainOutput, inputArtifact }, context) =>
+    ({ handle, operationId, input, retainOutput, inputArtifact, render }, context) =>
       safeTool(() =>
         runtime.invokeReadonly(handle, operationId, input, context.mcpReq.signal, {
           ...(retainOutput === undefined ? {} : { retainOutput }),
           ...(inputArtifact === undefined ? {} : { inputArtifact }),
+          ...(render === undefined ? {} : { render }),
         }),
       ),
   )

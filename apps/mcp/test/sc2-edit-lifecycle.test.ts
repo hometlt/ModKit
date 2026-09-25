@@ -9,6 +9,7 @@ import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { Client, InMemoryTransport } from '@modelcontextprotocol/client'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import type { MapLayerDescriptor, MapLayerGrid } from '@modkit/sdk/maps'
 import {
   createHostMcpPort,
   createModkitMcpServer,
@@ -26,7 +27,8 @@ let app: ReturnType<typeof createModkitMcpServer>
 let client: Client
 let readOnlyApp: ReturnType<typeof createModkitMcpServer>
 let readOnlyClient: Client
-const paths = { data: '', strings: '', layout: '', bank: '' }
+const paths = { data: '', strings: '', layout: '', bank: '', uvw: '' }
+const uvwFixture = resolve(coreRoot, 'vendor', 'multiverse-specs', 'specs', 'world', 'fixtures', 'uvw-profile-single-space.uvw.json')
 
 type CallResult = Awaited<ReturnType<Client['callTool']>>
 const envelope = (value: CallResult) => value.structuredContent as McpEnvelope
@@ -49,7 +51,12 @@ beforeAll(async () => {
   paths.strings = join(mod, 'enUS.SC2Data', 'LocalizedData', 'GameStrings.txt')
   paths.layout = join(mod, 'Base.SC2Data', 'UI', 'Layout', 'TechTreePanel_CNC.SC2Layout')
   paths.bank = join(root, 'Banks', 'endofdreamsbank2.SC2Bank')
+  paths.uvw = join(root, 'World', 'terrain.uvw.json')
   for (const path of Object.values(paths)) await mkdir(join(path, '..'), { recursive: true })
+  // The specification fixture has one missing-ground sample; ground there makes the layer writable.
+  const world = JSON.parse(await readFile(uvwFixture, 'utf8')) as { spaces: { layers: { samples: number[][] }[] }[] }
+  world.spaces[0]!.layers[0]!.samples[2]![3] = 2
+  await writeFile(paths.uvw, JSON.stringify(world, null, 2), 'utf8')
   const source = join(looseMod, 'Probe.SC2Mod')
   await copyFile(join(source, 'Base.SC2Data', 'GameData', 'UnitData.xml'), paths.data)
   await copyFile(join(source, 'enUS.SC2Data', 'LocalizedData', 'GameStrings.txt'), paths.strings)
@@ -228,6 +235,63 @@ describe('MCP edit lifecycle over installed SC2 writers', () => {
       await client.callTool({ name: 'modkit.close_subject', arguments: { handle } })
     }, 180_000)
   }
+
+  it('map layer: read a window → write it → commit → reopen → image → undo; the older plan goes stale', async () => {
+    const path = paths.uvw
+    const original = await readFile(path, 'utf8')
+    const handle = await openSubject(path, 'modkit/world-uvw')
+    const invoke = async (on: string, operationId: string, input: unknown, render?: 'image') => {
+      const result = await client.callTool({
+        name: 'modkit.invoke_readonly',
+        arguments: { handle: on, operationId, input, ...(render === undefined ? {} : { render }) },
+      })
+      if (result.isError === true) throw new Error(`${operationId} failed: ${JSON.stringify(result.structuredContent)}`)
+      return { result, value: (data(result)['result'] as { output: { value: unknown } }).output.value }
+    }
+    const layerOf = async (on: string) =>
+      ((await invoke(on, 'map.layers', {})).value as { layers: MapLayerDescriptor[] }).layers[0]!
+    const imageOf = (result: CallResult) =>
+      (result.content as { type: string; mimeType?: string; data?: string }[]).find(item => item.type === 'image')
+    const layer = await layerOf(handle)
+    expect(layer).toMatchObject({ id: 'main/terrain', meaning: 'height', editable: true, unit: 'm', sampling: 'vertex' })
+    const world = (on: MapLayerDescriptor, n: number) => (on.valueOffset ?? 0) + n * (on.valueScale ?? 1)
+    const sample = (height: number) => Math.round((height - (layer.valueOffset ?? 0)) / (layer.valueScale ?? 1))
+
+    const window = { layer: layer.id, x: 1, y: 1, width: 2, height: 2 }
+    const read = await invoke(handle, 'map.layer-read', window)
+    expect((read.value as MapLayerGrid).values.map(n => world(layer, n))).toEqual([0.75, 1.25, 1, 1.5])
+    const before = await invoke(handle, 'map.layer-read', { layer: layer.id }, 'image')
+    expect(imageOf(before.result)).toMatchObject({ type: 'image', mimeType: 'image/png' })
+    expect(data(before.result)['render']).toMatchObject({ kind: 'grey' })
+
+    const write = { ...window, values: [3, 3, 3, 3].map(sample) }
+    const planHandle = await propose(handle, 'map.layer-write', write)
+    const olderPlan = await propose(handle, 'map.layer-write', { ...write, values: [0, 0, 0, 0].map(sample) })
+    expect(await readFile(path, 'utf8')).toBe(original)
+    const transactionId = await prepareAndCommit(planHandle)
+    const written = await readFile(path, 'utf8')
+    expect(written).not.toBe(original)
+
+    // A plan made against the revision before the commit is refused, not merged.
+    const stale = await client.callTool({ name: 'modkit.prepare_edit', arguments: { planHandle: olderPlan } })
+    expect(envelope(stale).completeness).toBe('invalid')
+    expect(await readFile(path, 'utf8')).toBe(written)
+    await client.callTool({ name: 'modkit.discard_edit', arguments: { id: olderPlan } })
+
+    const reopened = await openSubject(path, 'modkit/world-uvw')
+    expect(await revisionOf(reopened)).not.toBe(await revisionOf(handle))
+    const reread = await invoke(reopened, 'map.layer-read', window)
+    const newLayer = await layerOf(reopened)
+    expect((reread.value as MapLayerGrid).values.map(n => world(newLayer, n))).toEqual([3, 3, 3, 3])
+    const after = await invoke(reopened, 'map.layer-read', { layer: layer.id }, 'image')
+    expect(imageOf(after.result)?.data).not.toBe(imageOf(before.result)?.data)
+    await client.callTool({ name: 'modkit.close_subject', arguments: { handle: reopened } })
+
+    const undone = data(await client.callTool({ name: 'modkit.undo_edit', arguments: { transactionId } }))
+    expect(undone['result']).toMatchObject({ state: 'committed' })
+    expect(await readFile(path, 'utf8')).toBe(original)
+    await client.callTool({ name: 'modkit.close_subject', arguments: { handle } })
+  }, 180_000)
 
   it('refuses a plan whose source changed after the proposal (stale revision)', async () => {
     const handle = await openSubject(paths.data, 'blizzard/sc2-data')

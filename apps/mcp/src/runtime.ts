@@ -22,6 +22,8 @@ import type {
   SubjectFactsSource,
   SubjectSelectorSource,
 } from '@modkit/sdk'
+import { MAP_LAYER_READ_OPERATION, type MapLayerGrid } from '@modkit/sdk/maps'
+import { greyGridToPng } from '@modkit/codec-kit/raster'
 import type {
   McpLanguageRequest,
   McpLanguageSession,
@@ -44,11 +46,13 @@ import {
   fingerprint,
   makeOffsetCursor,
   makeSourceCursor,
+  mcpImage,
   readOffsetCursor,
   readSourceCursor,
   type CursorSecret,
   type McpCompleteness,
   type McpEnvelope,
+  type McpImage,
 } from './protocol.js'
 
 const MCP_MAX_PROGRESS_EVENTS = 50
@@ -65,6 +69,27 @@ export class McpOperationError extends Error {
   ) {
     super(message)
   }
+}
+
+/**
+ * A `map.layer-read` grid as a grey 8-bit PNG for the client to look at, black to white over the
+ * grid's lowest to highest sample. The numbers themselves stay in the JSON.
+ */
+async function renderLayerGrid(grid: MapLayerGrid, signal: AbortSignal) {
+  if (!Array.isArray(grid.values) || grid.values.length === 0 || grid.values.length !== grid.width * grid.height)
+    throw new McpOperationError('x3.mcp/render-unsupported', 'The operation did not return a layer grid.')
+  let black = Infinity
+  let white = -Infinity
+  for (const value of grid.values) {
+    black = Math.min(black, value)
+    white = Math.max(white, value)
+  }
+  const span = white - black
+  const values = grid.values.map(value => (span === 0 ? 0 : Math.round(((value - black) * 255) / span)))
+  const image = mcpImage(await greyGridToPng({ width: grid.width, height: grid.height, values }, 255, signal))
+  if (image === undefined)
+    throw new McpOperationError('x3.mcp/render-too-large', 'The drawn layer exceeds the MCP image limit.')
+  return { image, legend: { kind: 'grey', blackSample: black, whiteSample: white } }
 }
 
 interface HandleEntry {
@@ -1583,6 +1608,7 @@ export class ModkitMcpRuntime {
         readonly field: string
         readonly encoding: 'hex'
       }
+      readonly render?: 'image'
     } = {},
   ): Promise<McpEnvelope> {
     const capturedInput = boundedJson(input)
@@ -1622,6 +1648,12 @@ export class ModkitMcpRuntime {
           throw new McpOperationError(
             'x3.mcp/operation-unavailable',
             `The declared read-only operation is ${operation.state}: ${operation.reason}`,
+          )
+        }
+        if (outputOptions.render !== undefined && operation.id !== MAP_LAYER_READ_OPERATION) {
+          throw new McpOperationError(
+            'x3.mcp/render-unsupported',
+            `render "image" draws ${MAP_LAYER_READ_OPERATION} grids only.`,
           )
         }
 
@@ -1717,6 +1749,14 @@ export class ModkitMcpRuntime {
           if (snapshot.state !== 'opened') {
             throw new McpOperationError('x3.mcp/no-session', 'No opened snapshot exists.')
           }
+          const images: McpImage[] = []
+          const shown = result.state === 'ok' && result.output.kind === 'bytes' ? mcpImage(result.output.value) : undefined
+          if (shown !== undefined) images.push(shown)
+          const rendered =
+            outputOptions.render === undefined || result.state !== 'ok' || result.output.kind !== 'json'
+              ? undefined
+              : await renderLayerGrid(result.output.value as unknown as MapLayerGrid, scopedSignal)
+          if (rendered !== undefined) images.push(rendered.image)
           return envelope({
             snapshotId: String(descriptor.revision),
             completeness,
@@ -1729,7 +1769,9 @@ export class ModkitMcpRuntime {
               progress,
               ...(artifact === undefined ? {} : { outputArtifact: artifact }),
               ...(substituted === undefined ? {} : { inputArtifact: substituted.provenance }),
+              ...(rendered === undefined ? {} : { render: rendered.legend }),
             },
+            images,
           })
         } finally {
           await streamLease?.release()

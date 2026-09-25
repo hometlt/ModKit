@@ -20,7 +20,7 @@ import {
   openFileArtifactSource,
   type NodeSubjectServices,
 } from '@modkit/host/node'
-import { parseUvwProfile } from '@modkit/uv/world'
+import { canonicalizeUvwProfile, parseUvwProfile } from '@modkit/uv/world'
 import {
   commitWorldObjectMove,
   createWorldEditState,
@@ -141,6 +141,68 @@ function objectPosition(path: string, id: string): readonly [number, number, num
 }
 
 describe('UVW codec edit → host commit/history', () => {
+  it('writes a map layer window and keeps every datum it does not touch; unknown data never opens as UVW', async () => {
+    const path = join(scratch, 'layer-window.uvw.json')
+    const fixture = JSON.parse(readFileSync(objectFixturePath, 'utf8')) as Record<string, unknown>
+    writeFileSync(path, JSON.stringify({ $comment: 'authored note', ...fixture }))
+    const original = readFileSync(path)
+    const canonical = (bytes: Buffer) =>
+      JSON.parse(JSON.stringify(canonicalizeUvwProfile(parseUvwProfile(new Uint8Array(bytes))))) as {
+        $comment?: string
+        spaces: { layers: { kind: string; samples?: number[][] }[] }[]
+      }
+    const before = canonical(original)
+    const service = await services()
+    const open = async (file: string) =>
+      service.open({ source: await openFileArtifactSource(file), path: file, intent: 'full', grant: WRITE, budget })
+    const opened = await open(path)
+    if (opened.state !== 'opened') throw new Error(opened.reason)
+    const listed = await opened.session.operations().invoke('map-layers', null)
+    if (listed.state !== 'ok' || listed.output.kind !== 'json') throw new Error('map.layers failed')
+    const layer = (listed.output.value as { layers: { id: string; valueScale: number; valueOffset: number }[] }).layers[0]
+    if (layer === undefined) throw new Error('the height layer is missing')
+    const written = await opened.session.operations().invoke('map-layer-write', {
+      layer: layer.id, x: 1, y: 0, width: 1, height: 1, values: [(7.5 - layer.valueOffset) / layer.valueScale],
+    })
+    if (written.state !== 'ok') throw new Error('map.layer-write was rejected')
+    const backend = createFileEditingBackend({ roots: [scratch] })
+    const editing = createSubjectEditing({
+      opened,
+      grant: WRITE,
+      backendFor: () => backend,
+      evidenceFor: () => evidence('sha256:uvw-codec-edit-v1', objectFixturePath, 'multiverse/uvw-profile-renderable-world'),
+    })
+    const prepared = await editing.coordinator.prepare(editing.planFromOperation(written.output), {
+      grant: editing.grantSnapshot,
+    })
+    if (prepared.state !== 'ready') throw new Error(`UVW layer write prepare: ${prepared.state}`)
+    const committed = await editing.coordinator.commit(prepared.prepared, { grant: editing.grantSnapshot })
+    if (committed.state !== 'committed') throw new Error(`UVW layer write commit: ${committed.state}`)
+
+    // The write puts the document in canonical order; its data may change only at the written sample.
+    const terrain = before.spaces[0]?.layers.find(item => item.kind === 'heightfield')
+    if (terrain?.samples?.[0] === undefined) throw new Error('the fixture heightfield is missing')
+    terrain.samples[0][1] = 7.5
+    expect(canonical(readFileSync(path))).toEqual(before)
+    expect(before.$comment).toBe('authored note')
+    const reopened = await open(path)
+    expect(reopened.state === 'opened' ? reopened.selected.contributionId : reopened.state).toBe('modkit/world-uvw')
+    if (reopened.state === 'opened') await reopened.session.dispose()
+    const undone = await editing.coordinator.undo(committed.receipt.transactionId, { grant: editing.grantSnapshot })
+    expect(undone.state).toBe('committed')
+    expect(Buffer.compare(readFileSync(path), original)).toBe(0)
+
+    // A property the profile does not know is refused when the document is read, so no UVW
+    // writer ever sees data it would drop.
+    const unknownPath = join(scratch, 'unknown-property.uvw.json')
+    writeFileSync(unknownPath, JSON.stringify({ ...fixture, vendorData: { keep: true } }))
+    const unknown = await open(unknownPath)
+    expect(unknown.state === 'opened' ? unknown.selected.contributionId : unknown.state).not.toBe('modkit/world-uvw')
+    if (unknown.state === 'opened') await unknown.session.dispose()
+    await opened.session.dispose()
+    await backend.dispose()
+  }, 30_000)
+
   it('commits a validated canonical edit, reopens it, then undoes and redoes exact bytes', async () => {
     const path = join(scratch, 'editable.uvw.json')
     const original = readFileSync(fixturePath)

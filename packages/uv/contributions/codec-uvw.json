@@ -124,6 +124,48 @@
         "mutatesSource": true,
         "requiredPermissions": ["read-source", "write-source"],
         "outputKinds": ["edit-plan"]
+      },
+      {
+        "id": "map.layers",
+        "handlerId": "map-layers",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["json"]
+      },
+      {
+        "id": "map.layer-read",
+        "handlerId": "map-layer-read",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["json"]
+      },
+      {
+        "id": "map.layer-write",
+        "handlerId": "map-layer-write",
+        "mutatesSource": true,
+        "requiredPermissions": ["read-source", "write-source"],
+        "outputKinds": ["edit-plan"]
+      }
+    ],
+    "fidelityEvidence": [
+      {
+        "formatId": "uvw",
+        "representationId": "uvw-world",
+        "claim": {
+          "roundTrip": "semantic",
+          "preservesUnknownData": true,
+          "notes": [
+            "Writes serialize the whole document in canonical order; everything outside the edit survives (packages/host/test/uvw-edits.test.ts).",
+            "The profile admits no unknown property: a document carrying one does not open as UVW, so no write can drop it."
+          ]
+        },
+        "evidenceId": "uvw-canonical-edit-v1",
+        "corpusId": "modkit/packages/host/test/uvw-edits.test.ts",
+        "corpusDigest": "none:proof-suite",
+        "conformanceProfile": "modkit/codec-contribution-v1",
+        "optionsFingerprint": "options:none",
+        "inputClass": "uvw-profile-1.0",
+        "provenAt": "2026-09-26T00:00:00Z"
       }
     ],
     "traitDeclarations": [
