@@ -32,6 +32,7 @@ import type {
 import {
   DEFAULT_SUBJECT_OPEN_BUDGET,
   createFilesystemLanguageDocumentSource,
+  createContentSourceMapPreviewResourcePlanResolver,
   createModkit,
   createNodeMapPreviewResourcePlanResolver,
   type ModkitOpened,
@@ -535,8 +536,17 @@ export async function createHostMcpPort(
   // A pack may keep its entries in a file of its extension; the catalog reads it on first query.
   const knowledgeFiles = new VirtualFileSystem().registerProvider(createFileVfsProvider())
   const knowledge = createKnowledgeCatalog(modkit.services.inventory, {}, { vfs: knowledgeFiles })
-  const mapPreviewResources = createNodeMapPreviewResourcePlanResolver({
-    subjects: modkit.services,
+  /*
+   * A map loads like a mod, as in VS Code: the configured content sources open it inside its mods,
+   * and its mod context answers what the map places (the SC2 loader's catalog, not a second Data
+   * analysis over a fixed file list). Without sources, or when they mount none of the map's
+   * dependencies, the installation locator path stays.
+   */
+  const mapPreviewResources = createContentSourceMapPreviewResourcePlanResolver({
+    contentSources: async () => contentSources,
+    fallback: createNodeMapPreviewResourcePlanResolver({
+      subjects: modkit.services,
+    }),
   })
   const discoveredById = new Map<string, { readonly path: string }>()
   const discoveryIdByCoordinate = new Map<string, string>()
