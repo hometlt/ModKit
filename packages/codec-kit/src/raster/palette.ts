@@ -5,7 +5,7 @@
  * sidecar (Westwood SHP/TMP, ...). Narrow on purpose: no image codec rides along.
  */
 
-export type PaletteFormat = 'westwood-6bit' | 'rgb-8bit' | 'jasc-pal' | 'riff-pal'
+export type PaletteFormat = 'westwood-6bit' | 'rgb-8bit' | 'rgbx-8bit' | 'jasc-pal' | 'riff-pal'
 
 export interface Palette {
   readonly format: PaletteFormat
@@ -119,7 +119,19 @@ function parseRiff(bytes: Uint8Array, maxNodes: number): Palette {
 }
 
 function parseBinary(bytes: Uint8Array): Palette {
-  if (bytes.byteLength !== 768) throw new TypeError('raw PAL must contain exactly 256 RGB entries')
+  if (bytes.byteLength === 1024) {
+    // 256 RGBx entries, the fourth byte unused (Total Annihilation's PALETTE.PAL)
+    const colors = emptyColors()
+    for (let index = 0; index < 256; index += 1) {
+      for (let channel = 0; channel < 3; channel += 1)
+        colors[index * 4 + channel] = bytes[index * 4 + channel] ?? 0
+    }
+    return Object.freeze({ format: 'rgbx-8bit', count: 256, version: 'raw', colors })
+  }
+  if (bytes.byteLength !== 768)
+    throw new TypeError(
+      'raw PAL must contain exactly 256 RGB entries (768 bytes) or RGBx entries (1024 bytes)',
+    )
   const sixBit = bytes.every(value => value <= 63)
   const colors = emptyColors()
   for (let index = 0; index < 256; index += 1) {
@@ -136,7 +148,7 @@ function parseBinary(bytes: Uint8Array): Palette {
   })
 }
 
-/** Reads a JASC-PAL, RIFF PAL or raw 768-byte palette; `maxNodes` bounds lines and chunks. */
+/** Reads a JASC-PAL, RIFF PAL or raw 768-byte RGB / 1024-byte RGBx palette; `maxNodes` bounds lines and chunks. */
 export function parsePalette(bytes: Uint8Array, maxNodes: number): Palette {
   if (isJascPalette(bytes)) return parseJasc(bytes, maxNodes)
   if (isRiffPalette(bytes)) return parseRiff(bytes, maxNodes)

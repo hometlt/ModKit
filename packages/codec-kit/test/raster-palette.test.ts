@@ -129,4 +129,12 @@ describe('raster palette', () => {
     expect([...applyPalette(Uint8Array.from([0]), colors)]).toEqual([4, 4, 4, 255])
     expect(() => applyPalette(new Uint8Array(1), new Uint8Array(768))).toThrow(/256 RGBA/u)
   })
+
+  it('reads a raw RGBx palette of 1024 bytes, the fourth byte ignored', () => {
+    const bytes = new Uint8Array(1024)
+    bytes.set([10, 20, 30, 99], 4)
+    const palette = parsePalette(bytes, 100)
+    expect(palette.format).toBe('rgbx-8bit')
+    expect([...palette.colors.subarray(4, 8)]).toEqual([10, 20, 30, 255])
+  })
 })
