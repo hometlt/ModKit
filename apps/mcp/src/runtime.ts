@@ -28,7 +28,9 @@ import {
   type MapLayerGrid,
   type WorldSceneSource,
 } from '@modkit/sdk/maps'
-import { greyGridToPng } from '@modkit/codec-kit/raster'
+import { encodePng, greyGridToPng } from '@modkit/codec-kit/raster'
+import { createWorldWebGlPlan, renderWorldTopDown } from '@modkit/scene/world'
+import { inspectCandidateWorld } from '@modkit/ui/world'
 import type {
   McpLanguageRequest,
   McpLanguageSession,
@@ -61,6 +63,10 @@ import {
 } from './protocol.js'
 
 const MCP_MAX_PROGRESS_EVENTS = 50
+// A world drawn from above: every layer, each up to a 512 × 512 grid of samples.
+const MCP_WORLD_IMAGE_MAX_LAYERS = 64
+const MCP_WORLD_IMAGE_MAX_ITEMS_PER_LAYER = 262_144
+const MCP_WORLD_IMAGE_PAGE_ITEMS = 16_384
 const MCP_GRAPH_SCAN_PAGE_SIZE = 50
 const MCP_MAX_GRAPH_SCAN_PAGES = 1_000
 const MCP_MAX_EDIT_PLANS = 64
@@ -186,6 +192,7 @@ export type CalculationsQuery =
 
 export type WorldSceneQuery =
   | { readonly view: 'info' }
+  | { readonly view: 'image'; readonly maxSize: number }
   | {
       readonly view: 'page'
       readonly facet: 'layers' | 'objects' | 'regions'
@@ -1430,6 +1437,47 @@ export class ModkitMcpRuntime {
             completeness: info.complete ? 'complete' : 'partial',
             provenance,
             data: info,
+          })
+        }
+        if (query.view === 'image') {
+          // The world viewer's own collector and plan; models stay placeholders from above.
+          const model = await inspectCandidateWorld(source, {
+            maxLayers: MCP_WORLD_IMAGE_MAX_LAYERS,
+            maxItemsPerLayer: MCP_WORLD_IMAGE_MAX_ITEMS_PER_LAYER,
+            maxPageItems: MCP_WORLD_IMAGE_PAGE_ITEMS,
+            modelResourceFilter: () => false,
+            signal: scopedSignal,
+          })
+          const image = renderWorldTopDown(
+            createWorldWebGlPlan({
+              items: model.layers.flatMap(layer => layer.page.items),
+              terrainMaterials: model.layers.flatMap(layer => layer.layer.materials ?? []),
+              waterMaterials: model.layers.flatMap(layer => layer.layer.waterMaterials ?? []),
+              terrainWeightRasters: model.layers.flatMap(layer => layer.layer.weightRasters ?? []),
+            }),
+            { maxSize: query.maxSize },
+          )
+          const shown = mcpImage(await encodePng(image.width, image.height, image.rgba, scopedSignal))
+          if (shown === undefined)
+            throw new McpOperationError('x3.mcp/render-too-large', 'The drawn world exceeds the MCP image limit.')
+          const cut = model.layers
+            .filter(layer => layer.page.state !== 'available' || layer.page.nextCursor !== undefined)
+            .map(layer => layer.layer.layerId)
+          return envelope({
+            snapshotId: model.snapshotId,
+            completeness: model.info.complete && cut.length === 0 ? 'complete' : 'partial',
+            diagnostics:
+              cut.length === 0
+                ? []
+                : [
+                    {
+                      code: 'x3.mcp/world-image-partial',
+                      message: `Drawn without the whole of these layers: ${cut.join(', ')}.`,
+                      severity: 'information',
+                    },
+                  ],
+            data: { width: image.width, height: image.height, world: image.world, objects: image.objects },
+            images: [shown],
           })
         }
         const binding = `world:${handle}:${query.facet}:${query.layerId ?? ''}`

@@ -420,6 +420,13 @@ const worldSceneInput = z.discriminatedUnion('view', [
   z
     .object({
       handle: handleSchema,
+      view: z.literal('image'),
+      maxSize: z.number().int().min(16).max(2_048).default(512),
+    })
+    .strict(),
+  z
+    .object({
+      handle: handleSchema,
       view: z.literal('page'),
       facet: z.enum(['layers', 'objects', 'regions']),
       layerId: z.string().min(1).max(256).optional(),
@@ -969,7 +976,7 @@ export function createModkitMcpServer(host: ModkitMcpHostPort): ModkitMcpServerR
     {
       title: 'Read a map world',
       description:
-        'Read the map world a subject publishes: info (coordinate spaces, facets and edit — the operationId and moveObjectKind that modkit.propose_edit takes to change an object, with expectedSourceRevision and edits [{ kind, objectId, patch }]) or one bounded page of the layers, objects or regions facet.',
+        'Read the map world a subject publishes: info (coordinate spaces, facets and edit — the operationId and moveObjectKind that modkit.propose_edit takes to change an object, with expectedSourceRevision and edits [{ kind, objectId, patch }]), one bounded page of the layers, objects or regions facet, or image: the world drawn from above, north up, as an image block with each objectId\'s pixel box in data.objects (models drawn as placeholders).',
       inputSchema: worldSceneInput,
       outputSchema: envelopeSchema,
       annotations: { ...readOnlyAnnotations, idempotentHint: true },

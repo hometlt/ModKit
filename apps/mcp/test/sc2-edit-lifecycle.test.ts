@@ -332,6 +332,15 @@ describe('MCP edit lifecycle over installed SC2 writers', () => {
     expect((regions['items'] as unknown[]).length).toBeGreaterThan(0)
     const [first] = await objectsOf(handle)
     if (first === undefined || info.edit === undefined) throw new Error('the world lists no movable object')
+    // Seen from above, the object the client will move has a pixel box in the legend.
+    const drawn = await client.callTool({ name: 'modkit.world_scene', arguments: { handle, view: 'image', maxSize: 128 } })
+    const picture = (drawn.content as { type: string; mimeType?: string }[]).find(item => item.type === 'image')
+    expect(picture).toMatchObject({ mimeType: 'image/png' })
+    const legend = data(drawn) as { width: number; height: number; objects: { objectId: number; x: number; y: number }[] }
+    const box = legend.objects.find(item => item.objectId === first.objectId)
+    expect(box).toBeDefined()
+    expect(box!.x).toBeLessThan(legend.width)
+    expect(box!.y).toBeLessThan(legend.height)
     const moved = { x: first.position.x + 1.5, y: first.position.y, z: first.position.z - 0.25 }
     const planHandle = await propose(handle, info.edit.operationId, {
       expectedSourceRevision: info.snapshotId,
