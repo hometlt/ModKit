@@ -6,7 +6,11 @@ import { describe, expect, it } from 'vitest'
 import { createCredentialBroker } from '@modkit/host'
 import type { CredentialPrompter } from '@modkit/sdk'
 
-import { createSecretCredentialStore, presettablePrompter } from '../src/credential-ports.js'
+import {
+  adoptKeptTickets,
+  createSecretCredentialStore,
+  presettablePrompter,
+} from '../src/credential-ports.js'
 
 const secrets = () => {
   const values = new Map<string, string>()
@@ -74,6 +78,71 @@ describe('the editor ports of the credential broker', () => {
     prompter.answerNext('second-key')
     await port.acquire('fixture/open-cloud', { reason: 'test', interactive: true })
     expect([...storage.values.values()]).toEqual(['second-key'])
+  })
+
+  it('moves tickets kept under both earlier names into the broker without loss', async () => {
+    const storage = secrets()
+    const sessionInventory = {
+      extensions: [
+        {
+          manifest: {
+            publisher: 'fixture',
+            id: 'game',
+            credentials: [
+              { id: 'fixture/session', kind: 'provider-session', label: 'Session', scoped: true },
+            ],
+          },
+        },
+      ],
+    } as never
+    const broker = createCredentialBroker({
+      inventory: sessionInventory,
+      store: createSecretCredentialStore(storage),
+    })
+    storage.values.set('old.eu', 'eu-ticket')
+    storage.values.set('older.eu', 'stale-eu-ticket')
+    storage.values.set('old.kr', 'kr-ticket')
+    storage.values.set('old.us', 'us-ticket')
+    const log: string[] = []
+    await adoptKeptTickets({
+      regions: [
+        { id: 'eu', credentialId: 'fixture/session' },
+        { id: 'kr', credentialId: 'fixture/session' },
+        // a region its source has not tied to a credential keeps its ticket where it is
+        { id: 'us' },
+      ],
+      secrets: storage,
+      broker,
+      keysFor: region => [`old.${region}`, `older.${region}`],
+      log: line => log.push(line),
+    })
+    const port = broker.portFor('fixture/game')
+    const text = async (scope: string) =>
+      new TextDecoder().decode((await port.secret('fixture/session', scope)) ?? new Uint8Array())
+    // the newer name wins; the older one is dropped once the broker holds a value
+    expect(await text('eu')).toBe('eu-ticket')
+    expect(await text('kr')).toBe('kr-ticket')
+    expect(storage.values.has('old.eu')).toBe(false)
+    expect(storage.values.has('older.eu')).toBe(false)
+    expect(storage.values.get('old.us')).toBe('us-ticket')
+    expect(log).toEqual([])
+  })
+
+  it('keeps an old ticket where it is when the broker refuses it', async () => {
+    const storage = secrets()
+    const broker = createCredentialBroker({ inventory, store: createSecretCredentialStore(storage) })
+    storage.values.set('old.eu', 'secret-value')
+    const log: string[] = []
+    await adoptKeptTickets({
+      regions: [{ id: 'eu', credentialId: 'fixture/undeclared' }],
+      secrets: storage,
+      broker,
+      keysFor: region => [`old.${region}`],
+      log: line => log.push(line),
+    })
+    expect(storage.values.get('old.eu')).toBe('secret-value')
+    expect(log).toHaveLength(1)
+    expect(log.join('')).not.toContain('secret-value')
   })
 
   it('deletes the key on sign-out', async () => {

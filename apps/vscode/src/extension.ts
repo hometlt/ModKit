@@ -313,6 +313,7 @@ import { nonce, panelHtml } from './panel-page.js'
 import { ExtensionsView } from './extensions-view.js'
 import { HostView } from './host-view.js'
 import { SourcesView } from './sources-view.js'
+import { adoptKeptTickets } from './credential-ports.js'
 import {
   AccountsView,
   createEditorCredentialPrompter,
@@ -1059,6 +1060,10 @@ async function activateModkit(
         // each extension's module reaches only the credentials that extension declared
         credentials: extension => host.services.credentials?.portFor(extension),
       })
+      // Tickets and keys kept before the broker move into it once the sources say whose they are.
+      void contentSources
+        .then(created => (created === undefined ? undefined : moveKeptTickets(created)))
+        .catch(error => log(`[accounts] moving kept tickets: ${String(error)}`))
     }
     const source = await contentSources
     if (!source) throw new Error('No extension of this window offers content sources')
@@ -1127,10 +1132,40 @@ async function activateModkit(
   const ticketKey = (region: string): string => `modkit.contentSources.ticket.${region}`
   /** Where Battle.net tickets were kept before any other game had a region. */
   const earlierTicketKey = (region: string): string => `modkit.battlenet.ticket.${region}`
-  /** A signed-out account must not be taken back, from either name. */
-  const forgetTicket = async (region: string): Promise<void> => {
+  /**
+   * The declared credential a region stands for, when its source names one (`credentialId`); a
+   * region without it stays on the old path until its extension says whose it is.
+   */
+  const brokeredRegion = async (source: ContentSources, region: string) => {
+    const broker = host.services.credentials
+    const id = (await source.snapshot()).regions?.find(item => item.id === region)?.credentialId
+    const entry =
+      id === undefined ? undefined : broker?.declared().find(item => item.requirement.id === id)
+    return broker === undefined || entry === undefined
+      ? undefined
+      : { broker, entry, id: entry.requirement.id, port: broker.portFor(entry.extension) }
+  }
+  /**
+   * Tickets and keys kept before the broker, under either earlier name, move into it without loss:
+   * adopt keeps a value the broker already holds, and the old entry goes only after that answer.
+   */
+  const moveKeptTickets = async (source: ContentSources): Promise<void> => {
+    const broker = host.services.credentials
+    if (broker === undefined) return
+    await adoptKeptTickets({
+      regions: (await source.snapshot()).regions ?? [],
+      secrets: context.secrets,
+      broker,
+      keysFor: region => [ticketKey(region), earlierTicketKey(region)],
+      log,
+    })
+  }
+  /** A signed-out account must not be taken back, from either name, nor from the broker. */
+  const forgetTicket = async (region: string, source?: ContentSources): Promise<void> => {
     await context.secrets.delete(ticketKey(region))
     await context.secrets.delete(earlierTicketKey(region))
+    const brokered = source === undefined ? undefined : await brokeredRegion(source, region)
+    if (brokered !== undefined) await brokered.broker.signOut(brokered.id, region)
   }
   /** The ticket kept for a region; one kept under the Battle.net-only name moves to the shared one. */
   const keptTicket = async (region: string): Promise<string | undefined> => {
@@ -1163,12 +1198,44 @@ async function activateModkit(
     region: string,
     accountId?: string,
   ): Promise<void> => {
-    const key = ticketKey(region)
-    const kept = await keptTicket(region)
-    const credential = (await source.snapshot()).regions.find(item => item.id === region)?.credential
     const run = async (ticket?: string) =>
       (await callContentSources(source, 'connect', [region, accountId, ticket])) as
         { ticket?: string } | undefined
+    const brokered = await brokeredRegion(source, region)
+    if (brokered !== undefined) {
+      const { broker, entry, id, port } = brokered
+      if (entry.requirement.kind === 'provider-session') {
+        // The service's own sign-in page returns a ticket; the broker keeps it for the next login.
+        const bytes = await port.secret(id, region)
+        const kept = bytes === undefined ? undefined : new TextDecoder().decode(bytes)
+        let result: { ticket?: string } | undefined
+        try {
+          result = await run(kept)
+        } catch (error) {
+          if (kept === undefined) throw error
+          // no longer accepted: forget it and sign in the ordinary way, once
+          await broker.signOut(id, region)
+          result = await run()
+        }
+        if (typeof result?.ticket === 'string' && result.ticket !== '') {
+          await port.remember(id, result.ticket, region)
+        }
+      } else {
+        // A key or OAuth sign-in: the broker asks and keeps it; the source reaches it through its port.
+        const status = await port.acquire(id, {
+          reason: localizer.text('vscode.accounts.reasonConnect', { label: entry.requirement.label }),
+          interactive: true,
+          scope: region,
+        })
+        if (status !== 'available') return
+        await run()
+      }
+      await rememberConnections(source)
+      return
+    }
+    const key = ticketKey(region)
+    const kept = await keptTicket(region)
+    const credential = (await source.snapshot()).regions.find(item => item.id === region)?.credential
     // A region that takes a typed key is not connected without one: cancelling leaves it as it was.
     const first = kept ?? (credential === undefined ? undefined : await askCredential(credential))
     if (credential !== undefined && first === undefined) return
@@ -2328,7 +2395,7 @@ async function activateModkit(
         if (snapshot.roots.some(root => root.id === sourceId)) {
           await callContentSources(source, 'disconnect', [sourceId.slice('mine:'.length)])
           const region = snapshot.roots.find(root => root.id === sourceId)?.region
-          if (region !== undefined) await forgetTicket(region)
+          if (region !== undefined) await forgetTicket(region, source)
           await rememberConnections(source)
           staleRoots.add(sourceId)
           sourceDecorations.fire(undefined)
@@ -2385,7 +2452,7 @@ async function activateModkit(
         await callContentSources(source, 'disconnect', [chosen])
         // A signed-out account must not be taken back by the next window.
         const region = connections.find(item => item.id === chosen)?.region
-        if (region !== undefined) await forgetTicket(region)
+        if (region !== undefined) await forgetTicket(region, source)
         await rememberConnections(source)
         sourcesView.refresh()
         return true
