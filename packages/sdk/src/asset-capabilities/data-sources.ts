@@ -644,6 +644,12 @@ export interface NamespaceEntry {
    * range, never extracting it into memory — so an entry of any size opens.
    */
   readonly storedRange?: { readonly offset: bigint; readonly length: bigint }
+  /**
+   * Hidden by the container's own convention (a dot folder, `__MACOSX/`, `.DS_Store`); a viewer
+   * shows it only when the user asks for hidden files. An entry under a hidden folder is hidden too,
+   * and a flat listing marks each such entry itself.
+   */
+  readonly hidden?: true
   readonly revision: RevisionId
 }
 

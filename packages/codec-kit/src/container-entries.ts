@@ -78,6 +78,7 @@ export function containerEntryAccess(
           ...(entry.storage.kind === 'custom' ? {} : { compression: entry.storage.kind }),
           ...(entry.modifiedAt === undefined ? {} : { modifiedAt: entry.modifiedAt }),
           ...(entry.checksum === undefined ? {} : { checksum: entry.checksum }),
+          ...(entry.hidden === true ? { hidden: true as const } : {}),
           // In place only within the container's own source; a companion's entry is extracted.
           ...(entry.storage.kind === 'stored' && entry.storage.source === undefined
             ? { storedRange: Object.freeze({ offset: entry.storage.offset, length: entry.storage.length }) }

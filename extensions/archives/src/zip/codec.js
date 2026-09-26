@@ -1003,6 +1003,17 @@ function containerPackHandler(bytes, entries, model, budget, input, source) {
   }
 }
 
+/**
+ * Hidden by convention: macOS resource forks (`__MACOSX/`), dot names (`.DS_Store`, `.git/`) and
+ * Windows thumbnails; any hidden folder hides what is under it.
+ */
+function hiddenZipPath(name) {
+  return name
+    .replace(/\/$/u, '')
+    .split('/')
+    .some(part => part === '__MACOSX' || part.startsWith('.') || part.toLowerCase() === 'thumbs.db')
+}
+
 function namespaceSource(entries, source) {
   const byId = new Map(entries.map(entry => [entry.id, entry]))
   return Object.freeze({
@@ -1039,6 +1050,7 @@ function namespaceSource(entries, source) {
           ...(dosTimestamp(entry.dosDate, entry.dosTime) === undefined
             ? {}
             : { modifiedAt: dosTimestamp(entry.dosDate, entry.dosTime) }),
+          ...(hiddenZipPath(entry.name) ? { hidden: true } : {}),
           revision: source.revision,
         }),
       )

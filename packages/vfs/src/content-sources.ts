@@ -49,12 +49,19 @@ export interface ContentSourceEntry {
   readonly size?: number
   /** Optional row actions; hosts render these only when their explorer supports actions. */
   readonly actions?: readonly ContentSourceEntryAction[]
+  /**
+   * Hidden by the source's convention; shown only when the user asks for hidden files. An entry
+   * under a hidden folder is hidden too.
+   */
+  readonly hidden?: true
 }
 /** One file of a {@link ContentSources.files} page. */
 export interface ContentSourceFile {
   /** The path inside the source, spelled as {@link ContentSources.list} spells it. */
   readonly path: string
   readonly size?: number
+  /** Hidden itself or under a hidden folder — a flat page marks each file. */
+  readonly hidden?: true
 }
 /** What a workspace search asks a source for; every field narrows, none widens. */
 export interface ContentSourceFilesQuery {

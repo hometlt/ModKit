@@ -173,6 +173,8 @@ export interface ContainerEntry {
   readonly storage: ContainerEntryStorage
   readonly modifiedAt?: number
   readonly checksum?: { readonly algorithm: string; readonly value: string }
+  /** Hidden by the format's convention; passed to the listing as `NamespaceEntry.hidden`. */
+  readonly hidden?: true
 }
 
 /**
