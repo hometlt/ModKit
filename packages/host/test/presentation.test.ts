@@ -142,7 +142,8 @@ describe('A-6 global presentation catalog resolution', () => {
     expect(
       createPresentationPlanValidator<Ticket>({ digest, ticketMatches }).validate(duplicateGroup),
     ).toMatchObject({ valid: false, issues: ['duplicate-singleton-group'] })
-  })
+    // the first descriptor assembly compiles the schema validators cold
+  }, 30_000)
 
   it('supports a fallback-only plan and switches stages without recreating the session', async () => {
     const descriptor = await assembleSubjectDescriptor(resolvedDescriptorWire())
