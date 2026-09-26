@@ -4,15 +4,12 @@ import { basename, extname, isAbsolute, relative, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { diagnostic, type Diagnostic } from '@modkit/core'
 import {
-  artifactNamespaceSourceFromVfsMount,
   composeLanguageDocumentSources,
   createKnowledgeCatalog,
   discoverServiceOperations,
   invokeServiceOperation,
-  openSubject,
   resolveContentLanguageSources,
   subjectTarget,
-  subjectOpenSnapshot,
   type Inventory,
   type ServiceOperationCatalog,
   type ServiceOperationInvocation,
@@ -1441,51 +1438,8 @@ export async function createHostMcpPort(
       const canonical = await realpath(lexical)
       signal?.throwIfAborted()
       if (!inside(roots, canonical)) throw new TypeError('subject path is outside configured roots')
-      const canonicalStat = await stat(canonical)
-      const opened = canonicalStat.isDirectory()
-        ? await (async (): Promise<McpOpenedSubject> => {
-            const vfs = new VirtualFileSystem().registerProvider(createFileVfsProvider())
-            const mount = await vfs.openMount(pathToFileURL(canonical).href)
-            const result = await openSubject({
-              inventory: modkit.services.inventory,
-              source: artifactNamespaceSourceFromVfsMount(mount),
-              path: basename(canonical),
-              intent: 'inspect',
-              target: modkit.services.target,
-              grant: {
-                id: `modkit-mcp-directory:${randomUUID()}`,
-                classes: ['read-source', 'write-source'],
-              },
-              budget: mapPreviewBudget,
-              executionBackends: modkit.services.executionBackends,
-              ...(modkit.services.serviceDefinitions === undefined
-                ? {}
-                : { serviceDefinitions: modkit.services.serviceDefinitions }),
-              ...(signal === undefined ? {} : { signal }),
-            })
-            const snapshot = subjectOpenSnapshot({
-              result,
-              sessionId: randomUUID,
-              diagnostics: result.diagnostics,
-            })
-            if (result.state !== 'opened') {
-              await vfs.dispose()
-              return Object.freeze({ snapshot, close: async () => undefined })
-            }
-            const session = result.session
-            let closed = false
-            return Object.freeze({
-              snapshot,
-              session,
-              async close(): Promise<void> {
-                if (closed) return
-                closed = true
-                await session.dispose()
-                await vfs.dispose()
-              },
-            })
-          })()
-        : await modkit.open(canonical, signal)
+      // A folder (an unpacked map or mod) opens like a file: one host route, with its editing.
+      const opened = await modkit.open(canonical, signal)
       if (opened.snapshot.state !== 'opened' || opened.session === undefined) return opened
       const originalSession = opened.session
       const coordinatePreview = (selectionId?: string, requestSignal = signal) =>

@@ -1,12 +1,15 @@
-import { resolve } from 'node:path'
+import { basename, join, resolve } from 'node:path'
 import { createHash } from 'node:crypto'
-import { readFile } from 'node:fs/promises'
+import { cp, mkdtemp, readdir, readFile, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import type { MapLayerDescriptor, MapLayerGrid } from '@modkit/sdk/maps'
 import { Client, InMemoryTransport } from '@modelcontextprotocol/client'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createHostMcpPort, createModkitMcpServer, type McpEnvelope, type ModkitMcpHostPort } from '../src/index.js'
 
 const coreRoot = resolve(import.meta.dirname, '..', '..', '..')
-const blizzardRoot = resolve(coreRoot, '..', 'modkit-extensions-blizzard')
+// A committed snapshot (.acceptance) keeps the extension still while other sessions edit the live one.
+const blizzardRoot = process.env.MODKIT_BLIZZARD_ROOT ?? resolve(coreRoot, '..', 'modkit-extensions-blizzard')
 const mapPath = process.env.MODKIT_SC2_MCP_MAP ?? 'C:/Apps/StarCraft II/Maps/all-races-coop-maps/02-CradleOfDeath.SC2Map'
 let host: ModkitMcpHostPort; let app: ReturnType<typeof createModkitMcpServer>; let client: Client
 const envelope = (value: Awaited<ReturnType<Client['callTool']>>) => value.structuredContent as McpEnvelope
@@ -36,4 +39,105 @@ describe('installed SC2 map through generic MCP', () => {
     const proposal = envelope(await client.callTool({ name: 'modkit.propose_edit', arguments: { handle, operationId: `${codecId}.edit-world`, input: { expectedSourceRevision: String(descriptor.revision), edits: [{ kind: 'terrain.cell.set', x: 0, y: 0, heightBase: 999 }] } } })); if (proposal.completeness === 'invalid') throw new Error(`proposal failed: ${JSON.stringify(proposal)}`); expect(proposal.data).toMatchObject({ committed: false }); expect(await digest(heightPath)).toBe(before)
     await client.callTool({ name: 'modkit.close_subject', arguments: { handle } })
   }, 180_000)
+})
+
+// A1 on SC2: the same MCP route as UVW and Warzone, on a copy of the installed folder map. The game
+// extension is trusted as a shipped one, so its writer's own fidelity proof counts.
+describe('installed SC2 map height through generic MCP', () => {
+  let root: string
+  let copy: string
+  let writer: { host: ModkitMcpHostPort; app: ReturnType<typeof createModkitMcpServer>; client: Client }
+  const call = async (name: string, args: Record<string, unknown>) => {
+    // A cold host opening a 25 MB folder map with the game's codecs can pass the client's 60 s default.
+    const result = await writer.client.callTool({ name, arguments: args }, { timeout: 170_000 })
+    if (result.isError === true) throw new Error(`${name} failed: ${JSON.stringify(result.structuredContent ?? result.content)}`)
+    return result
+  }
+  const value =(result: Awaited<ReturnType<Client['callTool']>>) =>
+    ((envelope(result).data as { result: { output: { value: unknown } } }).result.output.value)
+  const files = async () =>
+    new Map(
+      await Promise.all(
+        (await readdir(copy)).filter(name => !name.endsWith('.SC2Data')).map(async name => [name, await digest(join(copy, name))] as const),
+      ),
+    )
+
+  beforeAll(async () => {
+    root = await mkdtemp(join(tmpdir(), 'modkit-mcp-sc2-map-'))
+    copy = join(root, basename(mapPath))
+    await cp(mapPath, copy, { recursive: true })
+    const host = await createHostMcpPort({
+      roots: [root],
+      extensions: [resolve(blizzardRoot, 'mpq'), resolve(blizzardRoot, 'starcraft2')],
+      trustExtensions: true,
+      allowEdits: true,
+    })
+    const app = createModkitMcpServer(host)
+    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair()
+    const client = new Client({ name: 'sc2-map-height-real', version: '1.0.0' })
+    await Promise.all([app.server.connect(serverTransport), client.connect(clientTransport)])
+    writer = { host, app, client }
+  }, 180_000)
+  afterAll(async () => {
+    await Promise.allSettled([writer?.client.close(), writer?.app.dispose()])
+    await writer?.host.close()
+    if (root !== undefined) await rm(root, { recursive: true, force: true })
+  }, 60_000)
+
+  it('reads a height window, writes it, commits, reopens, refuses a stale plan and undoes', async () => {
+    const open = async () => {
+      const opened = envelope(await call('modkit.open_subject', { path: copy })).data as {
+        handle: string
+        selectionCandidates?: { candidateId: string; codecId?: string }[]
+      }
+      const candidate = opened.selectionCandidates?.find(item => item.codecId?.startsWith('blizzard/sc2-map') === true)
+      return candidate === undefined
+        ? opened.handle
+        : ((envelope(await call('modkit.open_selection', { handle: opened.handle, selectionId: candidate.candidateId })).data as { handle: string }).handle)
+    }
+    const before = await files()
+    const handle = await open()
+    const layers = value(await call('modkit.invoke_readonly', { handle, operationId: 'map.layers', input: {} })) as { layers: MapLayerDescriptor[] }
+    const layer = layers.layers.find(item => item.meaning === 'height')
+    if (layer === undefined) throw new Error('the SC2 map lists no height layer')
+    expect(layer).toMatchObject({ editable: true, sampling: 'vertex' })
+    const window = { layer: layer.id, x: Math.floor(layer.width / 2), y: Math.floor(layer.height / 2), width: 4, height: 3 }
+    const read = value(await call('modkit.invoke_readonly', { handle, operationId: 'map.layer-read', input: window })) as MapLayerGrid
+    const drawn = await call('modkit.invoke_readonly', { handle, operationId: 'map.layer-read', input: { layer: layer.id }, render: 'image' })
+    expect((drawn.content as { type: string }[]).some(item => item.type === 'image')).toBe(true)
+
+    const values = read.values.map(sample => (sample === layer.maximum ? sample - 1 : sample + 1))
+    const propose = async (input: unknown) => {
+      const proposal = envelope(await call('modkit.propose_edit', { handle, operationId: 'map.layer-write', input }))
+      const planHandle = (proposal.data as { planHandle?: string } | null)?.planHandle
+      if (planHandle === undefined) throw new Error(`no plan: ${JSON.stringify(proposal)}`)
+      return planHandle
+    }
+    const planHandle = await propose({ ...window, values })
+    const olderPlan = await propose({ ...window, values: read.values.map(() => layer.minimum) })
+    const prepared = envelope(await call('modkit.prepare_edit', { planHandle }))
+    // Writing heights leaves the game's own height map as it was; the plan says so.
+    expect(JSON.stringify(prepared)).toContain('blizzard/sc2-map-sync-height-not-updated')
+    const committed = (envelope(await call('modkit.commit_edit', { planHandle })).data as {
+      result: { state: string; receipt: { transactionId: string } }
+    }).result
+    expect(committed.state).toBe('committed')
+    const after = await files()
+    for (const [name, sum] of before) {
+      if (name === 't3HeightMap') expect(after.get(name)).not.toBe(sum)
+      else expect(after.get(name), name).toBe(sum)
+    }
+
+    const stale = await writer.client.callTool({ name: 'modkit.prepare_edit', arguments: { planHandle: olderPlan } })
+    expect(envelope(stale).completeness).toBe('invalid')
+    await writer.client.callTool({ name: 'modkit.discard_edit', arguments: { id: olderPlan } })
+    const reopened = await open()
+    const reread = value(await call('modkit.invoke_readonly', { handle: reopened, operationId: 'map.layer-read', input: window })) as MapLayerGrid
+    expect(reread.values).toEqual(values)
+    await call('modkit.close_subject', { handle: reopened })
+
+    await call('modkit.undo_edit', { transactionId: committed.receipt.transactionId })
+    expect(await files()).toEqual(before)
+    await call('modkit.close_subject', { handle })
+  }, 300_000)
 })
