@@ -17,6 +17,7 @@ const REQUIREMENTS: readonly CredentialRequirement[] = [
     kind: 'api-key',
     label: 'Acme Cloud key',
     audience: ['https://api.acme.test/v1/'],
+    environment: 'ACME_CLOUD_KEY',
   },
   {
     id: 'acme/oauth',
@@ -30,7 +31,13 @@ const REQUIREMENTS: readonly CredentialRequirement[] = [
       clientIdSetting: 'oauthClientId',
     },
   },
-  { id: 'acme/aes', kind: 'symmetric-key', label: 'Pak key', scoped: true },
+  {
+    id: 'acme/aes',
+    kind: 'symmetric-key',
+    label: 'Pak key',
+    scoped: true,
+    environment: 'ACME_AES',
+  },
   { id: 'acme/session', kind: 'provider-session', label: 'Acme session' },
 ]
 
@@ -298,6 +305,42 @@ describe('credential broker', () => {
     await refusal(port.fetch('acme/session', { url: 'https://api.acme.test/' }))
     await port.forget('acme/session')
     expect(await port.status('acme/session')).toBe('missing')
+  })
+
+  it('reads a declared environment variable when the store is empty (CLI, MCP)', async () => {
+    const { store, values } = memoryStore()
+    const hex = 'ab'.repeat(32)
+    const base64 = Buffer.from('cd'.repeat(32), 'hex').toString('base64')
+    const { fetch, sent } = fakeFetch(() => new Response('ok'))
+    const port = createCredentialBroker({
+      inventory: inventory(),
+      store,
+      fetch,
+      environment: { ACME_CLOUD_KEY: ` ${SECRET} `, ACME_AES: `guid-1:${hex}; guid-2:${base64}` },
+    }).portFor('acme/tool')
+    expect(await port.status('acme/cloud')).toBe('available')
+    expect(await port.acquire('acme/cloud', { reason: 'ci', interactive: true })).toBe('available')
+    await port.fetch('acme/cloud', { url: 'https://api.acme.test/v1/x' })
+    expect(sent[0]?.headers['x-api-key']).toBe(SECRET)
+    expect(Buffer.from((await port.secret('acme/aes', 'guid-1'))!).toString('hex')).toBe(hex)
+    expect(Buffer.from((await port.secret('acme/aes', 'guid-2'))!).toString('hex')).toBe(
+      'cd'.repeat(32),
+    )
+    expect(await port.status('acme/aes', 'guid-3')).toBe('missing')
+    // the store wins over the environment, and sign-out cannot remove a variable
+    await store.set('modkit.credential/acme/cloud', 'stored')
+    await port.fetch('acme/cloud', { url: 'https://api.acme.test/v1/x' })
+    expect(sent[1]?.headers['x-api-key']).toBe('stored')
+    await port.forget('acme/cloud')
+    expect(values.size).toBe(0)
+    expect(await port.status('acme/cloud')).toBe('available')
+
+    const single = createCredentialBroker({
+      inventory: inventory(),
+      store: memoryStore().store,
+      environment: { ACME_AES: hex },
+    }).portFor('acme/tool')
+    expect(await single.status('acme/aes', 'any-guid')).toBe('available')
   })
 
   it('matches the audience by origin and path prefix', () => {

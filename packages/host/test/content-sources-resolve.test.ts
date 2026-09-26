@@ -32,7 +32,8 @@ async function extension(name: string, contentSources: string | undefined): Prom
   return {
     snapshot: async () => ({ label: ${JSON.stringify(name)}, regions: [], connections: [],
       roots: [{ id: ${JSON.stringify(`${name}:root`)}, label: JSON.stringify(options.installationDirectory ?? null), region: 'local', kind: 'local',
-        probes: context?.installationProbes?.name ?? typeof context?.installationProbes }] }),
+        probes: context?.installationProbes?.name ?? typeof context?.installationProbes,
+        credentials: context?.credentials?.name ?? null }] }),
     connect: noop, disconnect: noop, search: async () => [], add: noop, remove: noop, refresh: noop,
     list: async () => [], read: async () => new Uint8Array(), dispose: noop,
   }
@@ -53,13 +54,19 @@ describe('the content sources extensions declare', () => {
         extension === 'example/sc2' ? { installationDirectory: 'C:/Games/SC2' } : undefined,
       // every module gets the host's platform probes beside its options
       installationProbes: { name: 'fixture-probes' } as never,
+      // and the credential port of its own extension only
+      credentials: extension =>
+        extension === 'example/roblox' ? ({ name: 'roblox-port' } as never) : undefined,
     })
     const snapshot = await sources?.snapshot()
     expect(
-      snapshot?.roots.map(root => [root.id, root.label, (root as { probes?: unknown }).probes]),
+      snapshot?.roots.map(root => {
+        const extra = root as { probes?: unknown; credentials?: unknown }
+        return [root.id, root.label, extra.probes, extra.credentials]
+      }),
     ).toEqual([
-      ['sc2:root', '"C:/Games/SC2"', 'fixture-probes'],
-      ['roblox:root', 'null', 'fixture-probes'],
+      ['sc2:root', '"C:/Games/SC2"', 'fixture-probes', null],
+      ['roblox:root', 'null', 'fixture-probes', 'roblox-port'],
     ])
     await sources?.dispose()
   })

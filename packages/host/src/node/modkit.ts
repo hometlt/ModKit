@@ -58,7 +58,11 @@ import {
   type ExtensionRootRequest,
 } from './extension-roots.js'
 import { createPathSubjectOpener } from './subject-opener.js'
-import { createNodeSubjectServices, type NodeSubjectServices } from './subject-services.js'
+import {
+  createNodeSubjectServices,
+  type NodeSubjectServices,
+  type NodeSubjectServicesOptions,
+} from './subject-services.js'
 import { nodeRuntimeTargetBase, nodeWorkerLinks, nodeWorkerRealmProfile } from './profile.js'
 import type { WorkerBackendPolicy } from '../execution/worker-policy.js'
 
@@ -112,6 +116,11 @@ export interface ModkitOptions {
   readonly disabledExtensions?: readonly string[]
   /** Where an opened subject's catalog questions are answered (its mod context). */
   readonly subjectCatalog?: SubjectCatalogOptions
+  /**
+   * The credential broker's store and prompter (see `createNodeSubjectServices`). A CLI or MCP
+   * host passes an in-memory store and `environment: process.env`: no prompts, no persisted secret.
+   */
+  readonly credentials?: NodeSubjectServicesOptions['credentials']
   /** Budget of every open and of the writer an edit resolves (default `DEFAULT_SUBJECT_OPEN_BUDGET`). */
   readonly budget?: ResourceBudget
   readonly onDiagnostic?: (diagnostic: Diagnostic) => void
@@ -227,6 +236,7 @@ export async function createModkit(options: ModkitOptions): Promise<Modkit> {
     ...(options.bootstrapUrl === undefined ? {} : { bootstrapUrl: options.bootstrapUrl }),
     ...(options.onDiagnostic === undefined ? {} : { onDiagnostic: options.onDiagnostic }),
     ...(options.subjectCatalog === undefined ? {} : { subjectCatalog: options.subjectCatalog }),
+    ...(options.credentials === undefined ? {} : { credentials: options.credentials }),
   })
 
   /*

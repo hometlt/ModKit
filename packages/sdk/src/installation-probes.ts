@@ -5,6 +5,8 @@
  * itself, and a browser host simply offers none. Game-specific marker validation stays with the game.
  * Every answer is `undefined` (or an empty record) when the platform, key or product is absent.
  */
+import type { CredentialPort } from './credentials.js'
+
 export type RegistryHive = 'HKLM' | 'HKCU'
 
 /** A per-user or machine folder a game keeps its documents or shared data in. */
@@ -36,4 +38,6 @@ export interface InstallationProbes {
 /** What a trusted host hands a content-source module beside its options. */
 export interface ContentSourceModuleContext {
   readonly installationProbes?: InstallationProbes
+  /** The credential broker's port for the module's own extension (its declared credentials). */
+  readonly credentials?: CredentialPort
 }

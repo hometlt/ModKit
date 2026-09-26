@@ -133,6 +133,8 @@ export interface InspectionContext {
   readonly contracts?: ContributionContext['contracts']
   readonly rasterResources?: ContributionContext['rasterResources']
   readonly videoFrames?: ContributionContext['videoFrames']
+  /** The broker's port for this extension's declared sign-ins and keys. */
+  readonly credentials?: ContributionContext['credentials']
   /** What the enclosing container hands this subject (see ContainerEntryTable.nestedContext). */
   readonly containerContext?: ContributionContext['containerContext']
   readonly modelResources?: ContributionContext['modelResources']
@@ -317,6 +319,8 @@ export interface NamespaceInspectionContext {
   readonly contracts?: ContributionContext['contracts']
   readonly rasterResources?: ContributionContext['rasterResources']
   readonly videoFrames?: ContributionContext['videoFrames']
+  /** The broker's port for this extension's declared sign-ins and keys. */
+  readonly credentials?: ContributionContext['credentials']
   /** What the enclosing container hands this subject (see ContainerEntryTable.nestedContext). */
   readonly containerContext?: ContributionContext['containerContext']
   readonly modelResources?: ContributionContext['modelResources']
@@ -1378,6 +1382,9 @@ export function createInspectionCodec(
                   ...(contributionContext.videoFrames === undefined
                     ? {}
                     : { videoFrames: contributionContext.videoFrames }),
+                  ...(contributionContext.credentials === undefined
+                    ? {}
+                    : { credentials: contributionContext.credentials }),
                   ...(contributionContext.containerContext === undefined
                     ? {}
                     : { containerContext: contributionContext.containerContext }),
@@ -1523,6 +1530,9 @@ export function createInspectionCodec(
                 ...(contributionContext.videoFrames === undefined
                   ? {}
                   : { videoFrames: contributionContext.videoFrames }),
+                ...(contributionContext.credentials === undefined
+                  ? {}
+                  : { credentials: contributionContext.credentials }),
                 ...(contributionContext.containerContext === undefined
                   ? {}
                   : { containerContext: contributionContext.containerContext }),

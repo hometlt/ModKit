@@ -51,6 +51,13 @@ export interface CredentialBrokerOptions {
   readonly now?: () => number
   /** A contribution setting by extension coordinate, for `oauth.clientIdSetting`. */
   readonly setting?: (extension: string, name: string) => unknown
+  /**
+   * Non-interactive hosts (CLI, MCP, automation): the variable a declaration names in
+   * `environment` answers when the store has nothing. Read-only — sign-out cannot remove it. A
+   * scoped credential takes `scope:value` entries separated by `;` or newlines, or one value for
+   * every scope; an OAuth variable holds an access token (no refresh).
+   */
+  readonly environment?: Readonly<Record<string, string | undefined>>
 }
 
 export interface DeclaredCredential {
@@ -115,6 +122,16 @@ export function credentialAudienceAllows(url: string, audience: readonly string[
   })
 }
 
+/** A store that keeps nothing past the process: CLI and MCP, where secrets come from the environment. */
+export function createMemoryCredentialStore(): CredentialStore {
+  const values = new Map<string, string>()
+  return Object.freeze({
+    get: async (key: string) => values.get(key),
+    set: async (key: string, value: string) => void values.set(key, value),
+    delete: async (key: string) => void values.delete(key),
+  })
+}
+
 export function createCredentialBroker(options: CredentialBrokerOptions): CredentialBroker {
   const now = options.now ?? Date.now
   const send = options.fetch ?? globalThis.fetch
@@ -140,8 +157,38 @@ export function createCredentialBroker(options: CredentialBrokerOptions): Creden
       throw refused('invalid', `the scope of ${requirement.id} is not a short printable name`)
     return `modkit.credential/${requirement.id}${requirement.scoped === true && scope !== undefined ? `#${scope}` : ''}`
   }
-  const readTokens = async (key: string): Promise<OAuth2Tokens | undefined> => {
-    const text = await options.store.get(key)
+  /** The value a declaration's environment variable gives for a store key, in stored form. */
+  const fromEnvironment = (key: string): string | undefined => {
+    const [id = '', scope] = key.slice('modkit.credential/'.length).split(/#(.*)/su)
+    const requirement = declarations.get(id)?.requirement
+    const raw =
+      requirement?.environment === undefined
+        ? undefined
+        : options.environment?.[requirement.environment]?.trim()
+    if (requirement === undefined || raw === undefined || raw === '') return undefined
+    let value: string | undefined = raw
+    if (requirement.scoped === true) {
+      const entries = raw
+        .split(/[;\n]/u)
+        .map(entry => entry.trim())
+        .filter(entry => entry !== '')
+      if (entries.every(entry => entry.includes(':'))) {
+        const pairs = new Map(
+          entries.map(entry => {
+            const at = entry.indexOf(':')
+            return [entry.slice(0, at).trim(), entry.slice(at + 1).trim()] as const
+          }),
+        )
+        value = scope === undefined ? undefined : pairs.get(scope)
+      }
+    }
+    if (value === undefined || value === '') return undefined
+    if (requirement.kind === 'symmetric-key') return symmetricKeyHex(value)
+    if (requirement.kind === 'oauth2-pkce') return JSON.stringify({ accessToken: value })
+    return value
+  }
+  const read = async (key: string) => (await options.store.get(key)) ?? fromEnvironment(key)
+  const tokensOf = (text: string | undefined): OAuth2Tokens | undefined => {
     if (text === undefined) return undefined
     try {
       const value = JSON.parse(text) as OAuth2Tokens
@@ -150,6 +197,7 @@ export function createCredentialBroker(options: CredentialBrokerOptions): Creden
       return undefined
     }
   }
+  const readTokens = async (key: string) => tokensOf(await read(key))
   const expired = (tokens: OAuth2Tokens) =>
     tokens.expiresAt !== undefined && tokens.expiresAt <= now() + EXPIRY_MARGIN_MS
   const clientIdOf = (entry: DeclaredCredential) => {
@@ -175,7 +223,7 @@ export function createCredentialBroker(options: CredentialBrokerOptions): Creden
       if (tokens === undefined) return 'missing'
       return expired(tokens) && tokens.refreshToken === undefined ? 'expired' : 'available'
     }
-    return (await options.store.get(key)) === undefined ? 'missing' : 'available'
+    return (await read(key)) === undefined ? 'missing' : 'available'
   }
 
   // A refresh token may be single-use (Roblox): one refresh per key at a time, and the new token is
@@ -281,7 +329,7 @@ export function createCredentialBroker(options: CredentialBrokerOptions): Creden
     const attempt = async (force: boolean) => {
       const value =
         requirement.kind === 'api-key'
-          ? await options.store.get(keyOf(requirement, request.scope))
+          ? await read(keyOf(requirement, request.scope))
           : await accessToken(entry, request.scope, force, signal)
       if (value === undefined)
         throw refused('missing', `${requirement.id} is not available; acquire it first`)
@@ -344,7 +392,7 @@ export function createCredentialBroker(options: CredentialBrokerOptions): Creden
         'not-exposed',
         `${requirement.id} is a ${requirement.kind}; its value stays with the host`,
       )
-    const value = await options.store.get(keyOf(requirement, scope))
+    const value = await read(keyOf(requirement, scope))
     if (value === undefined) return undefined
     return requirement.kind === 'symmetric-key' ? hexBytes(value) : new TextEncoder().encode(value)
   }
@@ -352,7 +400,7 @@ export function createCredentialBroker(options: CredentialBrokerOptions): Creden
   const forget = async (entry: DeclaredCredential, scope?: string, signal?: AbortSignal) => {
     const key = keyOf(entry.requirement, scope)
     if (entry.requirement.kind === 'oauth2-pkce' && options.oauth?.revoke !== undefined) {
-      const tokens = await readTokens(key)
+      const tokens = tokensOf(await options.store.get(key))
       const token = tokens?.refreshToken ?? tokens?.accessToken
       if (token !== undefined && entry.requirement.oauth?.revocationEndpoint !== undefined) {
         try {

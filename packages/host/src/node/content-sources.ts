@@ -6,7 +6,7 @@ import {
   loadContentSources,
   readContentSourceConfig,
 } from '@modkit/vfs/content-sources/node'
-import type { InstallationProbes } from '@modkit/sdk'
+import type { CredentialPort, InstallationProbes } from '@modkit/sdk'
 import { createNodeInstallationProbes } from './installation-probes.js'
 
 export interface ResolveContentSourcesOptions {
@@ -23,6 +23,8 @@ export interface ResolveContentSourcesOptions {
   readonly moduleOptions?: (extension: string) => Readonly<Record<string, unknown>> | undefined
   /** Platform probes handed to every module; defaults to this host's `createNodeInstallationProbes()`. */
   readonly installationProbes?: InstallationProbes
+  /** The credential port of one extension (`publisher/id`), handed to that extension's module. */
+  readonly credentials?: (extension: string) => CredentialPort | undefined
 }
 
 /**
@@ -36,6 +38,11 @@ export async function resolveContentSources(
   const context = {
     installationProbes: options.installationProbes ?? createNodeInstallationProbes(),
   }
+  // a module reaches only its own extension's credentials; an unowned configuration gets none
+  const contextOf = (extension: string | undefined) => {
+    const credentials = extension === undefined ? undefined : options.credentials?.(extension)
+    return credentials === undefined ? context : { ...context, credentials }
+  }
   if (config !== undefined && config.extension === undefined) {
     return loadContentSources(options.configPath, options.storage, context)
   }
@@ -44,7 +51,12 @@ export async function resolveContentSources(
   try {
     if (config !== undefined) {
       parts.push(
-        await loadContentSourceModule(config.module, config.options, options.storage, context),
+        await loadContentSourceModule(
+          config.module,
+          config.options,
+          options.storage,
+          contextOf(config.extension),
+        ),
       )
     }
     for (const root of options.extensionRoots) {
@@ -60,7 +72,7 @@ export async function resolveContentSources(
           declared.module,
           options.moduleOptions?.(declared.extension) ?? {},
           options.storage,
-          context,
+          contextOf(declared.extension),
         ),
       )
     }

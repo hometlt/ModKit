@@ -301,6 +301,7 @@ export * from './compression-definitions.js'
 export {
   createCredentialBroker,
   credentialAudienceAllows,
+  createMemoryCredentialStore,
   symmetricKeyHex,
   type CredentialBroker,
   type CredentialBrokerOptions,
