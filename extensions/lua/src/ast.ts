@@ -24,7 +24,11 @@
 
 export const LUA_AST_VERSION = 1 as const
 
-export type LuaDialect = 'lua51' | 'lua52' | 'lua53' | 'lua54' | 'luajit' | 'luau' | 'cfxlua'
+/**
+ * `gpg` is Gas Powered Games' Lua 5.0 of Supreme Commander and Forged Alliance (blueprints, scripts):
+ * Lua 5.1 syntax plus `#` line comments and `!=` for `~=`.
+ */
+export type LuaDialect = 'lua51' | 'lua52' | 'lua53' | 'lua54' | 'luajit' | 'luau' | 'cfxlua' | 'gpg'
 
 export const LUA_DIALECTS: readonly LuaDialect[] = Object.freeze([
   'lua51',
@@ -34,6 +38,7 @@ export const LUA_DIALECTS: readonly LuaDialect[] = Object.freeze([
   'luajit',
   'luau',
   'cfxlua',
+  'gpg',
 ])
 
 /** Half-open `[start, end)` offsets in UTF-16 code units of the parsed text. */

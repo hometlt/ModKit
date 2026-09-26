@@ -24,6 +24,9 @@ import { bindLuaChunk, type LuaBindResult } from './binder.js'
  * (`Enum.KeyCode.Q`, `game`), varargs, comparisons, and anything reading an unresolved value.
  * Writes the reader cannot apply — inside functions or loops, through calls that receive a known
  * table — are listed in `unappliedWrites`, because they may change the result at run time.
+ *
+ * Top-level calls of global names (`UnitBlueprint { … }`) are listed in `calls` with their
+ * arguments read the same way: the call itself is not run, its literal arguments are the data.
  */
 
 export type LuaStaticKey =
@@ -110,10 +113,23 @@ export interface LuaUnappliedWrite {
   readonly source: string
 }
 
+/**
+ * A call statement at the chunk's top level, its arguments read like any other value: data files
+ * that declare records by calling (`UnitBlueprint { … }` of Supreme Commander) rather than returning.
+ */
+export interface LuaTopLevelCall {
+  /** The called global or path of names as written (`UnitBlueprint`, `Game.Register`). */
+  readonly callee: string
+  readonly arguments: readonly LuaStaticValue[]
+  readonly range: LuaRange
+}
+
 export interface LuaModuleReading {
   /** The value of the chunk's final `return`, or `unresolved` with reason `no-return`. */
   readonly value: LuaStaticValue
   readonly unappliedWrites: readonly LuaUnappliedWrite[]
+  /** Calls of global names at the chunk's top level, in source order. */
+  readonly calls: readonly LuaTopLevelCall[]
 }
 
 /** Mutable table used while reading; frozen into `LuaStaticValue` at the end. */
@@ -172,6 +188,7 @@ class Reader {
   /** Bindings whose only write is their declaration. */
   readonly #constant = new Set<number>()
   readonly unappliedWrites: LuaUnappliedWrite[] = []
+  readonly calls: { callee: string; arguments: Value[]; range: LuaRange }[] = []
 
   constructor(text: string, binding: LuaBindResult) {
     this.#text = text
@@ -196,6 +213,21 @@ class Reader {
     return occurrence !== undefined && occurrence.range[0] === range[0]
       ? occurrence.binding
       : undefined
+  }
+
+  /** `Name` or `Name.field…` rooted in a global, as written; `undefined` for anything else. */
+  calleePath(expr: AstExpr): string | undefined {
+    if (expr.type === 'AstExprName') {
+      const binding = this.bindingOf(expr.range)
+      return binding === undefined || this.#binding.bindings[binding]?.kind === 'global'
+        ? expr.name
+        : undefined
+    }
+    if (expr.type === 'AstExprIndexName' && expr.op === '.') {
+      const base = this.calleePath(expr.expr)
+      return base === undefined ? undefined : `${base}.${expr.index}`
+    }
+    return undefined
   }
 
   // --- expressions --------------------------------------------------------------------------
@@ -494,9 +526,14 @@ class Reader {
           )
         })
         return
-      case 'AstStatExpr':
+      case 'AstStatExpr': {
+        const callee = this.calleePath(stat.expr.func)
+        if (callee !== undefined) {
+          this.calls.push({ callee, arguments: stat.expr.args.map(arg => this.evaluate(arg)), range: stat.range })
+        }
         this.callsWithTables(stat.expr.args, stat.range)
         return
+      }
       case 'AstStatFunction': {
         // `function module.name() … end` stores a function into the table right here.
         const place = stat.name.type === 'AstExprName' ? undefined : this.target(stat.name)
@@ -621,7 +658,17 @@ function freeze(value: Value, seen = new Map<TableBuilder, LuaStaticValue>()): L
 export function readLuaModule(parse: LuaParseResult, text: string): LuaModuleReading {
   const reader = new Reader(text, bindLuaChunk(parse.chunk))
   const value = reader.chunk(parse.chunk)
-  return { value: freeze(value), unappliedWrites: reader.unappliedWrites }
+  // One map, so a table that is both returned and passed to a call stays one value.
+  const seen = new Map<TableBuilder, LuaStaticValue>()
+  return {
+    value: freeze(value, seen),
+    unappliedWrites: reader.unappliedWrites,
+    calls: reader.calls.map(call => ({
+      callee: call.callee,
+      arguments: call.arguments.map(argument => freeze(argument, seen)),
+      range: call.range,
+    })),
+  }
 }
 
 /** Entry of a static table by string or integer key. */
