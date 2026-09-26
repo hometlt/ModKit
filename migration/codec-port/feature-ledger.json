@@ -583,9 +583,14 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-ea/test/receipts/k1/cps.image-inspect.json",
+          "sha256": "7f1d1cf7570ad374016bdb1c2e51131a2ffd3a917f54fd3b86113d94a907d224"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/cps/operation/image.inspect",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -2349,14 +2354,24 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-ea/test/receipts/k1/mix.archive-extract.json",
+          "sha256": "e2e12dd71910750718f053c1814863f7cd0facf41e2b038f140c54fb16a9b93f"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/mix/operation/archive.extract",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-ea/test/receipts/k1/mix.archive-inspect.json",
+          "sha256": "2558e8fb89a0aa639ba59326668ee1379d170ff07bbeda5790745fa6da2a20d2"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/mix/operation/archive.inspect",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -2899,9 +2914,14 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-ea/test/receipts/k1/r16.image-inspect.json",
+          "sha256": "0f20ae4481996d7cb47a3226aa040bc43caaa4ad428838f4193c16647f3ff0f0"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/r16/operation/image.inspect",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -2914,9 +2934,14 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-ea/test/receipts/k1/r8.image-inspect.json",
+          "sha256": "148f85f5ab11b18734c19f64dad93775d1a5819806ea8edbce42cb7da5eb9ce7"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/r8/operation/image.inspect",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -6492,9 +6517,14 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-ea/test/receipts/k1/shp.image-inspect.json",
+          "sha256": "cfdfc20b2db43e3680713a40952577a716672cf7ffa7a544a3ed7ea3b9f33149"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/shp/operation/image.inspect",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -6782,9 +6812,14 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-ea/test/receipts/k1/tmp.image-inspect.json",
+          "sha256": "e1ee21d4ef2e096066528bec5740e28d7ab9974b3ddd27420cef4e51949aea16"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/tmp/operation/image.inspect",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -7067,9 +7102,14 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-ea/test/receipts/k1/vpl.image-inspect.json",
+          "sha256": "bb210b1130a0f2f5642175a28fbb0b409449432752fcb2c1a71a40ff02b10405"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/vpl/operation/image.inspect",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -7327,9 +7367,14 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-ea/test/receipts/k1/wsa.image-inspect.json",
+          "sha256": "f901c5a6639fe52fc5098dcc3569324858c75b38cbba48aaa85e3b106e72ace3"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/wsa/operation/image.inspect",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],

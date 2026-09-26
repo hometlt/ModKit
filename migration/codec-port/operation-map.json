@@ -393,11 +393,11 @@
       "targetOperation": null
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-ea/westwood/contributions/codec-cps.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/cps/operation/image.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
       "contribution": null,
@@ -1261,18 +1261,18 @@
       "targetOperation": null
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-ea/westwood/contributions/codec-mix.json",
+      "handlerId": "extract-entry",
       "id": "legacy/codec-manifest/modkit/mix/operation/archive.extract",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "container.extract"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-ea/westwood/contributions/codec-mix.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/mix/operation/archive.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
       "contribution": null,
@@ -1758,11 +1758,11 @@
       "targetOperation": null
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-ea/westwood/contributions/codec-r16.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/r16/operation/image.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
       "contribution": null,
@@ -1772,11 +1772,11 @@
       "targetOperation": null
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-ea/westwood/contributions/codec-r8.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/r8/operation/image.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
       "contribution": null,
@@ -2451,11 +2451,11 @@
       "targetOperation": "view.inspect"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-ea/westwood/contributions/codec-shp.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/shp/operation/image.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
       "contribution": null,
@@ -2703,11 +2703,11 @@
       "targetOperation": null
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-ea/westwood/contributions/codec-tmp.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/tmp/operation/image.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
       "contribution": null,
@@ -2990,11 +2990,11 @@
       "targetOperation": null
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-ea/westwood/contributions/codec-vpl.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/vpl/operation/image.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
       "contribution": null,
@@ -3172,11 +3172,11 @@
       "targetOperation": null
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-ea/westwood/contributions/codec-wsa.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/wsa/operation/image.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
       "contribution": null,
