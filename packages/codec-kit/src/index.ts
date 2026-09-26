@@ -16,7 +16,11 @@ export function codecRefusal(
   message: string,
   context?: Readonly<Record<string, unknown>>,
 ): Error {
-  return new ModkitError({ code: code as never, message, ...(context === undefined ? {} : { context }) })
+  return new ModkitError({
+    code: code as never,
+    message,
+    ...(context === undefined ? {} : { context }),
+  })
 }
 export {
   snapshotModelSkeleton,
@@ -137,6 +141,50 @@ export interface InspectionContext {
   readonly byteSource: ByteRangeSource
   /** The opened input; Path A plans (`editPlanFromInput`) derive targets and revision from it. */
   readonly input: AssetInput
+}
+
+/** One companion the host bound for a requirement: its bytes, or why they could not be read. */
+export type BoundCompanion = {
+  readonly bindingId: string
+  readonly uri: string
+} & ({ readonly bytes: Uint8Array } | { readonly error: string })
+
+/**
+ * Reads every companion the host bound for `requirement` (a `planInput` candidate), each whole and
+ * within `budget.maxInputBytes`. A missing, oversized or unreadable companion is reported in its
+ * entry, never thrown; an input that is not a bundle has none.
+ */
+export async function readBoundCompanions(
+  context: InspectionContext,
+  requirement: string,
+): Promise<BoundCompanion[]> {
+  const input = context.input
+  if (input.originKind !== 'bundle') return []
+  const companions: BoundCompanion[] = []
+  for (const binding of input.bindingsFor(requirement)) {
+    const identity = { bindingId: binding.bindingId, uri: binding.source.uri }
+    try {
+      const lease = await input.openBinding(binding.bindingId, context.signal)
+      try {
+        const source = lease.value
+        if (source.kind !== 'bytes') throw new TypeError('the companion is not a byte source')
+        const size = source.size
+        if (size === undefined) throw new TypeError('the companion has no known size')
+        if (size > BigInt(context.budget.maxInputBytes))
+          throw new RangeError('the companion exceeds the input budget')
+        companions.push({ ...identity, bytes: await source.read(0n, Number(size), context.signal) })
+      } finally {
+        await lease.release()
+      }
+    } catch (error) {
+      if (context.signal?.aborted) throw error
+      companions.push({
+        ...identity,
+        error: error instanceof Error ? error.message : String(error),
+      })
+    }
+  }
+  return companions
 }
 
 /** Per-document availability; declarations retain operation identity, handlers and permissions. */
@@ -952,7 +1000,11 @@ async function readAll(source: ArtifactSource, budget: ResourceBudget, signal?: 
     if (signal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
     // Each read is one RPC exchange when the codec runs in a worker: 64 KiB chunks made a 41 MB
     // source ~650 exchanges inside one 30 s open deadline. 4 MiB stays well under the 64 MiB frame.
-    const chunk = await source.read(BigInt(offset), Math.min(READ_ALL_CHUNK_BYTES, total - offset), signal)
+    const chunk = await source.read(
+      BigInt(offset),
+      Math.min(READ_ALL_CHUNK_BYTES, total - offset),
+      signal,
+    )
     if (chunk.byteLength === 0) throw new RangeError('source ended before its declared size')
     result.set(chunk, offset)
     offset += chunk.byteLength
@@ -1416,7 +1468,10 @@ export function createInspectionCodec(
                 async companionSource(bindingId, companionSignal) {
                   const lease = await input.openBinding(bindingId, companionSignal)
                   try {
-                    return { source: rangeByteSource(lease.value, budget), release: () => lease.release() }
+                    return {
+                      source: rangeByteSource(lease.value, budget),
+                      release: () => lease.release(),
+                    }
                   } catch (error) {
                     await lease.release()
                     throw error
@@ -1513,7 +1568,12 @@ export function createInspectionCodec(
               ]),
           ...(entryAccess === undefined
             ? []
-            : [[CONTAINER_EXTRACT_HANDLER_ID, entryAccess.extract as HostOperationHandler] as const]),
+            : [
+                [
+                  CONTAINER_EXTRACT_HANDLER_ID,
+                  entryAccess.extract as HostOperationHandler,
+                ] as const,
+              ]),
           ...Object.entries(inspection.handlers ?? {}),
         ])
         return createAssetSession({
