@@ -191,3 +191,17 @@ describe('language provider', () => {
     expect(refused).toBeUndefined()
   })
 })
+
+describe('dialect a game declares', () => {
+  it('reads the file as the declared dialect, and warns about one it does not know', async () => {
+    const scar = { ...doc('local goto = 1; return goto', 'lua', 'file:///m.scar'), dialect: 'lua51' }
+    const state = await luaDocumentState(scar)
+    expect([state.dialect, state.parse.errors]).toEqual(['lua51', []])
+
+    const unknown = await luaDocumentState({ ...doc('return 1', 'lua', 'file:///m.scar'), dialect: 'lua50' })
+    expect(unknown.dialect).toBe('lua54')
+    const provider = createLuaLanguageProvider()
+    const diagnostics = await provider.diagnostics!(request({ ...doc('return 1', 'lua', 'file:///n.scar'), dialect: 'lua50' }))
+    expect(diagnostics.diagnostics.map(item => [item.code, item.severity])).toEqual([['unknown-dialect', 'warning']])
+  })
+})

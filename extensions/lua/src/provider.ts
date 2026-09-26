@@ -35,7 +35,7 @@ import type {
   LuaParseResult,
   LuaRange,
 } from './ast.js'
-import { LUA_TOKEN_CLASSES } from './ast.js'
+import { LUA_DIALECTS, LUA_TOKEN_CLASSES } from './ast.js'
 import { bindLuaChunk, type LuaBinding, type LuaBindResult } from './binder.js'
 import {
   documentPathOf,
@@ -61,12 +61,15 @@ export interface LuaDocumentState {
   readonly parse: LuaParseResult
   readonly binding: LuaBindResult
   readonly lines: LuaLineIndex
+  /** A dialect the document declared that this provider does not know; it was guessed instead. */
+  readonly unknownDialect?: string
 }
 
 /**
- * `luau` documents (and `.luau` files) are Luau. A `lua` document is Lua 5.4 unless Luau parses it
- * with fewer errors: Roblox projects keep Luau in `.lua` files, and Lua 5.1–5.3 programs are Lua
- * 5.4 syntax apart from `goto` used as a name. A game that knows its dialect passes it explicitly.
+ * The dialect a game declared for the file (`LanguageDocument.dialect`, from its
+ * `modkit.languageFiles`) wins. Otherwise `luau` documents (and `.luau` files) are Luau, and a `lua`
+ * document is Lua 5.4 unless Luau parses it with fewer errors: Roblox projects keep Luau in `.lua`
+ * files, and Lua 5.1–5.3 programs are Lua 5.4 syntax apart from `goto` used as a name.
  */
 export function resolveLuaDialect(
   syntax: LuaSyntax,
@@ -74,7 +77,15 @@ export function resolveLuaDialect(
 ): {
   readonly dialect: LuaDialect
   readonly parse: LuaParseResult
+  readonly unknownDialect?: string
 } {
+  const declared = document.dialect
+  if (declared !== undefined) {
+    const known = LUA_DIALECTS.find(dialect => dialect === declared)
+    if (known !== undefined) return { dialect: known, parse: syntax.parse(document.text, known) }
+    const { dialect: _unknown, ...undeclared } = document
+    return { ...resolveLuaDialect(syntax, undeclared), unknownDialect: declared }
+  }
   if (document.languageId === 'luau' || /\.luau$/iu.test(document.uri)) {
     return { dialect: 'luau', parse: syntax.parse(document.text, 'luau') }
   }
@@ -101,7 +112,7 @@ export async function luaDocumentState(
   document: LanguageDocument,
   dialect?: LuaDialect,
 ): Promise<LuaDocumentState> {
-  const key = `${document.uri}\u0000${document.version}\u0000${dialect ?? ''}`
+  const key = `${document.uri}\u0000${document.version}\u0000${dialect ?? document.dialect ?? ''}`
   const cached = cache.get(key)
   if (cached !== undefined && cached.document.text === document.text) return cached
   const syntax = await luaSyntax()
@@ -115,6 +126,7 @@ export async function luaDocumentState(
     parse: resolved.parse,
     binding: bindLuaChunk(resolved.parse.chunk),
     lines: new LuaLineIndex(document.text),
+    ...('unknownDialect' in resolved && resolved.unknownDialect !== undefined ? { unknownDialect: resolved.unknownDialect } : {}),
   })
   cache.set(key, state)
   if (cache.size > CACHE_LIMIT) {
@@ -409,13 +421,24 @@ export function luaSemanticTokens(state: LuaDocumentState): LanguageToken[] {
 // ---------------------------------------------------------------------------------------------
 
 export function luaDiagnostics(state: LuaDocumentState): LanguageDiagnostic[] {
-  return state.parse.errors.map(error => ({
+  const syntax = state.parse.errors.map(error => ({
     range: state.lines.range(error.range),
     severity: 'error' as const,
     message: error.message,
     code: 'syntax',
     source: state.dialect,
   }))
+  if (state.unknownDialect === undefined) return syntax
+  return [
+    {
+      range: state.lines.range([0, 0]),
+      severity: 'warning' as const,
+      message: `The file is declared as Lua dialect "${state.unknownDialect}", which this provider does not know (${LUA_DIALECTS.join(', ')}); it is read as ${state.dialect}.`,
+      code: 'unknown-dialect',
+      source: state.dialect,
+    },
+    ...syntax,
+  ]
 }
 
 function exprName(expr: AstExpr): string | undefined {
