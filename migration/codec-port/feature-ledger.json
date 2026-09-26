@@ -3233,9 +3233,14 @@
       "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/relic-ucs.audit.json",
+          "sha256": "e465f383056923cdba12d47f95a68910a9375a7eed2a041a3cfa1f8780b1f850"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/relic-ucs/audit",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [
