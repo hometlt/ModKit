@@ -1267,6 +1267,59 @@ type WorldModelSample = Readonly<{
 
 const staticModelSamples = new WeakMap<WorldModelSample['result'], Map<string, WorldModelSample>>()
 
+type WorldModelPrograms = Readonly<{
+  presented: readonly ModelMaterialRef[]
+  scene: ReturnType<typeof worldModelSceneMaterials>
+  programs: ReadonlyMap<string, SceneMaterialPrograms>
+}>
+
+// Programs of clock-independent materials, per converted model and presentation key. Bounded by the
+// model's presentation variants (animation, team color, cliff use); released with the model result.
+const retainedModelPrograms = new WeakMap<
+  WorldModelSample['result'],
+  Map<string, WorldModelPrograms>
+>()
+
+function retainedWorldModelPrograms(
+  result: WorldModelSample['result'],
+): Map<string, WorldModelPrograms> {
+  let programs = retainedModelPrograms.get(result)
+  if (programs === undefined) retainedModelPrograms.set(result, (programs = new Map()))
+  return programs
+}
+
+const materialsFollowingTime = new WeakMap<WorldModelSample['result'], boolean>()
+
+/**
+ * Whether any material of a model carries an animation track. Material programs sample their
+ * parameters at the clock only through tracks (`track`, `sequenceTracks`); without them the
+ * prepared programs are the same at every time and can be kept across frames.
+ */
+function worldMaterialsFollowTime(result: WorldModelSample['result']): boolean {
+  let follows = materialsFollowingTime.get(result)
+  if (follows === undefined) {
+    follows = false
+    const pending: unknown[] = [...(result.materials ?? [])]
+    while (pending.length > 0 && !follows) {
+      const value = pending.pop()
+      if (value === null || typeof value !== 'object' || ArrayBuffer.isView(value)) continue
+      if (Array.isArray(value)) {
+        pending.push(...value)
+        continue
+      }
+      for (const [key, entry] of Object.entries(value)) {
+        if ((key === 'track' || key === 'sequenceTracks') && entry !== undefined && entry !== null) {
+          follows = true
+          break
+        }
+        pending.push(entry)
+      }
+    }
+    materialsFollowingTime.set(result, follows)
+  }
+  return follows
+}
+
 function worldModelHasAnimatedGeometry(
   result: WorldModelSample['result'],
   item: WorldSceneObjectItem,
@@ -2702,13 +2755,7 @@ export function createWorldWebGlPlan(
   const projectorGround = preparation.terrainTriangles
   let modelTriangles = 0
   let diagnosticPlaceholders = 0
-  const planPrograms = new Map<
-    string,
-    Readonly<{
-      scene: ReturnType<typeof worldModelSceneMaterials>
-      programs: ReadonlyMap<string, SceneMaterialPrograms>
-    }>
-  >()
+  const planPrograms = new Map<string, WorldModelPrograms>()
   for (const item of objects) {
     const translation = objectPosition(item, input)
     const pickTriangles: number[] = []
@@ -2821,20 +2868,28 @@ export function createWorldWebGlPlan(
           : { teamColorIntensity: item.presentationTeamColorIntensity }),
       }
       // Same model, clock and team presentation → same materials and programs (one GPU lease each).
+      // Materials without animation tracks do not follow the clock: their programs outlive the frame,
+      // so an animated map keeps its GPU leases instead of preparing ~550 programs every frame.
+      const clock = worldMaterialsFollowTime(result) ? String(time) : ''
       const programKey = [
         component.resourceId,
-        time,
+        clock,
         selectedAnimation?.id ?? '',
         teamColor?.join(',') ?? '',
         item.presentationTeamColorIntensity ?? '',
+        item.derivedFrom === 'cliffs' ? 'cliffs' : '',
       ].join('\u0000')
-      const cachedMaterials = planPrograms.get(programKey)
-      const presented = presentationMaterials(item, result.materials ?? [])
+      const retained = clock === '' ? retainedWorldModelPrograms(result) : undefined
+      const cachedMaterials = planPrograms.get(programKey) ?? retained?.get(programKey)
+      const presented =
+        cachedMaterials?.presented ?? presentationMaterials(item, result.materials ?? [])
       const objectTint = worldObjectTint(item, input.selectedObjectId)
       const scene =
         cachedMaterials?.scene ?? worldModelSceneMaterials(presented, result.textures ?? [])
-      if (cachedMaterials !== undefined) programs = cachedMaterials.programs
-      else {
+      if (cachedMaterials !== undefined) {
+        programs = cachedMaterials.programs
+        planPrograms.set(programKey, cachedMaterials)
+      } else {
         try {
           programs = prepareSceneMaterialPrograms(
             scene.materials,
@@ -2847,7 +2902,9 @@ export function createWorldWebGlPlan(
           // fallback instead of making the whole map fail to render.
           programs = new Map()
         }
-        planPrograms.set(programKey, { scene, programs })
+        const prepared = Object.freeze({ presented, scene, programs })
+        planPrograms.set(programKey, prepared)
+        retained?.set(programKey, prepared)
       }
       const materialPrimitives: SceneRendererPrimitive[] = []
       const materialShadowPrimitives: SceneRendererPrimitive[] = []
