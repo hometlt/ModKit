@@ -23,6 +23,7 @@ import { composeTrsMatrix } from '@modkit/codec-kit/model-math/sequence-pose'
 import { BufferBuilder as RigBufferBuilder } from './legacy/rig-kernels.js'
 import type { UvmJsonObject } from './legacy/rig-types.js'
 import { prepareUvmSkeleton, writeUvmSkinAttributes, writeUvmAnimations } from './rig.js'
+import { materializeUvmAnimationMaterialTargets } from './animation-materials.js'
 export interface ModelProjection {
   readonly info: ModelSceneInfo
   readonly nodes?: readonly ModelNode[]
@@ -948,6 +949,13 @@ export function materializeUvmCore(
     )
   }
 
+  // Materials whose published params carry sequence tracks (UV offset, tiling, colour) are the
+  // clip catalog's material targets; one index for every codec, not a pass after materialization.
+  const materialTargets =
+    projection.materials === undefined
+      ? []
+      : materializeUvmAnimationMaterialTargets(projection.materials, materialBudget, signal)
+
   // `options.units`: the projection is in source units. One scale node puts the scene in metres and
   // UV_units records the factor, so an exporter inverts it exactly (SPEC_UVM_EXTENSIONS, UV_units).
   const unitsExtension = uvUnits((request.options as { units?: unknown } | undefined)?.units)
@@ -1060,7 +1068,10 @@ export function materializeUvmCore(
       ...(animation === undefined || animation.catalog.length === 0
         ? {}
         : {
-            UV_game_animation_clips: { clips: animation.catalog },
+            UV_game_animation_clips: {
+              clips: animation.catalog,
+              ...(materialTargets.length === 0 ? {} : { materialTargets }),
+            },
           }),
       UV_asset: {
         id: assetId,
