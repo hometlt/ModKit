@@ -16,6 +16,13 @@ export interface ModkitErrorOptions {
   readonly cause?: unknown
 }
 
+/**
+ * A realm-wide brand: an extension brings its own copy of `@modkit/core` (a vendored package), and
+ * its ModkitError is not `instanceof` the host's class, so a codec's typed refusal crossed the worker
+ * as a foreign error and lost its code. `Symbol.for` is shared by every copy in one realm.
+ */
+const MODKIT_ERROR_BRAND = Symbol.for('modkit.core/error')
+
 export class ModkitError extends Error {
   readonly code: ErrorCode
   readonly context?: Readonly<Record<string, unknown>>
@@ -30,6 +37,7 @@ export class ModkitError extends Error {
     this.code = options.code
     if (options.context !== undefined) this.context = options.context
     this.retryability = options.retryability ?? 'never'
+    Object.defineProperty(this, MODKIT_ERROR_BRAND, { value: true })
   }
 
   toJSON(): Record<string, unknown> {
@@ -43,5 +51,15 @@ export class ModkitError extends Error {
 }
 
 export function isModkitError(value: unknown): value is ModkitError {
-  return value instanceof ModkitError
+  if (value instanceof ModkitError) return true
+  // Another copy of this package in the same realm: same brand, same shape.
+  return (
+    value instanceof Error &&
+    (value as unknown as Record<symbol, unknown>)[MODKIT_ERROR_BRAND] === true &&
+    typeof (value as unknown as { code?: unknown }).code === 'string' &&
+    isQualifiedId((value as unknown as { code: string }).code) &&
+    ['never', 'safe', 'conditional'].includes(
+      (value as unknown as { retryability?: unknown }).retryability as string,
+    )
+  )
 }

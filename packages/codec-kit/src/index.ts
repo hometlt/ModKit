@@ -4,6 +4,20 @@ import { PROJECTION_RECEIPT_METADATA_ID } from './projection.js'
 import { CONTAINER_EXTRACT_HANDLER_ID, containerEntryAccess } from './container-entries.js'
 export { CONTAINER_EXTRACT_HANDLER_ID } from './container-entries.js'
 import type { SourceSpan } from '@modkit/core'
+import { ModkitError } from '@modkit/core'
+
+/**
+ * A codec's typed refusal (`<publisher>.<game>/<reason>`, e.g. an encrypted pak without its key).
+ * Thrown from `inspect` or an operation, it reaches the host with its code and JSON context across a
+ * worker, instead of being re-typed as a generic open failure. The context must hold no secrets.
+ */
+export function codecRefusal(
+  code: string,
+  message: string,
+  context?: Readonly<Record<string, unknown>>,
+): Error {
+  return new ModkitError({ code: code as never, message, ...(context === undefined ? {} : { context }) })
+}
 export {
   snapshotModelSkeleton,
   createModelSkeletonNodes,
