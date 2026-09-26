@@ -701,11 +701,11 @@
       "targetOperation": "view.inspect"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-ea/emperor/contributions/codec-emperor-xbf.json",
+      "handlerId": "model-export-uvm",
       "id": "legacy/codec-manifest/modkit/emperor-xbf/operation/model.export",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "model.export-uvm"
     },
     {
       "contribution": "modkit-extensions-ea/emperor/contributions/codec-emperor-xbf.json",
