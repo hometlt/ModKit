@@ -8,7 +8,7 @@ import {
 } from '@modkit/codec-kit/model-math/transform'
 
 // ponytail: the decomposition kernels live in codec-kit; this public `model/matrix` subpath still
-// re-exports them for rig-model and blizzard's fresh-rigid until both import codec-kit directly.
+// re-exports them for blizzard's fresh-rigid until it imports codec-kit directly.
 export { decomposeMatrix4, normalizeQuat, quaternionFromRotationMatrix }
 
 export function invertQuat(

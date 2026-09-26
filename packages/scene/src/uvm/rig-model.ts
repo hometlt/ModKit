@@ -10,7 +10,8 @@ import {
   invertMaterialFrame,
   multiplyMaterialFrames,
 } from '../materials/frame.js'
-import { multiplyQuat, quaternionFromRotationMatrix } from '../model/billboard-math.js'
+import { quaternionFromRotationMatrix } from '@modkit/codec-kit/model-math/transform'
+import { multiplyQuat } from '../model/billboard-math.js'
 import { boundUvmRig, boundUvmRootFrame } from './rig-bounds.js'
 
 function only(value: JsonObject, allowed: readonly string[], label: string): void {
