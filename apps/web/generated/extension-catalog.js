@@ -12910,7 +12910,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:234da4501402ba810b30b90ca44f7d8098d45f790bd2b8ed926879f6e0e4c80c',
+        artifactDigest: 'sha256:a816f21ad06b3d7e9b9d29c92f7fa8aa0b72adc7775c97e4b0d79dd88718c3e6',
         fileDigests: {
           'MIGRATION-NOTES-common-video.json':
             'sha256:17b84d2963ad154eb98c57537098aefe5c661e2f31c834768132c6a05a1e8cde',
@@ -12929,23 +12929,23 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:ba9bf25103feb1d8082009c69e7051150695929132dfe8aa0047a74a80e1ec4e',
           'package.json': 'sha256:53c008caf71696def5cd05ef278061995b52cc085a09bbc31f437d8b7a64dc3c',
           'src/avi/codec.js':
-            'sha256:db1094cd60857146bb2c5e0e98da582214af807367ea40ae0ab1a0378e0522da',
+            'sha256:ea64a458de50cf23ae144054ae0c2a1093faeff7b777cc8a42845a42c6bc12fe',
           'src/index.js': 'sha256:fc2cf3b104e31455bd7cf3a68c572cbffcedf72166be2e5362a5dfb4f0bb65b8',
           'src/linked.js':
             'sha256:d818dd626a030f977e526842a8c3fc6eb104e66b6cb26239c799459a7054583a',
           'src/mp4/codec.js':
-            'sha256:a4b5f3758689825d30c0a2046ace42bef5718814c2702a6a81e3bdbc20a09d63',
+            'sha256:937df7148eedf42131aead0ebdaf20159f98366187f0eabcc4e2068a482a99fd',
           'src/mpeg/codec.js':
-            'sha256:523a5b1479291f30aa45b5775eb7ff94022c52e398d88a00a2c4d0221632ff47',
+            'sha256:73b6dd6e296fe23c0f8de7b3631a697d04de69203c3ea9dd096f1dd3e3f631ac',
           'src/ogv/codec.js':
-            'sha256:455bb300bcd59fe8d850263bda52eae8bad985ab482e5c68de7715e7ec7956ab',
+            'sha256:bb195944c082d3c58345b41d9d0744958146d20ec4f0651cc2f16185487f8f54',
           'src/webm/codec.js':
-            'sha256:b5b37521af4523f898a3841361854224ef4b19dcc7293c857fe1f88a0ed7ee2b',
+            'sha256:485275a64df46b0d86181304e69c007c9b0400127c344e4ecebc89d44fea4dcd',
           'src/wmv/codec.js':
-            'sha256:36170e65799ad3a45cc2c1c70f9a36ef10c104bc2cdfe910ad217a23c86ed39e',
+            'sha256:a3ba619bf12bd80e18ae9a04b51221c3bd4dafbe13d9cd883edd276776f248a2',
         },
         inventoryRecordId:
-          'artifact:sha256:234da4501402ba810b30b90ca44f7d8098d45f790bd2b8ed926879f6e0e4c80c',
+          'artifact:sha256:a816f21ad06b3d7e9b9d29c92f7fa8aa0b72adc7775c97e4b0d79dd88718c3e6',
       },
       artifactRoot: 'extensions/video/',
       containers: {

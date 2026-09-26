@@ -158,12 +158,17 @@ const definition = Object.freeze({
   },
   async inspect(bytes, context) {
     const mp4 = parseMp4(bytes, context.budget)
-    const source = createVideoMediaSource(bytes, 'video/mp4', {
-      durationMs: mp4.durationMs,
-      seekable: true,
-      frameAccess: false,
-      tracks: mp4.tracks,
-    })
+    const source = createVideoMediaSource(
+      bytes,
+      'video/mp4',
+      {
+        durationMs: mp4.durationMs,
+        seekable: true,
+        frameAccess: false,
+        tracks: mp4.tracks,
+      },
+      context.videoFrames,
+    )
     const transport = createTransportSource({
       state: 'idle',
       positionMs: 0,

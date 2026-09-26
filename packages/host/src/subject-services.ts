@@ -25,6 +25,7 @@ import type {
   RuntimeTarget,
   ServiceContractDefinitionRegistry,
   ServiceFacetMatcherProfile,
+  VideoFrameDecoder,
 } from '@modkit/sdk'
 import type { DataSourceSurfaceSource } from './execution/index.js'
 import type { ExecutionBackendRegistry } from './execution/backend.js'
@@ -119,6 +120,8 @@ export interface SubjectServicesOptions {
   readonly contributionSettings?: (contributionId: string) => ContributionSettings | undefined
   /** Where an opened subject's catalog questions are answered; see {@link SubjectCatalogOptions}. */
   readonly subjectCatalog?: SubjectCatalogOptions
+  /** Decodes video frames for codecs (a desktop host with ffmpeg). */
+  readonly videoFrames?: VideoFrameDecoder
   readonly policy?: HostPolicy
   readonly minimumConfidence?: number
   readonly maxCandidates?: number
@@ -229,6 +232,7 @@ export function createSubjectServices(options: SubjectServicesOptions): SubjectS
       ? {}
       : { contributionSettings: options.contributionSettings }),
     ...(options.subjectCatalog === undefined ? {} : { subjectCatalog: options.subjectCatalog }),
+    ...(options.videoFrames === undefined ? {} : { videoFrames: options.videoFrames }),
   }
   const services: SubjectServices = {
     inventory: options.inventory,

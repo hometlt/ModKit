@@ -14,8 +14,9 @@
  * in-process; the gate refuses variants without an executable boundary for the worker target.
  */
 
-import type { InstallationProbes } from '@modkit/sdk'
+import type { InstallationProbes, VideoFrameDecoder } from '@modkit/sdk'
 import { createNodeInstallationProbes } from './installation-probes.js'
+import { createNodeVideoFrameDecoder } from './video-frames.js'
 import type { Diagnostic } from '@modkit/core'
 import {
   runtimeTargetForHostRealm,
@@ -73,6 +74,8 @@ export interface NodeSubjectServicesOptions {
   readonly disabledContributions?: readonly string[]
   /** Where an opened subject's catalog questions are answered (its mod context). */
   readonly subjectCatalog?: SubjectCatalogOptions
+  /** Video frames for codecs; default: ffmpeg found on PATH, `false` to offer none. */
+  readonly videoFrames?: VideoFrameDecoder | false
 }
 
 export interface NodeSubjectServices extends SubjectServices {
@@ -131,6 +134,10 @@ export async function createNodeSubjectServices(
   })
   if (definitions !== undefined)
     await registerServiceDefinitionsOrThrow(host.inventory, definitions)
+  const videoFrames =
+    options.videoFrames === false
+      ? undefined
+      : (options.videoFrames ?? createNodeVideoFrameDecoder())
   const services = createSubjectServices({
     inventory: host.inventory,
     target: workers.target,
@@ -140,6 +147,7 @@ export async function createNodeSubjectServices(
       ? {}
       : { contributionSettings: options.contributionSettings }),
     ...(options.subjectCatalog === undefined ? {} : { subjectCatalog: options.subjectCatalog }),
+    ...(videoFrames === undefined ? {} : { videoFrames }),
   })
   return Object.freeze({
     ...services,

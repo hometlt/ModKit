@@ -5,6 +5,7 @@ import type { RasterResourcePort } from './raster-resources.js'
 import type { ModelResourcePort } from './model-resources.js'
 import type { LogicalResourcePort } from './logical-resources.js'
 import type { InstallationProbes } from './installation-probes.js'
+import type { VideoFrameDecoder } from './video-frames.js'
 import type {
   AnyDescriptor,
   AssetDiagnostic,
@@ -83,7 +84,9 @@ export function contributionSettingsFor(
 ): Readonly<Record<string, unknown>> {
   if (settings === undefined) return Object.freeze({})
   const override = sourceUri === undefined ? undefined : settings.bySource?.[sourceUri]
-  return Object.freeze(override === undefined ? { ...settings.values } : { ...settings.values, ...override })
+  return Object.freeze(
+    override === undefined ? { ...settings.values } : { ...settings.values, ...override },
+  )
 }
 
 export interface ContributionContext {
@@ -101,6 +104,8 @@ export interface ContributionContext {
   readonly settings?: ContributionSettings
   /** Where platforms installed games, for installation providers on a trusted desktop host. */
   readonly installationProbes?: InstallationProbes
+  /** Decodes one video frame (a desktop host with ffmpeg); absent where no decoder exists. */
+  readonly videoFrames?: VideoFrameDecoder
   readonly signal?: AbortSignal
 }
 

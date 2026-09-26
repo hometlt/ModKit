@@ -90,6 +90,7 @@ import type {
   EncodedMediaSource,
   VectorSceneInfo,
   VectorSceneSource,
+  VideoFrameDecoder,
   VideoMediaInfo,
   VideoMediaSource,
 } from '@modkit/sdk'
@@ -131,6 +132,7 @@ export interface InspectionContext {
   /** Host-provided capability resolver; codecs never construct a provider inventory. */
   readonly contracts?: ContributionContext['contracts']
   readonly rasterResources?: ContributionContext['rasterResources']
+  readonly videoFrames?: ContributionContext['videoFrames']
   readonly modelResources?: ContributionContext['modelResources']
   readonly logicalResources?: ContributionContext['logicalResources']
   readonly budget: ResourceBudget
@@ -302,6 +304,7 @@ export interface NamespaceInspectionContext {
   readonly settings: Readonly<Record<string, unknown>>
   readonly contracts?: ContributionContext['contracts']
   readonly rasterResources?: ContributionContext['rasterResources']
+  readonly videoFrames?: ContributionContext['videoFrames']
   readonly modelResources?: ContributionContext['modelResources']
   readonly logicalResources?: ContributionContext['logicalResources']
   readonly budget: ResourceBudget
@@ -817,13 +820,19 @@ export function createAudioMediaSource(
   return Object.freeze(source)
 }
 
+/**
+ * A video media source over the whole encoded file. With `frames` (the host's
+ * `context.videoFrames`) it also reads frames and publishes `frameAccess: true`; without,
+ * `frameAccess` is false whatever the codec passed, since nothing could answer `readFrame`.
+ */
 export function createVideoMediaSource(
   bytes: Uint8Array,
   mediaType: string,
   info: VideoMediaInfo,
+  frames?: VideoFrameDecoder,
 ): VideoMediaSource {
   const tracks = Object.freeze(info.tracks.map(track => Object.freeze({ ...track })))
-  const ownedInfo = Object.freeze({ ...info, tracks })
+  const ownedInfo = Object.freeze({ ...info, tracks, frameAccess: frames !== undefined })
   const encoded = createEncodedMediaSource(bytes, {
     mediaType,
     codecs: tracks.map(track => track.codec),
@@ -837,30 +846,28 @@ export function createVideoMediaSource(
       if (signal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
       return encoded
     },
-  })
-}
-
-export function createVectorSceneSource(info: VectorSceneInfo, text: string): VectorSceneSource {
-  const ownedInfo = Object.freeze({
-    ...info,
-    ...(info.viewBox === undefined
+    ...(frames === undefined
       ? {}
-      : { viewBox: Object.freeze([...info.viewBox] as [number, number, number, number]) }),
-  })
-  const document = Object.freeze({
-    mediaType: 'image/svg+xml',
-    profile: 'uvg.secure-static.v1',
-    text,
-  })
-  return Object.freeze<VectorSceneSource>({
-    async info(signal?: AbortSignal) {
-      if (signal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
-      return ownedInfo
-    },
-    async document(signal) {
-      if (signal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
-      return document
-    },
+      : {
+          async readFrame(request, signal) {
+            if (signal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
+            if (!tracks.some(track => track.id === request.trackId && track.kind === 'video'))
+              throw new RangeError(`${request.trackId} is not a video track`)
+            if (request.pixelFormat !== 'rgba8')
+              throw new RangeError('video frames are decoded as rgba8 only')
+            return frames.decodeFrame({
+              // the host decoder may sit across a worker boundary, which takes only owned buffers
+              bytes:
+                bytes.byteOffset === 0 && bytes.byteLength === bytes.buffer.byteLength
+                  ? bytes
+                  : bytes.slice(),
+              mediaType,
+              timestampMs: request.timestampMs,
+              maxBytes: request.maxBytes,
+              ...(signal === undefined ? {} : { signal }),
+            })
+          },
+        }),
   })
 }
 
@@ -877,6 +884,7 @@ export {
   createModelNodeBehaviourSource,
   createModelPhysicsSource,
   createModelSocketSource,
+  createModelLodSource,
 } from './model/sources.js'
 
 // ProjectionReceipt — the native → live boundary (§2.6, block 12 item 5)
@@ -1298,6 +1306,9 @@ export function createInspectionCodec(
                   ...(contributionContext.rasterResources === undefined
                     ? {}
                     : { rasterResources: contributionContext.rasterResources }),
+                  ...(contributionContext.videoFrames === undefined
+                    ? {}
+                    : { videoFrames: contributionContext.videoFrames }),
                   ...(contributionContext.logicalResources === undefined
                     ? {}
                     : { logicalResources: contributionContext.logicalResources }),
@@ -1433,6 +1444,9 @@ export function createInspectionCodec(
                 ...(contributionContext.rasterResources === undefined
                   ? {}
                   : { rasterResources: contributionContext.rasterResources }),
+                ...(contributionContext.videoFrames === undefined
+                  ? {}
+                  : { videoFrames: contributionContext.videoFrames }),
                 ...(contributionContext.logicalResources === undefined
                   ? {}
                   : { logicalResources: contributionContext.logicalResources }),

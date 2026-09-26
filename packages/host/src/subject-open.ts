@@ -48,6 +48,7 @@ import {
   type RuntimeTarget,
   type ServiceContractDefinitionRegistry,
   type SelectedServiceOffer,
+  type VideoFrameDecoder,
 } from '@modkit/sdk'
 import { DATA_CATALOG_ENTITIES_INPUT, type JsonValue } from '@modkit/sdk'
 import {
@@ -156,6 +157,8 @@ export interface OpenSubjectOptions {
   readonly contributionSettings?: (contributionId: string) => ContributionSettings | undefined
   /** Nested raster decoding cannot recursively acquire another subject raster decoder. */
   readonly provideRasterResources?: boolean
+  /** The desktop host's video frame decoder, handed to codecs as `context.videoFrames`. */
+  readonly videoFrames?: VideoFrameDecoder
   /**
    * Where the subject's catalog questions are answered: an operation that names the entities it
    * needs (`catalogQueries`) is invoked again with them from the subject's mod context. Absent, an
@@ -1569,6 +1572,7 @@ async function openSubjectDirect(
           return Object.freeze({
             contracts,
             ...(settings === undefined ? {} : { settings }),
+            ...(options.videoFrames === undefined ? {} : { videoFrames: options.videoFrames }),
             logicalResources: createSubjectLogicalResources({
               state: record.logicalState,
               budget: effectiveBudget,
@@ -1598,6 +1602,9 @@ async function openSubjectDirect(
                   ...(record.rasterState.resources === undefined
                     ? {}
                     : { resourceSession: record.rasterState.resources }),
+                  ...(options.videoFrames === undefined
+                    ? {}
+                    : { videoFrames: options.videoFrames }),
                   ...(options.resolveInput === undefined
                     ? {}
                     : { resolveInput: options.resolveInput }),
@@ -1647,7 +1654,11 @@ async function openSubjectDirect(
         }
         const codec = assertCodec(
           codecModule(activation.module, candidate.contributionId).createCodec(
-            makeContext(activation.effectiveGrant, [candidate.contributionId], candidate.contributionId),
+            makeContext(
+              activation.effectiveGrant,
+              [candidate.contributionId],
+              candidate.contributionId,
+            ),
           ),
           candidate.contributionId,
         )
@@ -1983,7 +1994,10 @@ async function openSubjectDirect(
     const catalog =
       options.subjectCatalog === undefined
         ? undefined
-        : subjectCatalogEntities(options.subjectCatalog, async () => (await session.descriptor()).subjectUri)
+        : subjectCatalogEntities(
+            options.subjectCatalog,
+            async () => (await session.descriptor()).subjectUri,
+          )
     if (catalog !== undefined) best.resources.add(() => catalog.release())
     const managedSession = sessionWithResources(
       session,
@@ -2237,7 +2251,10 @@ export async function openSubject(request: OpenSubjectOptions): Promise<OpenSubj
   const aliases = scan.aliases
   if (aliases.length === 0) {
     const direct = await openSubjectDirect(options)
-    return withDiagnostics(direct, carrierShaped(direct) ? containerAliasAbsence(scan, options) : [])
+    return withDiagnostics(
+      direct,
+      carrierShaped(direct) ? containerAliasAbsence(scan, options) : [],
+    )
   }
   const formats = [
     ...new Set(aliases.map(alias => alias.spec.container?.formatId).filter(Boolean)),

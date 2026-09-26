@@ -257,12 +257,17 @@ const definition = Object.freeze({
         ...(stream.height === undefined ? {} : { height: stream.height }),
         selected: stream.index === 0,
       }))
-    const video = createVideoMediaSource(bytes, 'video/x-msvideo', {
-      durationMs: parsed.main.durationMs,
-      seekable: parsed.indexEntries > 0,
-      tracks: mediaTracks,
-      frameAccess: false,
-    })
+    const video = createVideoMediaSource(
+      bytes,
+      'video/x-msvideo',
+      {
+        durationMs: parsed.main.durationMs,
+        seekable: parsed.indexEntries > 0,
+        tracks: mediaTracks,
+        frameAccess: false,
+      },
+      context.videoFrames,
+    )
     const tree = createTreeDataSource({
       kind: 'movie',
       label: 'AVI',

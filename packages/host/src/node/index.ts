@@ -129,6 +129,12 @@ export {
   type NodeInstallationProbeOptions,
 } from './installation-probes.js'
 export {
+  createNodeVideoFrameDecoder,
+  findFfmpeg,
+  parsePam,
+  type NodeVideoFrameDecoderOptions,
+} from './video-frames.js'
+export {
   openDirectoryResolvedDataWorkspace,
   RESOLVED_DATA_EDIT_UNAVAILABLE,
   type DirectoryResolvedDataWorkspace,

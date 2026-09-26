@@ -315,12 +315,17 @@ const definition = Object.freeze({
         ...(stream.height === undefined ? {} : { height: stream.height }),
         selected: stream.index === 0,
       }))
-    const video = createVideoMediaSource(bytes, 'video/x-ms-wmv', {
-      durationMs: parsed.file.durationMs,
-      seekable: parsed.file.seekable,
-      tracks: mediaTracks,
-      frameAccess: false,
-    })
+    const video = createVideoMediaSource(
+      bytes,
+      'video/x-ms-wmv',
+      {
+        durationMs: parsed.file.durationMs,
+        seekable: parsed.file.seekable,
+        tracks: mediaTracks,
+        frameAccess: false,
+      },
+      context.videoFrames,
+    )
     const allObjects = [...parsed.objects, ...parsed.topLevel]
     const tree = createTreeDataSource({
       kind: 'movie',

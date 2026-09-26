@@ -28,6 +28,7 @@ import {
   ABI_DIAGNOSTIC_SINK,
   ABI_RASTER_RESOURCES,
   ABI_INSTALLATION_PROBES,
+  ABI_VIDEO_FRAMES,
   ABI_MODEL_RESOURCES,
   ABI_LOGICAL_RESOURCES,
   ABI_SERVICE_PROVIDER_MODULE,
@@ -83,7 +84,10 @@ export function moduleAdapter(
     context: ContributionContext,
     exposed: LocalCapability[],
   ) => {
-    const expose = (target: object, surface: { readonly contract: string; readonly major: number }) => {
+    const expose = (
+      target: object,
+      surface: { readonly contract: string; readonly major: number },
+    ) => {
       const capability = endpoint.expose(target, surface)
       exposed.push(capability)
       return capability
@@ -119,6 +123,9 @@ export function moduleAdapter(
       ...(context.installationProbes === undefined
         ? {}
         : { installationProbes: expose(context.installationProbes, ABI_INSTALLATION_PROBES) }),
+      ...(context.videoFrames === undefined
+        ? {}
+        : { videoFrames: expose(context.videoFrames, ABI_VIDEO_FRAMES) }),
     }
   }
   if (first.contract === ABI_SERVICE_PROVIDER_MODULE.contract) {
@@ -133,7 +140,10 @@ export function moduleAdapter(
         const live = await realm()
         const exposed: LocalCapability[] = []
         const outcome = await watch(live, () =>
-          live.root.call('createProvider', [selection, wireContext(live.endpoint, context, exposed)]),
+          live.root.call('createProvider', [
+            selection,
+            wireContext(live.endpoint, context, exposed),
+          ]),
         ).catch(async error => {
           await releaseAll(exposed)
           throw error

@@ -56,14 +56,19 @@ const definition = Object.freeze({
       note: match ? 'webm-ebml-header' : 'webm-header-missing',
     }
   },
-  async inspect(bytes) {
+  async inspect(bytes, context) {
     const webm = parseWebm(bytes)
-    const source = createVideoMediaSource(bytes, 'video/webm', {
-      durationMs: 'unknown',
-      seekable: true,
-      frameAccess: false,
-      tracks: webm.tracks,
-    })
+    const source = createVideoMediaSource(
+      bytes,
+      'video/webm',
+      {
+        durationMs: 'unknown',
+        seekable: true,
+        frameAccess: false,
+        tracks: webm.tracks,
+      },
+      context.videoFrames,
+    )
     const transport = createTransportSource({
       state: 'idle',
       positionMs: 0,
