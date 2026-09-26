@@ -437,6 +437,12 @@ export interface MapSemanticAnalysisRequest {
   readonly documents: readonly MapSemanticDocument[]
   /** Optional resolved catalog used to bind placed objects to schema-backed entities. */
   readonly catalog?: DataCatalogSnapshot
+  /**
+   * Operation ids the opened map subject declares. A publisher names its world edit route only
+   * among them — a codec family may name the same edit differently per codec (packed or folder).
+   * Absent when the caller analyzes documents without an opened subject.
+   */
+  readonly subjectOperationIds?: readonly string[]
   readonly maxDocuments: number
   readonly maxDocumentBytes: number
   readonly maxTotalBytes: number

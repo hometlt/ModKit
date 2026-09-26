@@ -730,6 +730,8 @@ export interface AnalyzeResolvedMapWorkspaceRequest {
   readonly catalog?: DataCatalogSnapshot
   /** Asked for what the map references when no `catalog` is given (see {@link CatalogEntities}). */
   readonly catalogEntities?: CatalogEntities
+  /** Operation ids the opened map subject declares; the publisher names its edit route among them. */
+  readonly subjectOperationIds?: readonly string[]
   readonly limits: ResolvedMapWorkspaceLimits
   /** Host-only acquisition measurements; never forwarded to a game provider or worker. */
   readonly onModelResourceProfile?: (profile: ModelResourceProfile) => void
@@ -1071,6 +1073,9 @@ export async function analyzeResolvedMapWorkspace(
       mapId: plan.mapId,
       documents,
       ...(catalog === undefined ? {} : { catalog }),
+      ...(request.subjectOperationIds === undefined
+        ? {}
+        : { subjectOperationIds: request.subjectOperationIds }),
       maxDocuments: limits.maxRequirements,
       maxDocumentBytes: limits.maxDocumentBytes,
       maxTotalBytes: limits.maxTotalBytes,
@@ -2810,6 +2815,7 @@ export async function coordinateMapPreviewAssetSession(
       resources,
       inputResolver,
       subjectUri: descriptor.subjectUri,
+      subjectOperationIds: Object.freeze(descriptor.operations.map(operation => operation.id)),
       ...(request.onModelResourceProfile === undefined
         ? {}
         : { onModelResourceProfile: request.onModelResourceProfile }),
