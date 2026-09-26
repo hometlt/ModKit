@@ -52,7 +52,16 @@ export async function readEvidence(root, reference) {
   return bytes
 }
 
-export async function discoverContributions(repositories) {
+/** Contracts whose manifests a ledger row may name: codecs, and service providers for writer rows. */
+const PUBLICATION_CONTRACTS = Object.freeze([
+  'modkit/codec-contribution',
+  'modkit/service-provider-contribution',
+])
+
+export async function discoverContributions(
+  repositories,
+  contracts = ['modkit/codec-contribution'],
+) {
   const records = []
   const walk = async (root, relative = '') => {
     const rows = await readdir(path.join(root.directory, relative), { withFileTypes: true })
@@ -96,7 +105,7 @@ export async function discoverContributions(repositories) {
               .relative(root.directory, path.resolve(root.directory, relative, match))
               .replaceAll('\\', '/')
             const manifest = await readJson(confined(root.directory, manifestPath))
-            if (manifest.contract?.id !== 'modkit/codec-contribution') continue
+            if (!contracts.includes(manifest.contract?.id)) continue
             records.push({
               repository: root.id,
               package: relative,
@@ -128,7 +137,7 @@ export async function discoverContributions(repositories) {
 }
 
 export async function discoverPublications(repositories, root) {
-  const contributions = await discoverContributions(repositories)
+  const contributions = await discoverContributions(repositories, PUBLICATION_CONTRACTS)
   return contributions.map(contribution => {
     const repository = repositories.find(item => item.id === contribution.repository)
     const workspaceRelativeRoot = repository.workspaceRelativeRoot?.replaceAll('\\', '/')

@@ -499,6 +499,12 @@ test('a write replaced by a writer offer is proven against the published provide
       }),
     )
   await provider([{ offerId: 'fixture-encoder', contract: 'common.edit/writer', major: 1 }])
+  // a service provider manifest is a publication too, as discovery sees it on disk
+  state.publications = await discoverPublications(
+    [{ id: 'fixture', directory: state.root }],
+    state.root,
+  )
+  assert.ok(state.publications.some(item => item.workspacePath === 'codec.json'))
   assert.deepEqual(await checkLedger(state), [])
   await provider([{ offerId: 'other-encoder', contract: 'common.edit/writer', major: 1 }])
   assert.match((await checkLedger(state)).join('\n'), /published writer offer absent/u)
