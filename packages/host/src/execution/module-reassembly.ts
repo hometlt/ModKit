@@ -28,6 +28,7 @@ export interface WireContext {
   readonly rasterResources?: ContributionContext['rasterResources']
   readonly modelResources?: ContributionContext['modelResources']
   readonly logicalResources?: WireLogicalResourcePort
+  readonly installationProbes?: ContributionContext['installationProbes']
 }
 
 const unavailableResolver = {
@@ -62,6 +63,7 @@ export function contributionContext(wire: WireContext): ContributionContext {
       ? {}
       : { logicalResources: logicalResourcesFromWire(wire.logicalResources) }),
     ...(wire.rasterResources === undefined ? {} : { rasterResources: wire.rasterResources }),
+    ...(wire.installationProbes === undefined ? {} : { installationProbes: wire.installationProbes }),
     ...(wire.providerIdentity === undefined
       ? {}
       : { providerIdentity: Object.freeze({ ...wire.providerIdentity }) }),

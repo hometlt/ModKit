@@ -36,6 +36,7 @@ import type {
   NamespaceAssetInput,
   OperationSession,
   RasterResourcePort,
+  InstallationProbes,
   ServiceProviderModule,
   SingleAssetInput,
 } from '@modkit/sdk'
@@ -90,6 +91,8 @@ export const ABI_DIAGNOSTIC_SINK = { contract: 'x3.abi/diagnostic-sink', major: 
 export const ABI_CONTRACT_RESOLVER = { contract: 'x3.abi/contract-resolver', major: 1 } as const
 export const ABI_RASTER_RESOURCES = { contract: 'x3.abi/raster-resources', major: 1 } as const
 export const ABI_MODEL_RESOURCES = { contract: 'x3.abi/model-resources', major: 1 } as const
+/** `ContributionContext.installationProbes`: read-only platform install probes of a desktop host. */
+export const ABI_INSTALLATION_PROBES = { contract: 'x3.abi/installation-probes', major: 1 } as const
 export const ABI_MODEL_RESOURCE_ASSET = {
   contract: 'x3.abi/model-resource-asset',
   major: 1,
@@ -296,6 +299,17 @@ const rasterResourcesSurface = {
   methods: { read: { kind: 'value', ...sig } },
 } as const satisfies AbiSurfaceOf<RasterResourcePort>
 
+const installationProbesSurface = {
+  ...ABI_INSTALLATION_PROBES,
+  methods: {
+    registryValues: { kind: 'value', ...sig },
+    steamAppDir: { kind: 'value', ...sig },
+    epicInstallLocation: { kind: 'value', ...sig },
+    gogInstallPath: { kind: 'value', ...sig },
+    storePackageLocation: { kind: 'value', ...sig },
+  },
+} as const satisfies AbiSurfaceOf<InstallationProbes>
+
 const modelAcquire = {
   kind: 'lease',
   result: ABI_MODEL_RESOURCE_ASSET,
@@ -353,6 +367,7 @@ export const RUNTIME_ABI_SURFACES: readonly CapabilitySurface[] = Object.freeze(
   diagnosticSinkSurface,
   contractResolverSurface,
   rasterResourcesSurface,
+  installationProbesSurface,
   modelResourcesSurface,
   modelResourceAssetSurface,
   logicalResourcesSurface,

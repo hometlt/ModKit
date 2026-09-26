@@ -16,6 +16,7 @@ import type {
   ContractResolverPort,
   ExecutionProfile,
   HostPolicy,
+  InstallationProbes,
   Lease,
   LogicalResourcePort,
   PermissionGrant,
@@ -159,6 +160,8 @@ export interface HostServiceResolverOptions {
   readonly offers?: readonly ProviderOffer[]
   /** Root provider only; build authority from its gate-narrowed grant, never inherit into children. */
   readonly logicalResourcesFor?: (grant: PermissionGrant) => LogicalResourcePort
+  /** Root provider only: where platforms installed games (installation discovery on a desktop host). */
+  readonly installationProbes?: InstallationProbes
 }
 
 export interface HostServiceResolver {
@@ -238,6 +241,9 @@ export function createHostServiceResolver(
               ...(chain.length !== 0 || options.logicalResourcesFor === undefined
                 ? {}
                 : { logicalResources: options.logicalResourcesFor(effectiveGrant) }),
+              ...(chain.length !== 0 || options.installationProbes === undefined
+                ? {}
+                : { installationProbes: options.installationProbes }),
               diagnostics: {
                 report(item: Diagnostic) {
                   diagnostics.push(item)

@@ -4,6 +4,7 @@ import type { Diagnostic, OperationId } from '@modkit/core'
 import type { RasterResourcePort } from './raster-resources.js'
 import type { ModelResourcePort } from './model-resources.js'
 import type { LogicalResourcePort } from './logical-resources.js'
+import type { InstallationProbes } from './installation-probes.js'
 import type {
   AnyDescriptor,
   AssetDiagnostic,
@@ -98,6 +99,8 @@ export interface ContributionContext {
   readonly providerIdentity?: ContributionProviderIdentity
   /** The host's settings for this contribution; absent when the host configures none. */
   readonly settings?: ContributionSettings
+  /** Where platforms installed games, for installation providers on a trusted desktop host. */
+  readonly installationProbes?: InstallationProbes
   readonly signal?: AbortSignal
 }
 

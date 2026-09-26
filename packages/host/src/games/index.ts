@@ -18,6 +18,7 @@ import {
 } from '@modkit/sdk/games'
 import type {
   DefinitionInventoryResult,
+  InstallationProbes,
   JsonValue,
   PermissionGrant,
   ResourceBudget,
@@ -208,6 +209,8 @@ export interface GamesHostServices {
   readonly target: RuntimeTarget
   readonly executionBackends: ExecutionBackendRegistry
   readonly serviceDefinitions?: ServiceContractDefinitionRegistry
+  /** A desktop host's platform probes (`@modkit/host/node` `createNodeInstallationProbes`). */
+  readonly installationProbes?: InstallationProbes
 }
 
 export interface ResolveGameInstallationRequest extends GameInstallationRequestFacet {
@@ -366,6 +369,9 @@ export async function resolveGameInstallationDiscovery(
     definitions,
     grant: request.grant,
     budgets: request.budgets,
+    ...(request.services.installationProbes === undefined
+      ? {}
+      : { installationProbes: request.services.installationProbes }),
     ...(request.signal === undefined ? {} : { signal: request.signal }),
   })
   try {

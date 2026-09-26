@@ -125,6 +125,10 @@ export { createModkit, type Modkit, type ModkitOpened, type ModkitOptions } from
 export { loadContentSources } from '@modkit/vfs/content-sources/node'
 export { resolveContentSources, type ResolveContentSourcesOptions } from './content-sources.js'
 export {
+  createNodeInstallationProbes,
+  type NodeInstallationProbeOptions,
+} from './installation-probes.js'
+export {
   openDirectoryResolvedDataWorkspace,
   RESOLVED_DATA_EDIT_UNAVAILABLE,
   type DirectoryResolvedDataWorkspace,

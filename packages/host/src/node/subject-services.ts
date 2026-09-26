@@ -14,6 +14,8 @@
  * in-process; the gate refuses variants without an executable boundary for the worker target.
  */
 
+import type { InstallationProbes } from '@modkit/sdk'
+import { createNodeInstallationProbes } from './installation-probes.js'
 import type { Diagnostic } from '@modkit/core'
 import type {
   ContributionSettings,
@@ -77,6 +79,8 @@ export interface NodeSubjectServices extends SubjectServices {
   readonly host: HostComposition
   /** The worker realm composition: codecs are resolved and activated for its target. */
   readonly workers: HostComposition
+  /** Where platforms installed games, handed to installation discovery providers. */
+  readonly installationProbes: InstallationProbes
 }
 
 export async function createNodeSubjectServices(
@@ -133,5 +137,5 @@ export async function createNodeSubjectServices(
       : { contributionSettings: options.contributionSettings }),
     ...(options.subjectCatalog === undefined ? {} : { subjectCatalog: options.subjectCatalog }),
   })
-  return Object.freeze({ ...services, host, workers })
+  return Object.freeze({ ...services, host, workers, installationProbes: createNodeInstallationProbes() })
 }

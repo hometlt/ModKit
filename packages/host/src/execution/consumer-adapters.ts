@@ -27,6 +27,7 @@ import {
   ABI_CONTRACT_RESOLVER,
   ABI_DIAGNOSTIC_SINK,
   ABI_RASTER_RESOURCES,
+  ABI_INSTALLATION_PROBES,
   ABI_MODEL_RESOURCES,
   ABI_LOGICAL_RESOURCES,
   ABI_SERVICE_PROVIDER_MODULE,
@@ -115,6 +116,9 @@ export function moduleAdapter(
       ...(context.rasterResources === undefined
         ? {}
         : { rasterResources: expose(context.rasterResources, ABI_RASTER_RESOURCES) }),
+      ...(context.installationProbes === undefined
+        ? {}
+        : { installationProbes: expose(context.installationProbes, ABI_INSTALLATION_PROBES) }),
     }
   }
   if (first.contract === ABI_SERVICE_PROVIDER_MODULE.contract) {
