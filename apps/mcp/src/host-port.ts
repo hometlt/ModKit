@@ -30,6 +30,7 @@ import type {
   LanguageWorkspaceDocumentOrigin,
 } from '@modkit/sdk/language'
 import {
+  DEFAULT_SUBJECT_OPEN_BUDGET,
   createFilesystemLanguageDocumentSource,
   createModkit,
   createNodeMapPreviewResourcePlanResolver,
@@ -500,6 +501,8 @@ export async function createHostMcpPort(
     // Plans can target these bounded roots; committing still requires the MCP startup edit policy.
     writableRoots: roots,
     intent: 'inspect',
+    // A map or mod folder reads files beyond the 64 MiB default; the open deadline stays.
+    budget: { ...DEFAULT_SUBJECT_OPEN_BUDGET, ...mapPreviewBudget },
     ...(onDiagnostic === undefined ? {} : { onDiagnostic }),
     // An operation that names catalog entities is answered from its subject's mod context.
     subjectCatalog: {
