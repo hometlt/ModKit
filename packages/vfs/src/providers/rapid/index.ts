@@ -18,6 +18,7 @@ import {
   type VfsProvider,
   type VfsProviderContext,
 } from '../../vfs.js'
+import { parseRapidManifest, rapidError, type RapidRecord } from './manifest.js'
 
 export interface RapidVfsProviderOptions {
   readonly id?: string
@@ -26,21 +27,9 @@ export interface RapidVfsProviderOptions {
   readonly poolRoot?: string
 }
 
-interface RapidRecord {
-  readonly path: string
-  readonly foldedPath: string
-  readonly md5: string
-  readonly crc32: string
-  readonly size: number
-}
 
 const RAPID_SCHEME = 'rapid+file'
-const RAPID_RECORD_FIXED_BYTES = 24
-const ASCII = new TextDecoder('ascii', { fatal: true })
 
-function rapidError(code: string, message: string, context?: Readonly<Record<string, unknown>>) {
-  return new ModkitError({ code: `x3.vfs/rapid-${code}`, message, ...(context ? { context } : {}) })
-}
 
 function fileUriOf(uri: string): string {
   if (!uri.toLowerCase().startsWith(`${RAPID_SCHEME}:`)) {
@@ -49,11 +38,6 @@ function fileUriOf(uri: string): string {
   return `file:${uri.slice(`${RAPID_SCHEME}:`.length)}`
 }
 
-function hex(bytes: Uint8Array): string {
-  let value = ''
-  for (const byte of bytes) value += byte.toString(16).padStart(2, '0')
-  return value
-}
 
 /** Read and inflate chunk: 1 MiB keeps a 73 MB blob at native zlib speed (64 KiB was 13× slower). */
 const POOL_CHUNK_BYTES = 1024 * 1024
@@ -127,69 +111,6 @@ async function readPoolBlob(
     )
   }
   return output
-}
-
-function parseManifest(bytes: Uint8Array, limits: VfsLimits): readonly RapidRecord[] {
-  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
-  const records: RapidRecord[] = []
-  const seen = new Set<string>()
-  let cursor = 0
-  while (cursor < bytes.byteLength) {
-    if (records.length >= limits.maxEntries) {
-      throw rapidError('entry-budget-exceeded', 'rapid manifest exceeds its entry boundary', {
-        maxEntries: limits.maxEntries,
-      })
-    }
-    const nameLength = bytes[cursor]
-    cursor += 1
-    if (nameLength === undefined || nameLength === 0) {
-      throw rapidError('manifest-invalid', 'rapid manifest contains an empty path record', {
-        cursor,
-      })
-    }
-    if (cursor + nameLength + RAPID_RECORD_FIXED_BYTES > bytes.byteLength) {
-      throw rapidError('manifest-truncated', 'rapid manifest record is truncated', { cursor })
-    }
-    const rawPath = ASCII.decode(bytes.subarray(cursor, cursor + nameLength))
-    cursor += nameLength
-    const path = normalizeVfsPath(rawPath)
-    assertVfsPathBudget(path, limits)
-    if (path !== rawPath.replaceAll('\\', '/') || path === '') {
-      throw rapidError('path-invalid', 'rapid manifest path is not confined and canonical', {
-        path: rawPath,
-      })
-    }
-    const foldedPath = path.toLowerCase()
-    if (seen.has(foldedPath)) {
-      throw rapidError(
-        'path-collision',
-        'rapid manifest contains a case-insensitive path collision',
-        {
-          path,
-        },
-      )
-    }
-    seen.add(foldedPath)
-    const md5 = hex(bytes.subarray(cursor, cursor + 16))
-    cursor += 16
-    const crc32 = view.getUint32(cursor, false).toString(16).padStart(8, '0')
-    cursor += 4
-    const size = view.getUint32(cursor, false)
-    cursor += 4
-    if (BigInt(size) > limits.maxFileBytes) {
-      throw rapidError(
-        'file-size-limit-exceeded',
-        'rapid record exceeds its logical file boundary',
-        {
-          path,
-          fileBytes: size,
-          maxFileBytes: String(limits.maxFileBytes),
-        },
-      )
-    }
-    records.push(Object.freeze({ path, foldedPath, md5, crc32, size }))
-  }
-  return Object.freeze(records)
 }
 
 function nameOf(path: string): string {
@@ -455,7 +376,7 @@ export class RapidVfsProvider implements VfsProvider {
       })
     }
     throwIfAborted(context.signal)
-    const records = parseManifest(manifest, limits)
+    const records = parseRapidManifest(manifest, limits)
     const manifestMd5 = createHash('md5').update(manifest).digest('hex')
     const poolRoot = await realpath(this.poolRoot ?? resolve(dirname(manifestPath), '..', 'pool'))
     return new RapidMount(

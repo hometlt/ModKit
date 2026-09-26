@@ -40,6 +40,10 @@
     "./providers/rapid": {
       "types": "./dist/providers/rapid/index.d.ts",
       "default": "./dist/providers/rapid/index.js"
+    },
+    "./providers/rapid/manifest": {
+      "types": "./dist/providers/rapid/manifest.d.ts",
+      "default": "./dist/providers/rapid/manifest.js"
     }
   },
   "files": [
