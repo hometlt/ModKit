@@ -7600,6 +7600,10 @@
         {
           "path": "modkit-extensions-other/test/receipts/k1/unreal-uasset.audit.r2.json",
           "sha256": "34c86c2c45f1fd3faafa1bc2f5fa86735840bb18885ab77bbb1e7cc688720eb1"
+        },
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/unreal-uasset.audit.r3.json",
+          "sha256": "e9e0591d82d7f235a43b4c73848b8f9a356e1e0882d3875ff7c63e67400e4a2b"
         }
       ],
       "id": "legacy/codec-manifest/modkit/unreal-uasset/audit",
