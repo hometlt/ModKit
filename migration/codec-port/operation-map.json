@@ -1765,11 +1765,15 @@
       "targetOperation": "view.inspect"
     },
     {
-      "contribution": null,
+      "contribution": "modkit-extensions-ea/westwood/contributions/codec-r16.json",
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/r16/operation/image.read",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": null,
+      "targetDataSource": {
+        "contract": "common.view/raster-image-source",
+        "major": 1
+      }
     },
     {
       "contribution": "modkit-extensions-ea/westwood/contributions/codec-r8.json",
@@ -1779,11 +1783,15 @@
       "targetOperation": "view.inspect"
     },
     {
-      "contribution": null,
+      "contribution": "modkit-extensions-ea/westwood/contributions/codec-r8.json",
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/r8/operation/image.read",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": null,
+      "targetDataSource": {
+        "contract": "common.view/raster-image-source",
+        "major": 1
+      }
     },
     {
       "contribution": null,
@@ -1800,11 +1808,15 @@
       "targetOperation": null
     },
     {
-      "contribution": null,
+      "contribution": "modkit-extensions-ea/westwood/contributions/codec-red-alert2-vxl.json",
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/red-alert2-vxl/operation/model.read",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": null,
+      "targetDataSource": {
+        "contract": "common.view/model-scene-source",
+        "major": 1
+      }
     },
     {
       "contribution": null,
@@ -2458,11 +2470,15 @@
       "targetOperation": "view.inspect"
     },
     {
-      "contribution": null,
+      "contribution": "modkit-extensions-ea/westwood/contributions/codec-shp.json",
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/shp/operation/image.read",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": null,
+      "targetDataSource": {
+        "contract": "common.view/raster-image-source",
+        "major": 1
+      }
     },
     {
       "contribution": null,
@@ -2710,11 +2726,15 @@
       "targetOperation": "view.inspect"
     },
     {
-      "contribution": null,
+      "contribution": "modkit-extensions-ea/westwood/contributions/codec-tmp.json",
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/tmp/operation/image.read",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": null,
+      "targetDataSource": {
+        "contract": "common.view/raster-image-source",
+        "major": 1
+      }
     },
     {
       "contribution": null,
@@ -2997,11 +3017,15 @@
       "targetOperation": "view.inspect"
     },
     {
-      "contribution": null,
+      "contribution": "modkit-extensions-ea/westwood/contributions/codec-vpl.json",
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/vpl/operation/image.read",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": null,
+      "targetDataSource": {
+        "contract": "common.view/raster-image-source",
+        "major": 1
+      }
     },
     {
       "contribution": "modkit-extensions-blizzard/blizzard-warcraft-3/contributions/codec-war3-mdx.json",
