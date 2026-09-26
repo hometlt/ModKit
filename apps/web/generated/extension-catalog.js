@@ -2301,7 +2301,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:ee747f65044950b9d7c42a75d20908ac69b3ae9e87764fab76ac13bf72f7ee2c',
+        artifactDigest: 'sha256:d5eb1a9d7e5720e00e602b4833c6c583b1e507fe1e957d9c94395a007fb05d2c',
         fileDigests: {
           'MIGRATION-NOTES-common-audio.json':
             'sha256:9208bc42ef1da984ce9776d9bed7024eaf3f797a1cd56ca193919caf142ee636',
@@ -2317,7 +2317,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-ogg.json':
             'sha256:eb7ddb19893b6958df00f28a4c9364205f9865e4318afe4fefca3efe9abd4fe5',
           'contributions/codec-wav.json':
-            'sha256:b9a35b941c7b1442b60f35aa3beb1a91aaf12853f51baf67fe654855d38f3240',
+            'sha256:138a4cf3079d0e7fe1d95fc243fa23c58bbb0767f47f98c9bf65b66f46f0c7be',
           'package.json': 'sha256:44743bfcbcf9f51ab7fb7b62e0c00343ecc962384f784b16c72d8ffc62b06d7c',
           'src/aac/codec.js':
             'sha256:8fd45809559754220cde4b64a0a51d35a9e0ce60f83b1557b16041321ca4d704',
@@ -2335,12 +2335,12 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'src/wav/codec.js':
             'sha256:4f00c2a91a81f4313d0547b761999e78b8e76b3458ebf30b48f7f71cd0e89201',
           'src/wav/pcm.js':
-            'sha256:f67d79a5e25ebd640be028b510fa09b84a9ba06ca0e4cc441026cf30beb48f37',
+            'sha256:4abd2df872239e3a015ddba1d402cde8bece75302e100110449bc9e032fd99e9',
           'test/wav-pcm-decode.test.ts':
-            'sha256:69f5cada4c7a40bc0834dc4b52d03d2d9fcc47f71e406d8b399cc011b2de0c07',
+            'sha256:a27ddb84d56504378757a692e2aa8c77a3916f5f1f693d694aeff301e8071cb7',
         },
         inventoryRecordId:
-          'artifact:sha256:ee747f65044950b9d7c42a75d20908ac69b3ae9e87764fab76ac13bf72f7ee2c',
+          'artifact:sha256:d5eb1a9d7e5720e00e602b4833c6c583b1e507fe1e957d9c94395a007fb05d2c',
       },
       artifactRoot: 'extensions/audio/',
       containers: {
@@ -2413,7 +2413,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         ],
         [
           'contributions/codec-wav.json',
-          'sha256:b9a35b941c7b1442b60f35aa3beb1a91aaf12853f51baf67fe654855d38f3240',
+          'sha256:138a4cf3079d0e7fe1d95fc243fa23c58bbb0767f47f98c9bf65b66f46f0c7be',
         ],
       ],
       documents: [
@@ -3223,6 +3223,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
               },
               match: {
                 extensions: ['wav'],
+                mediaTypes: ['audio/wav'],
               },
               openIntents: ['probe', 'inspect', 'full', 'stream', 'export'],
               operations: [
