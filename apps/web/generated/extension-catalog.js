@@ -6596,7 +6596,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:2347ae2ac70ad7b135405c876fe7a145d0d6a8c566fd922b9fe2d62f9f72366d',
+        artifactDigest: 'sha256:c58e3fb618077d59aebf89a94ad42935f005c652ad26c6449b00a04476d4d20e',
         fileDigests: {
           'MIGRATION-NOTES-common-images.json':
             'sha256:44c30ea45aaceceff66d53f72e5e0d0ec8efb1a7f2afbc2f9913849720632e93',
@@ -6698,7 +6698,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'src/ops/raster-transforms.js':
             'sha256:4150cf69752d72d6d7cc5b64e2bd8cec6b68695012f8b0ea4f361b19c8490f5d',
           'src/pal/codec.js':
-            'sha256:68718910cbdbc34fdca7a99817fc26d4a54b8521da4d38d4d13cbf633acbfc0b',
+            'sha256:3a46d1f0c237b6afbbc1a344a9836c1bd9b43fa60b3a1f07d379130eacbd8861',
           'src/pcx/codec.js':
             'sha256:72e48b7fce70032f4349e799ed887579698d0c790cc5ccff09420bcd1e2ec3e7',
           'src/pkm/codec.js':
@@ -6735,6 +6735,8 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:2a0d83d3152224ce7ea530605bb9441912aa9be68b3b4ec60d1e51cb0e5beed4',
           'test/ktx2-decode.test.ts':
             'sha256:0e1807a5b7d07485053fe106dc7cfbce7e664376d7eb4d8b59c878c65e1a09f5',
+          'test/pal-codec.test.ts':
+            'sha256:51a75a292abcede5292028f3f85586f6af72e79fca1c60d01b5d05e0eadbf0d6',
           'test/png-palette-decode.test.ts':
             'sha256:a91dff0a852807126efb31df8f4f7401a0eab4dcf9a36ba55081bd580ac5ac14',
           'test/raster-edit-content.test.ts':
@@ -6751,7 +6753,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:8b819b0622cce57f809b369081bdd6eca09d1c1793da7f82192db39229356c1d',
         },
         inventoryRecordId:
-          'artifact:sha256:2347ae2ac70ad7b135405c876fe7a145d0d6a8c566fd922b9fe2d62f9f72366d',
+          'artifact:sha256:c58e3fb618077d59aebf89a94ad42935f005c652ad26c6449b00a04476d4d20e',
       },
       artifactRoot: 'extensions/images/',
       containers: {
@@ -11127,6 +11129,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         'test/dds-transform.test.ts',
         'test/eac-r11-decode.test.ts',
         'test/ktx2-decode.test.ts',
+        'test/pal-codec.test.ts',
         'test/png-palette-decode.test.ts',
         'test/raster-edit-content.test.ts',
         'test/raster-export.test.ts',
