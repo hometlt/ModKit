@@ -217,6 +217,14 @@ const workerBuild = await build({
       'crypto',
       'digest.js',
     ),
+    'vendor/codec-kit/crypto/sha1-digest': join(
+      repoRoot,
+      'packages',
+      'codec-kit',
+      'dist',
+      'crypto',
+      'sha1-digest.js',
+    ),
     'vendor/codec-kit/json-edit': join(repoRoot, 'packages', 'codec-kit', 'dist', 'json-edit.js'),
     'vendor/codec-kit/checksum/index': join(
       repoRoot,

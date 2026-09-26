@@ -128,6 +128,9 @@ const nodeModuleMap = {
   '@modkit/codec-kit/crypto/digest': pathToFileURL(
     join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'crypto', 'digest.js'),
   ).href,
+  '@modkit/codec-kit/crypto/sha1-digest': pathToFileURL(
+    join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'crypto', 'sha1-digest.js'),
+  ).href,
   '@modkit/codec-kit/json-edit': pathToFileURL(
     join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'json-edit.js'),
   ).href,

@@ -110,6 +110,10 @@
       "types": "./dist/crypto/digest.d.ts",
       "default": "./dist/crypto/digest.js"
     },
+    "./crypto/sha1-digest": {
+      "types": "./dist/crypto/sha1-digest.d.ts",
+      "default": "./dist/crypto/sha1-digest.js"
+    },
     "./texture": {
       "types": "./dist/texture/index.d.ts",
       "default": "./dist/texture/index.js"

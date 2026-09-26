@@ -167,6 +167,7 @@ export const WEB_WORKER_MODULE_MAP: Readonly<Record<string, string>> = Object.fr
   '@modkit/codec-kit/crypto/blowfish': 'vendor/codec-kit/crypto/blowfish.js',
   '@modkit/codec-kit/crypto/aes': 'vendor/codec-kit/crypto/aes.js',
   '@modkit/codec-kit/crypto/digest': 'vendor/codec-kit/crypto/digest.js',
+  '@modkit/codec-kit/crypto/sha1-digest': 'vendor/codec-kit/crypto/sha1-digest.js',
   '@modkit/codec-kit/json-edit': 'vendor/codec-kit/json-edit.js',
   '@modkit/codec-kit/checksum': 'vendor/codec-kit/checksum/index.js',
   '@modkit/codec-kit/audio': 'vendor/codec-kit/audio/index.js',
