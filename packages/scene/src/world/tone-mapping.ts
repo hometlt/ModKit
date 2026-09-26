@@ -142,8 +142,43 @@ export function createWorldToneMapper(gl: WebGL2RenderingContext) {
     height = 0
   let lutKey: string | undefined
   const identity = new Matrix4()
+  // A copy of the scene depth for passes that read it while this target keeps testing against its
+  // own: WebGL refuses to sample a texture attached to the framebuffer being drawn.
+  let depthCopy: WebGLTexture | undefined
+  let depthCopyFramebuffer: WebGLFramebuffer | undefined
+  let depthCopyWidth = 0,
+    depthCopyHeight = 0
   return {
-    bytes: () => width * height * 12 + (lutKey === undefined ? 0 : 16 ** 3 * 4),
+    bytes: () =>
+      width * height * 12 +
+      depthCopyWidth * depthCopyHeight * 4 +
+      (lutKey === undefined ? 0 : 16 ** 3 * 4),
+    /** The depth drawn so far into this target, copied; the target stays bound for drawing. */
+    sceneDepth(): WebGLTexture {
+      if (depthCopy === undefined || depthCopyFramebuffer === undefined) {
+        depthCopy = gl.createTexture()!
+        depthCopyFramebuffer = gl.createFramebuffer()!
+      }
+      if (depthCopyWidth !== width || depthCopyHeight !== height) {
+        gl.bindTexture(gl.TEXTURE_2D, depthCopy)
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.DEPTH_COMPONENT24, width, height, 0, gl.DEPTH_COMPONENT, gl.UNSIGNED_INT, null)
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+        gl.bindFramebuffer(gl.FRAMEBUFFER, depthCopyFramebuffer)
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, depthCopy, 0)
+        if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE)
+          throw new Error('world scene depth copy framebuffer is incomplete')
+        depthCopyWidth = width
+        depthCopyHeight = height
+      }
+      gl.bindFramebuffer(gl.READ_FRAMEBUFFER, framebuffer)
+      gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, depthCopyFramebuffer)
+      gl.blitFramebuffer(0, 0, width, height, 0, 0, width, height, gl.DEPTH_BUFFER_BIT, gl.NEAREST)
+      gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer)
+      return depthCopy
+    },
     begin(w: number, h: number) {
       gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer)
       if (w !== width || h !== height) {
@@ -215,6 +250,8 @@ export function createWorldToneMapper(gl: WebGL2RenderingContext) {
       gl.deleteFramebuffer(framebuffer)
       gl.deleteTexture(texture)
       gl.deleteTexture(depth)
+      if (depthCopyFramebuffer !== undefined) gl.deleteFramebuffer(depthCopyFramebuffer)
+      if (depthCopy !== undefined) gl.deleteTexture(depthCopy)
       gl.deleteTexture(lut)
       gl.deleteVertexArray(vao)
       gl.deleteProgram(program)

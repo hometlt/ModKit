@@ -174,6 +174,11 @@ interface MutableTexturedBatch extends MutableBatch {
 }
 
 interface MutableSplatBatch extends MutableBatch {
+  /** A cliff piece's surface drawn as terrain where this texture's alpha (its blend mask) is clear. */
+  readonly maskTexture?: SceneRendererTexture
+  readonly maskTextureCoordinates?: number[]
+  /** Which texel channel holds the mask: 0-2 colour, 3 alpha. */
+  readonly maskChannel?: number
   readonly specularTextures?: readonly (SceneRendererTexture | undefined)[]
   readonly textureCoordinates: readonly number[][]
   readonly textureWeights0: number[]
@@ -245,6 +250,14 @@ export type WorldWebGlTransparentDraw =
     }>
 
 export interface WorldWebGlSplatBatch extends WorldWebGlBatch {
+  /**
+   * Cliff surfaces drawn as terrain only where this texture's alpha is below one half: SC2 shows the
+   * ground through a cliff piece by its terrain blend mask (TerrainAlphaMask), per pixel.
+   */
+  readonly maskTexture?: SceneRendererTexture
+  readonly maskTextureCoordinates?: Float32Array
+  /** Which texel channel holds the mask: 0-2 colour, 3 alpha. */
+  readonly maskChannel?: number
   readonly specularTextures?: readonly (SceneRendererTexture | undefined)[]
   readonly textureCoordinates: readonly Float32Array[]
   readonly textureWeights0: Float32Array
@@ -256,9 +269,26 @@ export interface WorldWebGlSplatBatch extends WorldWebGlBatch {
   readonly weightTextureCoordinates?: Float32Array
 }
 
+/**
+ * One water material's zones as flat planes at their elevation. A renderer that can read the opaque
+ * scene's depth draws these instead of the terrain-clipped water triangles: the depth under each
+ * pixel is measured to whatever the scene drew there (cliff meshes included), so shorelines follow
+ * the rendered ground rather than steps of the height grid, and submerged rock is covered.
+ */
+export interface WorldWebGlWaterPlane {
+  /** Zone rectangles as triangles; the vertex colour is the material colour at depth zero. */
+  readonly batch: WorldWebGlBatch
+  readonly colorFalloff: number
+  readonly receiveShadows: boolean
+}
+
 export interface WorldWebGlPlan {
   /** Visible water surface depth for screen-space effects, isolated from model transparency. */
   readonly waterSurfaceDepth: Float32Array
+  /** Untextured terrain-clipped water as zone planes, for renderers that read the scene depth. */
+  readonly waterPlanes: readonly WorldWebGlWaterPlane[]
+  /** The first this many triangles of `transparentTriangles` are the water the planes replace. */
+  readonly transparentWaterTriangles: number
   readonly opaqueTriangles: WorldWebGlBatch
   /** Opaque model triangles separated only when a material disables casting or receiving. */
   readonly shadowControlledOpaqueTriangles: readonly WorldWebGlShadowControlledBatch[]
@@ -663,7 +693,7 @@ function waterVertexColor(
   elevation: number,
   groundHeight: number,
 ): readonly [number, number, number, number] {
-  const color = material?.color ?? [0.12, 0.52, 0.82, 0.48]
+  const color = material?.color ?? WATER_DEFAULT_COLOR
   const depth = Math.max(0, elevation - groundHeight)
   // `CWater.State.ColorFallOff` is a rate per unit of depth (MK2 and the stock value 0.1). Read as
   // the depth to full colour, Amphion's resolved 0.1 made its sea opaque Avernus green past 0.3
@@ -955,6 +985,70 @@ function primitiveTriangles(
   return triangles
 }
 
+/**
+ * The terrain blend mask of a cliff piece's material: its `alpha1` layer (SC2's TerrainAlphaMask)
+ * with that layer's texture, texel channel, UV set and UV transform. Where the mask is clear the game
+ * draws the terrain through the piece, where it is set the rock. Undefined for a material without a
+ * decoded mask texture.
+ */
+function cliffMaskLayer(
+  result: WorldModelSample['result'],
+  materialId: string | undefined,
+):
+  | Readonly<{
+      texture: SceneRendererTexture
+      channel: number
+      uvSource: number
+      transform: (u: number, v: number) => readonly [number, number]
+    }>
+  | undefined {
+  const material = (result.materials ?? []).find(candidate => candidate.id === materialId)
+  const standard = record(record(material?.shader?.parameters?.['renderModel'])?.['standard'])
+  const layer = record(record(standard?.['layers'])?.['alpha1'])
+  const path = typeof layer?.['texturePath'] === 'string' ? layer['texturePath'] : undefined
+  const texture = (result.textures ?? []).find(candidate => candidate.id === path)
+  const channels = typeof layer?.['channels'] === 'number' ? layer['channels'] : 1
+  if (texture?.rgba === undefined || texture.width <= 0 || texture.height <= 0 || channels === 0)
+    return undefined
+  const values = (name: string, fallback: readonly number[]) => {
+    const value = record(layer?.[name])?.['value']
+    return Array.isArray(value) && value.every(item => typeof item === 'number')
+      ? (value as readonly number[])
+      : fallback
+  }
+  const tiling = values('uvTiling', [1, 1])
+  const offset = values('uvOffset', [0, 0])
+  const angle = values('uvAngle', [0, 0, 0])[2] ?? 0
+  const cos = Math.cos(angle),
+    sin = Math.sin(angle)
+  return Object.freeze({
+    texture,
+    // M3 colour channels: 1 RGBA and 2 AAAA read alpha, 3/4/5 read one colour channel.
+    channel: channels === 3 ? 0 : channels === 4 ? 1 : channels === 5 ? 2 : 3,
+    uvSource: typeof layer?.['uvSource'] === 'number' ? layer['uvSource'] : 0,
+    // The material's layer transform: rotate about the centre, then tile and offset.
+    transform: (u: number, v: number) => {
+      const cu = u - 0.5,
+        cv = v - 0.5
+      return [
+        (cos * cu + sin * cv + 0.5) * tiling[0]! + offset[0]!,
+        (-sin * cu + cos * cv + 0.5) * tiling[1]! + offset[1]!,
+      ] as const
+    },
+  })
+}
+
+/** The mask UVs of one primitive, in the layer's own UV set. */
+function cliffMaskCoordinates(
+  primitive: SceneRendererPrimitive,
+  uvSource: number,
+): Float32Array | undefined {
+  return (
+    primitive.textureCoordinateSets?.find(candidate => candidate.set === uvSource)?.coordinates ??
+    (uvSource === 0 ? primitive.textureCoordinates : undefined)
+  )
+}
+
 const referencedVertices = new WeakMap<SceneRendererPrimitive, readonly number[]>()
 
 function primitiveTriangleCount(primitive: SceneRendererPrimitive): number {
@@ -1046,6 +1140,13 @@ function frozenSplatBatch(source: MutableSplatBatch): WorldWebGlSplatBatch {
     ...(source.weightTextureCoordinates === undefined
       ? {}
       : { weightTextureCoordinates: Float32Array.from(source.weightTextureCoordinates) }),
+    ...(source.maskTexture === undefined || source.maskTextureCoordinates === undefined
+      ? {}
+      : {
+          maskTexture: source.maskTexture,
+          maskTextureCoordinates: Float32Array.from(source.maskTextureCoordinates),
+          maskChannel: source.maskChannel ?? 3,
+        }),
   })
 }
 
@@ -1428,11 +1529,15 @@ function createCliffPrimitiveLifter(
    * world-up offset), so the transform, normals and tangents stay as authored. Primitives that do not
    * move are returned as-is and keep their shared GPU buffers.
    */
-  const computeLiftedCliffPrimitives = <P extends { readonly positions: Float32Array }>(
+  /**
+   * Per-vertex base offsets of one placed piece, before seams are joined (see `offsetAt`), with the
+   * world point each vertex stands on at standard height. Undefined when nothing moves.
+   */
+  const computeCliffOffsets = <P extends { readonly positions: Float32Array }>(
     primitives: readonly P[],
     instanceTransform: Float32Array,
-  ): readonly P[] => {
-    if (baseHeight.step === 0) return primitives
+  ) => {
+    if (baseHeight.step === 0) return undefined
     const prepared = primitives.map(primitive => {
       const own =
         'transform' in primitive && primitive.transform instanceof Float32Array
@@ -1460,7 +1565,7 @@ function createCliffPrimitiveLifter(
         maxZ = Math.max(maxZ, wz)
       }
     }
-    if (!Number.isFinite(minX)) return primitives
+    if (!Number.isFinite(minX)) return undefined
     const corners = [gridOf([minX, 0, minZ]), gridOf([maxX, 0, maxZ])]
     const footprint: { x: number; z: number; standard: number; offset: number }[] = []
     for (
@@ -1479,7 +1584,7 @@ function createCliffPrimitiveLifter(
         const offset = vertexBaseOffset(vertex)
         footprint.push({ x: at[0], z: at[2], standard: at[1] - offset, offset })
       }
-    if (footprint.every(entry => entry.offset === 0)) return primitives
+    if (footprint.length === 0) return undefined
     const LEVEL_TOLERANCE = 0.05
     const nearest = (candidates: readonly (typeof footprint)[number][], x: number, z: number) => {
       let best = candidates[0]!
@@ -1524,7 +1629,72 @@ function createCliffPrimitiveLifter(
       const t = Math.min(1, Math.max(0, (y - low) / (high - low)))
       return lowEntry.offset + (highEntry.offset - lowEntry.offset) * t
     }
-    return prepared.map(({ primitive, m }) => {
+    const pieces = prepared.map(({ primitive, m }) => {
+      const source = primitive.positions
+      const offsets = new Float32Array(source.length / 3)
+      const keys: string[] = []
+      for (let index = 0; index + 2 < source.length; index += 3) {
+        const x = source[index]!
+        const y = source[index + 1]!
+        const z = source[index + 2]!
+        const wx = m[0]! * x + m[4]! * y + m[8]! * z + m[12]!
+        const wy = m[1]! * x + m[5]! * y + m[9]! * z + m[13]!
+        const wz = m[2]! * x + m[6]! * y + m[10]! * z + m[14]!
+        offsets[index / 3] = offsetAt(wx, wy, wz)
+        keys.push(cliffSeamKey(wx, wy, wz))
+      }
+      return { primitive, m, offsets, keys }
+    })
+    return pieces
+  }
+  // Offsets pooled by the world point a vertex stands on. Pieces that meet share their edge
+  // vertices, but each piece picks its offsets from its own footprint, so neighbours could lift one
+  // shared vertex by different amounts: Amphion's natural coast tore at 94 such seams, the worst by
+  // two units (holes through which the background showed as black wedges). A point registered by
+  // several pieces takes their mean, so neighbours stay joined; a lone point keeps its own offset.
+  const seams = new Map<string, { sum: number; count: number }>()
+  const cliffSeamKey = (x: number, y: number, z: number) =>
+    `${Math.round(x * 128)}:${Math.round(y * 128)}:${Math.round(z * 128)}`
+  const offsetsCache = new WeakMap<
+    object,
+    Map<string, ReturnType<typeof computeCliffOffsets>>
+  >()
+  const cachedOffsets = <P extends { readonly positions: Float32Array }>(
+    primitives: readonly P[],
+    instanceTransform: Float32Array,
+  ) => {
+    let instances = offsetsCache.get(primitives)
+    if (instances === undefined) offsetsCache.set(primitives, (instances = new Map()))
+    const key = instanceTransform.join(',')
+    if (!instances.has(key)) instances.set(key, computeCliffOffsets(primitives, instanceTransform))
+    return instances.get(key)
+  }
+  /** Record a placed piece's vertices before any piece is lifted, so its seams are joined. */
+  const registerCliffPiece = <P extends { readonly positions: Float32Array }>(
+    primitives: readonly P[],
+    instanceTransform: Float32Array,
+  ): void => {
+    const pieces = cachedOffsets(primitives, instanceTransform)
+    if (pieces === undefined) return
+    for (const { offsets, keys } of pieces)
+      keys.forEach((key, vertex) => {
+        const seam = seams.get(key)
+        if (seam === undefined) seams.set(key, { sum: offsets[vertex]!, count: 1 })
+        else {
+          seam.sum += offsets[vertex]!
+          seam.count += 1
+        }
+      })
+  }
+  const computeLiftedCliffPrimitives = <P extends { readonly positions: Float32Array }>(
+    primitives: readonly P[],
+    instanceTransform: Float32Array,
+  ): readonly P[] => {
+    const pieces = cachedOffsets(primitives, instanceTransform)
+    if (pieces === undefined) return primitives
+    // The offsets cache holds the pieces of `primitives` itself, in order.
+    return pieces.map(({ m, offsets, keys }, index): P => {
+      const primitive = primitives[index]!
       const det =
         m[0]! * (m[5]! * m[10]! - m[6]! * m[9]!) +
         m[1]! * (m[6]! * m[8]! - m[4]! * m[10]!) +
@@ -1538,18 +1708,13 @@ function createCliffPrimitiveLifter(
       const positions = new Float32Array(source.length)
       let moved = false
       for (let index = 0; index + 2 < source.length; index += 3) {
-        const x = source[index]!
-        const y = source[index + 1]!
-        const z = source[index + 2]!
-        const offset = offsetAt(
-          m[0]! * x + m[4]! * y + m[8]! * z + m[12]!,
-          m[1]! * x + m[5]! * y + m[9]! * z + m[13]!,
-          m[2]! * x + m[6]! * y + m[10]! * z + m[14]!,
-        )
+        const seam = seams.get(keys[index / 3]!)
+        const offset =
+          seam !== undefined && seam.count > 1 ? seam.sum / seam.count : offsets[index / 3]!
         if (offset !== 0) moved = true
-        positions[index] = x + upX * offset
-        positions[index + 1] = y + upY * offset
-        positions[index + 2] = z + upZ * offset
+        positions[index] = source[index]! + upX * offset
+        positions[index + 1] = source[index + 1]! + upY * offset
+        positions[index + 2] = source[index + 2]! + upZ * offset
       }
       return moved ? { ...primitive, positions } : primitive
     })
@@ -1571,7 +1736,7 @@ function createCliffPrimitiveLifter(
     }
     return result as readonly P[]
   }
-  return { gridOf, liftedCliffPrimitives }
+  return { gridOf, liftedCliffPrimitives, registerCliffPiece }
 }
 
 /** Frozen ground preparation shared across animated frames; water and actors are rebuilt below. */
@@ -1680,10 +1845,16 @@ function prepareWorldStaticTerrain(
             .map(candidate => candidate.id)
             .join(String.fromCharCode(0)),
         ].join(String.fromCharCode(0))
-  const rasterSplatBatch = (key = rasterSplatKey!): MutableSplatBatch => {
+  const rasterSplatBatch = (
+    key = rasterSplatKey!,
+    mask?: Readonly<{ texture: SceneRendererTexture; channel: number }>,
+  ): MutableSplatBatch => {
     const existing = splat.get(key)
     if (existing !== undefined) return existing
     const target: MutableSplatBatch = {
+      ...(mask === undefined
+        ? {}
+        : { maskTexture: mask.texture, maskTextureCoordinates: [], maskChannel: mask.channel }),
       ...batch(),
       textureCoordinates: exactRasterSplat!.textures.map(() => []),
       textureWeights0: [],
@@ -1716,12 +1887,21 @@ function prepareWorldStaticTerrain(
       at(0, 1) * (1 - fx) * fy
     )
   }
-  const { gridOf, liftedCliffPrimitives } = createCliffPrimitiveLifter(
+  const { gridOf, liftedCliffPrimitives, registerCliffPiece } = createCliffPrimitiveLifter(
     terrain,
     terrainByCell,
     terrainMinimumX,
     terrainMinimumY,
   )
+  // Every placed piece registers its vertices before any piece is lifted, so shared seam vertices
+  // get one offset (see `registerCliffPiece`).
+  for (const item of input.items) {
+    if (item.facet !== 'objects' || item.derivedFrom !== 'cliffs' || item.resourceId === undefined)
+      continue
+    const sampled = sampleSharedModel(item.resourceId, item)
+    if (sampled === undefined) continue
+    registerCliffPiece(sampled.primitives, worldObjectTransform(item, objectPosition(item, input)))
+  }
   type CliffTriangle = readonly [
     readonly [number, number, number],
     readonly [number, number, number],
@@ -1743,6 +1923,8 @@ function prepareWorldStaticTerrain(
    */
   interface CliffFill {
     readonly ramp: boolean
+    /** The piece shows the ground through its blend mask; its plates are not drawn as terrain. */
+    readonly masked: boolean
     readonly minX: number
     readonly maxX: number
     readonly minZ: number
@@ -1791,22 +1973,79 @@ function prepareWorldStaticTerrain(
       const ramp = /:ramp-[0-9]+$/u.test(item.id)
       const raw: CliffPlate[] = []
       const cover: CliffPlate[] = []
+      let masked = false
       for (const primitive of liftedCliffPrimitives(
         sampled.primitives,
         worldObjectTransform(item, translation),
-      ))
+      )) {
+        // A piece whose material has a terrain blend mask shows the ground through its own surface,
+        // per pixel, where the mask is clear (SC2 TerrainAlphaMask): every face, steep rims and
+        // wall feet included, is drawn once more as terrain and kept only where the rock is
+        // alpha-tested away. Plates standing in for that ground left holes wherever a clear face
+        // was not a plate, and painted ground over rock wherever a plate was masked.
+        const layer = cliffMaskLayer(sampled.result, primitive.materialId)
+        const maskUvs =
+          layer === undefined ? undefined : cliffMaskCoordinates(primitive, layer.uvSource)
+        const maskTarget =
+          layer === undefined || maskUvs === undefined
+            ? undefined
+            : rasterSplatBatch(
+                [rasterSplatKey!, 'mask', layer.texture.id, String(layer.channel)].join(
+                  String.fromCharCode(0),
+                ),
+                layer,
+              )
+        if (maskTarget !== undefined) masked = true
         for (const triangle of primitiveTriangles(primitive)) {
           const vertices = triangle.map(index =>
             instanceVertex(transformedPrimitiveVertex(primitive, index), item, translation),
           ) as unknown as CliffTriangle
           let normal = faceNormal(vertices[0], vertices[1], vertices[2])
-          const upward: CliffTriangle =
-            normal[1] >= 0 ? vertices : [vertices[0], vertices[2], vertices[1]]
-          if (normal[1] < 0) normal = [-normal[0], -normal[1], -normal[2]]
+          const flipped = normal[1] < 0
+          const upward: CliffTriangle = flipped ? [vertices[0], vertices[2], vertices[1]] : vertices
+          if (flipped) normal = [-normal[0], -normal[1], -normal[2]]
+          if (maskTarget !== undefined) {
+            const order = flipped ? [0, 2, 1] : [0, 1, 2]
+            const grid = upward.map(gridOf) as [
+              readonly [number, number],
+              readonly [number, number],
+              readonly [number, number],
+            ]
+            pushSplatTriangle(
+              maskTarget,
+              upward,
+              exactRasterSplat!.definitions.map(
+                definition =>
+                  grid.map(point =>
+                    terrainSurfaceUv(
+                      { x: Math.floor(point[0]), y: Math.floor(point[1]) },
+                      [point[0] - Math.floor(point[0]), point[1] - Math.floor(point[1])],
+                      undefined,
+                      definition.uvTransform,
+                    ),
+                  ) as [readonly [number, number], readonly [number, number], readonly [number, number]],
+              ),
+              [],
+              [normal, normal, normal],
+              grid.map(([x, y]) => terrainAoAt(x, y)),
+            )
+            maskTarget.weightTextureCoordinates!.push(
+              ...grid.map(point => rasterUv(point[0], point[1])).flat(),
+            )
+            for (const corner of order) {
+              const index = triangle[corner]!
+              maskTarget.maskTextureCoordinates!.push(
+                ...layer!.transform(maskUvs![index * 2]!, maskUvs![index * 2 + 1]!),
+              )
+            }
+            terrainTexturedTriangles += 1
+            terrainTriangles += 1
+          }
           if (normal[1] < 0.05) continue
           cover.push({ vertices: upward, normal })
           if (normal[1] >= 0.5) raw.push({ vertices: upward, normal })
         }
+      }
       if (raw.length === 0) continue
       let minX = Infinity
       let maxX = -Infinity
@@ -1874,7 +2113,7 @@ function prepareWorldStaticTerrain(
             ] as const,
         ) as unknown as CliffTriangle,
       }))
-      cliffFills.push({ ramp, minX, maxX, minZ, maxZ, plates, cover })
+      cliffFills.push({ ramp, masked, minX, maxX, minZ, maxZ, plates, cover })
     }
   // Height-field cells a piece's surface covers entirely (they are cut), and the height every
   // height-field vertex under a piece's surface is snapped to.
@@ -1937,6 +2176,7 @@ function prepareWorldStaticTerrain(
       }
   }
   for (const fill of cliffFills) {
+    if (fill.masked) continue
     const target = rasterSplatBatch()
     for (const plate of fill.plates) {
       const grid = plate.vertices.map(gridOf) as [
@@ -2615,6 +2855,10 @@ export function createWorldWebGlPlan(
   if (!Number.isFinite(timeSeconds) || timeSeconds < 0)
     throw new TypeError('world WebGL timeSeconds must be finite and nonnegative')
   let waterPolygons = 0
+  const waterPlaneBatches = new Map<
+    string,
+    { readonly batch: MutableBatch; readonly colorFalloff: number; readonly receiveShadows: boolean }
+  >()
   // Terrain cells bucketed by their UVW corner, so each water zone clips only the cells under it
   // instead of scanning the whole map per zone.
   let waterGroundBuckets: Map<string, WorldSceneTerrainItem[]> | undefined
@@ -2685,6 +2929,23 @@ export function createWorldWebGlPlan(
             transparentTextured.set(key, current)
             return current
           })()
+    if (texturedTarget === undefined) {
+      // The same zone as a plane at its elevation, for a renderer that measures the depth under the
+      // water against the drawn scene instead of the height grid (see WorldWebGlWaterPlane).
+      const key = material?.materialId ?? ''
+      const plane = waterPlaneBatches.get(key) ?? {
+        batch: batch(),
+        colorFalloff: material?.colorFalloff ?? WATER_COLOR_FALLOFF,
+        receiveShadows: material?.receiveShadows ?? false,
+      }
+      waterPlaneBatches.set(key, plane)
+      const color = material?.color ?? WATER_DEFAULT_COLOR
+      const a = [minimum.x, elevation, minimum.z] as const
+      const b = [maximum.x, elevation, minimum.z] as const
+      const c = [maximum.x, elevation, maximum.z] as const
+      const d = [minimum.x, elevation, maximum.z] as const
+      for (const vertex of [a, c, b, a, d, c]) pushVertex(plane.batch, vertex, WATER_SURFACE_NORMAL, color)
+    }
     let emitted = false
     if (material?.shorelineMode === 'terrain-clipped' && terrain.length > 0) {
       for (const ground of waterGroundCells(minimum, maximum)) {
@@ -2736,6 +2997,8 @@ export function createWorldWebGlPlan(
     if (!emitted && material?.shorelineMode === 'terrain-clipped') continue
     waterPolygons += 1
   }
+  // Nothing but water has entered the untextured transparent batch yet.
+  const transparentWaterTriangles = transparent.positions.length / 9
 
   // Capture before models append their transparent geometry: particles must not become AO surfaces.
   const waterDepthPositions: number[] = []
@@ -3308,6 +3571,16 @@ export function createWorldWebGlPlan(
   const plan: WorldWebGlPlan = Object.freeze({
     opaqueTriangles: appendWorldBatch(preparation.opaqueTriangles, opaque),
     waterSurfaceDepth,
+    waterPlanes: Object.freeze(
+      [...waterPlaneBatches.values()].map(plane =>
+        Object.freeze({
+          batch: frozenBatch(plane.batch),
+          colorFalloff: plane.colorFalloff,
+          receiveShadows: plane.receiveShadows,
+        }),
+      ),
+    ),
+    transparentWaterTriangles,
     modelMaterialScenes: Object.freeze(modelMaterialScenes),
     modelEffects: Object.freeze(modelEffects),
     shadowControlledOpaqueTriangles: Object.freeze(
@@ -3507,6 +3780,18 @@ uniform sampler2D shadowMap;
 uniform float shadowEnabled;
 uniform float shadowReceiver;
 uniform vec2 shadowTexelSize;
+// Water drawn as its zone's plane: the opaque scene's depth (a copy) gives the water depth under
+// each pixel. x = world units along the view ray per unit of window depth (orthographic far - near),
+// y = the vertical share of that ray.
+uniform float waterDepthMode;
+uniform sampler2D sceneDepthMap;
+uniform vec2 waterDepthScale;
+uniform float waterFalloff;
+uniform float waterShoreFade;
+// A cliff surface drawn as terrain: kept only where its blend mask (secondaryColorMap, channel
+// picked by the selector) is clear, the complement of the rock's alpha test.
+uniform float cliffMaskMode;
+uniform vec4 cliffMaskSelector;
 out vec4 outColor;
 float layerValue(vec4 first, vec4 second, int layer) {
   return layer < 4 ? first[layer] : second[layer - 4];
@@ -3660,6 +3945,21 @@ void main() {
     terrainSpecular = mixedSurface.a;
     surface.rgb *= mixedSurface.rgb;
     surface.a = 1.0;
+  }
+  if (cliffMaskMode > 0.5 && dot(texture(secondaryColorMap, secondaryTextureCoordinate), cliffMaskSelector) >= 0.5)
+    discard;
+  if (waterDepthMode > 0.5) {
+    // The shoreline is where the drawn scene rises through the plane (cliff meshes included), and
+    // the colour deepens with the water over whatever lies under the pixel - SC2 water reads the
+    // scene depth the same way. Same saturation and shore fade as the per-vertex water colour.
+    float sceneDepth = texelFetch(sceneDepthMap, ivec2(gl_FragCoord.xy), 0).r;
+    float waterDepth = (sceneDepth - gl_FragCoord.z) * waterDepthScale.x * waterDepthScale.y;
+    if (waterDepth <= 0.0) discard;
+    float saturation = 1.0 - exp(-waterDepth * waterFalloff);
+    surface = vec4(
+      vertexColor.rgb * (1.0 - 0.35 * saturation),
+      (vertexColor.a + (1.0 - vertexColor.a) * saturation) * min(1.0, waterDepth / waterShoreFade)
+    );
   }
   if (alphaCutoff > 0.0 && surface.a < alphaCutoff) discard;
   vec3 specular = vec3(0.0);
@@ -4231,12 +4531,14 @@ function retainedWorldPlanBytes(plan: WorldWebGlPlan | undefined): number {
   }
   for (const item of plan.splatTriangles) {
     retainBatch(item)
+    retain(item.maskTextureCoordinates)
     for (const coordinates of item.textureCoordinates) retain(coordinates)
     retain(item.textureWeights0)
     retain(item.textureWeights1)
     retain(item.weightTextureCoordinates)
   }
   for (const item of [plan.transparentTriangles, plan.lines, plan.points]) retainBatch(item)
+  for (const plane of plan.waterPlanes) retainBatch(plane.batch)
   retain(plan.picking.terrainTriangles)
   for (const item of plan.picking.objects) retain(item.triangles)
   let bytes = 0
@@ -4589,7 +4891,10 @@ function renderWorldShadowMap(
       if ((item.alphaCutoff ?? 0) > 0) drawShadowTextured(resources, program, item)
       else drawShadowPositions(resources, program, item.positions)
     }
-    for (const item of plan.splatTriangles) drawShadowPositions(resources, program, item.positions)
+    // A cliff surface drawn as terrain casts nothing: the rock program casts for the rock, and a
+    // no-shadows-cast material (Shakuras Cliff 0) must not darken the ground through its ground.
+    for (const item of plan.splatTriangles)
+      if (item.maskTexture === undefined) drawShadowPositions(resources, program, item.positions)
     if (plan.modelMaterialScenes.some(scene => scene.shadowPrimitives.length > 0)) {
       const sceneCamera = {
         viewProjection,
@@ -4964,6 +5269,15 @@ function drawSplatBatch(
       uniformLocation(gl, program, 'terrainWeightMapCount'),
       source.weightTextures?.length ?? 0,
     )
+    const masked = source.maskTexture !== undefined && source.maskTextureCoordinates !== undefined
+    if (masked) {
+      bindTexture2d(resources, source.maskTexture!, 6)
+      gl.uniform1i(uniformLocation(gl, program, 'secondaryColorMap'), 6)
+      const selector = [0, 0, 0, 0]
+      selector[source.maskChannel ?? 3] = 1
+      gl.uniform4fv(uniformLocation(gl, program, 'cliffMaskSelector'), selector)
+    }
+    gl.uniform1f(uniformLocation(gl, program, 'cliffMaskMode'), masked ? 1 : 0)
     drawBatch(
       resources,
       program,
@@ -4977,10 +5291,13 @@ function drawSplatBatch(
         ...(source.weightTextureCoordinates === undefined
           ? {}
           : { splatWeightTextureCoordinates: source.weightTextureCoordinates }),
+        ...(masked ? { secondaryTextureCoordinates: source.maskTextureCoordinates! } : {}),
       },
       gl.TRIANGLES,
       source,
     )
+    // Program state outlives the draw: later batches must not keep testing a mask.
+    if (masked) gl.uniform1f(uniformLocation(gl, program, 'cliffMaskMode'), 0)
   }
 }
 
@@ -5030,12 +5347,15 @@ const transparentDrawPlans = new WeakMap<
 export function createWorldWebGlTransparentDrawPlan(
   plan: WorldWebGlPlan,
   requested?: WorldWebGlCamera,
+  /** Leave out the terrain-clipped water that `plan.waterPlanes` replace. */
+  options: Readonly<{ excludeClippedWater?: boolean }> = {},
 ): readonly WorldWebGlTransparentDraw[] {
   const view = cameraState(requested)
-  const key = `${String(view.azimuth)}:${String(view.elevation)}`
+  const excludeClippedWater = options.excludeClippedWater === true
+  const key = `${String(view.azimuth)}:${String(view.elevation)}:${String(excludeClippedWater)}`
   const cached = transparentDrawPlans.get(plan)
   if (cached?.key === key) return cached.draws
-  const draws = sortedWorldWebGlTransparentDraws(plan, view)
+  const draws = sortedWorldWebGlTransparentDraws(plan, view, excludeClippedWater)
   transparentDrawPlans.set(plan, Object.freeze({ key, draws }))
   return draws
 }
@@ -5043,6 +5363,7 @@ export function createWorldWebGlTransparentDrawPlan(
 function sortedWorldWebGlTransparentDraws(
   plan: WorldWebGlPlan,
   view: ReturnType<typeof cameraState>,
+  excludeClippedWater = false,
 ): readonly WorldWebGlTransparentDraw[] {
   const horizontal = Math.cos(view.elevation)
   const direction = [
@@ -5089,7 +5410,10 @@ function sortedWorldWebGlTransparentDraws(
     ) {
       throw new TypeError('world transparent batch attributes must align to complete triangles')
     }
-    for (let offset = 0; offset < positions.length; offset += 9) {
+    // The untextured batch starts with the clipped water; a renderer drawing the planes skips it.
+    const first =
+      excludeClippedWater && source.kind === 'untextured' ? plan.transparentWaterTriangles * 9 : 0
+    for (let offset = first; offset < positions.length; offset += 9) {
       let depth = 0
       for (let vertex = 0; vertex < 3; vertex += 1) {
         const start = offset + vertex * 3
@@ -5222,6 +5546,7 @@ function createWorldWebGlCompositeTransparentDrawPlan(
     scene: WorldWebGlModelMaterialScene
     draw: MaterialDraw & { readonly program: NonNullable<MaterialDraw['program']> }
   }>[],
+  excludeClippedWater = false,
 ): readonly WorldWebGlCompositeTransparentDraw[] {
   const view = cameraState(requested)
   const horizontal = Math.cos(view.elevation)
@@ -5236,7 +5561,7 @@ function createWorldWebGlCompositeTransparentDrawPlan(
     depth: number
     ordinal: number
   }> = []
-  for (const draw of createWorldWebGlTransparentDrawPlan(plan, requested))
+  for (const draw of createWorldWebGlTransparentDrawPlan(plan, requested, { excludeClippedWater }))
     entries.push({
       value: Object.freeze({ kind: 'world', draw }),
       priority: 0,
@@ -5563,6 +5888,11 @@ function drawWorldWebGlWithResources(
     gl.uniform1i(uniformLocation(gl, program, 'normalMap'), 5)
     gl.uniform1i(uniformLocation(gl, program, 'secondaryColorMap'), 6)
     gl.uniform1i(uniformLocation(gl, program, 'shadowMap'), 7)
+    // The water pass samples the scene depth here; every other draw keeps a compatible 2D texture.
+    bindSentinelTexture2d(resources, WATER_SCENE_DEPTH_UNIT)
+    gl.uniform1i(uniformLocation(gl, program, 'sceneDepthMap'), WATER_SCENE_DEPTH_UNIT)
+    gl.uniform1f(uniformLocation(gl, program, 'waterDepthMode'), 0)
+    gl.uniform1f(uniformLocation(gl, program, 'cliffMaskMode'), 0)
     const sceneCamera = createWorldWebGlCameraFrame(plan, canvas.width, canvas.height, input.camera)
     gl.uniform3fv(uniformLocation(gl, program, 'eyePosition'), sceneCamera.eyePosition)
     const terrainLight = plan.light.terrain
@@ -5708,6 +6038,45 @@ function drawWorldWebGlWithResources(
     gl.blendEquation(gl.FUNC_ADD)
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
     gl.depthMask(false)
+    // Water over the HDR target is drawn as zone planes against a copy of the opaque depth: its
+    // shoreline follows the drawn ground and cliff meshes, not steps of the height grid (see
+    // WorldWebGlWaterPlane). Without that target the terrain-clipped water stays.
+    const waterByDepth =
+      resources.toneMapper !== undefined &&
+      plan.light.toneMapping !== undefined &&
+      plan.waterPlanes.length > 0
+    if (waterByDepth) {
+      const sceneDepth = resources.toneMapper!.sceneDepth()
+      gl.useProgram(program)
+      gl.activeTexture(gl.TEXTURE0 + WATER_SCENE_DEPTH_UNIT)
+      gl.bindTexture(gl.TEXTURE_2D, sceneDepth)
+      if (shadow !== undefined) {
+        gl.activeTexture(gl.TEXTURE7)
+        gl.bindTexture(gl.TEXTURE_2D, shadow.texture)
+      }
+      const { camera } = cameraFor(plan, canvas.width, canvas.height, input.camera)
+      const forward = camera.getWorldDirection(new Vector3())
+      gl.uniform2f(
+        uniformLocation(gl, program, 'waterDepthScale'),
+        camera.far - camera.near,
+        Math.abs(forward.y),
+      )
+      gl.uniform1f(uniformLocation(gl, program, 'waterShoreFade'), WATER_SHORE_FADE)
+      gl.uniform1f(uniformLocation(gl, program, 'waterDepthMode'), 1)
+      gl.uniform1f(uniformLocation(gl, program, 'textured'), 0)
+      gl.uniform1f(uniformLocation(gl, program, 'normalTextured'), 0)
+      gl.uniform1f(uniformLocation(gl, program, 'secondaryTextured'), 0)
+      gl.uniform1f(uniformLocation(gl, program, 'splatTextured'), 0)
+      gl.uniform1f(uniformLocation(gl, program, 'alphaCutoff'), 0)
+      gl.disable(gl.POLYGON_OFFSET_FILL)
+      for (const plane of plan.waterPlanes) {
+        gl.uniform1f(uniformLocation(gl, program, 'waterFalloff'), plane.colorFalloff)
+        gl.uniform1f(uniformLocation(gl, program, 'shadowReceiver'), plane.receiveShadows ? 1 : 0)
+        drawBatch(resources, program, plane.batch, gl.TRIANGLES)
+      }
+      gl.uniform1f(uniformLocation(gl, program, 'waterDepthMode'), 0)
+      assertNoWebGlError(gl, 'water pass')
+    }
     const transparentMaterialDraws = [
       ...materialSceneDraws.flatMap(({ scene, draw }) =>
         draw.depthOnly !== true && draw.program !== undefined && !materialIsSolid(draw.program)
@@ -5720,6 +6089,7 @@ function drawWorldWebGlWithResources(
       plan,
       input.camera,
       transparentMaterialDraws,
+      waterByDepth,
     )) {
       if (entry.kind === 'material') {
         resources.materialDraws.draw(entry.draw, sceneCamera, sceneLight)
@@ -5749,10 +6119,13 @@ function drawWorldWebGlWithResources(
     }
     gl.depthMask(true)
     assertNoWebGlError(gl, 'transparent pass')
+    const waterSurfaces = waterByDepth
+      ? plan.waterPlanes.map(plane => plane.batch.positions)
+      : [plan.waterSurfaceDepth]
     if (
       resources.toneMapper !== undefined &&
       (plan.light.toneMapping?.ambientOcclusion?.radius ?? 0) > 0 &&
-      plan.waterSurfaceDepth.length > 0
+      waterSurfaces.some(positions => positions.length > 0)
     ) {
       // Color blending stays depth-read-only. Afterwards AO needs the visible water plane,
       // not the submerged height field: otherwise its tile creases darken the whole water color.
@@ -5769,7 +6142,8 @@ function drawWorldWebGlWithResources(
       bindSentinelTexture2d(resources, 0)
       gl.uniform1i(uniformLocation(gl, depthProgram, 'baseColorMap'), 0)
       try {
-        drawShadowPositions(resources, depthProgram, plan.waterSurfaceDepth)
+        // Depth-tested: a plane writes only where the water lies over the drawn scene.
+        for (const positions of waterSurfaces) drawShadowPositions(resources, depthProgram, positions)
       } finally {
         gl.colorMask(true, true, true, true)
       }
@@ -5952,6 +6326,10 @@ const MAXIMUM_FILL_LIGHTS = 2
 const WORLD_TEXTURE_KEY_SAMPLES = 256
 
 const WATER_SURFACE_NORMAL = [0, 1, 0] as const
+/** Texture unit of the scene depth copy the water pass reads (units 0-8 hold the terrain and shadow). */
+const WATER_SCENE_DEPTH_UNIT = 9
+/** Water colour and opacity at depth zero when a material states none. */
+const WATER_DEFAULT_COLOR = [0.12, 0.52, 0.82, 0.48] as const
 
 /** Depth (world units) over which a shoreline reaches the water's own opacity. */
 const WATER_SHORE_FADE = 0.04
