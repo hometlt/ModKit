@@ -183,6 +183,35 @@ describe('createNodeSubjectServices (host realm inventory, worker realm target)'
     expect(serviceDefinitionSurfaces(own).every(item => item.surface !== undefined)).toBe(true)
   })
 
+  it('builds the credential broker over its own inventory from the application store', async () => {
+    const values = new Map<string, string>()
+    const store = {
+      get: async (key: string) => values.get(key),
+      set: async (key: string, value: string) => void values.set(key, value),
+      delete: async (key: string) => void values.delete(key),
+    }
+    const [plain, signedIn] = await Promise.all([
+      createNodeSubjectServices({
+        topology,
+        realms: { host: HOST, workers: WORKERS },
+        extensions: [],
+        policy,
+      }),
+      createNodeSubjectServices({
+        topology,
+        realms: { host: HOST, workers: WORKERS },
+        extensions: [],
+        policy,
+        credentials: { store },
+      }),
+    ])
+    expect(plain.credentials).toBeUndefined()
+    expect(signedIn.credentials?.declared()).toEqual([])
+    await expect(signedIn.credentials!.status('acme/none')).rejects.toMatchObject({
+      code: 'x3.host/credential-undeclared',
+    })
+  }, 30_000)
+
   it('keeps platform Data contracts when the bundled modkit/data extension registers its own contracts', async () => {
     const services = await createNodeSubjectServices({
       topology,

@@ -14,6 +14,107 @@
       },
       "type": "array"
     },
+    "credentials": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "audience": {
+            "items": {
+              "maxLength": 512,
+              "pattern": "^https?://[^\\s]+$",
+              "type": "string"
+            },
+            "maxItems": 16,
+            "type": "array"
+          },
+          "environment": {
+            "pattern": "^[A-Z][A-Z0-9_]{0,63}$",
+            "type": "string"
+          },
+          "header": {
+            "pattern": "^[A-Za-z0-9-]{1,64}$",
+            "type": "string"
+          },
+          "id": {
+            "maxLength": 128,
+            "pattern": "^[a-z0-9][a-z0-9.-]*/[a-z0-9][a-z0-9._-]*$",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "api-key",
+              "oauth2-pkce",
+              "provider-session",
+              "symmetric-key"
+            ]
+          },
+          "label": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          },
+          "oauth": {
+            "additionalProperties": false,
+            "properties": {
+              "authorizationEndpoint": {
+                "maxLength": 512,
+                "pattern": "^https?://[^\\s]+$",
+                "type": "string"
+              },
+              "clientId": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              },
+              "clientIdSetting": {
+                "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                "type": "string"
+              },
+              "loopbackPort": {
+                "maximum": 65535,
+                "minimum": 1024,
+                "type": "integer"
+              },
+              "revocationEndpoint": {
+                "maxLength": 512,
+                "pattern": "^https?://[^\\s]+$",
+                "type": "string"
+              },
+              "tokenEndpoint": {
+                "maxLength": 512,
+                "pattern": "^https?://[^\\s]+$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "authorizationEndpoint",
+              "tokenEndpoint"
+            ],
+            "type": "object"
+          },
+          "scoped": {
+            "type": "boolean"
+          },
+          "scopes": {
+            "items": {
+              "maxLength": 128,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 32,
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "label"
+        ],
+        "type": "object"
+      },
+      "maxItems": 32,
+      "type": "array"
+    },
     "dependsOn": {
       "items": {
         "$id": "https://schemas.modkit.org/x3/extension-requirement.v1.schema.json",

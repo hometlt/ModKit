@@ -372,8 +372,8 @@ export function createCredentialBroker(options: CredentialBrokerOptions): Creden
 
   return Object.freeze<CredentialBroker>({
     declared: () => Object.freeze([...declarations.values()]),
-    status: (id, scope) => status(declaration(id), scope),
-    signOut: (id, scope) => forget(declaration(id), scope),
+    status: async (id, scope) => status(declaration(id), scope),
+    signOut: async (id, scope) => forget(declaration(id), scope),
     portFor(extension) {
       const own = (id: string) => {
         const entry = declaration(id)

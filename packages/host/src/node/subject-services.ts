@@ -16,6 +16,8 @@
 
 import type { InstallationProbes, VideoFrameDecoder } from '@modkit/sdk'
 import { createNodeInstallationProbes } from './installation-probes.js'
+import { createCredentialBroker, type CredentialBrokerOptions } from '../credentials.js'
+import { createNodeOAuth2Engine } from './oauth2-pkce.js'
 import { createNodeVideoFrameDecoder } from './video-frames.js'
 import type { Diagnostic } from '@modkit/core'
 import {
@@ -76,6 +78,11 @@ export interface NodeSubjectServicesOptions {
   readonly subjectCatalog?: SubjectCatalogOptions
   /** Video frames for codecs; default: ffmpeg found on PATH, `false` to offer none. */
   readonly videoFrames?: VideoFrameDecoder | false
+  /**
+   * The application's secret store and prompter; the services build the credential broker over
+   * their inventory (OAuth through the loopback engine unless another is given).
+   */
+  readonly credentials?: Omit<CredentialBrokerOptions, 'inventory'>
 }
 
 export interface NodeSubjectServices extends SubjectServices {
@@ -138,6 +145,14 @@ export async function createNodeSubjectServices(
     options.videoFrames === false
       ? undefined
       : (options.videoFrames ?? createNodeVideoFrameDecoder())
+  const credentials =
+    options.credentials === undefined
+      ? undefined
+      : createCredentialBroker({
+          oauth: createNodeOAuth2Engine(),
+          ...options.credentials,
+          inventory: host.inventory,
+        })
   const services = createSubjectServices({
     inventory: host.inventory,
     target: workers.target,
@@ -148,6 +163,7 @@ export async function createNodeSubjectServices(
       : { contributionSettings: options.contributionSettings }),
     ...(options.subjectCatalog === undefined ? {} : { subjectCatalog: options.subjectCatalog }),
     ...(videoFrames === undefined ? {} : { videoFrames }),
+    ...(credentials === undefined ? {} : { credentials }),
   })
   return Object.freeze({
     ...services,
