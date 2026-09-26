@@ -193,6 +193,9 @@ export const nodeModuleMap: Readonly<Record<string, string>> = Object.freeze({
   '@modkit/codec-kit/texture/bc': pathToFileURL(
     join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'texture', 'bc.js'),
   ).href,
+  '@modkit/codec-kit/texture/gl-compressed': pathToFileURL(
+    join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'texture', 'gl-compressed.js'),
+  ).href,
   '@modkit/core': pathToFileURL(join(repositoryRoot, 'packages', 'core', 'dist', 'index.js')).href,
   '@modkit/sdk': pathToFileURL(join(repositoryRoot, 'packages', 'sdk', 'dist', 'index.js')).href,
   '@modkit/uv/model/materializer': pathToFileURL(

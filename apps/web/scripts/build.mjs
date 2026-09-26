@@ -386,6 +386,14 @@ const workerBuild = await build({
       'texture',
       'bc.js',
     ),
+    'vendor/codec-kit/texture/gl-compressed': join(
+      repoRoot,
+      'packages',
+      'codec-kit',
+      'dist',
+      'texture',
+      'gl-compressed.js',
+    ),
     'vendor/codec-kit/json-snapshot': join(
       repoRoot,
       'packages',

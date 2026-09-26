@@ -122,6 +122,10 @@
       "types": "./dist/texture/bc.d.ts",
       "default": "./dist/texture/bc.js"
     },
+    "./texture/gl-compressed": {
+      "types": "./dist/texture/gl-compressed.d.ts",
+      "default": "./dist/texture/gl-compressed.js"
+    },
     "./raster": {
       "types": "./dist/raster/index.d.ts",
       "default": "./dist/raster/index.js"

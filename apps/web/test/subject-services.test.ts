@@ -194,6 +194,9 @@ const nodeModuleMap = {
   '@modkit/codec-kit/texture/bc': pathToFileURL(
     join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'texture', 'bc.js'),
   ).href,
+  '@modkit/codec-kit/texture/gl-compressed': pathToFileURL(
+    join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'texture', 'gl-compressed.js'),
+  ).href,
   '@modkit/codec-kit/json-snapshot': pathToFileURL(
     join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'json-snapshot.js'),
   ).href,

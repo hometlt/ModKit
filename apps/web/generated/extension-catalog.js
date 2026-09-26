@@ -6596,7 +6596,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:c58e3fb618077d59aebf89a94ad42935f005c652ad26c6449b00a04476d4d20e',
+        artifactDigest: 'sha256:10ea28a497a5cea5b782e8898bcfc1c034b24bea5a23c2b1bdf4f8e9808854e0',
         fileDigests: {
           'MIGRATION-NOTES-common-images.json':
             'sha256:44c30ea45aaceceff66d53f72e5e0d0ec8efb1a7f2afbc2f9913849720632e93',
@@ -6690,7 +6690,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'src/jpeg/codec.js':
             'sha256:92f1265e5790c4e36ab3de69ec9c695d7d0395ee37a43b880edb5483bd605d7a',
           'src/ktx/codec.js':
-            'sha256:9d24a991d8a64e241895849cc43305babfc20647d4226f5bea8fc6cb44e92903',
+            'sha256:111154eea1f7a17553118d25f426135418c3b523a37a1d260296dcf7cbfe9765',
           'src/ktx2/codec.js':
             'sha256:2c72dc7edc2dbb11c14c60a83ec07427a27032c69034a0bcddb662b2b79ac87f',
           'src/linked.js':
@@ -6733,6 +6733,8 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:104de000cee52f895247c882aa74c54ba6c19a7ad763e830c285644a8fe40da9',
           'test/eac-r11-decode.test.ts':
             'sha256:2a0d83d3152224ce7ea530605bb9441912aa9be68b3b4ec60d1e51cb0e5beed4',
+          'test/ktx1-compressed.test.ts':
+            'sha256:1653111d042a80b970f424082842314ae9d24dc8137bb2e3540ea7edc21cf993',
           'test/ktx2-decode.test.ts':
             'sha256:0e1807a5b7d07485053fe106dc7cfbce7e664376d7eb4d8b59c878c65e1a09f5',
           'test/pal-codec.test.ts':
@@ -6753,7 +6755,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:8b819b0622cce57f809b369081bdd6eca09d1c1793da7f82192db39229356c1d',
         },
         inventoryRecordId:
-          'artifact:sha256:c58e3fb618077d59aebf89a94ad42935f005c652ad26c6449b00a04476d4d20e',
+          'artifact:sha256:10ea28a497a5cea5b782e8898bcfc1c034b24bea5a23c2b1bdf4f8e9808854e0',
       },
       artifactRoot: 'extensions/images/',
       containers: {
@@ -11128,6 +11130,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         'test/dds-subresources.test.ts',
         'test/dds-transform.test.ts',
         'test/eac-r11-decode.test.ts',
+        'test/ktx1-compressed.test.ts',
         'test/ktx2-decode.test.ts',
         'test/pal-codec.test.ts',
         'test/png-palette-decode.test.ts',
