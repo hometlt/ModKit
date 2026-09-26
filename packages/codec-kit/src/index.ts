@@ -913,6 +913,8 @@ function inspectionOperations(
   )
 }
 
+const READ_ALL_CHUNK_BYTES = 4 * 1024 * 1024
+
 async function readAll(source: ArtifactSource, budget: ResourceBudget, signal?: AbortSignal) {
   if (source.kind !== 'bytes' || source.size === undefined) {
     throw new TypeError('inspection codecs require a sized byte source')
@@ -925,7 +927,9 @@ async function readAll(source: ArtifactSource, budget: ResourceBudget, signal?: 
   let offset = 0
   while (offset < total) {
     if (signal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
-    const chunk = await source.read(BigInt(offset), Math.min(64 * 1024, total - offset), signal)
+    // Each read is one RPC exchange when the codec runs in a worker: 64 KiB chunks made a 41 MB
+    // source ~650 exchanges inside one 30 s open deadline. 4 MiB stays well under the 64 MiB frame.
+    const chunk = await source.read(BigInt(offset), Math.min(READ_ALL_CHUNK_BYTES, total - offset), signal)
     if (chunk.byteLength === 0) throw new RangeError('source ended before its declared size')
     result.set(chunk, offset)
     offset += chunk.byteLength
