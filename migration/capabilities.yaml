@@ -8711,7 +8711,7 @@ capabilities:
       - 'modkit/petroglyph-meg'
     mk3Operations:
       - 'asset.validate'
-      - 'export.raw'
+      - 'container.extract'
       - 'view.inspect'
     allocation:
       state: 'covered'
