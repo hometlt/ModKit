@@ -3,7 +3,8 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 describe('default language workspace composition', () => {
-  const source = readFileSync(join(import.meta.dirname, '..', 'src', 'extension.ts'), 'utf8')
+  const read = (name: string) => readFileSync(join(import.meta.dirname, '..', 'src', name), 'utf8')
+  const source = read('extension.ts')
 
   it('supplies bounded inventory-routed workspace documents with editor overlays', () => {
     expect(source).toContain('const languageDocumentSource: LanguageWorkspaceDocumentSource')
@@ -12,7 +13,9 @@ describe('default language workspace composition', () => {
     expect(source).toContain('composeLanguageDocumentSources([')
     expect(source).toContain('selectScopedSubject(')
     expect(source).toContain('projected?.dependenciesComplete === true')
-    expect(source).toContain('vscode.workspace.findFiles(')
+    // Project files come from the folders on disk only, through the one helper that asks VS Code.
+    expect(source).toContain('findDiskFiles(')
+    expect(read('workspace-files.ts')).toContain('vscode.workspace.findFiles(')
     expect(source).toContain('vscode.workspace.openTextDocument(candidate.uri)')
     expect(source).toContain('routedLanguageIds.length === 1')
     expect(source).toContain('bytes > 4_194_304 || totalTextBytes + bytes > 67_108_864')

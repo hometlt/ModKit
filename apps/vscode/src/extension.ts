@@ -1,12 +1,13 @@
 /**
  * VS Code extension host entry.
  *
- * This file is the only place allowed to import `vscode`. Everything that decides anything —
- * composing the realms, opening a subject, confining a path, writing a file — lives in
+ * This file and the adapter modules beside it (the tree views, the panel page, subject URIs, the
+ * custom document) are the only places allowed to import `vscode`. Everything that decides
+ * anything — composing the realms, opening a subject, confining a path, writing a file — lives in
  * `./host.ts`, `./index.ts` and `./uri.ts`, which know nothing about the editor and are therefore
  * testable in plain Node. What is left here is the adapter: workspace folders in, a webview
- * channel out, and the editor's own affordances (commands, a custom editor, two tree views, an
- * output channel) wired to the host's answers.
+ * channel out, and the editor's own affordances (commands, a custom editor, tree views, an output
+ * channel) wired to the host's answers.
  *
  * The webview never receives extension-host power. It gets a bridge realm profile, a strict CSP
  * with a per-load nonce, and a consumer of `x3.app/subject-services@1` — so doc 19's rule (a
@@ -15,1917 +16,310 @@
  */
 import { createHash } from 'node:crypto'
 import {
-  imageGalleryExtensions,
-  renderGalleryThumbnail,
-  type GalleryThumbnail,
+imageGalleryExtensions,
+renderGalleryThumbnail,
+type GalleryThumbnail,
 } from './image-gallery.js'
-import { copyFileSync, createReadStream, existsSync, readFileSync, statSync } from 'node:fs'
+import { copyFileSync, existsSync, readFileSync, statSync } from 'node:fs'
 import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import * as vscode from 'vscode'
 import { callContentSources } from '@modkit/vfs/content-sources/node'
 import { LoadedModResourceSessions } from '@modkit/host/mods'
 import {
-  type ContentSourceLocalPath,
-  type ContentSourceSearchResult,
-  type ContentSources,
-  type ModContextTarget,
+type ContentSourceLocalPath,
+type ContentSourceSearchResult,
+type ContentSources
 } from '@modkit/vfs/content-sources'
 import { chooseContentSource } from '@modkit/ui/content-sources'
 import type { CatalogSource, ExtensionManagerEntry } from '@modkit/extension-manager'
 import {
-  loadRepositorySubjectProfiles,
-  openRepositorySource,
-  projectVendorGameSubjects,
-  subjectRecordToWire,
+loadRepositorySubjectProfiles,
+openRepositorySource,
+projectVendorGameSubjects,
+subjectRecordToWire,
 } from '@modkit/extension-manager'
 import {
-  createNodeExtensionVfs,
-  createNodeExtensionManager,
-  discoverLocalExtensionCandidates,
-  type LocalExtensionCandidate,
+createNodeExtensionVfs,
+createNodeExtensionManager,
+discoverLocalExtensionCandidates,
+type LocalExtensionCandidate,
 } from '@modkit/extension-manager/node'
 import {
-  parseUiCatalogDocument,
-  UI_MESSAGES,
-  type UiCatalogDocument,
-  type UiLocale,
-  type UiLocalizer,
-  type UiMessageKey,
+parseUiCatalogDocument,
+UI_MESSAGES,
+type UiCatalogDocument, type UiMessageKey
 } from '@modkit/ui/localization'
 
 import type { CloseAnswer, WebviewChannel } from './bridge.js'
 import { ActiveModLoads } from './active-mod-loads.js'
 import {
-  createA7AcceptanceReceipt,
-  createModkitAcceptanceReceipt,
-  type ModkitAcceptanceReceipt,
+createA7AcceptanceReceipt,
+createModkitAcceptanceReceipt,
+type ModkitAcceptanceReceipt,
 } from './acceptance.js'
 import {
-  containerUriPath,
-  containerUriText,
-  containerLocationIdentity,
-  CONTAINER_SCHEME,
-  parseContainerUriPath,
-  parseContainerUriText,
-  splitContainer,
-  type ContainerNode,
+containerUriPath,
+containerUriText,
+containerLocationIdentity,
+CONTAINER_SCHEME,
+parseContainerUriPath,
+parseContainerUriText,
+splitContainer,
+type ContainerNode,
 } from './container-uri.js'
 import { advertisesSubjectCandidates, SUBJECT_SELECTOR_SOURCE } from './subject-candidates.js'
 import {
-  commandSubjectsFrom,
-  composeLanguageDocumentSources,
-  createModkitCommandRuntime,
-  discoverServiceOperations,
-  invokeServiceOperation,
-  SERVICE_OPERATION_CATALOG_MAX_PAGE_ITEMS,
-  loadLocalizationCatalogs,
-  resolveContentLanguageSources,
-  subjectTarget,
-  baseModsFor,
-  type BaseModSetting,
-  type CommandInput,
-  type CommandResult,
+commandSubjectsFrom,
+composeLanguageDocumentSources,
+createModkitCommandRuntime,
+discoverServiceOperations,
+invokeServiceOperation,
+SERVICE_OPERATION_CATALOG_MAX_PAGE_ITEMS,
+loadLocalizationCatalogs,
+resolveContentLanguageSources,
+subjectTarget,
+baseModsFor,
+type BaseModSetting,
+type CommandInput,
+type CommandResult,
 } from '@modkit/host'
 import {
-  classifyLanguageFile,
-  createLanguageWorkspace,
-  languageFileExtension,
-  languageWorkspaceContextToken,
-  languageProviderRoutes,
-  languageProviderTriggerCharacters,
-  resolveLanguageProvider,
-  type LanguageWorkspaceDocumentSource,
-  type LanguageWorkspaceDocumentSourceResult,
+classifyLanguageFile,
+createLanguageWorkspace,
+languageFileExtension,
+languageWorkspaceContextToken,
+languageProviderRoutes,
+languageProviderTriggerCharacters,
+resolveLanguageProvider,
+type LanguageWorkspaceDocumentSource,
+type LanguageWorkspaceDocumentSourceResult,
 } from '@modkit/host/language'
 import {
-  discoverGameInstallations,
-  interpretGameLaunchLog,
-  planGameLaunch,
+discoverGameInstallations,
+interpretGameLaunchLog,
+planGameLaunch,
 } from '@modkit/host/games'
 import {
-  createContentSourceMapPreviewResourcePlanResolver,
-  createNodeMapPreviewResourcePlanResolver,
-  flushArtifactDigestCache,
-  launchNodeGameResource,
-  resolveContentSources,
-  runningGameProcesses,
-  stopGameProcesses,
-  useArtifactDigestCache,
-  watchGameLaunchLogs,
-  type GameLaunchLogWatch,
-  type NodeGameLaunchReceipt,
+createContentSourceMapPreviewResourcePlanResolver,
+createNodeMapPreviewResourcePlanResolver,
+flushArtifactDigestCache,
+launchNodeGameResource,
+resolveContentSources,
+runningGameProcesses,
+stopGameProcesses,
+useArtifactDigestCache,
+watchGameLaunchLogs,
+type GameLaunchLogWatch,
+type NodeGameLaunchReceipt,
 } from '@modkit/host/node'
 import type {
-  AnyDescriptor,
-  AssetSession,
-  JsonValue,
-  OperationSession,
-  SubjectCandidateProviderSource,
-  SubjectCandidateScope,
-  TreeDataSource,
-  TreeNodeFacts,
-  TreeNodeRef,
+AnyDescriptor,
+AssetSession,
+JsonValue,
+OperationSession,
+SubjectCandidateProviderSource,
+SubjectCandidateScope,
+TreeDataSource,
+TreeNodeFacts
 } from '@modkit/sdk'
 import { createSubjectCandidateProvider } from '@modkit/sdk'
 import { isModkitError } from '@modkit/core'
 import {
-  CONTAINER_ENTRY_EXISTS,
-  CONTAINER_ENTRY_NOT_FOUND,
-  type ContainerRegistry,
+CONTAINER_ENTRY_EXISTS,
+CONTAINER_ENTRY_NOT_FOUND,
+type ContainerRegistry,
 } from './containers.js'
 import { registerWorkspaceSearch, type SearchFolderFile } from './workspace-search.js'
 import {
-  createOperationOutputStore,
-  operationOutputName,
-  operationOutputText,
-  OPERATION_OUTPUT_SCHEME,
+createOperationOutputStore,
+operationOutputName,
+operationOutputText,
+OPERATION_OUTPUT_SCHEME,
 } from './operation-output.js'
-import { CustomDocumentState } from './custom-document.js'
 import { formatPublicationVersion, nextPublicationVersion } from './publication-revision.js'
 import {
-  createExtensionCardCatalog,
-  extensionCardBundle,
-  extensionCardIconTarget,
-  extensionCardResourceTargets,
-  type ExtensionCardBundle,
+createExtensionCardCatalog,
+extensionCardBundle,
+extensionCardIconTarget,
+extensionCardResourceTargets,
+type ExtensionCardBundle,
 } from './extension-cards.js'
 import { openVsCodeExtensionCardResource } from './extension-card-resource-actions.js'
 import {
-  configuredExtensionRoots,
-  configuredDisabledContributions,
-  configuredDisabledExtensions,
-  describeConfiguredExtensions,
-  withContributionDisabled,
-  withContributionsDisabled,
-  withExtensionRoot,
+configuredExtensionRoots,
+configuredDisabledContributions,
+configuredDisabledExtensions,
+describeConfiguredExtensions,
+withContributionDisabled,
+withContributionsDisabled,
+withExtensionRoot,
 } from './extension-roots.js'
 import {
-  createExtensionTree,
-  extensionActionContextValue,
-  extensionComponentActionContextValue,
-  extensionEntryIsMutable,
-  extensionEntrySupportsGroupedRemoval,
-  extensionEntryDisplayName,
-  extensionGroupActionContextValue,
-  extensionTreeChildren,
-  extensionVendorActionContextValue,
-  OPEN_CONTRIBUTION_COMMAND,
-  OPEN_EXTENSION_COMMAND,
-  OPEN_GAME_COMMAND,
-  OPEN_VENDOR_COMMAND,
-  type ExtensionComponentNode,
-  type ExtensionNode,
-  type ExtensionVendorNode,
+extensionEntryIsMutable,
+extensionEntrySupportsGroupedRemoval,
+extensionEntryDisplayName, OPEN_CONTRIBUTION_COMMAND,
+OPEN_EXTENSION_COMMAND,
+OPEN_GAME_COMMAND,
+OPEN_VENDOR_COMMAND,
+type ExtensionComponentNode,
+type ExtensionNode,
+type ExtensionVendorNode
 } from './extension-tree.js'
 import {
-  createVsCodeExtensionManagerClient,
-  extensionManagerCommandCompletion,
-  ExtensionManagerController,
-  installedManagerExtensionState,
-  type ExtensionManagerCommand,
-  type StaticExtensionPackage,
+createVsCodeExtensionManagerClient,
+extensionManagerCommandCompletion,
+ExtensionManagerController,
+installedManagerExtensionState,
+type ExtensionManagerCommand,
+type StaticExtensionPackage,
 } from './extension-manager.js'
 import { extensionManagerSecurityOptions } from './extension-manager-environment.js'
 import {
-  catalogCandidates,
-  createVsCodeCommandOpener,
-  createVsCodeSubjectHost,
-  subjectKey,
-  subjectLabel,
-  VSCODE_SUBJECT_CONTRIBUTION_ID,
-  VSCODE_SUBJECT_SERVICES_URL,
-  type ViewerSurfaceOperation,
-  type ViewerSurfaceOperationResult,
-  type VsCodeConfigurationPort,
-  type VsCodeServed,
-  type VsCodeServeOptions,
-  type VsCodeSubjectHost,
-  type VsCodeTreeSubject,
+catalogCandidates,
+createVsCodeCommandOpener,
+createVsCodeSubjectHost,
+subjectKey,
+subjectLabel, type ViewerSurfaceOperation,
+type ViewerSurfaceOperationResult,
+type VsCodeConfigurationPort,
+type VsCodeServed,
+type VsCodeServeOptions, type VsCodeTreeSubject
 } from './host.js'
 import { describeDegradation, describeFacilities, type FacilityReport } from './facilities.js'
-import { pageHtml, refusalHtml, type WebviewLike } from './page.js'
+import { refusalHtml } from './page.js'
 import BUNDLED_CATALOG from '../generated/bundled-catalog.json' with { type: 'json' }
 import { describeOpenTarget } from './uri.js'
 import { registerDocumentVerification } from './verify-document.js'
 import { createVscodeLocalizer, VSCODE_UI_CATALOGS } from './localization.js'
 import {
-  applyEditorOnTypeEditResult,
-  caseInsensitiveExtensionPattern,
-  caseInsensitiveNamePattern,
-  createLanguageSessionController,
-  LANGUAGE_TOKEN_MODIFIERS,
-  LANGUAGE_TOKEN_TYPES,
-  plainLanguagePosition,
-  type EditorDocumentSymbol,
-  type EditorLanguageDocument,
+applyEditorOnTypeEditResult,
+caseInsensitiveExtensionPattern,
+caseInsensitiveNamePattern,
+createLanguageSessionController,
+LANGUAGE_TOKEN_MODIFIERS,
+LANGUAGE_TOKEN_TYPES,
+plainLanguagePosition,
+type EditorDocumentSymbol,
+type EditorLanguageDocument,
 } from './language-session.js'
 import {
-  createRuntimeDebugController,
-  type RuntimeDebugCommandRequest,
-  type RuntimeDebugCommandResult,
-  type RuntimeDebugController,
+createRuntimeDebugController,
+type RuntimeDebugCommandRequest,
+type RuntimeDebugCommandResult,
+type RuntimeDebugController,
 } from './runtime-debug.js'
 import {
-  assertMaterializationBound,
-  createDiagnosticJournal,
-  installationGameIds,
-  selectedContentSources,
-  withSelectedContentSource,
-  withoutSelectedContentSource,
-  type SelectedContentSource,
+assertMaterializationBound,
+createDiagnosticJournal,
+installationGameIds,
+selectedContentSources,
+withSelectedContentSource,
+withoutSelectedContentSource,
+type SelectedContentSource,
 } from './workbench-workflows.js'
-import { createSourceTree, type SourceTreeNode } from './source-tree.js'
+import { type SourceTreeNode } from './source-tree.js'
 import {
-  runExplicitGameLaunch,
-  VSCODE_GAME_LAUNCH_COMMAND,
-  type ExplicitGameLaunchRequest,
+runExplicitGameLaunch,
+VSCODE_GAME_LAUNCH_COMMAND,
+type ExplicitGameLaunchRequest,
 } from './game-launch-workflow.js'
 import {
-  gameLaunchConfiguration,
-  gameLogFindingsByFile,
-  launchTargetOf,
-  VSCODE_GAME_LAUNCH_DEBUG_TYPE,
-  VSCODE_GAME_LAUNCH_MOD_COMMAND,
-  type GameLaunchConfiguration,
-  type GameLaunchKind,
+gameLaunchConfiguration,
+gameLogFindingsByFile,
+launchTargetOf,
+VSCODE_GAME_LAUNCH_DEBUG_TYPE,
+VSCODE_GAME_LAUNCH_MOD_COMMAND,
+type GameLaunchConfiguration,
+type GameLaunchKind,
 } from './game-launch-ui.js'
 import {
-  anchorAssociationPattern,
-  associationPattern,
-  planEditorAssociations,
-  type AssociationPlan,
+anchorAssociationPattern,
+associationPattern,
+planEditorAssociations,
+type AssociationPlan,
 } from './editor-associations.js'
 import { deferredTreeDataProvider, type DeferredTreeDataProvider } from './deferred-tree.js'
 import { createPhaseLog } from './timing.js'
 import { createViewerStatusBar } from './viewer-status.js'
 import {
-  selectScopedSubject,
-  selectScopedSubjectCandidates,
-  type VsCodeSubjectCandidateScope,
+selectScopedSubject,
+selectScopedSubjectCandidates,
+type VsCodeSubjectCandidateScope,
 } from './subject-candidates.js'
 import {
-  ARMOD_EXTERNAL_PROCESS_TREE_MEMORY_DELTA_CEILING_BYTES,
-  ARMOD_EXTERNAL_PROCESS_TREE_MAX_OBSERVED_INTERVAL_MS,
-  ARMOD_EXTERNAL_PROCESS_TREE_MIN_SAMPLES,
-  INSTALLED_ARCHIVE_AUTHORITIES,
-  INSTALLED_ARCHIVE_ACCEPTANCE_CASE_IDS,
+ARMOD_EXTERNAL_PROCESS_TREE_MEMORY_DELTA_CEILING_BYTES,
+ARMOD_EXTERNAL_PROCESS_TREE_MAX_OBSERVED_INTERVAL_MS,
+ARMOD_EXTERNAL_PROCESS_TREE_MIN_SAMPLES,
+INSTALLED_ARCHIVE_AUTHORITIES,
+INSTALLED_ARCHIVE_ACCEPTANCE_CASE_IDS,
 } from './installed-archive-acceptance.js'
 
-const CUSTOM_EDITOR_TYPE = 'modkit.genericAssetPreview'
-
-/**
- * The stage-specific native editors (owner decision 2026-09-01, wave 2B first slice).
- *
- * Each is a real VS Code custom editor, so the modes appear in the editor picker — «Text», then
- * «Modkit Hex Viewer», then the family viewer — instead of behind a dropdown inside the webview.
- * The provider is one object: `panel.viewType` tells it which mode it is resolving.
- *
- * Boundary, stated rather than implied: a static `customEditors.selector` is a glob list, and «every
- * binary format but not the text ones» is not expressible as one. Hex is therefore offered for `*`
- * as an option, never a default; the text carve-out lives in the DEFAULT association sync, where it
- * can be expressed.
- */
-const STAGE_CUSTOM_EDITOR_TYPES: Readonly<Record<string, string>> = Object.freeze({
-  'modkit.hexViewer': 'hex',
-  'modkit.imageViewer': 'image',
-  'modkit.archiveViewer': 'archive',
-})
-
-/** Every view type this extension owns; the association sync never removes anyone else's. */
-const MODKIT_VIEW_TYPES: readonly string[] = Object.freeze([
+import {
   CUSTOM_EDITOR_TYPE,
-  ...Object.keys(STAGE_CUSTOM_EDITOR_TYPES),
-])
+  STAGE_CUSTOM_EDITOR_TYPES,
+  MODKIT_VIEW_TYPES,
+  LANGUAGE_ACTIVATION_BUDGET,
+  RUNTIME_ACTIVATION_BUDGET,
+  RUNTIME_SESSION_BUDGET,
+  GAME_DISCOVERY_BUDGET,
+  SERVICE_OPERATION_BUDGET,
+  PACKAGE_INSTALL_GATE_COMMAND,
+  RESOURCES_CHAIN_KEY,
+  PACKAGE_INSTALL_GATE_ENV,
+  PACKAGE_INSTALL_GATE_GENERATION_ENV,
+  PACKAGE_INSTALL_GATE_ARTIFACT_ENV,
+  PACKAGE_INSTALL_GATE_CONTINUE_ENV,
+  PACKAGE_INSTALL_GATE_DISABLED_URI_ENV,
+  FORMAT_SMOKE_WORKSPACE_ROOT_ENV,
+  FORMAT_SMOKE_SC2_ROOT_ENV,
+  FORMAT_SMOKE_WARZONE_ROOT_ENV,
+  FORMAT_SMOKE_START_ENV,
+  FORMAT_SMOKE_ACK_ENV,
+  ARCHIVE_ACCEPTANCE_START_ENV,
+  ARCHIVE_ACCEPTANCE_ACK_ENV,
+  SELECTED_SOURCES_KEY,
+  BATTLENET_CONNECTIONS_KEY,
+  CATALOGUE_KEY,
+} from './constants.js'
+import {
+  type FormatSmokeRouteStep,
+  type FormatSmokeOpenCase,
+  type FormatSmokeExcludedCase,
+  formatSmokeObject,
+  isAttemptedContainerCandidate,
+  formatSmokeConfinedPath,
+  readPackagedFormatSmoke,
+  requiredFormatSmokeRoot,
+  resolvePackagedFormatSmokeCases,
+  formatSmokeFileDigest,
+  readPackagedManagedRegistry,
+} from './packaged-acceptance.js'
+import {
+  subjectPathOf,
+  modContextTargetOf,
+  subjectUriOf,
+  namespaceEntryPathOf,
+  namespaceEntryRootOf,
+  memberUriOf,
+  openResourceFile,
+  subjectCandidateScopeOf,
+} from './subject-uris.js'
+import { BACKSLASH, ModkitCustomDocument } from './modkit-custom-document.js'
+import { workspaceFolders, findDiskFiles } from './workspace-files.js'
+import { exportViewerFiles } from './viewer-export.js'
+import { nonce, panelHtml } from './panel-page.js'
+import { ExtensionsView } from './extensions-view.js'
+import { HostView } from './host-view.js'
+import { SourcesView } from './sources-view.js'
+import {
+  type ResourceTreeNode,
+  type ResourceTreeHost,
+  type ResourceMemberTrees,
+  ResourcesView,
+} from './resources-view.js'
 
 let activeLanguageShutdown: (() => Promise<void>) | undefined
-
-const LANGUAGE_ACTIVATION_BUDGET = Object.freeze({
-  maxInputBytes: 16_777_216n,
-  maxDepth: 64,
-  maxNodes: 250_000,
-  maxScalarBytes: 16_777_216,
-  maxDiagnostics: 1_000,
-})
-
-const RUNTIME_ACTIVATION_BUDGET = Object.freeze({
-  maxInputBytes: 16_777_216n,
-  maxDepth: 64,
-  maxNodes: 250_000,
-  maxScalarBytes: 16_777_216,
-  maxDiagnostics: 1_000,
-  deadlineMs: 30_000,
-})
-
-const RUNTIME_SESSION_BUDGET = Object.freeze({
-  maxWallTimeMs: 30_000,
-  maxTicks: 1_000_000,
-  maxMemoryBytes: 512 * 1024 * 1024,
-})
-
-const GAME_DISCOVERY_BUDGET = Object.freeze({
-  maxInputBytes: 1_000_000n,
-  maxDepth: 64,
-  maxNodes: 100_000,
-  maxScalarBytes: 1_000_000,
-  maxDiagnostics: 100,
-})
-
-const SERVICE_OPERATION_BUDGET = Object.freeze({
-  maxInputBytes: 16_777_216n,
-  maxDepth: 128,
-  maxNodes: 1_000_000,
-  maxScalarBytes: 16_777_216,
-  maxDiagnostics: 1_000,
-  deadlineMs: 120_000,
-})
-
-const PACKAGE_INSTALL_GATE_COMMAND = '_modkit.acceptance.packageInstallGate'
-/** Whether Resources joins the dependency chain, remembered per workspace. */
-const RESOURCES_CHAIN_KEY = 'modkit.resources.showChain'
-const PACKAGE_INSTALL_GATE_ENV = 'MODKIT_VSCODE_ACCEPTANCE_PACKAGE_GATE'
-const PACKAGE_INSTALL_GATE_GENERATION_ENV = 'MODKIT_VSCODE_ACCEPTANCE_GENERATION'
-const PACKAGE_INSTALL_GATE_ARTIFACT_ENV = 'MODKIT_VSCODE_ACCEPTANCE_ARTIFACT_SHA256'
-const PACKAGE_INSTALL_GATE_CONTINUE_ENV = 'MODKIT_VSCODE_ACCEPTANCE_CONTINUE'
-const PACKAGE_INSTALL_GATE_DISABLED_URI_ENV = 'MODKIT_VSCODE_ACCEPTANCE_DISABLED_URI'
-const FORMAT_SMOKE_WORKSPACE_ROOT_ENV = 'MODKIT_VSCODE_ACCEPTANCE_FORMAT_SMOKE_WORKSPACE_ROOT'
-const FORMAT_SMOKE_SC2_ROOT_ENV = 'MODKIT_VSCODE_ACCEPTANCE_FORMAT_SMOKE_SC2_ROOT'
-const FORMAT_SMOKE_WARZONE_ROOT_ENV = 'MODKIT_VSCODE_ACCEPTANCE_FORMAT_SMOKE_WARZONE_ROOT'
-const FORMAT_SMOKE_START_ENV = 'MODKIT_VSCODE_ACCEPTANCE_FORMAT_SMOKE_START'
-const FORMAT_SMOKE_ACK_ENV = 'MODKIT_VSCODE_ACCEPTANCE_FORMAT_SMOKE_ACK'
-const ARCHIVE_ACCEPTANCE_START_ENV = 'MODKIT_VSCODE_ACCEPTANCE_ARCHIVE_START'
-const ARCHIVE_ACCEPTANCE_ACK_ENV = 'MODKIT_VSCODE_ACCEPTANCE_ARCHIVE_ACK'
-const MANAGED_PACKAGES_DIRECTORY = 'managed-packages'
-const MANAGED_RELEASE_DESCRIPTOR = 'release.v1.json'
-const MANAGED_RELEASE_CATALOG = 'catalog.v1.json'
-const SELECTED_SOURCES_KEY = 'modkit.selectedContentSources'
-/** Accounts this machine last had connected: region and non-secret account id, never a ticket. */
-const BATTLENET_CONNECTIONS_KEY = 'modkit.sources.knownConnections'
-/** The last listing read for each account's root, so a new window can show it before connecting. */
-const CATALOGUE_KEY = 'modkit.sources.catalogue'
-
-interface PackagedManagedRegistry {
-  readonly catalogPath: string
-  readonly trustedPublicKeys: Readonly<Record<string, string>>
-}
-
-const FORMAT_SMOKE_CASE_IDS = Object.freeze([
-  'image-dds',
-  'image-png',
-  'image-tga',
-  'image-jpeg',
-  'document-odt',
-  'data-xml',
-  'archive-zip',
-  'archive-warzone-wz',
-  'archive-mpq',
-  'casc-dds',
-  'audio-wav',
-  'audio-ogg',
-  'model-m3',
-  'model-warzone-pie',
-])
-
-interface FormatSmokeRouteStep {
-  readonly formatId: string
-  readonly extensionId: string
-  readonly contributionId: string
-}
-
-interface FormatSmokeAuthorityCase {
-  readonly id: string
-  readonly family: string
-  readonly formats: readonly string[]
-  readonly route: readonly FormatSmokeRouteStep[]
-  readonly stage: 'raster' | 'tree-text' | 'tree' | 'metadata-tree' | 'model-or-wireframe'
-  readonly corpus:
-    | { readonly kind: 'named-exclusion'; readonly reason: string }
-    | {
-        readonly kind:
-          'workspace-reference' | 'warzone-install-file' | 'sc2-install-file' | 'sc2-casc-entry'
-        readonly path: string
-        readonly bytes: number
-        readonly sha256: string
-      }
-    | {
-        readonly kind: 'warzone-wz-entry'
-        readonly container: string
-        readonly path: string
-        readonly bytes: number
-        readonly sha256: string
-      }
-}
-
-interface FormatSmokeAuthority {
-  readonly kind: 'x3.ga-recovery/format-family-smoke'
-  readonly schemaVersion: 1
-  readonly cases: readonly FormatSmokeAuthorityCase[]
-  readonly namedExclusions: readonly { readonly id: string; readonly reason: string }[]
-}
-
-interface FormatSmokeOpenCase {
-  readonly kind: 'open'
-  readonly id: string
-  readonly family: string
-  readonly stage: FormatSmokeAuthorityCase['stage']
-  readonly route: readonly FormatSmokeRouteStep[]
-  readonly source:
-    | {
-        readonly kind: 'file'
-        readonly path: string
-        readonly uri: vscode.Uri
-        readonly bytes: number
-        readonly sha256: string
-      }
-    | {
-        readonly kind: 'container-entry'
-        readonly container: string
-        readonly entry: string
-        readonly uri: vscode.Uri
-        readonly bytes: number
-        readonly sha256: string
-      }
-}
-
-interface FormatSmokeExcludedCase {
-  readonly kind: 'excluded'
-  readonly id: string
-  readonly family: string
-  readonly stage: FormatSmokeAuthorityCase['stage']
-  readonly route: readonly FormatSmokeRouteStep[]
-  readonly reason: string
-}
-
-type FormatSmokeCase = FormatSmokeOpenCase | FormatSmokeExcludedCase
-
-const formatSmokeObject = (value: unknown, label: string): Record<string, unknown> => {
-  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
-    throw new TypeError(`${label} must be an object`)
-  }
-  return value as Record<string, unknown>
-}
-
-interface AttemptedContainerCandidate {
-  readonly contributionId: string
-  readonly formatIds: readonly string[]
-  readonly state: 'rejected' | 'detected' | 'selected'
-  readonly diagnostics: readonly {
-    readonly severity: string
-    readonly code: string
-    readonly message: string
-  }[]
-}
-
-const isAttemptedContainerCandidate = (value: unknown): value is AttemptedContainerCandidate => {
-  if (value === null || typeof value !== 'object' || Array.isArray(value)) return false
-  const candidate = value as Record<string, unknown>
-  return (
-    typeof candidate.contributionId === 'string' &&
-    Array.isArray(candidate.formatIds) &&
-    candidate.formatIds.every((formatId: unknown) => typeof formatId === 'string') &&
-    (candidate.state === 'rejected' ||
-      candidate.state === 'detected' ||
-      candidate.state === 'selected') &&
-    Array.isArray(candidate.diagnostics) &&
-    candidate.diagnostics.every(diagnostic => {
-      if (diagnostic === null || typeof diagnostic !== 'object' || Array.isArray(diagnostic)) {
-        return false
-      }
-      const item = diagnostic as Record<string, unknown>
-      return (
-        typeof item.severity === 'string' &&
-        typeof item.code === 'string' &&
-        typeof item.message === 'string'
-      )
-    })
-  )
-}
-
-const formatSmokeConfinedPath = (root: string, portable: string, label: string): string => {
-  if (portable.includes('\0')) throw new TypeError(`${label} contains NUL`)
-  const normalized = portable.replaceAll('\\', '/')
-  if (normalized.startsWith('/') || /^[a-z]:\//iu.test(normalized)) {
-    throw new TypeError(`${label} escapes its explicit root`)
-  }
-  const target = resolve(root, ...normalized.split('/'))
-  const fromRoot = relative(root, target)
-  if (fromRoot === '..' || fromRoot.startsWith(`..${process.platform === 'win32' ? '\\' : '/'}`)) {
-    throw new TypeError(`${label} escapes its explicit root`)
-  }
-  return target
-}
-
-const formatSmokeEntryPath = (value: string, label: string): string => {
-  const normalized = value.replaceAll('\\', '/')
-  if (
-    normalized.split('/').some(segment => segment === '' || segment === '.' || segment === '..')
-  ) {
-    throw new TypeError(`${label} is not a confined container entry`)
-  }
-  return normalized
-}
-
-function readPackagedFormatSmoke(extensionRoot: string): {
-  readonly authority: FormatSmokeAuthority
-  readonly sha256: string
-} {
-  const path = join(extensionRoot, 'dist-app', 'format-smoke.v1.json')
-  const bytes = readFileSync(path)
-  const parsed = formatSmokeObject(JSON.parse(bytes.toString('utf8')), 'format smoke authority')
-  if (parsed.kind !== 'x3.ga-recovery/format-family-smoke' || parsed.schemaVersion !== 1) {
-    throw new TypeError('format smoke authority has the wrong kind or schemaVersion')
-  }
-  const cases = parsed.cases
-  if (!Array.isArray(cases) || cases.length !== FORMAT_SMOKE_CASE_IDS.length) {
-    throw new TypeError('format smoke authority must contain exactly 14 cases')
-  }
-  const ids = cases.map(item => formatSmokeObject(item, 'format smoke case').id)
-  if (JSON.stringify(ids) !== JSON.stringify(FORMAT_SMOKE_CASE_IDS)) {
-    throw new TypeError(`format smoke authority case order is ${JSON.stringify(ids)}`)
-  }
-  const exclusions = parsed.namedExclusions
-  if (!Array.isArray(exclusions) || exclusions.length !== 0) {
-    throw new TypeError('format smoke authority must contain no exclusions')
-  }
-  return Object.freeze({
-    authority: parsed as unknown as FormatSmokeAuthority,
-    sha256: `sha256:${createHash('sha256').update(bytes).digest('hex')}`,
-  })
-}
-
-const requiredFormatSmokeRoot = (environment: string): string => {
-  const value = process.env[environment]
-  if (value === undefined || value.trim() === '' || !isAbsolute(value)) {
-    throw new TypeError(`${environment} must name an absolute root`)
-  }
-  return resolve(value)
-}
-
-function resolvePackagedFormatSmokeCases(
-  authority: FormatSmokeAuthority,
-): readonly FormatSmokeCase[] {
-  const workspaceRoot = requiredFormatSmokeRoot(FORMAT_SMOKE_WORKSPACE_ROOT_ENV)
-  const sc2Root = requiredFormatSmokeRoot(FORMAT_SMOKE_SC2_ROOT_ENV)
-  const warzoneRoot = requiredFormatSmokeRoot(FORMAT_SMOKE_WARZONE_ROOT_ENV)
-  return Object.freeze(
-    authority.cases.map(entry => {
-      const common = {
-        id: entry.id,
-        family: entry.family,
-        stage: entry.stage,
-        route: Object.freeze(
-          entry.route.map(step =>
-            Object.freeze({
-              formatId: step.formatId,
-              extensionId: step.extensionId,
-              contributionId: step.contributionId,
-            }),
-          ),
-        ),
-      }
-      if (entry.corpus.kind === 'named-exclusion') {
-        return Object.freeze({
-          ...common,
-          kind: 'excluded' as const,
-          reason: entry.corpus.reason,
-        })
-      }
-      const corpus = entry.corpus
-      if (corpus.kind === 'sc2-casc-entry') {
-        const member = formatSmokeEntryPath(corpus.path, `${entry.id}.corpus.path`)
-        return Object.freeze({
-          ...common,
-          kind: 'open' as const,
-          source: Object.freeze({
-            kind: 'container-entry' as const,
-            container: sc2Root,
-            entry: member,
-            uri: vscode.Uri.from({
-              scheme: CONTAINER_SCHEME,
-              path: containerUriPath(sc2Root, member),
-            }),
-            bytes: corpus.bytes,
-            sha256: corpus.sha256,
-          }),
-        })
-      }
-      if (corpus.kind === 'warzone-wz-entry') {
-        const container = formatSmokeConfinedPath(
-          warzoneRoot,
-          corpus.container,
-          `${entry.id}.corpus.container`,
-        )
-        const member = formatSmokeEntryPath(corpus.path, `${entry.id}.corpus.path`)
-        return Object.freeze({
-          ...common,
-          kind: 'open' as const,
-          source: Object.freeze({
-            kind: 'container-entry' as const,
-            container,
-            entry: member,
-            uri: vscode.Uri.from({
-              scheme: CONTAINER_SCHEME,
-              path: containerUriPath(container, member),
-            }),
-            bytes: corpus.bytes,
-            sha256: corpus.sha256,
-          }),
-        })
-      }
-      const root =
-        corpus.kind === 'workspace-reference'
-          ? workspaceRoot
-          : corpus.kind === 'sc2-install-file'
-            ? sc2Root
-            : warzoneRoot
-      const path = formatSmokeConfinedPath(root, corpus.path, `${entry.id}.corpus.path`)
-      return Object.freeze({
-        ...common,
-        kind: 'open' as const,
-        source: Object.freeze({
-          kind: 'file' as const,
-          path,
-          uri: vscode.Uri.file(path),
-          bytes: corpus.bytes,
-          sha256: corpus.sha256,
-        }),
-      })
-    }),
-  )
-}
-
-async function formatSmokeFileDigest(path: string): Promise<string> {
-  const hash = createHash('sha256')
-  for await (const chunk of createReadStream(path)) hash.update(chunk)
-  return hash.digest('hex')
-}
-
-function readPackagedManagedRegistry(extensionRoot: string): PackagedManagedRegistry | undefined {
-  const releaseRoot = join(extensionRoot, 'dist-app', MANAGED_PACKAGES_DIRECTORY)
-  const descriptorPath = join(releaseRoot, MANAGED_RELEASE_DESCRIPTOR)
-  if (!existsSync(descriptorPath)) return undefined
-  const descriptor = JSON.parse(readFileSync(descriptorPath, 'utf8')) as {
-    readonly catalog?: { readonly file?: unknown }
-    readonly signing?: { readonly keyId?: unknown; readonly publicKeyPem?: unknown }
-  }
-  if (descriptor.catalog?.file !== MANAGED_RELEASE_CATALOG) {
-    throw new Error(`packaged managed catalog file must be ${MANAGED_RELEASE_CATALOG}`)
-  }
-  const keyId = descriptor.signing?.keyId
-  const publicKeyPem = descriptor.signing?.publicKeyPem
-  if (typeof keyId !== 'string' || keyId.trim() === '') {
-    throw new Error('packaged managed release signing keyId must be non-empty')
-  }
-  if (typeof publicKeyPem !== 'string' || publicKeyPem.trim() === '') {
-    throw new Error('packaged managed release public key must be non-empty PEM')
-  }
-  return Object.freeze({
-    catalogPath: join(releaseRoot, MANAGED_RELEASE_CATALOG),
-    trustedPublicKeys: Object.freeze({ [keyId]: publicKeyPem }),
-  })
-}
-
-/**
- * The subject string a URI names.
- *
- * A `file:` URI names a path; a `modkit-container:` URI names a member of an open container and has
- * no meaningful `fsPath` at all — its own text *is* the identity, and handing `fsPath` to anything
- * downstream would silently address a file that does not exist.
- */
-function subjectPathOf(uri: vscode.Uri): string {
-  if (uri.scheme === CONTAINER_SCHEME) return `${CONTAINER_SCHEME}:${uri.path}`
-  return uri.scheme === 'modkit-source' ? uri.toString() : uri.fsPath
-}
-
-/**
- * Where the content sources open a subject path: a `modkit-source:` URI is a path inside one of
- * them, a member of a container — nested or not — is the container's path joined with every member
- * on the way (the loader opens a packed package or the game's storage it lands in, and anything
- * else inside its base mods), anything else is a host path.
- */
-function modContextTargetOf(path: string): ModContextTarget | undefined {
-  if (path.startsWith('modkit-source:')) {
-    const uri = vscode.Uri.parse(path)
-    const [sourceId, ...parts] = uri.path.replace(/^\//u, '').split('/')
-    return uri.authority === 'battlenet' && sourceId
-      ? Object.freeze({ sourceId, path: parts.filter(Boolean).join('/') })
-      : undefined
-  }
-  const location = parseContainerUriText(path)
-  if (location === undefined) return path
-  const { file, members } = splitContainer(location.container)
-  return [file.replace(/[\\/]+$/u, ''), ...members, location.entry].filter(Boolean).join('/')
-}
-
-/** The inverse: the URI a subject string names, for the editor surfaces that take one. */
-function subjectUriOf(path: string): vscode.Uri {
-  if (path.startsWith('modkit-source:')) return vscode.Uri.parse(path)
-  const location = parseContainerUriText(path)
-  return location === undefined
-    ? vscode.Uri.file(path)
-    : vscode.Uri.from({
-        scheme: CONTAINER_SCHEME,
-        path: containerUriPath(location.container, location.entry),
-      })
-}
-
-/**
- * The entry a namespace-entry subject id names, or nothing when the subject is not one.
- *
- * Codecs address an entry inside their own package as `<package source uri>?vfs-path=<entry>`; the
- * package part is the codec's source uri, which is not this window's subject string, so only the
- * entry travels — the caller already knows which package it asked.
- */
-function namespaceEntryPathOf(subjectId: string): string | undefined {
-  const match = /[?&]vfs-path=([^&]*)$/u.exec(subjectId)
-  if (match?.[1] === undefined) return undefined
-  try {
-    const entry = decodeURIComponent(match[1]).replaceAll('\\', '/').replace(/^\/+/u, '')
-    return entry === '' || entry.split('/').includes('..') ? undefined : entry
-  } catch {
-    return undefined
-  }
-}
-
-/**
- * The package a namespace-entry subject belongs to, when its own address names one.
- *
- * With a dependency chain on screen the resource under the cursor usually belongs to a *lower*
- * layer — an alert declared by Core, read while editing Void. Both packages carry a file of the
- * same name, so resolving the entry against the active package opens the wrong document at a line
- * that means nothing. The subject id already carries its package; this reads it back.
- */
-function namespaceEntryRootOf(subjectId: string): string | undefined {
-  const cut = subjectId.search(/[?&]vfs-path=/u)
-  if (cut <= 0) return undefined
-  const head = subjectId.slice(0, cut)
-  if (parseContainerUriText(head) !== undefined || head.startsWith('modkit-source:')) return head
-  if (!head.startsWith('file:')) return undefined
-  try {
-    return vscode.Uri.parse(head, true).fsPath
-  } catch {
-    return undefined
-  }
-}
-
-/** The URI of one entry inside a package subject, for a directory package or a container member. */
-function memberUriOf(root: string, entry: string): vscode.Uri {
-  if (root.startsWith('modkit-source:')) {
-    return vscode.Uri.joinPath(vscode.Uri.parse(root), ...entry.split('/'))
-  }
-  const location = parseContainerUriText(root)
-  if (location === undefined) {
-    const filesystemRoot = root.startsWith('file:') ? vscode.Uri.parse(root).fsPath : root
-    // A packed mod's resource address carries the package file as its root.
-    try {
-      if (statSync(filesystemRoot).isFile())
-        return subjectUriOf(containerUriText(filesystemRoot, entry))
-    } catch { /* A directory or an unavailable source still uses the ordinary file route. */ }
-    return vscode.Uri.file(join(filesystemRoot, entry))
-  }
-  return subjectUriOf(
-        containerUriText(
-          location.container,
-          location.entry === '' ? entry : `${location.entry}/${entry}`,
-        ),
-      )
-}
-
-/**
- * Show a resource file, at its declaration when one is known.
- *
- * A file already on screen is revealed where it is: opening it «beside» a second time would split
- * the window once per click and leave the reader hunting for the copy that moved.
- */
-async function openResourceFile(target: vscode.Uri, range?: TreeNodeFacts['range']): Promise<void> {
-  const open = vscode.window.tabGroups.all
-    .flatMap(group => group.tabs.map(tab => ({ group, tab })))
-    .find(
-      ({ tab }) =>
-        (tab.input instanceof vscode.TabInputText || tab.input instanceof vscode.TabInputCustom) &&
-        tab.input.uri.toString() === target.toString(),
-    )
-  const line = range === undefined ? undefined : (range as { line?: number }).line
-  const column = range === undefined ? undefined : (range as { column?: number }).column
-  const at =
-    typeof line === 'number' && typeof column === 'number'
-      ? new vscode.Range(new vscode.Position(line, column), new vscode.Position(line, column))
-      : undefined
-  await vscode.commands.executeCommand('vscode.open', target, {
-    viewColumn: open?.group.viewColumn ?? vscode.ViewColumn.Beside,
-    preview: false,
-    ...(at === undefined ? {} : { selection: at }),
-  })
-}
-
-function subjectCandidateScopeOf(uri: vscode.Uri): VsCodeSubjectCandidateScope {
-  const container = uri.scheme === CONTAINER_SCHEME ? parseContainerUriPath(uri.path) : undefined
-  const workspaceTarget = container === undefined ? uri : vscode.Uri.file(container.container)
-  const workspaceUri = vscode.workspace.getWorkspaceFolder(workspaceTarget)?.uri.toString()
-  return Object.freeze({
-    uri: uri.toString(),
-    ...(workspaceUri === undefined ? {} : { workspaceUri }),
-    ...(container === undefined
-      ? {}
-      : { containerUri: vscode.Uri.file(container.container).toString() }),
-  })
-}
-
-const BACKSLASH = String.fromCharCode(92)
-
-class ModkitCustomDocument implements vscode.CustomDocument {
-  readonly state: CustomDocumentState
-  /** A remote content source has nothing to save into; a container member saves into its container. */
-  readonly readOnly: boolean
-
-  constructor(
-    readonly uri: vscode.Uri,
-    forceReadOnly = false,
-  ) {
-    this.state = new CustomDocumentState(subjectPathOf(uri))
-    this.readOnly = forceReadOnly || uri.scheme === 'modkit-source'
-  }
-
-  dispose(): void {
-    // The resolved panel owns the bridge session and detaches it from `state` on disposal.
-  }
-}
-
-/** Nonce for the webview CSP. A fresh one per load, so a cached script cannot be replayed. */
-function nonce(): string {
-  const bytes = new Uint8Array(16)
-  crypto.getRandomValues(bytes)
-  return [...bytes].map(byte => byte.toString(16).padStart(2, '0')).join('')
-}
-
-function workspaceFolders(): readonly string[] {
-  return (vscode.workspace.workspaceFolders ?? []).flatMap(folder =>
-    folder.uri.scheme === 'file' ? [folder.uri.fsPath] : [],
-  )
-}
-
-/** Where viewer exports land: one deterministic folder per window, never a page-supplied path. */
-export const VIEWER_EXPORT_FOLDER = 'modkit-export'
-
-/**
- * Write viewer-produced export files into this window's export folder.
- *
- * The destination is derived here and nowhere else — the page sends leaf names and bytes, never a
- * location — and a window with no writable folder refuses by saying so rather than choosing a
- * directory on the user's behalf.
- */
-async function exportViewerFiles(
-  files: readonly { readonly name: string; readonly bytes: Uint8Array }[],
-  beside?: string,
-): Promise<
-  | { readonly state: 'written'; readonly names: readonly string[] }
-  | {
-      readonly state: 'refused'
-      readonly reason: string
-    }
-> {
-  const localizer = createVscodeLocalizer(vscode.env.language)
-  if (beside !== undefined) return writeBeside(files, beside)
-  const folder = (vscode.workspace.workspaceFolders ?? []).find(
-    candidate => candidate.uri.scheme === 'file',
-  )
-  if (folder === undefined) {
-    return { state: 'refused', reason: localizer.text('vscode.export.noFolder') }
-  }
-  const target = vscode.Uri.joinPath(folder.uri, VIEWER_EXPORT_FOLDER)
-  await vscode.workspace.fs.createDirectory(target)
-  const names: string[] = []
-  for (const file of files) {
-    const destination = vscode.Uri.joinPath(target, file.name)
-    // `workspace.fs.writeFile` is typed `Uint8Array`; a Buffer subclass is rejected by the wire.
-    await vscode.workspace.fs.writeFile(destination, new Uint8Array(file.bytes))
-    names.push(file.name)
-  }
-  void vscode.window.showInformationMessage(
-    localizer.text('vscode.export.written', { count: names.length, folder: target.fsPath }),
-  )
-  return { state: 'written', names: Object.freeze(names) }
-}
-
-/**
- * A conversion lands where MK2 put it: beside its source — inside the same archive for a member —
- * under a name that does not overwrite anything, and opens in a tab of its own.
- */
-async function writeBeside(
-  files: readonly { readonly name: string; readonly bytes: Uint8Array }[],
-  beside: string,
-): Promise<{ readonly state: 'written'; readonly names: readonly string[] }> {
-  const source = subjectUriOf(beside)
-  const folder = vscode.Uri.joinPath(source, '..')
-  const exists = (uri: vscode.Uri): Thenable<boolean> =>
-    vscode.workspace.fs.stat(uri).then(
-      () => true,
-      () => false,
-    )
-  const names: string[] = []
-  for (const file of files) {
-    const dot = file.name.indexOf('.')
-    const stem = dot < 0 ? file.name : file.name.slice(0, dot)
-    const rest = dot < 0 ? '' : file.name.slice(dot)
-    let destination = vscode.Uri.joinPath(folder, file.name)
-    for (let copy = 2; await exists(destination); copy += 1) {
-      destination = vscode.Uri.joinPath(folder, `${stem} (${copy})${rest}`)
-    }
-    await vscode.workspace.fs.writeFile(destination, new Uint8Array(file.bytes))
-    names.push(destination.path.slice(destination.path.lastIndexOf('/') + 1))
-    await vscode.commands.executeCommand('vscode.open', destination, { preview: false })
-  }
-  return { state: 'written', names: Object.freeze(names) }
-}
-
-// ---------------------------------------------------------------------------------------------
-// the page
-
-interface PanelPageOptions {
-  readonly webview: vscode.Webview
-  readonly extensionUri: vscode.Uri
-  readonly host: VsCodeSubjectHost
-  readonly session: string
-  readonly locale: UiLocale
-  readonly localizationCatalogs: readonly UiCatalogDocument[]
-  readonly acceptance: ModkitAcceptanceReceipt
-  readonly openPath?: string
-  /** The one stage a stage-specific native editor raised this page for. */
-  readonly forcedStage?: string
-  readonly extensionCard?: import('./extension-cards.js').ExtensionCardBundle
-  /** Lower-case extensions the explorer's gallery draws, from the enabled image codecs. */
-  readonly galleryExtensions?: readonly string[]
-  /** Raised as a Modkit Explorer over one folder rather than for a subject. */
-  readonly explorer?: { readonly label: string }
-}
-
-/**
- * Build the page. The document, its policy and its nonce live in `./page.ts`; what this adds is
- * the editor's own URI rewriting and the snapshot cut from the composed host.
- */
-function panelHtml(options: PanelPageOptions): string {
-  const { webview, extensionUri } = options
-  const asset: WebviewLike = {
-    cspSource: webview.cspSource,
-    asWebviewUri: name => webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'dist-app', name)),
-  }
-  return pageHtml({
-    webview: asset,
-    nonce: nonce(),
-    /*
-     * Inert data a bridge realm is allowed to see, serialised into the page rather than fetched:
-     * the webview has no host access, and this is exactly what it may know about the realms it
-     * sits between.
-     */
-    bootstrap: {
-      locale: options.locale,
-      localizationCatalogs: options.localizationCatalogs,
-      extensionHost: {
-        realmId: options.host.services.host.profile.realmId,
-        facilities: options.host.services.host.profile.facilities,
-      },
-      webview: {
-        realmId: options.host.webview.profile.realmId,
-        facilities: options.host.webview.profile.facilities,
-      },
-      ...(options.host.webviewRenderer === undefined
-        ? {}
-        : { renderer: options.host.webviewRenderer }),
-      topologyId: options.host.services.host.topology.topologyId,
-      session: options.session,
-      moduleUrl: VSCODE_SUBJECT_SERVICES_URL,
-      contributionId: VSCODE_SUBJECT_CONTRIBUTION_ID,
-      supportedExtensions: options.host.supportedExtensions,
-      extensions: options.host.extensions,
-      diagnostics: options.host.services.host.inventory.diagnostics.length,
-      acceptance: options.acceptance,
-      ...(options.openPath === undefined ? {} : { openPath: options.openPath }),
-      ...(options.forcedStage === undefined ? {} : { forcedStage: options.forcedStage }),
-      ...(options.extensionCard === undefined ? {} : { extensionCard: options.extensionCard }),
-      ...(options.galleryExtensions === undefined
-        ? {}
-        : { galleryExtensions: options.galleryExtensions }),
-      ...(options.explorer === undefined ? {} : { explorer: options.explorer }),
-      showHiddenEntries:
-        vscode.workspace.getConfiguration('modkit').get<boolean>('showHiddenEntries') === true,
-    },
-  })
-}
-
-// ---------------------------------------------------------------------------------------------
-// tree views
-
-/**
- * Native extension-manager surface.
- *
- * Installed packages own their contributions. Availability is a separate catalogue question, and
- * problems remain visible without repeating installed packages in state-specific root groups.
- */
-class ExtensionsView implements vscode.TreeDataProvider<ExtensionNode>, vscode.Disposable {
-  private readonly changed = new vscode.EventEmitter<ExtensionNode | undefined>()
-  readonly onDidChangeTreeData = this.changed.event
-  private readonly subscription: { dispose(): void }
-
-  constructor(
-    private readonly host: VsCodeSubjectHost,
-    private readonly manager: ExtensionManagerController,
-    private readonly disabledContributionIds: () => readonly string[],
-    private readonly availableContributions: readonly import('./contributions.js').ContributionRow[],
-    private readonly localizer: UiLocalizer,
-    private readonly iconPathForEntry?: (entry: ExtensionManagerEntry) => string | undefined,
-    private readonly gameIconPath?: string,
-  ) {
-    this.subscription = manager.onDidChange(() => this.changed.fire(undefined))
-  }
-
-  dispose(): void {
-    this.subscription.dispose()
-    this.changed.dispose()
-  }
-
-  getTreeItem(node: ExtensionNode): vscode.TreeItem {
-    if (node.kind === 'group') {
-      const count = node.entries?.length ?? node.problems?.length ?? 0
-      const item = new vscode.TreeItem(
-        `${node.label} (${count})`,
-        node.group === 'installed' && count > 0
-          ? vscode.TreeItemCollapsibleState.Expanded
-          : vscode.TreeItemCollapsibleState.Collapsed,
-      )
-      item.iconPath = new vscode.ThemeIcon(node.group === 'problems' ? 'warning' : 'extensions')
-      item.contextValue = extensionGroupActionContextValue(node)
-      return item
-    }
-    if (node.kind === 'vendor') {
-      const count = node.sections.reduce(
-        (total, section) =>
-          total +
-          section.components.reduce((inner, component) => inner + component.entries.length, 0),
-        0,
-      )
-      const item = new vscode.TreeItem(node.label, vscode.TreeItemCollapsibleState.Collapsed)
-      item.description = `${count}`
-      item.tooltip = node.label
-      item.iconPath = new vscode.ThemeIcon('organization')
-      item.contextValue = extensionVendorActionContextValue(node)
-      item.command = {
-        command: OPEN_VENDOR_COMMAND,
-        title: this.localizer.text('extensions.action.openExtensionCard'),
-        arguments: [{ kind: 'vendor', id: node.id } as const],
-      }
-      return item
-    }
-    if (node.kind === 'section') {
-      const item = new vscode.TreeItem(node.label, vscode.TreeItemCollapsibleState.Collapsed)
-      item.description = `${
-        node.section === 'components'
-          ? node.components.reduce((count, component) => count + component.entries.length, 0)
-          : node.components.length
-      }`
-      item.tooltip = node.label
-      item.iconPath = new vscode.ThemeIcon(node.section === 'games' ? 'game' : 'references')
-      item.contextValue = `modkitExtensionSection.${node.section}`
-      return item
-    }
-    if (node.kind === 'component') {
-      const item = new vscode.TreeItem(node.label, vscode.TreeItemCollapsibleState.Collapsed)
-      item.description = `${node.entries.length}`
-      item.tooltip =
-        node.component === 'shared'
-          ? this.localizer.text('vscode.extensions.components')
-          : (node.id ?? node.label)
-      item.iconPath =
-        node.component !== 'game' || this.gameIconPath === undefined
-          ? new vscode.ThemeIcon(node.component === 'shared' ? 'references' : 'symbol-event')
-          : vscode.Uri.file(this.gameIconPath)
-      item.contextValue = extensionComponentActionContextValue(node)
-      if (node.component === 'game' && node.id !== undefined) {
-        item.command = {
-          command: OPEN_GAME_COMMAND,
-          title: this.localizer.text('extensions.action.openExtensionCard'),
-          arguments: [{ kind: 'game', id: node.id } as const],
-        }
-      }
-      return item
-    }
-    if (node.kind === 'problem') {
-      const item = new vscode.TreeItem(node.label, vscode.TreeItemCollapsibleState.None)
-      item.description = node.detail
-      item.tooltip = `${node.label}\n${node.detail}`
-      item.iconPath = new vscode.ThemeIcon('error')
-      return item
-    }
-
-    if (node.kind === 'contract') {
-      const item = new vscode.TreeItem(node.label, vscode.TreeItemCollapsibleState.Collapsed)
-      item.description = `${node.contributions.length}`
-      const exactContract =
-        node.contract === undefined
-          ? undefined
-          : `${node.contract}${node.contractMajor === undefined ? '' : `@${node.contractMajor}`}`
-      item.tooltip =
-        exactContract === undefined
-          ? this.localizer.text('extensions.tooltip.invalidContract')
-          : `${node.label}\n${this.localizer.text('extensions.tooltip.exactContract', { contract: exactContract })}`
-      item.iconPath = new vscode.ThemeIcon('symbol-interface')
-      item.contextValue = 'modkitContributionContract'
-      return item
-    }
-
-    if (node.kind === 'contribution') {
-      const { contribution } = node
-      const item = new vscode.TreeItem(
-        contribution.displayName,
-        vscode.TreeItemCollapsibleState.None,
-      )
-      const identity = contribution.id ?? contribution.path
-      const state = this.localizer.text(node.enabled ? 'common.enabled' : 'common.disabled')
-      // State is communicated by the icon, tooltip and assistive label; do not repeat it as text.
-      if (node.pendingReload)
-        item.description = this.localizer.text('extensions.state.reloadPending')
-      const exactContract = `${contribution.contract ?? this.localizer.text('extensions.tooltip.invalidContract')}${
-        contribution.contractMajor === undefined ? '' : `@${contribution.contractMajor}`
-      }`
-      item.tooltip =
-        `${identity}\n${node.extension}\n` +
-        `${this.localizer.text('extensions.tooltip.contract', { contract: exactContract })}\n` +
-        `${this.localizer.text('extensions.tooltip.state', { state })}` +
-        `${node.pendingReload ? ` · ${this.localizer.text('extensions.state.afterReload')}` : ''}\n` +
-        this.localizer.text('extensions.tooltip.origin', { origin: contribution.origin })
-      item.iconPath = new vscode.ThemeIcon(node.enabled ? 'pass-filled' : 'circle-slash')
-      item.accessibilityInformation = {
-        label: `${contribution.displayName}: ${state}${
-          node.pendingReload ? `; ${this.localizer.text('extensions.state.afterReload')}` : ''
-        }`,
-      }
-      item.contextValue = extensionActionContextValue(node)
-      if (contribution.id !== undefined) {
-        item.command = {
-          command: OPEN_CONTRIBUTION_COMMAND,
-          title: this.localizer.text('extensions.action.openContributionCard'),
-          arguments: [
-            { kind: 'contribution', id: contribution.id, extension: node.extension } as const,
-          ],
-        }
-      }
-      return item
-    }
-
-    const { entry } = node
-    const displayName = extensionEntryDisplayName(entry)
-    const item = new vscode.TreeItem(
-      displayName,
-      node.contributions.length > 0
-        ? vscode.TreeItemCollapsibleState.Collapsed
-        : vscode.TreeItemCollapsibleState.None,
-    )
-    const version =
-      entry.installedVersion === undefined
-        ? `${this.localizer.text('extensions.group.available')} ${entry.availableVersion}`
-        : entry.updateAvailable
-          ? `${entry.installedVersion} → ${entry.availableVersion}`
-          : entry.installedVersion
-    item.description = `${version}${
-      node.pendingReload ? ` · ${this.localizer.text('extensions.state.reloadPending')}` : ''
-    }`
-    item.tooltip =
-      `${displayName}\n${entry.id}\n${version}\n${this.localizer.text('extensions.tooltip.source', {
-        source: entry.source,
-      })}\n` +
-      this.localizer.text(
-        entry.trusted
-          ? 'extensions.tooltip.trustedPublisher'
-          : 'extensions.tooltip.unverifiedPublisher',
-      ) +
-      (node.pendingReload ? `\n${this.localizer.text('extensions.state.afterReload')}` : '')
-    const iconPath = this.iconPathForEntry?.(entry)
-    item.iconPath =
-      iconPath === undefined
-        ? new vscode.ThemeIcon(
-            node.group === 'available'
-              ? 'cloud-download'
-              : entry.enabled
-                ? 'extensions'
-                : 'circle-slash',
-          )
-        : vscode.Uri.file(iconPath)
-    item.contextValue = extensionActionContextValue(node)
-    item.command = {
-      command: OPEN_EXTENSION_COMMAND,
-      title: this.localizer.text('extensions.action.openExtensionCard'),
-      arguments: [{ kind: 'extension', id: entry.id } as const],
-    }
-    return item
-  }
-
-  async getChildren(node?: ExtensionNode): Promise<ExtensionNode[]> {
-    if (node !== undefined)
-      return [...extensionTreeChildren(node, this.disabledContributionIds(), this.localizer)]
-
-    const entries = (await this.manager.snapshot()).entries
-    const problems = [
-      ...this.host.extensions.failures.map(failure => ({
-        kind: 'problem' as const,
-        label: failure.root,
-        detail: `${failure.code}: ${failure.message}`,
-      })),
-      ...this.host.extensions.problems.map(problem => ({
-        kind: 'problem' as const,
-        label: problem,
-        detail: this.localizer.text('activity.settings'),
-      })),
-    ]
-    return [
-      ...createExtensionTree({
-        entries,
-        contributions: [...this.host.contributions, ...this.availableContributions],
-        configuredDisabledContributionIds: this.disabledContributionIds(),
-        pendingReloadEntryIds: this.manager.pendingReloadIds(),
-        problems,
-        localizer: this.localizer,
-      }),
-    ]
-  }
-}
-
-/**
- * The realm rail, as a native tree.
- *
- * Exactly the facts the webview used to draw down the side of its own panel — the topology and
- * realm this window composed, what loaded from where, and the facilities this page holds. None of
- * it was ever editor content: it describes the window, it is true whatever file is open, and a
- * sidebar is where VS Code puts that kind of thing. Drawing it inside the editor area meant the
- * custom editor was showing something other than the subject, which is what the owner's screenshot
- * caught.
- */
-interface HostNode {
-  readonly label: string
-  readonly detail?: string
-  readonly icon?: string
-  readonly children?: readonly HostNode[]
-}
-
-class HostView implements vscode.TreeDataProvider<HostNode> {
-  private readonly changed = new vscode.EventEmitter<HostNode | undefined>()
-  readonly onDidChangeTreeData = this.changed.event
-  /** What the page answered for; undefined until a page has loaded and reported. */
-  private facilities: FacilityReport | undefined
-
-  constructor(
-    private readonly host: VsCodeSubjectHost,
-    private readonly topologyId: string,
-    private readonly sources: () => readonly SelectedContentSource[],
-    private readonly localizer: UiLocalizer,
-  ) {}
-
-  refresh(): void {
-    this.changed.fire(undefined)
-  }
-
-  /** Called when a page reports its facilities, so the rail stops guessing and starts knowing. */
-  report(facilities: FacilityReport | undefined): void {
-    this.facilities = facilities
-    this.changed.fire(undefined)
-  }
-
-  getTreeItem(node: HostNode): vscode.TreeItem {
-    const item = new vscode.TreeItem(
-      node.label,
-      node.children === undefined || node.children.length === 0
-        ? vscode.TreeItemCollapsibleState.None
-        : vscode.TreeItemCollapsibleState.Expanded,
-    )
-    if (node.detail !== undefined) {
-      item.description = node.detail
-      item.tooltip = `${node.label}\n${node.detail}`
-    }
-    if (node.icon !== undefined) item.iconPath = new vscode.ThemeIcon(node.icon)
-    return item
-  }
-
-  getChildren(node?: HostNode): HostNode[] {
-    if (node !== undefined) return [...(node.children ?? [])]
-    const services = this.host.services
-    const webviewFacilities = this.host.webview.profile.facilities
-    /*
-     * The isolation claim, drawn from the very object the running product hands the page — so this
-     * row is a statement about this window, not a repetition of what the topology intends.
-     */
-    const isolated = !webviewFacilities.includes('editor.host-native')
-    return [
-      {
-        label: this.localizer.text('sidebar.host'),
-        icon: 'server-process',
-        children: [
-          { label: this.localizer.text('vscode.host.topology'), detail: this.topologyId },
-          {
-            label: this.localizer.text('vscode.host.extensionHost'),
-            detail: services.host.profile.realmId,
-          },
-          {
-            label: this.localizer.text('vscode.host.codecs'),
-            detail: `${services.workers.profile.realmId} (${services.executionProfiles.join('/')})`,
-          },
-          {
-            label: this.localizer.text('vscode.host.webview'),
-            detail: this.host.webview.profile.realmId,
-          },
-          {
-            label: this.localizer.text('vscode.host.inventoryDiagnostics'),
-            detail: String(services.host.inventory.diagnostics.length),
-          },
-          {
-            label: this.localizer.text('vscode.host.isolation'),
-            detail: isolated
-              ? this.localizer.text('vscode.host.isolationSafe')
-              : this.localizer.text('vscode.host.isolationUnsafe'),
-            icon: isolated ? 'shield' : 'warning',
-          },
-          {
-            label: this.localizer.text('vscode.host.detectableTypes'),
-            detail: String(this.host.supportedExtensions.length),
-          },
-        ],
-      },
-      {
-        /*
-         * Composed against honoured. Before a page has loaded there is nothing to compare, and the
-         * rail says the composed set and no more — inventing an observation would be the exact
-         * imitation §1.5 forbids.
-         */
-        label: this.localizer.text('sidebar.facilities'),
-        icon: 'list-unordered',
-        children:
-          this.facilities === undefined
-            ? webviewFacilities.map(facility => ({
-                label: facility,
-                detail: this.localizer.text('vscode.host.facilitiesPending'),
-              }))
-            : [
-                ...this.facilities.intended.map(facility => ({
-                  label: facility,
-                  detail: this.facilities?.observed.includes(facility)
-                    ? this.localizer.text('vscode.host.facilityHonoured')
-                    : this.localizer.text('vscode.host.facilityUnavailable'),
-                  icon: this.facilities?.observed.includes(facility) ? 'pass' : 'warning',
-                })),
-                ...this.facilities.ungranted.map(facility => ({
-                  label: facility,
-                  detail: this.localizer.text('vscode.host.facilityUngranted'),
-                  icon: 'circle-outline',
-                })),
-              ],
-      },
-      {
-        label: this.localizer.text('vscode.host.sources'),
-        icon: 'root-folder',
-        children:
-          this.sources().length === 0
-            ? [
-                {
-                  label: this.localizer.text('vscode.host.noSelectedGame'),
-                  detail: this.localizer.text('vscode.host.selectGameHint'),
-                },
-              ]
-            : this.sources().map(source => ({
-                label: source.displayName,
-                detail: source.gameId,
-                icon: 'folder-library',
-              })),
-      },
-    ]
-  }
-}
-
-/** The native, persistent view over the source authorities already used by the host. */
-class SourcesView implements vscode.TreeDataProvider<SourceTreeNode>, vscode.Disposable {
-  private readonly changed = new vscode.EventEmitter<SourceTreeNode | undefined>()
-  readonly onDidChangeTreeData = this.changed.event
-  private providerState:
-    | Promise<{
-        readonly snapshot?: Awaited<ReturnType<ContentSources['snapshot']>>
-        readonly problem?: string
-      }>
-    | undefined
-
-  constructor(
-    private readonly workspaceFolders: () => readonly {
-      readonly name: string
-      readonly uri: string
-    }[],
-    private readonly selectedInstallations: () => readonly SelectedContentSource[],
-    private readonly mountedProviderRootIds: () => ReadonlySet<string>,
-    private readonly providerSnapshot: () => Promise<
-      Awaited<ReturnType<ContentSources['snapshot']>>
-    >,
-    private readonly localizer: UiLocalizer,
-    private readonly mountedInstallationPaths: () => ReadonlySet<string> = () => new Set(),
-    private readonly mountingIds: () => ReadonlySet<string> = () => new Set(),
-    private readonly knownConnections: () => readonly {
-      readonly region: string
-      readonly accountId: string
-    }[] = () => [],
-    private readonly listPublications: (
-      sourceId: string,
-    ) => Promise<
-      readonly {
-        readonly name: string
-        readonly cached: boolean
-        /** Present only when this window holds a working copy of that publication. */
-        readonly copy?: 'clean' | 'edited'
-      }[]
-    > = async () => [],
-    private readonly rememberedRoots: () => readonly {
-      readonly id: string
-      readonly label: string
-      readonly region: string
-    }[] = () => [],
-    private readonly storage: () => Promise<ReadonlyMap<string, string>> = async () => new Map(),
-  ) {}
-
-  dispose(): void {
-    this.changed.dispose()
-  }
-
-  refresh(): void {
-    this.providerState = undefined
-    this.changed.fire(undefined)
-  }
-
-  private loadProviderState(): Promise<{
-    readonly snapshot?: Awaited<ReturnType<ContentSources['snapshot']>>
-    readonly problem?: string
-  }> {
-    this.providerState ??= this.providerSnapshot().then(
-      snapshot => ({ snapshot }),
-      error => ({ problem: error instanceof Error ? error.message : String(error) }),
-    )
-    return this.providerState
-  }
-
-  getTreeItem(node: SourceTreeNode): vscode.TreeItem {
-    const item = new vscode.TreeItem(
-      node.label,
-      node.kind === 'provider-root'
-        ? vscode.TreeItemCollapsibleState.Collapsed
-        : node.children === undefined
-          ? vscode.TreeItemCollapsibleState.None
-          : vscode.TreeItemCollapsibleState.Expanded,
-    )
-    item.id = node.id
-    item.iconPath = new vscode.ThemeIcon(node.icon)
-    // The host decorates by URI, which is what greys a row that is not connected or not downloaded.
-    if (node.resourceUri !== undefined) item.resourceUri = vscode.Uri.parse(node.resourceUri)
-    if (node.contextValue !== undefined) item.contextValue = node.contextValue
-    if (node.description !== undefined) item.description = node.description
-    item.tooltip = node.tooltip ?? node.description ?? node.label
-    if (node.kind === 'publication') {
-      item.collapsibleState = vscode.TreeItemCollapsibleState.None
-      item.command = {
-        command: node.cached === true ? 'modkit.sources.revealLocal' : 'modkit.sources.download',
-        title: this.localizer.text(
-          node.cached === true ? 'vscode.sources.reveal' : 'vscode.sources.download',
-        ),
-        arguments: [node],
-      }
-    } else if (node.offlineAccount !== undefined) {
-      // The row that says the account is not connected is the row that connects it.
-      item.command = {
-        command: 'modkit.sources.signIn',
-        title: this.localizer.text('vscode.sources.signIn'),
-        arguments: [node],
-      }
-    } else if (node.kind === 'provider-root') {
-      item.command = {
-        command: 'modkit.sources.open',
-        title: this.localizer.text('vscode.sources.open'),
-        arguments: [node],
-      }
-    } else if (node.kind === 'installation' && node.uri !== undefined) {
-      item.command = {
-        command: 'modkit.sources.openInstallation',
-        title: this.localizer.text('vscode.sources.open'),
-        arguments: [node],
-      }
-    } else if (node.kind === 'workspace' && node.uri !== undefined) {
-      item.command = {
-        command: 'revealInExplorer',
-        title: this.localizer.text('vscode.sources.reveal'),
-        arguments: [vscode.Uri.parse(node.uri)],
-      }
-    } else if (node.id === 'provider:sign-in') {
-      // The row that says there is no account is the row that adds one.
-      item.command = {
-        command: 'modkit.sources.signIn',
-        title: this.localizer.text('vscode.sources.signIn'),
-      }
-    } else if (node.id === 'provider:unavailable') {
-      item.command = {
-        command: 'modkit.contentSources',
-        title: this.localizer.text('vscode.sources.manage'),
-      }
-    } else if (node.id === 'installations:none') {
-      item.command = {
-        command: 'modkit.selectGameInstallation',
-        title: this.localizer.text('vscode.game.selectInstallation'),
-      }
-    }
-    return item
-  }
-
-  async getChildren(node?: SourceTreeNode): Promise<SourceTreeNode[]> {
-    /*
-     * A root's children are the publications it carries, read through the provider so the row can
-     * say whether each one is already downloaded. The catalogue itself is held by the provider and
-     * only re-read on refresh, so expanding a root costs nothing.
-     */
-    if (node?.kind === 'provider-root' && node.sourceId !== undefined) {
-      const sourceId = node.sourceId
-      const rows = await this.listPublications(sourceId).catch(() => [])
-      return rows.map(row =>
-        Object.freeze({
-          kind: 'publication' as const,
-          id: `publication:${sourceId}:${row.name}`,
-          label: row.name,
-          // A working copy is the most useful thing the row can say, so it takes the icon. The
-          // context value stays `cached`/`notCached`: the menus are keyed on exactly those two,
-          // and a third value would silently take every button off an edited row.
-          icon: row.copy === 'edited' ? 'edit' : row.cached ? 'package' : 'cloud',
-          ...(row.copy === undefined
-            ? {}
-            : {
-                description: this.localizer.text(
-                  row.copy === 'edited' ? 'vscode.sources.copyEdited' : 'vscode.sources.copyClean',
-                ),
-              }),
-          contextValue: `modkitSource.publication.${row.cached ? 'cached' : 'notCached'}`,
-          sourceId,
-          cached: row.cached,
-          resourceUri: `modkit-source://battlenet/${encodeURIComponent(sourceId)}/${encodeURIComponent(row.name)}`,
-          normalizedPath: row.name,
-        }),
-      )
-    }
-    if (node !== undefined) return [...(node.children ?? [])]
-    const provider = await this.loadProviderState()
-    return [
-      ...createSourceTree({
-        workspaceFolders: this.workspaceFolders(),
-        selectedInstallations: this.selectedInstallations(),
-        mountedProviderRootIds: this.mountedProviderRootIds(),
-        mountedInstallationPaths: this.mountedInstallationPaths(),
-        mountingIds: this.mountingIds(),
-        knownConnections: this.knownConnections(),
-        rememberedRoots: this.rememberedRoots(),
-        storage: await this.storage(),
-        ...(provider.snapshot === undefined ? {} : { providerSnapshot: provider.snapshot }),
-        ...(provider.problem === undefined ? {} : { providerProblem: provider.problem }),
-        text: {
-          workspace: this.localizer.text('vscode.sources.workspace'),
-          selectedInstallations: this.localizer.text('vscode.sources.selectedInstallations'),
-          providerSources: this.localizer.text('vscode.sources.providerSources'),
-          connections: this.localizer.text('vscode.sources.connections'),
-          roots: this.localizer.text('vscode.sources.roots'),
-          noWorkspaceFolders: this.localizer.text('vscode.sources.noWorkspaceFolders'),
-          noSelectedInstallations: this.localizer.text('vscode.host.noSelectedGame'),
-          providerUnavailable: this.localizer.text('vscode.sources.providerUnavailable'),
-          connected: this.localizer.text('vscode.sources.connected'),
-          selected: this.localizer.text('vscode.sources.selected'),
-          mounted: this.localizer.text('vscode.sources.mounted'),
-          mounting: this.localizer.text('vscode.sources.mounting'),
-          available: this.localizer.text('vscode.sources.available'),
-          signIn: this.localizer.text('vscode.sources.signIn'),
-          disconnected: this.localizer.text('vscode.sources.disconnected'),
-          stale: this.localizer.text('vscode.sources.stale'),
-          onlineUnavailable: this.localizer.text('vscode.sources.onlineUnavailable'),
-          myPublications: this.localizer.text('vscode.sources.myPublications'),
-          publicCatalogue: this.localizer.text('vscode.sources.publicCatalogue'),
-          localFolders: this.localizer.text('vscode.sources.localFolders'),
-        },
-      }),
-    ]
-  }
-}
-
-/** How many children of one resource node the view will render before it says it stopped. */
-const RESOURCE_CHILD_LIMIT = 20_000
-/** Facts fetched at once; the protocol allows 256 calls in flight across everything. */
-const RESOURCE_FACT_BATCH = 32
-
-type ResourceTreeNode =
-  | Readonly<{
-      kind: 'resource'
-      ref: TreeNodeRef
-      facts: TreeNodeFacts
-    }>
-  /*
-   * A node *inside* a resource file, answered by that format's own codec.
-   *
-   * A `.galaxy`, `.SC2Layout` or `.SC2Style` file is not a leaf: its functions, frames and styles
-   * are the resources an author actually references. Each of those formats already publishes a
-   * tree, so the file expands into that tree rather than this view learning a second parser.
-   */
-  | Readonly<{
-      kind: 'member'
-      subject: string
-      ref: TreeNodeRef
-      facts: TreeNodeFacts
-    }>
-  | Readonly<{
-      kind: 'more'
-      parent: TreeNodeRef
-      cursor: string
-    }>
-  | Readonly<{
-      kind: 'notice'
-      label: string
-      detail?: string
-    }>
-
-interface ResourceTreeHost extends Pick<VsCodeServed, 'openTreeDataSource'> {
-  /** Why the focused document's mod did not load; the mods already loaded are still shown. */
-  readonly failure?: string
-  /** A resource opens at its declaration when the node carries one. */
-  navigate(subjectId: string, range?: TreeNodeFacts['range']): void
-}
-
-/** Opens the tree a resource file publishes through its own codec, when it publishes one. */
-type ResourceMemberTrees = Readonly<{
-  /** The subject string of the file a resource node names, when this window can open it. */
-  subjectOf(subjectId: string): string | undefined
-  open(subject: string): Promise<TreeDataSource | undefined>
-  /** Shows the file a member node lives in, at that node's own position. */
-  reveal(subject: string, range?: TreeNodeFacts['range']): void
-  reset(): void
-}>
-
-/** Native projection of the host's persistent loaded-mod resource tree. */
-class ResourcesView implements vscode.TreeDataProvider<ResourceTreeNode>, vscode.Disposable {
-  private readonly changed = new vscode.EventEmitter<ResourceTreeNode | undefined>()
-  readonly onDidChangeTreeData = this.changed.event
-  private searchResults: readonly ResourceTreeNode[] | undefined
-  private generation = 0
-
-  constructor(
-    private readonly localizer: UiLocalizer,
-    private readonly loaded: () => Promise<ResourceTreeHost | undefined>,
-    private readonly members?: ResourceMemberTrees,
-  ) {}
-
-  dispose(): void {
-    this.changed.dispose()
-  }
-
-  refresh(): void {
-    this.generation += 1
-    this.searchResults = undefined
-    this.members?.reset()
-    this.changed.fire(undefined)
-  }
-
-  async open(node?: ResourceTreeNode): Promise<boolean> {
-    // The command is also reachable from the palette, where there is no node at all.
-    if (node === undefined || node.kind === 'notice' || node.kind === 'more') return false
-    if (node.kind === 'member') {
-      // A node inside a file — a Galaxy function, a layout frame — opens that file at its own
-      // position. Its subject is the file, so there is nothing to resolve.
-      this.members?.reveal(node.subject, node.facts.range)
-      return true
-    }
-    if (node.facts.subjectId === undefined) return false
-    const served = await this.loaded()
-    if (served === undefined) return false
-    served.navigate(node.facts.subjectId, node.facts.range)
-    return true
-  }
-
-  /** The file subject a resource node names, when that file has a codec that publishes a tree. */
-  private memberSubjectOf(node: ResourceTreeNode): string | undefined {
-    if (node.kind !== 'resource' || node.facts.subjectId === undefined) return undefined
-    return this.members?.subjectOf(node.facts.subjectId)
-  }
-
-  private async loadMember(subject: string, parent?: TreeNodeRef): Promise<ResourceTreeNode[]> {
-    const tree = await this.members?.open(subject)
-    if (tree === undefined) return []
-    const node = parent ?? (await tree.root())
-    const items: TreeNodeRef[] = []
-    let cursor: string | undefined
-    do {
-      const page = await tree.children(
-        node,
-        cursor === undefined ? { limit: 500 } : { cursor, limit: 500 },
-      )
-      items.push(...page.items)
-      cursor = page.nextCursor
-    } while (cursor !== undefined && items.length < RESOURCE_CHILD_LIMIT)
-    const nodes: ResourceTreeNode[] = []
-    for (let start = 0; start < items.length; start += RESOURCE_FACT_BATCH) {
-      const batch = items.slice(start, start + RESOURCE_FACT_BATCH)
-      nodes.push(
-        ...(await Promise.all(
-          batch.map(async ref =>
-            Object.freeze({ kind: 'member' as const, subject, ref, facts: await tree.facts(ref) }),
-          ),
-        )),
-      )
-    }
-    return nodes
-  }
-
-  private notice(label: string, detail?: string): ResourceTreeNode {
-    return Object.freeze({ kind: 'notice', label, ...(detail === undefined ? {} : { detail }) })
-  }
-
-  /*
-   * Children arrive as one list, not as a chain of «Load more» nodes.
-   *
-   * A cursor node made the rest of a catalog a *child* of the last page, so a long list grew
-   * sideways into nested trees instead of continuing. The pages are drained here and the list is
-   * flat; the cap is what keeps a runaway source from filling the view forever.
-   */
-  private async loadPage(
-    tree: TreeDataSource,
-    parent: TreeNodeRef,
-    cursor?: string,
-  ): Promise<ResourceTreeNode[]> {
-    const items: TreeNodeRef[] = []
-    let next = cursor
-    do {
-      const page = await tree.children(
-        parent,
-        next === undefined ? { limit: 500 } : { cursor: next, limit: 500 },
-      )
-      items.push(...page.items)
-      next = page.nextCursor
-    } while (next !== undefined && items.length < RESOURCE_CHILD_LIMIT)
-    /*
-     * Facts are fetched in bounded batches. One `Promise.all` over a whole catalog put thousands
-     * of calls on the wire at once and tripped the protocol's 256 pending-call ceiling, which the
-     * reader saw as «pending call limit 256 reached» on Abil and on layouts.
-     */
-    const nodes: ResourceTreeNode[] = []
-    for (let start = 0; start < items.length; start += RESOURCE_FACT_BATCH) {
-      const batch = items.slice(start, start + RESOURCE_FACT_BATCH)
-      nodes.push(
-        ...(await Promise.all(
-          batch.map(async ref =>
-            Object.freeze({ kind: 'resource' as const, ref, facts: await tree.facts(ref) }),
-          ),
-        )),
-      )
-    }
-    return next === undefined
-      ? nodes
-      : [
-          ...nodes,
-          this.notice(
-            this.localizer.text('vscode.resources.truncated', {
-              count: String(RESOURCE_CHILD_LIMIT),
-            }),
-          ),
-        ]
-  }
-
-  private async load(parent: TreeNodeRef, cursor?: string): Promise<ResourceTreeNode[]> {
-    const served = await this.loaded()
-    if (served === undefined) {
-      return [this.notice(this.localizer.text('vscode.resources.noActiveSubject'))]
-    }
-    const lease = await served.openTreeDataSource()
-    if (lease === undefined) {
-      return [this.notice(this.localizer.text('vscode.resources.unavailable'))]
-    }
-    try {
-      return await this.loadPage(lease.value, parent, cursor)
-    } finally {
-      await lease.release()
-    }
-  }
-
-  async search(pattern: string | undefined): Promise<void> {
-    const query = pattern?.trim()
-    if (!query) {
-      this.refresh()
-      return
-    }
-    const served = await this.loaded()
-    const lease = await served?.openTreeDataSource()
-    if (lease === undefined) {
-      this.searchResults = [this.notice(this.localizer.text('vscode.resources.unavailable'))]
-      this.changed.fire(undefined)
-      return
-    }
-    const generation = ++this.generation
-    try {
-      const found: ResourceTreeNode[] = []
-      for await (const ref of lease.value.search({ pattern: query })) {
-        found.push(Object.freeze({ kind: 'resource', ref, facts: await lease.value.facts(ref) }))
-        if (found.length >= 200) break
-      }
-      if (generation !== this.generation) return
-      this.searchResults =
-        found.length === 0
-          ? [this.notice(this.localizer.text('vscode.resources.noMatches', { query }))]
-          : Object.freeze(found)
-      this.changed.fire(undefined)
-    } finally {
-      await lease.release()
-    }
-  }
-
-  getTreeItem(node: ResourceTreeNode): vscode.TreeItem {
-    if (node.kind === 'notice') {
-      const item = new vscode.TreeItem(node.label, vscode.TreeItemCollapsibleState.None)
-      item.iconPath = new vscode.ThemeIcon('info')
-      if (node.detail !== undefined) item.description = node.detail
-      item.tooltip = node.detail ?? node.label
-      return item
-    }
-    if (node.kind === 'more') {
-      const item = new vscode.TreeItem(
-        this.localizer.text('vscode.resources.loadMore'),
-        vscode.TreeItemCollapsibleState.Collapsed,
-      )
-      item.iconPath = new vscode.ThemeIcon('ellipsis')
-      return item
-    }
-    const item = new vscode.TreeItem(
-      node.facts.label,
-      // A file whose format publishes a tree is expandable even when the package lists it as a
-      // leaf: its children come from the file's codec.
-      node.ref.hasChildren || (node.kind === 'resource' && this.memberSubjectOf(node) !== undefined)
-        ? vscode.TreeItemCollapsibleState.Collapsed
-        : vscode.TreeItemCollapsibleState.None,
-    )
-    item.id = node.kind === 'member' ? `${node.subject}|${node.ref.id}` : node.ref.id
-    if (node.facts.preview !== undefined) item.description = node.facts.preview
-    item.tooltip = node.facts.preview ?? node.facts.label
-    item.contextValue =
-      node.facts.subjectId === undefined ? 'modkitResource.node' : 'modkitResource.openable'
-    item.iconPath = new vscode.ThemeIcon(
-      node.facts.kind === 'mod'
-        ? 'package'
-        : node.ref.hasChildren
-          ? 'symbol-folder'
-          : /file|document|script|layout|string|style/iu.test(node.facts.kind)
-            ? 'file'
-            : 'symbol-field',
-    )
-    if (node.facts.subjectId !== undefined) {
-      item.command = {
-        command: 'modkit.resources.open',
-        title: this.localizer.text('vscode.resources.open'),
-        arguments: [node],
-      }
-    }
-    return item
-  }
-
-  async getChildren(node?: ResourceTreeNode): Promise<ResourceTreeNode[]> {
-    try {
-      if (node?.kind === 'notice') return []
-      if (node?.kind === 'more') return this.load(node.parent, node.cursor)
-      if (node?.kind === 'member') return this.loadMember(node.subject, node.ref)
-      if (node?.kind === 'resource') {
-        // A file that publishes its own tree expands into it; anything else expands as before.
-        const subject = node.ref.hasChildren ? undefined : this.memberSubjectOf(node)
-        return subject === undefined ? this.load(node.ref) : this.loadMember(subject)
-      }
-      if (this.searchResults !== undefined) return [...this.searchResults]
-      const served = await this.loaded()
-      if (served === undefined) {
-        return [this.notice(this.localizer.text('vscode.resources.noActiveSubject'))]
-      }
-      const lease = await served.openTreeDataSource()
-      if (lease === undefined) {
-        return [this.notice(this.localizer.text('vscode.resources.unavailable'))]
-      }
-      try {
-        const root = await lease.value.root()
-        const items = await this.loadPage(lease.value, root)
-        const failed = served.failure === undefined
-          ? []
-          : [this.notice(this.localizer.text('vscode.resources.failed'), served.failure)]
-        return items.length === 0 && failed.length === 0
-          ? [this.notice(this.localizer.text('vscode.resources.noActiveSubject'))]
-          : [...failed, ...items]
-      } finally {
-        await lease.release()
-      }
-    } catch (error) {
-      return [
-        this.notice(
-          this.localizer.text('vscode.resources.failed'),
-          error instanceof Error ? error.message : String(error),
-        ),
-      ]
-    }
-  }
-}
-
-// ---------------------------------------------------------------------------------------------
-// activation
 
 /**
  * What `activate()` hands back to anyone holding this extension.
@@ -1967,26 +361,6 @@ interface DeferredModkitViews {
   readonly sources: DeferredTreeDataProvider<SourceTreeNode>
   readonly resources: DeferredTreeDataProvider<ResourceTreeNode>
   readonly extensions: DeferredTreeDataProvider<ExtensionNode>
-}
-
-/**
- * `workspace.findFiles` over the folders on disk. Modkit's own folders (a mounted game storage, an
- * archive) answer VS Code's search too, but these callers mean the files of the project: its
- * language documents, a map to test on.
- */
-async function findDiskFiles(include: string, exclude: string, maximum: number): Promise<vscode.Uri[]> {
-  const found: vscode.Uri[] = []
-  for (const folder of vscode.workspace.workspaceFolders ?? []) {
-    if (folder.uri.scheme !== 'file' || found.length >= maximum) continue
-    found.push(
-      ...(await vscode.workspace.findFiles(
-        new vscode.RelativePattern(folder, include),
-        exclude,
-        maximum - found.length,
-      )),
-    )
-  }
-  return found
 }
 
 export async function activate(context: vscode.ExtensionContext): Promise<ModkitExtensionApi> {
