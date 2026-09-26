@@ -10,6 +10,7 @@ import { afterAll, describe, expect, it } from 'vitest'
 import { revisionId } from '@modkit/sdk'
 
 import { createCandidateWorldSceneLease } from '../../packages/host/src/maps/world-source.js'
+import { createNodeInstallationProbes } from '../../packages/host/src/node/installation-probes.js'
 import {
   inspectCandidateWorld,
   type CandidateWorldViewerLoadPerformance,
@@ -48,10 +49,11 @@ afterAll(async () => {
 
 describe('installed Warzone map in a real browser WebGL2 context', () => {
   it('renders 6c-Melting terrain, water and objects with retained GPU receipts', async () => {
-    const discovery = await discoverWarzone2100Installations({
-      gameId: 'wz2100project/warzone-2100',
-      maxCandidates: 128,
-    })
+    // The host's probes find the Store, Steam and registry installations; without them only fixed paths.
+    const discovery = await discoverWarzone2100Installations(
+      { gameId: 'wz2100project/warzone-2100', maxCandidates: 128 },
+      createNodeInstallationProbes(),
+    )
     const archivePath = discovery.installations[0]?.evidence.find(
       (item: { kind: string; found: boolean }) => item.kind === 'warzone-mp-archive' && item.found,
     )?.path
