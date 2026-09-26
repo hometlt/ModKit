@@ -86,6 +86,7 @@ function open() {
               mediaType: 'audio/x-example',
               storage: {
                 kind: 'custom',
+                compression: 'oodle',
                 async open() {
                   return (async function* () {
                     yield custom.subarray(0, 10)
@@ -117,6 +118,8 @@ describe('a container entry table gives listing and extraction for free', () => 
     const rest = await lease.value.list('', { limit: 2, cursor: first.nextCursor })
     expect(rest.items.map(item => item.path)).toEqual(['custom.bin', 'data/companion.bin'])
     expect(rest.items[0]?.mediaType).toBe('audio/x-example')
+    // A custom decoder names its own compression; the host lists it without interpreting it.
+    expect(rest.items[0]?.compression).toBe('oodle')
     // An entry in a companion is not in the container's own source, so it is extracted, not read in place.
     expect(rest.items[1]?.storedRange).toBeUndefined()
     expect(rest.nextCursor).toBeUndefined()

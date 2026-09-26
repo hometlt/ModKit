@@ -75,7 +75,11 @@ export function containerEntryAccess(
           kind: 'file' as const,
           size: entry.size,
           ...(stored === undefined || stored === entry.size ? {} : { storedSize: stored }),
-          ...(entry.storage.kind === 'custom' ? {} : { compression: entry.storage.kind }),
+          ...(entry.storage.kind !== 'custom'
+            ? { compression: entry.storage.kind }
+            : entry.storage.compression === undefined
+              ? {}
+              : { compression: entry.storage.compression }),
           ...(entry.modifiedAt === undefined ? {} : { modifiedAt: entry.modifiedAt }),
           ...(entry.checksum === undefined ? {} : { checksum: entry.checksum }),
           ...(entry.hidden === true ? { hidden: true as const } : {}),
