@@ -73,7 +73,7 @@
         "modkit/yaml-syntax-contract",
         "modkit/yaml-syntax-default"
       ],
-      "digest": "sha256:af06b4e1f6dfbf21a513a7f1acc69b689c40776b152c7df2d9f7dcb8df499feb"
+      "digest": "sha256:4a36477d3753f95d46efaf0c2b4b9e781ed87c7011d74237fbab95a112b72186"
     },
     {
       "name": "documents",

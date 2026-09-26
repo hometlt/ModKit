@@ -3315,7 +3315,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:af06b4e1f6dfbf21a513a7f1acc69b689c40776b152c7df2d9f7dcb8df499feb',
+        artifactDigest: 'sha256:4a36477d3753f95d46efaf0c2b4b9e781ed87c7011d74237fbab95a112b72186',
         fileDigests: {
           'README.md': 'sha256:96b749c43f62ad801f0aeb648aaa173263c721a114e99ad2bc1cbe4b7b3694d7',
           'contributions/codec-csv.json':
@@ -3405,7 +3405,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'src/ini/definition.js':
             'sha256:818494714eab867402779285234d227938d606a8737e50d4318ee6aa0cff6c45',
           'src/ini/provider.js':
-            'sha256:9198bfb668189dfc0e9449e17d65f778275c72ca0515b66734d5bd178098b8c4',
+            'sha256:1005e0cb9372113a2b63cdd0ed4037073dd486ba99d56f251b790153cd21f397',
           'src/linked.js':
             'sha256:c740633e0d59de1aef4d05018b633c55875566c16152fe27b56b186b77126ab0',
           'src/toml/codec.js':
@@ -3436,7 +3436,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:205a176ec39d8c1adeebd8f9419ff9c9b8e2e2d45f4387541adc7e96c2090df9',
         },
         inventoryRecordId:
-          'artifact:sha256:af06b4e1f6dfbf21a513a7f1acc69b689c40776b152c7df2d9f7dcb8df499feb',
+          'artifact:sha256:4a36477d3753f95d46efaf0c2b4b9e781ed87c7011d74237fbab95a112b72186',
       },
       artifactRoot: 'extensions/data/',
       containers: {
