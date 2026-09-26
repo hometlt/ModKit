@@ -779,6 +779,12 @@ export interface NamespaceEntrySource {
     page: PageRequest,
     signal?: AbortSignal,
   ): Promise<Page<NamespaceEntry>>
+  /**
+   * Optional exact-path lookup, answered even where the listing is incomplete: a hashed archive
+   * without its file list (an MPQ without `(listfile)`) finds a named entry it cannot enumerate.
+   * `undefined` means the container holds no entry at that path.
+   */
+  lookup?(path: string, signal?: AbortSignal): Promise<NamespaceEntry | undefined>
   /** Returns a leased source reference, never eager decoded bytes. */
   openEntry(entryId: string, signal?: AbortSignal): Promise<Lease<AssetSourceRef>>
 }

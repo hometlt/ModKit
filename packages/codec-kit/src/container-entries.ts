@@ -39,11 +39,14 @@ export function containerEntryAccess(
     ) => Promise<{ readonly source: ByteRangeSource; release(): Promise<void> }>
   },
 ) {
-  const fold = (path: string) => (table.caseSensitivity === 'insensitive' ? path.toLowerCase() : path)
+  const fold = (path: string) =>
+    table.caseSensitivity === 'insensitive' ? path.toLowerCase() : path
   const byPath = new Map<string, ContainerEntry>()
   for (const entry of table.entries) {
-    if (!validPath(entry.path)) throw new TypeError(`container entry path «${entry.path}» is invalid`)
-    if (typeof entry.size !== 'bigint' || entry.size < 0n) throw new TypeError(`container entry ${entry.path} has an invalid size`)
+    if (!validPath(entry.path))
+      throw new TypeError(`container entry path «${entry.path}» is invalid`)
+    if (typeof entry.size !== 'bigint' || entry.size < 0n)
+      throw new TypeError(`container entry ${entry.path} has an invalid size`)
     const key = fold(entry.path)
     if (byPath.has(key)) throw new TypeError(`container entry path «${entry.path}» is not unique`)
     byPath.set(key, entry)
@@ -58,47 +61,86 @@ export function containerEntryAccess(
         ? undefined
         : entry.storage.compressedLength
 
+  const toItem = (entry: ContainerEntry) => {
+    const stored = storedSize(entry)
+    return Object.freeze({
+      id: entry.path,
+      path: entry.path,
+      name: entry.path.slice(entry.path.lastIndexOf('/') + 1),
+      kind: 'file' as const,
+      size: entry.size,
+      ...(stored === undefined || stored === entry.size ? {} : { storedSize: stored }),
+      ...(entry.storage.kind !== 'custom'
+        ? { compression: entry.storage.kind }
+        : entry.storage.compression === undefined
+          ? {}
+          : { compression: entry.storage.compression }),
+      ...(entry.modifiedAt === undefined ? {} : { modifiedAt: entry.modifiedAt }),
+      ...(entry.checksum === undefined ? {} : { checksum: entry.checksum }),
+      ...(entry.hidden === true ? { hidden: true as const } : {}),
+      ...(entry.mediaType === undefined ? {} : { mediaType: entry.mediaType }),
+      // In place only within the container's own source; a companion's entry is extracted.
+      ...(entry.storage.kind === 'stored' && entry.storage.source === undefined
+        ? {
+            storedRange: Object.freeze({
+              offset: entry.storage.offset,
+              length: entry.storage.length,
+            }),
+          }
+        : {}),
+      revision: containerEntryRevision(containerRevision, entry.path, entry.size),
+    })
+  }
+
+  // Entries a lookup found beyond the listing (a hashed archive without its file list).
+  const found = new Map<string, ContainerEntry>()
+  const entryAt = async (
+    path: string,
+    signal: AbortSignal | undefined,
+  ): Promise<ContainerEntry | undefined> => {
+    const key = fold(path)
+    const known = byPath.get(key) ?? found.get(key)
+    if (known !== undefined || table.find === undefined || !validPath(path)) return known
+    const entry = await table.find(path, signal)
+    if (entry === undefined) return undefined
+    if (fold(entry.path) !== key || typeof entry.size !== 'bigint' || entry.size < 0n) {
+      throw new TypeError(`container lookup of «${path}» answered another or an invalid entry`)
+    }
+    found.set(key, entry)
+    return entry
+  }
+
   const namespace = Object.freeze({
-    async list(prefix: string, page: { readonly limit: number; readonly cursor?: string }, signal?: AbortSignal) {
+    async list(
+      prefix: string,
+      page: { readonly limit: number; readonly cursor?: string },
+      signal?: AbortSignal,
+    ) {
       throwIfCancelled(signal)
-      if (!Number.isSafeInteger(page.limit) || page.limit <= 0) throw new TypeError('page limit must be a positive safe integer')
+      if (!Number.isSafeInteger(page.limit) || page.limit <= 0)
+        throw new TypeError('page limit must be a positive safe integer')
       const start = page.cursor === undefined ? 0 : Number(page.cursor)
-      if (!Number.isSafeInteger(start) || start < 0) throw new TypeError('invalid container entry cursor')
+      if (!Number.isSafeInteger(start) || start < 0)
+        throw new TypeError('invalid container entry cursor')
       const wanted = fold(prefix)
-      const matching = prefix === '' ? entries : entries.filter(entry => fold(entry.path).startsWith(wanted))
-      const items = matching.slice(start, start + page.limit).map(entry => {
-        const stored = storedSize(entry)
-        return Object.freeze({
-          id: entry.path,
-          path: entry.path,
-          name: entry.path.slice(entry.path.lastIndexOf('/') + 1),
-          kind: 'file' as const,
-          size: entry.size,
-          ...(stored === undefined || stored === entry.size ? {} : { storedSize: stored }),
-          ...(entry.storage.kind !== 'custom'
-            ? { compression: entry.storage.kind }
-            : entry.storage.compression === undefined
-              ? {}
-              : { compression: entry.storage.compression }),
-          ...(entry.modifiedAt === undefined ? {} : { modifiedAt: entry.modifiedAt }),
-          ...(entry.checksum === undefined ? {} : { checksum: entry.checksum }),
-          ...(entry.hidden === true ? { hidden: true as const } : {}),
-          ...(entry.mediaType === undefined ? {} : { mediaType: entry.mediaType }),
-          // In place only within the container's own source; a companion's entry is extracted.
-          ...(entry.storage.kind === 'stored' && entry.storage.source === undefined
-            ? { storedRange: Object.freeze({ offset: entry.storage.offset, length: entry.storage.length }) }
-            : {}),
-          revision: containerEntryRevision(containerRevision, entry.path, entry.size),
-        })
-      })
+      const matching =
+        prefix === '' ? entries : entries.filter(entry => fold(entry.path).startsWith(wanted))
+      const items = matching.slice(start, start + page.limit).map(toItem)
       return Object.freeze({
         items: Object.freeze(items),
-        ...(start + items.length < matching.length ? { nextCursor: String(start + items.length) } : {}),
+        ...(start + items.length < matching.length
+          ? { nextCursor: String(start + items.length) }
+          : {}),
       })
+    },
+    async lookup(path: string, signal?: AbortSignal) {
+      throwIfCancelled(signal)
+      const entry = await entryAt(path, signal)
+      return entry === undefined ? undefined : toItem(entry)
     },
     async openEntry(entryId: string, signal?: AbortSignal) {
       throwIfCancelled(signal)
-      const entry = byPath.get(fold(entryId))
+      const entry = await entryAt(entryId, signal)
       if (entry === undefined) throw new TypeError(`unknown container entry ${entryId}`)
       return simpleLease(
         Object.freeze({
@@ -116,13 +158,18 @@ export function containerEntryAccess(
     signal: AbortSignal | undefined,
     bindingId?: string,
   ) => {
-    if (length > BigInt(maximum)) throw new RangeError(`container entry range of ${length} bytes exceeds the read budget of ${maximum}`)
+    if (length > BigInt(maximum))
+      throw new RangeError(
+        `container entry range of ${length} bytes exceeds the read budget of ${maximum}`,
+      )
     let bytes: Uint8Array
     if (bindingId === undefined) {
       bytes = await context.byteSource.read(offset, Number(length), signal)
     } else {
       if (context.companionSource === undefined) {
-        throw new TypeError(`container entry data lives in companion «${bindingId}», which this open does not carry`)
+        throw new TypeError(
+          `container entry data lives in companion «${bindingId}», which this open does not carry`,
+        )
       }
       const companion = await context.companionSource(bindingId, signal)
       try {
@@ -136,9 +183,14 @@ export function containerEntryAccess(
   }
 
   /** One entry's decoded bytes, whole: bounded by its size and by the open budget. */
-  const extractEntry = async (entry: ContainerEntry, signal: AbortSignal | undefined): Promise<Uint8Array> => {
+  const extractEntry = async (
+    entry: ContainerEntry,
+    signal: AbortSignal | undefined,
+  ): Promise<Uint8Array> => {
     if (entry.size > BigInt(maximum)) {
-      throw new RangeError(`container entry ${entry.path} (${entry.size} bytes) exceeds the extraction budget of ${maximum}`)
+      throw new RangeError(
+        `container entry ${entry.path} (${entry.size} bytes) exceeds the extraction budget of ${maximum}`,
+      )
     }
     const size = Number(entry.size)
     const storage = entry.storage
@@ -151,29 +203,43 @@ export function containerEntryAccess(
       case 'zlib':
       case 'gzip': {
         const { decompressBounded } = await import('./compression/bounded.js')
-        const format = storage.kind === 'deflate' ? 'deflate-raw' : storage.kind === 'zlib' ? 'deflate' : 'gzip'
-        bytes = await decompressBounded(await readRange(storage.offset, storage.compressedLength, signal, storage.source), format, {
-          maxOutputBytes: size,
-          ...(signal === undefined ? {} : { signal }),
-        })
+        const format =
+          storage.kind === 'deflate' ? 'deflate-raw' : storage.kind === 'zlib' ? 'deflate' : 'gzip'
+        bytes = await decompressBounded(
+          await readRange(storage.offset, storage.compressedLength, signal, storage.source),
+          format,
+          {
+            maxOutputBytes: size,
+            ...(signal === undefined ? {} : { signal }),
+          },
+        )
         break
       }
       case 'zstd': {
         const { decodeZstd } = await import('./compression/zstd.js')
-        bytes = decodeZstd(await readRange(storage.offset, storage.compressedLength, signal, storage.source), {
-          expectedLength: size,
-          maxOutputBytes: size,
-        })
+        bytes = decodeZstd(
+          await readRange(storage.offset, storage.compressedLength, signal, storage.source),
+          {
+            expectedLength: size,
+            maxOutputBytes: size,
+          },
+        )
         break
       }
       case 'lz4-block': {
         const { decodeLz4Block } = await import('./compression/lz4.js')
-        bytes = decodeLz4Block(await readRange(storage.offset, storage.compressedLength, signal, storage.source), size)
+        bytes = decodeLz4Block(
+          await readRange(storage.offset, storage.compressedLength, signal, storage.source),
+          size,
+        )
         break
       }
       case 'refpack': {
         const { decodeRefPack } = await import('./compression/refpack.js')
-        bytes = decodeRefPack(await readRange(storage.offset, storage.compressedLength, signal, storage.source), size)
+        bytes = decodeRefPack(
+          await readRange(storage.offset, storage.compressedLength, signal, storage.source),
+          size,
+        )
         break
       }
       case 'custom': {
@@ -184,7 +250,8 @@ export function containerEntryAccess(
           for await (const chunk of opened as AsyncIterable<Uint8Array>) {
             throwIfCancelled(signal)
             total += chunk.byteLength
-            if (total > size) throw new RangeError(`container entry ${entry.path} decodes past its size`)
+            if (total > size)
+              throw new RangeError(`container entry ${entry.path} decodes past its size`)
             chunks.push(chunk)
           }
           bytes = new Uint8Array(total)
@@ -200,7 +267,9 @@ export function containerEntryAccess(
       }
     }
     if (bytes.byteLength !== size) {
-      throw new RangeError(`container entry ${entry.path} decoded to ${bytes.byteLength} bytes, not ${size}`)
+      throw new RangeError(
+        `container entry ${entry.path} decoded to ${bytes.byteLength} bytes, not ${size}`,
+      )
     }
     return bytes
   }
@@ -210,7 +279,7 @@ export function containerEntryAccess(
       input !== null && typeof input === 'object' && !Array.isArray(input)
         ? (input as { readonly entryId?: unknown }).entryId
         : undefined
-    const entry = typeof entryId === 'string' ? byPath.get(fold(entryId)) : undefined
+    const entry = typeof entryId === 'string' ? await entryAt(entryId, operation.signal) : undefined
     if (entry === undefined) throw new TypeError('container.extract requires a known {entryId}')
     return { kind: 'bytes' as const, value: await extractEntry(entry, operation.signal) }
   }

@@ -15,7 +15,13 @@ container.set(encoder.encode('CNTR'))
 container.set(stored, 4)
 container.set(zlibbed, 4 + stored.byteLength)
 
-const budget = { maxInputBytes: 1024n * 1024n, maxScalarBytes: 4096, maxDepth: 32, maxNodes: 1000, maxDiagnostics: 10 }
+const budget = {
+  maxInputBytes: 1024n * 1024n,
+  maxScalarBytes: 4096,
+  maxDepth: 32,
+  maxNodes: 1000,
+  maxDiagnostics: 10,
+}
 const revision = 'provider-token:container-entries'
 
 function open() {
@@ -25,7 +31,8 @@ function open() {
     revision,
     size: BigInt(container.byteLength),
     async read(offset: bigint, length: number) {
-      if (offset < 0n || offset + BigInt(length) > BigInt(container.byteLength)) throw new RangeError('past the source')
+      if (offset < 0n || offset + BigInt(length) > BigInt(container.byteLength))
+        throw new RangeError('past the source')
       return container.slice(Number(offset), Number(offset) + length)
     },
   }
@@ -33,7 +40,16 @@ function open() {
     originKind: 'single',
     primaryBindingId: 'content',
     revisions: { topology: 'single', revision },
-    bindings: [{ bindingId: 'content', role: 'content', source: source.ref, sourceKind: 'candidate', ownership: 'owned', revision }],
+    bindings: [
+      {
+        bindingId: 'content',
+        role: 'content',
+        source: source.ref,
+        sourceKind: 'candidate',
+        ownership: 'owned',
+        revision,
+      },
+    ],
     // `data` is a companion holding entry bytes, as a `.rfd` beside its `.rfh` index.
     async openBinding(bindingId: string) {
       if (bindingId !== 'data') return { value: source, release: async () => undefined }
@@ -64,7 +80,10 @@ function open() {
         outputKinds: ['bytes'],
       },
     ],
-    detect: async prefix => ({ confidence: String.fromCharCode(...prefix.subarray(0, 4)) === 'CNTR' ? 1 : 0, kind: 'magic' }),
+    detect: async prefix => ({
+      confidence: String.fromCharCode(...prefix.subarray(0, 4)) === 'CNTR' ? 1 : 0,
+      kind: 'magic',
+    }),
     async inspect() {
       return {
         summary: {},
@@ -74,11 +93,19 @@ function open() {
           caseSensitivity: 'insensitive',
           complete: true,
           entries: [
-            { path: 'docs/Stored.txt', size: BigInt(stored.byteLength), storage: { kind: 'stored', offset: 4n, length: BigInt(stored.byteLength) } },
+            {
+              path: 'docs/Stored.txt',
+              size: BigInt(stored.byteLength),
+              storage: { kind: 'stored', offset: 4n, length: BigInt(stored.byteLength) },
+            },
             {
               path: 'docs/zlib.txt',
               size: BigInt(plain.byteLength),
-              storage: { kind: 'zlib', offset: BigInt(4 + stored.byteLength), compressedLength: BigInt(zlibbed.byteLength) },
+              storage: {
+                kind: 'zlib',
+                offset: BigInt(4 + stored.byteLength),
+                compressedLength: BigInt(zlibbed.byteLength),
+              },
             },
             {
               path: 'custom.bin',
@@ -98,9 +125,24 @@ function open() {
             {
               path: 'data/companion.bin',
               size: BigInt(companion.byteLength - 4),
-              storage: { kind: 'stored', offset: 4n, length: BigInt(companion.byteLength - 4), source: 'data' },
+              storage: {
+                kind: 'stored',
+                offset: 4n,
+                length: BigInt(companion.byteLength - 4),
+                source: 'data',
+              },
             },
           ],
+          // A hashed archive without its file list finds a named path it cannot enumerate.
+          async find(path: string) {
+            return path.toLowerCase() === 'unlisted/hashed.txt'
+              ? {
+                  path: 'unlisted/Hashed.txt',
+                  size: BigInt(stored.byteLength),
+                  storage: { kind: 'stored', offset: 4n, length: BigInt(stored.byteLength) },
+                }
+              : undefined
+          },
         },
       }
     },
@@ -109,6 +151,20 @@ function open() {
 }
 
 describe('a container entry table gives listing and extraction for free', () => {
+  it('looks up and extracts an entry by path that the listing cannot name', async () => {
+    const session = await open()
+    const lease = await session.dataSource('common.view/namespace-entry-source', 1)
+    const all = await lease.value.list('', { limit: 100 })
+    expect(all.items.map(item => item.path)).not.toContain('unlisted/Hashed.txt')
+    expect((await lease.value.lookup?.('UNLISTED/hashed.txt'))?.path).toBe('unlisted/Hashed.txt')
+    expect((await lease.value.lookup?.('docs/stored.txt'))?.path).toBe('docs/Stored.txt')
+    expect(await lease.value.lookup?.('nowhere.txt')).toBeUndefined()
+    const result = await session
+      .operations()
+      .invoke(CONTAINER_EXTRACT_HANDLER_ID, { entryId: 'unlisted/hashed.txt' })
+    expect(result).toMatchObject({ state: 'ok', output: { kind: 'bytes', value: stored } })
+  })
+
   it('lists entries by page and prefix, with stored size and compression', async () => {
     const session = await open()
     const lease = await session.dataSource('common.view/namespace-entry-source', 1)
@@ -135,7 +191,9 @@ describe('a container entry table gives listing and extraction for free', () => 
     ])
     await lease.release()
     const descriptor = await session.descriptor()
-    expect(descriptor.constraints.maxDecodedBytes).toBe(String(stored.byteLength + plain.byteLength + custom.byteLength + companion.byteLength - 4))
+    expect(descriptor.constraints.maxDecodedBytes).toBe(
+      String(stored.byteLength + plain.byteLength + custom.byteLength + companion.byteLength - 4),
+    )
     await session.operations().dispose()
   })
 
@@ -143,7 +201,8 @@ describe('a container entry table gives listing and extraction for free', () => 
     const session = await open()
     const extract = async (entryId: string) => {
       const result = await session.operations().invoke(CONTAINER_EXTRACT_HANDLER_ID, { entryId })
-      if (result.state !== 'ok' || result.output.kind !== 'bytes') throw new Error(JSON.stringify(result))
+      if (result.state !== 'ok' || result.output.kind !== 'bytes')
+        throw new Error(JSON.stringify(result))
       return new TextDecoder().decode(result.output.value as Uint8Array)
     }
     expect(await extract('docs/stored.txt')).toBe('hello, stored entry')

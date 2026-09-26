@@ -319,6 +319,12 @@ async function entryIdFor(
   const lease = await session.dataSource(NAMESPACE_ENTRY_SOURCE, 1)
   try {
     const namespace = lease.value as NamespaceEntrySource
+    // An exact lookup first: cheaper than walking the listing, and the only way into a hashed
+    // archive whose listing is incomplete (an MPQ without its file list).
+    if (namespace.lookup !== undefined) {
+      const entry = await namespace.lookup(wanted, signal)
+      if (entry !== undefined) return entry.id
+    }
     let cursor: string | undefined
     do {
       const page = await namespace.list(

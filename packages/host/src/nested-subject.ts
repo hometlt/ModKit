@@ -177,6 +177,10 @@ async function findEntry(
   pageLimit: number,
   signal?: AbortSignal,
 ): Promise<NamespaceEntry> {
+  // Entry ids of a container entry table are its paths: an exact lookup reaches an entry the
+  // listing cannot enumerate (a hashed archive without its file list) and skips the walk.
+  const looked = await namespace.lookup?.(entryId, signal)
+  if (looked?.id === entryId) return looked
   let cursor: string | undefined
   do {
     throwIfAborted(signal)

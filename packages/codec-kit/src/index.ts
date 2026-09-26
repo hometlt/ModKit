@@ -207,9 +207,14 @@ export interface ContainerEntry {
 export interface ContainerEntryTable {
   readonly entries: readonly ContainerEntry[]
   readonly caseSensitivity: 'sensitive' | 'insensitive'
-  /** False when the index was cut short (budget, damage); `diagnostics` say why. */
+  /** False when the index was cut short (budget, damage, no file list); `diagnostics` say why. */
   readonly complete: boolean
   readonly diagnostics?: readonly AssetDiagnostic[]
+  /**
+   * An entry by exact path that `entries` does not name — a hashed archive without its file list
+   * finds a path by hash. Published as the namespace's `lookup`; extraction uses it too.
+   */
+  find?(path: string, signal?: AbortSignal): Promise<ContainerEntry | undefined>
 }
 
 export interface InspectionResult {
