@@ -175,12 +175,23 @@ export function createUvmProjectorFrame(document: JsonObject, options: Options) 
     const world = options.nodeTransforms.get(`node-${node}`)
     if (world === undefined) throw new TypeError('projector node pose absent')
     const matrix = multiplyMaterialFrames(fromWorld, Array.from(world))
-    const basis = [
-      unit([valueAt(matrix, 0), valueAt(matrix, 1), valueAt(matrix, 2)]),
-      unit([valueAt(matrix, 4), valueAt(matrix, 5), valueAt(matrix, 6)]),
-      unit([valueAt(matrix, 8), valueAt(matrix, 9), valueAt(matrix, 10)]),
+    // The bone's frame, scale included: offsets, boxes and frustum distances are authored in bone
+    // units, so a bone scaled 2.4× casts a splat 2.4× wider (Shakuras_City_Debris_Splat covers 11.6
+    // cells in SC2; normalising the basis drew it over 4.9).
+    const columns = [
+      [valueAt(matrix, 0), valueAt(matrix, 1), valueAt(matrix, 2)],
+      [valueAt(matrix, 4), valueAt(matrix, 5), valueAt(matrix, 6)],
+      [valueAt(matrix, 8), valueAt(matrix, 9), valueAt(matrix, 10)],
     ] as const
-    const rotate = (v: ProjectorVec3): ProjectorVec3 => {
+    const basis = columns.map(unit) as unknown as readonly [ProjectorVec3, ProjectorVec3, ProjectorVec3]
+    const apply = (axes: typeof columns | typeof basis, v: ProjectorVec3): ProjectorVec3 => [
+      axes[0][0] * v[0] + axes[1][0] * v[1] + axes[2][0] * v[2],
+      axes[0][1] * v[0] + axes[1][1] * v[1] + axes[2][1] * v[2],
+      axes[0][2] * v[0] + axes[1][2] * v[1] + axes[2][2] * v[2],
+    ]
+    const throughBone = (v: ProjectorVec3): ProjectorVec3 => apply(columns, v)
+    /** A projector-local axis (pitch, yaw, roll applied) in bone space. */
+    const localAxis = (v: ProjectorVec3): ProjectorVec3 => {
       const pitch = scalar(entry['pitch']),
         yaw = scalar(entry['yaw']),
         roll = scalar(entry['roll'])
@@ -190,49 +201,45 @@ export function createUvmProjectorFrame(document: JsonObject, options: Options) 
       const x2 = x1 * Math.cos(yaw) + z1 * Math.sin(yaw),
         y2 = y1,
         z2 = -x1 * Math.sin(yaw) + z1 * Math.cos(yaw)
-      const local = unit([
+      return unit([
         x2 * Math.cos(roll) - y2 * Math.sin(roll),
         x2 * Math.sin(roll) + y2 * Math.cos(roll),
         z2,
       ])
-      return unit([
-        basis[0][0] * local[0] + basis[1][0] * local[1] + basis[2][0] * local[2],
-        basis[0][1] * local[0] + basis[1][1] * local[1] + basis[2][1] * local[2],
-        basis[0][2] * local[0] + basis[1][2] * local[1] + basis[2][2] * local[2],
-      ])
     }
-    const offset = vec(entry['offset']),
+    // Axes turn with the bone's rotation only, so they stay orthonormal under a non-uniform scale.
+    const rotate = (v: ProjectorVec3): ProjectorVec3 => unit(apply(basis, localAxis(v)))
+    /** How many source units one bone unit spans along a projector axis. */
+    const axisScale = (v: ProjectorVec3): number => Math.hypot(...throughBone(localAxis(v)))
+    const scaleX = axisScale([1, 0, 0]),
+      scaleY = axisScale([0, 1, 0]),
+      scaleZ = axisScale([0, 0, 1])
+    const offset = throughBone(vec(entry['offset'])),
       origin: ProjectorVec3 = [
-        valueAt(matrix, 12) +
-          basis[0][0] * offset[0] +
-          basis[1][0] * offset[1] +
-          basis[2][0] * offset[2],
-        valueAt(matrix, 13) +
-          basis[0][1] * offset[0] +
-          basis[1][1] * offset[1] +
-          basis[2][1] * offset[2],
-        valueAt(matrix, 14) +
-          basis[0][2] * offset[0] +
-          basis[1][2] * offset[1] +
-          basis[2][2] * offset[2],
+        valueAt(matrix, 12) + offset[0],
+        valueAt(matrix, 13) + offset[1],
+        valueAt(matrix, 14) + offset[2],
       ]
     const authoredProjectionType = entry['projectionType']
     if (authoredProjectionType !== 'orthographic' && authoredProjectionType !== 'perspective')
       throw new TypeError('unknown projector type')
     let projectionType: 'orthographic' | 'perspective' = authoredProjectionType
-    const near = scalar(entry['near']),
-      far = scalar(entry['far']),
+    const near = scalar(entry['near']) * scaleZ,
+      far = scalar(entry['far']) * scaleZ,
       tangentY = Math.tan(fov(scalar(entry['fieldOfView'])) * 0.5)
     // Terrain-bake projectors can carry a zero perspective frustum and an explicit signed box.
     // Keep that authored box instead of reducing its receiver volume to a near-zero cone.
-    const zBottom = scalar(entry['boxOffsetZBottom']), zTop = scalar(entry['boxOffsetZTop'])
+    const zBottom = scalar(entry['boxOffsetZBottom']) * scaleZ,
+      zTop = scalar(entry['boxOffsetZTop']) * scaleZ
     const boxed = near === 0 && far === 0 && zTop > zBottom
     if (boxed) projectionType = 'orthographic'
     const forwardAxis = rotate([0, 0, 1])
-    let left = Math.min(scalar(entry['boxOffsetXLeft']), scalar(entry['boxOffsetXRight'])),
-      rightExtent = Math.max(scalar(entry['boxOffsetXLeft']), scalar(entry['boxOffsetXRight']))
-    let bottom = Math.min(scalar(entry['boxOffsetYBack']), scalar(entry['boxOffsetYFront'])),
-      top = Math.max(scalar(entry['boxOffsetYBack']), scalar(entry['boxOffsetYFront']))
+    const boxX = [scalar(entry['boxOffsetXLeft']) * scaleX, scalar(entry['boxOffsetXRight']) * scaleX],
+      boxY = [scalar(entry['boxOffsetYBack']) * scaleY, scalar(entry['boxOffsetYFront']) * scaleY]
+    let left = Math.min(boxX[0]!, boxX[1]!),
+      rightExtent = Math.max(boxX[0]!, boxX[1]!)
+    let bottom = Math.min(boxY[0]!, boxY[1]!),
+      top = Math.max(boxY[0]!, boxY[1]!)
     const aspect = Math.max(0.001, Math.abs(scalar(entry['aspectRatio'])) || 1),
       distance = Math.max(0.001, Math.abs(near) || 0.01)
     const halfHeight =
