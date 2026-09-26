@@ -242,6 +242,14 @@ const workerBuild = await build({
       'compression',
       'bounded.js',
     ),
+    'vendor/codec-kit/compression/pkware-dcl': join(
+      repoRoot,
+      'packages',
+      'codec-kit',
+      'dist',
+      'compression',
+      'pkware-dcl.js',
+    ),
     'vendor/codec-kit/compression/inflate': join(
       repoRoot,
       'packages',

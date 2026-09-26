@@ -170,6 +170,10 @@
       "types": "./dist/compression/inflate.d.ts",
       "default": "./dist/compression/inflate.js"
     },
+    "./compression/pkware-dcl": {
+      "types": "./dist/compression/pkware-dcl.d.ts",
+      "default": "./dist/compression/pkware-dcl.js"
+    },
     "./compression/lz4": {
       "types": "./dist/compression/lz4.d.ts",
       "default": "./dist/compression/lz4.js"
