@@ -324,6 +324,7 @@ export function createResourceSession(options: ResourceSessionOptions): Resource
   return {
     sessionId,
     revision: options.revision,
+    primaryLogicalId: options.origin.primaryLogicalId,
     state: () => state,
 
     async resolve(requirement, signal) {

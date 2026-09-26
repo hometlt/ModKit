@@ -140,6 +140,8 @@ export type ResourceSessionState = 'live' | 'disposed'
 export interface ResourceSessionPort {
   readonly sessionId: string
   readonly revision: RevisionId
+  /** The primary subject's own logical id in the namespace `resolve` reads (its origin's naming). */
+  readonly primaryLogicalId?: string
   state(): ResourceSessionState
   resolve(
     requirement: LogicalResourceRequirement,

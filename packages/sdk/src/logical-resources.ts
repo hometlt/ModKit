@@ -143,4 +143,11 @@ export interface LogicalResourcePort {
     signal?: AbortSignal,
   ): Promise<ResourceResolution>
   provenance(signal?: AbortSignal): Promise<readonly ResourceProvenanceRecord[]>
+  /**
+   * Where the opened subject itself sits, attested by the host, in the namespace `resolve` reads:
+   * for an entry of a container its path inside the container, for a loose file its name in its
+   * directory. A codec whose references are engine paths (Unreal `/Game/...`) maps them onto that
+   * naming itself; undefined when the subject has no readable origin.
+   */
+  identity?(signal?: AbortSignal): Promise<LogicalResourceDiscoveryIdentity | undefined>
 }

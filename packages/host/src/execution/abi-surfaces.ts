@@ -354,6 +354,7 @@ const logicalResourcesSurface = {
     readBatch: { kind: 'value', ...sig },
     resolve: { kind: 'lease', result: ABI_LOGICAL_RESOURCE_RESOLUTION, wrapper: 'lease', ...sig },
     provenance: { kind: 'value', ...sig },
+    identity: { kind: 'value', ...sig },
   },
 } as const satisfies AbiSurfaceOf<WireLogicalResourcePort>
 

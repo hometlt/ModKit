@@ -16,7 +16,8 @@ export interface WireLogicalResourceResolution {
   openSource(signal?: AbortSignal): Promise<Lease<ArtifactSource>>
 }
 
-export interface WireLogicalResourcePort extends Omit<LogicalResourcePort, 'resolve'> {
+export interface WireLogicalResourcePort extends Omit<LogicalResourcePort, 'resolve' | 'identity'> {
+  identity: NonNullable<LogicalResourcePort['identity']>
   resolve(
     requirement: LogicalResourceRequirement,
     signal?: AbortSignal,
@@ -25,6 +26,7 @@ export interface WireLogicalResourcePort extends Omit<LogicalResourcePort, 'reso
 
 export function wireLogicalResources(port: LogicalResourcePort): WireLogicalResourcePort {
   return Object.freeze({
+    identity: port.identity === undefined ? async () => undefined : port.identity.bind(port),
     discover: port.discover.bind(port),
     readBatch: port.readBatch.bind(port),
     provenance: port.provenance.bind(port),
@@ -60,6 +62,7 @@ export function wireLogicalResources(port: LogicalResourcePort): WireLogicalReso
 
 export function logicalResourcesFromWire(wire: WireLogicalResourcePort): LogicalResourcePort {
   return Object.freeze({
+    identity: wire.identity.bind(wire),
     discover: wire.discover.bind(wire),
     readBatch: wire.readBatch.bind(wire),
     provenance: wire.provenance.bind(wire),

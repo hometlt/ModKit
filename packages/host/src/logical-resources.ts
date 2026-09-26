@@ -613,6 +613,14 @@ export function createSubjectLogicalResources(
         throw error
       }
     },
+    async identity(signal) {
+      signal?.throwIfAborted()
+      if (unavailable() !== undefined) return undefined
+      const primaryLogicalId = options.state.resources?.primaryLogicalId
+      return primaryLogicalId === undefined || primaryLogicalId.length === 0
+        ? undefined
+        : Object.freeze({ primaryLogicalId })
+    },
     async provenance(signal) {
       assertLive(signal)
       const records = options.state.resources?.provenance() ?? []
