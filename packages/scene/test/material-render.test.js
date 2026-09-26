@@ -16,6 +16,13 @@ it('keeps premultiplied RGB from being multiplied by alpha a second time', () =>
   blendMaterialPixel(frame, 0, [0.5, 0.25, 0.75, 0.5], { blend: 'premultiplied' })
   assert.deepEqual([...frame], [192, 128, 255, 255])
 })
+it('writes a solid fragment whole: an alpha-tested leaf keeps its colour and covers the pixel', () => {
+  for (const blend of ['opaque', 'alpha-test']) {
+    const frame = Uint8Array.of(10, 20, 30, 0)
+    blendMaterialPixel(frame, 0, [0.5, 0.25, 0.75, 0.4], { blend })
+    assert.deepEqual([...frame], [128, 64, 191, 255])
+  }
+})
 it('transports normals with inverse transpose and retains orthogonal tangent lighting under nonuniform scale', () => {
   const n = Math.SQRT1_2
   const geometry = materialGeometry(

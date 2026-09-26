@@ -450,8 +450,10 @@ function leaseShaderSources(
   const fragmentSource =
     fragment.replace(/void main\s*\(\s*\)/, 'void materialMain()') +
     '\nuniform vec4 u_instanceTint;\nvoid main(){materialMain();materialColor*=u_instanceTint;' +
+    // A solid pass covers its pixel whole: an alpha-tested leaf that survives the test is opaque.
+    // Multiplying its colour by the texel alpha drew SC2 foliage (alpha 0.3-0.7) dark with black rims.
     (materialIsSolid(source)
-      ? (source.defines.sceneLighting ? 'materialColor.a=clamp(materialColor.a,0.0,1.0);' : 'materialColor=clamp(materialColor,0.0,1.0);') + 'materialColor.rgb*=materialColor.a;'
+      ? (source.defines.sceneLighting ? '' : 'materialColor.rgb=clamp(materialColor.rgb,0.0,1.0);') + 'materialColor.a=1.0;'
       : '') +
     '}\n'
   const vertexSource = sceneMaterialVertexSource(

@@ -276,10 +276,11 @@ export function blendMaterialPixel(
                 ? source * dest
                 : mode === 'modulate2x'
                   ? 2 * source * dest
-                  : source * a
+                  : source
     frame[offset + channel] = Math.round(clamp(value) * 255)
   }
-  if (materialIsSolid(program)) frame[offset + 3] = Math.round(a * 255)
+  // A solid pass covers the pixel whole (an alpha-tested fragment that survived is opaque).
+  if (materialIsSolid(program)) frame[offset + 3] = 255
   else if (mode === 'blend' || mode === 'premultiplied')
     frame[offset + 3] = Math.round((a + ((frame[offset + 3] ?? 0) / 255) * (1 - a)) * 255)
 }
