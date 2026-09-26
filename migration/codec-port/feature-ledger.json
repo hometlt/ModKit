@@ -7529,9 +7529,14 @@
       "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/unreal-uasset-video.video-extract.json",
+          "sha256": "7f03818a08d18857d6bbc6abd8a5d6a5d4dcda6ed621a2e559b3ab1700a8c8ea"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/unreal-uasset-video/operation/video.extract",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [
