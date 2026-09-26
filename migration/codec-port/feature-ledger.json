@@ -748,14 +748,24 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-blizzard/blizzard-diablo/test/receipts/diablo3-app.model.read.json",
+          "sha256": "b831c445780c30704f921c7db6cf6958ece5976c5b3773cc312c6189bc784cb9"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/diablo3-app/operation/model.read",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-blizzard/blizzard-diablo/test/receipts/diablo3-app.model.render.json",
+          "sha256": "b9c7f096503bd7745260c4ebdfec16e18b909a4c4394a9142018f8a21616888d"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/diablo3-app/operation/model.render",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -768,14 +778,24 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-blizzard/blizzard-diablo/test/receipts/diablo3-tex.image.inspect.json",
+          "sha256": "f0f2de4e474c7512ddca85424dfa555faf7b0cb360dfeb7bf5eee845ad5e4a1d"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/diablo3-tex/operation/image.inspect",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-blizzard/blizzard-diablo/test/receipts/diablo3-tex.image.read.json",
+          "sha256": "a220bc4a67e668f8633e6c8fb762a61c17eaa9c16b211959a4c233c05a109ef7"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/diablo3-tex/operation/image.read",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],

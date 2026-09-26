@@ -533,32 +533,36 @@
       "targetOperation": null
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-blizzard/blizzard-diablo/contributions/codec-diablo3-app.json",
+      "handlerId": "model-export-uvm",
       "id": "legacy/codec-manifest/modkit/diablo3-app/operation/model.read",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "model.export-uvm"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-core/extensions/models/contributions/codec-uvm.json",
+      "handlerId": "render-uvm-scene",
       "id": "legacy/codec-manifest/modkit/diablo3-app/operation/model.render",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "model.render"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-blizzard/blizzard-diablo/contributions/codec-diablo3-tex.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/diablo3-tex/operation/image.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
-      "contribution": null,
+      "contribution": "modkit-extensions-blizzard/blizzard-diablo/contributions/codec-diablo3-tex.json",
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/diablo3-tex/operation/image.read",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": null,
+      "targetDataSource": {
+        "contract": "common.view/raster-image-source",
+        "major": 1
+      }
     },
     {
       "contribution": null,
