@@ -7255,9 +7255,14 @@
       "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/unity-ress.audit.json",
+          "sha256": "1afd3bb514cbeecbd11471b7d38988eb2329ec6ba045f274a978c4afcf55f68e"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/unity-ress/audit",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [
@@ -7305,9 +7310,14 @@
       "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/unityfs.audit.json",
+          "sha256": "bc9baf3a5159171eb73623d28d7e54895dd47bef7ef1547eb5f47c55dfc0bf31"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/unityfs/audit",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [
