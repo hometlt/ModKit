@@ -16,16 +16,23 @@ async function extension(name: string, contentSources: string | undefined): Prom
     JSON.stringify({
       name,
       version: '1.0.0',
-      modkit: { schemaVersion: 1, publisher: 'example', id: name, contributionManifests: [], ...(contentSources === undefined ? {} : { contentSources }) },
+      modkit: {
+        schemaVersion: 1,
+        publisher: 'example',
+        id: name,
+        contributionManifests: [],
+        ...(contentSources === undefined ? {} : { contentSources }),
+      },
     }),
   )
   await writeFile(
     join(root, 'dist', 'sources.mjs'),
-    `export async function createContentSources(options) {
+    `export async function createContentSources(options, context) {
   const noop = async () => {}
   return {
     snapshot: async () => ({ label: ${JSON.stringify(name)}, regions: [], connections: [],
-      roots: [{ id: ${JSON.stringify(`${name}:root`)}, label: JSON.stringify(options.installationDirectory ?? null), region: 'local', kind: 'local' }] }),
+      roots: [{ id: ${JSON.stringify(`${name}:root`)}, label: JSON.stringify(options.installationDirectory ?? null), region: 'local', kind: 'local',
+        probes: context?.installationProbes?.name ?? typeof context?.installationProbes }] }),
     connect: noop, disconnect: noop, search: async () => [], add: noop, remove: noop, refresh: noop,
     list: async () => [], read: async () => new Uint8Array(), dispose: noop,
   }
@@ -42,20 +49,32 @@ describe('the content sources extensions declare', () => {
     const sources = await resolveContentSources({
       extensionRoots: [sc2, none, roblox],
       storage: join(work, 'storage'),
-      moduleOptions: extension => (extension === 'example/sc2' ? { installationDirectory: 'C:/Games/SC2' } : undefined),
+      moduleOptions: extension =>
+        extension === 'example/sc2' ? { installationDirectory: 'C:/Games/SC2' } : undefined,
+      // every module gets the host's platform probes beside its options
+      installationProbes: { name: 'fixture-probes' } as never,
     })
     const snapshot = await sources?.snapshot()
-    expect(snapshot?.roots.map(root => [root.id, root.label])).toEqual([
-      ['sc2:root', '"C:/Games/SC2"'],
-      ['roblox:root', 'null'],
+    expect(
+      snapshot?.roots.map(root => [root.id, root.label, (root as { probes?: unknown }).probes]),
+    ).toEqual([
+      ['sc2:root', '"C:/Games/SC2"', 'fixture-probes'],
+      ['roblox:root', 'null', 'fixture-probes'],
     ])
     await sources?.dispose()
   })
 
   it('has none when no extension declares a module, and refuses one outside its root', async () => {
-    expect(await resolveContentSources({ extensionRoots: [await extension('plain', undefined)], storage: join(work, 'storage') })).toBeUndefined()
+    expect(
+      await resolveContentSources({
+        extensionRoots: [await extension('plain', undefined)],
+        storage: join(work, 'storage'),
+      }),
+    ).toBeUndefined()
     const escaping = await extension('escaping', '../sc2/dist/sources.mjs')
-    await expect(resolveContentSources({ extensionRoots: [escaping], storage: join(work, 'storage') })).rejects.toThrow(/inside the extension root/)
+    await expect(
+      resolveContentSources({ extensionRoots: [escaping], storage: join(work, 'storage') }),
+    ).rejects.toThrow(/inside the extension root/)
   })
 
   it('lets a configuration stand in for one extension while the others still compose', async () => {
@@ -65,17 +84,31 @@ describe('the content sources extensions declare', () => {
     const configPath = join(work, 'scoped-provider.json')
     await writeFile(
       configPath,
-      JSON.stringify({ module: join(configured, 'dist', 'sources.mjs'), options: {}, extension: 'example/scoped' }),
+      JSON.stringify({
+        module: join(configured, 'dist', 'sources.mjs'),
+        options: {},
+        extension: 'example/scoped',
+      }),
     )
-    const sources = await resolveContentSources({ extensionRoots: [declared, other], configPath, storage: join(work, 'storage') })
-    expect((await sources?.snapshot())?.roots.map(root => root.id)).toEqual(['scoped-config:root', 'scoped-other:root'])
+    const sources = await resolveContentSources({
+      extensionRoots: [declared, other],
+      configPath,
+      storage: join(work, 'storage'),
+    })
+    expect((await sources?.snapshot())?.roots.map(root => root.id)).toEqual([
+      'scoped-config:root',
+      'scoped-other:root',
+    ])
     await sources?.dispose()
   })
 
   it('uses only the configured module when a configuration is given', async () => {
     const configured = await extension('configured', undefined)
     const configPath = join(work, 'provider.json')
-    await writeFile(configPath, JSON.stringify({ module: join(configured, 'dist', 'sources.mjs'), options: {} }))
+    await writeFile(
+      configPath,
+      JSON.stringify({ module: join(configured, 'dist', 'sources.mjs'), options: {} }),
+    )
     const sources = await resolveContentSources({
       extensionRoots: [await extension('declared', 'dist/sources.mjs')],
       configPath,

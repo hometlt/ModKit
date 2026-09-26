@@ -6,6 +6,8 @@ import {
   loadContentSources,
   readContentSourceConfig,
 } from '@modkit/vfs/content-sources/node'
+import type { InstallationProbes } from '@modkit/sdk'
+import { createNodeInstallationProbes } from './installation-probes.js'
 
 export interface ResolveContentSourcesOptions {
   /** Every extension root the host loaded; each may declare `modkit.contentSources`. */
@@ -19,6 +21,8 @@ export interface ResolveContentSourcesOptions {
   readonly storage: string
   /** Options for one extension's module (`publisher/id`), e.g. the installation the user chose. */
   readonly moduleOptions?: (extension: string) => Readonly<Record<string, unknown>> | undefined
+  /** Platform probes handed to every module; defaults to this host's `createNodeInstallationProbes()`. */
+  readonly installationProbes?: InstallationProbes
 }
 
 /**
@@ -29,13 +33,20 @@ export async function resolveContentSources(
   options: ResolveContentSourcesOptions,
 ): Promise<ContentSources | undefined> {
   const config = options.configPath ? await readContentSourceConfig(options.configPath) : undefined
+  const context = {
+    installationProbes: options.installationProbes ?? createNodeInstallationProbes(),
+  }
   if (config !== undefined && config.extension === undefined) {
-    return loadContentSources(options.configPath, options.storage)
+    return loadContentSources(options.configPath, options.storage, context)
   }
   const seen = new Set<string>()
   const parts: ContentSources[] = []
   try {
-    if (config !== undefined) parts.push(await loadContentSourceModule(config.module, config.options, options.storage))
+    if (config !== undefined) {
+      parts.push(
+        await loadContentSourceModule(config.module, config.options, options.storage, context),
+      )
+    }
     for (const root of options.extensionRoots) {
       const declared = await declaredModule(root)
       if (declared === undefined || declared.extension === config?.extension) continue
@@ -49,6 +60,7 @@ export async function resolveContentSources(
           declared.module,
           options.moduleOptions?.(declared.extension) ?? {},
           options.storage,
+          context,
         ),
       )
     }

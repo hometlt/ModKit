@@ -307,6 +307,7 @@ const installationProbesSurface = {
     epicInstallLocation: { kind: 'value', ...sig },
     gogInstallPath: { kind: 'value', ...sig },
     storePackageLocation: { kind: 'value', ...sig },
+    knownFolder: { kind: 'value', ...sig },
   },
 } as const satisfies AbiSurfaceOf<InstallationProbes>
 

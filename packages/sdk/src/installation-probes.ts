@@ -7,8 +7,14 @@
  */
 export type RegistryHive = 'HKLM' | 'HKCU'
 
+/** A per-user or machine folder a game keeps its documents or shared data in. */
+export type KnownFolder = 'documents' | 'program-data'
+
 export interface InstallationProbes {
-  /** String values under one registry key (`SOFTWARE\\Blizzard Entertainment\\StarCraft II`). */
+  /**
+   * Values under one registry key (`SOFTWARE\\Blizzard Entertainment\\StarCraft II`) as strings:
+   * REG_SZ as is, REG_EXPAND_SZ unexpanded, DWORD/QWORD as `0x…`, REG_BINARY as lowercase hex digits.
+   */
   registryValues(
     hive: RegistryHive,
     key: string,
@@ -23,4 +29,11 @@ export interface InstallationProbes {
   gogInstallPath(productId: string, signal?: AbortSignal): Promise<string | undefined>
   /** A Microsoft Store package's install location by package family name. */
   storePackageLocation(familyName: string, signal?: AbortSignal): Promise<string | undefined>
+  /** The user's Documents folder (as the shell resolves it, even when moved) or ProgramData. */
+  knownFolder(folder: KnownFolder, signal?: AbortSignal): Promise<string | undefined>
+}
+
+/** What a trusted host hands a content-source module beside its options. */
+export interface ContentSourceModuleContext {
+  readonly installationProbes?: InstallationProbes
 }

@@ -863,7 +863,12 @@ export type {
   LogicalResourceReadBatchResult,
   LogicalResourceReadOutcome,
 } from './logical-resources.js'
-export type { InstallationProbes, RegistryHive } from './installation-probes.js'
+export type {
+  ContentSourceModuleContext,
+  InstallationProbes,
+  KnownFolder,
+  RegistryHive,
+} from './installation-probes.js'
 export type {
   ModelResourcePort,
   ModelResourceAsset,
