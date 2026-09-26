@@ -7077,19 +7077,34 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-blizzard/blizzard-warcraft-3/test/receipts/k1/war3-mdx.audit.json",
+          "sha256": "28a07c7c702f703aab03bc1b8ca17847685cdc3396001e0463d3376940d11bfb"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/war3-mdx/audit",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-blizzard/blizzard-warcraft-3/test/receipts/k1/war3-mdx.model-read.json",
+          "sha256": "c879d65bb008179cdc95de93b6332c0ba429a3dcc0469fc17fa9564efc45cb95"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/war3-mdx/operation/model.read",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-blizzard/blizzard-warcraft-3/test/receipts/k1/war3-mdx.model-render.json",
+          "sha256": "3f8499d1e006efc27976608b8f64100fba7f54ff9457ea716ab30f8e1038a64d"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/war3-mdx/operation/model.render",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],

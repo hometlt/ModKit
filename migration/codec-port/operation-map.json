@@ -3004,18 +3004,18 @@
       "targetOperation": null
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-blizzard/blizzard-warcraft-3/contributions/codec-war3-mdx.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/war3-mdx/operation/model.read",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-blizzard/blizzard-warcraft-3/contributions/codec-war3-mdx.json",
+      "handlerId": "model-export-uvm",
       "id": "legacy/codec-manifest/modkit/war3-mdx/operation/model.render",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "model.export-uvm"
     },
     {
       "contribution": null,
