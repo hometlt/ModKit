@@ -336,7 +336,9 @@ describe('installed Warzone map in a real browser WebGL2 context', () => {
       programCompilations: 2,
       shadowTargetAllocations: 1,
       shadowTargetReuses: 6,
-      worldPlanBuilds: 2,
+      // The animation seek keeps the static terrain preparation and rebuilds only dynamic sections.
+      worldPlanBuilds: 1,
+      worldPlanDynamicUpdates: 1,
       worldPlanReuses: 5,
       animationSeekSamples: 1,
       cpuFrameSamples: 7,
