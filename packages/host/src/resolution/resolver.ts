@@ -350,7 +350,9 @@ export function resolveProvider(
     }
   }
 
-  // Stage 6: deterministic preference tuple — no self-declared priority, no order.
+  // Stage 6: deterministic preference tuple — no self-declared priority, no order. Last, an offer
+  // that runs in the requested target outranks its in-process twin (`targetFor` returns the request
+  // target itself for it): a provider shipping both variants must not tie against itself.
   const score = (candidate: Candidate): readonly number[] => [
     request.operation !== undefined &&
     (candidate.offer.operations ?? []).includes(request.operation)
@@ -359,6 +361,7 @@ export function resolveProvider(
     preferredOutputs.filter(requirement =>
       (candidate.offer.outputs ?? []).some(offer => traitOfferMatches(requirement, offer)),
     ).length,
+    targetOf(candidate.offer) === request.target ? 1 : 0,
   ]
   const compareTuple = (a: readonly number[], b: readonly number[]): number => {
     for (let i = 0; i < a.length; i += 1) {
