@@ -522,6 +522,10 @@ export interface ModelLodLevelRef {
   readonly id: string
   readonly order: number
   readonly nodeIds: readonly string[]
+  /** Switch to this level below this fraction of viewport height (`MODKITX_lod_selection`). */
+  readonly screenCoverage?: number
+  /** Switch to this level beyond this distance, in metres. */
+  readonly maxDistance?: number
 }
 
 export interface ModelLodInfo {

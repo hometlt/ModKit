@@ -6,6 +6,7 @@ import type {
   ModelMesh,
   ModelPrimitive,
   ModelSocketRef,
+  ModelLodLevelRef,
   ModelMaterialRef,
   ModelBoneBinding,
   ModelAnimationClip,
@@ -35,6 +36,8 @@ export interface ModelProjection {
   /** Complete explicit scene-node bindings; unknown bind transforms are never guessed. */
   readonly skeleton?: readonly ModelBoneBinding[]
   readonly animations?: readonly ModelAnimationClip[]
+  /** Discrete levels of detail over whole scene-root nodes (the `model-lod-source` shape). */
+  readonly lods?: readonly ModelLodLevelRef[]
   readonly excludedFacetIds?: readonly string[]
   readonly resourceClosure?: {
     readonly mode: 'logical' | 'content-qualified'
@@ -1019,6 +1022,59 @@ export function materializeUvmCore(
     )
   }
 
+  // `projection.lods`: each level's root nodes go under one group node; the order-0 group stays in
+  // the scene and names the lower groups in MSFT_lod (they replace it in place, so the units and
+  // up-axis wrappers below apply to them too). A node in no level is drawn at every level.
+  let lodSelection: object | undefined
+  if (projection.lods !== undefined && projection.lods.length > 0) {
+    const levels = [...projection.lods].sort((a, b) => a.order - b.order)
+    if (levels.length < 2) fail('discrete LOD needs at least two levels')
+    if (levels.some((level, at) => at > 0 && level.order === levels[at - 1]!.order))
+      fail('two LOD levels share an order')
+    const claimed = new Set<number>()
+    const groups = levels.map(level => {
+      if (level.nodeIds.length === 0) fail(`LOD level ${level.id} names no nodes`)
+      const members = level.nodeIds.map(id => {
+        const index = nodeIndexById.get(id)
+        if (index === undefined) fail(`LOD level ${level.id} names unknown node ${id}`)
+        if (!rootIndices.includes(index))
+          fail(
+            `LOD level ${level.id} node ${id} is not a scene root; levels group whole root nodes`,
+          )
+        if (claimed.has(index)) fail(`node ${id} belongs to two LOD levels`)
+        claimed.add(index)
+        return index
+      })
+      const group = documentNodes.length
+      documentNodes.push({ name: `uv:lod-${level.order}`, children: members })
+      return { level, group }
+    })
+    documentNodes[groups[0]!.group]!.extensions = {
+      MSFT_lod: { ids: groups.slice(1).map(entry => entry.group) },
+    }
+    rootIndices = [...rootIndices.filter(index => !claimed.has(index)), groups[0]!.group]
+    const thresholds = groups.filter(
+      ({ level }) => level.screenCoverage !== undefined || level.maxDistance !== undefined,
+    )
+    if (thresholds.length > 0)
+      lodSelection = {
+        policy: groups.some(({ level }) => level.screenCoverage !== undefined)
+          ? 'screen-coverage'
+          : 'distance',
+        levels: groups.map(({ level, group }) => ({
+          node: group,
+          ...(level.screenCoverage === undefined ? {} : { screenCoverage: level.screenCoverage }),
+          ...(level.maxDistance === undefined ? {} : { maxDistance: level.maxDistance }),
+        })),
+      }
+    note(
+      'uv.model/structure@1',
+      'value-differs',
+      '/nodes',
+      `${groups.length} LOD levels are grouped under one node each (MSFT_lod)`,
+    )
+  }
+
   // Materials whose published params carry sequence tracks (UV offset, tiling, colour) are the
   // clip catalog's material targets; one index for every codec, not a pass after materialization.
   const materialTargets =
@@ -1145,9 +1201,12 @@ export function materializeUvmCore(
         ? []
         : ['UV_game_variants', 'KHR_animation_pointer']),
       ...(unitsExtension === undefined ? [] : ['UV_units']),
+      ...(projection.lods !== undefined && projection.lods.length > 0 ? ['MSFT_lod'] : []),
+      ...(lodSelection === undefined ? [] : ['MODKITX_lod_selection']),
     ],
     extensions: {
       ...(unitsExtension === undefined ? {} : { UV_units: unitsExtension }),
+      ...(lodSelection === undefined ? {} : { MODKITX_lod_selection: lodSelection }),
       ...(animation === undefined || animation.visibility.length === 0
         ? {}
         : {
