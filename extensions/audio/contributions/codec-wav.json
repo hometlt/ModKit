@@ -30,7 +30,7 @@
     "sourceTopology": "single",
     "artifactStages": ["authored", "compiled"],
     "openIntents": ["probe", "inspect", "full", "stream", "export"],
-    "match": { "extensions": ["wav"] },
+    "match": { "extensions": ["wav"], "mediaTypes": ["audio/wav"] },
     "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
     "representations": [
       {

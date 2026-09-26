@@ -155,6 +155,19 @@ describe('WAV IMA ADPCM', () => {
       -2000, -1993, -2003,
     ])
   })
+
+  it('decodes a short last block: its preamble and the whole words it holds', async () => {
+    // A full 12-byte block (17 frames), then a 9-byte tail: header, one word, one stray byte.
+    const data = new Uint8Array(21)
+    data.set(imaBlock(1000, 0, new Array(8).fill(0)), 0)
+    data.set(imaBlock(-2000, 0, [0xc4, 0, 0, 0, 0x77]), 12)
+    expect(frameCountFor(imaFormat(1, 12), data.byteLength)).toBe(17 + 9)
+    const channels = decodeWavPcm(data, imaFormat(1, 12), 17, 100)
+    const frames = [...(channels[0] as Float32Array)].map(value => Math.round(value * 32_768))
+    // Nine frames — the stray byte is not a word — opening as the hand-computed case above.
+    expect(frames).toHaveLength(9)
+    expect(frames.slice(0, 3)).toEqual([-2000, -1993, -2003])
+  })
 })
 
 /**

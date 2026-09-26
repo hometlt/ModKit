@@ -41,12 +41,24 @@ export function adpcmFramesPerBlock(blockAlign, channels) {
   return 1 + ((blockAlign - 4 * channels) * 2) / channels
 }
 
+/**
+ * Frames in a short last IMA ADPCM block of `bytes`: its header frame and 8 per whole group of
+ * 4-byte words (one word per channel), as Microsoft IMA allows at the end of a stream.
+ */
+function adpcmTailFrames(bytes, channels) {
+  const header = 4 * channels
+  return bytes < header ? 0 : 1 + Math.floor((bytes - header) / header) * 8
+}
+
 /** How many whole frames the data chunk holds for this format. */
 export function frameCountFor(format, dataBytes) {
   if (format.encoding === 'ima-adpcm') {
     if (format.blockAlign <= 0) return 0
     const blocks = Math.floor(dataBytes / format.blockAlign)
-    return blocks * adpcmFramesPerBlock(format.blockAlign, format.channels)
+    return (
+      blocks * adpcmFramesPerBlock(format.blockAlign, format.channels) +
+      adpcmTailFrames(dataBytes % format.blockAlign, format.channels)
+    )
   }
   if (format.blockAlign <= 0) return 0
   return Math.floor(dataBytes / format.blockAlign)
@@ -106,7 +118,9 @@ function decodeImaAdpcm(data, format, fromFrame, frameCount, channels) {
   const states = Array.from({ length: format.channels }, () => ({ predictor: 0, index: 0 }))
   for (let block = firstBlock; block < lastBlock; block += 1) {
     const blockStart = block * format.blockAlign
-    if (blockStart + format.blockAlign > data.byteLength) break
+    // The last block may be short: it keeps its header and the whole word groups it has.
+    const blockBytes = Math.min(format.blockAlign, data.byteLength - blockStart)
+    if (blockBytes < 4 * format.channels) break
     let frame = block * framesPerBlock
     for (let channel = 0; channel < format.channels; channel += 1) {
       const at = blockStart + channel * 4
@@ -120,7 +134,7 @@ function decodeImaAdpcm(data, format, fromFrame, frameCount, channels) {
     frame += 1
     const nibbleStart = blockStart + 4 * format.channels
     // Each 4-byte word holds 8 nibbles, i.e. 8 frames of one channel; words alternate by channel.
-    const groups = (format.blockAlign - 4 * format.channels) / (4 * format.channels)
+    const groups = Math.floor((blockBytes - 4 * format.channels) / (4 * format.channels))
     for (let group = 0; group < groups; group += 1) {
       for (let channel = 0; channel < format.channels; channel += 1) {
         const at = nibbleStart + (group * format.channels + channel) * 4
