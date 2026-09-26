@@ -316,7 +316,7 @@ describe('the Edit panel in a real browser', () => {
   it('offers no Edit panel for a subject this page can never write, and says why', async () => {
     /*
      * The served sample reaches the page through a same-origin fetch, so it has no handle and can
-     * never be saved back — even though its codec declares two perfectly good mutating operations.
+     * never be saved back — even though its codec declares three perfectly good mutating operations.
      * This is the half of the offer rule that has to stay true, and the one a host is most tempted
      * to fudge by drawing a disabled control.
      */
@@ -328,8 +328,9 @@ describe('the Edit panel in a real browser', () => {
     )
     expect(await page.locator(EDIT_PANEL).count()).toBe(0)
     const text = await inspectorText()
-    expect(text).toContain('0 edit form(s) over 2 mutating operation(s)')
-    expect(text).toContain('edit.structure, edit.content: no Edit panel')
+    // container.pack (c9f009de) is the third: archives inside archives are written back through it
+    expect(text).toContain('0 edit form(s) over 3 mutating operation(s)')
+    expect(text).toContain('edit.structure, edit.content, container.pack: no Edit panel')
     expect(text).toContain('no writable handle')
     // and the toolbar still shows the read-only verbs, so "no editing" is not "no operations"
     expect(await page.locator('[data-mk-part="operations.button"]').count()).toBeGreaterThan(0)
@@ -340,16 +341,16 @@ describe('the Edit panel in a real browser', () => {
     await pickFile('./samples/sample.zip', 'sample.zip')
     await waitForEditPanel()
 
-    // the same file, now with a handle: the panel is offered, over the same two operations
+    // the same file, now with a handle: the panel is offered, over the same three operations
     const before = await inspectorText()
-    expect(before).toContain('4 edit form(s) over 2 mutating operation(s)')
+    expect(before).toContain('4 edit form(s) over 3 mutating operation(s)')
     expect(
       await page.locator(`${EDIT_PANEL} [data-mk-part="form.select"] option`).allTextContents(),
     ).toEqual([
-      'Add archive entry',
-      'Remove archive entry',
-      'Rename archive entry',
-      'Replace archive entry',
+      'Add an entry to the archive',
+      'Remove an entry from the archive',
+      'Rename an entry in the archive',
+      "Replace an entry's contents",
     ])
 
     await showView('archive')
@@ -429,11 +430,14 @@ describe('the Edit panel in a real browser', () => {
   it('sets a PNG text field, writes the chunk, and the reopened metadata view shows it', async () => {
     await pickFile('./favicon-32.png', 'favicon-32.png')
     await waitForEditPanel()
-    expect(await inspectorText()).toContain('1 edit form(s) over 1 mutating operation(s)')
+    // edit.field (text chunks) and, since aa9a265f, edit.content (pixel edits) both write the PNG
+    expect(await inspectorText()).toContain('3 edit form(s) over 2 mutating operation(s)')
 
+    // The view lists the schema's fields (Description among them) before the file carries any text,
+    // so what proves the write is the value, not the label.
     await showView('metadata')
-    expect(await page.locator('[data-mk-part="metadata.label"]').allTextContents()).not.toContain(
-      'Description',
+    expect(await page.locator('[data-mk-part="metadata.value"]').allTextContents()).not.toContain(
+      PNG_TEXT,
     )
 
     await applyForm('png-set-text', { keyword: 'Description', text: PNG_TEXT })
