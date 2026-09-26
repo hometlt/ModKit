@@ -1043,10 +1043,6 @@ async function activateModkit(
           return installationDirectory === undefined ? undefined : { installationDirectory }
         },
       })
-      // A kept key reaches its source as soon as the source exists, so its assets resolve unasked.
-      void contentSources.then(source =>
-        source === undefined ? undefined : connectKeptKeys(source),
-      )
     }
     const source = await contentSources
     if (!source) throw new Error('No extension of this window offers content sources')
@@ -1173,37 +1169,6 @@ async function activateModkit(
     }
     if (typeof result?.ticket === 'string') await context.secrets.store(key, result.ticket)
     await rememberConnections(source)
-  }
-  /** The regions whose connect takes a typed key (Roblox Open Cloud) rather than a sign-in page. */
-  const keyRegions = async (source: ContentSources) =>
-    ((await source.snapshot()).regions ?? []).flatMap(region =>
-      region.credential === undefined ? [] : [{ id: region.id, label: region.credential.label }],
-    )
-  const chooseKeyRegion = async (
-    regions: readonly { readonly id: string; readonly label: string }[],
-  ): Promise<{ readonly id: string; readonly label: string } | undefined> =>
-    regions.length <= 1
-      ? regions[0]
-      : await vscode.window.showQuickPick(
-          regions.map(region => ({ ...region, description: region.id })),
-          { title: localizer.text('vscode.sources.chooseKey') },
-        )
-  /**
-   * Hand every kept key to its source without asking. A key no longer accepted stays kept and is
-   * only logged: replacing it is the user's command, not a prompt at startup.
-   */
-  const connectKeptKeys = async (source: ContentSources): Promise<void> => {
-    const connected = new Set(((await source.snapshot()).connections ?? []).map(c => c.region))
-    for (const region of await keyRegions(source)) {
-      if (connected.has(region.id)) continue
-      const kept = await keptTicket(region.id)
-      if (kept === undefined) continue
-      try {
-        await callContentSources(source, 'connect', [region.id, undefined, kept])
-      } catch (error) {
-        log(`[sources] ${region.label}: ${error instanceof Error ? error.message : String(error)}`)
-      }
-    }
   }
   const rememberedAccount = (region: string): string | undefined =>
     knownConnections().find(item => item.region === region)?.accountId
@@ -2698,8 +2663,10 @@ async function activateModkit(
           const connected = new Set(
             ((await source.snapshot()).connections ?? []).map(item => item.region),
           )
-          for (const region of await keyRegions(source)) {
-            if (!connected.has(region.id)) await connectAccount(source, region.id)
+          for (const region of (await source.snapshot()).regions ?? []) {
+            if (region.credential !== undefined && !connected.has(region.id)) {
+              await connectAccount(source, region.id)
+            }
           }
           let downloaded = 0
           let present = 0
@@ -2762,65 +2729,6 @@ async function activateModkit(
           }
         },
       ),
-      /*
-       * A region without a sign-in page (Roblox Open Cloud) takes a key the user types. Entering one
-       * replaces the kept key; the key lives only in the editor's secret storage and goes to the
-       * source through `connect`, never to settings, a file or the log.
-       */
-      vscode.commands.registerCommand('modkit.sources.setKey', async () => {
-        const source = await requireContentSources()
-        const region = await chooseKeyRegion(await keyRegions(source))
-        if (region === undefined) {
-          void vscode.window.showInformationMessage(localizer.text('vscode.sources.noKeyRegion'))
-          return false
-        }
-        const key = await askCredential(region)
-        if (key === undefined) return false
-        try {
-          const result = (await callContentSources(source, 'connect', [region.id, undefined, key])) as
-            | { readonly ticket?: unknown }
-            | undefined
-          await context.secrets.store(
-            ticketKey(region.id),
-            typeof result?.ticket === 'string' ? result.ticket : key,
-          )
-          await context.secrets.delete(earlierTicketKey(region.id))
-        } catch (error) {
-          // A key the source refuses is not kept.
-          void vscode.window.showErrorMessage(
-            `Modkit: ${error instanceof Error ? error.message : String(error)}`,
-          )
-          return false
-        }
-        sourcesView.refresh()
-        void vscode.window.showInformationMessage(
-          localizer.text('vscode.sources.keySaved', { label: region.label }),
-        )
-        return true
-      }),
-      vscode.commands.registerCommand('modkit.sources.forgetKey', async () => {
-        const source = await requireContentSources()
-        const kept = []
-        for (const region of await keyRegions(source)) {
-          if ((await keptTicket(region.id)) !== undefined) kept.push(region)
-        }
-        const region = await chooseKeyRegion(kept)
-        if (region === undefined) {
-          void vscode.window.showInformationMessage(localizer.text('vscode.sources.noKeptKey'))
-          return false
-        }
-        await forgetTicket(region.id)
-        for (const connection of (await source.snapshot()).connections ?? []) {
-          if (connection.region === region.id) {
-            await callContentSources(source, 'disconnect', [connection.id])
-          }
-        }
-        sourcesView.refresh()
-        void vscode.window.showInformationMessage(
-          localizer.text('vscode.sources.keyForgotten', { label: region.label }),
-        )
-        return true
-      }),
       vscode.commands.registerCommand('modkit.sources.refresh', async (argument: unknown) => {
         const row =
           typeof argument === 'object' && argument !== null

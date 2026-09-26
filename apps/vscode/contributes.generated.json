@@ -227,11 +227,6 @@
       "icon": "$(edit)"
     },
     {
-      "command": "modkit.sources.forgetKey",
-      "title": "%command.forgetSourceKey%",
-      "icon": "$(trash)"
-    },
-    {
       "command": "modkit.sources.open",
       "title": "%command.openContentSource%",
       "icon": "$(plug)"
@@ -260,11 +255,6 @@
       "command": "modkit.sources.revealLocal",
       "title": "%command.revealLocalSource%",
       "icon": "$(folder)"
-    },
-    {
-      "command": "modkit.sources.setKey",
-      "title": "%command.setSourceKey%",
-      "icon": "$(key)"
     },
     {
       "command": "modkit.sources.signIn",

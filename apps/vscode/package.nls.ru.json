@@ -5,8 +5,6 @@
   "command.refreshSources": "Обновить источники",
   "iconTheme.modkitFileIcons": "Значки файлов Modkit",
   "command.downloadReferences": "Скачать ассеты, на которые ссылается файл",
-  "command.setSourceKey": "Ввести или заменить ключ источника (Roblox Open Cloud)",
-  "command.forgetSourceKey": "Удалить ключ источника",
   "command.signInBattleNet": "Войти в Battle.net",
   "command.signOutBattleNet": "Выйти",
   "command.unmountContentSource": "Отмонтировать",

@@ -5,8 +5,6 @@
   "command.refreshSources": "Refresh Sources",
   "iconTheme.modkitFileIcons": "Modkit File Icons",
   "command.downloadReferences": "Download the Assets This File References",
-  "command.setSourceKey": "Enter or Replace a Content Source Key (Roblox Open Cloud)",
-  "command.forgetSourceKey": "Delete a Content Source Key",
   "command.signInBattleNet": "Sign in to Battle.net",
   "command.signOutBattleNet": "Sign out",
   "command.unmountContentSource": "Unmount",
