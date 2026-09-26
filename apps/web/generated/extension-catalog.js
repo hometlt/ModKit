@@ -6592,7 +6592,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:6fdc1398477077b7f70a798a5a636d9d4570f85eeb24217abf8ed0f365d016d9',
+        artifactDigest: 'sha256:2347ae2ac70ad7b135405c876fe7a145d0d6a8c566fd922b9fe2d62f9f72366d',
         fileDigests: {
           'MIGRATION-NOTES-common-images.json':
             'sha256:44c30ea45aaceceff66d53f72e5e0d0ec8efb1a7f2afbc2f9913849720632e93',
@@ -6624,7 +6624,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-ktx.json':
             'sha256:4ee4d58d454dd57f3968ffcc394b48b08d4be9cdbc023a8467f8a1bc66bc4806',
           'contributions/codec-ktx2.json':
-            'sha256:b9fc5eba855941df66f0bc62d82c7bed8985b5e82a4b6a0925375486b0be178b',
+            'sha256:65de45dc0687964552ee2f101cf12794bc5a213825f513b1f6b2b95b33fdf33d',
           'contributions/codec-pal.json':
             'sha256:ea2a3925124bc67b6b887b70a85f03722c49a18b7f44176dfdd6365d6920188a',
           'contributions/codec-pcx.json':
@@ -6688,7 +6688,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'src/ktx/codec.js':
             'sha256:9d24a991d8a64e241895849cc43305babfc20647d4226f5bea8fc6cb44e92903',
           'src/ktx2/codec.js':
-            'sha256:4d6240d729468880b18a12e629d29972d0e70b25b6b909329786a24637c463f1',
+            'sha256:2c72dc7edc2dbb11c14c60a83ec07427a27032c69034a0bcddb662b2b79ac87f',
           'src/linked.js':
             'sha256:bbe85af6cdf6da5544829b2bd7ad09a733ca00edc56e2229659247eba5cf8975',
           'src/ops/raster-transforms.js':
@@ -6729,6 +6729,8 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:104de000cee52f895247c882aa74c54ba6c19a7ad763e830c285644a8fe40da9',
           'test/eac-r11-decode.test.ts':
             'sha256:2a0d83d3152224ce7ea530605bb9441912aa9be68b3b4ec60d1e51cb0e5beed4',
+          'test/ktx2-decode.test.ts':
+            'sha256:0e1807a5b7d07485053fe106dc7cfbce7e664376d7eb4d8b59c878c65e1a09f5',
           'test/png-palette-decode.test.ts':
             'sha256:a91dff0a852807126efb31df8f4f7401a0eab4dcf9a36ba55081bd580ac5ac14',
           'test/raster-edit-content.test.ts':
@@ -6745,7 +6747,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:8b819b0622cce57f809b369081bdd6eca09d1c1793da7f82192db39229356c1d',
         },
         inventoryRecordId:
-          'artifact:sha256:6fdc1398477077b7f70a798a5a636d9d4570f85eeb24217abf8ed0f365d016d9',
+          'artifact:sha256:2347ae2ac70ad7b135405c876fe7a145d0d6a8c566fd922b9fe2d62f9f72366d',
       },
       artifactRoot: 'extensions/images/',
       containers: {
@@ -6854,7 +6856,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         ],
         [
           'contributions/codec-ktx2.json',
-          'sha256:b9fc5eba855941df66f0bc62d82c7bed8985b5e82a4b6a0925375486b0be178b',
+          'sha256:65de45dc0687964552ee2f101cf12794bc5a213825f513b1f6b2b95b33fdf33d',
         ],
         [
           'contributions/codec-pal.json',
@@ -9330,7 +9332,8 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             id: 'modkit/ktx2',
             limitations: [
               'The MK3 port validates the KTX2 header, complete level index, DFD/KVD/SGD ranges, dimensions, layers, faces, and supercompression declaration and publishes metadata plus encoded payload access.',
-              'Vulkan-format pixel decoding, Basis transcoding, zlib/zstd supercompression decoding, writing, metadata mutation, and pixel editing remain unsupported.',
+              'Single 2D images in BC1–BC5 VkFormats (131–142), plain or Zstandard-supercompressed, decode to rgba8 per mip level through codec-kit texture/bc and compression/zstd.',
+              'Other Vulkan formats, arrays, cube maps and volumes, Basis transcoding, zlib supercompression, writing, metadata mutation, and pixel editing remain unsupported.',
             ],
             runtimeVariants: [
               {
@@ -11119,6 +11122,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         'test/dds-subresources.test.ts',
         'test/dds-transform.test.ts',
         'test/eac-r11-decode.test.ts',
+        'test/ktx2-decode.test.ts',
         'test/png-palette-decode.test.ts',
         'test/raster-edit-content.test.ts',
         'test/raster-export.test.ts',
