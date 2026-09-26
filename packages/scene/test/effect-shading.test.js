@@ -281,6 +281,8 @@ test('particles and ribbons select common simple-effect state independently of n
   const program = full.materials.find(value => value.id === sprite.materialId)
   assert.equal(program.simpleEffect, undefined)
   assert.equal(program.shader.parameters.renderModel.standard.twoSided, true)
+  // a sprite takes no scene light (M3 lights particles only under the emitter's LitParts flag)
+  assert.equal(program.shader.parameters.renderModel.standard.unshaded, true)
   assert.equal(program.shader.parameters.renderModel.standard.layers.diffuse.uvSource, 0)
   assert.deepEqual(sprite.tint, [0.5, 0.25, 1, 0.5])
 

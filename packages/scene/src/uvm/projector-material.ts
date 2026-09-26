@@ -8,7 +8,9 @@ import type { SimpleEffectState } from '../render/simple-effect.js'
  * Material for camera-facing particles and ribbons. A render-material keeps its full program, as
  * SC2's particle.fx shades sprites through PSMainShading: smoke opacity comes from the alpha1/alpha2
  * masks, which the single-texture simple pass drops (hard square sprite edges). Sprites have no back
- * side, so every pass is two-sided. Colorless presentations return undefined.
+ * side, so every pass is two-sided, and they take no scene light: an M3 emitter lights its sprites
+ * only under its LitParts flag, which UV_game_effects does not carry yet. Colorless presentations
+ * return undefined.
  */
 export function effectSurfaceMaterial(
   base: SceneRendererMaterial,
@@ -47,6 +49,8 @@ export function effectSurfaceMaterial(
     return {
       ...standard,
       twoSided: true,
+      // ponytail: every sprite unlit until effects carry the emitter's lit flag (M3 LitParts)
+      unshaded: true,
       ...(layers === undefined
         ? {}
         : {
