@@ -1826,74 +1826,86 @@
       "targetOperation": "model.render"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/codec-relic-sga.json",
+      "handlerId": "extract-entry",
       "id": "legacy/codec-manifest/modkit/relic-sga/operation/archive.extract",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "container.extract"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/codec-relic-sga.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/relic-sga/operation/archive.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
-      "contribution": null,
+      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/codec-relic-sgm.json",
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/relic-sgm/operation/model.read",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": null,
+      "targetDataSource": {
+        "contract": "common.view/model-scene-source",
+        "major": 1
+      }
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-core/extensions/models/contributions/codec-uvm.json",
+      "handlerId": "render-uvm-scene",
       "id": "legacy/codec-manifest/modkit/relic-sgm/operation/model.render",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "model.render"
     },
     {
-      "contribution": null,
+      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/codec-relic-whm.json",
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/relic-whm/operation/model.read",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": null,
+      "targetDataSource": {
+        "contract": "common.view/model-scene-source",
+        "major": 1
+      }
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-core/extensions/models/contributions/codec-uvm.json",
+      "handlerId": "render-uvm-scene",
       "id": "legacy/codec-manifest/modkit/relic-whm/operation/model.render",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "model.render"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/codec-relic.json",
+      "handlerId": "extract-entry",
       "id": "legacy/codec-manifest/modkit/relic/operation/archive.extract",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "container.extract"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/codec-relic.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/relic/operation/archive.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/codec-rgt.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/rgt/operation/image.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
-      "contribution": null,
+      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/codec-rgt.json",
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/rgt/operation/image.read",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": null,
+      "targetDataSource": {
+        "contract": "common.view/raster-image-source",
+        "major": 1
+      }
     },
     {
       "contribution": null,
@@ -1903,32 +1915,36 @@
       "targetOperation": null
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/codec-rrtex.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/rrtex/operation/image.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/codec-rrtex.json",
+      "handlerId": "extract-entry",
       "id": "legacy/codec-manifest/modkit/rrtex/operation/image.read",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "container.extract"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/codec-rsh.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/rsh/operation/image.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
-      "contribution": null,
+      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/codec-rsh.json",
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/rsh/operation/image.read",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": null,
+      "targetDataSource": {
+        "contract": "common.view/raster-image-source",
+        "major": 1
+      }
     },
     {
       "contribution": null,
@@ -1966,18 +1982,22 @@
       "targetOperation": null
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/codec-rtx.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/rtx/operation/image.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
-      "contribution": null,
+      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/codec-rtx.json",
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/rtx/operation/image.read",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": null,
+      "targetDataSource": {
+        "contract": "common.view/raster-image-source",
+        "major": 1
+      }
     },
     {
       "contribution": null,
@@ -3203,18 +3223,22 @@
       "targetOperation": "view.inspect"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/codec-wtp.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/wtp/operation/image.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
-      "contribution": null,
+      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/codec-wtp.json",
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/wtp/operation/image.read",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": null,
+      "targetDataSource": {
+        "contract": "common.view/raster-image-source",
+        "major": 1
+      }
     },
     {
       "contribution": null,

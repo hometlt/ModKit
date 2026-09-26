@@ -3049,34 +3049,64 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/relic-sga.audit.json",
+          "sha256": "41c7eb0662d5b702b28bf408d5fb61bfceb3967a275754533a80d740c1f3eb8d"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/relic-sga/audit",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/relic-sga.archive-extract.json",
+          "sha256": "df15f690dfe7d0431f05b2cae95f5bb07c30f944d1aa945ac7c9e7ff48d6a92d"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/relic-sga/operation/archive.extract",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/relic-sga.archive-inspect.json",
+          "sha256": "879ee45d67f40ca576a5fb10b92bfc7ceda79304289bf9f2f5a0b8ea5157221f"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/relic-sga/operation/archive.inspect",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/relic-sgm.audit.json",
+          "sha256": "90da6c95629b20c6e08a6a5dc4fdb26a3bad9818574a562ed5435e8f82924ec2"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/relic-sgm/audit",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/relic-sgm.model-read.json",
+          "sha256": "e0bf88426d47651cd295ab866f8d0bbbfb57ebc0e62b58c725da8e9c80eab7ce"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/relic-sgm/operation/model.read",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/relic-sgm.model-render.json",
+          "sha256": "14b97abc14991476ef29e4094c16d541bfe46f9f3fe68e8697136a98d09b331c"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/relic-sgm/operation/model.render",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -3084,34 +3114,64 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/relic-whm.audit.json",
+          "sha256": "8e0ffe02ea60b502bde8a6714ec318bcbd9d1358905a00cede511706d57bb0d3"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/relic-whm/audit",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/relic-whm.model-read.json",
+          "sha256": "fd6a7b958a68faf259113f0115e2a7da284ed81936df89e9e63e351a9b2b2ca8"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/relic-whm/operation/model.read",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/relic-whm.model-render.json",
+          "sha256": "a433d038afb2c5c614e8ecf865b73fe9ec90a08f26b262183f2f64b13df0e294"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/relic-whm/operation/model.render",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/relic.audit.json",
+          "sha256": "e8dbdbc113156a4269cef3f408eff1ebad723cd530054a29448af845dc55ab3a"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/relic/audit",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/relic.archive-extract.json",
+          "sha256": "a22e53e8fa26f32b6ac8f70943c55112e0c24fd7125643799895655f2532c6ba"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/relic/operation/archive.extract",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/relic.archive-inspect.json",
+          "sha256": "a673b7279900c2f35453b9e33cf37f046298429f0c25f0737b6ac04964701e05"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/relic/operation/archive.inspect",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -3119,14 +3179,24 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/rgt.image-inspect.json",
+          "sha256": "27ec97aa5a407dcc9e6a3d27bc61df85388c199c2d5536dc1e015ae588e6ebd4"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/rgt/operation/image.inspect",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/rgt.image-read.json",
+          "sha256": "93bb97a1ad2e142f9eefc2c7465db602b92695e7929a32c8ac688e27055c8597"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/rgt/operation/image.read",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -3134,19 +3204,34 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/rrtex.audit.json",
+          "sha256": "b7960f94ef73bfa28305f3bcb4d6b186246c68d0e330619840ac5cdad862124b"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/rrtex/audit",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/rrtex.image-inspect.json",
+          "sha256": "10b2c27c09683f895bdead2f3cac6a483627aea32757c76a8c165b6557acde15"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/rrtex/operation/image.inspect",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/rrtex.image-read.json",
+          "sha256": "0b48470bd6a98e2b627bd663bc3c89c4ecd04c784a696bd30efd5390299f956e"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/rrtex/operation/image.read",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -3154,14 +3239,24 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/rsh.image-inspect.json",
+          "sha256": "0eda5ca5d4108b7105fbcb14f78d09590093b179037feee5a3756d78f681fff9"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/rsh/operation/image.inspect",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/rsh.image-read.json",
+          "sha256": "83ef14a5fc55c065c9325c61ebeccbd4c1e4091b36931ed85552955854281e16"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/rsh/operation/image.read",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -3199,14 +3294,24 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/rtx.image-inspect.json",
+          "sha256": "c074c82036bf6c36a08bf6c3138ae6922a1d21528409d1ec3110290f313a60c9"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/rtx/operation/image.inspect",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/rtx.image-read.json",
+          "sha256": "a1ee37de065fd09e8c99c89150813d535c2fb75650740dacd30c57ad1df493fe"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/rtx/operation/image.read",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -7477,14 +7582,24 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/wtp.image-inspect.json",
+          "sha256": "93060c81c2e7463155ceea59061726a339f5ba5dd01f88c809833f6bf8f10269"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/wtp/operation/image.inspect",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/wtp.image-read.json",
+          "sha256": "d6a7315222e4edc488b772f47dbca453328acf3ac2e109cdc718e81c299b6736"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/wtp/operation/image.read",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
