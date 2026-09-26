@@ -122,6 +122,9 @@ const nodeModuleMap = {
   '@modkit/codec-kit/crypto/blowfish': pathToFileURL(
     join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'crypto', 'blowfish.js'),
   ).href,
+  '@modkit/codec-kit/crypto/aes': pathToFileURL(
+    join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'crypto', 'aes.js'),
+  ).href,
   '@modkit/codec-kit/crypto/digest': pathToFileURL(
     join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'crypto', 'digest.js'),
   ).href,

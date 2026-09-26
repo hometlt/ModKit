@@ -98,6 +98,10 @@
       "types": "./dist/crypto/blowfish.d.ts",
       "default": "./dist/crypto/blowfish.js"
     },
+    "./crypto/aes": {
+      "types": "./dist/crypto/aes.d.ts",
+      "default": "./dist/crypto/aes.js"
+    },
     "./crypto/digest": {
       "types": "./dist/crypto/digest.d.ts",
       "default": "./dist/crypto/digest.js"
