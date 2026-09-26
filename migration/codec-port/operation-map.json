@@ -2918,18 +2918,22 @@
       "targetOperation": "view.inspect"
     },
     {
-      "contribution": null,
+      "contribution": "modkit-extensions-other/extensions/epic-games-unreal-engine/contributions/codec-unreal-actorx.json",
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/unreal-actorx/operation/model.read",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": null,
+      "targetDataSource": {
+        "contract": "common.view/model-scene-source",
+        "major": 1
+      }
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-core/extensions/models/contributions/codec-uvm.json",
+      "handlerId": "render-uvm-scene",
       "id": "legacy/codec-manifest/modkit/unreal-actorx/operation/model.render",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "model.render"
     },
     {
       "contribution": null,
@@ -2995,18 +2999,22 @@
       "targetOperation": null
     },
     {
-      "contribution": null,
+      "contribution": "modkit-extensions-other/extensions/epic-games-unreal-engine/contributions/codec-unreal-uasset.json",
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/unreal-uasset/operation/model.read",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": null,
+      "targetDataSource": {
+        "contract": "common.view/model-scene-source",
+        "major": 1
+      }
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-core/extensions/models/contributions/codec-uvm.json",
+      "handlerId": "render-uvm-scene",
       "id": "legacy/codec-manifest/modkit/unreal-uasset/operation/model.render",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "model.render"
     },
     {
       "contribution": null,

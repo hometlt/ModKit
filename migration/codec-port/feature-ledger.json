@@ -7335,14 +7335,24 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/unreal-actorx.model-read.json",
+          "sha256": "e16ddfa374b46cef6041a28e644004321a20faae758c6183f9ee70bce7384d95"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/unreal-actorx/operation/model.read",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/unreal-actorx.model-render.json",
+          "sha256": "25768622f65fbe31c197f6fdf8772ca2c26820073401368e6bdbf7bb718cb7ca"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/unreal-actorx/operation/model.render",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -7415,14 +7425,24 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/unreal-uasset.model-read.json",
+          "sha256": "2a278a1370753e2416ebe86b2684d8c0ca7e0edb972f3d44d897e878e7a7422a"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/unreal-uasset/operation/model.read",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/unreal-uasset.model-render.json",
+          "sha256": "ccf1bc7d5b0e2ac83cb9456eeb2c6e8390cbd28881ca2ba137d891ac2f867c02"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/unreal-uasset/operation/model.render",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
