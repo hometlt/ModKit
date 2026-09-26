@@ -419,7 +419,17 @@
               "request": "launch",
               "name": "%debugger.launch.sc2MapName%",
               "kind": "map",
-              "options": { "triggerDebug": false, "difficulty": 2, "speed": 2, "meleeMod": "Void" }
+              "options": {
+                "triggerDebug": false,
+                "difficulty": 2,
+                "speed": 2,
+                "meleeMod": "Void",
+                "preload": true,
+                "noUserCheats": true,
+                "reloadCheck": false,
+                "testMod": "",
+                "testConfig": ""
+              }
             }
           },
           {

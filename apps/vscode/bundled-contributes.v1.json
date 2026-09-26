@@ -951,7 +951,12 @@
               "triggerDebug": false,
               "difficulty": 2,
               "speed": 2,
-              "meleeMod": "Void"
+              "meleeMod": "Void",
+              "preload": true,
+              "noUserCheats": true,
+              "reloadCheck": false,
+              "testMod": "",
+              "testConfig": ""
             }
           }
         },
