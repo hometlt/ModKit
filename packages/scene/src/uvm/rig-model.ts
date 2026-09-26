@@ -5,7 +5,12 @@ import { snapshotJson } from '@modkit/codec-kit/json-snapshot'
 import { readUvmModel } from './model.js'
 import { projectUvmStaticModel, type StaticModelBudget } from './static-model.js'
 import { array, object } from './values.js'
-import { invertMaterialFrame } from '../materials/frame.js'
+import {
+  IDENTITY_MATERIAL_FRAME,
+  invertMaterialFrame,
+  multiplyMaterialFrames,
+} from '../materials/frame.js'
+import { multiplyQuat, quaternionFromRotationMatrix } from '../model/billboard-math.js'
 import { boundUvmRig, boundUvmRootFrame } from './rig-bounds.js'
 
 function only(value: JsonObject, allowed: readonly string[], label: string): void {
@@ -30,6 +35,57 @@ function copy(value: JsonValue, budget: StaticModelBudget, signal?: AbortSignal)
 }
 function identity(values: readonly number[]): boolean {
   return values.every((value, index) => value === (index % 5 === 0 ? 1 : 0))
+}
+
+/**
+ * A model frame as the one change it may be: uniform scale, rotation, translation. That is what a
+ * source coordinate frame (z-up to y-up, times the unit scale) is, and it is exactly what folds
+ * into a root joint's TRS. A mirror or a shear would not survive the fold, so it is refused.
+ */
+function similarityFrame(matrix: readonly number[]) {
+  const at = (index: number): number => matrix[index] ?? 0
+  const column = (index: number): [number, number, number] => [
+    at(index * 4),
+    at(index * 4 + 1),
+    at(index * 4 + 2),
+  ]
+  const [x, y, z] = [column(0), column(1), column(2)]
+  const dot = (a: readonly number[], b: readonly number[]): number =>
+    (a[0] ?? 0) * (b[0] ?? 0) + (a[1] ?? 0) * (b[1] ?? 0) + (a[2] ?? 0) * (b[2] ?? 0)
+  const scale = Math.hypot(...x)
+  // Relative slack for float32 matrices read back from a document.
+  const slack = 1e-6 * scale
+  if (
+    !(scale > 0) ||
+    Math.abs(Math.hypot(...y) - scale) > slack ||
+    Math.abs(Math.hypot(...z) - scale) > slack ||
+    Math.abs(dot(x, y)) > slack * scale ||
+    Math.abs(dot(x, z)) > slack * scale ||
+    Math.abs(dot(y, z)) > slack * scale
+  )
+    throw new TypeError('rig model frame must be a uniform scale, rotation and translation')
+  const cross = [y[1] * z[2] - y[2] * z[1], y[2] * z[0] - y[0] * z[2], y[0] * z[1] - y[1] * z[0]]
+  if (!(dot(x, cross) > 0)) throw new TypeError('rig model frame must not mirror')
+  const rotation = quaternionFromRotationMatrix([...x, ...y, ...z].map(value => value / scale))
+  const point = (value: ArrayLike<number>, row: number): number =>
+    at(row) * (value[0] ?? 0) +
+    at(4 + row) * (value[1] ?? 0) +
+    at(8 + row) * (value[2] ?? 0) +
+    at(12 + row)
+  return {
+    translation: (value: ArrayLike<number>): [number, number, number] => [
+      point(value, 0),
+      point(value, 1),
+      point(value, 2),
+    ],
+    rotation: (value: ArrayLike<number>): [number, number, number, number] =>
+      multiplyQuat(rotation, [value[0] ?? 0, value[1] ?? 0, value[2] ?? 0, value[3] ?? 1]),
+    scale: (value: ArrayLike<number>): [number, number, number] => [
+      (value[0] ?? 1) * scale,
+      (value[1] ?? 1) * scale,
+      (value[2] ?? 1) * scale,
+    ],
+  }
 }
 
 /** One explicit skin; identity mesh frames; named TRS joints. Multiple mesh regions and
@@ -92,6 +148,23 @@ export function projectUvmRigModel(
   }
   if (reachable.size !== nodes.length)
     throw new TypeError('rig authoring refuses unreachable nodes')
+  // Non-joint helpers above the whole skeleton - a source coordinate frame and its model root - are
+  // the model frame, which is baked below rather than refused. A helper between two joints is not:
+  // its transform would sit inside the bone chain, so it still has to be identity.
+  const frameNodes = new Set<number>()
+  for (const id of jointIds) {
+    if (id === undefined) continue
+    let above: number[] = []
+    for (
+      let parent = nodeParents.get(Number(id.slice('node-'.length)));
+      parent !== undefined;
+      parent = nodeParents.get(parent)
+    )
+      if (jointIds.has(`node-${parent}`)) above = []
+      else above.push(parent)
+    for (const node of above) frameNodes.add(node)
+  }
+  const meshNodeIndices: number[] = []
   for (const [index, raw] of nodes.entries()) {
     const node = object(raw, 'node'),
       joint = jointIds.has(`node-${index}`)
@@ -116,7 +189,11 @@ export function projectUvmRigModel(
     if (node['extensions'] !== undefined)
       only(
         object(node['extensions'], 'node extensions'),
-        joint ? ['UV_node_billboard'] : ['UV_game_socket', 'UV_game_collision'],
+        // A joint may itself be the attachment or hit volume (Warcraft III ATCH/CLID are nodes of
+        // the rig); the node supplies the socket's transform either way.
+        joint
+          ? ['UV_node_billboard', 'UV_game_socket', 'UV_game_collision']
+          : ['UV_game_socket', 'UV_game_collision'],
         'node.extensions',
       )
     if (joint) {
@@ -143,9 +220,13 @@ export function projectUvmRigModel(
       // intentionally independent from the native skeleton and need not be identity.
       continue
     }
-    if (!identity(required(parsed.scene.nodes[index], 'scene node').transform))
+    if (
+      !identity(required(parsed.scene.nodes[index], 'scene node').transform) &&
+      !(node['mesh'] === undefined && frameNodes.has(index))
+    )
       throw new TypeError('fresh skinned mesh/helper frames must be identity')
     if (node['mesh'] === undefined) continue
+    meshNodeIndices.push(index)
     if (node['skin'] !== 0 || typeof node['mesh'] !== 'number')
       throw new TypeError('every rig mesh must use the declared skin')
     const meshIndex = node['mesh']
@@ -178,7 +259,93 @@ export function projectUvmRigModel(
   for (const binding of bindings) append(binding)
   const remap = new Map(sorted.map((binding, index) => [binding.boneIndex, index]))
   const nodeToBone = new Map(sorted.map((binding, index) => [binding.nodeId, index]))
-  const restPoses = sorted.map((binding, index) => {
+  // The model frame F every root joint and mesh sits under is baked, not carried: into mesh space
+  // (the static projection below composes it into the vertices), into every inverse bind
+  // (IBM' = IBM * F^-1, so J * IBM' * (F * v) = J * IBM * v) and into the root joints' rest poses
+  // and tracks. A target that reads vertices as bind-pose model space then sees the same model.
+  const worldAbove = (node: number): readonly number[] => {
+    let matrix: readonly number[] = IDENTITY_MATERIAL_FRAME
+    for (let parent = nodeParents.get(node); parent !== undefined; parent = nodeParents.get(parent))
+      matrix = multiplyMaterialFrames(
+        required(parsed.scene.nodes[parent], 'scene node').transform,
+        matrix,
+      )
+    return matrix
+  }
+  const nodeIndexOf = (id: string): number => Number(id.slice('node-'.length))
+  const isRoot = (binding: ModelBoneBinding): boolean =>
+    binding.parentBoneIndex === null || binding.parentBoneIndex === undefined
+  const rootNodeIds = new Set(
+    sorted.filter(isRoot).map(binding => required(binding.nodeId, 'bone node id')),
+  )
+  const modelFrame = worldAbove(nodeIndexOf(required([...rootNodeIds][0], 'root joint')))
+  for (const node of [...[...rootNodeIds].map(nodeIndexOf), ...meshNodeIndices])
+    if (worldAbove(node).some((value, index) => value !== modelFrame[index]))
+      throw new TypeError('rig joints and meshes must share one model frame')
+  const frame = identity(modelFrame) ? undefined : similarityFrame(modelFrame)
+  const unframe = frame === undefined ? undefined : invertMaterialFrame(modelFrame)
+  const fold = (kind: string, value: readonly number[]): readonly number[] =>
+    frame === undefined
+      ? value
+      : kind === 'translation'
+        ? frame.translation(value)
+        : kind === 'rotation'
+          ? frame.rotation(value)
+          : kind === 'scale'
+            ? frame.scale(value)
+            : value
+  const rigBindings: readonly ModelBoneBinding[] =
+    frame === undefined || unframe === undefined
+      ? sorted
+      : sorted.map(binding => ({
+          ...binding,
+          ...(binding.localPose === undefined || !isRoot(binding)
+            ? {}
+            : {
+                localPose: {
+                  translation: frame.translation(binding.localPose.translation),
+                  rotation: frame.rotation(binding.localPose.rotation),
+                  scale: frame.scale(binding.localPose.scale),
+                },
+              }),
+          ...(binding.inverseBindMatrix === undefined
+            ? {}
+            : { inverseBindMatrix: multiplyMaterialFrames(binding.inverseBindMatrix, unframe) }),
+        }))
+  const rigClips =
+    frame === undefined
+      ? parsed.rig.clips
+      : parsed.rig.clips.map(clip => ({
+          ...clip,
+          ...(clip.channels === undefined
+            ? {}
+            : {
+                channels: clip.channels.map(channel =>
+                  channel.samples === undefined || !rootNodeIds.has(channel.target)
+                    ? channel
+                    : {
+                        ...channel,
+                        samples: channel.samples.map(sample => ({
+                          ...sample,
+                          value: fold(channel.kind, sample.value),
+                        })),
+                      },
+                ),
+              }),
+        }))
+  const rigPrimitives =
+    frame === undefined
+      ? parsed.scene.primitives
+      : parsed.scene.primitives.map(primitive => {
+          const positions = new Float32Array(primitive.positions.length)
+          for (let offset = 0; offset < positions.length; offset += 3)
+            positions.set(
+              frame.translation(primitive.positions.subarray(offset, offset + 3)),
+              offset,
+            )
+          return { ...primitive, positions }
+        })
+  const restPoses = rigBindings.map((binding, index) => {
     const pose = required(binding.localPose, 'joint local pose')
     invertMaterialFrame(required(binding.inverseBindMatrix, 'inverse bind matrix'))
     if (pose.scale.some(value => value === 0)) throw new TypeError('singular joint scale')
@@ -232,8 +399,21 @@ export function projectUvmRigModel(
   detached['extensionsRequired'] = array(detached, 'extensionsRequired').filter(
     name => !sceneOnlyExtensions.has(String(name)),
   )
-  detached['nodes'] = meshNodes
-  detached['scenes'] = [{ nodes: meshNodes.map((_node, index) => index) }]
+  // With a model frame the meshes hang under it, so the static projection bakes F into them.
+  detached['nodes'] =
+    frame === undefined
+      ? meshNodes
+      : [
+          ...meshNodes,
+          {
+            name: 'Rig model frame',
+            matrix: [...modelFrame],
+            children: meshNodes.map((_node, index) => index),
+          },
+        ]
+  detached['scenes'] = [
+    { nodes: frame === undefined ? meshNodes.map((_node, index) => index) : [meshNodes.length] },
+  ]
   detached['scene'] = 0
   // Original scene restrictions must be validated before replacing its node list.
   if (array(document, 'scenes').length !== 1 || (document['scene'] ?? 0) !== 0)
@@ -322,7 +502,7 @@ export function projectUvmRigModel(
     for (const raw of array(animation, 'samplers'))
       only(object(raw, 'sampler'), ['input', 'output', 'interpolation'], 'sampler')
   }
-  const animations = parsed.rig.clips.map((clip, clipIndex) => {
+  const animations = rigClips.map((clip, clipIndex) => {
     if (
       clip.unsupportedChannels ||
       clip.durationSeconds === undefined ||
@@ -365,10 +545,10 @@ export function projectUvmRigModel(
       nodeTracks: [...nodeTracks.values()],
     }
   })
-  const bounds = boundUvmRig(sorted, parsed.scene.primitives, parsed.rig.clips, budget, signal)
+  const bounds = boundUvmRig(rigBindings, rigPrimitives, rigClips, budget, signal)
   const rootBounds = boundUvmRootFrame(
-    required(sorted[0], 'bounds root'),
-    parsed.rig.clips,
+    required(rigBindings[0], 'bounds root'),
+    rigClips,
     bounds.radius,
     budget,
     signal,
