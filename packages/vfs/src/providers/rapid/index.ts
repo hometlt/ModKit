@@ -1,8 +1,8 @@
 import { createHash } from 'node:crypto'
-import { readFile, realpath, stat } from 'node:fs/promises'
+import { open, readFile, realpath, stat, type FileHandle } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
-import { gunzipSync } from 'node:zlib'
+import { createGunzip, gunzipSync } from 'node:zlib'
 
 import { ModkitError, throwIfAborted } from '@modkit/core'
 
@@ -53,6 +53,80 @@ function hex(bytes: Uint8Array): string {
   let value = ''
   for (const byte of bytes) value += byte.toString(16).padStart(2, '0')
   return value
+}
+
+/** Read and inflate chunk: 1 MiB keeps a 73 MB blob at native zlib speed (64 KiB was 13× slower). */
+const POOL_CHUNK_BYTES = 1024 * 1024
+
+/**
+ * Stream one pool blob from disk through asynchronous zlib into a buffer of exactly the manifest
+ * size, hashing as it goes. Only one chunk of the compressed blob is held at a time, and a large
+ * blob (BAR has 73 MB ones) no longer blocks the event loop in one synchronous inflate. Output
+ * past the manifest size stops the decoder at once. Node's DecompressionStream was measured at
+ * 40 s for BAR's largest blob against 3 s here, so this Node-only provider uses zlib directly.
+ */
+async function readPoolBlob(
+  poolPath: string,
+  record: RapidRecord,
+  signal?: AbortSignal,
+): Promise<Uint8Array> {
+  let handle: FileHandle
+  try {
+    handle = await open(poolPath, 'r')
+  } catch (cause) {
+    throw rapidError('pool-blob-unavailable', 'rapid pool blob is unavailable', {
+      path: record.path,
+      md5: record.md5,
+      cause: cause instanceof Error ? cause.message : String(cause),
+    })
+  }
+  const output = new Uint8Array(record.size)
+  const md5 = createHash('md5')
+  let written = 0
+  const compressed = handle.createReadStream({ autoClose: false, highWaterMark: POOL_CHUNK_BYTES })
+  const inflated = createGunzip({ chunkSize: POOL_CHUNK_BYTES })
+  compressed.on('error', error => inflated.destroy(error))
+  try {
+    for await (const chunk of compressed.pipe(inflated) as AsyncIterable<Buffer>) {
+      throwIfAborted(signal)
+      if (chunk.byteLength > record.size - written) {
+        throw rapidError('pool-integrity-mismatch', 'rapid pool blob exceeds its manifest size', {
+          path: record.path,
+          expectedBytes: record.size,
+          actualBytes: `more than ${String(record.size)}`,
+        })
+      }
+      output.set(chunk, written)
+      md5.update(chunk)
+      written += chunk.byteLength
+    }
+  } catch (cause) {
+    if (cause instanceof ModkitError || signal?.aborted === true) throw cause
+    throw rapidError('pool-blob-invalid', 'rapid pool blob is not a bounded valid gzip stream', {
+      path: record.path,
+      md5: record.md5,
+      cause: cause instanceof Error ? cause.message : String(cause),
+    })
+  } finally {
+    compressed.destroy()
+    inflated.destroy()
+    await handle.close()
+  }
+  const actualMd5 = md5.digest('hex')
+  if (written !== record.size || actualMd5 !== record.md5) {
+    throw rapidError(
+      'pool-integrity-mismatch',
+      'rapid pool blob does not match its manifest record',
+      {
+        path: record.path,
+        expectedBytes: record.size,
+        actualBytes: written,
+        expectedMd5: record.md5,
+        actualMd5,
+      },
+    )
+  }
+  return output
 }
 
 function parseManifest(bytes: Uint8Array, limits: VfsLimits): readonly RapidRecord[] {
@@ -233,46 +307,8 @@ class RapidMount implements VfsMount {
     let inner: RandomAccessSource | undefined
     try {
       const poolPath = resolve(this.poolRoot, record.md5.slice(0, 2), `${record.md5.slice(2)}.gz`)
-      let compressed: Uint8Array
-      try {
-        compressed = await readFile(poolPath, signal === undefined ? undefined : { signal })
-      } catch (cause) {
-        throw rapidError('pool-blob-unavailable', 'rapid pool blob is unavailable', {
-          path: record.path,
-          md5: record.md5,
-          cause: cause instanceof Error ? cause.message : String(cause),
-        })
-      }
+      const bytes = await readPoolBlob(poolPath, record, signal)
       throwIfAborted(signal)
-      let bytes: Uint8Array
-      try {
-        bytes = gunzipSync(compressed, { maxOutputLength: record.size + 1 })
-      } catch (cause) {
-        throw rapidError(
-          'pool-blob-invalid',
-          'rapid pool blob is not a bounded valid gzip stream',
-          {
-            path: record.path,
-            md5: record.md5,
-            cause: cause instanceof Error ? cause.message : String(cause),
-          },
-        )
-      }
-      throwIfAborted(signal)
-      const actualMd5 = createHash('md5').update(bytes).digest('hex')
-      if (bytes.byteLength !== record.size || actualMd5 !== record.md5) {
-        throw rapidError(
-          'pool-integrity-mismatch',
-          'rapid pool blob does not match its manifest record',
-          {
-            path: record.path,
-            expectedBytes: record.size,
-            actualBytes: bytes.byteLength,
-            expectedMd5: record.md5,
-            actualMd5,
-          },
-        )
-      }
       const id = `${this.rootUri}#${encodeURIComponent(record.path)}`
       const innerSource = budgetRandomAccessSource(
         createMemorySource(id, bytes),

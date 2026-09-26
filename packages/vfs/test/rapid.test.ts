@@ -159,4 +159,32 @@ describe('Rapid rapid VFS provider', () => {
     await restored.dispose()
     await mount.dispose()
   })
+
+  it('refuses a pool blob that is not gzip or is missing, and releases its reservation', async () => {
+    const bytes = new Uint8Array(64).fill(7)
+    const fixture = await rapidFixture([{ path: 'blob.bin', bytes }])
+    const md5 = createHash('md5').update(bytes).digest('hex')
+    const poolPath = join(
+      dirname(fixture.manifestPath),
+      '..',
+      'pool',
+      md5.slice(0, 2),
+      `${md5.slice(2)}.gz`,
+    )
+    const limits = { ...DEFAULT_VFS_LIMITS, maxMaterializedBytes: 64n }
+    const mount = await createRapidVfsProvider({ limits }).open(fixture.uri, { limits })
+    await writeFile(poolPath, bytes)
+    await expect(mount.open('blob.bin')).rejects.toSatisfy(
+      error => isModkitError(error) && error.code === 'x3.vfs/rapid-pool-blob-invalid',
+    )
+    await rm(poolPath)
+    await expect(mount.open('blob.bin')).rejects.toSatisfy(
+      error => isModkitError(error) && error.code === 'x3.vfs/rapid-pool-blob-unavailable',
+    )
+    // Both refusals gave back the whole 64-byte reservation.
+    await writeFile(poolPath, gzipSync(bytes))
+    const source = await mount.open('blob.bin')
+    expect([...(await source.readAt(0, 4))]).toEqual([7, 7, 7, 7])
+    await mount.dispose()
+  })
 })
