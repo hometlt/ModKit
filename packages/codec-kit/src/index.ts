@@ -358,9 +358,14 @@ export interface InspectionCodecDefinition {
     signal: AbortSignal | undefined,
     context: ContributionContext | undefined,
   ): Promise<AssetInputPlan>
+  /**
+   * `prefix`: the plan's first `from: 'start'` window. `suffix`: its `from: 'end'` window, when the
+   * probe plan declares one (a footer signature: Unreal pak, zip end records) and the size is known.
+   */
   detect(
     prefix: Uint8Array,
     uri: string,
+    suffix?: Uint8Array,
   ): Promise<{
     readonly confidence: number
     readonly kind?: 'magic' | 'structure' | 'companion' | 'context' | 'extension' | 'user-override'
@@ -1128,7 +1133,7 @@ function originFrom(
  * (`x3.host/source-range-unrepresentable` before `detect()` ever runs).
  */
 function probeLength(plan: Extract<ProbePlan, { kind: 'bytes' }>, size?: bigint) {
-  const first = plan.ranges[0]
+  const first = plan.ranges.find(range => range.from === 'start') ?? plan.ranges[0]
   const declared = Math.min(plan.maxBytes, first?.length ?? plan.maxBytes)
   const available = size === undefined ? declared : Number(size)
   return Math.max(0, Math.min(declared, available))
@@ -1251,17 +1256,35 @@ export function createInspectionCodec(
         probeLength(request.plan, request.source.size),
         signal,
       )
+      // The declared `from: 'end'` window (a footer), clamped to the source like the prefix.
+      const tail = request.plan.ranges.find(range => range.from === 'end')
+      const size = request.source.size
+      const tailLength =
+        tail === undefined || size === undefined
+          ? 0
+          : // the host counts every probe byte against maxBytes: the tail gets what the prefix left
+            Math.max(
+              0,
+              Math.min(tail.length, request.plan.maxBytes - bytes.byteLength, Number(size)),
+            )
+      const suffix =
+        tail === undefined || size === undefined
+          ? undefined
+          : tailLength === 0
+            ? new Uint8Array()
+            : await request.source.read(size - BigInt(tailLength), tailLength, signal)
       const detected = await (
         definition.detect as (
           prefix: Uint8Array,
           uri: string,
+          suffix?: Uint8Array,
         ) => Promise<{
           readonly confidence: number
           readonly kind?:
             'magic' | 'structure' | 'companion' | 'context' | 'extension' | 'user-override'
           readonly note?: string
         }>
-      )(bytes, request.source.ref.uri)
+      )(bytes, request.source.ref.uri, suffix)
       return Object.freeze({
         codecId: definition.id,
         confidence: detected.confidence,
@@ -1274,6 +1297,14 @@ export function createInspectionCodec(
         ]),
         requiredRanges: Object.freeze([
           Object.freeze({ byteOffset: '0', byteLength: String(bytes.byteLength) } as SourceSpan),
+          ...(suffix === undefined || size === undefined || suffix.byteLength === 0
+            ? []
+            : [
+                Object.freeze({
+                  byteOffset: String(size - BigInt(suffix.byteLength)),
+                  byteLength: String(suffix.byteLength),
+                } as SourceSpan),
+              ]),
         ]),
       })
     },
