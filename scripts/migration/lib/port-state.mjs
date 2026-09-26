@@ -268,17 +268,33 @@ export function validateReceipt(receipt, requirement) {
     proof.caseIds.some(id => !successful.some(item => item.id === id))
   )
     throw new Error(`proof is not bound to successful executed cases: ${requirement.id}`)
+  // MK3 replaced many read operations (image.read, model.read) by data sources: a proof names either
+  // the operation and its handler, or the data source contract it executed.
+  const operationTarget =
+    typeof proof.targetOperation === 'string' &&
+    proof.targetOperation !== '' &&
+    typeof proof.handlerId === 'string' &&
+    proof.handlerId !== ''
   if (
     requirement.kind === 'operation' &&
     (proof.legacyOperation !== requirement.label ||
-      typeof proof.targetOperation !== 'string' ||
-      !proof.targetOperation ||
-      typeof proof.handlerId !== 'string' ||
-      !proof.handlerId ||
+      !(operationTarget || dataSourceTarget(proof.targetDataSource)) ||
       proof.executed !== true)
   )
     throw new Error(`operation execution proof missing: ${requirement.id}`)
   return proof
+}
+
+/** `{ contract, major }` of a data source a proof or mapping names as its target, or undefined. */
+function dataSourceTarget(value) {
+  return value !== null &&
+    typeof value === 'object' &&
+    typeof value.contract === 'string' &&
+    /^[a-z0-9.-]+\/[a-z0-9.-]+$/u.test(value.contract) &&
+    Number.isSafeInteger(value.major) &&
+    value.major > 0
+    ? value
+    : undefined
 }
 
 /** Explicit partial acceptance; every selected ID must still belong to the named codec. */
@@ -412,10 +428,15 @@ export async function checkLedger({
       try {
         const receipt = JSON.parse(await readEvidence(root, reference))
         const proof = validateReceipt(receipt, requirement)
+        const source =
+          mapping === undefined ? undefined : dataSourceTarget(mapping.targetDataSource)
         if (
           mapping &&
-          (mapping.targetOperation !== proof.targetOperation ||
-            mapping.handlerId !== proof.handlerId)
+          (source === undefined
+            ? mapping.targetOperation !== proof.targetOperation ||
+              mapping.handlerId !== proof.handlerId
+            : proof.targetDataSource?.contract !== source.contract ||
+              proof.targetDataSource?.major !== source.major)
         )
           fail(`operation target mismatch: ${requirement.id}`)
         if (mapping) {
@@ -424,8 +445,16 @@ export async function checkLedger({
               `contribution is not published by a configured package: ${mapping.contribution}`,
             )
           const manifest = await readJson(confined(root, mapping.contribution))
-          if (
-            manifest.contract?.id !== 'modkit/codec-contribution' ||
+          if (manifest.contract?.id !== 'modkit/codec-contribution')
+            fail(`published operation absent: ${requirement.id}`)
+          else if (source !== undefined) {
+            if (
+              !manifest.spec?.publishesDataSources?.some(
+                item => item.contract === source.contract && item.major === source.major,
+              )
+            )
+              fail(`published data source absent: ${requirement.id}`)
+          } else if (
             !manifest.spec?.operations?.some(
               operation =>
                 operation.id === mapping.targetOperation &&

@@ -30,7 +30,8 @@ const requirements = requirementsFor(inventory, audits, [])
 
 test('stable keeps existing default bytes and supports compact canonical JSON', () => {
   const value = { z: [{ y: 2, a: '\n' }], a: { z: false, a: null } }
-  const pretty = '{\n  "a": {\n    "a": null,\n    "z": false\n  },\n  "z": [\n    {\n      "a": "\\n",\n      "y": 2\n    }\n  ]\n}\n'
+  const pretty =
+    '{\n  "a": {\n    "a": null,\n    "z": false\n  },\n  "z": [\n    {\n      "a": "\\n",\n      "y": 2\n    }\n  ]\n}\n'
   const compact = '{"a":{"a":null,"z":false},"z":[{"a":"\\n","y":2}]}\n'
   assert.equal(stable(value), pretty)
   assert.equal(stable(value, 2), pretty)
@@ -438,4 +439,37 @@ test('superseded rows need a hashed owner decision and hashed MK3 evidence', asy
   assert.deepEqual(await checkLedger(state), [])
   entry.evidence = [{ ...reference, sha256: hash('{}') }]
   assert.match((await checkLedger(state)).join('\n'), /digest changed/u)
+})
+
+test('a read replaced by a data source is proven against the published data source', async t => {
+  const state = await acceptedFixture(t)
+  const receipt = JSON.parse(await readFile(path.join(state.root, 'receipt.json')))
+  const target = { contract: 'common.view/raster-image-source', major: 1 }
+  for (const proof of receipt.proofs)
+    if (proof.kind === 'operation') {
+      delete proof.targetOperation
+      delete proof.handlerId
+      proof.targetDataSource = target
+    }
+  const bytes = stable(receipt)
+  await writeFile(path.join(state.root, 'receipt.json'), bytes)
+  for (const entry of state.ledger.entries) entry.evidence[0].sha256 = hash(bytes)
+  state.ledger.protectedEvidence = [{ path: 'receipt.json', sha256: hash(bytes) }]
+  for (const row of state.operationMap.entries)
+    Object.assign(row, { targetOperation: null, handlerId: null, targetDataSource: target })
+  const manifest = publishesDataSources =>
+    writeFile(
+      path.join(state.root, 'codec.json'),
+      stable({
+        contract: { id: 'modkit/codec-contribution' },
+        spec: { operations: [], publishesDataSources },
+      }),
+    )
+  await manifest([target])
+  assert.deepEqual(await checkLedger(state), [])
+  await manifest([{ contract: 'common.view/raster-image-source', major: 2 }])
+  assert.match((await checkLedger(state)).join('\n'), /published data source absent/u)
+  await manifest([target])
+  state.operationMap.entries[0].targetDataSource = { ...target, major: 2 }
+  assert.match((await checkLedger(state)).join('\n'), /operation target mismatch/u)
 })
