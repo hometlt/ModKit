@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "contract": {
+    "id": "org.modkitx/codec-contribution",
+    "major": 1
+  },
+  "id": "org.example/credentials-worker",
+  "displayName": "Credentials worker fixture",
+  "runtimeVariants": [
+    {
+      "variantId": "worker",
+      "entrypoint": "./codec.mjs",
+      "target": {
+        "environments": ["node-worker"]
+      },
+      "executionProfile": "worker-brokered",
+      "requestedPermissionClasses": ["read-source"]
+    }
+  ],
+  "spec": {
+    "formatRefs": [
+      {
+        "formatId": "credentials-fixture",
+        "label": "Credentials fixture"
+      }
+    ],
+    "roles": ["semantic"],
+    "sourceTopology": "single",
+    "artifactStages": ["authored"],
+    "openIntents": ["probe", "full"],
+    "match": {
+      "extensions": ["creds"]
+    },
+    "probe": {
+      "kind": "bytes",
+      "ranges": [
+        {
+          "from": "start",
+          "length": 4
+        }
+      ],
+      "maxBytes": 4
+    },
+    "representations": [
+      {
+        "id": "creds",
+        "contract": "org.example/credentials-fixture",
+        "major": 1,
+        "stage": "authored",
+        "lossy": false
+      }
+    ],
+    "publishesDataSources": [],
+    "operations": [],
+    "implementationTier": {
+      "claimed": 1
+    },
+    "budgets": {
+      "maxInputBytes": "1024",
+      "maxDepth": 8,
+      "maxNodes": 8,
+      "maxScalarBytes": 1024,
+      "maxDiagnostics": 8
+    }
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "name": "credentials-worker-fixture",
+  "version": "1.0.0",
+  "license": "MIT",
+  "type": "module",
+  "modkit": {
+    "schemaVersion": 1,
+    "publisher": "org.example",
+    "id": "credentials-worker",
+    "contributionManifests": [
+      "./codec.json"
+    ],
+    "credentials": [
+      {
+        "id": "org.example/cloud",
+        "kind": "api-key",
+        "label": "Example cloud key",
+        "audience": [
+          "https://api.example.test/v1/"
+        ]
+      }
+    ]
+  }
+}
