@@ -7645,9 +7645,16 @@
       "status": "adapted"
     },
     {
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-26",
+        "path": "modkit-core/reports/parity/owner-decisions/warcraft2-never-implemented-dropped-2026-09-26.json",
+        "reason": "Owner decision 2026-09-26 (relayed by [MK] Integrator): Warcraft II is removed from the project completely. In MK2 the PUD codec was a metadata-only planned codec with no source (\"Section parsing, validation, terrain preview, unit placement, and writing are not implemented\"); MK3 has no Warcraft II code or manifest, so the audit row is dropped with nothing to remove.",
+        "sha256": "ddfdf346abaa6f7d9dedf97a27c48b95ee1e5f074f3a578f15b7495b36082a85"
+      },
       "evidence": [],
       "id": "legacy/codec-manifest/modkit/warcraft2-pud/audit",
-      "status": "pending"
+      "status": "owner-dropped"
     },
     {
       "evidence": [],
