@@ -7552,6 +7552,10 @@
         {
           "path": "modkit-extensions-other/test/receipts/k1/unreal-uasset-video.audit.json",
           "sha256": "e47dd2c10221ebeaeccf0d84223dbefd4c09eb9a89b6ca8f85982115e75764e0"
+        },
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/unreal-uasset-video.audit.r2.json",
+          "sha256": "fa2f944f900a779eb5acf7e8211039a1b634f6cd10248f2e038a1a3810acdff2"
         }
       ],
       "id": "legacy/codec-manifest/modkit/unreal-uasset-video/audit",
@@ -7592,6 +7596,10 @@
         {
           "path": "modkit-extensions-other/test/receipts/k1/unreal-uasset.audit.json",
           "sha256": "030516c0e32a18770d5068d44cb1df41109463cb099ca72917a3041b5c33d788"
+        },
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/unreal-uasset.audit.r2.json",
+          "sha256": "34c86c2c45f1fd3faafa1bc2f5fa86735840bb18885ab77bbb1e7cc688720eb1"
         }
       ],
       "id": "legacy/codec-manifest/modkit/unreal-uasset/audit",
