@@ -27,6 +27,13 @@ import { bindLuaChunk, type LuaBindResult } from './binder.js'
  *
  * Top-level calls of global names (`UnitBlueprint { … }`) are listed in `calls` with their
  * arguments read the same way: the call itself is not run, its literal arguments are the data.
+ * A call inside an expression stays `unresolved`, and one of a global name keeps its callee and
+ * arguments (`call`).
+ *
+ * Globals assigned at the top level are read like locals and listed in `globals`. Writing into
+ * what a call returned (`GameData = Inherit([[…]])`, then `GameData["a"]["b"] = 5`) makes a table
+ * that `extends` the call, with `overlay` tables for the keys written below it: the data a file adds
+ * over the one it inherits from.
  */
 
 export type LuaStaticKey =
@@ -71,6 +78,16 @@ export type LuaStaticValue =
        * still answer at run time through the metatable.
        */
       readonly metatable?: true
+      /**
+       * The table is what this call returns, with `entries` written over it: a variable assigned
+       * from a call and then written into (`GameData = Inherit([[…]])`, `GameData.a = 1`).
+       */
+      readonly extends?: LuaStaticCall
+      /**
+       * Created by writing into a table that `extends` a call: it exists in the call's result, and
+       * only the keys written here are known.
+       */
+      readonly overlay?: true
       readonly range: LuaRange
     }
   /**
@@ -83,11 +100,21 @@ export type LuaStaticValue =
       readonly reason: LuaUnresolvedReason
       /** Source text of the expression. */
       readonly source: string
+      /** For a call of a global name or path: what is called and its arguments, read as data. */
+      readonly call?: LuaStaticCall
       readonly range: LuaRange
     }
 
+/** A call not run: the called global or path of names as written, and its arguments read as data. */
+export interface LuaStaticCall {
+  readonly callee: string
+  readonly arguments: readonly LuaStaticValue[]
+}
+
 export type LuaUnresolvedReason =
   | 'call'
+  /** A field of a table that `extends` a call and that this chunk does not write. */
+  | 'inherited'
   | 'function'
   | 'global'
   | 'reassigned-local'
@@ -124,12 +151,30 @@ export interface LuaTopLevelCall {
   readonly range: LuaRange
 }
 
+/** A global the chunk assigns at its top level, with its value at the end of the chunk. */
+export interface LuaStaticGlobal {
+  readonly name: string
+  readonly value: LuaStaticValue
+  /** The last top-level assignment of the name itself. */
+  readonly range: LuaRange
+}
+
 export interface LuaModuleReading {
   /** The value of the chunk's final `return`, or `unresolved` with reason `no-return`. */
   readonly value: LuaStaticValue
   readonly unappliedWrites: readonly LuaUnappliedWrite[]
   /** Calls of global names at the chunk's top level, in source order. */
   readonly calls: readonly LuaTopLevelCall[]
+  /**
+   * Globals assigned at the chunk's top level, in the order first assigned: data files that set a
+   * global instead of returning (`GameData = Inherit([[…]])` of Dawn of War attributes).
+   */
+  readonly globals: readonly LuaStaticGlobal[]
+}
+
+interface CallBuilder {
+  readonly callee: string
+  readonly arguments: Value[]
 }
 
 /** Mutable table used while reading; frozen into `LuaStaticValue` at the end. */
@@ -138,9 +183,13 @@ interface TableBuilder {
   readonly range: LuaRange
   readonly entries: { key: LuaStaticKey; value: Value; range: LuaRange }[]
   metatable?: true
+  extends?: CallBuilder
+  overlay?: true
 }
 
-type Value = Exclude<LuaStaticValue, { kind: 'table' }> | TableBuilder
+type UnresolvedBuilder = Omit<Extract<LuaStaticValue, { kind: 'unresolved' }>, 'call'> & { readonly call?: CallBuilder }
+
+type Value = Exclude<LuaStaticValue, { kind: 'table' } | { kind: 'unresolved' }> | UnresolvedBuilder | TableBuilder
 
 function keyOf(value: Value): LuaStaticKey | undefined {
   switch (value.kind) {
@@ -180,6 +229,13 @@ function store(table: TableBuilder, key: LuaStaticKey, value: Value, range: LuaR
   }
 }
 
+/** A value written into: what a call of a global returned becomes a table that extends the call. */
+function extended(value: Value): Value {
+  return value.kind === 'unresolved' && value.call !== undefined
+    ? { kind: 'table', range: value.range, entries: [], extends: value.call }
+    : value
+}
+
 class Reader {
   readonly #text: string
   readonly #binding: LuaBindResult
@@ -187,6 +243,8 @@ class Reader {
   readonly #locals = new Map<number, Value>()
   /** Bindings whose only write is their declaration. */
   readonly #constant = new Set<number>()
+  /** Globals assigned at the top level so far, in the order first assigned. */
+  readonly globals = new Map<string, { value: Value; range: LuaRange }>()
   readonly unappliedWrites: LuaUnappliedWrite[] = []
   readonly calls: { callee: string; arguments: Value[]; range: LuaRange }[] = []
 
@@ -204,7 +262,7 @@ class Reader {
     return this.#text.slice(range[0], range[1])
   }
 
-  unresolved(reason: LuaUnresolvedReason, range: LuaRange): Value {
+  unresolved(reason: LuaUnresolvedReason, range: LuaRange): UnresolvedBuilder {
     return { kind: 'unresolved', reason, source: this.source(range), range }
   }
 
@@ -213,6 +271,12 @@ class Reader {
     return occurrence !== undefined && occurrence.range[0] === range[0]
       ? occurrence.binding
       : undefined
+  }
+
+  /** Whether a name at this place refers to a global rather than a local. */
+  isGlobal(expr: AstExpr & { type: 'AstExprName' }): boolean {
+    const binding = this.bindingOf(expr.range)
+    return binding === undefined || this.#binding.bindings[binding]?.kind === 'global'
   }
 
   /** `Name` or `Name.field…` rooted in a global, as written; `undefined` for anything else. */
@@ -259,7 +323,7 @@ class Reader {
         const binding = this.bindingOf(expr.range)
         const declared = binding === undefined ? undefined : this.#binding.bindings[binding]
         if (declared === undefined || declared.kind === 'global') {
-          return { kind: 'symbol', path: expr.name, range: expr.range }
+          return this.globals.get(expr.name)?.value ?? { kind: 'symbol', path: expr.name, range: expr.range }
         }
         const value = this.#locals.get(declared.id)
         if (value === undefined || !this.#constant.has(declared.id)) {
@@ -282,7 +346,10 @@ class Reader {
             ? ({ kind: 'string', value: expr.index } as const)
             : keyOf(this.evaluate(expr.index))
         if (key === undefined) return this.unresolved('unresolved-operand', expr.range)
-        return lookup(base, key) ?? this.unresolved('missing-field', expr.range)
+        return (
+          lookup(base, key) ??
+          this.unresolved(base.extends !== undefined || base.overlay === true ? 'inherited' : 'missing-field', expr.range)
+        )
       }
       case 'AstExprCall': {
         // `setmetatable(t, mt)` returns `t`; the metatable only answers keys `t` lacks.
@@ -302,7 +369,12 @@ class Reader {
             return table
           }
         }
-        return this.unresolved('call', expr.range)
+        // Not run; a call of a global name keeps what it calls and its arguments as data.
+        const callee = this.calleePath(expr.func)
+        return {
+          ...this.unresolved('call', expr.range),
+          ...(callee === undefined ? {} : { call: { callee, arguments: expr.args.map(arg => this.evaluate(arg)) } }),
+        }
       }
       case 'AstExprFunction':
         return this.unresolved('function', expr.range)
@@ -450,7 +522,7 @@ class Reader {
 
   // --- statements ---------------------------------------------------------------------------
 
-  /** Field path of an assignment target rooted at a chunk-level local table, if static. */
+  /** Field path of an assignment target rooted at a chunk-level local or global table, if static. */
   target(
     expr: AstExpr,
   ):
@@ -458,27 +530,60 @@ class Reader {
     | { unapplied: 'dynamic-key' | 'unresolved-target' }
     | undefined {
     if (expr.type !== 'AstExprIndexName' && expr.type !== 'AstExprIndexExpr') return undefined
-    const base = this.evaluate(expr.expr)
-    if (base.kind !== 'table') {
-      return base.kind === 'unresolved' && this.rootsInKnownTable(expr)
-        ? { unapplied: 'unresolved-target' }
-        : undefined
-    }
-    const key =
-      expr.type === 'AstExprIndexName'
-        ? ({ kind: 'string', value: expr.index } as const)
-        : keyOf(this.evaluate(expr.index))
-    return key === undefined ? { unapplied: 'dynamic-key' } : { table: base, key }
+    const table = this.container(expr.expr)
+    if (table === undefined) return this.rootsInKnownTable(expr) ? { unapplied: 'unresolved-target' } : undefined
+    const key = this.keyOfIndex(expr)
+    return key === undefined ? { unapplied: 'dynamic-key' } : { table, key }
   }
 
-  /** Whether an expression path starts at a chunk-level local whose value is known. */
+  keyOfIndex(expr: AstExpr & { type: 'AstExprIndexName' | 'AstExprIndexExpr' }): LuaStaticKey | undefined {
+    return expr.type === 'AstExprIndexName' ? { kind: 'string', value: expr.index } : keyOf(this.evaluate(expr.index))
+  }
+
+  /**
+   * The table a write goes into. Writing into what a call returned makes the variable a table that
+   * `extends` the call, and writing below it makes `overlay` tables for the keys the chunk names.
+   */
+  container(expr: AstExpr): TableBuilder | undefined {
+    if (expr.type === 'AstExprName') {
+      if (this.isGlobal(expr)) {
+        const global = this.globals.get(expr.name)
+        if (global === undefined) return undefined
+        global.value = extended(global.value)
+        return global.value.kind === 'table' ? global.value : undefined
+      }
+      const binding = this.bindingOf(expr.range)
+      const value = binding === undefined || !this.#constant.has(binding) ? undefined : this.#locals.get(binding)
+      if (binding === undefined || value === undefined) return undefined
+      const table = extended(value)
+      this.#locals.set(binding, table)
+      return table.kind === 'table' ? table : undefined
+    }
+    if (expr.type !== 'AstExprIndexName' && expr.type !== 'AstExprIndexExpr') {
+      const value = this.evaluate(expr)
+      return value.kind === 'table' ? value : undefined
+    }
+    const parent = this.container(expr.expr)
+    const key = parent === undefined ? undefined : this.keyOfIndex(expr)
+    if (parent === undefined || key === undefined) return undefined
+    const entry = parent.entries.find(item => sameKey(item.key, key))
+    if (entry === undefined) {
+      if (parent.extends === undefined && parent.overlay !== true) return undefined
+      const overlay: TableBuilder = { kind: 'table', range: expr.range, entries: [], overlay: true }
+      store(parent, key, overlay, expr.range)
+      return overlay
+    }
+    entry.value = extended(entry.value)
+    return entry.value.kind === 'table' ? entry.value : undefined
+  }
+
+  /** Whether an expression path starts at a chunk-level local or global whose value is a known table. */
   rootsInKnownTable(expr: AstExpr): boolean {
     let current: AstExpr = expr
     while (current.type === 'AstExprIndexName' || current.type === 'AstExprIndexExpr')
       current = current.expr
     if (current.type !== 'AstExprName') return false
-    const binding = this.bindingOf(current.range)
-    return binding !== undefined && this.#locals.get(binding)?.kind === 'table'
+    return this.isKnownTableName(current)
   }
 
   chunk(block: AstStatBlock): Value {
@@ -505,8 +610,23 @@ class Reader {
           )
         })
         return
-      case 'AstStatAssign':
+      case 'AstStatAssign': {
+        // Lua evaluates every value before it assigns any (`a, b = b, a`); a last call or `...`
+        // gives the targets past the listed values results nobody knows statically.
+        const values = stat.values.map(value => this.evaluate(value))
+        const last = stat.values.at(-1)
+        const spread = last?.type === 'AstExprCall' || last?.type === 'AstExprVarargs'
+        const valueAt = (index: number, target: AstExpr): Value =>
+          values[index] ??
+          (spread && last !== undefined ? this.unresolved(last.type === 'AstExprCall' ? 'call' : 'varargs', last.range) : { kind: 'nil', range: target.range })
         stat.vars.forEach((target, index) => {
+          if (target.type === 'AstExprName') {
+            if (!this.isGlobal(target)) return
+            const global = this.globals.get(target.name)
+            if (global === undefined) this.globals.set(target.name, { value: valueAt(index, target), range: stat.range })
+            else Object.assign(global, { value: valueAt(index, target), range: stat.range })
+            return
+          }
           const place = this.target(target)
           if (place === undefined) return
           if ('unapplied' in place) {
@@ -517,15 +637,10 @@ class Reader {
             })
             return
           }
-          const init = stat.values[index]
-          store(
-            place.table,
-            place.key,
-            init === undefined ? { kind: 'nil', range: target.range } : this.evaluate(init),
-            stat.range,
-          )
+          store(place.table, place.key, valueAt(index, target), stat.range)
         })
         return
+      }
       case 'AstStatExpr': {
         const callee = this.calleePath(stat.expr.func)
         if (callee !== undefined) {
@@ -554,7 +669,7 @@ class Reader {
       args.some(
         arg =>
           this.rootsInKnownTable(arg) ||
-          (arg.type === 'AstExprName' && this.isKnownTableName(arg.range)),
+          (arg.type === 'AstExprName' && this.isKnownTableName(arg)),
       )
     ) {
       this.unappliedWrites.push({
@@ -565,8 +680,9 @@ class Reader {
     }
   }
 
-  isKnownTableName(range: LuaRange): boolean {
-    const binding = this.bindingOf(range)
+  isKnownTableName(expr: AstExpr & { type: 'AstExprName' }): boolean {
+    if (this.isGlobal(expr)) return this.globals.get(expr.name)?.value.kind === 'table'
+    const binding = this.bindingOf(expr.range)
     return binding !== undefined && this.#locals.get(binding)?.kind === 'table'
   }
 
@@ -584,7 +700,9 @@ class Reader {
         case 'AstStatAssign':
         case 'AstStatCompoundAssign': {
           const targets = inner.type === 'AstStatAssign' ? inner.vars : [inner.var]
-          if (targets.some(target => this.rootsInKnownTable(target))) {
+          // Also a global the chunk assigns: a function or loop may set it again at run time.
+          const global = (target: AstExpr) => target.type === 'AstExprName' && this.isGlobal(target) && this.globals.has(target.name)
+          if (targets.some(target => this.rootsInKnownTable(target) || global(target))) {
             this.unappliedWrites.push({
               range: inner.range,
               reason,
@@ -598,7 +716,7 @@ class Reader {
             inner.expr.args.some(
               arg =>
                 this.rootsInKnownTable(arg) ||
-                (arg.type === 'AstExprName' && this.isKnownTableName(arg.range)),
+                (arg.type === 'AstExprName' && this.isKnownTableName(arg)),
             )
           ) {
             this.unappliedWrites.push({
@@ -637,7 +755,15 @@ class Reader {
   }
 }
 
+function freezeCall(call: CallBuilder, seen: Map<TableBuilder, LuaStaticValue>): LuaStaticCall {
+  return { callee: call.callee, arguments: call.arguments.map(argument => freeze(argument, seen)) }
+}
+
 function freeze(value: Value, seen = new Map<TableBuilder, LuaStaticValue>()): LuaStaticValue {
+  if (value.kind === 'unresolved') {
+    const { call, ...rest } = value
+    return call === undefined ? rest : { ...rest, call: freezeCall(call, seen) }
+  }
   if (value.kind !== 'table') return value
   const done = seen.get(value)
   if (done !== undefined) return done
@@ -646,6 +772,8 @@ function freeze(value: Value, seen = new Map<TableBuilder, LuaStaticValue>()): L
     kind: 'table',
     entries,
     ...(value.metatable === true ? { metatable: true as const } : {}),
+    ...(value.extends === undefined ? {} : { extends: freezeCall(value.extends, seen) }),
+    ...(value.overlay === true ? { overlay: true as const } : {}),
     range: value.range,
   }
   seen.set(value, table)
@@ -668,6 +796,7 @@ export function readLuaModule(parse: LuaParseResult, text: string): LuaModuleRea
       arguments: call.arguments.map(argument => freeze(argument, seen)),
       range: call.range,
     })),
+    globals: [...reader.globals].map(([name, global]) => ({ name, value: freeze(global.value, seen), range: global.range })),
   }
 }
 
@@ -686,7 +815,14 @@ export function luaStaticField(
   return undefined
 }
 
-/** Plain JSON view for inspection: unresolved values become `{ "$unresolved": reason, source }`. */
+function callToJson(call: LuaStaticCall, seen: Set<LuaStaticValue>): unknown {
+  return { callee: call.callee, arguments: call.arguments.map(argument => luaStaticToJson(argument, seen)) }
+}
+
+/**
+ * Plain JSON view for inspection: unresolved values become `{ "$unresolved": reason, source }` (with
+ * `$call` for a call of a global), a table built over a call carries `$extends`, an overlay `$overlay`.
+ */
 export function luaStaticToJson(value: LuaStaticValue, seen = new Set<LuaStaticValue>()): unknown {
   switch (value.kind) {
     case 'nil':
@@ -700,14 +836,22 @@ export function luaStaticToJson(value: LuaStaticValue, seen = new Set<LuaStaticV
     case 'symbol':
       return { $symbol: value.path }
     case 'unresolved':
-      return { $unresolved: value.reason, source: value.source }
+      return {
+        $unresolved: value.reason,
+        source: value.source,
+        ...(value.call === undefined ? {} : { $call: callToJson(value.call, seen) }),
+      }
     case 'table': {
       if (seen.has(value)) return { $cycle: true }
       seen.add(value)
       const keys = value.entries.map(entry => entry.key)
-      const isArray = keys.every((key, index) => key.kind === 'number' && key.value === index + 1)
+      const isArray =
+        value.extends === undefined && value.overlay !== true && keys.every((key, index) => key.kind === 'number' && key.value === index + 1)
       if (isArray) return value.entries.map(entry => luaStaticToJson(entry.value, seen))
-      const out: Record<string, unknown> = {}
+      const out: Record<string, unknown> = {
+        ...(value.extends === undefined ? {} : { $extends: callToJson(value.extends, seen) }),
+        ...(value.overlay === true ? { $overlay: true } : {}),
+      }
       for (const entry of value.entries) {
         const name =
           entry.key.kind === 'number'
