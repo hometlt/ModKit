@@ -189,6 +189,8 @@ export interface ContainerEntry {
   readonly checksum?: { readonly algorithm: string; readonly value: string }
   /** Hidden by the format's convention; passed to the listing as `NamespaceEntry.hidden`. */
   readonly hidden?: true
+  /** What the entry holds when its name has no extension; the host selects its codec by it. */
+  readonly mediaType?: string
 }
 
 /**

@@ -83,6 +83,7 @@ function open() {
             {
               path: 'custom.bin',
               size: BigInt(custom.byteLength),
+              mediaType: 'audio/x-example',
               storage: {
                 kind: 'custom',
                 async open() {
@@ -115,6 +116,7 @@ describe('a container entry table gives listing and extraction for free', () => 
     expect(first.nextCursor).toBe('2')
     const rest = await lease.value.list('', { limit: 2, cursor: first.nextCursor })
     expect(rest.items.map(item => item.path)).toEqual(['custom.bin', 'data/companion.bin'])
+    expect(rest.items[0]?.mediaType).toBe('audio/x-example')
     // An entry in a companion is not in the container's own source, so it is extracted, not read in place.
     expect(rest.items[1]?.storedRange).toBeUndefined()
     expect(rest.nextCursor).toBeUndefined()

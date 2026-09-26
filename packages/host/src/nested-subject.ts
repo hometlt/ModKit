@@ -477,6 +477,8 @@ export async function openNestedSubject(
         inventory: options.inventory,
         source,
         path: entry.path,
+        // An entry with no extension or signature (Emperor BAG sounds) says what it holds.
+        ...(entry.mediaType === undefined ? {} : { mediaType: entry.mediaType }),
         intent: options.intent ?? 'full',
         target: options.target,
         grant: options.grant,

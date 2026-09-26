@@ -650,6 +650,11 @@ export interface NamespaceEntry {
    * and a flat listing marks each such entry itself.
    */
   readonly hidden?: true
+  /**
+   * What the entry holds, when neither its name nor its bytes say so (`audio/x-emperor-bag`); a host
+   * opening it as a nested subject selects the codec by it, as by an extension.
+   */
+  readonly mediaType?: string
   readonly revision: RevisionId
 }
 
