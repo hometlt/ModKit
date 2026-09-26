@@ -85,4 +85,25 @@ describe('source units of a materialized model', () => {
       /metersPerSourceUnit/u,
     )
   })
+
+  it('turns a +z-up source to +y-up with one rotation node inside the units node', () => {
+    const zUp = {
+      ...(projection as unknown as { info: object }),
+      info: { ...(projection as unknown as { info: object }).info, upAxis: '+z' },
+    } as never
+    const written = materializeUvmCore(
+      zUp,
+      request({ metersPerSourceUnit: 0.5 }),
+    ) as unknown as Written
+    const root = written.document.nodes[written.document.scenes[0]!.nodes[0]!]!
+    expect(root['name']).toBe('uv:units')
+    const turn = written.document.nodes[(root['children'] as number[])[0]!]!
+    expect(turn).toEqual({
+      name: 'uv:up-axis',
+      rotation: [-Math.SQRT1_2, 0, 0, Math.SQRT1_2],
+      children: [0],
+    })
+    const plain = materializeUvmCore(projection, request()) as unknown as Written
+    expect(plain.document.nodes.some(node => node['name'] === 'uv:up-axis')).toBe(false)
+  })
 })

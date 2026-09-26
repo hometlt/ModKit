@@ -956,6 +956,24 @@ export function materializeUvmCore(
       ? []
       : materializeUvmAnimationMaterialTargets(projection.materials, materialBudget, signal)
 
+  // A +z-up source (ModelSceneInfo.upAxis) is turned to UVM's +y-up by one rotation node — the same
+  // (x, y, z) → (x, z, -y) the model viewer applies — so the geometry itself stays as published.
+  if (info.upAxis === '+z') {
+    const root = documentNodes.length
+    documentNodes.push({
+      name: 'uv:up-axis',
+      rotation: [-Math.SQRT1_2, 0, 0, Math.SQRT1_2],
+      children: [...rootIndices],
+    })
+    rootIndices = [root]
+    note(
+      'uv.model/structure@1',
+      'value-differs',
+      '/nodes',
+      'one rotation node turns the +z-up source to +y-up',
+    )
+  }
+
   // `options.units`: the projection is in source units. One scale node puts the scene in metres and
   // UV_units records the factor, so an exporter inverts it exactly (SPEC_UVM_EXTENSIONS, UV_units).
   const unitsExtension = uvUnits((request.options as { units?: unknown } | undefined)?.units)
