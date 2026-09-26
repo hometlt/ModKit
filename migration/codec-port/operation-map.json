@@ -656,18 +656,18 @@
       "targetOperation": "view.inspect"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-other/extensions/realitypump-earth-2150/contributions/codec-earth-tex.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/earth-tex/operation/image.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-other/extensions/realitypump-earth-2150/contributions/codec-earth-tex.json",
+      "handlerId": "extract-entry",
       "id": "legacy/codec-manifest/modkit/earth-tex/operation/image.read",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "container.extract"
     },
     {
       "contribution": "modkit-extensions-other/extensions/realitypump-earth2160/contributions/codec-earth2160-model.json",

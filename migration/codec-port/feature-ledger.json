@@ -957,19 +957,34 @@
       "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/earth-tex.audit.json",
+          "sha256": "40605f0c7a79bf0c2b2c48411a33697a60833385698956f4f45d9e6c5e135c19"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/earth-tex/audit",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/earth-tex.image-inspect.json",
+          "sha256": "65b0de795ac655616252e190dbf499768d503f8d39acbb3ebdb650cb3cc07f55"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/earth-tex/operation/image.inspect",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/earth-tex.image-read.json",
+          "sha256": "b5dd398fc6144a0568e4109b17d2c875fa6699c54e74b5d5743f1c4d0e6d1d08"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/earth-tex/operation/image.read",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [
