@@ -409,6 +409,7 @@ export {
   type ModelSceneInfo,
   type ModelUpAxis,
   type ModelSceneSource,
+  type RasterAtlasRegion,
   type RasterImageInfo,
   type RasterImageSource,
   type RasterPixelFormat,

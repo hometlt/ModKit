@@ -42,6 +42,20 @@ export interface RasterImageInfo {
   readonly orientation: 'top-left' | 'bottom-left' | 'unknown'
   /** Whether the optional decoded-region method is available. */
   readonly decodedAccess: boolean
+  /**
+   * Sub-images of an atlas, in pixels of mip level 0 (a Diablo III texture's animation frames of
+   * different sizes). Cropping one is `readRegion` with its rectangle; absent means no atlas.
+   */
+  readonly atlasRegions?: readonly RasterAtlasRegion[]
+}
+
+export interface RasterAtlasRegion {
+  readonly x: number
+  readonly y: number
+  readonly width: number
+  readonly height: number
+  /** The format's own name or ordinal for the region, when it has one. */
+  readonly name?: string
 }
 
 export interface RasterRegionRequest {

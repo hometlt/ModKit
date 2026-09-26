@@ -141,6 +141,7 @@ export type {
   ModelSceneInfo,
   ModelUpAxis,
   ModelSceneSource,
+  RasterAtlasRegion,
   RasterImageInfo,
   RasterImageSource,
   RasterPixelFormat,
