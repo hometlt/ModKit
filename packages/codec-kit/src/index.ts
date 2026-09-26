@@ -1,6 +1,8 @@
 import { pageStart } from './paging.js'
 import { deferAssetSession } from './deferred-session.js'
 import { PROJECTION_RECEIPT_METADATA_ID } from './projection.js'
+import { CONTAINER_EXTRACT_HANDLER_ID, containerEntryAccess } from './container-entries.js'
+export { CONTAINER_EXTRACT_HANDLER_ID } from './container-entries.js'
 import type { SourceSpan } from '@modkit/core'
 export {
   snapshotModelSkeleton,
@@ -1364,8 +1366,21 @@ export function createInspectionCodec(
                   context: InspectionContext,
                 ) => Promise<InspectionResult>
               )(bytes as Uint8Array, inspectionContext)
-        const dataSources = new Map([
+        // S3: an entry table gives the listing and extraction the codec did not publish itself.
+        const entryAccess =
+          inspection.containerEntries === undefined
+            ? undefined
+            : containerEntryAccess(inspection.containerEntries, {
+                scheme: definition.format.id,
+                source: source as ArtifactByteSource,
+                byteSource,
+                budget,
+              })
+        const dataSources = new Map<string, unknown>([
           ['common.view/byte-range-source', byteSource],
+          ...(entryAccess === undefined
+            ? []
+            : [['common.view/namespace-entry-source', entryAccess.namespace] as const]),
           ...Object.entries(inspection.dataSources ?? {}),
         ])
         if (inspection.text === true) {
@@ -1423,7 +1438,9 @@ export function createInspectionCodec(
             seekable: true,
             randomAccess: true,
             trusted: false,
-            maxDecodedBytes: String(inspection.maxDecodedBytes ?? sourceSize),
+            maxDecodedBytes: String(
+              inspection.maxDecodedBytes ?? entryAccess?.decodedTotal ?? sourceSize,
+            ),
             ...(inspection.unsupportedFeatures === undefined
               ? {}
               : { unsupportedFeatures: inspection.unsupportedFeatures }),
@@ -1447,6 +1464,9 @@ export function createInspectionCodec(
                   HostOperationHandler,
                 ],
               ]),
+          ...(entryAccess === undefined
+            ? []
+            : [[CONTAINER_EXTRACT_HANDLER_ID, entryAccess.extract as HostOperationHandler] as const]),
           ...Object.entries(inspection.handlers ?? {}),
         ])
         return createAssetSession({
