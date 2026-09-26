@@ -1,0 +1,56 @@
+import { describe, expect, it } from 'vitest'
+import { createInspectionCodec } from '../src/index.js'
+
+describe('inspection session release', () => {
+  it('releases what the codec holds for the session once, when the session is disposed', async () => {
+    let released = 0
+    const bytes = Uint8Array.of(0x52, 0x4e, 0x47, 0x45)
+    const source = {
+      kind: 'bytes',
+      ref: { id: 'fixture', uri: 'memory:release' },
+      revision: 'provider-token:release',
+      size: BigInt(bytes.byteLength),
+      async read(offset: bigint, length: number) {
+        return bytes.slice(Number(offset), Number(offset) + length)
+      },
+    }
+    const input = {
+      originKind: 'single',
+      primaryBindingId: 'content',
+      revisions: { topology: 'single', revision: source.revision },
+      bindings: [
+        {
+          bindingId: 'content',
+          role: 'content',
+          source: source.ref,
+          sourceKind: 'candidate',
+          ownership: 'owned',
+          revision: source.revision,
+        },
+      ],
+      async openBinding() {
+        return { value: source, release: async () => undefined }
+      },
+    }
+    const codec = createInspectionCodec({
+      id: 'example/release',
+      access: 'ranges',
+      format: { id: 'example/release', label: 'Release' },
+      detect: async () => ({ confidence: 1, kind: 'magic' }),
+      async inspect() {
+        return { summary: null, metadata: [], traits: [], release: () => void (released += 1) }
+      },
+    } as never)
+    const session = await codec.open(input as never, 'full', {
+      maxInputBytes: 1024n,
+      maxScalarBytes: 1024,
+      maxDepth: 8,
+      maxNodes: 100,
+      maxDiagnostics: 10,
+    } as never)
+    expect(released).toBe(0)
+    await session.dispose()
+    await session.dispose()
+    expect(released).toBe(1)
+  })
+})

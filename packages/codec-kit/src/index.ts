@@ -268,6 +268,11 @@ export interface ContainerEntryTable {
 }
 
 export interface InspectionResult {
+  /**
+   * Released once with the session: what the codec holds for the session's whole life (a decoder
+   * service lease resolved on first use), rather than per entry or per call.
+   */
+  readonly release?: () => void | Promise<void>
   /** S3 DRAFT — only for `access: 'ranges'`; ignored until the host builds on it. */
   readonly containerEntries?: ContainerEntryTable
   readonly summary: JsonValue
@@ -1395,7 +1400,11 @@ export function createInspectionCodec(
                 throw new TypeError(`${definition.id} does not publish ${contract}`)
               return simpleLease(value as DataSourceOf<Contract, Major>)
             },
-            release: [() => namespaceLease.release()],
+            release: [
+              () => namespaceLease.release(),
+              // released first: the host releases in reverse order
+              ...(inspection.release === undefined ? [] : [inspection.release]),
+            ],
           }).session
         } catch (error) {
           await namespaceLease.release()
@@ -1609,7 +1618,11 @@ export function createInspectionCodec(
               throw new TypeError(`${definition.id} does not publish ${contract}`)
             return simpleLease(value as DataSourceOf<Contract, Major>)
           },
-          release: [() => sourceLease.release()],
+          release: [
+            () => sourceLease.release(),
+            // released first: the host releases in reverse order
+            ...(inspection.release === undefined ? [] : [inspection.release]),
+          ],
         }).session
       } catch (error) {
         await sourceLease.release()
