@@ -3175,6 +3175,55 @@ describe('13C real-browser viewer host', () => {
     expect(result.afterUnmount).toMatchObject({ opens: 1, unmounts: 2, disposes: 1 })
   })
 
+  it('opens the first mountable default stage and still offers every stage', async () => {
+    await reset()
+    const result = await page.evaluate(async () => {
+      const { ui } = (globalThis as unknown as { modkit: { ui: Record<string, unknown> } }).modkit
+      const typed = ui as unknown as typeof import('@modkit/ui')
+      const root = document.querySelector('#app') as HTMLElement
+      const viewer = (label: string) =>
+        ({
+          abiVersion: 1,
+          async mount(args: { container: unknown }) {
+            ;(args.container as HTMLElement).textContent = label
+            return { async update() {}, async unmount() {} }
+          },
+        }) as const
+      const preview = typed.createCodecPreview({
+        stages: [
+          { id: 'card', label: 'Card', contract: 'test.view/card', module: viewer('card') },
+          { id: 'table', label: 'Table', contract: 'test.view/table', module: viewer('table') },
+        ],
+        async openSession() {
+          return {
+            // `absent` names a stage this subject cannot mount; the next id wins.
+            defaultStages: ['absent', 'table'],
+            async descriptor() {
+              return {
+                traits: [],
+                dataSources: [{ contract: 'test.view/card' }, { contract: 'test.view/table' }],
+              }
+            },
+            async dataSource() {
+              return { value: {} }
+            },
+            async dispose() {},
+          }
+        },
+      })
+      const handle = await preview.open(
+        root,
+        { id: 'fixture', name: 'fixture.csv', directory: false },
+        new Uint8Array(),
+      )
+      if (handle === undefined) throw new Error('no preview')
+      const observed = { views: handle.views.map(view => view.id), active: handle.activeView }
+      await handle.unmount()
+      return observed
+    })
+    expect(result).toEqual({ views: ['card', 'table'], active: 'table' })
+  })
+
   it('routes the picker and a drop through the host, not into a replaced preview pane', async () => {
     await reset()
     const result = await page.evaluate(async () => {

@@ -144,6 +144,12 @@ export interface EditorPorts {
 export interface PreviewSession {
   /** Host-resolved immutable stage plan. Hosts without presentation resolution may omit it. */
   readonly presentation?: PresentationPlan
+  /**
+   * Stage ids to open first, in order, without narrowing the picker as a `presentation` does: the
+   * first one this subject can mount wins. An embedding page names its `view` and the host plan's
+   * default here and still offers every stage the subject publishes.
+   */
+  readonly defaultStages?: readonly string[]
   descriptor(): Promise<Record<string, unknown>>
   dataSource(contract: string, major: number): Promise<{ value: unknown }>
   /**
@@ -264,13 +270,14 @@ export function createCodecPreview(options: CodecPreviewOptions): PreviewResolve
       }
 
       let active: { unmount(): Promise<void> | void } | undefined
-      const plannedActive = session.presentation?.activeStage
+      const preferredActive = [
+        ...(session.presentation?.activeStage === undefined
+          ? []
+          : [session.presentation.activeStage as string]),
+        ...(session.defaultStages ?? []),
+      ].find(id => usable.some(stage => stageId(stage) === id))
       let activeId =
-        plannedActive !== undefined && usable.some(stage => stageId(stage) === plannedActive)
-          ? plannedActive
-          : usable[0] === undefined
-            ? ''
-            : stageId(usable[0])
+        preferredActive ?? (usable[0] === undefined ? '' : stageId(usable[0]))
 
       const show = async (viewId: string): Promise<void> => {
         const stage = usable.find(item => stageId(item) === viewId)

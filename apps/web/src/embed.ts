@@ -92,6 +92,7 @@ import {
   createScopedViewerSubjectNavigation,
   nestedSubjectServices,
   openNestedSubjectRef,
+  resolveCommonPresentationPlan,
   resolveFormatWriter,
   type OpenedSubject,
   type SubjectEditorPorts,
@@ -723,14 +724,15 @@ export type EmbedSubjectNavigationOwner = (
   session: EmbedPreviewSession,
 ) => Promise<void>
 
-function embedPreviewSession(
+async function embedPreviewSession(
   host: EmbedHost,
   opened: OpenedSubject,
   grant: PermissionGrant,
   budget: ResourceBudget,
   sessionId: string,
   onNavigate?: EmbedSubjectNavigationOwner,
-): EmbedPreviewSession {
+  preferred?: string,
+): Promise<EmbedPreviewSession> {
   const session = opened.session as unknown as {
     descriptor(): Promise<Record<string, unknown>>
     dataSource(contract: string, major: number): Promise<{ value: unknown }>
@@ -764,7 +766,7 @@ function embedPreviewSession(
             if (nested?.result.state !== 'opened')
               return { state: 'rejected', reason: 'target-unavailable' }
             openCount += 1
-            const child = embedPreviewSession(
+            const child = await embedPreviewSession(
               host,
               nested.result,
               grant,
@@ -781,11 +783,32 @@ function embedPreviewSession(
             }
           },
         })
+  /*
+   * The host's plan picks the default view, as in the workbench: without it the first stage in the
+   * list won, and the card the host adds to every subject covered a CSV's table. It only orders:
+   * the page's `view` comes first when the subject can mount it, and the picker keeps every stage.
+   */
+  const plannedDefault = (
+    await resolveCommonPresentationPlan(
+      (await session.descriptor()) as unknown as AnyDescriptor,
+      {
+        sessionId,
+        providerId: opened.selected.contributionId,
+        variantId: opened.selected.variantId,
+      },
+      { availableStageIds: host.stages.map(stageIdOf) },
+    )
+  )?.plan.activeStage
+  const defaultStages = [
+    ...(preferred === undefined ? [] : [preferred]),
+    ...(plannedDefault === undefined ? [] : [plannedDefault as string]),
+  ]
   let disposed = false
   return {
     opened,
     grant,
     budget,
+    defaultStages,
     ...(managed === undefined ? {} : { subjectNavigation: managed.port }),
     descriptor: () => session.descriptor(),
     dataSource: (contract: string, major: number) => session.dataSource(contract, major),
@@ -811,6 +834,8 @@ export async function openEmbedSession(
     readonly sourceUri?: string
     readonly writable: boolean
     readonly onNavigate?: EmbedSubjectNavigationOwner
+    /** The stage the page asked for in `view`; it wins over the plan's default when offered. */
+    readonly preferred?: string
   },
   signal?: AbortSignal,
 ): Promise<EmbedPreviewSession | undefined> {
@@ -848,6 +873,7 @@ export async function openEmbedSession(
     budget,
     `modkit-embed-${openCount}`,
     options.onNavigate,
+    options.preferred,
   )
 }
 
@@ -1316,9 +1342,10 @@ export function defineModkitElements(options: DefineModkitElementsOptions = {}):
             if (preopened?.session === session) preopened = undefined
           }
         }
+        const preferredView = this.getAttribute('view')
         previewer = createCodecPreview({
           supported: host.services.supportedExtensions,
-          stages: preferStage(host.stages, this.getAttribute('view') ?? undefined),
+          stages: preferStage(host.stages, preferredView ?? undefined),
           fallback: host.fallback,
           editorPorts: () => editorPorts,
           openSession: async (openedEntry, openedBytes, signal) => {
@@ -1334,6 +1361,7 @@ export function defineModkitElements(options: DefineModkitElementsOptions = {}):
                   token,
                   writable,
                   onNavigate: openNavigatedSubject,
+                  ...(preferredView === null ? {} : { preferred: preferredView }),
                   ...(sourceUri === undefined ? {} : { sourceUri }),
                 },
                 signal,
