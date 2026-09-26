@@ -158,6 +158,12 @@ const nodeModuleMap = {
   '@modkit/codec-kit/model/draco': pathToFileURL(
     join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'model', 'draco.js'),
   ).href,
+  '@modkit/codec-kit/model/bounds': pathToFileURL(
+    join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'model', 'bounds.js'),
+  ).href,
+  '@modkit/codec-kit/model-math/transform': pathToFileURL(
+    join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'model-math', 'transform.js'),
+  ).href,
   '@modkit/codec-kit/raster': pathToFileURL(
     join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'raster', 'index.js'),
   ).href,
