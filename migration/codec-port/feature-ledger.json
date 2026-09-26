@@ -3034,9 +3034,14 @@
       "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-ea/test/receipts/k1/red-alert2-vxl.model-render.json",
+          "sha256": "b078f3595f1a00f8b3c048cc0ba57781866d334b2f1f5bc1f43c4b505216e67f"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/red-alert2-vxl/operation/model.render",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],

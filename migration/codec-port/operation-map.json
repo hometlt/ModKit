@@ -1819,11 +1819,11 @@
       }
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-core/extensions/models/contributions/codec-uvm.json",
+      "handlerId": "render-uvm-scene",
       "id": "legacy/codec-manifest/modkit/red-alert2-vxl/operation/model.render",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "model.render"
     },
     {
       "contribution": null,
