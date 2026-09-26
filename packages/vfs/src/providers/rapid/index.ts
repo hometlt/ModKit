@@ -27,9 +27,7 @@ export interface RapidVfsProviderOptions {
   readonly poolRoot?: string
 }
 
-
 const RAPID_SCHEME = 'rapid+file'
-
 
 function fileUriOf(uri: string): string {
   if (!uri.toLowerCase().startsWith(`${RAPID_SCHEME}:`)) {
@@ -37,7 +35,6 @@ function fileUriOf(uri: string): string {
   }
   return `file:${uri.slice(`${RAPID_SCHEME}:`.length)}`
 }
-
 
 /** Read and inflate chunk: 1 MiB keeps a 73 MB blob at native zlib speed (64 KiB was 13× slower). */
 const POOL_CHUNK_BYTES = 1024 * 1024
@@ -227,7 +224,7 @@ class RapidMount implements VfsMount {
     const releaseMaterialized = this.reserveMaterialized(retained, record.path)
     let inner: RandomAccessSource | undefined
     try {
-      const poolPath = resolve(this.poolRoot, record.md5.slice(0, 2), `${record.md5.slice(2)}.gz`)
+      const poolPath = this.poolPathOf(record.md5)
       const bytes = await readPoolBlob(poolPath, record, signal)
       throwIfAborted(signal)
       const id = `${this.rootUri}#${encodeURIComponent(record.path)}`
@@ -317,6 +314,36 @@ class RapidMount implements VfsMount {
     }
   }
 
+  /**
+   * The distinct blobs the manifest names that have no pool file, in md5 order. Only `stat`: the
+   * integrity of a present blob stays with `readPoolBlob` when it is opened. Stops after
+   * `maxBlobs` missing ones with `complete: false`.
+   */
+  async missingBlobs(
+    maxBlobs: number,
+    signal?: AbortSignal,
+  ): Promise<{ readonly missing: readonly string[]; readonly complete: boolean }> {
+    this.assertLive()
+    const hashes = [...new Set([...this.records.values()].map(record => record.md5))].sort()
+    const missing: string[] = []
+    for (const md5 of hashes) {
+      throwIfAborted(signal)
+      const present = await stat(this.poolPathOf(md5)).then(
+        info => info.isFile(),
+        () => false,
+      )
+      if (present) continue
+      if (missing.length === maxBlobs)
+        return Object.freeze({ missing: Object.freeze(missing), complete: false })
+      missing.push(md5)
+    }
+    return Object.freeze({ missing: Object.freeze(missing), complete: true })
+  }
+
+  private poolPathOf(md5: string): string {
+    return resolve(this.poolRoot, md5.slice(0, 2), `${md5.slice(2)}.gz`)
+  }
+
   private assertLive(): void {
     if (!this.disposed) return
     throw rapidError('mount-disposed', `rapid VFS mount «${this.rootUri}» is disposed`)
@@ -387,6 +414,27 @@ export class RapidVfsProvider implements VfsProvider {
       limits,
     )
   }
+}
+
+/**
+ * Which pool blobs of a mounted rapid package are absent — a partly downloaded installation. The
+ * mount must come from the rapid provider; at most `maxBlobs` (default 4096) are listed, and
+ * `complete` says whether that is all of them.
+ */
+export async function rapidMissingBlobs(
+  mount: VfsMount,
+  options: { readonly maxBlobs?: number; readonly signal?: AbortSignal } = {},
+): Promise<{ readonly missing: readonly string[]; readonly complete: boolean }> {
+  if (!(mount instanceof RapidMount))
+    throw rapidError('not-a-rapid-mount', 'the mount is not a rapid package mount', {
+      mountId: mount.id,
+    })
+  const maxBlobs = options.maxBlobs ?? 4096
+  if (!Number.isSafeInteger(maxBlobs) || maxBlobs < 1)
+    throw rapidError('missing-blob-limit-invalid', 'maxBlobs must be a positive safe integer', {
+      maxBlobs,
+    })
+  return mount.missingBlobs(maxBlobs, options.signal)
 }
 
 export function createRapidVfsProvider(options: RapidVfsProviderOptions = {}): RapidVfsProvider {

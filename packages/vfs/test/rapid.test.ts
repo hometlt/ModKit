@@ -8,7 +8,7 @@ import { gzipSync } from 'node:zlib'
 import { afterEach, describe, expect, it } from 'vitest'
 import { isCancellation, isModkitError } from '@modkit/core'
 import { DEFAULT_VFS_LIMITS, VirtualFileSystem, type VfsNode } from '@modkit/vfs'
-import { createRapidVfsProvider } from '@modkit/vfs/providers/rapid'
+import { createRapidVfsProvider, rapidMissingBlobs } from '@modkit/vfs/providers/rapid'
 
 const temporaryRoots: string[] = []
 
@@ -185,6 +185,47 @@ describe('Rapid rapid VFS provider', () => {
     await writeFile(poolPath, gzipSync(bytes))
     const source = await mount.open('blob.bin')
     expect([...(await source.readAt(0, 4))]).toEqual([7, 7, 7, 7])
+    await mount.dispose()
+  })
+  it('lists the distinct pool blobs a package names that are absent, bounded and cancellable', async () => {
+    const [one, two, three] = [1, 2, 3].map(value => Uint8Array.from([value])) as [
+      Uint8Array,
+      Uint8Array,
+      Uint8Array,
+    ]
+    const fixture = await rapidFixture([
+      { path: 'one.bin', bytes: one },
+      { path: 'two.bin', bytes: two },
+      { path: 'two-again.bin', bytes: two },
+      { path: 'three.bin', bytes: three },
+    ])
+    const md5 = (bytes: Uint8Array) => createHash('md5').update(bytes).digest('hex')
+    const pool = (bytes: Uint8Array) =>
+      join(
+        dirname(fixture.manifestPath),
+        '..',
+        'pool',
+        md5(bytes).slice(0, 2),
+        `${md5(bytes).slice(2)}.gz`,
+      )
+    await rm(pool(two))
+    await rm(pool(three))
+    const mount = await createRapidVfsProvider().open(fixture.uri, { limits: DEFAULT_VFS_LIMITS })
+    // two.bin and two-again.bin name one blob: it is listed once. Only stat decides presence.
+    const absent = [md5(two), md5(three)].sort()
+    expect(await rapidMissingBlobs(mount)).toEqual({ missing: absent, complete: true })
+    expect(await rapidMissingBlobs(mount, { maxBlobs: 1 })).toEqual({
+      missing: [absent[0]],
+      complete: false,
+    })
+    const aborted = new AbortController()
+    aborted.abort()
+    await expect(rapidMissingBlobs(mount, { signal: aborted.signal })).rejects.toSatisfy(
+      isCancellation,
+    )
+    await expect(rapidMissingBlobs({ id: 'memory:x' } as never)).rejects.toSatisfy(
+      error => isModkitError(error) && error.code === 'x3.vfs/rapid-not-a-rapid-mount',
+    )
     await mount.dispose()
   })
 })
