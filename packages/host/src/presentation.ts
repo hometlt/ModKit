@@ -173,6 +173,8 @@ export interface CatalogPresentationCandidate extends PresentationSlot {
   /** Result of data-only catalog applicability evaluation for this descriptor. */
   readonly eligible: boolean
   readonly missing?: readonly string[]
+  /** Bindings of optional facets: they enrich the stage but do not say who feeds it. */
+  readonly optionalBindingIds?: readonly string[]
 }
 
 export interface PresentationResolverOptions<Ticket> {
@@ -304,6 +306,9 @@ export async function resolveCommonPresentationPlan(
       return {
         ...entry.slot,
         bindings: Object.freeze([...entry.slot.bindings, ...optional]),
+        ...(optional.length === 0
+          ? {}
+          : { optionalBindingIds: Object.freeze(optional.map(binding => binding.bindingId)) }),
         eligible: eligibility.eligible,
         missing: eligibility.missing,
       } satisfies CatalogPresentationCandidate
@@ -446,16 +451,19 @@ export function createPresentationPlanValidator<Ticket>(
 /**
  * A slot fed only by data sources the host added (`hostDataSources`: fallback facts, projected
  * relations), not by the codec. Slots without data-source bindings (operation-driven stages) never
- * count as host-fed.
+ * count as host-fed. Optional facets do not count: the card over host facts that also shows an
+ * image's raster is still the host's card, not the image's view.
  */
-function hostFedOnly(slot: PresentationSlot, descriptor: AnyDescriptor): boolean {
+function hostFedOnly(slot: CatalogPresentationCandidate, descriptor: AnyDescriptor): boolean {
   const hostOffers = descriptor.hostDataSources ?? []
   if (hostOffers.length === 0) return false
   const offered = (
     list: readonly { readonly contract: string; readonly major: number }[],
     source: { readonly contract: string; readonly major: number },
   ) => list.some(item => item.contract === source.contract && item.major === source.major)
+  const optional = new Set<string>(slot.optionalBindingIds ?? [])
   const sources = slot.bindings
+    .filter(binding => !optional.has(binding.bindingId))
     .map(binding => ('dataSource' in binding ? binding.dataSource : binding))
     .filter(source => offered(descriptor.dataSources, source))
   return sources.length > 0 && sources.every(source => offered(hostOffers, source))

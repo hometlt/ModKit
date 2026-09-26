@@ -61,6 +61,45 @@ describe('a stage fed only by what the host added', () => {
     expect(await activeStage(descriptor([FACTS]))).toBe('table')
   })
 
+  it('still ranks after when an optional facet binds a codec source: a PNG opens as its image', async () => {
+    const RASTER = { contract: 'common.view/raster-image-source', major: 1 } as const
+    const card = {
+      ...stage('card', 390, FACTS),
+      bindings: [
+        { bindingId: bindingId('card'), ...FACTS },
+        { bindingId: bindingId('card-optional-1'), ...RASTER },
+      ],
+      optionalBindingIds: ['card-optional-1'],
+    }
+    const image = {
+      ...stage('image', 360, RASTER),
+      bindings: [{ bindingId: bindingId('image'), ...RASTER }],
+    }
+    const resolved = await resolvePresentationPlan<string>({
+      descriptor: {
+        subjectUri: 'file:///icon.png',
+        revision: 'r1',
+        dataSources: [RASTER, FACTS],
+        hostDataSources: [FACTS],
+        operations: [],
+        diagnostics: [],
+      } as unknown as AnyDescriptor,
+      candidates: [card, image] as never,
+      digest: () => 'digest',
+      ticketMatches: () => true,
+      async resolveBinding(binding) {
+        return {
+          ...binding,
+          offerId: 'offer',
+          providerId: 'provider',
+          variantId: 'portable',
+          ticket: 'ticket',
+        } as ResolvedBinding<string>
+      },
+    })
+    expect(resolved.plan.activeStage).toBe('image')
+  })
+
   it('keeps its priority when the codec publishes the facts itself', async () => {
     expect(await activeStage(descriptor())).toBe('card')
   })
