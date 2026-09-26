@@ -201,6 +201,10 @@
     "./raster/jpeg": {
       "types": "./dist/raster/jpeg.d.ts",
       "default": "./dist/raster/jpeg.js"
+    },
+    "./raster/palette": {
+      "types": "./dist/raster/palette.d.ts",
+      "default": "./dist/raster/palette.js"
     }
   },
   "files": [

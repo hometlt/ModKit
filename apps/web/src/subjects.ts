@@ -177,6 +177,7 @@ export const WEB_WORKER_MODULE_MAP: Readonly<Record<string, string>> = Object.fr
   '@modkit/codec-kit/compression/zstd': 'vendor/codec-kit/compression/zstd.js',
   '@modkit/codec-kit/model/draco': 'vendor/codec-kit/model/draco.js',
   '@modkit/codec-kit/raster': 'vendor/codec-kit/raster/index.js',
+  '@modkit/codec-kit/raster/palette': 'vendor/codec-kit/raster/palette.js',
   '@modkit/codec-kit/texture/bc': 'vendor/codec-kit/texture/bc.js',
   '@modkit/codec-kit/json-snapshot': 'vendor/codec-kit/json-snapshot.js',
   '@modkit/codec-kit/text': 'vendor/codec-kit/text/index.js',
