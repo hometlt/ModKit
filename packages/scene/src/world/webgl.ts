@@ -1110,6 +1110,11 @@ function presentationMaterials(
       }
     }
     if (cliff && standard !== undefined && out.shader !== undefined) {
+      // Keep the render model's version and surface fields: without them the program is refused
+      // and the piece falls back to the plain textured path, which reads the atlas by raw UV (no
+      // uvTiling/uvOffset: black rock texels) and draws back faces.
+      const { composite: _cliffComposite, ...surface } = renderModel ?? {}
+      void _cliffComposite
       out = {
         ...out,
         alphaMode: 'mask' as const,
@@ -1119,6 +1124,7 @@ function presentationMaterials(
           parameters: {
             ...out.shader.parameters,
             renderModel: {
+              ...surface,
               standard: { ...standard, blendMode: 0, alphaTestThreshold: 0.5 },
             },
           },
