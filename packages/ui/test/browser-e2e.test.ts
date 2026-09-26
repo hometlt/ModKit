@@ -3817,8 +3817,8 @@ describe('13C real-browser viewer host', () => {
       await page.locator('[data-mk-part="model.canvas"]').getAttribute('data-model-renderer'),
     ).toBe('wireframe')
     expect(await page.getByRole('combobox', { name: 'Model primitive' }).inputValue()).toBe('')
-    expect(await page.getByText('bones (2)', { exact: true }).isVisible()).toBe(true)
-    expect(await page.getByText('materials (1)', { exact: true }).isVisible()).toBe(true)
+    expect(await page.getByText('Bones (2)', { exact: true }).isVisible()).toBe(true)
+    expect(await page.getByText('Materials (1)', { exact: true }).isVisible()).toBe(true)
     await page.getByRole('combobox', { name: 'Model primitive' }).selectOption('turret')
     await page.waitForFunction(() =>
       (
@@ -3917,11 +3917,12 @@ describe('13C real-browser viewer host', () => {
         },
       }
       // one quad and two bones: enough to cover pixels and to draw a bone overlay over them
+      const identity = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
       const scene = {
         async info() {
           return {
             scenes: 1,
-            nodes: 1,
+            nodes: 2,
             meshes: 1,
             primitives: 1,
             materials: 1,
@@ -3930,8 +3931,19 @@ describe('13C real-browser viewer host', () => {
             geometryAccess: 'decoded' as const,
           }
         },
+        // The bones' scene nodes: the sampler checks each bone's parent against the node tree.
         async nodes() {
-          return { items: [] }
+          return {
+            items: [
+              { id: 'bone-root', childIds: ['bone-tip'], meshIds: [], transform: identity },
+              {
+                id: 'bone-tip',
+                childIds: [],
+                meshIds: [],
+                transform: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0.5, 0, 1],
+              },
+            ],
+          }
         },
         async meshes() {
           return { items: [{ id: 'mesh', primitiveIds: ['plate'] }] }
