@@ -24,14 +24,15 @@ function identityTransform() {
   return Object.freeze([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1])
 }
 
-function nodeTransform(node: JsonObject): readonly number[] {
+/** A node's matrix, or its TRS both composed and kept, so a re-export writes TRS again. */
+function nodeTransform(node: JsonObject): Pick<ModelNode, 'transform' | 'trs'> {
   const hasTrs = ['translation', 'rotation', 'scale'].some(key => node[key] !== undefined)
   if (node['matrix'] !== undefined) {
     if (hasTrs || !finiteArray(node['matrix'], 16))
       throw new TypeError('UVM node matrix must be finite and cannot coexist with TRS')
-    return Object.freeze([...node['matrix']])
+    return { transform: Object.freeze([...node['matrix']]) }
   }
-  if (!hasTrs) return identityTransform()
+  if (!hasTrs) return { transform: identityTransform() }
   const translation = node['translation'] === undefined ? [0, 0, 0] : node['translation']
   const rotation = node['rotation'] === undefined ? [0, 0, 0, 1] : node['rotation']
   const scale = node['scale'] === undefined ? [1, 1, 1] : node['scale']
@@ -43,7 +44,14 @@ function nodeTransform(node: JsonObject): readonly number[] {
   composeTrsMatrix(transform, 0, translation, rotation, scale)
   if (!transform.every(Number.isFinite))
     throw new RangeError('UVM node TRS exceeds the finite transform range')
-  return Object.freeze(Array.from(transform))
+  return {
+    transform: Object.freeze(Array.from(transform)),
+    trs: Object.freeze({
+      translation: Object.freeze([...translation]) as [number, number, number],
+      rotation: Object.freeze([...rotation]) as [number, number, number, number],
+      scale: Object.freeze([...scale]) as [number, number, number],
+    }),
+  }
 }
 
 export function decodeUvmGeometry(
@@ -275,7 +283,7 @@ export function decodeUvmGeometry(
       ...(typeof node['name'] === 'string' ? { name: node['name'] } : {}),
       childIds,
       meshIds,
-      transform: nodeTransform(node),
+      ...nodeTransform(node),
     }
   })
   return Object.freeze({

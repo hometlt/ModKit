@@ -226,6 +226,20 @@ export interface ModelNode {
   readonly meshIds: readonly string[]
   /** Column-major 4x4 local transform. */
   readonly transform: readonly number[]
+  /**
+   * The same local transform as translation, unit rotation quaternion `[x, y, z, w]` and scale,
+   * when the publisher states it: its format authors TRS, or it decomposes a matrix it knows to be
+   * a pure TRS (an HVA section pose). It composes as T · R · S to `transform`. Only a node that
+   * carries it can be driven by translation/rotation/scale animation channels on export: a bare
+   * matrix is never decomposed implicitly.
+   */
+  readonly trs?: ModelNodeTrs
+}
+
+export interface ModelNodeTrs {
+  readonly translation: readonly [number, number, number]
+  readonly rotation: readonly [number, number, number, number]
+  readonly scale: readonly [number, number, number]
 }
 
 export interface ModelMesh {

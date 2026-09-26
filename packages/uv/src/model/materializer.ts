@@ -19,6 +19,7 @@ import {
 import { DEFAULT_MODEL_SKELETON_BUDGET } from '@modkit/codec-kit/model/skeleton'
 import { DEFAULT_MODEL_ANIMATION_BUDGET } from '@modkit/codec-kit/model/animation'
 import { boundsOf } from '@modkit/codec-kit/model/bounds'
+import { composeTrsMatrix } from '@modkit/codec-kit/model-math/sequence-pose'
 import { BufferBuilder as RigBufferBuilder } from './legacy/rig-kernels.js'
 import type { UvmJsonObject } from './legacy/rig-types.js'
 import { prepareUvmSkeleton, writeUvmSkinAttributes, writeUvmAnimations } from './rig.js'
@@ -158,6 +159,11 @@ function finite<T extends Iterable<number>>(values: T, label: string): T {
     if (!Number.isFinite(value)) fail(`${label} contains a non-finite number`)
   }
   return values
+}
+
+/** A stated TRS and its matrix agree to float32 precision, not bit for bit. */
+function closeTo(composed: number, stated: number): boolean {
+  return Math.abs(composed - stated) <= 1e-4 * Math.max(1, Math.abs(stated))
 }
 
 const byUtf8 = (left: string, right: string) => {
@@ -596,8 +602,7 @@ export function materializeUvmCore(
     const { id: _id, name, shader, contracts, alphaMode, alphaCutoff, ...fields } = definition
     if (name !== undefined) target.name = name
     if (alphaMode !== undefined)
-      target.alphaMode =
-        alphaMode === 'opaque' ? 'OPAQUE' : alphaMode === 'mask' ? 'MASK' : 'BLEND'
+      target.alphaMode = alphaMode === 'opaque' ? 'OPAQUE' : alphaMode === 'mask' ? 'MASK' : 'BLEND'
     if (alphaCutoff !== undefined) target.alphaCutoff = alphaCutoff
     if (Object.keys(fields).length > 0)
       target.extras = { modkit: { material: { version: 1, fields } } }
@@ -843,6 +848,19 @@ export function materializeUvmCore(
       entry.translation = [...bone.localPose!.translation]
       entry.rotation = [...bone.localPose!.rotation]
       entry.scale = [...bone.localPose!.scale]
+    } else if (node.trs !== undefined) {
+      // The publisher stated the decomposition; it must be the transform it also published.
+      const { translation, rotation, scale } = node.trs
+      finite([...translation, ...rotation, ...scale], `node ${node.id} trs`)
+      if (Math.abs(Math.hypot(...rotation) - 1) > 1e-4)
+        fail(`node «${node.id}» trs rotation must be a unit quaternion`)
+      const composed = new Float32Array(16)
+      composeTrsMatrix(composed, 0, translation, rotation, scale)
+      if (composed.some((value, index) => !closeTo(value, transform[index]!)))
+        fail(`node «${node.id}» trs does not compose to its transform`)
+      entry.translation = [...translation]
+      entry.rotation = [...rotation]
+      entry.scale = [...scale]
     } else if (transform.some((value, index) => value !== (index % 5 === 0 ? 1 : 0))) {
       entry.matrix = transform
     }

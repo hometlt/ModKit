@@ -402,6 +402,7 @@ export {
   type ModelBounds,
   type ModelMesh,
   type ModelNode,
+  type ModelNodeTrs,
   type ModelPrimitive,
   type ModelPrimitiveRequest,
   type ModelPrimitiveTopology,

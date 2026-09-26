@@ -43,6 +43,15 @@ function frozenModelNode(node: ModelNode): ModelNode {
     childIds: Object.freeze([...node.childIds]),
     meshIds: Object.freeze([...node.meshIds]),
     transform: Object.freeze([...node.transform]),
+    ...(node.trs === undefined
+      ? {}
+      : {
+          trs: Object.freeze({
+            translation: Object.freeze([...node.trs.translation]) as typeof node.trs.translation,
+            rotation: Object.freeze([...node.trs.rotation]) as typeof node.trs.rotation,
+            scale: Object.freeze([...node.trs.scale]) as typeof node.trs.scale,
+          }),
+        }),
   })
 }
 
@@ -314,7 +323,11 @@ export function createModelEffectSource({
     ...effect,
     ...(effect.properties === undefined
       ? {}
-      : { properties: Object.freeze(effect.properties.map((one: ModelEffectProperty) => Object.freeze({ ...one }))) }),
+      : {
+          properties: Object.freeze(
+            effect.properties.map((one: ModelEffectProperty) => Object.freeze({ ...one })),
+          ),
+        }),
   }))
   const byKind: Record<string, number> = {}
   for (const effect of items) byKind[effect.kind] = (byKind[effect.kind] ?? 0) + 1
@@ -411,9 +424,7 @@ export function createModelNodeBehaviourSource({
 }): ModelNodeBehaviourSource {
   const items = behaviours.map(behaviour => ({
     ...behaviour,
-    ...(behaviour.nodeIds === undefined
-      ? {}
-      : { nodeIds: Object.freeze([...behaviour.nodeIds]) }),
+    ...(behaviour.nodeIds === undefined ? {} : { nodeIds: Object.freeze([...behaviour.nodeIds]) }),
     ...(behaviour.properties === undefined
       ? {}
       : {
@@ -423,8 +434,7 @@ export function createModelNodeBehaviourSource({
         }),
   }))
   const byKind: Record<string, number> = {}
-  for (const behaviour of items)
-    byKind[behaviour.kind] = (byKind[behaviour.kind] ?? 0) + 1
+  for (const behaviour of items) byKind[behaviour.kind] = (byKind[behaviour.kind] ?? 0) + 1
   return facetSource(
     Object.freeze({ behaviours: items.length, byKind: Object.freeze(byKind) }),
     'behaviours',
