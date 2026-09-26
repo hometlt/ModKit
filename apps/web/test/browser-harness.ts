@@ -127,6 +127,9 @@ export const nodeModuleMap: Readonly<Record<string, string>> = Object.freeze({
   '@modkit/codec-kit/checksum': pathToFileURL(
     join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'checksum', 'index.js'),
   ).href,
+  '@modkit/codec-kit/crypto/blowfish': pathToFileURL(
+    join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'crypto', 'blowfish.js'),
+  ).href,
   '@modkit/codec-kit/audio': pathToFileURL(
     join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'audio', 'index.js'),
   ).href,

@@ -193,6 +193,14 @@ const workerBuild = await build({
   entryPoints: {
     'worker-entry': join(repoRoot, 'packages', 'host', 'dist', 'browser', 'worker-entry.js'),
     'vendor/codec-kit/index': join(repoRoot, 'packages', 'codec-kit', 'src', 'index.js'),
+    'vendor/codec-kit/crypto/blowfish': join(
+      repoRoot,
+      'packages',
+      'codec-kit',
+      'dist',
+      'crypto',
+      'blowfish.js',
+    ),
     'vendor/codec-kit/crypto/digest': join(
       repoRoot,
       'packages',

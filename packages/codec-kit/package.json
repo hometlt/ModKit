@@ -94,6 +94,10 @@
       "types": "./dist/crypto/sha1.d.ts",
       "default": "./dist/crypto/sha1.js"
     },
+    "./crypto/blowfish": {
+      "types": "./dist/crypto/blowfish.d.ts",
+      "default": "./dist/crypto/blowfish.js"
+    },
     "./crypto/digest": {
       "types": "./dist/crypto/digest.d.ts",
       "default": "./dist/crypto/digest.js"
