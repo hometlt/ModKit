@@ -3,3 +3,4 @@ export { createSelectedProvider, createTextSyntaxProvider } from './provider-run
 export { plainNode, scalar } from './scalars.js'
 export { decodeInput, encodeText, failure, lease, newlineOf, preflight, span } from './text.js'
 export { treeDataSource } from './tree-data-source.js'
+export { parseIni, type IniDocument, type IniEntry, type IniSection } from './ini.js'
