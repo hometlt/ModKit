@@ -983,9 +983,14 @@
       "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-ea/test/receipts/k1/emperor-xbf.model-render.json",
+          "sha256": "207dd9f94a4a66bc3a477069fba77e4fedf533c7109c8d525363fc52aa97216e"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/emperor-xbf/operation/model.render",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
