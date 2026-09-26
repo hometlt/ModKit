@@ -9,6 +9,7 @@ import { join, resolve } from 'node:path'
 import { Client, InMemoryTransport } from '@modelcontextprotocol/client'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { MapLayerDescriptor, MapLayerGrid } from '@modkit/sdk/maps'
+import { createNodeInstallationProbes } from '@modkit/host/node'
 import { extractZipArchiveEntry, parseZipArchive } from '../../../extensions/archives/src/zip/codec.js'
 import { discoverWarzone2100Installations } from '../../../../modkit-extensions-warzone/src/provider.js'
 import { createHostMcpPort, createModkitMcpServer, type McpEnvelope, type ModkitMcpHostPort } from '../src/index.js'
@@ -27,7 +28,11 @@ const envelope = (value: CallResult) => value.structuredContent as McpEnvelope
 const data = (value: CallResult) => (envelope(value).data ?? {}) as Record<string, unknown>
 
 beforeAll(async () => {
-  const discovery = await discoverWarzone2100Installations({ gameId: 'wz2100project/warzone-2100', maxCandidates: 128 })
+  // The host's probes find the Store, Steam and registry installations; without them only fixed paths.
+  const discovery = await discoverWarzone2100Installations(
+    { gameId: 'wz2100project/warzone-2100', maxCandidates: 128 },
+    createNodeInstallationProbes(),
+  )
   const archivePath = discovery.installations
     .flatMap((installation: { evidence: { kind: string; found: boolean; path?: string }[] }) => installation.evidence)
     .find(item => item.kind === 'warzone-mp-archive' && item.found)?.path
