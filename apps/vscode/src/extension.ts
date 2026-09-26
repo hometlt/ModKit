@@ -12087,42 +12087,151 @@ async function activateModkit(
       })()
     }),
 
-    vscode.commands.registerCommand('modkit.explainResolution', () => {
-      const lines = [
-        localizer.text('vscode.resolution.topology', {
-          id: host.services.host.topology.topologyId,
-        }),
-        localizer.text('vscode.resolution.extensionHost', {
-          realm: host.services.host.profile.realmId,
-          count: host.services.host.profile.facilities.length,
-        }),
-        localizer.text('vscode.resolution.codecs', {
-          realm: host.services.workers.profile.realmId,
-          profiles: host.services.executionProfiles.join('/'),
-        }),
-        localizer.text('vscode.resolution.webview', {
-          realm: host.webview.profile.realmId,
-          count: host.webview.profile.facilities.length,
-        }),
-        localizer.text('vscode.resolution.extensions', {
-          loaded: host.extensions.bundled.length + host.extensions.installed.length,
-          refused: host.extensions.failures.length + host.extensions.problems.length,
-        }),
-        localizer.text('vscode.resolution.contributions', {
-          count: host.contributions.length,
-          disabled: host.contributions.filter(row => row.disabled).length,
-        }),
-        localizer.text('vscode.resolution.detectableTypes', {
-          count: host.supportedExtensions.length,
-        }),
-        localizer.text('vscode.resolution.diagnostics', {
-          count: host.services.host.inventory.diagnostics.length,
-        }),
-      ]
-      for (const line of lines) log(line)
-      void vscode.window.showInformationMessage(lines.join(' · '), { modal: false })
+    /*
+     * How the active file resolves: the package it lies in, the mod chain the game's loader builds
+     * for it in load order (each layer's role, why it is there and where it comes from), which layer
+     * actually serves this file — the last one that has it — and what no content source holds. The
+     * report is a Markdown document, so it can be read, searched and pasted into a bug.
+     */
+    vscode.commands.registerCommand('modkit.explainResolution', async (argument: unknown) => {
+      const tab = vscode.window.tabGroups.activeTabGroup.activeTab?.input
+      const uri =
+        argument instanceof vscode.Uri
+          ? argument
+          : tab instanceof vscode.TabInputCustom || tab instanceof vscode.TabInputText
+            ? tab.uri
+            : undefined
+      if (uri === undefined) {
+        void vscode.window.showInformationMessage(localizer.text('vscode.resolution.noFile'))
+        return
+      }
+      const path = subjectPathOf(uri)
+      const target = modContextTargetOf(path)
+      const source = await requireContentSources().catch(() => undefined)
+      if (target === undefined || source?.openModContext === undefined) {
+        void vscode.window.showInformationMessage(
+          localizer.text('vscode.resolution.noLoader', { name: basename(uri.path) }),
+        )
+        return
+      }
+      const baseMods =
+        typeof target === 'string' ? baseModsFor(target, baseModsSetting(uri)) : undefined
+      const started = performance.now()
+      const placement = await source.locateModPackage?.(target)
+      const modContext = await source.openModContext({
+        schemaVersion: 1,
+        target,
+        ...(baseMods === undefined ? {} : { baseMods }),
+      })
+      const milliseconds = Math.round(performance.now() - started)
+      try {
+        const targetPath = typeof target === 'string' ? target : target.path
+        const inside =
+          placement?.kind !== 'package'
+            ? undefined
+            : typeof target === 'string'
+              ? relative(placement.path, targetPath).replaceAll('\\', '/')
+              : targetPath.toLowerCase().startsWith(`${placement.path.toLowerCase()}/`)
+                ? targetPath.slice(placement.path.length + 1)
+                : undefined
+        const served =
+          inside === undefined || inside === '' || inside.startsWith('..')
+            ? undefined
+            : await modContext.locate(inside)
+        const layerName = (id: string) =>
+          modContext.layers.find(layer => layer.id === id)?.displayName ?? id
+        const cell = (text: string) => text.replaceAll('|', '\\|')
+        const report = [
+          `# ${localizer.text('vscode.resolution.title', { name: basename(uri.path) })}`,
+          '',
+          placement?.kind === 'package'
+            ? localizer.text('vscode.resolution.inPackage', {
+                name: placement.displayName,
+                source: placement.sourceId,
+                path: placement.path,
+              })
+            : placement?.kind === 'missing'
+              ? localizer.text('vscode.resolution.missing')
+              : localizer.text('vscode.resolution.loose', {
+                  mods: (baseMods ?? []).join(', ') || '—',
+                }),
+          '',
+          localizer.text('vscode.resolution.context', {
+            game: modContext.gameId,
+            layers: modContext.layers.length,
+            milliseconds,
+          }),
+          '',
+          `| # | ${localizer.text('vscode.resolution.columns')} |`,
+          '| --- | --- | --- | --- | --- | --- |',
+          ...modContext.layers.map(
+            (layer, index) =>
+              `| ${index + 1} | ${cell(layer.displayName)} | ${layer.role} | ${layer.provenance} | ` +
+              `${cell(layer.sourceId)} | ${cell(layer.sourcePath)} |`,
+          ),
+          '',
+          served === undefined
+            ? localizer.text('vscode.resolution.notServed')
+            : localizer.text('vscode.resolution.served', {
+                layer: layerName(served.layerId),
+                path: served.path,
+              }),
+          '',
+          modContext.unresolved.length === 0
+            ? localizer.text('vscode.resolution.allResolved')
+            : localizer.text('vscode.resolution.unresolved', {
+                names: modContext.unresolved.join(', '),
+              }),
+          '',
+          `## ${localizer.text('vscode.resolution.host')}`,
+          '',
+          ...hostResolutionLines().map(line => `- ${line}`),
+          '',
+        ].join('\n')
+        await vscode.window.showTextDocument(
+          await vscode.workspace.openTextDocument({ language: 'markdown', content: report }),
+          { preview: true },
+        )
+      } finally {
+        await modContext.dispose()
+      }
     }),
   )
+
+  /** The composed host, for the end of a resolution report: realms, extensions, contributions. */
+  function hostResolutionLines(): readonly string[] {
+    return [
+      localizer.text('vscode.resolution.topology', {
+        id: host.services.host.topology.topologyId,
+      }),
+      localizer.text('vscode.resolution.extensionHost', {
+        realm: host.services.host.profile.realmId,
+        count: host.services.host.profile.facilities.length,
+      }),
+      localizer.text('vscode.resolution.codecs', {
+        realm: host.services.workers.profile.realmId,
+        profiles: host.services.executionProfiles.join('/'),
+      }),
+      localizer.text('vscode.resolution.webview', {
+        realm: host.webview.profile.realmId,
+        count: host.webview.profile.facilities.length,
+      }),
+      localizer.text('vscode.resolution.extensions', {
+        loaded: host.extensions.bundled.length + host.extensions.installed.length,
+        refused: host.extensions.failures.length + host.extensions.problems.length,
+      }),
+      localizer.text('vscode.resolution.contributions', {
+        count: host.contributions.length,
+        disabled: host.contributions.filter(row => row.disabled).length,
+      }),
+      localizer.text('vscode.resolution.detectableTypes', {
+        count: host.supportedExtensions.length,
+      }),
+      localizer.text('vscode.resolution.diagnostics', {
+        count: host.services.host.inventory.diagnostics.length,
+      }),
+    ]
+  }
 
   // ---------------------------------------------------------------- custom editor
   /*
