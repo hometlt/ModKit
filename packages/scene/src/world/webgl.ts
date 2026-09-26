@@ -1199,6 +1199,17 @@ function worldObjectTransform(
   return rotation
 }
 
+/** The instance tint of a placed model: its authored tint, times the selection highlight. */
+function worldObjectTint(
+  item: WorldSceneObjectItem,
+  selectedObjectId: number | undefined,
+): readonly [number, number, number, number] | undefined {
+  const selected = item.objectId === selectedObjectId
+  if (item.presentationTint === undefined && !selected) return undefined
+  const [red, green, blue] = item.presentationTint ?? [1, 1, 1]
+  return selected ? [red, green * 0.82, blue * 0.12, 1] : [red, green, blue, 1]
+}
+
 function modelMaterialCoverage(material: ModelMaterialRef | undefined): Readonly<{
   mode: 'opaque' | 'mask' | 'blend'
   cutoff: number
@@ -2819,6 +2830,7 @@ export function createWorldWebGlPlan(
       ].join('\u0000')
       const cachedMaterials = planPrograms.get(programKey)
       const presented = presentationMaterials(item, result.materials ?? [])
+      const objectTint = worldObjectTint(item, input.selectedObjectId)
       const scene =
         cachedMaterials?.scene ?? worldModelSceneMaterials(presented, result.textures ?? [])
       if (cachedMaterials !== undefined) programs = cachedMaterials.programs
@@ -2861,9 +2873,7 @@ export function createWorldWebGlPlan(
               instanceTransform,
               primitiveTransform ?? IDENTITY_COMPONENT_TRANSFORM,
             ),
-            ...(item.objectId === input.selectedObjectId
-              ? { tint: [1, 0.82, 0.12, 1] as const }
-              : {}),
+            ...(objectTint === undefined ? {} : { tint: objectTint }),
           })
           materialPrimitives.push(instancePrimitive)
           if (castsSharedMaterialShadow) materialShadowPrimitives.push(instancePrimitive)

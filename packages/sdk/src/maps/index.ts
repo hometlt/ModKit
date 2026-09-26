@@ -534,6 +534,11 @@ export interface MapPlacedObject {
   readonly presentationTeamColor?: readonly [number, number, number]
   /** Renderer team-color intensity for this object (see `SceneRendererMaterialContext`); 0 = none. */
   readonly presentationTeamColorIntensity?: number
+  /**
+   * Authored per-object tint: RGB 0..1 multiplying the shaded colour of the object's model, in the
+   * colour space of its textures (no transfer function applied). Absent means no tint.
+   */
+  readonly presentationTint?: readonly [number, number, number]
   readonly variation?: number
   /** Authored resource amount, before any gameplay harvesting. */
   readonly resources?: number
