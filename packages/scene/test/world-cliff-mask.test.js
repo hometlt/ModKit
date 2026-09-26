@@ -164,6 +164,11 @@ it('draws every face of a masked cliff piece as terrain, masked per pixel, inste
     plain.splatTriangles.some(batch => batch.maskTexture !== undefined),
     false,
   )
+  // The cells cut under the piece leave the drawn ground but still cast, at their own heights: the
+  // height field throws a cliff's shadow in SC2.
+  assert.equal(masked.terrainShadowCasters.length / 9, 8)
+  assert.ok(masked.terrainShadowCasters.every((value, index) => index % 3 !== 1 || value === 0))
+  assert.ok(masked.stats.shadowCasterTriangles >= 8)
 })
 
 it('reads the mask through the alpha1 layer transform and keeps it with its corner', () => {

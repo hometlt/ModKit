@@ -291,6 +291,8 @@ export interface WorldWebGlPlan {
   /** The first this many triangles of `transparentTriangles` are the water the planes replace. */
   readonly transparentWaterTriangles: number
   readonly opaqueTriangles: WorldWebGlBatch
+  /** Height-field cells cut from the drawn ground under cliff pieces: shadow casters only. */
+  readonly terrainShadowCasters: Float32Array
   /** Opaque model triangles separated only when a material disables casting or receiving. */
   readonly shadowControlledOpaqueTriangles: readonly WorldWebGlShadowControlledBatch[]
   /** Native/UVM materials rendered by the same compiler as the standalone model viewer. */
@@ -2266,6 +2268,11 @@ function prepareWorldStaticTerrain(
       accumulated[2] += normal[2]
     }
   }
+  // Cells cut from the drawn ground under cliff pieces still cast. SC2's height field is whole: it
+  // climbs every cliff and throws the cliff's shadow (its natural cliff meshes are no-shadows-cast for
+  // that reason). Without these cells the casting ground ended a cliff's width short of the edge and
+  // an east-facing coast threw almost nothing onto the beach below, only the rim doodads did.
+  const cutShadowCasters: number[] = []
   for (const item of terrain) {
     const east = terrainByCell.get(`${item.x + 1}:${item.y}`)
     const south = terrainByCell.get(`${item.x}:${item.y + 1}`)
@@ -2274,7 +2281,11 @@ function prepareWorldStaticTerrain(
     const corners = [item, east, southEast, south].map(
       snappedTerrainPosition,
     ) as unknown as TerrainPatch['positions']
-    if (cutCells.has(`${item.x}:${item.y}`)) continue
+    if (cutCells.has(`${item.x}:${item.y}`)) {
+      const [a, b, c, d] = [item, east, southEast, south].map(terrainPosition)
+      cutShadowCasters.push(...a!, ...b!, ...c!, ...a!, ...c!, ...d!)
+      continue
+    }
     const cornerKeys = [
       `${item.x}:${item.y}`,
       `${item.x + 1}:${item.y}`,
@@ -2714,8 +2725,10 @@ function prepareWorldStaticTerrain(
     lines: frozenBatch(lines),
     points: frozenBatch(points),
     terrainTriangles: Float32Array.from(terrainPickTriangles),
+    terrainShadowCasters: Float32Array.from(cutShadowCasters),
     shadowCasterTriangles:
-      (opaque.positions.length +
+      (cutShadowCasters.length +
+        opaque.positions.length +
         [...textured.values(), ...splat.values()].reduce(
           (sum, item) => sum + item.positions.length,
           0,
@@ -3573,6 +3586,7 @@ export function createWorldWebGlPlan(
       9
   const plan: WorldWebGlPlan = Object.freeze({
     opaqueTriangles: appendWorldBatch(preparation.opaqueTriangles, opaque),
+    terrainShadowCasters: preparation.terrainShadowCasters,
     waterSurfaceDepth,
     waterPlanes: Object.freeze(
       [...waterPlaneBatches.values()].map(plane =>
@@ -4903,6 +4917,7 @@ function renderWorldShadowMap(
     // a coast was lit between the shadows of the rim doodads. How far shadows reach is the camera's
     // business (light.shadowRange), not the casters'.
     drawShadowPositions(resources, program, plan.opaqueTriangles.positions)
+    drawShadowPositions(resources, program, plan.terrainShadowCasters)
     for (const item of plan.shadowControlledOpaqueTriangles) {
       if (item.castShadows) drawShadowPositions(resources, program, item.positions)
     }
