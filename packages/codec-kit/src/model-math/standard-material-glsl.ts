@@ -80,8 +80,6 @@ export interface StandardMaterialDefines {
   specMode: 0 | 1
   unshaded: boolean
   doubleLambert: boolean
-  /** Drawn from both sides: a back face is lit by its own, reversed normal (`gl_FrontFacing`). */
-  twoSided?: boolean
   clampOutput: boolean
   usesVertexColor: boolean
   usesVertexAlpha: boolean
@@ -219,7 +217,6 @@ export function buildMaterialDefines(
     specMode: material.specMode,
     unshaded: material.unshaded,
     doubleLambert: material.doubleLambert,
-    ...(material.twoSided ? { twoSided: true } : {}),
     clampOutput: material.clampOutput,
     usesVertexColor: material.usesVertexColor,
     usesVertexAlpha: material.usesVertexAlpha,
@@ -250,7 +247,7 @@ export function canonicalDefineKey(defines: StandardMaterialDefines): string {
   return (
     `layers[${layerKeys}]` +
     `;n=${defines.normalMapFormat}.${defines.normalMapSpace};spec=${defines.specMode}` +
-    `;${defines.unshaded ? 'U' : ''}${defines.doubleLambert ? 'D' : ''}${defines.twoSided ? '2' : ''}${defines.clampOutput ? 'C' : ''}` +
+    `;${defines.unshaded ? 'U' : ''}${defines.doubleLambert ? 'D' : ''}${defines.clampOutput ? 'C' : ''}` +
     `${defines.usesVertexColor ? 'vc' : ''}${defines.usesVertexAlpha ? 'va' : ''}${defines.alphaTest ? 'at' : ''}` +
     `;uv=${defines.uvSetCount};${defines.gpuSkinning ? 'skin' : ''}${defines.hardwareInstancing ? 'inst' : ''}${defines.bakedPoseInstancing ? 'baked' : ''}` +
     `${defines.sceneLighting ? ';scene' : ''}`
@@ -1219,9 +1216,6 @@ export function buildStandardFragmentSource(
     body.push(`  float ${detailSlot}Factor = dot(${maskSlot}Value, u_${detailSlot}Factors);`)
     body.push(`  normal = blendNormal(normal, decodeNormal(${detailTexel}), ${detailSlot}Factor);`)
   }
-  // A two-sided leaf seen from behind is lit by its back: without this it took the front normal,
-  // lambert 0 and ambient only, and SC2 foliage drew black rims along every silhouette.
-  if (defines.twoSided) body.push('  if (!gl_FrontFacing) normal = -normal;')
   body.push('  vec3 color = vec3(0.0);')
   const diffuse = layerBySlot.get('diffuse')
   if (diffuse) {
