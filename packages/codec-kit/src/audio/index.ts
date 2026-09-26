@@ -5,7 +5,7 @@
  */
 import { createCrc32Msb } from '../checksum/index.js'
 
-/** Linear integer PCM, the only shape `encodeWav` writes (format tag 1). */
+/** Linear integer PCM (format tag 1). */
 export interface PcmFormat {
   readonly channels: number
   readonly sampleRate: number
@@ -13,53 +13,129 @@ export interface PcmFormat {
   readonly bitsPerSample: number
 }
 
-const HEADER_BYTES = 44
+/** Microsoft IMA ADPCM (format tag 0x11): blocks of `blockAlign` bytes, 4 bits per sample. */
+export interface ImaAdpcmFormat {
+  readonly channels: number
+  readonly sampleRate: number
+  readonly blockAlign: number
+}
+
+export type WavFormat =
+  ({ readonly encoding: 'pcm' } & PcmFormat) | ({ readonly encoding: 'ima-adpcm' } & ImaAdpcmFormat)
+
 const PCM_BITS = [8, 16, 24, 32]
 
-/**
- * A canonical RIFF/WAVE file: a 16-byte `fmt ` (tag 1) and `data` holding `samples` unchanged —
- * interleaved little-endian frames, as a WAVE stores them. The result is one fresh buffer (worker
- * RPC refuses views that do not own theirs), padded to even size as RIFF requires.
- */
-export function encodeWav(format: PcmFormat, samples: Uint8Array): Uint8Array {
-  const { channels, sampleRate, bitsPerSample } = format
+function checkShape(channels: number, sampleRate: number): void {
   if (!Number.isInteger(channels) || channels < 1 || channels > 0xffff) {
     throw new RangeError('WAV channels must be 1..65535')
   }
   if (!Number.isInteger(sampleRate) || sampleRate < 1 || sampleRate > 0xffffffff) {
     throw new RangeError('WAV sample rate must be a positive 32-bit integer')
   }
-  if (!PCM_BITS.includes(bitsPerSample)) throw new RangeError('WAV PCM is 8, 16, 24 or 32 bits')
-  const blockAlign = channels * (bitsPerSample / 8)
-  if (blockAlign > 0xffff) throw new RangeError('WAV frame exceeds 65535 bytes')
-  if (samples.byteLength % blockAlign !== 0) {
-    throw new RangeError(`WAV data is not a whole number of ${blockAlign}-byte frames`)
-  }
-  const byteRate = sampleRate * blockAlign
-  if (byteRate > 0xffffffff) throw new RangeError('WAV byte rate exceeds 32 bits')
-  const pad = samples.byteLength & 1
-  const riffSize = HEADER_BYTES - 8 + samples.byteLength + pad
-  if (riffSize > 0xffffffff) throw new RangeError('WAV data exceeds the 4 GiB RIFF limit')
+}
 
-  const bytes = new Uint8Array(HEADER_BYTES + samples.byteLength + pad)
-  const view = new DataView(bytes.buffer)
-  const tag = (offset: number, text: string) => {
-    for (let index = 0; index < 4; index += 1) bytes[offset + index] = text.charCodeAt(index)
+/** The `fmt ` body, the `fact` sample count (non-PCM only) and the frame size data comes in. */
+function formatChunk(format: WavFormat, dataBytes: number) {
+  checkShape(format.channels, format.sampleRate)
+  const { channels, sampleRate } = format
+  if (format.encoding === 'pcm') {
+    if (!PCM_BITS.includes(format.bitsPerSample)) {
+      throw new RangeError('WAV PCM is 8, 16, 24 or 32 bits')
+    }
+    const blockAlign = channels * (format.bitsPerSample / 8)
+    if (blockAlign > 0xffff) throw new RangeError('WAV frame exceeds 65535 bytes')
+    if (dataBytes % blockAlign !== 0) {
+      throw new RangeError(`WAV data is not a whole number of ${blockAlign}-byte frames`)
+    }
+    if (sampleRate * blockAlign > 0xffffffff) throw new RangeError('WAV byte rate exceeds 32 bits')
+    const fmt = new DataView(new ArrayBuffer(16))
+    fmt.setUint16(0, 1, true)
+    fmt.setUint16(2, channels, true)
+    fmt.setUint32(4, sampleRate, true)
+    fmt.setUint32(8, sampleRate * blockAlign, true)
+    fmt.setUint16(12, blockAlign, true)
+    fmt.setUint16(14, format.bitsPerSample, true)
+    return { fmt: new Uint8Array(fmt.buffer), fact: undefined }
   }
-  tag(0, 'RIFF')
-  view.setUint32(4, riffSize, true)
-  tag(8, 'WAVE')
-  tag(12, 'fmt ')
-  view.setUint32(16, 16, true)
-  view.setUint16(20, 1, true)
-  view.setUint16(22, channels, true)
-  view.setUint32(24, sampleRate, true)
-  view.setUint32(28, byteRate, true)
-  view.setUint16(32, blockAlign, true)
-  view.setUint16(34, bitsPerSample, true)
-  tag(36, 'data')
-  view.setUint32(40, samples.byteLength, true)
-  bytes.set(samples, HEADER_BYTES)
+  // Each channel opens a block with 4 header bytes; the nibbles follow in 4-byte words per channel.
+  const { blockAlign } = format
+  const header = 4 * channels
+  if (
+    !Number.isInteger(blockAlign) ||
+    blockAlign <= header ||
+    blockAlign > 0xffff ||
+    (blockAlign - header) % header !== 0
+  ) {
+    throw new RangeError(
+      `IMA ADPCM block of ${blockAlign} bytes does not fit ${channels} channel(s)`,
+    )
+  }
+  const samplesPerBlock = 1 + ((blockAlign - header) * 2) / channels
+  // A short last block holds its header sample and the whole words it has.
+  const tail = dataBytes % blockAlign
+  const tailSamples = tail < header ? 0 : 1 + Math.floor((tail - header) / header) * 8
+  const fmt = new DataView(new ArrayBuffer(20))
+  fmt.setUint16(0, 0x11, true)
+  fmt.setUint16(2, channels, true)
+  fmt.setUint32(4, sampleRate, true)
+  fmt.setUint32(8, Math.round((sampleRate * blockAlign) / samplesPerBlock), true)
+  fmt.setUint16(12, blockAlign, true)
+  fmt.setUint16(14, 4, true)
+  fmt.setUint16(16, 2, true)
+  fmt.setUint16(18, samplesPerBlock, true)
+  return {
+    fmt: new Uint8Array(fmt.buffer),
+    fact: Math.floor(dataBytes / blockAlign) * samplesPerBlock + tailSamples,
+  }
+}
+
+/**
+ * The RIFF/WAVE header for `dataBytes` of `format` data: `fmt `, a `fact` sample count for IMA
+ * ADPCM, and the `data` chunk header. The data follows it unchanged, then a zero pad byte when
+ * `dataBytes` is odd, so a container can present a headerless game stream as a WAV without copying
+ * the stream.
+ */
+export function wavHeader(format: WavFormat, dataBytes: number): Uint8Array {
+  if (!Number.isSafeInteger(dataBytes) || dataBytes < 0) {
+    throw new RangeError('WAV data size must be a non-negative integer')
+  }
+  const { fmt, fact } = formatChunk(format, dataBytes)
+  const size = 12 + 8 + fmt.byteLength + (fact === undefined ? 0 : 12) + 8
+  const riffSize = size - 8 + dataBytes + (dataBytes & 1)
+  if (riffSize > 0xffffffff) throw new RangeError('WAV data exceeds the 4 GiB RIFF limit')
+  const bytes = new Uint8Array(size)
+  const view = new DataView(bytes.buffer)
+  let at = 0
+  const chunk = (id: string, length: number) => {
+    for (let index = 0; index < 4; index += 1) bytes[at + index] = id.charCodeAt(index)
+    view.setUint32(at + 4, length, true)
+    at += 8
+  }
+  chunk('RIFF', riffSize)
+  bytes.set([0x57, 0x41, 0x56, 0x45], at) // WAVE
+  at += 4
+  chunk('fmt ', fmt.byteLength)
+  bytes.set(fmt, at)
+  at += fmt.byteLength
+  if (fact !== undefined) {
+    chunk('fact', 4)
+    view.setUint32(at, fact, true)
+    at += 4
+  }
+  chunk('data', dataBytes)
+  return bytes
+}
+
+/**
+ * A canonical PCM RIFF/WAVE file: a 16-byte `fmt ` (tag 1) and `data` holding `samples` unchanged —
+ * interleaved little-endian frames, as a WAVE stores them. The result is one fresh buffer (worker
+ * RPC refuses views that do not own theirs), padded to even size as RIFF requires.
+ */
+export function encodeWav(format: PcmFormat, samples: Uint8Array): Uint8Array {
+  const header = wavHeader({ ...format, encoding: 'pcm' }, samples.byteLength)
+  const bytes = new Uint8Array(header.byteLength + samples.byteLength + (samples.byteLength & 1))
+  bytes.set(header)
+  bytes.set(samples, header.byteLength)
   return bytes
 }
 
