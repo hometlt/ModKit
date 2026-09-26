@@ -9,6 +9,7 @@ const stored = encoder.encode('hello, stored entry')
 const plain = encoder.encode('zlib entry '.repeat(40))
 const zlibbed = new Uint8Array(deflateSync(plain))
 const custom = encoder.encode('decoded by the format itself')
+const companion = encoder.encode('....bytes kept in the companion data file')
 const container = new Uint8Array(4 + stored.byteLength + zlibbed.byteLength)
 container.set(encoder.encode('CNTR'))
 container.set(stored, 4)
@@ -33,8 +34,21 @@ function open() {
     primaryBindingId: 'content',
     revisions: { topology: 'single', revision },
     bindings: [{ bindingId: 'content', role: 'content', source: source.ref, sourceKind: 'candidate', ownership: 'owned', revision }],
-    async openBinding() {
-      return { value: source, release: async () => undefined }
+    // `data` is a companion holding entry bytes, as a `.rfd` beside its `.rfh` index.
+    async openBinding(bindingId: string) {
+      if (bindingId !== 'data') return { value: source, release: async () => undefined }
+      return {
+        value: {
+          kind: 'bytes',
+          ref: { id: 'fixture-data', uri: 'memory:container-data' },
+          revision,
+          size: BigInt(companion.byteLength),
+          async read(offset: bigint, length: number) {
+            return companion.slice(Number(offset), Number(offset) + length)
+          },
+        },
+        release: async () => undefined,
+      }
     },
   }
   const codec = createInspectionCodec({
@@ -79,6 +93,11 @@ function open() {
                 },
               },
             },
+            {
+              path: 'data/companion.bin',
+              size: BigInt(companion.byteLength - 4),
+              storage: { kind: 'stored', offset: 4n, length: BigInt(companion.byteLength - 4), source: 'data' },
+            },
           ],
         },
       }
@@ -95,7 +114,9 @@ describe('a container entry table gives listing and extraction for free', () => 
     expect(first.items.map(item => item.path)).toEqual(['docs/Stored.txt', 'docs/zlib.txt'])
     expect(first.nextCursor).toBe('2')
     const rest = await lease.value.list('', { limit: 2, cursor: first.nextCursor })
-    expect(rest.items.map(item => item.path)).toEqual(['custom.bin'])
+    expect(rest.items.map(item => item.path)).toEqual(['custom.bin', 'data/companion.bin'])
+    // An entry in a companion is not in the container's own source, so it is extracted, not read in place.
+    expect(rest.items[1]?.storedRange).toBeUndefined()
     expect(rest.nextCursor).toBeUndefined()
     const docs = await lease.value.list('DOCS/', { limit: 10 })
     expect(docs.items.map(item => [item.path, item.compression, item.storedSize])).toEqual([
@@ -109,7 +130,7 @@ describe('a container entry table gives listing and extraction for free', () => 
     ])
     await lease.release()
     const descriptor = await session.descriptor()
-    expect(descriptor.constraints.maxDecodedBytes).toBe(String(stored.byteLength + plain.byteLength + custom.byteLength))
+    expect(descriptor.constraints.maxDecodedBytes).toBe(String(stored.byteLength + plain.byteLength + custom.byteLength + companion.byteLength - 4))
     await session.operations().dispose()
   })
 
@@ -123,6 +144,7 @@ describe('a container entry table gives listing and extraction for free', () => 
     expect(await extract('docs/stored.txt')).toBe('hello, stored entry')
     expect(await extract('docs/zlib.txt')).toBe('zlib entry '.repeat(40))
     expect(await extract('custom.bin')).toBe('decoded by the format itself')
+    expect(await extract('data/companion.bin')).toBe('bytes kept in the companion data file')
     await expect(
       session.operations().invoke(CONTAINER_EXTRACT_HANDLER_ID, { entryId: 'missing' }),
     ).rejects.toThrow(/requires a known \{entryId\}/)

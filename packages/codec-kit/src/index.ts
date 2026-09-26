@@ -141,11 +141,19 @@ export type InspectionOperationState =
  * decoder covers (Halo ERA `decryptRange`, a proprietary codec): the format opens the entry itself.
  */
 export type ContainerEntryStorage =
-  | { readonly kind: 'stored'; readonly offset: bigint; readonly length: bigint }
+  | {
+      readonly kind: 'stored'
+      readonly offset: bigint
+      readonly length: bigint
+      /** Binding id of the input's companion holding the bytes (`.rfd` beside `.rfh`, `.ucas`
+       * beside `.utoc`); absent means the container source itself. */
+      readonly source?: string
+    }
   | {
       readonly kind: 'deflate' | 'zlib' | 'gzip' | 'zstd' | 'lz4-block' | 'refpack'
       readonly offset: bigint
       readonly compressedLength: bigint
+      readonly source?: string
     }
   | {
       readonly kind: 'custom'
@@ -1375,6 +1383,16 @@ export function createInspectionCodec(
                 source: source as ArtifactByteSource,
                 byteSource,
                 budget,
+                // A companion the input carries (`.rfd` beside `.rfh`), read by range under the same budget.
+                async companionSource(bindingId, companionSignal) {
+                  const lease = await input.openBinding(bindingId, companionSignal)
+                  try {
+                    return { source: rangeByteSource(lease.value, budget), release: () => lease.release() }
+                  } catch (error) {
+                    await lease.release()
+                    throw error
+                  }
+                },
               })
         const dataSources = new Map<string, unknown>([
           ['common.view/byte-range-source', byteSource],
