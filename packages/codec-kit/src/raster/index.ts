@@ -27,3 +27,4 @@ export {
   type JpegFrameInfo,
 } from './jpeg.js'
 export type { RgbaImage } from '../texture/types.js'
+export { findEmbeddedImage, type EmbeddedImage } from './embedded.js'
