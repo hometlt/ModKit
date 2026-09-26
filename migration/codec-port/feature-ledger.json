@@ -743,9 +743,14 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-blizzard/blizzard-diablo/test/receipts/diablo3-app.audit.json",
+          "sha256": "05a2cccea33d74d221d3f915db8a27d53303336fe25a59c2e89ed43869c6ad52"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/diablo3-app/audit",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [
@@ -773,9 +778,14 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-blizzard/blizzard-diablo/test/receipts/diablo3-tex.audit.json",
+          "sha256": "a66e1f02ee9cd27e7f054095fa8c372931655cc4ccd708b7eca23559e0e3e0ce"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/diablo3-tex/audit",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [
