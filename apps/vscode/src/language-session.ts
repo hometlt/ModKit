@@ -343,6 +343,8 @@ const languageDocument = (
     languageId: route.languageId,
     version: editor.version,
     text: editor.text,
+    // A game's file association (`.scar` → lua51) names the dialect; the provider need not guess it.
+    ...(route.dialect === undefined ? {} : { dialect: route.dialect }),
   })
 
 const requestOf = (

@@ -201,6 +201,16 @@
       "icon": "$(cloud-download)"
     },
     {
+      "command": "modkit.sources.setKey",
+      "title": "%command.setSourceKey%",
+      "icon": "$(key)"
+    },
+    {
+      "command": "modkit.sources.forgetKey",
+      "title": "%command.forgetSourceKey%",
+      "icon": "$(trash)"
+    },
+    {
       "command": "modkit.resources.refresh",
       "title": "%command.refreshResources%",
       "icon": "$(refresh)"

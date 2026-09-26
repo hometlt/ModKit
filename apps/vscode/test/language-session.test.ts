@@ -337,6 +337,21 @@ describe('VS Code-free language session controller', () => {
     await controller.shutdown()
   })
 
+  it('hands the provider the dialect a game file association names', async () => {
+    const workspace = fakeWorkspace()
+    const controller = createLanguageSessionController({
+      workspace,
+      routes: [{ languageId: 'lua', documentKind: 'lua-source', extension: 'scar', dialect: 'lua51' }],
+      debounceMs: 0,
+      publishDiagnostics: () => undefined,
+    })
+    await controller.initialize()
+    controller.open(editorDocument(1, 'x = 1', { fileName: '/workspace/sample.scar' }))
+    await vi.waitFor(() => expect(workspace.opens).toHaveLength(1))
+    expect(workspace.opens[0]?.document).toMatchObject({ languageId: 'lua', dialect: 'lua51' })
+    await controller.shutdown()
+  })
+
   it('refuses an ambiguous extension mapping instead of guessing a provider route', async () => {
     const workspace = fakeWorkspace()
     const notices: { code: string }[] = []

@@ -210,6 +210,11 @@
         "icon": "$(edit)"
       },
       {
+        "command": "modkit.sources.forgetKey",
+        "title": "%command.forgetSourceKey%",
+        "icon": "$(trash)"
+      },
+      {
         "command": "modkit.sources.open",
         "title": "%command.openContentSource%",
         "icon": "$(plug)"
@@ -239,6 +244,7 @@
         "title": "%command.revealLocalSource%",
         "icon": "$(folder)"
       },
+      { "command": "modkit.sources.setKey", "title": "%command.setSourceKey%", "icon": "$(key)" },
       {
         "command": "modkit.sources.signIn",
         "title": "%command.signInBattleNet%",
@@ -933,12 +939,14 @@
     "onCommand:modkit.sources.download",
     "onCommand:modkit.sources.downloadReferences",
     "onCommand:modkit.sources.editCopy",
+    "onCommand:modkit.sources.forgetKey",
     "onCommand:modkit.sources.open",
     "onCommand:modkit.sources.openInstallation",
     "onCommand:modkit.sources.publish",
     "onCommand:modkit.sources.publishNew",
     "onCommand:modkit.sources.refresh",
     "onCommand:modkit.sources.revealLocal",
+    "onCommand:modkit.sources.setKey",
     "onCommand:modkit.sources.signIn",
     "onCommand:modkit.sources.signOut",
     "onCommand:modkit.sources.unmount",

@@ -87,6 +87,7 @@ type CommandResult,
 import {
 classifyLanguageFile,
 createLanguageWorkspace,
+languageFileAssociations,
 languageFileExtension,
 languageWorkspaceContextToken,
 languageProviderRoutes,
@@ -1031,16 +1032,22 @@ async function activateModkit(
       process.env['MODKIT_CONTENT_SOURCE_CONFIG'] ??
       configuredPath ??
       (existsSync(defaultConfig) ? defaultConfig : undefined)
-    contentSources ??= resolveContentSources({
-      extensionRoots: extensionRootPaths(),
-      ...(configured === undefined ? {} : { configPath: configured }),
-      storage,
-      moduleOptions: extension => {
-        const installationDirectory =
-          extension === 'blizzard/starcraft2' ? selectedStarcraft2() : undefined
-        return installationDirectory === undefined ? undefined : { installationDirectory }
-      },
-    })
+    if (contentSources === undefined) {
+      contentSources = resolveContentSources({
+        extensionRoots: extensionRootPaths(),
+        ...(configured === undefined ? {} : { configPath: configured }),
+        storage,
+        moduleOptions: extension => {
+          const installationDirectory =
+            extension === 'blizzard/starcraft2' ? selectedStarcraft2() : undefined
+          return installationDirectory === undefined ? undefined : { installationDirectory }
+        },
+      })
+      // A kept key reaches its source as soon as the source exists, so its assets resolve unasked.
+      void contentSources.then(source =>
+        source === undefined ? undefined : connectKeptKeys(source),
+      )
+    }
     const source = await contentSources
     if (!source) throw new Error('No extension of this window offers content sources')
     return source
@@ -1166,6 +1173,37 @@ async function activateModkit(
     }
     if (typeof result?.ticket === 'string') await context.secrets.store(key, result.ticket)
     await rememberConnections(source)
+  }
+  /** The regions whose connect takes a typed key (Roblox Open Cloud) rather than a sign-in page. */
+  const keyRegions = async (source: ContentSources) =>
+    ((await source.snapshot()).regions ?? []).flatMap(region =>
+      region.credential === undefined ? [] : [{ id: region.id, label: region.credential.label }],
+    )
+  const chooseKeyRegion = async (
+    regions: readonly { readonly id: string; readonly label: string }[],
+  ): Promise<{ readonly id: string; readonly label: string } | undefined> =>
+    regions.length <= 1
+      ? regions[0]
+      : await vscode.window.showQuickPick(
+          regions.map(region => ({ ...region, description: region.id })),
+          { title: localizer.text('vscode.sources.chooseKey') },
+        )
+  /**
+   * Hand every kept key to its source without asking. A key no longer accepted stays kept and is
+   * only logged: replacing it is the user's command, not a prompt at startup.
+   */
+  const connectKeptKeys = async (source: ContentSources): Promise<void> => {
+    const connected = new Set(((await source.snapshot()).connections ?? []).map(c => c.region))
+    for (const region of await keyRegions(source)) {
+      if (connected.has(region.id)) continue
+      const kept = await keptTicket(region.id)
+      if (kept === undefined) continue
+      try {
+        await callContentSources(source, 'connect', [region.id, undefined, kept])
+      } catch (error) {
+        log(`[sources] ${region.label}: ${error instanceof Error ? error.message : String(error)}`)
+      }
+    }
   }
   const rememberedAccount = (region: string): string | undefined =>
     knownConnections().find(item => item.region === region)?.accountId
@@ -2656,6 +2694,13 @@ async function activateModkit(
             )
             return
           }
+          // A download that needs a key asks for it once, here, rather than failing every asset.
+          const connected = new Set(
+            ((await source.snapshot()).connections ?? []).map(item => item.region),
+          )
+          for (const region of await keyRegions(source)) {
+            if (!connected.has(region.id)) await connectAccount(source, region.id)
+          }
           let downloaded = 0
           let present = 0
           const failed = new Map<string, number>()
@@ -2700,9 +2745,82 @@ async function activateModkit(
           const reasons = [...failed].map(([reason, count]) => `${reason} ×${count}`).join(', ')
           if (notDownloaded === 0) void vscode.window.showInformationMessage(summary)
           else void vscode.window.showWarningMessage(`${summary} ${reasons}`)
-          if (downloaded > 0) sourcesView.refresh()
+          if (downloaded === 0) return
+          sourcesView.refresh()
+          // The open view resolved its references before the download: reopen it to show them.
+          for (const group of vscode.window.tabGroups.all) {
+            for (const tab of group.tabs) {
+              const input = tab.input
+              if (!(input instanceof vscode.TabInputCustom) || tab.isDirty) continue
+              if (input.uri.toString() !== uri.toString()) continue
+              await vscode.window.tabGroups.close(tab, true)
+              await vscode.commands.executeCommand('vscode.openWith', uri, input.viewType, {
+                viewColumn: group.viewColumn,
+                preserveFocus: true,
+              })
+            }
+          }
         },
       ),
+      /*
+       * A region without a sign-in page (Roblox Open Cloud) takes a key the user types. Entering one
+       * replaces the kept key; the key lives only in the editor's secret storage and goes to the
+       * source through `connect`, never to settings, a file or the log.
+       */
+      vscode.commands.registerCommand('modkit.sources.setKey', async () => {
+        const source = await requireContentSources()
+        const region = await chooseKeyRegion(await keyRegions(source))
+        if (region === undefined) {
+          void vscode.window.showInformationMessage(localizer.text('vscode.sources.noKeyRegion'))
+          return false
+        }
+        const key = await askCredential(region)
+        if (key === undefined) return false
+        try {
+          const result = (await callContentSources(source, 'connect', [region.id, undefined, key])) as
+            | { readonly ticket?: unknown }
+            | undefined
+          await context.secrets.store(
+            ticketKey(region.id),
+            typeof result?.ticket === 'string' ? result.ticket : key,
+          )
+          await context.secrets.delete(earlierTicketKey(region.id))
+        } catch (error) {
+          // A key the source refuses is not kept.
+          void vscode.window.showErrorMessage(
+            `Modkit: ${error instanceof Error ? error.message : String(error)}`,
+          )
+          return false
+        }
+        sourcesView.refresh()
+        void vscode.window.showInformationMessage(
+          localizer.text('vscode.sources.keySaved', { label: region.label }),
+        )
+        return true
+      }),
+      vscode.commands.registerCommand('modkit.sources.forgetKey', async () => {
+        const source = await requireContentSources()
+        const kept = []
+        for (const region of await keyRegions(source)) {
+          if ((await keptTicket(region.id)) !== undefined) kept.push(region)
+        }
+        const region = await chooseKeyRegion(kept)
+        if (region === undefined) {
+          void vscode.window.showInformationMessage(localizer.text('vscode.sources.noKeptKey'))
+          return false
+        }
+        await forgetTicket(region.id)
+        for (const connection of (await source.snapshot()).connections ?? []) {
+          if (connection.region === region.id) {
+            await callContentSources(source, 'disconnect', [connection.id])
+          }
+        }
+        sourcesView.refresh()
+        void vscode.window.showInformationMessage(
+          localizer.text('vscode.sources.keyForgotten', { label: region.label }),
+        )
+        return true
+      }),
       vscode.commands.registerCommand('modkit.sources.refresh', async (argument: unknown) => {
         const row =
           typeof argument === 'object' && argument !== null
@@ -5628,6 +5746,18 @@ async function activateModkit(
    * extension contributes the route, and the host resolver still decides which provider runs.
    */
   const languageRoutes = languageProviderRoutes(host.services.inventory)
+  // A game's file association (`.scar` → lua) also gives the editor its language: colours, brackets.
+  const fileAssociations = languageFileAssociations(host.services.inventory)
+  const associateLanguage = (document: vscode.TextDocument): void => {
+    if (document.languageId !== 'plaintext') return
+    const name = document.fileName.toLowerCase()
+    const association = fileAssociations.find(item => name.endsWith(`.${item.extension}`))
+    if (association !== undefined) {
+      void vscode.languages.setTextDocumentLanguage(document, association.languageId)
+    }
+  }
+  vscode.workspace.textDocuments.forEach(associateLanguage)
+  context.subscriptions.push(vscode.workspace.onDidOpenTextDocument(associateLanguage))
   const languageDiagnostics = vscode.languages.createDiagnosticCollection('modkit-language')
   context.subscriptions.push(languageDiagnostics)
 
@@ -6440,10 +6570,10 @@ async function activateModkit(
         for (const candidate of ranked.slice(0, request.maxDocuments)) {
           request.signal.throwIfAborted()
           const document = await vscode.workspace.openTextDocument(candidate.uri)
-          const routedLanguageIds = classifyLanguageFile(
-            languageRoutes,
-            candidate.uri.path,
-          ).candidates.filter(languageId => accepted.has(languageId))
+          const classified = classifyLanguageFile(languageRoutes, candidate.uri.path)
+          const routedLanguageIds = classified.candidates.filter(languageId =>
+            accepted.has(languageId),
+          )
           const languageId = accepted.has(document.languageId)
             ? document.languageId
             : routedLanguageIds.length === 1
@@ -6468,6 +6598,9 @@ async function activateModkit(
               languageId,
               version: document.version,
               text,
+              ...(classified.dialect === undefined || classified.languageId !== languageId
+                ? {}
+                : { dialect: classified.dialect }),
             }),
           )
           const folder = vscode.workspace.getWorkspaceFolder(candidate.uri)
@@ -10524,7 +10657,8 @@ async function activateModkit(
                 source: placement.sourceId,
                 path: placement.path,
               })
-            : placement?.kind === 'missing'
+            : // A single module answers `foreign` directly; for the reader it is as unplaced as `missing`.
+              placement?.kind === 'missing' || placement?.kind === 'foreign'
               ? localizer.text('vscode.resolution.missing')
               : localizer.text('vscode.resolution.loose', {
                   mods: (baseMods ?? []).join(', ') || '—',
