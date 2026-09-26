@@ -7299,6 +7299,10 @@
         {
           "path": "modkit-extensions-other/test/receipts/k1/unity-mesh.audit.json",
           "sha256": "663e530852443296b2616abea91015d4f2e04a0338e5c0b6003d90d7cd8d1efe"
+        },
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/unity-mesh.audit.r2.json",
+          "sha256": "e04a694b782ff49f60042252fd3807087f0813d7b70fc3fd294010ec0fee62b8"
         }
       ],
       "id": "legacy/codec-manifest/modkit/unity-mesh/audit",
