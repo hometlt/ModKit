@@ -635,25 +635,25 @@
       "targetOperation": null
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-other/extensions/realitypump-earth-2150/contributions/codec-earth-par.json",
+      "handlerId": "extract-entry",
       "id": "legacy/codec-manifest/modkit/earth-par/operation/archive.extract",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "container.extract"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-other/extensions/realitypump-earth-2150/contributions/codec-earth-par.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/earth-par/operation/archive.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-other/extensions/realitypump-earth-2150/contributions/codec-earth-res.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/earth-res/operation/archive.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
       "contribution": null,
@@ -670,18 +670,22 @@
       "targetOperation": null
     },
     {
-      "contribution": null,
+      "contribution": "modkit-extensions-other/extensions/realitypump-earth2160/contributions/codec-earth2160-model.json",
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/earth2160-model/operation/model.read",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": null,
+      "targetDataSource": {
+        "contract": "common.view/model-scene-source",
+        "major": 1
+      }
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-core/extensions/models/contributions/codec-uvm.json",
+      "handlerId": "render-uvm-scene",
       "id": "legacy/codec-manifest/modkit/earth2160-model/operation/model.render",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "model.render"
     },
     {
       "contribution": null,
@@ -859,11 +863,11 @@
       "targetOperation": null
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-other/extensions/cavedog-total-annihilation/contributions/codec-gaf.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/gaf/operation/image.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
       "contribution": "modkit-extensions-blizzard/starcraft2/modules/galaxy/codecs/galaxy/codec.json",
@@ -1912,11 +1916,16 @@
       }
     },
     {
-      "contribution": null,
+      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/writer-relic-texture.json",
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/rgt/operation/image.write",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": null,
+      "targetWriter": {
+        "contract": "common.edit/writer",
+        "major": 1,
+        "offerId": "rgt-rgba8-encoder"
+      }
     },
     {
       "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/codec-rrtex.json",
@@ -1951,11 +1960,16 @@
       }
     },
     {
-      "contribution": null,
+      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/writer-relic-texture.json",
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/rsh/operation/image.write",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": null,
+      "targetWriter": {
+        "contract": "common.edit/writer",
+        "major": 1,
+        "offerId": "rsh-rgba8-encoder"
+      }
     },
     {
       "contribution": null,
@@ -2004,11 +2018,16 @@
       }
     },
     {
-      "contribution": null,
+      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/writer-relic-texture.json",
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/rtx/operation/image.write",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": null,
+      "targetWriter": {
+        "contract": "common.edit/writer",
+        "major": 1,
+        "offerId": "rtx-rgba8-encoder"
+      }
     },
     {
       "contribution": null,
@@ -2617,18 +2636,22 @@
       "targetOperation": null
     },
     {
-      "contribution": null,
+      "contribution": "modkit-extensions-other/extensions/annihilation-gas-powered/contributions/codec-supcom-scm.json",
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/supcom-scm/operation/model.read",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": null,
+      "targetDataSource": {
+        "contract": "common.view/model-scene-source",
+        "major": 1
+      }
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-core/extensions/models/contributions/codec-uvm.json",
+      "handlerId": "render-uvm-scene",
       "id": "legacy/codec-manifest/modkit/supcom-scm/operation/model.render",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "model.render"
     },
     {
       "contribution": null,
@@ -2652,18 +2675,18 @@
       "targetOperation": null
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-other/extensions/cavedog-total-annihilation/contributions/codec-ta-hpi.json",
+      "handlerId": "extract-entry",
       "id": "legacy/codec-manifest/modkit/ta-hpi/operation/archive.extract",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "container.extract"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-other/extensions/cavedog-total-annihilation/contributions/codec-ta-hpi.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/ta-hpi/operation/archive.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
       "contribution": null,
@@ -2817,74 +2840,82 @@
       "targetOperation": null
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-other/extensions/unity-engine/contributions/codec-unity-assets.json",
+      "handlerId": "extract-entry",
       "id": "legacy/codec-manifest/modkit/unity-assets/operation/archive.extract",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "container.extract"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-other/extensions/unity-engine/contributions/codec-unity-assets.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/unity-assets/operation/archive.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
-      "contribution": null,
+      "contribution": "modkit-extensions-other/extensions/unity-engine/contributions/codec-unity-mesh.json",
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/unity-mesh/operation/model.read",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": null,
+      "targetDataSource": {
+        "contract": "common.view/model-scene-source",
+        "major": 1
+      }
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-core/extensions/models/contributions/codec-uvm.json",
+      "handlerId": "render-uvm-scene",
       "id": "legacy/codec-manifest/modkit/unity-mesh/operation/model.render",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "model.render"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-other/extensions/unity-engine/contributions/codec-unity-ress.json",
+      "handlerId": "extract-entry",
       "id": "legacy/codec-manifest/modkit/unity-ress/operation/archive.extract",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "container.extract"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-other/extensions/unity-engine/contributions/codec-unity-ress.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/unity-ress/operation/archive.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-other/extensions/unity-engine/contributions/codec-unity.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/unity/operation/image.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
-      "contribution": null,
+      "contribution": "modkit-extensions-other/extensions/unity-engine/contributions/codec-unity.json",
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/unity/operation/image.read",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": null,
+      "targetDataSource": {
+        "contract": "common.view/raster-image-source",
+        "major": 1
+      }
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-other/extensions/unity-engine/contributions/codec-unityfs.json",
+      "handlerId": "extract-entry",
       "id": "legacy/codec-manifest/modkit/unityfs/operation/archive.extract",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "container.extract"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-other/extensions/unity-engine/contributions/codec-unityfs.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/unityfs/operation/archive.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
       "contribution": null,
@@ -3066,53 +3097,57 @@
       "targetOperation": "model.export-uvm"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-warzone/contributions/codec-warzone-img.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/warzone-img/operation/view.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-warzone/contributions/codec-warzone-lev.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/warzone-lev/operation/view.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
-      "contribution": null,
+      "contribution": "modkit-extensions-warzone/codecs/warzone-pie/codec.json",
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/warzone-pie/operation/model.read",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": null,
+      "targetDataSource": {
+        "contract": "common.view/model-scene-source",
+        "major": 1
+      }
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-warzone/codecs/warzone-pie/codec.json",
+      "handlerId": "render-pie-scene",
       "id": "legacy/codec-manifest/modkit/warzone-pie/operation/model.render",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "model.render"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-warzone/contributions/codec-warzone-wrf.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/warzone-wrf/operation/view.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-warzone/contributions/codec-warzone-wz.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/warzone-wz/operation/view.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-warzone/contributions/codec-warzone2100-map.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/warzone2100-map/operation/view.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
       "contribution": null,
@@ -3136,18 +3171,18 @@
       "targetOperation": null
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-other/extensions/realitypump-earth2160/contributions/codec-wd.json",
+      "handlerId": "extract-entry",
       "id": "legacy/codec-manifest/modkit/wd/operation/archive.extract",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "container.extract"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-other/extensions/realitypump-earth2160/contributions/codec-wd.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/wd/operation/archive.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
       "contribution": null,
@@ -3245,11 +3280,16 @@
       }
     },
     {
-      "contribution": null,
+      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/writer-relic-texture.json",
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/wtp/operation/image.write",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": null,
+      "targetWriter": {
+        "contract": "common.edit/writer",
+        "major": 1,
+        "offerId": "wtp-rgba8-encoder"
+      }
     },
     {
       "contribution": null,

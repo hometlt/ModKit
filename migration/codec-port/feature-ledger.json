@@ -886,29 +886,54 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/earth-par.audit.json",
+          "sha256": "586ea367881f5151ca570a2d1b0069cf5fdbf5257aa5fb7c733c23ace4e1f9e9"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/earth-par/audit",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/earth-par-archive.extract.json",
+          "sha256": "6d323a9876ce5ea42de1b322565cf574903d6fb00f95fad97c7fca1b1feb6bc4"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/earth-par/operation/archive.extract",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/earth-par-archive.inspect.json",
+          "sha256": "5c1857cd161106a535ab3dc81f05c9a275b8339970556f33adb7967db4a5ad97"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/earth-par/operation/archive.inspect",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/earth-res.audit.json",
+          "sha256": "924119f8f3c49bd7570ee67bd6c7f86f611f437d32e4ac4dcf769b19dc706447"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/earth-res/audit",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/earth-res-archive.inspect.json",
+          "sha256": "a28ebecd7299d189a5277f87522c2cc58d747996dc025391901bb31745c50183"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/earth-res/operation/archive.inspect",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -926,19 +951,34 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/earth2160-model.audit.json",
+          "sha256": "2aecc773a6ec3476355f038590dacedb40cee8ff8702d5be065a770a5af090ec"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/earth2160-model/audit",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/earth2160-model.model-read.json",
+          "sha256": "c27639d8cc9d1c60d25fa615a613a28b2f8cb34bd164396f1e4407bed91d8be9"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/earth2160-model/operation/model.read",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/earth2160-model.model-render.json",
+          "sha256": "ac5acac1474f6c8333e0a1bd2748eb00e51fabb0752d060e9492b7a3ab462625"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/earth2160-model/operation/model.render",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -1161,14 +1201,24 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/gaf.audit.json",
+          "sha256": "95793e717d12e27d361f2619b300aeea558de88b342fd0d25e2873a230283ae7"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/gaf/audit",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/gaf.image-inspect.json",
+          "sha256": "7e498abc9fdb838ca41ad75f6b157209a292c10233796951a3fd42510a780dd1"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/gaf/operation/image.inspect",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "decision": {
@@ -3242,9 +3292,14 @@
       "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/rgt.image-write.json",
+          "sha256": "401280050e82348a2cac0ae36e3f7c27aab64d50c12281aa00ff251ccbabe53e"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/rgt/operation/image.write",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [
@@ -3307,9 +3362,14 @@
       "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/rsh.image-write.json",
+          "sha256": "ab36dca451df77780b7f1836d73e11da53ea68fc7585bf867be199c20e17ac3e"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/rsh/operation/image.write",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -3367,9 +3427,14 @@
       "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/rtx.image-write.json",
+          "sha256": "bb4243461e2b5329c8cc37fc7a796e28f2def6748f373f05edab596df5ddb9c9"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/rtx/operation/image.write",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -6910,14 +6975,24 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/supcom-scm.model-read.json",
+          "sha256": "aca4108401bb5407326dbccceee810b63a3ae906248ceafaf2613d3b1e58c55b"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/supcom-scm/operation/model.read",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/supcom-scm.model-render.json",
+          "sha256": "5f62ce1b34a68d335f70e5b16a882217243630cd67a01582a352e011a182bac7"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/supcom-scm/operation/model.render",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -6945,19 +7020,34 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/ta-hpi.audit.json",
+          "sha256": "5b97f7349ee2a2fab6ff08121799178f93d79e64d254c1ff425652947efe5b09"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/ta-hpi/audit",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/ta-hpi-archive.extract.json",
+          "sha256": "f002eecd0b2f0eab6e68c7be634b34a1580e532671ed5ba633b3781a474d7813"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/ta-hpi/operation/archive.extract",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/ta-hpi-archive.inspect.json",
+          "sha256": "3f72c21819ef48d7b34890eee568bdadf8d218171f6e365ea09247aa4258a9a0"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/ta-hpi/operation/archive.inspect",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -7120,14 +7210,24 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/unity-assets-archive.extract.json",
+          "sha256": "25354599a9e397a679104743c09c176e685ae64848d60202154d7f1d893833d5"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/unity-assets/operation/archive.extract",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/unity-assets-archive.inspect.json",
+          "sha256": "5ea911455881af383bd083b0a9ee18e651dbd8a48bd3a35128e8e40361924377"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/unity-assets/operation/archive.inspect",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -7135,14 +7235,24 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/unity-mesh.model-read.json",
+          "sha256": "b931263ac4ddd49716b8789b67217f2f4e68550ece7ee032cc0f8d013da25105"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/unity-mesh/operation/model.read",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/unity-mesh.model-render.json",
+          "sha256": "d7d47ef2bf63ea0e88ad5e24846147cb3ac809e53405b66ea8fbb2c383a2032e"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/unity-mesh/operation/model.render",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -7150,14 +7260,24 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/unity-ress-archive.extract.json",
+          "sha256": "85646253d177268eb40f15f0a61ed3e1339fffa06b2ad8ed4f4da3177dc1b4c9"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/unity-ress/operation/archive.extract",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/unity-ress-archive.inspect.json",
+          "sha256": "faeaa48cf0f880baf68f2b412247a94c71a14ae3ef95f0fb5cebbd4512ffb33c"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/unity-ress/operation/archive.inspect",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -7165,14 +7285,24 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/unity.image-inspect.json",
+          "sha256": "d707e87138b8ecef14e788f21504a720aff2e9c0bd596c4014fa0570c95e42b4"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/unity/operation/image.inspect",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/unity.image-read.json",
+          "sha256": "e8028e50aef0cc6a8f9a4c62adfa4f26b90bb2fc3c100af154a8b9bd8261f4a3"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/unity/operation/image.read",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -7180,14 +7310,24 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/unityfs-archive.extract.json",
+          "sha256": "a2631de513bd879796547162583e4c1b44c53dac0c85fce6a7292f6372a0050e"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/unityfs/operation/archive.extract",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/unityfs-archive.inspect.json",
+          "sha256": "59236326c6d0189d2513df0f0923ff0d591741f065b10f7260e93a1a728d1587"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/unityfs/operation/archive.inspect",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -7430,9 +7570,14 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-warzone/test/receipts/k1/warzone-img.view-inspect.json",
+          "sha256": "c80eaed6ad62773e47856f54cf8750ce310e8059d7a3c734017c992db6a2ffcd"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/warzone-img/operation/view.inspect",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -7440,9 +7585,14 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-warzone/test/receipts/k1/warzone-lev.view-inspect.json",
+          "sha256": "54b7f82b98e236454f9ef7949699d5508725e3e85891350282e1771c823e5e9a"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/warzone-lev/operation/view.inspect",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -7450,14 +7600,24 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-warzone/test/receipts/k1/warzone-pie.model-read.json",
+          "sha256": "e66f62a436a9e458a145d264f555001db5381eeb62c89dc459fca259f7e60527"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/warzone-pie/operation/model.read",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-warzone/test/receipts/k1/warzone-pie.model-render.json",
+          "sha256": "9f9b64a3aaeb7a754e14867939b36e883f478708f59607a6a8612ca801c0a6f3"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/warzone-pie/operation/model.render",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -7465,9 +7625,14 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-warzone/test/receipts/k1/warzone-wrf.view-inspect.json",
+          "sha256": "42545b154d32bcda3c7b0b40a42ee4d5bfc895effe44de5f41aa6ad2d6d49dd1"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/warzone-wrf/operation/view.inspect",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -7475,9 +7640,14 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-warzone/test/receipts/k1/warzone-wz.view-inspect.json",
+          "sha256": "7a71b5f43cf0cfab290067e90c41be4c51f48c720bc50c1a62f6a20a52250c7a"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/warzone-wz/operation/view.inspect",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -7485,9 +7655,14 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-warzone/test/receipts/k1/warzone2100-map.view-inspect.json",
+          "sha256": "de830a7c8cd9b7d982e164bd4bd7106d5d616ff8b8128f8704580cb12c44ecfa"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/warzone2100-map/operation/view.inspect",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -7510,19 +7685,34 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/wd.audit.json",
+          "sha256": "f63a4e07a7825a2d0e421e4bac449c49f72c8a3842b9be93a12eceeaa926a85e"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/wd/audit",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/wd-archive.extract.json",
+          "sha256": "43b007cb597962a34baa1291add04deb34a25f893187a04cae15445998341e48"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/wd/operation/archive.extract",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/wd-archive.inspect.json",
+          "sha256": "03325af6296123574a8845bb8dd87e3f479818333a8665d513cb9821bf53aeb3"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/wd/operation/archive.inspect",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -7660,9 +7850,14 @@
       "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/wtp.image-write.json",
+          "sha256": "ec0a149396f9d188c9d7317f3c990563ea3ee936d1d9080e780f174c09e849be"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/wtp/operation/image.write",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
