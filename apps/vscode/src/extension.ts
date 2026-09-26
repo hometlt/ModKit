@@ -1056,6 +1056,8 @@ async function activateModkit(
             extension === 'blizzard/starcraft2' ? selectedStarcraft2() : undefined
           return installationDirectory === undefined ? undefined : { installationDirectory }
         },
+        // each extension's module reaches only the credentials that extension declared
+        credentials: extension => host.services.credentials?.portFor(extension),
       })
     }
     const source = await contentSources
