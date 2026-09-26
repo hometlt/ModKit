@@ -161,6 +161,42 @@ function finite<T extends Iterable<number>>(values: T, label: string): T {
   return values
 }
 
+/** The request's `options.units` as the UV_units root extension, or undefined when absent. */
+function uvUnits(
+  value: unknown,
+): { metersPerSourceUnit: number; [key: string]: unknown } | undefined {
+  if (value === undefined) return undefined
+  if (typeof value !== 'object' || value === null) fail('options.units must be an object')
+  const units = value as Record<string, unknown>
+  const positive = (key: string, required: boolean): number | undefined => {
+    const one = units[key]
+    if (one === undefined && !required) return undefined
+    if (typeof one !== 'number' || !Number.isFinite(one) || one <= 0)
+      fail(`options.units.${key} must be a positive finite number`)
+    return one
+  }
+  const metersPerSourceUnit = positive('metersPerSourceUnit', true)!
+  const sourceUnitsPerCell = positive('sourceUnitsPerCell', false)
+  const sourceFrameRate = positive('sourceFrameRate', false)
+  const { sourceUnit, footprintCells } = units
+  if (sourceUnit !== undefined && (typeof sourceUnit !== 'string' || sourceUnit.trim() === ''))
+    fail('options.units.sourceUnit must be a non-empty string')
+  if (
+    footprintCells !== undefined &&
+    (!Array.isArray(footprintCells) ||
+      footprintCells.length !== 2 ||
+      !footprintCells.every(cell => typeof cell === 'number' && Number.isFinite(cell) && cell > 0))
+  )
+    fail('options.units.footprintCells must be two positive numbers')
+  return {
+    ...(sourceUnit === undefined ? {} : { sourceUnit }),
+    metersPerSourceUnit,
+    ...(sourceUnitsPerCell === undefined ? {} : { sourceUnitsPerCell }),
+    ...(footprintCells === undefined ? {} : { footprintCells: [...(footprintCells as number[])] }),
+    ...(sourceFrameRate === undefined ? {} : { sourceFrameRate }),
+  }
+}
+
 /** A stated TRS and its matrix agree to float32 precision, not bit for bit. */
 function closeTo(composed: number, stated: number): boolean {
   return Math.abs(composed - stated) <= 1e-4 * Math.max(1, Math.abs(stated))
@@ -912,6 +948,26 @@ export function materializeUvmCore(
     )
   }
 
+  // `options.units`: the projection is in source units. One scale node puts the scene in metres and
+  // UV_units records the factor, so an exporter inverts it exactly (SPEC_UVM_EXTENSIONS, UV_units).
+  const unitsExtension = uvUnits((request.options as { units?: unknown } | undefined)?.units)
+  if (unitsExtension !== undefined && unitsExtension.metersPerSourceUnit !== 1) {
+    const scale = unitsExtension.metersPerSourceUnit
+    const root = documentNodes.length
+    documentNodes.push({
+      name: 'uv:units',
+      scale: [scale, scale, scale],
+      children: [...rootIndices],
+    })
+    rootIndices = [root]
+    note(
+      'uv.model/structure@1',
+      'value-differs',
+      '/nodes',
+      'one scale node brings the source units to metres (UV_units)',
+    )
+  }
+
   const animation =
     projection.animations === undefined
       ? undefined
@@ -992,8 +1048,10 @@ export function materializeUvmCore(
       ...(animation === undefined || animation.visibility.length === 0
         ? []
         : ['UV_game_variants', 'KHR_animation_pointer']),
+      ...(unitsExtension === undefined ? [] : ['UV_units']),
     ],
     extensions: {
+      ...(unitsExtension === undefined ? {} : { UV_units: unitsExtension }),
       ...(animation === undefined || animation.visibility.length === 0
         ? {}
         : {
