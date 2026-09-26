@@ -908,14 +908,24 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-ea/test/receipts/k1/emperor-bag.audit.json",
+          "sha256": "e1e8be7df2ac7266bca26166239cd6a1eed438427c8eca8d719440ea629d1670"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/emperor-bag/audit",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-ea/test/receipts/k1/emperor-rfh-rfd.audit.json",
+          "sha256": "361238bcaa877773176c689dadd808a1414782df6b18e4fca49cc11529f25a22"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/emperor-rfh-rfd/audit",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [
@@ -938,9 +948,14 @@
       "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-ea/test/receipts/k1/emperor-xbf.audit.json",
+          "sha256": "750d3e363b39d612233ab910ee3ea288c5ee30f34b5924e36f113d3c58ecf262"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/emperor-xbf/audit",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
