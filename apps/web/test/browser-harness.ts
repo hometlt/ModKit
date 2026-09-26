@@ -190,6 +190,9 @@ export const nodeModuleMap: Readonly<Record<string, string>> = Object.freeze({
   '@modkit/codec-kit/raster/palette': pathToFileURL(
     join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'raster', 'palette.js'),
   ).href,
+  '@modkit/codec-kit/texture': pathToFileURL(
+    join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'texture', 'index.js'),
+  ).href,
   '@modkit/codec-kit/texture/bc': pathToFileURL(
     join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'texture', 'bc.js'),
   ).href,
