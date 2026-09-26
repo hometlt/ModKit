@@ -992,12 +992,24 @@ export interface ResolvedMapWorkspaceAnalysisRequest extends MapSemanticAnalysis
   readonly maxDiagnostics: number
 }
 
+/**
+ * How far from the eye shadows are drawn, with that eye's vertical field of view (SC2 CCamera
+ * ShadowClip and FieldOfView of the game camera). A renderer with another projection places the
+ * perspective eye that frames its view with this field of view; past `distance` from it no point
+ * receives a shadow. Absent: shadows everywhere.
+ */
+export interface WorldShadowRange {
+  readonly distance: number
+  readonly fieldOfViewDegrees: number
+}
+
 /** One resolved, renderer-neutral world-lighting environment for a map snapshot. */
 export interface MapWorldLightingSummary {
   readonly coordinateSpaceId: string
   readonly ambientColor: readonly [number, number, number]
   readonly ambientIntensity: number
   readonly toneMapping?: WorldToneMapping
+  readonly shadowRange?: WorldShadowRange
   readonly terrain?: WorldTerrainLighting
   readonly directional: readonly Readonly<{
     readonly id: string
@@ -1277,6 +1289,7 @@ export interface WorldSceneLightingItem {
   readonly ambientColor: readonly [number, number, number]
   readonly ambientIntensity: number
   readonly toneMapping?: WorldToneMapping
+  readonly shadowRange?: WorldShadowRange
   readonly terrain?: WorldTerrainLighting
   readonly directional: readonly Readonly<{
     readonly id: string

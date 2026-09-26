@@ -10,6 +10,7 @@ import type {
   WorldSceneTerrainItem,
   WorldToneMapping,
   WorldTerrainLighting,
+  WorldShadowRange,
 } from '@modkit/sdk/maps'
 import type {
   ModelMaterialRef,
@@ -327,6 +328,8 @@ export interface WorldWebGlPlan {
   readonly light: Readonly<{
     toneMapping?: WorldToneMapping
     terrain?: WorldTerrainLighting
+    /** Shadows only this far from the eye that frames the view (see WorldShadowRange). */
+    shadowRange?: WorldShadowRange
     specularColor?: readonly [number, number, number]
     specularIntensity?: number
     useAmbientOcclusion?: boolean
@@ -3630,6 +3633,7 @@ export function createWorldWebGlPlan(
     light: Object.freeze({
       ...(lighting?.toneMapping === undefined ? {} : { toneMapping: lighting.toneMapping }),
       ...(lighting?.terrain === undefined ? {} : { terrain: lighting.terrain }),
+      ...(lighting?.shadowRange === undefined ? {} : { shadowRange: lighting.shadowRange }),
       specularColor: directional?.specularColor ?? lightColor,
       specularIntensity: directional?.specularIntensity ?? directional?.intensity ?? 0.9,
       useAmbientOcclusion: directional?.useAmbientOcclusion ?? true,
@@ -3781,6 +3785,9 @@ uniform sampler2D shadowMap;
 uniform float shadowEnabled;
 uniform float shadowReceiver;
 uniform vec2 shadowTexelSize;
+// Shadows end this far (0: nowhere) from the perspective eye that frames the view.
+uniform vec3 shadowRangeEye;
+uniform float shadowRangeDistance;
 // Water drawn as its zone's plane: the opaque scene's depth (a copy) gives the water depth under
 // each pixel. x = world units along the view ray per unit of window depth (orthographic far - near),
 // y = the vertical share of that ray.
@@ -3848,6 +3855,11 @@ float directionalShadow(vec3 resolvedNormal) {
     projected.y <= 0.0 || projected.y >= 1.0 ||
     projected.z <= 0.0 || projected.z >= 1.0
   ) return 1.0;
+  // SC2 draws shadows only within its camera's ShadowClip of the eye: fade over the last tenth.
+  float reach = shadowRangeDistance > 0.0
+    ? distance(worldPosition, shadowRangeEye) / shadowRangeDistance
+    : 0.0;
+  if (reach >= 1.0) return 1.0;
   float slope = 1.0 - max(0.0, dot(normalize(resolvedNormal), normalize(-lightDirection)));
   float bias = max(0.00035, 0.0015 * slope);
   float visible = 0.0;
@@ -3860,7 +3872,7 @@ float directionalShadow(vec3 resolvedNormal) {
       visible += projected.z - bias <= closest ? 1.0 : 0.0;
     }
   }
-  return visible / 9.0;
+  return mix(visible / 9.0, 1.0, smoothstep(0.9, 1.0, reach));
 }
 /** Radiance already carries intensity; a zero direction means "no such light". */
 vec3 fillLight(vec3 resolvedNormal, vec3 direction, vec3 radiance) {
@@ -4785,6 +4797,12 @@ function renderWorldShadowMap(
   resources: WorldWebGlOwnedResources,
 ): WorldShadowResources | undefined {
   if (input.shadows !== true || plan.stats.shadowCasterTriangles === 0) return undefined
+  // Out of the shadow range the map would only be sampled by nothing.
+  if (
+    worldShadowRangeEye(plan, gl.drawingBufferWidth, gl.drawingBufferHeight, input.camera)
+      ?.reachable === false
+  )
+    return undefined
   const requestedSize = input.shadowMapSize ?? 2_048
   if (!Number.isSafeInteger(requestedSize) || requestedSize <= 0)
     throw new TypeError('world shadowMapSize must be a positive safe integer')
@@ -5657,6 +5675,37 @@ function cameraFor(
   return Object.freeze({ camera, radius })
 }
 
+/**
+ * The perspective eye that frames this view with the lighting's shadow-range field of view, and the
+ * distance from it past which nothing is shadowed (SC2 CCamera ShadowClip). `reachable` is false
+ * when no visible point can lie within that distance, so the shadow map need not be drawn at all:
+ * the SC2 editor's whole-map view shows no shadows for exactly this reason. Undefined without a range.
+ */
+export function worldShadowRangeEye(
+  plan: WorldWebGlPlan,
+  width: number,
+  height: number,
+  requested?: WorldWebGlCamera,
+): Readonly<{ eye: readonly [number, number, number]; distance: number; reachable: boolean }> | undefined {
+  const range = plan.light.shadowRange
+  if (range === undefined || !(range.distance > 0) || !(range.fieldOfViewDegrees > 0)) return undefined
+  const { camera, radius } = cameraFor(plan, width, height, requested)
+  const forward = camera.getWorldDirection(new Vector3())
+  const center = camera.position.clone().addScaledVector(forward, radius * 3)
+  const halfHeight = camera.top
+  const eyeDistance = halfHeight / Math.tan((Math.min(179, range.fieldOfViewDegrees) * Math.PI) / 360)
+  const eye = center.clone().addScaledVector(forward, -eyeDistance)
+  const nearest =
+    eyeDistance -
+    Math.hypot(camera.right, halfHeight) -
+    (plan.bounds.maximum[1] - plan.bounds.minimum[1])
+  return Object.freeze({
+    eye: [eye.x, eye.y, eye.z] as const,
+    distance: range.distance,
+    reachable: nearest < range.distance,
+  })
+}
+
 /** Model material light: key color × intensity plus the authored ambient color, as terrain uses. */
 export function worldMaterialLight(plan: WorldWebGlPlan) {
   const { direction, color, intensity, ambient, ambientIntensity } = plan.light
@@ -5961,6 +6010,12 @@ function drawWorldWebGlWithResources(
       gl.bindTexture(gl.TEXTURE_2D, shadow.texture)
       gl.uniform1f(uniformLocation(gl, program, 'shadowEnabled'), 1)
     }
+    const shadowRange = worldShadowRangeEye(plan, canvas.width, canvas.height, input.camera)
+    gl.uniform3fv(
+      uniformLocation(gl, program, 'shadowRangeEye'),
+      Float32Array.from(shadowRange?.eye ?? [0, 0, 0]),
+    )
+    gl.uniform1f(uniformLocation(gl, program, 'shadowRangeDistance'), shadowRange?.distance ?? 0)
     gl.uniform1f(uniformLocation(gl, program, 'pointSize'), 7)
     gl.uniform1f(uniformLocation(gl, program, 'alphaCutoff'), 0)
     gl.disable(gl.CULL_FACE)
