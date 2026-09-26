@@ -6,7 +6,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
   extensions: [
     {
       artifact: {
-        artifactDigest: 'sha256:8cc092873972825d2d07ec213d0943d7cf40beaeb1aad5fbac3a294ae52edda0',
+        artifactDigest: 'sha256:8da3ada0fab7c3a26f36d8d697c95e2a88cc45f8ea32975c0a3fe8bff061592c',
         fileDigests: {
           'MIGRATION-NOTES-common-archives.json':
             'sha256:4e1d77808583a26fb61d65d660ef09c3f4c222915c2e3581d793b202cbde4b44',
@@ -68,7 +68,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'src/xz/codec.js':
             'sha256:7f7bf200f42316f1225842dfafa0a05bbca0354c0c2e48d23e7afa026259edea',
           'src/zip/codec.js':
-            'sha256:992502f9adde2a8c6195f2cf800ac3ddb9da6f61ebe86de7b8d7e99a73b20808',
+            'sha256:1cec2e869f478a858f3ed262c88797fa71a29d032183f3802c08bb68df679697',
           'src/zstd/codec.js':
             'sha256:b52c70fa49264a57782e3927e3d0f86ac5ec08a2df44cb000f5f558612b75240',
           'test/fixtures/7z/bcj.7z':
@@ -95,11 +95,13 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:57143f60a3776ae9c9599db8b4c58ad56802ba21555af17eacfa8a3b7b1c7fce',
           'test/seven-zip-rar.test.ts':
             'sha256:ba910f659d74ec19eec62ac888ce88f34cc9cabce16624368c2fc972c70cbe65',
+          'test/zip-hidden.test.ts':
+            'sha256:a6cfca0092c425dae1b70da9cdc4dd19658aff82e14b287c0f38bf2d9c84d76d',
           'test/zstd.test.ts':
             'sha256:74a5cab68793e3872c97feb5c564e0c4c0eae69d1f49df96d60239407ceccda8',
         },
         inventoryRecordId:
-          'artifact:sha256:8cc092873972825d2d07ec213d0943d7cf40beaeb1aad5fbac3a294ae52edda0',
+          'artifact:sha256:8da3ada0fab7c3a26f36d8d697c95e2a88cc45f8ea32975c0a3fe8bff061592c',
       },
       artifactRoot: 'extensions/archives/',
       containers: {
@@ -2291,6 +2293,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         'test/fixtures/7z/lzma2.7z',
         'test/fixtures/7z/plain-header.7z',
         'test/seven-zip-rar.test.ts',
+        'test/zip-hidden.test.ts',
         'test/zstd.test.ts',
       ],
       name: 'archives',
