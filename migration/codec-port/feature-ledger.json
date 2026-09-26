@@ -7385,6 +7385,10 @@
         {
           "path": "modkit-extensions-other/test/receipts/k1/unreal-actorx.model-read.json",
           "sha256": "e16ddfa374b46cef6041a28e644004321a20faae758c6183f9ee70bce7384d95"
+        },
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/unreal-actorx.model-read.r2.json",
+          "sha256": "4b71f54b497be4d8a6271be854adced2e8d3cda882794b383287301f0b83afd7"
         }
       ],
       "id": "legacy/codec-manifest/modkit/unreal-actorx/operation/model.read",
