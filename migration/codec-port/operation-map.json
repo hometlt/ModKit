@@ -36,32 +36,32 @@
       "targetOperation": null
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-other/extensions/microsoft-age-series/contributions/codec-age-bar.json",
+      "handlerId": "extract-entry",
       "id": "legacy/codec-manifest/modkit/age-bar/operation/archive.extract",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "container.extract"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-other/extensions/microsoft-age-series/contributions/codec-age-bar.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/age-bar/operation/archive.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-other/extensions/microsoft-age-series/contributions/codec-age-drs.json",
+      "handlerId": "extract-entry",
       "id": "legacy/codec-manifest/modkit/age-drs/operation/archive.extract",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "container.extract"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-other/extensions/microsoft-age-series/contributions/codec-age-drs.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/age-drs/operation/archive.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
       "contribution": null,
@@ -995,18 +995,18 @@
       "targetOperation": null
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-other/extensions/microsoft-halo-wars/contributions/codec-halo-era.json",
+      "handlerId": "extract-entry",
       "id": "legacy/codec-manifest/modkit/halo-era/operation/archive.extract",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "container.extract"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-other/extensions/microsoft-halo-wars/contributions/codec-halo-era.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/halo-era/operation/archive.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
       "contribution": null,
@@ -1030,18 +1030,18 @@
       "targetOperation": null
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-other/extensions/new-world-computing-heroes-3/contributions/codec-heroes3-lod.json",
+      "handlerId": "extract-entry",
       "id": "legacy/codec-manifest/modkit/heroes3-lod/operation/archive.extract",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "container.extract"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-other/extensions/new-world-computing-heroes-3/contributions/codec-heroes3-lod.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/heroes3-lod/operation/archive.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
       "contribution": null,

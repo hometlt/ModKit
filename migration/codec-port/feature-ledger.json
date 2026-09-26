@@ -103,14 +103,24 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/age-bar-archive.extract.json",
+          "sha256": "843324cc092c80bc5b44fc53be9283c01dd9ab7bec331914c1e8eb050fbe63e0"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/age-bar/operation/archive.extract",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/age-bar-archive.inspect.json",
+          "sha256": "6124ca1e2003bf10a5d17417f4de2b4b9c99d687bb411b0cab4276175af0dd23"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/age-bar/operation/archive.inspect",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -118,14 +128,24 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/age-drs-archive.extract.json",
+          "sha256": "50a47df976ca1e43bfed555653fce997f512b9e74f520583cb1602020f982e51"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/age-drs/operation/archive.extract",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/age-drs-archive.inspect.json",
+          "sha256": "cd1cdbe18a36b1aa8b1a8b4debbdd208aed1a593accd4deea7ee235e6c8db268"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/age-drs/operation/archive.inspect",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -1588,14 +1608,24 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/halo-era-archive.extract.json",
+          "sha256": "5bc91f60d3377b539d9d28bb282ea6bec3246fdf95224b7339f2d2c7f764c3c2"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/halo-era/operation/archive.extract",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/halo-era-archive.inspect.json",
+          "sha256": "01ecf21d0df57eef904e060712d1b606706a4f30b8c344e2a2673c3fbf7e64e7"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/halo-era/operation/archive.inspect",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -1628,14 +1658,24 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/heroes3-lod-archive.extract.json",
+          "sha256": "f070df37f9bd2234736d583044f8cc3efca54ad8e4a908947a3388e3e527a206"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/heroes3-lod/operation/archive.extract",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/heroes3-lod-archive.inspect.json",
+          "sha256": "55b30727494b55279eb28e5a78f63bca736d2842a1dd3686f53deab9b26db19f"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/heroes3-lod/operation/archive.inspect",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
