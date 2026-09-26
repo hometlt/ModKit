@@ -118,7 +118,8 @@ export function createWorldToneMapper(gl: WebGL2RenderingContext) {
       if (operatorId == 3) mapped = pow(luminance, mapping.z);
       if (operatorId == 4) { float x = pow(luminance, 2.2) * mapping.x; mapped = x * (12.3 * x + 0.5) / (x * (12.3 * x + 4.0) + 0.02); }
       color *= mapped / max(luminance, 0.000001);
-      if (colorizationEnabled) color = texture(colorMap, (clamp(color, 0.0, 1.0) * 15.0 + 0.5) / 16.0).rgb;
+      // HDR.fx: the colour map is read at saturate(C + 0.5 / size); texel k holds the colour k / 16.
+      if (colorizationEnabled) color = texture(colorMap, clamp(color + 0.5 / 16.0, 0.0, 1.0)).rgb;
       if (correctGamma) color = pow(max(color, vec3(0.0)), vec3(1.0 / 2.2));
       outColor = vec4(color, 1.0);
     }`,

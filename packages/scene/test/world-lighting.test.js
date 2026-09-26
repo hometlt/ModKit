@@ -36,18 +36,42 @@ const lighting = directional => ({
 describe('world lighting rig', () => {
   it('bakes a neutral 3D LUT with RGB axes and validates all native tone-map operators', () => {
     const neutral = { inputLow: 0, inputHigh: 1, inputGamma: 1, outputLow: 0, outputHigh: 1, brightness: 1, contrast: 1, hue: 0, saturation: 0, lightness: 0, blend: 0 }
-    assert.deepEqual(colorizeWorldColor([0.2, 0.4, 0.8], neutral), [0.2, 0.4, 0.8])
+    // Levels act on HSL lightness: a neutral grade returns the colour (to float rounding).
+    colorizeWorldColor([0.2, 0.4, 0.8], neutral).forEach((value, channel) =>
+      assert.ok(Math.abs(value - [0.2, 0.4, 0.8][channel]) < 1e-12),
+    )
     const lut = createWorldColorLut(neutral)
     assert.equal(lut.byteLength, 16384)
-    assert.deepEqual([...lut.slice(15 * 4, 15 * 4 + 4)], [255, 0, 0, 255])
-    assert.deepEqual([...lut.slice(15 * 16 * 4, 15 * 16 * 4 + 4)], [0, 255, 0, 255])
-    assert.deepEqual([...lut.slice(-4)], [255, 255, 255, 255])
+    // Texel k holds the colour k/16: SC2 samples at saturate(C + 0.5/16), so 15/16 is the last texel.
+    assert.deepEqual([...lut.slice(15 * 4, 15 * 4 + 4)], [239, 0, 0, 255])
+    assert.deepEqual([...lut.slice(15 * 16 * 4, 15 * 16 * 4 + 4)], [0, 239, 0, 255])
+    assert.deepEqual([...lut.slice(8 * 4, 8 * 4 + 4)], [128, 0, 0, 255])
+    assert.deepEqual([...lut.slice(-4)], [239, 239, 239, 255])
     for (const operator of ['reinhard', 'exponential', 'logarithmic', 'linear', 'filmic']) {
       const settings = { operator, exposure: 1.55, contrast: 1, whitePoint: 1.85 }
       assert.deepEqual(toneMapWorldColor([0, 0, 0], settings), [0, 0, 0])
       assert.ok(toneMapWorldColor([2, 1, 0.5], settings).every(Number.isFinite))
     }
     assert.equal(toneMapWorldColor([0.4, 0.8, 0.2], { operator: 'linear', exposure: 1, contrast: 1, whitePoint: 1 })[1], 0.8)
+  })
+  it('grades lightness like the SC2 editor colour map and blends the colorize tint', () => {
+    // Amphion's SnowRefinery grade.
+    const amphion = { inputLow: 0, inputHigh: 1, inputGamma: 1, outputLow: 0, outputHigh: 1, brightness: 1, contrast: 1.17, hue: 0.132, saturation: 0.1, lightness: 0.16, blend: 0.2 }
+    // Contrast is a power on lightness; hue and saturation of the colour survive it.
+    const graded = colorizeWorldColor([0.5, 0.5, 0.5], { ...amphion, blend: 0 })
+    for (const value of graded) assert.ok(Math.abs(value - Math.pow(0.5, 1.17)) < 1e-12)
+    // The tint is the authored hue and saturation at the graded lightness plus the offset.
+    const lightness = Math.pow(0.5, 1.17) + 0.16
+    const q = lightness + 0.1 - lightness * 0.1, p = 2 * lightness - q
+    const channel = t => { const h = t - Math.floor(t); return h < 1 / 6 ? p + (q - p) * 6 * h : h < 0.5 ? q : h < 2 / 3 ? p + (q - p) * (2 / 3 - h) * 6 : p }
+    const tint = [channel(0.132 + 1 / 3), channel(0.132), channel(0.132 - 1 / 3)]
+    colorizeWorldColor([0.5, 0.5, 0.5], amphion).forEach((value, index) =>
+      assert.ok(Math.abs(value - (0.8 * graded[index] + 0.2 * tint[index])) < 1e-12),
+    )
+    // Input gamma is the editor's slider: 0.5 lifts to the power 5.5, 2 to 8/9.
+    const gammaOf = inputGamma => colorizeWorldColor([0.5, 0.5, 0.5], { ...amphion, contrast: 1, blend: 0, inputGamma })[0]
+    assert.ok(Math.abs(gammaOf(0.5) - Math.pow(0.5, 5.5)) < 1e-12)
+    assert.ok(Math.abs(gammaOf(2) - Math.pow(0.5, 8 / 9)) < 1e-12)
   })
   it('tone maps HDR luminance once without changing RGB ratios or making black NaN', () => {
     const settings = { operator: 'reinhard', exposure: 1.55, contrast: 1, whitePoint: 1.85 }
