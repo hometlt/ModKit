@@ -168,4 +168,30 @@ describe('a flat listing becomes a tree', () => {
     expect(listContainerDirectory(declared, 'empty')).toEqual([])
     expect(statContainerEntry(declared, 'empty')?.kind).toBe('directory')
   })
+
+  it('marks what the codec hides, and a folder that holds nothing else, but keeps them indexed', () => {
+    const hidden = (path: string): ContainerEntryLike => ({ ...entry(path), hidden: true })
+    const index = buildContainerIndex([
+      entry('readme.txt'),
+      hidden('.DS_Store'),
+      hidden('__MACOSX/readme.txt'),
+      hidden('art/Thumbs.db'),
+      entry('art/body.w3d'),
+      { id: 'd', path: 'secret', name: 'secret', kind: 'directory', hidden: true },
+    ])
+    const flags = (path: string) =>
+      Object.fromEntries(
+        (listContainerDirectory(index, path) ?? []).map(node => [node.name, node.hidden === true]),
+      )
+    expect(flags('')).toEqual({
+      'readme.txt': false,
+      '.DS_Store': true,
+      __MACOSX: true,
+      art: false,
+      secret: true,
+    })
+    expect(flags('art')).toEqual({ 'Thumbs.db': true, 'body.w3d': false })
+    // Hidden is a listing choice, not absence: a path asked for by name still resolves.
+    expect(statContainerEntry(index, '__MACOSX/readme.txt')?.entryId).toBe('id:__MACOSX/readme.txt')
+  })
 })

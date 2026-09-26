@@ -340,6 +340,11 @@
         "default": true,
         "markdownDescription": "%configuration.launch.warnIfRunning.description%"
       },
+      "modkit.showHiddenEntries": {
+        "type": "boolean",
+        "default": false,
+        "markdownDescription": "%configuration.showHiddenEntries.description%"
+      },
       "modkit.launch.testMap": {
         "type": "string",
         "default": "",

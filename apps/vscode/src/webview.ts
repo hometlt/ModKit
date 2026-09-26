@@ -124,7 +124,12 @@ interface Bootstrap {
   readonly galleryExtensions?: readonly string[]
   /** Raised as a Modkit Explorer over one folder; see `mountExplorerFolder`. */
   readonly explorer?: PageBootstrap['explorer']
+  /** `modkit.showHiddenEntries` when the page was built. */
+  readonly showHiddenEntries?: boolean
 }
+
+/** The live "show hidden files and folders" option: the bootstrap value, then `show-hidden` events. */
+let showHiddenEntries = false
 
 /** `acquireVsCodeApi`, declared structurally so nothing here depends on the editor's typings. */
 interface VsCodeWebviewApi {
@@ -274,23 +279,36 @@ async function mountExplorerFolder(
           },
         }),
   })
-  const container = document.createElement('div')
-  container.className = 'modkit-explorer'
-  workbench.setMain(container)
-  const scope = new AbortController()
+  let scope = new AbortController()
   window.addEventListener('unload', () => scope.abort(), { once: true })
-  await viewer.mount({
-    container,
-    // A folder has no codec interpretation; the viewer reads only its revision.
-    descriptor: {
-      interpretation: 'none',
-      candidates: [],
-      revision: snapshot.explorer?.label ?? 'explorer',
-    } as unknown as AnyDescriptor,
-    slot,
-    sources,
-    signal: scope.signal,
-  } as unknown as Parameters<typeof viewer.mount>[0])
+  const draw = async (): Promise<void> => {
+    const container = document.createElement('div')
+    container.className = 'modkit-explorer'
+    workbench.setMain(container)
+    await viewer.mount({
+      container,
+      // A folder has no codec interpretation; the viewer reads only its revision.
+      descriptor: {
+        interpretation: 'none',
+        candidates: [],
+        revision: snapshot.explorer?.label ?? 'explorer',
+      } as unknown as AnyDescriptor,
+      slot,
+      sources,
+      signal: scope.signal,
+    } as unknown as Parameters<typeof viewer.mount>[0])
+  }
+  // The host lists through the filesystem providers, which apply the option; a changed option only
+  // has to ask for the folders again.
+  bridge.onEvent(event => {
+    if (event.op !== 'show-hidden') return
+    showHiddenEntries = event.show
+    listings.clear()
+    scope.abort()
+    scope = new AbortController()
+    void draw().catch(() => undefined)
+  })
+  await draw()
 }
 
 interface MapPreviewCandidate {
@@ -370,6 +388,7 @@ async function mount(
   api: VsCodeWebviewApi,
 ): Promise<void> {
   const localizer = createVscodeLocalizer(snapshot.locale, snapshot.localizationCatalogs)
+  showHiddenEntries = snapshot.showHiddenEntries === true
   // ---------------------------------------------------------------- transport
   const channel: WebviewChannel = {
     post: message => {
@@ -728,6 +747,7 @@ async function mount(
           const record = recordForDescriptor(descriptor)
           return record === undefined ? false : reopenCommittedEntry(editors, record.entry)
         },
+        showHiddenEntries: () => showHiddenEntries,
         lastOutcome(descriptor) {
           const record = recordForDescriptor(descriptor)
           return record === undefined ? undefined : editOutcomes.get(record.entry.id)
@@ -1124,6 +1144,20 @@ async function mount(
       case 'status-choose':
         statusChoose?.(event.itemId, event.choiceId)
         break
+      case 'show-hidden': {
+        showHiddenEntries = event.show
+        // An archive view read the option when it drew its listing; its tab is opened again.
+        const listed = [...subjects.values()].filter(record =>
+          (record.descriptor['dataSources'] as readonly { readonly contract?: unknown }[] | undefined)
+            ?.some(item => item.contract === NAMESPACE_CONTRACT),
+        )
+        for (const record of listed) {
+          void reopenCommittedEntry(editors, record.entry).catch((error: unknown) =>
+            say(describe(error)),
+          )
+        }
+        break
+      }
       default:
         break
     }

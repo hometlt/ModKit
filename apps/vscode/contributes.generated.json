@@ -399,6 +399,11 @@
         },
         "markdownDescription": "%configuration.nonDefaultContributions.description%",
         "type": "array"
+      },
+      "modkit.showHiddenEntries": {
+        "default": false,
+        "markdownDescription": "%configuration.showHiddenEntries.description%",
+        "type": "boolean"
       }
     }
   },

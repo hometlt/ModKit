@@ -291,6 +291,8 @@ export type ShellEvent =
   | { readonly op: 'timing'; readonly name: string; readonly milliseconds: number }
   /** An in-page Save button delegates to VS Code so the provider, title marker and Ctrl+S agree. */
   | { readonly op: 'document-save-requested'; readonly path: string }
+  /** `modkit.showHiddenEntries` changed; open archive views are drawn again with it. */
+  | { readonly op: 'show-hidden'; readonly show: boolean }
 
 interface RequestEnvelope {
   readonly modkit: 1

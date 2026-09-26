@@ -208,6 +208,9 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
                 context.archiveAction?.(action, target) ?? Promise.resolve(false),
             }),
         ...(context.archiveGallery === undefined ? {} : { gallery: context.archiveGallery }),
+        ...(context.showHiddenEntries === undefined
+          ? {}
+          : { showHidden: context.showHiddenEntries }),
         reload: descriptor => context.reopen(descriptor as unknown as Record<string, unknown>),
       }),
     },

@@ -1006,6 +1006,8 @@ function panelHtml(options: PanelPageOptions): string {
         ? {}
         : { galleryExtensions: options.galleryExtensions }),
       ...(options.explorer === undefined ? {} : { explorer: options.explorer }),
+      showHiddenEntries:
+        vscode.workspace.getConfiguration('modkit').get<boolean>('showHiddenEntries') === true,
     },
   })
 }
@@ -2378,8 +2380,12 @@ async function activateModkit(
    * route that writes a member back. `isReadonly` makes the workbench say that instead of offering
    * a Save that would fail.
    */
+  /** The one "show hidden files and folders" option, for every archive and content-source view. */
+  const showHiddenEntries = (): boolean =>
+    vscode.workspace.getConfiguration('modkit').get<boolean>('showHiddenEntries') === true
   const containers: ContainerRegistry = host.containers({
     roots,
+    showHidden: showHiddenEntries,
     onDiagnostic: item =>
       log(`[container] ${item.severity ?? 'information'} ${item.code}: ${item.message}`),
     ...(process.env[PACKAGE_INSTALL_GATE_ENV] === '1'
@@ -3334,10 +3340,13 @@ async function activateModkit(
         }
         // Browsing inside a publication downloads it, so the row it belongs to has to say so.
         publicationRead(location)
-        return entries.map(entry => [
-          entry.name,
-          entry.directory ? vscode.FileType.Directory : vscode.FileType.File,
-        ])
+        const hiddenToo = showHiddenEntries()
+        return entries
+          .filter(entry => hiddenToo || entry.hidden !== true)
+          .map(entry => [
+            entry.name,
+            entry.directory ? vscode.FileType.Directory : vscode.FileType.File,
+          ])
       }
       try {
         return await read()
@@ -4363,6 +4372,15 @@ async function activateModkit(
         sourcesView.refresh()
         resourcesView.refresh()
       }),
+      // Listings read the option per request, so the Explorer only has to ask again; this re-reads
+      // every expanded folder of an archive or a mounted source without reopening anything.
+      vscode.workspace.onDidChangeConfiguration(event => {
+        if (!event.affectsConfiguration('modkit.showHiddenEntries')) return
+        void vscode.commands.executeCommand('workbench.files.action.refreshFilesExplorer')
+        // Open Modkit pages draw their archive views again with the new value.
+        const show = showHiddenEntries()
+        for (const served of live) served.bridge.emit({ op: 'show-hidden', show })
+      }),
       vscode.commands.registerCommand('modkit.sources.open', async (argument: unknown) => {
         const row =
           typeof argument === 'object' && argument !== null
@@ -4605,10 +4623,12 @@ async function activateModkit(
       signal: AbortSignal,
     ): AsyncGenerator<readonly SearchFolderFile[]> {
       const folders = [root]
+      const hiddenToo = showHiddenEntries()
       for (let folder = folders.pop(); folder !== undefined; folder = folders.pop()) {
         signal.throwIfAborted()
         const files: SearchFolderFile[] = []
         for (const entry of await sources.list(id, folder)) {
+          if (entry.hidden === true && !hiddenToo) continue
           if (entry.directory) folders.push(entry.path)
           else
             files.push({
@@ -4638,10 +4658,13 @@ async function activateModkit(
                 yield* walkSource(sources, id, path, signal)
                 return
               }
-              yield page.items.map(item => ({
-                path: relativeTo(item.path, path),
-                ...(item.size === undefined ? {} : { size: item.size }),
-              }))
+              const hiddenToo = showHiddenEntries()
+              yield page.items
+                .filter(item => hiddenToo || item.hidden !== true)
+                .map(item => ({
+                  path: relativeTo(item.path, path),
+                  ...(item.size === undefined ? {} : { size: item.size }),
+                }))
               cursor = page.nextCursor
             } while (cursor !== undefined)
           },

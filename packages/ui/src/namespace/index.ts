@@ -45,7 +45,12 @@ export class NamespaceModel {
   }
 }
 
-export function createNamespaceViewer(options: UiLocalizationOptions = {}): ViewerModule {
+export interface NamespaceViewerOptions extends UiLocalizationOptions {
+  /** Whether entries the codec calls hidden are listed; read per listing. Absent, they are not. */
+  readonly showHidden?: () => boolean
+}
+
+export function createNamespaceViewer(options: NamespaceViewerOptions = {}): ViewerModule {
   const localizer = withEnglishUiFallback(options.localizer, NAMESPACE_FALLBACK_MESSAGES)
   return defineViewerModule({
     abiVersion: 1,
@@ -68,7 +73,9 @@ export function createNamespaceViewer(options: UiLocalizationOptions = {}): View
       const renderPrefix = async (prefix: string, parent: HTMLElement) => {
         const page = await model.list(prefix, undefined, scope.signal)
         const seen = new Set<string>()
+        const hiddenToo = options.showHidden?.() === true
         for (const entry of page.items) {
+          if (entry.hidden === true && !hiddenToo) continue
           if (seen.has(entry.id)) throw new TypeError(`duplicate namespace entry id: ${entry.id}`)
           seen.add(entry.id)
           const item = element(parent, 'li', { part: 'namespace.item' })

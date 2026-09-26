@@ -80,6 +80,11 @@ export interface ArchiveViewerOptions {
    * than an archive. Absent, it is called an archive.
    */
   readonly rootLabel?: string
+  /**
+   * Whether members the codec calls hidden (`__MACOSX`, a dot name) are listed; read when a
+   * listing is drawn. Absent, they are left out.
+   */
+  readonly showHidden?: () => boolean
 }
 
 /** What the Explorer offers on a file, a folder or the archive itself. */
@@ -210,11 +215,18 @@ export function createArchiveViewer(options: ArchiveViewerOptions = {}): ViewerM
       scope.lease(lease)
       const source = lease.value as NamespaceEntrySource
       const hasChildren = source.children !== undefined
-      const listChildren = (path: string, page: PageRequest): Promise<Page<NamespaceEntry>> => {
+      const shown = (page: Page<NamespaceEntry>): Page<NamespaceEntry> =>
+        options.showHidden?.() === true
+          ? page
+          : { ...page, items: page.items.filter(item => item.hidden !== true) }
+      const listChildren = async (
+        path: string,
+        page: PageRequest,
+      ): Promise<Page<NamespaceEntry>> => {
         if (source.children === undefined) {
           throw new TypeError('namespace source has no children method')
         }
-        return source.children(path, page, scope.signal)
+        return shown(await source.children(path, page, scope.signal))
       }
 
       // ------------------------------------------------------------ entries loaded so far
@@ -287,8 +299,8 @@ export function createArchiveViewer(options: ArchiveViewerOptions = {}): ViewerM
         remember(items)
         rootItems = items
       } else {
-        const { items, capped: wasCapped } = await pageAll(page =>
-          source.list('', page, scope.signal),
+        const { items, capped: wasCapped } = await pageAll(async page =>
+          shown(await source.list('', page, scope.signal)),
         )
         remember(items)
         capped = wasCapped

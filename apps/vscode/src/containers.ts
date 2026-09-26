@@ -124,6 +124,11 @@ export interface ContainerRegistryOptions {
   }) => void
   /** Host-open seam for the namespace-only container branch; production uses `openSubject`. */
   readonly openNamespaceSubject?: typeof openSubject
+  /**
+   * Whether listings include entries the codec calls hidden, read per request so a changed setting
+   * applies to the next listing. Absent means they are left out; opening one by path always works.
+   */
+  readonly showHidden?: () => boolean
 }
 
 export interface ContainerRegistry {
@@ -210,6 +215,7 @@ const nodeOf = (entry: NamespaceEntry): ContainerNode => ({
   ...(entry.kind === 'file' ? { entryId: entry.id } : {}),
   ...(entry.size === undefined ? {} : { size: Number(entry.size) }),
   ...(entry.modifiedAt === undefined ? {} : { modifiedAt: entry.modifiedAt }),
+  ...(entry.hidden === true ? { hidden: true as const } : {}),
 })
 
 async function listImmediateChildren(
@@ -376,6 +382,7 @@ function keyOf(container: string): string {
 
 export function createContainerRegistry(options: ContainerRegistryOptions): ContainerRegistry {
   const held = new Map<string, Promise<HeldContainer>>()
+  const showHidden = (): boolean => options.showHidden?.() === true
   const writeGrant = (): PermissionGrant => ({
     ...options.grant,
     id: `${options.grant.id}:container-write:${randomUUID()}`,
@@ -970,8 +977,9 @@ export function createContainerRegistry(options: ContainerRegistryOptions): Cont
 
     async list(container, entry, signal) {
       const holder = await holderFor(container, signal)
-      if (holder.hierarchical) return hierarchicalChildren(holder, entry, signal)
-      const children = listContainerDirectory(holder.index, entry)
+      const children = holder.hierarchical
+        ? await hierarchicalChildren(holder, entry, signal)
+        : listContainerDirectory(holder.index, entry)
       if (children === undefined) {
         throw new ModkitError({
           code: CONTAINER_ENTRY_NOT_FOUND,
@@ -979,7 +987,7 @@ export function createContainerRegistry(options: ContainerRegistryOptions): Cont
           context: { entry, container },
         })
       }
-      return children
+      return showHidden() ? children : children.filter(item => item.hidden !== true)
     },
 
     async walk(container, entry, maximum, signal) {
@@ -1008,8 +1016,10 @@ export function createContainerRegistry(options: ContainerRegistryOptions): Cont
           cursor === undefined ? { limit: PAGE_LIMIT } : { cursor, limit: PAGE_LIMIT },
           signal,
         )
+        const hiddenToo = showHidden()
         for (const item of page.items) {
           if (item.kind !== 'file' || !inside(item.path)) continue
+          if (item.hidden === true && !hiddenToo) continue
           files.push(item)
           if (files.length >= maximum) break
         }

@@ -345,6 +345,8 @@ export interface VsCodeContainerOptions {
     readonly entry: string
     readonly bytes: number
   }) => void
+  /** Whether listings include entries the codec calls hidden; read per request. */
+  readonly showHidden?: () => boolean
 }
 
 export interface VsCodeSubjectHostOptions {
@@ -640,6 +642,7 @@ export async function createVsCodeSubjectHost(
         budget: DEFAULT_OPEN_BUDGET,
         ...(container.onDiagnostic === undefined ? {} : { onDiagnostic: container.onDiagnostic }),
         ...(container.onExtract === undefined ? {} : { onExtract: container.onExtract }),
+        ...(container.showHidden === undefined ? {} : { showHidden: container.showHidden }),
       }),
     serve: (served: VsCodeServeOptions) =>
       serveVsCode(services, served, { extensions, contributions }),

@@ -150,6 +150,8 @@ export interface ContainerNode {
   readonly modifiedAt?: number
   /** The container's own opaque entry id — files only, and only for entries it actually listed. */
   readonly entryId?: string
+  /** The codec calls it hidden (`__MACOSX`, a dot name); a listing leaves it out unless asked. */
+  readonly hidden?: true
 }
 
 /** A container's flat listing, indexed so a directory can be answered without rescanning it. */
@@ -168,6 +170,7 @@ export interface ContainerEntryLike {
   readonly kind: 'file' | 'directory'
   readonly size?: bigint
   readonly modifiedAt?: number
+  readonly hidden?: true
 }
 
 /**
@@ -181,10 +184,21 @@ export interface ContainerEntryLike {
  * A duplicate path (two members with the same name, which some containers permit) keeps the first
  * occurrence: the listing order is the container's own, and picking the last would make the answer
  * depend on how far the pagination happened to read.
+ *
+ * A synthesised directory is hidden when nothing visible lives under it — `__MACOSX` holds only
+ * hidden files — and a declared one when its entry says so; either way it stays in the index, so a
+ * path the reader asks for by name still resolves.
  */
 export function buildContainerIndex(entries: readonly ContainerEntryLike[]): ContainerIndex {
   const directories = new Map<string, Map<string, ContainerNode>>([['', new Map()]])
   const files = new Map<string, ContainerNode>()
+  const visible = new Set<string>([''])
+  const declaredHidden = new Set<string>()
+  const showAncestors = (path: string): void => {
+    for (let cut = path.lastIndexOf('/'); cut !== -1; cut = path.lastIndexOf('/', cut - 1)) {
+      visible.add(path.slice(0, cut))
+    }
+  }
 
   const directoryAt = (path: string): Map<string, ContainerNode> => {
     const known = directories.get(path)
@@ -206,6 +220,11 @@ export function buildContainerIndex(entries: readonly ContainerEntryLike[]): Con
     const name = cut === -1 ? path : path.slice(cut + 1)
     if (entry.kind === 'directory') {
       directoryAt(path)
+      if (entry.hidden === true) declaredHidden.add(path)
+      else {
+        visible.add(path)
+        showAncestors(path)
+      }
       continue
     }
     if (files.has(path)) continue
@@ -215,9 +234,20 @@ export function buildContainerIndex(entries: readonly ContainerEntryLike[]): Con
       entryId: entry.id,
       ...(entry.size === undefined ? {} : { size: Number(entry.size) }),
       ...(entry.modifiedAt === undefined ? {} : { modifiedAt: entry.modifiedAt }),
+      ...(entry.hidden === true ? { hidden: true as const } : {}),
     }
     files.set(path, node)
     directoryAt(parent).set(name, node)
+    if (entry.hidden !== true) showAncestors(path)
+  }
+
+  for (const path of directories.keys()) {
+    if (path === '' || (visible.has(path) && !declaredHidden.has(path))) continue
+    const cut = path.lastIndexOf('/')
+    const parent = directories.get(cut === -1 ? '' : path.slice(0, cut))
+    const name = cut === -1 ? path : path.slice(cut + 1)
+    const node = parent?.get(name)
+    if (node !== undefined) parent?.set(name, { ...node, hidden: true })
   }
 
   return Object.freeze({ directories, files })

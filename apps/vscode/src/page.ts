@@ -74,6 +74,8 @@ export interface PageBootstrap {
    * switcher competing with the native one.
    */
   readonly forcedStage?: string
+  /** `modkit.showHiddenEntries` when the page was built; `show-hidden` events carry changes. */
+  readonly showHiddenEntries?: boolean
   /** Function-free extension/contribution subject cards for the generic subject-card renderer. */
   readonly extensionCard?: import('./extension-cards.js').ExtensionCardBundle
   /**
