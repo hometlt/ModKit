@@ -665,10 +665,10 @@ function waterVertexColor(
 ): readonly [number, number, number, number] {
   const color = material?.color ?? [0.12, 0.52, 0.82, 0.48]
   const depth = Math.max(0, elevation - groundHeight)
-  // `CWater.State.ColorFallOff` is the depth over which the water reaches its own colour, not a
-  // rate: read as a rate, Amphion's sea (0.1-0.7 deep) stayed glassy and its 0.3-deep ponds
-  // vanished, where the editor draws the sea opaque past the shallow band and the ponds solid.
-  const saturation = 1 - Math.exp(-depth / (material?.colorFalloff ?? WATER_COLOR_FALLOFF))
+  // `CWater.State.ColorFallOff` is a rate per unit of depth (MK2 and the stock value 0.1). Read as
+  // the depth to full colour, Amphion's resolved 0.1 made its sea opaque Avernus green past 0.3
+  // deep, where the editor shows the sand through a teal sea and the ponds as a purple wash.
+  const saturation = 1 - Math.exp(-depth * (material?.colorFalloff ?? WATER_COLOR_FALLOFF))
   // Shorelines fade over the last few centimetres of depth, not half a unit: maps flood wide flats
   // that sit barely under the surface (Amphion's sea floor is 0.1-0.25 below it), and a long ramp
   // left them almost transparent and speckled along the clipped edge.
@@ -5882,12 +5882,8 @@ const WATER_SURFACE_NORMAL = [0, 1, 0] as const
 
 /** Depth (world units) over which a shoreline reaches the water's own opacity. */
 const WATER_SHORE_FADE = 0.04
-/**
- * Depth (world units) over which water without a `ColorFallOff` reaches its own colour. Kept long:
- * without the editor's sky reflection, a sea drawn at its own colour reads as flat paint (Amphion's
- * Avernus turned pure green), while a translucent blend over the sea floor matches the editor's teal.
- */
-const WATER_COLOR_FALLOFF = 10
+/** `ColorFallOff` of the stock CWater templates: saturation rate per unit of water depth. */
+const WATER_COLOR_FALLOFF = 0.1
 
 /** World units per water clipping bucket, and how far a terrain cell reaches past its corner. */
 const WATER_BUCKET_SIZE = 8

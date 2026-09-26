@@ -197,6 +197,45 @@ describe('common world WebGL plan', () => {
     assert.equal(center?.objectId, 1)
   })
 
+  it('reads CWater ColorFallOff as a saturation rate per unit of depth', () => {
+    const terrain = Array.from({ length: 4 }, (_, index) => ({
+      facet: 'terrain',
+      id: `terrain:${index}`,
+      layerId: 'terrain',
+      coordinateSpaceId: 'uvw',
+      lod: 'exact',
+      x: index % 2,
+      y: Math.floor(index / 2),
+      heightBase: 0,
+      heightAdjustment: 0,
+      mask: 0,
+      uvwPosition: { x: index % 2, y: 0, z: -Math.floor(index / 2) },
+    }))
+    const water = {
+      facet: 'water',
+      id: 'water',
+      layerId: 'water',
+      coordinateSpaceId: 'uvw',
+      zoneId: 0,
+      templateId: 'Avernus',
+      materialId: 'avernus',
+      minimum: { x: 0, y: 0 },
+      maximum: { x: 1, y: 1 },
+      uvwMinimum: { x: 0, z: -1 },
+      uvwMaximum: { x: 1, z: 0 },
+      uvwElevation: 1,
+    }
+    const plan = createWorldWebGlPlan({
+      items: [...terrain, water],
+      waterMaterials: [{ materialId: 'avernus', color: [0, 0.5, 0.25, 0.332], colorFalloff: 0.1 }],
+    })
+    // One unit deep at rate 0.1: saturation 1 − e^−0.1, so the sea stays translucent over its floor.
+    const saturation = 1 - Math.exp(-0.1)
+    const alphas = plan.transparentTriangles.colors.filter((_, index) => index % 4 === 3)
+    assert.ok(alphas.length > 0)
+    for (const alpha of alphas) assert.ok(Math.abs(alpha - (0.332 + 0.668 * saturation)) < 1e-6)
+  })
+
   it('clips SC2-style water against terrain and scrolls its surface UVs deterministically', () => {
     const terrain = Array.from({ length: 4 }, (_, index) => ({
       facet: 'terrain',
