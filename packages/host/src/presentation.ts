@@ -443,13 +443,40 @@ export function createPresentationPlanValidator<Ticket>(
   })
 }
 
+/**
+ * A slot fed only by data sources the host added (`hostDataSources`: fallback facts, projected
+ * relations), not by the codec. Slots without data-source bindings (operation-driven stages) never
+ * count as host-fed.
+ */
+function hostFedOnly(slot: PresentationSlot, descriptor: AnyDescriptor): boolean {
+  const hostOffers = descriptor.hostDataSources ?? []
+  if (hostOffers.length === 0) return false
+  const offered = (
+    list: readonly { readonly contract: string; readonly major: number }[],
+    source: { readonly contract: string; readonly major: number },
+  ) => list.some(item => item.contract === source.contract && item.major === source.major)
+  const sources = slot.bindings
+    .map(binding => ('dataSource' in binding ? binding.dataSource : binding))
+    .filter(source => offered(descriptor.dataSources, source))
+  return sources.length > 0 && sources.every(source => offered(hostOffers, source))
+}
+
 /** Resolve an evaluated global viewer catalog into one immutable session-local plan. */
 export async function resolvePresentationPlan<Ticket>(
   options: PresentationResolverOptions<Ticket>,
 ): Promise<ResolvedPresentationPlan<Ticket>> {
-  const eligible = sortedSlots(
+  const byPriority = sortedSlots(
     options.candidates.filter(item => item.eligible && (item.missing?.length ?? 0) === 0),
   )
+  /*
+   * Owner decision 26.09: what the codec publishes comes first. A stage the host alone feeds — the
+   * card over fallback facts — ranks after every stage fed by the codec, so a CSV opens as its table
+   * and an image as its picture; a codec's own facts keep the card first for a data entity.
+   */
+  const eligible = [
+    ...byPriority.filter(slot => !hostFedOnly(slot, options.descriptor)),
+    ...byPriority.filter(slot => hostFedOnly(slot, options.descriptor)),
+  ]
   const unsatisfied = options.candidates
     .filter(item => !item.eligible || (item.missing?.length ?? 0) > 0)
     .map(item => ({ contributionId: item.contributionId, missing: [...(item.missing ?? [])] }))
