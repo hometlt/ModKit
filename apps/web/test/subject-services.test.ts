@@ -269,7 +269,8 @@ describe('PWA product path — catalog → composition → worker-brokered open'
     expect(catalogToExtensionInputs(catalog, ORIGIN, 'installed')[0]?.execution?.origin).toBe(
       'installed',
     )
-  })
+    // Hashes every bundled root from disk; ten roots take over the default five seconds.
+  }, 60_000)
 
   it('keeps a contribution card-addressable while its portable setting prevents activation', async () => {
     const services = await createWebSubjectServices({

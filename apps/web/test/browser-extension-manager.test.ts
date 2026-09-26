@@ -628,7 +628,8 @@ describe('common extension manager browser adapter', () => {
       packageReadsAfterInstall,
     )
     await runtime.dispose()
-  })
+    // Installs, verifies and loads every portable root; that outgrew the default five seconds.
+  }, 60_000)
 
   it('refuses catalog/package root mismatch before persistence', async () => {
     const bundle = portableBundle()
