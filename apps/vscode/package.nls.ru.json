@@ -96,5 +96,11 @@
   "debugger.launch.sc2Map": "Modkit: карта StarCraft II",
   "debugger.launch.sc2Mod": "Modkit: тест мода StarCraft II",
   "debugger.launch.sc2MapName": "StarCraft II: запуск карты",
-  "debugger.launch.sc2ModName": "StarCraft II: тест мода"
+  "debugger.launch.sc2ModName": "StarCraft II: тест мода",
+  "view.accounts": "Аккаунты и ключи",
+  "view.accountsEmpty": "Ни одному установленному расширению не нужен вход или ключ.",
+  "command.accountsRefresh": "Обновить аккаунты и ключи",
+  "command.accountsAcquire": "Войти или ввести ключ",
+  "command.accountsReplace": "Заменить ключ",
+  "command.accountsSignOut": "Выйти или удалить ключ"
 }

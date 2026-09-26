@@ -314,6 +314,13 @@ import { ExtensionsView } from './extensions-view.js'
 import { HostView } from './host-view.js'
 import { SourcesView } from './sources-view.js'
 import {
+  AccountsView,
+  createEditorCredentialPrompter,
+  createSecretCredentialStore,
+  credentialSetting,
+  registerAccountsCommands,
+} from './credentials.js'
+import {
   type ResourceTreeNode,
   type ResourceTreeHost,
   type ResourceMemberTrees,
@@ -522,7 +529,14 @@ async function activateModkit(
   useArtifactDigestCache(join(context.globalStorageUri.fsPath, 'artifact-digests.v1.json'))
   context.subscriptions.push({ dispose: () => flushArtifactDigestCache() })
   const composing = timing.phase('compose host (catalog roots, inventory, realms)')
+  // The broker's application ports: secrets in SecretStorage, prompts in the editor's own boxes.
+  const credentialPrompter = createEditorCredentialPrompter(() => localizer)
   const host = await createVsCodeSubjectHost({
+    credentials: {
+      store: createSecretCredentialStore(context.secrets),
+      prompter: credentialPrompter,
+      setting: credentialSetting,
+    },
     // An operation that names catalog entities (a replay's units) is answered from its subject's mod
     // context, inside the base mods the `modkit.baseMods` setting names for the subject's path.
     subjectCatalog: {
@@ -11046,6 +11060,21 @@ async function activateModkit(
    * blocks 13–14 — see docs/MK3/requests/REQUEST_VSCODE_NATIVE_SHELL_2026-08-25.md §3. Until then
    * the archive stage in the editor is where container entries are listed.
    */
+  const credentialBroker = host.services.credentials
+  if (credentialBroker !== undefined) {
+    const accountsView = new AccountsView(credentialBroker, localizer)
+    context.subscriptions.push(
+      accountsView,
+      vscode.window.registerTreeDataProvider('modkit.accounts', accountsView),
+      ...registerAccountsCommands({
+        broker: credentialBroker,
+        prompter: credentialPrompter,
+        view: accountsView,
+        localizer,
+        log,
+      }),
+    )
+  }
   context.subscriptions.push(
     sourcesView,
     resourcesView,

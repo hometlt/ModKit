@@ -1,6 +1,26 @@
 {
   "commands": [
     {
+      "command": "modkit.accounts.acquire",
+      "title": "%command.accountsAcquire%",
+      "icon": "$(key)"
+    },
+    {
+      "command": "modkit.accounts.refresh",
+      "title": "%command.accountsRefresh%",
+      "icon": "$(refresh)"
+    },
+    {
+      "command": "modkit.accounts.replace",
+      "title": "%command.accountsReplace%",
+      "icon": "$(edit)"
+    },
+    {
+      "command": "modkit.accounts.signOut",
+      "title": "%command.accountsSignOut%",
+      "icon": "$(sign-out)"
+    },
+    {
       "command": "modkit.addExtensionFolder",
       "title": "%command.addExtensionFolder%"
     },
@@ -744,6 +764,21 @@
     ],
     "view/item/context": [
       {
+        "command": "modkit.accounts.acquire",
+        "when": "view == modkit.accounts && viewItem =~ /^credential\\.[a-z0-9-]+\\.(?:missing|expired)$/",
+        "group": "inline@1"
+      },
+      {
+        "command": "modkit.accounts.replace",
+        "when": "view == modkit.accounts && viewItem =~ /^credential\\.(?:api-key|symmetric-key|oauth2-pkce)\\.available$/",
+        "group": "inline@2"
+      },
+      {
+        "command": "modkit.accounts.signOut",
+        "when": "view == modkit.accounts && viewItem =~ /^credential\\.[a-z0-9-]+\\.(?:available|expired)$/",
+        "group": "inline@3"
+      },
+      {
         "command": "modkit.extensions.completeGameSupport",
         "when": "view == modkit.extensions && viewItem == modkitExtensionComponent.game.partial",
         "group": "inline@1"
@@ -916,6 +951,11 @@
     ],
     "view/title": [
       {
+        "command": "modkit.accounts.refresh",
+        "when": "view == modkit.accounts",
+        "group": "navigation@1"
+      },
+      {
         "command": "modkit.contentSources",
         "when": "view == modkit.sources",
         "group": "navigation@1"
@@ -956,6 +996,10 @@
   "views": {
     "modkit": [
       {
+        "id": "modkit.accounts",
+        "name": "%view.accounts%"
+      },
+      {
         "id": "modkit.extensions",
         "name": "%view.extensions%"
       },
@@ -979,6 +1023,11 @@
     ]
   },
   "viewsWelcome": [
+    {
+      "view": "modkit.accounts",
+      "contents": "%view.accountsEmpty%",
+      "when": "modkit.ready"
+    },
     {
       "view": "modkit.extensions",
       "contents": "%view.loading%",

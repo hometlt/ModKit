@@ -81,6 +81,7 @@ import {
   type FileArtifactReadTelemetry,
   type FileArtifactStreamTelemetry,
   type NodeSubjectServices,
+  type NodeSubjectServicesOptions,
 } from '@modkit/host/node'
 
 import { anchorDocumentIndex, anchoredSubjectPath } from './anchor-documents.js'
@@ -393,6 +394,8 @@ export interface VsCodeSubjectHostOptions {
    * describing a catalog of their own — the old directory discovery runs instead.
    */
   readonly bundledCatalog?: readonly BundledCatalogRoot[]
+  /** The editor's secret store and prompts; the services build the credential broker over them. */
+  readonly credentials?: NodeSubjectServicesOptions['credentials']
   /** Injectable for tests; defaults to `node:fs`. */
   readonly probe?: DirectoryProbe
 }
@@ -541,6 +544,7 @@ export async function createVsCodeSubjectHost(
      */
     ...(options.bootstrapUrl === undefined ? {} : { bootstrapUrl: options.bootstrapUrl }),
     ...(options.onDiagnostic === undefined ? {} : { onDiagnostic: options.onDiagnostic }),
+    ...(options.credentials === undefined ? {} : { credentials: options.credentials }),
   })
   const bundledCoordinates = new Set(bundled.coordinates)
   const bundledLoadErrors: readonly VsCodeBundledLoadError[] = Object.freeze([

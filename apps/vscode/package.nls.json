@@ -96,5 +96,11 @@
   "debugger.launch.sc2Map": "Modkit: StarCraft II map",
   "debugger.launch.sc2Mod": "Modkit: StarCraft II mod test",
   "debugger.launch.sc2MapName": "StarCraft II: launch map",
-  "debugger.launch.sc2ModName": "StarCraft II: test mod"
+  "debugger.launch.sc2ModName": "StarCraft II: test mod",
+  "view.accounts": "Accounts and Keys",
+  "view.accountsEmpty": "No installed extension needs a sign-in or a key.",
+  "command.accountsRefresh": "Refresh Accounts and Keys",
+  "command.accountsAcquire": "Sign In or Enter Key",
+  "command.accountsReplace": "Replace Key",
+  "command.accountsSignOut": "Sign Out or Delete Key"
 }

@@ -286,6 +286,26 @@
     {
       "command": "modkit.game.launchActiveMod",
       "title": "%command.launchActiveMod%"
+    },
+    {
+      "command": "modkit.accounts.refresh",
+      "title": "%command.accountsRefresh%",
+      "icon": "$(refresh)"
+    },
+    {
+      "command": "modkit.accounts.acquire",
+      "title": "%command.accountsAcquire%",
+      "icon": "$(key)"
+    },
+    {
+      "command": "modkit.accounts.replace",
+      "title": "%command.accountsReplace%",
+      "icon": "$(edit)"
+    },
+    {
+      "command": "modkit.accounts.signOut",
+      "title": "%command.accountsSignOut%",
+      "icon": "$(sign-out)"
     }
   ],
   "configuration": {
@@ -332,7 +352,12 @@
         "type": "object",
         "default": {},
         "scope": "resource",
-        "additionalProperties": { "type": "array", "items": { "type": "string" } },
+        "additionalProperties": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
         "markdownDescription": "%configuration.baseMods.description%"
       },
       "modkit.launch.warnIfRunning": {
@@ -713,6 +738,11 @@
       "view": "modkit.sources",
       "contents": "%view.loading%",
       "when": "!modkit.ready"
+    },
+    {
+      "view": "modkit.accounts",
+      "contents": "%view.accountsEmpty%",
+      "when": "modkit.ready"
     }
   ],
   "viewsContainers": {
@@ -737,6 +767,10 @@
       {
         "id": "modkit.extensions",
         "name": "%view.extensions%"
+      },
+      {
+        "id": "modkit.accounts",
+        "name": "%view.accounts%"
       }
     ]
   },
@@ -825,6 +859,11 @@
         "command": "modkit.resources.toggleChain",
         "when": "view == modkit.resources",
         "group": "navigation@0"
+      },
+      {
+        "command": "modkit.accounts.refresh",
+        "when": "view == modkit.accounts",
+        "group": "navigation@1"
       }
     ],
     "view/item/context": [
@@ -997,6 +1036,21 @@
         "command": "modkit.sources.publishNew",
         "when": "view == modkit.sources && viewItem =~ /^modkitSource\\.providerRoot(\\.|$)/",
         "group": "inline@0"
+      },
+      {
+        "command": "modkit.accounts.acquire",
+        "when": "view == modkit.accounts && viewItem =~ /^credential\\.[a-z0-9-]+\\.(?:missing|expired)$/",
+        "group": "inline@1"
+      },
+      {
+        "command": "modkit.accounts.replace",
+        "when": "view == modkit.accounts && viewItem =~ /^credential\\.(?:api-key|symmetric-key|oauth2-pkce)\\.available$/",
+        "group": "inline@2"
+      },
+      {
+        "command": "modkit.accounts.signOut",
+        "when": "view == modkit.accounts && viewItem =~ /^credential\\.[a-z0-9-]+\\.(?:available|expired)$/",
+        "group": "inline@3"
       }
     ]
   },
