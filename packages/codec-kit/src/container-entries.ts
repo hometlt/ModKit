@@ -73,6 +73,9 @@ export function containerEntryAccess(
           ...(entry.storage.kind === 'custom' ? {} : { compression: entry.storage.kind }),
           ...(entry.modifiedAt === undefined ? {} : { modifiedAt: entry.modifiedAt }),
           ...(entry.checksum === undefined ? {} : { checksum: entry.checksum }),
+          ...(entry.storage.kind === 'stored'
+            ? { storedRange: Object.freeze({ offset: entry.storage.offset, length: entry.storage.length }) }
+            : {}),
           revision: containerEntryRevision(containerRevision, entry.path, entry.size),
         })
       })

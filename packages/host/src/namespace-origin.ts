@@ -21,6 +21,7 @@ import {
   type ArtifactByteSource,
   type ArtifactSource,
   type AssetSourceRef,
+  type ByteRangeSource,
   type InputSearchScope,
   type Lease,
   type NamespaceEntry,
@@ -919,6 +920,61 @@ export function createWorkspaceNamespaceCandidateDiscovery(
  * that the codec reads the entry that is *in the container* — so the bytes stay where the host can
  * still say which container revision they came out of.
  */
+/**
+ * An entry the container stores uncompressed, read in place: `[offset, offset + length)` of the
+ * parent's byte-range source. Nothing is extracted, so an entry of any size opens; every read is
+ * checked against the entry's own bounds before it reaches the parent.
+ */
+export function containerEntryRangeSource(
+  ref: AssetSourceRef,
+  revision: RevisionId,
+  parent: ByteRangeSource,
+  range: { readonly offset: bigint; readonly length: bigint },
+): ArtifactByteSource {
+  const invalid = (message: string, context: Record<string, string | number>) =>
+    new ModkitError({ code: 'x3.host/invalid-source-range', message, context: { uri: ref.uri, ...context } })
+  if (range.offset < 0n || range.length < 0n) throw invalid(`entry range of «${ref.uri}» is negative`, {})
+  const read = async (offset: bigint, length: number, signal?: AbortSignal): Promise<Uint8Array> => {
+    throwIfAborted(signal)
+    if (offset < 0n || !Number.isSafeInteger(length) || length < 0) {
+      throw invalid(`container entry read of «${ref.uri}» must use a non-negative exact range`, {
+        offset: String(offset),
+        length,
+      })
+    }
+    if (offset > range.length) {
+      throw invalid(`container entry read of «${ref.uri}» starts beyond the entry size`, {
+        offset: String(offset),
+        size: String(range.length),
+      })
+    }
+    const available = range.length - offset
+    const wanted = BigInt(length) < available ? length : Number(available)
+    return wanted === 0 ? new Uint8Array() : parent.read(range.offset + offset, wanted, signal)
+  }
+  return Object.freeze({
+    kind: 'bytes' as const,
+    ref,
+    revision,
+    size: range.length,
+    read,
+    async *stream(
+      window?: { readonly offset: bigint; readonly length?: bigint },
+      signal?: AbortSignal,
+    ): AsyncIterable<Uint8Array> {
+      const start = window?.offset ?? 0n
+      const end = window?.length === undefined ? range.length : start + window.length
+      // Bounded chunks: a stream of a large entry never asks the parent for more than 1 MiB at once.
+      for (let at = start; at < end && at < range.length; ) {
+        const chunk = await read(at, Number(end - at < 1_048_576n ? end - at : 1_048_576n), signal)
+        if (chunk.byteLength === 0) return
+        at += BigInt(chunk.byteLength)
+        yield chunk
+      }
+    },
+  })
+}
+
 export function containerEntrySource(
   ref: AssetSourceRef,
   revision: RevisionId,

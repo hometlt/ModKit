@@ -638,6 +638,12 @@ export interface NamespaceEntry {
    * the algorithm from the length of the value.
    */
   readonly checksum?: { readonly algorithm: string; readonly value: string }
+  /**
+   * For an entry the container stores uncompressed: its bytes are exactly this range of the parent's
+   * `common.view/byte-range-source`. A host then opens the entry as a nested subject by reading that
+   * range, never extracting it into memory — so an entry of any size opens.
+   */
+  readonly storedRange?: { readonly offset: bigint; readonly length: bigint }
   readonly revision: RevisionId
 }
 

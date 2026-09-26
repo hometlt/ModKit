@@ -102,6 +102,11 @@ describe('a container entry table gives listing and extraction for free', () => 
       ['docs/Stored.txt', 'stored', undefined],
       ['docs/zlib.txt', 'zlib', BigInt(zlibbed.byteLength)],
     ])
+    // Only an uncompressed entry says where its bytes are, so a host reads it in place.
+    expect(docs.items.map(item => item.storedRange)).toEqual([
+      { offset: 4n, length: BigInt(stored.byteLength) },
+      undefined,
+    ])
     await lease.release()
     const descriptor = await session.descriptor()
     expect(descriptor.constraints.maxDecodedBytes).toBe(String(stored.byteLength + plain.byteLength + custom.byteLength))
