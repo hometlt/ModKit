@@ -53,6 +53,8 @@ interface Texture2DDecoderRuntime {
     blockWidth: number,
     blockHeight: number,
   ): Promise<Uint8Array | null>
+  unpack_crunch(data: Uint8Array): Promise<Uint8Array | null>
+  unpack_unity_crunch(data: Uint8Array): Promise<Uint8Array | null>
 }
 
 let runtimePromise: Promise<Texture2DDecoderRuntime> | undefined
@@ -120,6 +122,8 @@ function browserRuntime(native: NativeTexture2DDecoder): Texture2DDecoderRuntime
     decode_atc_rgb4: decode('decode_atc_rgb4'),
     decode_atc_rgba8: decode('decode_atc_rgba8'),
     decode_astc: decode('decode_astc'),
+    unpack_crunch: decode('unpack_crunch'),
+    unpack_unity_crunch: decode('unpack_unity_crunch'),
   }
 }
 
@@ -258,4 +262,17 @@ export async function decode_astc(
   blockHeight: number,
 ): Promise<Uint8Array | null> {
   return (await decoder()).decode_astc(data, width, height, blockWidth, blockHeight)
+}
+
+/**
+ * A Crunch (`.crn`) payload unpacked to its GPU blocks (DXT1/DXT5/ETC/ETC2, as the header says),
+ * ready for the matching decoder above; null when the data is not Crunch.
+ */
+export async function unpack_crunch(data: Uint8Array): Promise<Uint8Array | null> {
+  return (await decoder()).unpack_crunch(data)
+}
+
+/** Unity's Crunch variant (TextureFormat DXT1Crunched, DXT5Crunched, ETC_RGB4Crunched, ETC2_RGBA8Crunched). */
+export async function unpack_unity_crunch(data: Uint8Array): Promise<Uint8Array | null> {
+  return (await decoder()).unpack_unity_crunch(data)
 }
