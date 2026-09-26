@@ -68,6 +68,18 @@ export interface ExtensionPresentation {
 }
 
 /** The one normalized contract both authored containers produce (canon §5.13). */
+/**
+ * A game's file association: files with `extension` are documents of `languageId`, parsed in
+ * `dialect` (`.scar` → `lua`, `lua51`). The game declares it; the language provider stays generic
+ * and reads the dialect from the document (`LanguageDocument.dialect`).
+ */
+export interface LanguageFileAssociation {
+  /** Lowercase, without the dot. */
+  readonly extension: string
+  readonly languageId: string
+  readonly dialect?: string
+}
+
 export interface ExtensionManifest {
   readonly schemaVersion: 1
   readonly publisher: string
@@ -83,6 +95,8 @@ export interface ExtensionManifest {
    * process and composes it with every other extension's (`@modkit/host/node` `resolveContentSources`).
    */
   readonly contentSources?: string
+  /** File associations the extension's game defines for languages it does not provide. */
+  readonly languageFiles?: readonly LanguageFileAssociation[]
 }
 
 /** Authored `package.json#modkit` block: no version/license by construction (Q76). */
@@ -94,6 +108,7 @@ export interface ModkitBlock {
   readonly dependsOn?: readonly ExtensionRequirement[]
   readonly presentation?: ExtensionPresentation
   readonly contentSources?: string
+  readonly languageFiles?: readonly LanguageFileAssociation[]
 }
 
 export type AuthoredContainerKind = 'package-json' | 'standalone'

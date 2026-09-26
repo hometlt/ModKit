@@ -38,6 +38,7 @@ import {
   validatedLanguageWorkspaceSemanticInputs,
 } from './context.js'
 import { validatedLanguageSemanticContextRequirements } from './semantic-context.js'
+import { languageFileAssociations } from './workspace.js'
 
 /** Owner id under which the platform definition is registered. */
 export const STANDARD_LANGUAGE_OWNER = 'modkit/language'
@@ -578,10 +579,19 @@ export async function resolveLanguageProvider(
     released = true
     await resolver.release()
   }
+  // A game's file association (`.scar` → lua) is not an extension the language's provider knows:
+  // that provider is selected by language alone.
+  const associated =
+    request.extension !== undefined &&
+    languageFileAssociations(request.services.inventory).some(
+      association =>
+        association.languageId === request.languageId &&
+        association.extension === normalizedExtension(request.extension!),
+    )
   const facet: LanguageProviderRequestFacet = {
     languageId: request.languageId,
     ...(request.documentKind === undefined ? {} : { documentKind: request.documentKind }),
-    ...(request.extension === undefined ? {} : { extension: request.extension }),
+    ...(request.extension === undefined || associated ? {} : { extension: request.extension }),
   }
   try {
     const lease = await resolver.port.resolve({
@@ -658,6 +668,7 @@ export async function resolveLanguageProvider(
 }
 
 export {
+  languageFileAssociations,
   createLanguageWorkspace,
   classifyLanguageFile,
   languageFileExtension,

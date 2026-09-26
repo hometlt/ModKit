@@ -278,6 +278,7 @@ export type {
   ExtensionRequirement,
   ExtensionSourceDetails,
   ExtensionVendorDescriptor,
+  LanguageFileAssociation,
   ModkitBlock,
   RequirementMode,
   RequirementScope,

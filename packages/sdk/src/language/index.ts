@@ -34,6 +34,11 @@ export interface LanguageDocument {
   readonly languageId: string
   readonly version: number
   readonly text: string
+  /**
+   * The dialect a game declared for this file (`modkit.languageFiles`, `.scar` → `lua51`). A
+   * provider that knows it parses in it; an unknown one falls back to its own detection.
+   */
+  readonly dialect?: string
 }
 
 export type LanguageTokenKind =
@@ -336,8 +341,7 @@ export interface LanguageKnowledgeSemanticContextRequirement {
 }
 
 export type LanguageSemanticContextRequirement =
-  | LanguageResolvedDataSemanticContextRequirement
-  | LanguageKnowledgeSemanticContextRequirement
+  LanguageResolvedDataSemanticContextRequirement | LanguageKnowledgeSemanticContextRequirement
 
 /** Versioned host-owned mod/dependency context shared by every language provider. */
 export interface LanguageWorkspaceContext {

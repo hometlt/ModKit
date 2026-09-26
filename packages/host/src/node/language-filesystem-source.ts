@@ -87,7 +87,8 @@ export function createFilesystemLanguageDocumentSource(
         route =>
           accepted.has(route.languageId) &&
           (route.fileName !== undefined ||
-            classifyLanguageFile(options.routes, `x.${route.extension}`).languageId === route.languageId),
+            classifyLanguageFile(options.routes, `x.${route.extension}`).languageId ===
+              route.languageId),
       )
       // Nothing this snapshot wants can be told apart: an honest empty snapshot, incomplete when
       // files of those kinds may exist.
@@ -202,12 +203,14 @@ export function createFilesystemLanguageDocumentSource(
               ? previous.version
               : previous.version + 1
         versions.set(uri, { signature, version })
+        const dialect = classifyLanguageFile(options.routes, path).dialect
         documents.push(
           Object.freeze({
             uri,
             languageId: languageOf(path) as string,
             version,
             text,
+            ...(dialect === undefined ? {} : { dialect }),
           }),
         )
         documentOrigins.push(

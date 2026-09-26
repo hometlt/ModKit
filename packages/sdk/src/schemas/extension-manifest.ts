@@ -134,6 +134,19 @@ export const extensionPresentationSchema = {
  * (canon §5.13). Also the exact shape of the standalone `modkit.extension.json`
  * container (Q76: standalone carries its own version/license).
  */
+/** `languageFiles`: game file associations (`.scar` → `lua`, dialect `lua51`). */
+const LANGUAGE_TOKEN = { type: 'string', pattern: '^[a-z0-9][a-z0-9._-]{0,63}$' } as const
+const languageFilesSchema = {
+  type: 'array',
+  maxItems: 64,
+  items: {
+    type: 'object',
+    additionalProperties: false,
+    required: ['extension', 'languageId'],
+    properties: { extension: LANGUAGE_TOKEN, languageId: LANGUAGE_TOKEN, dialect: LANGUAGE_TOKEN },
+  },
+} as const
+
 export const extensionManifestSchema = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',
   $id: 'https://schemas.modkit.org/x3/extension-manifest.v1.schema.json',
@@ -150,6 +163,7 @@ export const extensionManifestSchema = {
     dependsOn: { type: 'array', items: extensionRequirementSchema },
     presentation: extensionPresentationSchema,
     contentSources: { type: 'string', pattern: EXTENSION_VFS_PATH_PATTERN },
+    languageFiles: languageFilesSchema,
   },
 } as const
 
@@ -173,6 +187,7 @@ export const modkitBlockSchema = {
     dependsOn: { type: 'array', items: extensionRequirementSchema },
     presentation: extensionPresentationSchema,
     contentSources: { type: 'string', pattern: EXTENSION_VFS_PATH_PATTERN },
+    languageFiles: languageFilesSchema,
   },
 } as const
 

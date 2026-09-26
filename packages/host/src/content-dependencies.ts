@@ -1,4 +1,10 @@
-import { compareUtf8, diagnostic, isCancellation, throwIfAborted, type Diagnostic } from '@modkit/core'
+import {
+  compareUtf8,
+  diagnostic,
+  isCancellation,
+  throwIfAborted,
+  type Diagnostic,
+} from '@modkit/core'
 import type { LanguageWorkspaceSemanticInput } from '@modkit/sdk/language'
 import {
   isRevisionId,
@@ -226,7 +232,10 @@ function createContentDependencyOrigin(
           // it is answered in the caller's spelling, by the strongest layer that holds it.
           const entry = rootScoped
             ? found
-            : Object.freeze({ ...found, logicalId: found.logicalId.slice(mount.logicalPrefix.length + 1) })
+            : Object.freeze({
+                ...found,
+                logicalId: found.logicalId.slice(mount.logicalPrefix.length + 1),
+              })
           const key = fold(entry.logicalId)
           if (emitted.has(key)) continue
           emitted.add(key)
@@ -363,8 +372,14 @@ export function createContentDependencyLanguageDocumentSource(
       }[] = []
       const contentPaths = new Set<string>()
       // Knowledge files the provider asked for, at a layer's root, in layer order (weaker first).
-      const wantedKnowledge = new Set((request.knowledgeFileNames ?? []).map(name => name.toLowerCase()))
-      const knowledge: { readonly mount: IndexedMount; readonly path: string; readonly fileName: string }[] = []
+      const wantedKnowledge = new Set(
+        (request.knowledgeFileNames ?? []).map(name => name.toLowerCase()),
+      )
+      const knowledge: {
+        readonly mount: IndexedMount
+        readonly path: string
+        readonly fileName: string
+      }[] = []
       let visited = 0
       // Without a provider-authored content fingerprint, bytes may change while the mount identity
       // stays the same. Keep the documents usable, but never claim a complete/stable semantic
@@ -407,7 +422,10 @@ export function createContentDependencyLanguageDocumentSource(
             knowledge.push({ mount, path: entry.path, fileName: relative })
             continue
           }
-          const { languageId, candidates: claimants } = classifyLanguageFile(options.routes, relative)
+          const { languageId, candidates: claimants } = classifyLanguageFile(
+            options.routes,
+            relative,
+          )
           if (languageId === undefined) {
             if (claimants.some(id => accepted.has(id))) complete = false
             continue
@@ -437,7 +455,11 @@ export function createContentDependencyLanguageDocumentSource(
       let totalBytes = 0
       for (const candidate of candidates.slice(0, request.maxDocuments)) {
         request.signal.throwIfAborted()
-        const languageId = classifyLanguageFile(options.routes, candidate.relative).languageId!
+        const { languageId: classified, dialect } = classifyLanguageFile(
+          options.routes,
+          candidate.relative,
+        )
+        const languageId = classified!
         let bytes: Uint8Array
         try {
           bytes = await options.contentSources.read(
@@ -475,7 +497,15 @@ export function createContentDependencyLanguageDocumentSource(
               ? previous.version
               : previous.version + 1
         revisions.set(uri, { signature, version })
-        documents.push(Object.freeze({ uri, languageId, version, text }))
+        documents.push(
+          Object.freeze({
+            uri,
+            languageId,
+            version,
+            text,
+            ...(dialect === undefined ? {} : { dialect }),
+          }),
+        )
         documentOrigins.push(
           Object.freeze({
             uri,
@@ -499,14 +529,27 @@ export function createContentDependencyLanguageDocumentSource(
               kind: 'semantic-context-status',
               id: `language-knowledge:${id}`,
               revision: languageWorkspaceContextToken({ id, message }),
-              payload: Object.freeze({ state: 'unavailable', requirement: 'language-knowledge', message }),
+              payload: Object.freeze({
+                state: 'unavailable',
+                requirement: 'language-knowledge',
+                message,
+              }),
             }),
           )
         let text: string
         try {
-          const bytes = await options.contentSources.read(file.mount.sourceId, file.path, KNOWLEDGE_FILE_MAX_BYTES)
-          if (bytes.byteLength > KNOWLEDGE_FILE_MAX_BYTES || knowledgeBytes + bytes.byteLength > KNOWLEDGE_TOTAL_MAX_BYTES) {
-            unavailable(`${file.fileName} exceeds the knowledge budget (8 MiB a file, 32 MiB in all)`)
+          const bytes = await options.contentSources.read(
+            file.mount.sourceId,
+            file.path,
+            KNOWLEDGE_FILE_MAX_BYTES,
+          )
+          if (
+            bytes.byteLength > KNOWLEDGE_FILE_MAX_BYTES ||
+            knowledgeBytes + bytes.byteLength > KNOWLEDGE_TOTAL_MAX_BYTES
+          ) {
+            unavailable(
+              `${file.fileName} exceeds the knowledge budget (8 MiB a file, 32 MiB in all)`,
+            )
             continue
           }
           text = new TextDecoder('utf-8', { fatal: true }).decode(bytes)

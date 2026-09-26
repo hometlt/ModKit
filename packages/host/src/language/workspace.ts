@@ -56,6 +56,7 @@ import {
 } from '@modkit/sdk/language'
 import type {
   JsonValue,
+  LanguageFileAssociation,
   PermissionGrant,
   ReferenceOccurrence,
   ResourceBudget,
@@ -107,12 +108,16 @@ export const LANGUAGE_DEFAULT_MAX_EDITS = 1_024
 export const LANGUAGE_MAX_EDITS = 4_096
 
 /** The knowledge files a provider asked for, as a document source request field (or nothing). */
-function knowledgeFileNamesOf(provider: LanguageProvider): { readonly knowledgeFileNames?: readonly string[] } {
+function knowledgeFileNamesOf(provider: LanguageProvider): {
+  readonly knowledgeFileNames?: readonly string[]
+} {
   try {
     const requirement = validatedLanguageSemanticContextRequirements(
       provider.semanticContextRequirements ?? [],
     ).find(item => item.kind === 'language-knowledge')
-    return requirement?.kind === 'language-knowledge' ? { knowledgeFileNames: requirement.fileNames } : {}
+    return requirement?.kind === 'language-knowledge'
+      ? { knowledgeFileNames: requirement.fileNames }
+      : {}
   } catch {
     return {}
   }
@@ -124,6 +129,8 @@ const SEMANTIC_CONTEXT_SCOPE_MAX = 64
 
 /** One exact request route plus provider-owned editor activation metadata. */
 export interface LanguageProviderRoute extends LanguageProviderRequestFacet {
+  /** The dialect a game's file association declares for this extension route. */
+  readonly dialect?: string
   readonly completionTriggerCharacters?: readonly string[]
   readonly signatureHelpTriggerCharacters?: readonly string[]
   readonly onTypeFormattingTriggerCharacters?: readonly string[]
@@ -271,8 +278,12 @@ export function languageFileExtension(path: string): string | undefined {
 }
 
 /** Whether a route serves this file: by its exact name, else by its extension. */
-export function languageRouteServesFile(route: LanguageProviderRequestFacet, path: string): boolean {
-  if (route.fileName !== undefined) return route.fileName.toLowerCase() === baseNameOf(path).toLowerCase()
+export function languageRouteServesFile(
+  route: LanguageProviderRequestFacet,
+  path: string,
+): boolean {
+  if (route.fileName !== undefined)
+    return route.fileName.toLowerCase() === baseNameOf(path).toLowerCase()
   return route.extension !== undefined && route.extension === languageFileExtension(path)
 }
 
@@ -282,16 +293,45 @@ export function languageRouteServesFile(route: LanguageProviderRequestFacet, pat
  * (`candidates` lists them, so a snapshot that wanted one can report itself incomplete).
  */
 export function classifyLanguageFile(
-  routes: readonly LanguageProviderRequestFacet[],
+  routes: readonly LanguageProviderRoute[],
   path: string,
-): Readonly<{ languageId?: string; candidates: readonly string[] }> {
-  const named = routes.filter(route => route.fileName !== undefined && languageRouteServesFile(route, path))
-  const matching = named.length > 0 ? named : routes.filter(route => route.fileName === undefined && languageRouteServesFile(route, path))
+): Readonly<{ languageId?: string; dialect?: string; candidates: readonly string[] }> {
+  const named = routes.filter(
+    route => route.fileName !== undefined && languageRouteServesFile(route, path),
+  )
+  const matching =
+    named.length > 0
+      ? named
+      : routes.filter(route => route.fileName === undefined && languageRouteServesFile(route, path))
   const candidates = [...new Set(matching.map(route => route.languageId))].sort(compareUtf8)
+  const dialects = [
+    ...new Set(matching.flatMap(route => (route.dialect === undefined ? [] : [route.dialect]))),
+  ]
   return Object.freeze({
     ...(candidates.length === 1 ? { languageId: candidates[0] as string } : {}),
+    ...(candidates.length === 1 && dialects.length === 1 ? { dialect: dialects[0] as string } : {}),
     candidates: Object.freeze(candidates),
   })
+}
+
+/**
+ * File associations the inventory's extensions declare (`modkit.languageFiles`): a game names the
+ * language and dialect of its own file kinds (`.scar` → `lua`, `lua51`) without providing a language.
+ */
+export function languageFileAssociations(inventory: Inventory): readonly LanguageFileAssociation[] {
+  const seen = new Map<string, LanguageFileAssociation>()
+  for (const extension of inventory.extensions)
+    for (const association of extension.manifest.languageFiles ?? []) {
+      const normalized: LanguageFileAssociation = Object.freeze({
+        extension: normalizedExtension(association.extension),
+        languageId: association.languageId,
+        ...(association.dialect === undefined ? {} : { dialect: association.dialect }),
+      })
+      seen.set(canonicalJsonStringify(normalized), normalized)
+    }
+  return Object.freeze(
+    [...seen.entries()].sort(([a], [b]) => compareUtf8(a, b)).map(([, value]) => value),
+  )
 }
 
 /**
@@ -309,8 +349,7 @@ export function languageProviderRoutes(inventory: Inventory): readonly LanguageP
       const facet = languageOfferFacet(offer.facet)
       const kinds = facet.documentKinds ?? [undefined]
       // A file-name-only offer adds no catch-all extension route: its files are known by name.
-      const extensions =
-        facet.extensions ?? (facet.fileNames === undefined ? [undefined] : [])
+      const extensions = facet.extensions ?? (facet.fileNames === undefined ? [undefined] : [])
       const targets: readonly (
         | { readonly extension?: string; readonly fileName?: undefined }
         | { readonly fileName: string; readonly extension?: undefined }
@@ -370,6 +409,20 @@ export function languageProviderRoutes(inventory: Inventory): readonly LanguageP
         }
       }
     }
+  }
+  // A game's association routes its extension to a language it does not provide; the provider of
+  // that language is resolved without the extension (see resolveLanguageProvider).
+  const provided = new Set([...routes.values()].map(route => route.languageId))
+  for (const association of languageFileAssociations(inventory)) {
+    if (!provided.has(association.languageId)) continue
+    const identity = { languageId: association.languageId, extension: association.extension }
+    routes.set(
+      canonicalJsonStringify({ ...identity, dialect: association.dialect ?? null }),
+      Object.freeze({
+        ...identity,
+        ...(association.dialect === undefined ? {} : { dialect: association.dialect }),
+      }),
+    )
   }
   return Object.freeze(
     [...routes.entries()]
