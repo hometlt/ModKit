@@ -268,8 +268,9 @@ export function validateReceipt(receipt, requirement) {
     proof.caseIds.some(id => !successful.some(item => item.id === id))
   )
     throw new Error(`proof is not bound to successful executed cases: ${requirement.id}`)
-  // MK3 replaced many read operations (image.read, model.read) by data sources: a proof names either
-  // the operation and its handler, or the data source contract it executed.
+  // MK3 replaced many read operations (image.read, model.read) by data sources and writes by writer
+  // offers: a proof names the operation and its handler, the data source contract, or the writer
+  // offer it executed.
   const operationTarget =
     typeof proof.targetOperation === 'string' &&
     proof.targetOperation !== '' &&
@@ -278,11 +279,24 @@ export function validateReceipt(receipt, requirement) {
   if (
     requirement.kind === 'operation' &&
     (proof.legacyOperation !== requirement.label ||
-      !(operationTarget || dataSourceTarget(proof.targetDataSource)) ||
+      !(
+        operationTarget ||
+        dataSourceTarget(proof.targetDataSource) ||
+        writerTarget(proof.targetWriter)
+      ) ||
       proof.executed !== true)
   )
     throw new Error(`operation execution proof missing: ${requirement.id}`)
   return proof
+}
+
+/** `{ contract, major, offerId }` of a writer offer a proof or mapping names, or undefined. */
+function writerTarget(value) {
+  return dataSourceTarget(value) !== undefined &&
+    typeof value.offerId === 'string' &&
+    value.offerId !== ''
+    ? value
+    : undefined
 }
 
 /** `{ contract, major }` of a data source a proof or mapping names as its target, or undefined. */
@@ -430,13 +444,18 @@ export async function checkLedger({
         const proof = validateReceipt(receipt, requirement)
         const source =
           mapping === undefined ? undefined : dataSourceTarget(mapping.targetDataSource)
+        const writer = mapping === undefined ? undefined : writerTarget(mapping.targetWriter)
         if (
           mapping &&
-          (source === undefined
-            ? mapping.targetOperation !== proof.targetOperation ||
-              mapping.handlerId !== proof.handlerId
-            : proof.targetDataSource?.contract !== source.contract ||
-              proof.targetDataSource?.major !== source.major)
+          (writer !== undefined
+            ? proof.targetWriter?.contract !== writer.contract ||
+              proof.targetWriter?.major !== writer.major ||
+              proof.targetWriter?.offerId !== writer.offerId
+            : source === undefined
+              ? mapping.targetOperation !== proof.targetOperation ||
+                mapping.handlerId !== proof.handlerId
+              : proof.targetDataSource?.contract !== source.contract ||
+                proof.targetDataSource?.major !== source.major)
         )
           fail(`operation target mismatch: ${requirement.id}`)
         if (mapping) {
@@ -445,7 +464,18 @@ export async function checkLedger({
               `contribution is not published by a configured package: ${mapping.contribution}`,
             )
           const manifest = await readJson(confined(root, mapping.contribution))
-          if (manifest.contract?.id !== 'modkit/codec-contribution')
+          if (writer !== undefined) {
+            if (
+              manifest.contract?.id !== 'modkit/service-provider-contribution' ||
+              !manifest.spec?.provides?.some(
+                offer =>
+                  offer.contract === writer.contract &&
+                  offer.major === writer.major &&
+                  offer.offerId === writer.offerId,
+              )
+            )
+              fail(`published writer offer absent: ${requirement.id}`)
+          } else if (manifest.contract?.id !== 'modkit/codec-contribution')
             fail(`published operation absent: ${requirement.id}`)
           else if (source !== undefined) {
             if (

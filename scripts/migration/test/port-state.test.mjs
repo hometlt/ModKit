@@ -473,3 +473,36 @@ test('a read replaced by a data source is proven against the published data sour
   state.operationMap.entries[0].targetDataSource = { ...target, major: 2 }
   assert.match((await checkLedger(state)).join('\n'), /operation target mismatch/u)
 })
+
+test('a write replaced by a writer offer is proven against the published provider', async t => {
+  const state = await acceptedFixture(t)
+  const receipt = JSON.parse(await readFile(path.join(state.root, 'receipt.json')))
+  const target = { contract: 'common.edit/writer', major: 1, offerId: 'fixture-encoder' }
+  for (const proof of receipt.proofs)
+    if (proof.kind === 'operation') {
+      delete proof.targetOperation
+      delete proof.handlerId
+      proof.targetWriter = target
+    }
+  const bytes = stable(receipt)
+  await writeFile(path.join(state.root, 'receipt.json'), bytes)
+  for (const entry of state.ledger.entries) entry.evidence[0].sha256 = hash(bytes)
+  state.ledger.protectedEvidence = [{ path: 'receipt.json', sha256: hash(bytes) }]
+  for (const row of state.operationMap.entries)
+    Object.assign(row, { targetOperation: null, handlerId: null, targetWriter: target })
+  const provider = offers =>
+    writeFile(
+      path.join(state.root, 'codec.json'),
+      stable({
+        contract: { id: 'modkit/service-provider-contribution' },
+        spec: { provides: offers },
+      }),
+    )
+  await provider([{ offerId: 'fixture-encoder', contract: 'common.edit/writer', major: 1 }])
+  assert.deepEqual(await checkLedger(state), [])
+  await provider([{ offerId: 'other-encoder', contract: 'common.edit/writer', major: 1 }])
+  assert.match((await checkLedger(state)).join('\n'), /published writer offer absent/u)
+  await provider([{ offerId: 'fixture-encoder', contract: 'common.edit/writer', major: 1 }])
+  state.operationMap.entries[0].targetWriter = { ...target, offerId: 'other-encoder' }
+  assert.match((await checkLedger(state)).join('\n'), /operation target mismatch/u)
+})
