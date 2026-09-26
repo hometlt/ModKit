@@ -198,6 +198,7 @@ export type {
 export { foreignServiceContractId } from './service-contracts.js'
 export * from './model-encoding.js'
 export * from './video-frames.js'
+export * from './oodle.js'
 export * from './language/index.js'
 export * from './language/translation.js'
 export * from './knowledge/index.js'

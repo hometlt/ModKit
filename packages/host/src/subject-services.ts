@@ -56,6 +56,7 @@ import {
   NATIVE_MODEL_ENCODER_MATCHER,
   registerStandardModelEncodingDefinitions,
 } from './model-encoding.js'
+import { registerStandardCompressionDefinitions } from './compression-definitions.js'
 import { GAME_INSTALLATION_MATCHER, registerStandardGameDefinitions } from './games/index.js'
 import { MOD_WORKSPACE_MATCHER, registerStandardModDefinitions } from './mods/index.js'
 import {
@@ -312,6 +313,7 @@ export async function registerServiceDefinitionsOrThrow(
   const serviceOperations = await registerStandardServiceOperationDefinitions(definitions)
   const renderer = await registerStandardRendererDefinitions(definitions)
   const modelEncoding = await registerStandardModelEncodingDefinitions(definitions)
+  const compression = await registerStandardCompressionDefinitions(definitions)
   const games = await registerStandardGameDefinitions(definitions)
   const mods = await registerStandardModDefinitions(definitions)
   const data = await registerStandardDataDefinitions(definitions)
@@ -323,6 +325,7 @@ export async function registerServiceDefinitionsOrThrow(
     serviceOperations,
     renderer,
     modelEncoding,
+    compression,
     games,
     mods,
     data,

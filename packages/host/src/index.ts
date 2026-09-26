@@ -204,7 +204,11 @@ export {
   type ContentLanguageSourcesRequest,
 } from './content-dependency-operations.js'
 export { openModContextLayerSource } from './mod-context-layer-source.js'
-export { createModContextDataWorkspaceInputs, type ModContextDataWorkspaceInputs, type ModContextNestedRoot } from './mod-context-data-workspace.js'
+export {
+  createModContextDataWorkspaceInputs,
+  type ModContextDataWorkspaceInputs,
+  type ModContextNestedRoot,
+} from './mod-context-data-workspace.js'
 export {
   createBundledServiceDefinitionRegistry,
   createSubjectServices,
@@ -293,6 +297,7 @@ export * from './runtime/index.js'
 export * from './service-operations.js'
 export * from './renderer/index.js'
 export * from './model-encoding.js'
+export * from './compression-definitions.js'
 export * from './games/index.js'
 export * from './mods/index.js'
 export * from './data/index.js'
