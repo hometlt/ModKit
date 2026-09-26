@@ -35,6 +35,7 @@ import {
   type AssetSession,
   type PermissionGrant,
   type RasterResourcePort,
+  type ResourceBudget,
 } from '@modkit/sdk'
 import type { SubjectOpenSnapshot } from '../subject-rpc.js'
 import { createSubjectEditing, type SubjectEditing } from '../subject-editing.js'
@@ -111,6 +112,8 @@ export interface ModkitOptions {
   readonly disabledExtensions?: readonly string[]
   /** Where an opened subject's catalog questions are answered (its mod context). */
   readonly subjectCatalog?: SubjectCatalogOptions
+  /** Budget of every open and of the writer an edit resolves (default `DEFAULT_SUBJECT_OPEN_BUDGET`). */
+  readonly budget?: ResourceBudget
   readonly onDiagnostic?: (diagnostic: Diagnostic) => void
 }
 
@@ -293,10 +296,12 @@ export async function createModkit(options: ModkitOptions): Promise<Modkit> {
   }
   // Read through a call: the opener callback sets it, which control-flow narrowing cannot see.
   const readLastOpened = () => lastOpened.value
+  const budget = options.budget ?? DEFAULT_SUBJECT_OPEN_BUDGET
   const opener = createPathSubjectOpener({
     subjects,
     roots,
     grant,
+    budget,
     intent: options.intent ?? 'full',
     sessionId: randomUUID,
     onOpened: opened => {
@@ -342,7 +347,7 @@ export async function createModkit(options: ModkitOptions): Promise<Modkit> {
           services,
           opened,
           grant,
-          budgets: DEFAULT_SUBJECT_OPEN_BUDGET,
+          budgets: budget,
         })
         for (const item of resolution.diagnostics) options.onDiagnostic?.(item)
         releaseWriter = resolution.release
