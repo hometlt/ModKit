@@ -7565,9 +7565,14 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-warzone/test/receipts/k1/warzone-img.audit.json",
+          "sha256": "a6643b7c8d3ca3c8d69221d101a371919d77f1013d663bd04ed3a6e22dca5577"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/warzone-img/audit",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [
@@ -7580,9 +7585,14 @@
       "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-warzone/test/receipts/k1/warzone-lev.audit.json",
+          "sha256": "79ada4ffbce251da493d9443484e3bd6ecf3e3392fc42d1b86e50a40480e8bdb"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/warzone-lev/audit",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [
@@ -7595,9 +7605,14 @@
       "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-warzone/test/receipts/k1/warzone-pie.audit.json",
+          "sha256": "54a59e5353bb5862542047d9f43991f87f1b6661717c9cd8b24885e7e3c2c3f2"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/warzone-pie/audit",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [
@@ -7620,9 +7635,14 @@
       "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-warzone/test/receipts/k1/warzone-wrf.audit.json",
+          "sha256": "dfcabe767df1598d8944769c0d7bef8078682bdb68f8a1db7a79c6ebdf3c4476"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/warzone-wrf/audit",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [
@@ -7635,9 +7655,14 @@
       "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-warzone/test/receipts/k1/warzone-wz.audit.json",
+          "sha256": "bec4e959d3591de1e8a148e51750e2569d5713f0de52506a786369481d226119"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/warzone-wz/audit",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [
@@ -7650,9 +7675,14 @@
       "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-warzone/test/receipts/k1/warzone2100-map.audit.json",
+          "sha256": "1d968f33e6a2ec8ab74b0ee72dd09c1121bca74bcbac088eb3f4aa04c1ab0184"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/warzone2100-map/audit",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [
