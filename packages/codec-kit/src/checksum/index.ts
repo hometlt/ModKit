@@ -17,7 +17,7 @@ export function crc32Range(bytes: Uint8Array, start: number, end: number): numbe
   return crc32(bytes.subarray(start, end))
 }
 
-/** The IEEE polynomial fed most-significant bit first (0x04C11DB7): BZip2's block CRC. */
+/** The IEEE polynomial fed MSB first (0x04C11DB7): BZip2's block CRC and Ogg's page CRC. */
 const FORWARD = (() => {
   const table = new Uint32Array(256)
   for (let n = 0; n < 256; n += 1) {
@@ -34,15 +34,25 @@ export interface Crc32MsbAccumulator {
   digest(): number
 }
 
-/** BZip2's CRC-32: the IEEE polynomial, not reflected. */
-export function createCrc32Msb(): Crc32MsbAccumulator {
-  let crc = 0xffffffff
+export interface Crc32MsbOptions {
+  /** Register before the first byte; BZip2 0xFFFFFFFF, Ogg 0. */
+  readonly init?: number
+  /** XORed into the result; BZip2 0xFFFFFFFF, Ogg 0. */
+  readonly xorOut?: number
+}
+
+/** The IEEE polynomial, not reflected: BZip2's CRC-32 by default, Ogg's with `init` and `xorOut` 0. */
+export function createCrc32Msb({
+  init = 0xffffffff,
+  xorOut = 0xffffffff,
+}: Crc32MsbOptions = {}): Crc32MsbAccumulator {
+  let crc = init >>> 0
   return {
     update(byte, count = 1) {
       for (let index = 0; index < count; index += 1) {
         crc = ((crc << 8) ^ (FORWARD[((crc >>> 24) ^ byte) & 0xff] as number)) >>> 0
       }
     },
-    digest: () => (crc ^ 0xffffffff) >>> 0,
+    digest: () => (crc ^ xorOut) >>> 0,
   }
 }
