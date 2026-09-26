@@ -1,6 +1,7 @@
 import type { ModelPrimitive } from '@modkit/sdk'
 import type { ModelBonePoseSample } from './skeleton.js'
 import { skinInterleaved } from './legacy/skinning-kernels.js'
+import { invertAffine } from '../model-math/transform.js'
 
 /** Compile buffer layout and sparse bone joins once. Output frames own their deformed attributes. */
 export function createModelSkinDeformer(
@@ -169,42 +170,6 @@ export interface SkinBakeOptions {
   readonly blendEpsilon?: number
   readonly maxBytes?: number
   readonly signal?: AbortSignal
-}
-
-/** Column-major 4x4 inverse for an affine matrix: transpose the basis, then move the origin back. */
-function invertAffine(matrix: readonly number[]): number[] {
-  const value = (index: number): number => {
-    const one = matrix[index]
-    return typeof one === 'number' && Number.isFinite(one) ? one : 0
-  }
-  const basis = [value(0), value(1), value(2), value(4), value(5), value(6), value(8), value(9), value(10)]
-  const determinant =
-    basis[0]! * (basis[4]! * basis[8]! - basis[5]! * basis[7]!) -
-    basis[3]! * (basis[1]! * basis[8]! - basis[2]! * basis[7]!) +
-    basis[6]! * (basis[1]! * basis[5]! - basis[2]! * basis[4]!)
-  if (!Number.isFinite(determinant) || Math.abs(determinant) < 1e-12)
-    throw new RangeError('a bind matrix with no inverse cannot place a baked part')
-  const inverse = [
-    (basis[4]! * basis[8]! - basis[5]! * basis[7]!) / determinant,
-    (basis[2]! * basis[7]! - basis[1]! * basis[8]!) / determinant,
-    (basis[1]! * basis[5]! - basis[2]! * basis[4]!) / determinant,
-    (basis[5]! * basis[6]! - basis[3]! * basis[8]!) / determinant,
-    (basis[0]! * basis[8]! - basis[2]! * basis[6]!) / determinant,
-    (basis[2]! * basis[3]! - basis[0]! * basis[5]!) / determinant,
-    (basis[3]! * basis[7]! - basis[4]! * basis[6]!) / determinant,
-    (basis[1]! * basis[6]! - basis[0]! * basis[7]!) / determinant,
-    (basis[0]! * basis[4]! - basis[1]! * basis[3]!) / determinant,
-  ]
-  const translation = [value(12), value(13), value(14)]
-  const moved = [0, 1, 2].map(
-    row => -(inverse[row]! * translation[0]! + inverse[row + 3]! * translation[1]! + inverse[row + 6]! * translation[2]!),
-  )
-  return [
-    inverse[0]!, inverse[1]!, inverse[2]!, 0,
-    inverse[3]!, inverse[4]!, inverse[5]!, 0,
-    inverse[6]!, inverse[7]!, inverse[8]!, 0,
-    moved[0]!, moved[1]!, moved[2]!, 1,
-  ]
 }
 
 function applyPoint(matrix: readonly number[], x: number, y: number, z: number): [number, number, number] {

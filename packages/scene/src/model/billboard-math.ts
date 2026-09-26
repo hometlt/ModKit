@@ -1,71 +1,15 @@
 // Pinned raw-WebGL numerical kernels, copied without equation changes.
 // Source commit 1a14ba4eddd0ae88de273348ebd44cfb98a0581d; webgl-core/index.ts.
 // Indexed numeric reads use explicit zero fallback for strict TS; admitted matrices have 16 entries.
-export function normalizeQuat(
-  value: readonly [number, number, number, number] | readonly number[],
-): [number, number, number, number] {
-  const x = value[0] ?? 0
-  const y = value[1] ?? 0
-  const z = value[2] ?? 0
-  const w = value[3] ?? 1
-  const length = Math.hypot(x, y, z, w) || 1
-  return [x / length, y / length, z / length, w / length]
-}
+import {
+  decomposeMatrix4,
+  normalizeQuat,
+  quaternionFromRotationMatrix,
+} from '@modkit/codec-kit/model-math/transform'
 
-export function decomposeMatrix4(matrix: Float32Array): {
-  translation: [number, number, number]
-  rotation: [number, number, number, number]
-  scaling: [number, number, number]
-} {
-  const sx = Math.hypot(matrix[0] ?? 0, matrix[1] ?? 0, matrix[2] ?? 0) || 1
-  const sy = Math.hypot(matrix[4] ?? 0, matrix[5] ?? 0, matrix[6] ?? 0) || 1
-  const sz = Math.hypot(matrix[8] ?? 0, matrix[9] ?? 0, matrix[10] ?? 0) || 1
-  return {
-    translation: [matrix[12] ?? 0, matrix[13] ?? 0, matrix[14] ?? 0],
-    scaling: [sx, sy, sz],
-    rotation: quaternionFromRotationMatrix([
-      (matrix[0] ?? 1) / sx,
-      (matrix[1] ?? 0) / sx,
-      (matrix[2] ?? 0) / sx,
-      (matrix[4] ?? 0) / sy,
-      (matrix[5] ?? 1) / sy,
-      (matrix[6] ?? 0) / sy,
-      (matrix[8] ?? 0) / sz,
-      (matrix[9] ?? 0) / sz,
-      (matrix[10] ?? 1) / sz,
-    ]),
-  }
-}
-
-export function quaternionFromRotationMatrix(
-  matrix: readonly number[],
-): [number, number, number, number] {
-  const m00 = matrix[0] ?? 1
-  const m01 = matrix[3] ?? 0
-  const m02 = matrix[6] ?? 0
-  const m10 = matrix[1] ?? 0
-  const m11 = matrix[4] ?? 1
-  const m12 = matrix[7] ?? 0
-  const m20 = matrix[2] ?? 0
-  const m21 = matrix[5] ?? 0
-  const m22 = matrix[8] ?? 1
-  const trace = m00 + m11 + m22
-
-  if (trace > 0) {
-    const s = Math.sqrt(trace + 1) * 2
-    return normalizeQuat([(m21 - m12) / s, (m02 - m20) / s, (m10 - m01) / s, 0.25 * s])
-  }
-  if (m00 > m11 && m00 > m22) {
-    const s = Math.sqrt(1 + m00 - m11 - m22) * 2
-    return normalizeQuat([0.25 * s, (m01 + m10) / s, (m02 + m20) / s, (m21 - m12) / s])
-  }
-  if (m11 > m22) {
-    const s = Math.sqrt(1 + m11 - m00 - m22) * 2
-    return normalizeQuat([(m01 + m10) / s, 0.25 * s, (m12 + m21) / s, (m02 - m20) / s])
-  }
-  const s = Math.sqrt(1 + m22 - m00 - m11) * 2
-  return normalizeQuat([(m02 + m20) / s, (m12 + m21) / s, 0.25 * s, (m10 - m01) / s])
-}
+// ponytail: the decomposition kernels live in codec-kit; this public `model/matrix` subpath still
+// re-exports them for rig-model and blizzard's fresh-rigid until both import codec-kit directly.
+export { decomposeMatrix4, normalizeQuat, quaternionFromRotationMatrix }
 
 export function invertQuat(
   rotation: readonly [number, number, number, number],
