@@ -18,7 +18,11 @@ export interface VfsLimits {
   readonly maxMaterializedBytes: bigint
   /** Logical size of one addressable random-access file. */
   readonly maxFileBytes: bigint
-  /** Cumulative bytes actually returned by all sources opened from one mount. */
+  /**
+   * Cumulative bytes actually returned by all sources opened from one mount. Opt-in for a caller
+   * that reads one bounded thing (an extension artifact); unbounded by default, because a mount of
+   * an installed game lives as long as the window and reads far more than any one budget.
+   */
   readonly maxReadBytes: bigint
   /** Bytes requested by one random-access read. */
   readonly maxReadRangeBytes: number
@@ -34,7 +38,8 @@ export const DEFAULT_VFS_LIMITS: VfsLimits = Object.freeze({
   maxEntries: 25_000,
   maxMaterializedBytes: 512n * 1024n * 1024n,
   maxFileBytes: 8n * 1024n * 1024n * 1024n * 1024n,
-  maxReadBytes: 512n * 1024n * 1024n,
+  // one read and one stream are bounded below; a lifetime total refused the 940th CASC texture
+  maxReadBytes: 2n ** 63n - 1n,
   maxReadRangeBytes: 16 * 1024 * 1024,
   maxStreamBytes: 512n * 1024n * 1024n,
   maxPathBytes: 4096,
