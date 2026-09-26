@@ -3741,8 +3741,6 @@ uniform vec3 lightColor;
 uniform float lightIntensity;
 uniform vec3 eyePosition;
 uniform vec3 lightSpecularRadiance;
-uniform vec3 fillSpecularRadiance0;
-uniform vec3 fillSpecularRadiance1;
 uniform vec3 terrainLighting;
 uniform float keyUsesVertexAo;
 uniform float fillUsesVertexAo0;
@@ -3975,9 +3973,9 @@ void main() {
     vec3 view = normalize(eyePosition - worldPosition);
     vec3 key = normalize(-lightDirection);
     float exponent = max(terrainLighting.x, 1.0);
+    // Specular comes from the key light only: SC2 Lighting.fx adds the other directional lights
+    // with useSpecular false (their diffuse carries the ambient occlusion instead).
     specular = specColor * terrainLighting.z * lightSpecularRadiance * pow(max(dot(resolvedNormal, normalize(view + key)), 0.0), exponent) * step(0.000001, diffuse) * shadow;
-    if (length(fillLightDirection0) > 0.0) specular += specColor * terrainLighting.z * fillSpecularRadiance0 * pow(max(dot(resolvedNormal, normalize(view - normalize(fillLightDirection0))), 0.0), exponent) * step(0.000001, dot(resolvedNormal, -normalize(fillLightDirection0)));
-    if (length(fillLightDirection1) > 0.0) specular += specColor * terrainLighting.z * fillSpecularRadiance1 * pow(max(dot(resolvedNormal, normalize(view - normalize(fillLightDirection1))), 0.0), exponent) * step(0.000001, dot(resolvedNormal, -normalize(fillLightDirection1)));
   }
   outColor = vec4(surface.rgb * lighting + specular, surface.a);
 }`
@@ -5932,14 +5930,6 @@ function drawWorldWebGlWithResources(
       gl.uniform1f(
         uniformLocation(gl, program, `fillUsesVertexAo${String(index)}`),
         fill?.useAmbientOcclusion === false ? 0 : 1,
-      )
-      gl.uniform3fv(
-        uniformLocation(gl, program, `fillSpecularRadiance${String(index)}`),
-        fill === undefined
-          ? [0, 0, 0]
-          : (fill.specularColor ?? fill.color).map(
-              value => value * (fill.specularIntensity ?? fill.intensity),
-            ),
       )
       gl.uniform3fv(
         uniformLocation(gl, program, `fillLightDirection${String(index)}`),
