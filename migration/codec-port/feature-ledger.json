@@ -782,6 +782,10 @@
         {
           "path": "modkit-extensions-blizzard/blizzard-diablo/test/receipts/diablo3-tex.image.inspect.json",
           "sha256": "f0f2de4e474c7512ddca85424dfa555faf7b0cb360dfeb7bf5eee845ad5e4a1d"
+        },
+        {
+          "path": "modkit-extensions-blizzard/blizzard-diablo/test/receipts/diablo3-tex.image.inspect.v2.json",
+          "sha256": "d7b5434b6ad835cb0a6d3ccd005635a9a60a0a84fe9b1bbf1758d21124265514"
         }
       ],
       "id": "legacy/codec-manifest/modkit/diablo3-tex/operation/image.inspect",
@@ -792,6 +796,10 @@
         {
           "path": "modkit-extensions-blizzard/blizzard-diablo/test/receipts/diablo3-tex.image.read.json",
           "sha256": "a220bc4a67e668f8633e6c8fb762a61c17eaa9c16b211959a4c233c05a109ef7"
+        },
+        {
+          "path": "modkit-extensions-blizzard/blizzard-diablo/test/receipts/diablo3-tex.image.read.v2.json",
+          "sha256": "741646530da565194aec730a147c54992fb153d5239e0d39f7dda981421a1ab4"
         }
       ],
       "id": "legacy/codec-manifest/modkit/diablo3-tex/operation/image.read",
