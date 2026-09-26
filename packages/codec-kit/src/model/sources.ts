@@ -29,6 +29,8 @@ import type {
   ModelEffectSource,
   ModelSocketRef,
   ModelSocketSource,
+  ModelLodLevelRef,
+  ModelLodSource,
 } from '@modkit/sdk'
 import type { JsonSnapshotBudget } from '../json-snapshot.js'
 import { pageStart } from '../paging.js'
@@ -460,4 +462,16 @@ export function createModelSocketSource({
     'sockets',
     items,
   )
+}
+
+/** Discrete levels of detail, most detailed first (`order` 0). */
+export function createModelLodSource({
+  levels,
+}: {
+  readonly levels: readonly ModelLodLevelRef[]
+}): ModelLodSource {
+  const items = [...levels]
+    .sort((a, b) => a.order - b.order)
+    .map(level => ({ ...level, nodeIds: Object.freeze([...level.nodeIds]) }))
+  return facetSource(Object.freeze({ levels: items.length }), 'levels', items)
 }

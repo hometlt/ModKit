@@ -28,6 +28,7 @@ const MODEL_FACETS = [
   'common.view/model-animation-source',
   'common.view/model-collision-source',
   'common.view/model-material-source',
+  'common.view/model-lod-source',
 ] as const
 
 describe('UV digests are algorithm-qualified', () => {
@@ -120,10 +121,10 @@ describe('optional model facet sources', () => {
   })
 
   it('reserves the unpublished facets without pretending they are contracts', () => {
-    // `model-effect-source` left this list once M3 and MDX published per-emitter records: a
-    // reservation exists to be closed, and the two that remain still have no publisher.
+    // `model-effect-source` left this list once M3 and MDX published per-emitter records, and
+    // `model-lod-source` once Earth 2160 publishes its LODLevel meshes: a reservation exists to be
+    // closed, and the one that remains still has no publisher.
     expect(RESERVED_MODEL_FACET_SOURCES.map(entry => entry.contract)).toEqual([
-      'common.view/model-lod-source',
       'common.view/model-variant-source',
     ])
     for (const entry of RESERVED_MODEL_FACET_SOURCES) {

@@ -325,9 +325,10 @@ describe('NXT-103 — standard data-source surfaces', () => {
       'common.view/model-camera-source',
       'common.view/model-physics-source',
       'common.view/model-node-behaviour-source',
+      'common.view/model-lod-source',
       'common.view/slide-deck-source',
     ])
-    expect(ADMITTED_DATA_SOURCE_CONTRACTS.length).toBe(STANDARD_DATA_SOURCE_CONTRACTS.length - 8)
+    expect(ADMITTED_DATA_SOURCE_CONTRACTS.length).toBe(STANDARD_DATA_SOURCE_CONTRACTS.length - 9)
     // the base model contract is untouched: a facet beside a contract is not a change to it
     expect(dataSourceMaturity('common.view/model-scene-source')).toBe('admitted')
     for (const contract of ADMITTED_DATA_SOURCE_CONTRACTS) {

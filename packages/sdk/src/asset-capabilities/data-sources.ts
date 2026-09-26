@@ -60,6 +60,9 @@ import type {
   ModelNodeBehaviourInfo,
   ModelNodeBehaviourRef,
   ModelNodeBehaviourSource,
+  ModelLodInfo,
+  ModelLodLevelRef,
+  ModelLodSource,
   ModelPhysicsInfo,
   ModelPhysicsRef,
   ModelPhysicsSource,
@@ -113,6 +116,9 @@ export {
   type ModelNodeBehaviourInfo,
   type ModelNodeBehaviourRef,
   type ModelNodeBehaviourSource,
+  type ModelLodInfo,
+  type ModelLodLevelRef,
+  type ModelLodSource,
   type ModelPhysicsInfo,
   type ModelPhysicsRef,
   type ModelPhysicsSource,
@@ -1290,6 +1296,7 @@ export interface DataSourceContractMap {
   'common.view/model-camera-source': { 1: ModelCameraSource }
   'common.view/model-physics-source': { 1: ModelPhysicsSource }
   'common.view/model-node-behaviour-source': { 1: ModelNodeBehaviourSource }
+  'common.view/model-lod-source': { 1: ModelLodSource }
   'common.view/relation-graph-source': { 1: RelationGraphSource }
   'common.view/subject-selector-source': { 1: SubjectSelectorSource }
   'common.view/subject-facts-source': { 1: SubjectFactsSource }

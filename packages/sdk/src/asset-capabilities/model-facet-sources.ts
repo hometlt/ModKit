@@ -514,6 +514,26 @@ export interface ModelNodeBehaviourSource {
   behaviours(page: PageRequest, signal?: AbortSignal): Promise<Page<ModelNodeBehaviourRef>>
 }
 
+/**
+ * One discrete level of detail. `order` 0 is the most detailed; a viewer draws the lowest order by
+ * default. Nodes that no level names are drawn at every level.
+ */
+export interface ModelLodLevelRef {
+  readonly id: string
+  readonly order: number
+  readonly nodeIds: readonly string[]
+}
+
+export interface ModelLodInfo {
+  readonly levels: number
+}
+
+/** Discrete levels of detail — `common.view/model-lod-source@1`. */
+export interface ModelLodSource {
+  info(signal?: AbortSignal): Promise<ModelLodInfo>
+  levels(page: PageRequest, signal?: AbortSignal): Promise<Page<ModelLodLevelRef>>
+}
+
 /** Attachment points — `common.view/model-socket-source@1`. */
 export interface ModelSocketSource {
   info(signal?: AbortSignal): Promise<ModelSocketInfo>
@@ -544,16 +564,6 @@ export interface ReservedModelFacetSource {
 }
 
 export const RESERVED_MODEL_FACET_SOURCES: readonly ReservedModelFacetSource[] = Object.freeze([
-  Object.freeze({
-    contract: 'common.view/model-lod-source',
-    major: 1,
-    minimalShape: Object.freeze([
-      'info(): { levels }',
-      'levels(page): { id, nodeIds, order, selection? }',
-    ]),
-    blockedBy:
-      'no codec publishes discrete LOD levels today: MSFT_lod topology is readable in principle, and nothing reads it',
-  }),
   Object.freeze({
     contract: 'common.view/model-variant-source',
     major: 1,
