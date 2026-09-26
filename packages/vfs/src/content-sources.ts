@@ -134,12 +134,20 @@ export type ModContextTarget = string | { readonly sourceId: string; readonly pa
  * `package` — the target lies in this package (its primary layer's source and path);
  * `loose` — it exists outside any package and opens over `baseMods`;
  * `missing` — `openModContext` would refuse it: a host path under which nothing exists. A path
- * absent inside a content source still opens loose and fails only on read, so it is `loose`.
+ * absent inside a content source still opens loose and fails only on read, so it is `loose`;
+ * `foreign` — the target is not this game's (an SC2 script to Dawn of War): another module in the
+ * same window may place it. The composition never answers `foreign` itself.
  */
 export type ModPackagePlacement =
-  | { readonly kind: 'package'; readonly sourceId: string; readonly path: string; readonly displayName: string }
+  | {
+      readonly kind: 'package'
+      readonly sourceId: string
+      readonly path: string
+      readonly displayName: string
+    }
   | { readonly kind: 'loose' }
   | { readonly kind: 'missing' }
+  | { readonly kind: 'foreign' }
 
 /** The `sourceId` of a layer that lives on the host's own disk rather than in a content source. */
 export const HOST_LAYER_SOURCE_ID = 'host'
@@ -505,20 +513,33 @@ export async function callContentSources(
  */
 export function composeContentSources(parts: readonly ContentSources[]): ContentSources {
   if (parts.length === 1) return parts[0]!
-  const owners = { region: new Map<string, ContentSources>(), connection: new Map<string, ContentSources>(),
-    source: new Map<string, ContentSources>(), result: new Map<string, ContentSources>() }
+  const owners = {
+    region: new Map<string, ContentSources>(),
+    connection: new Map<string, ContentSources>(),
+    source: new Map<string, ContentSources>(),
+    result: new Map<string, ContentSources>(),
+  }
   // ponytail: a review id is not in any snapshot; it belongs to the part that last prepared one.
   let publisher: ContentSources | undefined
   const snapshot = async (): Promise<ContentSourceSnapshot> => {
-    const taken = await Promise.all(parts.map(async part => ({ part, snapshot: await part.snapshot() })))
+    const taken = await Promise.all(
+      parts.map(async part => ({ part, snapshot: await part.snapshot() })),
+    )
     for (const map of [owners.region, owners.connection, owners.source]) map.clear()
-    const claim = (map: Map<string, ContentSources>, kind: string, id: string, part: ContentSources) => {
-      if (map.has(id) && map.get(id) !== part) throw new TypeError(`two content source modules name the ${kind} «${id}»`)
+    const claim = (
+      map: Map<string, ContentSources>,
+      kind: string,
+      id: string,
+      part: ContentSources,
+    ) => {
+      if (map.has(id) && map.get(id) !== part)
+        throw new TypeError(`two content source modules name the ${kind} «${id}»`)
       map.set(id, part)
     }
     for (const { part, snapshot } of taken) {
       for (const region of snapshot.regions) claim(owners.region, 'region', region.id, part)
-      for (const connection of snapshot.connections) claim(owners.connection, 'connection', connection.id, part)
+      for (const connection of snapshot.connections)
+        claim(owners.connection, 'connection', connection.id, part)
       for (const root of snapshot.roots) claim(owners.source, 'source', root.id, part)
     }
     return {
@@ -540,14 +561,24 @@ export function composeContentSources(parts: readonly ContentSources[]): Content
   const byConnection = (id: string) => owner(owners.connection, id)
   const optional = <K extends keyof ContentSources>(part: ContentSources, key: K) => {
     const method = part[key]
-    if (typeof method !== 'function') throw new TypeError(`this content source module does not support ${String(key)}`)
+    if (typeof method !== 'function')
+      throw new TypeError(`this content source module does not support ${String(key)}`)
     return (method as (...args: unknown[]) => unknown).bind(part)
   }
+  // A host path goes to the module that places it in a package, else to the first that accepts it
+  // loose; a module that calls it foreign or missing never receives it. One that cannot place targets
+  // is asked only when no module accepted the path.
   const hostTarget = async (target: string): Promise<ContentSources | undefined> => {
+    let loose: ContentSources | undefined
     for (const part of parts) {
-      if ((await part.locateModPackage?.(target))?.kind === 'package') return part
+      const placement = await part.locateModPackage?.(target)
+      if (placement?.kind === 'package') return part
+      if (placement?.kind === 'loose') loose ??= part
     }
-    return parts.find(part => part.openModContext !== undefined)
+    return (
+      loose ??
+      parts.find(part => part.openModContext !== undefined && part.locateModPackage === undefined)
+    )
   }
   const composed: ContentSources = {
     snapshot,
@@ -624,14 +655,19 @@ export function composeContentSources(parts: readonly ContentSources[]): Content
     },
     async openModContext(request) {
       const part =
-        typeof request.target === 'string' ? await hostTarget(request.target) : await bySource(request.target.sourceId)
-      if (part?.openModContext === undefined) throw new TypeError('no content source module opens mod contexts')
+        typeof request.target === 'string'
+          ? await hostTarget(request.target)
+          : await bySource(request.target.sourceId)
+      if (part?.openModContext === undefined)
+        throw new TypeError('no content source module opens mod contexts')
       return part.openModContext(request)
     },
     async locateModPackage(target, signal) {
       if (typeof target !== 'string') {
         const part = await bySource(target.sourceId)
-        return part.locateModPackage === undefined ? { kind: 'missing' } : part.locateModPackage(target, signal)
+        return part.locateModPackage === undefined
+          ? { kind: 'missing' }
+          : part.locateModPackage(target, signal)
       }
       let loose = false
       for (const part of parts) {
@@ -647,7 +683,8 @@ export function composeContentSources(parts: readonly ContentSources[]): Content
   }
   // A client offers a command only when the method exists: keep just what some part supports.
   for (const key of OPTIONAL_CONTENT_SOURCE_METHODS) {
-    if (!parts.some(part => part[key] !== undefined)) delete (composed as Partial<ContentSources>)[key]
+    if (!parts.some(part => part[key] !== undefined))
+      delete (composed as Partial<ContentSources>)[key]
   }
   // Each game's Runtime preparer; the host picks the one for the opened context's game.
   const runtimePreparers = parts.flatMap(part => {
