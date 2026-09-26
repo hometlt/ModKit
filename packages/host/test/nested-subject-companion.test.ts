@@ -1073,3 +1073,69 @@ describe('the archive origin serves the scopes an entry actually has', () => {
     }
   })
 })
+
+describe('a container hands its entries what they need from it', () => {
+  it('passes the namespace nestedContext to the nested codec as containerContext', async () => {
+    const archive = await openArchive([{ path: 'active/props/lamp.mesh', bytes: MODEL_BYTES }])
+    openSessions.push(archive)
+    const subjects = await nestedServices()
+    const seen: unknown[] = []
+    const executionBackends = createExecutionBackendRegistry([
+      {
+        profile: 'trusted-in-process',
+        supports: (_target, variant) => variant.executionProfile === 'trusted-in-process',
+        async activate(context) {
+          const module = (await import(context.entrypoint.href)) as {
+            createCodec?: (context: ContributionContext) => Codec
+          }
+          const create = module.createCodec
+          return {
+            module:
+              create === undefined
+                ? module
+                : {
+                    ...module,
+                    createCodec(contribution: ContributionContext) {
+                      seen.push(contribution.containerContext)
+                      return create(contribution)
+                    },
+                  },
+            release: async () => undefined,
+          }
+        },
+      },
+    ])
+    // the container codec publishes nestedContext through its namespace (IoStore: script objects)
+    const parent = {
+      ...archive,
+      descriptor: () => archive.descriptor(),
+      operations: () => archive.operations(),
+      async dataSource(contract: string, major: number) {
+        const lease = await archive.dataSource(contract as never, major as never)
+        if (contract !== 'common.view/namespace-entry-source') return lease
+        const namespace = lease.value as NamespaceEntrySource
+        return {
+          value: {
+            list: namespace.list.bind(namespace),
+            openEntry: namespace.openEntry.bind(namespace),
+            ...(namespace.lookup === undefined ? {} : { lookup: namespace.lookup.bind(namespace) }),
+            nestedContext: async () => ({ scriptObjects: ['/Script/Engine.Actor'] }),
+          },
+          release: () => lease.release(),
+        }
+      },
+    } as unknown as AssetSession
+    const { result } = await openNestedSubject({
+      parent,
+      entryId: await entryIdOf(archive, 'active/props/lamp.mesh'),
+      inventory: subjects.inventory,
+      executionBackends,
+      target,
+      grant,
+      budget,
+    })
+    if (result.state !== 'opened') throw new Error(JSON.stringify(result.diagnostics))
+    openSessions.push(result.session)
+    expect(seen).toContainEqual({ scriptObjects: ['/Script/Engine.Actor'] })
+  })
+})

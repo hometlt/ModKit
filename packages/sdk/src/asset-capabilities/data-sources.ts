@@ -793,6 +793,12 @@ export interface NamespaceEntrySource {
    * `undefined` means the container holds no entry at that path.
    */
   lookup?(path: string, signal?: AbortSignal): Promise<NamespaceEntry | undefined>
+  /**
+   * Data the container hands every subject opened from its entries (IoStore: the global script
+   * object names of `global.utoc`, which lie beside the container, not in it). The host passes it
+   * as the nested codec's `ContributionContext.containerContext`.
+   */
+  nestedContext?(signal?: AbortSignal): Promise<JsonValue | undefined>
   /** Returns a leased source reference, never eager decoded bytes. */
   openEntry(entryId: string, signal?: AbortSignal): Promise<Lease<AssetSourceRef>>
 }

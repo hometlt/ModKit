@@ -133,6 +133,14 @@ export function containerEntryAccess(
           : {}),
       })
     },
+    ...(table.nestedContext === undefined
+      ? {}
+      : {
+          async nestedContext(signal?: AbortSignal) {
+            throwIfCancelled(signal)
+            return table.nestedContext
+          },
+        }),
     async lookup(path: string, signal?: AbortSignal) {
       throwIfCancelled(signal)
       const entry = await entryAt(path, signal)

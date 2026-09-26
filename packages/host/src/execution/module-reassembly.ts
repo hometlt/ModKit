@@ -30,6 +30,7 @@ export interface WireContext {
   readonly logicalResources?: WireLogicalResourcePort
   readonly installationProbes?: ContributionContext['installationProbes']
   readonly videoFrames?: ContributionContext['videoFrames']
+  readonly containerContext?: ContributionContext['containerContext']
 }
 
 const unavailableResolver = {
@@ -68,6 +69,7 @@ export function contributionContext(wire: WireContext): ContributionContext {
       ? {}
       : { installationProbes: wire.installationProbes }),
     ...(wire.videoFrames === undefined ? {} : { videoFrames: wire.videoFrames }),
+    ...(wire.containerContext === undefined ? {} : { containerContext: wire.containerContext }),
     ...(wire.providerIdentity === undefined
       ? {}
       : { providerIdentity: Object.freeze({ ...wire.providerIdentity }) }),

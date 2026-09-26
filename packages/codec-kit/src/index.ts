@@ -133,6 +133,8 @@ export interface InspectionContext {
   readonly contracts?: ContributionContext['contracts']
   readonly rasterResources?: ContributionContext['rasterResources']
   readonly videoFrames?: ContributionContext['videoFrames']
+  /** What the enclosing container hands this subject (see ContainerEntryTable.nestedContext). */
+  readonly containerContext?: ContributionContext['containerContext']
   readonly modelResources?: ContributionContext['modelResources']
   readonly logicalResources?: ContributionContext['logicalResources']
   readonly budget: ResourceBudget
@@ -265,6 +267,11 @@ export interface ContainerEntryTable {
    * finds a path by hash. Published as the namespace's `lookup`; extraction uses it too.
    */
   find?(path: string, signal?: AbortSignal): Promise<ContainerEntry | undefined>
+  /**
+   * Handed to every subject opened from an entry, as its `context.containerContext`: what the
+   * container knows that its entries need (IoStore: the global script object names).
+   */
+  readonly nestedContext?: JsonValue
 }
 
 export interface InspectionResult {
@@ -310,6 +317,8 @@ export interface NamespaceInspectionContext {
   readonly contracts?: ContributionContext['contracts']
   readonly rasterResources?: ContributionContext['rasterResources']
   readonly videoFrames?: ContributionContext['videoFrames']
+  /** What the enclosing container hands this subject (see ContainerEntryTable.nestedContext). */
+  readonly containerContext?: ContributionContext['containerContext']
   readonly modelResources?: ContributionContext['modelResources']
   readonly logicalResources?: ContributionContext['logicalResources']
   readonly budget: ResourceBudget
@@ -1345,6 +1354,9 @@ export function createInspectionCodec(
                   ...(contributionContext.videoFrames === undefined
                     ? {}
                     : { videoFrames: contributionContext.videoFrames }),
+                  ...(contributionContext.containerContext === undefined
+                    ? {}
+                    : { containerContext: contributionContext.containerContext }),
                   ...(contributionContext.logicalResources === undefined
                     ? {}
                     : { logicalResources: contributionContext.logicalResources }),
@@ -1487,6 +1499,9 @@ export function createInspectionCodec(
                 ...(contributionContext.videoFrames === undefined
                   ? {}
                   : { videoFrames: contributionContext.videoFrames }),
+                ...(contributionContext.containerContext === undefined
+                  ? {}
+                  : { containerContext: contributionContext.containerContext }),
                 ...(contributionContext.logicalResources === undefined
                   ? {}
                   : { logicalResources: contributionContext.logicalResources }),

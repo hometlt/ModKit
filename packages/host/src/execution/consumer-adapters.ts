@@ -99,6 +99,9 @@ export function moduleAdapter(
         : { providerIdentity: context.providerIdentity }),
       // Settings are plain data, so they cross as a copy rather than as an exposed surface.
       ...(context.settings === undefined ? {} : { settings: context.settings }),
+      ...(context.containerContext === undefined
+        ? {}
+        : { containerContext: context.containerContext }),
       diagnostics: expose(
         { report: (diagnostic: Diagnostic) => context.diagnostics.report(diagnostic) },
         ABI_DIAGNOSTIC_SINK,

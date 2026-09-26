@@ -167,6 +167,7 @@ const namespaceEntrySourceSurface = {
     readPreamble: { kind: 'value', optional: true, ...sig },
     search: { kind: 'value', optional: true, ...sig },
     lookup: { kind: 'value', optional: true, ...sig },
+    nestedContext: { kind: 'value', optional: true, ...sig },
     /** `Lease<AssetSourceRef>`: the ref crosses by copy, the lease is a release-only handle. */
     openEntry: { kind: 'leased-value', ...sig },
   },

@@ -106,6 +106,8 @@ export interface ContributionContext {
   readonly installationProbes?: InstallationProbes
   /** Decodes one video frame (a desktop host with ffmpeg); absent where no decoder exists. */
   readonly videoFrames?: VideoFrameDecoder
+  /** What the enclosing container hands a subject opened from one of its entries (inert JSON). */
+  readonly containerContext?: JsonValue
   readonly signal?: AbortSignal
 }
 

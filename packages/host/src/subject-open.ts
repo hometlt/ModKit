@@ -159,6 +159,8 @@ export interface OpenSubjectOptions {
   readonly provideRasterResources?: boolean
   /** The desktop host's video frame decoder, handed to codecs as `context.videoFrames`. */
   readonly videoFrames?: VideoFrameDecoder
+  /** What the enclosing container hands this subject's codec (`context.containerContext`). */
+  readonly containerContext?: JsonValue
   /**
    * Where the subject's catalog questions are answered: an operation that names the entities it
    * needs (`catalogQueries`) is invoked again with them from the subject's mod context. Absent, an
@@ -1573,6 +1575,9 @@ async function openSubjectDirect(
             contracts,
             ...(settings === undefined ? {} : { settings }),
             ...(options.videoFrames === undefined ? {} : { videoFrames: options.videoFrames }),
+            ...(options.containerContext === undefined
+              ? {}
+              : { containerContext: options.containerContext }),
             logicalResources: createSubjectLogicalResources({
               state: record.logicalState,
               budget: effectiveBudget,

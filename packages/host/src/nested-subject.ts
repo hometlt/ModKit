@@ -376,6 +376,17 @@ export async function openNestedSubject(
   try {
     const namespace = namespaceLease.value
     const entry = await findEntry(namespace, options.entryId, pageLimit, options.signal)
+    // What the container hands every subject of its entries; inert JSON, bounded like any input.
+    const containerContext = await namespace.nestedContext?.(options.signal)
+    if (
+      containerContext !== undefined &&
+      BigInt(new TextEncoder().encode(JSON.stringify(containerContext)).byteLength) >
+        options.budget.maxInputBytes
+    )
+      throw new ModkitError({
+        code: 'x3.host/resource-budget-exceeded',
+        message: 'the container context exceeds the nested input budget',
+      })
     const primaryLogicalId =
       logicalRoots === undefined
         ? entry.path
@@ -530,6 +541,7 @@ export async function openNestedSubject(
           ? {}
           : { contributionSettings: options.contributionSettings }),
         ...(options.videoFrames === undefined ? {} : { videoFrames: options.videoFrames }),
+        ...(containerContext === undefined ? {} : { containerContext }),
         ...(options.minimumConfidence === undefined
           ? {}
           : { minimumConfidence: options.minimumConfidence }),
