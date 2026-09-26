@@ -19,15 +19,7 @@ import {
   renderGalleryThumbnail,
   type GalleryThumbnail,
 } from './image-gallery.js'
-import {
-  copyFileSync,
-  createReadStream,
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  statSync,
-  writeFileSync,
-} from 'node:fs'
+import { copyFileSync, createReadStream, existsSync, readFileSync, statSync } from 'node:fs'
 import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import * as vscode from 'vscode'
@@ -2636,62 +2628,6 @@ async function activateModkit(
   /** The StarCraft II installation the user chose, which its content sources read. */
   const selectedStarcraft2 = (): string | undefined =>
     selectedSources.find(item => item.gameId === 'blizzard/starcraft-2')?.installPath
-  /*
-   * ponytail: StarCraft II's extension does not declare `modkit.contentSources` yet, so its module
-   * is still found by path and handed over as a configuration that stands in for that extension
-   * (`extension`), beside every other declared module. Delete this once blizzard declares it; the
-   * installation then reaches the module through `moduleOptions`.
-   */
-  const automaticContentSourceConfig = (storage: string): string | undefined => {
-    for (const absolute of extensionRootPaths()) {
-      const declaration = join(absolute, 'package.json')
-      const module = join(
-        absolute,
-        'dist',
-        'modules',
-        'game',
-        'battlenet',
-        'content-sources',
-        'local-content-sources.js',
-      )
-      if (!existsSync(declaration) || !existsSync(module)) continue
-      try {
-        const manifest = JSON.parse(readFileSync(declaration, 'utf8')) as {
-          readonly modkit?: { readonly publisher?: unknown; readonly id?: unknown }
-        }
-        if (manifest.modkit?.publisher !== 'blizzard' || manifest.modkit.id !== 'starcraft2') {
-          continue
-        }
-      } catch {
-        continue
-      }
-      mkdirSync(storage, { recursive: true })
-      const generated = join(storage, 'local-provider.generated.json')
-      const installationDirectory = selectedStarcraft2()
-      writeFileSync(
-        generated,
-        `${JSON.stringify(
-          {
-            module,
-            // Stands in for StarCraft II only; other extensions' declared sources still compose.
-            extension: 'blizzard/starcraft2',
-            options: {
-              ...(installationDirectory === undefined ? {} : { installationDirectory }),
-              // With a state directory the provider can also offer the public Battle.net
-              // catalogue, which needs no account: published content is addressed by digest and
-              // served over HTTPS, and whatever the game already downloaded is read from its
-              // own cache. Signing in stays with the native runtime.
-              stateDirectory: storage,
-            },
-          },
-          null,
-          2,
-        )}\n`,
-      )
-      return generated
-    }
-    return undefined
-  }
   const resetContentSources = (): void => {
     const previous = contentSources
     contentSources = undefined
@@ -2708,10 +2644,13 @@ async function activateModkit(
       typeof configuredSetting === 'string' && configuredSetting.trim().length > 0
         ? configuredSetting.trim()
         : undefined
+    // Without an explicit configuration every extension's declared sources compose; StarCraft II's
+    // module learns the chosen installation through moduleOptions and keeps its state (the public
+    // Battle.net catalogue included) in the host's `<storage>/state`.
     const configured =
       process.env['MODKIT_CONTENT_SOURCE_CONFIG'] ??
       configuredPath ??
-      (existsSync(defaultConfig) ? defaultConfig : automaticContentSourceConfig(storage))
+      (existsSync(defaultConfig) ? defaultConfig : undefined)
     contentSources ??= resolveContentSources({
       extensionRoots: extensionRootPaths(),
       ...(configured === undefined ? {} : { configPath: configured }),
