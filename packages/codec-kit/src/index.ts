@@ -890,6 +890,30 @@ export function createVideoMediaSource(
   })
 }
 
+export function createVectorSceneSource(info: VectorSceneInfo, text: string): VectorSceneSource {
+  const ownedInfo = Object.freeze({
+    ...info,
+    ...(info.viewBox === undefined
+      ? {}
+      : { viewBox: Object.freeze([...info.viewBox] as [number, number, number, number]) }),
+  })
+  const document = Object.freeze({
+    mediaType: 'image/svg+xml',
+    profile: 'uvg.secure-static.v1',
+    text,
+  })
+  return Object.freeze<VectorSceneSource>({
+    async info(signal?: AbortSignal) {
+      if (signal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
+      return ownedInfo
+    },
+    async document(signal) {
+      if (signal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
+      return document
+    },
+  })
+}
+
 export {
   createModelSceneSource,
   createModelResourceRefsSource,
