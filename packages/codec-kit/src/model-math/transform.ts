@@ -16,28 +16,41 @@ export function normalizeQuat(
   return [x / length, y / length, z / length, w / length]
 }
 
-/** Translation, unit rotation quaternion `[x, y, z, w]` and per-axis scale of a column-major matrix. */
+/**
+ * Translation, unit rotation quaternion `[x, y, z, w]` and per-axis scale of a column-major matrix,
+ * so that T·R·S reproduces it: a reflection (negative determinant) reads as a negative x scale, and
+ * a zero column as a zero scale on that axis.
+ */
 export function decomposeMatrix4(matrix: ArrayLike<number>): {
   translation: [number, number, number]
   rotation: [number, number, number, number]
   scaling: [number, number, number]
 } {
-  const sx = Math.hypot(matrix[0] ?? 0, matrix[1] ?? 0, matrix[2] ?? 0) || 1
-  const sy = Math.hypot(matrix[4] ?? 0, matrix[5] ?? 0, matrix[6] ?? 0) || 1
-  const sz = Math.hypot(matrix[8] ?? 0, matrix[9] ?? 0, matrix[10] ?? 0) || 1
+  const m = (at: number) => matrix[at] ?? (at % 5 === 0 ? 1 : 0)
+  const determinant =
+    m(0) * (m(5) * m(10) - m(9) * m(6)) -
+    m(4) * (m(1) * m(10) - m(9) * m(2)) +
+    m(8) * (m(1) * m(6) - m(5) * m(2))
+  const sx = (determinant < 0 ? -1 : 1) * Math.hypot(m(0), m(1), m(2))
+  const sy = Math.hypot(m(4), m(5), m(6))
+  const sz = Math.hypot(m(8), m(9), m(10))
+  // a zero column's rotation axis is arbitrary; dividing by 1 keeps the quaternion finite
+  const dx = sx || 1
+  const dy = sy || 1
+  const dz = sz || 1
   return {
-    translation: [matrix[12] ?? 0, matrix[13] ?? 0, matrix[14] ?? 0],
+    translation: [m(12), m(13), m(14)],
     scaling: [sx, sy, sz],
     rotation: quaternionFromRotationMatrix([
-      (matrix[0] ?? 1) / sx,
-      (matrix[1] ?? 0) / sx,
-      (matrix[2] ?? 0) / sx,
-      (matrix[4] ?? 0) / sy,
-      (matrix[5] ?? 1) / sy,
-      (matrix[6] ?? 0) / sy,
-      (matrix[8] ?? 0) / sz,
-      (matrix[9] ?? 0) / sz,
-      (matrix[10] ?? 1) / sz,
+      m(0) / dx,
+      m(1) / dx,
+      m(2) / dx,
+      m(4) / dy,
+      m(5) / dy,
+      m(6) / dy,
+      m(8) / dz,
+      m(9) / dz,
+      m(10) / dz,
     ]),
   }
 }

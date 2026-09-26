@@ -13,6 +13,18 @@ describe('model-math transform', () => {
     rotation.forEach((value, index) => expect(value).toBeCloseTo([0, 0, half, half][index]!, 6))
   })
 
+  it('reads a reflection as a negative x scale and a zero column as a zero scale', () => {
+    const mirrored = decomposeMatrix4([0, -2, 0, 0, -3, 0, 0, 0, 0, 0, 4, 0, 5, 6, 7, 1])
+    expect(mirrored.scaling).toEqual([-2, 3, 4])
+    const half = Math.SQRT1_2
+    mirrored.rotation.forEach((value, index) =>
+      expect(value).toBeCloseTo([0, 0, half, half][index]!, 6),
+    )
+    const hidden = decomposeMatrix4([2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 1])
+    expect(hidden.scaling).toEqual([2, 0, 4])
+    expect(hidden.rotation.every(Number.isFinite)).toBe(true)
+  })
+
   it('inverts an affine matrix and refuses a singular basis', () => {
     const inverse = invertAffine(matrix)
     // inverse · (5, 6, 7) is the origin
