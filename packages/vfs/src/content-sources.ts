@@ -28,6 +28,12 @@ export interface ContentSourceRegion {
   readonly id: string
   readonly label: string
   readonly credential?: { readonly kind: 'api-key'; readonly label: string }
+  /**
+   * The declared credential (`modkit.credentials[].id` of the source's extension) that signs this
+   * region in; a scoped one is kept per region (scope = `id`). An application finds the account of
+   * a region here — for its accounts view and for moving older secrets — without knowing games.
+   */
+  readonly credentialId?: string
 }
 export interface ContentSourceSnapshot {
   readonly label: string

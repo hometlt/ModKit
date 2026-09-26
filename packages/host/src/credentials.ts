@@ -73,6 +73,12 @@ export interface CredentialBroker {
   /** The port an extension's contributions receive; it reaches only that extension's declarations. */
   portFor(extension: string): CredentialPort
   signOut(id: string, scope?: string): Promise<void>
+  /**
+   * Keep a secret the application already held before the broker (an older secret store entry, a
+   * setting), unless one is stored: `kept` leaves the stored value alone. API keys, symmetric keys
+   * and provider sessions only — OAuth tokens are acquired, never adopted.
+   */
+  adopt(id: string, value: string, scope?: string): Promise<'adopted' | 'kept'>
 }
 
 const DEFAULT_MAX_BYTES = 64 * 1024 * 1024
@@ -422,6 +428,18 @@ export function createCredentialBroker(options: CredentialBrokerOptions): Creden
     declared: () => Object.freeze([...declarations.values()]),
     status: async (id, scope) => status(declaration(id), scope),
     signOut: async (id, scope) => forget(declaration(id), scope),
+    async adopt(id, value, scope) {
+      const { requirement } = declaration(id)
+      if (requirement.kind === 'oauth2-pkce')
+        throw refused('not-exposed', `${id} is an OAuth sign-in; it is acquired, not adopted`)
+      const key = keyOf(requirement, scope)
+      if ((await options.store.get(key)) !== undefined) return 'kept'
+      const kept = requirement.kind === 'symmetric-key' ? symmetricKeyHex(value) : value.trim()
+      if (kept === undefined || kept === '')
+        throw refused('invalid', `${requirement.label}: the value to adopt is empty or malformed`)
+      await options.store.set(key, kept)
+      return 'adopted'
+    },
     portFor(extension) {
       const own = (id: string) => {
         const entry = declaration(id)

@@ -343,6 +343,23 @@ describe('credential broker', () => {
     expect(await single.status('acme/aes', 'any-guid')).toBe('available')
   })
 
+  it('adopts a secret the application held before, never over a stored one', async () => {
+    const { store, values } = memoryStore()
+    const broker = createCredentialBroker({ inventory: inventory(), store })
+    expect(await broker.adopt('acme/session', ` ${SECRET} `, 'eu')).toBe('adopted')
+    expect(values.get('modkit.credential/acme/session')).toBe(SECRET)
+    expect(await broker.adopt('acme/session', 'newer', 'eu')).toBe('kept')
+    expect(values.get('modkit.credential/acme/session')).toBe(SECRET)
+    const hex = 'ef'.repeat(16)
+    expect(await broker.adopt('acme/aes', Buffer.from(hex, 'hex').toString('base64'), 'g1')).toBe(
+      'adopted',
+    )
+    expect(values.get('modkit.credential/acme/aes#g1')).toBe(hex)
+    await refusal(broker.adopt('acme/aes', SECRET, 'g2'))
+    await refusal(broker.adopt('acme/oauth', SECRET))
+    await refusal(broker.adopt('acme/unknown', SECRET))
+  })
+
   it('matches the audience by origin and path prefix', () => {
     const audience = ['https://apis.example.test/assets/']
     expect(credentialAudienceAllows('https://apis.example.test/assets/v1/1', audience)).toBe(true)
