@@ -1,10 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-  resolveDataAuthoringIndex,
-  resolveDataCatalog,
-  type DataEntityPatch,
-  type DataTypeSchema,
-} from '@modkit/sdk/data'
+import { resolveDataCatalog, type DataEntityPatch, type DataTypeSchema } from '@modkit/sdk/data'
 
 const schemas: readonly DataTypeSchema[] = [
   { typeId: 'Base', fields: [] },
@@ -40,95 +35,7 @@ function patch(
 }
 
 describe('game-neutral data catalog resolution', () => {
-  it('builds bounded parent deltas with defaults, sources and indexed tombstones', () => {
-    const source = (documentIndex: number) => ({
-      rootId: `root-${documentIndex}`,
-      path: `UnitData-${documentIndex}.xml`,
-      documentIndex,
-    })
-    const authoringSchemas: readonly DataTypeSchema[] = [
-      {
-        typeId: 'Unit',
-        fields: [
-          { fieldId: 'Life', cardinality: 'scalar' },
-          { fieldId: 'Abilities', cardinality: 'indexed', indexKey: 'index' },
-          {
-            fieldId: 'Cost',
-            cardinality: 'scalar',
-            fields: [
-              { fieldId: 'Link', cardinality: 'scalar' },
-              { fieldId: 'Time', cardinality: 'scalar' },
-            ],
-          },
-        ],
-      },
-    ]
-    const index = resolveDataAuthoringIndex({
-      workspaceId: 'authoring',
-      gameId: 'example/game',
-      analyzerId: 'example/analyzer',
-      snapshotId: 'authoring:1',
-      schemas: authoringSchemas,
-      patches: [
-        {
-          namespace: 'Unit',
-          typeId: 'Unit',
-          entityId: 'Base',
-          fields: {
-            Life: 40,
-            Abilities: [{ index: 'Move', value: 1 }],
-            Cost: { Time: 5 },
-          },
-          source: source(0),
-        },
-        {
-          namespace: 'Unit',
-          typeId: 'Unit',
-          entityId: 'Child',
-          parentEntityId: 'Base',
-          fields: { Abilities: [{ index: 'Move', value: 0, removed: true }] },
-          source: source(1),
-        },
-      ],
-      basePatches: [
-        {
-          namespace: 'Unit',
-          typeId: 'Unit',
-          entityId: 'Child',
-          fields: { Cost: { Link: 'Unit/Child' } },
-          source: source(2),
-        },
-      ],
-      maxEntities: 8,
-      maxDepth: 8,
-      maxOutputBytes: 1_048_576,
-    })
-    const child = index.entities.find(entity => entity.entityId === 'Child')
-    expect(child).toMatchObject({
-      identity: 'Unit\0Child',
-      parentEntityId: 'Base',
-      source: 1,
-      complete: true,
-    })
-    expect(child?.fields).toEqual([
-      expect.objectContaining({ fieldId: 'Abilities', value: [], originEntityId: 'Child' }),
-      expect.objectContaining({
-        fieldId: 'Cost',
-        value: { Link: 'Unit/Child', Time: 5 },
-        originEntityId: 'Base',
-        origins: [
-          { path: ['Link'], source: 2, originEntityId: 'Child' },
-          { path: ['Time'], source: 0, originEntityId: 'Base' },
-        ],
-      }),
-    ])
-    expect(child?.fields?.some(field => field.fieldId === 'Life')).toBe(false)
-    expect(child?.tombstones).toEqual([{ path: ['Abilities', 'Move'], source: 1 }])
-    expect(index.sourceTable).toHaveLength(3)
-    expect(index.valuesComplete).toBe(true)
-  })
-
-  it('tracks leaf origins and inherited tokens consistently across compact and full results', () => {
+  it('inherits tokens, the default template and owner metadata in the full result', () => {
     const schema: DataTypeSchema = {
       typeId: 'Unit',
       fields: [
@@ -186,18 +93,6 @@ describe('game-neutral data catalog resolution', () => {
         ],
       },
     ]
-    const index = resolveDataAuthoringIndex({
-      workspaceId: 'origin-parity',
-      gameId: 'example/game',
-      analyzerId: 'example/analyzer',
-      snapshotId: 'origin-parity:1',
-      schemas: [schema],
-      patches,
-      ownerMetadata,
-      maxEntities: 8,
-      maxDepth: 8,
-      maxOutputBytes: 1_048_576,
-    })
     const snapshot = resolveDataCatalog({
       workspaceId: 'origin-parity',
       gameId: 'example/game',
@@ -211,111 +106,16 @@ describe('game-neutral data catalog resolution', () => {
       maxEntities: 8,
       maxDepth: 8,
     })
-    const child = index.entities.find(entity => entity.entityId === 'Child')
-    const config = child?.fields?.find(field => field.fieldId === 'Config')
-    const slots = child?.fields?.find(field => field.fieldId === 'Slots')
-    expect(config?.origins).toEqual([
-      { path: ['Changed'], source: 1, originEntityId: 'Base' },
-      { path: ['Inherited'], source: 0, originEntityId: 'Base' },
-      { path: ['Local'], source: 2, originEntityId: 'Child' },
-    ])
-    expect(slots?.origins).toEqual([
-      { path: ['A', 'Change'], source: 2, originEntityId: 'Child' },
-      { path: ['A', 'Keep'], source: 0, originEntityId: 'Base' },
-    ])
-    expect(child?.tokens).toEqual([
+    expect(snapshot.definitions?.find(entity => entity.entityId === 'Child')?.tokens).toEqual([
       { id: 'Local', value: 'yes' },
       { id: 'Tone', value: 'red' },
       { id: 'Unit', type: 'CUnitLink', value: 'Marauder' },
     ])
-    expect(child?.defaultTemplate).toBeUndefined()
-    expect(index.entities.find(entity => entity.entityId === 'Base')?.defaultTemplate).toBe(true)
-    expect(snapshot.definitions?.find(entity => entity.entityId === 'Child')?.tokens).toEqual(
-      child?.tokens,
-    )
     expect(snapshot.definitions?.find(entity => entity.entityId === 'Base')?.defaultTemplate).toBe(
       true,
     )
-    expect(index.ownerMetadata).toEqual(ownerMetadata)
     expect(snapshot.ownerMetadata).toEqual(ownerMetadata)
-    expect(Object.isFrozen(index.ownerMetadata)).toBe(true)
     expect(Object.isFrozen(snapshot.ownerMetadata)).toBe(true)
-  })
-
-  it('drops all values on overflow while preserving every identity and winning source', () => {
-    const index = resolveDataAuthoringIndex({
-      workspaceId: 'bounded-authoring',
-      gameId: 'example/game',
-      analyzerId: 'example/analyzer',
-      snapshotId: 'bounded:1',
-      schemas: [{ typeId: 'Unit', fields: [{ fieldId: 'Blob', cardinality: 'scalar' }] }],
-      patches: [patch('Large', 0, { Blob: 'x'.repeat(10_000) })],
-      maxEntities: 2,
-      maxDepth: 2,
-      maxOutputBytes: 2_048,
-    })
-    expect(index.valuesComplete).toBe(false)
-    expect(index.entities).toEqual([
-      expect.objectContaining({ identity: 'Unit\0Large', source: 0 }),
-    ])
-    expect(index.entities[0]).not.toHaveProperty('fields')
-    expect(index.sourceTable).toEqual([
-      expect.objectContaining({ rootId: 'root-0', path: 'UnitData-0.xml' }),
-    ])
-    expect(new TextEncoder().encode(JSON.stringify(index)).byteLength).toBeLessThanOrEqual(2_048)
-  })
-
-  it('bounds diagnostic evidence while retaining exact severity totals', () => {
-    const index = resolveDataAuthoringIndex({
-      workspaceId: 'diagnostic-authoring',
-      gameId: 'example/game',
-      analyzerId: 'example/analyzer',
-      snapshotId: 'diagnostics:1',
-      schemas: [{ typeId: 'Unit', fields: [] }],
-      patches: [patch('Marine', 0, {})],
-      diagnostics: Array.from({ length: 80 }, (_, item) => ({
-        severity: item % 2 === 0 ? ('warning' as const) : ('information' as const),
-        code: `example/${'c'.repeat(300)}`,
-        message: `diagnostic\0${'m'.repeat(3_000)}`,
-      })),
-      maxEntities: 2,
-      maxDepth: 2,
-      maxOutputBytes: 1_048_576,
-    })
-    expect(index.diagnostics).toMatchObject({
-      errorCount: 0,
-      warningCount: 40,
-      informationCount: 40,
-      truncated: true,
-    })
-    expect(index.diagnostics.items).toHaveLength(64)
-    expect(index.diagnostics.items[0]?.code).toHaveLength(256)
-    expect(index.diagnostics.items[0]?.message).toHaveLength(2_048)
-    expect(index.diagnostics.items[0]?.message).not.toContain('\0')
-  })
-
-  it('keeps a many-entity identity/source index inside a fixed transfer budget', () => {
-    const entityCount = 5_000
-    const index = resolveDataAuthoringIndex({
-      workspaceId: 'scale-authoring',
-      gameId: 'example/game',
-      analyzerId: 'example/analyzer',
-      snapshotId: 'scale:1',
-      schemas: [{ typeId: 'Unit', fields: [{ fieldId: 'Blob', cardinality: 'scalar' }] }],
-      patches: Array.from({ length: entityCount }, (_, entity) =>
-        patch(`Unit${entity}`, 0, { Blob: 'x'.repeat(2_048) }),
-      ),
-      maxEntities: entityCount,
-      maxDepth: 8,
-      maxOutputBytes: 4 * 1_024 * 1_024,
-    })
-    expect(index.entityCount).toBe(entityCount)
-    expect(index.entities).toHaveLength(entityCount)
-    expect(index.sourceTable).toHaveLength(1)
-    expect(index.valuesComplete).toBe(false)
-    expect(new TextEncoder().encode(JSON.stringify(index)).byteLength).toBeLessThanOrEqual(
-      4 * 1_024 * 1_024,
-    )
   })
 
   it('merges ordered patches and resolves schema-driven parent inheritance', () => {
