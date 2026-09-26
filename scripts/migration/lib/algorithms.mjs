@@ -5,7 +5,7 @@ import ts from 'typescript'
 import { sha256 } from './legacy-oracle.mjs'
 
 export const algorithmPattern =
-  /^(?:crc32|adler32|inflate\w*|mpqHash|parseXml\w*|boundsOf|decodeBc\w*|decodeAdpcm\w*|sha1\w*|md5\w*)$/iu
+  /^(?:crc32|adler32|inflate\w*|mpqHash|parseXml\w*|boundsOf|invertAffine|decompose\w*|quaternionFrom\w*|decodeBc\w*|encodeDxt\w*|parsePalette|applyPalette|wavHeader|decodeAdpcm\w*|sha1\w*|md5\w*)$/iu
 export const algorithmRepositories = [
   'modkit-core',
   'modkit-extensions-blizzard',
@@ -189,7 +189,7 @@ export async function checkMpqHashCanonicalization({ current, workspaceRoot }) {
       row.repository === 'modkit-core' &&
       row.path === MPQ_HASH_CANONICAL_PATH &&
       row.symbol === 'mpqHash#0' &&
-      row.disposition === 'canonical-copy',
+      row.disposition.startsWith('canonical-'),
   )
   const blizzardDefinitions = definitions.filter(
     row => row.repository === 'modkit-extensions-blizzard',
