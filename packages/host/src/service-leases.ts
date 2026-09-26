@@ -29,8 +29,8 @@ import type {
   ServiceContractDefinitionRegistry,
 } from '@modkit/sdk'
 import type { ExecutionBackendRegistry } from './execution/backend.js'
-import type { Inventory } from './inventory.js'
-import { offersFromInventory } from './offers.js'
+import { inventoryRecordFor, type Inventory } from './inventory.js'
+import { inventoryBindingForOffer, offersFromInventory } from './offers.js'
 import { buildLockEntry } from './resolution/lock.js'
 import {
   createContractResolverPort,
@@ -66,11 +66,45 @@ export interface ProviderActivation {
   release(): Promise<void>
 }
 
+/**
+ * The target a service offer is resolved and activated for. A trusted in-process variant of an
+ * artifact allowed to run in-process runs in the process that owns the registry, not in the worker
+ * realm codecs are activated for; every other offer runs in `target`.
+ */
+export function serviceTargetFor(
+  executionBackends: ExecutionBackendRegistry,
+  offer: ProviderOffer,
+  target: RuntimeTarget,
+): RuntimeTarget {
+  const inProcess = executionBackends.inProcessTarget
+  if (inProcess === undefined) return target
+  const contribution = inventoryBindingForOffer(offer)?.contribution
+  const variant = contribution?.manifest?.runtimeVariants?.find(
+    item => item.variantId === offer.runtimeVariant,
+  )
+  if (
+    contribution === undefined ||
+    variant?.executionProfile !== 'trusted-in-process' ||
+    inventoryRecordFor(contribution)?.execution.allowTrustedInProcess !== true
+  ) {
+    return target
+  }
+  return Object.freeze({
+    ...inProcess,
+    ...(target.grantedPermissions === undefined
+      ? {}
+      : { grantedPermissions: target.grantedPermissions }),
+  })
+}
+
 /** Activate the contribution behind a resolved offer and lease the provider it creates. */
 export async function activateServiceProvider(
   options: ProviderActivationOptions,
 ): Promise<ProviderActivation> {
-  const ticket = issueActivationTicket(options.result, options.target)
+  const ticket = issueActivationTicket(
+    options.result,
+    serviceTargetFor(options.executionBackends, options.result.selected.offer, options.target),
+  )
   const activation = await activateContribution({
     ticket,
     grant: options.grant,
@@ -214,6 +248,7 @@ export function createHostServiceResolver(
       offers,
       definitions: options.definitions,
       target,
+      targetFor: offer => serviceTargetFor(options.executionBackends, offer, target),
       onResolved(request: FacetAwareProviderRequest, result) {
         locks.push(buildLockEntry(request, result))
       },

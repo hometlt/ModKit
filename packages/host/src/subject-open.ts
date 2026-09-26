@@ -58,7 +58,7 @@ import {
   type SubjectCatalogOptions,
 } from './catalog-questions.js'
 import { inventoryRecordFor, type Inventory, type InventoryContribution } from './inventory.js'
-import { activateServiceProvider } from './service-leases.js'
+import { activateServiceProvider, serviceTargetFor } from './service-leases.js'
 import { offersFromInventory } from './offers.js'
 import {
   buildCodecDetectionSelection,
@@ -1525,6 +1525,7 @@ async function openSubjectDirect(
                   offers,
                   definitions: options.serviceDefinitions,
                   target,
+                  targetFor: offer => serviceTargetFor(executionBackends, offer, target),
                   onResolved(request: FacetAwareProviderRequest, result) {
                     nestedLocks.push(buildLockEntry(request, result))
                   },

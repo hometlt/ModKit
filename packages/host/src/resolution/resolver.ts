@@ -19,6 +19,7 @@ import type {
   RejectedCandidate,
   ResolutionResult,
   ResolvedProvider,
+  RuntimeTarget,
   TraitDefinitionOffer,
   TraitDefinitionRequirement,
 } from '@modkit/sdk'
@@ -77,6 +78,8 @@ interface Candidate {
 export interface ResolutionPreparation {
   readonly accepts?: (offer: ProviderOffer, contractOffer: ContractOffer) => boolean
   readonly selectionKey?: (offer: ProviderOffer, contractOffer: ContractOffer) => string | undefined
+  /** The target an offer is checked against, when it does not run in `request.target`. */
+  readonly targetFor?: (offer: ProviderOffer) => RuntimeTarget
 }
 
 function candidateSortKey(candidate: Candidate): string {
@@ -249,10 +252,12 @@ export function resolveProvider(
   }
 
   // Stage 3: concrete target vs target constraints (environment/OS/arch/webApis/caps).
-  const target = request.target
   let sawToolReject = false
+  const targetOf = (offer: ProviderOffer): RuntimeTarget =>
+    preparation?.targetFor?.(offer) ?? request.target
   const targetOk = versionOk.filter(candidate => {
     const constraint = candidate.offer.target
+    const target = targetOf(candidate.offer)
     const envOk =
       constraint.environments === undefined || constraint.environments.includes(target.environment)
     const osOk =
@@ -295,7 +300,8 @@ export function resolveProvider(
   // Stage 4: granted permissions and required outputs.
   let sawPermissionReject = false
   const permitted = targetOk.filter(candidate => {
-    if (!isSubset(candidate.offer.requiredPermissions, [...(target.grantedPermissions ?? [])])) {
+    const granted = targetOf(candidate.offer).grantedPermissions ?? []
+    if (!isSubset(candidate.offer.requiredPermissions, [...granted])) {
       reject(candidate.offer, 'permission-required', undefined, candidate.contractOffer.offerId)
       sawPermissionReject = true
       return false

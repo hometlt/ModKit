@@ -11,6 +11,7 @@
  */
 
 import type { Diagnostic } from '@modkit/core'
+import type { RuntimeTarget } from '@modkit/sdk'
 import {
   linkedInProcessBackend,
   createExecutionBackendRegistry,
@@ -53,6 +54,8 @@ export interface NodeExecutionBackendsOptions {
    * before falling back to dynamic import.
    */
   readonly linkedModules?: ReadonlyMap<string, Readonly<Record<string, unknown>>>
+  /** The host process's target, when codecs are activated for a worker realm (see the registry). */
+  readonly inProcessTarget?: RuntimeTarget
 }
 
 export function createNodeExecutionBackends(
@@ -96,5 +99,8 @@ export function createNodeExecutionBackends(
       },
     ),
   )
-  return createExecutionBackendRegistry(backends)
+  return createExecutionBackendRegistry(
+    backends,
+    options.inProcessTarget === undefined ? {} : { inProcessTarget: options.inProcessTarget },
+  )
 }

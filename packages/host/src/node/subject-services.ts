@@ -17,10 +17,11 @@
 import type { InstallationProbes } from '@modkit/sdk'
 import { createNodeInstallationProbes } from './installation-probes.js'
 import type { Diagnostic } from '@modkit/core'
-import type {
-  ContributionSettings,
-  HostTopology,
-  ServiceContractDefinitionRegistry,
+import {
+  runtimeTargetForHostRealm,
+  type ContributionSettings,
+  type HostTopology,
+  type ServiceContractDefinitionRegistry,
 } from '@modkit/sdk'
 import { createHostComposition, type HostComposition } from '../composition.js'
 import type { ExecutionBackendRegistry } from '../execution/backend.js'
@@ -92,7 +93,10 @@ export async function createNodeSubjectServices(
       : options.serviceDefinitions === undefined || options.serviceDefinitions === 'bundled'
         ? createBundledServiceDefinitionRegistry()
         : options.serviceDefinitions
+  // in-process variants (linked built-ins, trusted artifacts) run in the host process, not a worker
+  const hostRealm = options.topology.realms.find(realm => realm.realmId === options.realms.host)
   const executionBackends: ExecutionBackendRegistry = createNodeExecutionBackends({
+    ...(hostRealm === undefined ? {} : { inProcessTarget: runtimeTargetForHostRealm(hostRealm) }),
     ...(options.policy === undefined ? {} : { policy: options.policy }),
     ...(options.onDiagnostic === undefined ? {} : { onDiagnostic: options.onDiagnostic }),
     ...(definitions === undefined
@@ -137,5 +141,10 @@ export async function createNodeSubjectServices(
       : { contributionSettings: options.contributionSettings }),
     ...(options.subjectCatalog === undefined ? {} : { subjectCatalog: options.subjectCatalog }),
   })
-  return Object.freeze({ ...services, host, workers, installationProbes: createNodeInstallationProbes() })
+  return Object.freeze({
+    ...services,
+    host,
+    workers,
+    installationProbes: createNodeInstallationProbes(),
+  })
 }

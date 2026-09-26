@@ -43,6 +43,13 @@ export interface ExecutionBackend {
 
 export interface ExecutionBackendRegistry {
   readonly profiles: readonly ExecutionProfile[]
+  /**
+   * Where `trusted-in-process` code runs when this registry activates codecs for another realm:
+   * the process that owns the registry. A Node host resolves for its worker realm, yet a linked
+   * built-in (`@modkit/uv`'s materializer) can only run in the host process; without this its
+   * `node` offer never matched the `node-worker` target. Absent: in-process code runs in the target.
+   */
+  readonly inProcessTarget?: RuntimeTarget
   supports(
     profile: ExecutionProfile,
     target: RuntimeTarget,
@@ -86,6 +93,7 @@ function invalid(message: string): ModkitError {
 
 export function createExecutionBackendRegistry(
   backends: readonly ExecutionBackend[],
+  options: { readonly inProcessTarget?: RuntimeTarget } = {},
 ): ExecutionBackendRegistry {
   const bindings = new Map<ExecutionProfile, BackendBinding>()
   for (const [index, backend] of backends.entries()) {
@@ -109,6 +117,7 @@ export function createExecutionBackendRegistry(
   const profiles = Object.freeze([...bindings.keys()].sort())
   const registry: ExecutionBackendRegistry = {
     profiles,
+    ...(options.inProcessTarget === undefined ? {} : { inProcessTarget: options.inProcessTarget }),
     supports(
       profile: ExecutionProfile,
       target: RuntimeTarget,

@@ -28,6 +28,7 @@ export async function resolveServiceProvider(
   request: FacetAwareProviderRequest,
   offers: readonly ProviderOffer[],
   definitions: ServiceContractDefinitionRegistry,
+  targetFor?: (offer: ProviderOffer) => RuntimeTarget,
 ): Promise<ResolutionResult> {
   const accepted = new Set<object>()
   const selectionKeys = new Map<object, string>()
@@ -55,6 +56,7 @@ export async function resolveServiceProvider(
   return resolveProvider(request, offers, {
     accepts: (_offer, logical) => accepted.has(logical),
     selectionKey: (_offer, logical) => selectionKeys.get(logical),
+    ...(targetFor === undefined ? {} : { targetFor }),
   })
 }
 
@@ -62,6 +64,8 @@ export interface ContractResolverRuntimeOptions {
   readonly offers: readonly ProviderOffer[]
   readonly definitions: ServiceContractDefinitionRegistry
   readonly target: RuntimeTarget
+  /** The target an offer runs in when that is not `target` (in-process code of a worker-target host). */
+  readonly targetFor?: (offer: ProviderOffer) => RuntimeTarget
   /** Host-owned activation creates the selected runtime handle; extensions never receive facets. */
   readonly activate: (
     selection: SelectedServiceOffer,
@@ -107,6 +111,7 @@ export function createContractResolverPort(
       providerRequest,
       options.offers,
       options.definitions,
+      options.targetFor,
     )
     if (result.state !== 'resolved') {
       throw new ModkitError({
