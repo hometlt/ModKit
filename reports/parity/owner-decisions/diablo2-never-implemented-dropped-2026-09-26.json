@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "kind": "owner-decision/owner-dropped",
+  "date": "2026-09-26",
+  "reason": "Owner decision 2026-09-26: the Diablo II codecs (character model, DC6, DT1) are dropped from the port and the project. In MK2 they were metadata-only planned codecs — manifests with no implementation (\"Detection, decoding, rendering, and export are not implemented\") — so there is no behaviour to carry, and MK3 has no Diablo II code or manifest.",
+  "rows": [
+    {
+      "id": "legacy/codec-manifest/modkit/diablo2-character-model/audit",
+      "class": "never-implemented",
+      "mk2Manifest": {
+        "path": "references/modkitmk2/extensions/blizzard/diablo/codecs/diablo2-character-model/codec.manifest.json",
+        "commit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+        "sha256Lf": "46a639b9e0276a0e77a99367365dc685780f91999e9cb43b89332cab9a312ddf"
+      },
+      "where": "MK2 declared a metadata-only planned codec with no source files; MK3 has no Diablo II code to remove"
+    },
+    {
+      "id": "legacy/codec-manifest/modkit/diablo2-dc6/audit",
+      "class": "never-implemented",
+      "mk2Manifest": {
+        "path": "references/modkitmk2/extensions/blizzard/diablo/codecs/diablo2-dc6/codec.manifest.json",
+        "commit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+        "sha256Lf": "29b654ddbd83f307e2c31f0b6dbf215afc50532ba1a5ae64478f876d94a23ab7"
+      },
+      "where": "MK2 declared a metadata-only planned codec with no source files; MK3 has no Diablo II code to remove"
+    },
+    {
+      "id": "legacy/codec-manifest/modkit/diablo2-dt1/audit",
+      "class": "never-implemented",
+      "mk2Manifest": {
+        "path": "references/modkitmk2/extensions/blizzard/diablo/codecs/diablo2-dt1/codec.manifest.json",
+        "commit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+        "sha256Lf": "b6051e32e55e32042494762aca4a8a8bbf6907ec4c9389ffd617c28d031c9517"
+      },
+      "where": "MK2 declared a metadata-only planned codec with no source files; MK3 has no Diablo II code to remove"
+    }
+  ]
+}

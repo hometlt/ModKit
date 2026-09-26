@@ -728,19 +728,40 @@
       "status": "pending"
     },
     {
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-26",
+        "path": "modkit-core/reports/parity/owner-decisions/diablo2-never-implemented-dropped-2026-09-26.json",
+        "reason": "Owner decision 2026-09-26: the Diablo II codecs (character model, DC6, DT1) are dropped from the port and the project. In MK2 they were metadata-only planned codecs — manifests with no implementation (\"Detection, decoding, rendering, and export are not implemented\") — so there is no behaviour to carry, and MK3 has no Diablo II code or manifest.",
+        "sha256": "4d90fa9390c9e44dda341cb1666c94cd1140322e51e8c28af6ce808bf407f84f"
+      },
       "evidence": [],
       "id": "legacy/codec-manifest/modkit/diablo2-character-model/audit",
-      "status": "pending"
+      "status": "owner-dropped"
     },
     {
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-26",
+        "path": "modkit-core/reports/parity/owner-decisions/diablo2-never-implemented-dropped-2026-09-26.json",
+        "reason": "Owner decision 2026-09-26: the Diablo II codecs (character model, DC6, DT1) are dropped from the port and the project. In MK2 they were metadata-only planned codecs — manifests with no implementation (\"Detection, decoding, rendering, and export are not implemented\") — so there is no behaviour to carry, and MK3 has no Diablo II code or manifest.",
+        "sha256": "4d90fa9390c9e44dda341cb1666c94cd1140322e51e8c28af6ce808bf407f84f"
+      },
       "evidence": [],
       "id": "legacy/codec-manifest/modkit/diablo2-dc6/audit",
-      "status": "pending"
+      "status": "owner-dropped"
     },
     {
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-26",
+        "path": "modkit-core/reports/parity/owner-decisions/diablo2-never-implemented-dropped-2026-09-26.json",
+        "reason": "Owner decision 2026-09-26: the Diablo II codecs (character model, DC6, DT1) are dropped from the port and the project. In MK2 they were metadata-only planned codecs — manifests with no implementation (\"Detection, decoding, rendering, and export are not implemented\") — so there is no behaviour to carry, and MK3 has no Diablo II code or manifest.",
+        "sha256": "4d90fa9390c9e44dda341cb1666c94cd1140322e51e8c28af6ce808bf407f84f"
+      },
       "evidence": [],
       "id": "legacy/codec-manifest/modkit/diablo2-dt1/audit",
-      "status": "pending"
+      "status": "owner-dropped"
     },
     {
       "evidence": [

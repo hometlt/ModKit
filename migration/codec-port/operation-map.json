@@ -558,11 +558,11 @@
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/diablo3-tex/operation/image.read",
       "status": "adapted",
-      "targetOperation": null,
       "targetDataSource": {
         "contract": "common.view/raster-image-source",
         "major": 1
-      }
+      },
+      "targetOperation": null
     },
     {
       "contribution": null,
@@ -674,11 +674,11 @@
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/earth2160-model/operation/model.read",
       "status": "adapted",
-      "targetOperation": null,
       "targetDataSource": {
         "contract": "common.view/model-scene-source",
         "major": 1
-      }
+      },
+      "targetOperation": null
     },
     {
       "contribution": "modkit-core/extensions/models/contributions/codec-uvm.json",
@@ -1777,11 +1777,11 @@
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/r16/operation/image.read",
       "status": "adapted",
-      "targetOperation": null,
       "targetDataSource": {
         "contract": "common.view/raster-image-source",
         "major": 1
-      }
+      },
+      "targetOperation": null
     },
     {
       "contribution": "modkit-extensions-ea/westwood/contributions/codec-r8.json",
@@ -1795,11 +1795,11 @@
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/r8/operation/image.read",
       "status": "adapted",
-      "targetOperation": null,
       "targetDataSource": {
         "contract": "common.view/raster-image-source",
         "major": 1
-      }
+      },
+      "targetOperation": null
     },
     {
       "contribution": null,
@@ -1820,11 +1820,11 @@
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/red-alert2-vxl/operation/model.read",
       "status": "adapted",
-      "targetOperation": null,
       "targetDataSource": {
         "contract": "common.view/model-scene-source",
         "major": 1
-      }
+      },
+      "targetOperation": null
     },
     {
       "contribution": "modkit-core/extensions/models/contributions/codec-uvm.json",
@@ -1852,11 +1852,11 @@
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/relic-sgm/operation/model.read",
       "status": "adapted",
-      "targetOperation": null,
       "targetDataSource": {
         "contract": "common.view/model-scene-source",
         "major": 1
-      }
+      },
+      "targetOperation": null
     },
     {
       "contribution": "modkit-core/extensions/models/contributions/codec-uvm.json",
@@ -1870,11 +1870,11 @@
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/relic-whm/operation/model.read",
       "status": "adapted",
-      "targetOperation": null,
       "targetDataSource": {
         "contract": "common.view/model-scene-source",
         "major": 1
-      }
+      },
+      "targetOperation": null
     },
     {
       "contribution": "modkit-core/extensions/models/contributions/codec-uvm.json",
@@ -1909,11 +1909,11 @@
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/rgt/operation/image.read",
       "status": "adapted",
-      "targetOperation": null,
       "targetDataSource": {
         "contract": "common.view/raster-image-source",
         "major": 1
-      }
+      },
+      "targetOperation": null
     },
     {
       "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/writer-relic-texture.json",
@@ -1953,11 +1953,11 @@
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/rsh/operation/image.read",
       "status": "adapted",
-      "targetOperation": null,
       "targetDataSource": {
         "contract": "common.view/raster-image-source",
         "major": 1
-      }
+      },
+      "targetOperation": null
     },
     {
       "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/writer-relic-texture.json",
@@ -2011,11 +2011,11 @@
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/rtx/operation/image.read",
       "status": "adapted",
-      "targetOperation": null,
       "targetDataSource": {
         "contract": "common.view/raster-image-source",
         "major": 1
-      }
+      },
+      "targetOperation": null
     },
     {
       "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/writer-relic-texture.json",
@@ -2517,11 +2517,11 @@
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/shp/operation/image.read",
       "status": "adapted",
-      "targetOperation": null,
       "targetDataSource": {
         "contract": "common.view/raster-image-source",
         "major": 1
-      }
+      },
+      "targetOperation": null
     },
     {
       "contribution": null,
@@ -2640,11 +2640,11 @@
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/supcom-scm/operation/model.read",
       "status": "adapted",
-      "targetOperation": null,
       "targetDataSource": {
         "contract": "common.view/model-scene-source",
         "major": 1
-      }
+      },
+      "targetOperation": null
     },
     {
       "contribution": "modkit-core/extensions/models/contributions/codec-uvm.json",
@@ -2777,11 +2777,11 @@
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/tmp/operation/image.read",
       "status": "adapted",
-      "targetOperation": null,
       "targetDataSource": {
         "contract": "common.view/raster-image-source",
         "major": 1
-      }
+      },
+      "targetOperation": null
     },
     {
       "contribution": null,
@@ -2823,22 +2823,22 @@
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/uasset/operation/audio.decode",
       "status": "adapted",
-      "targetOperation": null,
       "targetDataSource": {
         "contract": "common.view/audio-media-source",
         "major": 1
-      }
+      },
+      "targetOperation": null
     },
     {
       "contribution": "modkit-extensions-other/extensions/epic-games-unreal-engine/contributions/codec-uasset.json",
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/uasset/operation/audio.export",
       "status": "adapted",
-      "targetOperation": null,
       "targetDataSource": {
         "contract": "common.view/audio-media-source",
         "major": 1
-      }
+      },
+      "targetOperation": null
     },
     {
       "contribution": "modkit-extensions-other/extensions/epic-games-unreal-engine/contributions/codec-uasset.json",
@@ -2866,11 +2866,11 @@
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/unity-mesh/operation/model.read",
       "status": "adapted",
-      "targetOperation": null,
       "targetDataSource": {
         "contract": "common.view/model-scene-source",
         "major": 1
-      }
+      },
+      "targetOperation": null
     },
     {
       "contribution": "modkit-core/extensions/models/contributions/codec-uvm.json",
@@ -2905,11 +2905,11 @@
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/unity/operation/image.read",
       "status": "adapted",
-      "targetOperation": null,
       "targetDataSource": {
         "contract": "common.view/raster-image-source",
         "major": 1
-      }
+      },
+      "targetOperation": null
     },
     {
       "contribution": "modkit-extensions-other/extensions/unity-engine/contributions/codec-unityfs.json",
@@ -2930,11 +2930,11 @@
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/unreal-actorx/operation/model.read",
       "status": "adapted",
-      "targetOperation": null,
       "targetDataSource": {
         "contract": "common.view/model-scene-source",
         "major": 1
-      }
+      },
+      "targetOperation": null
     },
     {
       "contribution": "modkit-core/extensions/models/contributions/codec-uvm.json",
@@ -2983,22 +2983,22 @@
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/unreal-uasset-texture/operation/image.read",
       "status": "adapted",
-      "targetOperation": null,
       "targetDataSource": {
         "contract": "common.view/raster-image-source",
         "major": 1
-      }
+      },
+      "targetOperation": null
     },
     {
       "contribution": "modkit-extensions-other/extensions/epic-games-unreal-engine/contributions/codec-unreal-uasset-video.json",
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/unreal-uasset-video/operation/video.export",
       "status": "adapted",
-      "targetOperation": null,
       "targetDataSource": {
         "contract": "common.view/video-media-source",
         "major": 1
-      }
+      },
+      "targetOperation": null
     },
     {
       "contribution": null,
@@ -3019,11 +3019,11 @@
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/unreal-uasset/operation/model.read",
       "status": "adapted",
-      "targetOperation": null,
       "targetDataSource": {
         "contract": "common.view/model-scene-source",
         "major": 1
-      }
+      },
+      "targetOperation": null
     },
     {
       "contribution": "modkit-core/extensions/models/contributions/codec-uvm.json",
@@ -3100,11 +3100,11 @@
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/vpl/operation/image.read",
       "status": "adapted",
-      "targetOperation": null,
       "targetDataSource": {
         "contract": "common.view/raster-image-source",
         "major": 1
-      }
+      },
+      "targetOperation": null
     },
     {
       "contribution": "modkit-extensions-blizzard/blizzard-warcraft-3/contributions/codec-war3-mdx.json",
@@ -3139,11 +3139,11 @@
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/warzone-pie/operation/model.read",
       "status": "adapted",
-      "targetOperation": null,
       "targetDataSource": {
         "contract": "common.view/model-scene-source",
         "major": 1
-      }
+      },
+      "targetOperation": null
     },
     {
       "contribution": "modkit-extensions-warzone/codecs/warzone-pie/codec.json",
@@ -3297,11 +3297,11 @@
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/wtp/operation/image.read",
       "status": "adapted",
-      "targetOperation": null,
       "targetDataSource": {
         "contract": "common.view/raster-image-source",
         "major": 1
-      }
+      },
+      "targetOperation": null
     },
     {
       "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/writer-relic-texture.json",
