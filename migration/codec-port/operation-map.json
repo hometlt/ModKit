@@ -2826,18 +2826,22 @@
       "targetOperation": null
     },
     {
-      "contribution": null,
+      "contribution": "modkit-extensions-other/extensions/epic-games-unreal-engine/contributions/codec-uasset.json",
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/uasset/operation/audio.export",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": null,
+      "targetDataSource": {
+        "contract": "common.view/audio-media-source",
+        "major": 1
+      }
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-other/extensions/epic-games-unreal-engine/contributions/codec-uasset.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/uasset/operation/audio.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
       "contribution": "modkit-extensions-other/extensions/unity-engine/contributions/codec-unity-assets.json",
@@ -2936,53 +2940,61 @@
       "targetOperation": "model.render"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-other/extensions/epic-games-unreal-engine/contributions/codec-unreal-iostore.json",
+      "handlerId": "extract-entry",
       "id": "legacy/codec-manifest/modkit/unreal-iostore/operation/archive.extract",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "container.extract"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-other/extensions/epic-games-unreal-engine/contributions/codec-unreal-iostore.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/unreal-iostore/operation/archive.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-other/extensions/epic-games-unreal-engine/contributions/codec-unreal-pak.json",
+      "handlerId": "extract-entry",
       "id": "legacy/codec-manifest/modkit/unreal-pak/operation/archive.extract",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "container.extract"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-other/extensions/epic-games-unreal-engine/contributions/codec-unreal-pak.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/unreal-pak/operation/archive.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-other/extensions/epic-games-unreal-engine/contributions/codec-unreal-uasset-texture.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/unreal-uasset-texture/operation/image.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
-      "contribution": null,
+      "contribution": "modkit-extensions-other/extensions/epic-games-unreal-engine/contributions/codec-unreal-uasset-texture.json",
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/unreal-uasset-texture/operation/image.read",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": null,
+      "targetDataSource": {
+        "contract": "common.view/raster-image-source",
+        "major": 1
+      }
     },
     {
-      "contribution": null,
+      "contribution": "modkit-extensions-other/extensions/epic-games-unreal-engine/contributions/codec-unreal-uasset-video.json",
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/unreal-uasset-video/operation/video.export",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": null,
+      "targetDataSource": {
+        "contract": "common.view/video-media-source",
+        "major": 1
+      }
     },
     {
       "contribution": null,
@@ -2992,11 +3004,11 @@
       "targetOperation": null
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-other/extensions/epic-games-unreal-engine/contributions/codec-unreal-uasset-video.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/unreal-uasset-video/operation/video.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
       "contribution": "modkit-extensions-other/extensions/epic-games-unreal-engine/contributions/codec-unreal-uasset.json",

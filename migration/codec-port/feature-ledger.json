@@ -7195,14 +7195,24 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/uasset.audio-export.json",
+          "sha256": "adf387afcc571b9186c281dd764690e8a3a3f6c0f4076f86eead9dcea1d50b9d"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/uasset/operation/audio.export",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/uasset.audio-inspect.json",
+          "sha256": "a37f76b7f10200387b47b0ae21fd0c8d951ed4863a36ceae74c0ff09e78bb2d1"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/uasset/operation/audio.inspect",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -7370,14 +7380,24 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/unreal-iostore.archive-extract.json",
+          "sha256": "0b979b42bb02a06126573f7461acef1a96f6ed288eee253f4cf2fcc45530e330"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/unreal-iostore/operation/archive.extract",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/unreal-iostore.archive-inspect.json",
+          "sha256": "944195e47ec055b1aa34c2d25b679b1b1f28877fde208f50dc26d026ad57875b"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/unreal-iostore/operation/archive.inspect",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -7385,14 +7405,24 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/unreal-pak.archive-extract.json",
+          "sha256": "f525433f2f4c663474b6091ed63b87628c1e6e87616bebfc03cdf7b524ec4d43"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/unreal-pak/operation/archive.extract",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/unreal-pak.archive-inspect.json",
+          "sha256": "27482bf84a4e7f12d8c331bf13d595b1d2ce2595f3a18c038a8c7fc4a15776bf"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/unreal-pak/operation/archive.inspect",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -7400,14 +7430,24 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/unreal-uasset-texture.image-inspect.json",
+          "sha256": "c0aa7498821c2e9d0651ae4a01579f891e0a390eb6052ef51492c6ab166c2f09"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/unreal-uasset-texture/operation/image.inspect",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/unreal-uasset-texture.image-read.json",
+          "sha256": "1cd8328ee869c3bdb8339ed9743c1b0a42ee958dce6f4b8330663d43552a194a"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/unreal-uasset-texture/operation/image.read",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -7415,9 +7455,14 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/unreal-uasset-video.video-export.json",
+          "sha256": "c949547d02306ab2c58100dcc7b17cadc10f7ab2a9d6401a07d8877a10110b66"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/unreal-uasset-video/operation/video.export",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -7425,9 +7470,14 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/unreal-uasset-video.video-inspect.json",
+          "sha256": "4d197c1b7ddc8a5bed257f592a99e0436994f577b01f7118a6f71158ee0533d8"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/unreal-uasset-video/operation/video.inspect",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
