@@ -13233,7 +13233,6 @@ capabilities:
     mk3Operations:
       - 'asset.validate'
       - 'container.extract'
-      - 'export.raw'
       - 'view.inspect'
     allocation:
       state: 'covered'
