@@ -37,6 +37,10 @@
       "types": "./dist/model/skinning.d.ts",
       "default": "./dist/model/skinning.js"
     },
+    "./model/bounds": {
+      "types": "./dist/model/bounds.d.ts",
+      "default": "./dist/model/bounds.js"
+    },
     "./model/geometry": {
       "types": "./dist/model/geometry.d.ts",
       "default": "./dist/model/geometry.js"

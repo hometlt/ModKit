@@ -18,6 +18,7 @@ import {
 } from '@modkit/codec-kit/model/materials'
 import { DEFAULT_MODEL_SKELETON_BUDGET } from '@modkit/codec-kit/model/skeleton'
 import { DEFAULT_MODEL_ANIMATION_BUDGET } from '@modkit/codec-kit/model/animation'
+import { boundsOf } from '@modkit/codec-kit/model/bounds'
 import { BufferBuilder as RigBufferBuilder } from './legacy/rig-kernels.js'
 import type { UvmJsonObject } from './legacy/rig-types.js'
 import { prepareUvmSkeleton, writeUvmSkinAttributes, writeUvmAnimations } from './rig.js'
@@ -206,19 +207,6 @@ class BufferBuilder {
   build() {
     return this.buffer.finish()
   }
-}
-
-function boundsOf(positions: Float32Array) {
-  const min = [Infinity, Infinity, Infinity]
-  const max = [-Infinity, -Infinity, -Infinity]
-  for (let offset = 0; offset < positions.length; offset += 3) {
-    for (let axis = 0; axis < 3; axis += 1) {
-      const value = positions[offset + axis] as number
-      if (value < (min[axis] as number)) min[axis] = value
-      if (value > (max[axis] as number)) max[axis] = value
-    }
-  }
-  return { min, max }
 }
 
 // ---------------------------------------------------------------------------------------------
