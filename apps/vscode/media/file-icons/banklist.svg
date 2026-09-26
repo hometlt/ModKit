@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <g stroke="#3f9e7a" stroke-width="2.6" stroke-linecap="round" fill="none">
+    <line x1="23" y1="16" x2="29" y2="16"/>
+    <line x1="19.5" y1="22.06" x2="22.5" y2="27.26"/>
+    <line x1="12.5" y1="22.06" x2="9.5" y2="27.26"/>
+    <line x1="9" y1="16" x2="3" y2="16"/>
+    <line x1="12.5" y1="9.94" x2="9.5" y2="4.74"/>
+    <line x1="19.5" y1="9.94" x2="22.5" y2="4.74"/>
+  </g>
+  <rect x="12.5" y="11" width="7" height="10" rx="1" fill="#f0f0f0" stroke="#555" stroke-width="0.5"/>
+  <line x1="13.7" y1="14" x2="18.3" y2="14" stroke="#555" stroke-width="0.8"/>
+  <line x1="13.7" y1="16.7" x2="18.3" y2="16.7" stroke="#555" stroke-width="0.8"/>
+  <line x1="13.7" y1="19.4" x2="18.3" y2="19.4" stroke="#555" stroke-width="0.8"/>
+</svg>

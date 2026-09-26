@@ -447,6 +447,31 @@
   ],
   "grammars": [
     {
+      "language": "galaxy",
+      "scopeName": "source.galaxy",
+      "path": "./media/galaxy.tmLanguage.json"
+    },
+    {
+      "language": "sc2-layout",
+      "scopeName": "text.xml.sc2layout",
+      "path": "./media/sc2-layout.tmLanguage.json"
+    },
+    {
+      "language": "sc2-strings",
+      "scopeName": "source.sc2strings",
+      "path": "./media/sc2-strings.tmLanguage.json"
+    },
+    {
+      "language": "sc2-style",
+      "scopeName": "text.xml.sc2style",
+      "path": "./media/sc2-style.tmLanguage.json"
+    },
+    {
+      "language": "texturereductionvalues",
+      "scopeName": "source.texturereductionvalues",
+      "path": "./media/texture-reduction-values.tmLanguage.json"
+    },
+    {
       "language": "sc2-data",
       "scopeName": "text.xml.sc2-data",
       "path": "./media/sc2-data.tmLanguage.json"
@@ -470,6 +495,21 @@
       ],
       "extensions": [
         ".galaxy"
+      ],
+      "configuration": "./media/galaxy-language-configuration.json"
+    },
+    {
+      "id": "ini",
+      "extensions": [
+        ".SC2Hotkeys",
+        ".sc2hotkeys"
+      ]
+    },
+    {
+      "id": "lua",
+      "filenames": [
+        "modinfo.lua",
+        "mapinfo.lua"
       ]
     },
     {
@@ -519,7 +559,8 @@
       "extensions": [
         ".SC2Layout",
         ".sc2layout"
-      ]
+      ],
+      "configuration": "./media/sc2-layout-language-configuration.json"
     },
     {
       "id": "sc2-map-objects",
@@ -548,7 +589,8 @@
       ],
       "filenamePatterns": [
         "**/[Ll]ocalized[Dd]ata/*.[tT][xX][tT]"
-      ]
+      ],
+      "configuration": "./media/sc2-strings-language-configuration.json"
     },
     {
       "id": "sc2-style",
@@ -558,6 +600,16 @@
       "extensions": [
         ".SC2Style",
         ".sc2style"
+      ],
+      "configuration": "./media/sc2-style-language-configuration.json"
+    },
+    {
+      "id": "texturereductionvalues",
+      "aliases": [
+        "StarCraft II Texture Reduction Values"
+      ],
+      "filenames": [
+        "TextureReductionValues.txt"
       ]
     },
     {
@@ -605,6 +657,47 @@
       ]
     }
   ],
+  "snippets": [
+    {
+      "language": "galaxy",
+      "path": "./media/galaxy-snippets.json"
+    }
+  ],
+  "iconThemes": [
+    {
+      "id": "modkit-file-icons",
+      "label": "%iconTheme.modkitFileIcons%",
+      "path": "./media/file-icons/modkit-icon-theme.json"
+    }
+  ],
+  "configurationDefaults": {
+    "[sc2-layout]": {
+      "editor.quickSuggestions": {
+        "other": true,
+        "comments": false,
+        "strings": true
+      }
+    },
+    "editor.tokenColorCustomizations": {
+      "textMateRules": [
+        {
+          "scope": "support.type.property-name.sc2strings",
+          "settings": {
+            "foreground": "#4daafc"
+          }
+        },
+        {
+          "scope": [
+            "punctuation.separator.key.sc2strings",
+            "punctuation.separator.key-value.sc2strings"
+          ],
+          "settings": {
+            "foreground": "#9d9d9d"
+          }
+        }
+      ]
+    }
+  },
   "viewsWelcome": [
     {
       "view": "modkit.extensions",

@@ -93,6 +93,22 @@ if (
 ) {
   throw new TypeError('debuggers must contain unique non-empty types')
 }
+// Galaxy snippets, the file icon theme and editor defaults for the game languages (from MK2).
+const snippets = [...(input.snippets ?? [])].sort((a, b) => compareUtf8(a.language, b.language))
+const iconThemes = [...(input.iconThemes ?? [])].sort((a, b) => compareUtf8(a.id, b.id))
+if (
+  snippets.some(row => typeof row.language !== 'string' || typeof row.path !== 'string') ||
+  iconThemes.some(
+    (row, index) =>
+      typeof row.id !== 'string' ||
+      typeof row.path !== 'string' ||
+      (index > 0 && row.id === iconThemes[index - 1].id),
+  )
+) {
+  throw new TypeError('snippets need a language and a path; icon themes a unique id and a path')
+}
+const configurationDefaults =
+  input.configurationDefaults === undefined ? undefined : sortedKeys(input.configurationDefaults)
 // The settings schema is authored as one object; only its property order is normalised, because a
 // JSON Schema's own keyword order carries no meaning but its nesting does.
 const configuration = {
@@ -103,11 +119,14 @@ const configuration = {
 const document = {
   commands,
   configuration,
+  ...(configurationDefaults === undefined ? {} : { configurationDefaults }),
   customEditors,
   ...(debuggers.length === 0 ? {} : { debuggers }),
   grammars,
+  ...(iconThemes.length === 0 ? {} : { iconThemes }),
   languages,
   menus,
+  ...(snippets.length === 0 ? {} : { snippets }),
   views,
   viewsContainers,
   ...(viewsWelcome.length === 0 ? {} : { viewsWelcome }),

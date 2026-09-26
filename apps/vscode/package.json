@@ -363,6 +363,26 @@
         }
       }
     },
+    "configurationDefaults": {
+      "[sc2-layout]": {
+        "editor.quickSuggestions": { "comments": false, "other": true, "strings": true }
+      },
+      "editor.tokenColorCustomizations": {
+        "textMateRules": [
+          {
+            "scope": "support.type.property-name.sc2strings",
+            "settings": { "foreground": "#4daafc" }
+          },
+          {
+            "scope": [
+              "punctuation.separator.key.sc2strings",
+              "punctuation.separator.key-value.sc2strings"
+            ],
+            "settings": { "foreground": "#9d9d9d" }
+          }
+        ]
+      }
+    },
     "customEditors": [
       {
         "viewType": "modkit.archiveViewer",
@@ -447,9 +467,19 @@
     ],
     "grammars": [
       {
+        "language": "galaxy",
+        "scopeName": "source.galaxy",
+        "path": "./media/galaxy.tmLanguage.json"
+      },
+      {
         "language": "sc2-data",
         "scopeName": "text.xml.sc2-data",
         "path": "./media/sc2-data.tmLanguage.json"
+      },
+      {
+        "language": "sc2-layout",
+        "scopeName": "text.xml.sc2layout",
+        "path": "./media/sc2-layout.tmLanguage.json"
       },
       {
         "language": "sc2-map-objects",
@@ -460,10 +490,39 @@
         "language": "sc2-map-preload",
         "scopeName": "text.xml.sc2-map-preload",
         "path": "./media/sc2-map-preload.tmLanguage.json"
+      },
+      {
+        "language": "sc2-strings",
+        "scopeName": "source.sc2strings",
+        "path": "./media/sc2-strings.tmLanguage.json"
+      },
+      {
+        "language": "sc2-style",
+        "scopeName": "text.xml.sc2style",
+        "path": "./media/sc2-style.tmLanguage.json"
+      },
+      {
+        "language": "texturereductionvalues",
+        "scopeName": "source.texturereductionvalues",
+        "path": "./media/texture-reduction-values.tmLanguage.json"
+      }
+    ],
+    "iconThemes": [
+      {
+        "id": "modkit-file-icons",
+        "label": "%iconTheme.modkitFileIcons%",
+        "path": "./media/file-icons/modkit-icon-theme.json"
       }
     ],
     "languages": [
-      { "id": "galaxy", "aliases": ["Galaxy"], "extensions": [".galaxy"] },
+      {
+        "id": "galaxy",
+        "aliases": ["Galaxy"],
+        "extensions": [".galaxy"],
+        "configuration": "./media/galaxy-language-configuration.json"
+      },
+      { "id": "ini", "extensions": [".SC2Hotkeys", ".sc2hotkeys"] },
+      { "id": "lua", "filenames": ["modinfo.lua", "mapinfo.lua"] },
       { "id": "luau", "aliases": ["Luau"], "extensions": [".luau"] },
       {
         "id": "sc2-bank",
@@ -484,7 +543,8 @@
       {
         "id": "sc2-layout",
         "aliases": ["StarCraft II Layout"],
-        "extensions": [".SC2Layout", ".sc2layout"]
+        "extensions": [".SC2Layout", ".sc2layout"],
+        "configuration": "./media/sc2-layout-language-configuration.json"
       },
       {
         "id": "sc2-map-objects",
@@ -501,12 +561,14 @@
       {
         "id": "sc2-strings",
         "aliases": ["StarCraft II Strings"],
-        "filenamePatterns": ["**/[Ll]ocalized[Dd]ata/*.[tT][xX][tT]"]
+        "filenamePatterns": ["**/[Ll]ocalized[Dd]ata/*.[tT][xX][tT]"],
+        "configuration": "./media/sc2-strings-language-configuration.json"
       },
       {
         "id": "sc2-style",
         "aliases": ["StarCraft II Style"],
-        "extensions": [".SC2Style", ".sc2style"]
+        "extensions": [".SC2Style", ".sc2style"],
+        "configuration": "./media/sc2-style-language-configuration.json"
       },
       {
         "id": "sc2-triggers",
@@ -529,6 +591,11 @@
         "id": "storm-cutscene",
         "aliases": ["Storm Cutscene"],
         "extensions": [".StormCutscene", ".stormcutscene"]
+      },
+      {
+        "id": "texturereductionvalues",
+        "aliases": ["StarCraft II Texture Reduction Values"],
+        "filenames": ["TextureReductionValues.txt"]
       },
       {
         "id": "xml",
@@ -796,6 +863,7 @@
         }
       ]
     },
+    "snippets": [{ "language": "galaxy", "path": "./media/galaxy-snippets.json" }],
     "views": {
       "modkit": [
         { "id": "modkit.extensions", "name": "%view.extensions%" },

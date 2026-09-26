@@ -1,0 +1,29 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "SC2 Texture Reduction Values",
+  "scopeName": "source.texturereductionvalues",
+  "patterns": [
+    { "include": "#count-line" },
+    { "include": "#entry-line" }
+  ],
+  "repository": {
+    "count-line": {
+      "comment": "The lone leading count/version line.",
+      "match": "^\\s*(\\d+)\\s*$",
+      "name": "constant.numeric.count.texturereductionvalues"
+    },
+    "entry-line": {
+      "comment": "textureName.dds:value:value:value:... — filename colored distinctly from the colon-separated reduction values.",
+      "begin": "^([^:\\r\\n]+?)(:)",
+      "beginCaptures": {
+        "1": { "name": "entity.name.filename.texturereductionvalues" },
+        "2": { "name": "punctuation.separator.texturereductionvalues" }
+      },
+      "end": "$",
+      "patterns": [
+        { "match": "\\d+", "name": "constant.numeric.integer.texturereductionvalues" },
+        { "match": ":", "name": "punctuation.separator.texturereductionvalues" }
+      ]
+    }
+  }
+}

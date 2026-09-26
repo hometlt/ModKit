@@ -3,6 +3,7 @@
   "command.contentSources": "Modkit: Источники содержимого (локальные / провайдеры)…",
   "command.openContentSource": "Смонтировать источник",
   "command.refreshSources": "Обновить источники",
+  "iconTheme.modkitFileIcons": "Значки файлов Modkit",
   "command.downloadReferences": "Скачать ассеты, на которые ссылается файл",
   "command.signInBattleNet": "Войти в Battle.net",
   "command.signOutBattleNet": "Выйти",

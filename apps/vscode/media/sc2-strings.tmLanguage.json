@@ -1,0 +1,104 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "SC2 Localized Strings",
+  "scopeName": "source.sc2strings",
+  "patterns": [
+    { "include": "#comment" },
+    { "include": "#key" },
+    { "include": "#markup" }
+  ],
+  "repository": {
+    "comment": {
+      "patterns": [
+        { "include": "#line-comment" },
+        { "include": "#trailing-comment" }
+      ]
+    },
+    "line-comment": {
+      "comment": "A key starting with // (any amount of leading whitespace) is a full-line comment, distinct from the ///-after-a-value convention below.",
+      "match": "^\\s*//.*$",
+      "name": "comment.line.double-slash.sc2strings"
+    },
+    "trailing-comment": {
+      "match": "///.*$",
+      "name": "comment.line.triple-slash.sc2strings"
+    },
+    "key": {
+      "patterns": [
+        { "include": "#key-3seg" },
+        { "include": "#key-plain" }
+      ]
+    },
+    "key-3seg": {
+      "comment": "The common Catalog/Property/ObjectId key convention. Every segment shares the same scope/color as the key-plain fallback below; only '/' and '=' are their own (muted) punctuation scopes. Scope is support.type.property-name (same as JSON object keys) rather than a variable.* scope, since most themes leave variable.* unstyled (default foreground) but reliably color property-name keys.",
+      "match": "^([A-Za-z_]\\w*)(/)([^=/\\r\\n]+)(/)([^=/\\r\\n]+)(=)",
+      "captures": {
+        "1": { "name": "support.type.property-name.sc2strings" },
+        "2": { "name": "punctuation.separator.key.sc2strings" },
+        "3": { "name": "support.type.property-name.sc2strings" },
+        "4": { "name": "punctuation.separator.key.sc2strings" },
+        "5": { "name": "support.type.property-name.sc2strings" },
+        "6": { "name": "punctuation.separator.key-value.sc2strings" }
+      }
+    },
+    "key-plain": {
+      "comment": "Fallback for keys that aren't exactly Catalog/Property/ObjectId (2 or 4+ segments, or a single bare identifier).",
+      "match": "^([^=\\r\\n]+?)(=)",
+      "captures": {
+        "1": { "name": "support.type.property-name.sc2strings" },
+        "2": { "name": "punctuation.separator.key-value.sc2strings" }
+      }
+    },
+    "markup": {
+      "patterns": [
+        { "include": "#tag" },
+        { "include": "#token" }
+      ]
+    },
+    "token": {
+      "comment": "$Token$ / ~Name~ / %Name% runtime variables. %Name% is identifier-bounded so a literal percent sign (\"+25%\") is never mistaken for a token.",
+      "match": "(\\$[A-Za-z][^$\\r\\n]*\\$)|(~[A-Za-z][A-Za-z0-9_]*~)|(%[A-Za-z][A-Za-z0-9_]*%)",
+      "name": "variable.language.token.sc2strings"
+    },
+    "tag": {
+      "comment": "Only recognized SC2 tag names are treated as markup; anything else (e.g. <None>) is left as plain text, and a stray '>' elsewhere is never an error.",
+      "begin": "(</?)((?i:n|sp|h|d|c|s|img|k|ul|li|w|lang|a|ignore))\\b",
+      "beginCaptures": {
+        "1": { "name": "punctuation.definition.tag.begin.sc2strings" },
+        "2": { "name": "entity.name.tag.sc2strings" }
+      },
+      "end": "(/?)(>)",
+      "endCaptures": {
+        "1": { "name": "punctuation.definition.tag.end.sc2strings" },
+        "2": { "name": "punctuation.definition.tag.end.sc2strings" }
+      },
+      "patterns": [
+        { "include": "#expression-attr" },
+        { "include": "#attribute" }
+      ]
+    },
+    "expression-attr": {
+      "begin": "\\b([Rr]ef|[Tt]ime)\\s*(=)\\s*(\")",
+      "beginCaptures": {
+        "1": { "name": "entity.other.attribute-name.sc2strings" },
+        "2": { "name": "punctuation.separator.key-value.sc2strings" },
+        "3": { "name": "punctuation.definition.string.begin.sc2strings" }
+      },
+      "end": "\"",
+      "endCaptures": { "0": { "name": "punctuation.definition.string.end.sc2strings" } },
+      "name": "string.quoted.double.sc2strings",
+      "patterns": [
+        { "match": "[()+*/-]", "name": "keyword.operator.arithmetic.sc2strings" },
+        { "match": "\\$[A-Za-z][^$]*\\$|~[A-Za-z]\\w*~|%[A-Za-z]\\w*%", "name": "variable.language.token.sc2strings" }
+      ]
+    },
+    "attribute": {
+      "match": "([A-Za-z_]\\w*)\\s*(=)\\s*(\"[^\"]*\"|'[^']*')",
+      "captures": {
+        "1": { "name": "entity.other.attribute-name.sc2strings" },
+        "2": { "name": "punctuation.separator.key-value.sc2strings" },
+        "3": { "name": "string.quoted.sc2strings" }
+      }
+    }
+  }
+}
