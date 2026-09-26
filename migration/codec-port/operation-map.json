@@ -687,18 +687,18 @@
       "targetOperation": null
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-ea/emperor/contributions/codec-emperor-rfh-rfd.json",
+      "handlerId": "extract-entry",
       "id": "legacy/codec-manifest/modkit/emperor-rfh-rfd/operation/archive.extract",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "container.extract"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-ea/emperor/contributions/codec-emperor-rfh-rfd.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/emperor-rfh-rfd/operation/archive.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
       "contribution": null,
@@ -708,11 +708,11 @@
       "targetOperation": null
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-ea/emperor/contributions/codec-emperor-xbf.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/emperor-xbf/operation/model.read",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
       "contribution": null,
