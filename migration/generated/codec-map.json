@@ -32,7 +32,7 @@
       ]
     }
   ],
-  "contributionCount": 264,
+  "contributionCount": 271,
   "inventorySha256": "08c3bdad48056914277c7f95a0f97ef4feb85c8ec86a2fa8faf47bd7f9817e8c",
   "legacyCount": 206,
   "rows": [
@@ -81,7 +81,7 @@
       "codec": "age-bar",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 3,
+      "pending": 1,
       "requirements": 3,
       "source": "extensions/microsoft/age-series/codecs/age-bar/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/age-bar",
@@ -98,7 +98,7 @@
       "codec": "age-drs",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 3,
+      "pending": 1,
       "requirements": 3,
       "source": "extensions/microsoft/age-series/codecs/age-drs/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/age-drs",
@@ -494,11 +494,11 @@
       "codec": "cps",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 2,
+      "pending": 0,
       "requirements": 2,
       "source": "extensions/ea/westwood/codecs/cps/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/cps",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -624,33 +624,33 @@
       "codec": "diablo2-character-model",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 1,
+      "pending": 0,
       "requirements": 1,
       "source": "extensions/blizzard/diablo/codecs/diablo2-character-model/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/diablo2-character-model",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [],
       "codec": "diablo2-dc6",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 1,
+      "pending": 0,
       "requirements": 1,
       "source": "extensions/blizzard/diablo/codecs/diablo2-dc6/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/diablo2-dc6",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [],
       "codec": "diablo2-dt1",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 1,
+      "pending": 0,
       "requirements": 1,
       "source": "extensions/blizzard/diablo/codecs/diablo2-dt1/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/diablo2-dt1",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -663,11 +663,11 @@
       "codec": "diablo3-app",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 3,
+      "pending": 0,
       "requirements": 3,
       "source": "extensions/blizzard/diablo/codecs/diablo3-app/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/diablo3-app",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [],
@@ -691,11 +691,11 @@
       "codec": "diablo3-tex",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 3,
+      "pending": 0,
       "requirements": 3,
       "source": "extensions/blizzard/diablo/codecs/diablo3-tex/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/diablo3-tex",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -770,22 +770,28 @@
       "codec": "earth-par",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 3,
+      "pending": 0,
       "requirements": 3,
       "source": "extensions/realitypump/earth-2150/codecs/earth-par/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/earth-par",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
-      "candidates": [],
+      "candidates": [
+        {
+          "id": "modkit/earth-res",
+          "path": "extensions/realitypump-earth-2150/contributions/codec-earth-res.json",
+          "repository": "other"
+        }
+      ],
       "codec": "earth-res",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 2,
+      "pending": 0,
       "requirements": 2,
       "source": "extensions/realitypump/earth-2150/codecs/earth-res/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/earth-res",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -815,11 +821,11 @@
       "codec": "earth2160-model",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 3,
+      "pending": 0,
       "requirements": 3,
       "source": "extensions/realitypump/earth2160/codecs/earth2160-model/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/earth2160-model",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -839,15 +845,21 @@
       "status": "pending"
     },
     {
-      "candidates": [],
+      "candidates": [
+        {
+          "id": "ea/emperor-bag",
+          "path": "emperor/contributions/codec-emperor-bag.json",
+          "repository": "ea"
+        }
+      ],
       "codec": "emperor-bag",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 1,
+      "pending": 0,
       "requirements": 1,
       "source": "extensions/ea/emperor/codecs/emperor-bag/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/emperor-bag",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -860,11 +872,11 @@
       "codec": "emperor-rfh-rfd",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 3,
+      "pending": 0,
       "requirements": 3,
       "source": "extensions/ea/emperor/codecs/emperor-rfh-rfd/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/emperor-rfh-rfd",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -877,7 +889,7 @@
       "codec": "emperor-xbf",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 5,
+      "pending": 1,
       "requirements": 5,
       "source": "extensions/ea/emperor/codecs/emperor-xbf/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/emperor-xbf",
@@ -1013,11 +1025,11 @@
       "codec": "gaf",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 2,
+      "pending": 0,
       "requirements": 2,
       "source": "extensions/cavedog/total-annihilation/codecs/gaf/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/gaf",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -1035,11 +1047,11 @@
       "codec": "galaxy",
       "family": "sc2",
       "featureAudit": "available",
-      "pending": 2,
+      "pending": 0,
       "requirements": 32,
       "source": "extensions/blizzard/starcraft-2/codecs/galaxy/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/galaxy",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -1137,7 +1149,7 @@
       "codec": "halo-era",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 3,
+      "pending": 1,
       "requirements": 3,
       "source": "extensions/microsoft/halo-wars/codecs/halo-era/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/halo-era",
@@ -1182,7 +1194,7 @@
       "codec": "heroes3-lod",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 3,
+      "pending": 1,
       "requirements": 3,
       "source": "extensions/new-world-computing/heroes-3/codecs/heroes3-lod/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/heroes3-lod",
@@ -1329,7 +1341,7 @@
       "codec": "m3",
       "family": "sc2",
       "featureAudit": "available",
-      "pending": 20,
+      "pending": 1,
       "requirements": 22,
       "source": "extensions/blizzard/starcraft-2/codecs/m3/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/m3",
@@ -1384,18 +1396,18 @@
       "candidates": [
         {
           "id": "ea/mix",
-          "path": "archives/contributions/codec-mix.json",
+          "path": "westwood/contributions/codec-mix.json",
           "repository": "ea"
         }
       ],
       "codec": "mix",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 3,
+      "pending": 0,
       "requirements": 3,
       "source": "extensions/ea/archives/codecs/mix/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/mix",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -1844,11 +1856,11 @@
       "codec": "r16",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 3,
+      "pending": 0,
       "requirements": 3,
       "source": "extensions/ea/westwood/codecs/r16/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/r16",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -1861,11 +1873,11 @@
       "codec": "r8",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 3,
+      "pending": 0,
       "requirements": 3,
       "source": "extensions/ea/westwood/codecs/r8/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/r8",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -1888,14 +1900,14 @@
       "candidates": [
         {
           "id": "ea/red-alert2-vxl",
-          "path": "tiberian-sun/contributions/codec-red-alert2-vxl.json",
+          "path": "westwood/contributions/codec-red-alert2-vxl.json",
           "repository": "ea"
         }
       ],
       "codec": "red-alert2-vxl",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 3,
+      "pending": 1,
       "requirements": 3,
       "source": "extensions/ea/tiberian-sun/codecs/red-alert2-vxl/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/red-alert2-vxl",
@@ -1912,11 +1924,11 @@
       "codec": "relic",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 3,
+      "pending": 0,
       "requirements": 3,
       "source": "extensions/relic/essence/codecs/relic/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/relic",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [],
@@ -1940,28 +1952,28 @@
       "codec": "relic-sga",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 3,
+      "pending": 0,
       "requirements": 3,
       "source": "extensions/relic/essence/codecs/relic-sga/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/relic-sga",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
         {
           "id": "modkit/relic-sgm",
-          "path": "extensions/relic-models/contributions/codec-relic-sgm.json",
+          "path": "extensions/relic-essence/contributions/codec-relic-sgm.json",
           "repository": "other"
         }
       ],
       "codec": "relic-sgm",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 3,
+      "pending": 0,
       "requirements": 3,
       "source": "extensions/relic/models/codecs/relic-sgm/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/relic-sgm",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [],
@@ -1978,18 +1990,18 @@
       "candidates": [
         {
           "id": "modkit/relic-whm",
-          "path": "extensions/relic-models/contributions/codec-relic-whm.json",
+          "path": "extensions/relic-essence/contributions/codec-relic-whm.json",
           "repository": "other"
         }
       ],
       "codec": "relic-whm",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 3,
+      "pending": 0,
       "requirements": 3,
       "source": "extensions/relic/models/codecs/relic-whm/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/relic-whm",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -2002,11 +2014,11 @@
       "codec": "rgt",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 4,
+      "pending": 0,
       "requirements": 4,
       "source": "extensions/relic/essence/codecs/rgt/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/rgt",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -2019,11 +2031,11 @@
       "codec": "rrtex",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 3,
+      "pending": 0,
       "requirements": 3,
       "source": "extensions/relic/essence/codecs/rrtex/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/rrtex",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -2036,11 +2048,11 @@
       "codec": "rsh",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 4,
+      "pending": 0,
       "requirements": 4,
       "source": "extensions/relic/essence/codecs/rsh/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/rsh",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -2070,11 +2082,11 @@
       "codec": "rtx",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 4,
+      "pending": 0,
       "requirements": 4,
       "source": "extensions/relic/essence/codecs/rtx/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/rtx",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [],
@@ -2137,11 +2149,11 @@
       "codec": "sc2-bank",
       "family": "sc2",
       "featureAudit": "available",
-      "pending": 1,
+      "pending": 0,
       "requirements": 27,
       "source": "extensions/blizzard/starcraft-2/codecs/sc2-bank/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/sc2-bank",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -2159,11 +2171,11 @@
       "codec": "sc2-data",
       "family": "sc2",
       "featureAudit": "available",
-      "pending": 9,
+      "pending": 0,
       "requirements": 26,
       "source": "extensions/blizzard/starcraft-2/codecs/sc2-data/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/sc2-data",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -2181,11 +2193,11 @@
       "codec": "sc2-document-metadata",
       "family": "sc2",
       "featureAudit": "available",
-      "pending": 3,
+      "pending": 0,
       "requirements": 19,
       "source": "extensions/blizzard/starcraft-2/codecs/sc2-document-metadata/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/sc2-document-metadata",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -2203,7 +2215,7 @@
       "codec": "sc2-layout",
       "family": "sc2",
       "featureAudit": "available",
-      "pending": 6,
+      "pending": 2,
       "requirements": 28,
       "source": "extensions/blizzard/starcraft-2/codecs/sc2-layout/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/sc2-layout",
@@ -2225,7 +2237,7 @@
       "codec": "sc2-map",
       "family": "sc2",
       "featureAudit": "available",
-      "pending": 23,
+      "pending": 1,
       "requirements": 23,
       "source": "extensions/blizzard/starcraft-2/codecs/sc2-map/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/sc2-map",
@@ -2247,7 +2259,7 @@
       "codec": "sc2-mod",
       "family": "sc2",
       "featureAudit": "available",
-      "pending": 21,
+      "pending": 2,
       "requirements": 24,
       "source": "extensions/blizzard/starcraft-2/codecs/sc2-mod/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/sc2-mod",
@@ -2269,7 +2281,7 @@
       "codec": "sc2-replay",
       "family": "sc2",
       "featureAudit": "available",
-      "pending": 10,
+      "pending": 1,
       "requirements": 27,
       "source": "extensions/blizzard/starcraft-2/codecs/sc2-replay/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/sc2-replay",
@@ -2291,7 +2303,7 @@
       "codec": "sc2-runtime",
       "family": "sc2",
       "featureAudit": "available",
-      "pending": 19,
+      "pending": 18,
       "requirements": 19,
       "source": "extensions/blizzard/starcraft-2/codecs/sc2-runtime/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/sc2-runtime",
@@ -2313,11 +2325,11 @@
       "codec": "sc2-strings",
       "family": "sc2",
       "featureAudit": "available",
-      "pending": 6,
+      "pending": 0,
       "requirements": 26,
       "source": "extensions/blizzard/starcraft-2/codecs/sc2-strings/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/sc2-strings",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -2352,7 +2364,7 @@
       "codec": "shp",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 4,
+      "pending": 2,
       "requirements": 4,
       "source": "extensions/ea/westwood/codecs/shp/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/shp",
@@ -2572,7 +2584,7 @@
       "codec": "supcom-scm",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 3,
+      "pending": 1,
       "requirements": 3,
       "source": "extensions/annihilation/gas-powered/codecs/supcom-scm/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/supcom-scm",
@@ -2623,11 +2635,11 @@
       "codec": "ta-hpi",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 3,
+      "pending": 0,
       "requirements": 3,
       "source": "extensions/cavedog/total-annihilation/codecs/ta-hpi/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/ta-hpi",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -2708,11 +2720,11 @@
       "codec": "tmp",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 3,
+      "pending": 0,
       "requirements": 3,
       "source": "extensions/ea/westwood/codecs/tmp/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/tmp",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [],
@@ -2736,7 +2748,7 @@
       "codec": "uasset",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 4,
+      "pending": 1,
       "requirements": 4,
       "source": "extensions/epic-games/unreal-engine/codecs/uasset/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/uasset",
@@ -2753,7 +2765,7 @@
       "codec": "unity",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 3,
+      "pending": 1,
       "requirements": 3,
       "source": "extensions/unity/engine/codecs/unity/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/unity",
@@ -2770,7 +2782,7 @@
       "codec": "unity-assets",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 3,
+      "pending": 1,
       "requirements": 3,
       "source": "extensions/unity/engine/codecs/unity-assets/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/unity-assets",
@@ -2787,7 +2799,7 @@
       "codec": "unity-mesh",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 3,
+      "pending": 1,
       "requirements": 3,
       "source": "extensions/unity/engine/codecs/unity-mesh/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/unity-mesh",
@@ -2804,11 +2816,11 @@
       "codec": "unity-ress",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 3,
+      "pending": 0,
       "requirements": 3,
       "source": "extensions/unity/engine/codecs/unity-ress/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/unity-ress",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -2821,11 +2833,11 @@
       "codec": "unityfs",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 3,
+      "pending": 0,
       "requirements": 3,
       "source": "extensions/unity/engine/codecs/unityfs/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/unityfs",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -2838,7 +2850,7 @@
       "codec": "unreal-actorx",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 3,
+      "pending": 1,
       "requirements": 3,
       "source": "extensions/epic-games/unreal-engine/codecs/unreal-actorx/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/unreal-actorx",
@@ -2855,7 +2867,7 @@
       "codec": "unreal-iostore",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 3,
+      "pending": 1,
       "requirements": 3,
       "source": "extensions/epic-games/unreal-engine/codecs/unreal-iostore/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/unreal-iostore",
@@ -2872,7 +2884,7 @@
       "codec": "unreal-pak",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 3,
+      "pending": 1,
       "requirements": 3,
       "source": "extensions/epic-games/unreal-engine/codecs/unreal-pak/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/unreal-pak",
@@ -2889,7 +2901,7 @@
       "codec": "unreal-uasset",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 3,
+      "pending": 1,
       "requirements": 3,
       "source": "extensions/epic-games/unreal-engine/codecs/unreal-uasset/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/unreal-uasset",
@@ -2906,7 +2918,7 @@
       "codec": "unreal-uasset-texture",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 3,
+      "pending": 1,
       "requirements": 3,
       "source": "extensions/epic-games/unreal-engine/codecs/unreal-uasset-texture/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/unreal-uasset-texture",
@@ -2923,7 +2935,7 @@
       "codec": "unreal-uasset-video",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 4,
+      "pending": 2,
       "requirements": 4,
       "source": "extensions/epic-games/unreal-engine/codecs/unreal-uasset-video/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/unreal-uasset-video",
@@ -2974,11 +2986,11 @@
       "codec": "vpl",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 3,
+      "pending": 0,
       "requirements": 3,
       "source": "extensions/ea/westwood/codecs/vpl/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/vpl",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -2991,11 +3003,11 @@
       "codec": "war3-mdx",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 3,
+      "pending": 0,
       "requirements": 3,
       "source": "extensions/blizzard/warcraft-3/codecs/war3-mdx/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/war3-mdx",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [],
@@ -3074,11 +3086,11 @@
       "codec": "warzone-img",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 2,
+      "pending": 0,
       "requirements": 2,
       "source": "extensions/opensource/warzone-2100/codecs/warzone-img/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/warzone-img",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -3091,11 +3103,11 @@
       "codec": "warzone-lev",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 2,
+      "pending": 0,
       "requirements": 2,
       "source": "extensions/opensource/warzone-2100/codecs/warzone-lev/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/warzone-lev",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -3108,11 +3120,11 @@
       "codec": "warzone-pie",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 3,
+      "pending": 0,
       "requirements": 3,
       "source": "extensions/opensource/warzone-2100/codecs/warzone-pie/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/warzone-pie",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -3125,11 +3137,11 @@
       "codec": "warzone-wrf",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 2,
+      "pending": 0,
       "requirements": 2,
       "source": "extensions/opensource/warzone-2100/codecs/warzone-wrf/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/warzone-wrf",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -3142,11 +3154,11 @@
       "codec": "warzone-wz",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 2,
+      "pending": 0,
       "requirements": 2,
       "source": "extensions/opensource/warzone-2100/codecs/warzone-wz/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/warzone-wz",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -3159,11 +3171,11 @@
       "codec": "warzone2100-map",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 2,
+      "pending": 0,
       "requirements": 2,
       "source": "extensions/opensource/warzone-2100/codecs/warzone2100-map/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/warzone2100-map",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -3193,11 +3205,11 @@
       "codec": "wd",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 3,
+      "pending": 0,
       "requirements": 3,
       "source": "extensions/realitypump/earth2160/codecs/wd/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/wd",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -3323,11 +3335,11 @@
       "codec": "wsa",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 2,
+      "pending": 0,
       "requirements": 2,
       "source": "extensions/ea/westwood/codecs/wsa/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/wsa",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -3340,11 +3352,11 @@
       "codec": "wtp",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 4,
+      "pending": 0,
       "requirements": 4,
       "source": "extensions/relic/essence/codecs/wtp/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/wtp",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [

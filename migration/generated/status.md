@@ -78,12 +78,11 @@ Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`
 
 | allocation       | Строк | migrationState         | Строк | evidenceLevel | Строк |
 | ---------------- | ----- | ---------------------- | ----- | ------------- | ----- |
-| `absent`         | 84    | `equivalent-better`    | 21    | E0            | 82    |
-| `covered`        | 194   | `implemented`          | 217   | E1            | 133   |
-| `not-applicable` | 1     | `missing`              | 84    | E2            | 59    |
-| `superseded`     | 52    | `partial`              | 8     | E3            | 23    |
-|                  |       | `relocated-multiverse` | 1     | E4            | 31    |
-|                  |       |                        |       | E5            | 3     |
+| `absent`         | 83    | `equivalent-better`    | 21    | E0            | 82    |
+| `covered`        | 195   | `implemented`          | 218   | E1            | 133   |
+| `not-applicable` | 1     | `missing`              | 83    | E2            | 59    |
+| `superseded`     | 52    | `partial`              | 8     | E3            | 24    |
+|                  |       | `relocated-multiverse` | 1     | E4            | 33    |
 
 ### 3.3. Доказанные writers
 

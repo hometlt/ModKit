@@ -4245,8 +4245,8 @@ capabilities:
     migrationState: 'implemented'
     supportState: 'partial'
     runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E5'
-    hostEvidence: 'vscode-installed'
+    evidenceLevel: 'E4'
+    hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
       coverageStatus: 'compared-synthetic'
@@ -4274,6 +4274,7 @@ capabilities:
         read: null
         materialize: null
     knownLoss:
+      - 'installed-host receipt installed-acceptance-wave2b-final-687fd1f8 lost with artifacts/ga-recovery-wave2b (2026-09-26); re-accept in the installed VS Code'
       - 'АУДИТ 2026-08-31 ЗАКРЫТ волнами 1B–2B: packaging/install regression устранён; тот же DDS-маршрут проверен в установленном VS Code (installed-acceptance-wave2b-final-687fd1f8.receipt.json, formatSmoke image-dds и casc-dds, якорь 2B-1/2B-2). Прежняя запись «installed VS Code штатно не получает DDS codec root, packagedCodecRoots=[]» более не соответствует факту.'
       - 'АУДИТ 2026-08-31 частично закрыт. Выбор mip/layer/face/slice работает с волны 2B. Перенос legacy-декодера 2026-09-03 добавил BC4/BC5 (ATI1/ATI2/BC4U/BC5U/BC4S/BC5S со знаковыми конечными точками), luminance- и alpha-only пиксельные форматы, 8/16-битные несжатые поверхности, написания DXT2/DXT4 и DXGI 28/29/80/81/83/84/87/91. Остаются нереализованными BC6H и BC7: в legacy они шли через сторонний WASM-пакет texture2ddecoder, а не через читаемый алгоритм (та же граница, что зафиксирована в extensions/images/src/pkm/etc.js), и в корпусе SC2 из 63 053 файлов .dds не встречаются ни разу — то есть валидирующего корпуса для них по-прежнему нет.'
       - 'Перенос legacy DDS 2026-09-03: дифференциал против самого legacy-декодера (legacy:extensions/common/images/codecs/dds/src/dds.ts) на 1283 реальных файлах SC2 — побайтово идентичный вывод на всех уровнях мипов во всех форматах корпуса (DXT1, DXT3, DXT5, ATI2, RGB24, RGB32, L8A8). До переноса L8A8 (33 файла корпуса) не открывался вовсе («pixel format is neither FourCC nor RGB»), а ATI2 (1 файл, карта нормалей) отвергался как «pixel payload is truncated», потому что неизвестный FourCC получал размер из незаполненного dwRGBBitCount. Дополнительно: расширение 565-конечных точек переведено на битовую репликацию, как задаёт D3D и как делал legacy; прежнее рациональное округление расходилось с эталоном на 1 на канал.'
@@ -4288,7 +4289,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
-      installedHost: 'artifacts/ga-recovery-wave2b/installed-acceptance-wave2b-final-687fd1f8.receipt.json#2B-1/2B-2'
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits:
@@ -5030,7 +5031,7 @@ capabilities:
       - 'modkit/earth-par'
     mk3Operations:
       - 'asset.validate'
-      - 'export.raw'
+      - 'container.extract'
       - 'view.inspect'
     allocation:
       state: 'covered'
@@ -5038,7 +5039,7 @@ capabilities:
       portFamily: 'mk2/realitypump-earth-2150'
       portVerdict: null
     migrationState: 'implemented'
-    supportState: 'partial'
+    supportState: 'supported'
     runtimeAvailability: 'browser-and-node'
     evidenceLevel: 'E1'
     hostEvidence: 'node'
@@ -5085,17 +5086,21 @@ capabilities:
       - 'legacy/codec-manifest/modkit/earth-res'
     legacyEvidence:
       - 'legacy:extensions/realitypump/earth-2150/codecs/earth-res/codec.manifest.json'
-    hostFacilities: []
-    mk3Contributions: []
-    mk3Operations: []
+    hostFacilities:
+      - 'read-source'
+    mk3Contributions:
+      - 'modkit/earth-res'
+    mk3Operations:
+      - 'asset.validate'
+      - 'view.inspect'
     allocation:
-      state: 'absent'
-      x3ContributionId: null
-      portFamily: null
+      state: 'covered'
+      x3ContributionId: 'modkit/earth-res'
+      portFamily: 'mk2/realitypump-earth-2150'
       portVerdict: null
-    migrationState: 'missing'
-    supportState: 'unsupported'
-    runtimeAvailability: 'none'
+    migrationState: 'implemented'
+    supportState: 'partial'
+    runtimeAvailability: 'browser-and-node'
     evidenceLevel: 'E0'
     hostEvidence: 'none'
     writerEvidence: 'not-declared'
@@ -5119,7 +5124,7 @@ capabilities:
         read: null
         materialize: null
     knownLoss:
-      - 'no MK3 contribution exists for this legacy route yet'
+      - 'container layout unconfirmed in MK2 as in MK3: the contribution inspects and validates; no entry extraction'
     receipts:
       projection: null
       materialization: null
@@ -8243,8 +8248,8 @@ capabilities:
     migrationState: 'equivalent-better'
     supportState: 'unknown'
     runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E5'
-    hostEvidence: 'vscode-installed'
+    evidenceLevel: 'E3'
+    hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
       coverageStatus: 'compared-synthetic'
@@ -8271,6 +8276,7 @@ capabilities:
         read: null
         materialize: null
     knownLoss:
+      - 'installed-host receipt installed-acceptance-wave2b-final-687fd1f8 lost with artifacts/ga-recovery-wave2b (2026-09-26); re-accept in the installed VS Code'
       - 'E5 закрывает только live app workflow (воспроизведение, смена скорости, пауза) на реальном CASC-корпусе; sealed-oracle дифференциал по-прежнему synthetic и его вердикт — poorer, поэтому E5 здесь не означает «не беднее legacy».'
       - 'operation dropped at port: audio.export'
       - 'operation dropped at port: audio.inspect'
@@ -8278,7 +8284,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
-      installedHost: 'artifacts/ga-recovery-wave2b/installed-acceptance-wave2b-final-687fd1f8.receipt.json#2B-3'
+      installedHost: null
     replacementWorkflow: 'MK3 contribution modkit/audio-ogg'
     closedBy:
       commits: []
@@ -14478,8 +14484,8 @@ capabilities:
     migrationState: 'implemented'
     supportState: 'supported'
     runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E5'
-    hostEvidence: 'vscode-installed'
+    evidenceLevel: 'E4'
+    hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
       coverageStatus: 'compared-synthetic'
@@ -14506,6 +14512,7 @@ capabilities:
         read: null
         materialize: null
     knownLoss:
+      - 'installed-host receipt installed-acceptance-wave2b-final-687fd1f8 lost with artifacts/ga-recovery-wave2b (2026-09-26); re-accept in the installed VS Code'
       - 'E5 закрывает live app workflow (воспроизведение IMA ADPCM через codec-pcm, смена скорости, пауза) на реальном CASC-корпусе; sealed-oracle дифференциал остаётся synthetic.'
       - 'operation dropped at port: audio.decode'
       - 'operation dropped at port: audio.export'
@@ -14514,7 +14521,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
-      installedHost: 'artifacts/ga-recovery-wave2b/installed-acceptance-wave2b-final-687fd1f8.receipt.json#2B-3'
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []

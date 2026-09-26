@@ -745,11 +745,19 @@ function deriveX3Facts() {
     ['spring', externalRepositoryRoot(repoRoot, 'spring')],
     ['other', externalRepositoryRoot(repoRoot, 'other')],
   ].flatMap(([repository, root]) =>
-    execFileSync('git', ['-C', root, 'ls-files', 'contributions/*.json', '*/contributions/*.json'])
+    // Manifests sit at any depth (blizzard: starcraft2/modules/<area>/codecs/<name>/codec.json);
+    // test fixtures may reuse real ids and are not contributions.
+    execFileSync('git', [
+      '-C',
+      root,
+      'ls-files',
+      ':(glob)**/contributions/*.json',
+      ':(glob)**/codec.json',
+    ])
       .toString('utf8')
       .trim()
       .split('\n')
-      .filter(Boolean)
+      .filter(file => file && !/(^|\/)(test|tests|fixtures|node_modules|dist)\//u.test(file))
       .map(file => ({ file: `external:${repository}/${file}`, absolute: path.join(root, file) })),
   )
   const files = [
