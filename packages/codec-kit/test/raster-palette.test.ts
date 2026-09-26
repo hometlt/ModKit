@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { applyPalette, parsePalette } from '../src/raster/palette.js'
+import {
+  applyPalette,
+  nearestPaletteIndex,
+  parsePalette,
+  quantizeToPalette,
+} from '../src/raster/palette.js'
 
 const encoder = new TextEncoder()
 
@@ -79,6 +84,35 @@ describe('raster palette', () => {
     const truncated = riff([[1, 2, 3]])
     new DataView(truncated.buffer).setUint32(4, truncated.byteLength, true)
     expect(() => parsePalette(truncated, 100)).toThrow(/declared size/u)
+  })
+
+  it('finds the nearest colour, lowest index on a tie, never the skipped one', () => {
+    const colors = new Uint8Array(1024)
+    colors.set([200, 0, 0, 255], 4)
+    colors.set([200, 0, 0, 255], 8)
+    colors.set([0, 0, 200, 255], 12)
+    expect(nearestPaletteIndex(colors, 190, 10, 0)).toBe(1)
+    expect(nearestPaletteIndex(colors, 0, 0, 0)).toBe(0)
+    expect(nearestPaletteIndex(colors, 0, 0, 0, 0)).toBe(4)
+    expect(nearestPaletteIndex(colors, 10, 0, 180, 0)).toBe(3)
+  })
+
+  it('quantizes RGBA to indices, the inverse of applyPalette for palette colours', () => {
+    const { colors } = parsePalette(
+      raw([
+        [0, 0, 0],
+        [63, 0, 0],
+        [0, 63, 0],
+      ]),
+      100,
+    )
+    const indices = Uint8Array.from([1, 2, 0, 2])
+    const pixels = applyPalette(indices, colors, 0)
+    expect([...quantizeToPalette(pixels, colors, { transparent: 0 })]).toEqual([1, 2, 0, 2])
+    // a colour off the palette rounds to its nearest entry; half-transparent is transparent
+    const off = Uint8Array.from([250, 10, 5, 255, 20, 240, 30, 100])
+    expect([...quantizeToPalette(off, colors, { transparent: 0 })]).toEqual([1, 0])
+    expect(() => quantizeToPalette(new Uint8Array(3), colors)).toThrow(/groups of four/u)
   })
 
   it('turns indices into RGBA, the reserved index fully transparent', () => {
