@@ -187,8 +187,16 @@ export function createFilesystemLanguageDocumentSource(
         const bytes = await readFile(path)
         totalBytes += bytes.byteLength
         let text: string
+        // UTF-16 by its BOM (Relic .ucs tables); such a document is analysed but read-only, since
+        // the host's text splice writes UTF-8 and would corrupt it.
+        const utf16 =
+          bytes[0] === 0xff && bytes[1] === 0xfe
+            ? 'utf-16le'
+            : bytes[0] === 0xfe && bytes[1] === 0xff
+              ? 'utf-16be'
+              : undefined
         try {
-          text = new TextDecoder('utf-8', { fatal: true }).decode(bytes)
+          text = new TextDecoder(utf16 ?? 'utf-8', { fatal: true }).decode(bytes)
         } catch {
           complete = false
           continue
@@ -220,7 +228,7 @@ export function createFilesystemLanguageDocumentSource(
             logicalId: candidate.logicalId,
             precedence: candidate.precedence,
             sourceRevision: signature,
-            readOnly: false,
+            readOnly: utf16 !== undefined,
           }),
         )
       }
