@@ -155,12 +155,10 @@ describe('common world WebGL plan', () => {
       gatewaySegments: 1,
       regionShapes: 1,
       diagnosticPlaceholders: 0,
-      // Only the model casts: terrain and its cliff geometry receive shadows, as in SC2.
-      shadowCasterTriangles: 1,
+      shadowCasterTriangles: 5,
       shadowMapSize: 0,
     })
     assert.equal(plan.opaqueTriangles.positions.length / 9, 5)
-    assert.deepEqual(Array.from(plan.opaqueShadowCasters), Array.from(plan.opaqueTriangles.positions.slice(-9)))
     assert.equal(plan.transparentTriangles.positions.length / 9, 2)
     assert.deepEqual(plan.waterSurfaceDepth, plan.transparentTriangles.positions)
     assert.equal(plan.lines.positions.length / 6, 34)
@@ -1236,9 +1234,6 @@ describe('common world WebGL plan', () => {
     )
     assert.deepEqual(Array.from(plan.texturedTriangles[0].texture.rgba), [12, 80, 28, 255])
     assert.deepEqual(Array.from(plan.texturedTriangles[0].normalTexture.rgba), [128, 128, 255, 255])
-    // Terrain receives shadows but casts none: nothing here reaches the shadow map.
-    assert.equal(plan.texturedTriangles[0].castShadows, false)
-    assert.equal(plan.stats.shadowCasterTriangles, 0)
   })
 
   it('retains normalized multi-layer terrain splat weights in GPU batches', () => {
@@ -1392,7 +1387,6 @@ describe('common world WebGL plan', () => {
       ['grass-normal.dds', 'dirt-normal.dds'],
     )
     assert.equal(plan.splatTriangles[0].weightTextures.length, 1)
-    assert.equal(plan.stats.shadowCasterTriangles, 0)
     assert.deepEqual(Array.from(plan.splatTriangles[0].textureWeights0.slice(0, 4)), [0, 0, 0, 0])
     assert.deepEqual(
       Array.from(plan.splatTriangles[0].weightTextureCoordinates),

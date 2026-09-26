@@ -291,12 +291,6 @@ export interface WorldWebGlPlan {
   /** The first this many triangles of `transparentTriangles` are the water the planes replace. */
   readonly transparentWaterTriangles: number
   readonly opaqueTriangles: WorldWebGlBatch
-  /**
-   * The model part of `opaqueTriangles` (a view over its tail): the shadow casters among them. The
-   * terrain in front of it casts no shadow, as in SC2, where only models (cliff pieces by their
-   * material's flags) are drawn into the shadow map.
-   */
-  readonly opaqueShadowCasters: Float32Array
   /** Opaque model triangles separated only when a material disables casting or receiving. */
   readonly shadowControlledOpaqueTriangles: readonly WorldWebGlShadowControlledBatch[]
   /** Native/UVM materials rendered by the same compiler as the standalone model viewer. */
@@ -2526,7 +2520,6 @@ function prepareWorldStaticTerrain(
           ...batch(),
           textureCoordinates: [],
           texture,
-          castShadows: false,
           ...(normalTexture === undefined ? {} : { normalTexture }),
         }
         textured.set(key, target)
@@ -2721,6 +2714,13 @@ function prepareWorldStaticTerrain(
     lines: frozenBatch(lines),
     points: frozenBatch(points),
     terrainTriangles: Float32Array.from(terrainPickTriangles),
+    shadowCasterTriangles:
+      (opaque.positions.length +
+        [...textured.values(), ...splat.values()].reduce(
+          (sum, item) => sum + item.positions.length,
+          0,
+        )) /
+      9,
     stats: {
       terrainTriangles,
       terrainTexturedTriangles,
@@ -3559,6 +3559,7 @@ export function createWorldWebGlPlan(
   const direction: readonly [number, number, number] = directional?.direction ?? [-0.45, -1, -0.35]
   const lightColor: readonly [number, number, number] = directional?.color ?? [1, 0.97, 0.9]
   const shadowCasterTriangles =
+    preparation.shadowCasterTriangles +
     modelMaterialShadowTriangles +
     (opaque.positions.length +
       [...shadowControlledOpaque.values()].reduce(
@@ -3570,12 +3571,8 @@ export function createWorldWebGlPlan(
         0,
       )) /
       9
-  const opaqueTriangles = appendWorldBatch(preparation.opaqueTriangles, opaque)
   const plan: WorldWebGlPlan = Object.freeze({
-    opaqueTriangles,
-    opaqueShadowCasters: opaqueTriangles.positions.subarray(
-      preparation.opaqueTriangles.positions.length,
-    ),
+    opaqueTriangles: appendWorldBatch(preparation.opaqueTriangles, opaque),
     waterSurfaceDepth,
     waterPlanes: Object.freeze(
       [...waterPlaneBatches.values()].map(plane =>
@@ -4901,10 +4898,11 @@ function renderWorldShadowMap(
     gl.uniformMatrix4fv(uniformLocation(gl, program, 'lightViewProjection'), false, viewProjection)
     bindSentinelTexture2d(resources, 0)
     gl.uniform1i(uniformLocation(gl, program, 'baseColorMap'), 0)
-    // Terrain casts nothing (see `opaqueShadowCasters`): its height field, textured cells, splat
-    // batches and the ground drawn on cliff pieces only receive. A plateau drawn into the map threw
-    // its whole edge as a long band down onto low beaches and the sea, which SC2 never shows.
-    drawShadowPositions(resources, program, plan.opaqueShadowCasters)
+    // The terrain casts: its height field climbs every cliff, so it throws the cliff's shadow, and
+    // SC2 marks its natural cliff meshes no-shadows-cast for that reason. Without it the beach under
+    // a coast was lit between the shadows of the rim doodads. How far shadows reach is the camera's
+    // business (light.shadowRange), not the casters'.
+    drawShadowPositions(resources, program, plan.opaqueTriangles.positions)
     for (const item of plan.shadowControlledOpaqueTriangles) {
       if (item.castShadows) drawShadowPositions(resources, program, item.positions)
     }
@@ -4913,6 +4911,10 @@ function renderWorldShadowMap(
       if ((item.alphaCutoff ?? 0) > 0) drawShadowTextured(resources, program, item)
       else drawShadowPositions(resources, program, item.positions)
     }
+    // A cliff surface drawn as terrain casts nothing: the rock program casts for the rock, and a
+    // no-shadows-cast material (Shakuras Cliff 0) must not darken the ground through its ground.
+    for (const item of plan.splatTriangles)
+      if (item.maskTexture === undefined) drawShadowPositions(resources, program, item.positions)
     if (plan.modelMaterialScenes.some(scene => scene.shadowPrimitives.length > 0)) {
       const sceneCamera = {
         viewProjection,
