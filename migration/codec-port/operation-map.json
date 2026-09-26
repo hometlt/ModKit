@@ -2819,11 +2819,15 @@
       "targetOperation": null
     },
     {
-      "contribution": null,
+      "contribution": "modkit-core/extensions/audio/contributions/codec-wav.json",
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/uasset/operation/audio.decode",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": null,
+      "targetDataSource": {
+        "contract": "common.view/audio-media-source",
+        "major": 1
+      }
     },
     {
       "contribution": "modkit-extensions-other/extensions/epic-games-unreal-engine/contributions/codec-uasset.json",

@@ -7190,9 +7190,14 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/uasset.audio-decode.json",
+          "sha256": "9c807e3d339e9ec5ca1e0e8396b5c08b2e84ec5b7e6ae7de1d6e21c0325a5960"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/uasset/operation/audio.decode",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [
