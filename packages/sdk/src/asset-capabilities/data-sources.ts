@@ -134,6 +134,7 @@ export type {
   ModelBounds,
   ModelMesh,
   ModelNode,
+  ModelNodeTrs,
   ModelPrimitive,
   ModelPrimitiveRequest,
   ModelPrimitiveTopology,
