@@ -228,16 +228,17 @@ export function createAssetSession(options: AssetSessionOptions): ManagedAssetSe
       ? metadataFieldProjections(originalDescriptor.metadata)
       : Object.freeze([])
   const projectsRelations = options.subjectProjection !== undefined && metadataFields.length > 0
-  const dataSources: DataSourceOffer[] = [...originalDescriptor.dataSources]
+  const added: DataSourceOffer[] = []
   if (!originalOffers.has('common.view/subject-facts-source@1')) {
-    dataSources.push({ contract: 'common.view/subject-facts-source', major: 1 })
+    added.push({ contract: 'common.view/subject-facts-source', major: 1 })
   }
   if (projectsRelations && !originalOffers.has('common.view/relation-graph-source@1')) {
-    dataSources.push({ contract: 'common.view/relation-graph-source', major: 1 })
+    added.push({ contract: 'common.view/relation-graph-source', major: 1 })
   }
   const descriptor = Object.freeze({
     ...originalDescriptor,
-    dataSources: Object.freeze(dataSources),
+    dataSources: Object.freeze([...originalDescriptor.dataSources, ...added]),
+    ...(added.length === 0 ? {} : { hostDataSources: Object.freeze(added) }),
   }) as AnyDescriptor
   const operationByHandler = new Map(descriptor.operations.map(item => [item.handlerId, item]))
   const declarationByHandler = new Map(

@@ -256,9 +256,12 @@ describe('NXT-103 — standard data-source surfaces', () => {
       kind: 'value',
       signal: 'last',
     })
+    // a world scene may also serve its placed models and terrain textures (optional)
     expect(STANDARD_DATA_SOURCE_SURFACES['common.view/world-scene-source'].methods).toEqual({
       info: { kind: 'value', signal: 'last' },
       page: { kind: 'value', signal: 'last' },
+      model: { kind: 'value', optional: true, signal: 'last' },
+      texture: { kind: 'value', optional: true, signal: 'last' },
     })
     expect(
       STANDARD_DATA_SOURCE_SURFACES['common.view/subject-calculations-source'].methods,

@@ -176,6 +176,11 @@ describe('P3 generic subject projection', () => {
       contract: 'common.view/subject-facts-source',
       major: 1,
     })
+    // the host, not the codec, added these: a presentation prefers the codec's own sources
+    expect(sessionDescriptor.hostDataSources).toContainEqual({
+      contract: 'common.view/subject-facts-source',
+      major: 1,
+    })
     const lease = await managed.session.dataSource('common.view/subject-facts-source', 1)
     const summary = await lease.value.summary()
     expect(summary.identity).toMatchObject({ kind: 'format:dds', label: 'DirectDraw Surface' })
@@ -227,6 +232,8 @@ describe('P3 generic subject projection', () => {
       handlers: new Map(),
       openDataSource,
     })
+    // a codec's own facts are not the host's
+    expect((await managed.session.descriptor()).hostDataSources).toBeUndefined()
     await expect(managed.session.dataSource('common.view/subject-facts-source', 1)).rejects.toBe(
       failure,
     )

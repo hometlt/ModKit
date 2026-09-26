@@ -518,6 +518,7 @@ const subjectProperties = {
   operations: { type: 'array', items: assetOperationDescriptorSchema },
   constraints: assetConstraintsSchema,
   dataSources: { type: 'array', items: dataSourceRefWireSchema },
+  hostDataSources: { type: 'array', items: dataSourceRefWireSchema },
   diagnostics: { type: 'array', items: assetDiagnosticSchema },
   revision: revisionString,
 } as const

@@ -466,6 +466,12 @@ export interface SubjectDescriptorBase<
   readonly operations: readonly Operation[]
   readonly constraints: Constraints
   readonly dataSources: readonly Offer[]
+  /**
+   * The offers of `dataSources` the host added itself (fallback subject facts, projected relations)
+   * rather than the codec. A presentation prefers a view over the codec's own sources to one that
+   * only these feed.
+   */
+  readonly hostDataSources?: readonly Offer[]
   readonly diagnostics: readonly Diagnostic[]
   readonly revision: Revision
 }
