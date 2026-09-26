@@ -193,6 +193,9 @@ const nodeModuleMap = {
   '@modkit/uv/model/container': pathToFileURL(
     join(repositoryRoot, 'packages', 'uv', 'dist', 'model', 'container.js'),
   ).href,
+  '@modkit/uv/model/materializer': pathToFileURL(
+    join(repositoryRoot, 'packages', 'uv', 'dist', 'model', 'materializer.js'),
+  ).href,
   '@modkit/uv/model/validation': pathToFileURL(
     join(repositoryRoot, 'packages', 'uv', 'dist', 'model', 'validation', 'index.js'),
   ).href,

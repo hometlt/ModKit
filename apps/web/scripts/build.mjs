@@ -360,6 +360,14 @@ const workerBuild = await build({
       'index.js',
     ),
     'vendor/uv/model/container': join(repoRoot, 'packages', 'uv', 'dist', 'model', 'container.js'),
+    'vendor/uv/model/materializer': join(
+      repoRoot,
+      'packages',
+      'uv',
+      'dist',
+      'model',
+      'materializer.js',
+    ),
     'vendor/uv/model/validation': join(
       repoRoot,
       'packages',

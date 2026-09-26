@@ -168,6 +168,9 @@ export const nodeModuleMap: Readonly<Record<string, string>> = Object.freeze({
   ).href,
   '@modkit/core': pathToFileURL(join(repositoryRoot, 'packages', 'core', 'dist', 'index.js')).href,
   '@modkit/sdk': pathToFileURL(join(repositoryRoot, 'packages', 'sdk', 'dist', 'index.js')).href,
+  '@modkit/uv/model/materializer': pathToFileURL(
+    join(repositoryRoot, 'packages', 'uv', 'dist', 'model', 'materializer.js'),
+  ).href,
 })
 
 export function domGlobals(fetch: ReturnType<typeof diskOrigin>['fetch']): WebDomGlobals {
