@@ -13,6 +13,7 @@
  * bundled definition registry below is only for inputs the host already vouches for.
  */
 
+import type { CredentialBroker } from './credentials.js'
 import { compareUtf8, ModkitError, type Diagnostic } from '@modkit/core'
 import type {
   ArtifactSource,
@@ -111,6 +112,8 @@ export interface SubjectServices {
   readonly contributionSettings?: (contributionId: string) => ContributionSettings | undefined
   /** The video frame decoder handed to codecs, for callers that open subjects themselves. */
   readonly videoFrames?: VideoFrameDecoder
+  /** The sign-in and key broker, for callers that open subjects themselves. */
+  readonly credentials?: CredentialBroker
   open(request: SubjectOpenRequest): Promise<OpenSubjectResult>
 }
 
@@ -125,6 +128,8 @@ export interface SubjectServicesOptions {
   readonly subjectCatalog?: SubjectCatalogOptions
   /** Decodes video frames for codecs (a desktop host with ffmpeg). */
   readonly videoFrames?: VideoFrameDecoder
+  /** Signs in and keeps keys for the extensions that declare credentials. */
+  readonly credentials?: CredentialBroker
   readonly policy?: HostPolicy
   readonly minimumConfidence?: number
   readonly maxCandidates?: number
@@ -236,6 +241,7 @@ export function createSubjectServices(options: SubjectServicesOptions): SubjectS
       : { contributionSettings: options.contributionSettings }),
     ...(options.subjectCatalog === undefined ? {} : { subjectCatalog: options.subjectCatalog }),
     ...(options.videoFrames === undefined ? {} : { videoFrames: options.videoFrames }),
+    ...(options.credentials === undefined ? {} : { credentials: options.credentials }),
   }
   const services: SubjectServices = {
     inventory: options.inventory,
@@ -250,6 +256,7 @@ export function createSubjectServices(options: SubjectServicesOptions): SubjectS
       ? {}
       : { contributionSettings: options.contributionSettings }),
     ...(options.videoFrames === undefined ? {} : { videoFrames: options.videoFrames }),
+    ...(options.credentials === undefined ? {} : { credentials: options.credentials }),
     open: request => openSubject({ ...fixed, ...request }),
   }
   return Object.freeze(services)

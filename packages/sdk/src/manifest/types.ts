@@ -4,6 +4,7 @@
  * cannot silently diverge from the wire authority.
  */
 
+import type { CredentialRequirement } from '../credentials.js'
 import type { ExtensionId } from '@modkit/core'
 
 export type RequirementMode = 'required' | 'default' | 'suggested' | 'integrates'
@@ -97,6 +98,8 @@ export interface ExtensionManifest {
   readonly contentSources?: string
   /** File associations the extension's game defines for languages it does not provide. */
   readonly languageFiles?: readonly LanguageFileAssociation[]
+  /** Sign-ins and keys the extension uses through the host's broker. */
+  readonly credentials?: readonly CredentialRequirement[]
 }
 
 /** Authored `package.json#modkit` block: no version/license by construction (Q76). */
@@ -109,6 +112,7 @@ export interface ModkitBlock {
   readonly presentation?: ExtensionPresentation
   readonly contentSources?: string
   readonly languageFiles?: readonly LanguageFileAssociation[]
+  readonly credentials?: readonly CredentialRequirement[]
 }
 
 export type AuthoredContainerKind = 'package-json' | 'standalone'

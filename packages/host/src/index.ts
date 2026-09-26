@@ -298,6 +298,17 @@ export * from './service-operations.js'
 export * from './renderer/index.js'
 export * from './model-encoding.js'
 export * from './compression-definitions.js'
+export {
+  createCredentialBroker,
+  credentialAudienceAllows,
+  symmetricKeyHex,
+  type CredentialBroker,
+  type CredentialBrokerOptions,
+  type DeclaredCredential,
+  type OAuth2Engine,
+  type OAuth2Request,
+  type OAuth2Tokens,
+} from './credentials.js'
 export * from './games/index.js'
 export * from './mods/index.js'
 export * from './data/index.js'

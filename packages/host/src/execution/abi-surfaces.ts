@@ -38,6 +38,7 @@ import type {
   RasterResourcePort,
   InstallationProbes,
   VideoFrameDecoder,
+  CredentialPort,
   ServiceProviderModule,
   SingleAssetInput,
 } from '@modkit/sdk'
@@ -96,6 +97,8 @@ export const ABI_MODEL_RESOURCES = { contract: 'x3.abi/model-resources', major: 
 export const ABI_INSTALLATION_PROBES = { contract: 'x3.abi/installation-probes', major: 1 } as const
 /** `ContributionContext.videoFrames`: one decoded video frame from a desktop host. */
 export const ABI_VIDEO_FRAMES = { contract: 'x3.abi/video-frames', major: 1 } as const
+/** `ContributionContext.credentials`: the broker's port for one extension's declared credentials. */
+export const ABI_CREDENTIALS = { contract: 'x3.abi/credentials', major: 1 } as const
 export const ABI_MODEL_RESOURCE_ASSET = {
   contract: 'x3.abi/model-resource-asset',
   major: 1,
@@ -319,6 +322,18 @@ const videoFramesSurface = {
   methods: { decodeFrame: { kind: 'value', signal: { arg: 0, key: 'signal' } } },
 } as const satisfies AbiSurfaceOf<VideoFrameDecoder>
 
+const credentialsSurface = {
+  ...ABI_CREDENTIALS,
+  methods: {
+    status: { kind: 'value', arity: 2, ...sig },
+    acquire: { kind: 'value', arity: 2, ...sig },
+    fetch: { kind: 'value', arity: 2, ...sig },
+    secret: { kind: 'value', arity: 2, ...sig },
+    remember: { kind: 'value', arity: 3, ...sig },
+    forget: { kind: 'value', arity: 2, ...sig },
+  },
+} as const satisfies AbiSurfaceOf<CredentialPort>
+
 const modelAcquire = {
   kind: 'lease',
   result: ABI_MODEL_RESOURCE_ASSET,
@@ -379,6 +394,7 @@ export const RUNTIME_ABI_SURFACES: readonly CapabilitySurface[] = Object.freeze(
   rasterResourcesSurface,
   installationProbesSurface,
   videoFramesSurface,
+  credentialsSurface,
   modelResourcesSurface,
   modelResourceAssetSurface,
   logicalResourcesSurface,

@@ -6,6 +6,7 @@ import type { ModelResourcePort } from './model-resources.js'
 import type { LogicalResourcePort } from './logical-resources.js'
 import type { InstallationProbes } from './installation-probes.js'
 import type { VideoFrameDecoder } from './video-frames.js'
+import type { CredentialPort } from './credentials.js'
 import type {
   AnyDescriptor,
   AssetDiagnostic,
@@ -108,6 +109,8 @@ export interface ContributionContext {
   readonly videoFrames?: VideoFrameDecoder
   /** What the enclosing container hands a subject opened from one of its entries (inert JSON). */
   readonly containerContext?: JsonValue
+  /** The sign-ins and keys this extension declared, through the host's broker. */
+  readonly credentials?: CredentialPort
   readonly signal?: AbortSignal
 }
 

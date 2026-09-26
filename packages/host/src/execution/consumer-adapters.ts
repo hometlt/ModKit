@@ -29,6 +29,7 @@ import {
   ABI_RASTER_RESOURCES,
   ABI_INSTALLATION_PROBES,
   ABI_VIDEO_FRAMES,
+  ABI_CREDENTIALS,
   ABI_MODEL_RESOURCES,
   ABI_LOGICAL_RESOURCES,
   ABI_SERVICE_PROVIDER_MODULE,
@@ -129,6 +130,9 @@ export function moduleAdapter(
       ...(context.videoFrames === undefined
         ? {}
         : { videoFrames: expose(context.videoFrames, ABI_VIDEO_FRAMES) }),
+      ...(context.credentials === undefined
+        ? {}
+        : { credentials: expose(context.credentials, ABI_CREDENTIALS) }),
     }
   }
   if (first.contract === ABI_SERVICE_PROVIDER_MODULE.contract) {

@@ -311,6 +311,13 @@ async function normalizeExtensionManifestUncached(
               ExtensionManifest['languageFiles']
             >,
           }),
+      ...(blockRecord['credentials'] === undefined
+        ? {}
+        : {
+            credentials: blockRecord['credentials'] as NonNullable<
+              ExtensionManifest['credentials']
+            >,
+          }),
     }) as ExtensionManifest,
   )
   const all = [

@@ -147,6 +147,45 @@ const languageFilesSchema = {
   },
 } as const
 
+/** `credentials`: sign-ins and keys through the host broker (PLAN_UNIFIED_AUTH). */
+const HTTP_URL = { type: 'string', pattern: '^https?://[^\\s]+$', maxLength: 512 } as const
+const credentialsSchema = {
+  type: 'array',
+  maxItems: 32,
+  items: {
+    type: 'object',
+    additionalProperties: false,
+    required: ['id', 'kind', 'label'],
+    properties: {
+      id: { type: 'string', pattern: '^[a-z0-9][a-z0-9.-]*/[a-z0-9][a-z0-9._-]*$', maxLength: 128 },
+      kind: { enum: ['api-key', 'oauth2-pkce', 'provider-session', 'symmetric-key'] },
+      label: { type: 'string', minLength: 1, maxLength: 128 },
+      audience: { type: 'array', maxItems: 16, items: HTTP_URL },
+      header: { type: 'string', pattern: '^[A-Za-z0-9-]{1,64}$' },
+      scopes: {
+        type: 'array',
+        maxItems: 32,
+        items: { type: 'string', minLength: 1, maxLength: 128 },
+      },
+      oauth: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['authorizationEndpoint', 'tokenEndpoint'],
+        properties: {
+          authorizationEndpoint: HTTP_URL,
+          tokenEndpoint: HTTP_URL,
+          revocationEndpoint: HTTP_URL,
+          clientId: { type: 'string', minLength: 1, maxLength: 256 },
+          clientIdSetting: { type: 'string', pattern: '^[A-Za-z0-9._-]{1,64}$' },
+          loopbackPort: { type: 'integer', minimum: 1024, maximum: 65535 },
+        },
+      },
+      scoped: { type: 'boolean' },
+      environment: { type: 'string', pattern: '^[A-Z][A-Z0-9_]{0,63}$' },
+    },
+  },
+} as const
+
 export const extensionManifestSchema = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',
   $id: 'https://schemas.modkit.org/x3/extension-manifest.v1.schema.json',
@@ -164,6 +203,7 @@ export const extensionManifestSchema = {
     presentation: extensionPresentationSchema,
     contentSources: { type: 'string', pattern: EXTENSION_VFS_PATH_PATTERN },
     languageFiles: languageFilesSchema,
+    credentials: credentialsSchema,
   },
 } as const
 
@@ -188,6 +228,7 @@ export const modkitBlockSchema = {
     presentation: extensionPresentationSchema,
     contentSources: { type: 'string', pattern: EXTENSION_VFS_PATH_PATTERN },
     languageFiles: languageFilesSchema,
+    credentials: credentialsSchema,
   },
 } as const
 

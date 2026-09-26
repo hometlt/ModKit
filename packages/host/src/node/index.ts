@@ -134,6 +134,7 @@ export {
   parsePam,
   type NodeVideoFrameDecoderOptions,
 } from './video-frames.js'
+export { createNodeOAuth2Engine, type NodeOAuth2EngineOptions } from './oauth2-pkce.js'
 export {
   openDirectoryResolvedDataWorkspace,
   RESOLVED_DATA_EDIT_UNAVAILABLE,

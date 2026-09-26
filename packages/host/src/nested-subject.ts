@@ -23,6 +23,7 @@
  * surfaces routes through this function unchanged.
  */
 
+import type { CredentialBroker } from './credentials.js'
 import { ModkitError, throwIfAborted, type Diagnostic } from '@modkit/core'
 import {
   type AnyDescriptor,
@@ -104,6 +105,8 @@ export interface NestedSubjectOptions {
   readonly contributionSettings?: (contributionId: string) => ContributionSettings | undefined
   /** The desktop host's video frame decoder, so a video entry reads frames like a video file. */
   readonly videoFrames?: VideoFrameDecoder
+  /** The sign-in and key broker, so an entry's codec reaches the same credentials. */
+  readonly credentials?: CredentialBroker
   readonly minimumConfidence?: number
   readonly maxCandidates?: number
   /** Bounded host-owned validation for requirements that declare `expected` traits. */
@@ -141,6 +144,7 @@ export function nestedSubjectServices(
     | 'serviceDefinitions'
     | 'contributionSettings'
     | 'videoFrames'
+    | 'credentials'
   >,
 ): Pick<
   NestedSubjectOptions,
@@ -150,6 +154,7 @@ export function nestedSubjectServices(
   | 'serviceDefinitions'
   | 'contributionSettings'
   | 'videoFrames'
+  | 'credentials'
 > {
   return {
     inventory: services.inventory,
@@ -162,6 +167,7 @@ export function nestedSubjectServices(
       ? {}
       : { contributionSettings: services.contributionSettings }),
     ...(services.videoFrames === undefined ? {} : { videoFrames: services.videoFrames }),
+    ...(services.credentials === undefined ? {} : { credentials: services.credentials }),
   }
 }
 
@@ -541,6 +547,7 @@ export async function openNestedSubject(
           ? {}
           : { contributionSettings: options.contributionSettings }),
         ...(options.videoFrames === undefined ? {} : { videoFrames: options.videoFrames }),
+        ...(options.credentials === undefined ? {} : { credentials: options.credentials }),
         ...(containerContext === undefined ? {} : { containerContext }),
         ...(options.minimumConfidence === undefined
           ? {}

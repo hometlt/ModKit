@@ -1,5 +1,6 @@
 /** Host-owned file opening pipeline. No application or codec may bypass this composition root. */
 
+import type { CredentialBroker } from './credentials.js'
 import {
   canonicalJsonStringify,
   compareUtf8,
@@ -159,6 +160,8 @@ export interface OpenSubjectOptions {
   readonly provideRasterResources?: boolean
   /** The desktop host's video frame decoder, handed to codecs as `context.videoFrames`. */
   readonly videoFrames?: VideoFrameDecoder
+  /** The sign-in and key broker; each codec gets its extension's port as `context.credentials`. */
+  readonly credentials?: CredentialBroker
   /** What the enclosing container hands this subject's codec (`context.containerContext`). */
   readonly containerContext?: JsonValue
   /**
@@ -1523,6 +1526,11 @@ async function openSubjectDirect(
             contributionId === undefined
               ? undefined
               : options.contributionSettings?.(contributionId)
+          const owner =
+            contributionId === undefined
+              ? undefined
+              : offers.find(offer => offer.providerId === contributionId)?.extensionId
+          const credentials = owner === undefined ? undefined : options.credentials?.portFor(owner)
           const contracts =
             options.serviceDefinitions === undefined
               ? noServiceResolver()
@@ -1575,6 +1583,7 @@ async function openSubjectDirect(
             contracts,
             ...(settings === undefined ? {} : { settings }),
             ...(options.videoFrames === undefined ? {} : { videoFrames: options.videoFrames }),
+            ...(credentials === undefined ? {} : { credentials }),
             ...(options.containerContext === undefined
               ? {}
               : { containerContext: options.containerContext }),
@@ -1610,6 +1619,9 @@ async function openSubjectDirect(
                   ...(options.videoFrames === undefined
                     ? {}
                     : { videoFrames: options.videoFrames }),
+                  ...(options.credentials === undefined
+                    ? {}
+                    : { credentials: options.credentials }),
                   ...(options.resolveInput === undefined
                     ? {}
                     : { resolveInput: options.resolveInput }),

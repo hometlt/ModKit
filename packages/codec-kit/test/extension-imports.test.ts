@@ -11,11 +11,10 @@ const repo = join(import.meta.dirname, '..', '..', '..')
 
 describe('codec-kit exports the bundled extensions import', () => {
   it('has every name a bundled JS codec imports from @modkit/codec-kit', () => {
-    const files = execFileSync(
-      'git',
-      ['ls-files', '--', 'extensions/*.js', 'extensions/*.mjs'],
-      { cwd: repo, encoding: 'utf8' },
-    )
+    const files = execFileSync('git', ['ls-files', '--', 'extensions/*.js', 'extensions/*.mjs'], {
+      cwd: repo,
+      encoding: 'utf8',
+    })
       .split('\n')
       .filter(file => file !== '' && !/\/(dist|test)\//u.test(file))
     const missing: string[] = []
@@ -23,7 +22,10 @@ describe('codec-kit exports the bundled extensions import', () => {
       const text = readFileSync(join(repo, file), 'utf8')
       for (const match of text.matchAll(/import\s*\{([^}]*)\}\s*from\s*'@modkit\/codec-kit'/gu))
         for (const item of match[1]!.split(',')) {
-          const name = item.trim().replace(/^type\s+/u, '').split(/\s+as\s+/u)[0]!
+          const name = item
+            .trim()
+            .replace(/^type\s+/u, '')
+            .split(/\s+as\s+/u)[0]!
           if (name !== '' && !item.trim().startsWith('type ') && !(name in codecKit))
             missing.push(`${file}: ${name}`)
         }
