@@ -139,6 +139,7 @@ export type {
   EncodedMediaSource,
   ModelBounds,
   ModelMesh,
+  ModelMorphTarget,
   ModelNode,
   ModelNodeTrs,
   ModelPrimitive,

@@ -404,6 +404,7 @@ export {
   type EncodedMediaSource,
   type ModelBounds,
   type ModelMesh,
+  type ModelMorphTarget,
   type ModelNode,
   type ModelNodeTrs,
   type ModelPrimitive,

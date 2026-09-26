@@ -260,6 +260,23 @@ export interface ModelMesh {
   readonly id: string
   readonly name?: string
   readonly primitiveIds: readonly string[]
+  /**
+   * Default weight of each morph target, in target order (glTF `mesh.weights`); every primitive of
+   * the mesh carries the same number of targets. Absent with targets present means all zero.
+   */
+  readonly morphWeights?: readonly number[]
+}
+
+/** A blend shape (glTF morph target): per-vertex deltas added in proportion to its weight. */
+export interface ModelMorphTarget {
+  /** The shape's name (a FACS pose, `Smile`), the same for this target in every primitive. */
+  readonly name?: string
+  /** Three floats per vertex. */
+  readonly positions: Float32Array
+  /** Three floats per vertex. */
+  readonly normals?: Float32Array
+  /** Three floats per vertex: tangent xyz deltas; the handedness does not morph. */
+  readonly tangents?: Float32Array
 }
 
 export interface ModelPrimitive {
@@ -287,6 +304,8 @@ export interface ModelPrimitive {
   readonly hierarchyId?: string
   readonly materialId?: string
   readonly bounds?: ModelBounds
+  /** Blend shapes over these vertices, in the mesh's target order. */
+  readonly morphTargets?: readonly ModelMorphTarget[]
 }
 
 export interface ModelPrimitiveRequest {

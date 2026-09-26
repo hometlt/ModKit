@@ -91,11 +91,13 @@ interface PrimitiveEntry {
   attributes: { [semantic: string]: number }
   indices: number
   material?: string
+  targets?: PrimitiveEntry['attributes'][]
 }
 export interface DocumentPrimitive {
   attributes: PrimitiveEntry['attributes']
   indices: number
   material?: number | undefined
+  targets?: PrimitiveEntry['attributes'][]
 }
 export interface DocumentNode {
   name?: string
@@ -414,6 +416,8 @@ export function materializeUvmCore(
   const primitiveIndices = new Map<string, { mesh: number; primitive: number }>()
   const ambiguousPrimitiveIds = new Set<string>()
 
+  // Morph targets per mesh: glTF requires the same count in every primitive; names come along.
+  const meshTargetNames = new Map<string, readonly (string | undefined)[]>()
   for (const mesh of orderedMeshes) {
     const meshPrimitives = []
     for (const primitiveId of mesh.primitiveIds ?? []) {
@@ -556,6 +560,54 @@ export function materializeUvmCore(
         type: 'SCALAR',
       })
       const entry: PrimitiveEntry = { attributes, indices: indicesAccessor }
+      const morphTargets = primitive.morphTargets ?? []
+      const names = morphTargets.map(target => target.name)
+      const priorNames = meshTargetNames.get(mesh.id)
+      if (
+        priorNames !== undefined &&
+        (priorNames.length !== names.length || priorNames.some((name, at) => name !== names[at]))
+      )
+        fail(`mesh ${mesh.id} primitives disagree on their morph targets`)
+      meshTargetNames.set(mesh.id, names)
+      if (morphTargets.length > 0) {
+        entry.targets = morphTargets.map((target, at) => {
+          const delta = (values: Float32Array, semantic: string) => {
+            const data = Float32Array.from(
+              finite(values, `primitive ${primitive.id} morph target ${at} ${semantic}`),
+            )
+            if (data.length !== vertexCount * 3)
+              fail(
+                `primitive ${primitive.id} morph target ${at} ${semantic} must contain ${vertexCount} VEC3 deltas`,
+              )
+            return data
+          }
+          const positionDeltas = delta(target.positions, 'POSITION')
+          const deltaBounds = boundsOf(positionDeltas)
+          const target_: PrimitiveEntry['attributes'] = { POSITION: accessors.length }
+          accessors.push({
+            bufferView: buffers.push(positionDeltas),
+            componentType: FLOAT,
+            count: vertexCount,
+            type: 'VEC3',
+            min: deltaBounds.min,
+            max: deltaBounds.max,
+          })
+          for (const [semantic, values] of [
+            ['NORMAL', target.normals],
+            ['TANGENT', target.tangents],
+          ] as const) {
+            if (values === undefined) continue
+            target_[semantic] = accessors.length
+            accessors.push({
+              bufferView: buffers.push(delta(values, semantic)),
+              componentType: FLOAT,
+              count: vertexCount,
+              type: 'VEC3',
+            })
+          }
+          return target_
+        })
+      }
       if (typeof primitive.materialId === 'string') {
         materialIds.add(primitive.materialId)
         entry.material = primitive.materialId
@@ -907,13 +959,31 @@ export function materializeUvmCore(
   })
 
   const documentMeshes = emittedMeshes.map(({ mesh, primitives: entries }) => {
-    const value: { name?: string; primitives?: DocumentPrimitive[] } = {}
+    const value: {
+      name?: string
+      primitives?: DocumentPrimitive[]
+      weights?: number[]
+      extras?: { targetNames: string[] }
+    } = {}
     if (typeof mesh.name === 'string') value.name = mesh.name
     value.primitives = entries.map(entry => {
       const primitive: DocumentPrimitive = { attributes: entry.attributes, indices: entry.indices }
       if (entry.material !== undefined) primitive.material = materialIndexById.get(entry.material)
+      if (entry.targets !== undefined) primitive.targets = entry.targets
       return primitive
     })
+    // glTF: default weights on the mesh, target names by the common `extras.targetNames` convention
+    const names = meshTargetNames.get(mesh.id) ?? []
+    if (names.length > 0) {
+      const weights = mesh.morphWeights ?? names.map(() => 0)
+      if (weights.length !== names.length || !weights.every(Number.isFinite))
+        fail(`mesh ${mesh.id} morph weights must be ${names.length} finite numbers`)
+      value.weights = [...weights]
+      if (names.every(name => typeof name === 'string'))
+        value.extras = { targetNames: names as string[] }
+    } else if (mesh.morphWeights !== undefined && mesh.morphWeights.length > 0) {
+      fail(`mesh ${mesh.id} has morph weights but no morph targets`)
+    }
     return value
   })
 
