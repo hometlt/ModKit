@@ -108,6 +108,8 @@ export interface SubjectServices {
   readonly serviceDefinitions?: ServiceContractDefinitionRegistry
   /** The host's settings for a contribution, for callers that open subjects themselves. */
   readonly contributionSettings?: (contributionId: string) => ContributionSettings | undefined
+  /** The video frame decoder handed to codecs, for callers that open subjects themselves. */
+  readonly videoFrames?: VideoFrameDecoder
   open(request: SubjectOpenRequest): Promise<OpenSubjectResult>
 }
 
@@ -246,6 +248,7 @@ export function createSubjectServices(options: SubjectServicesOptions): SubjectS
     ...(options.contributionSettings === undefined
       ? {}
       : { contributionSettings: options.contributionSettings }),
+    ...(options.videoFrames === undefined ? {} : { videoFrames: options.videoFrames }),
     open: request => openSubject({ ...fixed, ...request }),
   }
   return Object.freeze(services)

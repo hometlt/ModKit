@@ -37,6 +37,8 @@ import {
   type ResourceRole,
   type RuntimeTarget,
   type ServiceContractDefinitionRegistry,
+  type ContributionSettings,
+  type VideoFrameDecoder,
 } from '@modkit/sdk'
 import { rootSubject, subjectRefEquals, type SubjectRef } from '@modkit/sdk/subjects'
 import type { ExecutionBackendRegistry } from './execution/backend.js'
@@ -98,6 +100,10 @@ export interface NestedSubjectOptions {
   readonly executionBackends?: ExecutionBackendRegistry
   readonly policy?: HostPolicy
   readonly serviceDefinitions?: ServiceContractDefinitionRegistry
+  /** The host's settings for the entry's codec, as for any subject the host opens. */
+  readonly contributionSettings?: (contributionId: string) => ContributionSettings | undefined
+  /** The desktop host's video frame decoder, so a video entry reads frames like a video file. */
+  readonly videoFrames?: VideoFrameDecoder
   readonly minimumConfidence?: number
   readonly maxCandidates?: number
   /** Bounded host-owned validation for requirements that declare `expected` traits. */
@@ -129,9 +135,22 @@ export interface NestedSubjectOptions {
 export function nestedSubjectServices(
   services: Pick<
     SubjectServices,
-    'inventory' | 'target' | 'executionBackends' | 'serviceDefinitions'
+    | 'inventory'
+    | 'target'
+    | 'executionBackends'
+    | 'serviceDefinitions'
+    | 'contributionSettings'
+    | 'videoFrames'
   >,
-): Pick<NestedSubjectOptions, 'inventory' | 'target' | 'executionBackends' | 'serviceDefinitions'> {
+): Pick<
+  NestedSubjectOptions,
+  | 'inventory'
+  | 'target'
+  | 'executionBackends'
+  | 'serviceDefinitions'
+  | 'contributionSettings'
+  | 'videoFrames'
+> {
   return {
     inventory: services.inventory,
     target: services.target,
@@ -139,6 +158,10 @@ export function nestedSubjectServices(
     ...(services.serviceDefinitions === undefined
       ? {}
       : { serviceDefinitions: services.serviceDefinitions }),
+    ...(services.contributionSettings === undefined
+      ? {}
+      : { contributionSettings: services.contributionSettings }),
+    ...(services.videoFrames === undefined ? {} : { videoFrames: services.videoFrames }),
   }
 }
 
@@ -503,6 +526,10 @@ export async function openNestedSubject(
         ...(options.serviceDefinitions === undefined
           ? {}
           : { serviceDefinitions: options.serviceDefinitions }),
+        ...(options.contributionSettings === undefined
+          ? {}
+          : { contributionSettings: options.contributionSettings }),
+        ...(options.videoFrames === undefined ? {} : { videoFrames: options.videoFrames }),
         ...(options.minimumConfidence === undefined
           ? {}
           : { minimumConfidence: options.minimumConfidence }),
