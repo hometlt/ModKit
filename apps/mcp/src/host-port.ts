@@ -6,6 +6,7 @@ import { diagnostic, type Diagnostic } from '@modkit/core'
 import {
   composeLanguageDocumentSources,
   createKnowledgeCatalog,
+  createMemoryCredentialStore,
   discoverServiceOperations,
   invokeServiceOperation,
   resolveContentLanguageSources,
@@ -118,6 +119,18 @@ export interface McpDiscoveredSubject {
   readonly version?: string
   readonly buildName?: string
   readonly buildUid?: string
+}
+
+/** One declared sign-in or key and whether it is available — never its value. */
+export interface McpCredentialStatus {
+  readonly id: string
+  readonly extension: string
+  readonly kind: string
+  readonly label: string
+  readonly status: 'missing' | 'available' | 'expired'
+  readonly scoped: boolean
+  /** The environment variable an MCP host reads it from. */
+  readonly environment?: string
 }
 
 export interface McpDiscoveryResult {
@@ -275,6 +288,8 @@ export interface McpModContext {
 export interface ModkitMcpHostPort {
   /** Present when content sources are configured. */
   modContext?(subjectUri: string): Promise<McpModContext>
+  /** Status of every declared credential; values never leave the broker. */
+  credentialStatus?(): Promise<readonly McpCredentialStatus[]>
   openResolvedDataWorkspace?(
     request: McpResolvedWorkspaceRequest,
     signal?: AbortSignal,
@@ -495,6 +510,8 @@ export async function createHostMcpPort(
   const modkit = await createModkit({
     modules: [sceneModule, uvModule],
     extensions: [],
+    // no prompts and no persisted secret: a credential comes from the variable its declaration names
+    credentials: { store: createMemoryCredentialStore(), environment: process.env },
     ...(configuration.trustExtensions === true
       ? { trustedExtensions: extensions }
       : { userExtensions: extensions }),
@@ -1125,7 +1142,26 @@ export async function createHostMcpPort(
     target: modkit.services.host.target,
   })
   const openModContext = contentSources?.openModContext?.bind(contentSources)
+  const credentials = modkit.services.credentials
   const port: ModkitMcpHostPort = {
+    ...(credentials === undefined
+      ? {}
+      : {
+          credentialStatus: () =>
+            Promise.all(
+              credentials.declared().map(async ({ extension, requirement }) => ({
+                id: requirement.id,
+                extension,
+                kind: requirement.kind,
+                label: requirement.label,
+                status: await credentials.status(requirement.id),
+                scoped: requirement.scoped === true,
+                ...(requirement.environment === undefined
+                  ? {}
+                  : { environment: requirement.environment }),
+              })),
+            ),
+        }),
     ...(openModContext === undefined
       ? {}
       : {

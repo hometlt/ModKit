@@ -38,7 +38,7 @@ import {
 } from '@modkit/host/node'
 import { sceneModule } from '@modkit/scene/module'
 import { uvModule } from '@modkit/uv/module'
-import { createModkitCliSubjectServices } from './profile.js'
+import { createModkitCliSubjectServices, modkitCliCredentials } from './profile.js'
 import { snapshotJson } from '@modkit/codec-kit/json-snapshot'
 import type { JsonValue } from '@modkit/sdk'
 
@@ -369,6 +369,7 @@ async function runEditCommand(
     // Mutating operations need write-source in the open grant even to be planned.
     writableRoots: [directory],
     intent: 'inspect',
+    credentials: modkitCliCredentials(),
   })
   try {
     if (modkit.extensionFailures.length > 0) {

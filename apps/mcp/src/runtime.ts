@@ -548,6 +548,7 @@ export class ModkitMcpRuntime {
         operations: [
           'inventory',
           'capabilities',
+          'credentials',
           'open-subject',
           'open-selection',
           'close-subject',
@@ -1335,6 +1336,16 @@ export class ModkitMcpRuntime {
         })),
         data: { layers: context.layers, unresolved: context.unresolved },
       })
+    })
+  }
+
+  /** Declared sign-ins and keys with their status only: an MCP client never sees a secret. */
+  async credentials(): Promise<McpEnvelope> {
+    const items = (await this.host.credentialStatus?.()) ?? []
+    return envelope({
+      snapshotId: this.inventorySnapshotId,
+      completeness: 'complete',
+      data: { total: items.length, items: items as unknown as JsonValue },
     })
   }
 

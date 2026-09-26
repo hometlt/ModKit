@@ -4,6 +4,7 @@ import { createHostTopology, type HostTopology } from '@modkit/sdk'
 import { uvModule } from '@modkit/uv/module'
 import {
   createHostComposition,
+  createMemoryCredentialStore,
   linkedExtensionInputs,
   type ExecutionBackendRegistry,
   type ExtensionInput,
@@ -117,6 +118,14 @@ export function createModkitCliComposition(
  * activate for the worker realm — portable variants run worker-brokered in worker threads of the
  * CLI process; in-process execution needs the artifact's own `allowTrustedInProcess`.
  */
+/**
+ * The CLI never prompts and keeps no secret: a credential comes from the environment variable its
+ * declaration names (`modkit.credentials[].environment`), for this process only.
+ */
+export function modkitCliCredentials() {
+  return { store: createMemoryCredentialStore(), environment: process.env }
+}
+
 export function createModkitCliSubjectServices(
   extensions: readonly ExtensionInput[],
   options: { readonly onDiagnostic?: (diagnostic: Diagnostic) => void } = {},
@@ -127,6 +136,7 @@ export function createModkitCliSubjectServices(
     extensions: [...CLI_BUILTIN_MODULES.inputs, ...extensions],
     linkedModules: CLI_BUILTIN_MODULES.modules,
     policy: MODKIT_CLI_WORKER_POLICY,
+    credentials: modkitCliCredentials(),
     ...(options.onDiagnostic === undefined ? {} : { onDiagnostic: options.onDiagnostic }),
   })
 }

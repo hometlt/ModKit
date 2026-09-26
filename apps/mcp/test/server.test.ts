@@ -1075,12 +1075,55 @@ describe('bounded protocol projection', () => {
 })
 
 describe('MCP v2 adapter', () => {
+  it('lists declared sign-ins and keys with status only', async () => {
+    const { client } = await connected({
+      ...fakeHost().host,
+      credentialStatus: async () => [
+        {
+          id: 'roblox/open-cloud',
+          extension: 'roblox/roblox',
+          kind: 'api-key',
+          label: 'Roblox Open Cloud key',
+          status: 'available',
+          scoped: false,
+          environment: 'MODKIT_ROBLOX_OPEN_CLOUD_KEY',
+        },
+      ],
+    })
+    const response = structured(
+      await client.callTool({ name: 'modkit.credentials', arguments: {} }),
+    )
+    expect(response.data).toEqual({
+      total: 1,
+      items: [
+        {
+          id: 'roblox/open-cloud',
+          extension: 'roblox/roblox',
+          kind: 'api-key',
+          label: 'Roblox Open Cloud key',
+          status: 'available',
+          scoped: false,
+          environment: 'MODKIT_ROBLOX_OPEN_CLOUD_KEY',
+        },
+      ],
+    })
+    // a host without a broker answers an empty list, not an error
+    const { client: plain } = await connected(fakeHost().host)
+    expect(
+      structured(await plain.callTool({ name: 'modkit.credentials', arguments: {} })).data,
+    ).toEqual({
+      total: 0,
+      items: [],
+    })
+  })
+
   it('advertises bounded inspection and explicitly effectful service-operation tools', async () => {
     const { client } = await connected(fakeHost().host)
     const tools = await client.listTools()
     expect(tools.tools.map(tool => tool.name)).toEqual([
       'modkit.inventory',
       'modkit.capabilities',
+      'modkit.credentials',
       'modkit.service_operations',
       'modkit.invoke_service_operation',
       'modkit.language',

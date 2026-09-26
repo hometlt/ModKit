@@ -672,6 +672,18 @@ export function createModkitMcpServer(host: ModkitMcpHostPort): ModkitMcpServerR
     () => safeTool(() => runtime.capabilities()),
   )
   server.registerTool(
+    'modkit.credentials',
+    {
+      title: 'List sign-ins and keys',
+      description:
+        'List the sign-ins and keys extensions declare, with status only (missing, available, expired) and the environment variable an MCP host reads each from. Values are never returned.',
+      inputSchema: emptyInput,
+      outputSchema: envelopeSchema,
+      annotations: { ...readOnlyAnnotations, idempotentHint: true },
+    },
+    () => safeTool(() => runtime.credentials()),
+  )
+  server.registerTool(
     'modkit.service_operations',
     {
       title: 'List extension service operations',

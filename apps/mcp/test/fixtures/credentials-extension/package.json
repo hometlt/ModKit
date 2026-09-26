@@ -1,0 +1,21 @@
+{
+  "name": "credentials-extension-fixture",
+  "version": "1.0.0",
+  "license": "MIT",
+  "type": "module",
+  "modkit": {
+    "schemaVersion": 1,
+    "publisher": "org.example",
+    "id": "credentials-extension",
+    "contributionManifests": [],
+    "credentials": [
+      {
+        "id": "org.example/cloud",
+        "kind": "api-key",
+        "label": "Example cloud key",
+        "audience": ["https://api.example.test/v1/"],
+        "environment": "MODKIT_TEST_EXAMPLE_CLOUD_KEY"
+      }
+    ]
+  }
+}
