@@ -9,7 +9,8 @@
  */
 
 import { createHash, randomUUID } from 'node:crypto'
-import { basename, dirname, resolve } from 'node:path'
+import { readdir } from 'node:fs/promises'
+import { basename, dirname, join, relative, resolve, sep } from 'node:path'
 
 import { canonicalJsonStringify, ModkitError, type Diagnostic } from '@modkit/core'
 import {
@@ -29,6 +30,7 @@ import {
 import {
   analyzeResolvedDataWorkspace,
   createResolvedDataSubjectSelectorLease,
+  type DataWorkspaceFileLister,
   type ResolvedDataEditPlanRequest,
   type ResolvedDataGraphIsolationPlanRequest,
   type ResolvedDataWorkspaceLimits,
@@ -195,6 +197,28 @@ export async function openDirectoryResolvedDataWorkspace(
     id: `resolved-directories-read:${randomUUID()}`,
     classes: [],
   }
+  const directoryOf = new Map(directories.map(directory => [rootIdOf(directory), directory]))
+  const listFiles: DataWorkspaceFileLister = async (rootId, prefix, maximum, signal) => {
+    const directory = directoryOf.get(rootId)
+    if (directory === undefined) throw new RangeError(`no directory for root ${rootId}`)
+    // Segment by segment without case, as the game reads its packages on any file system.
+    let base = directory
+    for (const segment of prefix === '' ? [] : prefix.split('/')) {
+      const entries = await readdir(base).catch(() => undefined)
+      const found = entries?.find(entry => entry.toLowerCase() === segment.toLowerCase())
+      if (found === undefined) return { paths: [], complete: true }
+      base = join(base, found)
+    }
+    signal?.throwIfAborted()
+    const entries = await readdir(base, { recursive: true, withFileTypes: true }).catch(() => [])
+    const paths = entries
+      .filter(entry => entry.isFile())
+      .map(entry => relative(directory, join(entry.parentPath, entry.name)).split(sep).join('/'))
+      .sort()
+    return paths.length > maximum
+      ? { paths: paths.slice(0, maximum), complete: false }
+      : { paths, complete: true }
+  }
   const analyzed = await analyzeResolvedDataWorkspace({
     services: request.services,
     grant: readGrant,
@@ -204,6 +228,7 @@ export async function openDirectoryResolvedDataWorkspace(
     locales: request.locales,
     queries: [],
     limits: request.limits,
+    listFiles,
     writableRoots: [
       { rootId: lock.activeRootId, sourcePath: basename(active), target: rootTarget },
     ],

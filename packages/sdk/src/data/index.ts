@@ -77,11 +77,31 @@ export interface DataWorkspaceDocumentRequirement {
   readonly required?: boolean
 }
 
+/** A directory of one workspace root that a planner needs listed before it can name its documents. */
+export interface DataWorkspaceListingQuery {
+  readonly rootId: string
+  /** Root-relative confined directory, matched without regard to case (`base.sc2data/gamedata`). */
+  readonly prefix: string
+}
+
+/** The host's answer to one listing query. */
+export interface DataWorkspaceListing extends DataWorkspaceListingQuery {
+  /** Root-relative paths of every file under `prefix`, recursively, in the root's own spelling. */
+  readonly paths: readonly string[]
+  /** False when the root could not be listed whole; the planner then keeps its fixed names. */
+  readonly complete: boolean
+}
+
 export interface DataWorkspacePlanRequest {
   readonly workspace: ModWorkspaceLock
   /** Preferred locale first, followed by explicit fallbacks. */
   readonly locales: readonly string[]
   readonly maxRequirements: number
+  /**
+   * Answers to the previous plan's `listingQueries`. A planner that knows which files a root holds
+   * plans them; without listings it plans the names it knows (a fixed catalog list).
+   */
+  readonly listings?: readonly DataWorkspaceListing[]
   readonly signal?: AbortSignal
 }
 
@@ -93,6 +113,11 @@ export interface DataWorkspacePlan {
   readonly requirements: readonly DataWorkspaceDocumentRequirement[]
   readonly diagnostics: readonly DataCatalogDiagnostic[]
   readonly complete: boolean
+  /**
+   * Directories the planner would list to name every document (GameData holds files no fixed list
+   * knows). A host that can list them plans once more with `listings`; this plan stays valid as is.
+   */
+  readonly listingQueries?: readonly DataWorkspaceListingQuery[]
 }
 
 export interface DataEntityRef {

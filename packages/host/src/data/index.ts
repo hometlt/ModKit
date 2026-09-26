@@ -34,7 +34,9 @@ import {
   type DataSubjectCalculationsOpenRequest,
   type DataLocalizationDocument,
   type DataWorkspaceDocumentRequirement,
+  type DataWorkspaceListing,
   type DataWorkspacePlan,
+  type DataWorkspacePlanRequest,
   type ResolvedDataWorkspace,
   type ResolvedDataWorkspaceSnapshot,
 } from '@modkit/sdk/data'
@@ -76,6 +78,7 @@ import type {
 } from '@modkit/sdk'
 import type { ExecutionBackendRegistry } from '../execution/backend.js'
 import type { Inventory } from '../inventory.js'
+import { normalizeCompanionLogicalId } from '../input-resolution.js'
 import { createHostServiceResolver } from '../service-leases.js'
 
 /** Owner id under which the standard catalog-analysis definition is registered. */
@@ -564,7 +567,63 @@ export interface AnalyzeResolvedDataWorkspaceRequest {
   readonly limits: ResolvedDataWorkspaceLimits
   /** Host-opened writable namespaces. Providers receive only their root ids, never these bindings. */
   readonly writableRoots?: readonly ResolvedDataWritableRoot[]
+  /** Lists a root's files, so the provider plans what the root holds rather than a fixed list. */
+  readonly listFiles?: DataWorkspaceFileLister
   readonly signal?: AbortSignal
+}
+
+/**
+ * Root-relative paths of the files under `prefix` of one workspace root, recursively, at most
+ * `maximum` (then `complete: false`). The input that built the workspace lock provides it.
+ */
+export type DataWorkspaceFileLister = (
+  rootId: string,
+  prefix: string,
+  maximum: number,
+  signal?: AbortSignal,
+) => Promise<{ readonly paths: readonly string[]; readonly complete: boolean }>
+
+/** Bounds of the listing round: queries per plan, paths per listing. */
+export const DATA_WORKSPACE_LISTING_LIMITS = Object.freeze({ maxQueries: 64, maxPaths: 16_384 })
+
+/**
+ * Plan, and when the provider asks for directory listings and the caller can list, plan once more
+ * with them. The first plan stays the answer when there is nothing to list or no lister.
+ */
+export async function planDataWorkspace(
+  planner: { plan(request: DataWorkspacePlanRequest): Promise<DataWorkspacePlan> },
+  request: Omit<DataWorkspacePlanRequest, 'listings'>,
+  listFiles?: DataWorkspaceFileLister,
+): Promise<DataWorkspacePlan> {
+  const first = await planner.plan(request)
+  const queries = first.listingQueries
+  if (listFiles === undefined || !Array.isArray(queries) || queries.length === 0) return first
+  if (queries.length > DATA_WORKSPACE_LISTING_LIMITS.maxQueries) {
+    throw new TypeError('resolved data provider asked for too many directory listings')
+  }
+  const roots = new Set(request.workspace.loadOrder.map(root => root.rootId))
+  const listings: DataWorkspaceListing[] = []
+  for (const query of queries) {
+    if (!roots.has(query.rootId)) {
+      throw new TypeError(`resolved data provider asked to list unknown root ${query.rootId}`)
+    }
+    const prefix = query.prefix === '' ? '' : normalizeCompanionLogicalId(query.prefix)
+    const listed = await listFiles(
+      query.rootId,
+      prefix,
+      DATA_WORKSPACE_LISTING_LIMITS.maxPaths,
+      request.signal,
+    )
+    listings.push(
+      Object.freeze({
+        rootId: query.rootId,
+        prefix,
+        paths: Object.freeze(listed.paths.slice(0, DATA_WORKSPACE_LISTING_LIMITS.maxPaths)),
+        complete: listed.complete && listed.paths.length <= DATA_WORKSPACE_LISTING_LIMITS.maxPaths,
+      }),
+    )
+  }
+  return planner.plan({ ...request, listings: Object.freeze(listings) })
 }
 
 export interface ResolvedDataWritableRoot {
@@ -1811,12 +1870,16 @@ export async function analyzeResolvedDataWorkspace(
   const diagnostics: Diagnostic[] = [...resolution.diagnostics]
   const opened: Lease<unknown>[] = []
   try {
-    const plan = await resolution.workspace.plan({
-      workspace: request.workspace,
-      locales: request.locales,
-      maxRequirements: limits.maxRequirements,
-      ...(request.signal === undefined ? {} : { signal: request.signal }),
-    })
+    const plan = await planDataWorkspace(
+      resolution.workspace,
+      {
+        workspace: request.workspace,
+        locales: request.locales,
+        maxRequirements: limits.maxRequirements,
+        ...(request.signal === undefined ? {} : { signal: request.signal }),
+      },
+      request.listFiles,
+    )
     validateWorkspacePlan(plan, request.workspace, request.locales, limits.maxRequirements)
     const writableRoots = Object.freeze([...(request.writableRoots ?? [])])
     const writableRootIds = new Set<string>()
