@@ -52,6 +52,11 @@ export interface UvmEffectFrameOptions {
   readonly maxBytes: number
   readonly maxNodes: number
   readonly maxDiagnostics?: number
+  /**
+   * `snapshotUvmEffectExtension(document, budget)` taken once by an owner whose document never
+   * changes (a reusable effect source), so each frame does not copy the whole extension again.
+   */
+  readonly extensionSnapshot?: JsonValue
   readonly signal?: AbortSignal
 }
 
@@ -215,6 +220,18 @@ function transform(point: Vec3, matrix: ArrayLike<number>): Vec3 {
       number(matrix[row + 12], 0),
   ) as unknown as Vec3
 }
+/** Snapshot of a document's `UV_game_effects` under the frame budget, as createUvmEffectFrame reads it. */
+export function snapshotUvmEffectExtension(
+  document: JsonObject,
+  budget: Readonly<{ maxBytes: number; maxNodes: number }>,
+  signal?: AbortSignal,
+): JsonValue {
+  return snapshotJson(
+    field(document['extensions'], 'UV_game_effects'),
+    { maxBytes: budget.maxBytes, maxNodes: budget.maxNodes, maxDepth: 64 },
+    signal,
+  )
+}
 /** Deterministic bounded effect preview over the public UVM extension. Native extras are never read.
  * The existing simulator owns emission/integration. This adapter owns node anchors and neutral quads.
  * Unsupported properties stay in the document and receive explicit per-emitter diagnostics. */
@@ -244,15 +261,7 @@ export function createUvmEffectFrame(document: JsonObject, options: UvmEffectFra
   )
     throw new RangeError('invalid effect budget/time')
   const effect = object(
-    snapshotJson(
-      extension,
-      {
-        maxBytes: options.maxBytes,
-        maxNodes: options.maxNodes,
-        maxDepth: 64,
-      },
-      signal,
-    ),
+    options.extensionSnapshot ?? snapshotUvmEffectExtension(document, options, signal),
     'UV_game_effects',
   )
   const nodeCount = array(document, 'nodes').length

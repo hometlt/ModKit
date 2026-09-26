@@ -44,6 +44,124 @@ const clamp = (value: number) => Math.min(1, Math.max(0, value))
 const finiteReceiverPositions = new WeakSet<Float32Array>()
 const highestReceiverIndex = new WeakMap<Uint32Array, number>()
 
+/**
+ * Uniform grid over one receiver primitive, in receiver space, on its two widest axes. A map places
+ * each decal over a few of its ~76 000 terrain triangles; scanning all of them twice per projector per
+ * frame dominated animated world frames. Receivers are immutable render buffers, so the grid is built
+ * once per buffer. A query returns the triangle offsets (into the index array, step 3) whose bounds
+ * touch the box, in ascending order: the clip loop then visits exactly the triangles the full scan
+ * would have kept, in the same order, and emits identical output.
+ */
+interface ReceiverGrid {
+  query(minimum: readonly number[], maximum: readonly number[]): Uint32Array
+}
+const RECEIVER_GRID_MIN_TRIANGLES = 1_024
+const receiverGrids = new WeakMap<
+  Float32Array,
+  { readonly indices: Uint32Array | undefined; readonly grid: ReceiverGrid | undefined }[]
+>()
+
+function receiverGrid(primitive: SceneRendererPrimitive): ReceiverGrid | undefined {
+  const positions = primitive.positions
+  const built = receiverGrids.get(positions)
+  const cached = built?.find(entry => entry.indices === primitive.indices)
+  if (cached !== undefined) return cached.grid
+  const grid = createReceiverGrid(positions, primitive.indices)
+  receiverGrids.set(positions, [...(built ?? []), { indices: primitive.indices, grid }])
+  return grid
+}
+
+function createReceiverGrid(
+  positions: Float32Array,
+  indices: Uint32Array | undefined,
+): ReceiverGrid | undefined {
+  const count = indices?.length ?? positions.length / 3
+  const triangles = Math.floor(count / 3)
+  if (triangles < RECEIVER_GRID_MIN_TRIANGLES) return undefined
+  const vertexOf = (offset: number) => (indices?.[offset] ?? offset) * 3
+  const low = [Infinity, Infinity, Infinity],
+    high = [-Infinity, -Infinity, -Infinity]
+  for (let offset = 0; offset < triangles * 3; offset++) {
+    const vertex = vertexOf(offset)
+    for (let axis = 0; axis < 3; axis++) {
+      const value = positions[vertex + axis]!
+      if (value < low[axis]!) low[axis] = value
+      if (value > high[axis]!) high[axis] = value
+    }
+  }
+  const extents = [0, 1, 2].map(axis => high[axis]! - low[axis]!)
+  const axes = [0, 1, 2].sort((a, b) => extents[b]! - extents[a]!).slice(0, 2) as [number, number]
+  const [u, v] = axes
+  const spanU = Math.max(extents[u]!, 1e-6),
+    spanV = Math.max(extents[v]!, 1e-6)
+  // About two triangles per cell, at most 512 cells a side.
+  const targetCells = Math.max(1, triangles / 2)
+  const columns = Math.max(1, Math.min(512, Math.round(Math.sqrt((targetCells * spanU) / spanV))))
+  const rows = Math.max(1, Math.min(512, Math.round(targetCells / columns)))
+  const cellU = spanU / columns,
+    cellV = spanV / rows
+  const cellColumn = (value: number) =>
+    Math.min(columns - 1, Math.max(0, Math.floor((value - low[u]!) / cellU)))
+  const cellRow = (value: number) =>
+    Math.min(rows - 1, Math.max(0, Math.floor((value - low[v]!) / cellV)))
+  const triangleCells = (offset: number) => {
+    const a = vertexOf(offset),
+      b = vertexOf(offset + 1),
+      c = vertexOf(offset + 2)
+    return [
+      cellColumn(Math.min(positions[a + u]!, positions[b + u]!, positions[c + u]!)),
+      cellColumn(Math.max(positions[a + u]!, positions[b + u]!, positions[c + u]!)),
+      cellRow(Math.min(positions[a + v]!, positions[b + v]!, positions[c + v]!)),
+      cellRow(Math.max(positions[a + v]!, positions[b + v]!, positions[c + v]!)),
+    ] as const
+  }
+  const cellStart = new Uint32Array(columns * rows + 1)
+  for (let offset = 0; offset < triangles * 3; offset += 3) {
+    const [c0, c1, r0, r1] = triangleCells(offset)
+    for (let row = r0; row <= r1; row++)
+      for (let column = c0; column <= c1; column++) cellStart[row * columns + column + 1]! += 1
+  }
+  for (let cell = 0; cell < columns * rows; cell++) cellStart[cell + 1]! += cellStart[cell]!
+  const cellTriangles = new Uint32Array(cellStart[columns * rows]!)
+  const fill = cellStart.slice(0, columns * rows)
+  for (let offset = 0; offset < triangles * 3; offset += 3) {
+    const [c0, c1, r0, r1] = triangleCells(offset)
+    for (let row = r0; row <= r1; row++)
+      for (let column = c0; column <= c1; column++)
+        cellTriangles[fill[row * columns + column]!++] = offset
+  }
+  const stamps = new Uint32Array(triangles)
+  let generation = 0
+  return Object.freeze({
+    query(minimum: readonly number[], maximum: readonly number[]): Uint32Array {
+      if (
+        maximum[u]! < low[u]! ||
+        minimum[u]! > high[u]! ||
+        maximum[v]! < low[v]! ||
+        minimum[v]! > high[v]!
+      )
+        return new Uint32Array(0)
+      generation += 1
+      if (generation === 0xffffffff) {
+        stamps.fill(0)
+        generation = 1
+      }
+      const found: number[] = []
+      for (let row = cellRow(minimum[v]!); row <= cellRow(maximum[v]!); row++)
+        for (let column = cellColumn(minimum[u]!); column <= cellColumn(maximum[u]!); column++) {
+          const cell = row * columns + column
+          for (let entry = cellStart[cell]!; entry < cellStart[cell + 1]!; entry++) {
+            const offset = cellTriangles[entry]!
+            if (stamps[offset / 3] === generation) continue
+            stamps[offset / 3] = generation
+            found.push(offset)
+          }
+        }
+      return Uint32Array.from(found).sort()
+    },
+  })
+}
+
 /** Two passes reserve exact output before allocation. Unlike the old live-buffer preview,
  * exhaustion rejects the frame instead of publishing silently truncated receiver geometry. */
 export function clipProjectorReceivers(
@@ -143,7 +261,12 @@ export function clipProjectorReceivers(
         }
       }
     }
-    return { ...receiver, minimum, maximum }
+    return {
+      ...receiver,
+      minimum,
+      maximum,
+      candidates: receiverGrid(receiver.primitive)?.query(minimum, maximum),
+    }
   })
   const distance = (vertices: Float32Array, vertex: number, plane: number): number => {
     const x = component(vertices, vertex * 6 + 3),
@@ -202,9 +325,11 @@ export function clipProjectorReceivers(
   }
   const visit = (write?: (vertex: number) => void): number => {
     let vertices = 0
-    for (const { primitive, transform: m, minimum, maximum } of bounded) {
+    for (const { primitive, transform: m, minimum, maximum, candidates } of bounded) {
       const count = primitive.indices?.length ?? primitive.positions.length / 3
-      for (let triangle = 0; triangle < count; triangle += 3) {
+      const visited = candidates === undefined ? count / 3 : candidates.length
+      for (let candidate = 0; candidate < visited; candidate++) {
+        const triangle = candidates === undefined ? candidate * 3 : candidates[candidate]!
         options.signal?.throwIfAborted()
         const a = (primitive.indices?.[triangle] ?? triangle) * 3
         const b = (primitive.indices?.[triangle + 1] ?? triangle + 1) * 3

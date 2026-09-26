@@ -2,7 +2,8 @@ import type { SceneRendererMaterial, SceneRendererPrimitive } from '@modkit/sdk/
 import { createUvmProjectorFrame } from './projectors.js'
 import { readUvmContainer } from '@modkit/uv/model/container'
 import { createModelSceneSampler } from '../model/sampler.js'
-import { createUvmEffectFrame } from './effects.js'
+import { createUvmEffectFrame, snapshotUvmEffectExtension } from './effects.js'
+import type { JsonValue } from '@modkit/sdk'
 import { readUvmModel } from './model.js'
 import { field } from './values.js'
 
@@ -67,6 +68,11 @@ export function createUvmEffectSource(
     },
   )
   const activeNodes = new Set(scene.nodes.map(node => node.id))
+  // This document is private to the source and never changes: every instance and frame reads one
+  // snapshot of its effects instead of copying the whole extension per call.
+  let snapshot: JsonValue | undefined
+  const effectSnapshot = (): JsonValue =>
+    (snapshot ??= snapshotUvmEffectExtension(document, { maxBytes: MAX_BYTES, maxNodes: MAX_NODES }))
   // Seeking to one clock samples the same historical times whatever the view, so a new camera (or
   // another instance at that clock) reuses the poses instead of re-sampling the rig.
   // ponytail: whole-map clear at a fixed size; an LRU if clocks start varying per frame.
@@ -110,6 +116,7 @@ export function createUvmEffectSource(
         maxNodes: MAX_NODES,
         nodeTransformsAt,
         viewMatrix,
+        extensionSnapshot: effectSnapshot(),
       }),
   })
 }
