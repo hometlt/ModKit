@@ -66,9 +66,10 @@ describe('installed SC2 map height through generic MCP', () => {
     root = await mkdtemp(join(tmpdir(), 'modkit-mcp-sc2-map-'))
     copy = join(root, basename(mapPath))
     await cp(mapPath, copy, { recursive: true })
+    // CASC opens the installation the map's world resolves its dependencies against.
     const host = await createHostMcpPort({
       roots: [root],
-      extensions: [resolve(blizzardRoot, 'mpq'), resolve(blizzardRoot, 'starcraft2')],
+      extensions: [resolve(blizzardRoot, 'mpq'), resolve(blizzardRoot, 'casc'), resolve(blizzardRoot, 'starcraft2')],
       trustExtensions: true,
       allowEdits: true,
     })

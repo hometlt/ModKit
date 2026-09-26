@@ -53,6 +53,7 @@ import type { ContentSources } from '@modkit/vfs/content-sources'
 import { loadContentSources } from '@modkit/vfs/content-sources/node'
 import { createFileVfsProvider } from '@modkit/vfs/providers/file'
 import { McpOperationError } from './runtime.js'
+import { MCP_MAX_WORLD_PAGE_ITEMS } from './protocol.js'
 import type { ModkitMcpConfiguration } from './config.js'
 
 export interface McpOpenedSubject {
@@ -345,7 +346,7 @@ const mapPreviewLimits = Object.freeze({
     maxTerrainCells: 100_000,
     maxTerrainSamples: 100_000,
     maxDepth: 128,
-    maxPageSize: 1_000,
+    maxPageSize: MCP_MAX_WORLD_PAGE_ITEMS,
     maxDiagnostics: 1_000,
   }),
   catalogEnrichment: MCP_MAP_PREVIEW_CATALOG_ENRICHMENT_POLICY,
@@ -358,6 +359,35 @@ const mapPreviewBudget = Object.freeze({
   maxScalarBytes: 268_435_456,
   maxDiagnostics: 1_000,
 })
+
+/**
+ * The opened subject together with the world its map preview built for it: the codec's own
+ * descriptor, operations and edits, plus the preview's data sources (world, graph, selector) the
+ * codec does not publish itself. Replacing the subject by its preview dropped every codec operation.
+ */
+function withPreviewSources(codec: AssetSession, preview: AssetSession): AssetSession {
+  const key = (offer: { readonly contract: string; readonly major: number }) => `${offer.contract}@${offer.major}`
+  const descriptor = async () => {
+    const [own, previewed] = await Promise.all([codec.descriptor(), preview.descriptor()])
+    const owned = new Set(own.dataSources.map(key))
+    const added = previewed.dataSources.filter(offer => !owned.has(key(offer)))
+    return { own, added, merged: Object.freeze({ ...own, dataSources: Object.freeze([...own.dataSources, ...added]) }) }
+  }
+  return Object.freeze({
+    revision: codec.revision,
+    state: () => codec.state(),
+    descriptor: async () => (await descriptor()).merged,
+    dataSource: (async (contract: string, major: number, ...rest: unknown[]) => {
+      const { added } = await descriptor()
+      const from = added.some(offer => offer.contract === contract && offer.major === major) ? preview : codec
+      return (from.dataSource as (...args: unknown[]) => unknown)(contract, major, ...rest)
+    }) as unknown as AssetSession['dataSource'],
+    operations: () => codec.operations(),
+    events: (signal?: AbortSignal) => codec.events(signal),
+    // The preview session owns the opened one and releases both.
+    dispose: () => preview.dispose(),
+  })
+}
 
 const inside = (roots: readonly string[], path: string): boolean =>
   roots.some(root => {
@@ -1525,13 +1555,15 @@ export async function createHostMcpPort(
         })
       }
       let closed = false
+      const session = withPreviewSources(originalSession, preview.session)
       return Object.freeze({
         snapshot: Object.freeze({
           ...opened.snapshot,
-          descriptor: preview.descriptor as unknown as typeof opened.snapshot.descriptor,
+          descriptor: (await session.descriptor()) as unknown as typeof opened.snapshot.descriptor,
           diagnostics: Object.freeze([...opened.snapshot.diagnostics, ...preview.diagnostics]),
         }),
-        session: preview.session,
+        ...(opened.editing === undefined ? {} : { editing: opened.editing }),
+        session,
         async close(): Promise<void> {
           if (closed) return
           closed = true

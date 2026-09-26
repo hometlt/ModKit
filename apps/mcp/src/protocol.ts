@@ -7,6 +7,8 @@ export const MCP_MAX_DIAGNOSTICS = 50
 export const MCP_MAX_PROVENANCE_ITEMS = 100
 export const MCP_MAX_OUTPUT_BYTES = 128 * 1_024
 export const MCP_MAX_IMAGE_BYTES = 4 * 1_024 * 1_024
+/** One world page a map preview serves, and so the most a world reader asks for at once. */
+export const MCP_MAX_WORLD_PAGE_ITEMS = 1_000
 
 export type McpCompleteness = 'complete' | 'partial' | 'capped' | 'invalid'
 

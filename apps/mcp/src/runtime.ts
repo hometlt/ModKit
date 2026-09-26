@@ -30,7 +30,11 @@ import {
 } from '@modkit/sdk/maps'
 import { encodePng, greyGridToPng } from '@modkit/codec-kit/raster'
 import { createWorldWebGlPlan, renderWorldTopDown } from '@modkit/scene/world'
-import { inspectCandidateWorld } from '@modkit/ui/world'
+import {
+  WORLD_VIEWER_MAX_ITEMS_PER_LAYER,
+  WORLD_VIEWER_MAX_LAYERS,
+  inspectCandidateWorld,
+} from '@modkit/ui/world'
 import type {
   McpLanguageRequest,
   McpLanguageSession,
@@ -47,6 +51,7 @@ import type {
 import {
   MCP_MAX_CURSOR_LENGTH,
   MCP_MAX_OPEN_HANDLES,
+  MCP_MAX_WORLD_PAGE_ITEMS,
   boundedJson,
   createCursorSecret,
   envelope,
@@ -63,10 +68,6 @@ import {
 } from './protocol.js'
 
 const MCP_MAX_PROGRESS_EVENTS = 50
-// A world drawn from above: every layer, each up to a 512 × 512 grid of samples.
-const MCP_WORLD_IMAGE_MAX_LAYERS = 64
-const MCP_WORLD_IMAGE_MAX_ITEMS_PER_LAYER = 262_144
-const MCP_WORLD_IMAGE_PAGE_ITEMS = 16_384
 const MCP_GRAPH_SCAN_PAGE_SIZE = 50
 const MCP_MAX_GRAPH_SCAN_PAGES = 1_000
 const MCP_MAX_EDIT_PLANS = 64
@@ -1442,9 +1443,9 @@ export class ModkitMcpRuntime {
         if (query.view === 'image') {
           // The world viewer's own collector and plan; models stay placeholders from above.
           const model = await inspectCandidateWorld(source, {
-            maxLayers: MCP_WORLD_IMAGE_MAX_LAYERS,
-            maxItemsPerLayer: MCP_WORLD_IMAGE_MAX_ITEMS_PER_LAYER,
-            maxPageItems: MCP_WORLD_IMAGE_PAGE_ITEMS,
+            maxLayers: WORLD_VIEWER_MAX_LAYERS,
+            maxItemsPerLayer: WORLD_VIEWER_MAX_ITEMS_PER_LAYER,
+            maxPageItems: MCP_MAX_WORLD_PAGE_ITEMS,
             modelResourceFilter: () => false,
             signal: scopedSignal,
           })
