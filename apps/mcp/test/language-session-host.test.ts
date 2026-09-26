@@ -2,7 +2,7 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import type { ContentSources } from '@modkit/vfs/content-sources'
+import { HOST_LAYER_SOURCE_ID, type ContentSources } from '@modkit/vfs/content-sources'
 import {
   createHostMcpPort,
   type McpLanguageSessionContext,
@@ -47,7 +47,10 @@ const contentSources: ContentSources = {
       contextId: 'fixture',
       layers: [
         { id: 'dependency', displayName: 'Fixture dependency', sourceId: 'fixture-source', sourcePath: 'root', role: 'dependency', provenance: 'declared', fingerprint: 'content-hash.sha256:fixture' },
-        { id: 'subject', displayName: 'subject', sourceId: 'fixture-source', sourcePath: String(typeof request.target === 'string' ? request.target : request.target.path), role: 'primary', provenance: 'opened' },
+        // a file on the host's disk is a host layer, as the real loader reports it; one in a source keeps its source
+        typeof request.target === 'string'
+          ? { id: 'subject', displayName: 'subject', sourceId: HOST_LAYER_SOURCE_ID, sourcePath: request.target, role: 'primary', provenance: 'opened' }
+          : { id: 'subject', displayName: 'subject', sourceId: request.target.sourceId, sourcePath: request.target.path, role: 'primary', provenance: 'opened' },
       ],
       unresolved: [],
       diagnostics: [],
