@@ -1141,6 +1141,12 @@ export function materializeUvmCore(
               })
               .map(node => node.id),
           ),
+          new Map(
+            orderedNodes.flatMap(node => {
+              const count = meshTargetNames.get((node.meshIds ?? [])[0] ?? '')?.length ?? 0
+              return count > 0 ? [[node.id, count] as const] : []
+            }),
+          ),
         )
   for (const loss of animation?.losses ?? []) {
     losses.push(`animation ${loss.clipId}: ${loss.reason}`)

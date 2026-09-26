@@ -94,4 +94,45 @@ describe('morph targets in UVM', () => {
       /no morph targets/u,
     )
   })
+
+  it('animates the weights of the node whose mesh carries the targets', () => {
+    const base = projection({
+      morphTargets: [{ name: 'Smile', positions: new Float32Array(9) }],
+    }) as unknown as {
+      info: object
+    }
+    const animated = {
+      ...base,
+      info: { ...base.info, animations: 1 },
+      animations: [
+        {
+          id: 'talk',
+          name: 'talk',
+          kind: 'animation',
+          provenance: 'direct',
+          frames: 2,
+          channels: [
+            {
+              target: 'face',
+              kind: 'weights',
+              firstFrame: 0,
+              lastFrame: 1,
+              interpolation: 'linear',
+              samples: [
+                { frame: 0, timeSeconds: 0, value: [0] },
+                { frame: 1, timeSeconds: 0.5, value: [1] },
+              ],
+            },
+          ],
+        },
+      ],
+    } as never
+    const written = materializeUvmCore(animated, request) as unknown as {
+      document: { animations: { channels: { target: { node: number; path: string } }[] }[] }
+    }
+    expect(written.document.animations[0]!.channels[0]!.target).toEqual({
+      node: 0,
+      path: 'weights',
+    })
+  })
 })

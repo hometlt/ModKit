@@ -217,6 +217,8 @@ export function writeUvmAnimations(
     { readonly mesh: number; readonly primitive: number }
   > = new Map(),
   rigidNodeIds: ReadonlySet<string> = new Set(),
+  /** Node id → morph target count of the node's mesh, for `weights` channels. */
+  morphTargetCounts: ReadonlyMap<string, number> = new Map(),
 ) {
   const clips = snapshotModelAnimations(source, budget, signal)
   const animations: UvmJsonObject[] = []
@@ -241,9 +243,10 @@ export function writeUvmAnimations(
       const loss = (reason: string) => losses.push({ clipId: clip.id, channel: index, reason })
       if (path === 'visibility') {
         const primitive = primitiveIndices.get(channel.target)
-        const binding = primitive === undefined && node !== undefined && bone !== undefined
-          ? { node, binding: 'batch' as const }
-          : undefined
+        const binding =
+          primitive === undefined && node !== undefined && bone !== undefined
+            ? { node, binding: 'batch' as const }
+            : undefined
         const samples = channel.samples
         if (
           (primitive === undefined && binding === undefined) ||
@@ -273,9 +276,10 @@ export function writeUvmAnimations(
           )
           continue
         }
-        const targetKey = primitive === undefined
-          ? `node/${binding!.node}/batch-visibility`
-          : `${primitive.mesh}/${primitive.primitive}/visibility`
+        const targetKey =
+          primitive === undefined
+            ? `node/${binding!.node}/batch-visibility`
+            : `${primitive.mesh}/${primitive.primitive}/visibility`
         if (targets.has(targetKey)) refuse(`clip ${clip.id} repeats primitive visibility`)
         targets.add(targetKey)
         let visibilityIndex = visibilityIndices.get(targetKey)
@@ -343,6 +347,67 @@ export function writeUvmAnimations(
           )
         )
           loss('visibility times or values were rounded to the glTF float32 representation')
+        continue
+      }
+      if (path === 'weights') {
+        // glTF morph weights: one key carries a weight per target of the node's mesh
+        const count = morphTargetCounts.get(channel.target) ?? 0
+        const samples = channel.samples
+        if (
+          node === undefined ||
+          count === 0 ||
+          channel.axis !== undefined ||
+          !samples?.length ||
+          (channel.interpolation !== 'step' && channel.interpolation !== 'linear')
+        ) {
+          loss('weights channel has no node with morph targets or no scalar sampling semantics')
+          continue
+        }
+        let previous = -Infinity
+        if (
+          !samples.every(sample => {
+            const time = Math.fround(sample.timeSeconds ?? NaN)
+            const valid =
+              Number.isFinite(time) &&
+              time >= 0 &&
+              time > previous &&
+              sample.value.length === count &&
+              sample.value.every(value => Number.isFinite(Math.fround(value)))
+            previous = time
+            return valid
+          })
+        ) {
+          loss(`weights keys must be strictly increasing times with ${count} finite weights each`)
+          continue
+        }
+        const key = `${node}/weights`
+        if (targets.has(key)) refuse(`clip ${clip.id} has multiple channels for ${key}`)
+        targets.add(key)
+        const times = Float32Array.from(samples, sample => sample.timeSeconds ?? NaN)
+        const input = addAccessor(
+          storage.buffer,
+          storage.views,
+          storage.accessors,
+          times,
+          'SCALAR',
+          5126,
+          undefined,
+          { min: [times[0] ?? 0], max: [times[times.length - 1] ?? 0] },
+        )
+        const output = addAccessor(
+          storage.buffer,
+          storage.views,
+          storage.accessors,
+          Float32Array.from(samples.flatMap(sample => sample.value)),
+          'SCALAR',
+          5126,
+        )
+        channels.push({ sampler: samplers.length, target: { node, path: 'weights' } })
+        samplers.push({
+          input,
+          output,
+          interpolation: channel.interpolation === 'step' ? 'STEP' : 'LINEAR',
+        })
         continue
       }
       if (
