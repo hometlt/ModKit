@@ -163,6 +163,24 @@ export const nodeModuleMap: Readonly<Record<string, string>> = Object.freeze({
   '@modkit/codec-kit/model-math/transform': pathToFileURL(
     join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'model-math', 'transform.js'),
   ).href,
+  '@modkit/codec-kit/model/skeleton': pathToFileURL(
+    join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'model', 'skeleton.js'),
+  ).href,
+  '@modkit/codec-kit/model/sources': pathToFileURL(
+    join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'model', 'sources.js'),
+  ).href,
+  '@modkit/codec-kit/model/animation': pathToFileURL(
+    join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'model', 'animation.js'),
+  ).href,
+  '@modkit/codec-kit/model/skinning': pathToFileURL(
+    join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'model', 'skinning.js'),
+  ).href,
+  '@modkit/codec-kit/model-math/sequence-pose': pathToFileURL(
+    join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'model-math', 'sequence-pose.js'),
+  ).href,
+  '@modkit/codec-kit/model-math/effects-sim': pathToFileURL(
+    join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'model-math', 'effects-sim.js'),
+  ).href,
   '@modkit/codec-kit/raster': pathToFileURL(
     join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'raster', 'index.js'),
   ).href,
