@@ -62,9 +62,13 @@ export async function resolveContentSources(
     for (const root of options.extensionRoots) {
       const declared = await declaredModule(root)
       if (declared === undefined || declared.extension === config?.extension) continue
+      // one module per extension (the inventory keeps one root per id too): a second root of the
+      // same extension — a live repository beside its snapshot — would claim the same regions and
+      // make every snapshot() of the composition refuse; the first root wins
       const key = (await realpath(declared.module)).toLowerCase()
-      if (seen.has(key)) continue
+      if (seen.has(key) || seen.has(declared.extension)) continue
       seen.add(key)
+      seen.add(declared.extension)
       // ponytail: one shared cache/state folder, as the single provider had; modules keep their own
       // file names apart. Give each module its own folder if two ever collide.
       parts.push(

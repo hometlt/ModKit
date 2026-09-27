@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, describe, expect, it } from 'vitest'
@@ -68,6 +68,22 @@ describe('the content sources extensions declare', () => {
       ['sc2:root', '"C:/Games/SC2"', 'fixture-probes', null],
       ['roblox:root', 'null', 'fixture-probes', 'roblox-port'],
     ])
+    await sources?.dispose()
+  })
+
+  it('composes one module per extension when two roots carry the same one', async () => {
+    const live = await extension('twin', 'dist/sources.mjs')
+    const snapshot = join(work, 'snapshot')
+    await mkdir(snapshot, { recursive: true })
+    const copy = join(snapshot, 'twin')
+    await mkdir(join(copy, 'dist'), { recursive: true })
+    for (const file of ['package.json', 'dist/sources.mjs'])
+      await writeFile(join(copy, file), await readFile(join(live, file)))
+    const sources = await resolveContentSources({
+      extensionRoots: [live, copy],
+      storage: join(work, 'storage'),
+    })
+    expect((await sources?.snapshot())?.roots.map(root => root.id)).toEqual(['twin:root'])
     await sources?.dispose()
   })
 
