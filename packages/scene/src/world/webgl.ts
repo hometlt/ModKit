@@ -517,27 +517,47 @@ export function worldModelAnimation(
   )
 }
 
+/** Start phases a `randomStart` clip is spread over: copies still share samples and programs in groups. */
+const RANDOM_START_PHASES = 8
+
+/**
+ * The object's clip time. A looping `randomStart` clip (SC2 `RandomStartOffset`) is offset by a
+ * phase stable per object; `durationSeconds` is the selected clip's length, omitted where only
+ * a change of time matters. An explicit per-object time is played as given.
+ */
 function worldObjectTime(
   input: WorldWebGlInput,
   item: WorldSceneObjectItem,
   hasSelectedAnimation: boolean,
+  durationSeconds?: number,
 ): number {
-  return (
-    (input.animationTimes?.get(item.objectId) ??
+  const explicit = input.animationTimes?.get(item.objectId)
+  const time =
+    (explicit ??
       (item.presentationAnimation !== undefined || hasSelectedAnimation
         ? (input.timeSeconds ?? 0)
         : 0)) * (item.presentationAnimation?.speed ?? 1)
+  if (
+    explicit !== undefined ||
+    !item.presentationAnimation?.randomStart ||
+    !item.presentationAnimation.loop ||
+    !durationSeconds
   )
+    return time
+  return time + ((stringHash(item.id) % RANDOM_START_PHASES) / RANDOM_START_PHASES) * durationSeconds
 }
 
-function colorHash(value: string | number): readonly [number, number, number, number] {
-  const text = String(value)
+function stringHash(text: string): number {
   let hash = 2_166_136_261
   for (let index = 0; index < text.length; index += 1) {
     hash ^= text.charCodeAt(index)
     hash = Math.imul(hash, 16_777_619)
   }
-  const hue = ((hash >>> 0) % 360) / 60
+  return hash >>> 0
+}
+
+function colorHash(value: string | number): readonly [number, number, number, number] {
+  const hue = (stringHash(String(value)) % 360) / 60
   const chroma = 0.34
   const component = chroma * (1 - Math.abs((hue % 2) - 1))
   const sector = Math.floor(hue)
@@ -2823,7 +2843,7 @@ export function createWorldWebGlPlan(
       ? staticModelSamples.get(result)?.get(staticKey)
       : undefined
     if (previousStatic !== undefined) return previousStatic
-    const clock = worldObjectTime(input, item, selected !== undefined)
+    const clock = worldObjectTime(input, item, selected !== undefined, selected?.durationSeconds)
     const time =
       selected?.durationSeconds && (item.presentationAnimation?.loop ?? selected.looping)
         ? clock % selected.durationSeconds
@@ -3131,7 +3151,12 @@ export function createWorldWebGlPlan(
           : sampled.primitives
       let programs: ReadonlyMap<string, SceneMaterialPrograms> = new Map()
       const selectedAnimation = worldModelAnimation(result, item)
-      const time = worldObjectTime(input, item, selectedAnimation !== undefined)
+      const time = worldObjectTime(
+        input,
+        item,
+        selectedAnimation !== undefined,
+        selectedAnimation?.durationSeconds,
+      )
       const sequenceTime =
         selectedAnimation?.durationSeconds &&
         (item.presentationAnimation?.loop ?? selectedAnimation.looping)

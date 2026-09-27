@@ -554,6 +554,11 @@ export interface MapPlacedObject {
     readonly groups: readonly string[]
     readonly loop: boolean
     readonly speed: number
+    /**
+     * Each instance starts the looping clip at its own point (SC2 `RandomStartOffset`), so placed
+     * copies of one model do not animate in lockstep. The renderer picks a stable phase per object.
+     */
+    readonly randomStart?: boolean
   }
   readonly modules?: number
   readonly name?: string
