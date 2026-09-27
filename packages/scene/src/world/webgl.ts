@@ -1198,7 +1198,32 @@ function cliffMaskCoordinates(
   )
 }
 
-const referencedVertices = new WeakMap<SceneRendererPrimitive, readonly number[]>()
+/**
+ * Unique vertices that the triangles of an indexed primitive reference, by index array and
+ * topology: skinned geometry gets new positions every frame but keeps its index array.
+ */
+const referencedVertices = new WeakMap<object, Map<string, readonly number[]>>()
+
+/** The referenced vertices of a primitive, or their count when they are simply the first ones. */
+function referencedVertexIndices(source: SceneRendererPrimitive): readonly number[] | number {
+  const indices = source.indices
+  const count = indices?.length ?? Math.floor(source.positions.length / 3)
+  const used =
+    primitiveTriangleCount(source) === 0
+      ? 0
+      : source.topology === 'triangles'
+        ? Math.floor(count / 3) * 3
+        : count
+  if (indices === undefined) return used
+  let byTopology = referencedVertices.get(indices)
+  if (byTopology === undefined) referencedVertices.set(indices, (byTopology = new Map()))
+  let list = byTopology.get(source.topology)
+  if (list === undefined) {
+    list = [...new Set(Array.from({ length: used }, (_, index) => indices[index] ?? index))]
+    byTopology.set(source.topology, list)
+  }
+  return list
+}
 
 function primitiveTriangleCount(primitive: SceneRendererPrimitive): number {
   const count = primitive.indices?.length ?? Math.floor(primitive.positions.length / 3)
@@ -1249,37 +1274,45 @@ function sharedPickPrimitive(
     sameOptionalMatrix(last.transform, primitive.transform)
   )
     return Object.freeze({ primitive, minimum: last.minimum, maximum: last.maximum })
-  let indices = referencedVertices.get(source)
-  if (indices === undefined) {
-    const count = source.indices?.length ?? Math.floor(source.positions.length / 3)
-    const used =
-      primitiveTriangleCount(source) === 0
-        ? 0
-        : source.topology === 'triangles'
-          ? Math.floor(count / 3) * 3
-          : count
-    indices = [
-      ...new Set(Array.from({ length: used }, (_, index) => source.indices?.[index] ?? index)),
-    ]
-    referencedVertices.set(source, indices)
-  }
-  const minimum: [number, number, number] = [Infinity, Infinity, Infinity]
-  const maximum: [number, number, number] = [-Infinity, -Infinity, -Infinity]
-  for (const index of indices) {
-    const vertex = transformedPrimitiveVertex(primitive, index)
-    for (const axis of [0, 1, 2] as const) {
-      if (!Number.isFinite(vertex[axis]))
-        throw new TypeError('world WebGL plan contains a non-finite model coordinate')
-      minimum[axis] = Math.min(minimum[axis], vertex[axis])
-      maximum[axis] = Math.max(maximum[axis], vertex[axis])
+  // Animated instances get new geometry every frame: this loop runs per vertex, so it keeps to
+  // locals (the same arithmetic as transformedPrimitiveVertex).
+  const referenced = referencedVertexIndices(source)
+  const count = typeof referenced === 'number' ? referenced : referenced.length
+  const positions = primitive.positions
+  const transform = primitive.transform
+  let minX = Infinity,
+    minY = Infinity,
+    minZ = Infinity,
+    maxX = -Infinity,
+    maxY = -Infinity,
+    maxZ = -Infinity
+  for (let at = 0; at < count; at++) {
+    const index = typeof referenced === 'number' ? at : referenced[at]!
+    let x = positions[index * 3] ?? 0,
+      y = positions[index * 3 + 1] ?? 0,
+      z = positions[index * 3 + 2] ?? 0
+    if (transform !== undefined) {
+      const tx = transform[0]! * x + transform[4]! * y + transform[8]! * z + transform[12]!
+      const ty = transform[1]! * x + transform[5]! * y + transform[9]! * z + transform[13]!
+      z = transform[2]! * x + transform[6]! * y + transform[10]! * z + transform[14]!
+      x = tx
+      y = ty
     }
+    if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z))
+      throw new TypeError('world WebGL plan contains a non-finite model coordinate')
+    minX = Math.min(minX, x)
+    maxX = Math.max(maxX, x)
+    minY = Math.min(minY, y)
+    maxY = Math.max(maxY, y)
+    minZ = Math.min(minZ, z)
+    maxZ = Math.max(maxZ, z)
   }
   const bounds = Object.freeze({
     source,
     transform:
       primitive.transform === undefined ? undefined : Float32Array.from(primitive.transform),
-    minimum: Object.freeze(minimum),
-    maximum: Object.freeze(maximum),
+    minimum: Object.freeze([minX, minY, minZ] as const),
+    maximum: Object.freeze([maxX, maxY, maxZ] as const),
   })
   if (owner !== undefined && slot !== undefined) {
     let known = slots
@@ -3598,6 +3631,9 @@ export function createWorldWebGlPlan(
             : texture === undefined
               ? colorHash(primitive.materialId ?? item.kind)
               : ([1, 1, 1, 1] as const)
+        // Every triangle of the primitive writes the same batch: find or add it at the first one.
+        let texturedTarget: MutableTexturedBatch | undefined
+        let controlledTarget: MutableBatch | undefined
         for (const triangle of primitiveTriangles(primitive)) {
           const vertices = triangle.map(index =>
             instanceVertex(
@@ -3618,27 +3654,30 @@ export function createWorldWebGlPlan(
             textureCoordinates !== undefined &&
             textureCoordinates.length >= (primitive.positions.length / 3) * 2
           ) {
-            const key = `${result.sourceKey}\u0000${texture.id}\u0000${normalTexture?.id ?? ''}\u0000${blendMode ?? 'opaque'}\u0000${String(coverage.cutoff)}\u0000${String(shadowPolicy.castShadows)}\u0000${String(shadowPolicy.receiveShadows)}`
-            const collection = blendMode === undefined ? textured : transparentTextured
-            const target = collection.get(key) ?? {
-              ...batch(),
-              textureCoordinates: [],
-              texture,
-              ...(normalTexture === undefined ? {} : { normalTexture }),
-              ...(blendMode === undefined ? {} : { blendMode }),
-              castShadows: shadowPolicy.castShadows,
-              receiveShadows: shadowPolicy.receiveShadows,
-              ...(coverage.cutoff === 0 ? {} : { alphaCutoff: coverage.cutoff }),
+            if (texturedTarget === undefined) {
+              const key = `${result.sourceKey}\u0000${texture.id}\u0000${normalTexture?.id ?? ''}\u0000${blendMode ?? 'opaque'}\u0000${String(coverage.cutoff)}\u0000${String(shadowPolicy.castShadows)}\u0000${String(shadowPolicy.receiveShadows)}`
+              const collection = blendMode === undefined ? textured : transparentTextured
+              const target = collection.get(key) ?? {
+                ...batch(),
+                textureCoordinates: [],
+                texture,
+                ...(normalTexture === undefined ? {} : { normalTexture }),
+                ...(blendMode === undefined ? {} : { blendMode }),
+                castShadows: shadowPolicy.castShadows,
+                receiveShadows: shadowPolicy.receiveShadows,
+                ...(coverage.cutoff === 0 ? {} : { alphaCutoff: coverage.cutoff }),
+              }
+              collection.set(
+                key,
+                target as MutableTexturedBatch & {
+                  readonly blendMode: 'blend' | 'additive'
+                  readonly receiveShadows: boolean
+                },
+              )
+              texturedTarget = target
             }
-            collection.set(
-              key,
-              target as MutableTexturedBatch & {
-                readonly blendMode: 'blend' | 'additive'
-                readonly receiveShadows: boolean
-              },
-            )
             pushTexturedTriangle(
-              target,
+              texturedTarget,
               vertices,
               triangle.map(index => [
                 textureCoordinates[index * 2] ?? 0,
@@ -3653,14 +3692,17 @@ export function createWorldWebGlPlan(
           } else if (shadowPolicy.castShadows && shadowPolicy.receiveShadows) {
             pushTriangle(opaque, vertices[0], vertices[1], vertices[2], color)
           } else {
-            const key = `${String(shadowPolicy.castShadows)}:${String(shadowPolicy.receiveShadows)}`
-            const target = shadowControlledOpaque.get(key) ?? {
-              ...batch(),
-              castShadows: shadowPolicy.castShadows,
-              receiveShadows: shadowPolicy.receiveShadows,
+            if (controlledTarget === undefined) {
+              const key = `${String(shadowPolicy.castShadows)}:${String(shadowPolicy.receiveShadows)}`
+              const target = shadowControlledOpaque.get(key) ?? {
+                ...batch(),
+                castShadows: shadowPolicy.castShadows,
+                receiveShadows: shadowPolicy.receiveShadows,
+              }
+              shadowControlledOpaque.set(key, target)
+              controlledTarget = target
             }
-            shadowControlledOpaque.set(key, target)
-            pushTriangle(target, vertices[0], vertices[1], vertices[2], color)
+            pushTriangle(controlledTarget, vertices[0], vertices[1], vertices[2], color)
           }
           for (const vertex of vertices) pickTriangles.push(vertex[0], vertex[1], vertex[2])
           modelTriangles += 1
@@ -3904,12 +3946,22 @@ export function createWorldWebGlPlan(
   let hasPositions = preparation.hasPositions
   for (const positions of [...positionSets, ...objectPickMeshes.map(item => item.triangles)]) {
     if (positions.length > 0) hasPositions = true
+    let [minX, minY, minZ] = minimum
+    let [maxX, maxY, maxZ] = maximum
     for (let offset = 0; offset < positions.length; offset += 3) {
-      for (const axis of [0, 1, 2] as const) {
-        minimum[axis] = Math.min(minimum[axis], positions[offset + axis]!)
-        maximum[axis] = Math.max(maximum[axis], positions[offset + axis]!)
-      }
+      minX = Math.min(minX, positions[offset]!)
+      maxX = Math.max(maxX, positions[offset]!)
+      minY = Math.min(minY, positions[offset + 1]!)
+      maxY = Math.max(maxY, positions[offset + 1]!)
+      minZ = Math.min(minZ, positions[offset + 2]!)
+      maxZ = Math.max(maxZ, positions[offset + 2]!)
     }
+    minimum[0] = minX
+    minimum[1] = minY
+    minimum[2] = minZ
+    maximum[0] = maxX
+    maximum[1] = maxY
+    maximum[2] = maxZ
   }
   for (const item of objectPickMeshes) {
     for (const primitive of item.primitives) {
