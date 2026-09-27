@@ -755,6 +755,88 @@ function clippedWaterGroundPolygon(
   return polygon
 }
 
+interface WorldWaterGround {
+  /** Terrain cells bucketed by their UVW corner, so a zone clips only the cells under it. */
+  readonly buckets: Map<string, WorldSceneTerrainItem[]>
+  /** Clipped ground triangles (x, y, z per corner) of each zone box and elevation. */
+  readonly zones: Map<string, Float64Array>
+}
+
+/**
+ * Ground under each water zone clipped to it, kept per terrain preparation: the clip reads only the
+ * terrain and the zone's box and elevation, so a plan for another clock, selection or water
+ * material reuses it (Amphion: ~70 ms a plan, and a plan is built for every animation frame).
+ */
+const worldWaterGround = new WeakMap<object, WorldWaterGround>()
+
+function clippedWaterGround(
+  preparation: Readonly<{
+    terrain: readonly WorldSceneTerrainItem[]
+    terrainByCell: ReadonlyMap<string, WorldSceneTerrainItem>
+  }>,
+  minimum: Readonly<{ x: number; z: number }>,
+  maximum: Readonly<{ x: number; z: number }>,
+  elevation: number,
+): Float64Array {
+  let ground = worldWaterGround.get(preparation)
+  if (ground === undefined) {
+    const buckets = new Map<string, WorldSceneTerrainItem[]>()
+    for (const cell of preparation.terrain) {
+      const [x, , z] = terrainPosition(cell)
+      const key = `${Math.floor(x / WATER_BUCKET_SIZE)}:${Math.floor(z / WATER_BUCKET_SIZE)}`
+      const bucket = buckets.get(key)
+      if (bucket === undefined) buckets.set(key, [cell])
+      else bucket.push(cell)
+    }
+    worldWaterGround.set(preparation, (ground = { buckets, zones: new Map() }))
+  }
+  const key = `${minimum.x}:${minimum.z}:${maximum.x}:${maximum.z}:${elevation}`
+  const cached = ground.zones.get(key)
+  if (cached !== undefined) return cached
+  const { terrainByCell } = preparation
+  const values: number[] = []
+  // A cell reaches one sample past its corner in either direction, so widen by that margin.
+  const bucket = (value: number) => Math.floor(value / WATER_BUCKET_SIZE)
+  for (
+    let bx = bucket(minimum.x - WATER_CELL_MARGIN);
+    bx <= bucket(maximum.x + WATER_CELL_MARGIN);
+    bx += 1
+  )
+    for (
+      let bz = bucket(minimum.z - WATER_CELL_MARGIN);
+      bz <= bucket(maximum.z + WATER_CELL_MARGIN);
+      bz += 1
+    )
+      for (const cell of ground.buckets.get(`${bx}:${bz}`) ?? []) {
+        const east = terrainByCell.get(`${cell.x + 1}:${cell.y}`)
+        const south = terrainByCell.get(`${cell.x}:${cell.y + 1}`)
+        const southEast = terrainByCell.get(`${cell.x + 1}:${cell.y + 1}`)
+        if (east === undefined || south === undefined || southEast === undefined) continue
+        const a = terrainPosition(cell)
+        const b = terrainPosition(east)
+        const c = terrainPosition(southEast)
+        const d = terrainPosition(south)
+        for (const triangle of [
+          [a, c, b],
+          [a, d, c],
+        ] as const) {
+          if (
+            Math.max(...triangle.map(vertex => vertex[0])) < minimum.x ||
+            Math.min(...triangle.map(vertex => vertex[0])) > maximum.x ||
+            Math.max(...triangle.map(vertex => vertex[2])) < minimum.z ||
+            Math.min(...triangle.map(vertex => vertex[2])) > maximum.z
+          )
+            continue
+          const polygon = clippedWaterGroundPolygon(triangle, minimum, maximum, elevation)
+          for (let index = 1; index + 1 < polygon.length; index += 1)
+            values.push(...polygon[0]!, ...polygon[index]!, ...polygon[index + 1]!)
+        }
+      }
+  const triangles = Float64Array.from(values)
+  ground.zones.set(key, triangles)
+  return triangles
+}
+
 function waterVertexColor(
   material: MapWaterMaterialDefinition | undefined,
   elevation: number,
@@ -3127,7 +3209,7 @@ export function createWorldWebGlPlan(
     previous !== undefined && sameWorldStaticInput(previous.input, input)
       ? previous.preparation
       : prepareWorldStaticTerrain(input, sampleSharedModel)
-  const { terrain, terrainByCell, liftedCliffPrimitives } = preparation
+  const { terrain, liftedCliffPrimitives } = preparation
   const timeSeconds = input.timeSeconds ?? 0
   if (!Number.isFinite(timeSeconds) || timeSeconds < 0)
     throw new TypeError('world WebGL timeSeconds must be finite and nonnegative')
@@ -3136,39 +3218,6 @@ export function createWorldWebGlPlan(
     string,
     { readonly batch: MutableBatch; readonly colorFalloff: number; readonly receiveShadows: boolean }
   >()
-  // Terrain cells bucketed by their UVW corner, so each water zone clips only the cells under it
-  // instead of scanning the whole map per zone.
-  let waterGroundBuckets: Map<string, WorldSceneTerrainItem[]> | undefined
-  const waterGroundCells = (
-    minimum: Readonly<{ x: number; z: number }>,
-    maximum: Readonly<{ x: number; z: number }>,
-  ): WorldSceneTerrainItem[] => {
-    if (waterGroundBuckets === undefined) {
-      waterGroundBuckets = new Map()
-      for (const ground of terrain) {
-        const [x, , z] = terrainPosition(ground)
-        const key = `${Math.floor(x / WATER_BUCKET_SIZE)}:${Math.floor(z / WATER_BUCKET_SIZE)}`
-        const bucket = waterGroundBuckets.get(key)
-        if (bucket === undefined) waterGroundBuckets.set(key, [ground])
-        else bucket.push(ground)
-      }
-    }
-    const cells: WorldSceneTerrainItem[] = []
-    // A cell reaches one sample past its corner in either direction, so widen by that margin.
-    const bucket = (value: number) => Math.floor(value / WATER_BUCKET_SIZE)
-    for (
-      let bx = bucket(minimum.x - WATER_CELL_MARGIN);
-      bx <= bucket(maximum.x + WATER_CELL_MARGIN);
-      bx += 1
-    )
-      for (
-        let bz = bucket(minimum.z - WATER_CELL_MARGIN);
-        bz <= bucket(maximum.z + WATER_CELL_MARGIN);
-        bz += 1
-      )
-        for (const ground of waterGroundBuckets.get(`${bx}:${bz}`) ?? []) cells.push(ground)
-    return cells
-  }
   for (const item of input.items.filter(item => item.facet === 'water')) {
     const minimum = item.uvwMinimum ?? { x: item.minimum.x, z: item.minimum.y }
     const maximum = item.uvwMaximum ?? { x: item.maximum.x, z: item.maximum.y }
@@ -3225,36 +3274,17 @@ export function createWorldWebGlPlan(
     }
     let emitted = false
     if (material?.shorelineMode === 'terrain-clipped' && terrain.length > 0) {
-      for (const ground of waterGroundCells(minimum, maximum)) {
-        const east = terrainByCell.get(`${ground.x + 1}:${ground.y}`)
-        const south = terrainByCell.get(`${ground.x}:${ground.y + 1}`)
-        const southEast = terrainByCell.get(`${ground.x + 1}:${ground.y + 1}`)
-        if (east === undefined || south === undefined || southEast === undefined) continue
-        const a = terrainPosition(ground)
-        const b = terrainPosition(east)
-        const c = terrainPosition(southEast)
-        const d = terrainPosition(south)
-        for (const triangle of [
-          [a, c, b],
-          [a, d, c],
-        ] as const) {
-          if (
-            Math.max(...triangle.map(vertex => vertex[0])) < minimum.x ||
-            Math.min(...triangle.map(vertex => vertex[0])) > maximum.x ||
-            Math.max(...triangle.map(vertex => vertex[2])) < minimum.z ||
-            Math.min(...triangle.map(vertex => vertex[2])) > maximum.z
-          )
-            continue
-          const polygon = clippedWaterGroundPolygon(triangle, minimum, maximum, elevation)
-          for (let index = 1; index + 1 < polygon.length; index += 1) {
-            const clipped = [polygon[0]!, polygon[index]!, polygon[index + 1]!] as const
-            if (texturedTarget === undefined)
-              pushWaterTriangle(transparent, clipped, elevation, material)
-            else
-              pushTexturedWaterTriangle(texturedTarget, clipped, elevation, material!, timeSeconds)
-            emitted = true
-          }
-        }
+      const ground = clippedWaterGround(preparation, minimum, maximum, elevation)
+      for (let offset = 0; offset < ground.length; offset += 9) {
+        const clipped = [
+          [ground[offset]!, ground[offset + 1]!, ground[offset + 2]!],
+          [ground[offset + 3]!, ground[offset + 4]!, ground[offset + 5]!],
+          [ground[offset + 6]!, ground[offset + 7]!, ground[offset + 8]!],
+        ] as const
+        if (texturedTarget === undefined)
+          pushWaterTriangle(transparent, clipped, elevation, material)
+        else pushTexturedWaterTriangle(texturedTarget, clipped, elevation, material!, timeSeconds)
+        emitted = true
       }
     } else {
       const a = [minimum.x, elevation - 1, minimum.z] as const
