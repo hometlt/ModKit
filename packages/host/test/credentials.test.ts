@@ -387,6 +387,51 @@ describe('credential broker', () => {
     await refusal(broker.adopt('acme/unknown', SECRET))
   })
 
+  it('compares hex scopes in one form; all zeros means no scope', async () => {
+    const { store, values } = memoryStore()
+    const hexInventory = {
+      extensions: [
+        {
+          source: 'hex',
+          origin: 'linked',
+          container: 'package-json',
+          manifest: {
+            publisher: 'acme',
+            id: 'hex',
+            credentials: [
+              {
+                id: 'acme/pak',
+                kind: 'symmetric-key',
+                label: 'Pak key',
+                scoped: true,
+                scopeFormat: 'hex',
+                environment: 'ACME_PAK',
+                replacesSettings: [{ contribution: 'acme/pak', key: 'aesKeys', scoped: true }],
+              },
+            ],
+          },
+          contributions: [],
+        },
+      ],
+      diagnostics: [],
+    } as unknown as Inventory
+    const key = 'ab'.repeat(32)
+    const broker = createCredentialBroker({
+      inventory: hexInventory,
+      store,
+      environment: { ACME_PAK: `{0000-0000}:${'cd'.repeat(32)}` },
+    })
+    expect(await broker.adopt('acme/pak', key, '{DEAD-BEEF}')).toBe('adopted')
+    expect(values.has('modkit.credential/acme/pak#deadbeef')).toBe(true)
+    const port = broker.portFor('acme/hex')
+    expect(await port.status('acme/pak', '0xDeadBeef')).toBe('available')
+    // the zero GUID is the unscoped key, from the variable too
+    expect(Buffer.from((await port.secret('acme/pak', '00000000'))!).toString('hex')).toBe(
+      'cd'.repeat(32),
+    )
+    await refusal(port.status('acme/pak', 'not-hex!'))
+  })
+
   it('matches the audience by origin and path prefix', () => {
     const audience = ['https://apis.example.test/assets/']
     expect(credentialAudienceAllows('https://apis.example.test/assets/v1/1', audience)).toBe(true)

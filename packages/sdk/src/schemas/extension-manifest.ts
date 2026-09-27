@@ -183,6 +183,21 @@ const credentialsSchema = {
       },
       scoped: { type: 'boolean' },
       environment: { type: 'string', pattern: '^[A-Z][A-Z0-9_]{0,63}$' },
+      replacesSettings: {
+        type: 'array',
+        maxItems: 16,
+        items: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['contribution', 'key'],
+          properties: {
+            contribution: { type: 'string', minLength: 1, maxLength: 256 },
+            key: { type: 'string', pattern: '^[A-Za-z0-9._-]{1,64}$' },
+            scoped: { const: true },
+          },
+        },
+      },
+      scopeFormat: { enum: ['hex'] },
     },
   },
 } as const

@@ -155,7 +155,16 @@ export function createCredentialBroker(options: CredentialBrokerOptions): Creden
       throw refused('undeclared', `no extension declares the credential ${id}`)
     return found
   }
-  const keyOf = (requirement: CredentialRequirement, scope: string | undefined) => {
+  /** A scope in the declared form: `hex` drops dashes, braces and `0x`, lowercases; zeros = none. */
+  const scopeOf = (requirement: CredentialRequirement, scope: string | undefined) => {
+    if (scope === undefined || requirement.scopeFormat !== 'hex') return scope
+    const hex = scope.trim().replace(/^0x/iu, '').replace(/[-{}]/gu, '').toLowerCase()
+    if (!/^[0-9a-f]+$/u.test(hex))
+      throw refused('invalid', `the scope of ${requirement.id} is not a hex identifier`)
+    return /^0+$/u.test(hex) ? undefined : hex
+  }
+  const keyOf = (requirement: CredentialRequirement, rawScope: string | undefined) => {
+    const scope = scopeOf(requirement, rawScope)
     if (
       scope !== undefined &&
       (scope.length === 0 || scope.length > 128 || /[\u0000-\u001f]/u.test(scope))
@@ -179,13 +188,19 @@ export function createCredentialBroker(options: CredentialBrokerOptions): Creden
         .map(entry => entry.trim())
         .filter(entry => entry !== '')
       if (entries.every(entry => entry.includes(':'))) {
-        const pairs = new Map(
-          entries.map(entry => {
-            const at = entry.indexOf(':')
-            return [entry.slice(0, at).trim(), entry.slice(at + 1).trim()] as const
-          }),
-        )
-        value = scope === undefined ? undefined : pairs.get(scope)
+        const pairs = new Map<string, string>()
+        for (const entry of entries) {
+          const at = entry.indexOf(':')
+          try {
+            pairs.set(
+              scopeOf(requirement, entry.slice(0, at).trim()) ?? '',
+              entry.slice(at + 1).trim(),
+            )
+          } catch {
+            // a malformed scope in the variable answers nothing, it does not break the others
+          }
+        }
+        value = pairs.get(scope ?? '')
       }
     }
     if (value === undefined || value === '') return undefined
