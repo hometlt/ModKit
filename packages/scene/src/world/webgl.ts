@@ -4388,7 +4388,8 @@ interface WorldWebGlOwnedResources {
   readonly textures: Map<string, WorldWebGlTextureEntry>
   readonly textureArrays: Map<object, WorldWebGlTextureEntry>
   readonly usedTextures: Set<WorldWebGlTextureEntry>
-  readonly materialTextureHandles: Map<string, WebGLTexture>
+  /** By texture object: one texture path can arrive at different reduced sizes per model. */
+  readonly materialTextureHandles: Map<SceneRendererTexture, WebGLTexture>
   materialDraws: ReturnType<typeof materialWebGlDraws>
   materialPlan: WorldWebGlPlan | undefined
   retiredMaterialProgramCompilations: number
@@ -4884,7 +4885,7 @@ function createShadowProgram(gl: WebGL2RenderingContext): WebGLProgram {
 function createOwnedResources(gl: WebGL2RenderingContext): WorldWebGlOwnedResources {
   const program = createProgram(gl)
   try {
-    const materialTextureHandles = new Map<string, WebGLTexture>()
+    const materialTextureHandles = new Map<SceneRendererTexture, WebGLTexture>()
     return {
       gl,
       program,
@@ -4914,7 +4915,7 @@ function createOwnedResources(gl: WebGL2RenderingContext): WorldWebGlOwnedResour
       textureArrays: new Map(),
       usedTextures: new Set(),
       materialTextureHandles,
-      materialDraws: materialWebGlDraws(gl, materialTextureHandles, {
+      materialDraws: materialWebGlDraws(gl, texture => materialTextureHandles.get(texture), {
         mipmaps: true,
         checkEachDraw: false,
       }),
@@ -5084,7 +5085,8 @@ function prepareWorldMaterialResources(
       resources.retiredMaterialProgramCompilations += resources.materialDraws.programCompilations()
       resources.retiredMaterialDrawCalls += resources.materialDraws.drawCalls()
       resources.materialDraws.release()
-      resources.materialDraws = materialWebGlDraws(resources.gl, resources.materialTextureHandles, {
+      const handles = resources.materialTextureHandles
+      resources.materialDraws = materialWebGlDraws(resources.gl, texture => handles.get(texture), {
         mipmaps: true,
         checkEachDraw: false,
       })
@@ -5097,7 +5099,7 @@ function prepareWorldMaterialResources(
     for (const texture of scene.textures) {
       if (seen.has(texture)) continue
       seen.add(texture)
-      resources.materialTextureHandles.set(texture.id, bindTexture2d(resources, texture, 0))
+      resources.materialTextureHandles.set(texture, bindTexture2d(resources, texture, 0))
     }
 }
 

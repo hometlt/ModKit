@@ -1,5 +1,9 @@
 import { applyWebGlDepthBias } from './depth-bias.js'
-import type { SceneRendererCamera, SceneRendererDirectionalLight } from '@modkit/sdk/renderer'
+import type {
+  SceneRendererCamera,
+  SceneRendererDirectionalLight,
+  SceneRendererTexture,
+} from '@modkit/sdk/renderer'
 import {
   createWebGlMaterialProgram,
   linkWebGlMaterialProgramsInParallel,
@@ -63,10 +67,18 @@ const sameNumbers = (left: ArrayLike<number> | undefined, right: ArrayLike<numbe
 export const materialCanInstance = (program: StandardMaterialProgram) =>
   program.normalMapSpace !== 'object'
 
+/**
+ * Uploaded textures of material draws: by texture id, or by the texture itself when ids are not
+ * unique (a world whose models carry one texture path at different reduced sizes).
+ */
+export type MaterialTextureHandles =
+  | ReadonlyMap<string, WebGLTexture>
+  | ((texture: SceneRendererTexture) => WebGLTexture | undefined)
+
 /** Retained GPU program/geometry leases. Scene owns camera matrices and render state. */
 export function materialWebGlDraws(
   gl: WebGL2RenderingContext,
-  textures: ReadonlyMap<string, WebGLTexture>,
+  textures: MaterialTextureHandles,
   /**
    * `mipmaps`: the caller uploaded every linear texture with a full mip chain.
    * `checkEachDraw: false`: the caller checks WebGL errors per pass; `getError` forces a GPU sync,
@@ -299,7 +311,7 @@ export function materialWebGlDraws(
     if (lease === undefined) {
       const bound = new Map<string, WebGLTexture>()
       for (const [resource, texture] of material.textures) {
-        const handle = textures.get(texture.id)
+        const handle = typeof textures === 'function' ? textures(texture) : textures.get(texture.id)
         if (handle === undefined) throw new TypeError(`GPU material texture missing: ${resource}`)
         bound.set(resource, handle)
       }

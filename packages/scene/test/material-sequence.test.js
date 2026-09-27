@@ -33,6 +33,7 @@ const placements = count => {
 function context() {
   const calls = new Map()
   const uniforms = new Map()
+  const boundTextures = []
   const names = ['a_position', 'a_normal', 'a_tangent', 'a_color', 'a_uv0']
   for (let column = 0; column < 4; column++) names.push(`a_instanceMatrix${column}`)
   const gl = {
@@ -66,12 +67,13 @@ function context() {
       return (...args) => {
         calls.set(name, (calls.get(name) ?? 0) + 1)
         if (String(name).startsWith('uniform') && args[0] !== null) uniforms.set(args[0], args.at(-1))
+        if (name === 'bindTexture') boundTextures.push(args[1])
         return value?.(...args)
       }
     },
   })
   const count = name => calls.get(name) ?? 0
-  return { gl: proxy, calls, uniforms, count }
+  return { gl: proxy, calls, uniforms, count, boundTextures }
 }
 
 it('draws a sequence changing only what differs from the previous draw, and restores once', () => {
@@ -122,4 +124,28 @@ it('shares one sampler object between leases with equal sampling and deletes it 
   assert.equal(count('deleteSampler'), 0)
   renderer.release()
   assert.equal(count('deleteSampler'), 1)
+})
+
+it('takes each lease texture by its texture object, so equal ids of different sizes stay apart', () => {
+  const { gl, boundTextures } = context()
+  // One texture path, reduced differently for two models.
+  const large = { id: 'albedo.png', width: 256, height: 256 }
+  const small = { id: 'albedo.png', width: 128, height: 128 }
+  const handles = new Map([
+    [large, { name: 'large' }],
+    [small, { name: 'small' }],
+  ])
+  const renderer = materialWebGlDraws(gl, texture => handles.get(texture), { checkEachDraw: false })
+  for (const [id, texture] of [
+    ['a', large],
+    ['b', small],
+  ])
+    renderer.draw(
+      { primitive: mesh(id), program: { ...source }, material: { textures: new Map([['albedo', texture]]) } },
+      camera,
+    )
+  assert.deepEqual(
+    boundTextures.map(texture => texture.name),
+    ['large', 'small'],
+  )
 })
