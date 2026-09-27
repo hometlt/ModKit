@@ -203,6 +203,12 @@ it('keeps an object in later plans until its clock or inputs change', () => {
   assert.equal(second.stats.modelTriangles, first.stats.modelTriangles)
   assert.notEqual(sceneOf(second, 'glow'), sceneOf(first, 'glow'))
   assert.notEqual(alphaOf(second), alphaOf(first))
+  // Rebuilt for its clock, it keeps its pick bounds: the geometry and placement are the same.
+  assert.notEqual(second.picking.objects[1], first.picking.objects[1])
+  assert.equal(
+    second.picking.objects[1].primitives[0].minimum,
+    first.picking.objects[1].primitives[0].minimum,
+  )
   // Its clock unchanged, the glowing object is kept as well.
   const third = at(1, second, { timeSeconds: 5 })
   assert.equal(sceneOf(third, 'glow'), sceneOf(second, 'glow'))

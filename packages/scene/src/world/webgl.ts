@@ -1098,10 +1098,46 @@ function primitiveTriangleCount(primitive: SceneRendererPrimitive): number {
       : 0
 }
 
+interface WorldPickBounds {
+  readonly source: SceneRendererPrimitive
+  readonly transform: Float32Array | undefined
+  readonly minimum: readonly [number, number, number]
+  readonly maximum: readonly [number, number, number]
+}
+
+// The last bounds of each object's primitive slot: a rebuilt object whose geometry and placement did
+// not change (only its clock moved) reuses them instead of transforming every vertex again.
+const lastPickBounds = new WeakMap<object, Map<string, WorldPickBounds>>()
+
+function sameOptionalMatrix(
+  left: ArrayLike<number> | undefined,
+  right: ArrayLike<number> | undefined,
+): boolean {
+  if (left === undefined || right === undefined) return left === right
+  if (left.length !== right.length) return false
+  for (let index = 0; index < left.length; index++) if (left[index] !== right[index]) return false
+  return true
+}
+
+/**
+ * Pick entry of a placed primitive: its world bounding box over the vertices it references. With
+ * an `owner` and `slot` the bounds are kept for the next plan while the source geometry and the
+ * placement matrix stay the same.
+ */
 function sharedPickPrimitive(
   source: SceneRendererPrimitive,
   primitive: SceneRendererPrimitive,
+  owner?: object,
+  slot?: string,
 ): WorldWebGlPickPrimitive {
+  const slots = owner === undefined ? undefined : lastPickBounds.get(owner)
+  const last = slot === undefined ? undefined : slots?.get(slot)
+  if (
+    last !== undefined &&
+    last.source === source &&
+    sameOptionalMatrix(last.transform, primitive.transform)
+  )
+    return Object.freeze({ primitive, minimum: last.minimum, maximum: last.maximum })
   let indices = referencedVertices.get(source)
   if (indices === undefined) {
     const count = source.indices?.length ?? Math.floor(source.positions.length / 3)
@@ -1127,11 +1163,19 @@ function sharedPickPrimitive(
       maximum[axis] = Math.max(maximum[axis], vertex[axis])
     }
   }
-  return Object.freeze({
-    primitive,
+  const bounds = Object.freeze({
+    source,
+    transform:
+      primitive.transform === undefined ? undefined : Float32Array.from(primitive.transform),
     minimum: Object.freeze(minimum),
     maximum: Object.freeze(maximum),
   })
+  if (owner !== undefined && slot !== undefined) {
+    let known = slots
+    if (known === undefined) lastPickBounds.set(owner, (known = new Map()))
+    known.set(slot, bounds)
+  }
+  return Object.freeze({ primitive, minimum: bounds.minimum, maximum: bounds.maximum })
 }
 
 const frozenObjectPicks = new WeakMap<WorldObjectPickMesh, WorldWebGlPlan['picking']['objects'][number]>()
@@ -3386,7 +3430,9 @@ export function createWorldWebGlPlan(
         worldObjectTransform(item, translation),
         componentTransform,
       )
+      let primitiveIndex = -1
       for (const primitive of primitives) {
+        primitiveIndex += 1
         const material = presented.find(candidate => candidate.id === primitive.materialId)
         const shadowPolicy = modelMaterialShadowPolicy(material)
         const prepared = programs.get(primitive.materialId ?? '')
@@ -3410,7 +3456,14 @@ export function createWorldWebGlPlan(
           if (castsSharedMaterialShadow) materialShadowPrimitives.push(instancePrimitive)
           const count = primitiveTriangleCount(primitive)
           if (count > 0) {
-            pickPrimitives.push(sharedPickPrimitive(primitive, instancePrimitive))
+            pickPrimitives.push(
+              sharedPickPrimitive(
+                primitive,
+                instancePrimitive,
+                item,
+                `${component.id}\u0000${String(primitiveIndex)}`,
+              ),
+            )
             if (castsSharedMaterialShadow) modelMaterialShadowTriangles += count
             modelTriangles += count
             rendered = true
