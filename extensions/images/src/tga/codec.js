@@ -4,185 +4,10 @@ import {
   createTreeDataSource,
 } from '@modkit/codec-kit'
 import { rasterEditContent, rasterEditContentOperation } from '../ops/raster-transforms.js'
-import { encodeTga } from '@modkit/codec-kit/raster'
+// Header and pixel reading are codec-kit's (also used by providers that meet a TGA).
+import { decodeTgaPixels, encodeTga, parseTga, plausibleTgaHeader } from '@modkit/codec-kit/raster'
 
 const ID = 'modkit/tga'
-const FOOTER = Object.freeze([
-  0x54, 0x52, 0x55, 0x45, 0x56, 0x49, 0x53, 0x49, 0x4f, 0x4e, 0x2d, 0x58, 0x46, 0x49, 0x4c, 0x45,
-  0x2e, 0x00,
-])
-
-function u16(bytes, offset) {
-  if (offset < 0 || offset + 2 > bytes.byteLength) throw new RangeError('TGA field is truncated')
-  return new DataView(bytes.buffer, bytes.byteOffset + offset, 2).getUint16(0, true)
-}
-
-function hasFooter(bytes) {
-  const start = bytes.byteLength - FOOTER.length
-  return start >= 0 && FOOTER.every((value, index) => bytes[start + index] === value)
-}
-
-function plausibleHeader(bytes) {
-  if (bytes.byteLength < 18) return false
-  const colorMapType = bytes[1]
-  const imageType = bytes[2]
-  const width = u16(bytes, 12)
-  const height = u16(bytes, 14)
-  const pixelDepth = bytes[16]
-  if (
-    ![0, 1].includes(colorMapType) ||
-    ![1, 2, 3, 9, 10, 11].includes(imageType) ||
-    width === 0 ||
-    height === 0
-  ) {
-    return false
-  }
-  const mapped = imageType === 1 || imageType === 9
-  const grayscale = imageType === 3 || imageType === 11
-  if (mapped !== (colorMapType === 1)) return false
-  if (mapped && ![8, 16].includes(pixelDepth)) return false
-  if (grayscale && ![8, 16].includes(pixelDepth)) return false
-  if (!mapped && !grayscale && ![16, 24, 32].includes(pixelDepth)) return false
-  return true
-}
-
-function parseTga(bytes, maxScalarBytes) {
-  if (!plausibleHeader(bytes)) throw new TypeError('TGA header is invalid')
-  const idBytes = bytes[0]
-  const colorMapType = bytes[1]
-  const imageType = bytes[2]
-  const colorMapFirst = u16(bytes, 3)
-  const colorMapLength = u16(bytes, 5)
-  const colorMapDepth = bytes[7]
-  const xOrigin = u16(bytes, 8)
-  const yOrigin = u16(bytes, 10)
-  const width = u16(bytes, 12)
-  const height = u16(bytes, 14)
-  const pixelDepth = bytes[16]
-  const descriptor = bytes[17]
-  const mapped = imageType === 1 || imageType === 9
-  const grayscale = imageType === 3 || imageType === 11
-  const rle = imageType >= 9
-  const colorMapEntryBytes = Math.ceil(colorMapDepth / 8)
-  if (
-    (mapped && (colorMapLength === 0 || ![15, 16, 24, 32].includes(colorMapDepth))) ||
-    (!mapped && (colorMapLength !== 0 || colorMapType !== 0))
-  ) {
-    throw new TypeError('TGA color-map declaration is invalid')
-  }
-  const dataOffset = 18 + idBytes + colorMapLength * colorMapEntryBytes
-  const footerBytes = hasFooter(bytes) ? 26 : 0
-  const dataEnd = bytes.byteLength - footerBytes
-  if (dataOffset >= dataEnd) throw new TypeError('TGA image payload is missing')
-  const decodedBytes = BigInt(width) * BigInt(height) * 4n
-  const decodedAccess =
-    !mapped &&
-    decodedBytes <= BigInt(maxScalarBytes) &&
-    ((!grayscale && [16, 24, 32].includes(pixelDepth)) ||
-      (grayscale && [8, 16].includes(pixelDepth)))
-  return Object.freeze({
-    idBytes,
-    colorMapType,
-    imageType,
-    colorMapFirst,
-    colorMapLength,
-    colorMapDepth,
-    xOrigin,
-    yOrigin,
-    width,
-    height,
-    pixelDepth,
-    descriptor,
-    mapped,
-    grayscale,
-    rle,
-    topOrigin: (descriptor & 0x20) !== 0,
-    rightOrigin: (descriptor & 0x10) !== 0,
-    alphaBits: descriptor & 0x0f,
-    dataOffset,
-    dataEnd,
-    decodedBytes,
-    decodedAccess,
-    hasFooter: footerBytes !== 0,
-  })
-}
-
-function readPixel(bytes, source, tga) {
-  if (tga.grayscale) {
-    return Object.freeze({
-      red: bytes[source] ?? 0,
-      green: bytes[source] ?? 0,
-      blue: bytes[source] ?? 0,
-      alpha: tga.pixelDepth === 16 ? (bytes[source + 1] ?? 255) : 255,
-      next: source + tga.pixelDepth / 8,
-    })
-  }
-  if (tga.pixelDepth === 16) {
-    const value = u16(bytes, source)
-    return Object.freeze({
-      red: Math.round((((value >>> 10) & 0x1f) * 255) / 31),
-      green: Math.round((((value >>> 5) & 0x1f) * 255) / 31),
-      blue: Math.round(((value & 0x1f) * 255) / 31),
-      alpha: tga.alphaBits > 0 ? ((value & 0x8000) === 0 ? 0 : 255) : 255,
-      next: source + 2,
-    })
-  }
-  return Object.freeze({
-    red: bytes[source + 2] ?? 0,
-    green: bytes[source + 1] ?? 0,
-    blue: bytes[source] ?? 0,
-    alpha: tga.pixelDepth === 32 ? (bytes[source + 3] ?? 255) : 255,
-    next: source + tga.pixelDepth / 8,
-  })
-}
-
-function decodePixels(bytes, tga) {
-  const pixelCount = tga.width * tga.height
-  const pixels = new Uint8Array(pixelCount * 4)
-  let source = tga.dataOffset
-  let filePixel = 0
-  const write = pixel => {
-    if (filePixel >= pixelCount) throw new TypeError('TGA packet crosses the declared image')
-    const fileX = filePixel % tga.width
-    const fileY = Math.floor(filePixel / tga.width)
-    const targetX = tga.rightOrigin ? tga.width - 1 - fileX : fileX
-    const targetY = tga.topOrigin ? fileY : tga.height - 1 - fileY
-    const target = (targetY * tga.width + targetX) * 4
-    pixels[target] = pixel.red
-    pixels[target + 1] = pixel.green
-    pixels[target + 2] = pixel.blue
-    pixels[target + 3] = pixel.alpha
-    filePixel += 1
-  }
-  while (filePixel < pixelCount) {
-    if (source >= tga.dataEnd) throw new TypeError('TGA image data is truncated')
-    if (tga.rle) {
-      const packet = bytes[source] ?? 0
-      source += 1
-      const count = (packet & 0x7f) + 1
-      if (filePixel + count > pixelCount) throw new TypeError('TGA RLE packet is too long')
-      if ((packet & 0x80) !== 0) {
-        const pixel = readPixel(bytes, source, tga)
-        if (pixel.next > tga.dataEnd) throw new TypeError('TGA RLE pixel is truncated')
-        source = pixel.next
-        for (let index = 0; index < count; index += 1) write(pixel)
-      } else {
-        for (let index = 0; index < count; index += 1) {
-          const pixel = readPixel(bytes, source, tga)
-          if (pixel.next > tga.dataEnd) throw new TypeError('TGA raw packet pixel is truncated')
-          source = pixel.next
-          write(pixel)
-        }
-      }
-    } else {
-      const pixel = readPixel(bytes, source, tga)
-      if (pixel.next > tga.dataEnd) throw new TypeError('TGA pixel is truncated')
-      source = pixel.next
-      write(pixel)
-    }
-  }
-  return pixels
-}
 
 function regionReader(bytes, tga) {
   let decoded
@@ -208,7 +33,7 @@ function regionReader(bytes, tga) {
     if (!Number.isSafeInteger(outputBytes) || outputBytes > request.maxBytes) {
       throw new RangeError('TGA region exceeds maxBytes budget')
     }
-    decoded ??= decodePixels(bytes, tga)
+    decoded ??= decodeTgaPixels(bytes, tga)
     const pixels = new Uint8Array(outputBytes)
     for (let row = 0; row < request.height; row += 1) {
       const source = ((request.y + row) * tga.width + request.x) * 4
@@ -229,7 +54,7 @@ const definition = Object.freeze({
   format: Object.freeze({ id: 'tga', label: 'Truevision TGA', mediaType: 'image/x-tga' }),
   operations: Object.freeze([rasterEditContentOperation('transform')]),
   async detect(prefix) {
-    return plausibleHeader(prefix)
+    return plausibleTgaHeader(prefix)
       ? { confidence: 0.9, kind: 'structure', note: 'tga-plausible-header' }
       : { confidence: 0, kind: 'structure', note: 'signature-mismatch' }
   },
@@ -329,7 +154,7 @@ const definition = Object.freeze({
           decode: async () => ({
             width: tga.width,
             height: tga.height,
-            pixels: decodePixels(bytes, tga),
+            pixels: decodeTgaPixels(bytes, tga),
           }),
           encode: encodeTga,
           fidelity: {

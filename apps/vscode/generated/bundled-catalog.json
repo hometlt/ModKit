@@ -121,7 +121,7 @@
         "modkit/tiff",
         "modkit/webp"
       ],
-      "digest": "sha256:10ea28a497a5cea5b782e8898bcfc1c034b24bea5a23c2b1bdf4f8e9808854e0"
+      "digest": "sha256:1e38b25f32a05094e47abcd0522a486599651527c4ae228a2b455b483e068b72"
     },
     {
       "name": "lua",
@@ -129,7 +129,7 @@
       "declared": true,
       "coordinate": "modkit/lua",
       "contributions": ["modkit/lua-language"],
-      "digest": "sha256:3152a2a332eeb14f43d2e57177c5b40ccf07f843e6859a86b61714d4e0bcecd3"
+      "digest": "sha256:663e323674fa8adf3b2dba6ee5aac6b087d55cc06303ee0fb8769cc99ffcd97c"
     },
     {
       "name": "models",

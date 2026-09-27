@@ -28,3 +28,4 @@ export {
 } from './jpeg.js'
 export type { RgbaImage } from '../texture/types.js'
 export { findEmbeddedImage, type EmbeddedImage } from './embedded.js'
+export { decodeTga, decodeTgaPixels, parseTga, plausibleTgaHeader, type TgaHeader } from './tga.js'
