@@ -14,12 +14,35 @@ import { presettablePrompter, type PresettablePrompter } from './credential-port
 
 export { createSecretCredentialStore } from './credential-ports.js'
 
+/** How long a sign-in page may wait for the editor's "open this website?" answer. */
+const OPEN_EXTERNAL_WAIT_MS = 120_000
+
 /** `localizer` is read per prompt: the window swaps in its full catalogs after activation starts. */
 export function createEditorCredentialPrompter(localizer: () => UiLocalizer): PresettablePrompter {
   return presettablePrompter({
     secret: request => askSecret(localizer(), request),
+    /*
+     * Always answers: VS Code may hold `openExternal` behind its "open this website?" prompt for as
+     * long as nobody answers it, and the OAuth engine keeps its loopback port until this returns.
+     * A refusal, a failure or no answer within the bound is `false`, and the engine then cancels
+     * the sign-in and closes the port.
+     */
     async openExternal(url: string) {
-      return vscode.env.openExternal(vscode.Uri.parse(url))
+      let timer: ReturnType<typeof setTimeout> | undefined
+      const unanswered = new Promise<false>(resolve => {
+        timer = setTimeout(() => resolve(false), OPEN_EXTERNAL_WAIT_MS)
+      })
+      try {
+        return await Promise.race([
+          Promise.resolve(vscode.env.openExternal(vscode.Uri.parse(url))).then(
+            opened => opened === true,
+            () => false,
+          ),
+          unanswered,
+        ])
+      } finally {
+        clearTimeout(timer)
+      }
     },
     async confirm(message: string) {
       const yes = localizer().text('vscode.accounts.continue')
