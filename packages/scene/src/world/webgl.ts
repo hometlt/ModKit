@@ -1134,6 +1134,25 @@ function sharedPickPrimitive(
   })
 }
 
+const frozenObjectPicks = new WeakMap<WorldObjectPickMesh, WorldWebGlPlan['picking']['objects'][number]>()
+
+/** A plan's pick entry of an object; a retained object keeps its entry across plans. */
+function frozenObjectPick(item: WorldObjectPickMesh): WorldWebGlPlan['picking']['objects'][number] {
+  let frozen = frozenObjectPicks.get(item)
+  if (frozen === undefined)
+    frozenObjectPicks.set(
+      item,
+      (frozen = Object.freeze({
+        objectId: item.objectId,
+        center: item.center,
+        triangles: Float32Array.from(item.triangles),
+        primitives: Object.freeze(item.primitives),
+        placeholder: item.placeholder,
+      })),
+    )
+  return frozen
+}
+
 function frozenBatch(source: MutableBatch): WorldWebGlBatch {
   return Object.freeze({
     positions: Float32Array.from(source.positions),
@@ -1477,6 +1496,64 @@ function worldModelProgramTemplate(
   }
   return template
 }
+
+/** What an object added to a plan, and the inputs it was built from. */
+interface WorldStaticObject {
+  readonly key: readonly unknown[]
+  readonly scenes: readonly WorldWebGlModelMaterialScene[]
+  readonly effects: readonly WorldWebGlModelEffectInstance[]
+  readonly pickMesh: WorldObjectPickMesh
+  readonly modelTriangles: number
+  readonly shadowTriangles: number
+}
+
+interface WorldObjectPickMesh {
+  readonly objectId: number
+  readonly center: readonly [number, number, number]
+  readonly triangles: number[]
+  readonly primitives: WorldWebGlPickPrimitive[]
+  readonly placeholder: boolean
+}
+
+/**
+ * An object adds the same scenes, effects and pick mesh to every plan built from the same inputs
+ * (see `worldStaticObjectKey`): an animated map re-samples only the objects whose clock moved
+ * instead of placing, bounding and grouping all of them every frame.
+ */
+const retainedStaticObjects = new WeakMap<WorldSceneObjectItem, WorldStaticObject>()
+
+/**
+ * Everything an object's contribution depends on: the terrain preparation (cliff lifting, projector
+ * ground), its team colour, and each model result with the clock the object samples it at (its
+ * geometry, materials, effects and projectors follow only that clock). The selected object
+ * (tinted, possibly moved by a preview) is never retained.
+ */
+function worldStaticObjectKey(
+  item: WorldSceneObjectItem,
+  input: WorldWebGlInput,
+  preparation: unknown,
+): readonly unknown[] | undefined {
+  if (item.objectId === input.selectedObjectId) return undefined
+  const teamColor =
+    item.presentationTeamColor ??
+    (item.player === undefined ? undefined : input.teamColors?.get(item.player))
+  const key: unknown[] = [preparation, teamColor?.join(',') ?? '']
+  for (const resourceId of new Set([
+    ...(item.resourceId === undefined ? [] : [item.resourceId]),
+    ...(item.resourceIds ?? []),
+    ...(item.modelComponents ?? []).map(component => component.resourceId),
+  ])) {
+    const result = input.models?.get(resourceId)
+    key.push(resourceId, result)
+    if (result?.state !== 'converted') continue
+    const selected = worldModelAnimation(result, item)
+    key.push(worldObjectTime(input, item, selected !== undefined, selected?.durationSeconds))
+  }
+  return key
+}
+
+const sameWorldStaticObjectKey = (left: readonly unknown[], right: readonly unknown[]) =>
+  left.length === right.length && left.every((value, index) => value === right[index])
 
 const materialsFollowingTime = new WeakMap<WorldModelSample['result'], boolean>()
 
@@ -2874,13 +2951,7 @@ export function createWorldWebGlPlan(
       readonly receiveShadows: boolean
     }
   >()
-  const objectPickMeshes: {
-    objectId: number
-    center: readonly [number, number, number]
-    triangles: number[]
-    primitives: WorldWebGlPickPrimitive[]
-    placeholder: boolean
-  }[] = []
+  const objectPickMeshes: WorldObjectPickMesh[] = []
   const planSamples = new Map<
     string,
     Readonly<{
@@ -3120,6 +3191,22 @@ export function createWorldWebGlPlan(
   let diagnosticPlaceholders = 0
   const planPrograms = new Map<string, WorldModelPrograms>()
   for (const item of objects) {
+    const staticKey = worldStaticObjectKey(item, input, preparation)
+    const retainedObject = staticKey === undefined ? undefined : retainedStaticObjects.get(item)
+    if (retainedObject !== undefined && sameWorldStaticObjectKey(retainedObject.key, staticKey!)) {
+      for (const scene of retainedObject.scenes) modelMaterialScenes.push(scene)
+      for (const effect of retainedObject.effects) modelEffects.push(effect)
+      objectPickMeshes.push(retainedObject.pickMesh)
+      modelTriangles += retainedObject.modelTriangles
+      modelMaterialShadowTriangles += retainedObject.shadowTriangles
+      continue
+    }
+    const scenesBefore = modelMaterialScenes.length
+    const effectsBefore = modelEffects.length
+    const trianglesBefore = modelTriangles
+    const shadowTrianglesBefore = modelMaterialShadowTriangles
+    // Cleared by anything that writes into the plan's shared batches instead of its own scenes.
+    let retainable = staticKey !== undefined
     const translation = objectPosition(item, input)
     const pickTriangles: number[] = []
     const pickPrimitives: WorldWebGlPickPrimitive[] = []
@@ -3306,6 +3393,8 @@ export function createWorldWebGlPlan(
           }
           continue
         }
+        // The fallback writes the plan's shared batches: such an object is rebuilt with the plan.
+        retainable = false
         const layer = material?.layers?.find(candidate =>
           BASE_COLOR_SLOTS.has(materialSlot(candidate.slot)),
         )
@@ -3522,14 +3611,28 @@ export function createWorldWebGlPlan(
       const selected = item.objectId === input.selectedObjectId
       pushVertex(points, translation, [0, 1, 0], selected ? [1, 0.9, 0.1, 1] : colorHash(item.kind))
       diagnosticPlaceholders += 1
+      retainable = false
     }
-    objectPickMeshes.push({
+    const pickMesh: WorldObjectPickMesh = {
       objectId: item.objectId,
       center: translation,
       triangles: pickTriangles,
       primitives: pickPrimitives,
       placeholder: !resolved,
-    })
+    }
+    objectPickMeshes.push(pickMesh)
+    if (retainable && staticKey !== undefined)
+      retainedStaticObjects.set(
+        item,
+        Object.freeze({
+          key: staticKey,
+          scenes: Object.freeze(modelMaterialScenes.slice(scenesBefore)),
+          effects: Object.freeze(modelEffects.slice(effectsBefore)),
+          pickMesh,
+          modelTriangles: modelTriangles - trianglesBefore,
+          shadowTriangles: modelMaterialShadowTriangles - shadowTrianglesBefore,
+        }),
+      )
   }
 
   let navigationSamples = 0
@@ -3706,17 +3809,7 @@ export function createWorldWebGlPlan(
     points: appendWorldBatch(preparation.points, points),
     picking: Object.freeze({
       terrainTriangles: projectorGround,
-      objects: Object.freeze(
-        objectPickMeshes.map(item =>
-          Object.freeze({
-            objectId: item.objectId,
-            center: item.center,
-            triangles: Float32Array.from(item.triangles),
-            primitives: Object.freeze(item.primitives),
-            placeholder: item.placeholder,
-          }),
-        ),
-      ),
+      objects: Object.freeze(objectPickMeshes.map(frozenObjectPick)),
     }),
     bounds: Object.freeze({ minimum: Object.freeze(minimum), maximum: Object.freeze(maximum) }),
     light: Object.freeze({
@@ -6286,6 +6379,89 @@ const worldMaterialBatches = new WeakMap<WorldWebGlPlan, WorldWebGlMaterialBatch
 const worldShadowMaterialBatches = new WeakMap<WorldWebGlPlan, WorldWebGlMaterialBatches>()
 const SHADOW_DEPTH_BIAS = Object.freeze({ slopeScale: 1.1, units: 4 })
 
+/** A scene's solid draws with their group keys (undefined: the draw cannot instance). */
+interface WorldSceneSolidDraws {
+  readonly draws: readonly Readonly<{
+    key: string | undefined
+    draw: WorldWebGlMaterialGroup['draw']
+  }>[]
+  readonly transparent: boolean
+}
+
+// Scenes are immutable and a retained object keeps its scenes across plans, so their solid draws
+// and group keys are computed once per scene.
+const worldSceneSolidDraws = new WeakMap<WorldWebGlModelMaterialScene, WorldSceneSolidDraws>()
+const worldSceneCasterDraws = new WeakMap<WorldWebGlModelMaterialScene, WorldSceneSolidDraws>()
+const worldGroupIds = new WeakMap<object, number>()
+let worldGroupIdCount = 0
+const worldGroupId = (value: object | undefined) => {
+  if (value === undefined) return '-'
+  let known = worldGroupIds.get(value)
+  if (known === undefined) worldGroupIds.set(value, (known = ++worldGroupIdCount))
+  return String(known)
+}
+
+function worldSceneSolidDrawsOf(
+  scene: WorldWebGlModelMaterialScene,
+  shadow: boolean,
+): WorldSceneSolidDraws {
+  const cache = shadow ? worldSceneCasterDraws : worldSceneSolidDraws
+  const cached = cache.get(scene)
+  if (cached !== undefined) return cached
+  let transparent = false
+  const draws: { key: string | undefined; draw: WorldWebGlMaterialGroup['draw'] }[] = []
+  for (const found of sceneMaterialDraws(
+    shadow ? scene.shadowPrimitives : scene.primitives,
+    scene.materials,
+    scene.programs,
+    IDENTITY_VIEW_PROJECTION,
+    [],
+    1,
+  )) {
+    const program = found.program
+    if (program === undefined || found.depthOnly === true) continue
+    if (!materialIsSolid(program)) {
+      transparent = true
+      continue
+    }
+    const draw = shadow
+      ? {
+          ...found,
+          program,
+          primitive: { ...found.primitive, depthBias: SHADOW_DEPTH_BIAS },
+          depthOnly: true,
+        }
+      : { ...found, program }
+    if (!materialCanInstance(program)) {
+      draws.push({ key: undefined, draw })
+      continue
+    }
+    const primitive = draw.primitive
+    const bias = primitive.depthBias
+    const key = [
+      worldGroupId(program),
+      worldGroupId(draw.material),
+      draw.depthOnly === true ? 'depth' : 'colour',
+      primitive.topology,
+      worldGroupId(primitive.positions),
+      worldGroupId(primitive.normals),
+      worldGroupId(primitive.tangents),
+      worldGroupId(primitive.colors),
+      worldGroupId(primitive.textureCoordinates),
+      ...(primitive.textureCoordinateSets ?? []).map(
+        set => `${set.set}:${worldGroupId(set.coordinates)}`,
+      ),
+      worldGroupId(primitive.indices),
+      bias === undefined ? '-' : `${bias.slopeScale}:${bias.units}`,
+      primitiveTint(primitive).join(':'),
+    ].join('|')
+    draws.push({ key, draw })
+  }
+  const result = Object.freeze({ draws: Object.freeze(draws), transparent })
+  cache.set(scene, result)
+  return result
+}
+
 /**
  * Solid (opaque and alpha-tested) material draws of a plan, grouped by everything one instanced
  * draw shares: program, material, geometry, depth bias and tint. With depth writes the order of
@@ -6294,13 +6470,6 @@ const SHADOW_DEPTH_BIAS = Object.freeze({ slopeScale: 1.1, units: 4 })
  * depth-only casters of the shadow map instead.
  */
 function groupWorldMaterialDraws(plan: WorldWebGlPlan, shadow: boolean): WorldWebGlMaterialBatches {
-  const ids = new Map<object, number>()
-  const id = (value: object | undefined) => {
-    if (value === undefined) return '-'
-    let known = ids.get(value)
-    if (known === undefined) ids.set(value, (known = ids.size))
-    return String(known)
-  }
   const groups = new Map<
     string,
     { draw: WorldWebGlMaterialGroup['draw']; transforms: Float32Array[]; seen: Set<Float32Array> }
@@ -6308,59 +6477,21 @@ function groupWorldMaterialDraws(plan: WorldWebGlPlan, shadow: boolean): WorldWe
   const singles: MaterialDraw[] = []
   const transparentScenes: WorldWebGlModelMaterialScene[] = []
   for (const scene of plan.modelMaterialScenes) {
-    let transparent = false
-    for (const found of sceneMaterialDraws(
-      shadow ? scene.shadowPrimitives : scene.primitives,
-      scene.materials,
-      scene.programs,
-      IDENTITY_VIEW_PROJECTION,
-      [],
-      1,
-    )) {
-      const program = found.program
-      if (program === undefined || found.depthOnly === true) continue
-      if (!materialIsSolid(program)) {
-        transparent = true
-        continue
-      }
-      const draw = shadow
-        ? {
-            ...found,
-            program,
-            primitive: { ...found.primitive, depthBias: SHADOW_DEPTH_BIAS },
-            depthOnly: true,
-          }
-        : { ...found, program }
-      if (!materialCanInstance(program)) {
+    const solid = worldSceneSolidDrawsOf(scene, shadow)
+    for (const { key, draw } of solid.draws) {
+      if (key === undefined) {
         singles.push(draw)
         continue
       }
-      const primitive = draw.primitive
-      const bias = primitive.depthBias
-      const key = [
-        id(program),
-        id(draw.material),
-        draw.depthOnly === true ? 'depth' : 'colour',
-        primitive.topology,
-        id(primitive.positions),
-        id(primitive.normals),
-        id(primitive.tangents),
-        id(primitive.colors),
-        id(primitive.textureCoordinates),
-        ...(primitive.textureCoordinateSets ?? []).map(set => `${set.set}:${id(set.coordinates)}`),
-        id(primitive.indices),
-        bias === undefined ? '-' : `${bias.slopeScale}:${bias.units}`,
-        primitiveTint(primitive).join(':'),
-      ].join('|')
       let group = groups.get(key)
       if (group === undefined) groups.set(key, (group = { draw, transforms: [], seen: new Set() }))
-      const transform = primitive.transform ?? IDENTITY_VIEW_PROJECTION
+      const transform = draw.primitive.transform ?? IDENTITY_VIEW_PROJECTION
       // A primitive drawn twice into the same depth (two solid passes) writes it once.
       if (shadow && group.seen.has(transform)) continue
       group.seen.add(transform)
       group.transforms.push(transform)
     }
-    if (transparent && !shadow) transparentScenes.push(scene)
+    if (solid.transparent && !shadow) transparentScenes.push(scene)
   }
   const instanced = [...groups.values()].map(({ draw, transforms }) => {
     const matrices = new Float32Array(transforms.length * 16)

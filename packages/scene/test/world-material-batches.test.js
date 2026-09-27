@@ -19,7 +19,7 @@ const item = (objectId, resourceId, x) => ({
   resourceId,
 })
 // One textured triangle with a standard render-model material: 0 opaque, 1 blended.
-const model = (key, blend, depthPrepass = false) => ({
+const model = (key, blend, depthPrepass = false, animated = false) => ({
   state: 'converted',
   sourceKey: key,
   diagnostics: [],
@@ -50,6 +50,21 @@ const model = (key, blend, depthPrepass = false) => ({
                   slot: 'diffuse',
                   texturePath: `${key}.png`,
                   constantColor: { value: [1, 1, 1, 1] },
+                  ...(animated
+                    ? {
+                        alphaFactor: {
+                          value: 1,
+                          track: {
+                            lineType: 1,
+                            globalSeqId: null,
+                            keys: [
+                              { frame: 0, vector: [0.25] },
+                              { frame: 2, vector: [0.75] },
+                            ],
+                          },
+                        },
+                      }
+                    : {}),
                   uvSource: 0,
                   channels: 0,
                   op: 6,
@@ -165,4 +180,47 @@ it('leaves depth prepasses to their blended passes, right before each of them', 
   assert.equal(passes[1], blended)
   const plain = { ...blended, program: { ...blended.program, depthPrepass: false } }
   assert.deepEqual(worldBlendedMaterialPasses(plain), [plain])
+})
+
+it('keeps an object in later plans until its clock or inputs change', () => {
+  const models = new Map([
+    ['rock', model('rock', 0)],
+    ['glow', model('glow', 0, false, true)],
+  ])
+  const items = [item(1, 'rock', 0), item(2, 'glow', 3)]
+  const sceneOf = (plan, key) =>
+    plan.modelMaterialScenes.find(scene => scene.primitives[0].id === `${key}-triangle`)
+  const alphaOf = plan =>
+    sceneOf(plan, 'glow').programs.get('surface').passes[0].uniforms.u_diffuseAlphaFactor
+  // The glowing material samples its alpha at the object's own clock.
+  const at = (time, previous, extra = {}) =>
+    createWorldWebGlPlan({ items, models, animationTimes: new Map([[2, time]]), ...extra }, previous)
+  const first = at(0)
+  const second = at(1, first)
+  // The rock does not move or animate: the same scene and pick entry, so its draws keep their group.
+  assert.equal(sceneOf(second, 'rock'), sceneOf(first, 'rock'))
+  assert.equal(second.picking.objects[0], first.picking.objects[0])
+  assert.equal(second.stats.modelTriangles, first.stats.modelTriangles)
+  assert.notEqual(sceneOf(second, 'glow'), sceneOf(first, 'glow'))
+  assert.notEqual(alphaOf(second), alphaOf(first))
+  // Its clock unchanged, the glowing object is kept as well.
+  const third = at(1, second, { timeSeconds: 5 })
+  assert.equal(sceneOf(third, 'glow'), sceneOf(second, 'glow'))
+  // Selection tints the rock, and a reloaded model is a new input: both rebuild it.
+  const selected = at(1, third, { selectedObjectId: 1 })
+  assert.notEqual(sceneOf(selected, 'rock'), sceneOf(third, 'rock'))
+  assert.ok(sceneOf(selected, 'rock').primitives[0].tint !== undefined)
+  const reloaded = createWorldWebGlPlan(
+    {
+      items,
+      models: new Map([...models, ['rock', model('rock', 0)]]),
+      animationTimes: new Map([[2, 1]]),
+    },
+    third,
+  )
+  assert.notEqual(sceneOf(reloaded, 'rock'), sceneOf(third, 'rock'))
+  assert.deepEqual(
+    worldMaterialBatchesOf(reloaded).groups.map(group => group.instances.count),
+    worldMaterialBatchesOf(third).groups.map(group => group.instances.count),
+  )
 })
