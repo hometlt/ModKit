@@ -133,6 +133,19 @@ describe('OAuth 2.0 PKCE engine (loopback)', () => {
     expect(forms.at(-1)?.get('token')).toBe('refresh-2')
   })
 
+  it('redirects to localhost when the service accepts only https or localhost', async () => {
+    const engine = createNodeOAuth2Engine()
+    const prompter = browser('approve')
+    const base = requirement()
+    const tokens = await engine.authorize({
+      requirement: { ...base, oauth: { ...base.oauth!, loopbackHost: 'localhost' } },
+      clientId: 'client-1',
+      prompter,
+    })
+    expect(tokens.accessToken).toBe('access-1')
+    expect(new URL(prompter.pages[0]!.searchParams.get('redirect_uri')!).hostname).toBe('localhost')
+  })
+
   it('reports a denied sign-in', async () => {
     const engine = createNodeOAuth2Engine()
     await expect(

@@ -5,7 +5,7 @@
  * server closes after the first answer. A public client: no client secret is sent or shipped.
  */
 import { createHash, randomBytes } from 'node:crypto'
-import { createServer } from 'node:http'
+import { createServer, type IncomingMessage, type ServerResponse } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { ModkitError } from '@modkit/core'
 import type { OAuth2Engine, OAuth2Tokens } from '../credentials.js'
@@ -72,15 +72,29 @@ export function createNodeOAuth2Engine(options: NodeOAuth2EngineOptions = {}): O
       const state = base64url(randomBytes(16))
       if (signal?.aborted === true) throw refused('aborted', 'the sign-in was cancelled')
       const server = createServer()
+      // `localhost` (services that accept only https or localhost) may resolve to ::1 in the browser
+      const servers = [server]
       let timer: ReturnType<typeof setTimeout> | undefined
       let abort: (() => void) | undefined
       await new Promise<void>((resolve, reject) => {
         server.once('error', reject)
         server.listen(oauth.loopbackPort ?? 0, '127.0.0.1', () => resolve())
       })
+      const host = oauth.loopbackHost ?? '127.0.0.1'
       try {
         const { port } = server.address() as AddressInfo
-        const redirectUri = `http://127.0.0.1:${port}/callback`
+        if (host === 'localhost') {
+          const ipv6 = createServer()
+          // no IPv6 on this machine: 127.0.0.1 still answers
+          await new Promise<void>(resolve => {
+            ipv6.once('error', () => resolve())
+            ipv6.listen(port, '::1', () => {
+              servers.push(ipv6)
+              resolve()
+            })
+          })
+        }
+        const redirectUri = `http://${host}:${port}/callback`
         const code = new Promise<string>((resolve, reject) => {
           timer = setTimeout(
             () => reject(refused('timeout', 'the sign-in was not finished in time')),
@@ -88,7 +102,7 @@ export function createNodeOAuth2Engine(options: NodeOAuth2EngineOptions = {}): O
           )
           abort = () => reject(refused('aborted', 'the sign-in was cancelled'))
           signal?.addEventListener('abort', abort, { once: true })
-          server.on('request', (request, response) => {
+          const answer = (request: IncomingMessage, response: ServerResponse) => {
             const url = new URL(request.url ?? '/', redirectUri)
             if (url.pathname !== '/callback') {
               response.writeHead(404).end()
@@ -122,7 +136,8 @@ export function createNodeOAuth2Engine(options: NodeOAuth2EngineOptions = {}): O
               finish(200, 'Signed in. You can close this page and return to Modkit.', () =>
                 resolve(value),
               )
-          })
+          }
+          for (const each of servers) each.on('request', answer)
         })
         code.catch(() => undefined)
         const authorize = new URL(oauth.authorizationEndpoint)
@@ -154,8 +169,10 @@ export function createNodeOAuth2Engine(options: NodeOAuth2EngineOptions = {}): O
       } finally {
         clearTimeout(timer)
         if (abort !== undefined) signal?.removeEventListener('abort', abort)
-        server.closeAllConnections()
-        server.close()
+        for (const each of servers) {
+          each.closeAllConnections()
+          each.close()
+        }
       }
     },
 

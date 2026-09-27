@@ -178,6 +178,7 @@ const credentialsSchema = {
           clientId: { type: 'string', minLength: 1, maxLength: 256 },
           clientIdSetting: { type: 'string', pattern: '^[A-Za-z0-9._-]{1,64}$' },
           loopbackPort: { type: 'integer', minimum: 1024, maximum: 65535 },
+          loopbackHost: { enum: ['localhost', '127.0.0.1'] },
         },
       },
       scoped: { type: 'boolean' },

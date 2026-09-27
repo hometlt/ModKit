@@ -24,6 +24,11 @@ export interface CredentialOAuth2Endpoints {
   readonly clientIdSetting?: string
   /** A fixed loopback port when the service registers an exact redirect; otherwise a random one. */
   readonly loopbackPort?: number
+  /**
+   * The redirect host: `127.0.0.1` (default, RFC 8252) or `localhost` for services that accept only
+   * https or localhost redirects (Roblox); the host then also listens on ::1.
+   */
+  readonly loopbackHost?: 'localhost' | '127.0.0.1'
 }
 
 /** One declared credential (`package.json#modkit.credentials[]`). */
