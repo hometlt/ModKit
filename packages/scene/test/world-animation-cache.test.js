@@ -577,6 +577,76 @@ it('reuses the simulated effect frames of many differently turned instances in t
   assert.notEqual(pannedDraws[0].scene.materials, firstDraws[0].scene.materials)
 })
 
+// A render-material model whose Stand clip keys nothing and whose materials carry no tracks.
+function stillClipModel() {
+  const model = effectModel()
+  const [material] = model.materials
+  const { standard } = material.shader.parameters.renderModel
+  return {
+    ...model,
+    uvmBytes: undefined,
+    animations: [
+      {
+        id: 'stand',
+        name: 'Stand',
+        kind: 'animation',
+        provenance: 'direct',
+        frames: 2,
+        durationSeconds: 1,
+        looping: true,
+        channels: [],
+      },
+    ],
+    materials: [
+      {
+        ...material,
+        shader: {
+          ...material.shader,
+          parameters: {
+            renderModel: {
+              version: 1,
+              layers: [],
+              standard: { ...standard, layers: { diffuse: standard.layers.diffuse } },
+            },
+          },
+        },
+      },
+    ],
+  }
+}
+
+it('keeps an object whose clip moves neither geometry, materials nor effects while the clock runs', () => {
+  const values = plan =>
+    JSON.stringify(plan, (_, value) => (value instanceof Map ? [...value] : value))
+  const input = { ...world(), models: new Map([['actor', stillClipModel()]]) }
+  const first = createWorldWebGlPlan(input)
+  assert.equal(first.modelMaterialScenes.length, 1)
+  const nextInput = { ...input, timeSeconds: 0.5 }
+  const next = createWorldWebGlPlan(nextInput, first)
+  assert.equal(next.modelMaterialScenes[0], first.modelMaterialScenes[0])
+  assert.equal(next.picking.objects.at(-1), first.picking.objects.at(-1))
+  assert.equal(values(next), values(createWorldWebGlPlan(nextInput)))
+  // The same clip keying the root node moves the geometry: the object follows the clock.
+  const moving = {
+    ...input,
+    models: new Map([
+      [
+        'actor',
+        {
+          ...stillClipModel(),
+          nodes: animatedModel().nodes,
+          skeleton: animatedModel().skeleton,
+          animations: animatedModel().animations,
+        },
+      ],
+    ]),
+  }
+  const movingFirst = createWorldWebGlPlan(moving)
+  const movingNext = createWorldWebGlPlan({ ...moving, timeSeconds: 0.5 }, movingFirst)
+  assert.notEqual(movingNext.modelMaterialScenes[0], movingFirst.modelMaterialScenes[0])
+  assert.equal(values(movingNext), values(createWorldWebGlPlan({ ...moving, timeSeconds: 0.5 })))
+})
+
 it('keeps procedural cliff skirts until the model covering each edge has loaded', () => {
   const terrain = Array.from({ length: 6 }, (_, i) => ({
     facet: 'terrain',
