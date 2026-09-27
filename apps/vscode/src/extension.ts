@@ -314,6 +314,7 @@ import { ExtensionsView } from './extensions-view.js'
 import { HostView } from './host-view.js'
 import { SourcesView } from './sources-view.js'
 import { adoptKeptTickets, adoptReplacedSettings } from './credential-ports.js'
+import { contentSourceRoots } from './content-source-roots.js'
 import {
   AccountsView,
   createEditorCredentialPrompter,
@@ -1004,23 +1005,8 @@ async function activateModkit(
   context.subscriptions.push(containerChanges)
   // The same Explorer accepts local containers and remote VFS roots. This adapter owns no login protocol.
   let contentSources: Promise<ContentSources | undefined> | undefined
-  /** Every extension root of this window once, for the content-source modules they declare. */
-  const extensionRootPaths = (): string[] => {
-    const seen = new Set<string>()
-    return [
-      ...managedExtensionState.roots.map(item => item.root),
-      ...localExtensionCandidates.flatMap(item => (item.root === undefined ? [] : [item.root])),
-      ...configuredExtensionRoots(rawConfiguredExtensions, path => resolve(path)).roots.map(
-        item => item.root,
-      ),
-    ].flatMap(root => {
-      const absolute = resolve(root)
-      const key = process.platform === 'win32' ? absolute.toLowerCase() : absolute
-      if (seen.has(key)) return []
-      seen.add(key)
-      return [absolute]
-    })
-  }
+  /** The roots the inventory loaded, one per extension, for the content-source modules they declare. */
+  const extensionRootPaths = (): string[] => contentSourceRoots(host.services.host.inventory)
   /** The StarCraft II installation the user chose, which its content sources read. */
   const selectedStarcraft2 = (): string | undefined =>
     selectedSources.find(item => item.gameId === 'blizzard/starcraft-2')?.installPath
