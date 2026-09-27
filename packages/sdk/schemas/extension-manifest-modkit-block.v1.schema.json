@@ -98,6 +98,37 @@
             ],
             "type": "object"
           },
+          "replacesSettings": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "contribution": {
+                  "maxLength": 256,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "key": {
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                },
+                "scoped": {
+                  "const": true
+                }
+              },
+              "required": [
+                "contribution",
+                "key"
+              ],
+              "type": "object"
+            },
+            "maxItems": 16,
+            "type": "array"
+          },
+          "scopeFormat": {
+            "enum": [
+              "hex"
+            ]
+          },
           "scoped": {
             "type": "boolean"
           },
