@@ -167,6 +167,37 @@ function worldLightingInputs(
   })
 }
 
+/** A draw's validated model matrix (identity when it has none). */
+export function materialModelMatrix(primitive: SceneRendererPrimitive): Float32Array {
+  return affine(primitive.transform, 'model transform')
+}
+
+/** Inverse-transpose direction matrix of a model matrix and its determinant sign (see `normalMatrix`). */
+export function materialNormalMatrix(matrix: Float32Array): { matrix: Float32Array; sign: number } {
+  return normalMatrix(matrix)
+}
+
+/** The camera- and light-dependent part of `materialGeometry`: one per frame for every draw. */
+export function materialFrameGeometry(
+  camera: SceneRendererCamera,
+  light?: SceneRendererDirectionalLight,
+  worldShading = false,
+) {
+  const view = affine(camera.viewMatrix, 'view transform')
+  const lightDirection = unit(xyz(point(view, unit(light?.direction ?? [0, 0, 1]), 0)))
+  const orthographic =
+    camera.viewProjection[3] === 0 &&
+    camera.viewProjection[7] === 0 &&
+    camera.viewProjection[11] === 0
+  const worldLighting = worldShading ? worldLightingInputs(view, light, orthographic) : undefined
+  return {
+    view,
+    lightDirection,
+    orthographic,
+    ...(worldLighting === undefined ? {} : { worldLighting }),
+  }
+}
+
 /** Both providers consume these same matrices and vertex-space conventions. */
 export function materialGeometry(
   primitive: SceneRendererPrimitive,
@@ -176,8 +207,12 @@ export function materialGeometry(
   environmentEnabled = false,
   worldShading = false,
 ) {
-  const model = affine(primitive.transform, 'model transform'),
-    view = affine(camera.viewMatrix, 'view transform')
+  const model = affine(primitive.transform, 'model transform')
+  const { view, lightDirection, orthographic, worldLighting } = materialFrameGeometry(
+    camera,
+    light,
+    worldShading,
+  )
   const modelView = new Float32Array(16)
   multiplyMat4(modelView, 0, view, 0, model, 0)
   if (!modelView.every(Number.isFinite)) throw new TypeError('model/view transform exceeds float32')
@@ -198,12 +233,6 @@ export function materialGeometry(
   const environmentEye = snapshotEyePosition(camera.eyePosition)
   if (environmentNormal !== undefined && !environmentNormal.matrix.every(Number.isFinite))
     throw new TypeError('scene world normal matrix exceeds float32')
-  const lightDirection = unit(xyz(point(view, unit(light?.direction ?? [0, 0, 1]), 0)))
-  const orthographic =
-    camera.viewProjection[3] === 0 &&
-    camera.viewProjection[7] === 0 &&
-    camera.viewProjection[11] === 0
-  const worldLighting = worldShading ? worldLightingInputs(view, light, orthographic) : undefined
   return {
     model,
     modelView,
@@ -496,21 +525,66 @@ export function prepareMaterialGeometry(
   }
 }
 
+/**
+ * Placement from attributes: four model-matrix columns (codec-kit's instancing names) that an
+ * instanced draw feeds per instance and a single draw sets as constant attribute values. Both then
+ * run the same arithmetic, so coplanar parts of instanced and single draws keep equal depths. The
+ * frames `materialGeometry` computes on the CPU are derived here: the cofactor normal matrices and
+ * determinant signs of model-view, material-world and model.
+ */
+const PLACEMENT_DECLARATIONS = `uniform mat4 u_view, u_worldToMaterial;
+in vec4 a_instanceMatrix0, a_instanceMatrix1, a_instanceMatrix2, a_instanceMatrix3;
+mat3 sceneCofactor(mat3 m){return mat3(cross(m[1],m[2]),cross(m[2],m[0]),cross(m[0],m[1]));}
+float sceneOrientationOf(mat3 m){return dot(m[0],cross(m[1],m[2]))<0.0?-1.0:1.0;}
+`
+
+function placementLocals(worldGeometry: boolean): string {
+  return `
+  mat4 model=mat4(a_instanceMatrix0,a_instanceMatrix1,a_instanceMatrix2,a_instanceMatrix3);
+  mat4 modelView=u_view*model,materialWorld=u_worldToMaterial*model;
+  float orientation=sceneOrientationOf(mat3(modelView));
+  mat3 viewNormalMatrix=sceneCofactor(mat3(modelView))*orientation;
+  mat3 worldNormalMatrix=sceneCofactor(mat3(materialWorld))*sceneOrientationOf(mat3(materialWorld));${worldGeometry ? '\n  float objectOrientation=sceneOrientationOf(mat3(model));\n  mat3 objectNormalMatrix=sceneCofactor(mat3(model))*objectOrientation;' : ''}`
+}
+
 /** Scene vertex stage for the shared fragment contract: normalized inverse-transpose normals,
- * tangent-space lighting, and explicit camera frames. Native shader builders remain immutable. */
+ * tangent-space lighting, and explicit camera frames. Native shader builders remain immutable.
+ * `placementAttributes` takes the model matrix from attributes (see PLACEMENT_DECLARATIONS);
+ * without it the stage reads the per-draw matrices from uniforms. */
 export function sceneMaterialVertexSource(
   defines: StandardMaterialDefines,
   environmentEnabled = false,
   worldShading = false,
+  placementAttributes = false,
 ): string {
   const worldGeometry = environmentEnabled || worldShading
+  const name = placementAttributes
+    ? {
+        model: 'model',
+        modelView: 'modelView',
+        materialWorld: 'materialWorld',
+        worldNormal: 'worldNormalMatrix',
+        viewNormal: 'viewNormalMatrix',
+        orientation: 'orientation',
+        objectNormal: 'objectNormalMatrix',
+        objectOrientation: 'objectOrientation',
+      }
+    : {
+        model: 'u_model',
+        modelView: 'u_modelView',
+        materialWorld: 'u_materialWorld',
+        worldNormal: 'u_worldNormalMatrix',
+        viewNormal: 'u_viewNormalMatrix',
+        orientation: 'u_orientation',
+        objectNormal: 'u_sceneWorldNormalMatrix',
+        objectOrientation: 'u_sceneWorldOrientation',
+      }
   return `#version 300 es
 precision highp float;
-uniform mat4 u_model, u_modelView, u_viewProjection, u_materialWorld;
-uniform mat3 u_worldNormalMatrix, u_viewNormalMatrix;
+${placementAttributes ? 'uniform mat4 u_viewProjection;' : 'uniform mat4 u_model, u_modelView, u_viewProjection, u_materialWorld;\nuniform mat3 u_worldNormalMatrix, u_viewNormalMatrix;'}
 uniform vec3 u_lightDirection;
 ${defines.sceneLighting ? 'uniform vec3 u_sceneFillViewDirection0, u_sceneFillViewDirection1;\nout vec3 v_sceneFillDir0, v_sceneFillDir1;' : ''}
-${worldGeometry ? 'uniform mat3 u_sceneWorldNormalMatrix;\nuniform float u_sceneWorldOrientation;\n' : ''}uniform float u_orientation, u_orthographic;
+${worldGeometry && !placementAttributes ? 'uniform mat3 u_sceneWorldNormalMatrix;\nuniform float u_sceneWorldOrientation;\n' : ''}uniform float ${placementAttributes ? '' : 'u_orientation, '}u_orthographic;
 in vec3 a_position, a_normal; in vec4 a_tangent;
 ${Array.from({ length: defines.uvSetCount }, (_, i) => `in vec2 a_uv${i}; out vec2 v_uv${i};`).join('\n')}
 ${defines.usesVertexAlpha || defines.usesVertexColor ? 'in vec4 a_color; out vec4 v_vertexColor;' : ''}
@@ -518,14 +592,14 @@ out vec3 v_normal, v_lightDir, v_halfVec, v_viewDir, v_viewPosition, v_viewNorma
 out vec3 v_modelPosition, v_modelNormal, v_worldPosition, v_worldNormal;
 ${worldGeometry ? 'out vec3 v_sceneWorldPosition, v_sceneWorldNormal, v_sceneWorldTangent, v_sceneWorldBitangent;\n' : ''}out vec4 v_clipPosition;
 vec3 unit(vec3 v,vec3 fallback){float len=length(v);return len>1e-9?v/len:fallback;}
-void main(){
-  vec4 world=u_model*vec4(a_position,1.0);
-  vec3 view=(u_modelView*vec4(a_position,1.0)).xyz;
-  vec3 n=unit(u_viewNormalMatrix*a_normal,vec3(0.0,0.0,1.0));
-  vec3 rawT=mat3(u_modelView)*a_tangent.xyz;
+${placementAttributes ? PLACEMENT_DECLARATIONS : ''}void main(){${placementAttributes ? placementLocals(worldGeometry) : ''}
+  vec4 world=${name.model}*vec4(a_position,1.0);
+  vec3 view=(${name.modelView}*vec4(a_position,1.0)).xyz;
+  vec3 n=unit(${name.viewNormal}*a_normal,vec3(0.0,0.0,1.0));
+  vec3 rawT=mat3(${name.modelView})*a_tangent.xyz;
   vec3 fallback=unit(cross(abs(n.z)<0.9?vec3(0.0,0.0,1.0):vec3(0.0,1.0,0.0),n),vec3(1.0,0.0,0.0));
   vec3 t=unit(rawT-n*dot(n,rawT),fallback);
-  vec3 b=cross(n,t)*(a_tangent.w<0.0?-1.0:1.0)*u_orientation;
+  vec3 b=cross(n,t)*(a_tangent.w<0.0?-1.0:1.0)*${name.orientation};
   mat3 tbn=transpose(mat3(t,b,n));
   vec3 eye=u_orthographic>0.5?vec3(0.0,0.0,1.0):unit(-view,vec3(0.0,0.0,1.0));
   v_normal=vec3(0.0,0.0,1.0); v_lightDir=tbn*u_lightDirection;
@@ -534,16 +608,16 @@ ${defines.sceneLighting ? '  v_sceneFillDir0=tbn*u_sceneFillViewDirection0; v_sc
   v_viewPosition=u_orthographic>0.5?vec3(0.0,0.0,-1.0):view; v_viewNormal=n;
 ${
   worldGeometry
-    ? `  vec3 sceneN=unit(u_sceneWorldNormalMatrix*a_normal,vec3(0.0,0.0,1.0));
-  vec3 sceneRawT=mat3(u_model)*a_tangent.xyz;
+    ? `  vec3 sceneN=unit(${name.objectNormal}*a_normal,vec3(0.0,0.0,1.0));
+  vec3 sceneRawT=mat3(${name.model})*a_tangent.xyz;
   vec3 sceneFallback=unit(cross(abs(sceneN.z)<0.9?vec3(0.0,0.0,1.0):vec3(0.0,1.0,0.0),sceneN),vec3(1.0,0.0,0.0));
   vec3 sceneT=unit(sceneRawT-sceneN*dot(sceneN,sceneRawT),sceneFallback);
   v_sceneWorldPosition=world.xyz;v_sceneWorldNormal=sceneN;v_sceneWorldTangent=sceneT;
-  v_sceneWorldBitangent=cross(sceneN,sceneT)*(a_tangent.w<0.0?-1.0:1.0)*u_sceneWorldOrientation;
+  v_sceneWorldBitangent=cross(sceneN,sceneT)*(a_tangent.w<0.0?-1.0:1.0)*${name.objectOrientation};
 `
     : ''
 }  v_modelPosition=a_position;v_modelNormal=unit(a_normal,vec3(0.0,0.0,1.0));
-  v_worldPosition=(u_materialWorld*vec4(a_position,1.0)).xyz;v_worldNormal=unit(u_worldNormalMatrix*a_normal,vec3(0.0,0.0,1.0));
+  v_worldPosition=(${name.materialWorld}*vec4(a_position,1.0)).xyz;v_worldNormal=unit(${name.worldNormal}*a_normal,vec3(0.0,0.0,1.0));
   v_clipPosition=u_viewProjection*world;gl_Position=v_clipPosition;
   ${Array.from({ length: defines.uvSetCount }, (_, i) => `v_uv${i}=a_uv${i};`).join('\n')}
   ${defines.usesVertexAlpha || defines.usesVertexColor ? 'v_vertexColor=a_color;' : ''}

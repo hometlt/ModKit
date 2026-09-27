@@ -7,10 +7,31 @@ import {
   type WebGlMaterialProgram,
 } from '../materials/webgl.js'
 import type { StandardMaterialProgram } from '../materials/index.js'
-import { materialGeometry, sceneMaterialVertexSource } from './material-geometry.js'
+import {
+  materialFrameGeometry,
+  materialModelMatrix,
+  materialNormalMatrix,
+  sceneMaterialVertexSource,
+} from './material-geometry.js'
 import { materialIsSolid, type MaterialDraw } from './material-draws.js'
 import { requiresEnvironmentEye, snapshotEyePosition } from '../materials/environment.js'
 import { cubeNearestSamplerSource } from '../materials/cube-maps.js'
+
+/** Placements of one draw's geometry and material: sixteen column-major floats per instance. */
+export interface MaterialInstances {
+  readonly matrices: Float32Array
+  readonly count: number
+}
+
+const IDENTITY_MATRIX = Float32Array.of(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
+const worldToMaterialMatrices = new WeakMap<StandardMaterialProgram, Float32Array>()
+
+/**
+ * Object-space normal maps read the draw's normal matrix per fragment (`u_sceneWorldNormalMatrix`),
+ * which instanced draws derive per vertex; such materials draw one placement at a time.
+ */
+export const materialCanInstance = (program: StandardMaterialProgram) =>
+  program.normalMapSpace !== 'object'
 
 /** Retained GPU program/geometry leases. Scene owns camera matrices and render state. */
 export function materialWebGlDraws(
@@ -43,6 +64,8 @@ export function materialWebGlDraws(
     data: readonly (ArrayBufferView | undefined)[]
     buffers: BufferEntry[]
     constants: { location: number; value: Float32Array }[]
+    /** Model-matrix column attributes; a single draw sets them as constant values. */
+    placement: readonly number[]
     used: boolean
   }
   const retained = new Map<ArrayBufferView, BufferEntry>()
@@ -66,6 +89,7 @@ export function materialWebGlDraws(
     program: WebGLProgram,
     source: StandardMaterialProgram,
     primitive: MaterialDraw['primitive'],
+    instances?: Float32Array,
   ) => {
     const attributes = [
       primitive.positions,
@@ -78,7 +102,7 @@ export function materialWebGlDraws(
         primitive.textureCoordinateSets?.find(uv => uv.set === set)?.coordinates ??
           (set === 0 ? primitive.textureCoordinates : undefined),
       )
-    const data = [...attributes, primitive.indices]
+    const data = [...attributes, primitive.indices, instances]
     const geometries = vertexArrays.get(program)
     const variants = geometries?.get(primitive.positions)
     let entry = variants?.find(
@@ -89,7 +113,14 @@ export function materialWebGlDraws(
     if (entry === undefined) {
       const vao = gl.createVertexArray()
       if (vao === null) throw new TypeError('could not allocate material vertex array')
-      const created: VertexArrayEntry = { vao, data, buffers: [], constants: [], used: true }
+      const created: VertexArrayEntry = {
+        vao,
+        data,
+        buffers: [],
+        constants: [],
+        placement: [],
+        used: true,
+      }
       entry = created
       gl.bindVertexArray(vao)
       try {
@@ -114,6 +145,18 @@ export function materialWebGlDraws(
           attribute(`a_uv${set}`, 4 + set, 2, [0, 0, 0, 1])
         if (primitive.indices !== undefined)
           entry.buffers.push(retainedBuffer(gl.ELEMENT_ARRAY_BUFFER, primitive.indices))
+        created.placement = [0, 1, 2, 3].map(column =>
+          gl.getAttribLocation(program, `a_instanceMatrix${column}`),
+        )
+        if (instances !== undefined) {
+          entry.buffers.push(retainedBuffer(gl.ARRAY_BUFFER, instances))
+          created.placement.forEach((location, column) => {
+            if (location < 0) return
+            gl.enableVertexAttribArray(location)
+            gl.vertexAttribPointer(location, 4, gl.FLOAT, false, 64, column * 16)
+            gl.vertexAttribDivisor(location, 1)
+          })
+        }
       } catch (error) {
         gl.bindVertexArray(null)
         gl.deleteVertexArray(vao)
@@ -130,6 +173,177 @@ export function materialWebGlDraws(
     // Generic attribute values are context state, not VAO state. Other draws/passes can change
     // them, so restore missing normal/tangent/color/UV defaults even when reusing a VAO.
     for (const { location, value } of entry.constants) gl.vertexAttrib4fv(location, value)
+    return entry
+  }
+  const leaseFor = (
+    source: StandardMaterialProgram,
+    material: NonNullable<MaterialDraw['material']>,
+  ): WebGlMaterialProgram => {
+    usedPrograms.add(source)
+    let lease = programs.get(source)
+    if (lease === undefined) {
+      const bound = new Map<string, WebGLTexture>()
+      for (const [resource, texture] of material.textures) {
+        const handle = textures.get(texture.id)
+        if (handle === undefined) throw new TypeError(`GPU material texture missing: ${resource}`)
+        bound.set(resource, handle)
+      }
+      const { vertexSource, fragmentSource, filters } = leaseShaderSources(source, material)
+      lease = createWebGlMaterialProgram(gl, { ...source, vertexSource, fragmentSource }, bound, {
+        filters,
+        programCache: linked,
+        pendingPrograms,
+        ...(options.mipmaps === true ? { mipmaps: true } : {}),
+      })
+      programCompilations += 1
+      programs.set(source, lease)
+    }
+    return lease
+  }
+  const topologyMode = (primitive: MaterialDraw['primitive']) =>
+    primitive.topology === 'triangles'
+      ? gl.TRIANGLES
+      : primitive.topology === 'triangle-strip'
+        ? gl.TRIANGLE_STRIP
+        : primitive.topology === 'triangle-fan'
+          ? gl.TRIANGLE_FAN
+          : undefined
+  /** Camera frame of the placement vertex stage; returns the frame for the world-shading inputs. */
+  const bindCameraFrame = (
+    program: WebGLProgram,
+    source: StandardMaterialProgram,
+    camera: SceneRendererCamera,
+    light: MaterialSceneLight | undefined,
+    worldShading: boolean,
+  ) => {
+    const uniform = (name: string) => uniformLocation(gl, program, name)
+    const frame = materialFrameGeometry(camera, light, worldShading)
+    let worldToMaterial = worldToMaterialMatrices.get(source)
+    if (worldToMaterial === undefined)
+      worldToMaterialMatrices.set(
+        source,
+        (worldToMaterial =
+          source.worldToMaterial === undefined
+            ? IDENTITY_MATRIX
+            : Float32Array.from(source.worldToMaterial)),
+      )
+    gl.uniformMatrix4fv(uniform('u_view'), false, frame.view)
+    gl.uniformMatrix4fv(uniform('u_worldToMaterial'), false, worldToMaterial)
+    gl.uniformMatrix4fv(uniform('u_viewProjection'), false, camera.viewProjection)
+    gl.uniform3fv(uniform('u_lightDirection'), frame.lightDirection)
+    gl.uniform1f(uniform('u_orthographic'), frame.orthographic ? 1 : 0)
+    return frame
+  }
+  const bindSceneLight = (
+    program: WebGLProgram,
+    source: StandardMaterialProgram,
+    camera: SceneRendererCamera,
+    light: MaterialSceneLight | undefined,
+  ) => {
+    if (source.defines.sceneLighting !== true) return
+    const uniform = (name: string) => uniformLocation(gl, program, name)
+    const color = light?.color ?? [1, 1, 1, 1]
+    const ambient = light?.ambient ?? 0.25
+    gl.uniform3f(uniform('u_sceneLightColor'), color[0], color[1], color[2])
+    gl.uniform3fv(uniform('u_sceneSpecularColor'), light?.specularColor ?? color.slice(0, 3))
+    gl.uniform3fv(uniform('u_sceneAmbientColor'), light?.ambientColor ?? [ambient, ambient, ambient])
+    for (let index = 0; index < 2; index++) {
+      const fill = light?.fills?.[index]
+      const direction = fill?.direction ?? [0, 0, 0]
+      const length = Math.hypot(...direction) || 1
+      const d = direction.map(value => value / length)
+      const view = camera.viewMatrix
+      const inView = view === undefined ? d : [
+        view[0]! * d[0]! + view[4]! * d[1]! + view[8]! * d[2]!,
+        view[1]! * d[0]! + view[5]! * d[1]! + view[9]! * d[2]!,
+        view[2]! * d[0]! + view[6]! * d[1]! + view[10]! * d[2]!,
+      ]
+      gl.uniform3fv(uniform(`u_sceneFillViewDirection${index}`), inView)
+      gl.uniform3fv(uniform(`u_sceneFillWorldDirection${index}`), d)
+      gl.uniform3fv(uniform(`u_sceneFillColor${index}`), fill?.color ?? [0, 0, 0])
+    }
+  }
+  /** Environment eye and world-shading frame: per frame, not per placement. */
+  const bindSceneFrame = (
+    program: WebGLProgram,
+    source: StandardMaterialProgram,
+    eyePosition: ReturnType<typeof snapshotEyePosition>,
+    worldShading: boolean,
+    lighting: ReturnType<typeof materialFrameGeometry>['worldLighting'],
+  ) => {
+    const uniform = (name: string) => uniformLocation(gl, program, name)
+    if (source.environment !== undefined)
+      gl.uniform3fv(uniform('u_sceneEyePosition'), eyePosition ?? [0, 0, 0])
+    if (!worldShading) return
+    if (lighting === undefined) throw new TypeError('missing scene world lighting inputs')
+    gl.uniform3fv(uniform('u_sceneLightDirection'), lighting.lightDirection)
+    gl.uniform3fv(uniform('u_sceneLightingEye'), lighting.eyePosition)
+    gl.uniform3fv(uniform('u_sceneLightingViewDirection'), lighting.viewDirection)
+    gl.uniform1f(uniform('u_sceneLightingOrthographic'), lighting.orthographic ? 1 : 0)
+  }
+  const applyDrawState = (
+    source: StandardMaterialProgram,
+    primitive: MaterialDraw['primitive'],
+    depthOnly: boolean,
+  ) => {
+    gl.colorMask(!depthOnly, !depthOnly, !depthOnly, !depthOnly)
+    gl.depthMask(depthOnly || materialIsSolid(source))
+    gl.enable(gl.DEPTH_TEST)
+    gl.depthFunc(gl.LEQUAL)
+    applyWebGlDepthBias(gl, primitive.depthBias)
+    if (source.twoSided) gl.disable(gl.CULL_FACE)
+    else {
+      gl.enable(gl.CULL_FACE)
+      gl.cullFace(gl.BACK)
+      gl.frontFace(gl.CCW)
+    }
+    if (materialIsSolid(source) || depthOnly) gl.disable(gl.BLEND)
+    else {
+      gl.enable(gl.BLEND)
+      gl.blendEquation(gl.FUNC_ADD)
+      switch (source.blend) {
+        case 'blend':
+          gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
+          break
+        case 'premultiplied':
+          gl.blendFuncSeparate(gl.ONE, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
+          break
+        case 'additive':
+          gl.blendFuncSeparate(gl.ONE, gl.ONE, gl.ZERO, gl.ONE)
+          break
+        case 'add-alpha':
+          gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE, gl.ZERO, gl.ONE)
+          break
+        case 'modulate':
+          gl.blendFuncSeparate(gl.ZERO, gl.SRC_COLOR, gl.ZERO, gl.ONE)
+          break
+        case 'modulate2x':
+          gl.blendFuncSeparate(gl.DST_COLOR, gl.SRC_COLOR, gl.ZERO, gl.ONE)
+          break
+      }
+    }
+  }
+  const submit = (mode: number, primitive: MaterialDraw['primitive'], instances?: number) => {
+    const count = primitive.indices?.length ?? primitive.positions.length / 3
+    if (instances === undefined) {
+      if (primitive.indices === undefined) gl.drawArrays(mode, 0, count)
+      else gl.drawElements(mode, count, gl.UNSIGNED_INT, 0)
+    } else if (primitive.indices === undefined) gl.drawArraysInstanced(mode, 0, count, instances)
+    else gl.drawElementsInstanced(mode, count, gl.UNSIGNED_INT, 0, instances)
+    drawCalls += 1
+    if (options.checkEachDraw !== false) {
+      const error = gl.getError()
+      if (error !== gl.NO_ERROR) throw new TypeError(`material WebGL draw failed (${error})`)
+    }
+    const triangles =
+      primitive.topology === 'triangles' ? Math.floor(count / 3) : Math.max(0, count - 2)
+    return triangles * (instances ?? 1)
+  }
+  const unbind = (source: StandardMaterialProgram) => {
+    for (let unit = 0; unit < source.textures.length; unit++) gl.bindSampler(unit, null)
+    gl.bindVertexArray(null)
+    gl.colorMask(true, true, true, true)
+    gl.disable(gl.CULL_FACE)
   }
   return {
     programCompilations: () => programCompilations,
@@ -208,185 +422,100 @@ export function materialWebGlDraws(
         }
       }
     },
-    draw(
-      draw: MaterialDraw,
-      camera: SceneRendererCamera,
-      light?: SceneRendererDirectionalLight & {
-        /** Scene lighting ambient color; defaults to the scalar `ambient` as gray. */
-        readonly ambientColor?: readonly [number, number, number]
-        readonly specularColor?: readonly [number, number, number]
-        readonly fills?: readonly { readonly direction: readonly [number, number, number]; readonly color: readonly [number, number, number] }[]
-      },
-    ): number {
+    draw(draw: MaterialDraw, camera: SceneRendererCamera, light?: MaterialSceneLight): number {
       const { program: source, material, primitive } = draw
       if (source === undefined || material === undefined)
         throw new TypeError('missing GPU material')
-      const environmentEnabled = source.environment !== undefined
       const worldShading =
         source.normalBlendPolicy !== undefined || source.normalMapSpace === 'object'
       const eyePosition = snapshotEyePosition(camera.eyePosition)
       if (requiresEnvironmentEye(source) && eyePosition === undefined)
         throw new TypeError('explicit reflection environment requires eyePosition')
-      const mode =
-        primitive.topology === 'triangles'
-          ? gl.TRIANGLES
-          : primitive.topology === 'triangle-strip'
-            ? gl.TRIANGLE_STRIP
-            : primitive.topology === 'triangle-fan'
-              ? gl.TRIANGLE_FAN
-              : undefined
+      const mode = topologyMode(primitive)
       if (mode === undefined) return 0
-      usedPrograms.add(source)
-      let lease = programs.get(source)
-      if (lease === undefined) {
-        const bound = new Map<string, WebGLTexture>()
-        for (const [resource, texture] of material.textures) {
-          const handle = textures.get(texture.id)
-          if (handle === undefined) throw new TypeError(`GPU material texture missing: ${resource}`)
-          bound.set(resource, handle)
-        }
-        const { vertexSource, fragmentSource, filters } = leaseShaderSources(source, material)
-        lease = createWebGlMaterialProgram(gl, { ...source, vertexSource, fragmentSource }, bound, {
-          filters,
-          programCache: linked,
-          pendingPrograms,
-          ...(options.mipmaps === true ? { mipmaps: true } : {}),
-        })
-        programCompilations += 1
-        programs.set(source, lease)
-      }
+      const model = materialModelMatrix(primitive)
+      const lease = leaseFor(source, material)
       try {
-        bindGeometry(lease.program, source, primitive)
+        const geometry = bindGeometry(lease.program, source, primitive)
         lease.bind()
-        gl.uniform4fv(
-          uniformLocation(gl, lease.program, 'u_instanceTint'),
-          primitiveTint(primitive) as number[],
-        )
-        const program = lease.program,
-          geometry = materialGeometry(
-            primitive,
-            camera,
-            light,
-            source.worldToMaterial,
-            environmentEnabled,
-            worldShading,
-          )
-        const uniform = (name: string) => uniformLocation(gl, program, name)
-        gl.uniformMatrix4fv(uniform('u_model'), false, geometry.model)
-        gl.uniformMatrix4fv(uniform('u_modelView'), false, geometry.modelView)
-        gl.uniformMatrix4fv(uniform('u_materialWorld'), false, geometry.materialWorld)
-        gl.uniformMatrix4fv(uniform('u_viewProjection'), false, camera.viewProjection)
-        gl.uniformMatrix3fv(uniform('u_worldNormalMatrix'), false, geometry.worldNormal)
-        gl.uniformMatrix3fv(uniform('u_viewNormalMatrix'), false, geometry.viewNormal)
-        gl.uniform3fv(uniform('u_lightDirection'), geometry.lightDirection)
-        gl.uniform1f(uniform('u_orientation'), geometry.orientation)
-        gl.uniform1f(uniform('u_orthographic'), geometry.orthographic ? 1 : 0)
-        if (source.defines.sceneLighting === true) {
-          const color = light?.color ?? [1, 1, 1, 1]
-          const ambient = light?.ambient ?? 0.25
-          gl.uniform3f(uniform('u_sceneLightColor'), color[0], color[1], color[2])
-          gl.uniform3fv(uniform('u_sceneSpecularColor'), light?.specularColor ?? color.slice(0, 3))
-          gl.uniform3fv(
-            uniform('u_sceneAmbientColor'),
-            light?.ambientColor ?? [ambient, ambient, ambient],
-          )
-          for (let index = 0; index < 2; index++) {
-            const fill = light?.fills?.[index]
-            const direction = fill?.direction ?? [0, 0, 0]
-            const length = Math.hypot(...direction) || 1
-            const d = direction.map(value => value / length)
-            const view = camera.viewMatrix
-            const inView = view === undefined ? d : [
-              view[0]! * d[0]! + view[4]! * d[1]! + view[8]! * d[2]!,
-              view[1]! * d[0]! + view[5]! * d[1]! + view[9]! * d[2]!,
-              view[2]! * d[0]! + view[6]! * d[1]! + view[10]! * d[2]!,
-            ]
-            gl.uniform3fv(uniform(`u_sceneFillViewDirection${index}`), inView)
-            gl.uniform3fv(uniform(`u_sceneFillWorldDirection${index}`), d)
-            gl.uniform3fv(uniform(`u_sceneFillColor${index}`), fill?.color ?? [0, 0, 0])
-          }
-        }
-        if (environmentEnabled || worldShading) {
-          if (
-            geometry.environmentNormalMatrix === undefined ||
-            geometry.environmentOrientation === undefined
-          )
-            throw new TypeError('missing scene world geometry frame')
+        const program = lease.program
+        // The placement vertex stage reads the model matrix from attributes: constants here.
+        geometry.placement.forEach((location, column) => {
+          if (location >= 0) gl.vertexAttrib4fv(location, model.subarray(column * 4, column * 4 + 4))
+        })
+        gl.uniform4fv(uniformLocation(gl, program, 'u_instanceTint'), primitiveTint(primitive) as number[])
+        const frame = bindCameraFrame(program, source, camera, light, worldShading)
+        bindSceneLight(program, source, camera, light)
+        // Object-space normal maps turn the decoded normal by the model's normal matrix per fragment.
+        if (source.normalMapSpace === 'object')
           gl.uniformMatrix3fv(
-            uniform('u_sceneWorldNormalMatrix'),
+            uniformLocation(gl, program, 'u_sceneWorldNormalMatrix'),
             false,
-            geometry.environmentNormalMatrix,
+            materialNormalMatrix(model).matrix,
           )
-          gl.uniform1f(uniform('u_sceneWorldOrientation'), geometry.environmentOrientation)
-        }
-        if (environmentEnabled)
-          gl.uniform3fv(uniform('u_sceneEyePosition'), eyePosition ?? [0, 0, 0])
-        if (worldShading) {
-          const lighting = geometry.worldLighting
-          if (lighting === undefined) throw new TypeError('missing scene world lighting inputs')
-          gl.uniform3fv(uniform('u_sceneLightDirection'), lighting.lightDirection)
-          gl.uniform3fv(uniform('u_sceneLightingEye'), lighting.eyePosition)
-          gl.uniform3fv(uniform('u_sceneLightingViewDirection'), lighting.viewDirection)
-          gl.uniform1f(uniform('u_sceneLightingOrthographic'), lighting.orthographic ? 1 : 0)
-        }
-        gl.colorMask(!draw.depthOnly, !draw.depthOnly, !draw.depthOnly, !draw.depthOnly)
-        gl.depthMask(draw.depthOnly === true || materialIsSolid(source))
-        gl.enable(gl.DEPTH_TEST)
-        gl.depthFunc(gl.LEQUAL)
-        applyWebGlDepthBias(gl, primitive.depthBias)
-        if (source.twoSided) gl.disable(gl.CULL_FACE)
-        else {
-          gl.enable(gl.CULL_FACE)
-          gl.cullFace(gl.BACK)
-          gl.frontFace(gl.CCW)
-        }
-        if (materialIsSolid(source) || draw.depthOnly) gl.disable(gl.BLEND)
-        else {
-          gl.enable(gl.BLEND)
-          gl.blendEquation(gl.FUNC_ADD)
-          switch (source.blend) {
-            case 'blend':
-              gl.blendFuncSeparate(
-                gl.SRC_ALPHA,
-                gl.ONE_MINUS_SRC_ALPHA,
-                gl.ONE,
-                gl.ONE_MINUS_SRC_ALPHA,
-              )
-              break
-            case 'premultiplied':
-              gl.blendFuncSeparate(gl.ONE, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
-              break
-            case 'additive':
-              gl.blendFuncSeparate(gl.ONE, gl.ONE, gl.ZERO, gl.ONE)
-              break
-            case 'add-alpha':
-              gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE, gl.ZERO, gl.ONE)
-              break
-            case 'modulate':
-              gl.blendFuncSeparate(gl.ZERO, gl.SRC_COLOR, gl.ZERO, gl.ONE)
-              break
-            case 'modulate2x':
-              gl.blendFuncSeparate(gl.DST_COLOR, gl.SRC_COLOR, gl.ZERO, gl.ONE)
-              break
-          }
-        }
-        const count = primitive.indices?.length ?? primitive.positions.length / 3
-        if (primitive.indices === undefined) gl.drawArrays(mode, 0, count)
-        else gl.drawElements(mode, count, gl.UNSIGNED_INT, 0)
-        drawCalls += 1
-        if (options.checkEachDraw !== false) {
-          const error = gl.getError()
-          if (error !== gl.NO_ERROR) throw new TypeError(`material WebGL draw failed (${error})`)
-        }
-        return primitive.topology === 'triangles' ? Math.floor(count / 3) : Math.max(0, count - 2)
+        bindSceneFrame(program, source, eyePosition, worldShading, frame.worldLighting)
+        applyDrawState(source, primitive, draw.depthOnly === true)
+        return submit(mode, primitive)
       } finally {
-        for (let unit = 0; unit < source.textures.length; unit++) gl.bindSampler(unit, null)
-        gl.bindVertexArray(null)
-        gl.colorMask(true, true, true, true)
-        gl.disable(gl.CULL_FACE)
+        unbind(source)
+      }
+    },
+    /**
+     * One draw for every placement in `instances`: the model matrix comes from per-instance
+     * attributes and the vertex stage derives the normal matrices and signs from it. Everything else
+     * — material, tint, depth bias, pipeline state — is the draw's, shared by all placements.
+     */
+    drawInstanced(
+      draw: MaterialDraw,
+      instances: MaterialInstances,
+      camera: SceneRendererCamera,
+      light?: MaterialSceneLight,
+    ): number {
+      const { program: source, material, primitive } = draw
+      if (source === undefined || material === undefined)
+        throw new TypeError('missing GPU material')
+      if (!materialCanInstance(source))
+        throw new TypeError('object-space normal materials cannot be instanced')
+      if (camera.viewMatrix === undefined)
+        throw new TypeError('instanced material draws require a view matrix')
+      if (
+        !Number.isSafeInteger(instances.count) ||
+        instances.count < 0 ||
+        instances.matrices.length < instances.count * 16
+      )
+        throw new TypeError('invalid material instances')
+      const worldShading = source.normalBlendPolicy !== undefined
+      const eyePosition = snapshotEyePosition(camera.eyePosition)
+      if (requiresEnvironmentEye(source) && eyePosition === undefined)
+        throw new TypeError('explicit reflection environment requires eyePosition')
+      const mode = topologyMode(primitive)
+      if (mode === undefined || instances.count === 0) return 0
+      const lease = leaseFor(source, material)
+      try {
+        bindGeometry(lease.program, source, primitive, instances.matrices)
+        lease.bind()
+        const program = lease.program
+        gl.uniform4fv(uniformLocation(gl, program, 'u_instanceTint'), primitiveTint(primitive) as number[])
+        const frame = bindCameraFrame(program, source, camera, light, worldShading)
+        bindSceneLight(program, source, camera, light)
+        bindSceneFrame(program, source, eyePosition, worldShading, frame.worldLighting)
+        applyDrawState(source, primitive, draw.depthOnly === true)
+        return submit(mode, primitive, instances.count)
+      } finally {
+        unbind(source)
       }
     },
   }
+}
+
+/** Scene lighting for material draws; `ambientColor` defaults to the scalar `ambient` as gray. */
+export type MaterialSceneLight = SceneRendererDirectionalLight & {
+  readonly ambientColor?: readonly [number, number, number]
+  readonly specularColor?: readonly [number, number, number]
+  readonly fills?: readonly {
+    readonly direction: readonly [number, number, number]
+    readonly color: readonly [number, number, number]
+  }[]
 }
 import { primitiveTint } from './tint.js'
 
@@ -456,10 +585,12 @@ function leaseShaderSources(
       ? (source.defines.sceneLighting ? '' : 'materialColor.rgb=clamp(materialColor.rgb,0.0,1.0);') + 'materialColor.a=1.0;'
       : '') +
     '}\n'
+  // One program serves single and instanced draws: both read the placement from attributes.
   const vertexSource = sceneMaterialVertexSource(
     source.defines,
     source.environment !== undefined,
     worldShading,
+    true,
   )
   return { vertexSource, fragmentSource, filters }
 }

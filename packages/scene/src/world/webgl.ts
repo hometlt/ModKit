@@ -22,7 +22,12 @@ import type { SceneRendererMaterialContext } from '@modkit/sdk/renderer'
 import { boundsOf } from '@modkit/codec-kit/model/bounds'
 import { createModelSceneSampler } from '../model/index.js'
 import { createUvmEffectSource, type UvmEffectSource } from '../uvm/effect-source.js'
-import { materialWebGlDraws } from '../render/material-webgl.js'
+import {
+  materialCanInstance,
+  materialWebGlDraws,
+  type MaterialInstances,
+} from '../render/material-webgl.js'
+import { primitiveTint } from '../render/tint.js'
 import { materialIsSolid, sceneMaterialDraws, type MaterialDraw } from '../render/material-draws.js'
 import { prepareSceneMaterialPrograms, type SceneMaterialPrograms } from '../render/materials.js'
 import { applyTextureFilter } from '../render/texture-filtering.js'
@@ -4968,29 +4973,10 @@ function renderWorldShadowMap(
         ] as const,
       }
       const sceneLight = worldMaterialLight(plan)
-      for (const scene of plan.modelMaterialScenes)
-        for (const draw of sceneMaterialDraws(
-          scene.shadowPrimitives,
-          scene.materials,
-          scene.programs,
-          viewProjection,
-          [],
-          1,
-        )) {
-          if (draw.program === undefined || !materialIsSolid(draw.program)) continue
-          resources.materialDraws.draw(
-            {
-              ...draw,
-              primitive: {
-                ...draw.primitive,
-                depthBias: { slopeScale: 1.1, units: 4 },
-              },
-              depthOnly: true,
-            },
-            sceneCamera,
-            sceneLight,
-          )
-        }
+      const casters = worldMaterialBatchesOf(plan, true)
+      for (const group of casters.groups)
+        resources.materialDraws.drawInstanced(group.draw, group.instances, sceneCamera, sceneLight)
+      for (const draw of casters.singles) resources.materialDraws.draw(draw, sceneCamera, sceneLight)
       gl.colorMask(false, false, false, false)
     }
     assertNoWebGlError(gl, 'shadow-map pass')
@@ -6208,6 +6194,138 @@ function pickWorldWebGlPlan(
   return nearest
 }
 
+export interface WorldWebGlMaterialGroup {
+  readonly draw: MaterialDraw & { readonly program: NonNullable<MaterialDraw['program']> }
+  readonly instances: MaterialInstances
+}
+
+export interface WorldWebGlMaterialBatches {
+  /** Instanced draws, in the order their first placement appears in the plan. */
+  readonly groups: readonly WorldWebGlMaterialGroup[]
+  /** Solid draws of materials that cannot instance, one placement each. */
+  readonly singles: readonly MaterialDraw[]
+  /** Scenes with a blended pass: those passes keep their per-frame back-to-front order. */
+  readonly transparentScenes: readonly WorldWebGlModelMaterialScene[]
+}
+
+/**
+ * The draws of one blended material pass. A depth prepass fills the pass's depth right before its
+ * colour, after every solid draw and every blended draw behind it: the pass then shows only its
+ * nearest surface over the scene behind it, as in MK2. A solid pass writes its own depth and needs
+ * no prepass; drawing prepasses with the solid passes instead would hide whatever solid draw came
+ * later behind a translucent surface, so the picture would depend on the order of placements.
+ */
+export function worldBlendedMaterialPasses<Draw extends MaterialDraw>(draw: Draw): readonly Draw[] {
+  return draw.program?.depthPrepass === true && !materialIsSolid(draw.program)
+    ? [{ ...draw, depthOnly: true }, draw]
+    : [draw]
+}
+
+const IDENTITY_VIEW_PROJECTION = new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1])
+const worldMaterialBatches = new WeakMap<WorldWebGlPlan, WorldWebGlMaterialBatches>()
+const worldShadowMaterialBatches = new WeakMap<WorldWebGlPlan, WorldWebGlMaterialBatches>()
+const SHADOW_DEPTH_BIAS = Object.freeze({ slopeScale: 1.1, units: 4 })
+
+/**
+ * Solid (opaque and alpha-tested) material draws of a plan, grouped by everything one instanced
+ * draw shares: program, material, geometry, depth bias and tint. With depth writes the order of
+ * solid passes does not decide the picture, so every placement of a group draws at once. Depth
+ * prepasses are left to their blended passes (`worldBlendedMaterialPasses`). `shadow` builds the
+ * depth-only casters of the shadow map instead.
+ */
+function groupWorldMaterialDraws(plan: WorldWebGlPlan, shadow: boolean): WorldWebGlMaterialBatches {
+  const ids = new Map<object, number>()
+  const id = (value: object | undefined) => {
+    if (value === undefined) return '-'
+    let known = ids.get(value)
+    if (known === undefined) ids.set(value, (known = ids.size))
+    return String(known)
+  }
+  const groups = new Map<
+    string,
+    { draw: WorldWebGlMaterialGroup['draw']; transforms: Float32Array[]; seen: Set<Float32Array> }
+  >()
+  const singles: MaterialDraw[] = []
+  const transparentScenes: WorldWebGlModelMaterialScene[] = []
+  for (const scene of plan.modelMaterialScenes) {
+    let transparent = false
+    for (const found of sceneMaterialDraws(
+      shadow ? scene.shadowPrimitives : scene.primitives,
+      scene.materials,
+      scene.programs,
+      IDENTITY_VIEW_PROJECTION,
+      [],
+      1,
+    )) {
+      const program = found.program
+      if (program === undefined || found.depthOnly === true) continue
+      if (!materialIsSolid(program)) {
+        transparent = true
+        continue
+      }
+      const draw = shadow
+        ? {
+            ...found,
+            program,
+            primitive: { ...found.primitive, depthBias: SHADOW_DEPTH_BIAS },
+            depthOnly: true,
+          }
+        : { ...found, program }
+      if (!materialCanInstance(program)) {
+        singles.push(draw)
+        continue
+      }
+      const primitive = draw.primitive
+      const bias = primitive.depthBias
+      const key = [
+        id(program),
+        id(draw.material),
+        draw.depthOnly === true ? 'depth' : 'colour',
+        primitive.topology,
+        id(primitive.positions),
+        id(primitive.normals),
+        id(primitive.tangents),
+        id(primitive.colors),
+        id(primitive.textureCoordinates),
+        ...(primitive.textureCoordinateSets ?? []).map(set => `${set.set}:${id(set.coordinates)}`),
+        id(primitive.indices),
+        bias === undefined ? '-' : `${bias.slopeScale}:${bias.units}`,
+        primitiveTint(primitive).join(':'),
+      ].join('|')
+      let group = groups.get(key)
+      if (group === undefined) groups.set(key, (group = { draw, transforms: [], seen: new Set() }))
+      const transform = primitive.transform ?? IDENTITY_VIEW_PROJECTION
+      // A primitive drawn twice into the same depth (two solid passes) writes it once.
+      if (shadow && group.seen.has(transform)) continue
+      group.seen.add(transform)
+      group.transforms.push(transform)
+    }
+    if (transparent && !shadow) transparentScenes.push(scene)
+  }
+  return Object.freeze({
+    groups: Object.freeze(
+      [...groups.values()].map(({ draw, transforms }) => {
+        const matrices = new Float32Array(transforms.length * 16)
+        transforms.forEach((transform, index) => matrices.set(transform, index * 16))
+        return Object.freeze({ draw, instances: Object.freeze({ matrices, count: transforms.length }) })
+      }),
+    ),
+    singles: Object.freeze(singles),
+    transparentScenes: Object.freeze(transparentScenes),
+  })
+}
+
+/** A plan's material draws as the renderer submits them; retained with the plan. */
+export function worldMaterialBatchesOf(
+  plan: WorldWebGlPlan,
+  shadow = false,
+): WorldWebGlMaterialBatches {
+  const cache = shadow ? worldShadowMaterialBatches : worldMaterialBatches
+  let batches = cache.get(plan)
+  if (batches === undefined) cache.set(plan, (batches = groupWorldMaterialDraws(plan, shadow)))
+  return batches
+}
+
 function drawWorldWebGlWithResources(
   canvas: HTMLCanvasElement,
   input: WorldWebGlInput,
@@ -6359,11 +6477,13 @@ function drawWorldWebGlWithResources(
     gl.uniform1f(uniformLocation(gl, program, 'shadowReceiver'), 1)
     for (const item of plan.splatTriangles) drawSplatBatch(resources, program, item)
     const sceneLight = worldMaterialLight(plan)
-    const materialSceneDraws: Array<{
+    const batches = worldMaterialBatchesOf(plan)
+    // Blended passes keep the per-frame back-to-front order of their scene.
+    const transparentSceneDraws: Array<{
       scene: WorldWebGlModelMaterialScene
-      draw: MaterialDraw
+      draw: MaterialDraw & { readonly program: NonNullable<MaterialDraw['program']> }
     }> = []
-    for (const scene of plan.modelMaterialScenes)
+    for (const scene of batches.transparentScenes)
       for (const draw of sceneMaterialDraws(
         scene.primitives,
         scene.materials,
@@ -6372,20 +6492,20 @@ function drawWorldWebGlWithResources(
         [],
         1,
       ))
-        materialSceneDraws.push({ scene, draw })
+        if (draw.depthOnly !== true && draw.program !== undefined && !materialIsSolid(draw.program))
+          transparentSceneDraws.push({ scene, draw: { ...draw, program: draw.program } })
     const effectDraws = worldModelEffectDraws(plan, sceneCamera)
     // Issue every program this frame needs before the first draw, so they compile in parallel.
     resources.materialDraws.warm([
-      ...materialSceneDraws.map(entry => entry.draw),
+      ...batches.groups.map(group => group.draw),
+      ...batches.singles,
+      ...transparentSceneDraws.map(entry => entry.draw),
       ...effectDraws.map(entry => entry.draw),
     ])
-    if (materialSceneDraws.length > 0) {
-      for (const { draw } of materialSceneDraws)
-        if (
-          draw.depthOnly === true ||
-          (draw.program !== undefined && materialIsSolid(draw.program))
-        )
-          resources.materialDraws.draw(draw, sceneCamera, sceneLight)
+    if (batches.groups.length + batches.singles.length > 0) {
+      for (const group of batches.groups)
+        resources.materialDraws.drawInstanced(group.draw, group.instances, sceneCamera, sceneLight)
+      for (const draw of batches.singles) resources.materialDraws.draw(draw, sceneCamera, sceneLight)
       gl.useProgram(program)
       gl.disable(gl.POLYGON_OFFSET_FILL)
     }
@@ -6441,14 +6561,7 @@ function drawWorldWebGlWithResources(
       gl.uniform1f(uniformLocation(gl, program, 'waterDepthMode'), 0)
       assertNoWebGlError(gl, 'water pass')
     }
-    const transparentMaterialDraws = [
-      ...materialSceneDraws.flatMap(({ scene, draw }) =>
-        draw.depthOnly !== true && draw.program !== undefined && !materialIsSolid(draw.program)
-          ? [{ scene, draw: { ...draw, program: draw.program } }]
-          : [],
-      ),
-      ...effectDraws,
-    ]
+    const transparentMaterialDraws = [...transparentSceneDraws, ...effectDraws]
     for (const entry of createWorldWebGlCompositeTransparentDrawPlan(
       plan,
       input.camera,
@@ -6456,7 +6569,8 @@ function drawWorldWebGlWithResources(
       waterByDepth,
     )) {
       if (entry.kind === 'material') {
-        resources.materialDraws.draw(entry.draw, sceneCamera, sceneLight)
+        for (const draw of worldBlendedMaterialPasses(entry.draw))
+          resources.materialDraws.draw(draw, sceneCamera, sceneLight)
         continue
       }
       const item = entry.draw

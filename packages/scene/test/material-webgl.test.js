@@ -193,7 +193,8 @@ it('shares a VAO across placed instances, new uniform leases and frames without 
   assert.equal(calls.get('deleteVertexArray') ?? 0, 0)
   assert.equal(calls.get('vertexAttribPointer'), pointerCalls)
   assert.equal(calls.get('bindBuffer'), bindings)
-  assert.equal(calls.get('getAttribLocation'), 5)
+  // Five vertex attributes and four placement columns, looked up once for the one VAO.
+  assert.equal(calls.get('getAttribLocation'), 9)
   assert.equal(renderer.drawCalls(), 1001)
   assert.deepEqual(renderer.stats(), firstStats)
   assert.deepEqual(submissions.at(-1).constants.get(3), [1, 1, 1, 1])
