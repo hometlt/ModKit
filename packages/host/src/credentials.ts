@@ -235,6 +235,7 @@ export function createCredentialBroker(options: CredentialBrokerOptions): Creden
   // A refresh token may be single-use (Roblox): one refresh per key at a time, and the new token is
   // stored before anyone else reads the key again.
   const refreshing = new Map<string, Promise<string | undefined>>()
+  const acquiring = new Map<string, Promise<CredentialStatus>>()
   /** A live access token, refreshed when it has run out; undefined when there is none. */
   const accessToken = async (
     entry: DeclaredCredential,
@@ -449,7 +450,20 @@ export function createCredentialBroker(options: CredentialBrokerOptions): Creden
       }
       return Object.freeze<CredentialPort>({
         status: async (id, scope) => status(own(id), scope),
-        acquire: async (id, acquireOptions, signal) => acquire(own(id), acquireOptions, signal),
+        async acquire(id, acquireOptions, signal) {
+          const entry = own(id)
+          if (!acquireOptions.interactive) return acquire(entry, acquireOptions, signal)
+          // one interactive sign-in per credential at a time: a second request waits for the first
+          // (a fixed loopback port cannot be taken twice)
+          const key = keyOf(entry.requirement, acquireOptions.scope)
+          const pending = acquiring.get(key)
+          if (pending !== undefined) return pending
+          const attempt = acquire(entry, acquireOptions, signal).finally(() =>
+            acquiring.delete(key),
+          )
+          acquiring.set(key, attempt)
+          return attempt
+        },
         fetch: async (id, request, signal) => fetchWith(own(id), request, signal),
         secret: async (id, scope) => secret(own(id), scope),
         async remember(id, value, scope) {

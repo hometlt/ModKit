@@ -254,6 +254,33 @@ describe('credential broker', () => {
     expect(values.has('modkit.credential/acme/oauth')).toBe(false)
   })
 
+  it('runs one interactive sign-in per credential; a second request waits for it', async () => {
+    const { store } = memoryStore()
+    let finish: () => void = () => undefined
+    const oauth: OAuth2Engine = {
+      authorize: vi.fn(
+        () =>
+          new Promise(resolve => {
+            finish = () => resolve({ accessToken: 'access-0' })
+          }),
+      ),
+      refresh: vi.fn(),
+    }
+    const port = createCredentialBroker({
+      inventory: inventory(),
+      store,
+      prompter: prompter(undefined),
+      oauth,
+      setting: () => 'client-1',
+    }).portFor('acme/tool')
+    const first = port.acquire('acme/oauth', { reason: 'a', interactive: true })
+    const second = port.acquire('acme/oauth', { reason: 'b', interactive: true })
+    await new Promise(resolve => setTimeout(resolve, 10))
+    finish()
+    expect(await Promise.all([first, second])).toEqual(['available', 'available'])
+    expect(oauth.authorize).toHaveBeenCalledTimes(1)
+  })
+
   it('signs out locally when the service cannot revoke', async () => {
     const { store, values } = memoryStore()
     await store.set('modkit.credential/acme/oauth', JSON.stringify({ accessToken: SECRET }))

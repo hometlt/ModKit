@@ -146,6 +146,28 @@ describe('OAuth 2.0 PKCE engine (loopback)', () => {
     expect(new URL(prompter.pages[0]!.searchParams.get('redirect_uri')!).hostname).toBe('localhost')
   })
 
+  it('frees a fixed port on timeout even while openExternal never returns', async () => {
+    const free = createServer()
+    await new Promise<void>(resolve => free.listen(0, '127.0.0.1', resolve))
+    const port = (free.address() as AddressInfo).port
+    await new Promise<void>(resolve => free.close(() => resolve()))
+    const base = requirement()
+    const fixed = { ...base, oauth: { ...base.oauth!, loopbackPort: port } }
+    const stuck: CredentialPrompter = {
+      secret: async () => undefined,
+      confirm: async () => true,
+      openExternal: () => new Promise<boolean>(() => undefined), // a modal nobody answers
+    }
+    const engine = createNodeOAuth2Engine({ timeoutMs: 50 })
+    await expect(
+      engine.authorize({ requirement: fixed, clientId: 'client-1', prompter: stuck }),
+    ).rejects.toMatchObject({ code: 'x3.host/oauth-timeout' })
+    // the port is free again: a second sign-in can listen on it
+    await expect(
+      engine.authorize({ requirement: fixed, clientId: 'client-1', prompter: stuck }),
+    ).rejects.toMatchObject({ code: 'x3.host/oauth-timeout' })
+  })
+
   it('reports a denied sign-in', async () => {
     const engine = createNodeOAuth2Engine()
     await expect(

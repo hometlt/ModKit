@@ -152,8 +152,13 @@ export function createNodeOAuth2Engine(options: NodeOAuth2EngineOptions = {}): O
         authorize.searchParams.set('state', state)
         const scopes = requirement.scopes ?? []
         if (scopes.length > 0) authorize.searchParams.set('scope', scopes.join(' '))
-        if (!(await prompter.openExternal(authorize.href)))
-          throw refused('aborted', 'the sign-in page could not be opened')
+        // the timer and a cancel end the sign-in (and free the port) even while the application's
+        // prompter still holds openExternal, e.g. behind a modal confirmation
+        const opened = await Promise.race([
+          prompter.openExternal(authorize.href),
+          code.then(() => true),
+        ])
+        if (!opened) throw refused('aborted', 'the sign-in page could not be opened')
         const authorizationCode = await code
         return await tokenRequest(
           oauth.tokenEndpoint,
