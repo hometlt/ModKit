@@ -122,12 +122,11 @@ describe('desktop source IPC boundary', () => {
 })
 
 describe('what a host may hand a provider', () => {
-  it('passes a kept ticket to connect and checks the options of a revision', async () => {
+  it('passes no secret to connect and checks the options of a revision', async () => {
     const calls: unknown[][] = []
     const source = {
       connect: async (...args: unknown[]) => {
         calls.push(args)
-        return { ticket: 'ST-fresh' }
       },
       prepareRevision: async (...args: unknown[]) => {
         calls.push(args)
@@ -135,14 +134,12 @@ describe('what a host may hand a provider', () => {
       },
     } as unknown as ContentSources
 
-    // The ticket is the third argument; without it the provider must see undefined, not null.
-    expect(await callContentSources(source, 'connect', ['eu', 'account-1', 'ST-kept'])).toEqual({
-      ticket: 'ST-fresh',
-    })
+    // A ticket a caller still sends is dropped: keys reach the module only through its broker port.
+    await callContentSources(source, 'connect', ['eu', 'account-1', 'ST-kept'])
     await callContentSources(source, 'connect', ['eu'])
     expect(calls).toEqual([
-      ['eu', 'account-1', 'ST-kept'],
-      ['eu', undefined, undefined],
+      ['eu', 'account-1'],
+      ['eu', undefined],
     ])
 
     calls.length = 0

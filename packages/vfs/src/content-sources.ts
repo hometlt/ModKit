@@ -23,11 +23,10 @@ export interface ContentSourceRoot {
    */
   readonly referenceSchemes?: readonly string[]
 }
-/** A region; `credential` says what the user must supply before {@link ContentSources.connect}. */
+/** A region; `credentialId` names the declared credential that signs it in. */
 export interface ContentSourceRegion {
   readonly id: string
   readonly label: string
-  readonly credential?: { readonly kind: 'api-key'; readonly label: string }
   /**
    * The declared credential (`modkit.credentials[].id` of the source's extension) that signs this
    * region in; a scoped one is kept per region (scope = `id`). An application finds the account of
@@ -236,8 +235,11 @@ export const MOD_CONTEXT_MAX_QUERY_REFS = 1024
 /** Source identifiers remain opaque; only an explicit trusted provider may reveal a local target. */
 export interface ContentSources {
   snapshot(): Promise<ContentSourceSnapshot>
-  /** A ticket kept by the host replaces the interactive login; a fresh one comes back to be kept. */
-  connect(region: string, accountId?: string, ticket?: string): Promise<void | { ticket?: string }>
+  /**
+   * Connect an account. Keys, tickets and tokens are the credential broker's: the module reads
+   * them through `ContentSourceModuleContext.credentials`, none crosses this call.
+   */
+  connect(region: string, accountId?: string): Promise<void>
   disconnect(connectionId: string): Promise<void>
   search(connectionId: string, name: string): Promise<readonly ContentSourceSearchResult[]>
   add(resultId: string): Promise<void>
@@ -411,11 +413,7 @@ export async function callContentSources(
     case 'snapshot':
       return source.snapshot()
     case 'connect':
-      return source.connect(
-        string(0),
-        args[1] === undefined ? undefined : string(1),
-        args[2] === undefined ? undefined : string(2),
-      )
+      return source.connect(string(0), args[1] === undefined ? undefined : string(1))
     case 'disconnect':
       return source.disconnect(string(0))
     case 'search':
@@ -588,8 +586,8 @@ export function composeContentSources(parts: readonly ContentSources[]): Content
   }
   const composed: ContentSources = {
     snapshot,
-    async connect(region, accountId, ticket) {
-      return (await owner(owners.region, region)).connect(region, accountId, ticket)
+    async connect(region, accountId) {
+      return (await owner(owners.region, region)).connect(region, accountId)
     },
     async disconnect(connectionId) {
       return (await byConnection(connectionId)).disconnect(connectionId)
