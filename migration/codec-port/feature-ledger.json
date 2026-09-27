@@ -7462,6 +7462,10 @@
         {
           "path": "modkit-extensions-other/test/receipts/k1/unreal-iostore.audit.json",
           "sha256": "10df177ea64b618071769aac8ddb6bac9c41d2b7612df0514219fe1a9622e43a"
+        },
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/unreal-iostore.audit.r2.json",
+          "sha256": "6d548a01701422b4ca8823fe2ec899d73e38f2ef44bf95f6b2292812fd814cd0"
         }
       ],
       "id": "legacy/codec-manifest/modkit/unreal-iostore/audit",
@@ -7492,6 +7496,10 @@
         {
           "path": "modkit-extensions-other/test/receipts/k1/unreal-pak.audit.json",
           "sha256": "7bed2ce6d2527fdc8a3e35f01680b4c726a914b443eb65975f0404429bfbcab5"
+        },
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/unreal-pak.audit.r2.json",
+          "sha256": "f855ee43a38029583741d8edd4d8b2c3cf07a5ca846b56a4c29b1dcafaea325a"
         }
       ],
       "id": "legacy/codec-manifest/modkit/unreal-pak/audit",
