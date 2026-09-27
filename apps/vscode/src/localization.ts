@@ -119,6 +119,8 @@ const EN_MESSAGES = Object.freeze({
   'vscode.accounts.scopePrompt': 'Which one — a key id or a region, as the extension names it',
   'vscode.accounts.reason': 'You asked for it in Accounts and Keys',
   'vscode.accounts.reasonConnect': 'Connecting {label}',
+  'vscode.accounts.settingsMoved':
+    'Keys moved from settings into this editor’s secret storage: {adopted}. Not moved because a key for that scope is already kept: {kept}. Left in settings because they were not valid keys: {refused}.',
   'vscode.accounts.secretPrompt': '{reason}. Kept in this editor’s secret storage, never in a file.',
   'vscode.accounts.continue': 'Continue',
   'vscode.accounts.signOut': 'Sign out',
@@ -594,6 +596,8 @@ const RU_MESSAGES: Readonly<Record<keyof typeof EN_MESSAGES, string>> = Object.f
   'vscode.accounts.scopePrompt': 'Для чего именно — идентификатор ключа или регион, как его называет расширение',
   'vscode.accounts.reason': 'Вы запросили это в «Аккаунтах и ключах»',
   'vscode.accounts.reasonConnect': 'Подключение: {label}',
+  'vscode.accounts.settingsMoved':
+    'Ключи перенесены из настроек в защищённое хранилище редактора: {adopted}. Не перенесены, потому что ключ для этого идентификатора уже есть: {kept}. Оставлены в настройках, потому что это не ключи: {refused}.',
   'vscode.accounts.secretPrompt': '{reason}. Хранится в защищённом хранилище редактора, не в файле.',
   'vscode.accounts.continue': 'Продолжить',
   'vscode.accounts.signOut': 'Выйти',

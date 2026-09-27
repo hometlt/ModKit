@@ -8,6 +8,7 @@ import type { CredentialPrompter } from '@modkit/sdk'
 
 import {
   adoptKeptTickets,
+  adoptReplacedSettings,
   createSecretCredentialStore,
   presettablePrompter,
 } from '../src/credential-ports.js'
@@ -143,6 +144,86 @@ describe('the editor ports of the credential broker', () => {
     expect(storage.values.get('old.eu')).toBe('secret-value')
     expect(log).toHaveLength(1)
     expect(log.join('')).not.toContain('secret-value')
+  })
+
+  it('moves keys out of contribution settings by the declaration that replaces them', async () => {
+    const storage = secrets()
+    const keyInventory = {
+      extensions: [
+        {
+          manifest: {
+            publisher: 'fixture',
+            id: 'archives',
+            credentials: [
+              {
+                id: 'fixture/archive-key',
+                kind: 'symmetric-key',
+                label: 'Archive key',
+                scoped: true,
+                scopeFormat: 'hex',
+                replacesSettings: [
+                  { contribution: 'fixture/pak', key: 'mainKey' },
+                  { contribution: 'fixture/pak', key: 'keys', scoped: true },
+                ],
+              },
+            ],
+          },
+        },
+      ],
+    } as never
+    const broker = createCredentialBroker({
+      inventory: keyInventory,
+      store: createSecretCredentialStore(storage),
+    })
+    const main = '00112233445566778899aabbccddeeff'
+    const other = 'ffeeddccbbaa99887766554433221100'
+    const level = {
+      'fixture/pak': {
+        mainKey: main,
+        cacheIndex: true,
+        bySource: {
+          'file:///game': { keys: { '{A0A1A2A3-B0B1-C0C1-D0D1-E0E1E2E3E4E5}': other, bad: 'nope' } },
+        },
+      },
+      'fixture/other': { unrelated: 1 },
+    }
+    const log: string[] = []
+    const result = await adoptReplacedSettings({
+      level,
+      declared: broker.declared(),
+      broker,
+      log: line => log.push(line),
+    })
+    expect(result).toMatchObject({ changed: true, adopted: 2, kept: 0, refused: 1 })
+    // moved values leave the settings; what is not a secret, and what was refused, stays
+    expect(result.next).toEqual({
+      'fixture/pak': { cacheIndex: true, bySource: { 'file:///game': { keys: { bad: 'nope' } } } },
+      'fixture/other': { unrelated: 1 },
+    })
+    // the input level itself is not modified
+    expect(level['fixture/pak'].mainKey).toBe(main)
+    const port = broker.portFor('fixture/archives')
+    const hex = async (scope?: string) =>
+      Buffer.from((await port.secret('fixture/archive-key', scope)) ?? []).toString('hex')
+    expect(await hex()).toBe(main)
+    // the broker normalises the GUID scope; the codec asks with the bare hex form
+    expect(await hex('a0a1a2a3b0b1c0c1d0d1e0e1e2e3e4e5')).toBe(other)
+    expect(log).toHaveLength(1)
+    expect(log.join('')).not.toContain('nope')
+  })
+
+  it('leaves settings alone when no declaration replaces them', async () => {
+    const storage = secrets()
+    const broker = createCredentialBroker({ inventory, store: createSecretCredentialStore(storage) })
+    const level = { 'fixture/pak': { mainKey: 'x' } }
+    const result = await adoptReplacedSettings({
+      level,
+      declared: broker.declared(),
+      broker,
+      log: () => undefined,
+    })
+    expect(result).toMatchObject({ changed: false, adopted: 0 })
+    expect(result.next).toBe(level)
   })
 
   it('deletes the key on sign-out', async () => {

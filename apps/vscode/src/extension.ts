@@ -313,7 +313,7 @@ import { nonce, panelHtml } from './panel-page.js'
 import { ExtensionsView } from './extensions-view.js'
 import { HostView } from './host-view.js'
 import { SourcesView } from './sources-view.js'
-import { adoptKeptTickets } from './credential-ports.js'
+import { adoptKeptTickets, adoptReplacedSettings } from './credential-ports.js'
 import {
   AccountsView,
   createEditorCredentialPrompter,
@@ -11129,6 +11129,62 @@ async function activateModkit(
    * blocks 13–14 — see docs/MK3/requests/REQUEST_VSCODE_NATIVE_SHELL_2026-08-25.md §3. Until then
    * the archive stage in the editor is where container entries are listed.
    */
+  /*
+   * Secrets an extension used to read from `modkit.contributionSettings` (a declaration's
+   * `replacesSettings`) move into the broker from every level that holds them — user, workspace
+   * and, in a multi-root workspace, each folder — and leave the settings once adopted. One notice
+   * says how many moved and how many stayed; it never shows a value.
+   */
+  const moveReplacedSettings = async (
+    broker: NonNullable<typeof host.services.credentials>,
+  ): Promise<void> => {
+    const declared = broker
+      .declared()
+      .filter(entry => (entry.requirement.replacesSettings?.length ?? 0) > 0)
+    if (declared.length === 0) return
+    const root = vscode.workspace.getConfiguration('modkit')
+    const levels: {
+      readonly config: vscode.WorkspaceConfiguration
+      readonly target: vscode.ConfigurationTarget
+      readonly value: unknown
+    }[] = [
+      {
+        config: root,
+        target: vscode.ConfigurationTarget.Global,
+        value: root.inspect('contributionSettings')?.globalValue,
+      },
+      {
+        config: root,
+        target: vscode.ConfigurationTarget.Workspace,
+        value: root.inspect('contributionSettings')?.workspaceValue,
+      },
+      // folder settings are a level of their own only in a multi-root workspace
+      ...(vscode.workspace.workspaceFile === undefined
+        ? []
+        : (vscode.workspace.workspaceFolders ?? []).map(folder => {
+            const config = vscode.workspace.getConfiguration('modkit', folder.uri)
+            return {
+              config,
+              target: vscode.ConfigurationTarget.WorkspaceFolder,
+              value: config.inspect('contributionSettings')?.workspaceFolderValue,
+            }
+          })),
+    ]
+    const totals = { adopted: 0, kept: 0, refused: 0 }
+    for (const level of levels) {
+      if (level.value === undefined) continue
+      const result = await adoptReplacedSettings({ level: level.value, declared, broker, log })
+      totals.adopted += result.adopted
+      totals.kept += result.kept
+      totals.refused += result.refused
+      if (result.changed)
+        await level.config.update('contributionSettings', result.next, level.target)
+    }
+    if (totals.adopted + totals.kept + totals.refused === 0) return
+    void vscode.window.showInformationMessage(
+      localizer.text('vscode.accounts.settingsMoved', totals),
+    )
+  }
   const credentialBroker = host.services.credentials
   if (credentialBroker !== undefined) {
     const accountsView = new AccountsView(credentialBroker, localizer)
@@ -11142,6 +11198,9 @@ async function activateModkit(
         localizer,
         log,
       }),
+    )
+    void moveReplacedSettings(credentialBroker).catch(error =>
+      log(`[accounts] moving keys out of settings: ${error instanceof Error ? error.message : ''}`),
     )
   }
   context.subscriptions.push(
