@@ -1429,6 +1429,41 @@ type WorldModelSample = Readonly<{
   nodeTransforms: ReadonlyMap<string, Float32Array>
 }>
 
+const worldModelSceneSamplers = new WeakMap<
+  WorldModelSample['result'],
+  Map<string, ReturnType<typeof createModelSceneSampler>>
+>()
+
+/**
+ * The scene sampler of one model and clip. Building it (rig, skin deformers, clip tracks) cost more
+ * than sampling it; every sample returns new arrays, so one sampler serves every clock and plan.
+ */
+function worldModelSceneSampler(
+  result: WorldModelSample['result'],
+  clip: NonNullable<Parameters<typeof createModelSceneSampler>[1]>['clip'],
+): ReturnType<typeof createModelSceneSampler> {
+  let samplers = worldModelSceneSamplers.get(result)
+  if (samplers === undefined) worldModelSceneSamplers.set(result, (samplers = new Map()))
+  const key = clip?.id ?? ''
+  let sampler = samplers.get(key)
+  if (sampler === undefined) {
+    sampler = createModelSceneSampler(
+      {
+        nodes: result.nodes ?? [],
+        meshes: result.meshes,
+        primitives: result.primitives,
+        ...(result.skeleton === undefined ? {} : { skeleton: result.skeleton }),
+      },
+      {
+        ...(clip === undefined ? {} : { clip }),
+        maxBytes: 64 * 1024 * 1024,
+      },
+    )
+    samplers.set(key, sampler)
+  }
+  return sampler
+}
+
 const staticModelSamples = new WeakMap<WorldModelSample['result'], Map<string, WorldModelSample>>()
 
 type WorldModelPrograms = Readonly<{
@@ -2984,18 +3019,7 @@ export function createWorldWebGlPlan(
     const sample =
       (result.nodes?.length ?? 0) === 0
         ? { primitives: result.primitives, nodeTransforms: new Map<string, Float32Array>() }
-        : createModelSceneSampler(
-            {
-              nodes: result.nodes ?? [],
-              meshes: result.meshes,
-              primitives: result.primitives,
-              ...(result.skeleton === undefined ? {} : { skeleton: result.skeleton }),
-            },
-            {
-              ...(clip === undefined ? {} : { clip }),
-              maxBytes: 64 * 1024 * 1024,
-            },
-          ).sample(time)
+        : worldModelSceneSampler(result, clip).sample(time)
     const current = {
       result,
       primitives: sample.primitives,
