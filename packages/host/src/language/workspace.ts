@@ -2361,6 +2361,25 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
     }
   }
 
+  const mergeLocationLists = (
+    ...lists: readonly (LanguageLocationList | undefined)[]
+  ): LanguageLocationList | undefined => {
+    const present = lists.filter((list): list is LanguageLocationList => list !== undefined)
+    if (present.length === 0) return undefined
+    const seen = new Set<string>()
+    const locations = present
+      .flatMap(list => list.locations)
+      .filter(location => {
+        const { start, end } = location.range
+        const key = `${location.uri}#${start.line}:${start.character}-${end.line}:${end.character}`
+        if (seen.has(key)) return false
+        seen.add(key)
+        return true
+      })
+    // the union is at least as complete as its most complete part
+    return { locations, isIncomplete: present.every(list => list.isIncomplete) }
+  }
+
   const indexedReferenceLocations = async (
     provider: LanguageProvider,
     feature: LanguageFeatureRequest,
@@ -2697,15 +2716,16 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
             'references',
             request.includeDeclaration === true,
           )
-          return indexed !== undefined && indexed.locations.length > 0
-            ? indexed
-            : provider.references?.({
-                ...feature,
-                position: request.position,
-                ...(request.includeDeclaration === undefined
-                  ? {}
-                  : { includeDeclaration: request.includeDeclaration }),
-              })
+          // The index and the provider each see part of the answer (a Data provider merges the
+          // references of every language; the index holds typed occurrences): one deduplicated list.
+          const answered = await provider.references?.({
+            ...feature,
+            position: request.position,
+            ...(request.includeDeclaration === undefined
+              ? {}
+              : { includeDeclaration: request.includeDeclaration }),
+          })
+          return mergeLocationLists(indexed, answered)
         },
         validateLocationList,
         {

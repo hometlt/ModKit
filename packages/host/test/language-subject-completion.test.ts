@@ -740,6 +740,49 @@ describe('language subject completion lifecycle', () => {
     }
   })
 
+  it('answers index and provider together, without duplicates', async () => {
+    const workspace = await openWorkspace(
+      { open: async () => undefined },
+      false,
+      {
+        snapshot: async () => ({
+          documents: [
+            {
+              uri: 'file:///workspace/dependency.lang',
+              languageId: 'fixture-language',
+              version: 1,
+              text: 'dependency',
+            },
+          ],
+          isComplete: true,
+        }),
+      },
+      document => ({
+        uri: document.uri,
+        layerId: 'fixture:workspace',
+        logicalId: document.uri.slice('file:///workspace/'.length),
+        precedence: 0,
+        sourceRevision: `fixture:${document.version}:${document.text}`,
+        readOnly: false,
+      }),
+      undefined,
+      'indexed-declaration',
+    )
+    try {
+      await expect(
+        workspace.references({ ...completionRequest(), includeDeclaration: true }),
+      ).resolves.toMatchObject({
+        // the index knows the declaration, the provider the references it merges from other files
+        locations: [
+          { uri: DOCUMENT_URI },
+          { uri: 'file:///workspace/dependency.lang' },
+        ],
+      })
+    } finally {
+      await workspace.shutdown()
+    }
+  })
+
   it.each([
     {
       name: 'complete dependency context',
