@@ -1581,6 +1581,8 @@ interface WorldStaticObject {
   readonly key: readonly unknown[]
   readonly scenes: readonly WorldWebGlModelMaterialScene[]
   readonly effects: readonly WorldWebGlModelEffectInstance[]
+  /** Triangles the object appended to the plan's shared projector batches, in order. */
+  readonly projectorWrites: readonly WorldProjectorWrite[]
   readonly pickMesh: WorldObjectPickMesh
   readonly modelTriangles: number
   readonly shadowTriangles: number
@@ -1592,6 +1594,19 @@ interface WorldObjectPickMesh {
   readonly triangles: number[]
   readonly primitives: WorldWebGlPickPrimitive[]
   readonly placeholder: boolean
+}
+
+/** One projector's simple-effect triangles, as appended to its shared textured batch. */
+interface WorldProjectorWrite {
+  readonly texture: MutableTexturedBatch['texture']
+  readonly positions: readonly number[]
+  readonly normals: readonly number[]
+  readonly colors: readonly number[]
+  readonly textureCoordinates: readonly number[]
+}
+
+function appendNumbers(target: number[], values: readonly number[]) {
+  for (const value of values) target.push(value)
 }
 
 /**
@@ -3258,12 +3273,32 @@ export function createWorldWebGlPlan(
   let modelTriangles = 0
   let diagnosticPlaceholders = 0
   const planPrograms = new Map<string, WorldModelPrograms>()
+  const projectorBatch = (texture: MutableTexturedBatch['texture']) => {
+    const key = `projector:${texture.id}`
+    const target = transparentTextured.get(key) ?? {
+      ...batch(),
+      textureCoordinates: [],
+      texture,
+      blendMode: 'blend' as const,
+      castShadows: false,
+      receiveShadows: false,
+    }
+    transparentTextured.set(key, target)
+    return target
+  }
   for (const item of objects) {
     const staticKey = worldStaticObjectKey(item, input, preparation)
     const retainedObject = staticKey === undefined ? undefined : retainedStaticObjects.get(item)
     if (retainedObject !== undefined && sameWorldStaticObjectKey(retainedObject.key, staticKey!)) {
       for (const scene of retainedObject.scenes) modelMaterialScenes.push(scene)
       for (const effect of retainedObject.effects) modelEffects.push(effect)
+      for (const write of retainedObject.projectorWrites) {
+        const target = projectorBatch(write.texture)
+        appendNumbers(target.positions, write.positions)
+        appendNumbers(target.normals, write.normals)
+        appendNumbers(target.colors, write.colors)
+        appendNumbers(target.textureCoordinates, write.textureCoordinates)
+      }
       objectPickMeshes.push(retainedObject.pickMesh)
       modelTriangles += retainedObject.modelTriangles
       modelMaterialShadowTriangles += retainedObject.shadowTriangles
@@ -3271,6 +3306,7 @@ export function createWorldWebGlPlan(
     }
     const scenesBefore = modelMaterialScenes.length
     const effectsBefore = modelEffects.length
+    const projectorWrites: WorldProjectorWrite[] = []
     const trianglesBefore = modelTriangles
     const shadowTrianglesBefore = modelMaterialShadowTriangles
     // Cleared by anything that writes into the plan's shared batches instead of its own scenes.
@@ -3620,16 +3656,11 @@ export function createWorldWebGlPlan(
           )?.textureId
           const texture = scene.textures.find(candidate => candidate.id === textureId)
           if (!texture || !primitive.textureCoordinates) continue
-          const key = `projector:${texture.id}`
-          const target = transparentTextured.get(key) ?? {
-            ...batch(),
-            textureCoordinates: [],
-            texture,
-            blendMode: 'blend' as const,
-            castShadows: false,
-            receiveShadows: false,
-          }
-          transparentTextured.set(key, target)
+          const target = projectorBatch(texture)
+          const positionsBefore = target.positions.length
+          const normalsBefore = target.normals.length
+          const colorsBefore = target.colors.length
+          const coordinatesBefore = target.textureCoordinates.length
           for (const triangle of primitiveTriangles(primitive)) {
             const vertices = triangle.map(index => {
               const p = transformedComponentVertex(
@@ -3648,6 +3679,15 @@ export function createWorldWebGlPlan(
               [1, 1, 1, material?.baseColor?.[3] ?? 1],
             )
           }
+          projectorWrites.push(
+            Object.freeze({
+              texture,
+              positions: target.positions.slice(positionsBefore),
+              normals: target.normals.slice(normalsBefore),
+              colors: target.colors.slice(colorsBefore),
+              textureCoordinates: target.textureCoordinates.slice(coordinatesBefore),
+            }),
+          )
         }
         if (projectedMaterialPrimitives.length > 0)
           modelMaterialScenes.push(
@@ -3705,6 +3745,7 @@ export function createWorldWebGlPlan(
           key: staticKey,
           scenes: Object.freeze(modelMaterialScenes.slice(scenesBefore)),
           effects: Object.freeze(modelEffects.slice(effectsBefore)),
+          projectorWrites: Object.freeze(projectorWrites),
           pickMesh,
           modelTriangles: modelTriangles - trianglesBefore,
           shadowTriangles: modelMaterialShadowTriangles - shadowTrianglesBefore,

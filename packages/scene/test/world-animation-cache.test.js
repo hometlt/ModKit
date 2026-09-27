@@ -257,7 +257,7 @@ it('renderer picking reuses its retained plan, counts dynamic updates honestly a
   assert.throws(() => renderer.pick(next, screen), /disposed/)
 })
 
-function effectModel() {
+function effectModel({ decal = false } = {}) {
   const layer = (slot, animated = false) => ({
     slot,
     texturePath: 'effect.png',
@@ -312,7 +312,10 @@ function effectModel() {
     scene: 0,
     scenes: [{ nodes: [0] }],
     nodes: [{ translation: [0, 1, 0], rotation: [Math.SQRT1_2, 0, 0, Math.SQRT1_2] }],
-    materials: [{ pbrMetallicRoughness: { baseColorFactor: [1, 1, 1, 1] } }],
+    materials: [
+      { pbrMetallicRoughness: { baseColorFactor: [1, 1, 1, 1] } },
+      ...(decal ? [{ pbrMetallicRoughness: { baseColorFactor: [1, 1, 1, 1] } }] : []),
+    ],
     extensionsUsed: ['UV_asset', 'UV_provenance', 'UV_game_effects'],
     extensions: {
       UV_asset: { id: 'world-animation-fixture', class: 'model' },
@@ -325,7 +328,7 @@ function effectModel() {
         projectors: [
           {
             node: 0,
-            material: 0,
+            material: decal ? 1 : 0,
             active: 1,
             projectionType: 'orthographic',
             offset: [0, 0, 0],
@@ -388,8 +391,32 @@ function effectModel() {
           },
         },
       },
+      // A projected decal whose alpha does not animate is drawn as a simple textured effect.
+      ...(decal
+        ? [
+            {
+              id: 'decal',
+              alphaMode: 'blend',
+              blendMode: 'blend',
+              layers: [{ slot: 'diffuse', resourceId: 'decal.png', uvSource: 0 }],
+              shader: {
+                id: 'modkit.render-material.v1',
+                parameters: {
+                  renderModel: {
+                    version: 1,
+                    layers: [{ label: 'diffuse', path: 'decal.png' }],
+                    standard: {
+                      ...standard,
+                      layers: { diffuse: { ...layer('diffuse'), texturePath: 'decal.png' } },
+                    },
+                  },
+                },
+              },
+            },
+          ]
+        : []),
     ],
-    textures: [texture('effect.png')],
+    textures: [texture('effect.png'), ...(decal ? [texture('decal.png')] : [])],
     uvmBytes: writeUvmContainer({
       format: 'glb',
       document,
@@ -418,6 +445,27 @@ it('retains terrain while sequence-only material programs, live effects and proj
   assert.deepEqual(alpha(next), [0.5, 0.5])
   // Compiled programs own sampler callbacks; compare their serializable values and actual sampled
   // uniforms above, rather than requiring independently compiled closures to share identity.
+  const values = plan =>
+    JSON.stringify(plan, (_, value) => (value instanceof Map ? [...value] : value))
+  assert.equal(values(next), values(createWorldWebGlPlan(nextInput)))
+})
+
+it('replays the projected decal triangles of an object kept from the previous plan', () => {
+  const input = {
+    ...world(),
+    models: new Map([['actor', effectModel({ decal: true })]]),
+    // The object's own clock stays while the global time moves: the next plan keeps the object.
+    animationTimes: new Map([[actor.objectId, 0]]),
+  }
+  const decals = plan =>
+    plan.transparentTexturedTriangles.filter(batch => batch.texture.id === 'decal.png')
+  const first = createWorldWebGlPlan(input)
+  assert.equal(decals(first).length, 1)
+  assert.ok(decals(first)[0].positions.length > 0)
+  const nextInput = { ...input, timeSeconds: 0.5 }
+  const next = createWorldWebGlPlan(nextInput, first)
+  assert.equal(next.modelMaterialScenes[0], first.modelMaterialScenes[0])
+  assert.deepEqual([...decals(next)[0].positions], [...decals(first)[0].positions])
   const values = plan =>
     JSON.stringify(plan, (_, value) => (value instanceof Map ? [...value] : value))
   assert.equal(values(next), values(createWorldWebGlPlan(nextInput)))
