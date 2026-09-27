@@ -380,16 +380,29 @@ export interface WorldWebGlModelEffectInstance {
 }
 
 const effectSources = new WeakMap<Uint8Array, Map<number | undefined, UvmEffectSource | null>>()
-const effectFrames = new WeakMap<
-  UvmEffectSource,
-  Map<
-    string,
-    {
-      readonly frame: ReturnType<UvmEffectSource['frame']>
-      readonly programs: ReadonlyMap<string, SceneMaterialPrograms>
-    }
-  >
->()
+interface WorldEffectFrame {
+  readonly frame: ReturnType<UvmEffectSource['frame']>
+  readonly programs: ReadonlyMap<string, SceneMaterialPrograms>
+}
+
+/**
+ * Simulated effect frames of one source by clock, team colour and orientation: the frames the
+ * current pass used and those of the previous pass at the same camera. One model's instances can
+ * need more keys than any fixed limit (each orientation is its own key), and clearing a full map in
+ * the middle of a pass made every instance simulate again on every frame, even when neither clock
+ * nor view had changed. Tail, trail and ribbon geometry also follows the camera position, which the
+ * key leaves out, so frames pass to the next pass only when its camera is the same (a selection
+ * click or a loading tick at a still camera).
+ */
+interface WorldEffectFrames {
+  pass: number
+  camera: string
+  current: Map<string, WorldEffectFrame>
+  previous: Map<string, WorldEffectFrame>
+}
+
+const effectFrames = new WeakMap<UvmEffectSource, WorldEffectFrames>()
+let effectPass = 0
 const effectDrawPlans = new WeakMap<
   WorldWebGlPlan,
   {
@@ -418,7 +431,7 @@ function uvmEffectSource(bytes: Uint8Array, sequenceIndex?: number): UvmEffectSo
  * Transparent material draws for every live effect at this camera. Sprite and ribbon geometry is
  * built in model space against the model-local view and then placed with the instance transform.
  */
-function worldModelEffectDraws(
+export function worldModelEffectDraws(
   plan: WorldWebGlPlan,
   camera: WorldWebGlCameraFrame,
 ): readonly Readonly<{
@@ -428,6 +441,7 @@ function worldModelEffectDraws(
   const cameraKey = `${camera.viewMatrix.join(',')}|${camera.viewProjection.join(',')}`
   const previous = effectDrawPlans.get(plan)
   if (previous?.cameraKey === cameraKey) return previous.draws
+  effectPass += 1
   const draws: Array<{
     scene: WorldWebGlModelMaterialScene
     draw: MaterialDraw & { readonly program: NonNullable<MaterialDraw['program']> }
@@ -449,10 +463,25 @@ function worldModelEffectDraws(
         Array.from(localView.subarray(0, 11), value => value.toFixed(4)).join(','),
       ].join('|')
       let frames = effectFrames.get(effect.source)
-      if (frames === undefined || frames.size > 64)
-        effectFrames.set(effect.source, (frames = new Map()))
-      let cached = frames.get(key)
-      if (cached === undefined) {
+      if (frames === undefined)
+        effectFrames.set(
+          effect.source,
+          (frames = {
+            pass: effectPass,
+            camera: cameraKey,
+            current: new Map(),
+            previous: new Map(),
+          }),
+        )
+      else if (frames.pass !== effectPass) {
+        frames.previous = frames.camera === cameraKey ? frames.current : new Map()
+        frames.current = new Map()
+        frames.pass = effectPass
+        frames.camera = cameraKey
+      }
+      let cached = frames.current.get(key) ?? frames.previous.get(key)
+      if (cached !== undefined) frames.current.set(key, cached)
+      else {
         const frame = effect.source.frame(time, effect.materials, localView)
         // Stable program objects keep the GPU leases across frames that reuse this entry.
         const programs = prepareSceneMaterialPrograms(
@@ -461,7 +490,7 @@ function worldModelEffectDraws(
           { ...effect.context, time, sequenceTime: time },
           [],
         )
-        frames.set(key, (cached = { frame, programs }))
+        frames.current.set(key, (cached = { frame, programs }))
       }
       const { frame, programs } = cached
       if (frame.primitives.length === 0) continue

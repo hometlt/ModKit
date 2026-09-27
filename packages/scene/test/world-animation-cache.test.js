@@ -2,9 +2,12 @@ import assert from 'node:assert/strict'
 import { it } from 'node:test'
 import { writeUvmContainer } from '@modkit/uv/model/container'
 import {
+  DEFAULT_WORLD_WEBGL_CAMERA,
+  createWorldWebGlCameraFrame,
   createWorldWebGlPlan,
   createWorldWebGlRenderer,
   pickWorldWebGl,
+  worldModelEffectDraws,
 } from '../src/world/webgl.js'
 
 const identity = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
@@ -190,7 +193,10 @@ it('rebuilds the ground preparation for terrain revisions only, each plan equal 
     item === actor ? { ...actor, derivedFrom: 'cliffs', typeId: 'CliffNatural:fixture' } : item,
   )
   const cliffPlan = createWorldWebGlPlan(cliffInput)
-  cliffInput.models.set('actor', { ...cliffInput.models.get('actor'), sourceKey: 'replaced-in-map' })
+  cliffInput.models.set('actor', {
+    ...cliffInput.models.get('actor'),
+    sourceKey: 'replaced-in-map',
+  })
   const replaced = createWorldWebGlPlan(cliffInput, cliffPlan)
   assert.notEqual(replaced.picking.terrainTriangles, cliffPlan.picking.terrainTriangles)
   assert.deepEqual(replaced, createWorldWebGlPlan(cliffInput))
@@ -275,7 +281,7 @@ it('renderer picking reuses its retained plan, counts dynamic updates honestly a
   assert.throws(() => renderer.pick(next, screen), /disposed/)
 })
 
-function effectModel({ decal = false } = {}) {
+function effectModel({ decal = false, particles = false } = {}) {
   const layer = (slot, animated = false) => ({
     slot,
     texturePath: 'effect.png',
@@ -309,6 +315,8 @@ function effectModel({ decal = false } = {}) {
         }
       : {}),
   })
+  // Particles take their material by its converted index name.
+  const effectId = particles ? 'material-0' : 'effect'
   const standard = {
     layers: { diffuse: layer('diffuse'), alpha1: layer('alpha1', true) },
     blendMode: 1,
@@ -341,35 +349,57 @@ function effectModel({ decal = false } = {}) {
       UV_game_effects: {
         profile: 'common',
         trackTimeUnit: 'seconds',
-        particles: [],
+        particles: particles
+          ? [
+              {
+                node: 0,
+                material: 0,
+                emissionRate: 10,
+                lifeSpan: 3,
+                speed: 1,
+                alpha: 1,
+                segmentColors: [
+                  [1, 1, 1],
+                  [1, 1, 1],
+                  [1, 1, 1],
+                ],
+                segmentAlphas: [1, 1, 1],
+                orientationMode: 'billboard',
+                emitShape: 'point',
+                maxParticles: 16,
+              },
+            ]
+          : [],
         ribbons: [],
-        projectors: [
-          {
-            node: 0,
-            material: decal ? 1 : 0,
-            active: 1,
-            projectionType: 'orthographic',
-            offset: [0, 0, 0],
-            pitch: 0,
-            yaw: 0,
-            roll: 0,
-            near: 0.1,
-            far: 2,
-            fieldOfView: 1,
-            aspectRatio: 1,
-            boxOffsetXLeft: -1,
-            boxOffsetXRight: 1,
-            boxOffsetYBack: -1,
-            boxOffsetYFront: 1,
-            boxOffsetZBottom: 0,
-            boxOffsetZTop: 0,
-            alphaInit: 1,
-            falloff: 0,
-            attenuationDistance: 0,
-            flags: 0,
-            layer: 0,
-          },
-        ],
+        projectors: particles
+          ? []
+          : [
+              {
+                node: 0,
+                material: decal ? 1 : 0,
+                active: 1,
+                projectionType: 'orthographic',
+                offset: [0, 0, 0],
+                pitch: 0,
+                yaw: 0,
+                roll: 0,
+                near: 0.1,
+                far: 2,
+                fieldOfView: 1,
+                aspectRatio: 1,
+                boxOffsetXLeft: -1,
+                boxOffsetXRight: 1,
+                boxOffsetYBack: -1,
+                boxOffsetYFront: 1,
+                boxOffsetZBottom: 0,
+                boxOffsetZTop: 0,
+                alphaInit: 1,
+                falloff: 0,
+                attenuationDistance: 0,
+                flags: 0,
+                layer: 0,
+              },
+            ],
       },
     },
   }
@@ -392,13 +422,13 @@ function effectModel({ decal = false } = {}) {
     primitives: [
       {
         ...animatedModel().primitives[0],
-        materialId: 'effect',
+        materialId: effectId,
         textureCoordinates: Float32Array.of(0, 0, 1, 0, 0, 1),
       },
     ],
     materials: [
       {
-        id: 'effect',
+        id: effectId,
         alphaMode: 'blend',
         blendMode: 'blend',
         layers: [{ slot: 'diffuse', resourceId: 'effect.png', uvSource: 0 }],
@@ -508,6 +538,43 @@ it('keeps the terrain preparation while other models load or the selection chang
   const values = plan =>
     JSON.stringify(plan, (_, value) => (value instanceof Map ? [...value] : value))
   assert.equal(values(second), values(createWorldWebGlPlan(loaded)))
+})
+
+it('reuses the simulated effect frames of many differently turned instances in the next plan', () => {
+  // More instances than a fixed cache bound, each turned its own way: each orientation is a key.
+  const actors = Array.from({ length: 70 }, (_, index) => ({
+    ...actor,
+    id: `actor-${index}`,
+    objectId: index + 1,
+    rotation: index * 0.05,
+  }))
+  const input = {
+    ...world(),
+    items: [...world().items.filter(item => item !== actor), ...actors],
+    models: new Map([['actor', effectModel({ particles: true })]]),
+    timeSeconds: 0.5,
+  }
+  const first = createWorldWebGlPlan(input)
+  const camera = createWorldWebGlCameraFrame(first, 64, 64)
+  const firstDraws = worldModelEffectDraws(first, camera)
+  assert.ok(firstDraws.length >= 70)
+  // A selection click at the same clock: every instance keeps its simulated frame.
+  const second = createWorldWebGlPlan({ ...input, selectedObjectId: 1_000 }, first)
+  const secondDraws = worldModelEffectDraws(second, createWorldWebGlCameraFrame(second, 64, 64))
+  assert.equal(secondDraws.length, firstDraws.length)
+  secondDraws.forEach((entry, index) =>
+    assert.equal(entry.scene.materials, firstDraws[index].scene.materials),
+  )
+  // Tails and ribbons follow the camera position, which the key leaves out: a panned camera
+  // simulates again instead of taking the frames built for the previous one.
+  const panned = createWorldWebGlCameraFrame(second, 64, 64, {
+    ...DEFAULT_WORLD_WEBGL_CAMERA,
+    target: [1, 0, -1],
+  })
+  assert.notDeepEqual(panned.viewMatrix, camera.viewMatrix)
+  const pannedDraws = worldModelEffectDraws(second, panned)
+  assert.equal(pannedDraws.length, firstDraws.length)
+  assert.notEqual(pannedDraws[0].scene.materials, firstDraws[0].scene.materials)
 })
 
 it('keeps procedural cliff skirts until the model covering each edge has loaded', () => {
