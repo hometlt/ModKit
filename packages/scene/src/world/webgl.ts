@@ -26,6 +26,7 @@ import {
   materialCanInstance,
   materialWebGlDraws,
   type MaterialInstances,
+  type MaterialSequenceDraw,
 } from '../render/material-webgl.js'
 import { primitiveTint } from '../render/tint.js'
 import { materialIsSolid, sceneMaterialDraws, type MaterialDraw } from '../render/material-draws.js'
@@ -4723,7 +4724,18 @@ function disposeOwnedResources(resources: WorldWebGlOwnedResources): void {
   }
 }
 
-function assertNoWebGlError(gl: WebGL2RenderingContext, stage: string) {
+/** Frames between WebGL error checks once a renderer has drawn its first frames. */
+const WORLD_ERROR_CHECK_INTERVAL = 60
+
+/**
+ * WebGL errors of a pass. `getError` waits until the GPU process has run every queued command,
+ * which serialized the page and the GPU process up to eight times a frame; a renderer checks its
+ * first frames and then every `WORLD_ERROR_CHECK_INTERVAL`th, so an error surfaces at the next
+ * checked pass.
+ */
+function assertNoWebGlError(resources: WorldWebGlOwnedResources, stage: string) {
+  if (resources.frames >= 2 && resources.frames % WORLD_ERROR_CHECK_INTERVAL !== 0) return
+  const gl = resources.gl
   const error = gl.getError()
   if (error !== gl.NO_ERROR) throw new TypeError(`world WebGL ${stage} failed (${String(error)})`)
 }
@@ -4973,13 +4985,14 @@ function renderWorldShadowMap(
         ] as const,
       }
       const sceneLight = worldMaterialLight(plan)
-      const casters = worldMaterialBatchesOf(plan, true)
-      for (const group of casters.groups)
-        resources.materialDraws.drawInstanced(group.draw, group.instances, sceneCamera, sceneLight)
-      for (const draw of casters.singles) resources.materialDraws.draw(draw, sceneCamera, sceneLight)
+      resources.materialDraws.drawSequence(
+        worldMaterialBatchesOf(plan, true).sequence,
+        sceneCamera,
+        sceneLight,
+      )
       gl.colorMask(false, false, false, false)
     }
-    assertNoWebGlError(gl, 'shadow-map pass')
+    assertNoWebGlError(resources, 'shadow-map pass')
     gl.disable(gl.POLYGON_OFFSET_FILL)
     gl.colorMask(true, true, true, true)
     gl.bindFramebuffer(gl.FRAMEBUFFER, null)
@@ -6204,6 +6217,8 @@ export interface WorldWebGlMaterialBatches {
   readonly groups: readonly WorldWebGlMaterialGroup[]
   /** Solid draws of materials that cannot instance, one placement each. */
   readonly singles: readonly MaterialDraw[]
+  /** The groups, then the singles: the renderer's draw sequence. */
+  readonly sequence: readonly MaterialSequenceDraw[]
   /** Scenes with a blended pass: those passes keep their per-frame back-to-front order. */
   readonly transparentScenes: readonly WorldWebGlModelMaterialScene[]
 }
@@ -6302,15 +6317,15 @@ function groupWorldMaterialDraws(plan: WorldWebGlPlan, shadow: boolean): WorldWe
     }
     if (transparent && !shadow) transparentScenes.push(scene)
   }
+  const instanced = [...groups.values()].map(({ draw, transforms }) => {
+    const matrices = new Float32Array(transforms.length * 16)
+    transforms.forEach((transform, index) => matrices.set(transform, index * 16))
+    return Object.freeze({ draw, instances: Object.freeze({ matrices, count: transforms.length }) })
+  })
   return Object.freeze({
-    groups: Object.freeze(
-      [...groups.values()].map(({ draw, transforms }) => {
-        const matrices = new Float32Array(transforms.length * 16)
-        transforms.forEach((transform, index) => matrices.set(transform, index * 16))
-        return Object.freeze({ draw, instances: Object.freeze({ matrices, count: transforms.length }) })
-      }),
-    ),
+    groups: Object.freeze(instanced),
     singles: Object.freeze(singles),
+    sequence: Object.freeze([...instanced, ...singles.map(draw => Object.freeze({ draw }))]),
     transparentScenes: Object.freeze(transparentScenes),
   })
 }
@@ -6502,14 +6517,12 @@ function drawWorldWebGlWithResources(
       ...transparentSceneDraws.map(entry => entry.draw),
       ...effectDraws.map(entry => entry.draw),
     ])
-    if (batches.groups.length + batches.singles.length > 0) {
-      for (const group of batches.groups)
-        resources.materialDraws.drawInstanced(group.draw, group.instances, sceneCamera, sceneLight)
-      for (const draw of batches.singles) resources.materialDraws.draw(draw, sceneCamera, sceneLight)
+    if (batches.sequence.length > 0) {
+      resources.materialDraws.drawSequence(batches.sequence, sceneCamera, sceneLight)
       gl.useProgram(program)
       gl.disable(gl.POLYGON_OFFSET_FILL)
     }
-    assertNoWebGlError(gl, 'opaque pass')
+    assertNoWebGlError(resources, 'opaque pass')
     gl.uniform1f(uniformLocation(gl, program, 'textured'), 0)
     gl.uniform1f(uniformLocation(gl, program, 'normalTextured'), 0)
     gl.uniform1f(uniformLocation(gl, program, 'secondaryTextured'), 0)
@@ -6517,7 +6530,7 @@ function drawWorldWebGlWithResources(
     gl.uniform1f(uniformLocation(gl, program, 'shadowReceiver'), 0)
     drawBatch(resources, program, plan.lines, gl.LINES)
     drawBatch(resources, program, plan.points, gl.POINTS)
-    assertNoWebGlError(gl, 'overlay pass')
+    assertNoWebGlError(resources, 'overlay pass')
     gl.enable(gl.BLEND)
     gl.blendEquation(gl.FUNC_ADD)
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
@@ -6559,18 +6572,27 @@ function drawWorldWebGlWithResources(
         drawBatch(resources, program, plane.batch, gl.TRIANGLES)
       }
       gl.uniform1f(uniformLocation(gl, program, 'waterDepthMode'), 0)
-      assertNoWebGlError(gl, 'water pass')
+      assertNoWebGlError(resources, 'water pass')
     }
     const transparentMaterialDraws = [...transparentSceneDraws, ...effectDraws]
-    for (const entry of createWorldWebGlCompositeTransparentDrawPlan(
+    const transparentEntries = createWorldWebGlCompositeTransparentDrawPlan(
       plan,
       input.camera,
       transparentMaterialDraws,
       waterByDepth,
-    )) {
+    )
+    for (let index = 0; index < transparentEntries.length; index++) {
+      const entry = transparentEntries[index]!
       if (entry.kind === 'material') {
-        for (const draw of worldBlendedMaterialPasses(entry.draw))
-          resources.materialDraws.draw(draw, sceneCamera, sceneLight)
+        // Consecutive material draws run as one sequence of the material renderer.
+        const run: MaterialSequenceDraw[] = []
+        for (let next = index; next < transparentEntries.length; next++) {
+          const candidate = transparentEntries[next]!
+          if (candidate.kind !== 'material') break
+          for (const draw of worldBlendedMaterialPasses(candidate.draw)) run.push({ draw })
+          index = next
+        }
+        resources.materialDraws.drawSequence(run, sceneCamera, sceneLight)
         continue
       }
       const item = entry.draw
@@ -6596,7 +6618,7 @@ function drawWorldWebGlWithResources(
       }
     }
     gl.depthMask(true)
-    assertNoWebGlError(gl, 'transparent pass')
+    assertNoWebGlError(resources, 'transparent pass')
     const waterSurfaces = waterByDepth
       ? plan.waterPlanes.map(plane => plane.batch.positions)
       : [plan.waterSurfaceDepth]
@@ -6625,11 +6647,11 @@ function drawWorldWebGlWithResources(
       } finally {
         gl.colorMask(true, true, true, true)
       }
-      assertNoWebGlError(gl, 'water surface depth pass')
+      assertNoWebGlError(resources, 'water surface depth pass')
     }
     if (plan.light.toneMapping !== undefined)
       resources.toneMapper?.finish(plan.light.toneMapping, sceneCamera.viewProjection)
-    assertNoWebGlError(gl, 'postprocess pass')
+    assertNoWebGlError(resources, 'postprocess pass')
     resources.frames += 1
     completed = true
     return Object.freeze({

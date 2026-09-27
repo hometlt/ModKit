@@ -6,6 +6,17 @@ export interface WebGlMaterialProgram {
   readonly program: WebGLProgram
   /** Bind material uniforms/textures. The geometry adapter supplies camera and vertex attributes. */
   bind(): void
+  /**
+   * Upload the material uniforms and sampler units into `program`, which must be current. Uniform
+   * values stay in the program, so a caller that tracks the last upload can skip repeating it.
+   */
+  uploadUniforms(): void
+  /** The texture and sampler `bind` puts on each unit, in unit order. */
+  readonly textureUnits: readonly Readonly<{
+    texture: WebGLTexture
+    sampler: WebGLSampler
+    target: number
+  }>[]
   release(): void
 }
 
@@ -87,6 +98,11 @@ export function createWebGlMaterialProgram(
     readonly programCache?: Map<string, WebGLProgram>
     /** Cached programs linked by `linkWebGlMaterialProgramsInParallel` whose status is still unchecked. */
     readonly pendingPrograms?: Set<WebGLProgram>
+    /**
+     * Sampler objects by their parameters, owned (and deleted) by the caller: leases with equal
+     * wrap and filter settings share one instead of creating and deleting their own.
+     */
+    readonly samplerCache?: Map<string, WebGLSampler>
   } = {},
 ): WebGlMaterialProgram {
   if (options.filter !== undefined && options.filter !== 'nearest' && options.filter !== 'linear')
@@ -150,33 +166,29 @@ export function createWebGlMaterialProgram(
       value: typeof value === 'number' ? value : Float32Array.from(value),
     }))
     const maps = bindings.map(({ binding, texture, filter: filterMode }) => {
-      const sampler = gl.createSampler()
-      if (sampler === null) throw new TypeError('could not allocate a material sampler')
-      samplers.push(sampler)
       const wrap = (mode: string) => (mode === 'clamp' ? gl.CLAMP_TO_EDGE : gl.REPEAT)
       const cube = binding.dimension === 'cube'
-      gl.samplerParameteri(
-        sampler,
-        gl.TEXTURE_WRAP_S,
-        cube ? gl.CLAMP_TO_EDGE : wrap(binding.wrapU),
-      )
-      gl.samplerParameteri(
-        sampler,
-        gl.TEXTURE_WRAP_T,
-        cube ? gl.CLAMP_TO_EDGE : wrap(binding.wrapV),
-      )
-      if (cube) gl.samplerParameteri(sampler, gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE)
+      const wrapS = cube ? gl.CLAMP_TO_EDGE : wrap(binding.wrapU)
+      const wrapT = cube ? gl.CLAMP_TO_EDGE : wrap(binding.wrapV)
       const filter = filterMode === 'nearest' ? gl.NEAREST : gl.LINEAR
       const mipmapped = options.mipmaps === true && filterMode !== 'nearest'
-      gl.samplerParameteri(
-        sampler,
-        gl.TEXTURE_MIN_FILTER,
-        mipmapped ? gl.LINEAR_MIPMAP_LINEAR : filter,
-      )
-      gl.samplerParameteri(sampler, gl.TEXTURE_MAG_FILTER, filter)
+      const minFilter = mipmapped ? gl.LINEAR_MIPMAP_LINEAR : filter
       const anisotropy = mipmapped ? textureAnisotropy(gl) : undefined
-      if (anisotropy !== undefined)
-        gl.samplerParameterf(sampler, anisotropy.parameter, anisotropy.value)
+      const key = `${cube ? 'cube' : '2d'}:${wrapS}:${wrapT}:${minFilter}:${filter}:${anisotropy?.value ?? 0}`
+      let sampler = options.samplerCache?.get(key) ?? null
+      if (sampler === null) {
+        sampler = gl.createSampler()
+        if (sampler === null) throw new TypeError('could not allocate a material sampler')
+        if (options.samplerCache === undefined) samplers.push(sampler)
+        else options.samplerCache.set(key, sampler)
+        gl.samplerParameteri(sampler, gl.TEXTURE_WRAP_S, wrapS)
+        gl.samplerParameteri(sampler, gl.TEXTURE_WRAP_T, wrapT)
+        if (cube) gl.samplerParameteri(sampler, gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE)
+        gl.samplerParameteri(sampler, gl.TEXTURE_MIN_FILTER, minFilter)
+        gl.samplerParameteri(sampler, gl.TEXTURE_MAG_FILTER, filter)
+        if (anisotropy !== undefined)
+          gl.samplerParameterf(sampler, anisotropy.parameter, anisotropy.value)
+      }
       return {
         texture,
         sampler,
@@ -184,27 +196,35 @@ export function createWebGlMaterialProgram(
         location: uniformLocation(gl, program, binding.uniform),
       }
     })
+    const uploadUniforms = () => {
+      if (!live) throw new TypeError('material program has been released')
+      for (const { location, value } of values) {
+        if (location === null) continue
+        if (typeof value === 'number') gl.uniform1f(location, value)
+        else if (value.length === 2) gl.uniform2fv(location, value)
+        else if (value.length === 3) gl.uniform3fv(location, value)
+        else if (value.length === 4) gl.uniform4fv(location, value)
+        else if (value.length === 9) gl.uniformMatrix3fv(location, false, value)
+        else throw new TypeError('invalid material uniform arity')
+      }
+      maps.forEach(({ location }, unit) => gl.uniform1i(location, unit))
+    }
     return Object.freeze({
       program,
       bind() {
         if (!live) throw new TypeError('material program has been released')
         gl.useProgram(program)
-        for (const { location, value } of values) {
-          if (location === null) continue
-          if (typeof value === 'number') gl.uniform1f(location, value)
-          else if (value.length === 2) gl.uniform2fv(location, value)
-          else if (value.length === 3) gl.uniform3fv(location, value)
-          else if (value.length === 4) gl.uniform4fv(location, value)
-          else if (value.length === 9) gl.uniformMatrix3fv(location, false, value)
-          else throw new TypeError('invalid material uniform arity')
-        }
-        maps.forEach(({ texture, sampler, target, location }, unit) => {
+        uploadUniforms()
+        maps.forEach(({ texture, sampler, target }, unit) => {
           gl.activeTexture(gl.TEXTURE0 + unit)
           gl.bindTexture(target, texture)
           gl.bindSampler(unit, sampler)
-          gl.uniform1i(location, unit)
         })
       },
+      uploadUniforms,
+      textureUnits: Object.freeze(
+        maps.map(({ texture, sampler, target }) => Object.freeze({ texture, sampler, target })),
+      ),
       release,
     })
   } catch (error) {
