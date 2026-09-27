@@ -19,6 +19,7 @@ import type {
   SceneRendererTexture,
 } from '@modkit/sdk'
 import type { SceneRendererMaterialContext } from '@modkit/sdk/renderer'
+import { boundsOf } from '@modkit/codec-kit/model/bounds'
 import { createModelSceneSampler } from '../model/index.js'
 import { createUvmEffectSource, type UvmEffectSource } from '../uvm/effect-source.js'
 import { materialWebGlDraws } from '../render/material-webgl.js'
@@ -28,6 +29,7 @@ import { applyTextureFilter } from '../render/texture-filtering.js'
 import { uniformLocation } from '../materials/webgl.js'
 import { invertMaterialFrame } from '../materials/frame.js'
 import { createWorldToneMapper } from './tone-mapping.js'
+import { transparentOrderLevels } from './transparent-order.js'
 
 export interface WorldWebGlInput {
   readonly items: readonly WorldSceneItem[]
@@ -5545,7 +5547,7 @@ function sortedWorldWebGlTransparentDraws(
   return Object.freeze(output)
 }
 
-type WorldWebGlCompositeTransparentDraw =
+export type WorldWebGlCompositeTransparentDraw =
   | Readonly<{ kind: 'world'; draw: WorldWebGlTransparentDraw }>
   | Readonly<{
       kind: 'material'
@@ -5554,28 +5556,29 @@ type WorldWebGlCompositeTransparentDraw =
     }>
 
 const boundsCenters = new WeakMap<Float32Array, readonly [number, number, number]>()
+const primitiveBounds = new WeakMap<Float32Array, ReturnType<typeof boundsOf>>()
+
+/** Vertex arrays are shared by every instance and immutable for a plan: scan each one once. */
+function cachedPrimitiveBounds(positions: Float32Array): ReturnType<typeof boundsOf> {
+  let bounds = primitiveBounds.get(positions)
+  if (bounds === undefined) primitiveBounds.set(positions, (bounds = boundsOf(positions)))
+  return bounds
+}
 
 function transparentProjectionDepth(
   positions: Float32Array,
   direction: readonly [number, number, number],
   transform?: Float32Array,
 ): number {
-  // Vertex arrays are shared by every instance and immutable for a plan; scan each one once.
   let center = boundsCenters.get(positions)
   if (center === undefined) {
     if (positions.length % 3 !== 0 || !positions.every(Number.isFinite))
       throw new TypeError('world transparent primitive contains invalid positions')
-    const minimum = [Infinity, Infinity, Infinity]
-    const maximum = [-Infinity, -Infinity, -Infinity]
-    for (let offset = 0; offset < positions.length; offset += 3)
-      for (const axis of [0, 1, 2] as const) {
-        minimum[axis] = Math.min(minimum[axis]!, positions[offset + axis]!)
-        maximum[axis] = Math.max(maximum[axis]!, positions[offset + axis]!)
-      }
+    const { min, max } = cachedPrimitiveBounds(positions)
     center =
       positions.length === 0
         ? ([0, 0, 0] as const)
-        : (minimum.map((value, axis) => (value + maximum[axis]!) / 2) as [number, number, number])
+        : (min.map((value, axis) => (value + max[axis]!) / 2) as [number, number, number])
     boundsCenters.set(positions, center)
   }
   let point: readonly [number, number, number] = center
@@ -5599,7 +5602,12 @@ function transparentProjectionDepth(
   return depth
 }
 
-function createWorldWebGlCompositeTransparentDrawPlan(
+/**
+ * Every transparent draw of a frame in blending order: world runs and transparent material passes by
+ * priority and depth, then packed so that decals of one batch draw as one run wherever the order among
+ * overlapping draws allows it.
+ */
+export function createWorldWebGlCompositeTransparentDrawPlan(
   plan: WorldWebGlPlan,
   requested: WorldWebGlCamera | undefined,
   materialDraws: readonly Readonly<{
@@ -5609,6 +5617,18 @@ function createWorldWebGlCompositeTransparentDrawPlan(
   excludeClippedWater = false,
 ): readonly WorldWebGlCompositeTransparentDraw[] {
   const view = cameraState(requested)
+  const worldDraws = createWorldWebGlTransparentDrawPlan(plan, requested, { excludeClippedWater })
+  // The world runs are cached per view direction; the same runs and material draws pack the same.
+  const key: unknown[] = [worldDraws]
+  for (const { draw } of materialDraws)
+    key.push(draw.primitive.positions, draw.primitive.transform, draw.program)
+  const cached = compositeTransparentPacks.get(plan)
+  if (
+    cached !== undefined &&
+    cached.key.length === key.length &&
+    cached.key.every((value, index) => value === key[index])
+  )
+    return cached.draws
   const horizontal = Math.cos(view.elevation)
   const direction = [
     Math.cos(view.azimuth) * horizontal,
@@ -5621,7 +5641,7 @@ function createWorldWebGlCompositeTransparentDrawPlan(
     depth: number
     ordinal: number
   }> = []
-  for (const draw of createWorldWebGlTransparentDrawPlan(plan, requested, { excludeClippedWater }))
+  for (const draw of worldDraws)
     entries.push({
       value: Object.freeze({ kind: 'world', draw }),
       priority: 0,
@@ -5643,7 +5663,262 @@ function createWorldWebGlCompositeTransparentDrawPlan(
     (left, right) =>
       left.priority - right.priority || left.depth - right.depth || left.ordinal - right.ordinal,
   )
-  return Object.freeze(entries.map(entry => entry.value))
+  const ordered = entries.map(entry => entry.value)
+  const draws = packWorldWebGlTransparentDraws(plan, view, worldDraws, ordered)
+  compositeTransparentPacks.set(plan, Object.freeze({ key, draws }))
+  return draws
+}
+
+/** The last packed composite per plan, keyed by its world runs and material draw identities. */
+const compositeTransparentPacks = new WeakMap<
+  WorldWebGlPlan,
+  Readonly<{ key: readonly unknown[]; draws: readonly WorldWebGlCompositeTransparentDraw[] }>
+>()
+
+/** Screen boxes of a world transparent plan's triangles; the plan is cached per view direction. */
+const worldTransparentTriangles = new WeakMap<
+  readonly WorldWebGlTransparentDraw[],
+  Readonly<{
+    boxes: Float64Array
+    depths: Float64Array
+    /** First vertex of each triangle in its batch: triangles are three consecutive vertices. */
+    vertices: Uint32Array
+    /** Each run's first triangle, then one past the last. */
+    runStarts: Uint32Array
+    runOf: ReadonlyMap<WorldWebGlTransparentDraw, number>
+  }>
+>()
+
+/** An orthonormal basis of the view plane: the orthographic camera's screen axes up to sign. */
+function worldViewPlaneBasis(view: ReturnType<typeof cameraState>) {
+  const horizontal = Math.cos(view.elevation)
+  const direction = [
+    Math.cos(view.azimuth) * horizontal,
+    Math.sin(view.elevation),
+    Math.sin(view.azimuth) * horizontal,
+  ] as const
+  // cross((0, 1, 0), direction); straight down any horizontal axis will do.
+  const length = Math.hypot(direction[2], direction[0])
+  const right =
+    length < 1e-9
+      ? ([1, 0, 0] as const)
+      : ([direction[2] / length, 0, -direction[0] / length] as const)
+  const up = [
+    direction[1] * right[2] - direction[2] * right[1],
+    direction[2] * right[0] - direction[0] * right[2],
+    direction[0] * right[1] - direction[1] * right[0],
+  ] as const
+  return { direction, right, up }
+}
+
+/** Screen box of a transformed primitive: its local bounds' corners projected on the view plane. */
+function primitiveScreenBox(
+  primitive: SceneRendererPrimitive,
+  basis: ReturnType<typeof worldViewPlaneBasis>,
+  box: Float64Array,
+  offset: number,
+): void {
+  const { min, max } = cachedPrimitiveBounds(primitive.positions)
+  if (!(min[0] <= max[0])) {
+    // Nothing to draw, nothing to overlap.
+    box.set([Infinity, Infinity, -Infinity, -Infinity], offset)
+    return
+  }
+  const matrix = primitive.transform
+  let x0 = Infinity
+  let y0 = Infinity
+  let x1 = -Infinity
+  let y1 = -Infinity
+  for (let corner = 0; corner < 8; corner += 1) {
+    let x = corner & 1 ? max[0] : min[0]
+    let y = corner & 2 ? max[1] : min[1]
+    let z = corner & 4 ? max[2] : min[2]
+    if (matrix !== undefined) {
+      const w = matrix[3]! * x + matrix[7]! * y + matrix[11]! * z + matrix[15]!
+      const tx = (matrix[0]! * x + matrix[4]! * y + matrix[8]! * z + matrix[12]!) / w
+      const ty = (matrix[1]! * x + matrix[5]! * y + matrix[9]! * z + matrix[13]!) / w
+      z = (matrix[2]! * x + matrix[6]! * y + matrix[10]! * z + matrix[14]!) / w
+      x = tx
+      y = ty
+    }
+    const u = x * basis.right[0] + y * basis.right[1] + z * basis.right[2]
+    const v = x * basis.up[0] + y * basis.up[1] + z * basis.up[2]
+    // NaN keeps the bounds NaN, which the levelling reads as covering everything.
+    x0 = u < x0 || Number.isNaN(u) ? u : x0
+    x1 = u > x1 || Number.isNaN(u) ? u : x1
+    y0 = v < y0 || Number.isNaN(v) ? v : y0
+    y1 = v > y1 || Number.isNaN(v) ? v : y1
+  }
+  box[offset] = x0
+  box[offset + 1] = y0
+  box[offset + 2] = x1
+  box[offset + 3] = y1
+}
+
+function worldTransparentTrianglesOf(
+  worldDraws: readonly WorldWebGlTransparentDraw[],
+  basis: ReturnType<typeof worldViewPlaneBasis>,
+) {
+  const cached = worldTransparentTriangles.get(worldDraws)
+  if (cached !== undefined) return cached
+  let total = 0
+  for (const draw of worldDraws) total += draw.range.count / 3
+  const boxes = new Float64Array(total * 4)
+  const depths = new Float64Array(total)
+  const vertices = new Uint32Array(total)
+  const runStarts = new Uint32Array(worldDraws.length + 1)
+  const runOf = new Map<WorldWebGlTransparentDraw, number>()
+  let triangle = 0
+  worldDraws.forEach((draw, run) => {
+    runOf.set(draw, run)
+    runStarts[run] = triangle
+    const positions = draw.batch.positions
+    const { indices, first, count } = draw.range
+    for (let index = first; index < first + count; index += 3, triangle += 1) {
+      const vertex = indices[index]!
+      vertices[triangle] = vertex
+      let x0 = Infinity
+      let y0 = Infinity
+      let x1 = -Infinity
+      let y1 = -Infinity
+      let depth = 0
+      for (let corner = 0; corner < 3; corner += 1) {
+        const at = (vertex + corner) * 3
+        const x = positions[at]!
+        const y = positions[at + 1]!
+        const z = positions[at + 2]!
+        const u = x * basis.right[0] + y * basis.right[1] + z * basis.right[2]
+        const v = x * basis.up[0] + y * basis.up[1] + z * basis.up[2]
+        if (u < x0) x0 = u
+        if (u > x1) x1 = u
+        if (v < y0) y0 = v
+        if (v > y1) y1 = v
+        depth += x * basis.direction[0] + y * basis.direction[1] + z * basis.direction[2]
+      }
+      boxes.set([x0, y0, x1, y1], triangle * 4)
+      depths[triangle] = depth / 3
+    }
+  })
+  runStarts[worldDraws.length] = triangle
+  const result = Object.freeze({ boxes, depths, vertices, runStarts, runOf })
+  worldTransparentTriangles.set(worldDraws, result)
+  return result
+}
+
+/**
+ * Transparent draws in back-to-front order, packed: see `transparentOrderLevels`. Decals of one
+ * batch that alternate in depth with other batches but never overlap them on screen draw as one run,
+ * and every pair that does overlap keeps its sorted order, so the blended picture is unchanged.
+ * Each world triangle is its own item; material draws never merge.
+ */
+function packWorldWebGlTransparentDraws(
+  plan: WorldWebGlPlan,
+  view: ReturnType<typeof cameraState>,
+  worldDraws: readonly WorldWebGlTransparentDraw[],
+  ordered: readonly WorldWebGlCompositeTransparentDraw[],
+): readonly WorldWebGlCompositeTransparentDraw[] {
+  const basis = worldViewPlaneBasis(view)
+  const triangles = worldTransparentTrianglesOf(worldDraws, basis)
+  let materials = 0
+  for (const entry of ordered) if (entry.kind === 'material') materials += 1
+  const count = triangles.depths.length + materials
+  const boxes = new Float64Array(count * 4)
+  const batches = new Int32Array(count)
+  const itemTriangle = new Int32Array(count).fill(-1)
+  const itemEntry: WorldWebGlCompositeTransparentDraw[] = []
+  const batchIds = new Map<WorldWebGlBatch, number>()
+  let item = 0
+  for (const entry of ordered) {
+    if (entry.kind === 'material') {
+      primitiveScreenBox(entry.draw.primitive, basis, boxes, item * 4)
+      batches[item] = -1
+      itemEntry[item] = entry
+      item += 1
+      continue
+    }
+    const run = triangles.runOf.get(entry.draw)
+    if (run === undefined) throw new TypeError('world transparent run is not in its plan')
+    let batch = batchIds.get(entry.draw.batch)
+    if (batch === undefined) batchIds.set(entry.draw.batch, (batch = batchIds.size))
+    for (let triangle = triangles.runStarts[run]!; triangle < triangles.runStarts[run + 1]!; triangle += 1) {
+      boxes.set(triangles.boxes.subarray(triangle * 4, triangle * 4 + 4), item * 4)
+      batches[item] = batch
+      itemTriangle[item] = triangle
+      itemEntry[item] = entry
+      item += 1
+    }
+  }
+  const extent = Math.hypot(
+    plan.bounds.maximum[0] - plan.bounds.minimum[0],
+    plan.bounds.maximum[1] - plan.bounds.minimum[1],
+    plan.bounds.maximum[2] - plan.bounds.minimum[2],
+  )
+  // Far above float32 projection error, far below a decal: only near-touching boxes are affected.
+  const levels = transparentOrderLevels(boxes, batches, Math.max(1e-4, extent * 1e-5))
+  // Stable order by level: counting sort.
+  let deepest = 0
+  for (const level of levels) if (level > deepest) deepest = level
+  const starts = new Int32Array(deepest + 2)
+  for (const level of levels) starts[level + 1]! += 1
+  for (let level = 1; level < starts.length; level += 1) starts[level]! += starts[level - 1]!
+  const order = new Int32Array(count)
+  for (let index = 0; index < count; index += 1) order[starts[levels[index]!]!++] = index
+  interface Group {
+    readonly draw: WorldWebGlTransparentDraw
+    readonly triangles: number[]
+  }
+  const emitted: (WorldWebGlCompositeTransparentDraw | Group)[] = []
+  let currentLevel = -1
+  let groups = new Map<number, Group>()
+  for (const index of order) {
+    const level = levels[index]!
+    if (level !== currentLevel) {
+      currentLevel = level
+      groups = new Map()
+    }
+    const entry = itemEntry[index]!
+    const triangle = itemTriangle[index]!
+    if (triangle < 0 || entry.kind !== 'world') {
+      emitted.push(entry)
+      continue
+    }
+    let group = groups.get(batches[index]!)
+    if (group === undefined) {
+      group = { draw: entry.draw, triangles: [] }
+      groups.set(batches[index]!, group)
+      emitted.push(group)
+    }
+    group.triangles.push(triangle)
+  }
+  // One index list per batch, its groups laid out in draw order, so every group is one range.
+  const sizes = new Map<WorldWebGlBatch, number>()
+  for (const value of emitted)
+    if ('triangles' in value)
+      sizes.set(value.draw.batch, (sizes.get(value.draw.batch) ?? 0) + value.triangles.length * 3)
+  const lists = new Map<WorldWebGlBatch, { indices: Uint32Array; filled: number }>()
+  for (const [batch, size] of sizes) lists.set(batch, { indices: new Uint32Array(size), filled: 0 })
+  return Object.freeze(
+    emitted.map(value => {
+      if (!('triangles' in value)) return value
+      const list = lists.get(value.draw.batch)!
+      const first = list.filled
+      let depth = 0
+      for (const triangle of value.triangles) {
+        const vertex = triangles.vertices[triangle]!
+        list.indices[list.filled++] = vertex
+        list.indices[list.filled++] = vertex + 1
+        list.indices[list.filled++] = vertex + 2
+        depth += triangles.depths[triangle]!
+      }
+      const range = Object.freeze({
+        indices: list.indices,
+        first,
+        count: list.filled - first,
+        depth: depth / value.triangles.length,
+      })
+      return Object.freeze({ kind: 'world', draw: Object.freeze({ ...value.draw, range }) })
+    }),
+  )
 }
 
 export function orbitWorldWebGlCamera(
