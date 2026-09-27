@@ -957,6 +957,28 @@ function colorForMaterial(index: number, normalizedHeight: number): string {
 // Reconstructing a reduced/newer input would invalidate the renderer's retained plan on click.
 const lastWorldWebGlInputs = new WeakMap<HTMLCanvasElement, WorldWebGlInput>()
 
+// A model's layer list is frozen and shared by the snapshots of one load, so its flattened world
+// items and terrain definitions are built once instead of on every animation frame (~100 000 items).
+function flattenWorldLayers(layers: readonly CandidateWorldViewerLayer[]) {
+  return Object.freeze({
+    items: layers.flatMap(layer => layer.page.items),
+    terrainMaterials: layers.flatMap(layer => layer.layer.materials ?? []),
+    waterMaterials: layers.flatMap(layer => layer.layer.waterMaterials ?? []),
+    terrainWeightRasters: layers.flatMap(layer => layer.layer.weightRasters ?? []),
+  })
+}
+
+const flattenedWorldLayers = new WeakMap<
+  readonly CandidateWorldViewerLayer[],
+  ReturnType<typeof flattenWorldLayers>
+>()
+
+function flattenedWorldLayersOf(layers: readonly CandidateWorldViewerLayer[]) {
+  let flattened = flattenedWorldLayers.get(layers)
+  if (flattened === undefined) flattenedWorldLayers.set(layers, (flattened = flattenWorldLayers(layers)))
+  return flattened
+}
+
 /** Draws a bounded game-neutral isometric scene from common terrain/world facets. */
 export function drawCandidateWorld(
   canvas: HTMLCanvasElement,
@@ -967,14 +989,15 @@ export function drawCandidateWorld(
   timeSeconds = 0,
   renderer?: WorldWebGlRenderer,
 ): WorldRenderStats {
-  const worldItems = model.layers.flatMap(layer => layer.page.items)
+  const flattened = flattenedWorldLayersOf(model.layers)
+  const worldItems = flattened.items
   const selectedObjectId = typeof selection === 'number' ? selection : selection?.selectedObjectId
   const webGlInput = {
     items: worldItems,
     ...(model.models === undefined ? {} : { models: model.models }),
-    terrainMaterials: model.layers.flatMap(layer => layer.layer.materials ?? []),
-    waterMaterials: model.layers.flatMap(layer => layer.layer.waterMaterials ?? []),
-    terrainWeightRasters: model.layers.flatMap(layer => layer.layer.weightRasters ?? []),
+    terrainMaterials: flattened.terrainMaterials,
+    waterMaterials: flattened.waterMaterials,
+    terrainWeightRasters: flattened.terrainWeightRasters,
     ...(model.terrainTextures === undefined ? {} : { terrainTextures: model.terrainTextures }),
     ...(selectedObjectId === undefined ? {} : { selectedObjectId }),
     ...(typeof selection !== 'object' || selection.preview === undefined
