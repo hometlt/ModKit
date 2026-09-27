@@ -70,6 +70,12 @@
                 "pattern": "^[A-Za-z0-9._-]{1,64}$",
                 "type": "string"
               },
+              "loopbackHost": {
+                "enum": [
+                  "localhost",
+                  "127.0.0.1"
+                ]
+              },
               "loopbackPort": {
                 "maximum": 65535,
                 "minimum": 1024,
