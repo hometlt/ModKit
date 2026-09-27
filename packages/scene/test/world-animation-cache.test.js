@@ -155,29 +155,45 @@ it('retains exact terrain/splat/picking arrays while default actors and water ad
   assert.deepEqual(seek, createWorldWebGlPlan(seekInput))
 })
 
-it('invalidates ground preparation for every structural/presentation revision, including replaced map entries', () => {
+it('rebuilds the ground preparation for terrain revisions only, each plan equal to a fresh one', () => {
   const input = world()
   const initial = createWorldWebGlPlan(input)
-  const variants = [
+  const terrainRevisions = [
     { items: input.items.map((item, i) => (i === 0 ? { ...item, ambientOcclusion: 0.25 } : item)) },
-    { models: new Map([['actor', { ...input.models.get('actor'), sourceKey: 'revision:2' }]]) },
     { terrainMaterials: [{ ...input.terrainMaterials[0], normalResourceId: 'normal.png' }] },
     { terrainWeightRasters: [{ ...input.terrainWeightRasters[0] }] },
     { terrainTextures: new Map([...input.terrainTextures, ['ground.png', texture('ground.png')]]) },
+  ]
+  // The preparation reads the items, the terrain definitions and the cliff pieces only: another
+  // object's model, water, selection, preview and team colours leave it (the actor is no cliff).
+  const otherRevisions = [
+    { models: new Map([['actor', { ...input.models.get('actor'), sourceKey: 'revision:2' }]]) },
     { waterMaterials: [{ ...input.waterMaterials[0], scroll: [1, 0] }] },
     { selectedObjectId: 1 },
     { selectedObjectId: 1, previewPosition: { x: 2, y: 1, z: 3 } },
     { teamColors: new Map([[0, [1, 0, 0]]]) },
   ]
-  for (const variant of variants) {
-    const changed = { ...input, ...variant }
-    const plan = createWorldWebGlPlan(changed, initial)
-    assert.notEqual(plan.picking.terrainTriangles, initial.picking.terrainTriangles)
-    assert.deepEqual(plan, createWorldWebGlPlan(changed))
-  }
-  input.models.set('actor', { ...input.models.get('actor'), sourceKey: 'replaced-in-map' })
-  const replaced = createWorldWebGlPlan(input, initial)
-  assert.notEqual(replaced.picking.terrainTriangles, initial.picking.terrainTriangles)
+  for (const [variants, rebuilt] of [
+    [terrainRevisions, true],
+    [otherRevisions, false],
+  ])
+    for (const variant of variants) {
+      const changed = { ...input, ...variant }
+      const plan = createWorldWebGlPlan(changed, initial)
+      if (rebuilt) assert.notEqual(plan.picking.terrainTriangles, initial.picking.terrainTriangles)
+      else assert.equal(plan.picking.terrainTriangles, initial.picking.terrainTriangles)
+      assert.deepEqual(plan, createWorldWebGlPlan(changed))
+    }
+  // A cliff piece's model, replaced in the same map, is a terrain revision.
+  const cliffInput = world()
+  cliffInput.items = cliffInput.items.map(item =>
+    item === actor ? { ...actor, derivedFrom: 'cliffs', typeId: 'CliffNatural:fixture' } : item,
+  )
+  const cliffPlan = createWorldWebGlPlan(cliffInput)
+  cliffInput.models.set('actor', { ...cliffInput.models.get('actor'), sourceKey: 'replaced-in-map' })
+  const replaced = createWorldWebGlPlan(cliffInput, cliffPlan)
+  assert.notEqual(replaced.picking.terrainTriangles, cliffPlan.picking.terrainTriangles)
+  assert.deepEqual(replaced, createWorldWebGlPlan(cliffInput))
 })
 
 it('rebuilds animated cliff caps and their adjoining terrain, but retains them for static cliffs', () => {
@@ -250,8 +266,10 @@ it('renderer picking reuses its retained plan, counts dynamic updates honestly a
   assert.equal(renderer.stats().worldPlanBuildSamples, 1)
   assert.equal(renderer.stats().worldPlanDynamicUpdates, 1)
   assert.equal(renderer.stats().worldPlanDynamicUpdateSamples, 1)
+  // Selection tints an object but leaves the terrain preparation: another dynamic update.
   renderer.pick({ ...next, selectedObjectId: 1 }, screen)
-  assert.equal(renderer.stats().worldPlanBuilds, 2)
+  assert.equal(renderer.stats().worldPlanBuilds, 1)
+  assert.equal(renderer.stats().worldPlanDynamicUpdates, 2)
   renderer.dispose()
   assert.equal(renderer.stats().worldPlanBytesRetained, 0)
   assert.throws(() => renderer.pick(next, screen), /disposed/)
@@ -469,6 +487,27 @@ it('replays the projected decal triangles of an object kept from the previous pl
   const values = plan =>
     JSON.stringify(plan, (_, value) => (value instanceof Map ? [...value] : value))
   assert.equal(values(next), values(createWorldWebGlPlan(nextInput)))
+})
+
+it('keeps the terrain preparation while other models load or the selection changes', () => {
+  const input = world()
+  const first = createWorldWebGlPlan(input)
+  // A model that is no cliff piece arrives: the terrain is the same.
+  const loaded = { ...input, models: new Map([...input.models, ['other', effectModel()]]) }
+  const second = createWorldWebGlPlan(loaded, first)
+  assert.equal(second.splatTriangles, first.splatTriangles)
+  const selected = createWorldWebGlPlan({ ...loaded, selectedObjectId: actor.objectId }, second)
+  assert.equal(selected.splatTriangles, first.splatTriangles)
+  // Changed ground is a new terrain.
+  const [ground, ...rest] = loaded.items
+  const raised = createWorldWebGlPlan(
+    { ...loaded, items: [{ ...ground, heightAdjustment: 1 }, ...rest] },
+    selected,
+  )
+  assert.notEqual(raised.splatTriangles, first.splatTriangles)
+  const values = plan =>
+    JSON.stringify(plan, (_, value) => (value instanceof Map ? [...value] : value))
+  assert.equal(values(second), values(createWorldWebGlPlan(loaded)))
 })
 
 it('keeps procedural cliff skirts until the model covering each edge has loaded', () => {

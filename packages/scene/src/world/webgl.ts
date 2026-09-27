@@ -4752,14 +4752,30 @@ function sameWorldPlanInput(left: WorldWebGlInput, right: WorldWebGlInput): bool
   )
 }
 
+/**
+ * Whether the terrain preparation (`prepareWorldStaticTerrain`) of `left` serves `right`: it reads
+ * the items, the terrain materials, textures and weight rasters, and of the models only the cliff
+ * pieces (their results, placements and, for animated geometry, clocks). Loading the other models,
+ * selecting or recolouring an object keeps it: each model-loading tick re-prepared the whole terrain.
+ */
 function sameWorldStaticInput(left: WorldWebGlInput, right: WorldWebGlInput): boolean {
-  if (!sameWorldPlanInputExceptAnimationTimes(left, right)) return false
-  // Cliff caps are sampled model geometry. A changed cliff clock must regenerate both caps and
-  // neighbouring terrain. Material-only/empty clips do not alter the sampled cap geometry.
+  if (
+    !sameArrayIdentity(left.items, right.items) ||
+    !sameArrayIdentity(left.terrainMaterials, right.terrainMaterials) ||
+    !sameArrayIdentity(left.terrainWeightRasters, right.terrainWeightRasters) ||
+    !sameWorldMap(left.terrainTextures, right.terrainTextures)
+  )
+    return false
   for (const item of right.items) {
     if (item.facet !== 'objects' || item.derivedFrom !== 'cliffs' || item.resourceId === undefined)
       continue
     const model = right.models?.get(item.resourceId)
+    if (model !== left.models?.get(item.resourceId)) return false
+    const [lx, ly, lz] = objectPosition(item, left)
+    const [rx, ry, rz] = objectPosition(item, right)
+    if (lx !== rx || ly !== ry || lz !== rz) return false
+    // Cliff caps are sampled model geometry. A changed cliff clock must regenerate both caps and
+    // neighbouring terrain. Material-only/empty clips do not alter the sampled cap geometry.
     if (model?.state !== 'converted' || !worldModelHasAnimatedGeometry(model, item)) continue
     if (worldObjectTime(left, item, true) !== worldObjectTime(right, item, true)) return false
   }
