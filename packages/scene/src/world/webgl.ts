@@ -30,7 +30,12 @@ import {
 } from '../render/material-webgl.js'
 import { primitiveTint } from '../render/tint.js'
 import { materialIsSolid, sceneMaterialDraws, type MaterialDraw } from '../render/material-draws.js'
-import { prepareSceneMaterialPrograms, type SceneMaterialPrograms } from '../render/materials.js'
+import {
+  createSceneMaterialProgramSampler,
+  prepareSceneMaterialPrograms,
+  type SceneMaterialProgramSampler,
+  type SceneMaterialPrograms,
+} from '../render/materials.js'
 import { applyTextureFilter } from '../render/texture-filtering.js'
 import { uniformLocation } from '../materials/webgl.js'
 import { invertMaterialFrame } from '../materials/frame.js'
@@ -1426,6 +1431,51 @@ function retainedWorldModelPrograms(
   let programs = retainedModelPrograms.get(result)
   if (programs === undefined) retainedModelPrograms.set(result, (programs = new Map()))
   return programs
+}
+
+interface WorldModelProgramTemplate {
+  readonly presented: WorldModelPrograms['presented']
+  readonly scene: WorldModelPrograms['scene']
+  /** Undefined when the materials are malformed or unsupported: the model keeps its fallback. */
+  readonly sampler: SceneMaterialProgramSampler | undefined
+}
+
+const retainedModelProgramTemplates = new WeakMap<
+  WorldModelSample['result'],
+  Map<string, WorldModelProgramTemplate>
+>()
+
+/**
+ * The clock-independent part of a model's material programs for one presentation (animation,
+ * team colour, cliff): presented materials, their scene materials and the compiled program sampler.
+ * A playing model samples it per clock instead of snapshotting and compiling its materials again.
+ */
+function worldModelProgramTemplate(
+  result: WorldModelSample['result'],
+  key: string,
+  item: WorldSceneObjectItem,
+): WorldModelProgramTemplate {
+  let templates = retainedModelProgramTemplates.get(result)
+  if (templates === undefined) retainedModelProgramTemplates.set(result, (templates = new Map()))
+  let template = templates.get(key)
+  if (template === undefined) {
+    const presented = presentationMaterials(item, result.materials ?? [])
+    const scene = worldModelSceneMaterials(presented, result.textures ?? [])
+    let sampler: SceneMaterialProgramSampler | undefined
+    try {
+      sampler = createSceneMaterialProgramSampler(
+        scene.materials,
+        new Map(scene.textures.map(texture => [texture.id, texture])),
+      )
+    } catch {
+      // A malformed or unsupported game-material vocabulary must retain the existing visible
+      // fallback instead of making the whole map fail to render.
+      sampler = undefined
+    }
+    template = Object.freeze({ presented, scene, sampler })
+    templates.set(key, template)
+  }
+  return template
 }
 
 const materialsFollowingTime = new WeakMap<WorldModelSample['result'], boolean>()
@@ -3189,41 +3239,36 @@ export function createWorldWebGlPlan(
       // Materials without animation tracks do not follow the clock: their programs outlive the frame,
       // so an animated map keeps its GPU leases instead of preparing ~550 programs every frame.
       const clock = worldMaterialsFollowTime(result) ? String(time) : ''
-      const programKey = [
+      const templateKey = [
         component.resourceId,
-        clock,
         selectedAnimation?.id ?? '',
         teamColor?.join(',') ?? '',
         item.presentationTeamColorIntensity ?? '',
         item.derivedFrom === 'cliffs' ? 'cliffs' : '',
       ].join('\u0000')
+      const programKey = `${templateKey}\u0000${clock}`
       const retained = clock === '' ? retainedWorldModelPrograms(result) : undefined
-      const cachedMaterials = planPrograms.get(programKey) ?? retained?.get(programKey)
-      const presented =
-        cachedMaterials?.presented ?? presentationMaterials(item, result.materials ?? [])
-      const objectTint = worldObjectTint(item, input.selectedObjectId)
-      const scene =
-        cachedMaterials?.scene ?? worldModelSceneMaterials(presented, result.textures ?? [])
-      if (cachedMaterials !== undefined) {
-        programs = cachedMaterials.programs
-        planPrograms.set(programKey, cachedMaterials)
-      } else {
+      let cachedMaterials = planPrograms.get(programKey) ?? retained?.get(programKey)
+      if (cachedMaterials === undefined) {
+        const template = worldModelProgramTemplate(result, templateKey, item)
+        let sampled: ReadonlyMap<string, SceneMaterialPrograms> = new Map()
         try {
-          programs = prepareSceneMaterialPrograms(
-            scene.materials,
-            new Map(scene.textures.map(texture => [texture.id, texture])),
-            materialContext,
-            [],
-          )
+          if (template.sampler !== undefined) sampled = template.sampler.sample(materialContext, [])
         } catch {
-          // A malformed or unsupported game-material vocabulary must retain the existing visible
-          // fallback instead of making the whole map fail to render.
-          programs = new Map()
+          // As above: an unsupported sample keeps the model's fallback.
+          sampled = new Map()
         }
-        const prepared = Object.freeze({ presented, scene, programs })
-        planPrograms.set(programKey, prepared)
-        retained?.set(programKey, prepared)
+        cachedMaterials = Object.freeze({
+          presented: template.presented,
+          scene: template.scene,
+          programs: sampled,
+        })
+        retained?.set(programKey, cachedMaterials)
       }
+      planPrograms.set(programKey, cachedMaterials)
+      const { presented, scene } = cachedMaterials
+      programs = cachedMaterials.programs
+      const objectTint = worldObjectTint(item, input.selectedObjectId)
       const materialPrimitives: SceneRendererPrimitive[] = []
       const materialShadowPrimitives: SceneRendererPrimitive[] = []
       const instanceTransform = multiplyComponentTransforms(

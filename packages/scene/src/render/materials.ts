@@ -30,30 +30,34 @@ export function prepareSceneMaterialPrograms(
   diagnostics: SceneRendererDiagnostic[],
   signal?: AbortSignal,
 ): ReadonlyMap<string, SceneMaterialPrograms> {
-  const environment = snapshotEnvironment(context?.environment)
-  if (context !== undefined) {
-    for (const value of [context.time, context.sequenceTime])
-      if (value !== undefined && (!Number.isFinite(value) || value < 0))
-        throw new TypeError('material time must be finite and nonnegative')
-    if (
-      context.sequenceIndex !== undefined &&
-      (!Number.isSafeInteger(context.sequenceIndex) ||
-        context.sequenceIndex < 0 ||
-        context.sequenceIndex > 0xffffffff)
-    )
-      throw new TypeError('invalid material sequence index')
-    for (const [vector, size] of [
-      [context.teamColor, 3],
-      [context.ambient, 4],
-    ] as const)
-      if (
-        vector !== undefined &&
-        (!Array.isArray(vector) ||
-          vector.length !== size ||
-          vector.some(value => !Number.isFinite(value) || value < 0 || value > 1))
-      )
-        throw new TypeError('invalid material lighting')
-  }
+  validateMaterialContext(context)
+  return createSceneMaterialProgramSampler(materials, textures, signal).sample(
+    context,
+    diagnostics,
+    signal,
+  )
+}
+
+export interface SceneMaterialProgramSampler {
+  /** The programs of one moment: playback time, sequence, team colour and lighting. */
+  sample(
+    context: SceneRendererMaterialContext | undefined,
+    diagnostics: SceneRendererDiagnostic[],
+    signal?: AbortSignal,
+  ): ReadonlyMap<string, SceneMaterialPrograms>
+}
+
+/**
+ * The moment-independent part of `prepareSceneMaterialPrograms`, done once: material validation,
+ * the parameter snapshot, the compiled render-material samplers and the texture bindings. A model
+ * that plays calls `sample` per moment; the compiled samplers keep their shader sources across
+ * moments, so only uniform values are new. Diagnostics are reported by `sample`, in material order.
+ */
+export function createSceneMaterialProgramSampler(
+  materials: readonly SceneRendererMaterial[],
+  textures: ReadonlyMap<string, SceneRendererTexture>,
+  signal?: AbortSignal,
+): SceneMaterialProgramSampler {
   for (const texture of textures.values())
     if (texture.filter !== undefined && texture.filter !== 'nearest' && texture.filter !== 'linear')
       throw new TypeError('invalid material texture filter')
@@ -69,44 +73,62 @@ export function prepareSceneMaterialPrograms(
     signal,
   )
   if (!Array.isArray(parameters)) throw new TypeError('invalid material parameters')
-  const results = new Map<string, SceneMaterialPrograms>()
+  type Entry =
+    | Readonly<{ kind: 'skip'; diagnostics: readonly SceneRendererDiagnostic[] }>
+    | Readonly<{
+        kind: 'instance'
+        material: SceneRendererMaterial
+        context: SceneRendererMaterialContext
+        sampler: SceneMaterialProgramSampler
+      }>
+    | Readonly<{
+        kind: 'standard'
+        material: SceneRendererMaterial
+        sampler: ReturnType<typeof createStandardMaterialPrograms>
+        bound: ReadonlyMap<string, SceneRendererTexture>
+        normalMapFormats: ReadonlyMap<string, NormalMapFormat>
+        textureDimensions: ReadonlyMap<string, '2d' | 'cube'>
+      }>
+  const entries: Entry[] = []
   for (const [index, material] of materials.entries()) {
     signal?.throwIfAborted()
     if (material.context !== undefined) {
       const { context: instanceContext, ...plain } = material
-      const prepared = prepareSceneMaterialPrograms(
-        [plain],
-        textures,
-        context?.sceneLighting === true && instanceContext.sceneLighting === undefined
-          ? { ...instanceContext, sceneLighting: true }
-          : instanceContext,
-        diagnostics,
-        signal,
-      )
-      const program = prepared.get(material.id)
-      if (program !== undefined) results.set(material.id, program)
+      validateMaterialContext(instanceContext)
+      entries.push({
+        kind: 'instance',
+        material,
+        context: instanceContext,
+        sampler: createSceneMaterialProgramSampler([plain], textures, signal),
+      })
       continue
     }
+    const skipped: SceneRendererDiagnostic[] = []
     if (material.simpleEffect !== undefined) {
       const resource = material.simpleEffect.textureResource
       if (
         resource !== undefined &&
         !material.textureBindings?.some(binding => binding.resourceId === resource)
       )
-        diagnostics.push({
+        skipped.push({
           severity: 'warning',
           code: 'common.scene/simple-effect-texture-unresolved',
           message: `Material ${material.id}: simple-effect texture ${resource} was not acquired; drawing its untextured RGBA.`,
         })
+      entries.push({ kind: 'skip', diagnostics: skipped })
       continue
     }
-    if (material.shader === undefined) continue
+    if (material.shader === undefined) {
+      entries.push({ kind: 'skip', diagnostics: skipped })
+      continue
+    }
     if (material.shader.id !== RENDER_MATERIAL_SHADER) {
-      diagnostics.push({
+      skipped.push({
         severity: 'warning',
         code: 'common.scene/material-shader-unsupported',
         message: `Material ${material.id} uses unsupported shader ${material.shader.id}; rendering its base-color fallback.`,
       })
+      entries.push({ kind: 'skip', diagnostics: skipped })
       continue
     }
     const sampler = createStandardMaterialPrograms(parameters[index], {
@@ -133,61 +155,129 @@ export function prepareSceneMaterialPrograms(
       const texture = textures.get(bindings.get(resource) ?? '')
       if (texture === undefined) {
         missing = true
-        diagnostics.push({
+        skipped.push({
           severity: 'warning',
           code: 'common.scene/material-texture-unresolved',
           message: `Material ${material.id} requires ${resource}; rendering its base-color fallback until its textures resolve.`,
         })
       } else bound.set(resource, texture)
     }
-    if (missing) continue
+    if (missing) {
+      entries.push({ kind: 'skip', diagnostics: skipped })
+      continue
+    }
     const normalMapFormats = new Map<string, NormalMapFormat>()
     for (const [id, texture] of bound) {
       const format = textureNormalFormat(texture)
       if (format !== undefined) normalMapFormats.set(id, format)
     }
-    let passes: readonly StandardMaterialProgram[]
-    try {
-      passes = sampler.sample(
-        {
-          time: context?.time ?? 0,
-          ...(context?.sequenceTime === undefined ? {} : { sequenceTime: context.sequenceTime }),
-          ...(context?.sequenceIndex === undefined ? {} : { sequenceIndex: context.sequenceIndex }),
-        },
-        {
-          normalMapFormats,
-          textureDimensions: new Map(
-            [...bound].map(([id, texture]) => [id, texture.dimension ?? '2d']),
-          ),
-          ...(environment === undefined ? {} : { environment }),
-          ...(context?.teamColor === undefined ? {} : { teamColor: context.teamColor }),
-          ...(context?.ambient === undefined ? {} : { ambient: context.ambient }),
-          ...(context?.sceneLighting === true ? { sceneLighting: true } : {}),
-          ...(context?.teamColorIntensity === undefined
-            ? {}
-            : { teamColorIntensity: context.teamColorIntensity }),
-        },
-        signal,
-      )
-    } catch (error) {
-      if (!(error instanceof UnsupportedCubeCoordinatesError)) throw error
-      diagnostics.push({
-        severity: 'warning',
-        code: 'common.scene/material-feature-unrendered',
-        message: `Material ${material.id}: ${error.message}; rendering its base-color fallback.`,
-      })
-      continue
-    }
-    for (const pass of passes)
-      for (const message of pass.diagnostics)
-        diagnostics.push({
-          severity: 'warning',
-          code: 'common.scene/material-feature-unrendered',
-          message: `Material ${material.id}: ${message}`,
-        })
-    results.set(material.id, Object.freeze({ passes, textures: bound }))
+    entries.push({
+      kind: 'standard',
+      material,
+      sampler,
+      bound,
+      normalMapFormats,
+      textureDimensions: new Map(
+        [...bound].map(([id, texture]) => [id, texture.dimension ?? '2d'] as const),
+      ),
+    })
   }
-  return results
+  return Object.freeze({
+    sample(
+      context: SceneRendererMaterialContext | undefined,
+      diagnostics: SceneRendererDiagnostic[],
+      sampleSignal?: AbortSignal,
+    ): ReadonlyMap<string, SceneMaterialPrograms> {
+      validateMaterialContext(context)
+      const environment = snapshotEnvironment(context?.environment)
+      const results = new Map<string, SceneMaterialPrograms>()
+      for (const entry of entries) {
+        sampleSignal?.throwIfAborted()
+        if (entry.kind === 'skip') {
+          diagnostics.push(...entry.diagnostics)
+          continue
+        }
+        if (entry.kind === 'instance') {
+          const prepared = entry.sampler.sample(
+            context?.sceneLighting === true && entry.context.sceneLighting === undefined
+              ? { ...entry.context, sceneLighting: true }
+              : entry.context,
+            diagnostics,
+            sampleSignal,
+          )
+          const program = prepared.get(entry.material.id)
+          if (program !== undefined) results.set(entry.material.id, program)
+          continue
+        }
+        let passes: readonly StandardMaterialProgram[]
+        try {
+          passes = entry.sampler.sample(
+            {
+              time: context?.time ?? 0,
+              ...(context?.sequenceTime === undefined ? {} : { sequenceTime: context.sequenceTime }),
+              ...(context?.sequenceIndex === undefined
+                ? {}
+                : { sequenceIndex: context.sequenceIndex }),
+            },
+            {
+              normalMapFormats: entry.normalMapFormats,
+              textureDimensions: entry.textureDimensions,
+              ...(environment === undefined ? {} : { environment }),
+              ...(context?.teamColor === undefined ? {} : { teamColor: context.teamColor }),
+              ...(context?.ambient === undefined ? {} : { ambient: context.ambient }),
+              ...(context?.sceneLighting === true ? { sceneLighting: true } : {}),
+              ...(context?.teamColorIntensity === undefined
+                ? {}
+                : { teamColorIntensity: context.teamColorIntensity }),
+            },
+            sampleSignal,
+          )
+        } catch (error) {
+          if (!(error instanceof UnsupportedCubeCoordinatesError)) throw error
+          diagnostics.push({
+            severity: 'warning',
+            code: 'common.scene/material-feature-unrendered',
+            message: `Material ${entry.material.id}: ${error.message}; rendering its base-color fallback.`,
+          })
+          continue
+        }
+        for (const pass of passes)
+          for (const message of pass.diagnostics)
+            diagnostics.push({
+              severity: 'warning',
+              code: 'common.scene/material-feature-unrendered',
+              message: `Material ${entry.material.id}: ${message}`,
+            })
+        results.set(entry.material.id, Object.freeze({ passes, textures: entry.bound }))
+      }
+      return results
+    },
+  })
+}
+
+function validateMaterialContext(context: SceneRendererMaterialContext | undefined) {
+  if (context === undefined) return
+  for (const value of [context.time, context.sequenceTime])
+    if (value !== undefined && (!Number.isFinite(value) || value < 0))
+      throw new TypeError('material time must be finite and nonnegative')
+  if (
+    context.sequenceIndex !== undefined &&
+    (!Number.isSafeInteger(context.sequenceIndex) ||
+      context.sequenceIndex < 0 ||
+      context.sequenceIndex > 0xffffffff)
+  )
+    throw new TypeError('invalid material sequence index')
+  for (const [vector, size] of [
+    [context.teamColor, 3],
+    [context.ambient, 4],
+  ] as const)
+    if (
+      vector !== undefined &&
+      (!Array.isArray(vector) ||
+        vector.length !== size ||
+        vector.some(value => !Number.isFinite(value) || value < 0 || value > 1))
+    )
+      throw new TypeError('invalid material lighting')
 }
 
 /** Sample one acquired RGBA surface. Game material samplers own wrap; filter defaults to linear. */

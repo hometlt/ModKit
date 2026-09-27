@@ -4,7 +4,10 @@ import {
   createRenderMaterialSampler,
   createStandardMaterialPrograms,
 } from '../src/materials/index.js'
-import { prepareSceneMaterialPrograms } from '../src/render/materials.js'
+import {
+  createSceneMaterialProgramSampler,
+  prepareSceneMaterialPrograms,
+} from '../src/render/materials.js'
 
 const budget = { maxDepth: 64, maxNodes: 10000, maxBytes: 1048576 }
 const layer = (slot = 'diffuse', options = {}) => ({
@@ -620,4 +623,37 @@ it('rejects singular, projective and overflowing world projection frames before 
         ),
       /matrix|frame|float32/,
     )
+})
+
+it('samples prepared materials per moment with the programs a fresh preparation gives', () => {
+  const glowing = [
+    {
+      id: 'glow',
+      baseColor: [1, 1, 1, 1],
+      shader: {
+        id: 'modkit.render-material.v1',
+        parameters: parameters(
+          material({
+            layers: {
+              diffuse: layer('diffuse', { alphaFactor: { value: 1, track: track([0.25], [0.75]) } }),
+            },
+          }),
+        ),
+      },
+    },
+  ]
+  const sampler = createSceneMaterialProgramSampler(glowing, new Map())
+  const [early, late] = [0, 1].map(time => sampler.sample({ time }, []).get('glow').passes[0])
+  // One compiled shader for every moment; only the uniform values follow the clock.
+  assert.equal(late.defines, early.defines)
+  assert.notEqual(late.uniforms.u_diffuseAlphaFactor, early.uniforms.u_diffuseAlphaFactor)
+  for (const [time, sampled] of [
+    [0, early],
+    [1, late],
+  ]) {
+    const fresh = prepareSceneMaterialPrograms(glowing, new Map(), { time }, []).get('glow')
+    assert.deepEqual(sampled.uniforms, fresh.passes[0].uniforms)
+    assert.equal(sampled.fragmentSource, fresh.passes[0].fragmentSource)
+  }
+  assert.throws(() => sampler.sample({ time: -1 }, []), /finite and nonnegative/)
 })
