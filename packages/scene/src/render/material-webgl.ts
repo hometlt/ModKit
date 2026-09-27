@@ -655,6 +655,15 @@ export function materialWebGlDraws(
           programs.delete(source)
         }
       usedPrograms.clear()
+      // A linked program no lease uses any more (its models left the scene) is deleted too, so a
+      // renderer that outlives many scenes does not keep every shader it ever linked.
+      const leased = new Set<WebGLProgram>()
+      for (const lease of programs.values()) leased.add(lease.program)
+      for (const [key, program] of linked)
+        if (!leased.has(program) && !pendingPrograms.has(program)) {
+          gl.deleteProgram(program)
+          linked.delete(key)
+        }
       // Delete unused VAOs before their buffers, including replaced animated attribute arrays.
       for (const [program, geometries] of vertexArrays) {
         for (const [positions, variants] of geometries) {

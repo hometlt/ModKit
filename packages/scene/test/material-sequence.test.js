@@ -149,3 +149,21 @@ it('takes each lease texture by its texture object, so equal ids of different si
     ['large', 'small'],
   )
 })
+
+it('deletes a linked program once no lease draws with it', () => {
+  const { gl, count } = context()
+  const renderer = materialWebGlDraws(gl, new Map([['albedo.png', {}]]), { checkEachDraw: false })
+  const other = { ...source, fragmentSource: `${source.fragmentSource}\n// another shader` }
+  renderer.draw({ primitive: mesh('a'), program: source, material }, camera)
+  renderer.draw({ primitive: mesh('b'), program: other, material }, camera)
+  renderer.sweep()
+  assert.equal(count('deleteProgram'), 0)
+  // The next frame draws only the first material: the other program has no lease left.
+  renderer.draw({ primitive: mesh('a'), program: source, material }, camera)
+  renderer.sweep()
+  assert.equal(count('deleteProgram'), 1)
+  renderer.draw({ primitive: mesh('a'), program: source, material }, camera)
+  renderer.sweep()
+  assert.equal(count('deleteProgram'), 1)
+  assert.equal(count('createProgram'), 2)
+})

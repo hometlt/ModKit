@@ -5070,27 +5070,11 @@ function prepareWorldMaterialResources(
   plan: WorldWebGlPlan,
 ): void {
   if (resources.materialPlan !== plan) {
-    const previous =
-      resources.materialPlan === undefined
-        ? undefined
-        : worldStaticPreparations.get(resources.materialPlan)
-    const current = worldStaticPreparations.get(plan)
-    // Animated updates change uniforms/program descriptions, not the source texture bindings.
-    // Retain the material renderer so its VAOs and linked shaders survive; sweep drops dead leases.
-    if (
-      previous === undefined ||
-      current === undefined ||
-      !sameWorldPlanInputExceptAnimationTimes(previous.input, current.input)
-    ) {
-      resources.retiredMaterialProgramCompilations += resources.materialDraws.programCompilations()
-      resources.retiredMaterialDrawCalls += resources.materialDraws.drawCalls()
-      resources.materialDraws.release()
-      const handles = resources.materialTextureHandles
-      resources.materialDraws = materialWebGlDraws(resources.gl, texture => handles.get(texture), {
-        mipmaps: true,
-        checkEachDraw: false,
-      })
-    }
+    // The material renderer outlives plans. A lease belongs to one program object and keeps the
+    // texture handles of its own texture objects, which stay in use while it draws; sweep drops
+    // the leases, programs, vertex arrays and buffers a frame no longer draws. Releasing it on
+    // every changed input re-linked all programs and re-uploaded all buffers on each model-loading
+    // tick, selection and preview drag.
     resources.materialTextureHandles.clear()
     resources.materialPlan = plan
   }
