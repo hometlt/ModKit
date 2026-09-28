@@ -2571,6 +2571,7 @@ function worldStaticObjectKey(
   item: WorldSceneObjectItem,
   input: WorldWebGlInput,
   preparation: unknown,
+  models: number,
 ): readonly unknown[] | undefined {
   if (item.objectId === input.selectedObjectId) return undefined
   const teamColor =
@@ -2578,13 +2579,16 @@ function worldStaticObjectKey(
     (item.player === undefined ? undefined : input.teamColors?.get(item.player))
   const keyed = worldObjectResourcesOf(item).keyed
   const known = worldStaticObjectKeys.get(item)
-  if (
-    known !== undefined &&
-    known.preparation === preparation &&
-    known.teamColor === teamColor &&
-    keyed.every((resourceId, index) => input.models?.get(resourceId) === known.results[index])
-  )
-    return known.key
+  if (known !== undefined && known.preparation === preparation && known.teamColor === teamColor) {
+    // One generation reads the same result for every resource id (worldModelGenerations).
+    if (known.models === models) return known.key
+    if (
+      keyed.every((resourceId, index) => input.models?.get(resourceId) === known.results[index])
+    ) {
+      worldStaticObjectKeys.set(item, Object.freeze({ ...known, models }))
+      return known.key
+    }
+  }
   const key: unknown[] = [preparation, teamColor?.join(',') ?? '']
   const results: unknown[] = []
   let timed = false
@@ -2599,7 +2603,8 @@ function worldStaticObjectKey(
     timed = true
   }
   if (timed) worldStaticObjectKeys.delete(item)
-  else worldStaticObjectKeys.set(item, Object.freeze({ preparation, teamColor, results, key }))
+  else
+    worldStaticObjectKeys.set(item, Object.freeze({ preparation, teamColor, results, key, models }))
   return key
 }
 
@@ -2614,6 +2619,7 @@ const worldStaticObjectKeys = new WeakMap<
     teamColor: unknown
     results: readonly unknown[]
     key: readonly unknown[]
+    models: number
   }>
 >()
 
@@ -4029,8 +4035,18 @@ const worldStaticPreparations = new WeakMap<
   {
     input: WorldWebGlInput
     preparation: ReturnType<typeof prepareWorldStaticTerrain>
+    /** See worldModelGenerations. */
+    models: number
   }
 >()
+
+/**
+ * A plan's models generation: the previous plan's while every model result is the same object
+ * (the input's map equals, entry by entry, the one the previous plan snapshot), a new number
+ * otherwise. Plans of one generation read the same result for every resource id, so an object key
+ * built in one of them holds in all of them (worldStaticObjectKey).
+ */
+let worldModelGenerations = 0
 
 function appendFrozenWorldBatch(
   staticBatch: WorldWebGlBatch,
@@ -4160,6 +4176,10 @@ export function createWorldWebGlPlan(
   }
   const previous =
     previousPlan === undefined ? undefined : worldStaticPreparations.get(previousPlan)
+  const models =
+    previous !== undefined && sameWorldMap(previous.input.models, input.models)
+      ? previous.models
+      : ++worldModelGenerations
   const preparation =
     previous !== undefined && sameWorldStaticInput(previous.input, input)
       ? previous.preparation
@@ -4267,7 +4287,7 @@ export function createWorldWebGlPlan(
     return target
   }
   for (const item of objects) {
-    const staticKey = worldStaticObjectKey(item, input, preparation)
+    const staticKey = worldStaticObjectKey(item, input, preparation, models)
     const retainedObject = staticKey === undefined ? undefined : retainedStaticObjects.get(item)
     const keptScenes =
       retainedObject !== undefined && sameWorldStaticObjectKey(retainedObject.key, staticKey!)
@@ -5048,7 +5068,11 @@ export function createWorldWebGlPlan(
       shadowMapSize: 0,
     }),
   })
-  worldStaticPreparations.set(plan, { input: snapshotWorldPlanInput(input), preparation })
+  worldStaticPreparations.set(plan, {
+    input: snapshotWorldPlanInput(input),
+    preparation,
+    models,
+  })
   if (currentPrograms.materials.size > 0) worldCurrentPrograms.set(plan, currentPrograms)
   worldPlanBatches.set(plan, {
     batches: currentBatches,
@@ -5841,11 +5865,12 @@ function sameWorldPlanInputExceptAnimationTimes(
 }
 
 function sameWorldPlanInput(left: WorldWebGlInput, right: WorldWebGlInput): boolean {
-  // Default model clips and sequence-only material/effect animations also consume this clock.
+  // Default model clips and sequence-only material/effect animations also consume this clock. It
+  // is what an animated frame changes, so it is compared before the object list.
   return (
-    sameWorldPlanInputExceptAnimationTimes(left, right) &&
+    (left.timeSeconds ?? 0) === (right.timeSeconds ?? 0) &&
     sameNumberMap(left.animationTimes, right.animationTimes) &&
-    (left.timeSeconds ?? 0) === (right.timeSeconds ?? 0)
+    sameWorldPlanInputExceptAnimationTimes(left, right)
   )
 }
 
@@ -5855,12 +5880,19 @@ function sameWorldPlanInput(left: WorldWebGlInput, right: WorldWebGlInput): bool
  * pieces (their results, placements and, for animated geometry, clocks). Loading the other models,
  * selecting or recolouring an object keeps it: each model-loading tick re-prepared the whole terrain.
  */
+/**
+ * The previous plan's input and the new input while retainedWorldPlan builds a plan whose inputs,
+ * the clocks aside, it found to be the same: the static part need not compare them again.
+ */
+let worldInputsCompared: Readonly<{ previous: WorldWebGlInput; input: WorldWebGlInput }> | undefined
+
 function sameWorldStaticInput(left: WorldWebGlInput, right: WorldWebGlInput): boolean {
   if (
-    !sameArrayIdentity(left.items, right.items) ||
-    !sameArrayIdentity(left.terrainMaterials, right.terrainMaterials) ||
-    !sameArrayIdentity(left.terrainWeightRasters, right.terrainWeightRasters) ||
-    !sameWorldMap(left.terrainTextures, right.terrainTextures)
+    (worldInputsCompared?.previous !== left || worldInputsCompared.input !== right) &&
+    (!sameArrayIdentity(left.items, right.items) ||
+      !sameArrayIdentity(left.terrainMaterials, right.terrainMaterials) ||
+      !sameArrayIdentity(left.terrainWeightRasters, right.terrainWeightRasters) ||
+      !sameWorldMap(left.terrainTextures, right.terrainTextures))
   )
     return false
   for (const item of right.items) {
@@ -5892,16 +5924,23 @@ function retainedWorldPlan(
     return resources.lastPlan
   }
   const previousInput = resources.lastPlanInput
+  // Only the clocks moved (an animated frame): the new plan's static part need not compare again.
+  const sameExceptClocks =
+    previousInput !== undefined && sameWorldPlanInputExceptAnimationTimes(previousInput, input)
   const animationSeek =
-    previousInput !== undefined &&
-    sameWorldPlanInputExceptAnimationTimes(previousInput, input) &&
-    !sameNumberMap(previousInput.animationTimes, input.animationTimes)
+    sameExceptClocks && !sameNumberMap(previousInput.animationTimes, input.animationTimes)
   const previousPreparation =
     resources.lastPlan === undefined
       ? undefined
       : worldStaticPreparations.get(resources.lastPlan)?.preparation
   const startedAt = globalThis.performance?.now() ?? Date.now()
-  const plan = createWorldWebGlPlan(input, resources.lastPlan)
+  let plan: WorldWebGlPlan
+  try {
+    if (sameExceptClocks) worldInputsCompared = Object.freeze({ previous: previousInput, input })
+    plan = createWorldWebGlPlan(input, resources.lastPlan)
+  } finally {
+    worldInputsCompared = undefined
+  }
   const elapsed = (globalThis.performance?.now() ?? Date.now()) - startedAt
   if (
     previousPreparation !== undefined &&

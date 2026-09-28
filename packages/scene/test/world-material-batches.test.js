@@ -346,3 +346,19 @@ it('rebuilds a kept object when its team colour or model changes, not when the s
   )
   assert.notEqual(sceneOf(reloaded), sceneOf(blueAgain))
 })
+
+it('keeps an object by the models of the plan it builds on, whatever was built in between', () => {
+  const items = [item(1, 'rock', 0)]
+  const opaque = model('rock', 0)
+  const sceneOf = plan => plan.modelMaterialScenes[0]
+  const first = createWorldWebGlPlan({ items, models: new Map([['rock', opaque]]) })
+  const blended = createWorldWebGlPlan(
+    { items, models: new Map([['rock', model('rock', 1)]]) },
+    first,
+  )
+  assert.equal(worldMaterialBatchesOf(blended).transparentScenes.length, 1)
+  // Built on the first plan again, with its model: not the blended object built in between.
+  const back = createWorldWebGlPlan({ items, models: new Map([['rock', opaque]]) }, first)
+  assert.notEqual(sceneOf(back), sceneOf(blended))
+  assert.equal(worldMaterialBatchesOf(back).transparentScenes.length, 0)
+})
