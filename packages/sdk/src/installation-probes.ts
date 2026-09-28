@@ -40,4 +40,6 @@ export interface ContentSourceModuleContext {
   readonly installationProbes?: InstallationProbes
   /** The credential broker's port for the module's own extension (its declared credentials). */
   readonly credentials?: CredentialPort
+  /** The host's one directory of index caches (see `index-caches.ts`), shared with codecs. */
+  readonly indexCacheDirectory?: string
 }

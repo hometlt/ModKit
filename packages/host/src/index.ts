@@ -299,6 +299,13 @@ export * from './renderer/index.js'
 export * from './model-encoding.js'
 export * from './compression-definitions.js'
 export {
+  createContentIndexBuilder,
+  openContentIndex,
+  type ContentIndex,
+  type ContentIndexBuilder,
+  type ContentIndexReader,
+} from './content-index.js'
+export {
   createCredentialBroker,
   credentialAudienceAllows,
   createMemoryCredentialStore,

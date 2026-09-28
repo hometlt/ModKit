@@ -22,6 +22,13 @@ export interface ContentSourceRoot {
    * fetch what a subject references finds the root by scheme and calls {@link ContentSources.download}.
    */
   readonly referenceSchemes?: readonly string[]
+  /**
+   * Changes whenever the root's files may have changed (a build number, a manifest hash). A client
+   * keys caches of the root's contents by it — a content index is only kept for a root that has one.
+   */
+  readonly revision?: string
+  /** The product or build line this root reads, for index caches (`s2`, `wow_classic`). */
+  readonly product?: string
 }
 /** A region; `credentialId` names the declared credential that signs it in. */
 export interface ContentSourceRegion {

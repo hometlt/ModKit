@@ -25,6 +25,8 @@ export interface ResolveContentSourcesOptions {
   readonly installationProbes?: InstallationProbes
   /** The credential port of one extension (`publisher/id`), handed to that extension's module. */
   readonly credentials?: (extension: string) => CredentialPort | undefined
+  /** The host's one directory of index caches, handed to every module (shared with codecs). */
+  readonly indexCacheDirectory?: string
 }
 
 /**
@@ -37,6 +39,9 @@ export async function resolveContentSources(
   const config = options.configPath ? await readContentSourceConfig(options.configPath) : undefined
   const context = {
     installationProbes: options.installationProbes ?? createNodeInstallationProbes(),
+    ...(options.indexCacheDirectory === undefined
+      ? {}
+      : { indexCacheDirectory: options.indexCacheDirectory }),
   }
   // a module reaches only its own extension's credentials; an unowned configuration gets none
   const contextOf = (extension: string | undefined) => {

@@ -136,6 +136,14 @@ export {
 } from './video-frames.js'
 export { createNodeOAuth2Engine, type NodeOAuth2EngineOptions } from './oauth2-pkce.js'
 export {
+  listIndexCaches,
+  openCachedContentIndex,
+  removeIndexCache,
+  type CachedContentIndex,
+  type CachedContentIndexRequest,
+  type IndexCacheEntry,
+} from './index-caches.js'
+export {
   openDirectoryResolvedDataWorkspace,
   RESOLVED_DATA_EDIT_UNAVAILABLE,
   type DirectoryResolvedDataWorkspace,
