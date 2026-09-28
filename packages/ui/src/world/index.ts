@@ -53,8 +53,20 @@ import { WORLD_FALLBACK_MESSAGES } from '../localization/fallback-catalogs.gener
 import { withEnglishUiFallback } from '../localization/fallback.js'
 import { createMediaShell } from '../media-shell/index.js'
 import type { ImageSidebarSection } from '../image/index.js'
-import { createWorldLatticePlan, drawWorldLattice, type WorldLatticePlan } from './lattice.js'
-export { createWorldLatticePlan, drawWorldLattice, worldLatticeColor } from './lattice.js'
+import {
+  WORLD_OBJECT_KIND_COLORS,
+  createWorldLatticePlan,
+  drawWorldLattice,
+  worldLatticeObjectAt,
+  type WorldLatticePlan,
+} from './lattice.js'
+export {
+  WORLD_OBJECT_KIND_COLORS,
+  createWorldLatticePlan,
+  drawWorldLattice,
+  worldLatticeColor,
+  worldLatticeObjectAt,
+} from './lattice.js'
 
 export const WORLD_VIEWER_MAX_LAYERS = 16
 export const WORLD_VIEWER_MAX_ITEMS_PER_LAYER = 100_000
@@ -1187,14 +1199,7 @@ export function drawCandidateWorld(
     }
   }
 
-  const colors: Readonly<Record<Exclude<WorldPreviewPoint['kind'], 'terrain'>, string>> = {
-    unit: '#56b4e9',
-    structure: '#e69f00',
-    feature: '#7fc97f',
-    doodad: '#cc79a7',
-    point: '#f0e442',
-    camera: '#d55e00',
-  }
+  const colors = WORLD_OBJECT_KIND_COLORS
   const objectItems = model.layers.flatMap(layer =>
     layer.page.items.filter((item): item is WorldSceneObjectItem => item.facet === 'objects'),
   )
@@ -1742,6 +1747,29 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
         )
         redraw()
       }
+      // The lattice picks the object drawn nearest to the click, as the 3D view picks by ray.
+      const onLatticePointer = (event: PointerEvent) => {
+        if (event.button !== 0 || currentModel === undefined || latticePlan === undefined) return
+        const rect = latticeCanvas.getBoundingClientRect()
+        const objectId = worldLatticeObjectAt(
+          latticeCanvas,
+          latticePlan,
+          ((event.clientX - rect.left) / Math.max(1, rect.width)) * latticeCanvas.width,
+          ((event.clientY - rect.top) / Math.max(1, rect.height)) * latticeCanvas.height,
+        )
+        edit = selectWorldObject(
+          edit,
+          objectId === undefined
+            ? undefined
+            : currentModel.layers
+                .flatMap(layer => layer.page.items)
+                .find(
+                  (item): item is WorldSceneObjectItem =>
+                    item.facet === 'objects' && item.objectId === objectId,
+                ),
+        )
+        redraw()
+      }
       let drag:
         | {
             pointerId: number
@@ -1835,6 +1863,7 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
           })
       }
       canvas.addEventListener('pointerdown', onPointer)
+      latticeCanvas.addEventListener('pointerdown', onLatticePointer)
       canvas.addEventListener('pointerdown', onCameraPointerDown)
       canvas.addEventListener('pointermove', onCameraPointerMove)
       canvas.addEventListener('pointerup', onCameraPointerUp)
@@ -1849,6 +1878,7 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
         webGlRenderer?.dispose()
         if (animationFrame !== undefined) view?.cancelAnimationFrame(animationFrame)
         canvas.removeEventListener('pointerdown', onPointer)
+        latticeCanvas.removeEventListener('pointerdown', onLatticePointer)
         canvas.removeEventListener('pointerdown', onCameraPointerDown)
         canvas.removeEventListener('pointermove', onCameraPointerMove)
         canvas.removeEventListener('pointerup', onCameraPointerUp)

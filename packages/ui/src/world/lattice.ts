@@ -1,5 +1,5 @@
 /** Fast top-down height preview. Uses only published world facets, never model/texture ports. */
-import type { WorldSceneItem, WorldSceneTerrainItem } from '@modkit/sdk/maps'
+import type { MapObjectKind, WorldSceneItem, WorldSceneTerrainItem } from '@modkit/sdk/maps'
 
 type Point = readonly [number, number]
 type Quad<Value> = readonly [Value, Value, Value, Value]
@@ -14,9 +14,19 @@ export interface WorldLatticePlan {
     readonly colors: Quad<string>
   }[]
   readonly contours: readonly (readonly [Point, Point])[]
-  readonly objects: readonly { readonly point: Point; readonly objectId: number }[]
+  readonly objects: readonly { readonly point: Point; readonly objectId: number; readonly kind: MapObjectKind }[]
   readonly bounds: readonly [number, number, number, number]
 }
+
+/** One colour per placed-object kind, shared by the lattice, its legend and the isometric fallback. */
+export const WORLD_OBJECT_KIND_COLORS: Readonly<Record<MapObjectKind, string>> = Object.freeze({
+  unit: '#56b4e9',
+  structure: '#e69f00',
+  feature: '#7fc97f',
+  doodad: '#cc79a7',
+  point: '#f0e442',
+  camera: '#d55e00',
+})
 
 /** Low ground is darker; submerged terrain is blue. Colors do not depend on texture readiness. */
 export function worldLatticeColor(
@@ -148,7 +158,7 @@ export function createWorldLatticePlan(items: readonly WorldSceneItem[]): WorldL
         ? [uvw.x, uvw.z]
         : [item.position.x, native || terrain.length === 0 ? -item.position.y : item.position.y]
     include(point)
-    return [{ point, objectId: item.objectId }]
+    return [{ point, objectId: item.objectId, kind: item.kind }]
   })
   return {
     cells,
@@ -158,13 +168,11 @@ export function createWorldLatticePlan(items: readonly WorldSceneItem[]): WorldL
   }
 }
 
-export function drawWorldLattice(
-  canvas: HTMLCanvasElement,
+/** The lattice's world-to-canvas mapping: the plan's bounds fitted into the canvas with a margin. */
+function latticeScreen(
+  canvas: Pick<HTMLCanvasElement, 'width' | 'height'>,
   plan: WorldLatticePlan,
-  selectedObjectId?: number,
-): void {
-  const context = canvas.getContext('2d')
-  if (context === null) throw new TypeError('2D lattice canvas is unavailable')
+): (point: Point) => Point {
   const [minX, minY, maxX, maxY] = plan.bounds
   const scale = Math.min(
     (canvas.width - 32) / Math.max(1, maxX - minX),
@@ -172,10 +180,40 @@ export function drawWorldLattice(
   )
   const offsetX = (canvas.width - (maxX - minX) * scale) / 2
   const offsetY = (canvas.height - (maxY - minY) * scale) / 2
-  const screen = (point: Point): Point => [
-    offsetX + (point[0] - minX) * scale,
-    offsetY + (point[1] - minY) * scale,
-  ]
+  return point => [offsetX + (point[0] - minX) * scale, offsetY + (point[1] - minY) * scale]
+}
+
+/** The object drawn nearest to a canvas pixel, within `radius` pixels. */
+export function worldLatticeObjectAt(
+  canvas: Pick<HTMLCanvasElement, 'width' | 'height'>,
+  plan: WorldLatticePlan,
+  x: number,
+  y: number,
+  radius = 6,
+): number | undefined {
+  const screen = latticeScreen(canvas, plan)
+  let best: number | undefined
+  let bestDistance = radius * radius
+  for (const object of plan.objects) {
+    const [sx, sy] = screen(object.point)
+    const distance = (sx - x) ** 2 + (sy - y) ** 2
+    if (distance <= bestDistance) {
+      bestDistance = distance
+      best = object.objectId
+    }
+  }
+  return best
+}
+
+export function drawWorldLattice(
+  canvas: HTMLCanvasElement,
+  plan: WorldLatticePlan,
+  selectedObjectId?: number,
+  kindLabels?: Readonly<Partial<Record<MapObjectKind, string>>>,
+): void {
+  const context = canvas.getContext('2d')
+  if (context === null) throw new TypeError('2D lattice canvas is unavailable')
+  const screen = latticeScreen(canvas, plan)
   context.clearRect(0, 0, canvas.width, canvas.height)
   context.lineWidth = 0.35
   context.strokeStyle = 'rgba(15, 25, 25, 0.18)'
@@ -210,14 +248,35 @@ export function drawWorldLattice(
   }
   context.stroke()
   for (const object of plan.objects) {
-    context.fillStyle = object.objectId === selectedObjectId ? '#ffe082' : '#54c879'
+    const selected = object.objectId === selectedObjectId
+    context.fillStyle = WORLD_OBJECT_KIND_COLORS[object.kind]
     context.beginPath()
-    context.arc(
-      ...screen(object.point),
-      object.objectId === selectedObjectId ? 4 : 2,
-      0,
-      Math.PI * 2,
-    )
+    context.arc(...screen(object.point), selected ? 4 : 2, 0, Math.PI * 2)
     context.fill()
+    if (selected) {
+      context.lineWidth = 1.5
+      context.strokeStyle = '#ffe082'
+      context.stroke()
+    }
   }
+  // Legend: the kinds present, in the viewer's language when the caller names them.
+  const kinds = (Object.keys(WORLD_OBJECT_KIND_COLORS) as MapObjectKind[]).filter(kind =>
+    plan.objects.some(object => object.kind === kind),
+  )
+  if (kinds.length === 0) return
+  context.font = '11px sans-serif'
+  context.textBaseline = 'middle'
+  const rowHeight = 15
+  const width = Math.max(...kinds.map(kind => context.measureText(kindLabels?.[kind] ?? kind).width)) + 22
+  context.fillStyle = 'rgba(12, 14, 18, 0.72)'
+  context.fillRect(6, 6, width, kinds.length * rowHeight + 6)
+  kinds.forEach((kind, index) => {
+    const y = 6 + 3 + index * rowHeight + rowHeight / 2
+    context.fillStyle = WORLD_OBJECT_KIND_COLORS[kind]
+    context.beginPath()
+    context.arc(15, y, 4, 0, Math.PI * 2)
+    context.fill()
+    context.fillStyle = '#e8eaed'
+    context.fillText(kindLabels?.[kind] ?? kind, 24, y)
+  })
 }

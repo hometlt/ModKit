@@ -11,7 +11,7 @@ import {
   type CandidateWorldViewerModel,
   type WorldLoadProgress,
 } from '../src/world/index.js'
-import { createWorldLatticePlan, worldLatticeColor } from '../src/world/lattice.js'
+import { createWorldLatticePlan, worldLatticeColor, worldLatticeObjectAt } from '../src/world/lattice.js'
 
 function fixture(log: string[] = []): CandidateWorldSceneSource {
   const items: WorldSceneItem[] = [
@@ -210,7 +210,13 @@ describe('progressive world preview', () => {
         [0.5, 1],
       ],
     ])
-    expect(plan.objects).toEqual([{ point: [0.75, 0.5], objectId: 2 }])
+    expect(plan.objects).toEqual([{ point: [0.75, 0.5], objectId: 2, kind: 'doodad' }])
+    // A click on the drawn point selects it; one far from every point selects nothing.
+    const canvas = { width: 64, height: 64 }
+    const hits = new Set<number | undefined>()
+    for (let y = 0; y < 64; y += 2) for (let x = 0; x < 64; x += 2) hits.add(worldLatticeObjectAt(canvas, plan, x, y))
+    expect(hits).toEqual(new Set([2, undefined]))
+    expect(worldLatticeObjectAt(canvas, plan, 0, 0)).toBeUndefined()
     expect(worldLatticeColor(0, 0, 1, true)).toContain('207')
   })
 })
