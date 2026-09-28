@@ -7451,7 +7451,13 @@ function packWorldWebGlTransparentDraws(
     let batch = batchIds.get(entry.draw.batch)
     if (batch === undefined) batchIds.set(entry.draw.batch, (batch = batchIds.size))
     for (let triangle = triangles.runStarts[run]!; triangle < triangles.runStarts[run + 1]!; triangle += 1) {
-      boxes.set(triangles.boxes.subarray(triangle * 4, triangle * 4 + 4), item * 4)
+      // Element copies: a subarray view per triangle cost more than the copy (71 000 a frame).
+      const from = triangle * 4,
+        to = item * 4
+      boxes[to] = triangles.boxes[from]!
+      boxes[to + 1] = triangles.boxes[from + 1]!
+      boxes[to + 2] = triangles.boxes[from + 2]!
+      boxes[to + 3] = triangles.boxes[from + 3]!
       batches[item] = batch
       itemTriangle[item] = triangle
       itemEntry[item] = entry
