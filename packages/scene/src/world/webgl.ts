@@ -5988,6 +5988,56 @@ function worldTextureKey(texture: SceneRendererTexture): string {
   return key
 }
 
+/**
+ * The scalar value each uniform of the world's own programs holds, by program and location. Batch
+ * draws of the opaque, water, shadow and composite passes set their flags and sampler units before
+ * every draw (`textured`, `normalTextured`, `alphaCutoff`, `shadowReceiver`, `baseColorMap` …) — on
+ * Amphion ~17 000 calls a frame, mostly the value the program already holds. A uniform's value is
+ * the state of its program, and only these two functions write the scalar uniforms of the world's
+ * programs (nothing else writes them at all), so a value the program holds needs no call. The
+ * location belongs to the program in use, as every write here already required.
+ */
+const worldScalarUniforms = new WeakMap<WebGLProgram, Map<WebGLUniformLocation, number>>()
+
+function heldWorldUniforms(program: WebGLProgram): Map<WebGLUniformLocation, number> {
+  let held = worldScalarUniforms.get(program)
+  if (held === undefined) worldScalarUniforms.set(program, (held = new Map()))
+  return held
+}
+
+function worldUniform1f(
+  gl: WebGL2RenderingContext,
+  program: WebGLProgram,
+  name: string,
+  value: number,
+): void {
+  const location = uniformLocation(gl, program, name)
+  // A null location takes no value: WebGL ignores the write.
+  if (location === null) return
+  const held = heldWorldUniforms(program)
+  // The program keeps the float32 of the value; -0 and NaN compare as themselves.
+  const stored = Math.fround(value)
+  if (Object.is(held.get(location), stored)) return
+  gl.uniform1f(location, value)
+  held.set(location, stored)
+}
+
+function worldUniform1i(
+  gl: WebGL2RenderingContext,
+  program: WebGLProgram,
+  name: string,
+  value: number,
+): void {
+  const location = uniformLocation(gl, program, name)
+  if (location === null) return
+  const held = heldWorldUniforms(program)
+  // WebGL converts a GLint argument as ToInt32.
+  const stored = value | 0
+  if (held.get(location) === stored) return
+  gl.uniform1i(location, value)
+  held.set(location, stored)
+}
+
 function bindTexture2d(
   resources: WorldWebGlOwnedResources,
   texture: SceneRendererTexture,
@@ -6473,7 +6523,7 @@ function drawShadowPositions(
     resources.geometryCacheHits += 1
     resources.usedGeometry.add(cached)
     gl.bindVertexArray(cached.vao)
-    gl.uniform1f(uniformLocation(gl, program, 'alphaCutoff'), 0)
+    worldUniform1f(gl, program, 'alphaCutoff', 0)
     gl.drawArrays(gl.TRIANGLES, 0, cached.count)
     gl.bindVertexArray(null)
     return
@@ -6493,7 +6543,7 @@ function drawShadowPositions(
     gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW)
     gl.enableVertexAttribArray(location)
     gl.vertexAttribPointer(location, 3, gl.FLOAT, false, 0, 0)
-    gl.uniform1f(uniformLocation(gl, program, 'alphaCutoff'), 0)
+    worldUniform1f(gl, program, 'alphaCutoff', 0)
     gl.drawArrays(gl.TRIANGLES, 0, positions.length / 3)
     gl.bindVertexArray(null)
     const entry: WorldWebGlGeometryEntry = Object.freeze({
@@ -6524,8 +6574,8 @@ function drawShadowTextured(
 ): void {
   bindTexture2d(resources, source.texture, 0)
   const gl = resources.gl
-  gl.uniform1i(uniformLocation(gl, program, 'baseColorMap'), 0)
-  gl.uniform1f(uniformLocation(gl, program, 'alphaCutoff'), source.alphaCutoff ?? 0)
+  worldUniform1i(gl, program, 'baseColorMap', 0)
+  worldUniform1f(gl, program, 'alphaCutoff', source.alphaCutoff ?? 0)
   drawBatch(resources, program, source, gl.TRIANGLES)
 }
 
@@ -6661,7 +6711,7 @@ function renderWorldShadowMap(
     gl.useProgram(program)
     gl.uniformMatrix4fv(uniformLocation(gl, program, 'lightViewProjection'), false, viewProjection)
     bindSentinelTexture2d(resources, 0)
-    gl.uniform1i(uniformLocation(gl, program, 'baseColorMap'), 0)
+    worldUniform1i(gl, program, 'baseColorMap', 0)
     // The terrain casts: its height field climbs every cliff, so it throws the cliff's shadow, and
     // SC2 marks its natural cliff meshes no-shadows-cast for that reason. Without it the beach under
     // a coast was lit between the shadows of the rim doodads. How far shadows reach is the camera's
@@ -6831,23 +6881,23 @@ function drawTexturedBatch(
 ) {
   const gl = resources.gl
   bindTexture2d(resources, source.texture, 4)
-  gl.uniform1i(uniformLocation(gl, program, 'baseColorMap'), 4)
+  worldUniform1i(gl, program, 'baseColorMap', 4)
   if (source.normalTexture === undefined) {
-    gl.uniform1f(uniformLocation(gl, program, 'normalTextured'), 0)
+    worldUniform1f(gl, program, 'normalTextured', 0)
   } else {
     bindTexture2d(resources, source.normalTexture, 5)
-    gl.uniform1i(uniformLocation(gl, program, 'normalMap'), 5)
-    gl.uniform1f(uniformLocation(gl, program, 'normalTextured'), 1)
+    worldUniform1i(gl, program, 'normalMap', 5)
+    worldUniform1f(gl, program, 'normalTextured', 1)
   }
   if (source.secondaryTexture === undefined || source.secondaryTextureCoordinates === undefined) {
-    gl.uniform1f(uniformLocation(gl, program, 'secondaryTextured'), 0)
+    worldUniform1f(gl, program, 'secondaryTextured', 0)
   } else {
     bindTexture2d(resources, source.secondaryTexture, 6)
-    gl.uniform1i(uniformLocation(gl, program, 'secondaryColorMap'), 6)
-    gl.uniform1f(uniformLocation(gl, program, 'secondaryTextured'), 1)
+    worldUniform1i(gl, program, 'secondaryColorMap', 6)
+    worldUniform1f(gl, program, 'secondaryTextured', 1)
   }
-  gl.uniform1f(uniformLocation(gl, program, 'textured'), 1)
-  gl.uniform1f(uniformLocation(gl, program, 'alphaCutoff'), source.alphaCutoff ?? 0)
+  worldUniform1f(gl, program, 'textured', 1)
+  worldUniform1f(gl, program, 'alphaCutoff', source.alphaCutoff ?? 0)
   drawBatch(resources, program, source, gl.TRIANGLES, source, range)
 }
 
@@ -6988,10 +7038,10 @@ function drawSplatBatch(
     uploadArray(source.normalTextures, source.textures, 1, 'terrain normal')
     const hasSpecular = source.specularTextures?.some(texture => texture !== undefined) ?? false
     if (hasSpecular) uploadArray(source.specularTextures!, source.textures, 8, 'terrain specular')
-    gl.uniform1i(uniformLocation(gl, program, 'terrainSpecularMaps'), 8)
-    gl.uniform1f(uniformLocation(gl, program, 'terrainSpecularTextured'), hasSpecular ? 1 : 0)
-    gl.uniform1i(uniformLocation(gl, program, 'terrainMaps'), 0)
-    gl.uniform1i(uniformLocation(gl, program, 'terrainNormalMaps'), 1)
+    worldUniform1i(gl, program, 'terrainSpecularMaps', 8)
+    worldUniform1f(gl, program, 'terrainSpecularTextured', hasSpecular ? 1 : 0)
+    worldUniform1i(gl, program, 'terrainMaps', 0)
+    worldUniform1i(gl, program, 'terrainNormalMaps', 1)
     if ((source.weightTextures?.length ?? 0) < 2) {
       const firstMissingUnit = 2 + (source.weightTextures?.length ?? 0)
       for (let unit = firstMissingUnit; unit <= 3; unit += 1) {
@@ -7000,14 +7050,14 @@ function drawSplatBatch(
     }
     // Every active sampler type must point at a compatible unit even when its runtime branch is
     // disabled. The ordinary 2D samplers share unit 2 here; array samplers stay on units 0 and 1.
-    gl.uniform1i(uniformLocation(gl, program, 'baseColorMap'), 4)
-    gl.uniform1i(uniformLocation(gl, program, 'normalMap'), 5)
-    gl.uniform1i(uniformLocation(gl, program, 'secondaryColorMap'), 6)
-    gl.uniform1i(uniformLocation(gl, program, 'terrainWeightMaps[0]'), 2)
-    gl.uniform1i(uniformLocation(gl, program, 'terrainWeightMaps[1]'), 3)
+    worldUniform1i(gl, program, 'baseColorMap', 4)
+    worldUniform1i(gl, program, 'normalMap', 5)
+    worldUniform1i(gl, program, 'secondaryColorMap', 6)
+    worldUniform1i(gl, program, 'terrainWeightMaps[0]', 2)
+    worldUniform1i(gl, program, 'terrainWeightMaps[1]', 3)
     ;(source.weightTextures ?? []).forEach((texture, index) => {
       bindTexture2d(resources, texture, 2 + index)
-      gl.uniform1i(uniformLocation(gl, program, `terrainWeightMaps[${String(index)}]`), 2 + index)
+      worldUniform1i(gl, program, `terrainWeightMaps[${String(index)}]`, 2 + index)
     })
     const uniformLayers = (name: string, values: readonly number[]) =>
       gl.uniform4fv(uniformLocation(gl, program, name), Float32Array.from(values))
@@ -7024,28 +7074,22 @@ function drawSplatBatch(
     uniformLayers('terrainClampU1', clampU.slice(4, 8))
     uniformLayers('terrainClampV0', clampV.slice(0, 4))
     uniformLayers('terrainClampV1', clampV.slice(4, 8))
-    gl.uniform1f(uniformLocation(gl, program, 'textured'), 0)
-    gl.uniform1f(uniformLocation(gl, program, 'alphaCutoff'), 0)
-    gl.uniform1f(uniformLocation(gl, program, 'normalTextured'), 0)
-    gl.uniform1f(uniformLocation(gl, program, 'secondaryTextured'), 0)
-    gl.uniform1f(uniformLocation(gl, program, 'splatTextured'), 1)
-    gl.uniform1f(
-      uniformLocation(gl, program, 'rasterSplatTextured'),
-      source.weightTextures === undefined ? 0 : 1,
-    )
-    gl.uniform1f(
-      uniformLocation(gl, program, 'terrainWeightMapCount'),
-      source.weightTextures?.length ?? 0,
-    )
+    worldUniform1f(gl, program, 'textured', 0)
+    worldUniform1f(gl, program, 'alphaCutoff', 0)
+    worldUniform1f(gl, program, 'normalTextured', 0)
+    worldUniform1f(gl, program, 'secondaryTextured', 0)
+    worldUniform1f(gl, program, 'splatTextured', 1)
+    worldUniform1f(gl, program, 'rasterSplatTextured', source.weightTextures === undefined ? 0 : 1)
+    worldUniform1f(gl, program, 'terrainWeightMapCount', source.weightTextures?.length ?? 0)
     const masked = source.maskTexture !== undefined && source.maskTextureCoordinates !== undefined
     if (masked) {
       bindTexture2d(resources, source.maskTexture!, 6)
-      gl.uniform1i(uniformLocation(gl, program, 'secondaryColorMap'), 6)
+      worldUniform1i(gl, program, 'secondaryColorMap', 6)
       const selector = [0, 0, 0, 0]
       selector[source.maskChannel ?? 3] = 1
       gl.uniform4fv(uniformLocation(gl, program, 'cliffMaskSelector'), selector)
     }
-    gl.uniform1f(uniformLocation(gl, program, 'cliffMaskMode'), masked ? 1 : 0)
+    worldUniform1f(gl, program, 'cliffMaskMode', masked ? 1 : 0)
     drawBatch(
       resources,
       program,
@@ -7065,7 +7109,7 @@ function drawSplatBatch(
       source,
     )
     // Program state outlives the draw: later batches must not keep testing a mask.
-    if (masked) gl.uniform1f(uniformLocation(gl, program, 'cliffMaskMode'), 0)
+    if (masked) worldUniform1f(gl, program, 'cliffMaskMode', 0)
   }
 }
 
@@ -8196,25 +8240,25 @@ function drawWorldWebGlWithResources(
     gl.useProgram(program)
     // Active sampler types must never share a texture unit, including draws whose shader branches
     // do not sample them. Reserve a stable layout before the first opaque batch is submitted.
-    gl.uniform1i(uniformLocation(gl, program, 'terrainMaps'), 0)
-    gl.uniform1i(uniformLocation(gl, program, 'terrainNormalMaps'), 1)
-    gl.uniform1i(uniformLocation(gl, program, 'terrainWeightMaps[0]'), 2)
-    gl.uniform1i(uniformLocation(gl, program, 'terrainWeightMaps[1]'), 3)
-    gl.uniform1i(uniformLocation(gl, program, 'baseColorMap'), 4)
-    gl.uniform1i(uniformLocation(gl, program, 'normalMap'), 5)
-    gl.uniform1i(uniformLocation(gl, program, 'secondaryColorMap'), 6)
-    gl.uniform1i(uniformLocation(gl, program, 'shadowMap'), 7)
+    worldUniform1i(gl, program, 'terrainMaps', 0)
+    worldUniform1i(gl, program, 'terrainNormalMaps', 1)
+    worldUniform1i(gl, program, 'terrainWeightMaps[0]', 2)
+    worldUniform1i(gl, program, 'terrainWeightMaps[1]', 3)
+    worldUniform1i(gl, program, 'baseColorMap', 4)
+    worldUniform1i(gl, program, 'normalMap', 5)
+    worldUniform1i(gl, program, 'secondaryColorMap', 6)
+    worldUniform1i(gl, program, 'shadowMap', 7)
     // The water pass samples the scene depth here; every other draw keeps a compatible 2D texture.
     bindSentinelTexture2d(resources, WATER_SCENE_DEPTH_UNIT)
-    gl.uniform1i(uniformLocation(gl, program, 'sceneDepthMap'), WATER_SCENE_DEPTH_UNIT)
+    worldUniform1i(gl, program, 'sceneDepthMap', WATER_SCENE_DEPTH_UNIT)
     bindSentinelTexture2d(resources, WATER_CAUSTICS_UNIT)
-    gl.uniform1i(uniformLocation(gl, program, 'causticsMap'), WATER_CAUSTICS_UNIT)
-    gl.uniform1f(uniformLocation(gl, program, 'causticsMode'), 0)
+    worldUniform1i(gl, program, 'causticsMap', WATER_CAUSTICS_UNIT)
+    worldUniform1f(gl, program, 'causticsMode', 0)
     bindSentinelTexture2d(resources, WATER_NORMAL_UNIT)
-    gl.uniform1i(uniformLocation(gl, program, 'waterNormalMap'), WATER_NORMAL_UNIT)
-    gl.uniform1f(uniformLocation(gl, program, 'waterWavesMode'), 0)
-    gl.uniform1f(uniformLocation(gl, program, 'waterDepthMode'), 0)
-    gl.uniform1f(uniformLocation(gl, program, 'cliffMaskMode'), 0)
+    worldUniform1i(gl, program, 'waterNormalMap', WATER_NORMAL_UNIT)
+    worldUniform1f(gl, program, 'waterWavesMode', 0)
+    worldUniform1f(gl, program, 'waterDepthMode', 0)
+    worldUniform1f(gl, program, 'cliffMaskMode', 0)
     const sceneCamera = createWorldWebGlCameraFrame(plan, canvas.width, canvas.height, input.camera)
     gl.uniform3fv(uniformLocation(gl, program, 'eyePosition'), sceneCamera.eyePosition)
     const terrainLight = plan.light.terrain
@@ -8224,35 +8268,34 @@ function drawWorldWebGlWithResources(
       terrainLight?.diffuseMultiplier ?? 1,
       terrainLight?.specularMultiplier ?? 0,
     )
-    gl.uniform1f(
-      uniformLocation(gl, program, 'keyUsesVertexAo'),
-      plan.light.useAmbientOcclusion === false ? 0 : 1,
-    )
+    worldUniform1f(gl, program, 'keyUsesVertexAo', plan.light.useAmbientOcclusion === false ? 0 : 1)
     gl.uniform3fv(
       uniformLocation(gl, program, 'lightSpecularRadiance'),
       (plan.light.specularColor ?? plan.light.color).map(
         value => value * (plan.light.specularIntensity ?? plan.light.intensity),
       ),
     )
-    gl.uniform1i(uniformLocation(gl, program, 'terrainSpecularMaps'), 8)
+    worldUniform1i(gl, program, 'terrainSpecularMaps', 8)
     const viewProjection = sceneCamera.viewProjection
     gl.uniformMatrix4fv(uniformLocation(gl, program, 'viewProjection'), false, viewProjection)
     gl.uniform3fv(
       uniformLocation(gl, program, 'ambientColor'),
       Float32Array.from(plan.light.ambient),
     )
-    gl.uniform1f(uniformLocation(gl, program, 'ambientIntensity'), plan.light.ambientIntensity)
+    worldUniform1f(gl, program, 'ambientIntensity', plan.light.ambientIntensity)
     gl.uniform3fv(
       uniformLocation(gl, program, 'lightDirection'),
       Float32Array.from(plan.light.direction),
     )
     gl.uniform3fv(uniformLocation(gl, program, 'lightColor'), Float32Array.from(plan.light.color))
-    gl.uniform1f(uniformLocation(gl, program, 'lightIntensity'), plan.light.intensity)
+    worldUniform1f(gl, program, 'lightIntensity', plan.light.intensity)
     const fills = plan.light.fills.slice(0, MAXIMUM_FILL_LIGHTS)
     for (let index = 0; index < MAXIMUM_FILL_LIGHTS; index += 1) {
       const fill = fills[index]
-      gl.uniform1f(
-        uniformLocation(gl, program, `fillUsesVertexAo${String(index)}`),
+      worldUniform1f(
+        gl,
+        program,
+        `fillUsesVertexAo${String(index)}`,
         fill?.useAmbientOcclusion === false ? 0 : 1,
       )
       gl.uniform3fv(
@@ -8267,7 +8310,7 @@ function drawWorldWebGlWithResources(
       )
     }
     if (shadow === undefined) {
-      gl.uniform1f(uniformLocation(gl, program, 'shadowEnabled'), 0)
+      worldUniform1f(gl, program, 'shadowEnabled', 0)
     } else {
       gl.uniformMatrix4fv(
         uniformLocation(gl, program, 'shadowViewProjection'),
@@ -8281,38 +8324,35 @@ function drawWorldWebGlWithResources(
       )
       gl.activeTexture(gl.TEXTURE7)
       gl.bindTexture(gl.TEXTURE_2D, shadow.texture)
-      gl.uniform1f(uniformLocation(gl, program, 'shadowEnabled'), 1)
+      worldUniform1f(gl, program, 'shadowEnabled', 1)
     }
     const shadowRange = worldShadowRangeEye(plan, canvas.width, canvas.height, input.camera)
     gl.uniform3fv(
       uniformLocation(gl, program, 'shadowRangeEye'),
       Float32Array.from(shadowRange?.eye ?? [0, 0, 0]),
     )
-    gl.uniform1f(uniformLocation(gl, program, 'shadowRangeDistance'), shadowRange?.distance ?? 0)
-    gl.uniform1f(uniformLocation(gl, program, 'pointSize'), 7)
-    gl.uniform1f(uniformLocation(gl, program, 'alphaCutoff'), 0)
+    worldUniform1f(gl, program, 'shadowRangeDistance', shadowRange?.distance ?? 0)
+    worldUniform1f(gl, program, 'pointSize', 7)
+    worldUniform1f(gl, program, 'alphaCutoff', 0)
     gl.disable(gl.CULL_FACE)
     gl.disable(gl.BLEND)
     gl.depthMask(true)
-    gl.uniform1f(uniformLocation(gl, program, 'textured'), 0)
-    gl.uniform1f(uniformLocation(gl, program, 'normalTextured'), 0)
-    gl.uniform1f(uniformLocation(gl, program, 'secondaryTextured'), 0)
-    gl.uniform1f(uniformLocation(gl, program, 'splatTextured'), 0)
-    gl.uniform1f(uniformLocation(gl, program, 'alphaCutoff'), 0)
-    gl.uniform1f(uniformLocation(gl, program, 'shadowReceiver'), 1)
+    worldUniform1f(gl, program, 'textured', 0)
+    worldUniform1f(gl, program, 'normalTextured', 0)
+    worldUniform1f(gl, program, 'secondaryTextured', 0)
+    worldUniform1f(gl, program, 'splatTextured', 0)
+    worldUniform1f(gl, program, 'alphaCutoff', 0)
+    worldUniform1f(gl, program, 'shadowReceiver', 1)
     drawBatch(resources, program, plan.opaqueTriangles, gl.TRIANGLES)
     for (const item of plan.shadowControlledOpaqueTriangles) {
-      gl.uniform1f(uniformLocation(gl, program, 'shadowReceiver'), item.receiveShadows ? 1 : 0)
+      worldUniform1f(gl, program, 'shadowReceiver', item.receiveShadows ? 1 : 0)
       drawBatch(resources, program, item, gl.TRIANGLES)
     }
     for (const item of plan.texturedTriangles) {
-      gl.uniform1f(
-        uniformLocation(gl, program, 'shadowReceiver'),
-        item.receiveShadows === false ? 0 : 1,
-      )
+      worldUniform1f(gl, program, 'shadowReceiver', item.receiveShadows === false ? 0 : 1)
       drawTexturedBatch(resources, program, item)
     }
-    gl.uniform1f(uniformLocation(gl, program, 'shadowReceiver'), 1)
+    worldUniform1f(gl, program, 'shadowReceiver', 1)
     for (const item of plan.splatTriangles) drawSplatBatch(resources, program, item)
     const sceneLight = worldMaterialLight(plan)
     const batches = worldMaterialBatchesOf(plan)
@@ -8351,11 +8391,11 @@ function drawWorldWebGlWithResources(
       gl.disable(gl.POLYGON_OFFSET_FILL)
     }
     assertNoWebGlError(resources, 'opaque pass')
-    gl.uniform1f(uniformLocation(gl, program, 'textured'), 0)
-    gl.uniform1f(uniformLocation(gl, program, 'normalTextured'), 0)
-    gl.uniform1f(uniformLocation(gl, program, 'secondaryTextured'), 0)
-    gl.uniform1f(uniformLocation(gl, program, 'splatTextured'), 0)
-    gl.uniform1f(uniformLocation(gl, program, 'shadowReceiver'), 0)
+    worldUniform1f(gl, program, 'textured', 0)
+    worldUniform1f(gl, program, 'normalTextured', 0)
+    worldUniform1f(gl, program, 'secondaryTextured', 0)
+    worldUniform1f(gl, program, 'splatTextured', 0)
+    worldUniform1f(gl, program, 'shadowReceiver', 0)
     drawBatch(resources, program, plan.lines, gl.LINES)
     drawBatch(resources, program, plan.points, gl.POINTS)
     assertNoWebGlError(resources, 'overlay pass')
@@ -8386,20 +8426,20 @@ function drawWorldWebGlWithResources(
         camera.far - camera.near,
         Math.abs(forward.y),
       )
-      gl.uniform1f(uniformLocation(gl, program, 'waterShoreFade'), WATER_SHORE_FADE)
-      gl.uniform1f(uniformLocation(gl, program, 'waterDepthMode'), 1)
-      gl.uniform1f(uniformLocation(gl, program, 'textured'), 0)
-      gl.uniform1f(uniformLocation(gl, program, 'normalTextured'), 0)
-      gl.uniform1f(uniformLocation(gl, program, 'secondaryTextured'), 0)
-      gl.uniform1f(uniformLocation(gl, program, 'splatTextured'), 0)
-      gl.uniform1f(uniformLocation(gl, program, 'alphaCutoff'), 0)
+      worldUniform1f(gl, program, 'waterShoreFade', WATER_SHORE_FADE)
+      worldUniform1f(gl, program, 'waterDepthMode', 1)
+      worldUniform1f(gl, program, 'textured', 0)
+      worldUniform1f(gl, program, 'normalTextured', 0)
+      worldUniform1f(gl, program, 'secondaryTextured', 0)
+      worldUniform1f(gl, program, 'splatTextured', 0)
+      worldUniform1f(gl, program, 'alphaCutoff', 0)
       gl.disable(gl.POLYGON_OFFSET_FILL)
       gl.uniform3f(uniformLocation(gl, program, 'waterViewForward'), forward.x, forward.y, forward.z)
       for (const plane of plan.waterPlanes) {
-        gl.uniform1f(uniformLocation(gl, program, 'waterFalloff'), plane.colorFalloff)
-        gl.uniform1f(uniformLocation(gl, program, 'shadowReceiver'), plane.receiveShadows ? 1 : 0)
+        worldUniform1f(gl, program, 'waterFalloff', plane.colorFalloff)
+        worldUniform1f(gl, program, 'shadowReceiver', plane.receiveShadows ? 1 : 0)
         const caustics = plane.caustics
-        if (caustics === undefined) gl.uniform1f(uniformLocation(gl, program, 'causticsMode'), 0)
+        if (caustics === undefined) worldUniform1f(gl, program, 'causticsMode', 0)
         else {
           // The flip-book frame of the moment, as the game plays it at CausticsFPS.
           const frame =
@@ -8407,25 +8447,25 @@ function drawWorldWebGlWithResources(
               ? Math.floor((input.timeSeconds ?? 0) * caustics.framesPerSecond) % caustics.frames.length
               : 0
           bindTexture2d(resources, caustics.frames[frame]!, WATER_CAUSTICS_UNIT)
-          gl.uniform1f(uniformLocation(gl, program, 'causticsMode'), 1)
+          worldUniform1f(gl, program, 'causticsMode', 1)
           gl.uniform2f(uniformLocation(gl, program, 'causticsScale'), caustics.scale[0], caustics.scale[1])
-          gl.uniform1f(uniformLocation(gl, program, 'causticsFalloff'), caustics.falloff)
+          worldUniform1f(gl, program, 'causticsFalloff', caustics.falloff)
         }
         const waves = plane.waves
-        if (waves === undefined) gl.uniform1f(uniformLocation(gl, program, 'waterWavesMode'), 0)
+        if (waves === undefined) worldUniform1f(gl, program, 'waterWavesMode', 0)
         else {
           bindTexture2d(resources, waves.texture, WATER_NORMAL_UNIT)
-          gl.uniform1f(uniformLocation(gl, program, 'waterWavesMode'), 1)
+          worldUniform1f(gl, program, 'waterWavesMode', 1)
           gl.uniform2f(uniformLocation(gl, program, 'waterWaveTiling'), waves.tiling[0], waves.tiling[1])
           gl.uniform4f(uniformLocation(gl, program, 'waterWaveScroll'), ...waves.scroll)
           gl.uniform2f(uniformLocation(gl, program, 'waterSpecular'), waves.specularity, waves.specularScale)
-          gl.uniform1f(uniformLocation(gl, program, 'waterTime'), input.timeSeconds ?? 0)
+          worldUniform1f(gl, program, 'waterTime', input.timeSeconds ?? 0)
         }
         drawBatch(resources, program, plane.batch, gl.TRIANGLES)
       }
-      gl.uniform1f(uniformLocation(gl, program, 'causticsMode'), 0)
-      gl.uniform1f(uniformLocation(gl, program, 'waterWavesMode'), 0)
-      gl.uniform1f(uniformLocation(gl, program, 'waterDepthMode'), 0)
+      worldUniform1f(gl, program, 'causticsMode', 0)
+      worldUniform1f(gl, program, 'waterWavesMode', 0)
+      worldUniform1f(gl, program, 'waterDepthMode', 0)
       assertNoWebGlError(resources, 'water pass')
     }
     const transparentMaterialDraws = [...transparentSceneDraws, ...effectDraws]
@@ -8464,15 +8504,15 @@ function drawWorldWebGlWithResources(
       gl.enable(gl.BLEND)
       gl.depthMask(false)
       gl.blendFunc(gl.SRC_ALPHA, item.blendMode === 'additive' ? gl.ONE : gl.ONE_MINUS_SRC_ALPHA)
-      gl.uniform1f(uniformLocation(gl, program, 'shadowReceiver'), item.receiveShadows ? 1 : 0)
+      worldUniform1f(gl, program, 'shadowReceiver', item.receiveShadows ? 1 : 0)
       if (item.kind === 'textured') {
         drawTexturedBatch(resources, program, item.batch, item.range)
       } else {
-        gl.uniform1f(uniformLocation(gl, program, 'textured'), 0)
-        gl.uniform1f(uniformLocation(gl, program, 'normalTextured'), 0)
-        gl.uniform1f(uniformLocation(gl, program, 'secondaryTextured'), 0)
-        gl.uniform1f(uniformLocation(gl, program, 'splatTextured'), 0)
-        gl.uniform1f(uniformLocation(gl, program, 'alphaCutoff'), 0)
+        worldUniform1f(gl, program, 'textured', 0)
+        worldUniform1f(gl, program, 'normalTextured', 0)
+        worldUniform1f(gl, program, 'secondaryTextured', 0)
+        worldUniform1f(gl, program, 'splatTextured', 0)
+        worldUniform1f(gl, program, 'alphaCutoff', 0)
         drawBatch(resources, program, item.batch, gl.TRIANGLES, item.batch, item.range)
       }
     }
@@ -8499,7 +8539,7 @@ function drawWorldWebGlWithResources(
         sceneCamera.viewProjection,
       )
       bindSentinelTexture2d(resources, 0)
-      gl.uniform1i(uniformLocation(gl, depthProgram, 'baseColorMap'), 0)
+      worldUniform1i(gl, depthProgram, 'baseColorMap', 0)
       try {
         // Depth-tested: a plane writes only where the water lies over the drawn scene.
         for (const positions of waterSurfaces) drawShadowPositions(resources, depthProgram, positions)
