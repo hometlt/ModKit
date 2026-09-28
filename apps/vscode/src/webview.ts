@@ -787,7 +787,8 @@ async function mount(
         },
         exportBaseName(descriptor) {
           const record = recordForDescriptor(descriptor as unknown as Record<string, unknown>)
-          return record?.entry.name ?? 'image'
+          // the subject's name without its own extension: `icon.dds` exports as `icon.png`
+          return record?.entry.name.replace(/\.[^.]+$/u, '') ?? 'image'
         },
       }),
     ),

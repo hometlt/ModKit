@@ -90,7 +90,11 @@ export interface ImageExportFile {
  * `<base>.<preset>.<ext>` otherwise — `tex.png`, `tex.dxt1.dds`, `tex.button.dds`, as MK2 wrote.
  */
 export function convertedFileName(baseName: string, presetId: string, ext: string): string {
-  return presetId === ext ? `${baseName}.${ext}` : `${baseName}.${exportSafeName(presetId)}.${ext}`
+  // a form's `writes.extension` carries its dot (sdk fields); one dot joins, never two
+  const bare = ext.replace(/^\./u, '')
+  return presetId === bare
+    ? `${baseName}.${bare}`
+    : `${baseName}.${exportSafeName(presetId)}.${bare}`
 }
 
 /** What the host did with them. A refusal is a stated outcome, never a silent no-op. */

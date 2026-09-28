@@ -46,8 +46,10 @@ describe('image conversion presets', () => {
   })
 
   it('names converted files as MK2 did', () => {
+    // `writes.extension` as manifests declare it, with its dot
+    expect(convertedFileName('tex', 'png', '.png')).toBe('tex.png')
+    expect(convertedFileName('tex', 'dxt1', '.dds')).toBe('tex.dxt1.dds')
+    expect(convertedFileName('tex', 'button', '.dds')).toBe('tex.button.dds')
     expect(convertedFileName('tex', 'png', 'png')).toBe('tex.png')
-    expect(convertedFileName('tex', 'dxt1', 'dds')).toBe('tex.dxt1.dds')
-    expect(convertedFileName('tex', 'button', 'dds')).toBe('tex.button.dds')
   })
 })
