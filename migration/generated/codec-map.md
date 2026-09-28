@@ -131,7 +131,7 @@ Pending requires source copy, behavioral evidence and the declared acceptance su
 | rtf | other | core:modkit/document-rtf | pending | 5 / 5 | pending |
 | rtx | other | other:modkit/rtx | pending | 0 / 4 | evidence-ready |
 | sage-asset-bundle | other | none | pending | 1 / 1 | pending |
-| sage-skudef | other | ea:ea/sage-skudef | pending | 2 / 2 | pending |
+| sage-skudef | other | ea:ea/sage-skudef | pending | 0 / 2 | evidence-ready |
 | sage-w3x | other | ea:ea/sage-w3x | pending | 3 / 3 | pending |
 | sc2-bank | sc2 | blizzard:blizzard/sc2-bank, blizzard:blizzard/sc2-bank | available | 0 / 27 | evidence-ready |
 | sc2-data | sc2 | blizzard:blizzard/sc2-data, blizzard:blizzard/sc2-data | available | 0 / 26 | evidence-ready |

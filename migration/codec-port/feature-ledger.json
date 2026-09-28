@@ -3683,14 +3683,24 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-ea/test/receipts/k1/sage-skudef.audit.json",
+          "sha256": "92883f13d9f21f1c5b1131f22775b8b41f2a154afd8bf01318e75774a2e03d38"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sage-skudef/audit",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-ea/test/receipts/k1/sage-skudef.view-inspect.json",
+          "sha256": "771a591634e8a0f7ddcdd16b6efd7d9fee620ff39c02533cc121d528f3bf21b9"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sage-skudef/operation/view.inspect",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],

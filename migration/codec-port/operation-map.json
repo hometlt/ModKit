@@ -2038,11 +2038,11 @@
       }
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-ea/sage/contributions/codec-sage-skudef.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/sage-skudef/operation/view.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
       "contribution": null,

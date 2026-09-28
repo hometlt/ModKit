@@ -2098,11 +2098,11 @@
       "codec": "sage-skudef",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 2,
+      "pending": 0,
       "requirements": 2,
       "source": "extensions/ea/sage/codecs/sage-skudef/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/sage-skudef",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
