@@ -75,6 +75,8 @@ export interface PrepareVsCodeMapPreviewRequest {
   readonly localizer?: UiLocalizer
   /** Game-string locales the map's names are read in, preferred first (`modkit.locale`). */
   readonly locales?: readonly string[]
+  /** The window's content sources: the world's models also reach the subject's dependency layers. */
+  readonly contentSources?: CoordinateMapPreviewAssetSessionRequest['contentSources']
   /** Test seam: product callers always use the common host coordinator. */
   readonly coordinate?: MapPreviewCoordinator
 }
@@ -118,6 +120,7 @@ export async function prepareVsCodeMapPreview(
             },
           }),
       ...(request.catalog === undefined ? {} : { catalog: request.catalog }),
+      ...(request.contentSources === undefined ? {} : { contentSources: request.contentSources }),
       ...(request.signal === undefined ? {} : { signal: request.signal }),
     })
   } catch (error) {

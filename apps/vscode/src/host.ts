@@ -47,6 +47,7 @@ import { advertisesSubjectCandidates, SUBJECT_SELECTOR_SOURCE } from './subject-
 import { configuredContributionSettings } from './contribution-settings.js'
 import { uvModule } from '@modkit/uv/module'
 import type { MapPreviewResourcePlanResolver } from '@modkit/host/maps'
+import type { ContentSources } from '@modkit/vfs/content-sources'
 import { selectSceneRenderer, type SceneRendererSelection } from '@modkit/host/renderer'
 import type { UiLocalizer } from '@modkit/ui/localization'
 import {
@@ -815,6 +816,8 @@ export interface VsCodeServeOptions {
   readonly mapPreviewResourcePlanResolver?: MapPreviewResourcePlanResolver
   /** Game-string locales, preferred first (`modkit.locale`); read at each open. */
   readonly gameLocales?: () => readonly string[]
+  /** The window's content sources, so a world's models reach its dependency layers; undefined when none. */
+  readonly contentSources?: () => Promise<ContentSources | undefined>
   /** Localizes host-owned diagnostics before they cross into VS Code's Problems UI. */
   readonly localizer?: UiLocalizer
   /**
@@ -1357,6 +1360,7 @@ function serveVsCode(
         const result = await services.open(request)
         finished?.()
         if (result.state === 'opened') {
+          const contentSources = await options.contentSources?.()
           const preview = await prepareVsCodeMapPreview({
             services,
             opened: result,
@@ -1364,6 +1368,7 @@ function serveVsCode(
             budgets: request.budget,
             ...(options.localizer === undefined ? {} : { localizer: options.localizer }),
             ...(options.gameLocales === undefined ? {} : { locales: options.gameLocales() }),
+            ...(contentSources === undefined ? {} : { contentSources }),
             ...(mapSelection === undefined ? {} : { selectionId: mapSelection.selectionId }),
             ...(options.mapPreviewResourcePlanResolver === undefined
               ? {}

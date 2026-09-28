@@ -74,6 +74,29 @@ describe('VS Code map preview binding', () => {
     expect(resolveResourcePlan).not.toHaveBeenCalled()
   })
 
+  it('reads names in the chosen game locales and lets models reach the dependency layers', async () => {
+    const contentSources = { snapshot: async () => ({}) } as never
+    let seen:
+      | Parameters<NonNullable<Parameters<typeof prepareVsCodeMapPreview>[0]['coordinate']>>[0]
+      | undefined
+    await prepareVsCodeMapPreview({
+      services: {} as never,
+      opened: opened(async () => undefined),
+      grant: { id: 'vscode-map-sources', classes: ['read-source'] },
+      budgets: budget,
+      locales: ['ruRU', 'enUS'],
+      contentSources,
+      coordinate: async request => {
+        seen = request
+        return { state: 'selection-required', candidates: [], diagnostics: [] }
+      },
+    })
+    expect(seen?.catalogEnrichment?.locales).toEqual(['ruRU', 'enUS'])
+    // the limits stay those of the policy; only the locales follow the window
+    expect(seen?.catalogEnrichment?.limits).toBe(MAP_PREVIEW_CATALOG_ENRICHMENT_POLICY.limits)
+    expect(seen?.contentSources).toBe(contentSources)
+  })
+
   it('turns a user-selected candidate into the host second-open request', async () => {
     const dispose = vi.fn(async () => undefined)
     const open = vi.fn(async request => parseVsCodeMapPreviewSelectionRequest(request))

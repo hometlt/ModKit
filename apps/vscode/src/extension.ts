@@ -8079,6 +8079,8 @@ async function activateModkit(
       configuration,
       mapPreviewResourcePlanResolver,
       gameLocales: configuredGameLocales,
+      // Downloaded assets and a game's shipped textures sit in the subject's dependency layers.
+      contentSources: () => requireContentSources().catch(() => undefined),
       localizer,
       // The window's one registry, so a page opening a member reaches the archive the Explorer
       // already has open rather than a second copy of it.
