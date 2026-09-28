@@ -140,6 +140,18 @@ it('sets a program shared by materials only where the next one differs in float3
   assert.equal(uploads.get('u_ambient'), 3)
 })
 
+it('asks a linked program for its attribute locations once, whatever geometry it draws', () => {
+  const { gl, count } = context()
+  const renderer = materialWebGlDraws(gl, new Map([['albedo.png', {}]]), { checkEachDraw: false })
+  const draws = ['a', 'b', 'c'].map(id => ({
+    draw: { primitive: mesh(id), program: source, material },
+  }))
+  renderer.drawSequence(draws, camera)
+  assert.equal(count('createVertexArray'), 3)
+  // a_position, a_normal, a_tangent, a_color, a_uv0 and the four instance matrix columns.
+  assert.equal(count('getAttribLocation'), 9)
+})
+
 it('shares one sampler object between leases with equal sampling and deletes it on release', () => {
   const { gl, count } = context()
   const renderer = materialWebGlDraws(gl, new Map([['albedo.png', {}]]), { checkEachDraw: false })

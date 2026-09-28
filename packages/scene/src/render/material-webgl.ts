@@ -211,6 +211,17 @@ export function materialWebGlDraws(
     }
     return lastFrame
   }
+  // A linked program's attribute locations never change: each vertex array asked for all of them
+  // again (an animated frame builds hundreds of vertex arrays, ~3 000 getAttribLocation calls).
+  const attributeLocations = new WeakMap<WebGLProgram, Map<string, number>>()
+  const attributeLocation = (program: WebGLProgram, name: string) => {
+    let locations = attributeLocations.get(program)
+    if (locations === undefined) attributeLocations.set(program, (locations = new Map()))
+    let location = locations.get(name)
+    if (location === undefined)
+      locations.set(name, (location = gl.getAttribLocation(program, name)))
+    return location
+  }
   const retainedBuffer = (target: number, data: ArrayBufferView) => {
     let entry = retained.get(data)
     if (entry === undefined) {
@@ -267,7 +278,7 @@ export function materialWebGlDraws(
       gl.bindVertexArray(vao)
       try {
         const attribute = (name: string, index: number, size: number, fallback: number[]) => {
-          const location = gl.getAttribLocation(program, name)
+          const location = attributeLocation(program, name)
           if (location < 0) return
           const values = attributes[index]
           if (values === undefined) {
@@ -288,7 +299,7 @@ export function materialWebGlDraws(
         if (primitive.indices !== undefined)
           entry.buffers.push(retainedBuffer(gl.ELEMENT_ARRAY_BUFFER, primitive.indices))
         created.placement = [0, 1, 2, 3].map(column =>
-          gl.getAttribLocation(program, `a_instanceMatrix${column}`),
+          attributeLocation(program, `a_instanceMatrix${column}`),
         )
         if (instances !== undefined) {
           entry.buffers.push(retainedBuffer(gl.ARRAY_BUFFER, instances))
