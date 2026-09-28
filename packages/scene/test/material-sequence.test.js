@@ -29,10 +29,11 @@ const placements = count => {
   return { matrices, count }
 }
 
-// Counts every call by name and keeps the last value uploaded to each uniform.
+// Counts every call by name and keeps the last value uploaded to each uniform, and how often.
 function context() {
   const calls = new Map()
   const uniforms = new Map()
+  const uploads = new Map()
   const boundTextures = []
   const names = ['a_position', 'a_normal', 'a_tangent', 'a_color', 'a_uv0']
   for (let column = 0; column < 4; column++) names.push(`a_instanceMatrix${column}`)
@@ -66,14 +67,17 @@ function context() {
       if (value !== undefined && typeof value !== 'function') return value
       return (...args) => {
         calls.set(name, (calls.get(name) ?? 0) + 1)
-        if (String(name).startsWith('uniform') && args[0] !== null) uniforms.set(args[0], args.at(-1))
+        if (String(name).startsWith('uniform') && args[0] !== null) {
+          uniforms.set(args[0], args.at(-1))
+          uploads.set(args[0], (uploads.get(args[0]) ?? 0) + 1)
+        }
         if (name === 'bindTexture') boundTextures.push(args[1])
         return value?.(...args)
       }
     },
   })
   const count = name => calls.get(name) ?? 0
-  return { gl: proxy, calls, uniforms, count, boundTextures }
+  return { gl: proxy, calls, uniforms, uploads, count, boundTextures }
 }
 
 it('draws a sequence changing only what differs from the previous draw, and restores once', () => {
@@ -110,6 +114,30 @@ it('draws a sequence changing only what differs from the previous draw, and rest
   assert.equal(count('uniformMatrix4fv'), 5)
   assert.equal(uniforms.get('u_viewProjection'), moved)
   assert.equal(count('uniform4fv'), 1)
+})
+
+it('sets a program shared by materials only where the next one differs in float32', () => {
+  const { gl, uniforms, uploads } = context()
+  const renderer = materialWebGlDraws(gl, new Map([['albedo.png', {}]]), { checkEachDraw: false })
+  // One linked program (same sources): 0.1 and its float32 are one value to WebGL.
+  const shiny = {
+    ...source,
+    uniforms: { u_specularity: 0.1, u_emisMult: 1, u_ambient: [1, 0, 0, 1] },
+  }
+  const same = { ...shiny, uniforms: { ...shiny.uniforms, u_specularity: Math.fround(0.1) } }
+  const dull = { ...shiny, uniforms: { ...shiny.uniforms, u_ambient: [1, 0, 0, 0.5] } }
+  const draws = [shiny, same, dull, shiny].map((program, index) => ({
+    draw: { primitive: mesh(`m${index}`), program, material },
+  }))
+  renderer.drawSequence(draws, camera)
+  assert.equal(uploads.get('u_specularity'), 1)
+  assert.equal(uploads.get('u_emisMult'), 1)
+  assert.equal(uploads.get('u_ambient'), 3) // shiny, dull, shiny
+  assert.equal(uploads.get('u_diffuseMap'), 1) // the sampler unit
+  assert.deepEqual([...uniforms.get('u_ambient')], [1, 0, 0, 1])
+  // A later sequence finds the program holding the last material's values.
+  renderer.drawSequence(draws.slice(3), camera)
+  assert.equal(uploads.get('u_ambient'), 3)
 })
 
 it('shares one sampler object between leases with equal sampling and deletes it on release', () => {

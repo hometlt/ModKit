@@ -83,6 +83,30 @@ export function uniformLocation(gl: WebGL2RenderingContext, program: WebGLProgra
   return locations.get(name) ?? null
 }
 
+/**
+ * The value each material uniform holds in its linked program, by program and location. Materials that share a linked program switch it back
+ * and forth within a frame and mostly agree on most values: every switch uploaded every value and
+ * sampler unit again, most of a frame's GL calls. Only uploadUniforms writes these locations (the
+ * frame, light and placement uniforms have other names), so this is the program's own state and
+ * an equal float32 value (or unit) needs no call.
+ */
+const heldUniforms = new WeakMap<WebGLProgram, Map<WebGLUniformLocation, number | Float32Array>>()
+
+function holdsUniform(
+  program: Map<WebGLUniformLocation, number | Float32Array>,
+  location: WebGLUniformLocation,
+  value: number | Float32List,
+): boolean {
+  const held = program.get(location)
+  if (held === undefined) return false
+  if (typeof value === 'number')
+    return typeof held === 'number' && Object.is(held, Math.fround(value))
+  if (typeof held === 'number' || held.length !== value.length) return false
+  for (let index = 0; index < held.length; index++)
+    if (!Object.is(held[index], Math.fround(value[index]!))) return false
+  return true
+}
+
 /** Bind generated material programs to WebGL2, without native texture decoding or scene ownership. */
 export function createWebGlMaterialProgram(
   gl: WebGL2RenderingContext,
@@ -199,6 +223,9 @@ export function createWebGlMaterialProgram(
         location: uniformLocation(gl, program, binding.uniform),
       }
     })
+    let held = heldUniforms.get(program)
+    if (held === undefined) heldUniforms.set(program, (held = new Map()))
+    const holds = held
     const uploadUniforms = (uniforms?: StandardMaterialProgram['uniforms']) => {
       if (!live) throw new TypeError('material program has been released')
       for (const { name, location, value: own } of values) {
@@ -206,14 +233,24 @@ export function createWebGlMaterialProgram(
         // WebGL reads a plain array into float32 as it reads the lease's own Float32Array copy.
         const value = (uniforms === undefined ? own : uniforms[name]) as number | Float32List
         if (value === undefined) throw new TypeError(`material uniform ${name} has no value`)
+        if (typeof value !== 'number' && ![2, 3, 4, 9].includes(value.length))
+          throw new TypeError('invalid material uniform arity')
+        if (holdsUniform(holds, location, value)) continue
         if (typeof value === 'number') gl.uniform1f(location, value)
         else if (value.length === 2) gl.uniform2fv(location, value)
         else if (value.length === 3) gl.uniform3fv(location, value)
         else if (value.length === 4) gl.uniform4fv(location, value)
-        else if (value.length === 9) gl.uniformMatrix3fv(location, false, value)
-        else throw new TypeError('invalid material uniform arity')
+        else gl.uniformMatrix3fv(location, false, value)
+        holds.set(
+          location,
+          typeof value === 'number' ? Math.fround(value) : Float32Array.from(value),
+        )
       }
-      maps.forEach(({ location }, unit) => gl.uniform1i(location, unit))
+      maps.forEach(({ location }, unit) => {
+        if (location === null || holds.get(location) === unit) return
+        gl.uniform1i(location, unit)
+        holds.set(location, unit)
+      })
     }
     return Object.freeze({
       program,
