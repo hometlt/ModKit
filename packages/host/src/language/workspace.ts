@@ -79,6 +79,7 @@ import { createWorkspaceReferenceIndex } from '../references.js'
 import {
   analyzeResolvedDataSemanticContext,
   prepareResolvedDataSemanticContext,
+  semanticInputLocales,
   validatedLanguageSemanticContextRequirements,
   type ResolvedDataSemanticContextResult,
 } from './semantic-context.js'
@@ -1580,6 +1581,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
     complete: boolean,
     signal: AbortSignal,
     preferCached = false,
+    locales: readonly string[] = [],
   ): Promise<
     Readonly<{ inputs: readonly LanguageWorkspaceSemanticInput[]; complete: boolean }>
   > => {
@@ -1600,6 +1602,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
         documents: snapshotDocuments,
         origins: originsByUri,
         complete,
+        locales,
       })
       let resolved = cachedSemanticContext(prepared.key)
       let stale = false
@@ -1913,6 +1916,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
           baseSemanticComplete,
           controller.signal,
           preferCachedSemanticContext,
+          semanticInputLocales(baseSemanticInputs),
         )
         semanticContextsComplete = semanticContexts.complete
       } catch {

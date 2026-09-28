@@ -3,6 +3,7 @@ import type { PermissionGrant, ResourceBudget } from '@modkit/sdk'
 import {
   RESOLVED_DATA_AUTHORING_INDEX_KIND,
   type DataCatalogDocument,
+  type DataLocalizationDocument,
   type ResolvedDataAuthoringIndex,
   type ResolvedDataWorkspaceAnalysisRequest,
   type ResolvedDataWorkspaceSnapshot,
@@ -41,7 +42,9 @@ export function validatedLanguageSemanticContextRequirements(
     const keys = typeof item === 'object' && item !== null ? Reflect.ownKeys(item) : []
     const knowledge =
       typeof item === 'object' && item !== null && (item as { kind?: unknown }).kind === 'language-knowledge'
-    const allowed = knowledge ? ['kind', 'fileNames'] : ['kind', 'gameId', 'languageIds']
+    const allowed = knowledge
+      ? ['kind', 'fileNames']
+      : ['kind', 'gameId', 'languageIds', 'localizationLanguageIds']
     if (
       typeof item !== 'object' ||
       item === null ||
@@ -83,8 +86,17 @@ export function validatedLanguageSemanticContextRequirements(
     const kind = descriptors['kind']?.value
     const gameId = descriptors['gameId']?.value
     const languageIds = descriptors['languageIds']?.value
+    const localizationLanguageIds = descriptors['localizationLanguageIds']?.value
+    const idList = (value: unknown): value is string[] =>
+      Array.isArray(value) &&
+      value.length > 0 &&
+      value.length <= 16 &&
+      Object.keys(value).length === value.length &&
+      value.every(boundedText) &&
+      new Set(value).size === value.length
     if (
       kind !== 'resolved-data-snapshot' ||
+      (localizationLanguageIds !== undefined && !idList(localizationLanguageIds)) ||
       !boundedText(gameId) ||
       !Array.isArray(languageIds) ||
       languageIds.length === 0 ||
@@ -102,6 +114,9 @@ export function validatedLanguageSemanticContextRequirements(
         kind,
         gameId,
         languageIds: Object.freeze([...languageIds]),
+        ...(localizationLanguageIds === undefined
+          ? {}
+          : { localizationLanguageIds: Object.freeze([...localizationLanguageIds]) }),
       }),
     )
   }
@@ -114,7 +129,30 @@ export interface PreparedResolvedDataSemanticContext {
   readonly scopeKey: string
   readonly workspaceId: string
   readonly documents: readonly DataCatalogDocument[]
+  /** Preferred locale first, from the workspace's `locale-set` input. */
+  readonly locales: readonly string[]
+  readonly localizationDocuments: readonly DataLocalizationDocument[]
   readonly complete: boolean
+}
+
+/** The locales a workspace's `locale-set` input names (payload `{ locales }`), preferred first. */
+export function semanticInputLocales(
+  inputs: readonly LanguageWorkspaceSemanticInput[],
+): readonly string[] {
+  for (const input of inputs) {
+    if (input.kind !== 'locale-set') continue
+    const locales = (input.payload as { readonly locales?: unknown } | undefined)?.locales
+    if (Array.isArray(locales) && locales.every(boundedText)) return Object.freeze([...locales])
+  }
+  return Object.freeze([])
+}
+
+/** The first locale that begins one of the path's segments (`enUS.SC2Data/…` is enUS). */
+function localeOfPath(path: string, locales: readonly string[]): string | undefined {
+  const segments = path.split('/').map(segment => segment.toLowerCase())
+  return locales.find(locale =>
+    segments.some(segment => segment.startsWith(locale.toLowerCase())),
+  )
 }
 
 export function prepareResolvedDataSemanticContext(request: {
@@ -122,8 +160,35 @@ export function prepareResolvedDataSemanticContext(request: {
   readonly documents: readonly LanguageDocument[]
   readonly origins: ReadonlyMap<string, LanguageWorkspaceDocumentOrigin>
   readonly complete: boolean
+  /** From `semanticInputLocales`; without locales no string file enters the analysis. */
+  readonly locales?: readonly string[]
 }): PreparedResolvedDataSemanticContext {
   let complete = request.complete
+  const locales = request.locales ?? []
+  const localizationLanguageIds = request.requirement.localizationLanguageIds ?? []
+  const localizationDocuments = request.documents.flatMap(document => {
+    const origin = request.origins.get(document.uri)
+    if (!localizationLanguageIds.includes(document.languageId) || origin === undefined) return []
+    const locale = localeOfPath(origin.logicalId, locales)
+    return locale === undefined
+      ? []
+      : [
+          {
+            origin,
+            document: Object.freeze({
+              rootId: origin.layerId,
+              path: origin.logicalId,
+              text: document.text,
+              locale,
+            }),
+          },
+        ]
+  })
+  localizationDocuments.sort(
+    (left, right) =>
+      left.origin.precedence - right.origin.precedence ||
+      compareUtf8(left.origin.logicalId, right.origin.logicalId),
+  )
   const selected = request.documents
     .filter(document => request.requirement.languageIds.includes(document.languageId))
     .map(document => ({ document, origin: request.origins.get(document.uri) }))
@@ -158,9 +223,17 @@ export function prepareResolvedDataSemanticContext(request: {
       origin,
     }
   })
+  const localizationIdentities = localizationDocuments.map(({ document, origin }) => ({
+    path: origin.logicalId,
+    layerId: origin.layerId,
+    locale: document.locale,
+    contentRevision: languageWorkspaceContextToken(document.text),
+  }))
   const key = languageWorkspaceContextToken({
     requirement: request.requirement,
     documents: identities,
+    locales,
+    localization: localizationIdentities,
     complete,
   })
   const scopeKey = languageWorkspaceContextToken({
@@ -184,6 +257,8 @@ export function prepareResolvedDataSemanticContext(request: {
     scopeKey,
     workspaceId: `language:${key}`,
     documents: Object.freeze(documents),
+    locales,
+    localizationDocuments: Object.freeze(localizationDocuments.map(item => item.document)),
     complete,
   })
 }
@@ -249,7 +324,10 @@ export async function analyzeResolvedDataSemanticContext(request: {
         : request.budgets.maxInputBytes,
     )
     const maxTextBytes = Math.min(maximumInputBytes, LANGUAGE_WORKSPACE_SEMANTIC_PAYLOAD_MAX_BYTES)
-    const textBytes = request.prepared.documents.reduce(
+    const textBytes = [
+      ...request.prepared.documents,
+      ...request.prepared.localizationDocuments,
+    ].reduce(
       (total, document) => total + new TextEncoder().encode(document.text).byteLength,
       0,
     )
@@ -281,8 +359,8 @@ export async function analyzeResolvedDataSemanticContext(request: {
         workspaceId: request.prepared.workspaceId,
         gameId: request.requirement.gameId,
         documents: request.prepared.documents,
-        localizationDocuments: [],
-        locales: [],
+        localizationDocuments: request.prepared.localizationDocuments,
+        locales: request.prepared.locales,
         localizationKeys: [],
         queries: [],
         plannedDocumentCount:
@@ -291,7 +369,8 @@ export async function analyzeResolvedDataSemanticContext(request: {
           ? []
           : ['language-workspace-incomplete'],
         snapshotId: request.prepared.key,
-        maxDocuments: request.prepared.documents.length,
+        maxDocuments:
+          request.prepared.documents.length + request.prepared.localizationDocuments.length,
         maxTextBytes,
         maxEntities: Math.min(request.budgets.maxNodes, MAX_LANGUAGE_RESOLVED_DATA_ENTITIES),
         maxDepth: request.budgets.maxDepth,

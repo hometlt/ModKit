@@ -333,6 +333,13 @@ export interface LanguageResolvedDataSemanticContextRequirement {
   readonly gameId: string
   /** Only final workspace documents with one of these language ids enter Data analysis. */
   readonly languageIds: readonly string[]
+  /**
+   * Workspace documents with these language ids are the Data's string files. They enter the analysis
+   * as localization documents of the locales the workspace's `locale-set` input names (payload
+   * `{ locales }`, preferred first): a file belongs to the first locale that begins one of its path
+   * segments (`enUS.SC2Data/LocalizedData/GameStrings.txt`).
+   */
+  readonly localizationLanguageIds?: readonly string[]
 }
 
 /**
