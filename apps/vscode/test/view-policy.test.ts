@@ -196,6 +196,7 @@ describe('VS Code view policy', () => {
       'tree',
       'vector',
       'video',
+      'export',
       'localization',
     ])
     // The world renderer (and three.js behind it) is imported on first mount, not with the page.

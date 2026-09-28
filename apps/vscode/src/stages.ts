@@ -31,6 +31,7 @@ import { createVirtualTextViewer } from '@modkit/ui/text-virtual'
 import { createTreeViewer } from '@modkit/ui/tree'
 import { createVectorViewer } from '@modkit/ui/vector'
 import { createVideoViewer } from '@modkit/ui/video'
+import { createExportSection } from '@modkit/ui/export'
 
 import { orderStages } from './view-policy.js'
 import {
@@ -77,6 +78,22 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
         },
       ],
     })
+  /*
+   * The codec's conversions, beside the player (plan 7.22): a WEM exports to WAV the way a DDS
+   * exports to PNG. Image and model views draw their own; a subject with none gets no section.
+   */
+  const exportSections = [
+    {
+      id: 'export',
+      title: context.localizer.text('stage.export'),
+      icon: 'export',
+      module: createExportSection({
+        localizer: context.localizer,
+        ...(context.exportFiles === undefined ? {} : { exportBytes: context.exportFiles }),
+        exportBaseName: descriptor => context.exportBaseName?.(descriptor) ?? 'export',
+      }),
+    },
+  ]
   return orderStages<PreviewStage>([
     {
       id: 'image',
@@ -192,13 +209,13 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
       id: 'audio',
       label: context.localizer.text('stage.audio'),
       contract: 'common.view/audio-media-source',
-      module: createAudioViewer({ localizer: context.localizer }),
+      module: createAudioViewer({ localizer: context.localizer, sections: exportSections }),
     },
     {
       id: 'video',
       label: context.localizer.text('stage.video'),
       contract: 'common.view/video-media-source',
-      module: createVideoViewer({ localizer: context.localizer }),
+      module: createVideoViewer({ localizer: context.localizer, sections: exportSections }),
     },
     {
       id: 'archive',

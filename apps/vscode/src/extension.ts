@@ -8046,6 +8046,83 @@ async function activateModkit(
               await containers.edit(container, { remove: [path] })
               return true
             }
+            case 'extract': {
+              // Beside the archive file by default: that is where a person looks for what came out.
+              const beside = vscode.Uri.file(dirname(file))
+              if (kind === 'file') {
+                const target = await vscode.window.showSaveDialog({
+                  defaultUri: vscode.Uri.joinPath(beside, leafOf(path)),
+                })
+                if (target === undefined) return false
+                await vscode.workspace.fs.writeFile(target, await containers.read(container, path))
+                return false
+              }
+              const picked = await vscode.window.showOpenDialog({
+                defaultUri: beside,
+                canSelectFiles: false,
+                canSelectFolders: true,
+                openLabel: localizer.text('vscode.archive.extractHere'),
+              })
+              const folder = picked?.[0]
+              if (folder === undefined) return false
+              const members = (await containers.walk(container, path, 1_000_000)).filter(
+                item => item.kind === 'file',
+              )
+              const prefix = path === '' ? '' : `${path}/`
+              const written = await vscode.window.withProgress(
+                {
+                  location: vscode.ProgressLocation.Notification,
+                  title: localizer.text('vscode.archive.extracting', { name: basename(file) }),
+                  cancellable: true,
+                },
+                async (progress, token) => {
+                  const controller = new AbortController()
+                  token.onCancellationRequested(() => controller.abort())
+                  let count = 0
+                  for (const member of members) {
+                    if (controller.signal.aborted) break
+                    const relativePath = member.path.startsWith(prefix)
+                      ? member.path.slice(prefix.length)
+                      : member.path
+                    const bytes = await containers.read(container, member.path, controller.signal)
+                    await vscode.workspace.fs.writeFile(
+                      vscode.Uri.joinPath(folder, ...relativePath.split('/')),
+                      bytes,
+                    )
+                    count += 1
+                    progress.report({
+                      message: `${count} / ${members.length}`,
+                      increment: 100 / members.length,
+                    })
+                  }
+                  return count
+                },
+              )
+              void vscode.window.showInformationMessage(
+                `Modkit: ${localizer.text('vscode.archive.extracted', {
+                  count: written,
+                  total: members.length,
+                  folder: folder.fsPath,
+                })}`,
+              )
+              return false
+            }
+            case 'add-files': {
+              const picked = await vscode.window.showOpenDialog({
+                canSelectMany: true,
+                openLabel: localizer.text('vscode.archive.addHere'),
+              })
+              if (picked === undefined || picked.length === 0) return false
+              const into = kind === 'file' ? parentOf(path) : path
+              for (const source of picked) {
+                await containers.write(
+                  container,
+                  join(into, basename(source.path)),
+                  await vscode.workspace.fs.readFile(source),
+                )
+              }
+              return true
+            }
           }
         } catch (error) {
           void vscode.window.showErrorMessage(
