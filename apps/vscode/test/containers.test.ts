@@ -821,7 +821,8 @@ describe('a member is a subject in its own right', () => {
     cleanup.push(() => containers.dispose())
     const answer = await containers.open(containerUriText(archive, 'hello.txt'))
     expect(answer.snapshot.state).toBe('opened')
-    expect(asked).toEqual([`${archive.replace(/[\\/]+$/u, '')}/hello.txt`])
+    // the container file by its own path, then the member by the container's path joined with it
+    expect(asked).toEqual([archive, `${archive.replace(/[\\/]+$/u, '')}/hello.txt`])
     await answer.session?.dispose()
   }, 180_000)
 

@@ -146,7 +146,7 @@ const passingEvidence = (caseId: (typeof INSTALLED_ARCHIVE_ACCEPTANCE_CASE_IDS)[
   if (caseId === 'armod-open') {
     return {
       installedManifestSha256: INSTALLED_ARCHIVE_AUTHORITIES.armod.route.installedManifestSha256,
-      entrypoint: './src/warzone-wz/range-codec.js',
+      entrypoint: './src/warzone-wz/codec.js',
       selected: {
         extensionId: 'wz2100project/warzone-2100',
         contributionId: 'modkit/warzone-wz',

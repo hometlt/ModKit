@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto'
-import { revisionId, type ArtifactByteSource } from '@modkit/sdk'
+import { revisionId, type ArtifactByteSource, type ResourceBudget } from '@modkit/sdk'
 import type { Diagnostic } from '@modkit/core'
 import {
   createCompanionInputResolver,
@@ -32,11 +32,14 @@ export function contentSourceTarget(
 /**
  * Read-only source route shared by the native Explorer's custom editor and palette commands. With
  * the window's `contentSources` the file reaches the resources of its mod, as a file on disk does
- * (a model in the game's storage, its texture in another package of the chain).
+ * (a model in the game's storage, its texture in another package of the chain). `budget` is the
+ * one a file open runs under: the resources a model reads are bounded by it, not by the model's
+ * own size, so a texture larger than its model loads.
  */
 export function contentSourceOpener(
   services: SubjectServices,
   read: ContentSourceReader,
+  budget: ResourceBudget,
   contentSources?: () => Promise<ContentSources | undefined>,
 ): SubjectOpener {
   return async (requested, signal) => {
@@ -78,14 +81,7 @@ export function contentSourceOpener(
               }),
             ),
           }),
-      budget: {
-        maxInputBytes: BigInt(bytes.length || 1),
-        maxDepth: 256,
-        maxNodes: 1_000_000,
-        maxScalarBytes: 64 * 1024 * 1024,
-        maxDiagnostics: 1000,
-        deadlineMs: 30_000,
-      },
+      budget,
       ...(signal === undefined ? {} : { signal }),
     })
     const id = randomUUID()

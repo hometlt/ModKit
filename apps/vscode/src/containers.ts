@@ -499,11 +499,14 @@ export function createContainerRegistry(options: ContainerRegistryOptions): Cont
           }
         }
       } else {
+        // A container file reaches its mod's resources too, as any file opened by path does.
+        const assetOrigins = await options.assetOriginsFor?.(container)
         const opener = createPathSubjectOpener({
           subjects: options.services,
           roots,
           grant: options.grant,
           budget: options.budget,
+          ...(assetOrigins === undefined || assetOrigins.length === 0 ? {} : { assetOrigins }),
         })
         answer = await opener(container, signal)
         sessionToDispose = answer.session

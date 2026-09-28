@@ -187,7 +187,7 @@ const armodInstalledAuthority = Object.freeze({
   contributionId: 'modkit/warzone-wz',
   // The installed editor runs codecs worker-brokered, so it selects `portable`, not `trusted-node`.
   variantId: 'portable',
-  entrypoint: './src/warzone-wz/range-codec.js',
+  entrypoint: './src/warzone-wz/codec.js',
   manifestDigest: 'sha256:9f09effbbae1ee1e9755619cc250085dd5581cee395154d4f44d21055d733d20',
   artifactDigest: 'sha256:0cdc351d13ee42fc6487a6d85226d93ea15aa4006148aa4edd40cfee5f61805c',
   installedManifestSha256:

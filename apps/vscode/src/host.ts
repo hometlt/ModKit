@@ -1127,6 +1127,7 @@ export function createVsCodeCommandOpener(options: {
       return contentSourceOpener(
         options.services,
         options.readContentSource,
+        DEFAULT_OPEN_BUDGET,
         options.subjectCatalog?.contentSources,
       )(requested, signal)
     }
@@ -1373,6 +1374,7 @@ function serveVsCode(
       const answer = await contentSourceOpener(
         services,
         options.readContentSource,
+        options.budget ?? DEFAULT_OPEN_BUDGET,
         composed.subjectCatalog?.contentSources,
       )(
         requested,

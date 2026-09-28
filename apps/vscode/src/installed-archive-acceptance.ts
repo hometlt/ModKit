@@ -125,7 +125,7 @@ export const INSTALLED_ARCHIVE_AUTHORITIES = Object.freeze({
        * below are the same code either way.
        */
       variantId: 'portable',
-      entrypoint: './src/warzone-wz/range-codec.js',
+      entrypoint: './src/warzone-wz/codec.js',
       contributionManifest: './contributions/codec-warzone-wz.json',
       /*
        * Digests of the two installed files this route runs, taken from the extension root the
