@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { AssetSession, NamespaceEntrySource } from '@modkit/sdk'
 import { singleFileAsContainer } from '../src/maps/single-file-namespace.js'
+import { createWorkspaceNamespaceCompanionOrigin } from '../src/namespace-origin.js'
 
 const bytes = new TextEncoder().encode('[Basic]\nName=Tournament\n')
 
@@ -61,6 +62,30 @@ describe('a single-file map on the preview route', () => {
     ).rejects.toThrow(/budget/u)
     await adapted.dispose()
     expect(original.disposed).toBe(true)
+  })
+
+  it('serves the map file through the workspace resource origin the preview reads with', async () => {
+    const adapted = await singleFileAsContainer(session(['common.view/byte-range-source']), 1024n)
+    const descriptor = await adapted.descriptor()
+    const handlerId = descriptor.operations.find(item => item.id === 'container.extract')!.handlerId
+    const lease = await adapted.dataSource('common.view/namespace-entry-source', 1)
+    const origin = createWorkspaceNamespaceCompanionOrigin({
+      namespace: lease.value as NamespaceEntrySource,
+      primaryLogicalId: 'Tournament Arena.map',
+      containerRevision: descriptor.revision,
+      logicalRoots: [{ rootId: 'map', pathPrefix: '', logicalPrefix: '' }],
+      extract: async entryId => {
+        const result = await adapted.operations().invoke(handlerId, { entryId })
+        if (result.state !== 'ok' || result.output.kind !== 'bytes') throw new Error('no bytes')
+        return result.output.value
+      },
+    })
+    const opened = await origin.open('Tournament Arena.map')
+    if (opened.value.kind !== 'bytes') throw new Error('not bytes')
+    expect(opened.value.ref.uri).toBe('file:///C:/Maps/Tournament%20Arena.map')
+    expect(new TextDecoder().decode(await opened.value.read(0n, 7))).toBe('[Basic]')
+    await opened.release()
+    await lease.release()
   })
 
   it('leaves a container, or a subject without bytes, as it is', async () => {

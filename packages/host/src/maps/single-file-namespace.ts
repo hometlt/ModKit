@@ -59,9 +59,16 @@ export async function singleFileAsContainer(
     async lookup(path: string) {
       return path.toLowerCase() === name.toLowerCase() ? entry : undefined
     },
-    // the preview reads the file through container.extract; nothing opens it as a nested subject
-    async openEntry(): Promise<never> {
-      throw new TypeError('a single-file map is read through container.extract')
+    // the map's documents are read through container.extract; the reference names the file itself
+    async openEntry(entryId: string) {
+      if (entryId !== ENTRY_ID) throw new RangeError(`the map file has no entry ${entryId}`)
+      return {
+        value: Object.freeze({
+          id: `${descriptor.subjectUri}:${ENTRY_ID}`,
+          uri: descriptor.subjectUri,
+        }),
+        release: async (): Promise<void> => undefined,
+      }
     },
   })
   const extract = async (signal?: AbortSignal): Promise<Uint8Array> => {
