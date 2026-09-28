@@ -36,7 +36,9 @@ const document = {
 const ground = {
   id: 'ground',
   topology: 'triangles',
-  positions: Float32Array.of(-10, -10, 3, 10, -10, 3, 10, 10, 3, -10, -10, 3, 10, 10, 3, -10, 10, 3),
+  positions: Float32Array.from([
+    -10, -10, 3, 10, -10, 3, 10, 10, 3, -10, -10, 3, 10, 10, 3, -10, 10, 3,
+  ]),
 }
 const base = { id: 'material-0', baseColor: [1, 1, 1, 1] }
 const still = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]

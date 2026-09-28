@@ -7,7 +7,7 @@ import {
   createUvmEffectFrameCache,
   snapshotUvmEffectExtension,
 } from './effects.js'
-import type { JsonValue } from '@modkit/sdk'
+import type { JsonObject, JsonValue } from '@modkit/sdk'
 import { readUvmModel } from './model.js'
 import { field } from './values.js'
 
@@ -59,6 +59,10 @@ export function createUvmEffectSource(
           candidate => candidate.kind === 'animation' && candidate.channels.length > 0,
         ))
       : rig.clips.find(candidate => candidate.sequenceIndex === sequenceIndex)
+  const poseClip =
+    clip === undefined || clip.kind !== 'animation'
+      ? undefined
+      : { ...clip, channels: clip.channels.filter(channel => channel.kind !== 'visibility') }
   // Emitters sample historical node poses while seeking; a geometry-free sampler avoids skinning.
   const pose = createModelSceneSampler(
     {
@@ -68,18 +72,10 @@ export function createUvmEffectSource(
       skeleton: rig.bindings,
       nodePoses: rig.nodePoses,
     },
-    {
-      maxBytes: MAX_BYTES,
-      ...(clip === undefined || clip.kind !== 'animation'
-        ? {}
-        : {
-            clip: {
-              ...clip,
-              channels: clip.channels.filter(channel => channel.kind !== 'visibility'),
-            },
-          }),
-    },
+    { maxBytes: MAX_BYTES, ...(poseClip === undefined ? {} : { clip: poseClip }) },
   )
+  // Every step of every effect lane reads the few nodes the effect names (see anchoredPose).
+  const anchors = anchoredPose(document, scene, rig, poseClip, pose)
   const activeNodes = new Set(scene.nodes.map(node => node.id))
   const effects = field(document['extensions'], 'UV_game_effects')
   const entries = (key: string): readonly unknown[] => {
@@ -135,7 +131,7 @@ export function createUvmEffectSource(
     let transforms = poses.get(key)
     if (transforms === undefined) {
       if (poses.size >= MAX_CACHED_POSES) poses.clear()
-      transforms = pose.sample(at).nodeTransforms
+      transforms = anchors === undefined ? pose.sample(at).nodeTransforms : anchors.at(at)
       poses.set(key, transforms)
     }
     return transforms
@@ -177,4 +173,174 @@ export function createUvmEffectSource(
         cache: frames,
       }),
   })
+}
+
+type ScenePoseSampler = ReturnType<typeof createModelSceneSampler>
+type ScenePoseClip = NonNullable<Parameters<typeof createModelSceneSampler>[1]>['clip']
+
+/**
+ * Scene node ids an effect names: every `node` and `spaceNode` index in UV_game_effects (emitters,
+ * ribbons, projectors, fields, spline ends) and the nodes that carry collision volumes.
+ */
+function effectNodeIds(document: JsonObject): Set<string> {
+  const nodes = Array.isArray(document['nodes']) ? document['nodes'] : []
+  const ids = new Set<string>()
+  const pending: unknown[] = [field(document['extensions'], 'UV_game_effects')]
+  while (pending.length > 0) {
+    const value = pending.pop()
+    if (Array.isArray(value)) for (const item of value) pending.push(item)
+    else if (value !== null && typeof value === 'object')
+      for (const [key, item] of Object.entries(value)) {
+        if (
+          (key === 'node' || key === 'spaceNode') &&
+          typeof item === 'number' &&
+          Number.isSafeInteger(item) &&
+          item >= 0 &&
+          item < nodes.length
+        )
+          ids.add(`node-${item}`)
+        else pending.push(item)
+      }
+  }
+  for (const [index, node] of nodes.entries())
+    if (field(field(node, 'extensions'), 'UV_game_collision') !== undefined)
+      ids.add(`node-${index}`)
+  return ids
+}
+
+/**
+ * The world transforms effect steps read, from a sampler of only the nodes the effect names and
+ * their ancestors. A node's world transform composes its ancestors' alone (bones, their rigid
+ * children and posed nodes alike), so those nodes come out bit for bit as from the whole rig, which
+ * every step sampled before; any other node is read from a sample of the whole rig. Kept only where
+ * neither sampler loses a hierarchy's pose and both agree at the clip's start and middle.
+ */
+function anchoredPose(
+  document: JsonObject,
+  scene: ReturnType<typeof readUvmModel>['scene'],
+  rig: ReturnType<typeof readUvmModel>['rig'],
+  clip: ScenePoseClip,
+  whole: ScenePoseSampler,
+): { at(time: number): ReadonlyMap<string, Float32Array> } | undefined {
+  const parents = new Map<string, string>()
+  for (const node of scene.nodes) for (const child of node.childIds) parents.set(child, node.id)
+  const kept = new Set<string>()
+  for (const id of effectNodeIds(document))
+    for (let at: string | undefined = id; at !== undefined && !kept.has(at); at = parents.get(at))
+      kept.add(at)
+  if (kept.size === 0 || kept.size >= scene.nodes.length) return undefined
+  let part: ScenePoseSampler
+  try {
+    part = createModelSceneSampler(
+      {
+        nodes: scene.nodes
+          .filter(node => kept.has(node.id))
+          .map(node => ({
+            ...node,
+            meshIds: [],
+            childIds: node.childIds.filter(child => kept.has(child)),
+          })),
+        meshes: [],
+        primitives: [],
+        skeleton: rig.bindings.filter(bone => bone.nodeId !== undefined && kept.has(bone.nodeId)),
+        nodePoses: (rig.nodePoses ?? []).filter(node => kept.has(node.nodeId)),
+      },
+      {
+        maxBytes: MAX_BYTES,
+        ...(clip === undefined
+          ? {}
+          : {
+              clip: {
+                ...clip,
+                channels: clip.channels.filter(channel => kept.has(channel.target)),
+              },
+            }),
+      },
+    )
+  } catch {
+    return undefined
+  }
+  const unposed = (sampler: ScenePoseSampler) =>
+    sampler.diagnostics.some(item => item.code === 'common.model/pose-unavailable')
+  if (unposed(whole) || unposed(part)) return undefined
+  for (const time of new Set([0, (clip?.durationSeconds ?? 0) / 2])) {
+    const expected = whole.sample(time).nodeTransforms,
+      actual = part.sample(time).nodeTransforms
+    for (const id of kept) {
+      const left = expected.get(id),
+        right = actual.get(id)
+      if (
+        left === undefined ||
+        right === undefined ||
+        left.length !== right.length ||
+        left.some((value, index) => !Object.is(value, right[index]))
+      )
+        return undefined
+    }
+  }
+  return {
+    at: time =>
+      new AnchoredNodeTransforms(
+        part.sample(time).nodeTransforms,
+        kept,
+        () => whole.sample(time).nodeTransforms,
+      ),
+  }
+}
+
+/** One moment's node transforms: named nodes from the anchored sample, others from the whole rig. */
+class AnchoredNodeTransforms implements ReadonlyMap<string, Float32Array> {
+  readonly #anchored: ReadonlyMap<string, Float32Array>
+  readonly #kept: ReadonlySet<string>
+  readonly #sampleWhole: () => ReadonlyMap<string, Float32Array>
+  #whole: ReadonlyMap<string, Float32Array> | undefined
+
+  constructor(
+    anchored: ReadonlyMap<string, Float32Array>,
+    kept: ReadonlySet<string>,
+    sampleWhole: () => ReadonlyMap<string, Float32Array>,
+  ) {
+    this.#anchored = anchored
+    this.#kept = kept
+    this.#sampleWhole = sampleWhole
+  }
+
+  #all(): ReadonlyMap<string, Float32Array> {
+    return (this.#whole ??= this.#sampleWhole())
+  }
+
+  get(id: string) {
+    return this.#kept.has(id) ? this.#anchored.get(id) : this.#all().get(id)
+  }
+
+  has(id: string) {
+    return this.#kept.has(id) || this.#all().has(id)
+  }
+
+  get size() {
+    return this.#all().size
+  }
+
+  forEach(
+    callback: (value: Float32Array, key: string, map: ReadonlyMap<string, Float32Array>) => void,
+    thisArg?: unknown,
+  ) {
+    for (const [key, value] of this.#all()) callback.call(thisArg, value, key, this)
+  }
+
+  entries() {
+    return this.#all().entries()
+  }
+
+  keys() {
+    return this.#all().keys()
+  }
+
+  values() {
+    return this.#all().values()
+  }
+
+  [Symbol.iterator]() {
+    return this.#all()[Symbol.iterator]()
+  }
 }
