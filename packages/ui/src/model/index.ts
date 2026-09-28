@@ -39,6 +39,7 @@ import { PART_ATTRIBUTE } from '../parts.js'
 import { commitOperationWrite } from '../field-write/index.js'
 import { exportOffer, type EditOperationForm } from '../field-editor/index.js'
 import type { ImageExportFile, ImageExportOutcome, ImageSidebarSection } from '../image/index.js'
+import { convertedFileName } from '../image/index.js'
 import {
   createSurface,
   createViewerMount,
@@ -150,6 +151,18 @@ const CLIP_RENAME_OPERATION = 'edit.field'
  */
 const MODEL_CONVERT_OPERATION = 'model.export-native'
 
+/**
+ * Every model codec publishes its model as UVM (`model.export-uvm`), with no presets of its own: it
+ * is offered beside the codec's native encodings, with the input the host's own UVM export sends.
+ */
+const MODEL_UVM_OPERATION = 'model.export-uvm'
+const UVM_EXPORT_INPUT = Object.freeze({ schemaVersion: 1 })
+const UVM_WRITES = Object.freeze({
+  format: Object.freeze({ id: 'uvm', label: 'UVM' }),
+  extension: '.uvm',
+  mediaType: 'model/gltf-binary; profile=uvm-1.0',
+})
+
 export interface ModelConversionPreset {
   readonly form: EditOperationForm
   readonly input: JsonValue
@@ -162,7 +175,7 @@ export interface ModelConversionPreset {
  * operation — and is left out rather than guessed at from its input.
  */
 export function modelConversions(descriptor: AnyDescriptor): readonly ModelConversionPreset[] {
-  return exportOffer(descriptor, MODEL_CONVERT_OPERATION).flatMap(form => {
+  const native = exportOffer(descriptor, MODEL_CONVERT_OPERATION).flatMap(form => {
     if (form.writes === undefined) return []
     try {
       return [{ form, input: form.build(new Map()) }]
@@ -170,6 +183,21 @@ export function modelConversions(descriptor: AnyDescriptor): readonly ModelConve
       return []
     }
   })
+  const uvm = descriptor.operations.find(
+    item => item.id === MODEL_UVM_OPERATION && item.state === 'available' && !item.mutatesSource,
+  )
+  if (uvm === undefined) return native
+  const form: EditOperationForm = Object.freeze({
+    id: 'uvm',
+    label: 'UVM',
+    operationId: MODEL_UVM_OPERATION,
+    handlerId: uvm.handlerId,
+    summary: 'UVM',
+    fields: Object.freeze([]),
+    writes: UVM_WRITES,
+    build: () => UVM_EXPORT_INPUT,
+  })
+  return [...native, { form, input: UVM_EXPORT_INPUT }]
 }
 
 export function modelRendererBackend(rendererId: string): string {
@@ -1849,7 +1877,7 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
                       const outcome = await writeFiles(
                         [
                           {
-                            name: `${base}.${writes.extension}`,
+                            name: convertedFileName(base, preset.form.id, writes.extension),
                             mediaType: writes.mediaType,
                             bytes: output.value,
                           },
