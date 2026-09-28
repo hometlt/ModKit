@@ -7112,9 +7112,21 @@
       "status": "adapted"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-28",
+        "path": "modkit-core/reports/parity/owner-decisions/spring-rapid-extract-superseded-2026-09-28.json",
+        "reason": "Owner decision 2026-09-28 (relayed by [MK] Integrator, recorded in AGENTS.md §10): MK2's spring-rapid archive.extract is superseded by the MK3 design. A pool blob is read by the BAR content source (spring 8e6c02e: rapid packages as folders of the installation) through the rapid VFS provider, which checks each blob's md5 (core 8c9bc3ef); the .sdp codec lists the package and never sees the pool. MK3 is the reference, no MK2 comparison is run.",
+        "sha256": "8ef8ac5b568e5bce75d4d0b149c67aeb4bb59f65b2745d3abd9a016b0816a257"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/spring-rapid-extract-superseded-2026-09-28.json",
+          "sha256": "8ef8ac5b568e5bce75d4d0b149c67aeb4bb59f65b2745d3abd9a016b0816a257"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/spring-rapid/operation/archive.extract",
-      "status": "pending"
+      "status": "superseded"
     },
     {
       "evidence": [

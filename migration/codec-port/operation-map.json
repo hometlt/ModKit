@@ -2581,7 +2581,7 @@
       "contribution": null,
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/spring-rapid/operation/archive.extract",
-      "status": "pending",
+      "status": "superseded",
       "targetOperation": null
     },
     {

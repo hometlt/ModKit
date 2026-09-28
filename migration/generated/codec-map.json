@@ -2430,11 +2430,11 @@
       "codec": "spring-rapid",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 1,
+      "pending": 0,
       "requirements": 3,
       "source": "extensions/opensource/spring/codecs/spring-rapid/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/spring-rapid",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [

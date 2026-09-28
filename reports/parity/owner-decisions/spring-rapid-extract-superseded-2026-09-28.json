@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "kind": "owner-decision/superseded",
+  "date": "2026-09-28",
+  "reason": "Owner decision 2026-09-28 (relayed by [MK] Integrator, recorded in AGENTS.md §10): MK2's spring-rapid archive.extract is superseded by the MK3 design. A pool blob is read by the BAR content source (spring 8e6c02e: rapid packages as folders of the installation) through the rapid VFS provider, which checks each blob's md5 (core 8c9bc3ef); the .sdp codec lists the package and never sees the pool. MK3 is the reference, no MK2 comparison is run.",
+  "rows": [
+    {
+      "id": "legacy/codec-manifest/modkit/spring-rapid/operation/archive.extract",
+      "class": "replaced",
+      "where": "@modkit/vfs rapid provider + modkit-extensions-spring src/game/content-sources.ts",
+      "label": "Read a package file out of the rapid pool",
+      "evidence": [
+        {
+          "path": "modkit-core/packages/vfs/src/providers/rapid/index.ts",
+          "sha256": "90e617c8721d676e8392e14ee77061f8e0b1881fbf82e35d60680d9444da5e79"
+        },
+        {
+          "path": "modkit-core/packages/vfs/src/providers/rapid/manifest.ts",
+          "sha256": "ae612fdb1550ec57331231a55790e694e4b1f038e02bac193a37d22d417b7b42"
+        },
+        {
+          "path": "modkit-core/packages/vfs/test/rapid.test.ts",
+          "sha256": "8107b7469eb8a7b55521a390d955ea196e7e321f5e43607c3ffc55757dde4459"
+        },
+        {
+          "path": "modkit-extensions-spring/src/game/content-sources.ts",
+          "sha256": "1dfdc9ff93601ab51c40d4c752c61f1e0b3828ad91427a9890737ad78863525f"
+        },
+        {
+          "path": "modkit-extensions-spring/test/content-sources.test.ts",
+          "sha256": "bf425b90364ce5df7e30421954b144e621d17deaa5477663cee6d4788f6f7dc3"
+        }
+      ]
+    }
+  ]
+}
