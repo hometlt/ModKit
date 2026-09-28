@@ -7151,6 +7151,20 @@ async function activateModkit(
     'onTypeFormatting',
   )
   const onTypeFormattingTriggers = new Set(onTypeFormattingTriggerCharacters)
+  /*
+   * One registration serves every language, so it carries the union of their trigger characters. A
+   * character only another language declares (a space for strings, `,` elsewhere) must not open
+   * this document's list — MK2 registered each language with its own.
+   */
+  const foreignTrigger = (
+    document: vscode.TextDocument,
+    feature: 'completion' | 'signatureHelp',
+    triggerCharacter: string | undefined,
+  ): boolean =>
+    triggerCharacter !== undefined &&
+    languageController
+      .triggerCharacters(languageDocument(document), feature)
+      ?.includes(triggerCharacter) !== true
 
   const signalFor = (
     token: vscode.CancellationToken,
@@ -7428,7 +7442,8 @@ async function activateModkit(
       vscode.languages.registerCompletionItemProvider(
         languageSelector,
         {
-          async provideCompletionItems(document, position, token) {
+          async provideCompletionItems(document, position, token, context) {
+            if (foreignTrigger(document, 'completion', context.triggerCharacter)) return undefined
             const cancellation = signalFor(token)
             try {
               const completion = await languageController.completion(
@@ -7502,7 +7517,9 @@ async function activateModkit(
       vscode.languages.registerSignatureHelpProvider(
         languageSelector,
         {
-          async provideSignatureHelp(document, position, token) {
+          async provideSignatureHelp(document, position, token, context) {
+            if (foreignTrigger(document, 'signatureHelp', context.triggerCharacter))
+              return undefined
             const cancellation = signalFor(token)
             try {
               const help = await languageController.signatureHelp(

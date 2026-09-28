@@ -149,6 +149,14 @@ export async function applyEditorOnTypeEditResult(
 export interface LanguageSessionController {
   initialize(): Promise<void>
   supports(document: Pick<EditorLanguageDocument, 'fileName' | 'languageId'>): boolean
+  /**
+   * The trigger characters the document's own language declares for a feature — not the union a
+   * single editor registration carries for every language. Undefined when no route is selected.
+   */
+  triggerCharacters(
+    document: Pick<EditorLanguageDocument, 'fileName' | 'languageId'>,
+    feature: 'completion' | 'signatureHelp',
+  ): readonly string[] | undefined
   open(document: EditorLanguageDocument): void
   change(document: EditorLanguageDocument): void
   close(uri: string): Promise<void>
@@ -752,6 +760,16 @@ export function createLanguageSessionController(
   return Object.freeze({
     supports(document: Pick<EditorLanguageDocument, 'fileName' | 'languageId'>): boolean {
       return state !== 'shut-down' && selectRoute(options.routes, document).state === 'selected'
+    },
+    triggerCharacters(
+      document: Pick<EditorLanguageDocument, 'fileName' | 'languageId'>,
+      feature: 'completion' | 'signatureHelp',
+    ): readonly string[] | undefined {
+      const selection = selectRoute(options.routes, document)
+      if (selection.state !== 'selected') return undefined
+      return feature === 'completion'
+        ? (selection.route.completionTriggerCharacters ?? [])
+        : (selection.route.signatureHelpTriggerCharacters ?? [])
     },
     async initialize(): Promise<void> {
       if (state === 'shut-down') {

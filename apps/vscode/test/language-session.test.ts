@@ -521,6 +521,36 @@ describe('VS Code-free language session controller', () => {
     await controller.shutdown()
   })
 
+  it("answers a document's own trigger characters, not every language's", async () => {
+    const controller = createLanguageSessionController({
+      workspace: fakeWorkspace(),
+      routes: [
+        {
+          ...ROUTE,
+          completionTriggerCharacters: ['<', '"'],
+          signatureHelpTriggerCharacters: ['('],
+        },
+        {
+          languageId: 'strings',
+          documentKind: 'strings-source',
+          extension: 'txt',
+          completionTriggerCharacters: [' ', ','],
+        },
+      ],
+      publishDiagnostics: () => undefined,
+    })
+    await controller.initialize()
+    const fixture = editorDocument(1)
+    // the space and comma of the strings language do not open this document's list
+    expect(controller.triggerCharacters(fixture, 'completion')).toEqual(['<', '"'])
+    expect(controller.triggerCharacters(fixture, 'signatureHelp')).toEqual(['('])
+    const strings = editorDocument(1, '', { fileName: '/workspace/GameStrings.txt' })
+    expect(controller.triggerCharacters(strings, 'completion')).toEqual([' ', ','])
+    const other = editorDocument(1, '', { fileName: '/workspace/readme.unknown' })
+    expect(controller.triggerCharacters(other, 'completion')).toBeUndefined()
+    await controller.shutdown()
+  })
+
   it('publishes semantic diagnostics when an editor first opens a document, before any edit', async () => {
     const semanticDiagnostic = {
       severity: 'error' as const,
