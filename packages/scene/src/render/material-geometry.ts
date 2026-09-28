@@ -340,17 +340,34 @@ export interface MaterialGeometryPreparationOptions {
   readonly diagnostics?: SceneRendererDiagnostic[]
 }
 
+/**
+ * Vertex arrays found finite, and the largest value of index arrays. A primitive's arrays are
+ * immutable snapshots (prepared geometry is kept by them as well), and an animated model prepares
+ * its geometry every frame while keeping most of them: a skin gets new positions, normals and
+ * tangents, but keeps its texture coordinates, colors and indices, which are then not read again.
+ */
+const finiteArrays = new WeakSet<Float32Array>()
+const largestIndices = new WeakMap<Uint32Array, number>()
+
 // An animated model prepares its geometry every frame: plain loops, not a callback per element.
 function allFinite(values: Float32Array): boolean {
+  if (finiteArrays.has(values)) return true
   for (let index = 0; index < values.length; index++)
     if (!Number.isFinite(values[index]!)) return false
+  finiteArrays.add(values)
   return true
 }
 
 /** Every value is below `count` (unsigned indices are integers and not negative). */
 function allBelow(indices: Uint32Array, count: number): boolean {
-  for (let index = 0; index < indices.length; index++) if (indices[index]! >= count) return false
-  return true
+  let largest = largestIndices.get(indices)
+  if (largest === undefined) {
+    largest = -1
+    for (let index = 0; index < indices.length; index++)
+      if (indices[index]! > largest) largest = indices[index]!
+    largestIndices.set(indices, largest)
+  }
+  return largest < count
 }
 
 /** Generate missing flat normals and UV tangents once, shared by CPU and GPU. Supplied shading
