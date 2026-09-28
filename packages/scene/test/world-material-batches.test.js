@@ -325,3 +325,24 @@ it('groups kept draws by the programs they stand for, and builds anew an object 
   assert.deepEqual(groupsOf(fifth).map(([count]) => count), [3])
   assert.deepEqual(groupsOf(fifth), groupsOf(fresh([4, 4, 4])))
 })
+
+it('rebuilds a kept object when its team colour or model changes, not when the same values come anew', () => {
+  const items = [{ ...item(1, 'rock', 0), player: 1 }]
+  const models = new Map([['rock', model('rock', 0)]])
+  const colours = colour => new Map([[1, colour]])
+  const sceneOf = plan => plan.modelMaterialScenes[0]
+  const red = colours([1, 0, 0])
+  const first = createWorldWebGlPlan({ items, models, teamColors: red })
+  const same = createWorldWebGlPlan({ items, models, teamColors: red }, first)
+  assert.equal(sceneOf(same), sceneOf(first))
+  const blue = createWorldWebGlPlan({ items, models, teamColors: colours([0, 0, 1]) }, same)
+  assert.notEqual(sceneOf(blue), sceneOf(first))
+  // The same colour in a new map keeps the object.
+  const blueAgain = createWorldWebGlPlan({ items, models, teamColors: colours([0, 0, 1]) }, blue)
+  assert.equal(sceneOf(blueAgain), sceneOf(blue))
+  const reloaded = createWorldWebGlPlan(
+    { items, models: new Map([['rock', model('rock', 0)]]), teamColors: colours([0, 0, 1]) },
+    blueAgain,
+  )
+  assert.notEqual(sceneOf(reloaded), sceneOf(blueAgain))
+})

@@ -2116,7 +2116,8 @@ function keptWorldObjectScenes(
   if (kept.resamplers === undefined) return kept.scenes
   // At its own clock a kept scene stands for its own programs.
   const moved = worldObjectMaterialClock(item, input) !== kept.materialClock
-  const stands = new Map<SceneMaterialPrograms, SceneMaterialPrograms>()
+  // Objects kept with the same programs mostly stand for the same ones: only new pairs are added.
+  let added: [SceneMaterialPrograms, SceneMaterialPrograms][] | undefined
   for (const [index, scene] of kept.scenes.entries()) {
     const resample = kept.resamplers[index]
     if (resample === undefined) continue
@@ -2125,12 +2126,13 @@ function keptWorldObjectScenes(
       return undefined
     for (const [id, entry] of scene.programs) {
       const now = programs.get(id)!
-      const standing = current.materials.get(entry) ?? stands.get(entry)
-      if (standing !== undefined && standing !== now) return undefined
-      stands.set(entry, now)
+      const standing = current.materials.get(entry) ?? added?.find(pair => pair[0] === entry)?.[1]
+      if (standing === now) continue
+      if (standing !== undefined) return undefined
+      ;(added ??= []).push([entry, now])
     }
   }
-  for (const [entry, now] of stands) {
+  for (const [entry, now] of added ?? []) {
     current.materials.set(entry, now)
     entry.passes.forEach((pass, index) => current.passes.set(pass, now.passes[index]!))
   }
@@ -2512,17 +2514,46 @@ function worldStaticObjectKey(
   const teamColor =
     item.presentationTeamColor ??
     (item.player === undefined ? undefined : input.teamColors?.get(item.player))
+  const keyed = worldObjectResourcesOf(item).keyed
+  const known = worldStaticObjectKeys.get(item)
+  if (
+    known !== undefined &&
+    known.preparation === preparation &&
+    known.teamColor === teamColor &&
+    keyed.every((resourceId, index) => input.models?.get(resourceId) === known.results[index])
+  )
+    return known.key
   const key: unknown[] = [preparation, teamColor?.join(',') ?? '']
-  for (const resourceId of worldObjectResourcesOf(item).keyed) {
+  const results: unknown[] = []
+  let timed = false
+  for (const resourceId of keyed) {
     const result = input.models?.get(resourceId)
+    results.push(result)
     key.push(resourceId, result)
     // Materials alone follow the clock through the kept object's resamplers.
     if (result?.state !== 'converted' || !worldObjectFollowsTime(result, item)) continue
     const selected = worldModelAnimation(result, item)
     key.push(worldObjectTime(input, item, selected !== undefined, selected?.durationSeconds))
+    timed = true
   }
+  if (timed) worldStaticObjectKeys.delete(item)
+  else worldStaticObjectKeys.set(item, Object.freeze({ preparation, teamColor, results, key }))
   return key
 }
+
+/**
+ * The key of an object that no clock enters, while its inputs stay the same objects: most objects
+ * keep it from frame to frame, and it was built again for each of them every frame.
+ */
+const worldStaticObjectKeys = new WeakMap<
+  WorldSceneObjectItem,
+  Readonly<{
+    preparation: unknown
+    teamColor: unknown
+    results: readonly unknown[]
+    key: readonly unknown[]
+  }>
+>()
 
 /**
  * Whether more than the materials of a model's contribution to an object follows the object's
@@ -2545,7 +2576,8 @@ function worldObjectFollowsTime(
 }
 
 const sameWorldStaticObjectKey = (left: readonly unknown[], right: readonly unknown[]) =>
-  left.length === right.length && left.every((value, index) => value === right[index])
+  left === right ||
+  (left.length === right.length && left.every((value, index) => value === right[index]))
 
 const materialsFollowingTime = new WeakMap<WorldModelSample['result'], boolean>()
 
