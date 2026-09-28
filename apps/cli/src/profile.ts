@@ -1,6 +1,13 @@
 import { uint64 } from '@modkit/core'
 import { sceneModule } from '@modkit/scene/module'
-import { createHostTopology, type HostTopology } from '@modkit/sdk'
+import {
+  createHostTopology,
+  INDEX_CACHE_DIRECTORY_SETTING,
+  type ContributionSettings,
+  type HostTopology,
+} from '@modkit/sdk'
+import { homedir } from 'node:os'
+import { join } from 'node:path'
 import { uvModule } from '@modkit/uv/module'
 import {
   createHostComposition,
@@ -126,6 +133,26 @@ export function modkitCliCredentials() {
   return { store: createMemoryCredentialStore(), environment: process.env }
 }
 
+/**
+ * The index caches the CLI shares across runs (an installation's name index, a content index):
+ * `MODKIT_INDEX_CACHE_DIRECTORY`, else the user's local cache folder. Without it every run parsed
+ * Diablo III's 285 000 names again.
+ */
+export function modkitCliIndexCacheDirectory(environment = process.env): string {
+  return (
+    environment['MODKIT_INDEX_CACHE_DIRECTORY'] ??
+    join(environment['LOCALAPPDATA'] ?? join(homedir(), '.cache'), 'modkit', 'index-caches')
+  )
+}
+
+/** Every contribution is told where the shared index caches live, as VS Code tells it. */
+function modkitCliContributionSettings(): (contributionId: string) => ContributionSettings {
+  const settings: ContributionSettings = Object.freeze({
+    values: Object.freeze({ [INDEX_CACHE_DIRECTORY_SETTING]: modkitCliIndexCacheDirectory() }),
+  })
+  return () => settings
+}
+
 export function createModkitCliSubjectServices(
   extensions: readonly ExtensionInput[],
   options: { readonly onDiagnostic?: (diagnostic: Diagnostic) => void } = {},
@@ -137,6 +164,7 @@ export function createModkitCliSubjectServices(
     linkedModules: CLI_BUILTIN_MODULES.modules,
     policy: MODKIT_CLI_WORKER_POLICY,
     credentials: modkitCliCredentials(),
+    contributionSettings: modkitCliContributionSettings(),
     ...(options.onDiagnostic === undefined ? {} : { onDiagnostic: options.onDiagnostic }),
   })
 }
