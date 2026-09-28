@@ -5183,7 +5183,14 @@ export function createWorldWebGlPlan(
   const lighting = worldFacetItems(preparation, input.items, 'lighting')[0]
   const directional = lighting?.directional[0]
   const ambient: readonly [number, number, number] = lighting?.ambientColor ?? [1, 1, 1]
-  const direction: readonly [number, number, number] = directional?.direction ?? [-0.45, -1, -0.35]
+  const stated = directional?.direction
+  // a direction in the map's native axes (x east, y south, z up) turns as its positions do
+  const direction: readonly [number, number, number] =
+    stated === undefined
+      ? [-0.45, -1, -0.35]
+      : lighting?.coordinateSpaceId === 'map-native'
+        ? [stated[0], stated[2], stated[1]]
+        : stated
   const lightColor: readonly [number, number, number] = directional?.color ?? [1, 0.97, 0.9]
   // Each shared batch from its writes, or the previous plan's batch when its writes are the same.
   const currentBatches = new Map<
