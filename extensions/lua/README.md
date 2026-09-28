@@ -14,7 +14,10 @@ The Lua-family language of MK3: Lua 5.1–5.4, LuaJIT, Luau and CfxLua through o
   in `.lua` files). The LSP transport is the shared `apps/lsp` adapter.
 
 Games add knowledge of their environment (Roblox API, WC3 natives, Spring unitdefs) in their own
-extensions; a second Lua parser is not written anywhere.
+extensions; a second Lua parser is not written anywhere. A game whose API ships as LuaLS
+annotation files (`---@meta` libraries with `---@class`, `---@field`, `---@param`, `---@return`,
+`---@enum`, `---@alias`, `---@type`) turns them into its `modkit.lua-environment.json` with
+`luaEnvironmentFromAnnotations` (`./luals`), read through this syntax.
 
 Tests: `test/lua-language.test.ts`; `test/lua-corpus.test.ts` reads directories listed in
 `MODKIT_LUA_CORPUS` and is skipped without it.

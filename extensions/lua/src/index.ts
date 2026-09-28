@@ -21,6 +21,11 @@ export {
 } from './literal.js'
 export { loadLuaSyntax, luaSyntax, type LuaSyntax } from './syntax.js'
 export {
+  luaEnvironmentFromAnnotations,
+  readLuaAnnotationType,
+  type LuaAnnotationFile,
+} from './luals.js'
+export {
   LUA_LANGUAGE_IDS,
   analyzeLua,
   createLuaLanguageProvider,

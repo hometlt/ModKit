@@ -29,6 +29,10 @@
       "types": "./dist/provider.d.ts",
       "default": "./dist/provider.js"
     },
+    "./luals": {
+      "types": "./dist/luals.d.ts",
+      "default": "./dist/luals.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [
