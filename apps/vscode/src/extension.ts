@@ -11446,6 +11446,8 @@ async function activateModkit(
       )
       .map(language => language.id),
   )
+  // The editor context menu offers Modkit's commands only in these languages.
+  void vscode.commands.executeCommand('setContext', 'modkit.languages', [...ownLanguages])
   const localeStatus = vscode.window.createStatusBarItem(
     'modkit.gameLocale',
     vscode.StatusBarAlignment.Right,

@@ -718,6 +718,28 @@
         { "command": "modkit.sources.revealLocal", "when": "false" },
         { "command": "modkit.sources.unmount", "when": "false" }
       ],
+      "editor/context": [
+        {
+          "command": "modkit.explainResolution",
+          "when": "editorLangId in modkit.languages",
+          "group": "modkit@2"
+        },
+        {
+          "command": "modkit.openWith",
+          "when": "editorLangId in modkit.languages",
+          "group": "modkit@3"
+        },
+        {
+          "command": "modkit.selectGameLocale",
+          "when": "editorLangId in modkit.languages",
+          "group": "modkit@4"
+        },
+        {
+          "command": "modkit.verifyDocument",
+          "when": "editorLangId in modkit.languages && modkit.canVerifyDocument",
+          "group": "modkit@1"
+        }
+      ],
       "editor/title": [
         {
           "command": "modkit.game.launchActiveMap",
