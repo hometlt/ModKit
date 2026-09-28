@@ -1871,6 +1871,175 @@ type WorldModelPrograms = Readonly<{
   programs: ReadonlyMap<string, SceneMaterialPrograms>
 }>
 
+/** A plan's programs of clock-following materials, per template key and then per clock. */
+type WorldPlanPrograms = Map<string, Map<number, WorldModelPrograms>>
+
+/** A kept scene's programs at the object's moment in another plan (see WorldStaticObject). */
+type WorldSceneResampler = (
+  input: WorldWebGlInput,
+  planPrograms: WorldPlanPrograms,
+) => ReadonlyMap<string, SceneMaterialPrograms>
+
+/** Where and when an object samples one model's materials: its clip, clock and team colour. */
+function worldObjectMaterialMoment(
+  input: WorldWebGlInput,
+  item: WorldSceneObjectItem,
+  result: WorldModelSample['result'],
+) {
+  const selectedAnimation = worldModelAnimation(result, item)
+  const time = worldObjectTime(
+    input,
+    item,
+    selectedAnimation !== undefined,
+    selectedAnimation?.durationSeconds,
+  )
+  const sequenceTime =
+    selectedAnimation?.durationSeconds &&
+    (item.presentationAnimation?.loop ?? selectedAnimation.looping)
+      ? time % selectedAnimation.durationSeconds
+      : time
+  const teamColor =
+    item.presentationTeamColor ??
+    (item.player === undefined ? undefined : input.teamColors?.get(item.player))
+  const materialContext: SceneRendererMaterialContext = {
+    time,
+    sequenceTime,
+    ...(selectedAnimation?.sequenceIndex === undefined
+      ? {}
+      : { sequenceIndex: selectedAnimation.sequenceIndex }),
+    sceneLighting: true,
+    ...(teamColor === undefined ? {} : { teamColor }),
+    ...(item.presentationTeamColorIntensity === undefined
+      ? {}
+      : { teamColorIntensity: item.presentationTeamColorIntensity }),
+  }
+  return { selectedAnimation, time, teamColor, materialContext }
+}
+
+/**
+ * An object's programs for one model component at its moment. Same model, clock and team
+ * presentation → same materials and programs (one GPU lease each), shared within the plan.
+ * Materials without animation tracks do not follow the clock: their programs outlive the frame,
+ * so an animated map keeps its GPU leases instead of preparing ~550 programs every frame.
+ */
+function worldObjectModelPrograms(
+  result: WorldModelSample['result'],
+  item: WorldSceneObjectItem,
+  templateKey: string,
+  time: number,
+  context: () => SceneRendererMaterialContext,
+  planPrograms: WorldPlanPrograms,
+): WorldModelPrograms {
+  let byClock: Map<number, WorldModelPrograms> | undefined
+  let retained: Map<string, WorldModelPrograms> | undefined
+  let cachedMaterials: WorldModelPrograms | undefined
+  if (worldMaterialsFollowTime(result)) {
+    byClock = planPrograms.get(templateKey)
+    if (byClock === undefined) planPrograms.set(templateKey, (byClock = new Map()))
+    cachedMaterials = byClock.get(time)
+  } else {
+    retained = retainedWorldModelPrograms(result)
+    cachedMaterials = retained.get(templateKey)
+  }
+  if (cachedMaterials === undefined) {
+    const template = worldModelProgramTemplate(result, templateKey, item)
+    let sampled: ReadonlyMap<string, SceneMaterialPrograms> = new Map()
+    try {
+      if (template.sampler !== undefined) sampled = template.sampler.sample(context(), [])
+    } catch {
+      // As above: an unsupported sample keeps the model's fallback.
+      sampled = new Map()
+    }
+    cachedMaterials = Object.freeze({
+      presented: template.presented,
+      scene: template.scene,
+      programs: sampled,
+    })
+    retained?.set(templateKey, cachedMaterials)
+    byClock?.set(time, cachedMaterials)
+  }
+  return cachedMaterials
+}
+
+/** The presentation an object's programs for one model component are kept under. */
+function worldObjectProgramTemplateKey(
+  item: WorldSceneObjectItem,
+  resourceId: string,
+  moment: ReturnType<typeof worldObjectMaterialMoment>,
+): string {
+  return [
+    resourceId,
+    moment.selectedAnimation?.id ?? '',
+    moment.teamColor?.join(',') ?? '',
+    item.presentationTeamColorIntensity ?? '',
+    item.derivedFrom === 'cliffs' ? 'cliffs' : '',
+  ].join('\u0000')
+}
+
+/** The clocks at which an object samples its clock-following materials, one per model. */
+function worldObjectMaterialClock(item: WorldSceneObjectItem, input: WorldWebGlInput): string {
+  let clock = ''
+  for (const resourceId of worldObjectResourcesOf(item).keyed) {
+    const result = input.models?.get(resourceId)
+    if (result?.state !== 'converted' || !worldMaterialsFollowTime(result)) continue
+    const selected = worldModelAnimation(result, item)
+    const time = worldObjectTime(input, item, selected !== undefined, selected?.durationSeconds)
+    clock += `${time}\u0000`
+  }
+  return clock
+}
+
+/** What decides a scene's draws besides the uniform values: materials and their pass layout. */
+const programLayouts = new WeakMap<ReadonlyMap<string, SceneMaterialPrograms>, string>()
+function programLayout(programs: ReadonlyMap<string, SceneMaterialPrograms>): string {
+  let layout = programLayouts.get(programs)
+  if (layout === undefined) {
+    layout = [...programs]
+      .map(
+        ([id, entry]) =>
+          `${id}:${entry.passes
+            .map(
+              pass =>
+                `${pass.key}/${pass.blend}/${pass.depthPrepass}/${pass.priority}/${pass.twoSided}`,
+            )
+            .join(',')}`,
+      )
+      .join('\u0000')
+    programLayouts.set(programs, layout)
+  }
+  return layout
+}
+
+/**
+ * A kept object's scenes in this plan: as kept, or, once the clock its materials follow has moved,
+ * with programs sampled at the new moment. Undefined when a program's pass layout changed, since
+ * the kept scenes were split by it: the object is then built anew.
+ */
+function keptWorldObjectScenes(
+  item: WorldSceneObjectItem,
+  kept: WorldStaticObject,
+  input: WorldWebGlInput,
+  planPrograms: WorldPlanPrograms,
+): readonly WorldWebGlModelMaterialScene[] | undefined {
+  if (kept.resamplers === undefined) return kept.scenes
+  const clock = worldObjectMaterialClock(item, input)
+  if (clock === kept.materialClock) return kept.scenes
+  const scenes: WorldWebGlModelMaterialScene[] = []
+  for (const [index, scene] of kept.scenes.entries()) {
+    const resample = kept.resamplers[index]
+    if (resample === undefined) {
+      scenes.push(scene)
+      continue
+    }
+    const programs = resample(input, planPrograms)
+    if (programLayout(programs) !== programLayout(scene.programs)) return undefined
+    scenes.push(Object.freeze({ ...scene, programs }))
+  }
+  const frozen = Object.freeze(scenes)
+  retainedStaticObjects.set(item, Object.freeze({ ...kept, scenes: frozen, materialClock: clock }))
+  return frozen
+}
+
 // Programs of clock-independent materials, per converted model and presentation key. Bounded by the
 // model's presentation variants (animation, team color, cliff use); released with the model result.
 const retainedModelPrograms = new WeakMap<
@@ -1935,6 +2104,12 @@ function worldModelProgramTemplate(
 interface WorldStaticObject {
   readonly key: readonly unknown[]
   readonly scenes: readonly WorldWebGlModelMaterialScene[]
+  /**
+   * For an object whose clock reaches only its materials: the moment its scenes' programs were
+   * sampled at (worldObjectMaterialClock) and, per scene, how to sample them at another moment.
+   */
+  readonly materialClock?: string
+  readonly resamplers?: readonly (WorldSceneResampler | undefined)[]
   readonly effects: readonly WorldWebGlModelEffectInstance[]
   /** Triangles the object wrote to the plan's shared batches (projector decals, fallback), in order. */
   readonly batchWrites: readonly WorldObjectBatchWrite[]
@@ -2244,6 +2419,7 @@ function worldStaticObjectKey(
   for (const resourceId of worldObjectResourcesOf(item).keyed) {
     const result = input.models?.get(resourceId)
     key.push(resourceId, result)
+    // Materials alone follow the clock through the kept object's resamplers.
     if (result?.state !== 'converted' || !worldObjectFollowsTime(result, item)) continue
     const selected = worldModelAnimation(result, item)
     key.push(worldObjectTime(input, item, selected !== undefined, selected?.durationSeconds))
@@ -2252,17 +2428,18 @@ function worldStaticObjectKey(
 }
 
 /**
- * Whether anything a model contributes to an object follows the object's clock: sampled geometry
- * (keyed TRS or visibility), material tracks, live effects (simulated at that time) or decals whose
- * projection does. A clip that moves none of these (an empty Stand, a material-only sequence, a
- * still blob shadow) leaves the object's contribution the same at every clock, so it is kept while
- * the map animates.
+ * Whether more than the materials of a model's contribution to an object follows the object's
+ * clock: sampled geometry (keyed TRS or visibility), live effects (simulated at that time) or
+ * decals whose projection does. A clip that moves none of these (an empty Stand, a material-only
+ * sequence, a still blob shadow) leaves the object's geometry the same at every clock, so it is
+ * kept while the map animates; material tracks only have its programs sampled again
+ * (keptWorldObjectScenes).
  */
 function worldObjectFollowsTime(
   result: WorldModelSample['result'],
   item: WorldSceneObjectItem,
 ): boolean {
-  if (worldModelHasAnimatedGeometry(result, item) || worldMaterialsFollowTime(result)) return true
+  if (worldModelHasAnimatedGeometry(result, item)) return true
   const source =
     result.uvmBytes === undefined
       ? undefined
@@ -3883,7 +4060,7 @@ export function createWorldWebGlPlan(
   const projectorGround = preparation.terrainTriangles
   let modelTriangles = 0
   let diagnosticPlaceholders = 0
-  const planPrograms = new Map<string, WorldModelPrograms>()
+  const planPrograms: WorldPlanPrograms = new Map()
   const projectorBatch = (texture: MutableTexturedBatch['texture']) => {
     const key = `projector:${texture.id}`
     const target = transparentTextured.get(key) ?? {
@@ -3900,8 +4077,12 @@ export function createWorldWebGlPlan(
   for (const item of objects) {
     const staticKey = worldStaticObjectKey(item, input, preparation)
     const retainedObject = staticKey === undefined ? undefined : retainedStaticObjects.get(item)
-    if (retainedObject !== undefined && sameWorldStaticObjectKey(retainedObject.key, staticKey!)) {
-      for (const scene of retainedObject.scenes) modelMaterialScenes.push(scene)
+    const keptScenes =
+      retainedObject !== undefined && sameWorldStaticObjectKey(retainedObject.key, staticKey!)
+        ? keptWorldObjectScenes(item, retainedObject, input, planPrograms)
+        : undefined
+    if (retainedObject !== undefined && keptScenes !== undefined) {
+      for (const scene of keptScenes) modelMaterialScenes.push(scene)
       for (const effect of retainedObject.effects) modelEffects.push(effect)
       for (const entry of retainedObject.batchWrites) journalObjectWrite(entry)
       objectPickMeshes.push(retainedObject.pickMesh)
@@ -3910,6 +4091,7 @@ export function createWorldWebGlPlan(
       continue
     }
     const scenesBefore = modelMaterialScenes.length
+    const sceneResamplers = new Map<WorldWebGlModelMaterialScene, WorldSceneResampler>()
     const effectsBefore = modelEffects.length
     const objectBatchWrites: WorldObjectBatchWrite[] = []
     const previousProjectorWrites = lastProjectorWrites.get(item)
@@ -3994,67 +4176,18 @@ export function createWorldWebGlPlan(
               ),
             ) as typeof sampled.primitives)
           : sampled.primitives
-      let programs: ReadonlyMap<string, SceneMaterialPrograms> = new Map()
-      const selectedAnimation = worldModelAnimation(result, item)
-      const time = worldObjectTime(
-        input,
+      const moment = worldObjectMaterialMoment(input, item, result)
+      const { selectedAnimation, time, materialContext } = moment
+      const templateKey = worldObjectProgramTemplateKey(item, component.resourceId, moment)
+      const { presented, scene, programs } = worldObjectModelPrograms(
+        result,
         item,
-        selectedAnimation !== undefined,
-        selectedAnimation?.durationSeconds,
-      )
-      const sequenceTime =
-        selectedAnimation?.durationSeconds &&
-        (item.presentationAnimation?.loop ?? selectedAnimation.looping)
-          ? time % selectedAnimation.durationSeconds
-          : time
-      const teamColor =
-        item.presentationTeamColor ??
-        (item.player === undefined ? undefined : input.teamColors?.get(item.player))
-      const materialContext: SceneRendererMaterialContext = {
+        templateKey,
         time,
-        sequenceTime,
-        ...(selectedAnimation?.sequenceIndex === undefined
-          ? {}
-          : { sequenceIndex: selectedAnimation.sequenceIndex }),
-        sceneLighting: true,
-        ...(teamColor === undefined ? {} : { teamColor }),
-        ...(item.presentationTeamColorIntensity === undefined
-          ? {}
-          : { teamColorIntensity: item.presentationTeamColorIntensity }),
-      }
-      // Same model, clock and team presentation → same materials and programs (one GPU lease each).
-      // Materials without animation tracks do not follow the clock: their programs outlive the frame,
-      // so an animated map keeps its GPU leases instead of preparing ~550 programs every frame.
-      const clock = worldMaterialsFollowTime(result) ? String(time) : ''
-      const templateKey = [
-        component.resourceId,
-        selectedAnimation?.id ?? '',
-        teamColor?.join(',') ?? '',
-        item.presentationTeamColorIntensity ?? '',
-        item.derivedFrom === 'cliffs' ? 'cliffs' : '',
-      ].join('\u0000')
-      const programKey = `${templateKey}\u0000${clock}`
-      const retained = clock === '' ? retainedWorldModelPrograms(result) : undefined
-      let cachedMaterials = planPrograms.get(programKey) ?? retained?.get(programKey)
-      if (cachedMaterials === undefined) {
-        const template = worldModelProgramTemplate(result, templateKey, item)
-        let sampled: ReadonlyMap<string, SceneMaterialPrograms> = new Map()
-        try {
-          if (template.sampler !== undefined) sampled = template.sampler.sample(materialContext, [])
-        } catch {
-          // As above: an unsupported sample keeps the model's fallback.
-          sampled = new Map()
-        }
-        cachedMaterials = Object.freeze({
-          presented: template.presented,
-          scene: template.scene,
-          programs: sampled,
-        })
-        retained?.set(programKey, cachedMaterials)
-      }
-      planPrograms.set(programKey, cachedMaterials)
-      const { presented, scene } = cachedMaterials
-      programs = cachedMaterials.programs
+        () => materialContext,
+        planPrograms,
+      )
+      const materialsFollowTime = worldMaterialsFollowTime(result)
       const objectTint = worldObjectTint(item, input.selectedObjectId)
       const materialPrimitives: SceneRendererPrimitive[] = []
       const materialShadowPrimitives: SceneRendererPrimitive[] = []
@@ -4333,16 +4466,32 @@ export function createWorldWebGlPlan(
           journal(target, kept)
           objectBatchWrites.push({ collection: 'transparentTextured', key, target, write: kept })
         }
-        if (projectedMaterialPrimitives.length > 0)
-          modelMaterialScenes.push(
-            Object.freeze({
-              primitives: Object.freeze(projectedMaterialPrimitives),
-              shadowPrimitives: Object.freeze([]),
-              materials: projected.materials,
-              programs: projectedPrograms,
-              textures: scene.textures,
-            }),
-          )
+        if (projectedMaterialPrimitives.length > 0) {
+          const projectedScene = Object.freeze({
+            primitives: Object.freeze(projectedMaterialPrimitives),
+            shadowPrimitives: Object.freeze([]),
+            materials: projected.materials,
+            programs: projectedPrograms,
+            textures: scene.textures,
+          })
+          modelMaterialScenes.push(projectedScene)
+          if (materialsFollowTime) {
+            let sampler: SceneMaterialProgramSampler | undefined
+            sceneResamplers.set(projectedScene, next => {
+              try {
+                sampler ??= createSceneMaterialProgramSampler(
+                  projected.materials,
+                  new Map(scene.textures.map(texture => [texture.id, texture])),
+                )
+                const { materialContext: context } = worldObjectMaterialMoment(next, item, result)
+                return sampler.sample(context, [])
+              } catch {
+                // As in the build: unsupported projector materials stay apart from the map.
+                return new Map()
+              }
+            })
+          }
+        }
       }
       // Decals are projected above; only particles and ribbons are drawn per frame from here.
       if (effectSource?.liveEffects === true)
@@ -4356,16 +4505,35 @@ export function createWorldWebGlPlan(
             context: materialContext,
           }),
         )
-      if (materialPrimitives.length > 0)
-        modelMaterialScenes.push(
-          Object.freeze({
-            primitives: Object.freeze(materialPrimitives),
-            shadowPrimitives: Object.freeze(materialShadowPrimitives),
-            materials: scene.materials,
-            programs,
-            textures: scene.textures,
-          }),
-        )
+      if (materialPrimitives.length > 0) {
+        const materialScene = Object.freeze({
+          primitives: Object.freeze(materialPrimitives),
+          shadowPrimitives: Object.freeze(materialShadowPrimitives),
+          materials: scene.materials,
+          programs,
+          textures: scene.textures,
+        })
+        modelMaterialScenes.push(materialScene)
+        // The presentation (clip, team colour) is in the kept object's key: only the time moves.
+        if (materialsFollowTime)
+          sceneResamplers.set(
+            materialScene,
+            (next, nextPrograms) =>
+              worldObjectModelPrograms(
+                result,
+                item,
+                templateKey,
+                worldObjectTime(
+                  next,
+                  item,
+                  selectedAnimation !== undefined,
+                  selectedAnimation?.durationSeconds,
+                ),
+                () => worldObjectMaterialMoment(next, item, result).materialContext,
+                nextPrograms,
+              ).programs,
+          )
+      }
     }
     // A cliff piece whose code ships no mesh (ramp interiors) is the terrain's own slope: nothing to
     // mark.
@@ -4400,6 +4568,14 @@ export function createWorldWebGlPlan(
         Object.freeze({
           key: staticKey,
           scenes: Object.freeze(modelMaterialScenes.slice(scenesBefore)),
+          ...(sceneResamplers.size === 0
+            ? {}
+            : {
+                materialClock: worldObjectMaterialClock(item, input),
+                resamplers: Object.freeze(
+                  modelMaterialScenes.slice(scenesBefore).map(scene => sceneResamplers.get(scene)),
+                ),
+              }),
           effects: Object.freeze(modelEffects.slice(effectsBefore)),
           batchWrites: Object.freeze(objectBatchWrites),
           pickMesh,

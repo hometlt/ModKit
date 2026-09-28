@@ -203,11 +203,18 @@ it('keeps an object in later plans until its clock or inputs change', () => {
   assert.equal(second.stats.modelTriangles, first.stats.modelTriangles)
   assert.notEqual(sceneOf(second, 'glow'), sceneOf(first, 'glow'))
   assert.notEqual(alphaOf(second), alphaOf(first))
-  // Rebuilt for its clock, it keeps its pick bounds: the geometry and placement are the same.
-  assert.notEqual(second.picking.objects[1], first.picking.objects[1])
-  assert.equal(
-    second.picking.objects[1].primitives[0].minimum,
-    first.picking.objects[1].primitives[0].minimum,
+  // Only its materials follow the clock: the object is kept, and its programs are sampled at the
+  // new clock as a plan built anew samples them.
+  assert.equal(second.picking.objects[1], first.picking.objects[1])
+  assert.equal(sceneOf(second, 'glow').primitives, sceneOf(first, 'glow').primitives)
+  const fresh = createWorldWebGlPlan({
+    items: items.map(entry => ({ ...entry })),
+    models,
+    animationTimes: new Map([[2, 1]]),
+  })
+  assert.deepEqual(
+    sceneOf(second, 'glow').programs.get('surface').passes[0].uniforms,
+    sceneOf(fresh, 'glow').programs.get('surface').passes[0].uniforms,
   )
   // Its clock unchanged, the glowing object is kept as well.
   const third = at(1, second, { timeSeconds: 5 })
