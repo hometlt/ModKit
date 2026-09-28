@@ -152,6 +152,20 @@ describe('language provider', () => {
     expect(analysis.tokens.some(token => token.kind === 'type')).toBe(true)
   })
 
+  it('keeps every range inside its line when lines end in CRLF', async () => {
+    // A comment token ends after the `\r`; the host refuses a column past the line's text.
+    const document = doc('-- комментарий\r\nlocal x = 1 -- тоже\r\nreturn x\r\n')
+    const lengths = document.text.split('\r\n').map(line => line.length)
+    const { tokens } = await analyzeLua({ document })
+    const comments = tokens.filter(token => token.kind === 'comment')
+    expect(comments.map(token => token.range.end)).toEqual([
+      { line: 0, character: lengths[0] },
+      { line: 1, character: lengths[1] },
+    ])
+    expect(tokens.every(token => token.range.end.character <= lengths[token.range.end.line]!)).toBe(true)
+    expect(new LuaLineIndex(document.text).offset({ line: 0, character: 99 })).toBe(lengths[0])
+  })
+
   it('outlines functions, renames locals and finds references', async () => {
     const document = doc(
       'local M = {}\nfunction M.go(a)\n  local b = a\n  return b\nend\nlocal function helper() end\nreturn M\n',
