@@ -340,6 +340,19 @@ export interface MaterialGeometryPreparationOptions {
   readonly diagnostics?: SceneRendererDiagnostic[]
 }
 
+// An animated model prepares its geometry every frame: plain loops, not a callback per element.
+function allFinite(values: Float32Array): boolean {
+  for (let index = 0; index < values.length; index++)
+    if (!Number.isFinite(values[index]!)) return false
+  return true
+}
+
+/** Every value is below `count` (unsigned indices are integers and not negative). */
+function allBelow(indices: Uint32Array, count: number): boolean {
+  for (let index = 0; index < indices.length; index++) if (indices[index]! >= count) return false
+  return true
+}
+
 /** Generate missing flat normals and UV tangents once, shared by CPU and GPU. Supplied shading
  * attributes stay authored. Expanded renderer geometry carries no second skin binding. */
 export function prepareMaterialGeometry(
@@ -358,13 +371,13 @@ export function prepareMaterialGeometry(
   if (
     !(primitive.positions instanceof Float32Array) ||
     primitive.positions.length % 3 !== 0 ||
-    !primitive.positions.every(Number.isFinite)
+    !allFinite(primitive.positions)
   )
     throw new TypeError('invalid material positions')
   const count = primitive.positions.length / 3
   if (
     primitive.indices !== undefined &&
-    (!(primitive.indices instanceof Uint32Array) || primitive.indices.some(index => index >= count))
+    (!(primitive.indices instanceof Uint32Array) || !allBelow(primitive.indices, count))
   )
     throw new TypeError('material geometry index is out of range')
   for (const [buffer, width] of [
@@ -375,9 +388,7 @@ export function prepareMaterialGeometry(
   ] as const)
     if (
       buffer !== undefined &&
-      (!(buffer instanceof Float32Array) ||
-        buffer.length !== count * width ||
-        !buffer.every(Number.isFinite))
+      (!(buffer instanceof Float32Array) || buffer.length !== count * width || !allFinite(buffer))
     )
       throw new TypeError('invalid material vertex attributes')
   const uvSets = new Set<number>()
@@ -388,7 +399,7 @@ export function prepareMaterialGeometry(
     if (
       !(set.coordinates instanceof Float32Array) ||
       set.coordinates.length !== count * 2 ||
-      !set.coordinates.every(Number.isFinite)
+      !allFinite(set.coordinates)
     )
       throw new TypeError('invalid material UV attributes')
   }
@@ -435,13 +446,15 @@ export function prepareMaterialGeometry(
   else if (primitive.topology === 'triangle-fan')
     for (let i = 1; i + 1 < length; i++) append(0, i, i + 1)
   else return primitive
-  if (triangles.some(index => !Number.isInteger(index) || index < 0 || index >= count))
-    throw new TypeError('material geometry index is out of range')
+  if (!allBelow(triangles, count)) throw new TypeError('material geometry index is out of range')
   const expand = (source: Float32Array, width: number) => {
     const output = new Float32Array(triangles.length * width)
-    triangles.forEach((index, target) =>
-      output.set(source.subarray(index * width, (index + 1) * width), target * width),
-    )
+    for (let target = 0; target < triangles.length; target++) {
+      const from = triangles[target]! * width,
+        to = target * width
+      for (let component = 0; component < width; component++)
+        output[to + component] = source[from + component]!
+    }
     return output
   }
   const positions = expand(primitive.positions, 3),
