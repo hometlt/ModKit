@@ -152,6 +152,9 @@ const nodeModuleMap = {
   '@modkit/codec-kit/compression/lz4': pathToFileURL(
     join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'compression', 'lz4.js'),
   ).href,
+  '@modkit/codec-kit/compression/lcw': pathToFileURL(
+    join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'compression', 'lcw.js'),
+  ).href,
   '@modkit/codec-kit/compression/refpack': pathToFileURL(
     join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'compression', 'refpack.js'),
   ).href,
