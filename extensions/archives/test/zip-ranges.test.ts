@@ -2,7 +2,7 @@ import { crc32 } from '@modkit/codec-kit/checksum'
 import { deflateRawSync } from 'node:zlib'
 import { describe, expect, it } from 'vitest'
 // @ts-expect-error the ZIP codec is a JS module without declarations
-import { createCodec } from '../src/zip/codec.js'
+import { createCodec, readZipByRanges } from '../src/zip/codec.js'
 
 const MAX_U32 = 0xffffffff
 
@@ -164,6 +164,27 @@ describe('ZIP by ranges', () => {
       expect([...result.output.value]).toEqual([...expected])
     }
     await session.operations().dispose()
+  })
+
+  it('gives a ZIP-based format codec the directory and the entry table by ranges', async () => {
+    const byteSource = {
+      size: async () => BigInt(zip.byteLength),
+      read: async (offset: bigint, length: number) => {
+        expect(length).toBeLessThanOrEqual(700)
+        return zip.slice(Number(offset), Number(offset) + length)
+      },
+    }
+    const { entries, containerEntries } = await readZipByRanges(byteSource, {
+      maxInputBytes: 700n,
+      maxNodes: 10,
+    })
+    expect(entries.map((entry: { name: string }) => entry.name)).toEqual([
+      'docs/readme.txt',
+      'data/packed.bin',
+    ])
+    expect(
+      containerEntries.entries.map((entry: { storage: { kind: string } }) => entry.storage.kind),
+    ).toEqual(['stored', 'deflate'])
   })
 
   it('keeps editing for an archive within the budget and refuses it beyond', async () => {

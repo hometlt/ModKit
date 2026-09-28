@@ -317,6 +317,24 @@ async function localDataOffsets(files, read, size) {
   return offsets
 }
 
+/**
+ * A ZIP read by ranges for a codec that owns a ZIP-based format (Warzone `.wz`): the central
+ * directory records (`entries`, as `parseZipArchive` gives them) and the `containerEntries` table
+ * its range `inspect` returns, so listing and extraction stay the host's. Reads at most
+ * `budget.maxInputBytes` at a time; an archive of any size, ZIP64 included.
+ */
+export async function readZipByRanges(byteSource, budget, signal) {
+  const size = Number(await byteSource.size())
+  const maxRead = Number(budget.maxInputBytes)
+  const read = async (offset, length) => {
+    const bytes = await byteSource.read(BigInt(offset), length, signal)
+    if (bytes.byteLength !== length) throw new TypeError('ZIP archive is truncated')
+    return bytes
+  }
+  const entries = await readZipDirectory(read, size, budget.maxNodes, maxRead)
+  return { entries, containerEntries: await zipEntryTable(entries, read, size) }
+}
+
 /** ZIP entries as the host's entry table: listing, extraction and in-place nested opens. */
 async function zipEntryTable(entries, read, size) {
   const files = entries.filter(entry => entry.kind === 'file')

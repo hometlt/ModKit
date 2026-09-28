@@ -26,7 +26,7 @@
         "modkit/xz",
         "modkit/zstd"
       ],
-      "digest": "sha256:98b860bd94531ac33c1d01f9981e8125ce60622fd3570811ce8badc05a1bdfa2"
+      "digest": "sha256:ed0db02fe16fd0ea7345114181282cb2dbe88ff0e3f53d51fb069b0dd144a60a"
     },
     {
       "name": "audio",

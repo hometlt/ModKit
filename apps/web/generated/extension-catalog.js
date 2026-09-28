@@ -6,7 +6,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
   extensions: [
     {
       artifact: {
-        artifactDigest: 'sha256:98b860bd94531ac33c1d01f9981e8125ce60622fd3570811ce8badc05a1bdfa2',
+        artifactDigest: 'sha256:ed0db02fe16fd0ea7345114181282cb2dbe88ff0e3f53d51fb069b0dd144a60a',
         fileDigests: {
           'MIGRATION-NOTES-common-archives.json':
             'sha256:4e1d77808583a26fb61d65d660ef09c3f4c222915c2e3581d793b202cbde4b44',
@@ -68,7 +68,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'src/xz/codec.js':
             'sha256:7f7bf200f42316f1225842dfafa0a05bbca0354c0c2e48d23e7afa026259edea',
           'src/zip/codec.js':
-            'sha256:3335e80002dfcda10586bb6d9374a1e3ece3418d5c147846ac96436e4b98849b',
+            'sha256:fd4a108da5032790bf1eb8becffe5c9e3cc0c437de1af3cff3b9226e6cec42e8',
           'src/zstd/codec.js':
             'sha256:b52c70fa49264a57782e3927e3d0f86ac5ec08a2df44cb000f5f558612b75240',
           'test/fixtures/7z/bcj.7z':
@@ -98,12 +98,12 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'test/zip-hidden.test.ts':
             'sha256:005d30496d7a9b3327bf67b22e85d59cfb9955d38e7afd4686fc24992a86d2b4',
           'test/zip-ranges.test.ts':
-            'sha256:30756077b57f52b435ffd61357011a0c29e08f86e77b20534bc0aa1e0ef60d15',
+            'sha256:be51c3e20370436a10443ca305e1dc7715f6c26bded2f6b9189b88b1eabc8b53',
           'test/zstd.test.ts':
             'sha256:74a5cab68793e3872c97feb5c564e0c4c0eae69d1f49df96d60239407ceccda8',
         },
         inventoryRecordId:
-          'artifact:sha256:98b860bd94531ac33c1d01f9981e8125ce60622fd3570811ce8badc05a1bdfa2',
+          'artifact:sha256:ed0db02fe16fd0ea7345114181282cb2dbe88ff0e3f53d51fb069b0dd144a60a',
       },
       artifactRoot: 'extensions/archives/',
       containers: {
