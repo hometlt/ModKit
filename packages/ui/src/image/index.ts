@@ -335,17 +335,25 @@ export interface ImageSaveRequest {
   readonly descriptor: AnyDescriptor
   readonly operations: OperationSession
   readonly image: { readonly width: number; readonly height: number; readonly rgba: Uint8Array }
+  /**
+   * `bytes`: encode the pixels as the file a save would write and answer them, writing nothing —
+   * a Save As to another file, or the editor's backup. Absent: write them back to the source.
+   */
+  readonly mode?: 'bytes'
 }
 
 export interface ImageEditingHandlers {
   undo(): boolean
   redo(): boolean
   save(): Promise<void>
+  /** The file a save would write, encoded by the codec and not written anywhere. */
+  encode(): Promise<Uint8Array>
   readonly dirty: boolean
 }
 
 export type ImageSaveOutcome =
   | { readonly state: 'saved'; readonly message: string }
+  | { readonly state: 'encoded'; readonly bytes: Uint8Array }
   | { readonly state: 'refused'; readonly reason: string }
 
 /**
@@ -1044,9 +1052,37 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
         note =
           outcome.state === 'saved'
             ? outcome.message
-            : localizer.text('viewer.imageSaveRefused', { reason: outcome.reason })
+            : outcome.state === 'refused'
+              ? localizer.text('viewer.imageSaveRefused', { reason: outcome.reason })
+              : ''
         paint()
-        if (outcome.state !== 'saved') throw new Error(outcome.reason)
+        if (outcome.state === 'refused') throw new Error(outcome.reason)
+        if (outcome.state !== 'saved')
+          throw new Error('the host encoded the pixels instead of saving')
+      }
+      /** The current pixels as the file a save would write, encoded and written nowhere. */
+      const encodeEdits = async (): Promise<Uint8Array> => {
+        const save = options.savePixels
+        const pixels = editSurface.pixels()
+        if (save === undefined || pixels === undefined)
+          throw new Error('this image has no edited pixels to encode')
+        const outcome = await save(
+          {
+            descriptor,
+            operations: args.operations,
+            image: {
+              width: pixels.width,
+              height: pixels.height,
+              rgba: new Uint8Array(pixels.data),
+            },
+            mode: 'bytes',
+          },
+          scope.signal,
+        )
+        if (outcome.state === 'encoded') return outcome.bytes
+        throw new Error(
+          outcome.state === 'refused' ? outcome.reason : 'the host saved instead of encoding',
+        )
       }
 
       /*
@@ -1253,6 +1289,7 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
             undo: () => surfaceEditing.undo(),
             redo: () => surfaceEditing.redo(),
             save: () => surfaceEditing.save(),
+            encode: () => encodeEdits(),
             get dirty() {
               return surfaceEditing.dirty
             },
