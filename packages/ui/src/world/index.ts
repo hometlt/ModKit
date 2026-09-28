@@ -1516,6 +1516,7 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
         point: localizer.text('viewer.worldKindPoint'),
         camera: localizer.text('viewer.worldKindCamera'),
       }
+      const latticeLabels = { ...kindLabels, ramp: localizer.text('viewer.worldRamp') }
       const canvas = element(stage, 'canvas', { part: 'model.canvas' }) as HTMLCanvasElement
       const latticeCanvas = element(stage, 'canvas', { part: 'model.canvas' }) as HTMLCanvasElement
       canvas.width = 720
@@ -1623,7 +1624,7 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
               latticeLayers = currentModel.layers
             }
             if (latticePlan !== undefined)
-              drawWorldLattice(latticeCanvas, latticePlan, edit.selectedObjectId, kindLabels)
+              drawWorldLattice(latticeCanvas, latticePlan, edit.selectedObjectId, latticeLabels)
           } else {
             webGlRenderer ??= createWorldWebGlRenderer(canvas)
             const stats = drawCandidateWorld(

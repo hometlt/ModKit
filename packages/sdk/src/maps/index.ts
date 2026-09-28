@@ -794,6 +794,11 @@ export interface MapCliffSample {
   readonly y: number
   readonly level: number
   readonly authored: boolean
+  /**
+   * The sample lies on a ramp: walkable ground rising between two cliff levels, not a cliff. A view
+   * draws no cliff line across it; the publisher decides from its own data.
+   */
+  readonly ramp?: boolean
 }
 
 /** One ordered model choice for a cliff mesh piece; `yaw` rotates it about the vertical axis. */

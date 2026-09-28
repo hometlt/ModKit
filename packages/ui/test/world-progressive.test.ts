@@ -218,5 +218,29 @@ describe('progressive world preview', () => {
     expect(hits).toEqual(new Set([2, undefined]))
     expect(worldLatticeObjectAt(canvas, plan, 0, 0)).toBeUndefined()
     expect(worldLatticeColor(0, 0, 1, true)).toContain('207')
+    expect(plan.ramps).toEqual([])
+  })
+
+  it('draws a ramp as its cells, with no cliff line across it', async () => {
+    const source = fixture()
+    const items = (
+      await Promise.all(
+        ['terrain', 'cliffs'].map(facet => source.page({ facet: facet as 'terrain', limit: 16 })),
+      )
+    ).flatMap(page => page.items)
+    // The same step, but the publisher marks its higher side as ramp ground.
+    const ramped = items.map(item =>
+      item.facet === 'cliffs' && item.level === 1 ? { ...item, ramp: true } : item,
+    )
+    const plan = createWorldLatticePlan(ramped)
+    expect(plan.contours).toEqual([])
+    expect(plan.ramps).toEqual([
+      [
+        [0, 0],
+        [1, 0],
+        [1, 1],
+        [0, 1],
+      ],
+    ])
   })
 })

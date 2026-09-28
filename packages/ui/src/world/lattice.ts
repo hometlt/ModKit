@@ -7,6 +7,8 @@ interface LatticeVertex {
   readonly point: Point
   readonly height: number
   readonly level?: number
+  /** The publisher marked this sample as ramp ground: no cliff line crosses it. */
+  readonly ramp?: boolean
 }
 export interface WorldLatticePlan {
   readonly cells: readonly {
@@ -14,9 +16,14 @@ export interface WorldLatticePlan {
     readonly colors: Quad<string>
   }[]
   readonly contours: readonly (readonly [Point, Point])[]
+  /** Cells touching a ramp sample: the ramp's shape, drawn over the height colours. */
+  readonly ramps: readonly Quad<Point>[]
   readonly objects: readonly { readonly point: Point; readonly objectId: number; readonly kind: MapObjectKind }[]
   readonly bounds: readonly [number, number, number, number]
 }
+
+/** Ramp cells: translucent over the height colours, so the slope still reads. */
+export const WORLD_RAMP_COLOR = 'rgba(240, 200, 120, 0.55)'
 
 /** One colour per placed-object kind, shared by the lattice, its legend and the isometric fallback. */
 export const WORLD_OBJECT_KIND_COLORS: Readonly<Record<MapObjectKind, string>> = Object.freeze({
@@ -45,7 +52,9 @@ export function createWorldLatticePlan(items: readonly WorldSceneItem[]): WorldL
   const native =
     !canonical && terrain.length > 0 && terrain.every(item => item.mapNativePosition !== undefined)
   const cliffs = new Map(
-    items.filter(item => item.facet === 'cliffs').map(item => [`${item.x}:${item.y}`, item.level]),
+    items.flatMap(item =>
+      item.facet === 'cliffs' ? [[`${item.x}:${item.y}`, item] as const] : [],
+    ),
   )
   const vertices = new Map<string, LatticeVertex>()
   let minX = Infinity,
@@ -80,11 +89,12 @@ export function createWorldLatticePlan(items: readonly WorldSceneItem[]): WorldL
     include(point)
     minimumHeight = Math.min(minimumHeight, height)
     maximumHeight = Math.max(maximumHeight, height)
-    const level = cliffs.get(`${item.x}:${item.y}`)
+    const cliff = cliffs.get(`${item.x}:${item.y}`)
     vertices.set(`${item.layerId}:${item.x}:${item.y}`, {
       point,
       height,
-      ...(level === undefined ? {} : { level }),
+      ...(cliff === undefined ? {} : { level: cliff.level }),
+      ...(cliff?.ramp === true ? { ramp: true } : {}),
     })
   }
   const water = items.filter(item => item.facet === 'water')
@@ -106,6 +116,7 @@ export function createWorldLatticePlan(items: readonly WorldSceneItem[]): WorldL
     })
   const cells: WorldLatticePlan['cells'][number][] = []
   const contours: (readonly [Point, Point])[] = []
+  const ramps: Quad<Point>[] = []
   for (const item of terrain) {
     const at = (dx: number, dy: number) =>
       vertices.get(`${item.layerId}:${item.x + dx}:${item.y + dy}`)
@@ -121,6 +132,11 @@ export function createWorldLatticePlan(items: readonly WorldSceneItem[]): WorldL
         worldLatticeColor(vertex.height, minimumHeight, maximumHeight, submerged(vertex)),
       ) as unknown as Quad<string>,
     })
+    if (quad.some(vertex => vertex.ramp === true)) {
+      // Ramp ground rises between the levels without a cliff: its cells carry no cliff line.
+      ramps.push(quad.map(vertex => vertex.point) as unknown as Quad<Point>)
+      continue
+    }
     if (quad.some(vertex => vertex.level === undefined)) continue
     // A contour joins the midpoints of edges crossing a cliff level. Diagonals stay diagonal.
     const levels = [
@@ -163,6 +179,7 @@ export function createWorldLatticePlan(items: readonly WorldSceneItem[]): WorldL
   return {
     cells,
     contours,
+    ramps,
     objects,
     bounds: Number.isFinite(minX) ? [minX, minY, maxX, maxY] : [0, 0, 1, 1],
   }
@@ -209,7 +226,7 @@ export function drawWorldLattice(
   canvas: HTMLCanvasElement,
   plan: WorldLatticePlan,
   selectedObjectId?: number,
-  kindLabels?: Readonly<Partial<Record<MapObjectKind, string>>>,
+  kindLabels?: Readonly<Partial<Record<MapObjectKind | 'ramp', string>>>,
 ): void {
   const context = canvas.getContext('2d')
   if (context === null) throw new TypeError('2D lattice canvas is unavailable')
@@ -239,6 +256,14 @@ export function drawWorldLattice(
     context.fill()
     context.stroke()
   }
+  context.fillStyle = WORLD_RAMP_COLOR
+  for (const ramp of plan.ramps) {
+    context.beginPath()
+    context.moveTo(...screen(ramp[0]))
+    for (const point of ramp.slice(1)) context.lineTo(...screen(point))
+    context.closePath()
+    context.fill()
+  }
   context.lineWidth = 1.4
   context.strokeStyle = '#d8dec4'
   context.beginPath()
@@ -259,10 +284,13 @@ export function drawWorldLattice(
       context.stroke()
     }
   }
-  // Legend: the kinds present, in the viewer's language when the caller names them.
-  const kinds = (Object.keys(WORLD_OBJECT_KIND_COLORS) as MapObjectKind[]).filter(kind =>
-    plan.objects.some(object => object.kind === kind),
-  )
+  // Legend: the kinds present and ramps, in the viewer's language when the caller names them.
+  const kinds: (MapObjectKind | 'ramp')[] = [
+    ...(Object.keys(WORLD_OBJECT_KIND_COLORS) as MapObjectKind[]).filter(kind =>
+      plan.objects.some(object => object.kind === kind),
+    ),
+    ...(plan.ramps.length > 0 ? (['ramp'] as const) : []),
+  ]
   if (kinds.length === 0) return
   context.font = '11px sans-serif'
   context.textBaseline = 'middle'
@@ -272,9 +300,10 @@ export function drawWorldLattice(
   context.fillRect(6, 6, width, kinds.length * rowHeight + 6)
   kinds.forEach((kind, index) => {
     const y = 6 + 3 + index * rowHeight + rowHeight / 2
-    context.fillStyle = WORLD_OBJECT_KIND_COLORS[kind]
+    context.fillStyle = kind === 'ramp' ? WORLD_RAMP_COLOR : WORLD_OBJECT_KIND_COLORS[kind]
     context.beginPath()
-    context.arc(15, y, 4, 0, Math.PI * 2)
+    if (kind === 'ramp') context.rect(11, y - 4, 8, 8)
+    else context.arc(15, y, 4, 0, Math.PI * 2)
     context.fill()
     context.fillStyle = '#e8eaed'
     context.fillText(kindLabels?.[kind] ?? kind, 24, y)

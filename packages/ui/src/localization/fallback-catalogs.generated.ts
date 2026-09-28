@@ -798,6 +798,7 @@ export const WORLD_FALLBACK_MESSAGES = {
   'viewer.worldNavigation': 'Navigation',
   'viewer.worldOverlays': 'Overlays',
   'viewer.worldPreview': 'Top-down world preview',
+  'viewer.worldRamp': 'Ramps',
   'viewer.worldRegions': 'Regions',
   'viewer.worldSaveMove': 'Save selected move',
   'viewer.worldSummary': '{map} · {layers} layers · {items} items{bounded}',
