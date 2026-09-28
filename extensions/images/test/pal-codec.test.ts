@@ -35,6 +35,12 @@ describe('pal codec reads through codec-kit/raster/palette', () => {
     // the first open imports the codec cold, which takes seconds on a loaded machine
   }, 30_000)
 
+  it('renders 256 RGBx entries (StarCraft tileset .wpe), the fourth byte unused', async () => {
+    const rgbx = new Uint8Array(1024)
+    rgbx.set([200, 100, 50, 7], 4)
+    expect([...(await swatch(rgbx)).subarray(4, 8)]).toEqual([200, 100, 50, 255])
+  }, 30_000)
+
   it('refuses a raw table that is not 256 entries', async () => {
     await expect(openImageCodec('pal/codec.js', new Uint8Array(767))).rejects.toThrow(
       /256 RGB entries/u,

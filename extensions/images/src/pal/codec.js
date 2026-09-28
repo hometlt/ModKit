@@ -56,6 +56,9 @@ const definition = Object.freeze({
     if (isRiffPalette(prefix)) return { confidence: 0.98, kind: 'structure', note: 'riff-pal' }
     if (prefix.byteLength === 768)
       return { confidence: 0.7, kind: 'structure', note: 'raw-256-rgb' }
+    // 256 RGBx entries: Total Annihilation's PALETTE.PAL, StarCraft's tileset .wpe
+    if (prefix.byteLength === 1024)
+      return { confidence: 0.6, kind: 'structure', note: 'raw-256-rgbx' }
     return { confidence: 0, kind: 'structure', note: 'signature-mismatch' }
   },
   async inspect(bytes, context) {

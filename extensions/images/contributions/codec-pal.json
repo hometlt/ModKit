@@ -31,7 +31,7 @@
     "artifactStages": ["authored", "compiled", "runtime"],
     "openIntents": ["probe", "inspect", "thumbnail", "full", "export"],
     "match": {
-      "extensions": ["pal"],
+      "extensions": ["pal", "wpe"],
       "signatures": [
         { "from": "start", "offset": 0, "bytesHex": "4a4153432d50414c" },
         { "from": "start", "offset": 8, "bytesHex": "50414c20" }

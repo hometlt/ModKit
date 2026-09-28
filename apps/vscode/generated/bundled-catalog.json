@@ -124,7 +124,7 @@
         "modkit/tiff",
         "modkit/webp"
       ],
-      "digest": "sha256:1e38b25f32a05094e47abcd0522a486599651527c4ae228a2b455b483e068b72"
+      "digest": "sha256:6e394c4e704f7f9c0718f869be3f1ed5c4948be3978acfc120f4e23e10c79bfe"
     },
     {
       "name": "lua",

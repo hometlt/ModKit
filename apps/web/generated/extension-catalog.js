@@ -6905,7 +6905,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:1e38b25f32a05094e47abcd0522a486599651527c4ae228a2b455b483e068b72',
+        artifactDigest: 'sha256:6e394c4e704f7f9c0718f869be3f1ed5c4948be3978acfc120f4e23e10c79bfe',
         fileDigests: {
           'MIGRATION-NOTES-common-images.json':
             'sha256:44c30ea45aaceceff66d53f72e5e0d0ec8efb1a7f2afbc2f9913849720632e93',
@@ -6939,7 +6939,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-ktx2.json':
             'sha256:65de45dc0687964552ee2f101cf12794bc5a213825f513b1f6b2b95b33fdf33d',
           'contributions/codec-pal.json':
-            'sha256:ea2a3925124bc67b6b887b70a85f03722c49a18b7f44176dfdd6365d6920188a',
+            'sha256:7108266f4754267b7cfc26905695e1678cc0faa657b7da4a6998a44052be29ae',
           'contributions/codec-pcx.json':
             'sha256:5630f3d28021cd97416ff09684ca36e7168a6ee47f1d7f601d0e6a6e01e33bb8',
           'contributions/codec-pkm.json':
@@ -7007,9 +7007,9 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'src/ops/raster-transforms.js':
             'sha256:4150cf69752d72d6d7cc5b64e2bd8cec6b68695012f8b0ea4f361b19c8490f5d',
           'src/pal/codec.js':
-            'sha256:3a46d1f0c237b6afbbc1a344a9836c1bd9b43fa60b3a1f07d379130eacbd8861',
+            'sha256:e4f579ba15795cdbf009a49adb2eb6ae1ec8ae30382eae4ca0e24b7740bccf01',
           'src/pcx/codec.js':
-            'sha256:72e48b7fce70032f4349e799ed887579698d0c790cc5ccff09420bcd1e2ec3e7',
+            'sha256:0b1cdf74a35726d0c0b50d293a82a8b08bce7d739e36a934b04519e651eaa036',
           'src/pkm/codec.js':
             'sha256:2e3a5a9c78b3aee0af85f195e3b8d362d7afa18175057cf38ac6381bca804549',
           'src/pkm/etc.js':
@@ -7047,7 +7047,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'test/ktx2-decode.test.ts':
             'sha256:0e1807a5b7d07485053fe106dc7cfbce7e664376d7eb4d8b59c878c65e1a09f5',
           'test/pal-codec.test.ts':
-            'sha256:51a75a292abcede5292028f3f85586f6af72e79fca1c60d01b5d05e0eadbf0d6',
+            'sha256:f1b7d8c25dd5ba1a0f3f7a82b5bc1c9ba104512a7286f0c8e30e35ae7e410a36',
           'test/png-palette-decode.test.ts':
             'sha256:a91dff0a852807126efb31df8f4f7401a0eab4dcf9a36ba55081bd580ac5ac14',
           'test/raster-edit-content.test.ts':
@@ -7064,7 +7064,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:8b819b0622cce57f809b369081bdd6eca09d1c1793da7f82192db39229356c1d',
         },
         inventoryRecordId:
-          'artifact:sha256:1e38b25f32a05094e47abcd0522a486599651527c4ae228a2b455b483e068b72',
+          'artifact:sha256:6e394c4e704f7f9c0718f869be3f1ed5c4948be3978acfc120f4e23e10c79bfe',
       },
       artifactRoot: 'extensions/images/',
       containers: {
@@ -7177,7 +7177,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         ],
         [
           'contributions/codec-pal.json',
-          'sha256:ea2a3925124bc67b6b887b70a85f03722c49a18b7f44176dfdd6365d6920188a',
+          'sha256:7108266f4754267b7cfc26905695e1678cc0faa657b7da4a6998a44052be29ae',
         ],
         [
           'contributions/codec-pcx.json',
@@ -9824,7 +9824,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                 claimed: 1,
               },
               match: {
-                extensions: ['pal'],
+                extensions: ['pal', 'wpe'],
                 signatures: [
                   {
                     bytesHex: '4a4153432d50414c',
