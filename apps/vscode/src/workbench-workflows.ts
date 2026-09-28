@@ -298,6 +298,50 @@ function installationGameIdsByExtension(
   return byExtension
 }
 
+/** A setting whose name says it holds a secret: its value never leaves the window. */
+const SECRET_SETTING = /key|token|secret|passw|credential|ticket|cookie|auth/iu
+
+/**
+ * Settings as a diagnostics report may show them: every value under a name that sounds like a
+ * secret (`apiKey` in `contributionSettings`, a key left in an old setting) is replaced, at any
+ * depth. Sign-ins and keys live in the broker's SecretStorage, which a report never reads; this
+ * catches what an extension or an old setting put beside the rest.
+ */
+export function redactedSettings(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(redactedSettings)
+  if (typeof value !== 'object' || value === null) return value
+  return Object.fromEntries(
+    Object.entries(value).map(([name, item]) => [
+      name,
+      SECRET_SETTING.test(name) ? '[redacted]' : redactedSettings(item),
+    ]),
+  )
+}
+
+/** What «Export diagnostics» writes: one JSON a person can send, with no secret in it (plan 8.5). */
+export function diagnosticsReport(input: {
+  readonly createdAt: string
+  readonly versions: Readonly<Record<string, string>>
+  readonly settings: unknown
+  readonly contentSources: readonly Readonly<Record<string, string>>[]
+  readonly loadedMods: readonly { readonly id: string; readonly label: string }[]
+  readonly journal: string
+}): string {
+  return `${JSON.stringify(
+    {
+      schema: 'modkit.vscode-diagnostics@1',
+      createdAt: input.createdAt,
+      versions: input.versions,
+      settings: redactedSettings(input.settings),
+      contentSources: input.contentSources,
+      loadedMods: input.loadedMods.map(mod => ({ id: mod.id, label: mod.label })),
+      journal: input.journal.split(/\r?\n/u).filter(line => line !== ''),
+    },
+    null,
+    2,
+  )}\n`
+}
+
 export interface DiagnosticJournal {
   append(line: string): void
   lines(): readonly string[]

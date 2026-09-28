@@ -224,6 +224,7 @@ GAME_LOCALES,
 gameLocales,
 installationGameIds,
 logLevelOf,
+diagnosticsReport,
 installationsAtFolder,
 regionsToConnect,
 selectedContentSource,
@@ -10782,11 +10783,37 @@ async function activateModkit(
             : await vscode.window.showSaveDialog({
                 title: localizer.text('vscode.shell.exportDiagnostics'),
                 defaultUri: vscode.Uri.file(
-                  join(workspaceFolders()[0] ?? extensionRoot, 'modkit.log'),
+                  join(workspaceFolders()[0] ?? extensionRoot, 'modkit-diagnostics.json'),
                 ),
+                filters: { JSON: ['json'] },
               })
         if (target === undefined) return undefined
-        await vscode.workspace.fs.writeFile(target, new TextEncoder().encode(journal.text()))
+        // What a report says about the window; the broker's secrets are never read here.
+        const roots = await contentSources
+          ?.then(source => source?.snapshot())
+          .then(snapshot => snapshot?.roots)
+          .catch(() => undefined)
+        const sessions = await loadedSessions?.catch(() => undefined)
+        const report = diagnosticsReport({
+          createdAt: new Date().toISOString(),
+          versions: {
+            modkit: String((context.extension.packageJSON as { version?: unknown }).version),
+            vscode: vscode.version,
+            platform: `${process.platform} ${process.arch}`,
+            node: process.versions.node,
+          },
+          settings: JSON.parse(JSON.stringify(vscode.workspace.getConfiguration('modkit'))),
+          contentSources: (roots ?? []).map(root => ({
+            id: root.id,
+            label: root.label,
+            ...(root.game === undefined ? {} : { game: root.game }),
+            ...(root.product === undefined ? {} : { product: root.product }),
+            ...(root.storageOf === undefined ? {} : { storageOf: root.storageOf }),
+          })),
+          loadedMods: sessions?.list() ?? [],
+          journal: journal.text(),
+        })
+        await vscode.workspace.fs.writeFile(target, new TextEncoder().encode(report))
         return target
       })(),
     ),

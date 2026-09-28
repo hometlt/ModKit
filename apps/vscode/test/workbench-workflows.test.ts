@@ -8,6 +8,7 @@ import {
   VSCODE_LEGACY_VIEW_REPLACEMENTS,
   assertMaterializationBound,
   createDiagnosticJournal,
+  diagnosticsReport,
   gameLocales,
   installationGameIds,
   logLevelOf,
@@ -158,6 +159,34 @@ describe('generic source lifecycle', () => {
     expect(regionsToConnect(['roblox:assets'], roots, regions, [])).toEqual(['open-cloud'])
     expect(regionsToConnect(['roblox:assets'], roots, regions, ['open-cloud'])).toEqual([])
     expect(regionsToConnect(['unknown'], roots, regions, [])).toEqual([])
+  })
+
+  it('writes a diagnostics report without the secrets settings may hold (plan 8.5)', () => {
+    const report = diagnosticsReport({
+      createdAt: '2026-09-29T00:00:00.000Z',
+      versions: { modkit: '0.1.0' },
+      settings: {
+        locale: 'ruRU',
+        contributionSettings: {
+          'modkit/translation': { apiKey: 'sk-live-secret', endpoint: 'https://translate.example' },
+        },
+        stormgate: { aesKey: '0xDEADBEEF' },
+        accounts: [{ token: 'ticket-value', name: 'shown' }],
+      },
+      contentSources: [{ id: 'local:casc', label: 'StarCraft II' }],
+      loadedMods: [{ id: 'sc2|host|c:/mods/a.sc2mod', label: 'A.SC2Mod' }],
+      journal: '[host] opened\r\n[host] closed\n',
+    })
+    for (const secret of ['sk-live-secret', '0xDEADBEEF', 'ticket-value'])
+      expect(report).not.toContain(secret)
+    const parsed = JSON.parse(report) as Record<string, unknown>
+    expect(parsed['settings']).toMatchObject({
+      locale: 'ruRU',
+      contributionSettings: { 'modkit/translation': { endpoint: 'https://translate.example' } },
+      accounts: [{ name: 'shown' }],
+    })
+    expect(parsed['journal']).toEqual(['[host] opened', '[host] closed'])
+    expect(parsed['loadedMods']).toEqual([{ id: 'sc2|host|c:/mods/a.sc2mod', label: 'A.SC2Mod' }])
   })
 
   it('files journal lines by the severity word the product writes', () => {
