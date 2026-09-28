@@ -62,6 +62,7 @@ import {
   invokeContainerPack,
   nestedSubjectServices,
   replacedBytes,
+  type CompanionOrigin,
   type EditingBackend,
   openNestedSubject,
   openSubject,
@@ -130,6 +131,12 @@ export interface ContainerRegistryOptions {
    * applies to the next listing. Absent means they are left out; opening one by path always works.
    */
   readonly showHidden?: () => boolean
+  /**
+   * The places a member searches behind its container, for the member's own path (the container's
+   * file joined with its members): the resources of its mod — a model in a zipped resource pack
+   * reaches the game's textures. Absent, a member reaches only its container.
+   */
+  readonly assetOriginsFor?: (target: string) => Promise<readonly CompanionOrigin[]>
   /**
    * Turns an opened member into the subject its view shows, as a file open does — a map into its
    * world. Absent, the member is shown as its codec opened it.
@@ -835,10 +842,15 @@ export function createContainerRegistry(options: ContainerRegistryOptions): Cont
   ): Promise<Awaited<ReturnType<SubjectOpener>>> => {
     const diagnostics: Diagnostic[] = []
     const entryId = await entryIdOf(holder, container, entry, signal)
+    const { file, members } = splitContainer(container)
+    const assetOrigins = await options.assetOriginsFor?.(
+      [file.replace(/[\\/]+$/u, ''), ...members, entry].filter(Boolean).join('/'),
+    )
     const nested = await openNestedSubject({
       parent: holder.session,
       entryId,
       ...nestedSubjectServices(options.services),
+      ...(assetOrigins === undefined || assetOrigins.length === 0 ? {} : { assetOrigins }),
       /*
        * A member may plan its own edits: `write-source` lets its codec's mutating operations
        * run. They only return plans; the host commits them back through `edit`.

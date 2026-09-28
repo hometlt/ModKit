@@ -805,6 +805,26 @@ describe('a member is a subject in its own right', () => {
     await answer.session?.dispose()
   }, 180_000)
 
+  it('asks for the places behind a member by the member’s own path (its mod’s resources)', async () => {
+    const { host, archive, workspace } = await registryFor()
+    const asked: string[] = []
+    const containers = createContainerRegistry({
+      services: host.services,
+      roots: () => [workspace],
+      grant: { id: 'member-origins-test', classes: ['read-source'] },
+      budget: containerBudget,
+      assetOriginsFor: async target => {
+        asked.push(target)
+        return []
+      },
+    })
+    cleanup.push(() => containers.dispose())
+    const answer = await containers.open(containerUriText(archive, 'hello.txt'))
+    expect(answer.snapshot.state).toBe('opened')
+    expect(asked).toEqual([`${archive.replace(/[\\/]+$/u, '')}/hello.txt`])
+    await answer.session?.dispose()
+  }, 180_000)
+
   it('reaches the page over the same subject RPC a file does', async () => {
     const { host, workspace, archive } = await stage()
     const containers = host.containers({ roots: () => [workspace] })

@@ -53,6 +53,7 @@ import type { UiLocalizer } from '@modkit/ui/localization'
 import {
   codecFidelityEvidenceRecords,
   subjectFidelityEvidenceRecords,
+  createContentAssetOrigin,
   createEvidenceRegistry,
   createHostComposition,
   createRawWriter,
@@ -666,6 +667,25 @@ export async function createVsCodeSubjectHost(
         ...(container.onDiagnostic === undefined ? {} : { onDiagnostic: container.onDiagnostic }),
         ...(container.onExtract === undefined ? {} : { onExtract: container.onExtract }),
         ...(container.showHidden === undefined ? {} : { showHidden: container.showHidden }),
+        ...(options.subjectCatalog === undefined
+          ? {}
+          : {
+              assetOriginsFor: async (target: string) => {
+                const { contentSources, baseMods } = await modResources(
+                  options.subjectCatalog,
+                  target,
+                )
+                return contentSources === undefined
+                  ? []
+                  : [
+                      createContentAssetOrigin({
+                        contentSources,
+                        target: resolve(target),
+                        ...(baseMods === undefined ? {} : { baseMods }),
+                      }),
+                    ]
+              },
+            }),
         ...(container.mapPreview === undefined
           ? {}
           : { prepareOpened: mapMemberPreview(services, container.mapPreview) }),
