@@ -1208,7 +1208,9 @@ function runnableCandidates(
       if (options.source.kind === 'namespace') {
         if (spec.sourceTopology !== 'namespace' || spec.probe.kind !== 'namespace') continue
         if (route.containerAliasFormatId === undefined) {
-          if (spec.container !== undefined) continue
+          // a folder is its container unpacked when a marker file names it (a resource pack's
+          // pack.mcmeta): such an alias opens the folder itself; one known by extension does not
+          if (spec.container !== undefined && (spec.container.markers?.length ?? 0) === 0) continue
         } else if (
           spec.container?.formatId !== route.containerAliasFormatId ||
           !route.containerAliasContributionIds?.has(manifest.id)

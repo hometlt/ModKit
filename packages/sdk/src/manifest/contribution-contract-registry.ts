@@ -442,16 +442,18 @@ export const validateCodecContributionSemantics: SpecSemanticValidator = manifes
         ),
       )
     }
+    // a marker file (a resource pack's pack.mcmeta) selects a container that has no extension
     if (
       (spec.match.extensions?.length ?? 0) === 0 &&
       (spec.match.mediaTypes?.length ?? 0) === 0 &&
-      (spec.match.pathGlobs?.length ?? 0) === 0
+      (spec.match.pathGlobs?.length ?? 0) === 0 &&
+      (spec.container?.markers?.length ?? 0) === 0
     ) {
       diagnostics.push(
         diagnostic(
           'error',
           'x3.sdk/container-alias-selector-missing',
-          'a semantic container alias requires an extension, media type, or path selector',
+          'a semantic container alias requires an extension, media type, path or marker selector',
           ['spec', 'match'],
         ),
       )

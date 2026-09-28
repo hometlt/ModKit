@@ -163,7 +163,9 @@ function containerMarkersOf(inventory: Inventory): Readonly<Record<string, reado
   for (const extension of inventory.extensions) {
     for (const contribution of extension.contributions) {
       const manifest = contribution.manifest
-      if (manifest?.contract.id !== CODEC_CONTRIBUTION_CONTRACT) continue
+      // a codec that cannot activate (an invalid spec, switched off) marks nothing
+      if (!contribution.activationEligible || manifest?.contract.id !== CODEC_CONTRIBUTION_CONTRACT)
+        continue
       const spec = manifest.spec as unknown as CodecContributionSpecV1Wire
       if (spec.sourceTopology !== 'namespace') continue
       for (const marker of spec.container?.markers ?? [])
