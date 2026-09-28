@@ -18,6 +18,13 @@ export {
 export { decodeFadpcm, fadpcmFrames } from './fadpcm.js'
 export { decodeXaAdpcm, XA_SOUND_GROUP_BYTES, XA_SOUND_GROUP_SAMPLES } from './xa-adpcm.js'
 export { IMA_INDEX_TABLE, IMA_STEP_TABLE } from './ima.js'
+export {
+  CONVERT_TO_WAV,
+  convertToWav,
+  pcmAudio,
+  type PcmAudioOptions,
+  type PcmStream,
+} from './pcm-audio.js'
 export { decodeImaWs, decodeWsAdpcm, type WsAdpcmChunk } from './westwood.js'
 
 /** Linear integer PCM (format tag 1). */
