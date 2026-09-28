@@ -122,9 +122,16 @@ export function containerEntryAccess(
       const start = page.cursor === undefined ? 0 : Number(page.cursor)
       if (!Number.isSafeInteger(start) || start < 0)
         throw new TypeError('invalid container entry cursor')
+      // a prefix selects a path and what is under it, never a sibling that shares its start
       const wanted = fold(prefix)
+      const under = wanted.endsWith('/') ? wanted : `${wanted}/`
       const matching =
-        prefix === '' ? entries : entries.filter(entry => fold(entry.path).startsWith(wanted))
+        prefix === ''
+          ? entries
+          : entries.filter(entry => {
+              const path = fold(entry.path)
+              return path === wanted || path.startsWith(under)
+            })
       const items = matching.slice(start, start + page.limit).map(toItem)
       return Object.freeze({
         items: Object.freeze(items),
