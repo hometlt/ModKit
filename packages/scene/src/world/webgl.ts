@@ -1444,25 +1444,6 @@ function sharedPickPrimitive(
   return Object.freeze({ primitive, minimum: bounds.minimum, maximum: bounds.maximum })
 }
 
-const frozenObjectPicks = new WeakMap<WorldObjectPickMesh, WorldWebGlPlan['picking']['objects'][number]>()
-
-/** A plan's pick entry of an object; a retained object keeps its entry across plans. */
-function frozenObjectPick(item: WorldObjectPickMesh): WorldWebGlPlan['picking']['objects'][number] {
-  let frozen = frozenObjectPicks.get(item)
-  if (frozen === undefined)
-    frozenObjectPicks.set(
-      item,
-      (frozen = Object.freeze({
-        objectId: item.objectId,
-        center: item.center,
-        triangles: Float32Array.from(item.triangles),
-        primitives: Object.freeze(item.primitives),
-        placeholder: item.placeholder,
-      })),
-    )
-  return frozen
-}
-
 function frozenBatch(source: MutableBatch): WorldWebGlBatch {
   return Object.freeze({
     positions: Float32Array.from(source.positions),
@@ -1722,7 +1703,9 @@ const DEFAULT_SHADOW_POLICY: ModelMaterialShadowPolicy = Object.freeze({
 /** Materials are immutable model results: their policy is read once, not per primitive and plan. */
 const materialShadowPolicies = new WeakMap<ModelMaterialRef, ModelMaterialShadowPolicy>()
 
-function modelMaterialShadowPolicy(material: ModelMaterialRef | undefined): ModelMaterialShadowPolicy {
+function modelMaterialShadowPolicy(
+  material: ModelMaterialRef | undefined,
+): ModelMaterialShadowPolicy {
   if (material === undefined) return DEFAULT_SHADOW_POLICY
   let policy = materialShadowPolicies.get(material)
   if (policy === undefined) {
@@ -1737,7 +1720,10 @@ function modelMaterialShadowPolicy(material: ModelMaterialRef | undefined): Mode
 }
 
 /** A model's materials by id (the first of each id, as `find` would), once per material list. */
-const materialsById = new WeakMap<readonly ModelMaterialRef[], ReadonlyMap<unknown, ModelMaterialRef>>()
+const materialsById = new WeakMap<
+  readonly ModelMaterialRef[],
+  ReadonlyMap<unknown, ModelMaterialRef>
+>()
 
 function modelMaterialById(
   materials: readonly ModelMaterialRef[],
@@ -1930,6 +1916,10 @@ interface WorldObjectPickMesh {
   readonly triangles: number[]
   readonly primitives: WorldWebGlPickPrimitive[]
   readonly placeholder: boolean
+  /** Bounds of its triangles and primitives (min xyz, max xyz); null when it has neither. */
+  readonly bounds: readonly number[] | null
+  /** The plan's pick entry; a retained object keeps its entry across plans. */
+  readonly pick: WorldWebGlPlan['picking']['objects'][number]
 }
 
 /**
@@ -1982,43 +1972,35 @@ type WorldObjectBatchWrite =
       readonly write: WorldBatchWrite
     }
 
-/** Writes and pick meshes whose coordinates (and texture coordinates) a plan has already checked. */
+/** Writes whose coordinates (and texture coordinates) a plan has already checked. */
 const checkedWorldWrites = new WeakSet<WorldBatchWrite>()
-const checkedWorldPickMeshes = new WeakSet<WorldObjectPickMesh>()
 
 /**
  * Bounds of a pick mesh's triangles and primitives (minimum xyz, maximum xyz), or null when it has
- * neither; a retained object keeps its pick mesh, so its bounds are taken once.
+ * neither. Taken when the mesh is built; a retained object carries them with its mesh.
  */
-const worldPickMeshBounds = new WeakMap<WorldObjectPickMesh, readonly number[] | null>()
-
-function pickMeshBounds(item: WorldObjectPickMesh): readonly number[] | null {
-  let bounds = worldPickMeshBounds.get(item)
-  if (bounds === undefined) {
-    const triangles = positionBounds(item.triangles)
-    let [minX, minY, minZ, maxX, maxY, maxZ] = triangles as [
-      number,
-      number,
-      number,
-      number,
-      number,
-      number,
-    ]
-    for (const primitive of item.primitives) {
-      minX = Math.min(minX, primitive.minimum[0])
-      maxX = Math.max(maxX, primitive.maximum[0])
-      minY = Math.min(minY, primitive.minimum[1])
-      maxY = Math.max(maxY, primitive.maximum[1])
-      minZ = Math.min(minZ, primitive.minimum[2])
-      maxZ = Math.max(maxZ, primitive.maximum[2])
-    }
-    bounds =
-      item.triangles.length > 0 || item.primitives.length > 0
-        ? Object.freeze([minX, minY, minZ, maxX, maxY, maxZ])
-        : null
-    worldPickMeshBounds.set(item, bounds)
+function pickMeshBoundsOf(
+  triangles: readonly number[],
+  primitives: readonly WorldWebGlPickPrimitive[],
+): readonly number[] | null {
+  if (triangles.length === 0 && primitives.length === 0) return null
+  let [minX, minY, minZ, maxX, maxY, maxZ] = boundsOfPositions(triangles) as [
+    number,
+    number,
+    number,
+    number,
+    number,
+    number,
+  ]
+  for (const primitive of primitives) {
+    minX = Math.min(minX, primitive.minimum[0])
+    maxX = Math.max(maxX, primitive.maximum[0])
+    minY = Math.min(minY, primitive.minimum[1])
+    maxY = Math.max(maxY, primitive.maximum[1])
+    minZ = Math.min(minZ, primitive.minimum[2])
+    maxZ = Math.max(maxZ, primitive.maximum[2])
   }
-  return bounds
+  return Object.freeze([minX, minY, minZ, maxX, maxY, maxZ])
 }
 
 /** Bounds of a positions array (minimum xyz, maximum xyz); kept for writes and pick meshes. */
@@ -2026,25 +2008,27 @@ const worldPositionBounds = new WeakMap<readonly number[], readonly number[]>()
 
 function positionBounds(positions: readonly number[]): readonly number[] {
   let bounds = worldPositionBounds.get(positions)
-  if (bounds === undefined) {
-    let minX = Infinity,
-      minY = Infinity,
-      minZ = Infinity,
-      maxX = -Infinity,
-      maxY = -Infinity,
-      maxZ = -Infinity
-    for (let offset = 0; offset < positions.length; offset += 3) {
-      minX = Math.min(minX, positions[offset]!)
-      maxX = Math.max(maxX, positions[offset]!)
-      minY = Math.min(minY, positions[offset + 1]!)
-      maxY = Math.max(maxY, positions[offset + 1]!)
-      minZ = Math.min(minZ, positions[offset + 2]!)
-      maxZ = Math.max(maxZ, positions[offset + 2]!)
-    }
-    bounds = Object.freeze([minX, minY, minZ, maxX, maxY, maxZ])
-    worldPositionBounds.set(positions, bounds)
-  }
+  if (bounds === undefined)
+    worldPositionBounds.set(positions, (bounds = boundsOfPositions(positions)))
   return bounds
+}
+
+function boundsOfPositions(positions: readonly number[]): readonly number[] {
+  let minX = Infinity,
+    minY = Infinity,
+    minZ = Infinity,
+    maxX = -Infinity,
+    maxY = -Infinity,
+    maxZ = -Infinity
+  for (let offset = 0; offset < positions.length; offset += 3) {
+    minX = Math.min(minX, positions[offset]!)
+    maxX = Math.max(maxX, positions[offset]!)
+    minY = Math.min(minY, positions[offset + 1]!)
+    maxY = Math.max(maxY, positions[offset + 1]!)
+    minZ = Math.min(minZ, positions[offset + 2]!)
+    maxZ = Math.max(maxZ, positions[offset + 2]!)
+  }
+  return Object.freeze([minX, minY, minZ, maxX, maxY, maxZ])
 }
 
 /** Concatenates one attribute of a batch's writes, as `Float32Array.from` would convert them. */
@@ -4359,12 +4343,22 @@ export function createWorldWebGlPlan(
       retainable = false
     }
     lastProjectorWrites.set(item, projectorWrites)
+    if (!pickTriangles.every(Number.isFinite))
+      throw new TypeError('world WebGL plan contains a non-finite model coordinate')
     const pickMesh: WorldObjectPickMesh = {
       objectId: item.objectId,
       center: translation,
       triangles: pickTriangles,
       primitives: pickPrimitives,
       placeholder: !resolved,
+      bounds: pickMeshBoundsOf(pickTriangles, pickPrimitives),
+      pick: Object.freeze({
+        objectId: item.objectId,
+        center: translation,
+        triangles: Float32Array.from(pickTriangles),
+        primitives: Object.freeze(pickPrimitives),
+        placeholder: !resolved,
+      }),
     }
     objectPickMeshes.push(pickMesh)
     if (retainable && staticKey !== undefined)
@@ -4451,14 +4445,10 @@ export function createWorldWebGlPlan(
     .concat(texturedWrites)
   if (!finitePlan([lines, points, ...uncheckedWrites]))
     throw new TypeError('world WebGL plan contains a non-finite coordinate')
-  for (const item of objectPickMeshes)
-    if (!checkedWorldPickMeshes.has(item) && !item.triangles.every(Number.isFinite))
-      throw new TypeError('world WebGL plan contains a non-finite model coordinate')
   for (const write of texturedWrites)
     if (!(write.textureCoordinates ?? []).every(Number.isFinite))
       throw new TypeError('world WebGL plan contains a non-finite texture coordinate')
   for (const write of uncheckedWrites) checkedWorldWrites.add(write)
-  for (const item of objectPickMeshes) checkedWorldPickMeshes.add(item)
   const positionSets: readonly (readonly number[])[] = [
     lines.positions,
     points.positions,
@@ -4477,8 +4467,7 @@ export function createWorldWebGlPlan(
       maximum[axis] = Math.max(maximum[axis], bounds[axis + 3]!)
     }
   }
-  for (const item of objectPickMeshes) {
-    const bounds = pickMeshBounds(item)
+  for (const { bounds } of objectPickMeshes) {
     if (bounds === null) continue
     hasPositions = true
     minimum[0] = Math.min(minimum[0], bounds[0]!)
@@ -4583,7 +4572,7 @@ export function createWorldWebGlPlan(
     points: appendWorldBatch(preparation.points, points),
     picking: Object.freeze({
       terrainTriangles: projectorGround,
-      objects: Object.freeze(objectPickMeshes.map(frozenObjectPick)),
+      objects: Object.freeze(objectPickMeshes.map(item => item.pick)),
     }),
     bounds: Object.freeze({ minimum: Object.freeze(minimum), maximum: Object.freeze(maximum) }),
     light: Object.freeze({
