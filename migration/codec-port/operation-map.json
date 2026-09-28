@@ -379,18 +379,18 @@
       "targetOperation": null
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-ea/sage/contributions/codec-cnc3-localization.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/cnc3-localization/operation/view.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-ea/sage/contributions/codec-cnc3-map.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/cnc3-map/operation/view.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
       "contribution": "modkit-extensions-ea/westwood/contributions/codec-cps.json",
@@ -2585,11 +2585,11 @@
       "targetOperation": null
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-spring/contributions/codec-spring-rapid.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/spring-rapid/operation/archive.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
       "contribution": null,
@@ -2606,11 +2606,11 @@
       "targetOperation": null
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-spring/contributions/codec-spring-vfs.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/spring-vfs/operation/view.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
       "contribution": null,
