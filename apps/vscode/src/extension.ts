@@ -10317,7 +10317,9 @@ async function activateModkit(
             log(`[index-cache] ${item.cache.folder}: ${String(error)}`)
           }
         }
-        log(`[index-cache] removed ${String(picked.length - failed.length)} of ${String(picked.length)}`)
+        log(
+          `[index-cache] removed ${String(picked.length - failed.length)} of ${String(picked.length)}`,
+        )
         if (failed.length > 0)
           void vscode.window.showWarningMessage(
             `Modkit: ${localizer.text('vscode.indexCaches.inUse', { names: failed.join(', ') })}`,
@@ -10836,22 +10838,53 @@ async function activateModkit(
     )
   }
 
+  /**
+   * Edits a backup kept from the last session: applied to the file only when the user says so; the
+   * open view then reads the file again, now with them.
+   */
+  const offerKeptEdits = async (document: ModkitCustomDocument, kept: Uint8Array) => {
+    const current = await vscode.workspace.fs.readFile(document.uri).then(
+      bytes => bytes,
+      () => undefined,
+    )
+    // a backup equal to the file kept nothing unsaved
+    if (current !== undefined && Buffer.from(current).equals(Buffer.from(kept))) return
+    const apply = localizer.text('vscode.document.keptApply')
+    const choice = await vscode.window.showWarningMessage(
+      localizer.text('vscode.document.kept', { name: basename(document.uri.fsPath) }),
+      apply,
+      localizer.text('vscode.document.keptDiscard'),
+    )
+    if (choice !== apply) return
+    await vscode.workspace.fs.writeFile(document.uri, kept)
+    log(`applied kept edits to ${document.uri.toString()}`)
+    await document.state.revert().catch(() => undefined)
+  }
+
   const customEditor: vscode.CustomEditorProvider<ModkitCustomDocument> = {
     onDidChangeCustomDocument: customDocumentChanged.event,
 
     async openCustomDocument(uri, openContext, token) {
       checkCancellation(token)
-      if (openContext.backupId !== undefined) {
-        log(`restoring custom document from checkpoint ${openContext.backupId}`)
-        await vscode.workspace.fs.copy(vscode.Uri.parse(openContext.backupId), uri, {
-          overwrite: true,
-        })
-        checkCancellation(token)
-      }
-      return new ModkitCustomDocument(
+      const document = new ModkitCustomDocument(
         uri,
         formatSmokeReadOnlySubjects.has(subjectKey(subjectPathOf(uri))),
       )
+      if (openContext.backupId !== undefined) {
+        /*
+         * A backup holds edits that were never saved. They reach the file only if the user says so:
+         * the document opens as the file is on disk, and a notice offers to apply them.
+         */
+        const kept = await vscode.workspace.fs
+          .readFile(vscode.Uri.parse(openContext.backupId))
+          .then(
+            bytes => bytes,
+            () => undefined,
+          )
+        checkCancellation(token)
+        if (kept !== undefined) void offerKeptEdits(document, kept)
+      }
+      return document
     },
 
     resolveCustomEditor(document, panel) {
@@ -10951,9 +10984,24 @@ async function activateModkit(
       if (nativeSaveAsEnabled && served !== undefined && document.state.isDirty) {
         throw new Error('native MPQ Save As requires a clean source document')
       }
-      if (!document.readOnly && document.state.isDirty) await document.state.save()
+      const itself = destination.toString() === document.uri.toString()
+      if (!document.readOnly && document.state.isDirty) {
+        if (itself) {
+          await document.state.save()
+          return
+        }
+        /*
+         * The edits go to the new file and the source keeps what is on disk. A view that cannot
+         * encode its buffer is refused, never saved into the source to get at the bytes.
+         */
+        const bytes = await document.state.encode()
+        checkCancellation(token)
+        if (bytes === undefined) throw new Error(localizer.text('vscode.document.saveAsUnsaved'))
+        await vscode.workspace.fs.writeFile(destination, bytes)
+        return
+      }
       checkCancellation(token)
-      if (destination.toString() !== document.uri.toString()) {
+      if (!itself) {
         if (nativeSaveAsEnabled && served !== undefined) {
           const sourceBytes = await vscode.workspace.fs.readFile(document.uri)
           const native = await served.nativeSaveAs(
@@ -10981,14 +11029,20 @@ async function activateModkit(
     async backupCustomDocument(document, backupContext, token) {
       checkCancellation(token)
       /*
-       * The editor buffers live in the isolated webview, not in an extension-host mirror. The safe
-       * hot-exit checkpoint is therefore: commit through the same native save path, then copy the
-       * exact committed bytes to VS Code's backup destination. It may save earlier than shutdown,
-       * but it never fabricates or drops an editor-specific buffer.
+       * A backup keeps the unsaved edits beside the file, never in it: the bytes a save would write,
+       * encoded by the view that holds them. VS Code backs a dirty document up soon after each edit,
+       * so saving here wrote every edit to disk without Ctrl+S. A view that cannot encode its buffer
+       * refuses, and VS Code then asks to save or discard instead of trusting a backup.
        */
-      if (!document.readOnly) await document.state.save()
-      checkCancellation(token)
-      await vscode.workspace.fs.copy(document.uri, backupContext.destination, { overwrite: true })
+      if (!document.readOnly && document.state.isDirty) {
+        const bytes = await document.state.encode()
+        checkCancellation(token)
+        if (bytes === undefined)
+          throw new Error(localizer.text('vscode.document.backupUnavailable'))
+        await vscode.workspace.fs.writeFile(backupContext.destination, bytes)
+      } else {
+        await vscode.workspace.fs.copy(document.uri, backupContext.destination, { overwrite: true })
+      }
       return {
         id: backupContext.destination.toString(),
         delete: () => vscode.workspace.fs.delete(backupContext.destination),

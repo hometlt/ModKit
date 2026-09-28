@@ -6,8 +6,11 @@ describe('native custom document state', () => {
   it('fires one dirty transition and delegates save/revert to the resolved webview', async () => {
     const saveDocument = vi.fn(async () => undefined)
     const revertDocument = vi.fn(async () => undefined)
+    const encoded = new Uint8Array([7])
+    const encodeDocument = vi.fn(async () => encoded)
     const session = {
       saveDocument,
+      encodeDocument,
       revertDocument,
       undoDocument: vi.fn(async () => undefined),
       redoDocument: vi.fn(async () => undefined),
@@ -17,6 +20,10 @@ describe('native custom document state', () => {
 
     expect(document.markDirty(true)).toBe('became-dirty')
     expect(document.markDirty(true)).toBe('unchanged')
+    expect(document.isDirty).toBe(true)
+    // encoding for Save As or a backup leaves the edits unsaved
+    expect(await document.encode()).toBe(encoded)
+    expect(encodeDocument).toHaveBeenCalledWith('C:\\workspace\\asset.bin')
     expect(document.isDirty).toBe(true)
     await document.save()
     expect(saveDocument).toHaveBeenCalledWith('C:\\workspace\\asset.bin')
@@ -33,6 +40,7 @@ describe('native custom document state', () => {
     await expect(document.save()).rejects.toThrow('no resolved webview')
     const session = {
       saveDocument: async () => undefined,
+      encodeDocument: async () => undefined,
       revertDocument: async () => undefined,
       undoDocument: async () => undefined,
       redoDocument: async () => undefined,

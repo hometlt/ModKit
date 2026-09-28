@@ -158,6 +158,13 @@ export function createVsCodePixelSaver(
     } catch (error) {
       return { state: 'refused', reason: error instanceof Error ? error.message : String(error) }
     }
+    if (request.mode === 'bytes') {
+      // Save As and the editor's backup: the same plan, its file handed back instead of applied.
+      const bytes = wholeFileBytes(plan)
+      return bytes === undefined
+        ? { state: 'refused', reason: localizer.text('vscode.edit.notWholeFile') }
+        : { state: 'encoded', bytes }
+    }
     const applied = await ports.applyPlan(plan)
     if (applied.failed) return { state: 'refused', reason: applied.message }
     const outcome = `${localizer.text('vscode.edit.apply')} — ${applied.message}`
@@ -165,6 +172,18 @@ export function createVsCodePixelSaver(
     await options.reopen(descriptor)
     return { state: 'saved', message: outcome }
   }
+}
+
+/**
+ * The whole new file an edit plan writes, when it is one replacement of a file's entire content
+ * (an image codec's `replace`); undefined for a ranged or multi-file plan, or a staged payload.
+ */
+export function wholeFileBytes(plan: AssetEditPlan): Uint8Array | undefined {
+  const [edit, ...others] = plan.edits
+  if (edit === undefined || others.length > 0) return undefined
+  if (edit.operation !== 'replace' || edit.range !== undefined) return undefined
+  if (edit.payload.kind === 'inline') return edit.payload.bytes
+  return edit.payload.kind === 'text' ? new TextEncoder().encode(edit.payload.text) : undefined
 }
 
 /** Pixels cross the operation boundary as JSON; base64 keeps that from being one number per byte. */

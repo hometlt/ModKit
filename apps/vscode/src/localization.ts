@@ -411,6 +411,15 @@ const EN_MESSAGES = Object.freeze({
   'vscode.edit.reopenSuccess': '{outcome}; reopening the file to show the new revision',
   'vscode.edit.reopenFailed': '{outcome}; the tab could not be reopened, so this view is stale',
   'vscode.edit.nothingHere': 'Nothing here can change this file',
+  'vscode.edit.notWholeFile':
+    "This format's save does not write a whole file, so its edits cannot go to another file.",
+  'vscode.document.saveAsUnsaved':
+    "Save As cannot write this editor's unsaved changes to another file yet. Save or revert them first.",
+  'vscode.document.backupUnavailable': 'This editor cannot keep its unsaved changes in a backup.',
+  'vscode.document.kept':
+    'Unsaved changes to {name} were kept from the last session. Apply them to the file?',
+  'vscode.document.keptApply': 'Apply to file',
+  'vscode.document.keptDiscard': 'Discard',
   'vscode.edit.noneDrivable':
     '{unsupported} of {declared} mutating operation(s) declared; none can be driven here',
   'vscode.edit.counts': '{forms} form(s) over {declared} mutating operation(s)',
@@ -902,6 +911,16 @@ const RU_MESSAGES: Readonly<Record<keyof typeof EN_MESSAGES, string>> = Object.f
   'vscode.edit.reopenSuccess': '{outcome}; файл открывается заново в новой версии',
   'vscode.edit.reopenFailed': '{outcome}; вкладку не удалось открыть заново, данные устарели',
   'vscode.edit.nothingHere': 'Этот файл нельзя изменить здесь',
+  'vscode.edit.notWholeFile':
+    'Сохранение этого формата не пишет файл целиком, поэтому правки нельзя записать в другой файл.',
+  'vscode.document.saveAsUnsaved':
+    '«Сохранить как» пока не умеет записать несохранённые правки этого редактора в другой файл. Сначала сохраните или отмените их.',
+  'vscode.document.backupUnavailable':
+    'Этот редактор не умеет хранить несохранённые правки в резервной копии.',
+  'vscode.document.kept':
+    'С прошлого сеанса остались несохранённые правки {name}. Применить их к файлу?',
+  'vscode.document.keptApply': 'Применить к файлу',
+  'vscode.document.keptDiscard': 'Отбросить',
   'vscode.edit.noneDrivable':
     'Объявлено операций изменения: {declared}; недоступно здесь: {unsupported}',
   'vscode.edit.counts': 'Форм: {forms}; операций изменения: {declared}',

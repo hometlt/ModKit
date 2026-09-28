@@ -123,6 +123,8 @@ export type ShellRequest =
   | { readonly op: 'read'; readonly path: string; readonly maxBytes: number }
   /** Native CustomEditorProvider lifecycle, extension host → its one resolved webview. */
   | { readonly op: 'document-save'; readonly path: string }
+  /** The file a save would write, not written (Save As, a backup); answers base64 or nothing. */
+  | { readonly op: 'document-encode'; readonly path: string }
   /** The editor's own Undo and Redo, routed to whichever view owns the pending edit. */
   | { readonly op: 'document-undo'; readonly path: string }
   | { readonly op: 'document-redo'; readonly path: string }

@@ -1,6 +1,11 @@
 /** The webview operations a native VS Code custom document delegates to. */
 export interface CustomDocumentSession {
   saveDocument(path: string): Promise<void>
+  /**
+   * The file a save would write, encoded by the view holding the edits and written nowhere — for a
+   * Save As to another file and for the editor's backup. Undefined: that view cannot encode them.
+   */
+  encodeDocument(path: string): Promise<Uint8Array | undefined>
   revertDocument(path: string): Promise<void>
   /** Views that keep their own history (the image tools) answer the editor's Undo and Redo. */
   undoDocument(path: string): Promise<void>
@@ -40,6 +45,13 @@ export class CustomDocumentState {
     if (session === undefined) throw new Error('the custom document has no resolved webview')
     await session.saveDocument(this.path)
     this.dirty = false
+  }
+
+  /** The unsaved edits as the file a save would write; the source stays as it is. */
+  async encode(): Promise<Uint8Array | undefined> {
+    const session = this.session
+    if (session === undefined) throw new Error('the custom document has no resolved webview')
+    return session.encodeDocument(this.path)
   }
 
   /** The editor's own Undo and Redo, forwarded to the view that holds the pending edit. */

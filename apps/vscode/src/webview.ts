@@ -1067,6 +1067,7 @@ async function mount(
   bridge.serve(async request => {
     if (
       request.op !== 'document-save' &&
+      request.op !== 'document-encode' &&
       request.op !== 'document-revert' &&
       request.op !== 'document-undo' &&
       request.op !== 'document-redo'
@@ -1075,6 +1076,12 @@ async function mount(
     }
     if (snapshot.openPath === undefined || request.path !== snapshot.openPath) {
       throw new Error(localizer.text('vscode.webview.wrongDocument'))
+    }
+    if (request.op === 'document-encode') {
+      // Painted pixels encode through their codec; other editors have no such route yet, and the
+      // host then refuses rather than writing the source to get at the bytes.
+      if (pixelEditing?.dirty !== true) return null
+      return base64Of(await pixelEditing.encode())
     }
     if (request.op === 'document-undo') return pixelEditing?.undo() ?? false
     if (request.op === 'document-redo') return pixelEditing?.redo() ?? false

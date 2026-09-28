@@ -1022,6 +1022,8 @@ export interface VsCodeServed {
   notice(text: string, severity?: 'info' | 'error'): void
   /** Ask the mounted editor buffer to commit; resolves only after the webview reports success. */
   saveDocument(path: string): Promise<void>
+  /** The bytes a save would write, encoded by the page and not written; undefined when it cannot. */
+  encodeDocument(path: string): Promise<Uint8Array | undefined>
   /** The editor's own Undo and Redo, forwarded to the view holding the pending edit. */
   undoDocument(path: string): Promise<void>
   redoDocument(path: string): Promise<void>
@@ -2137,6 +2139,10 @@ function serveVsCode(
       if ((await bridge.request({ op: 'document-save', path: subjectKey(path) })) !== true) {
         throw new Error('the webview did not confirm that the custom document was saved')
       }
+    },
+    async encodeDocument(path: string) {
+      const answer = await bridge.request({ op: 'document-encode', path: subjectKey(path) })
+      return typeof answer === 'string' ? new Uint8Array(Buffer.from(answer, 'base64')) : undefined
     },
     async undoDocument(path: string) {
       await bridge.request({ op: 'document-undo', path: subjectKey(path) }).catch(() => undefined)
