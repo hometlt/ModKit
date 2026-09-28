@@ -922,6 +922,7 @@ export async function createHostMcpPort(
           kind: 'locale-set',
           id: `selected-game-locales:${locales.join(',')}`,
           revision: languageWorkspaceContextToken(locales),
+          payload: Object.freeze({ locales: [...locales] }),
         }),
         ...(context === undefined
           ? []

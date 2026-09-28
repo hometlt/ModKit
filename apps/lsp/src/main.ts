@@ -137,6 +137,7 @@ export async function runModkitLsp(argv: readonly string[]) {
         kind: 'locale-set',
         id: `selected-game-locales:${configuration.locales.join(',')}`,
         revision: languageWorkspaceContextToken(configuration.locales),
+        payload: Object.freeze({ locales: [...configuration.locales] }),
       }),
       ...(openedSubjectDescriptors.length === 0
         ? []
