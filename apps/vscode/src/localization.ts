@@ -356,6 +356,8 @@ const EN_MESSAGES = Object.freeze({
   'vscode.export.written': 'Modkit exported {count} file(s) to {folder}',
   'vscode.webview.noCodecClaimed':
     '{name} — no codec claimed it ({reason}); showing the raw bytes.',
+  'vscode.webview.mapWorldUnavailable':
+    "{name}: the map's world could not be prepared, so its other views are shown — {reason}",
   'vscode.webview.readOnly': '{name} is open read-only: {reason}',
   'vscode.webview.unsavedChanges': '{name} has unsaved changes.',
   'vscode.webview.saveFailed': '{name} could not be saved by its editing arm',
@@ -844,6 +846,8 @@ const RU_MESSAGES: Readonly<Record<keyof typeof EN_MESSAGES, string>> = Object.f
   'vscode.export.written': 'Modkit экспортировал файлов: {count} — в {folder}',
   'vscode.webview.noCodecClaimed':
     '{name} — ни один кодек не распознал файл ({reason}); показаны исходные байты.',
+  'vscode.webview.mapWorldUnavailable':
+    '{name}: мир карты не собран, поэтому показаны другие виды — {reason}',
   'vscode.webview.readOnly': '{name} открыт только для чтения: {reason}',
   'vscode.webview.unsavedChanges': 'В {name} есть несохранённые изменения.',
   'vscode.webview.saveFailed': 'Модуль редактирования не смог сохранить {name}',

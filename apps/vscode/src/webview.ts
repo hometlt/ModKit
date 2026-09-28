@@ -876,6 +876,18 @@ async function mount(
         `${entry.name} · ${opened.selected.contributionId}/${opened.selected.variantId} · ` +
           `${Math.round(opened.selected.confidence * 100)}%`,
       )
+      // A map whose world could not be prepared opens on its other views: say why here, not only
+      // in Problems, or it looks as if Modkit took the map for an archive.
+      const worldFailure = opened.diagnostics.find(
+        item => item.severity === 'error' && item.code.startsWith('x3.host/map-'),
+      )
+      if (worldFailure !== undefined)
+        say(
+          localizer.text('vscode.webview.mapWorldUnavailable', {
+            name: entry.name,
+            reason: `${worldFailure.code}: ${worldFailure.message}`,
+          }),
+        )
       subjects.set(entry.id, {
         entry,
         sessionId: opened.sessionId,
