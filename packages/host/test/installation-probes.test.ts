@@ -101,6 +101,17 @@ describe('installation probes of a desktop host', () => {
     })
     expect(await probes.knownFolder('documents')).toBe('C:/Users/Tester/OneDrive/Documents')
     expect(await probes.knownFolder('program-data')).toBe('C:/ProgramData')
+    const appData = createNodeInstallationProbes({
+      platform: 'win32',
+      environment: {
+        APPDATA: 'C:/Users/Tester/AppData/Roaming',
+        LOCALAPPDATA: 'C:/Users/Tester/AppData/Local',
+        USERPROFILE: 'C:/Users/Tester',
+      },
+    })
+    expect(await appData.knownFolder('roaming-app-data')).toBe('C:/Users/Tester/AppData/Roaming')
+    expect(await appData.knownFolder('local-app-data')).toBe('C:/Users/Tester/AppData/Local')
+    expect(await appData.knownFolder('home')).toBe('C:/Users/Tester')
     expect(
       await createNodeInstallationProbes({ platform: 'linux' }).knownFolder('program-data'),
     ).toBeUndefined()

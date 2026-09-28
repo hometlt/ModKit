@@ -10,8 +10,13 @@ import type { IndexCacheSwitches } from './index-caches.js'
 
 export type RegistryHive = 'HKLM' | 'HKCU'
 
-/** A per-user or machine folder a game keeps its documents or shared data in. */
-export type KnownFolder = 'documents' | 'program-data'
+/**
+ * A per-user or machine folder a game keeps its documents, data or launcher state in:
+ * `roaming-app-data` is `%APPDATA%` (`.minecraft`, Bedrock GDK `Minecraft Bedrock`),
+ * `local-app-data` is `%LOCALAPPDATA%`, `home` the user's home directory (`~/.minecraft`).
+ */
+export type KnownFolder =
+  'documents' | 'program-data' | 'roaming-app-data' | 'local-app-data' | 'home'
 
 export interface InstallationProbes {
   /**

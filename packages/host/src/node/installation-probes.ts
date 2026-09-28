@@ -225,6 +225,16 @@ export function createNodeInstallationProbes(
           ? (options.environment ?? process.env)['ProgramData']
           : undefined
       }
+      const env = options.environment ?? process.env
+      if (folder === 'home') return env['USERPROFILE'] ?? env['HOME'] ?? homedir()
+      if (folder === 'roaming-app-data' || folder === 'local-app-data') {
+        if (platform === 'win32')
+          return env[folder === 'roaming-app-data' ? 'APPDATA' : 'LOCALAPPDATA']
+        // the platform's per-user application data: macOS Application Support, XDG elsewhere
+        return platform === 'darwin'
+          ? join(homedir(), 'Library', 'Application Support')
+          : (env['XDG_DATA_HOME'] ?? join(homedir(), '.local', 'share'))
+      }
       if (platform !== 'win32') return join(homedir(), 'Documents')
       // The shell's own answer, which follows a Documents folder the user moved (to OneDrive, to D:).
       const shell = 'Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\User Shell Folders'
