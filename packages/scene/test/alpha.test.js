@@ -108,3 +108,28 @@ it('draw order includes model transforms and rejects invalid alpha state', () =>
   for (const alphaCutoff of [-1, NaN, Infinity])
     assert.throws(() => materialAlpha({ alphaCutoff }), /cutoff/)
 })
+
+it('orders placements that share one vertex array by their own transforms, under every camera', () => {
+  const shared = quad('shared').positions
+  const placed = (id, z) => {
+    const transform = identity.slice()
+    transform[14] = z
+    return { ...quad(id), positions: shared, transform }
+  }
+  const primitives = [placed('near', -0.5), placed('far', 0.5), placed('middle', 0)]
+  const blend = () => ({ mode: 'blend', cutoff: 0.5 })
+  assert.deepEqual(
+    alphaDrawOrder(primitives, blend, identity).map(x => x.id),
+    ['far', 'middle', 'near'],
+  )
+  // A camera looking the other way sorts the same arrays the other way round.
+  const flipped = identity.slice()
+  flipped[10] = -1
+  assert.deepEqual(
+    alphaDrawOrder(primitives, blend, flipped).map(x => x.id),
+    ['near', 'middle', 'far'],
+  )
+  const broken = { ...quad('broken'), positions: Float32Array.of(0, 0, Number.NaN) }
+  for (let round = 0; round < 2; round++)
+    assert.throws(() => alphaDrawOrder([broken], blend, identity), /nonfinite blend position/)
+})

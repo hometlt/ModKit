@@ -25,6 +25,32 @@ export function materialAlpha(material?: SceneRendererMaterial): MaterialAlpha {
   return { mode, cutoff: cutoff > 1 ? 2 : Math.fround(cutoff) }
 }
 
+/**
+ * Homogeneous center of a positions array's bounds. A primitive's arrays are immutable, and a scene
+ * kept between frames sorts the same arrays every frame under another camera: each is read once.
+ */
+const boundsCenters = new WeakMap<Float32Array, readonly number[]>()
+function boundsCenter(positions: Float32Array): readonly number[] {
+  let center = boundsCenters.get(positions)
+  if (center !== undefined) return center
+  const minimum = [Infinity, Infinity, Infinity],
+    maximum = [-Infinity, -Infinity, -Infinity]
+  for (let i = 0; i < positions.length; i++) {
+    const value = positions[i]
+    if (value === undefined || !Number.isFinite(value))
+      throw new TypeError('nonfinite blend position')
+    const axis = i % 3
+    minimum[axis] = Math.min(minimum[axis] ?? Infinity, value)
+    maximum[axis] = Math.max(maximum[axis] ?? -Infinity, value)
+  }
+  center =
+    positions.length === 0
+      ? [0, 0, 0, 1]
+      : minimum.map((v, i) => (v + (maximum[i] ?? 0)) / 2).concat(1)
+  boundsCenters.set(positions, center)
+  return center
+}
+
 /** Solid geometry first, then stable back-to-front primitive bounds centers for source-over.
  * Intersecting translucent primitives still require a geometry split or an order-independent renderer.
  */
@@ -43,20 +69,7 @@ export function alphaDrawOrder(
     const positions = primitive.positions
     if (!(positions instanceof Float32Array) || positions.length % 3 !== 0)
       throw new TypeError('blend primitive positions must be an xyz Float32Array')
-    const minimum = [Infinity, Infinity, Infinity],
-      maximum = [-Infinity, -Infinity, -Infinity]
-    for (let i = 0; i < positions.length; i++) {
-      const value = positions[i]
-      if (value === undefined || !Number.isFinite(value))
-        throw new TypeError('nonfinite blend position')
-      const axis = i % 3
-      minimum[axis] = Math.min(minimum[axis] ?? Infinity, value)
-      maximum[axis] = Math.max(maximum[axis] ?? -Infinity, value)
-    }
-    let center =
-      positions.length === 0
-        ? [0, 0, 0, 1]
-        : minimum.map((v, i) => (v + (maximum[i] ?? 0)) / 2).concat(1)
+    let center = boundsCenter(positions)
     for (const matrix of [primitive.transform, viewProjection]) {
       if (matrix === undefined) continue
       if (
