@@ -8,5 +8,7 @@ declare module 'pako' {
     onData(chunk: Uint8Array): void
     readonly err: number
     readonly msg: string
+    /** Output not yet handed to `onData`: pako emits only full chunks until the stream ends. */
+    readonly strm: { readonly output: Uint8Array; readonly next_out: number }
   }
 }

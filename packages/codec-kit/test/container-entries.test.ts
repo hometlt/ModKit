@@ -1,6 +1,7 @@
 import { deflateSync } from 'node:zlib'
 import { describe, expect, it } from 'vitest'
 import { CONTAINER_EXTRACT_HANDLER_ID, createInspectionCodec } from '../src/index.js'
+import { containerEntryAccess } from '../src/container-entries.js'
 
 // A tiny range container: a 4-byte magic, then three entries' bytes. The codec only maps its index
 // to a ContainerEntryTable; listing and extraction come from codec-kit (S3 stage 1).
@@ -201,9 +202,7 @@ describe('a container entry table gives listing and extraction for free', () => 
     const session = await open()
     const lease = await session.dataSource('common.view/namespace-entry-source', 1)
     const namespace = lease.value as typeof lease.value & {
-      openEntrySource(
-        id: string,
-      ): Promise<{
+      openEntrySource(id: string): Promise<{
         value: { size(): Promise<bigint>; read(o: bigint, n: number): Promise<Uint8Array> }
         release(): Promise<void>
       }>
@@ -244,5 +243,34 @@ describe('a container entry table gives listing and extraction for free', () => 
       session.operations().invoke(CONTAINER_EXTRACT_HANDLER_ID, { entryId: 'missing' }),
     ).rejects.toThrow(/requires a known \{entryId\}/)
     await session.operations().dispose()
+  })
+})
+
+describe('container entry identity', () => {
+  it('encodes each path segment of a nested entry uri, so `#` is not a fragment', async () => {
+    const access = containerEntryAccess(
+      {
+        entries: [
+          {
+            path: '#M61 Isles of Caladan/test.xbf',
+            size: 1n,
+            storage: { kind: 'stored', offset: 0n, length: 1n },
+          },
+        ],
+        caseSensitivity: 'insensitive',
+        complete: true,
+      },
+      {
+        scheme: 'rfh',
+        source: { ref: { id: 'maps', uri: 'file:///MAPS0001.RFH' }, revision: 'provider-token:uri' } as never,
+        byteSource: { size: async () => 1n, read: async () => new Uint8Array(1) },
+        budget: { maxInputBytes: 1024n } as never,
+      },
+    )
+    const lease = await access.namespace.openEntry('#M61 Isles of Caladan/test.xbf')
+    expect(lease.value.uri).toBe(
+      `rfh:${encodeURIComponent('file:///MAPS0001.RFH')}!/%23M61%20Isles%20of%20Caladan/test.xbf`,
+    )
+    expect(new URL(lease.value.uri).hash).toBe('')
   })
 })

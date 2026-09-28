@@ -226,7 +226,8 @@ export function containerEntryAccess(
       return simpleLease(
         Object.freeze({
           id: `${context.source.ref.id}!/${entry.path}`,
-          uri: `${context.scheme}:${encodeURIComponent(context.source.ref.uri)}!/${entry.path}`,
+          // segments encoded: a `#` or `?` in a name (Emperor `#M61 …/test.xbf`) is not a fragment
+          uri: `${context.scheme}:${encodeURIComponent(context.source.ref.uri)}!/${entry.path.split('/').map(encodeURIComponent).join('/')}`,
           parentIds: Object.freeze([context.source.ref.id]) as readonly [string],
         }),
       )

@@ -2,14 +2,24 @@
 /// <reference path="./pako.d.ts" />
 import { COMPRESSION_OUTPUT_LIMIT } from './bounded.js'
 
-/** `zlib` (RFC 1950), `deflate-raw` (RFC 1951) or `gzip` (RFC 1952). */
-export type InflateFormat = 'zlib' | 'deflate-raw' | 'gzip'
+/**
+ * `zlib` (RFC 1950), `deflate-raw` (RFC 1951) or `gzip` (RFC 1952). `zlib-flushed` is a zlib stream
+ * cut at a sync flush, with no final block and no Adler-32 (Warcraft III replay blocks): what it
+ * holds is inflated, and its missing end is not an error.
+ */
+export type InflateFormat = 'zlib' | 'zlib-flushed' | 'deflate-raw' | 'gzip'
+
+/** zlib's `Z_SYNC_FLUSH`, in Node and pako alike. */
+const Z_SYNC_FLUSH = 2
 
 /** Inflate one whole stream; throws `codec-kit/compression-output-limit` past `maxOutputBytes`. */
 export type InflateSync = (payload: Uint8Array, maxOutputBytes: number) => Uint8Array
 
 interface NodeZlib {
-  inflateSync(payload: Uint8Array, options: { maxOutputLength: number }): Uint8Array
+  inflateSync(
+    payload: Uint8Array,
+    options: { maxOutputLength: number; finishFlush?: number },
+  ): Uint8Array
   inflateRawSync(payload: Uint8Array, options: { maxOutputLength: number }): Uint8Array
   gunzipSync(payload: Uint8Array, options: { maxOutputLength: number }): Uint8Array
 }
@@ -44,15 +54,17 @@ export function loadInflateSync(format: InflateFormat = 'zlib'): Promise<Inflate
 
 async function resolveInflate(format: InflateFormat): Promise<InflateSync> {
   const zlib = (await import(/* @vite-ignore */ NODE_ZLIB).catch(() => undefined)) as
-    | NodeZlib
-    | undefined
+    NodeZlib | undefined
   if (typeof zlib?.inflateSync === 'function') {
     const run =
       format === 'zlib'
         ? zlib.inflateSync.bind(zlib)
-        : format === 'gzip'
-          ? zlib.gunzipSync.bind(zlib)
-          : zlib.inflateRawSync.bind(zlib)
+        : format === 'zlib-flushed'
+          ? (payload: Uint8Array, options: { maxOutputLength: number }) =>
+              zlib.inflateSync(payload, { ...options, finishFlush: Z_SYNC_FLUSH })
+          : format === 'gzip'
+            ? zlib.gunzipSync.bind(zlib)
+            : zlib.inflateRawSync.bind(zlib)
     return (payload, maximum) => {
       try {
         const out = run(payload, { maxOutputLength: Math.max(1, maximum) })
@@ -69,7 +81,9 @@ async function resolveInflate(format: InflateFormat): Promise<InflateSync> {
 }
 
 /** The JavaScript half of {@link loadInflateSync}, for a realm without native zlib (and tests). */
-export async function loadPortableInflateSync(format: InflateFormat = 'zlib'): Promise<InflateSync> {
+export async function loadPortableInflateSync(
+  format: InflateFormat = 'zlib',
+): Promise<InflateSync> {
   const pako = await import('pako')
   return (payload, maximum) => {
     const chunks: Uint8Array[] = []
@@ -81,8 +95,11 @@ export async function loadPortableInflateSync(format: InflateFormat = 'zlib'): P
       if (total > maximum) throw outputLimit(maximum)
       chunks.push(chunk)
     }
-    inflater.push(payload, true)
+    inflater.push(payload, format === 'zlib-flushed' ? Z_SYNC_FLUSH : true)
     if (inflater.err !== 0) throw new Error(`inflate failed: ${inflater.msg}`)
+    // a stream cut at a sync flush never ends, so its last partial chunk is still in the window
+    if (format === 'zlib-flushed' && inflater.strm.next_out > 0)
+      inflater.onData(inflater.strm.output.slice(0, inflater.strm.next_out))
     const out = new Uint8Array(total)
     let offset = 0
     for (const chunk of chunks) {
