@@ -248,6 +248,9 @@ describe('HTTP VFS provider', () => {
   it('mounts one allow-listed exact-range resource and enforces the mount read budget', async () => {
     const bytes = new TextEncoder().encode('0123456789')
     const fetcher: HttpFetch = async (_url, init) => {
+      // a compressed answer carries neither ranges nor a length (setup.rbxcdn.com with br)
+      if (init?.headers?.['Accept-Encoding'] !== 'identity')
+        throw new TypeError('HTTP range reads must ask for identity encoding')
       if (init?.method === 'HEAD') {
         return {
           ok: true,

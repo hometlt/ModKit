@@ -171,6 +171,13 @@ function sourceStream(
 }
 
 /** Exact-range source shared by VFS and browser hosts. */
+/**
+ * Byte ranges and a length are about the stored bytes: a server that compresses the response
+ * (setup.rbxcdn.com answers HEAD with `content-encoding: br` and no length) advertises neither.
+ * Browsers forbid the header and send their own; Node's fetch honours it.
+ */
+const IDENTITY_ENCODING = Object.freeze({ 'Accept-Encoding': 'identity' })
+
 export async function createHttpRangeSource(
   url: string,
   options: HttpRangeSourceOptions = {},
@@ -188,9 +195,11 @@ export async function createHttpRangeSource(
     const result = await fetchWithCheckedRedirects(
       resolvedUrl,
       fetcher,
-      options.signal === undefined
-        ? { method: 'HEAD' }
-        : { method: 'HEAD', signal: options.signal },
+      {
+        method: 'HEAD',
+        headers: IDENTITY_ENCODING,
+        ...(options.signal === undefined ? {} : { signal: options.signal }),
+      },
       options.allowedOrigins,
       maxRedirects,
     )
@@ -240,7 +249,7 @@ export async function createHttpRangeSource(
         resolvedUrl,
         fetcher,
         {
-          headers: { Range: `bytes=${offset}-${offset + length - 1}` },
+          headers: { ...IDENTITY_ENCODING, Range: `bytes=${offset}-${offset + length - 1}` },
           ...(signal === undefined ? {} : { signal }),
         },
         options.allowedOrigins,
