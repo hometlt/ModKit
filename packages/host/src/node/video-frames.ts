@@ -6,7 +6,8 @@
  * image codec. Codecs never start processes: this is the one place a frame decoder runs.
  */
 import { spawn } from 'node:child_process'
-import { existsSync } from 'node:fs'
+import { createHash } from 'node:crypto'
+import { existsSync, rmSync } from 'node:fs'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { delimiter, join } from 'node:path'
@@ -59,6 +60,50 @@ export function parsePam(bytes: Uint8Array): { width: number; height: number; pi
 const failed = (message: string) =>
   new ModkitError({ code: 'x3.host/video-frame-decode-failed', message })
 
+/**
+ * Who a video's bytes are, cheaply: their length and 32 windows spread over them. The bytes arrive
+ * anew with every frame (a copy across the worker boundary), so identity cannot say it.
+ */
+function fingerprintOf(bytes: Uint8Array): string {
+  // ponytail: sampled, not a full hash; two videos alike in length and every window would share it
+  const hash = createHash('sha256').update(String(bytes.byteLength))
+  const window = 4096
+  for (let index = 0; index < 32; index += 1) {
+    const start = Math.floor(((bytes.byteLength - window) * index) / 31)
+    hash.update(bytes.subarray(Math.max(0, start), Math.max(0, start) + window))
+  }
+  return hash.digest('hex')
+}
+
+/** The last video written for ffmpeg: its next frames read the same file instead of a new copy. */
+let written:
+  | { readonly fingerprint: string; readonly directory: string; readonly input: Promise<string> }
+  | undefined
+let cleanupRegistered = false
+
+async function inputFileOf(bytes: Uint8Array): Promise<string> {
+  const fingerprint = fingerprintOf(bytes)
+  if (written?.fingerprint === fingerprint) return written.input
+  const previous = written
+  const directory = await mkdtemp(join(tmpdir(), 'modkit-video-frame-'))
+  const input = join(directory, 'input')
+  written = { fingerprint, directory, input: writeFile(input, bytes).then(() => input) }
+  if (!cleanupRegistered) {
+    cleanupRegistered = true
+    process.once('exit', () => {
+      if (written !== undefined) rmSync(written.directory, { recursive: true, force: true })
+    })
+  }
+  // ponytail: a frame of the previous video still decoding loses its file; it fails and is asked again
+  if (previous !== undefined) void rm(previous.directory, { recursive: true, force: true })
+  try {
+    return await written.input
+  } catch (error) {
+    written = undefined
+    throw error
+  }
+}
+
 /** The desktop decoder, or undefined when no ffmpeg can be found. */
 export function createNodeVideoFrameDecoder(
   options: NodeVideoFrameDecoderOptions = {},
@@ -71,10 +116,8 @@ export function createNodeVideoFrameDecoder(
       request.signal?.throwIfAborted()
       if (!Number.isFinite(request.timestampMs) || request.timestampMs < 0)
         throw new RangeError('a frame timestamp is a non-negative number of milliseconds')
-      const directory = await mkdtemp(join(tmpdir(), 'modkit-video-frame-'))
-      try {
-        const input = join(directory, 'input')
-        await writeFile(input, request.bytes)
+      {
+        const input = await inputFileOf(request.bytes)
         const at = (request.timestampMs / 1000).toFixed(3)
         const decode = (seek: readonly string[]) =>
           run(
@@ -109,8 +152,6 @@ export function createNodeVideoFrameDecoder(
           pixels,
           timestampMs: request.timestampMs,
         })
-      } finally {
-        await rm(directory, { recursive: true, force: true })
       }
     },
   })
