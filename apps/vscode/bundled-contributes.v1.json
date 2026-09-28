@@ -250,6 +250,26 @@
       "icon": "$(symbol-reference)"
     },
     {
+      "command": "modkit.openEntityCard",
+      "title": "%command.openEntityCard%",
+      "icon": "$(symbol-class)"
+    },
+    {
+      "command": "modkit.openEntityGraph",
+      "title": "%command.openEntityGraph%",
+      "icon": "$(type-hierarchy)"
+    },
+    {
+      "command": "modkit.openModCard",
+      "title": "%command.openModCard%",
+      "icon": "$(package)"
+    },
+    {
+      "command": "modkit.resources.unloadMod",
+      "title": "%command.unloadMod%",
+      "icon": "$(close)"
+    },
+    {
       "command": "modkit.setCodecDefaultEditor",
       "title": "%command.setCodecDefaultEditor%"
     },
@@ -1010,6 +1030,21 @@
         "command": "modkit.selectGameLocale",
         "when": "editorLangId in modkit.languages",
         "group": "modkit@4"
+      },
+      {
+        "command": "modkit.openEntityCard",
+        "when": "editorLangId in modkit.languages",
+        "group": "modkit@5"
+      },
+      {
+        "command": "modkit.openEntityGraph",
+        "when": "editorLangId in modkit.languages",
+        "group": "modkit@6"
+      },
+      {
+        "command": "modkit.openModCard",
+        "when": "editorLangId in modkit.languages",
+        "group": "modkit@7"
       }
     ],
     "editor/title": [
@@ -1128,6 +1163,21 @@
         "group": "navigation@0"
       },
       {
+        "command": "modkit.openEntityCard",
+        "when": "view == modkit.resources",
+        "group": "1_entity@1"
+      },
+      {
+        "command": "modkit.openEntityGraph",
+        "when": "view == modkit.resources",
+        "group": "1_entity@2"
+      },
+      {
+        "command": "modkit.resources.unloadMod",
+        "when": "view == modkit.resources",
+        "group": "2_mods@1"
+      },
+      {
         "command": "modkit.accounts.refresh",
         "when": "view == modkit.accounts",
         "group": "navigation@1"
@@ -1183,6 +1233,26 @@
         "command": "modkit.resources.goToDeclaration",
         "when": "view == modkit.resources && viewItem =~ /\\.declared$/",
         "group": "navigation@2"
+      },
+      {
+        "command": "modkit.openEntityCard",
+        "when": "view == modkit.resources && viewItem =~ /^modkitResource\\.openable/",
+        "group": "navigation@3"
+      },
+      {
+        "command": "modkit.openEntityGraph",
+        "when": "view == modkit.resources && viewItem =~ /^modkitResource\\.openable/",
+        "group": "navigation@4"
+      },
+      {
+        "command": "modkit.resources.unloadMod",
+        "when": "view == modkit.resources && viewItem == modkitResource.mod",
+        "group": "inline@1"
+      },
+      {
+        "command": "modkit.resources.unloadMod",
+        "when": "view == modkit.resources && viewItem == modkitResource.mod",
+        "group": "navigation@1"
       },
       {
         "command": "modkit.extensions.enableContribution",

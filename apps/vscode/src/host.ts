@@ -1023,8 +1023,11 @@ export interface VsCodeServed {
   readonly exposure: SubjectRpcExposure
   /** Ask the page to open this path in a tab. */
   open(path: string): void
-  /** Ask the mounted parent session to open one of its opaque nested subject references. */
-  navigate(subjectId: string): void
+  /**
+   * Ask the mounted parent session to open one of its opaque nested subject references, on `stage`
+   * (the card, the relations graph) when the subject offers it.
+   */
+  navigate(subjectId: string, stage?: string): void
   /**
    * Bring the codec this path needs up while the page is still loading.
    *
@@ -2181,8 +2184,8 @@ function serveVsCode(
     open(path: string) {
       bridge.emit({ op: 'open', path: subjectKey(path), name: subjectLabel(path) })
     },
-    navigate(subjectId: string) {
-      bridge.emit({ op: 'navigate-subject', subjectId })
+    navigate(subjectId: string, stage?: string) {
+      bridge.emit({ op: 'navigate-subject', subjectId, ...(stage === undefined ? {} : { stage }) })
     },
     warm(path: string) {
       if (warmed.has(subjectKey(path))) return

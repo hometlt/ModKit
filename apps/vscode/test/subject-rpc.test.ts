@@ -165,7 +165,8 @@ describe('the VS Code subject bridge', () => {
     expect(dirty).toEqual([[path, true]])
     expect(saveRequested).toEqual([path])
     expect(requests).toEqual(['document-save', 'document-revert'])
-  })
+    // composing the real host takes seconds under load, as for the other tests of this bridge
+  }, 120_000)
 
   it('opens a subject over the JSON channel and hands the page its descriptor', async () => {
     const { client, served, workspace } = await wire({

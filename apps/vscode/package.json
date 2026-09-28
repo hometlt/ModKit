@@ -160,6 +160,16 @@
       { "command": "modkit.navigateResource", "title": "%command.navigateResource%" },
       { "command": "modkit.openArchiveEntry", "title": "%command.openContainerMember%" },
       {
+        "command": "modkit.openEntityCard",
+        "title": "%command.openEntityCard%",
+        "icon": "$(symbol-class)"
+      },
+      {
+        "command": "modkit.openEntityGraph",
+        "title": "%command.openEntityGraph%",
+        "icon": "$(type-hierarchy)"
+      },
+      {
         "command": "modkit.openExplorer",
         "title": "%command.openExplorer%",
         "icon": "$(folder-library)"
@@ -167,6 +177,7 @@
       { "command": "modkit.openLogFolder", "title": "%command.openLogFolder%" },
       { "command": "modkit.openMap2D", "title": "%command.openMap2D%", "icon": "$(layers)" },
       { "command": "modkit.openMap3D", "title": "%command.openMap3D%", "icon": "$(globe)" },
+      { "command": "modkit.openModCard", "title": "%command.openModCard%", "icon": "$(package)" },
       { "command": "modkit.openWith", "title": "%command.openActiveFile%" },
       { "command": "modkit.refreshContainer", "title": "%command.refreshContainer%" },
       { "command": "modkit.refreshRelations", "title": "%command.refreshRelations%" },
@@ -194,6 +205,11 @@
         "command": "modkit.resources.toggleChain",
         "title": "%command.toggleResourceChain%",
         "icon": "$(layers)"
+      },
+      {
+        "command": "modkit.resources.unloadMod",
+        "title": "%command.unloadMod%",
+        "icon": "$(close)"
       },
       { "command": "modkit.runCommand", "title": "%command.runCommand%" },
       { "command": "modkit.runtime.control", "title": "%command.controlRuntime%" },
@@ -731,6 +747,21 @@
           "group": "modkit@2"
         },
         {
+          "command": "modkit.openEntityCard",
+          "when": "editorLangId in modkit.languages",
+          "group": "modkit@5"
+        },
+        {
+          "command": "modkit.openEntityGraph",
+          "when": "editorLangId in modkit.languages",
+          "group": "modkit@6"
+        },
+        {
+          "command": "modkit.openModCard",
+          "when": "editorLangId in modkit.languages",
+          "group": "modkit@7"
+        },
+        {
           "command": "modkit.openWith",
           "when": "editorLangId in modkit.languages",
           "group": "modkit@3"
@@ -902,6 +933,16 @@
           "group": "inline@1"
         },
         {
+          "command": "modkit.openEntityCard",
+          "when": "view == modkit.resources && viewItem =~ /^modkitResource\\.openable/",
+          "group": "navigation@3"
+        },
+        {
+          "command": "modkit.openEntityGraph",
+          "when": "view == modkit.resources && viewItem =~ /^modkitResource\\.openable/",
+          "group": "navigation@4"
+        },
+        {
           "command": "modkit.openExplorer",
           "when": "view == modkit.sources && viewItem =~ /^modkitSource\\.(?:providerRoot|publicRoot|localRoot|installation)(?:\\.(?:mounted|mounting))?$/",
           "group": "explorer@0"
@@ -924,6 +965,16 @@
         {
           "command": "modkit.resources.open",
           "when": "view == modkit.resources && viewItem =~ /^modkitResource\\.openable/",
+          "group": "navigation@1"
+        },
+        {
+          "command": "modkit.resources.unloadMod",
+          "when": "view == modkit.resources && viewItem == modkitResource.mod",
+          "group": "inline@1"
+        },
+        {
+          "command": "modkit.resources.unloadMod",
+          "when": "view == modkit.resources && viewItem == modkitResource.mod",
           "group": "navigation@1"
         },
         {
@@ -1040,6 +1091,16 @@
         },
         { "command": "modkit.indexCaches", "when": "view == modkit.sources", "group": "1_cache@1" },
         {
+          "command": "modkit.openEntityCard",
+          "when": "view == modkit.resources",
+          "group": "1_entity@1"
+        },
+        {
+          "command": "modkit.openEntityGraph",
+          "when": "view == modkit.resources",
+          "group": "1_entity@2"
+        },
+        {
           "command": "modkit.resources.refresh",
           "when": "view == modkit.resources",
           "group": "navigation@2"
@@ -1053,6 +1114,11 @@
           "command": "modkit.resources.toggleChain",
           "when": "view == modkit.resources",
           "group": "navigation@0"
+        },
+        {
+          "command": "modkit.resources.unloadMod",
+          "when": "view == modkit.resources",
+          "group": "2_mods@1"
         },
         {
           "command": "modkit.selectGameInstallation",
@@ -1120,10 +1186,13 @@
     "onCommand:modkit.materializeContainerEntry",
     "onCommand:modkit.navigateResource",
     "onCommand:modkit.openArchiveEntry",
+    "onCommand:modkit.openEntityCard",
+    "onCommand:modkit.openEntityGraph",
     "onCommand:modkit.openExplorer",
     "onCommand:modkit.openLogFolder",
     "onCommand:modkit.openMap2D",
     "onCommand:modkit.openMap3D",
+    "onCommand:modkit.openModCard",
     "onCommand:modkit.openWith",
     "onCommand:modkit.refreshContainer",
     "onCommand:modkit.refreshRelations",
@@ -1132,6 +1201,7 @@
     "onCommand:modkit.resources.refresh",
     "onCommand:modkit.resources.search",
     "onCommand:modkit.resources.toggleChain",
+    "onCommand:modkit.resources.unloadMod",
     "onCommand:modkit.runCommand",
     "onCommand:modkit.runtime.control",
     "onCommand:modkit.searchContainer",

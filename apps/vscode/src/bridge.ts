@@ -264,7 +264,7 @@ export type ShellEvent =
   | { readonly op: 'roots'; readonly roots: readonly ShellRoot[] }
   | { readonly op: 'open'; readonly path: string; readonly name: string }
   /** Open an opaque subject reference through the navigation port of the mounted parent session. */
-  | { readonly op: 'navigate-subject'; readonly subjectId: string }
+  | { readonly op: 'navigate-subject'; readonly subjectId: string; readonly stage?: string }
   | { readonly op: 'notice'; readonly text: string; readonly severity: 'info' | 'error' }
   /** The webview's status line, mirrored into the extension's output channel. */
   | { readonly op: 'status'; readonly text: string }

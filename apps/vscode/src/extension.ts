@@ -27,6 +27,7 @@ import * as vscode from 'vscode'
 import { callContentSources } from '@modkit/vfs/content-sources/node'
 import { LoadedModResourceSessions } from '@modkit/host/mods'
 import {
+HOST_LAYER_SOURCE_ID,
 type ContentSourceLocalPath,
 type ContentSourceSearchResult,
 type ContentSources
@@ -5792,6 +5793,7 @@ async function activateModkit(
     root: string,
     subjectId: string,
     range?: TreeNodeFacts['range'],
+    stage?: string,
   ) => Promise<boolean> = async () => false
 
   /**
@@ -6195,8 +6197,8 @@ async function activateModkit(
     return Object.freeze({
       ...(failure === undefined ? {} : { failure }),
       openTreeDataSource: async () => Object.freeze({ value: sessions.tree(resourcesShowChain), release: async () => undefined }),
-      navigate(subjectId: string, range?: TreeNodeFacts['range']) {
-        void navigateWorkspaceResource(path ?? '', subjectId, range).catch(error =>
+      navigate(subjectId: string, range?: TreeNodeFacts['range'], stage?: string) {
+        void navigateWorkspaceResource(path ?? '', subjectId, range, stage).catch(error =>
           vscode.window.showErrorMessage(`Modkit: ${error instanceof Error ? error.message : String(error)}`),
         )
       },
@@ -8310,7 +8312,7 @@ async function activateModkit(
     return anchor === undefined ? undefined : vscode.Uri.joinPath(target, anchor[0])
   }
 
-  navigateWorkspaceResource = async (root, subjectId, range) => {
+  navigateWorkspaceResource = async (root, subjectId, range, stage) => {
     /*
      * A resource that *is* a file opens as that file. Routing it through the package's own custom
      * editor made every click open the package instead — which a CASC package cannot even preview,
@@ -8332,7 +8334,9 @@ async function activateModkit(
     const place =
       subjectId.startsWith('content-source:') || subjectId.startsWith('file:')
         ? subjectTarget(subjectId)
-        : undefined
+        : isAbsolute(subjectId)
+          ? subjectId
+          : undefined
     if (place !== undefined) {
       const uri =
         typeof place === 'string'
@@ -8359,7 +8363,7 @@ async function activateModkit(
     if (served === undefined) {
       throw new Error(`the resource workspace subject did not open: ${basename(root)}`)
     }
-    served.navigate(subjectId)
+    served.navigate(subjectId, stage)
     return true
   }
 
@@ -10650,6 +10654,99 @@ async function activateModkit(
     vscode.commands.registerCommand('modkit.resources.goToDeclaration', (argument: unknown) =>
       resourcesView.goToDeclaration(argument as ResourceTreeNode),
     ),
+
+    /*
+     * An entity's card or its relations graph (plan 5.30): the Resources row the command ran on,
+     * else one picked by id or name across the loaded mods, starting from the word at the cursor.
+     */
+    ...(['card', 'relations'] as const).map(stage =>
+      vscode.commands.registerCommand(
+        stage === 'card' ? 'modkit.openEntityCard' : 'modkit.openEntityGraph',
+        async (argument: unknown) => {
+          const row = argument as ResourceTreeNode | undefined
+          if (row?.kind === 'resource' && row.facts.subjectId !== undefined)
+            return resourcesView.open(row, stage)
+          const editor = vscode.window.activeTextEditor
+          const range = editor?.selection.isEmpty
+            ? editor.document.getWordRangeAtPosition(editor.selection.active)
+            : editor?.selection
+          const picked = await resourcesView.pick(
+            range === undefined || editor === undefined ? '' : editor.document.getText(range),
+            localizer.text(stage === 'card' ? 'vscode.entity.card' : 'vscode.entity.graph'),
+            localizer.text('vscode.entity.placeholder'),
+          )
+          return picked === undefined ? false : resourcesView.open(picked, stage)
+        },
+      ),
+    ),
+
+    /** The card of the mod the active (or given) file belongs to: its package, at its anchor. */
+    vscode.commands.registerCommand('modkit.openModCard', async (argument: unknown) => {
+      const tab = vscode.window.tabGroups.activeTabGroup.activeTab?.input
+      const uri =
+        argument instanceof vscode.Uri
+          ? argument
+          : tab instanceof vscode.TabInputCustom || tab instanceof vscode.TabInputText
+            ? tab.uri
+            : undefined
+      if (uri === undefined) {
+        void vscode.window.showInformationMessage(localizer.text('vscode.resolution.noFile'))
+        return false
+      }
+      const target = modContextTargetOf(subjectPathOf(uri))
+      const source = await requireContentSources().catch(() => undefined)
+      const placement =
+        target === undefined ? undefined : await source?.locateModPackage?.(target)
+      if (placement?.kind !== 'package') {
+        void vscode.window.showInformationMessage(
+          localizer.text('vscode.modCard.none', { name: basename(uri.path) }),
+        )
+        return false
+      }
+      const packageUri =
+        placement.sourceId === HOST_LAYER_SOURCE_ID
+          ? vscode.Uri.file(placement.path)
+          : vscode.Uri.from({
+              scheme: 'modkit-source',
+              authority: 'battlenet',
+              path: `/${placement.sourceId}/${placement.path}`,
+            })
+      const anchored = await anchoredUri(packageUri)
+      if (anchored === undefined) {
+        void vscode.window.showInformationMessage(
+          localizer.text('vscode.map.noAnchor', { name: placement.displayName }),
+        )
+        return false
+      }
+      await vscode.commands.executeCommand('vscode.openWith', anchored, CUSTOM_EDITOR_TYPE)
+      return true
+    }),
+
+    /** Unload a mod from Resources: the row it ran on, else one picked from the loaded mods. */
+    vscode.commands.registerCommand('modkit.resources.unloadMod', async (argument: unknown) => {
+      const sessions = await resourceSessions().catch(() => undefined)
+      const loaded = sessions?.list() ?? []
+      if (sessions === undefined || loaded.length === 0) {
+        void vscode.window.showInformationMessage(localizer.text('vscode.resources.noActiveSubject'))
+        return false
+      }
+      const row = argument as ResourceTreeNode | undefined
+      const named =
+        row?.kind === 'resource' && row.facts.kind === 'mod'
+          ? loaded.filter(mod => mod.label === row.facts.label)
+          : []
+      const chosen =
+        named.length === 1
+          ? named[0]
+          : await vscode.window.showQuickPick(
+              loaded.map(mod => ({ label: mod.label, id: mod.id })),
+              { title: localizer.text('vscode.resources.unloadTitle') },
+            )
+      if (chosen === undefined) return false
+      await sessions.unload(chosen.id)
+      resourcesView.refresh()
+      return true
+    }),
 
     /** Open the current or supplied resource through the generic workbench. */
     vscode.commands.registerCommand('modkit.navigateResource', (argument: unknown) => {

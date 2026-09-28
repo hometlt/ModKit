@@ -43,8 +43,11 @@ export type ResourceTreeNode =
 export interface ResourceTreeHost extends Pick<VsCodeServed, 'openTreeDataSource'> {
   /** Why the focused document's mod did not load; the mods already loaded are still shown. */
   readonly failure?: string
-  /** A resource opens at its declaration when the node carries one. */
-  navigate(subjectId: string, range?: TreeNodeFacts['range']): void
+  /**
+   * A resource opens at its declaration when the node carries one, on `stage` (the card, the
+   * relations graph) when asked and the subject offers it.
+   */
+  navigate(subjectId: string, range?: TreeNodeFacts['range'], stage?: string): void
 }
 
 /** Opens the tree a resource file publishes through its own codec, when it publishes one. */
@@ -81,7 +84,7 @@ export class ResourcesView implements vscode.TreeDataProvider<ResourceTreeNode>,
     this.changed.fire(undefined)
   }
 
-  async open(node?: ResourceTreeNode): Promise<boolean> {
+  async open(node?: ResourceTreeNode, stage?: string): Promise<boolean> {
     // The command is also reachable from the palette, where there is no node at all.
     if (node === undefined || node.kind === 'notice' || node.kind === 'more') return false
     if (node.kind === 'member') {
@@ -93,8 +96,86 @@ export class ResourcesView implements vscode.TreeDataProvider<ResourceTreeNode>,
     if (node.facts.subjectId === undefined) return false
     const served = await this.loaded()
     if (served === undefined) return false
-    served.navigate(node.facts.subjectId, node.facts.range)
+    served.navigate(node.facts.subjectId, node.facts.range, stage)
     return true
+  }
+
+  /**
+   * An entity picked by id or name across the loaded mods (plan 5.30). The query starts as
+   * `initial` — the word at the cursor — and a single node of exactly that id opens without asking.
+   */
+  async pick(
+    initial: string,
+    title: string,
+    placeholder: string,
+  ): Promise<ResourceTreeNode | undefined> {
+    const served = await this.loaded()
+    const lease = await served?.openTreeDataSource()
+    if (lease === undefined) return undefined
+    const tree = lease.value
+    type Item = vscode.QuickPickItem & { readonly node: ResourceTreeNode }
+    // The loaded mods answer the search; the picker must not filter their answer again.
+    const find = async (pattern: string): Promise<Item[]> => {
+      const found: Item[] = []
+      if (pattern === '') return found
+      for await (const ref of tree.search({ pattern })) {
+        const facts = await tree.facts(ref)
+        if (facts.subjectId === undefined) continue
+        found.push({
+          label: facts.label,
+          ...(facts.preview === undefined ? {} : { description: facts.preview }),
+          detail: facts.kind,
+          alwaysShow: true,
+          node: Object.freeze({ kind: 'resource' as const, ref, facts }),
+        })
+        if (found.length >= 200) break
+      }
+      return found
+    }
+    try {
+      const query = initial.trim()
+      const first = await find(query)
+      const exact = first.filter(item => item.label === query)
+      if (exact.length === 1) return exact[0]?.node
+      return await new Promise<ResourceTreeNode | undefined>(done => {
+        const picker = vscode.window.createQuickPick<Item>()
+        picker.title = title
+        picker.placeholder = placeholder
+        picker.value = query
+        picker.items = first
+        let generation = 0
+        let timer: ReturnType<typeof setTimeout> | undefined
+        picker.onDidChangeValue(value => {
+          const current = ++generation
+          clearTimeout(timer)
+          timer = setTimeout(() => {
+            picker.busy = true
+            void find(value.trim())
+              .then(
+                items => {
+                  if (current === generation) picker.items = items
+                },
+                () => undefined,
+              )
+              .finally(() => {
+                if (current === generation) picker.busy = false
+              })
+          }, 250)
+        })
+        picker.onDidAccept(() => {
+          done(picker.selectedItems[0]?.node)
+          picker.hide()
+        })
+        picker.onDidHide(() => {
+          clearTimeout(timer)
+          done(undefined)
+          picker.dispose()
+        })
+        picker.show()
+      })
+    } finally {
+      await lease.release()
+    }
   }
 
   /** The file that declares the node's entity, when that is not what a click opens (the card). */
@@ -269,11 +350,13 @@ export class ResourcesView implements vscode.TreeDataProvider<ResourceTreeNode>,
     if (node.facts.preview !== undefined) item.description = node.facts.preview
     item.tooltip = node.facts.preview ?? node.facts.label
     item.contextValue =
-      node.facts.subjectId === undefined
-        ? 'modkitResource.node'
-        : node.facts.declaration === undefined
-          ? 'modkitResource.openable'
-          : 'modkitResource.openable.declared'
+      node.kind === 'resource' && node.facts.kind === 'mod'
+        ? 'modkitResource.mod'
+        : node.facts.subjectId === undefined
+          ? 'modkitResource.node'
+          : node.facts.declaration === undefined
+            ? 'modkitResource.openable'
+            : 'modkitResource.openable.declared'
     const fileLike =
       !node.ref.hasChildren && /file|document|script|layout|string|style/iu.test(node.facts.kind)
     if (fileLike) {

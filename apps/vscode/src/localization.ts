@@ -155,6 +155,11 @@ const EN_MESSAGES = Object.freeze({
   'vscode.resources.open': 'Open resource',
   'vscode.resources.searchTitle': 'Search resources',
   'vscode.resources.searchPlaceholder': 'Name or value',
+  'vscode.resources.unloadTitle': 'Unload a mod from Resources',
+  'vscode.entity.card': 'Entity card',
+  'vscode.entity.graph': 'Relations graph',
+  'vscode.entity.placeholder': 'Entity id or name in the loaded mods',
+  'vscode.modCard.none': '{name} is not inside a mod package.',
 
   'vscode.shell.extensionRootsFailed':
     '{count} extension root(s) did not load. Run “Modkit: Show Diagnostics” for details.',
@@ -666,6 +671,11 @@ const RU_MESSAGES: Readonly<Record<keyof typeof EN_MESSAGES, string>> = Object.f
   'vscode.resources.open': 'Открыть ресурс',
   'vscode.resources.searchTitle': 'Поиск ресурсов',
   'vscode.resources.searchPlaceholder': 'Имя или значение',
+  'vscode.resources.unloadTitle': 'Выгрузить мод из «Ресурсов»',
+  'vscode.entity.card': 'Карточка сущности',
+  'vscode.entity.graph': 'Граф связей',
+  'vscode.entity.placeholder': 'Id или имя сущности в загруженных модах',
+  'vscode.modCard.none': '{name} не лежит в пакете мода.',
 
   'vscode.shell.extensionRootsFailed':
     'Не удалось загрузить корней расширений: {count}. Подробности доступны в «Modkit: Показать диагностику».',

@@ -468,6 +468,8 @@ async function mount(
     readonly result: Extract<SubjectClientOpenResult, { readonly state: 'opened' }>
   }
   const preopenedSubjects = new Map<string, NavigationEvent['result']>()
+  /** The view a navigated subject opens on, when the extension asked for one (its graph, say). */
+  const pendingStages = new Map<string, string>()
   let openNavigatedSubject: ((event: NavigationEvent) => Promise<void>) | undefined
   const client = await connectSubjectRpc({
     framePort: bridge.framePort,
@@ -960,10 +962,13 @@ async function mount(
     async open(container, entry, bytes, signal) {
       const handle = await codecPreview.open(container, entry, bytes, signal)
       if (handle === undefined) return undefined
-      const wanted = preferredStage(
-        handle.views.map(view => view.id),
-        subjects.get(entry.id)?.planActive,
-      )
+      const views = handle.views.map(view => view.id)
+      const requested = pendingStages.get(entry.id)
+      pendingStages.delete(entry.id)
+      const wanted =
+        requested !== undefined && views.includes(requested)
+          ? requested
+          : preferredStage(views, subjects.get(entry.id)?.planActive)
       if (wanted !== undefined && wanted !== handle.activeView) await handle.show(wanted)
       return handle
     },
@@ -1019,6 +1024,7 @@ async function mount(
       throw new Error('subject navigation source or target is unavailable in this webview')
     }
     if (subjects.has(event.target)) {
+      pendingStages.delete(event.target)
       await event.result.session.dispose()
       await editors.open({ id: event.target, name: baseName(event.target), directory: false })
       return
@@ -1143,12 +1149,14 @@ async function mount(
     await editors.open(entry)
   }
 
-  const navigateSubject = async (target: string): Promise<void> => {
+  const navigateSubject = async (target: string, stage?: string): Promise<void> => {
     const parent = subjects.get(snapshot.openPath ?? focused ?? '')
     const navigation = parent?.session.subjectNavigation
     if (navigation === undefined) throw new Error('the mounted subject does not support navigation')
+    if (stage !== undefined) pendingStages.set(target, stage)
     const result = await navigation.open({ scope: navigation.scope, target })
     if (result.state === 'rejected') {
+      pendingStages.delete(target)
       throw new Error(`subject navigation rejected ${target}: ${result.reason}`)
     }
   }
@@ -1159,7 +1167,9 @@ async function mount(
         void openPath(event.path, event.name).catch((error: unknown) => say(describe(error)))
         break
       case 'navigate-subject':
-        void navigateSubject(event.subjectId).catch((error: unknown) => say(describe(error)))
+        void navigateSubject(event.subjectId, event.stage).catch((error: unknown) =>
+          say(describe(error)),
+        )
         break
       case 'notice':
         say(event.text)
