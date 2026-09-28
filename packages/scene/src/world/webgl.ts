@@ -452,8 +452,15 @@ export interface WorldWebGlPlan {
 
 interface WorldWebGlPickPrimitive {
   readonly primitive: SceneRendererPrimitive
+  /** World bounds of the vertices it references, computed when first read. */
   readonly minimum: readonly [number, number, number]
   readonly maximum: readonly [number, number, number]
+  /**
+   * A box holding those bounds (min xyz, max xyz): the corners of the referenced vertices' own
+   * bounds, transformed and widened past rounding. Instances share the own bounds of their model's
+   * vertex arrays, so this costs eight corners, not a pass over the vertices.
+   */
+  readonly envelope: Float64Array
 }
 
 export interface WorldWebGlModelEffectInstance {
@@ -1563,9 +1570,112 @@ function sameOptionalMatrix(
 }
 
 /**
- * Pick entry of a placed primitive: its world bounding box over the vertices it references. With
- * an `owner` and `slot` the bounds are kept for the next plan while the source geometry and the
- * placement matrix stay the same.
+ * Own-space bounds (min xyz, max xyz) of the vertices a primitive references, by its positions array
+ * and referenced list (a count, or the list kept for its index array). The placed instances of one
+ * sampled model share its arrays: on Amphion ~1 000 animated primitives a frame have ~100 of them.
+ */
+const referencedOwnBounds = new WeakMap<object, Map<readonly number[] | number, Float64Array>>()
+
+function referencedBoundsOf(
+  positions: Float32Array,
+  referenced: readonly number[] | number,
+): Float64Array {
+  let byList = referencedOwnBounds.get(positions)
+  if (byList === undefined) referencedOwnBounds.set(positions, (byList = new Map()))
+  let bounds = byList.get(referenced)
+  if (bounds === undefined) {
+    const count = typeof referenced === 'number' ? referenced : referenced.length
+    let minX = Infinity,
+      minY = Infinity,
+      minZ = Infinity,
+      maxX = -Infinity,
+      maxY = -Infinity,
+      maxZ = -Infinity
+    for (let at = 0; at < count; at++) {
+      const offset = (typeof referenced === 'number' ? at : referenced[at]!) * 3
+      // The coordinates sharedPickPrimitive reads; a NaN stays NaN in the bounds.
+      const x = positions[offset] ?? 0,
+        y = positions[offset + 1] ?? 0,
+        z = positions[offset + 2] ?? 0
+      minX = Math.min(minX, x)
+      maxX = Math.max(maxX, x)
+      minY = Math.min(minY, y)
+      maxY = Math.max(maxY, y)
+      minZ = Math.min(minZ, z)
+      maxZ = Math.max(maxZ, z)
+    }
+    bounds = Float64Array.of(minX, minY, minZ, maxX, maxY, maxZ)
+    byList.set(referenced, bounds)
+  }
+  return bounds
+}
+
+/**
+ * A box holding every vertex of an own-space box as sharedPickPrimitive transforms it (min xyz, max
+ * xyz). An affine map takes a box's extremes at its corners; a vertex inside can land a few ulps past
+ * them in floating point, at most ~1e-15 of the terms' magnitude, so each side widens by 1e-12 of it.
+ * Non-finite bounds or a non-finite matrix give a non-finite box.
+ */
+function transformedEnvelope(own: Float64Array, transform: Float32Array | undefined): Float64Array {
+  if (transform === undefined) return own
+  let minX = Infinity,
+    minY = Infinity,
+    minZ = Infinity,
+    maxX = -Infinity,
+    maxY = -Infinity,
+    maxZ = -Infinity,
+    reachX = 0,
+    reachY = 0,
+    reachZ = 0
+  for (let corner = 0; corner < 8; corner++) {
+    const x = own[corner & 1 ? 3 : 0]!,
+      y = own[corner & 2 ? 4 : 1]!,
+      z = own[corner & 4 ? 5 : 2]!
+    const tx = transform[0]! * x + transform[4]! * y + transform[8]! * z + transform[12]!
+    const ty = transform[1]! * x + transform[5]! * y + transform[9]! * z + transform[13]!
+    const tz = transform[2]! * x + transform[6]! * y + transform[10]! * z + transform[14]!
+    minX = Math.min(minX, tx)
+    maxX = Math.max(maxX, tx)
+    minY = Math.min(minY, ty)
+    maxY = Math.max(maxY, ty)
+    minZ = Math.min(minZ, tz)
+    maxZ = Math.max(maxZ, tz)
+    reachX = Math.max(
+      reachX,
+      Math.abs(transform[0]! * x) +
+        Math.abs(transform[4]! * y) +
+        Math.abs(transform[8]! * z) +
+        Math.abs(transform[12]!),
+    )
+    reachY = Math.max(
+      reachY,
+      Math.abs(transform[1]! * x) +
+        Math.abs(transform[5]! * y) +
+        Math.abs(transform[9]! * z) +
+        Math.abs(transform[13]!),
+    )
+    reachZ = Math.max(
+      reachZ,
+      Math.abs(transform[2]! * x) +
+        Math.abs(transform[6]! * y) +
+        Math.abs(transform[10]! * z) +
+        Math.abs(transform[14]!),
+    )
+  }
+  return Float64Array.of(
+    minX - reachX * 1e-12,
+    minY - reachY * 1e-12,
+    minZ - reachZ * 1e-12,
+    maxX + reachX * 1e-12,
+    maxY + reachY * 1e-12,
+    maxZ + reachZ * 1e-12,
+  )
+}
+
+/**
+ * Pick entry of a placed primitive: its world bounding box over the vertices it references, computed
+ * when first read (a pick, or plan bounds its envelope reaches past). With an `owner` and `slot` the
+ * bounds are kept for the next plan while the source geometry and the placement matrix stay the same.
  */
 function sharedPickPrimitive(
   source: SceneRendererPrimitive,
@@ -1573,6 +1683,12 @@ function sharedPickPrimitive(
   owner?: object,
   slot?: string,
 ): WorldWebGlPickPrimitive {
+  const referenced = referencedVertexIndices(source)
+  // The same envelope whether the bounds are kept or computed: a kept plan equals a fresh one.
+  const envelope = transformedEnvelope(
+    referencedBoundsOf(primitive.positions, referenced),
+    primitive.transform,
+  )
   const slots = owner === undefined ? undefined : lastPickBounds.get(owner)
   const last = slot === undefined ? undefined : slots?.get(slot)
   if (
@@ -1580,10 +1696,31 @@ function sharedPickPrimitive(
     last.source === source &&
     sameOptionalMatrix(last.transform, primitive.transform)
   )
-    return Object.freeze({ primitive, minimum: last.minimum, maximum: last.maximum })
+    return Object.freeze({ primitive, minimum: last.minimum, maximum: last.maximum, envelope })
+  let bounds: WorldPickBounds | undefined
+  const exact = () => (bounds ??= sharedPickBounds(source, primitive, referenced, owner, slot))
+  return Object.freeze({
+    primitive,
+    get minimum() {
+      return exact().minimum
+    },
+    get maximum() {
+      return exact().maximum
+    },
+    envelope,
+  })
+}
+
+/** The exact world bounds of a placed primitive's referenced vertices, kept for its owner's slot. */
+function sharedPickBounds(
+  source: SceneRendererPrimitive,
+  primitive: SceneRendererPrimitive,
+  referenced: readonly number[] | number,
+  owner: object | undefined,
+  slot: string | undefined,
+): WorldPickBounds {
   // Animated instances get new geometry every frame: this loop runs per vertex, so it keeps to
   // locals (the same arithmetic as transformedPrimitiveVertex).
-  const referenced = referencedVertexIndices(source)
   const count = typeof referenced === 'number' ? referenced : referenced.length
   const positions = primitive.positions
   const transform = primitive.transform
@@ -1622,11 +1759,11 @@ function sharedPickPrimitive(
     maximum: Object.freeze([maxX, maxY, maxZ] as const),
   })
   if (owner !== undefined && slot !== undefined) {
-    let known = slots
+    let known = lastPickBounds.get(owner)
     if (known === undefined) lastPickBounds.set(owner, (known = new Map()))
     known.set(slot, bounds)
   }
-  return Object.freeze({ primitive, minimum: bounds.minimum, maximum: bounds.maximum })
+  return bounds
 }
 
 function frozenBatch(source: MutableBatch): WorldWebGlBatch {
@@ -2374,8 +2511,13 @@ interface WorldObjectPickMesh {
   readonly triangles: number[]
   readonly primitives: WorldWebGlPickPrimitive[]
   readonly placeholder: boolean
-  /** Bounds of its triangles and primitives (min xyz, max xyz); null when it has neither. */
+  /**
+   * Bounds of its triangles and primitives (min xyz, max xyz); null when it has neither. Computed
+   * when first read: the plan reads them only where `envelope` reaches past its bounds so far.
+   */
   readonly bounds: readonly number[] | null
+  /** A box holding `bounds` from its primitives' envelopes; null when it has neither. */
+  readonly envelope: readonly number[] | null
   /** The plan's pick entry; a retained object keeps its entry across plans. */
   readonly pick: WorldWebGlPlan['picking']['objects'][number]
 }
@@ -2459,6 +2601,31 @@ function pickMeshBoundsOf(
     maxY = Math.max(maxY, primitive.maximum[1])
     minZ = Math.min(minZ, primitive.minimum[2])
     maxZ = Math.max(maxZ, primitive.maximum[2])
+  }
+  return Object.freeze([minX, minY, minZ, maxX, maxY, maxZ])
+}
+
+/** A box holding pickMeshBoundsOf: the triangles' bounds and the primitives' envelopes. */
+function pickMeshEnvelopeOf(
+  triangles: readonly number[],
+  primitives: readonly WorldWebGlPickPrimitive[],
+): readonly number[] | null {
+  if (triangles.length === 0 && primitives.length === 0) return null
+  let [minX, minY, minZ, maxX, maxY, maxZ] = boundsOfPositions(triangles) as [
+    number,
+    number,
+    number,
+    number,
+    number,
+    number,
+  ]
+  for (const { envelope } of primitives) {
+    minX = Math.min(minX, envelope[0]!)
+    maxX = Math.max(maxX, envelope[3]!)
+    minY = Math.min(minY, envelope[1]!)
+    maxY = Math.max(maxY, envelope[4]!)
+    minZ = Math.min(minZ, envelope[2]!)
+    maxZ = Math.max(maxZ, envelope[5]!)
   }
   return Object.freeze([minX, minY, minZ, maxX, maxY, maxZ])
 }
@@ -5036,13 +5203,17 @@ export function createWorldWebGlPlan(
     lastProjectorWrites.set(item, projectorWrites)
     if (!pickTriangles.every(Number.isFinite))
       throw new TypeError('world WebGL plan contains a non-finite model coordinate')
+    let pickBounds: readonly number[] | null | undefined
     const pickMesh: WorldObjectPickMesh = {
       objectId: item.objectId,
       center: translation,
       triangles: pickTriangles,
       primitives: pickPrimitives,
       placeholder: !resolved,
-      bounds: pickMeshBoundsOf(pickTriangles, pickPrimitives),
+      get bounds() {
+        return (pickBounds ??= pickMeshBoundsOf(pickTriangles, pickPrimitives))
+      },
+      envelope: pickMeshEnvelopeOf(pickTriangles, pickPrimitives),
       pick: Object.freeze({
         objectId: item.objectId,
         center: translation,
@@ -5166,9 +5337,25 @@ export function createWorldWebGlPlan(
       maximum[axis] = Math.max(maximum[axis], bounds[axis + 3]!)
     }
   }
-  for (const { bounds } of objectPickMeshes) {
-    if (bounds === null) continue
+  for (const mesh of objectPickMeshes) {
+    const envelope = mesh.envelope
+    if (envelope === null) continue
     hasPositions = true
+    // An object inside the bounds so far leaves them as they are, whatever its exact bounds: only
+    // an envelope that reaches past them (or is not finite) needs the pass over its vertices.
+    if (
+      envelope[0]! >= minimum[0] &&
+      envelope[1]! >= minimum[1] &&
+      envelope[2]! >= minimum[2] &&
+      envelope[3]! <= maximum[0] &&
+      envelope[4]! <= maximum[1] &&
+      envelope[5]! <= maximum[2] &&
+      Number.isFinite(
+        envelope[3]! - envelope[0]! + envelope[4]! - envelope[1]! + envelope[5]! - envelope[2]!,
+      )
+    )
+      continue
+    const bounds = mesh.bounds!
     minimum[0] = Math.min(minimum[0], bounds[0]!)
     minimum[1] = Math.min(minimum[1], bounds[1]!)
     minimum[2] = Math.min(minimum[2], bounds[2]!)
