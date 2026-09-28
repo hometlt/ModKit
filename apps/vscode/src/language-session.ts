@@ -262,6 +262,8 @@ interface TrackedDocument {
   document: EditorLanguageDocument
   readonly route: LanguageProviderRoute
   opened: boolean
+  /** Opened in an editor: its first analysis runs the semantic diagnostics too. */
+  editorOpened?: boolean
   generation: number
   timer?: ReturnType<typeof setTimeout>
   controller?: AbortController
@@ -522,7 +524,12 @@ export function createLanguageSessionController(
         throw new OperationCancelledError('stale editor document')
       }
       try {
-        const refreshSemanticDiagnostics = tracked.opened
+        /*
+         * A file an editor opens shows its broken references at once, not after the first edit. A
+         * document staged only for a request (a hover, a verification with its own diagnostics
+         * call) is analysed without them, as before.
+         */
+        const refreshSemanticDiagnostics = tracked.opened || tracked.editorOpened === true
         const request = requestOf(document, route, controller.signal)
         const synchronizedResult = await options.workspace.synchronize(request)
         if (synchronizedResult.state === 'unresolved') {
@@ -600,6 +607,7 @@ export function createLanguageSessionController(
   const stage = (
     document: EditorLanguageDocument,
     immediate: boolean,
+    editorOpened = false,
   ): TrackedDocument | undefined => {
     requireReady()
     const selection = selectRoute(options.routes, document)
@@ -648,6 +656,7 @@ export function createLanguageSessionController(
       document,
       route: selection.route,
       opened: false,
+      ...(editorOpened ? { editorOpened } : {}),
       generation: 1,
     }
     documents.set(document.uri, tracked)
@@ -757,7 +766,7 @@ export function createLanguageSessionController(
     },
 
     open(document: EditorLanguageDocument): void {
-      stage(document, false)
+      stage(document, false, true)
     },
 
     change(document: EditorLanguageDocument): void {

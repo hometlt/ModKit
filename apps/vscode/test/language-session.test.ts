@@ -341,7 +341,9 @@ describe('VS Code-free language session controller', () => {
     const workspace = fakeWorkspace()
     const controller = createLanguageSessionController({
       workspace,
-      routes: [{ languageId: 'lua', documentKind: 'lua-source', extension: 'scar', dialect: 'lua51' }],
+      routes: [
+        { languageId: 'lua', documentKind: 'lua-source', extension: 'scar', dialect: 'lua51' },
+      ],
       debounceMs: 0,
       publishDiagnostics: () => undefined,
     })
@@ -516,6 +518,31 @@ describe('VS Code-free language session controller', () => {
       OperationCancelledError,
     )
     expect(diagnostics).not.toHaveBeenCalled()
+    await controller.shutdown()
+  })
+
+  it('publishes semantic diagnostics when an editor first opens a document, before any edit', async () => {
+    const semanticDiagnostic = {
+      severity: 'error' as const,
+      message: "Entity 'Missing' is not declared.",
+      range: { start: { line: 0, character: 0 }, end: { line: 0, character: 7 } },
+    }
+    const workspace = fakeWorkspace()
+    const diagnostics = vi.spyOn(workspace, 'diagnostics').mockResolvedValue({
+      diagnostics: [semanticDiagnostic],
+      isIncomplete: false,
+    })
+    const publications: (readonly unknown[])[] = []
+    const controller = createLanguageSessionController({
+      workspace,
+      routes: [ROUTE],
+      debounceMs: 0,
+      publishDiagnostics: (_uri, items) => publications.push(items),
+    })
+    await controller.initialize()
+    controller.open(editorDocument(1))
+    await vi.waitFor(() => expect(publications.at(-1)).toEqual([semanticDiagnostic]))
+    expect(diagnostics).toHaveBeenCalledWith(expect.objectContaining({ documentVersion: 1 }))
     await controller.shutdown()
   })
 
