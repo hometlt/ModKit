@@ -32,7 +32,7 @@ test('six-plane clipping preserves full triangle positions and orthographic UVs'
     before = input[0].primitive.positions.slice()
   const out = clipProjectorReceivers(frame, input, budget)
   assert.deepEqual(out.positions, before)
-  assert.deepEqual([...out.textureCoordinates], [0.25, 0.25, 0.75, 0.25, 0.5, 0.75])
+  assert.deepEqual([...out.textureCoordinates], [0.25, 0.75, 0.75, 0.75, 0.5, 0.25])
   assert.deepEqual([...out.indices], [0, 1, 2])
   assert.deepEqual(input[0].primitive.positions, before)
 })
@@ -48,7 +48,7 @@ test('crossing receivers are clipped to volume; perspective UVs use receiver dep
     receiver([-1, -1, 2, 1, -1, 2, 0, 1, 2]),
     budget,
   )
-  assert.deepEqual([...perspective.textureCoordinates], [0.25, 0.25, 0.75, 0.25, 0.5, 0.75])
+  assert.deepEqual([...perspective.textureCoordinates], [0.25, 0.75, 0.75, 0.75, 0.5, 0.25])
   assert.equal(
     clipProjectorReceivers(frame, receiver([0, 0, -1, 1, 0, -1, 0, 1, -1]), budget).positions
       .length,
@@ -139,7 +139,7 @@ test('common UVM projector uses sampled receivers and leaves its source unchange
   })
   assert.equal(out.primitives.length, 1)
   assert.deepEqual(out.primitives[0].depthBias, { slopeScale: -1, units: -1 })
-  assert.deepEqual([...out.primitives[0].textureCoordinates], [0.25, 0.25, 0.75, 0.25, 0.5, 0.75])
+  assert.deepEqual([...out.primitives[0].textureCoordinates], [0.25, 0.75, 0.75, 0.75, 0.5, 0.25])
   assert.deepEqual(document, original)
   assert.deepEqual(warnings, [])
 })
@@ -209,7 +209,7 @@ test('zero-frustum terrain-bake projectors use their signed box and clip distant
   })
   assert.equal(out.primitives.length, 1)
   assert.equal(out.primitives[0].positions.length, 9)
-  assert.deepEqual([...out.primitives[0].textureCoordinates], [0.25, 0.25, 0.75, 0.25, 0.5, 0.75])
+  assert.deepEqual([...out.primitives[0].textureCoordinates], [0.25, 0.75, 0.75, 0.75, 0.5, 0.25])
 })
 
 test('headless provider applies offset per primitive and preserves unbiased draw behavior', async () => {

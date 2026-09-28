@@ -408,10 +408,13 @@ export function clipProjectorReceivers(
         ? 0.5 + x / Math.max(1e-6, 2 * z * frame.tangentX)
         : (x - frame.left) / Math.max(1e-6, frame.rightExtent - frame.left),
     )
+    // Texture rows run top down, as model UVs do (D3D): the projector's top edge samples v = 0. Counting v
+    // up from the bottom mirrored every asymmetric splat — a corner shadow (Shadow_Corner90) lay beside
+    // its trim instead of under it.
     textureCoordinates[written * 2 + 1] = clamp(
       frame.projectionType === 'perspective'
-        ? 0.5 + y / Math.max(1e-6, 2 * z * frame.tangentY)
-        : (y - frame.bottom) / Math.max(1e-6, frame.top - frame.bottom),
+        ? 0.5 - y / Math.max(1e-6, 2 * z * frame.tangentY)
+        : (frame.top - y) / Math.max(1e-6, frame.top - frame.bottom),
     )
     indices[written] = written++
   })
