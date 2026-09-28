@@ -52,6 +52,7 @@ import { selectSceneRenderer, type SceneRendererSelection } from '@modkit/host/r
 import type { UiLocalizer } from '@modkit/ui/localization'
 import {
   codecFidelityEvidenceRecords,
+  subjectFidelityEvidenceRecords,
   createEvidenceRegistry,
   createHostComposition,
   createRawWriter,
@@ -1568,9 +1569,13 @@ function serveVsCode(
       const selectedWriter = writerResolution.writer ?? rawWriter
       let sessionEvidence = evidence
       if (opened.descriptor.interpretation === 'codec') {
-        sessionEvidence = codecFidelityEvidenceRecords(services.inventory, {
-          codecId: opened.descriptor.identity.codecId,
-          formatId: opened.descriptor.identity.formatId,
+        // The subject's codec, and for a map inside its MPQ the carrier that writes every plan of it.
+        sessionEvidence = subjectFidelityEvidenceRecords(services.inventory, {
+          selected: opened.selected,
+          descriptor: opened.descriptor,
+          ...(opened.carrier?.descriptor.interpretation === 'codec'
+            ? { carrier: { selected: opened.carrier.selected, descriptor: opened.carrier.descriptor } }
+            : {}),
         }).reduce((registry, record) => registry.with(record), sessionEvidence)
       }
       if (writerResolution.writer !== undefined) {

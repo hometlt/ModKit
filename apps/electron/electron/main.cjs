@@ -187,7 +187,7 @@ async function createWindow() {
     createSubjectEditing,
     createRawWriter,
     createEvidenceRegistry,
-    codecFidelityEvidenceRecords,
+    subjectFidelityEvidenceRecords,
     serviceProviderFidelityEvidenceRecord,
     resolveFormatWriter,
     commandRequest,
@@ -923,9 +923,11 @@ async function createWindow() {
     if (writable && (formatId !== 'png' || formatWriter?.writer !== undefined)) {
       try {
         const selectedWriter = formatWriter?.writer ?? rawWriter
-        let evidence = codecFidelityEvidenceRecords(subjectServices.inventory, {
-          codecId: opened.descriptor.identity?.codecId,
-          formatId,
+        // The subject's codec, and for a map inside its MPQ the carrier that writes every plan of it.
+        let evidence = subjectFidelityEvidenceRecords(subjectServices.inventory, {
+          selected: opened.selected,
+          descriptor: { identity: { formatId } },
+          ...(opened.carrier?.descriptor?.identity === undefined ? {} : { carrier: opened.carrier }),
         }).reduce((registry, record) => registry.with(record), createEvidenceRegistry())
         if (formatWriter?.writer !== undefined) {
           const writerRecord = serviceProviderFidelityEvidenceRecord(subjectServices.inventory, {

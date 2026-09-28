@@ -2,10 +2,10 @@ import { describe, expect, it } from 'vitest'
 import { revisionId, type ArtifactByteSource } from '@modkit/sdk'
 import type { Diagnostic } from '@modkit/core'
 import {
-  codecFidelityEvidenceRecords,
   createElectronSubjectServices,
   ELECTRON_WORKER_REALM,
   resolveElectronPresentationPlan,
+  subjectFidelityEvidenceRecords,
 } from '../src/index.js'
 
 function memorySource(text: string): ArtifactByteSource {
@@ -26,7 +26,7 @@ function memorySource(text: string): ArtifactByteSource {
 
 describe('Electron host-owned subject services', () => {
   it('re-exports every host editing helper that the CommonJS main process composes', () => {
-    expect(codecFidelityEvidenceRecords).toBeTypeOf('function')
+    expect(subjectFidelityEvidenceRecords).toBeTypeOf('function')
   })
 
   it('opens native JSON without a bundled extension root', async () => {
