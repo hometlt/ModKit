@@ -230,6 +230,7 @@ withSelectedContentSource,
 withoutSelectedContentSource,
 type SelectedContentSource,
 } from './workbench-workflows.js'
+import { anchorDocumentIndex } from './anchor-documents.js'
 import { type SourceTreeNode } from './source-tree.js'
 import {
 runExplicitGameLaunch,
@@ -9593,6 +9594,39 @@ async function activateModkit(
     })
   }
 
+  /*
+   * A map in its 3D world or its layers drawn in 2D (plan 6.9): the Explorer's file or folder, or
+   * the active tab. No editor opens a folder, so a map folder opens through the anchor document
+   * its codec declares (MapInfo for SC2), exactly as clicking that document does.
+   */
+  const openMapIn = async (argument: unknown, viewType: string): Promise<void> => {
+    const input: unknown = vscode.window.tabGroups.activeTabGroup.activeTab?.input
+    const tabUri =
+      typeof input === 'object' && input !== null && 'uri' in input
+        ? (input as { readonly uri?: unknown }).uri
+        : undefined
+    let target =
+      argument instanceof vscode.Uri ? argument : tabUri instanceof vscode.Uri ? tabUri : undefined
+    if (target === undefined) return
+    if (((await vscode.workspace.fs.stat(target)).type & vscode.FileType.Directory) !== 0) {
+      const name = basename(target.path)
+      const anchors = anchorDocumentIndex(host.services.inventory).get(
+        name.slice(name.lastIndexOf('.') + 1).toLowerCase(),
+      )
+      const anchor = (await vscode.workspace.fs.readDirectory(target)).find(
+        ([entry, type]) => type === vscode.FileType.File && anchors?.has(entry.toLowerCase()),
+      )
+      if (anchor === undefined) {
+        void vscode.window.showInformationMessage(
+          `Modkit: ${localizer.text('vscode.map.noAnchor', { name })}`,
+        )
+        return
+      }
+      target = vscode.Uri.joinPath(target, anchor[0])
+    }
+    await vscode.commands.executeCommand('vscode.openWith', target, viewType)
+  }
+
   /**
    * Launch a map, or test a mod on a map, after modal confirmation; offers to close a running
    * game first and reads the run's logs afterwards — the MK2 launch surface over the host's plan.
@@ -10399,6 +10433,12 @@ async function activateModkit(
     ),
     vscode.commands.registerCommand(VSCODE_GAME_LAUNCH_MOD_COMMAND, (argument: unknown) =>
       launchGame(argument, 'mod'),
+    ),
+    vscode.commands.registerCommand('modkit.openMap3D', (argument: unknown) =>
+      openMapIn(argument, 'modkit.worldViewer'),
+    ),
+    vscode.commands.registerCommand('modkit.openMap2D', (argument: unknown) =>
+      openMapIn(argument, 'modkit.mapLayersViewer'),
     ),
     // A `modkit-launch` launch configuration (F5): its package, kind and game options.
     vscode.debug.registerDebugConfigurationProvider(VSCODE_GAME_LAUNCH_DEBUG_TYPE, {

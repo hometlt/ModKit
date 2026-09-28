@@ -18,6 +18,9 @@ export const STAGE_CUSTOM_EDITOR_TYPES: Readonly<Record<string, string>> = Objec
   'modkit.hexViewer': 'hex',
   'modkit.imageViewer': 'image',
   'modkit.archiveViewer': 'archive',
+  // A map's world and its layers drawn in 2D (plan 6.8, 6.9): «Reopen With» between them.
+  'modkit.worldViewer': 'world',
+  'modkit.mapLayersViewer': 'map-layers',
 })
 
 /** Every view type this extension owns; the association sync never removes anyone else's. */

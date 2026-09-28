@@ -146,7 +146,11 @@
         "title": "%command.updateExtension%",
         "icon": "$(sync)"
       },
-      { "command": "modkit.game.launchActiveMap", "title": "%command.launchActiveMap%" },
+      {
+        "command": "modkit.game.launchActiveMap",
+        "title": "%command.launchActiveMap%",
+        "icon": "$(play)"
+      },
       { "command": "modkit.game.launchActiveMod", "title": "%command.launchActiveMod%" },
       { "command": "modkit.indexCaches", "title": "%command.indexCaches%", "icon": "$(database)" },
       {
@@ -160,6 +164,8 @@
         "title": "%command.openExplorer%",
         "icon": "$(folder-library)"
       },
+      { "command": "modkit.openMap2D", "title": "%command.openMap2D%", "icon": "$(layers)" },
+      { "command": "modkit.openMap3D", "title": "%command.openMap3D%", "icon": "$(globe)" },
       { "command": "modkit.openWith", "title": "%command.openActiveFile%" },
       { "command": "modkit.refreshContainer", "title": "%command.refreshContainer%" },
       { "command": "modkit.refreshRelations", "title": "%command.refreshRelations%" },
@@ -448,6 +454,18 @@
         "displayName": "%customEditor.imageViewer%",
         "selector": [{ "filenamePattern": "*" }],
         "priority": "option"
+      },
+      {
+        "viewType": "modkit.mapLayersViewer",
+        "displayName": "%customEditor.mapLayersViewer%",
+        "selector": [{ "filenamePattern": "*" }],
+        "priority": "option"
+      },
+      {
+        "viewType": "modkit.worldViewer",
+        "displayName": "%customEditor.worldViewer%",
+        "selector": [{ "filenamePattern": "*" }],
+        "priority": "option"
       }
     ],
     "debuggers": [
@@ -700,6 +718,21 @@
       ],
       "editor/title": [
         {
+          "command": "modkit.game.launchActiveMap",
+          "when": "activeCustomEditorId =~ /^modkit\\./ && (resourceExtname =~ /^\\.(sc2map|s2ma)$/i || resourceFilename == MapInfo)",
+          "group": "navigation@7"
+        },
+        {
+          "command": "modkit.openMap2D",
+          "when": "activeCustomEditorId =~ /^modkit\\./ && (resourceExtname =~ /^\\.(sc2map|s2ma)$/i || resourceFilename == MapInfo)",
+          "group": "navigation@6"
+        },
+        {
+          "command": "modkit.openMap3D",
+          "when": "activeCustomEditorId =~ /^modkit\\./ && (resourceExtname =~ /^\\.(sc2map|s2ma)$/i || resourceFilename == MapInfo)",
+          "group": "navigation@5"
+        },
+        {
           "command": "modkit.verifyDocument",
           "when": "modkit.canVerifyDocument",
           "group": "navigation@4"
@@ -720,6 +753,16 @@
           "command": "modkit.openExplorer",
           "when": "explorerResourceIsFolder",
           "group": "navigation@19"
+        },
+        {
+          "command": "modkit.openMap2D",
+          "when": "resourceExtname =~ /^\\.(sc2map|s2ma)$/i",
+          "group": "navigation@89"
+        },
+        {
+          "command": "modkit.openMap3D",
+          "when": "resourceExtname =~ /^\\.(sc2map|s2ma)$/i",
+          "group": "navigation@88"
         },
         {
           "command": "modkit.sources.clearCache",
@@ -1033,6 +1076,8 @@
     "onCommand:modkit.navigateResource",
     "onCommand:modkit.openArchiveEntry",
     "onCommand:modkit.openExplorer",
+    "onCommand:modkit.openMap2D",
+    "onCommand:modkit.openMap3D",
     "onCommand:modkit.openWith",
     "onCommand:modkit.refreshContainer",
     "onCommand:modkit.refreshRelations",
@@ -1072,6 +1117,8 @@
     "onCustomEditor:modkit.genericAssetPreview",
     "onCustomEditor:modkit.hexViewer",
     "onCustomEditor:modkit.imageViewer",
+    "onCustomEditor:modkit.mapLayersViewer",
+    "onCustomEditor:modkit.worldViewer",
     "onView:modkit.accounts",
     "onView:modkit.extensions",
     "onView:modkit.resources",

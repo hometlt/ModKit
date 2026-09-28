@@ -106,5 +106,9 @@
   "command.accountsReplace": "Заменить ключ",
   "command.accountsSignOut": "Выйти или удалить ключ",
   "command.selectGameLocale": "Modkit: Локаль игровых строк…",
-  "configuration.locale.description": "Локаль игровых строк (`enUS`, `ruRU`, `deDE`…) для имён в подсказках и hover, карточках, вики и виде карты. Пусто — по языку интерфейса VS Code; если у мода нет этой локали, берётся `enUS`, затем первая локаль мода."
+  "configuration.locale.description": "Локаль игровых строк (`enUS`, `ruRU`, `deDE`…) для имён в подсказках и hover, карточках, вики и виде карты. Пусто — по языку интерфейса VS Code; если у мода нет этой локали, берётся `enUS`, затем первая локаль мода.",
+  "command.openMap3D": "Modkit: открыть карту в 3D",
+  "command.openMap2D": "Modkit: слои карты (2D)",
+  "customEditor.worldViewer": "Modkit: 3D-мир",
+  "customEditor.mapLayersViewer": "Modkit: слои карты (2D)"
 }

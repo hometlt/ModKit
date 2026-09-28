@@ -105,7 +105,18 @@
     },
     {
       "command": "modkit.game.launchActiveMap",
-      "title": "%command.launchActiveMap%"
+      "title": "%command.launchActiveMap%",
+      "icon": "$(play)"
+    },
+    {
+      "command": "modkit.openMap3D",
+      "title": "%command.openMap3D%",
+      "icon": "$(globe)"
+    },
+    {
+      "command": "modkit.openMap2D",
+      "title": "%command.openMap2D%",
+      "icon": "$(layers)"
     },
     {
       "command": "modkit.materializeContainerEntry",
@@ -494,6 +505,26 @@
     {
       "viewType": "modkit.archiveViewer",
       "displayName": "%customEditor.archiveViewer%",
+      "selector": [
+        {
+          "filenamePattern": "*"
+        }
+      ],
+      "priority": "option"
+    },
+    {
+      "viewType": "modkit.worldViewer",
+      "displayName": "%customEditor.worldViewer%",
+      "selector": [
+        {
+          "filenamePattern": "*"
+        }
+      ],
+      "priority": "option"
+    },
+    {
+      "viewType": "modkit.mapLayersViewer",
+      "displayName": "%customEditor.mapLayersViewer%",
       "selector": [
         {
           "filenamePattern": "*"
@@ -947,6 +978,21 @@
         "command": "modkit.verifyDocument",
         "when": "modkit.canVerifyDocument",
         "group": "navigation@4"
+      },
+      {
+        "command": "modkit.openMap3D",
+        "when": "activeCustomEditorId =~ /^modkit\\./ && (resourceExtname =~ /^\\.(sc2map|s2ma)$/i || resourceFilename == MapInfo)",
+        "group": "navigation@5"
+      },
+      {
+        "command": "modkit.openMap2D",
+        "when": "activeCustomEditorId =~ /^modkit\\./ && (resourceExtname =~ /^\\.(sc2map|s2ma)$/i || resourceFilename == MapInfo)",
+        "group": "navigation@6"
+      },
+      {
+        "command": "modkit.game.launchActiveMap",
+        "when": "activeCustomEditorId =~ /^modkit\\./ && (resourceExtname =~ /^\\.(sc2map|s2ma)$/i || resourceFilename == MapInfo)",
+        "group": "navigation@7"
       }
     ],
     "explorer/context": [
@@ -994,6 +1040,16 @@
         "command": "modkit.game.launchActiveMod",
         "when": "resourceExtname =~ /^\\.(sc2mod|s2mod)$/i",
         "group": "navigation@90"
+      },
+      {
+        "command": "modkit.openMap3D",
+        "when": "resourceExtname =~ /^\\.(sc2map|s2ma)$/i",
+        "group": "navigation@88"
+      },
+      {
+        "command": "modkit.openMap2D",
+        "when": "resourceExtname =~ /^\\.(sc2map|s2ma)$/i",
+        "group": "navigation@89"
       }
     ],
     "view/title": [
