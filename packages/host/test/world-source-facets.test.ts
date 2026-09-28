@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { ResolvedMapWorkspaceSnapshot } from '@modkit/sdk/maps'
 import { createCandidateWorldSceneLease } from '@modkit/host'
+import { createCandidateWorldSceneLease as createSourceWorldSceneLease } from '../src/maps/world-source.js'
 
 const snapshot: ResolvedMapWorkspaceSnapshot = {
   schemaVersion: 1,
@@ -274,6 +275,101 @@ describe('common world source native visual facets', () => {
       // +Y quarter turn: X axis -> -Z, translation (2,0,0) -> (0,0,-2).
       expect(transform?.slice(0, 3).map(value => Math.round(value) + 0)).toEqual([0, 0, -1])
       expect(transform?.slice(12, 15).map(value => Math.round(value) + 0)).toEqual([0, 0, -2])
+    } finally {
+      await lease.release()
+    }
+  })
+
+  it('reads every page of a large model and keeps its graph whole when primitives run out', async () => {
+    const identity = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
+    // a root with 2 500 children, one mesh each: far more than one page of 1 024 nodes
+    const parts = Array.from({ length: 2500 }, (_, index) => `part-${index}`)
+    const nodes = [
+      { id: 'root', childIds: parts, meshIds: [], transform: identity },
+      ...parts.map(id => ({ id, childIds: [], meshIds: [`mesh-${id}`], transform: identity })),
+    ]
+    const meshes = parts.map(id => ({ id: `mesh-${id}`, primitiveIds: [`prim-${id}`] }))
+    const page = <Item>(items: readonly Item[], request: { limit: number; cursor?: string }) => {
+      const start = Number(request.cursor ?? 0)
+      const end = start + request.limit
+      return { items: items.slice(start, end), ...(end < items.length ? { nextCursor: String(end) } : {}) }
+    }
+    const modelResources = {
+      async acquire() {
+        return {
+          value: {
+            result: { state: 'converted' as const, bytes: new Uint8Array([1]), sourceKey: 'place', diagnostics: [] },
+            async nodes(request: { limit: number; cursor?: string }) {
+              return page(nodes, request)
+            },
+            async meshes(request: { limit: number; cursor?: string }) {
+              return page(meshes, request)
+            },
+            async primitive(id: string) {
+              return { id, topology: 'triangles' as const, positions: new Float32Array(9) }
+            },
+            async readRaster() {
+              return { state: 'unresolved' as const, diagnostics: [] }
+            },
+          },
+          async release() {},
+        }
+      },
+    }
+    const requirement = {
+      id: 'cliff:Place.rbxm',
+      logicalId: 'Place.rbxm',
+      role: 'sidecar' as const,
+      scopes: ['current-mount' as const],
+    }
+    const lease = createSourceWorldSceneLease(
+      {
+        ...snapshot,
+        cliffs: {
+          ...snapshot.cliffs!,
+          pieceModels: [{ id: 'Place', candidates: [{ requirement, yaw: 0 }] }],
+          pieces: [{ id: '1', position: { x: 1, y: 1, z: 6 }, modelId: 'Place' }],
+        },
+      },
+      [],
+      1024,
+      modelResources as never,
+    )
+    try {
+      const info = await lease.value.info()
+      const objects = await lease.value.page({
+        facet: 'objects',
+        layerId: info.facets.find(item => item.facet === 'objects')!.layerId,
+        limit: 64,
+      })
+      const piece = objects.items.find(item => item.facet === 'objects' && item.derivedFrom === 'cliffs')
+      const request = {
+        maxMeshes: 256,
+        maxNodes: 1024,
+        maxPrimitives: 512,
+        maxPrimitiveBytes: 1024,
+      }
+      // enough bytes for every primitive (36 bytes each): the whole place arrives
+      const whole = await lease.value.model?.(
+        piece!.facet === 'objects' ? piece!.resourceId! : '',
+        { ...request, maxBytes: 1 << 20 },
+      )
+      if (whole?.state !== 'converted') throw new Error('model did not convert')
+      expect([whole.nodes?.length, whole.meshes.length, whole.primitives.length, whole.complete]).toEqual([
+        2501, 2500, 2500, true,
+      ])
+      // a byte budget for 1 000 primitives: the rest is left out, and no node names what is missing
+      const cut = await lease.value.model?.(
+        piece!.facet === 'objects' ? piece!.resourceId! : '',
+        { ...request, maxBytes: 36_000 },
+      )
+      if (cut?.state !== 'converted') throw new Error('model did not convert')
+      expect([cut.meshes.length, cut.complete]).toEqual([1000, false])
+      const present = new Set(cut.nodes!.map(node => node.id))
+      const drawn = new Set(cut.meshes.map(mesh => mesh.id))
+      expect(cut.nodes!.every(node => node.childIds.every(id => present.has(id)))).toBe(true)
+      expect(cut.nodes!.every(node => (node.meshIds ?? []).every(id => drawn.has(id)))).toBe(true)
+      expect(cut.diagnostics.map(item => item.code)).toContain('x3.host/world-model-graph-truncated')
     } finally {
       await lease.release()
     }

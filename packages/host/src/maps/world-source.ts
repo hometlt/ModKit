@@ -316,6 +316,66 @@ function canonicalObjectRotation(
  * Pre-rotates root nodes by a map-native yaw, matching `canonicalObjectRotation` (+Y in UVW).
  * Used when the chosen model candidate is a rotated variant of the authored piece.
  */
+/**
+ * Every page of a model facet, up to `cap` items: a large model (a Roblox place tree of 2 280
+ * parts) is not cut at the first page. `complete` is false when the cap stopped it.
+ */
+async function readAllPages<Item>(
+  read: (page: { limit: number; cursor?: string }) => Promise<{
+    readonly items: readonly Item[]
+    readonly nextCursor?: string
+  }>,
+  pageLimit: number,
+  cap: number,
+): Promise<{ readonly items: readonly Item[]; readonly complete: boolean }> {
+  const items: Item[] = []
+  let cursor: string | undefined
+  do {
+    const page = await read({
+      limit: Math.min(pageLimit, cap - items.length),
+      ...(cursor === undefined ? {} : { cursor }),
+    })
+    items.push(...page.items)
+    cursor = page.nextCursor
+  } while (cursor !== undefined && items.length < cap)
+  return { items, complete: cursor === undefined }
+}
+
+/** Most items one model facet may publish to the world viewer (nodes, clips, materials, ...). */
+const MODEL_FACET_ITEM_CAP = 65_536
+
+/** Bytes of the typed arrays a primitive carries (positions, indices, attributes). */
+function primitiveByteLength(primitive: unknown): number {
+  let total = 0
+  const visit = (value: unknown, depth: number) => {
+    if (ArrayBuffer.isView(value)) total += value.byteLength
+    else if (depth < 3 && typeof value === 'object' && value !== null)
+      for (const child of Object.values(value)) visit(child, depth + 1)
+  }
+  visit(primitive, 0)
+  return total
+}
+
+/**
+ * A node graph that names only what is present: when a model was cut, a child or mesh the cut left
+ * out is dropped from its parent, so one large model cannot make the scene sampler refuse the
+ * whole world ("scene child is absent"). Returns whether anything was dropped.
+ */
+function consistentNodes<
+  Node extends Readonly<{ id: string; childIds: readonly string[]; meshIds?: readonly string[] }>,
+>(nodes: readonly Node[], meshIds: ReadonlySet<string>): { nodes: readonly Node[]; pruned: boolean } {
+  const present = new Set(nodes.map(node => node.id))
+  let pruned = false
+  const out = nodes.map(node => {
+    const childIds = node.childIds.filter(id => present.has(id))
+    const meshes = node.meshIds?.filter(id => meshIds.has(id))
+    if (childIds.length === node.childIds.length && meshes?.length === node.meshIds?.length) return node
+    pruned = true
+    return Object.freeze({ ...node, childIds, ...(meshes === undefined ? {} : { meshIds: meshes }) })
+  })
+  return { nodes: out, pruned }
+}
+
 function yawRootNodes<Node extends Readonly<{ id: string; childIds: readonly string[]; transform: readonly number[] }>>(
   nodes: readonly Node[],
   yaw: number,
@@ -1760,18 +1820,28 @@ export function createCandidateWorldSceneLease(
                   complete: false,
                 })
               }
-              const meshPage = await lease.value.meshes({ limit: request.maxMeshes }, signal)
-              const nodePage =
-                lease.value.nodes === undefined
+              // Request limits are page sizes; every page is read up to the facet cap.
+              const facet = <Item>(
+                read:
+                  | ((
+                      page: { limit: number; cursor?: string },
+                      signal?: AbortSignal,
+                    ) => Promise<{ readonly items: readonly Item[]; readonly nextCursor?: string }>)
+                  | undefined,
+                pageLimit: number,
+              ) =>
+                read === undefined
                   ? undefined
-                  : await lease.value.nodes({ limit: maxNodes }, signal)
-              const [skeletonPage, animationPage, materialPage, resourcePage, socketPage] =
+                  : readAllPages(page => read(page, signal), pageLimit, MODEL_FACET_ITEM_CAP)
+              const meshPage = (await facet(lease.value.meshes.bind(lease.value), request.maxMeshes))!
+              const [nodePage, skeletonPage, animationPage, materialPage, resourcePage, socketPage] =
                 await Promise.all([
-                  lease.value.skeletonBindings?.({ limit: maxNodes }, signal),
-                  lease.value.animationClips?.({ limit: maxNodes }, signal),
-                  lease.value.materials?.({ limit: maxNodes }, signal),
-                  lease.value.resourceReferences?.({ limit: maxResources }, signal),
-                  lease.value.sockets?.({ limit: maxNodes }, signal),
+                  facet(lease.value.nodes?.bind(lease.value), maxNodes),
+                  facet(lease.value.skeletonBindings?.bind(lease.value), maxNodes),
+                  facet(lease.value.animationClips?.bind(lease.value), maxNodes),
+                  facet(lease.value.materials?.bind(lease.value), maxNodes),
+                  facet(lease.value.resourceReferences?.bind(lease.value), maxResources),
+                  facet(lease.value.sockets?.bind(lease.value), maxNodes),
                 ])
               // A separately authored skin replaces the materials by index; the mesh's own texture
               // references are then not dependencies of what is drawn.
@@ -1793,7 +1863,16 @@ export function createCandidateWorldSceneLease(
                     )
                     try {
                       if (skin.value.result.state === 'unresolved') return undefined
-                      return (await skin.value.materials?.({ limit: maxNodes }, signal))?.items
+                      const read = skin.value.materials
+                      return read === undefined
+                        ? undefined
+                        : (
+                            await readAllPages(
+                              page => read.call(skin.value, page, signal),
+                              maxNodes,
+                              MODEL_FACET_ITEM_CAP,
+                            )
+                          ).items
                     } finally {
                       await skin.release()
                     }
@@ -1818,18 +1897,46 @@ export function createCandidateWorldSceneLease(
                 }
               }
               const allPrimitiveIds = meshPage.items.flatMap(mesh => mesh.primitiveIds)
-              const primitiveIds = allPrimitiveIds.slice(0, request.maxPrimitives)
-              if (primitiveIds.length > 0 && lease.value.primitive === undefined)
+              if (allPrimitiveIds.length > 0 && lease.value.primitive === undefined)
                 throw new TypeError('model publishes primitive ids without a primitive reader')
-              const primitives = await Promise.all(
-                primitiveIds.map(primitiveId =>
-                  lease.value.primitive!(
-                    primitiveId,
-                    { maxBytes: request.maxPrimitiveBytes },
-                    signal,
-                  ),
-                ),
+              // Primitives are read in batches until the model's byte budget is spent (each one also
+              // bounded by maxPrimitiveBytes); maxPrimitives is the batch size, not a total.
+              const primitives: Awaited<ReturnType<NonNullable<typeof lease.value.primitive>>>[] = []
+              let primitiveBytes = 0
+              for (
+                let start = 0;
+                start < allPrimitiveIds.length && primitiveBytes < request.maxBytes;
+                start += request.maxPrimitives
+              ) {
+                const batch = await Promise.all(
+                  allPrimitiveIds
+                    .slice(start, start + request.maxPrimitives)
+                    .map(primitiveId =>
+                      lease.value.primitive!(
+                        primitiveId,
+                        { maxBytes: request.maxPrimitiveBytes },
+                        signal,
+                      ),
+                    ),
+                )
+                for (const primitive of batch) {
+                  const bytes = primitiveByteLength(primitive)
+                  if (primitiveBytes + bytes > request.maxBytes) break
+                  primitiveBytes += bytes
+                  primitives.push(primitive)
+                }
+                if (primitives.length < Math.min(start + request.maxPrimitives, allPrimitiveIds.length))
+                  break
+              }
+              // A mesh is drawn only with all its primitives; a node names only what is present.
+              const loadedPrimitives = new Set(primitives.map(primitive => primitive.id))
+              const meshes = meshPage.items.filter(mesh =>
+                mesh.primitiveIds.every(id => loadedPrimitives.has(id)),
               )
+              const graph =
+                nodePage === undefined
+                  ? undefined
+                  : consistentNodes(nodePage.items, new Set(meshes.map(mesh => mesh.id)))
               const textureDiagnostics: ReturnType<typeof diagnostic>[] = []
               const textures: SceneRendererTexture[] = []
               const publishedResources = [...resourceItems]
@@ -1949,9 +2056,9 @@ export function createCandidateWorldSceneLease(
                 state: 'converted' as const,
                 sourceKey: result.sourceKey,
                 uvmBytes: result.bytes.slice(),
-                ...(nodePage === undefined
+                ...(graph === undefined
                   ? {}
-                  : { nodes: Object.freeze(yawRootNodes(nodePage.items, chosen.yaw)) }),
+                  : { nodes: Object.freeze(yawRootNodes(graph.nodes, chosen.yaw)) }),
                 ...(skeletonPage === undefined
                   ? {}
                   : { skeleton: Object.freeze([...skeletonPage.items]) }),
@@ -1966,23 +2073,32 @@ export function createCandidateWorldSceneLease(
                   ? {}
                   : { sockets: Object.freeze([...socketPage.items]) }),
                 ...(publishedResources.length === 0 ? {} : { textures: Object.freeze(textures) }),
-                meshes: Object.freeze([...meshPage.items]),
+                meshes: Object.freeze(meshes),
                 primitives: Object.freeze(primitives),
                 diagnostics: Object.freeze([
                   ...result.diagnostics,
                   ...skinDiagnostics,
                   ...textureDiagnostics,
+                  ...(graph?.pruned === true
+                    ? [
+                        diagnostic(
+                          'warning',
+                          'x3.host/world-model-graph-truncated',
+                          `model ${modelRequirement.logicalId} was cut (${MODEL_FACET_ITEM_CAP} items per facet, ${request.maxBytes} primitive bytes); nodes and meshes left out are dropped from their parents`,
+                        ),
+                      ]
+                    : []),
                 ]),
                 complete:
-                  meshPage.nextCursor === undefined &&
-                  nodePage?.nextCursor === undefined &&
-                  skeletonPage?.nextCursor === undefined &&
-                  animationPage?.nextCursor === undefined &&
-                  materialPage?.nextCursor === undefined &&
-                  resourcePage?.nextCursor === undefined &&
-                  socketPage?.nextCursor === undefined &&
+                  meshPage.complete &&
+                  nodePage?.complete !== false &&
+                  skeletonPage?.complete !== false &&
+                  animationPage?.complete !== false &&
+                  materialPage?.complete !== false &&
+                  resourcePage?.complete !== false &&
+                  socketPage?.complete !== false &&
                   textureReferences.length === textures.length &&
-                  allPrimitiveIds.length <= request.maxPrimitives,
+                  primitives.length === allPrimitiveIds.length,
               })
             } finally {
               await lease.release()
