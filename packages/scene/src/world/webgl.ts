@@ -720,12 +720,20 @@ function pushVertex(
   target.colors.push(...color)
 }
 
+type WorldColor = readonly [number, number, number, number]
+/** One color for a triangle, or one per corner (a primitive's COLOR_0). */
+type TriangleColor = WorldColor | readonly [WorldColor, WorldColor, WorldColor]
+
+function cornerColor(color: TriangleColor, corner: number): WorldColor {
+  return typeof color[0] === 'number' ? (color as WorldColor) : (color as readonly WorldColor[])[corner]!
+}
+
 function pushTriangle(
   target: MutableBatch,
   a: readonly [number, number, number],
   b: readonly [number, number, number],
   c: readonly [number, number, number],
-  color: readonly [number, number, number, number],
+  color: TriangleColor,
   normals?: readonly [
     readonly [number, number, number],
     readonly [number, number, number],
@@ -733,9 +741,9 @@ function pushTriangle(
   ],
 ) {
   const normal = faceNormal(a, b, c)
-  pushVertex(target, a, normals?.[0] ?? normal, color)
-  pushVertex(target, b, normals?.[1] ?? normal, color)
-  pushVertex(target, c, normals?.[2] ?? normal, color)
+  pushVertex(target, a, normals?.[0] ?? normal, cornerColor(color, 0))
+  pushVertex(target, b, normals?.[1] ?? normal, cornerColor(color, 1))
+  pushVertex(target, c, normals?.[2] ?? normal, cornerColor(color, 2))
 }
 
 function pushTexturedTriangle(
@@ -750,7 +758,7 @@ function pushTexturedTriangle(
     readonly [number, number],
     readonly [number, number],
   ],
-  color: readonly [number, number, number, number],
+  color: TriangleColor,
   normals?: readonly [
     readonly [number, number, number],
     readonly [number, number, number],
@@ -759,7 +767,7 @@ function pushTexturedTriangle(
 ) {
   const normal = faceNormal(vertices[0], vertices[1], vertices[2])
   for (let index = 0; index < 3; index += 1) {
-    pushVertex(target, vertices[index]!, normals?.[index] ?? normal, color)
+    pushVertex(target, vertices[index]!, normals?.[index] ?? normal, cornerColor(color, index))
     target.textureCoordinates.push(...textureCoordinates[index]!)
   }
 }
@@ -4391,12 +4399,36 @@ export function createWorldWebGlPlan(
         const textureCoordinates =
           primitive.textureCoordinateSets?.find(candidate => candidate.set === requestedUv)
             ?.coordinates ?? (requestedUv === 0 ? primitive.textureCoordinates : undefined)
-        const color =
-          item.objectId === input.selectedObjectId
-            ? ([1, 0.82, 0.12, 1] as const)
-            : texture === undefined
-              ? colorHash(primitive.materialId ?? item.kind)
-              : ([1, 1, 1, 1] as const)
+        // As glTF: COLOR_0 × the object's tint (× the texture, in the shader). A primitive with
+        // neither texture nor COLOR_0 keeps a stand-in hue per material.
+        const factor: WorldColor =
+          texture === undefined && primitive.colors === undefined
+            ? colorHash(primitive.materialId ?? item.kind)
+            : [1, 1, 1, 1]
+        const tint = item.presentationTint ?? [1, 1, 1]
+        const base: WorldColor = [
+          factor[0] * tint[0],
+          factor[1] * tint[1],
+          factor[2] * tint[2],
+          factor[3],
+        ]
+        const vertexColors = primitive.colors
+        const colorAt = (index: number): WorldColor =>
+          vertexColors === undefined || vertexColors.length < (index + 1) * 4
+            ? base
+            : [
+                base[0] * vertexColors[index * 4]!,
+                base[1] * vertexColors[index * 4 + 1]!,
+                base[2] * vertexColors[index * 4 + 2]!,
+                base[3] * vertexColors[index * 4 + 3]!,
+              ]
+        const selectedColor =
+          item.objectId === input.selectedObjectId ? ([1, 0.82, 0.12, 1] as const) : undefined
+        const triangleColor = (triangle: readonly number[]): TriangleColor =>
+          selectedColor ??
+          (vertexColors === undefined
+            ? base
+            : [colorAt(triangle[0]!), colorAt(triangle[1]!), colorAt(triangle[2]!)])
         // Every triangle of the primitive writes the same batch: find or add it at the first one.
         let written: WorldObjectBatchWrite | undefined
         let texturedWrite: MutableTexturedBatch | undefined
@@ -4457,14 +4489,14 @@ export function createWorldWebGlPlan(
                 readonly [number, number],
                 readonly [number, number],
               ],
-              color,
+              triangleColor(triangle),
             )
           } else if (shadowPolicy.castShadows && shadowPolicy.receiveShadows) {
             if (plainWrite === undefined) {
               plainWrite = batch()
               written = { collection: 'opaque', write: plainWrite }
             }
-            pushTriangle(plainWrite, vertices[0], vertices[1], vertices[2], color)
+            pushTriangle(plainWrite, vertices[0], vertices[1], vertices[2], triangleColor(triangle))
           } else {
             if (plainWrite === undefined) {
               const key = `${String(shadowPolicy.castShadows)}:${String(shadowPolicy.receiveShadows)}`
@@ -4477,7 +4509,7 @@ export function createWorldWebGlPlan(
               plainWrite = batch()
               written = { collection: 'controlled', key, target, write: plainWrite }
             }
-            pushTriangle(plainWrite, vertices[0], vertices[1], vertices[2], color)
+            pushTriangle(plainWrite, vertices[0], vertices[1], vertices[2], triangleColor(triangle))
           }
           for (const vertex of vertices) pickTriangles.push(vertex[0], vertex[1], vertex[2])
           modelTriangles += 1
