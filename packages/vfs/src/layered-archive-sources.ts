@@ -214,29 +214,40 @@ async function merge(archives: readonly LayerArchive[], label: string): Promise<
   return { archives, rows, children: childrenOf(rows.map(row => row.file)), layers }
 }
 
+/** One collator for every comparison: `localeCompare` builds one per call (6.7 s of 13.5 s on D3). */
+const byName = new Intl.Collator(undefined, { sensitivity: 'base' })
+
 function childrenOf(files: readonly Served[]): ReadonlyMap<string, readonly ContentSourceEntry[]> {
   const folders = new Map<string, Map<string, ContentSourceEntry>>([['', new Map()]])
   for (const file of files) {
-    const parts = file.path.split('/')
-    for (let depth = 0; depth < parts.length; depth += 1) {
-      const parent = keyOf(parts.slice(0, depth).join('/'))
-      const path = parts.slice(0, depth + 1).join('/')
-      const name = parts[depth] ?? ''
+    // `file.path` is already normalized: each folder's key is a slice of one lower-cased string
+    const lower = file.path.toLowerCase()
+    let parent = ''
+    for (let start = 0; ;) {
+      const slash = file.path.indexOf('/', start)
+      const end = slash === -1 ? file.path.length : slash
+      const key = lower.slice(0, end)
       let siblings = folders.get(parent)
       if (siblings === undefined) folders.set(parent, (siblings = new Map()))
-      if (siblings.has(keyOf(path))) continue
-      siblings.set(
-        keyOf(path),
-        depth === parts.length - 1
-          ? {
-              path,
-              name,
-              directory: false,
-              ...(file.size === undefined ? {} : { size: file.size }),
-              ...(file.hidden === true ? { hidden: true } : {}),
-            }
-          : { path, name, directory: true },
-      )
+      if (!siblings.has(key)) {
+        const path = file.path.slice(0, end)
+        const name = file.path.slice(start, end)
+        siblings.set(
+          key,
+          slash === -1
+            ? {
+                path,
+                name,
+                directory: false,
+                ...(file.size === undefined ? {} : { size: file.size }),
+                ...(file.hidden === true ? { hidden: true } : {}),
+              }
+            : { path, name, directory: true },
+        )
+      }
+      if (slash === -1) break
+      parent = key
+      start = slash + 1
     }
   }
   return new Map(
@@ -247,7 +258,7 @@ function childrenOf(files: readonly Served[]): ReadonlyMap<string, readonly Cont
           ? left.directory
             ? -1
             : 1
-          : left.name.localeCompare(right.name, undefined, { sensitivity: 'base' }),
+          : byName.compare(left.name, right.name),
       ),
     ]),
   )

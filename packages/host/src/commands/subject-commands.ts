@@ -325,10 +325,13 @@ async function entryIdFor(
       const entry = await namespace.lookup(wanted, signal)
       if (entry !== undefined) return entry.id
     }
+    // After a lookup miss only the listing under that very name can still answer (an id spelled
+    // like its path); walking the whole listing cost ~26 s on Diablo III for nothing.
+    const scope = namespace.lookup === undefined ? '' : wanted
     let cursor: string | undefined
     do {
       const page = await namespace.list(
-        '',
+        scope,
         cursor === undefined ? { limit: 512 } : { cursor, limit: 512 },
         signal,
       )
