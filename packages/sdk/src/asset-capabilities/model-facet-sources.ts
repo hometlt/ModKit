@@ -141,7 +141,7 @@ export interface ModelSkeletonSource {
 export type ModelAnimationKind = 'animation' | 'rest-pose'
 
 /** Explicit numerical interpolation; absent means that the channel cannot be sampled generically. */
-export type ModelAnimationInterpolation = 'step' | 'linear' | 'spherical-linear'
+export type ModelAnimationInterpolation = 'step' | 'linear' | 'spherical-linear' | 'cubic-spline'
 
 export interface ModelAnimationChannel {
   /** What the channel drives, in the publisher's own target space (a W3D pivot, for instance). */
@@ -171,6 +171,14 @@ export interface ModelAnimationSample {
   readonly timeSeconds?: number
   /** Scalar/vector/quaternion components in the publisher's documented order. */
   readonly value: readonly number[]
+  /**
+   * `cubic-spline` channels only, required on every key: the derivative of `value` per second
+   * arriving at and leaving this key, as glTF CUBICSPLINE stores it (the sampler scales it by the
+   * key interval). Hermite or Bezier tangents of a format are converted to this by the publisher.
+   * A consumer that knows the channel is a rotation renormalizes the result, as glTF requires.
+   */
+  readonly inTangent?: readonly number[]
+  readonly outTangent?: readonly number[]
 }
 
 export interface ModelAnimationClip {

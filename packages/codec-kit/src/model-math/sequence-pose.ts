@@ -14,6 +14,12 @@ import type { RenderNodeTrackSet, RenderSequence } from '../legacy/models/animat
  * with WebGL uniforms and THREE.Matrix4.fromArray.
  */
 
+/**
+ * A track whose keys carry glTF CUBICSPLINE tangents (`inTan`/`outTan`, derivatives per second).
+ * Distinct from the MDX line types 2 (Hermite) and 3 (Bezier), whose tangents mean something else.
+ */
+export const CUBIC_SPLINE_LINE_TYPE = 4
+
 const IDENTITY_QUAT: readonly number[] = [0, 0, 0, 1]
 const ZERO_VEC3: readonly number[] = [0, 0, 0]
 const ONE_VEC3: readonly number[] = [1, 1, 1]
@@ -56,6 +62,27 @@ export function sampleTrackValue(
   if (track.lineType === 0) return copyVector(ka.vector, out) // step
   const span = kb.frame - ka.frame
   const t = span > 0 ? Math.min(Math.max((time - ka.frame) / span, 0), 1) : 0
+  if (track.lineType === CUBIC_SPLINE_LINE_TYPE) {
+    // glTF CUBICSPLINE: tangents are derivatives per second, scaled by the key interval
+    const t2 = t * t
+    const t3 = t2 * t
+    const h00 = 2 * t3 - 3 * t2 + 1
+    const h10 = t3 - 2 * t2 + t
+    const h01 = -2 * t3 + 3 * t2
+    const h11 = t3 - t2
+    out.length = ka.vector.length
+    for (let i = 0; i < ka.vector.length; i += 1)
+      out[i] =
+        h00 * ka.vector[i]! +
+        h10 * span * (ka.outTan?.[i] ?? 0) +
+        h01 * (kb.vector[i] ?? ka.vector[i]!) +
+        h11 * span * (kb.inTan?.[i] ?? 0)
+    if (options.isQuat && out.length === 4) {
+      const len = Math.hypot(out[0]!, out[1]!, out[2]!, out[3]!)
+      if (len > 0) for (let i = 0; i < 4; i += 1) out[i]! /= len
+    }
+    return out
+  }
   if (options.isQuat && ka.vector.length === 4 && kb.vector.length === 4) {
     return slerpVector(ka.vector, kb.vector, t, out)
   }

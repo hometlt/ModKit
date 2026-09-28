@@ -258,15 +258,13 @@ export function decodeUvmRig(
         !['STEP', 'LINEAR', 'CUBICSPLINE'].includes(interpolation)
       )
         throw new TypeError('UVM animation interpolation is invalid')
-      if (interpolation === 'CUBICSPLINE') {
-        unsupportedChannels++
-        continue
-      }
+      // CUBICSPLINE stores [in-tangent, value, out-tangent] per key
+      const cubic = interpolation === 'CUBICSPLINE'
       const output = read(sampler['output'], 'animation value')
       const width = visible !== undefined ? 1 : targetPath === 'rotation' ? 4 : 3
       if (
         output.width !== width ||
-        output.count !== input.count ||
+        output.count !== input.count * (cubic ? 3 : 1) ||
         output.componentType !== 5126 ||
         output.normalized
       )
@@ -279,10 +277,16 @@ export function decodeUvmRig(
       )
       if (keyTimes !== undefined) decodedBytes += keyTimes.length * 8
       const samples = Array.from(keyTimes ?? input.values, (timeSeconds, frame) => {
-        const value = Array.from(output.values.subarray(frame * width, frame * width + width))
+        const at = (slot: number) => {
+          const start = (cubic ? frame * 3 + slot : frame) * width
+          return Array.from(output.values.subarray(start, start + width))
+        }
+        const value = at(cubic ? 1 : 0)
         if (width === 4 && Math.abs(Math.hypot(...value) - 1) > 0.0001)
           throw new TypeError('UVM animation quaternion is not a unit quaternion')
-        return { frame, timeSeconds, value }
+        return cubic
+          ? { frame, timeSeconds, value, inTangent: at(0), outTangent: at(2) }
+          : { frame, timeSeconds, value }
       })
       if (metadata['globalSeqId'] !== undefined) {
         unsupportedChannels++
@@ -314,7 +318,13 @@ export function decodeUvmRig(
         lastFrame: samples.length - 1,
         samples,
         interpolation:
-          interpolation === 'STEP' ? 'step' : width === 4 ? 'spherical-linear' : 'linear',
+          interpolation === 'STEP'
+            ? 'step'
+            : cubic
+              ? 'cubic-spline'
+              : width === 4
+                ? 'spherical-linear'
+                : 'linear',
         ...(metadata['concurrent'] === undefined ? {} : { concurrent: metadata['concurrent'] }),
         ...(metadata['wrapSeconds'] === undefined ? {} : { wrapSeconds: metadata['wrapSeconds'] }),
         ...(metadata['repeatCount'] === undefined ? {} : { repeatCount: metadata['repeatCount'] }),

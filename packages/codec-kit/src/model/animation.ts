@@ -1,6 +1,6 @@
 import type { ModelAnimationClip } from '@modkit/sdk'
 import { snapshotJson, type JsonSnapshotBudget } from '../json-snapshot.js'
-import { sampleTrackValue } from '../model-math/sequence-pose.js'
+import { CUBIC_SPLINE_LINE_TYPE, sampleTrackValue } from '../model-math/sequence-pose.js'
 import type { RenderScalarAnimationTrack } from '../legacy-model-support.js'
 
 export const DEFAULT_MODEL_ANIMATION_BUDGET: JsonSnapshotBudget = Object.freeze({
@@ -84,7 +84,7 @@ export function snapshotModelAnimations(
       }
       if (
         channel.repeatCount !== undefined &&
-          (!Number.isSafeInteger(channel.repeatCount) ||
+        (!Number.isSafeInteger(channel.repeatCount) ||
           channel.repeatCount < 0 ||
           channel.concurrent !== true ||
           channel.wrapSeconds === undefined)
@@ -94,7 +94,7 @@ export function snapshotModelAnimations(
         throw new TypeError('invalid animation samples')
       if (channel.interpolation === undefined) continue
       if (
-        !['step', 'linear', 'spherical-linear'].includes(channel.interpolation) ||
+        !['step', 'linear', 'spherical-linear', 'cubic-spline'].includes(channel.interpolation) ||
         !channel.samples?.length
       ) {
         throw new TypeError('sampleable channel needs interpolation and keys')
@@ -115,6 +115,13 @@ export function snapshotModelAnimations(
           throw new TypeError('inconsistent animation key components')
         }
         for (const component of sample.value) finite(component, 'key component')
+        if (channel.interpolation === 'cubic-spline') {
+          for (const tangent of [sample.inTangent, sample.outTangent]) {
+            if (!Array.isArray(tangent) || tangent.length !== components)
+              throw new TypeError('cubic-spline keys need in and out tangents of the key width')
+            for (const component of tangent) finite(component, 'key tangent')
+          }
+        }
       }
     }
   }
@@ -143,9 +150,19 @@ export function createModelAnimationSampler(
     if (channel.interpolation === undefined || channel.samples === undefined)
       throw new TypeError('channel has no sampling semantics')
     const track: RenderScalarAnimationTrack = {
-      lineType: channel.interpolation === 'step' ? 0 : 1,
+      lineType:
+        channel.interpolation === 'step'
+          ? 0
+          : channel.interpolation === 'cubic-spline'
+            ? CUBIC_SPLINE_LINE_TYPE
+            : 1,
       globalSeqId: null,
-      keys: channel.samples.map(key => ({ frame: key.timeSeconds!, vector: key.value })),
+      keys: channel.samples.map(key => ({
+        frame: key.timeSeconds!,
+        vector: key.value,
+        ...(key.inTangent === undefined ? {} : { inTan: key.inTangent }),
+        ...(key.outTangent === undefined ? {} : { outTan: key.outTangent }),
+      })),
     }
     return { channel, track }
   })

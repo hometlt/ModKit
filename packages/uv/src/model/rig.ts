@@ -431,6 +431,7 @@ export function writeUvmAnimations(
       }
       const key = `${node}/${path}`
       if (targets.has(key)) refuse(`clip ${clip.id} has multiple channels for ${key}`)
+      const cubic = channel.interpolation === 'cubic-spline'
       let previous = -Infinity
       const valid = channel.samples.every(sample => {
         const time = Math.fround(sample.timeSeconds!)
@@ -441,12 +442,75 @@ export function writeUvmAnimations(
           time > previous &&
           values.length === width &&
           values.every(Number.isFinite) &&
-          (width !== 4 || unitQuaternion(values))
+          (width !== 4 || unitQuaternion(values)) &&
+          (!cubic ||
+            [sample.inTangent, sample.outTangent].every(
+              tangent =>
+                tangent?.length === width && tangent.every(value => Number.isFinite(value)),
+            ))
         previous = time
         return ok
       })
       if (!valid) {
         loss('keys cannot be represented as finite, strictly increasing float32 glTF samples')
+        continue
+      }
+      if (cubic) {
+        // glTF CUBICSPLINE: per key [in-tangent, value, out-tangent], tangents in units per second
+        const times = Float32Array.from(channel.samples, sample => sample.timeSeconds!)
+        const input = addAccessor(
+          storage.buffer,
+          storage.views,
+          storage.accessors,
+          times,
+          'SCALAR',
+          5126,
+          undefined,
+          { min: [times[0] ?? 0], max: [times[times.length - 1] ?? 0] },
+        )
+        const output = addAccessor(
+          storage.buffer,
+          storage.views,
+          storage.accessors,
+          Float32Array.from(
+            channel.samples.flatMap(sample => [
+              ...sample.inTangent!,
+              ...sample.value,
+              ...sample.outTangent!,
+            ]),
+          ),
+          width === 4 ? 'VEC4' : 'VEC3',
+          5126,
+        )
+        const keyTimes = uvmKeyTimesMetadata(channel.samples.map(sample => sample.timeSeconds!))
+        const uv = {
+          ...(channel.concurrent === true
+            ? {
+                concurrent: true,
+                ...(channel.wrapSeconds === undefined ? {} : { wrapSeconds: channel.wrapSeconds }),
+                ...(channel.repeatCount === undefined ? {} : { repeatCount: channel.repeatCount }),
+              }
+            : {}),
+          ...keyTimes,
+        }
+        channels.push({
+          sampler: samplers.length,
+          target: { node, path },
+          ...(Object.keys(uv).length ? { extras: { uv } } : {}),
+        })
+        samplers.push({ input, output, interpolation: 'CUBICSPLINE' })
+        targets.add(key)
+        if (
+          channel.samples.some(sample =>
+            [
+              sample.timeSeconds!,
+              ...sample.value,
+              ...sample.inTangent!,
+              ...sample.outTangent!,
+            ].some(value => Math.fround(value) !== value),
+          )
+        )
+          loss('key times, values or tangents were rounded to the glTF float32 representation')
         continue
       }
       const emitted = encodeAnimationChannel(
