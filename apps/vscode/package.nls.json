@@ -14,6 +14,7 @@
   "command.openResourceNode": "Open Resource",
   "command.goToResourceDeclaration": "Go to Declaration",
   "command.openEntityCard": "Modkit: Entity Card…",
+  "configuration.installationSearchFolders.description": "Folders searched for installed games (**Select Game Installation**): a plain name is that folder at the root of every local drive, anything else a folder as it is — network drives only this way; `%VARIABLE%` is expanded. A match is only a candidate the game's own check confirms, after the registry and the stores. Folders a game names itself (`GOG Games`, `XboxGames`) are searched too.",
   "command.openEntityGraph": "Modkit: Relations Graph…",
   "command.openModCard": "Modkit: Mod Card",
   "command.unloadMod": "Modkit: Unload Mod…",

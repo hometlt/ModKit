@@ -393,6 +393,20 @@
           "markdownDescription": "%configuration.indexCaches.description%",
           "type": "object"
         },
+        "modkit.installationSearchFolders": {
+          "default": [
+            "Program Files",
+            "Program Files (x86)",
+            "Games",
+            "Apps",
+            "Applications",
+            "%LOCALAPPDATA%\\Programs"
+          ],
+          "items": { "type": "string" },
+          "markdownDescription": "%configuration.installationSearchFolders.description%",
+          "scope": "machine",
+          "type": "array"
+        },
         "modkit.launch.documentsDirectory": {
           "default": "",
           "markdownDescription": "%configuration.launch.documentsDirectory.description%",

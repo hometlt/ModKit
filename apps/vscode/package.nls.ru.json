@@ -14,6 +14,7 @@
   "command.openResourceNode": "Открыть ресурс",
   "command.goToResourceDeclaration": "К объявлению",
   "command.openEntityCard": "Modkit: Карточка сущности…",
+  "configuration.installationSearchFolders.description": "Папки, где ищутся установленные игры (**Выбрать установку игры**): простое имя — эта папка в корне каждого локального диска, остальное — папка как есть (сетевые диски — только так); `%ПЕРЕМЕННАЯ%` раскрывается. Совпадение — только кандидат, его подтверждает проверка самой игры, после реестра и магазинов. Папки, которые называет сама игра (`GOG Games`, `XboxGames`), ищутся тоже.",
   "command.openEntityGraph": "Modkit: Граф связей…",
   "command.openModCard": "Modkit: Карточка мода",
   "command.unloadMod": "Modkit: Выгрузить мод…",

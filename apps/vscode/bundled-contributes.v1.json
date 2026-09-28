@@ -419,6 +419,20 @@
         "default": true,
         "markdownDescription": "%configuration.launch.warnIfRunning.description%"
       },
+      "modkit.installationSearchFolders": {
+        "type": "array",
+        "items": { "type": "string" },
+        "default": [
+          "Program Files",
+          "Program Files (x86)",
+          "Games",
+          "Apps",
+          "Applications",
+          "%LOCALAPPDATA%\\Programs"
+        ],
+        "scope": "machine",
+        "markdownDescription": "%configuration.installationSearchFolders.description%"
+      },
       "modkit.showHiddenEntries": {
         "type": "boolean",
         "default": false,

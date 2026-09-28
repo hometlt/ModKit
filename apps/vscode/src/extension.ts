@@ -100,6 +100,7 @@ type LanguageWorkspaceDocumentSourceResult,
 } from '@modkit/host/language'
 import {
 discoverGameInstallations,
+gameInstallationSearchOf,
 interpretGameLaunchLog,
 planGameLaunch,
 } from '@modkit/host/games'
@@ -113,6 +114,7 @@ openCachedContentIndex,
 removeIndexCache,
 resolveContentSources,
 runningGameProcesses,
+searchInstallationFolders,
 stopGameProcesses,
 useArtifactDigestCache,
 watchGameLaunchLogs,
@@ -225,6 +227,7 @@ gameLocales,
 installationGameIds,
 logLevelOf,
 diagnosticsReport,
+installationSearchFolders,
 installationsAtFolder,
 regionsToConnect,
 selectedContentSource,
@@ -10403,11 +10406,54 @@ async function activateModkit(
     vscode.commands.registerCommand('modkit.selectGameInstallation', () =>
       (async () => {
         const gameIds = installationGameIds(host.services.host.inventory)
+        /*
+         * The folder search (owner decision 2026-09-28): every game's markers from its manifest,
+         * the folders `modkit.installationSearchFolders` names; a match is a candidate its game's
+         * provider still confirms, after the registry and the stores.
+         */
+        const wanted = gameInstallationSearchOf(host.services.host.inventory)
+        const configured = installationSearchFolders(
+          vscode.workspace.getConfiguration('modkit').get('installationSearchFolders'),
+          process.env,
+        )
+        const searched =
+          wanted.markers.length === 0
+            ? undefined
+            : await vscode.window.withProgress(
+                {
+                  location: vscode.ProgressLocation.Notification,
+                  title: localizer.text('vscode.game.searching'),
+                  cancellable: true,
+                },
+                async (_progress, token) => {
+                  const controller = new AbortController()
+                  token.onCancellationRequested(() => controller.abort())
+                  try {
+                    const result = await searchInstallationFolders({
+                      markers: wanted.markers,
+                      searchFolders: [...wanted.searchFolders, ...configured.driveFolders],
+                      folders: configured.folders,
+                      signal: controller.signal,
+                    })
+                    if (!result.complete)
+                      log('[installation] warning the folder search stopped at its folder limit')
+                    return result
+                  } catch (error) {
+                    if (!controller.signal.aborted)
+                      log(
+                        `[installation] error folder search: ${error instanceof Error ? error.message : String(error)}`,
+                      )
+                    return undefined
+                  }
+                },
+              )
         const discover = async (gameId: string, configuredPaths: readonly string[]) => {
+          const searchPaths = searched?.found[gameId] ?? []
           const discovery = await discoverGameInstallations({
             services: host.services,
             gameId,
             ...(configuredPaths.length === 0 ? {} : { configuredPaths }),
+            ...(searchPaths.length === 0 ? {} : { searchPaths }),
             maxCandidates: 32,
             grant: {
               id: 'vscode-game-installation-discovery',

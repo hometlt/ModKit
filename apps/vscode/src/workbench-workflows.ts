@@ -298,6 +298,28 @@ function installationGameIdsByExtension(
   return byExtension
 }
 
+/**
+ * The folders `modkit.installationSearchFolders` names for the installation search: a plain name is
+ * that folder at the root of every local drive (`Games`), anything else a folder as it is — a
+ * network share only this way — with `%VARIABLE%` expanded from the environment.
+ */
+export function installationSearchFolders(
+  value: unknown,
+  environment: Readonly<Record<string, string | undefined>>,
+): { readonly driveFolders: readonly string[]; readonly folders: readonly string[] } {
+  const driveFolders: string[] = []
+  const folders: string[] = []
+  for (const item of Array.isArray(value) ? value : []) {
+    if (typeof item !== 'string' || item.trim() === '') continue
+    const expanded = item
+      .trim()
+      .replace(/%([^%]+)%/gu, (whole, name: string) => environment[name] ?? whole)
+    if (/[\\/:]/u.test(expanded)) folders.push(expanded)
+    else driveFolders.push(expanded)
+  }
+  return { driveFolders, folders }
+}
+
 /** A setting whose name says it holds a secret: its value never leaves the window. */
 const SECRET_SETTING = /key|token|secret|passw|credential|ticket|cookie|auth/iu
 

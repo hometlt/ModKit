@@ -10,6 +10,7 @@ import {
   createDiagnosticJournal,
   diagnosticsReport,
   gameLocales,
+  installationSearchFolders,
   installationGameIds,
   logLevelOf,
   installationsAtFolder,
@@ -187,6 +188,19 @@ describe('generic source lifecycle', () => {
     })
     expect(parsed['journal']).toEqual(['[host] opened', '[host] closed'])
     expect(parsed['loadedMods']).toEqual([{ id: 'sc2|host|c:/mods/a.sc2mod', label: 'A.SC2Mod' }])
+  })
+
+  it('reads the installation search folders: a name at every drive root, a path as it is', () => {
+    expect(
+      installationSearchFolders(
+        ['Games', ' Apps ', '%LOCALAPPDATA%\\Programs', 'Z:\\Shared\\Games', '%UNSET%', '', 7],
+        { LOCALAPPDATA: 'C:\\Users\\me\\AppData\\Local' },
+      ),
+    ).toEqual({
+      driveFolders: ['Games', 'Apps', '%UNSET%'],
+      folders: ['C:\\Users\\me\\AppData\\Local\\Programs', 'Z:\\Shared\\Games'],
+    })
+    expect(installationSearchFolders(undefined, {})).toEqual({ driveFolders: [], folders: [] })
   })
 
   it('files journal lines by the severity word the product writes', () => {
