@@ -30,6 +30,8 @@ import {
 export interface SearchFolderFile {
   readonly path: string
   readonly size?: number
+  /** Listed only because the query asked for hidden files too. */
+  readonly hidden?: true
 }
 
 /** A root's content index: the paths that may hold a query (host `content-index`). */
@@ -42,17 +44,22 @@ export interface WorkspaceSearchBackend {
   /**
    * The files beneath `folder`, page by page. `pattern` and `extensions` are what the query
    * already rules out; a backend that cannot narrow may ignore them — the provider checks again.
+   * Hidden files come only with `includeHidden`, each marked; a backend that hides nothing ignores it.
    */
   files(
     folder: vscode.Uri,
-    query: { readonly pattern?: string; readonly extensions?: readonly string[] },
+    query: {
+      readonly pattern?: string
+      readonly extensions?: readonly string[]
+      readonly includeHidden?: boolean
+    },
     signal: AbortSignal,
   ): AsyncIterable<readonly SearchFolderFile[]>
   read(folder: vscode.Uri, path: string, maxBytes: number, signal: AbortSignal): Promise<Uint8Array>
   /**
    * The content index of `folder` when it is a root that can keep one: opened from the shared index
-   * cache, or built once from `files` — the root's text files, which the search hands over and
-   * matches its own query in as they pass. Undefined: the folder is searched by reading.
+   * cache, or built once from `files` — the root's visible text files, which the search hands over
+   * and matches its own query in as they pass. Undefined: the folder is searched by reading.
    */
   contentIndex?(
     folder: vscode.Uri,
@@ -112,12 +119,15 @@ const extensionOf = (path: string): string => {
 
 /**
  * Register quick open and Find in Files for one scheme. Returns undefined when this VS Code does
- * not grant the proposed search API to Modkit.
+ * not grant the proposed search API to Modkit. `showHidden` is the one "show hidden files" option:
+ * off, hidden files are in neither search; on, they are found too — by reading, as no content
+ * index holds them.
  */
 export function registerWorkspaceSearch(
   scheme: string,
   backend: WorkspaceSearchBackend,
   log: (message: string) => void,
+  showHidden: () => boolean = () => false,
 ): vscode.Disposable | undefined {
   const uriOf = (folder: vscode.Uri, path: string) =>
     vscode.Uri.joinPath(folder, ...path.split('/').filter(part => part !== ''))
@@ -133,7 +143,7 @@ export function registerWorkspaceSearch(
       try {
         for await (const page of backend.files(
           options.folder,
-          needle === '' ? {} : { pattern: needle },
+          { ...(needle === '' ? {} : { pattern: needle }), includeHidden: showHidden() },
           signal,
         )) {
           for (const file of page) {
@@ -162,6 +172,7 @@ export function registerWorkspaceSearch(
       let remaining = options.maxResults
       let limitHit = false
       let skipped = 0
+      const hiddenToo = showHidden()
 
       const scan = async (file: SearchFolderFile): Promise<void> => {
         if (remaining <= 0 || signal.aborted) return
@@ -256,27 +267,32 @@ export function registerWorkspaceSearch(
                   log(`[search] ${options.folder.toString()}: content index: ${String(error)}`)
                 return undefined
               })
+      // Every file of the folder, or with `onlyHidden` the hidden ones an index does not hold.
+      const readAll = async (onlyHidden: boolean): Promise<void> => {
+        for await (const page of backend.files(
+          options.folder,
+          { ...(known === undefined ? {} : { extensions: [...known] }), includeHidden: hiddenToo },
+          signal,
+        )) {
+          for (const file of page) {
+            if (remaining <= 0 || signal.aborted) break
+            if ((!onlyHidden || file.hidden === true) && wanted(file)) await queue(file)
+          }
+          if (remaining <= 0 || signal.aborted) break
+        }
+      }
       try {
-        if (indexed) {
-          // building the index read and matched every text file already
-        } else if (index !== undefined) {
+        // Building the index read and matched every visible text file already.
+        if (!indexed && index !== undefined) {
           for (const path of await index.candidates(query.pattern)) {
             if (remaining <= 0 || signal.aborted) break
             if (wanted({ path })) await queue({ path })
           }
-        } else {
-          for await (const page of backend.files(
-            options.folder,
-            known === undefined ? {} : { extensions: [...known] },
-            signal,
-          )) {
-            for (const file of page) {
-              if (remaining <= 0 || signal.aborted) break
-              if (wanted(file)) await queue(file)
-            }
-            if (remaining <= 0 || signal.aborted) break
-          }
         }
+        // No index holds a hidden file: with the option on, those are read.
+        if (indexed || index !== undefined) {
+          if (hiddenToo) await readAll(true)
+        } else await readAll(false)
         await Promise.all(reading)
       } catch (error) {
         if (!signal.aborted) throw error

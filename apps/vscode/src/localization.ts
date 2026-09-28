@@ -290,7 +290,7 @@ const EN_MESSAGES = Object.freeze({
   'vscode.container.openFileFirst':
     'Open a container file first, then run this command to choose a member.',
   'vscode.container.holdsNoEntries': '{container} has no entries: {reason}',
-  'vscode.map.noAnchor': '{name} holds no map document to open.',
+  'vscode.map.noAnchor': '{name} holds no document that stands for it, so it cannot be opened.',
   'vscode.container.members': 'Members of {container}',
   'vscode.container.openMember': 'Open a member as its own subject',
   'vscode.container.pickEntry': 'Choose an entry in the tree to inspect it.',
@@ -803,7 +803,7 @@ const RU_MESSAGES: Readonly<Record<keyof typeof EN_MESSAGES, string>> = Object.f
   'vscode.container.openFileFirst':
     'Сначала откройте файл-контейнер, затем запустите команду и выберите элемент.',
   'vscode.container.holdsNoEntries': 'В контейнере {container} нет элементов: {reason}',
-  'vscode.map.noAnchor': 'В {name} нет документа карты, который можно открыть.',
+  'vscode.map.noAnchor': 'В {name} нет документа, по которому его можно открыть.',
   'vscode.container.members': 'Элементы контейнера {container}',
   'vscode.container.openMember': 'Открыть элемент как отдельный субъект',
   'vscode.container.pickEntry': 'Выберите элемент в дереве для просмотра.',

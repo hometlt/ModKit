@@ -178,6 +178,11 @@
       "title": "%command.refreshRelations%"
     },
     {
+      "command": "modkit.resources.goToDeclaration",
+      "title": "%command.goToResourceDeclaration%",
+      "icon": "$(symbol-reference)"
+    },
+    {
       "command": "modkit.resources.open",
       "title": "%command.openResourceNode%",
       "icon": "$(go-to-file)"
@@ -851,6 +856,10 @@
         "when": "false"
       },
       {
+        "command": "modkit.resources.goToDeclaration",
+        "when": "false"
+      },
+      {
         "command": "modkit.resources.open",
         "when": "false"
       },
@@ -1082,9 +1091,24 @@
         "group": "explorer@0"
       },
       {
+        "command": "modkit.resources.goToDeclaration",
+        "when": "view == modkit.resources && viewItem =~ /\\.declared$/",
+        "group": "inline@2"
+      },
+      {
+        "command": "modkit.resources.goToDeclaration",
+        "when": "view == modkit.resources && viewItem =~ /\\.declared$/",
+        "group": "navigation@2"
+      },
+      {
         "command": "modkit.resources.open",
-        "when": "view == modkit.resources && viewItem == modkitResource.openable",
+        "when": "view == modkit.resources && viewItem =~ /^modkitResource\\.openable/",
         "group": "inline@1"
+      },
+      {
+        "command": "modkit.resources.open",
+        "when": "view == modkit.resources && viewItem =~ /^modkitResource\\.openable/",
+        "group": "navigation@1"
       },
       {
         "command": "modkit.sources.addPublic",

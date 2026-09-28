@@ -9,6 +9,7 @@ import { describe, expect, it } from 'vitest'
 const ROW_ONLY = [
   'modkit.navigateResource',
   'modkit.resources.open',
+  'modkit.resources.goToDeclaration',
   'modkit.sources.open',
   'modkit.sources.openInstallation',
   'modkit.sources.revealLocal',

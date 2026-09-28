@@ -245,6 +245,11 @@
       "icon": "$(go-to-file)"
     },
     {
+      "command": "modkit.resources.goToDeclaration",
+      "title": "%command.goToResourceDeclaration%",
+      "icon": "$(symbol-reference)"
+    },
+    {
       "command": "modkit.setCodecDefaultEditor",
       "title": "%command.setCodecDefaultEditor%"
     },
@@ -905,6 +910,10 @@
         "when": "false"
       },
       {
+        "command": "modkit.resources.goToDeclaration",
+        "when": "false"
+      },
+      {
         "command": "modkit.sources.open",
         "when": "false"
       },
@@ -1157,8 +1166,23 @@
       },
       {
         "command": "modkit.resources.open",
-        "when": "view == modkit.resources && viewItem == modkitResource.openable",
+        "when": "view == modkit.resources && viewItem =~ /^modkitResource\\.openable/",
         "group": "inline@1"
+      },
+      {
+        "command": "modkit.resources.goToDeclaration",
+        "when": "view == modkit.resources && viewItem =~ /\\.declared$/",
+        "group": "inline@2"
+      },
+      {
+        "command": "modkit.resources.open",
+        "when": "view == modkit.resources && viewItem =~ /^modkitResource\\.openable/",
+        "group": "navigation@1"
+      },
+      {
+        "command": "modkit.resources.goToDeclaration",
+        "when": "view == modkit.resources && viewItem =~ /\\.declared$/",
+        "group": "navigation@2"
       },
       {
         "command": "modkit.extensions.enableContribution",

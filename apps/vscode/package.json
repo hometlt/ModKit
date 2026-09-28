@@ -171,6 +171,11 @@
       { "command": "modkit.refreshContainer", "title": "%command.refreshContainer%" },
       { "command": "modkit.refreshRelations", "title": "%command.refreshRelations%" },
       {
+        "command": "modkit.resources.goToDeclaration",
+        "title": "%command.goToResourceDeclaration%",
+        "icon": "$(symbol-reference)"
+      },
+      {
         "command": "modkit.resources.open",
         "title": "%command.openResourceNode%",
         "icon": "$(go-to-file)"
@@ -705,6 +710,7 @@
         { "command": "modkit.extensions.removeGameSupport", "when": "false" },
         { "command": "modkit.extensions.removeVendorSupport", "when": "false" },
         { "command": "modkit.navigateResource", "when": "false" },
+        { "command": "modkit.resources.goToDeclaration", "when": "false" },
         { "command": "modkit.resources.open", "when": "false" },
         { "command": "modkit.sources.clearCache", "when": "false" },
         { "command": "modkit.sources.deletePublication", "when": "false" },
@@ -901,9 +907,24 @@
           "group": "explorer@0"
         },
         {
+          "command": "modkit.resources.goToDeclaration",
+          "when": "view == modkit.resources && viewItem =~ /\\.declared$/",
+          "group": "inline@2"
+        },
+        {
+          "command": "modkit.resources.goToDeclaration",
+          "when": "view == modkit.resources && viewItem =~ /\\.declared$/",
+          "group": "navigation@2"
+        },
+        {
           "command": "modkit.resources.open",
-          "when": "view == modkit.resources && viewItem == modkitResource.openable",
+          "when": "view == modkit.resources && viewItem =~ /^modkitResource\\.openable/",
           "group": "inline@1"
+        },
+        {
+          "command": "modkit.resources.open",
+          "when": "view == modkit.resources && viewItem =~ /^modkitResource\\.openable/",
+          "group": "navigation@1"
         },
         {
           "command": "modkit.sources.addPublic",
@@ -1106,6 +1127,7 @@
     "onCommand:modkit.openWith",
     "onCommand:modkit.refreshContainer",
     "onCommand:modkit.refreshRelations",
+    "onCommand:modkit.resources.goToDeclaration",
     "onCommand:modkit.resources.open",
     "onCommand:modkit.resources.refresh",
     "onCommand:modkit.resources.search",

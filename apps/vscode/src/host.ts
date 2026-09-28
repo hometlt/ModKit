@@ -84,6 +84,7 @@ import {
   type FileArtifactStreamTelemetry,
   type NodeSubjectServices,
   type NodeSubjectServicesOptions,
+  type PathSubjectOpenerOptions,
 } from '@modkit/host/node'
 
 import { anchorDocumentIndex, anchoredSubjectPath } from './anchor-documents.js'
@@ -670,13 +671,18 @@ export async function createVsCodeSubjectHost(
           : { prepareOpened: mapMemberPreview(services, container.mapPreview) }),
       }),
     serve: (served: VsCodeServeOptions) =>
-      serveVsCode(services, served, { extensions, contributions }),
+      serveVsCode(services, served, {
+        extensions,
+        contributions,
+        ...(options.subjectCatalog === undefined ? {} : { subjectCatalog: options.subjectCatalog }),
+      }),
     async openTreeSubject(path: string, roots: readonly string[], signal?: AbortSignal) {
       const opener = createPathSubjectOpener({
         subjects: services,
         roots,
         grant: DEFAULT_OPEN_GRANT,
         budget: DEFAULT_OPEN_BUDGET,
+        ...(await modResources(options.subjectCatalog, path)),
       })
       const answer = await opener(path, signal)
       if (answer.snapshot.state !== 'opened' || answer.session === undefined) return undefined
@@ -699,6 +705,7 @@ export async function createVsCodeSubjectHost(
         roots,
         grant: DEFAULT_OPEN_GRANT,
         budget: DEFAULT_OPEN_BUDGET,
+        ...(await modResources(options.subjectCatalog, path)),
       })
       const answer = await opener(path, signal)
       if (answer.snapshot.state !== 'opened' || answer.session === undefined) return undefined
@@ -1086,6 +1093,8 @@ export function createVsCodeCommandOpener(options: {
   readonly services: NodeSubjectServices
   readonly roots: () => readonly string[]
   readonly containers?: ContainerRegistry
+  /** The window's mod contexts; a file on disk reaches the resources of its mod through them. */
+  readonly subjectCatalog?: SubjectCatalogOptions
   readonly onRead?: (event: FileArtifactReadTelemetry) => void
   readonly onStream?: (event: FileArtifactStreamTelemetry) => void
 }): SubjectOpener {
@@ -1107,9 +1116,27 @@ export function createVsCodeCommandOpener(options: {
       budget: DEFAULT_OPEN_BUDGET,
       ...(options.onRead === undefined ? {} : { onRead: options.onRead }),
       ...(options.onStream === undefined ? {} : { onStream: options.onStream }),
+      ...(await modResources(options.subjectCatalog, requested)),
     })
     return opener(requested, signal)
   }
+}
+
+/**
+ * An ordinary open's way to the resources of the file's mod (host `createContentAssetOrigin`): a
+ * map on disk reaches its tileset in the installation, a resource-pack model its textures in the
+ * game. The mod context opens only when a codec asks in that scope; without sources, nothing.
+ */
+async function modResources(
+  catalog: SubjectCatalogOptions | undefined,
+  path: string,
+): Promise<Pick<PathSubjectOpenerOptions, 'contentSources' | 'baseMods'>> {
+  const contentSources = await catalog?.contentSources()
+  if (contentSources === undefined) return {}
+  const target = resolve(path)
+  const mods = catalog?.baseMods?.(target)
+  // The setting's packages for this very path, keyed by it; the host's `baseModsFor` finds them.
+  return { contentSources, ...(mods === undefined ? {} : { baseMods: { [target]: mods } }) }
 }
 
 /**
@@ -1181,6 +1208,7 @@ function serveVsCode(
   composed: {
     readonly extensions: VsCodeExtensionReport
     readonly contributions: readonly ContributionRow[]
+    readonly subjectCatalog?: SubjectCatalogOptions
   },
 ): VsCodeServed {
   const bridge = createBridge({
@@ -1442,6 +1470,7 @@ function serveVsCode(
       roots: options.roots(),
       grant: openGrant,
       budget: options.budget ?? DEFAULT_OPEN_BUDGET,
+      ...(await modResources(composed.subjectCatalog, subjectRequested)),
     })
     const rawAnswer = await opener(subjectRequested, signal)
     const openedAnswer =

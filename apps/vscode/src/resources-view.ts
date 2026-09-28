@@ -97,6 +97,15 @@ export class ResourcesView implements vscode.TreeDataProvider<ResourceTreeNode>,
     return true
   }
 
+  /** The file that declares the node's entity, when that is not what a click opens (the card). */
+  async goToDeclaration(node?: ResourceTreeNode): Promise<boolean> {
+    if (node?.kind !== 'resource' || node.facts.declaration === undefined) return false
+    const served = await this.loaded()
+    if (served === undefined) return false
+    served.navigate(node.facts.declaration.subjectId, node.facts.declaration.range)
+    return true
+  }
+
   /** The file subject a resource node names, when that file has a codec that publishes a tree. */
   private memberSubjectOf(node: ResourceTreeNode): string | undefined {
     if (node.kind !== 'resource' || node.facts.subjectId === undefined) return undefined
@@ -260,7 +269,11 @@ export class ResourcesView implements vscode.TreeDataProvider<ResourceTreeNode>,
     if (node.facts.preview !== undefined) item.description = node.facts.preview
     item.tooltip = node.facts.preview ?? node.facts.label
     item.contextValue =
-      node.facts.subjectId === undefined ? 'modkitResource.node' : 'modkitResource.openable'
+      node.facts.subjectId === undefined
+        ? 'modkitResource.node'
+        : node.facts.declaration === undefined
+          ? 'modkitResource.openable'
+          : 'modkitResource.openable.declared'
     const fileLike =
       !node.ref.hasChildren && /file|document|script|layout|string|style/iu.test(node.facts.kind)
     if (fileLike) {

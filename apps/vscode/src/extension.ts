@@ -83,6 +83,7 @@ baseModsFor,
 type BaseModSetting,
 type CommandInput,
 type CommandResult,
+type SubjectCatalogOptions,
 } from '@modkit/host'
 import {
 classifyLanguageFile,
@@ -572,21 +573,25 @@ async function activateModkit(
     await Promise.all(open.map(opened => opened.then(index => index.close()).catch(() => undefined)))
   }
   context.subscriptions.push({ dispose: () => void closeContentIndexes() })
+  /*
+   * A subject's mod context, inside the base mods the `modkit.baseMods` setting names for its path:
+   * it answers an operation that names catalog entities (a replay's units), and an ordinary open's
+   * request for a resource of the mod (a map's tileset, a model's texture in the game).
+   */
+  const subjectCatalog: SubjectCatalogOptions = {
+    contentSources: () => requireContentSources().catch(() => undefined),
+    baseMods: target =>
+      typeof target === 'string'
+        ? baseModsFor(target, baseModsSetting(vscode.Uri.file(target)))
+        : undefined,
+  }
   const host = await createVsCodeSubjectHost({
     credentials: {
       store: createSecretCredentialStore(context.secrets),
       prompter: credentialPrompter,
       setting: credentialSetting,
     },
-    // An operation that names catalog entities (a replay's units) is answered from its subject's mod
-    // context, inside the base mods the `modkit.baseMods` setting names for the subject's path.
-    subjectCatalog: {
-      contentSources: () => requireContentSources().catch(() => undefined),
-      baseMods: target =>
-        typeof target === 'string'
-          ? baseModsFor(target, baseModsSetting(vscode.Uri.file(target)))
-          : undefined,
-    },
+    subjectCatalog,
     bundledCatalog: BUNDLED_CATALOG.roots,
     catalogCandidates: catalogCandidates(extensionRoot, repositoryRoot),
     workspaceFolders: workspaceFolders(),
@@ -1638,7 +1643,9 @@ async function activateModkit(
     () => knownConnections(),
     async sourceId => {
       try {
-        const rows = await (await requireContentSources()).list(sourceId, '')
+        const rows = await (await requireContentSources()).list(sourceId, '', {
+          includeHidden: showHiddenEntries(),
+        })
         const states = await cacheStateOf(sourceId).catch(() => new Map<string, boolean>())
         staleRoots.delete(sourceId)
         void noteCatalogue(
@@ -1735,7 +1742,8 @@ async function activateModkit(
       const parts = location.path.split('/')
       const name = parts.pop()
       const node = (
-        await source.list(location.id, parts.join('/')).catch((error: unknown) => {
+        // A path named exactly is found hidden or not: only listings and search leave them out.
+        await source.list(location.id, parts.join('/'), { includeHidden: true }).catch((error: unknown) => {
           if (parts.length === 0 && catalogues()[location.id]?.names.includes(name ?? ''))
             return undefined
           throw error
@@ -1759,7 +1767,10 @@ async function activateModkit(
     async readDirectory(uri) {
       const location = sourceLocation(uri)
       const read = async (): Promise<[string, vscode.FileType][]> => {
-        const entries = await (await requireContentSources()).list(location.id, location.path)
+        // The sources leave hidden entries out unless the option asks for them (vfs `includeHidden`).
+        const entries = await (await requireContentSources()).list(location.id, location.path, {
+          includeHidden: showHiddenEntries(),
+        })
         if (!location.path) {
           staleRoots.delete(location.id)
           void noteCatalogue(
@@ -1769,13 +1780,10 @@ async function activateModkit(
         }
         // Browsing inside a publication downloads it, so the row it belongs to has to say so.
         publicationRead(location)
-        const hiddenToo = showHiddenEntries()
-        return entries
-          .filter(entry => hiddenToo || entry.hidden !== true)
-          .map(entry => [
-            entry.name,
-            entry.directory ? vscode.FileType.Directory : vscode.FileType.File,
-          ])
+        return entries.map(entry => [
+          entry.name,
+          entry.directory ? vscode.FileType.Directory : vscode.FileType.File,
+        ])
       }
       try {
         return await read()
@@ -2725,7 +2733,8 @@ async function activateModkit(
           }
           let downloaded = 0
           let present = 0
-          const failed = new Map<string, number>()
+          // Per code: how many, and the first message — the code alone does not say which asset or why.
+          const failed = new Map<string, { count: number; readonly message: string }>()
           // ponytail: one request at a time; a few parallel downloads if places name thousands.
           await vscode.window.withProgress(
             {
@@ -2745,26 +2754,31 @@ async function activateModkit(
                   else downloaded += 1
                 } catch (error) {
                   const code = (error as { readonly code?: unknown } | null)?.code
-                  const reason =
-                    typeof code === 'string'
-                      ? code
-                      : error instanceof Error
-                        ? error.message
-                        : String(error)
-                  failed.set(reason, (failed.get(reason) ?? 0) + 1)
-                  log(`[references] ${item.reference}: ${reason}`)
+                  const message = error instanceof Error ? error.message : String(error)
+                  const reason = typeof code === 'string' ? code : message
+                  const seen = failed.get(reason)
+                  if (seen === undefined) failed.set(reason, { count: 1, message })
+                  else seen.count += 1
+                  log(
+                    `[references] ${item.reference}: ${reason === message ? message : `${reason}: ${message}`}`,
+                  )
                 }
                 progress.report({ increment: 100 / wanted.size })
               }
             },
           )
-          const notDownloaded = [...failed.values()].reduce((sum, count) => sum + count, 0)
+          const notDownloaded = [...failed.values()].reduce((sum, item) => sum + item.count, 0)
           const summary = localizer.text('vscode.references.done', {
             downloaded,
             present,
             failed: notDownloaded,
           })
-          const reasons = [...failed].map(([reason, count]) => `${reason} ×${count}`).join(', ')
+          const reasons = [...failed]
+            .map(
+              ([reason, item]) =>
+                `${reason === item.message ? reason : `${reason}: ${item.message}`} ×${item.count}`,
+            )
+            .join('; ')
           if (notDownloaded === 0) void vscode.window.showInformationMessage(summary)
           else void vscode.window.showWarningMessage(`${summary} ${reasons}`)
           if (downloaded === 0) return
@@ -2837,6 +2851,7 @@ async function activateModkit(
       vscode.workspace.onDidChangeConfiguration(event => {
         if (!event.affectsConfiguration('modkit.showHiddenEntries')) return
         void vscode.commands.executeCommand('workbench.files.action.refreshFilesExplorer')
+        sourcesView.refresh()
         // Open Modkit pages draw their archive views again with the new value.
         const show = showHiddenEntries()
         for (const served of live) served.bridge.emit({ op: 'show-hidden', show })
@@ -3080,20 +3095,20 @@ async function activateModkit(
       sources: ContentSources,
       id: string,
       root: string,
+      includeHidden: boolean,
       signal: AbortSignal,
     ): AsyncGenerator<readonly SearchFolderFile[]> {
       const folders = [root]
-      const hiddenToo = showHiddenEntries()
       for (let folder = folders.pop(); folder !== undefined; folder = folders.pop()) {
         signal.throwIfAborted()
         const files: SearchFolderFile[] = []
-        for (const entry of await sources.list(id, folder)) {
-          if (entry.hidden === true && !hiddenToo) continue
+        for (const entry of await sources.list(id, folder, { includeHidden })) {
           if (entry.directory) folders.push(entry.path)
           else
             files.push({
               path: relativeTo(entry.path, root),
               ...(entry.size === undefined ? {} : { size: entry.size }),
+              ...(entry.hidden === true ? { hidden: true as const } : {}),
             })
         }
         yield files
@@ -3115,16 +3130,14 @@ async function activateModkit(
                 ...(cursor === undefined ? {} : { cursor }),
               })
               if (page === undefined) {
-                yield* walkSource(sources, id, path, signal)
+                yield* walkSource(sources, id, path, query.includeHidden === true, signal)
                 return
               }
-              const hiddenToo = showHiddenEntries()
-              yield page.items
-                .filter(item => hiddenToo || item.hidden !== true)
-                .map(item => ({
-                  path: relativeTo(item.path, path),
-                  ...(item.size === undefined ? {} : { size: item.size }),
-                }))
+              yield page.items.map(item => ({
+                path: relativeTo(item.path, path),
+                ...(item.size === undefined ? {} : { size: item.size }),
+                ...(item.hidden === true ? { hidden: true as const } : {}),
+              }))
               cursor = page.nextCursor
             } while (cursor !== undefined)
           },
@@ -3173,6 +3186,7 @@ async function activateModkit(
           },
         },
         log,
+        showHiddenEntries,
       ),
       registerWorkspaceSearch(
         CONTAINER_SCHEME,
@@ -6033,6 +6047,7 @@ async function activateModkit(
     services: host.services,
     roots,
     containers,
+    subjectCatalog,
   })
   const openAutomaticLanguageScope = (
     candidate: LanguageSubjectCandidate,
@@ -7502,6 +7517,9 @@ async function activateModkit(
                   if (item.replacementRange !== undefined)
                     native.range = rangeOf(item.replacementRange)
                   if (item.sortText !== undefined) native.sortText = item.sortText
+                  // A shortcut item (`:Button`) replaces from its shortcut character on; VS Code
+                  // filters by the range's text, so without the provider's filter text it hides it.
+                  if (item.filterText !== undefined) native.filterText = item.filterText
                   return native
                 }),
                 completion.isIncomplete,
@@ -7850,6 +7868,7 @@ async function activateModkit(
     services: host.services,
     roots,
     containers,
+    subjectCatalog,
     readContentSource,
   })
   let thumbnailQueue: Promise<unknown> = Promise.resolve()
@@ -8275,6 +8294,22 @@ async function activateModkit(
     void vscode.commands.executeCommand('vscode.openWith', uri, CUSTOM_EDITOR_TYPE)
   }
 
+  /**
+   * A folder that stands for one subject (a mod package, a map folder) opens at the document the
+   * codec names as its anchor; a file opens as itself. Undefined: the folder has no anchor.
+   */
+  const anchoredUri = async (target: vscode.Uri): Promise<vscode.Uri | undefined> => {
+    if (((await vscode.workspace.fs.stat(target)).type & vscode.FileType.Directory) === 0) return target
+    const name = basename(target.path)
+    const anchors = anchorDocumentIndex(host.services.inventory).get(
+      name.slice(name.lastIndexOf('.') + 1).toLowerCase(),
+    )
+    const anchor = (await vscode.workspace.fs.readDirectory(target)).find(
+      ([entry, type]) => type === vscode.FileType.File && anchors?.has(entry.toLowerCase()),
+    )
+    return anchor === undefined ? undefined : vscode.Uri.joinPath(target, anchor[0])
+  }
+
   navigateWorkspaceResource = async (root, subjectId, range) => {
     /*
      * A resource that *is* a file opens as that file. Routing it through the package's own custom
@@ -8287,6 +8322,32 @@ async function activateModkit(
       // of the layer that declared it — which with a chain on screen is often not the active
       // package.
       await openResourceFile(memberUriOf(namespaceEntryRootOf(subjectId) ?? root, entry), range)
+      return true
+    }
+    /*
+     * A place by its own address — a package the chain loads implicitly (Liberty in the game's
+     * storage), a declaring file of another layer — opens there: a file at its declaration, a
+     * package at the document that stands for it.
+     */
+    const place =
+      subjectId.startsWith('content-source:') || subjectId.startsWith('file:')
+        ? subjectTarget(subjectId)
+        : undefined
+    if (place !== undefined) {
+      const uri =
+        typeof place === 'string'
+          ? vscode.Uri.file(place)
+          : vscode.Uri.from({
+              scheme: 'modkit-source',
+              authority: 'battlenet',
+              path: `/${place.sourceId}/${place.path}`,
+            })
+      const anchored = await anchoredUri(uri)
+      if (anchored === undefined) {
+        throw new Error(localizer.text('vscode.map.noAnchor', { name: basename(uri.path) }))
+      }
+      if (anchored === uri) await openResourceFile(uri, range)
+      else await vscode.commands.executeCommand('vscode.openWith', anchored, CUSTOM_EDITOR_TYPE)
       return true
     }
     const uri = subjectUriOf(root)
@@ -8469,6 +8530,7 @@ async function activateModkit(
       services: host.services,
       roots,
       containers,
+      subjectCatalog,
       onRead: event => {
         if (archiveAcceptanceIoActive) archiveAcceptanceReads.push(event)
       },
@@ -9702,26 +9764,17 @@ async function activateModkit(
       typeof input === 'object' && input !== null && 'uri' in input
         ? (input as { readonly uri?: unknown }).uri
         : undefined
-    let target =
+    const target =
       argument instanceof vscode.Uri ? argument : tabUri instanceof vscode.Uri ? tabUri : undefined
     if (target === undefined) return
-    if (((await vscode.workspace.fs.stat(target)).type & vscode.FileType.Directory) !== 0) {
-      const name = basename(target.path)
-      const anchors = anchorDocumentIndex(host.services.inventory).get(
-        name.slice(name.lastIndexOf('.') + 1).toLowerCase(),
+    const anchored = await anchoredUri(target)
+    if (anchored === undefined) {
+      void vscode.window.showInformationMessage(
+        `Modkit: ${localizer.text('vscode.map.noAnchor', { name: basename(target.path) })}`,
       )
-      const anchor = (await vscode.workspace.fs.readDirectory(target)).find(
-        ([entry, type]) => type === vscode.FileType.File && anchors?.has(entry.toLowerCase()),
-      )
-      if (anchor === undefined) {
-        void vscode.window.showInformationMessage(
-          `Modkit: ${localizer.text('vscode.map.noAnchor', { name })}`,
-        )
-        return
-      }
-      target = vscode.Uri.joinPath(target, anchor[0])
+      return
     }
-    await vscode.commands.executeCommand('vscode.openWith', target, viewType)
+    await vscode.commands.executeCommand('vscode.openWith', anchored, viewType)
   }
 
   /**
@@ -10593,6 +10646,9 @@ async function activateModkit(
 
     vscode.commands.registerCommand('modkit.resources.open', (argument: unknown) =>
       resourcesView.open(argument as ResourceTreeNode),
+    ),
+    vscode.commands.registerCommand('modkit.resources.goToDeclaration', (argument: unknown) =>
+      resourcesView.goToDeclaration(argument as ResourceTreeNode),
     ),
 
     /** Open the current or supplied resource through the generic workbench. */

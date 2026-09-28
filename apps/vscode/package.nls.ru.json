@@ -12,6 +12,7 @@
   "command.toggleResourceChain": "Цепочка зависимостей",
   "command.searchResources": "Поиск ресурсов",
   "command.openResourceNode": "Открыть ресурс",
+  "command.goToResourceDeclaration": "К объявлению",
   "extension.displayName": "Modkit MK3",
   "extension.description": "Среда Modkit MK3 для игровых модификаций и их ресурсов.",
   "command.addExtensionFolder": "Modkit: Добавить папку расширения…",

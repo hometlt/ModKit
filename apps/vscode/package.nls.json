@@ -12,6 +12,7 @@
   "command.toggleResourceChain": "Toggle Dependency Chain",
   "command.searchResources": "Search Resources",
   "command.openResourceNode": "Open Resource",
+  "command.goToResourceDeclaration": "Go to Declaration",
   "extension.displayName": "Modkit MK3",
   "extension.description": "Modkit MK3 host for game mod assets.",
   "command.addExtensionFolder": "Modkit: Add Extension Folder…",
