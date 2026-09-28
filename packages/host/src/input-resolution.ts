@@ -133,6 +133,13 @@ export interface CompanionEnumerationOptions {
    * what any of them mean.
    */
   readonly prefix: string
+  /**
+   * The literal start every pattern gives the entry's *name* inside `prefix` (`Zombie_` of
+   * `anim/Zombie_*.ani`), when they agree. A hint like `prefix`: a backend that can drop other
+   * names before yielding them should, so a directory of 15 000 clips does not spend the entry
+   * budget on names no pattern can match; one that cannot ignores it and loses nothing.
+   */
+  readonly namePrefix?: string
 }
 
 /**
@@ -355,6 +362,8 @@ function compilePatterns(
   readonly test: (logicalId: string) => boolean
   /** Listing hint for backends whose namespace is too large to enumerate whole. */
   readonly prefixes: readonly string[]
+  /** The literal name start inside a single directory prefix; see CompanionEnumerationOptions. */
+  readonly namePrefix: string
 } {
   if (patterns === undefined || patterns.length === 0) {
     throw new ModkitError({
@@ -412,6 +421,7 @@ function compilePatterns(
       return expressions.some(item => item.expression.test(item.whole ? logicalId : name))
     },
     prefixes: enumerationPrefixes(patterns, caseSensitivity),
+    namePrefix: enumerationNamePrefix(patterns, caseSensitivity),
   }
 }
 
@@ -448,6 +458,40 @@ function enumerationPrefixes(
  * When patterns disagree, their common part is cut back to a `/` for the same reason: a character
  * boundary in the middle of a segment is not a location either.
  */
+/**
+ * What every pattern promises about the name after the one directory `enumerationPrefix` gives:
+ * the literal text before its first wildcard. Only when all patterns share that directory and
+ * have a wildcard; a literal pattern is already its own whole prefix.
+ */
+function enumerationNamePrefix(
+  patterns: readonly string[],
+  caseSensitivity: CompanionCaseSensitivity,
+): string {
+  const directory = enumerationPrefix(patterns)
+  if (directory === '') return ''
+  const fold = (value: string) => (caseSensitivity === 'insensitive' ? value.toLowerCase() : value)
+  const starts = patterns.map(pattern => {
+    const normalized = pattern.replaceAll('\\', '/')
+    const wildcard = normalized.search(/[*?]/u)
+    if (wildcard === -1 || !fold(normalized).startsWith(fold(directory))) return undefined
+    const literal = normalized.slice(directory.length, wildcard)
+    return literal.includes('/') ? undefined : literal
+  })
+  if (starts.some(start => start === undefined)) return ''
+  let common = starts[0]!
+  for (const start of starts.slice(1)) {
+    let length = 0
+    while (
+      length < common.length &&
+      length < start!.length &&
+      fold(common[length]!) === fold(start![length]!)
+    )
+      length += 1
+    common = common.slice(0, length)
+  }
+  return common
+}
+
 function enumerationPrefix(patterns: readonly string[]): string {
   const safe = patterns.map(pattern => {
     const normalized = pattern.replaceAll('\\', '/')
@@ -667,8 +711,9 @@ export function createCompanionInputResolver(
     const enumerateScope = async (
       scope: InputSearchScope,
       prefix: string,
+      namePrefix = '',
     ): Promise<readonly string[]> => {
-      const key = canonicalJsonStringify([scope, prefix])
+      const key = canonicalJsonStringify([scope, prefix, namePrefix])
       const cached = enumerated.get(key)
       if (cached !== undefined) return cached
       const ids: string[] = []
@@ -677,7 +722,11 @@ export function createCompanionInputResolver(
           ids.push(normalizeCompanionLogicalId(value, { scope }))
         }
       } else {
-        for await (const entry of origin.enumerate(scope, { prefix }, signal)) {
+        for await (const entry of origin.enumerate(
+          scope,
+          namePrefix === '' ? { prefix } : { prefix, namePrefix },
+          signal,
+        )) {
           checkpoint(`enumerate:${scope}`)
           budget.entries += 1
           if (budget.entries > limits.maxEntries) exceeded('entries', limits.maxEntries)
@@ -749,7 +798,8 @@ export function createCompanionInputResolver(
       const matched: { readonly rank: number; readonly logicalId: string }[] = []
       for (const [rank, scope] of usable.entries()) {
         for (const prefix of patterns.prefixes) {
-          for (const logicalId of await enumerateScope(scope, prefix)) {
+          const namePrefix = patterns.prefixes.length === 1 ? patterns.namePrefix : ''
+          for (const logicalId of await enumerateScope(scope, prefix, namePrefix)) {
             if (
               scope === 'explicit-user-selection' &&
               !(explicit?.[requirement.id] ?? []).some(

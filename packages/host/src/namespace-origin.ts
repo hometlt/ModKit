@@ -289,8 +289,12 @@ export function createNamespaceCompanionOrigin(
        * between a bounded search and a scan: a production namespace may list hundreds of thousands of entries,
        * and a requirement that names a directory reads a few hundred of them instead.
        */
+      const namePrefix =
+        enumeration.namePrefix === undefined ? '' : fold(enumeration.prefix + enumeration.namePrefix)
       for await (const entry of listing(enumeration.prefix, signal)) {
         throwIfAborted(signal)
+        // the name hint drops what no pattern can match before the resolver counts it
+        if (namePrefix !== '' && !fold(entry.path).startsWith(namePrefix)) continue
         yield Object.freeze({
           logicalId: entry.path,
           ...(entry.size === undefined ? {} : { size: entry.size }),
