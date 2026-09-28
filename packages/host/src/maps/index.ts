@@ -2732,6 +2732,15 @@ export async function coordinateMapPreviewAssetSession(
     plannedRootIds.size !== workspaceRootIds.size ||
     [...plannedRootIds].some(rootId => !workspaceRootIds.has(rootId))
   ) {
+    // Name the roots on each side: a plan root the workspace graph does not reach is a broken
+    // dependency edge in the preparation, a workspace root without a plan entry has no resources.
+    const unreached = [...plannedRootIds].filter(rootId => !workspaceRootIds.has(rootId))
+    const unplanned = [...workspaceRootIds].filter(rootId => !plannedRootIds.has(rootId))
+    const named = (rootIds: readonly string[]) =>
+      rootIds.map(rootId => {
+        const root = prepared.plan.workspace.roots.find(item => item.rootId === rootId)
+        return root === undefined ? rootId : `${rootId} (${root.sourcePath})`
+      })
     return {
       state: 'unresolved',
       diagnostics: Object.freeze([
@@ -2740,7 +2749,9 @@ export async function coordinateMapPreviewAssetSession(
         diagnostic(
           'error',
           'x3.host/map-preview-resource-root-mismatch',
-          'the resource plan must map every resolved workspace root exactly once',
+          `the resource plan must map every resolved workspace root exactly once${unreached.length === 0 ? '' : `; not reached from the map: ${named(unreached).join(', ')}`}${unplanned.length === 0 ? '' : `; without resources: ${named(unplanned).join(', ')}`}`,
+          undefined,
+          { unreached, unplanned },
         ),
       ]),
     }
