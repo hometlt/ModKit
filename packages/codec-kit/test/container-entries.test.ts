@@ -1,7 +1,7 @@
 import { deflateSync } from 'node:zlib'
 import { describe, expect, it } from 'vitest'
 import { CONTAINER_EXTRACT_HANDLER_ID, createInspectionCodec } from '../src/index.js'
-import { containerEntryAccess } from '../src/container-entries.js'
+import { containerEntryAccess, readContainerEntry } from '../src/container-entries.js'
 
 // A tiny range container: a 4-byte magic, then three entries' bytes. The codec only maps its index
 // to a ContainerEntryTable; listing and extraction come from codec-kit (S3 stage 1).
@@ -262,7 +262,10 @@ describe('container entry identity', () => {
       },
       {
         scheme: 'rfh',
-        source: { ref: { id: 'maps', uri: 'file:///MAPS0001.RFH' }, revision: 'provider-token:uri' } as never,
+        source: {
+          ref: { id: 'maps', uri: 'file:///MAPS0001.RFH' },
+          revision: 'provider-token:uri',
+        } as never,
         byteSource: { size: async () => 1n, read: async () => new Uint8Array(1) },
         budget: { maxInputBytes: 1024n } as never,
       },
@@ -272,5 +275,39 @@ describe('container entry identity', () => {
       `rfh:${encodeURIComponent('file:///MAPS0001.RFH')}!/%23M61%20Isles%20of%20Caladan/test.xbf`,
     )
     expect(new URL(lease.value.uri).hash).toBe('')
+  })
+})
+
+describe('readContainerEntry', () => {
+  it('decodes one entry from a range source without the host', async () => {
+    const bytes = new Uint8Array([...zlibbed, ...stored])
+    const source = {
+      size: async () => BigInt(bytes.byteLength),
+      read: async (offset: bigint, length: number) =>
+        bytes.slice(Number(offset), Number(offset) + length),
+    }
+    const zlib = await readContainerEntry(
+      {
+        path: 'a.txt',
+        size: BigInt(plain.byteLength),
+        storage: { kind: 'zlib', offset: 0n, compressedLength: BigInt(zlibbed.byteLength) },
+      },
+      source,
+      { maxBytes: 4096 },
+    )
+    expect(new TextDecoder().decode(zlib)).toBe('zlib entry '.repeat(40))
+    const entry = {
+      path: 'b.txt',
+      size: BigInt(stored.byteLength),
+      storage: {
+        kind: 'stored' as const,
+        offset: BigInt(zlibbed.byteLength),
+        length: BigInt(stored.byteLength),
+      },
+    }
+    expect(
+      new TextDecoder().decode(await readContainerEntry(entry, source, { maxBytes: 64 })),
+    ).toBe('hello, stored entry')
+    await expect(readContainerEntry(entry, source, { maxBytes: 4 })).rejects.toThrow(RangeError)
   })
 })

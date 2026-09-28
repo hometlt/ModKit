@@ -265,96 +265,8 @@ export function containerEntryAccess(
   }
 
   /** One entry's decoded bytes, whole: bounded by its size and by the open budget. */
-  const extractEntry = async (
-    entry: ContainerEntry,
-    signal: AbortSignal | undefined,
-  ): Promise<Uint8Array> => {
-    if (entry.size > BigInt(maximum)) {
-      throw new RangeError(
-        `container entry ${entry.path} (${entry.size} bytes) exceeds the extraction budget of ${maximum}`,
-      )
-    }
-    const size = Number(entry.size)
-    const storage = entry.storage
-    let bytes: Uint8Array
-    switch (storage.kind) {
-      case 'stored':
-        bytes = await readRange(storage.offset, storage.length, signal, storage.source)
-        break
-      case 'deflate':
-      case 'zlib':
-      case 'gzip': {
-        const { decompressBounded } = await import('./compression/bounded.js')
-        const format =
-          storage.kind === 'deflate' ? 'deflate-raw' : storage.kind === 'zlib' ? 'deflate' : 'gzip'
-        bytes = await decompressBounded(
-          await readRange(storage.offset, storage.compressedLength, signal, storage.source),
-          format,
-          {
-            maxOutputBytes: size,
-            ...(signal === undefined ? {} : { signal }),
-          },
-        )
-        break
-      }
-      case 'zstd': {
-        const { decodeZstd } = await import('./compression/zstd.js')
-        bytes = decodeZstd(
-          await readRange(storage.offset, storage.compressedLength, signal, storage.source),
-          {
-            expectedLength: size,
-            maxOutputBytes: size,
-          },
-        )
-        break
-      }
-      case 'lz4-block': {
-        const { decodeLz4Block } = await import('./compression/lz4.js')
-        bytes = decodeLz4Block(
-          await readRange(storage.offset, storage.compressedLength, signal, storage.source),
-          size,
-        )
-        break
-      }
-      case 'refpack': {
-        const { decodeRefPack } = await import('./compression/refpack.js')
-        bytes = decodeRefPack(
-          await readRange(storage.offset, storage.compressedLength, signal, storage.source),
-          size,
-        )
-        break
-      }
-      case 'custom': {
-        const opened = await storage.open(signal)
-        if (Symbol.asyncIterator in opened) {
-          const chunks: Uint8Array[] = []
-          let total = 0
-          for await (const chunk of opened as AsyncIterable<Uint8Array>) {
-            throwIfCancelled(signal)
-            total += chunk.byteLength
-            if (total > size)
-              throw new RangeError(`container entry ${entry.path} decodes past its size`)
-            chunks.push(chunk)
-          }
-          bytes = new Uint8Array(total)
-          let at = 0
-          for (const chunk of chunks) {
-            bytes.set(chunk, at)
-            at += chunk.byteLength
-          }
-        } else {
-          bytes = await (opened as ByteRangeSource).read(0n, size, signal)
-        }
-        break
-      }
-    }
-    if (bytes.byteLength !== size) {
-      throw new RangeError(
-        `container entry ${entry.path} decoded to ${bytes.byteLength} bytes, not ${size}`,
-      )
-    }
-    return bytes
-  }
+  const extractEntry = (entry: ContainerEntry, signal: AbortSignal | undefined) =>
+    decodeContainerEntry(entry, maximum, readRange, signal)
 
   const extract = async (input: unknown, operation: { readonly signal?: AbortSignal }) => {
     const entryId =
@@ -368,4 +280,135 @@ export function containerEntryAccess(
 
   const decodedTotal = entries.reduce((total, entry) => total + entry.size, 0n)
   return Object.freeze({ namespace, extract, extractEntry, decodedTotal })
+}
+
+/** Reads a range of the container (or of the companion `bindingId` names), at most the budget. */
+type EntryRangeReader = (
+  offset: bigint,
+  length: bigint,
+  signal: AbortSignal | undefined,
+  bindingId?: string,
+) => Promise<Uint8Array>
+
+/** One entry's decoded bytes, whole: bounded by its size and by `maximum`. */
+async function decodeContainerEntry(
+  entry: ContainerEntry,
+  maximum: number,
+  readRange: EntryRangeReader,
+  signal: AbortSignal | undefined,
+): Promise<Uint8Array> {
+  if (entry.size > BigInt(maximum)) {
+    throw new RangeError(
+      `container entry ${entry.path} (${entry.size} bytes) exceeds the extraction budget of ${maximum}`,
+    )
+  }
+  const size = Number(entry.size)
+  const storage = entry.storage
+  let bytes: Uint8Array
+  switch (storage.kind) {
+    case 'stored':
+      bytes = await readRange(storage.offset, storage.length, signal, storage.source)
+      break
+    case 'deflate':
+    case 'zlib':
+    case 'gzip': {
+      const { decompressBounded } = await import('./compression/bounded.js')
+      const format =
+        storage.kind === 'deflate' ? 'deflate-raw' : storage.kind === 'zlib' ? 'deflate' : 'gzip'
+      bytes = await decompressBounded(
+        await readRange(storage.offset, storage.compressedLength, signal, storage.source),
+        format,
+        {
+          maxOutputBytes: size,
+          ...(signal === undefined ? {} : { signal }),
+        },
+      )
+      break
+    }
+    case 'zstd': {
+      const { decodeZstd } = await import('./compression/zstd.js')
+      bytes = decodeZstd(
+        await readRange(storage.offset, storage.compressedLength, signal, storage.source),
+        {
+          expectedLength: size,
+          maxOutputBytes: size,
+        },
+      )
+      break
+    }
+    case 'lz4-block': {
+      const { decodeLz4Block } = await import('./compression/lz4.js')
+      bytes = decodeLz4Block(
+        await readRange(storage.offset, storage.compressedLength, signal, storage.source),
+        size,
+      )
+      break
+    }
+    case 'refpack': {
+      const { decodeRefPack } = await import('./compression/refpack.js')
+      bytes = decodeRefPack(
+        await readRange(storage.offset, storage.compressedLength, signal, storage.source),
+        size,
+      )
+      break
+    }
+    case 'custom': {
+      const opened = await storage.open(signal)
+      if (Symbol.asyncIterator in opened) {
+        const chunks: Uint8Array[] = []
+        let total = 0
+        for await (const chunk of opened as AsyncIterable<Uint8Array>) {
+          throwIfCancelled(signal)
+          total += chunk.byteLength
+          if (total > size)
+            throw new RangeError(`container entry ${entry.path} decodes past its size`)
+          chunks.push(chunk)
+        }
+        bytes = new Uint8Array(total)
+        let at = 0
+        for (const chunk of chunks) {
+          bytes.set(chunk, at)
+          at += chunk.byteLength
+        }
+      } else {
+        bytes = await (opened as ByteRangeSource).read(0n, size, signal)
+      }
+      break
+    }
+  }
+  if (bytes.byteLength !== size) {
+    throw new RangeError(
+      `container entry ${entry.path} decoded to ${bytes.byteLength} bytes, not ${size}`,
+    )
+  }
+  return bytes
+}
+
+/**
+ * One entry's decoded bytes read from `source` by its storage (stored, deflate, zlib, gzip, zstd,
+ * lz4-block, refpack or custom) — for a reader outside the host, such as a game's content source
+ * layering archives, that has the entry table but no `container.extract`. At most `maxBytes` per
+ * read and decoded; an entry kept in a companion is refused.
+ */
+export function readContainerEntry(
+  entry: ContainerEntry,
+  source: ByteRangeSource,
+  options: { readonly maxBytes: number; readonly signal?: AbortSignal },
+): Promise<Uint8Array> {
+  return decodeContainerEntry(
+    entry,
+    options.maxBytes,
+    async (offset, length, signal, bindingId) => {
+      if (bindingId !== undefined)
+        throw new TypeError(`container entry ${entry.path} lives in companion «${bindingId}»`)
+      if (length > BigInt(options.maxBytes))
+        throw new RangeError(
+          `container entry range of ${length} bytes exceeds the read budget of ${options.maxBytes}`,
+        )
+      const bytes = await source.read(offset, Number(length), signal)
+      if (BigInt(bytes.byteLength) !== length) throw new RangeError('container entry is truncated')
+      return bytes
+    },
+    options.signal,
+  )
 }
