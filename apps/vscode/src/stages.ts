@@ -24,7 +24,7 @@ import { lazyViewerModule } from '@modkit/ui/viewer'
 import { createHexEditor } from '@modkit/ui/hex-editor'
 import { createImageViewer } from '@modkit/ui/image'
 import { createMapLayersViewer } from '@modkit/ui/map-layers'
-import { createModelViewer } from '@modkit/ui/model'
+import { createModelViewer, MODEL_FACET_CONTRACTS } from '@modkit/ui/model'
 import { createPlaybackViewer } from '@modkit/ui/transport'
 import { createTableViewer } from '@modkit/ui/table'
 import { createVirtualTextViewer } from '@modkit/ui/text-virtual'
@@ -179,6 +179,8 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
        * a port or it is not, exactly as the image stage is handed an export writer or not.
        */
       module: modelViewer(),
+      // Materials, textures, bones, animations, lights…: bound when the codec publishes them.
+      optionalContracts: MODEL_FACET_CONTRACTS,
     },
     {
       id: 'audio',
