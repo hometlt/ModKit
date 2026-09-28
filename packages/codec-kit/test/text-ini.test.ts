@@ -70,6 +70,34 @@ describe('INI', () => {
     expect(result.diagnostics.map(item => item.code)).toEqual(['modkit/text-data-ini-skipped-line'])
   })
 
+  it("reads Emperor's Rules.txt and ArtIni.txt: // anywhere, names listed one per line", () => {
+    const text = [
+      '[BuildingTypes]',
+      'HKWall',
+      'HKOutpost\t\t\t//group\ticons',
+      '[GPSFXLavasmoke]\t//Just an effect',
+      '[HKWall]',
+      'StormDamage=5 //only = once',
+      'Xaf = "HK_Wall"',
+      'Side (0);',
+      '',
+    ].join('\r\n')
+    expect(parseIni(decoded(text)).state).toBe('failed')
+    const result = parseIni(decoded(text), 'ini-emperor')
+    if (result.state !== 'ok') throw new Error('expected ok')
+    const read = result.document.sections.map(section => [
+      section.name,
+      section.entries.map(entry => [entry.key, entry.value]),
+    ])
+    expect(read).toEqual([
+      ['', []],
+      ['BuildingTypes', [['HKWall', ''], ['HKOutpost', '']]],
+      ['GPSFXLavasmoke', []],
+      ['HKWall', [['StormDamage', '5'], ['Xaf', '"HK_Wall"'], ['Side (0);', '']]],
+    ])
+    expect(result.diagnostics).toEqual([])
+  })
+
   it('is linear in the size of the file', () => {
     const big = `[s]\r\n${'Key=Value ; c\r\n'.repeat(100_000)}`
     const started = performance.now()

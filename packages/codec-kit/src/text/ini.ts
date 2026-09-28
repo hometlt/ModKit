@@ -7,6 +7,10 @@
  * line, and a line without `=` (`***Crazy Ivan stuff***`) is skipped with a warning, as the
  * engine skips it. `ini-war3` reads Warcraft III's profile files (`Units/*Func.txt`,
  * `*Strings.txt`) the same way except that `;` is text, not a comment: tooltips contain it.
+ * `ini-emperor` reads Emperor: Battle for Dune's `Rules.txt` and `ArtIni.txt`: `//` starts a
+ * comment anywhere (a whole line, or after a section header, a value or a name), `;` is text, and a
+ * line without `=` is a list member, not skipped — `[BuildingTypes]` lists its names one per line —
+ * so it becomes an entry whose key is the line and whose value is empty.
  */
 import type { ParseResult } from '@modkit/sdk/text-data'
 import { diagnostic } from '@modkit/core'
@@ -35,8 +39,9 @@ export interface IniDocument {
 export function parseIni(decoded: DecodedText, dialect?: string): ParseResult<IniDocument> {
   const text = decoded.text
   const westwood = dialect === 'ini-westwood'
+  const emperor = dialect === 'ini-emperor'
   // Dialects whose engines skip what is not a key = value line, and take `//` as a comment.
-  const lenient = westwood || dialect === 'ini-war3'
+  const lenient = westwood || emperor || dialect === 'ini-war3'
   const span = spanner(text)
   const sections: IniSection[] = []
   let current: IniSection = { name: '', entries: [], range: span(0, 0) }
@@ -57,14 +62,24 @@ export function parseIni(decoded: DecodedText, dialect?: string): ParseResult<In
       (lenient && trimmed.startsWith('//'))
     )
       continue
-    const content = westwood ? trimmed.replace(/\s*;.*$/u, '') : trimmed
+    const content = westwood
+      ? trimmed.replace(/\s*;.*$/u, '')
+      : emperor
+        ? trimmed.replace(/\s*\/\/.*$/u, '')
+        : trimmed
     const section = /^\[([^\]]+)\]$/u.exec(content)
     if (section) {
       current = { name: section[1]!, entries: [], range: span(offset, line.length) }
       sections.push(current)
       continue
     }
-    const equals = line.indexOf('=')
+    // Emperor's `//` comment may hold an `=`; its entries are read from the line without it.
+    const body = emperor ? content : line
+    const equals = body.indexOf('=')
+    if (emperor && equals < 0) {
+      current.entries.push({ key: content, value: '', range: span(offset, line.length) })
+      continue
+    }
     if (equals <= 0) {
       if (lenient) {
         diagnostics.push(
@@ -87,7 +102,7 @@ export function parseIni(decoded: DecodedText, dialect?: string): ParseResult<In
         line.length,
       )
     }
-    const key = line.slice(0, equals).trim()
+    const key = body.slice(0, equals).trim()
     const identity = `${current.name}\n${key}`
     if (dialect === 'ini-basic' && seen.has(identity))
       return failure(
@@ -98,7 +113,7 @@ export function parseIni(decoded: DecodedText, dialect?: string): ParseResult<In
         line.length,
       )
     seen.add(identity)
-    const value = line.slice(equals + 1)
+    const value = body.slice(equals + 1)
     current.entries.push({
       key,
       value: (westwood ? value.replace(/;.*$/u, '') : value).trim(),
