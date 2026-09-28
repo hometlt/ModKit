@@ -72,6 +72,8 @@ export interface EditPanelOptions {
   readonly templateImages?: GameTemplateViewerOptions['images']
   /** Whether archive views list members the codec calls hidden (`modkit.showHiddenEntries`). */
   readonly showHiddenEntries?: () => boolean
+  /** The game-string locale a card opens in (`modkit.locale`); the card falls back to what it has. */
+  readonly gameLocale?: string
   /**
    * The pixel view lends its history and save to the window, so the editor's own Undo, Redo and
    * Save drive them. Called again with `undefined` when that view goes away.

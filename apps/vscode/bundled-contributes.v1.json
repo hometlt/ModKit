@@ -167,6 +167,11 @@
       "icon": "$(database)"
     },
     {
+      "command": "modkit.selectGameLocale",
+      "title": "%command.selectGameLocale%",
+      "icon": "$(globe)"
+    },
+    {
       "command": "modkit.sources.openInstallation",
       "title": "%command.openGameInstallation%",
       "icon": "$(plug)"
@@ -447,6 +452,11 @@
           "additionalProperties": false
         },
         "markdownDescription": "%configuration.indexCaches.description%"
+      },
+      "modkit.locale": {
+        "type": "string",
+        "default": "",
+        "markdownDescription": "%configuration.locale.description%"
       }
     }
   },
@@ -724,7 +734,8 @@
         "JASS"
       ],
       "extensions": [
-        ".j"
+        ".j",
+        ".jass"
       ],
       "filenamePatterns": [
         "**/[Ss]cripts/*.ai"

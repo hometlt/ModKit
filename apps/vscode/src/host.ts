@@ -813,6 +813,8 @@ export interface VsCodeServeOptions {
   readonly budget?: ResourceBudget
   /** Trusted desktop resolver for opaque installation/dependency roots declared by map providers. */
   readonly mapPreviewResourcePlanResolver?: MapPreviewResourcePlanResolver
+  /** Game-string locales, preferred first (`modkit.locale`); read at each open. */
+  readonly gameLocales?: () => readonly string[]
   /** Localizes host-owned diagnostics before they cross into VS Code's Problems UI. */
   readonly localizer?: UiLocalizer
   /**
@@ -1361,6 +1363,7 @@ function serveVsCode(
             grant: request.grant,
             budgets: request.budget,
             ...(options.localizer === undefined ? {} : { localizer: options.localizer }),
+            ...(options.gameLocales === undefined ? {} : { locales: options.gameLocales() }),
             ...(mapSelection === undefined ? {} : { selectionId: mapSelection.selectionId }),
             ...(options.mapPreviewResourcePlanResolver === undefined
               ? {}

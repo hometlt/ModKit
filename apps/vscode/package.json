@@ -191,6 +191,11 @@
         "title": "%command.selectGameInstallation%",
         "icon": "$(folder-library)"
       },
+      {
+        "command": "modkit.selectGameLocale",
+        "title": "%command.selectGameLocale%",
+        "icon": "$(globe)"
+      },
       { "command": "modkit.setCodecDefaultEditor", "title": "%command.setCodecDefaultEditor%" },
       { "command": "modkit.showDiagnostics", "title": "%command.showDiagnostics%" },
       { "command": "modkit.showHostProfile", "title": "%command.openWorkbench%" },
@@ -374,6 +379,11 @@
           "default": true,
           "markdownDescription": "%configuration.launch.warnIfRunning.description%",
           "type": "boolean"
+        },
+        "modkit.locale": {
+          "default": "",
+          "markdownDescription": "%configuration.locale.description%",
+          "type": "string"
         },
         "modkit.managedEditorAssociations": {
           "default": [],
@@ -567,7 +577,7 @@
       {
         "id": "jass",
         "aliases": ["JASS"],
-        "extensions": [".j"],
+        "extensions": [".j", ".jass"],
         "filenamePatterns": ["**/[Ss]cripts/*.ai"],
         "configuration": "./media/jass-language-configuration.json"
       },
@@ -1011,6 +1021,7 @@
     "onCommand:modkit.runtime.control",
     "onCommand:modkit.searchContainer",
     "onCommand:modkit.selectGameInstallation",
+    "onCommand:modkit.selectGameLocale",
     "onCommand:modkit.setCodecDefaultEditor",
     "onCommand:modkit.showDiagnostics",
     "onCommand:modkit.showHostProfile",

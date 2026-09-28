@@ -158,7 +158,10 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
               id: 'facts',
               title: context.localizer.text('stage.card'),
               icon: 'info',
-              module: createSubjectCardViewer({ localizer: context.localizer }),
+              module: createSubjectCardViewer({
+                localizer: context.localizer,
+                ...(context.gameLocale === undefined ? {} : { locale: context.gameLocale }),
+              }),
             },
             {
               id: 'structure',
@@ -256,6 +259,8 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
         localizer: context.localizer,
         // VS Code's tab and breadcrumb already name the subject; the card's own header repeated it.
         header: false,
+        // The locale `modkit.locale` names; the header still switches it for this card.
+        ...(context.gameLocale === undefined ? {} : { locale: context.gameLocale }),
         previews: { model: modelViewer() },
         ...(context.textures === undefined ? {} : { textures: context.textures }),
       }),

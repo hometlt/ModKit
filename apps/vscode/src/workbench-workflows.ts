@@ -217,6 +217,43 @@ export function regionsToConnect(
     .map(region => region.id)
 }
 
+/** Game-data locales the picker offers; `modkit.locale` also takes any other code. */
+export const GAME_LOCALES: readonly string[] = Object.freeze([
+  'enUS',
+  'deDE',
+  'esES',
+  'esMX',
+  'frFR',
+  'itIT',
+  'jaJP',
+  'koKR',
+  'plPL',
+  'ptBR',
+  'ruRU',
+  'zhCN',
+  'zhTW',
+])
+
+/**
+ * Game-string locales in preference order (`modkit.locale`): the configured code, or when it is
+ * empty the one VS Code's display language names (`ru` → `ruRU`, `pt-br` → `ptBR`), then enUS,
+ * which every stock game package has. A viewer falls back along it to the first locale a mod has.
+ */
+export function gameLocales(configured: unknown, displayLanguage: string): readonly string[] {
+  const code = typeof configured === 'string' ? configured.trim() : ''
+  const [language = '', region = ''] = displayLanguage.toLowerCase().split('-')
+  const fromDisplay = GAME_LOCALES.find(
+    locale =>
+      locale.slice(0, 2).toLowerCase() === language &&
+      (region === '' || locale.slice(2).toLowerCase() === region),
+  )
+  const chosen =
+    code === ''
+      ? fromDisplay
+      : (GAME_LOCALES.find(locale => locale.toLowerCase() === code.toLowerCase()) ?? code)
+  return Object.freeze([...new Set([...(chosen === undefined ? [] : [chosen]), 'enUS'])])
+}
+
 /** The installation-discovery game ids of each extension, keyed by its `publisher/id`. */
 function installationGameIdsByExtension(
   inventory: unknown,

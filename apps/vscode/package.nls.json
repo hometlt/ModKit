@@ -104,5 +104,7 @@
   "command.accountsRefresh": "Refresh Accounts and Keys",
   "command.accountsAcquire": "Sign In or Enter Key",
   "command.accountsReplace": "Replace Key",
-  "command.accountsSignOut": "Sign Out or Delete Key"
+  "command.accountsSignOut": "Sign Out or Delete Key",
+  "command.selectGameLocale": "Modkit: Game Strings Locale…",
+  "configuration.locale.description": "Locale of game strings (`enUS`, `ruRU`, `deDE`…) for names in hover and completions, cards, the wiki and the map view. Empty follows VS Code's display language; a mod without that locale falls back to `enUS`, then to the first locale it has."
 }

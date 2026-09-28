@@ -76,6 +76,8 @@ export interface PageBootstrap {
   readonly forcedStage?: string
   /** `modkit.showHiddenEntries` when the page was built; `show-hidden` events carry changes. */
   readonly showHiddenEntries?: boolean
+  /** The game-string locale cards open in (`modkit.locale`), when the page was built. */
+  readonly gameLocale?: string
   /** Function-free extension/contribution subject cards for the generic subject-card renderer. */
   readonly extensionCard?: import('./extension-cards.js').ExtensionCardBundle
   /**

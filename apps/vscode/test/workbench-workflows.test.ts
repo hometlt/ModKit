@@ -8,6 +8,7 @@ import {
   VSCODE_LEGACY_VIEW_REPLACEMENTS,
   assertMaterializationBound,
   createDiagnosticJournal,
+  gameLocales,
   installationGameIds,
   installationsAtFolder,
   regionsToConnect,
@@ -156,6 +157,19 @@ describe('generic source lifecycle', () => {
     expect(regionsToConnect(['roblox:assets'], roots, regions, [])).toEqual(['open-cloud'])
     expect(regionsToConnect(['roblox:assets'], roots, regions, ['open-cloud'])).toEqual([])
     expect(regionsToConnect(['unknown'], roots, regions, [])).toEqual([])
+  })
+
+  it('takes the game-string locale from modkit.locale, else from the display language, then enUS', () => {
+    expect(gameLocales('', 'ru')).toEqual(['ruRU', 'enUS'])
+    expect(gameLocales(undefined, 'pt-br')).toEqual(['ptBR', 'enUS'])
+    expect(gameLocales('', 'zh-tw')).toEqual(['zhTW', 'enUS'])
+    // a display language no game locale matches, or its English, reads enUS alone
+    expect(gameLocales('', 'cs')).toEqual(['enUS'])
+    expect(gameLocales('', 'en-gb')).toEqual(['enUS'])
+    // the setting wins over the display language, spelled any case; an unlisted code is kept
+    expect(gameLocales('dede', 'ru')).toEqual(['deDE', 'enUS'])
+    expect(gameLocales(' enUS ', 'ru')).toEqual(['enUS'])
+    expect(gameLocales('xxYY', 'ru')).toEqual(['xxYY', 'enUS'])
   })
 
   it('hands each extension the selected installation of the game its own discovery names', () => {

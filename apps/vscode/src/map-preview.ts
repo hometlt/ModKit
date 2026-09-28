@@ -73,6 +73,8 @@ export interface PrepareVsCodeMapPreviewRequest {
   readonly signal?: AbortSignal
   /** Host-selected UI language; defaults to the deterministic English application catalog. */
   readonly localizer?: UiLocalizer
+  /** Game-string locales the map's names are read in, preferred first (`modkit.locale`). */
+  readonly locales?: readonly string[]
   /** Test seam: product callers always use the common host coordinator. */
   readonly coordinate?: MapPreviewCoordinator
 }
@@ -107,6 +109,14 @@ export async function prepareVsCodeMapPreview(
         : { resourcePlanResolver: request.resourcePlanResolver }),
       ...(request.selectionId === undefined ? {} : { selectionId: request.selectionId }),
       ...COORDINATOR_LIMITS,
+      ...(request.locales === undefined
+        ? {}
+        : {
+            catalogEnrichment: {
+              ...MAP_PREVIEW_CATALOG_ENRICHMENT_POLICY,
+              locales: Object.freeze([...request.locales]),
+            },
+          }),
       ...(request.catalog === undefined ? {} : { catalog: request.catalog }),
       ...(request.signal === undefined ? {} : { signal: request.signal }),
     })

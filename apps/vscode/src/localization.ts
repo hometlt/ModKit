@@ -423,6 +423,11 @@ const EN_MESSAGES = Object.freeze({
   'vscode.iconTheme.offer':
     'Turn on Modkit file icons? They show game formats (models, textures, maps, archives) in the Explorer. You can switch back under Preferences → File Icon Theme.',
   'vscode.iconTheme.enable': 'Turn on',
+  'vscode.locale.statusName': 'Modkit Game Strings Locale',
+  'vscode.locale.tooltip': 'Game strings in {locale}: names in hover, completions and cards. Click to change.',
+  'vscode.locale.pick': 'Locale of game strings',
+  'vscode.locale.auto': 'Automatic — {locale} (VS Code display language)',
+  'vscode.locale.current': 'current',
   'vscode.edit.noneDrivable':
     '{unsupported} of {declared} mutating operation(s) declared; none can be driven here',
   'vscode.edit.counts': '{forms} form(s) over {declared} mutating operation(s)',
@@ -927,6 +932,11 @@ const RU_MESSAGES: Readonly<Record<keyof typeof EN_MESSAGES, string>> = Object.f
   'vscode.iconTheme.offer':
     'Включить значки файлов Modkit? Они показывают форматы игр (модели, текстуры, карты, архивы) в проводнике. Вернуть прежнюю тему можно в «Параметры → Тема значков файлов».',
   'vscode.iconTheme.enable': 'Включить',
+  'vscode.locale.statusName': 'Локаль игровых строк Modkit',
+  'vscode.locale.tooltip': 'Игровые строки: {locale} — имена в hover, подсказках и карточках. Нажмите, чтобы сменить.',
+  'vscode.locale.pick': 'Локаль игровых строк',
+  'vscode.locale.auto': 'Автоматически — {locale} (язык интерфейса VS Code)',
+  'vscode.locale.current': 'текущая',
   'vscode.edit.noneDrivable':
     'Объявлено операций изменения: {declared}; недоступно здесь: {unsupported}',
   'vscode.edit.counts': 'Форм: {forms}; операций изменения: {declared}',

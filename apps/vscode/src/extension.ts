@@ -218,6 +218,8 @@ type RuntimeDebugController,
 import {
 assertMaterializationBound,
 createDiagnosticJournal,
+GAME_LOCALES,
+gameLocales,
 installationGameIds,
 installationsAtFolder,
 regionsToConnect,
@@ -683,6 +685,9 @@ async function activateModkit(
   } finally {
     await localizationVfs.dispose()
   }
+  // Game-string locales, preferred first: `modkit.locale`, else the display language, then enUS.
+  const configuredGameLocales = (): readonly string[] =>
+    gameLocales(vscode.workspace.getConfiguration('modkit').get('locale'), vscode.env.language)
   /*
    * A map loads like a mod: it names its dependencies, the configured content sources (the
    * installation, its CASC storage, the player's folders) resolve them, and the world reads every
@@ -6645,11 +6650,13 @@ async function activateModkit(
         }
         const openOrigins = [...openOriginsByUri.values()]
         const contextOrigins = Object.freeze([...openOrigins, ...documentOrigins])
+        const locales = configuredGameLocales()
         const semanticInputs = Object.freeze([
           Object.freeze({
             kind: 'locale-set',
-            id: 'selected-game-locales:enUS',
-            revision: languageWorkspaceContextToken(['enUS']),
+            id: `selected-game-locales:${locales.join(',')}`,
+            revision: languageWorkspaceContextToken(locales),
+            payload: Object.freeze({ locales: [...locales] }),
           }),
           Object.freeze({
             kind: 'content-path-index',
@@ -8071,6 +8078,7 @@ async function activateModkit(
       exportFiles: (files, beside) => exportViewerFiles(files, beside),
       configuration,
       mapPreviewResourcePlanResolver,
+      gameLocales: configuredGameLocales,
       localizer,
       // The window's one registry, so a page opening a member reaches the archive the Explorer
       // already has open rather than a second copy of it.
@@ -11284,6 +11292,66 @@ async function activateModkit(
           : workbench.update('iconTheme', ICON_THEME_ID, vscode.ConfigurationTarget.Global),
       )
   }
+
+  /*
+   * The game-string locale sits in the status bar while one of this extension's own languages is
+   * edited: names in hover, completions and cards come in it. Picking one writes `modkit.locale`;
+   * the built-in languages it only adds files to (XML, INI, Lua) do not show it.
+   */
+  const ownLanguages = new Set(
+    ((context.extension.packageJSON as { contributes?: { languages?: unknown[] } }).contributes
+      ?.languages ?? [])
+      .filter(
+        (language): language is { id: string; aliases: unknown } =>
+          typeof language === 'object' && language !== null && 'aliases' in language,
+      )
+      .map(language => language.id),
+  )
+  const localeStatus = vscode.window.createStatusBarItem(
+    'modkit.gameLocale',
+    vscode.StatusBarAlignment.Right,
+    99,
+  )
+  localeStatus.name = localizer.text('vscode.locale.statusName')
+  localeStatus.command = 'modkit.selectGameLocale'
+  const showLocaleStatus = (): void => {
+    const locale = configuredGameLocales()[0] as string
+    localeStatus.text = `$(globe) ${locale}`
+    localeStatus.tooltip = localizer.text('vscode.locale.tooltip', { locale })
+    const languageId = vscode.window.activeTextEditor?.document.languageId
+    if (languageId !== undefined && ownLanguages.has(languageId)) localeStatus.show()
+    else localeStatus.hide()
+  }
+  context.subscriptions.push(
+    localeStatus,
+    vscode.window.onDidChangeActiveTextEditor(showLocaleStatus),
+    vscode.workspace.onDidChangeConfiguration(event => {
+      if (!event.affectsConfiguration('modkit.locale')) return
+      showLocaleStatus()
+      // Answers already in flight were computed in the old locale.
+      languageWorkspace.invalidate('game-string locale changed')
+    }),
+    vscode.commands.registerCommand('modkit.selectGameLocale', async () => {
+      const current = vscode.workspace.getConfiguration('modkit').get<string>('locale') ?? ''
+      const automatic = gameLocales('', vscode.env.language)[0] as string
+      const items = [
+        { label: localizer.text('vscode.locale.auto', { locale: automatic }), value: '' },
+        ...GAME_LOCALES.map(locale => ({ label: locale, value: locale })),
+      ].map(item =>
+        item.value === current.trim()
+          ? { ...item, description: localizer.text('vscode.locale.current') }
+          : item,
+      )
+      const picked = await vscode.window.showQuickPick(items, {
+        placeHolder: localizer.text('vscode.locale.pick'),
+      })
+      if (picked === undefined) return
+      await vscode.workspace
+        .getConfiguration('modkit')
+        .update('locale', picked.value, vscode.ConfigurationTarget.Global)
+    }),
+  )
+  showLocaleStatus()
 
   // ---------------------------------------------------------------- views
   /*

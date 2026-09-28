@@ -9,6 +9,7 @@ import {
   type VsCodeSubjectHost,
 } from './host.js'
 import { pageHtml, type WebviewLike } from './page.js'
+import { gameLocales } from './workbench-workflows.js'
 
 /** Nonce for the webview CSP. A fresh one per load, so a cached script cannot be replayed. */
 export function nonce(): string {
@@ -87,6 +88,10 @@ export function panelHtml(options: PanelPageOptions): string {
       ...(options.explorer === undefined ? {} : { explorer: options.explorer }),
       showHiddenEntries:
         vscode.workspace.getConfiguration('modkit').get<boolean>('showHiddenEntries') === true,
+      gameLocale: gameLocales(
+        vscode.workspace.getConfiguration('modkit').get('locale'),
+        vscode.env.language,
+      )[0] as string,
     },
   })
 }

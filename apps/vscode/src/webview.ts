@@ -126,6 +126,8 @@ interface Bootstrap {
   readonly explorer?: PageBootstrap['explorer']
   /** `modkit.showHiddenEntries` when the page was built. */
   readonly showHiddenEntries?: boolean
+  /** The game-string locale cards open in (`modkit.locale`). */
+  readonly gameLocale?: string
 }
 
 /** The live "show hidden files and folders" option: the bootstrap value, then `show-hidden` events. */
@@ -748,6 +750,7 @@ async function mount(
           return record === undefined ? false : reopenCommittedEntry(editors, record.entry)
         },
         showHiddenEntries: () => showHiddenEntries,
+        ...(snapshot.gameLocale === undefined ? {} : { gameLocale: snapshot.gameLocale }),
         lastOutcome(descriptor) {
           const record = recordForDescriptor(descriptor)
           return record === undefined ? undefined : editOutcomes.get(record.entry.id)
