@@ -14,7 +14,7 @@
  * in-process; the gate refuses variants without an executable boundary for the worker target.
  */
 
-import type { InstallationProbes, VideoFrameDecoder } from '@modkit/sdk'
+import type { InstallationFiles, InstallationProbes, VideoFrameDecoder } from '@modkit/sdk'
 import { createNodeInstallationProbes } from './installation-probes.js'
 import { createCredentialBroker, type CredentialBrokerOptions } from '../credentials.js'
 import { createNodeOAuth2Engine } from './oauth2-pkce.js'
@@ -78,6 +78,11 @@ export interface NodeSubjectServicesOptions {
   readonly subjectCatalog?: SubjectCatalogOptions
   /** Video frames for codecs; default: ffmpeg found on PATH, `false` to offer none. */
   readonly videoFrames?: VideoFrameDecoder | false
+  /**
+   * A game installation's files for codecs and their providers (`createNodeInstallationFiles`
+   * over the installations the application selected); none by default.
+   */
+  readonly installationFiles?: InstallationFiles
   /**
    * The application's secret store and prompter; the services build the credential broker over
    * their inventory (OAuth through the loopback engine unless another is given).
@@ -163,6 +168,9 @@ export async function createNodeSubjectServices(
       : { contributionSettings: options.contributionSettings }),
     ...(options.subjectCatalog === undefined ? {} : { subjectCatalog: options.subjectCatalog }),
     ...(videoFrames === undefined ? {} : { videoFrames }),
+    ...(options.installationFiles === undefined
+      ? {}
+      : { installationFiles: options.installationFiles }),
     ...(credentials === undefined ? {} : { credentials }),
   })
   return Object.freeze({

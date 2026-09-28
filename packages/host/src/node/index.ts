@@ -129,6 +129,10 @@ export {
   type NodeInstallationProbeOptions,
 } from './installation-probes.js'
 export {
+  createNodeInstallationFiles,
+  type NodeInstallationFilesOptions,
+} from './installation-files.js'
+export {
   searchInstallationFolders,
   type InstallationFolderSearch,
   type InstallationFolderSearchOptions,

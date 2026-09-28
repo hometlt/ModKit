@@ -27,6 +27,7 @@ import type {
   ServiceContractDefinitionRegistry,
   ServiceFacetMatcherProfile,
   VideoFrameDecoder,
+  InstallationFiles,
 } from '@modkit/sdk'
 import type { DataSourceSurfaceSource } from './execution/index.js'
 import type { ExecutionBackendRegistry } from './execution/backend.js'
@@ -112,6 +113,8 @@ export interface SubjectServices {
   readonly contributionSettings?: (contributionId: string) => ContributionSettings | undefined
   /** The video frame decoder handed to codecs, for callers that open subjects themselves. */
   readonly videoFrames?: VideoFrameDecoder
+  /** A game installation's files handed to codecs, for callers that open subjects themselves. */
+  readonly installationFiles?: InstallationFiles
   /** The sign-in and key broker, for callers that open subjects themselves. */
   readonly credentials?: CredentialBroker
   open(request: SubjectOpenRequest): Promise<OpenSubjectResult>
@@ -128,6 +131,8 @@ export interface SubjectServicesOptions {
   readonly subjectCatalog?: SubjectCatalogOptions
   /** Decodes video frames for codecs (a desktop host with ffmpeg). */
   readonly videoFrames?: VideoFrameDecoder
+  /** Files of a game's confirmed installation, read-only (a desktop host that knows one). */
+  readonly installationFiles?: InstallationFiles
   /** Signs in and keeps keys for the extensions that declare credentials. */
   readonly credentials?: CredentialBroker
   readonly policy?: HostPolicy
@@ -241,6 +246,9 @@ export function createSubjectServices(options: SubjectServicesOptions): SubjectS
       : { contributionSettings: options.contributionSettings }),
     ...(options.subjectCatalog === undefined ? {} : { subjectCatalog: options.subjectCatalog }),
     ...(options.videoFrames === undefined ? {} : { videoFrames: options.videoFrames }),
+    ...(options.installationFiles === undefined
+      ? {}
+      : { installationFiles: options.installationFiles }),
     ...(options.credentials === undefined ? {} : { credentials: options.credentials }),
   }
   const services: SubjectServices = {
@@ -256,6 +264,9 @@ export function createSubjectServices(options: SubjectServicesOptions): SubjectS
       ? {}
       : { contributionSettings: options.contributionSettings }),
     ...(options.videoFrames === undefined ? {} : { videoFrames: options.videoFrames }),
+    ...(options.installationFiles === undefined
+      ? {}
+      : { installationFiles: options.installationFiles }),
     ...(options.credentials === undefined ? {} : { credentials: options.credentials }),
     open: request => openSubject({ ...fixed, ...request }),
   }

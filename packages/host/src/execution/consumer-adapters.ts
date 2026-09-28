@@ -29,6 +29,7 @@ import {
   ABI_RASTER_RESOURCES,
   ABI_INSTALLATION_PROBES,
   ABI_VIDEO_FRAMES,
+  ABI_INSTALLATION_FILES,
   ABI_CREDENTIALS,
   ABI_MODEL_RESOURCES,
   ABI_LOGICAL_RESOURCES,
@@ -130,6 +131,9 @@ export function moduleAdapter(
       ...(context.videoFrames === undefined
         ? {}
         : { videoFrames: expose(context.videoFrames, ABI_VIDEO_FRAMES) }),
+      ...(context.installationFiles === undefined
+        ? {}
+        : { installationFiles: expose(context.installationFiles, ABI_INSTALLATION_FILES) }),
       ...(context.credentials === undefined
         ? {}
         : { credentials: expose(context.credentials, ABI_CREDENTIALS) }),

@@ -40,6 +40,7 @@ import {
   type ServiceContractDefinitionRegistry,
   type ContributionSettings,
   type VideoFrameDecoder,
+  type InstallationFiles,
 } from '@modkit/sdk'
 import { rootSubject, subjectRefEquals, type SubjectRef } from '@modkit/sdk/subjects'
 import type { ExecutionBackendRegistry } from './execution/backend.js'
@@ -107,6 +108,8 @@ export interface NestedSubjectOptions {
   readonly contributionSettings?: (contributionId: string) => ContributionSettings | undefined
   /** The desktop host's video frame decoder, so a video entry reads frames like a video file. */
   readonly videoFrames?: VideoFrameDecoder
+  /** A game installation's files, as for any subject the host opens. */
+  readonly installationFiles?: InstallationFiles
   /** The sign-in and key broker, so an entry's codec reaches the same credentials. */
   readonly credentials?: CredentialBroker
   readonly minimumConfidence?: number
@@ -152,6 +155,7 @@ export function nestedSubjectServices(
     | 'serviceDefinitions'
     | 'contributionSettings'
     | 'videoFrames'
+    | 'installationFiles'
     | 'credentials'
   >,
 ): Pick<
@@ -162,6 +166,7 @@ export function nestedSubjectServices(
   | 'serviceDefinitions'
   | 'contributionSettings'
   | 'videoFrames'
+  | 'installationFiles'
   | 'credentials'
 > {
   return {
@@ -175,6 +180,9 @@ export function nestedSubjectServices(
       ? {}
       : { contributionSettings: services.contributionSettings }),
     ...(services.videoFrames === undefined ? {} : { videoFrames: services.videoFrames }),
+    ...(services.installationFiles === undefined
+      ? {}
+      : { installationFiles: services.installationFiles }),
     ...(services.credentials === undefined ? {} : { credentials: services.credentials }),
   }
 }
@@ -576,6 +584,9 @@ export async function openNestedSubject(
           ? {}
           : { contributionSettings: options.contributionSettings }),
         ...(options.videoFrames === undefined ? {} : { videoFrames: options.videoFrames }),
+        ...(options.installationFiles === undefined
+          ? {}
+          : { installationFiles: options.installationFiles }),
         ...(options.credentials === undefined ? {} : { credentials: options.credentials }),
         ...(containerContext === undefined ? {} : { containerContext }),
         ...(options.minimumConfidence === undefined

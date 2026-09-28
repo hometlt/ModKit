@@ -50,6 +50,7 @@ import {
   type ServiceContractDefinitionRegistry,
   type SelectedServiceOffer,
   type VideoFrameDecoder,
+  type InstallationFiles,
 } from '@modkit/sdk'
 import { DATA_CATALOG_ENTITIES_INPUT, type JsonValue } from '@modkit/sdk'
 import {
@@ -165,6 +166,8 @@ export interface OpenSubjectOptions {
   readonly provideRasterResources?: boolean
   /** The desktop host's video frame decoder, handed to codecs as `context.videoFrames`. */
   readonly videoFrames?: VideoFrameDecoder
+  /** A game installation's files, handed to codecs and their providers as `installationFiles`. */
+  readonly installationFiles?: InstallationFiles
   /** The sign-in and key broker; each codec gets its extension's port as `context.credentials`. */
   readonly credentials?: CredentialBroker
   /** What the enclosing container hands this subject's codec (`context.containerContext`). */
@@ -1610,6 +1613,9 @@ async function openSubjectDirect(
             contracts,
             ...(settings === undefined ? {} : { settings }),
             ...(options.videoFrames === undefined ? {} : { videoFrames: options.videoFrames }),
+            ...(options.installationFiles === undefined
+              ? {}
+              : { installationFiles: options.installationFiles }),
             ...(credentials === undefined ? {} : { credentials }),
             ...(options.containerContext === undefined
               ? {}
