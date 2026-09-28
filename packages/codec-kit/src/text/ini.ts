@@ -5,7 +5,8 @@
  * within a section. `ini-westwood` reads the files Westwood's engines read (Tiberian Sun, Red
  * Alert 2): a `;` comment after a section header or a value is cut off, `//` starts a comment
  * line, and a line without `=` (`***Crazy Ivan stuff***`) is skipped with a warning, as the
- * engine skips it.
+ * engine skips it. `ini-war3` reads Warcraft III's profile files (`Units/*Func.txt`,
+ * `*Strings.txt`) the same way except that `;` is text, not a comment: tooltips contain it.
  */
 import type { ParseResult } from '@modkit/sdk/text-data'
 import { diagnostic } from '@modkit/core'
@@ -34,6 +35,8 @@ export interface IniDocument {
 export function parseIni(decoded: DecodedText, dialect?: string): ParseResult<IniDocument> {
   const text = decoded.text
   const westwood = dialect === 'ini-westwood'
+  // Dialects whose engines skip what is not a key = value line, and take `//` as a comment.
+  const lenient = westwood || dialect === 'ini-war3'
   const span = spanner(text)
   const sections: IniSection[] = []
   let current: IniSection = { name: '', entries: [], range: span(0, 0) }
@@ -51,7 +54,7 @@ export function parseIni(decoded: DecodedText, dialect?: string): ParseResult<In
       trimmed === '' ||
       trimmed.startsWith(';') ||
       trimmed.startsWith('#') ||
-      (westwood && trimmed.startsWith('//'))
+      (lenient && trimmed.startsWith('//'))
     )
       continue
     const content = westwood ? trimmed.replace(/\s*;.*$/u, '') : trimmed
@@ -63,7 +66,7 @@ export function parseIni(decoded: DecodedText, dialect?: string): ParseResult<In
     }
     const equals = line.indexOf('=')
     if (equals <= 0) {
-      if (westwood) {
+      if (lenient) {
         diagnostics.push(
           diagnostic(
             'warning',

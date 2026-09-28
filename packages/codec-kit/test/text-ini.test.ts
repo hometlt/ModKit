@@ -54,6 +54,22 @@ describe('INI', () => {
     expect(result.diagnostics.map(item => item.code)).toEqual(['modkit/text-data-ini-skipped-line'])
   })
 
+  it('reads Warcraft III profiles: // lines and lines without = skipped, ; kept as text', () => {
+    const text = '[hfoo]\r\n// Footman\r\nPurchase Medusa Pebble\r\nTip=Train; then fight\r\nTip=Again\r\n'
+    expect(parseIni(decoded(text)).state).toBe('failed')
+    const result = parseIni(decoded(text), 'ini-war3')
+    if (result.state !== 'ok') throw new Error('expected ok')
+    // A key given twice stays twice; which one counts is the reader's rule.
+    expect(result.document.sections[1]).toMatchObject({
+      name: 'hfoo',
+      entries: [
+        { key: 'Tip', value: 'Train; then fight' },
+        { key: 'Tip', value: 'Again' },
+      ],
+    })
+    expect(result.diagnostics.map(item => item.code)).toEqual(['modkit/text-data-ini-skipped-line'])
+  })
+
   it('is linear in the size of the file', () => {
     const big = `[s]\r\n${'Key=Value ; c\r\n'.repeat(100_000)}`
     const started = performance.now()
