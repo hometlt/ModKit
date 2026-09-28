@@ -545,8 +545,18 @@ function matchesGlob(path: string, glob: string): boolean {
   return new RegExp(`${pattern}$`, 'u').test(path)
 }
 
-function matchesSpec(spec: CodecContributionSpecV1Wire, path: string, mediaType?: string): boolean {
-  const normalizedPath = path.replaceAll('\\', '/').split(/[?#]/u, 1)[0]?.toLocaleLowerCase() ?? ''
+/** Exported for its test only. */
+export function matchesSpec(
+  spec: CodecContributionSpecV1Wire,
+  path: string,
+  mediaType?: string,
+): boolean {
+  // A query or fragment ends a URI's path; in a plain path `#` and `?` are characters of the name
+  // (Emperor map folders: `#M61 Isles of Caladan/test.CPF`). A drive letter is not a scheme.
+  const uri = /^[a-z][a-z0-9+.-]+:/iu.test(path)
+  const normalizedPath = (uri ? (path.split(/[?#]/u, 1)[0] ?? '') : path)
+    .replaceAll('\\', '/')
+    .toLocaleLowerCase()
   const extensionMatch = (spec.match.extensions ?? []).some(extension => {
     const suffix = extension.toLocaleLowerCase().replace(/^\.+/u, '')
     return normalizedPath.endsWith(`.${suffix}`) || normalizedPath === suffix
