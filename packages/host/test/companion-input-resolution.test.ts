@@ -402,6 +402,41 @@ describe('companion input resolution — cardinality', () => {
     ])
   })
 
+  it('opens without a listed optional companion that will not open, and names why', async () => {
+    const reported: Diagnostic[] = []
+    const { origin } = fakeOrigin({
+      entries: ['primary.vxl', 'locked.hva'],
+      onOpen: logicalId => {
+        if (logicalId === 'locked.hva') throw new Error('sharing violation')
+      },
+    })
+    const resolve = companionResolver(origin, { onDiagnostic: item => reported.push(item) })
+    const input = await resolve(
+      context(
+        bundlePlan([requirement({ id: 'motion', role: 'animation' })]),
+        byteSource('primary.vxl'),
+      ),
+    )
+    expect(input.bindingsFor('motion')).toEqual([])
+    expect(reported).toEqual([
+      expect.objectContaining({
+        code: COMPANION_UNAVAILABLE,
+        data: expect.objectContaining({ reason: 'open-failed', error: 'sharing violation' }),
+      }),
+    ])
+    // a required one that will not open still fails the open
+    await expect(
+      companionResolver(origin)(
+        context(
+          bundlePlan([
+            requirement({ id: 'motion', role: 'animation', required: true, cardinality: 'one' }),
+          ]),
+          byteSource('primary.vxl'),
+        ),
+      ),
+    ).rejects.toThrow('sharing violation')
+  })
+
   it('refuses to choose between two candidates where at most one was declared', async () => {
     const { origin, counters } = fakeOrigin({
       entries: ['primary.vxl', 'left.hva', 'right.hva'],

@@ -934,7 +934,30 @@ export function createCompanionInputResolver(
          */
         let identity = pinned.get(logicalId)
         if (identity === undefined) {
-          const lease = await origin.open(logicalId, signal)
+          let lease: Lease<ArtifactSource>
+          try {
+            lease = await origin.open(logicalId, signal)
+          } catch (error) {
+            throwIfAborted(signal)
+            if (requirement.required) throw error
+            // an optional companion that is listed but will not open is absent, and says why
+            report?.(
+              diagnostic(
+                'information',
+                COMPANION_UNAVAILABLE,
+                `optional companion «${requirement.role}» (${logicalId}) could not be opened; the dependent capability stays unavailable`,
+                [requirement.id],
+                {
+                  ...detail,
+                  reason: 'open-failed',
+                  error: error instanceof Error ? error.message : String(error),
+                },
+              ),
+            )
+            usedBindingIds.delete(bindingId)
+            budget.bindings -= 1
+            continue
+          }
           try {
             identity = { ref: lease.value.ref, revision: lease.value.revision }
             pinned.set(logicalId, identity)
