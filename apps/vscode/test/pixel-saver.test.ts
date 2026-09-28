@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import type { AnyDescriptor, AssetEditPlan, OperationSession } from '@modkit/sdk'
 
-import { createVsCodePixelSaver, wholeFileBytes } from '../src/edit-panel.js'
+import { createVsCodePixelSaver, pixelSaveRefusal, wholeFileBytes } from '../src/edit-panel.js'
 import { createVscodeLocalizer } from '../src/localization.js'
 
 const planWith = (edits: readonly unknown[]): AssetEditPlan =>
@@ -44,6 +44,42 @@ describe('pixel saver', () => {
 
     expect((await save(request)).state).toBe('saved')
     expect(applyPlan).toHaveBeenCalledTimes(1)
+  })
+
+  it('offers the paint tools only where Save can write the pixels', async () => {
+    const localizer = createVscodeLocalizer('en')
+    const withOperations = (operations: readonly unknown[]) =>
+      ({ operations }) as unknown as AnyDescriptor
+    const writable = withOperations([
+      { id: 'edit.content', handlerId: 'image.edit', mutatesSource: true },
+    ])
+    const exportOnly = withOperations([
+      { id: 'export.convert', handlerId: 'convert', mutatesSource: false },
+    ])
+    const armed = { localizer, portsFor: () => ({}) as never }
+    expect(pixelSaveRefusal(armed, writable)).toBeUndefined()
+    // no encoder: the Edit section says export still works, and Save says the same
+    const noEncoder = localizer.text('imageEditing.unavailable')
+    expect(pixelSaveRefusal(armed, exportOnly)).toBe(noEncoder)
+    // a read-only source has no editing arm, whatever its codec can write
+    expect(pixelSaveRefusal({ localizer, portsFor: () => undefined }, writable)).toBe(
+      localizer.text('vscode.edit.noArm'),
+    )
+    const save = createVsCodePixelSaver({
+      localizer,
+      portsFor: () => ({}) as never,
+      reopen: async () => true,
+      lastOutcome: () => undefined,
+      recordOutcome: () => undefined,
+    })
+    const invoke = vi.fn()
+    const refused = await save({
+      descriptor: exportOnly,
+      operations: { invoke } as unknown as OperationSession,
+      image: { width: 1, height: 1, rgba: new Uint8Array(4) },
+    })
+    expect(refused).toEqual({ state: 'refused', reason: noEncoder })
+    expect(invoke).not.toHaveBeenCalled()
   })
 
   it('takes the file only from a plan that replaces one whole file', () => {

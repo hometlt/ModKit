@@ -114,23 +114,38 @@ export function fidelityNote(
  * codec's `edit.content` handler, applies the plan through the subject's editing arm and reopens
  * the tab on the new revision, exactly as an edit-panel form does.
  */
+// Every writable raster codec takes painted pixels as `edit.content` `replace`; its other
+// operations (a PNG text field, say) are not a way to save pixels.
+const pixelSaveHandler = (descriptor: Record<string, unknown>): string | undefined =>
+  descriptorOperations(descriptor).find(item => item.id === 'edit.content' && item.mutatesSource)
+    ?.handlerId
+
+/**
+ * Why painted pixels of this subject cannot be saved, or undefined when they can. The Edit section
+ * asks before it offers tools, and Save asks again, so the two never disagree.
+ */
+export function pixelSaveRefusal(
+  options: Pick<EditPanelOptions, 'localizer' | 'portsFor'>,
+  subject: AnyDescriptor,
+): string | undefined {
+  const descriptor = asRecord(subject)
+  if (options.portsFor(descriptor) === undefined) return options.localizer.text('vscode.edit.noArm')
+  return pixelSaveHandler(descriptor) === undefined
+    ? options.localizer.text('imageEditing.unavailable')
+    : undefined
+}
+
 export function createVsCodePixelSaver(
   options: EditPanelOptions,
 ): NonNullable<ImageViewerOptions['savePixels']> {
   const localizer = options.localizer
   return async (request, signal) => {
     const descriptor = asRecord(request.descriptor)
+    const refusal = pixelSaveRefusal(options, request.descriptor)
     const ports = options.portsFor(descriptor)
-    if (ports === undefined)
-      return { state: 'refused', reason: localizer.text('vscode.edit.noArm') }
-    // Every writable raster codec takes painted pixels as `edit.content` `replace`; its other
-    // operations (a PNG text field, say) are not a way to save pixels.
-    const handlerId = descriptorOperations(descriptor).find(
-      item => item.id === 'edit.content' && item.mutatesSource,
-    )?.handlerId
-    if (handlerId === undefined) {
-      return { state: 'refused', reason: localizer.text('vscode.edit.nothingHere') }
-    }
+    const handlerId = pixelSaveHandler(descriptor)
+    if (refusal !== undefined || ports === undefined || handlerId === undefined)
+      return { state: 'refused', reason: refusal ?? localizer.text('vscode.edit.nothingHere') }
     let result
     try {
       result = await request.operations.invoke(
