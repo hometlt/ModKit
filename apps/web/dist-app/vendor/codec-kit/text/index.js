@@ -1,18 +1,21 @@
+import {
+  createTableDataSource
+} from "../../../chunks/chunk-XYU4XXWE.js";
 import "../../../chunks/chunk-OVW5EXOM.js";
 import {
   assembleSubjectDescriptor,
   createAssetSession,
   createUtf8TextDataSource
-} from "../../../chunks/chunk-5GA6R5US.js";
+} from "../../../chunks/chunk-JFXF7H5K.js";
 import "../../../chunks/chunk-JHPOUH6S.js";
 import {
   revisionId
-} from "../../../chunks/chunk-NMXLVS6H.js";
+} from "../../../chunks/chunk-MYUZP6E2.js";
 import {
   diagnostic,
   throwIfAborted,
   uint64
-} from "../../../chunks/chunk-HUU44HII.js";
+} from "../../../chunks/chunk-LX6GSJ3D.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 
 // packages/codec-kit/src/text/codec-runtime.ts
@@ -372,6 +375,31 @@ function span(text, offset = 0, length = text.length) {
     column: offset - (lastLf === -1 ? 0 : lastLf + 1)
   });
 }
+function spanner(text) {
+  const encoder = new TextEncoder();
+  let at = 0;
+  let bytes = 0;
+  let line = 0;
+  let lineStart = 0;
+  return (offset, length) => {
+    if (offset < at) at = bytes = line = lineStart = 0;
+    const between = text.slice(at, offset);
+    bytes += encoder.encode(between).byteLength;
+    for (let index = between.indexOf("\n"); index !== -1; index = between.indexOf("\n", index + 1)) {
+      line += 1;
+      lineStart = at + index + 1;
+    }
+    at = offset;
+    return Object.freeze({
+      byteOffset: uint64(BigInt(bytes)),
+      byteLength: uint64(BigInt(encoder.encode(text.slice(offset, offset + length)).byteLength)),
+      utf16Offset: offset,
+      utf16Length: length,
+      line,
+      column: offset - lineStart
+    });
+  };
+}
 function failure(code, message, text = "", offset = 0, length = 0) {
   return {
     state: "failed",
@@ -582,6 +610,227 @@ function plainNode(value, text, counters, depth = 0) {
   }
   return { kind: "scalar", value: scalar(value), range };
 }
+
+// packages/codec-kit/src/text/ini.ts
+function parseIni(decoded, dialect) {
+  const text = decoded.text;
+  const westwood = dialect === "ini-westwood";
+  const emperor = dialect === "ini-emperor";
+  const lenient = westwood || emperor || dialect === "ini-war3";
+  const span2 = spanner(text);
+  const sections = [];
+  let current = { name: "", entries: [], range: span2(0, 0) };
+  sections.push(current);
+  const seen = /* @__PURE__ */ new Set();
+  const diagnostics = [];
+  const lines = /([^\r\n]*)(\r\n|\r|\n|$)/gu;
+  for (let match = lines.exec(text); match !== null; match = lines.exec(text)) {
+    const offset = match.index;
+    const line = match[1];
+    if (match[0] === "") break;
+    const trimmed = line.trim();
+    if (trimmed === "" || trimmed.startsWith(";") || trimmed.startsWith("#") || lenient && trimmed.startsWith("//"))
+      continue;
+    const content = westwood ? trimmed.replace(/\s*;.*$/u, "") : emperor ? trimmed.replace(/\s*\/\/.*$/u, "") : trimmed;
+    const section = /^\[([^\]]+)\]$/u.exec(content);
+    if (section) {
+      current = { name: section[1], entries: [], range: span2(offset, line.length) };
+      sections.push(current);
+      continue;
+    }
+    const body = emperor ? content : line;
+    const equals = body.indexOf("=");
+    if (emperor && equals < 0) {
+      current.entries.push({ key: content, value: "", range: span2(offset, line.length) });
+      continue;
+    }
+    if (equals <= 0) {
+      if (lenient) {
+        diagnostics.push(
+          diagnostic(
+            "warning",
+            "modkit/text-data-ini-skipped-line",
+            "line without key = value; the engine skips it",
+            void 0,
+            void 0,
+            span2(offset, line.length)
+          )
+        );
+        continue;
+      }
+      return failure(
+        "modkit/text-data-ini-parse",
+        "INI entry requires a non-empty key",
+        text,
+        offset,
+        line.length
+      );
+    }
+    const key = body.slice(0, equals).trim();
+    const identity = `${current.name}
+${key}`;
+    if (dialect === "ini-basic" && seen.has(identity))
+      return failure(
+        "modkit/text-data-ini-duplicate",
+        `duplicate key ${key}`,
+        text,
+        offset,
+        line.length
+      );
+    seen.add(identity);
+    const value = body.slice(equals + 1);
+    current.entries.push({
+      key,
+      value: (westwood ? value.replace(/;.*$/u, "") : value).trim(),
+      range: span2(offset, line.length)
+    });
+  }
+  return { state: "ok", document: { sections, source: decoded.source }, diagnostics };
+}
+
+// packages/codec-kit/src/text/sylk.ts
+var MAX_COLUMNS = 16384;
+var MAX_ROWS = 1048576;
+function fieldsOf(line) {
+  const fields = [];
+  let field = "";
+  for (let index = 0; index < line.length; index += 1) {
+    const character = line[index];
+    if (character !== ";") field += character;
+    else if (line[index + 1] === ";") {
+      field += ";";
+      index += 1;
+    } else {
+      fields.push(field);
+      field = "";
+    }
+  }
+  fields.push(field);
+  return fields;
+}
+function parseSylk(decoded, limits) {
+  const text = decoded.text;
+  const span2 = spanner(text);
+  const rows = /* @__PURE__ */ new Map();
+  const diagnostics = [];
+  let started = false;
+  let column = 1;
+  let row = 1;
+  let columns = 0;
+  let cells = 0;
+  const lines = /([^\r\n]*)(\r\n|\r|\n|$)/gu;
+  for (let match = lines.exec(text); match !== null; match = lines.exec(text)) {
+    if (match[0] === "") break;
+    const offset = match.index;
+    const line = match[1];
+    if (line.trim() === "") continue;
+    const [kind = "", ...fields] = fieldsOf(line);
+    if (!started) {
+      if (kind !== "ID")
+        return failure(
+          "modkit/text-data-slk-parse",
+          "SYLK starts with an ID record",
+          text,
+          offset,
+          line.length
+        );
+      started = true;
+      continue;
+    }
+    if (kind === "E") break;
+    if (kind !== "C" && kind !== "F") continue;
+    let value;
+    for (const field of fields) {
+      const code = field[0];
+      if (code === "X" || code === "Y") {
+        const coordinate = /^\d+$/u.test(field.slice(1)) ? Number(field.slice(1)) : 0;
+        if (coordinate < 1 || coordinate > (code === "X" ? MAX_COLUMNS : MAX_ROWS))
+          return failure(
+            "modkit/text-data-slk-parse",
+            `SYLK coordinate ${field} is out of range`,
+            text,
+            offset,
+            line.length
+          );
+        if (code === "X") column = coordinate;
+        else row = coordinate;
+      } else if (code === "K" && kind === "C") value = field.slice(1);
+    }
+    if (value === void 0) continue;
+    const quoted = value.startsWith('"');
+    const cell = {
+      column,
+      value: quoted ? value.slice(1, value.length > 1 && value.endsWith('"') ? -1 : void 0) : value,
+      quoted,
+      range: span2(offset, line.length)
+    };
+    const cellsOfRow = rows.get(row) ?? /* @__PURE__ */ new Map();
+    if (cellsOfRow.has(column))
+      diagnostics.push(
+        diagnostic(
+          "warning",
+          "modkit/text-data-slk-duplicate-cell",
+          `cell X${String(column)};Y${String(row)} is written twice; the later value is kept`,
+          void 0,
+          void 0,
+          cell.range
+        )
+      );
+    else {
+      if (limits !== void 0 && cells >= limits.maxNodes)
+        return {
+          state: "truncated",
+          document: documentOf(rows, columns, decoded),
+          truncated: { limit: "maxNodes" },
+          diagnostics
+        };
+      cells += 1;
+    }
+    rows.set(row, cellsOfRow);
+    cellsOfRow.set(column, cell);
+    columns = Math.max(columns, column);
+  }
+  if (!started) return failure("modkit/text-data-slk-parse", "SYLK starts with an ID record", text);
+  return { state: "ok", document: documentOf(rows, columns, decoded), diagnostics };
+}
+function documentOf(rows, columns, decoded) {
+  const ordered = [...rows].sort(([left], [right]) => left - right).map(([index, cells]) => ({
+    index,
+    cells: [...cells.values()].sort((left, right) => left.column - right.column)
+  }));
+  return { columns, rows: ordered, source: decoded.source };
+}
+function formatSylk(document) {
+  const escape = (value) => value.replaceAll(";", ";;");
+  const height = document.rows.reduce((most, row) => Math.max(most, row.index), 0);
+  const records = ["ID;PWXL;N;E", `B;X${String(document.columns)};Y${String(height)};D0`];
+  for (const row of document.rows)
+    row.cells.forEach(
+      (cell, index) => records.push(
+        `C;X${String(cell.column)}${index === 0 ? `;Y${String(row.index)}` : ""};K${cell.quoted ? `"${escape(cell.value)}"` : escape(cell.value)}`
+      )
+    );
+  records.push("E", "");
+  return records.join("\n");
+}
+function sylkTableDataSource(document) {
+  const height = document.rows.reduce((most, row) => Math.max(most, row.index), 0);
+  const byRow = new Map(document.rows.map((row) => [row.index, row]));
+  const dense = (index) => {
+    const values = new Array(document.columns).fill("");
+    for (const cell of byRow.get(index)?.cells ?? []) values[cell.column - 1] = cell.value;
+    return values;
+  };
+  const cellAt = (row, column) => byRow.get(row)?.cells.find((cell) => cell.column === column);
+  return createTableDataSource({
+    header: dense(1),
+    rows: Array.from({ length: Math.max(0, height - 1) }, (_, offset) => dense(offset + 2)),
+    cellFacts: (coord) => {
+      const cell = cellAt(coord.row + 2, coord.column + 1);
+      return cell === void 0 ? void 0 : { range: cell.range };
+    }
+  });
+}
 export {
   createSelectedProvider,
   createTextCodec,
@@ -589,11 +838,15 @@ export {
   decodeInput,
   encodeText,
   failure,
+  formatSylk,
   lease,
   newlineOf,
+  parseIni,
+  parseSylk,
   plainNode,
   preflight,
   scalar,
   span,
+  sylkTableDataSource,
   treeDataSource
 };

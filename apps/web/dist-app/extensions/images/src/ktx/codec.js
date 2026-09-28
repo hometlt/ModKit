@@ -3,6 +3,7 @@ import {
   createRasterImageSource,
   createTreeDataSource,
 } from '@modkit/codec-kit'
+import { decodeGlCompressed, gpuBlockLayoutFromGl } from '@modkit/codec-kit/texture/gl-compressed'
 
 const ID = 'modkit/ktx'
 const IDENTIFIER = Object.freeze([
@@ -111,17 +112,22 @@ function parseKtx(bytes, maxNodes, maxScalarBytes) {
   const first = levels[0]
   const rowBytes = aligned4(width * channels)
   const decodedBytes = BigInt(width) * BigInt(height) * 4n
-  const decodedAccess =
-    littleEndian &&
+  // glType 0: GPU blocks of glInternalFormat, decoded by codec-kit (as MK2 did through its GPU decoders)
+  const compressed = glType === 0 && gpuBlockLayoutFromGl(glInternalFormat) !== null
+  const single2d =
     storedHeight > 0 &&
     storedDepth === 0 &&
     arrayElements === 0 &&
     faces === 1 &&
-    glType === 0x1401 &&
-    glTypeSize === 1 &&
-    channels > 0 &&
-    first.imageBytes >= rowBytes * height &&
     decodedBytes <= BigInt(maxScalarBytes)
+  const decodedAccess =
+    single2d &&
+    (compressed ||
+      (littleEndian &&
+        glType === 0x1401 &&
+        glTypeSize === 1 &&
+        channels > 0 &&
+        first.imageBytes >= rowBytes * height))
   const orientation = keyValues.find(entry => entry.key === 'KTXorientation')?.value
   return Object.freeze({
     littleEndian,
@@ -139,6 +145,7 @@ function parseKtx(bytes, maxNodes, maxScalarBytes) {
     keyValues,
     levels: Object.freeze(levels),
     channels,
+    compressed,
     rowBytes,
     decodedBytes,
     decodedAccess,
@@ -149,6 +156,14 @@ function parseKtx(bytes, maxNodes, maxScalarBytes) {
 function regionReader(bytes, ktx) {
   const first = ktx.levels[0]
   const topDown = ktx.orientation?.includes('T=d') === true
+  let blocks
+  const decodedLevel = () =>
+    (blocks ??= decodeGlCompressed(
+      bytes.subarray(first.firstOffset, first.firstOffset + first.imageBytes),
+      ktx.glInternalFormat,
+      ktx.width,
+      ktx.height,
+    ))
   return async request => {
     const integers = [request.x, request.y, request.width, request.height, request.maxBytes]
     if (!integers.every(value => Number.isSafeInteger(value) && value >= 0)) {
@@ -172,6 +187,22 @@ function regionReader(bytes, ktx) {
       throw new RangeError('KTX1 region exceeds maxBytes budget')
     }
     const pixels = new Uint8Array(outputBytes)
+    if (ktx.compressed) {
+      const decoded = (await decodedLevel()).pixels
+      for (let row = 0; row < request.height; row += 1) {
+        const logicalY = request.y + row
+        const sourceY = topDown ? logicalY : ktx.height - 1 - logicalY
+        const start = (sourceY * ktx.width + request.x) * 4
+        pixels.set(decoded.subarray(start, start + request.width * 4), row * request.width * 4)
+      }
+      return Object.freeze({
+        width: request.width,
+        height: request.height,
+        rowStride: request.width * 4,
+        pixelFormat: 'rgba8',
+        pixels,
+      })
+    }
     for (let row = 0; row < request.height; row += 1) {
       const logicalY = request.y + row
       const sourceY = topDown ? logicalY : ktx.height - 1 - logicalY
@@ -219,7 +250,7 @@ const definition = Object.freeze({
         channels: ktx.channels || 4,
         bitDepth: ktx.glTypeSize * 8,
         colorSpace: 'unknown',
-        alphaMode: ktx.channels === 4 ? 'straight' : 'none',
+        alphaMode: ktx.channels === 4 || ktx.compressed ? 'straight' : 'none',
         orientation: 'top-left',
         decodedAccess: ktx.decodedAccess,
       },

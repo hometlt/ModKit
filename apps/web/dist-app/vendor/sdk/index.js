@@ -18,6 +18,8 @@ import {
   GAME_INSTALLATION_MATCHER_PROFILE,
   GAME_LAUNCH_PLAN_CONTRACT,
   HOST_TRANSPORT_KINDS,
+  INDEX_CACHE_DIRECTORY_SETTING,
+  INDEX_CACHE_MANIFEST,
   KNOWLEDGE_PACK_CONTRIBUTION_CONTRACT,
   KNOWLEDGE_PACK_FACT,
   LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT,
@@ -41,6 +43,7 @@ import {
   MIXED_VISUAL_WORLD_BINDING_ID,
   MOD_WORKSPACE_COMPOSITION_CONTRACT,
   MOD_WORKSPACE_MATCHER_PROFILE,
+  OODLE_DECODER_CONTRACT,
   RESOLVED_DATA_AUTHORING_INDEX_KIND,
   RESOLVED_DATA_WORKSPACE_CONTRACT,
   RESOLVED_DATA_WORKSPACE_MATCHER_PROFILE,
@@ -70,6 +73,7 @@ import {
   WRITER_SURFACE,
   activationRequiredPermissionClasses,
   bindingId,
+  containerEntryRevision,
   contributionSettingsFor,
   createContributionContractRegistry,
   createHostRealmProfile,
@@ -83,12 +87,14 @@ import {
   hostFacilityDiagnostics,
   hostFacilityId,
   hostRealmCacheKey,
+  indexCacheEnabled,
   isHostFacilityId,
   isMixedVisualPresentationSlot,
   isStandardHostFacilityId,
   languageWorkspaceIsSemanticallyIncomplete,
   loadSubjectCandidatePage,
   mapLayerWindow,
+  namespaceEntryEditTarget,
   normalizeExtensionManifest,
   normalizeModkitIdentifier,
   normalizeModkitPackageSpecifier,
@@ -96,7 +102,6 @@ import {
   operationScopedPermissionClasses,
   presentationSlotId,
   referenceTargetKey,
-  resolveDataAuthoringIndex,
   resolveDataCatalog,
   resolveModWorkspaceGraph,
   runtimeTargetForHostRealm,
@@ -109,11 +114,7 @@ import {
   validateLocalizationContributionSemantics,
   writerOfferSatisfies,
   writerSelectionKey
-} from "../../chunks/chunk-SCKD5U6H.js";
-import {
-  SCENE_RENDERER_CONTRACT,
-  SCENE_RENDERER_MATCHER_PROFILE
-} from "../../chunks/chunk-GGIVOOBZ.js";
+} from "../../chunks/chunk-47QWC2WU.js";
 import {
   NATIVE_MODEL_ENCODER_CONTRACT,
   NATIVE_MODEL_ENCODER_MATCHER_PROFILE
@@ -208,8 +209,12 @@ import {
   viewerContributionSpecV1Schema,
   writerOfferV1Schema,
   writerRequirementV1Schema
-} from "../../chunks/chunk-NMXLVS6H.js";
-import "../../chunks/chunk-HUU44HII.js";
+} from "../../chunks/chunk-MYUZP6E2.js";
+import {
+  SCENE_RENDERER_CONTRACT,
+  SCENE_RENDERER_MATCHER_PROFILE
+} from "../../chunks/chunk-GGIVOOBZ.js";
+import "../../chunks/chunk-LX6GSJ3D.js";
 import "../../chunks/chunk-CQ52GEHY.js";
 export {
   A1_SPEC_SCHEMA_ENTRIES,
@@ -239,6 +244,8 @@ export {
   GAME_TEMPLATE_PREVIEW_OPERATION_ID,
   GAME_TEMPLATE_PREVIEW_SCHEMA_VERSION,
   HOST_TRANSPORT_KINDS,
+  INDEX_CACHE_DIRECTORY_SETTING,
+  INDEX_CACHE_MANIFEST,
   KNOWLEDGE_LOCALE_PATTERN,
   KNOWLEDGE_PACK_CONTRIBUTION_CONTRACT,
   KNOWLEDGE_PACK_FACT,
@@ -265,6 +272,7 @@ export {
   MOD_WORKSPACE_MATCHER_PROFILE,
   NATIVE_MODEL_ENCODER_CONTRACT,
   NATIVE_MODEL_ENCODER_MATCHER_PROFILE,
+  OODLE_DECODER_CONTRACT,
   OPERATING_SYSTEMS,
   PERMISSION_CLASSES,
   QUALIFIED_PATTERN,
@@ -311,6 +319,7 @@ export {
   assetSourceRefFromSourceRef,
   bindingId,
   codecContributionSpecV1Schema,
+  containerEntryRevision,
   contractDefinitionSpecV1Schema,
   contributionId,
   contributionManifestSchema,
@@ -351,6 +360,7 @@ export {
   hostFacilityDiagnostics,
   hostFacilityId,
   hostRealmCacheKey,
+  indexCacheEnabled,
   isAlgorithmQualifiedDigest,
   isGameTemplatePreviewResult,
   isHostFacilityId,
@@ -370,6 +380,7 @@ export {
   localizationContributionSpecV1Schema,
   mapLayerWindow,
   modkitBlockSchema,
+  namespaceEntryEditTarget,
   narrowGrant,
   normalizeExtensionManifest,
   normalizeModkitIdentifier,
@@ -379,7 +390,6 @@ export {
   presentationSlotId,
   referenceTargetKey,
   requirementScopeSchema,
-  resolveDataAuthoringIndex,
   resolveDataCatalog,
   resolveModWorkspaceGraph,
   resourceBudgetWireSchema,

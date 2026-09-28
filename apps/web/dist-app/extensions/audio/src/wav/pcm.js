@@ -7,17 +7,10 @@
  * bounded by the frame window the caller asks for, and the viewer plays what comes back.
  */
 
-/** IMA ADPCM step index adjustment per 4-bit nibble magnitude. */
-const INDEX_TABLE = Object.freeze([-1, -1, -1, -1, 2, 4, 6, 8, -1, -1, -1, -1, 2, 4, 6, 8])
-
-/** IMA ADPCM quantiser step sizes (89 entries, the standard table). */
-const STEP_TABLE = Object.freeze([
-  7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 19, 21, 23, 25, 28, 31, 34, 37, 41, 45, 50, 55, 60, 66, 73,
-  80, 88, 97, 107, 118, 130, 143, 157, 173, 190, 209, 230, 253, 279, 307, 337, 371, 408, 449, 494,
-  544, 598, 658, 724, 796, 876, 963, 1060, 1166, 1282, 1411, 1552, 1707, 1878, 2066, 2272, 2499,
-  2749, 3024, 3327, 3660, 4026, 4428, 4871, 5358, 5894, 6484, 7132, 7845, 8630, 9493, 10_442,
-  11_487, 12_635, 13_899, 15_289, 16_818, 18_500, 20_350, 22_385, 24_623, 27_086, 29_794, 32_767,
-])
+import {
+  IMA_INDEX_TABLE as INDEX_TABLE,
+  IMA_STEP_TABLE as STEP_TABLE,
+} from '@modkit/codec-kit/audio'
 
 const clampSample = value => (value < -32_768 ? -32_768 : value > 32_767 ? 32_767 : value)
 
@@ -41,12 +34,24 @@ export function adpcmFramesPerBlock(blockAlign, channels) {
   return 1 + ((blockAlign - 4 * channels) * 2) / channels
 }
 
+/**
+ * Frames in a short last IMA ADPCM block of `bytes`: its header frame and 8 per whole group of
+ * 4-byte words (one word per channel), as Microsoft IMA allows at the end of a stream.
+ */
+function adpcmTailFrames(bytes, channels) {
+  const header = 4 * channels
+  return bytes < header ? 0 : 1 + Math.floor((bytes - header) / header) * 8
+}
+
 /** How many whole frames the data chunk holds for this format. */
 export function frameCountFor(format, dataBytes) {
   if (format.encoding === 'ima-adpcm') {
     if (format.blockAlign <= 0) return 0
     const blocks = Math.floor(dataBytes / format.blockAlign)
-    return blocks * adpcmFramesPerBlock(format.blockAlign, format.channels)
+    return (
+      blocks * adpcmFramesPerBlock(format.blockAlign, format.channels) +
+      adpcmTailFrames(dataBytes % format.blockAlign, format.channels)
+    )
   }
   if (format.blockAlign <= 0) return 0
   return Math.floor(dataBytes / format.blockAlign)
@@ -106,7 +111,9 @@ function decodeImaAdpcm(data, format, fromFrame, frameCount, channels) {
   const states = Array.from({ length: format.channels }, () => ({ predictor: 0, index: 0 }))
   for (let block = firstBlock; block < lastBlock; block += 1) {
     const blockStart = block * format.blockAlign
-    if (blockStart + format.blockAlign > data.byteLength) break
+    // The last block may be short: it keeps its header and the whole word groups it has.
+    const blockBytes = Math.min(format.blockAlign, data.byteLength - blockStart)
+    if (blockBytes < 4 * format.channels) break
     let frame = block * framesPerBlock
     for (let channel = 0; channel < format.channels; channel += 1) {
       const at = blockStart + channel * 4
@@ -120,7 +127,7 @@ function decodeImaAdpcm(data, format, fromFrame, frameCount, channels) {
     frame += 1
     const nibbleStart = blockStart + 4 * format.channels
     // Each 4-byte word holds 8 nibbles, i.e. 8 frames of one channel; words alternate by channel.
-    const groups = (format.blockAlign - 4 * format.channels) / (4 * format.channels)
+    const groups = Math.floor((blockBytes - 4 * format.channels) / (4 * format.channels))
     for (let group = 0; group < groups; group += 1) {
       for (let channel = 0; channel < format.channels; channel += 1) {
         const at = nibbleStart + (group * format.channels + channel) * 4

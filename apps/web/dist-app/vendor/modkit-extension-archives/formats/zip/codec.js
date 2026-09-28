@@ -1,43 +1,50 @@
 import {
-  PROJECTION_RECEIPT_METADATA_ID,
+  PROJECTION_RECEIPT_METADATA_ID
+} from "../../../../chunks/chunk-EBEE75BR.js";
+import "../../../../chunks/chunk-NJ5SYYRG.js";
+import {
   pageStart
-} from "../../../../chunks/chunk-A26CPHMT.js";
-import "../../../../chunks/chunk-W5HVUYW4.js";
-import "../../../../chunks/chunk-4IC3253U.js";
-import "../../../../chunks/chunk-4FJ6AE2N.js";
+} from "../../../../chunks/chunk-J4JPK5CS.js";
+import "../../../../chunks/chunk-N7TDQTWE.js";
+import "../../../../chunks/chunk-C4KZWCMG.js";
+import "../../../../chunks/chunk-4UWK2KXO.js";
+import "../../../../chunks/chunk-7XI76P4Q.js";
+import "../../../../chunks/chunk-WXUQLAQ3.js";
 import {
   snapshotJson
 } from "../../../../chunks/chunk-3YDGNEY2.js";
+import "../../../../chunks/chunk-5TKG6RWH.js";
+import {
+  decompressBounded
+} from "../../../../chunks/chunk-JVAXQGJ2.js";
 import "../../../../chunks/chunk-OVW5EXOM.js";
 import {
   assembleSubjectDescriptor,
   createAssetSession,
   createUtf8TextDataSource
-} from "../../../../chunks/chunk-5GA6R5US.js";
+} from "../../../../chunks/chunk-JFXF7H5K.js";
 import "../../../../chunks/chunk-JHPOUH6S.js";
 import {
+  containerEntryRevision,
   contributionSettingsFor
-} from "../../../../chunks/chunk-SCKD5U6H.js";
-import "../../../../chunks/chunk-GGIVOOBZ.js";
+} from "../../../../chunks/chunk-47QWC2WU.js";
 import "../../../../chunks/chunk-YYQ3QKXM.js";
 import "../../../../chunks/chunk-KL23KRQT.js";
 import {
   revisionId,
   toPortableProjectionReceipt
-} from "../../../../chunks/chunk-NMXLVS6H.js";
+} from "../../../../chunks/chunk-MYUZP6E2.js";
+import "../../../../chunks/chunk-GGIVOOBZ.js";
 import {
   ModkitError,
   canonicalJsonStringify,
   diagnostic
-} from "../../../../chunks/chunk-HUU44HII.js";
+} from "../../../../chunks/chunk-LX6GSJ3D.js";
 import "../../../../chunks/chunk-NUFRM6SI.js";
 import "../../../../chunks/chunk-L5WKTLBK.js";
 import {
   crc32
-} from "../../../../chunks/chunk-GZXTFMPE.js";
-import {
-  decompressBounded
-} from "../../../../chunks/chunk-JVAXQGJ2.js";
+} from "../../../../chunks/chunk-XXOPIMKN.js";
 import "../../../../chunks/chunk-CQ52GEHY.js";
 
 // packages/codec-kit/dist/deferred-session.js
@@ -182,6 +189,294 @@ function deferAssetSession(revision, initialize, budget, openingSignal) {
   });
 }
 
+// packages/codec-kit/dist/container-entries.js
+var CONTAINER_EXTRACT_HANDLER_ID = "extract-entry";
+function throwIfCancelled(signal) {
+  if (signal?.aborted)
+    throw new DOMException("operation cancelled", "AbortError");
+}
+var offsetOf = (storage, signal) => storage.locate === void 0 ? Promise.resolve(storage.offset) : storage.locate(signal);
+function validPath(path) {
+  return path !== "" && path.split("/").every((part) => part !== "" && part !== "." && part !== "..");
+}
+function containerEntryAccess(table, context) {
+  const fold = (path) => table.caseSensitivity === "insensitive" ? path.toLowerCase() : path;
+  const byPath = /* @__PURE__ */ new Map();
+  for (const entry of table.entries) {
+    if (!validPath(entry.path))
+      throw new TypeError(`container entry path \xAB${entry.path}\xBB is invalid`);
+    if (typeof entry.size !== "bigint" || entry.size < 0n)
+      throw new TypeError(`container entry ${entry.path} has an invalid size`);
+    const key = fold(entry.path);
+    if (byPath.has(key))
+      throw new TypeError(`container entry path \xAB${entry.path}\xBB is not unique`);
+    byPath.set(key, entry);
+  }
+  const entries = [...byPath.values()];
+  const containerRevision = revisionId(String(context.source.revision));
+  const directories = (table.directories ?? []).map(({ path, hidden }) => {
+    if (!validPath(path))
+      throw new TypeError(`container folder path \xAB${path}\xBB is invalid`);
+    return Object.freeze({
+      id: `${path}/`,
+      path: `${path}/`,
+      name: path.slice(path.lastIndexOf("/") + 1),
+      kind: "directory",
+      ...hidden === true ? { hidden: true } : {},
+      // a plain string: a branded RevisionId would leak an unexported brand into the declarations
+      revision: String(context.source.revision)
+    });
+  });
+  const maximum = Number(context.budget.maxInputBytes);
+  const storedSize = (entry) => entry.storage.kind === "stored" ? entry.storage.length : entry.storage.kind === "custom" ? void 0 : entry.storage.compressedLength;
+  const toItem = (entry) => {
+    const stored = storedSize(entry);
+    return Object.freeze({
+      id: entry.path,
+      path: entry.path,
+      name: entry.path.slice(entry.path.lastIndexOf("/") + 1),
+      kind: "file",
+      size: entry.size,
+      ...stored === void 0 || stored === entry.size ? {} : { storedSize: stored },
+      ...entry.storage.kind !== "custom" ? { compression: entry.storage.kind } : entry.storage.compression === void 0 ? {} : { compression: entry.storage.compression },
+      ...entry.modifiedAt === void 0 ? {} : { modifiedAt: entry.modifiedAt },
+      ...entry.checksum === void 0 ? {} : { checksum: entry.checksum },
+      ...entry.hidden === true ? { hidden: true } : {},
+      ...entry.mediaType === void 0 ? {} : { mediaType: entry.mediaType },
+      // In place only within the container's own source; a companion's entry is extracted.
+      ...entry.storage.kind === "stored" && entry.storage.source === void 0 && entry.storage.locate === void 0 ? {
+        storedRange: Object.freeze({
+          offset: entry.storage.offset,
+          length: entry.storage.length
+        })
+      } : {},
+      // Readable by range without extraction: stored data in a companion, a RefPack stream (decoded
+      // from checkpoints), or a custom entry whose storage promises a range source.
+      ...entry.storage.kind === "stored" && (entry.storage.source !== void 0 || entry.storage.locate !== void 0) || entry.storage.kind === "refpack" || entry.storage.kind === "custom" && entry.storage.rangeAccess === true ? { rangeAccess: true } : {},
+      revision: containerEntryRevision(containerRevision, entry.path, entry.size)
+    });
+  };
+  const found = /* @__PURE__ */ new Map();
+  const entryAt = async (path, signal) => {
+    const key = fold(path);
+    const known = byPath.get(key) ?? found.get(key);
+    if (known !== void 0 || table.find === void 0 || !validPath(path))
+      return known;
+    const entry = await table.find(path, signal);
+    if (entry === void 0)
+      return void 0;
+    if (fold(entry.path) !== key || typeof entry.size !== "bigint" || entry.size < 0n) {
+      throw new TypeError(`container lookup of \xAB${path}\xBB answered another or an invalid entry`);
+    }
+    found.set(key, entry);
+    return entry;
+  };
+  const namespace = Object.freeze({
+    async list(prefix, page, signal) {
+      throwIfCancelled(signal);
+      if (!Number.isSafeInteger(page.limit) || page.limit <= 0)
+        throw new TypeError("page limit must be a positive safe integer");
+      const start = page.cursor === void 0 ? 0 : Number(page.cursor);
+      if (!Number.isSafeInteger(start) || start < 0)
+        throw new TypeError("invalid container entry cursor");
+      const wanted = fold(prefix);
+      const under = wanted.endsWith("/") ? wanted : `${wanted}/`;
+      const matching = prefix === "" ? entries : entries.filter((entry) => {
+        const path = fold(entry.path);
+        return path === wanted || path.startsWith(under);
+      });
+      const folders = directories.filter((folder) => {
+        const path = fold(folder.path);
+        return prefix === "" || path === `${wanted}/` || path.startsWith(under);
+      });
+      const all = [...matching.map(toItem), ...folders];
+      const items = all.slice(start, start + page.limit);
+      return Object.freeze({
+        items: Object.freeze(items),
+        ...start + items.length < all.length ? { nextCursor: String(start + items.length) } : {}
+      });
+    },
+    ...table.nestedContext === void 0 ? {} : {
+      async nestedContext(signal) {
+        throwIfCancelled(signal);
+        return table.nestedContext;
+      }
+    },
+    ...table.preamble === void 0 ? {} : {
+      async readPreamble(maxBytes, signal) {
+        throwIfCancelled(signal);
+        if (!Number.isSafeInteger(maxBytes) || maxBytes < 0)
+          throw new TypeError("preamble maxBytes must be a non-negative safe integer");
+        const bytes = await table.preamble(maxBytes, signal);
+        if (bytes.byteLength > maxBytes)
+          throw new RangeError("container preamble exceeds the requested bound");
+        return bytes.byteOffset === 0 && bytes.byteLength === bytes.buffer.byteLength ? bytes : bytes.slice();
+      }
+    },
+    async lookup(path, signal) {
+      throwIfCancelled(signal);
+      const entry = await entryAt(path, signal);
+      return entry === void 0 ? void 0 : toItem(entry);
+    },
+    async openEntrySource(entryId, signal) {
+      throwIfCancelled(signal);
+      const entry = await entryAt(entryId, signal);
+      if (entry === void 0)
+        throw new TypeError(`unknown container entry ${entryId}`);
+      const storage = entry.storage;
+      if (storage.kind === "stored" || storage.kind === "refpack") {
+        let holder;
+        if (storage.source === void 0) {
+          holder = { source: context.byteSource, release: async () => void 0 };
+        } else {
+          if (context.companionSource === void 0)
+            throw new TypeError(`container entry data lives in companion \xAB${storage.source}\xBB, which this open does not carry`);
+          holder = await context.companionSource(storage.source, signal);
+        }
+        try {
+          const start = await offsetOf(storage, signal);
+          const extent = storage.kind === "stored" ? storage.length : storage.compressedLength;
+          const window = Object.freeze({
+            size: async () => extent,
+            async read(offset, length, readSignal) {
+              if (offset < 0n || offset + BigInt(length) > extent)
+                throw new RangeError("container entry read is outside the entry");
+              return holder.source.read(start + offset, length, readSignal);
+            }
+          });
+          if (storage.kind === "stored")
+            return Object.freeze({ value: window, release: () => holder.release() });
+          const { refPackRangeSource } = await import("../../../codec-kit/compression/refpack.js");
+          const decoded = await refPackRangeSource(window, { compressedLength: extent });
+          return Object.freeze({ value: decoded, release: () => holder.release() });
+        } catch (error) {
+          await holder.release();
+          throw error;
+        }
+      }
+      if (storage.kind === "custom" && storage.rangeAccess === true) {
+        const opened = await storage.open(signal);
+        if (Symbol.asyncIterator in opened)
+          throw new TypeError(`container entry ${entry.path} promised a range source, not a stream`);
+        return Object.freeze({ value: opened, release: async () => void 0 });
+      }
+      throw new TypeError(`container entry ${entry.path} is not readable by range; extract it`);
+    },
+    async openEntry(entryId, signal) {
+      throwIfCancelled(signal);
+      const entry = await entryAt(entryId, signal);
+      if (entry === void 0)
+        throw new TypeError(`unknown container entry ${entryId}`);
+      return simpleLease(Object.freeze({
+        id: `${context.source.ref.id}!/${entry.path}`,
+        // segments encoded: a `#` or `?` in a name (Emperor `#M61 …/test.xbf`) is not a fragment
+        uri: `${context.scheme}:${encodeURIComponent(context.source.ref.uri)}!/${entry.path.split("/").map(encodeURIComponent).join("/")}`,
+        parentIds: Object.freeze([context.source.ref.id])
+      }));
+    }
+  });
+  const readRange = async (offset, length, signal, bindingId) => {
+    if (length > BigInt(maximum))
+      throw new RangeError(`container entry range of ${length} bytes exceeds the read budget of ${maximum}`);
+    let bytes;
+    if (bindingId === void 0) {
+      bytes = await context.byteSource.read(offset, Number(length), signal);
+    } else {
+      if (context.companionSource === void 0) {
+        throw new TypeError(`container entry data lives in companion \xAB${bindingId}\xBB, which this open does not carry`);
+      }
+      const companion = await context.companionSource(bindingId, signal);
+      try {
+        bytes = await companion.source.read(offset, Number(length), signal);
+      } finally {
+        await companion.release();
+      }
+    }
+    if (BigInt(bytes.byteLength) !== length)
+      throw new RangeError("container entry is truncated");
+    return bytes;
+  };
+  const extractEntry = (entry, signal) => decodeContainerEntry(entry, maximum, readRange, signal);
+  const extract = async (input, operation) => {
+    const entryId = input !== null && typeof input === "object" && !Array.isArray(input) ? input.entryId : void 0;
+    const entry = typeof entryId === "string" ? await entryAt(entryId, operation.signal) : void 0;
+    if (entry === void 0)
+      throw new TypeError("container.extract requires a known {entryId}");
+    return { kind: "bytes", value: await extractEntry(entry, operation.signal) };
+  };
+  const decodedTotal = entries.reduce((total, entry) => total + entry.size, 0n);
+  return Object.freeze({ namespace, extract, extractEntry, decodedTotal });
+}
+async function decodeContainerEntry(entry, maximum, readRange, signal) {
+  if (entry.size > BigInt(maximum)) {
+    throw new RangeError(`container entry ${entry.path} (${entry.size} bytes) exceeds the extraction budget of ${maximum}`);
+  }
+  const size = Number(entry.size);
+  const storage = entry.storage;
+  let bytes;
+  switch (storage.kind) {
+    case "stored":
+      bytes = await readRange(await offsetOf(storage, signal), storage.length, signal, storage.source);
+      break;
+    case "deflate":
+    case "zlib":
+    case "gzip": {
+      const { decompressBounded: decompressBounded2 } = await import("../../../codec-kit/compression/bounded.js");
+      const format = storage.kind === "deflate" ? "deflate-raw" : storage.kind === "zlib" ? "deflate" : "gzip";
+      bytes = await decompressBounded2(await readRange(await offsetOf(storage, signal), storage.compressedLength, signal, storage.source), format, {
+        maxOutputBytes: size,
+        ...signal === void 0 ? {} : { signal }
+      });
+      break;
+    }
+    case "zstd": {
+      const { decodeZstd } = await import("../../../codec-kit/compression/zstd.js");
+      bytes = decodeZstd(await readRange(await offsetOf(storage, signal), storage.compressedLength, signal, storage.source), {
+        expectedLength: size,
+        maxOutputBytes: size
+      });
+      break;
+    }
+    case "lz4-block": {
+      const { decodeLz4Block } = await import("../../../codec-kit/compression/lz4.js");
+      bytes = decodeLz4Block(await readRange(await offsetOf(storage, signal), storage.compressedLength, signal, storage.source), size);
+      break;
+    }
+    case "refpack": {
+      const { decodeRefPack } = await import("../../../codec-kit/compression/refpack.js");
+      bytes = decodeRefPack(await readRange(await offsetOf(storage, signal), storage.compressedLength, signal, storage.source), size);
+      break;
+    }
+    case "custom": {
+      const opened = await storage.open(signal);
+      if (Symbol.asyncIterator in opened) {
+        const chunks = [];
+        let total = 0;
+        for await (const chunk of opened) {
+          throwIfCancelled(signal);
+          total += chunk.byteLength;
+          if (total > size)
+            throw new RangeError(`container entry ${entry.path} decodes past its size`);
+          chunks.push(chunk);
+        }
+        bytes = new Uint8Array(total);
+        let at = 0;
+        for (const chunk of chunks) {
+          bytes.set(chunk, at);
+          at += chunk.byteLength;
+        }
+      } else {
+        bytes = await opened.read(0n, size, signal);
+      }
+      break;
+    }
+  }
+  if (bytes.byteLength !== size) {
+    throw new RangeError(`container entry ${entry.path} decoded to ${bytes.byteLength} bytes, not ${size}`);
+  }
+  return bytes;
+}
+
 // packages/codec-kit/dist/editing.js
 function assetRevisionFromInput(input) {
   if (input.originKind !== "single" || input.revisions.topology !== "single") {
@@ -224,6 +519,38 @@ function editPlanFromInput(input, { planId, edits, fidelity, guarantee = "atomic
     diagnostics: Object.freeze([...diagnostics])
   });
 }
+
+// packages/codec-kit/dist/audio/pcm-audio.js
+function convertToWav(summary = "Writes the decoded sound as a 16-bit PCM WAV file.") {
+  return Object.freeze({
+    id: "export.convert",
+    handlerId: "convert-audio",
+    mutatesSource: false,
+    requiredPermissions: Object.freeze(["read-source"]),
+    inputSchema: Object.freeze({
+      $ref: "modkit://codec-kit/audio-export-convert.v1",
+      document: Object.freeze({
+        schemaVersion: 1,
+        forms: Object.freeze([
+          Object.freeze({
+            id: "wav",
+            label: "WAV",
+            summary,
+            baseInput: Object.freeze({ target: "wav" }),
+            fields: Object.freeze([]),
+            writes: Object.freeze({
+              format: Object.freeze({ id: "wav", label: "WAV" }),
+              extension: ".wav",
+              mediaType: "audio/wav"
+            })
+          })
+        ])
+      })
+    }),
+    outputKinds: Object.freeze(["bytes"])
+  });
+}
+var CONVERT_TO_WAV = convertToWav();
 
 // packages/codec-kit/dist/xml-scan.js
 var NAMED_ENTITIES = Object.freeze({
@@ -270,15 +597,27 @@ function simpleLease(value) {
 }
 function createTreeDataSource(rootNode) {
   const nodes = /* @__PURE__ */ new Map();
-  const register = (node, id) => {
-    const children = Array.isArray(node.children) ? node.children : [];
-    nodes.set(id, { node, childIds: children.map((_, index) => `${id}/${index}`) });
-    children.forEach((child, index) => register(child, `${id}/${index}`));
+  nodes.set("root", { node: rootNode });
+  const childIdsOf = (id) => {
+    const item = nodes.get(id);
+    if (item === void 0)
+      return [];
+    if (item.childIds === void 0) {
+      const source = item.node.children;
+      const children = typeof source === "function" ? source() : source ?? [];
+      item.childIds = children.map((child, index) => {
+        const childId = `${id}/${index}`;
+        nodes.set(childId, { node: child });
+        return childId;
+      });
+    }
+    return item.childIds;
   };
-  register(rootNode, "root");
   const ref = (id) => {
     const item = nodes.get(id);
-    return Object.freeze({ id, hasChildren: (item?.childIds.length ?? 0) > 0 });
+    const source = item?.node.children;
+    const hasChildren = item?.childIds !== void 0 ? item.childIds.length > 0 : typeof source === "function" ? item?.node.hasChildren ?? true : (source?.length ?? 0) > 0;
+    return Object.freeze({ id, hasChildren });
   };
   return Object.freeze({
     async root() {
@@ -291,7 +630,7 @@ function createTreeDataSource(rootNode) {
         throw new TypeError("tree page limit must be a positive safe integer");
       }
       const start = pageStart(page.cursor);
-      const childIds = nodes.get(node.id)?.childIds ?? [];
+      const childIds = childIdsOf(node.id);
       const items = childIds.slice(start, start + page.limit).map(ref);
       return Object.freeze({
         items: Object.freeze(items),
@@ -317,13 +656,17 @@ function createTreeDataSource(rootNode) {
     },
     async *search(query, signal) {
       const needle = query.pattern.toLocaleLowerCase();
-      for (const [id, item] of nodes) {
+      const pending = ["root"];
+      while (pending.length > 0) {
         if (signal?.aborted)
           throw new DOMException("operation cancelled", "AbortError");
+        const id = pending.pop();
+        const item = nodes.get(id);
         const haystack = `${item.node.label}
 ${item.node.preview ?? ""}`.toLocaleLowerCase();
         if (haystack.includes(needle))
           yield ref(id);
+        pending.push(...childIdsOf(id).toReversed());
       }
     }
   });
@@ -358,6 +701,7 @@ var TRANSPORT_OPERATIONS = Object.freeze([
     outputKinds: Object.freeze(["none"])
   })
 ]);
+var COMPUTED_MIP_SOURCE_MAX_BYTES = 512 * 1024 * 1024;
 function jsonSafe(value) {
   if (typeof value === "bigint")
     return value.toString();
@@ -420,6 +764,7 @@ function inspectionOperations(declarations, states = []) {
     return Object.freeze(override === void 0 || override.state === "available" ? { ...identity, state: "available" } : { ...identity, state: override.state, reason: override.reason });
   }));
 }
+var READ_ALL_CHUNK_BYTES = 4 * 1024 * 1024;
 async function readAll(source, budget, signal) {
   if (source.kind !== "bytes" || source.size === void 0) {
     throw new TypeError("inspection codecs require a sized byte source");
@@ -433,7 +778,7 @@ async function readAll(source, budget, signal) {
   while (offset < total) {
     if (signal?.aborted)
       throw new DOMException("operation cancelled", "AbortError");
-    const chunk = await source.read(BigInt(offset), Math.min(64 * 1024, total - offset), signal);
+    const chunk = await source.read(BigInt(offset), Math.min(READ_ALL_CHUNK_BYTES, total - offset), signal);
     if (chunk.byteLength === 0)
       throw new RangeError("source ended before its declared size");
     result.set(chunk, offset);
@@ -516,7 +861,7 @@ function originFrom(input, primary, companions = []) {
   throw new TypeError("inspection codec requires a physical byte input");
 }
 function probeLength(plan, size) {
-  const first = plan.ranges[0];
+  const first = plan.ranges.find((range) => range.from === "start") ?? plan.ranges[0];
   const declared = Math.min(plan.maxBytes, first?.length ?? plan.maxBytes);
   const available = size === void 0 ? declared : Number(size);
   return Math.max(0, Math.min(declared, available));
@@ -603,7 +948,14 @@ function createInspectionCodec(definition2, contributionContext) {
         throw new TypeError(`${definition2.id} requires a byte probe`);
       }
       const bytes = await request.source.read(0n, probeLength(request.plan, request.source.size), signal);
-      const detected = await definition2.detect(bytes, request.source.ref.uri);
+      const tail = request.plan.ranges.find((range) => range.from === "end");
+      const size = request.source.size;
+      const tailLength = tail === void 0 || size === void 0 ? 0 : (
+        // the host counts every probe byte against maxBytes: the tail gets what the prefix left
+        Math.max(0, Math.min(tail.length, request.plan.maxBytes - bytes.byteLength, Number(size)))
+      );
+      const suffix = tail === void 0 || size === void 0 ? void 0 : tailLength === 0 ? new Uint8Array() : await request.source.read(size - BigInt(tailLength), tailLength, signal);
+      const detected = await definition2.detect(bytes, request.source.ref.uri, suffix);
       return Object.freeze({
         codecId: definition2.id,
         confidence: detected.confidence,
@@ -615,7 +967,13 @@ function createInspectionCodec(definition2, contributionContext) {
           })
         ]),
         requiredRanges: Object.freeze([
-          Object.freeze({ byteOffset: "0", byteLength: String(bytes.byteLength) })
+          Object.freeze({ byteOffset: "0", byteLength: String(bytes.byteLength) }),
+          ...suffix === void 0 || size === void 0 || suffix.byteLength === 0 ? [] : [
+            Object.freeze({
+              byteOffset: String(size - BigInt(suffix.byteLength)),
+              byteLength: String(suffix.byteLength)
+            })
+          ]
         ])
       });
     },
@@ -647,6 +1005,9 @@ function createInspectionCodec(definition2, contributionContext) {
               contracts: contributionContext.contracts,
               ...contributionContext.modelResources === void 0 ? {} : { modelResources: contributionContext.modelResources },
               ...contributionContext.rasterResources === void 0 ? {} : { rasterResources: contributionContext.rasterResources },
+              ...contributionContext.videoFrames === void 0 ? {} : { videoFrames: contributionContext.videoFrames },
+              ...contributionContext.credentials === void 0 ? {} : { credentials: contributionContext.credentials },
+              ...contributionContext.containerContext === void 0 ? {} : { containerContext: contributionContext.containerContext },
               ...contributionContext.logicalResources === void 0 ? {} : { logicalResources: contributionContext.logicalResources }
             },
             budget,
@@ -718,7 +1079,11 @@ function createInspectionCodec(definition2, contributionContext) {
                 throw new TypeError(`${definition2.id} does not publish ${contract}`);
               return simpleLease(value);
             },
-            release: [() => namespaceLease.release()]
+            release: [
+              () => namespaceLease.release(),
+              // released first: the host releases in reverse order
+              ...inspection.release === void 0 ? [] : [inspection.release]
+            ]
           }).session;
         } catch (error) {
           await namespaceLease.release();
@@ -746,6 +1111,9 @@ function createInspectionCodec(definition2, contributionContext) {
             contracts: contributionContext.contracts,
             ...contributionContext.modelResources === void 0 ? {} : { modelResources: contributionContext.modelResources },
             ...contributionContext.rasterResources === void 0 ? {} : { rasterResources: contributionContext.rasterResources },
+            ...contributionContext.videoFrames === void 0 ? {} : { videoFrames: contributionContext.videoFrames },
+            ...contributionContext.credentials === void 0 ? {} : { credentials: contributionContext.credentials },
+            ...contributionContext.containerContext === void 0 ? {} : { containerContext: contributionContext.containerContext },
             ...contributionContext.logicalResources === void 0 ? {} : { logicalResources: contributionContext.logicalResources }
           },
           budget,
@@ -758,8 +1126,28 @@ function createInspectionCodec(definition2, contributionContext) {
           input
         };
         const inspection = rangeDefinition !== void 0 ? await rangeDefinition.inspect(inspectionContext) : await definition2.inspect(bytes, inspectionContext);
+        const entryAccess = inspection.containerEntries === void 0 ? void 0 : containerEntryAccess(inspection.containerEntries, {
+          scheme: definition2.format.id,
+          source,
+          byteSource,
+          budget,
+          // A companion the input carries (`.rfd` beside `.rfh`), read by range under the same budget.
+          async companionSource(bindingId, companionSignal) {
+            const lease = await input.openBinding(bindingId, companionSignal);
+            try {
+              return {
+                source: rangeByteSource(lease.value, budget),
+                release: () => lease.release()
+              };
+            } catch (error) {
+              await lease.release();
+              throw error;
+            }
+          }
+        });
         const dataSources = new Map([
           ["common.view/byte-range-source", byteSource],
+          ...entryAccess === void 0 ? [] : [["common.view/namespace-entry-source", entryAccess.namespace]],
           ...Object.entries(inspection.dataSources ?? {})
         ]);
         if (inspection.text === true) {
@@ -813,7 +1201,7 @@ function createInspectionCodec(definition2, contributionContext) {
             seekable: true,
             randomAccess: true,
             trusted: false,
-            maxDecodedBytes: String(inspection.maxDecodedBytes ?? sourceSize),
+            maxDecodedBytes: String(inspection.maxDecodedBytes ?? entryAccess?.decodedTotal ?? sourceSize),
             ...inspection.unsupportedFeatures === void 0 ? {} : { unsupportedFeatures: inspection.unsupportedFeatures }
           },
           dataSources: [...dataSources.keys()].map((contract) => ({ contract, major: 1 })),
@@ -827,6 +1215,12 @@ function createInspectionCodec(definition2, contributionContext) {
           ["validate", async () => ({ kind: "none" })],
           ...bytes === void 0 ? [] : [
             ["export-raw", async () => ({ kind: "bytes", value: bytes })]
+          ],
+          ...entryAccess === void 0 ? [] : [
+            [
+              CONTAINER_EXTRACT_HANDLER_ID,
+              entryAccess.extract
+            ]
           ],
           ...Object.entries(inspection.handlers ?? {})
         ]);
@@ -846,7 +1240,11 @@ function createInspectionCodec(definition2, contributionContext) {
               throw new TypeError(`${definition2.id} does not publish ${contract}`);
             return simpleLease(value);
           },
-          release: [() => sourceLease.release()]
+          release: [
+            () => sourceLease.release(),
+            // released first: the host releases in reverse order
+            ...inspection.release === void 0 ? [] : [inspection.release]
+          ]
         }).session;
       } catch (error) {
         await sourceLease.release();
@@ -872,6 +1270,7 @@ var ZIP_CENTRAL = 33639248;
 var ZIP_EOCD = 101010256;
 var ZIP_DESCRIPTOR = 134695760;
 var ZIP64_LOCATOR = 117853008;
+var ZIP64_EOCD = 101075792;
 var FLAG_ENCRYPTED = 1;
 var FLAG_COMPRESSION_OPTIONS = 6;
 var FLAG_DESCRIPTOR = 8;
@@ -926,52 +1325,96 @@ function findEocd(bytes) {
   }
   return -1;
 }
-function safePath(value) {
-  const normalized = value.replaceAll("\\", "/");
-  const parts = normalized.split("/").filter(Boolean);
-  if (value.includes("\0") || normalized.startsWith("/") || /^[a-z]:/iu.test(normalized) || parts.some((part) => part === "." || part === "..")) {
-    throw new TypeError(`unsafe ZIP entry path: ${value}`);
-  }
-  return `${parts.join("/")}${normalized.endsWith("/") && parts.length > 0 ? "/" : ""}`;
+function u64(bytes, offset) {
+  if (offset < 0 || offset + 8 > bytes.byteLength) throw new RangeError("truncated ZIP u64");
+  const value = new DataView(bytes.buffer, bytes.byteOffset + offset, 8).getBigUint64(0, true);
+  if (value > BigInt(Number.MAX_SAFE_INTEGER)) throw new RangeError("ZIP64 value is too large");
+  return Number(value);
 }
-function parseZipArchive(bytes, maxEntries) {
-  const eocd = findEocd(bytes);
+function eocdOf(tail, tailStart) {
+  const eocd = findEocd(tail);
   if (eocd < 0) throw new TypeError("ZIP end-of-central-directory record is missing");
-  if (u16(bytes, eocd + 4) !== 0 || u16(bytes, eocd + 6) !== 0) {
+  if (u16(tail, eocd + 4) !== 0 || u16(tail, eocd + 6) !== 0) {
     throw new TypeError("multi-disk ZIP archives are unsupported");
   }
-  const count = u16(bytes, eocd + 10);
-  const centralSize = u32(bytes, eocd + 12);
-  const centralOffset = u32(bytes, eocd + 16);
-  if (count === 65535 || centralSize === 4294967295 || centralOffset === 4294967295) {
-    throw new TypeError("ZIP64 requires a dedicated codec profile");
+  const count = u16(tail, eocd + 10);
+  const centralSize = u32(tail, eocd + 12);
+  const centralOffset = u32(tail, eocd + 16);
+  const saturated = count === MAX_U16 || centralSize === MAX_U32 || centralOffset === MAX_U32;
+  const locator = eocd >= 20 && u32(tail, eocd - 20) === ZIP64_LOCATOR;
+  if (saturated && !locator)
+    throw new TypeError("ZIP64 end-of-central-directory locator is missing");
+  return Object.freeze({
+    eocd: tailStart + eocd,
+    count,
+    centralSize,
+    centralOffset,
+    ...locator ? { zip64RecordOffset: u64(tail, eocd - 20 + 8) } : {}
+  });
+}
+function zip64DirectoryOf(record) {
+  if (u32(record, 0) !== ZIP64_EOCD)
+    throw new TypeError("ZIP64 end-of-central-directory record is invalid");
+  if (u32(record, 16) !== 0 || u32(record, 20) !== 0) {
+    throw new TypeError("multi-disk ZIP archives are unsupported");
   }
+  return { count: u64(record, 32), centralSize: u64(record, 40), centralOffset: u64(record, 48) };
+}
+function withZip64Extra(extra, fields) {
+  for (let at = 0; at + 4 <= extra.byteLength; ) {
+    const id = u16(extra, at);
+    const length = u16(extra, at + 2);
+    if (id === EXTRA_ZIP64) {
+      const field = extra.subarray(at + 4, at + 4 + length);
+      let read = 0;
+      const next = () => {
+        const value = u64(field, read);
+        read += 8;
+        return value;
+      };
+      return {
+        size: fields.size === MAX_U32 ? next() : fields.size,
+        compressedSize: fields.compressedSize === MAX_U32 ? next() : fields.compressedSize,
+        localOffset: fields.localOffset === MAX_U32 ? next() : fields.localOffset
+      };
+    }
+    at += 4 + length;
+  }
+  if (fields.size === MAX_U32 || fields.compressedSize === MAX_U32 || fields.localOffset === MAX_U32)
+    throw new TypeError("ZIP entry saturates a size or offset without a ZIP64 field");
+  return fields;
+}
+function parseCentralDirectory(central, centralOffset, count, maxEntries) {
   if (count > maxEntries) throw new RangeError("ZIP entry count exceeds maxNodes budget");
-  if (centralOffset + centralSize > eocd) throw new TypeError("ZIP central directory is truncated");
   const entries = [];
-  let offset = centralOffset;
+  let offset = 0;
   for (let index = 0; index < count; index += 1) {
-    if (offset + 46 > bytes.byteLength || u32(bytes, offset) !== ZIP_CENTRAL) {
+    if (offset + 46 > central.byteLength || u32(central, offset) !== ZIP_CENTRAL) {
       throw new TypeError(`invalid ZIP central-directory entry ${index}`);
     }
-    const flags = u16(bytes, offset + 8);
-    const method = u16(bytes, offset + 10);
-    const dosTime = u16(bytes, offset + 12);
-    const dosDate = u16(bytes, offset + 14);
-    const crc = u32(bytes, offset + 16);
-    const compressedSize = u32(bytes, offset + 20);
-    const size = u32(bytes, offset + 24);
-    const nameLength = u16(bytes, offset + 28);
-    const extraLength = u16(bytes, offset + 30);
-    const commentLength = u16(bytes, offset + 32);
-    const localOffset = u32(bytes, offset + 42);
+    const flags = u16(central, offset + 8);
+    const method = u16(central, offset + 10);
+    const dosTime = u16(central, offset + 12);
+    const dosDate = u16(central, offset + 14);
+    const crc = u32(central, offset + 16);
+    const nameLength = u16(central, offset + 28);
+    const extraLength = u16(central, offset + 30);
+    const commentLength = u16(central, offset + 32);
     const next = offset + 46 + nameLength + extraLength + commentLength;
-    if (next > bytes.byteLength) throw new TypeError("ZIP central-directory name is truncated");
-    const nameBytes = bytes.subarray(offset + 46, offset + 46 + nameLength);
+    if (next > central.byteLength) throw new TypeError("ZIP central-directory name is truncated");
+    const nameBytes = central.subarray(offset + 46, offset + 46 + nameLength);
     const name = safePath(
-      (flags & 2048) !== 0 ? utf8.decode(nameBytes) : legacy.decode(nameBytes)
+      (flags & FLAG_UTF8_NAMES) !== 0 ? utf8.decode(nameBytes) : legacy.decode(nameBytes)
     );
     if (name === "") throw new TypeError("ZIP entries must have non-empty paths");
+    const { size, compressedSize, localOffset } = withZip64Extra(
+      central.subarray(offset + 46 + nameLength, offset + 46 + nameLength + extraLength),
+      {
+        compressedSize: u32(central, offset + 20),
+        size: u32(central, offset + 24),
+        localOffset: u32(central, offset + 42)
+      }
+    );
     entries.push(
       Object.freeze({
         id: `entry-${index}`,
@@ -985,16 +1428,116 @@ function parseZipArchive(bytes, maxEntries) {
         compressedSize,
         size,
         localOffset,
-        centralOffset: offset,
+        centralOffset: centralOffset + offset,
         centralLength: next - offset
       })
     );
     offset = next;
   }
-  if (offset !== centralOffset + centralSize) {
+  if (offset !== central.byteLength) {
     throw new TypeError("ZIP central-directory size does not match its entries");
   }
   return Object.freeze(entries);
+}
+function safePath(value) {
+  const normalized = value.replaceAll("\\", "/");
+  const parts = normalized.split("/").filter(Boolean);
+  if (value.includes("\0") || normalized.startsWith("/") || /^[a-z]:/iu.test(normalized) || parts.some((part) => part === "." || part === "..")) {
+    throw new TypeError(`unsafe ZIP entry path: ${value}`);
+  }
+  return `${parts.join("/")}${normalized.endsWith("/") && parts.length > 0 ? "/" : ""}`;
+}
+function parseZipArchive(bytes, maxEntries) {
+  const tail = eocdOf(bytes, 0);
+  const directory = tail.zip64RecordOffset === void 0 ? tail : zip64DirectoryOf(bytes.subarray(tail.zip64RecordOffset, tail.zip64RecordOffset + 56));
+  if (directory.centralOffset + directory.centralSize > bytes.byteLength) {
+    throw new TypeError("ZIP central directory is truncated");
+  }
+  return parseCentralDirectory(
+    bytes.subarray(directory.centralOffset, directory.centralOffset + directory.centralSize),
+    directory.centralOffset,
+    directory.count,
+    maxEntries
+  );
+}
+async function readZipDirectory(read, size, maxEntries, maxRead) {
+  const tailStart = Math.max(0, size - Math.min(65557, maxRead));
+  const tail = eocdOf(await read(tailStart, size - tailStart), tailStart);
+  const directory = tail.zip64RecordOffset === void 0 ? tail : zip64DirectoryOf(await read(tail.zip64RecordOffset, 56));
+  if (directory.count > maxEntries) throw new RangeError("ZIP entry count exceeds maxNodes budget");
+  if (directory.centralSize > maxRead)
+    throw new RangeError(
+      `ZIP central directory (${directory.centralSize} bytes) exceeds the read budget of ${maxRead}`
+    );
+  if (directory.centralOffset + directory.centralSize > size) {
+    throw new TypeError("ZIP central directory is truncated");
+  }
+  return parseCentralDirectory(
+    await read(directory.centralOffset, directory.centralSize),
+    directory.centralOffset,
+    directory.count,
+    maxEntries
+  );
+}
+function localDataLocator(entry, read, size) {
+  let located;
+  return () => located ??= (async () => {
+    if (entry.localOffset + 30 > size)
+      throw new TypeError(`the local header of \xAB${entry.name}\xBB is truncated`);
+    const header = await read(entry.localOffset, 30);
+    if (u32(header, 0) !== ZIP_LOCAL)
+      throw new TypeError(`the local header of \xAB${entry.name}\xBB is invalid`);
+    const dataOffset = entry.localOffset + 30 + u16(header, 26) + u16(header, 28);
+    if (dataOffset + entry.compressedSize > size)
+      throw new TypeError(`the data of \xAB${entry.name}\xBB is truncated`);
+    return BigInt(dataOffset);
+  })();
+}
+async function readZipByRanges(byteSource, budget, signal) {
+  const size = Number(await byteSource.size());
+  const maxRead = Number(budget.maxInputBytes);
+  const read = async (offset, length) => {
+    const bytes = await byteSource.read(BigInt(offset), length, signal);
+    if (bytes.byteLength !== length) throw new TypeError("ZIP archive is truncated");
+    return bytes;
+  };
+  const entries = await readZipDirectory(read, size, budget.maxNodes, maxRead);
+  return { entries, containerEntries: await zipEntryTable(entries, read, size) };
+}
+async function zipEntryTable(entries, read, size) {
+  const files = entries.filter((entry) => entry.kind === "file");
+  const byPath = /* @__PURE__ */ new Map();
+  for (const entry of files) {
+    const offset = BigInt(entry.localOffset);
+    const locate = localDataLocator(entry, read, size);
+    const compressedLength = BigInt(entry.compressedSize);
+    const unreadable = (entry.flags & (FLAG_ENCRYPTED | FLAG_STRONG_ENCRYPTION)) !== 0 ? "encrypted ZIP entries are unsupported" : ![STORED, 8, 93].includes(entry.method) ? `unsupported ZIP compression method ${entry.method}` : void 0;
+    const modifiedAt = dosTimestamp(entry.dosDate, entry.dosTime);
+    byPath.set(entry.name, {
+      path: entry.name,
+      size: BigInt(entry.size),
+      storage: unreadable !== void 0 ? {
+        kind: "custom",
+        compression: compressionName(entry.method),
+        async open() {
+          throw new TypeError(unreadable);
+        }
+      } : entry.method === STORED ? { kind: "stored", offset, locate, length: compressedLength } : { kind: entry.method === 8 ? "deflate" : "zstd", offset, locate, compressedLength },
+      ...modifiedAt === void 0 ? {} : { modifiedAt },
+      // the container's own CRC-32, not a digest this codec computed
+      checksum: { algorithm: "crc-32", value: entry.crc.toString(16).padStart(8, "0") },
+      ...hiddenZipPath(entry.name) ? { hidden: true } : {}
+    });
+  }
+  return {
+    entries: [...byPath.values()],
+    directories: entries.filter((entry) => entry.kind === "directory").map((entry) => ({
+      path: entry.name.slice(0, -1),
+      ...hiddenZipPath(entry.name) ? { hidden: true } : {}
+    })),
+    caseSensitivity: "sensitive",
+    complete: true
+  };
 }
 async function extractZipArchiveEntry(bytes, entry) {
   if (entry.kind !== "file") throw new TypeError("directories have no byte payload");
@@ -1651,11 +2194,16 @@ function containerPackHandler(bytes, entries, model, budget, input, source) {
     const touched = /* @__PURE__ */ new Set();
     const member = (item, label) => {
       const change = requireRecord(item, label);
-      const entry = byId.get(change.entryId);
+      const entry = byId.get(change.entryId) ?? entries.find((item2) => item2.name === change.entryId);
       if (entry === void 0) {
         throw new TypeError(`ZIP entry id \xAB${String(change.entryId)}\xBB was not found`);
       }
-      if (change.expectedRevision !== source.revision) {
+      const current = entry.kind === "file" ? containerEntryRevision(
+        revisionId(String(source.revision)),
+        entry.name,
+        BigInt(entry.size)
+      ) : source.revision;
+      if (change.expectedRevision !== current && change.expectedRevision !== source.revision) {
         throw new TypeError(`\xAB${entry.name}\xBB changed since it was read`);
       }
       if (touched.has(entry.id)) throw new TypeError(`\xAB${entry.name}\xBB is changed twice`);
@@ -1732,64 +2280,18 @@ function containerPackHandler(bytes, entries, model, budget, input, source) {
     );
   };
 }
-function namespaceSource(entries, source) {
-  const byId = new Map(entries.map((entry) => [entry.id, entry]));
-  return Object.freeze({
-    async list(prefix, page, signal) {
-      if (signal?.aborted) throw new DOMException("operation cancelled", "AbortError");
-      const matching = entries.filter((entry) => entry.name.startsWith(prefix));
-      const start = page.cursor === void 0 ? 0 : Number(page.cursor);
-      if (!Number.isSafeInteger(start) || start < 0 || !Number.isSafeInteger(page.limit) || page.limit <= 0) {
-        throw new TypeError("invalid ZIP namespace page");
-      }
-      const items = matching.slice(start, start + page.limit).map(
-        (entry) => Object.freeze({
-          id: entry.id,
-          path: entry.name,
-          name: entry.name.replace(/\/$/u, "").split("/").at(-1),
-          kind: entry.kind,
-          ...entry.kind === "file" ? {
-            size: BigInt(entry.size),
-            storedSize: BigInt(entry.compressedSize),
-            compression: compressionName(entry.method),
-            // the container's own CRC-32, not a digest this codec computed
-            checksum: {
-              algorithm: "crc-32",
-              value: entry.crc.toString(16).padStart(8, "0")
-            }
-          } : {},
-          ...dosTimestamp(entry.dosDate, entry.dosTime) === void 0 ? {} : { modifiedAt: dosTimestamp(entry.dosDate, entry.dosTime) },
-          revision: source.revision
-        })
-      );
-      return Object.freeze({
-        items: Object.freeze(items),
-        ...start + items.length < matching.length ? { nextCursor: String(start + items.length) } : {}
-      });
-    },
-    async openEntry(entryId, signal) {
-      if (signal?.aborted) throw new DOMException("operation cancelled", "AbortError");
-      const entry = byId.get(entryId);
-      if (entry === void 0 || entry.kind !== "file")
-        throw new TypeError("ZIP entry is not a file");
-      const encoded = entry.name.split("/").map(encodeURIComponent).join("/");
-      return simpleLease(
-        Object.freeze({
-          id: `${source.ref.id}!/${entry.name}`,
-          uri: `zip-entry:${encodeURIComponent(source.ref.uri)}!/${encoded}`,
-          parentIds: Object.freeze([source.ref.id])
-        })
-      );
-    }
-  });
+function hiddenZipPath(name) {
+  return name.replace(/\/$/u, "").split("/").some((part) => part === "__MACOSX" || part.startsWith(".") || part.toLowerCase() === "thumbs.db");
 }
 var definition = Object.freeze({
   id: "modkit/archive-zip",
   format: Object.freeze({ id: "zip", label: "ZIP archive", mediaType: "application/zip" }),
+  // any size: the directory is read by ranges; an archive within the budget is also editable
+  access: "ranges",
   operations: Object.freeze([
     Object.freeze({
       id: "container.extract",
-      handlerId: "extract-entry",
+      handlerId: CONTAINER_EXTRACT_HANDLER_ID,
       mutatesSource: false,
       requiredPermissions: Object.freeze(["read-source"]),
       outputKinds: Object.freeze(["bytes"])
@@ -1803,12 +2305,29 @@ var definition = Object.freeze({
     const match = signature === ZIP_LOCAL || signature === ZIP_EOCD;
     return { confidence: match ? 0.95 : 0.01, note: match ? "zip-signature" : "signature-mismatch" };
   },
-  async inspect(bytes, context) {
-    const entries = parseZipArchive(bytes, context.budget.maxNodes);
+  async inspect(context) {
+    const size = Number(await context.byteSource.size());
+    const maxRead = Number(context.budget.maxInputBytes);
+    const read = async (offset, length) => {
+      const bytes2 = await context.byteSource.read(BigInt(offset), length, context.signal);
+      if (bytes2.byteLength !== length) throw new TypeError("ZIP archive is truncated");
+      return bytes2;
+    };
+    const whole = size <= maxRead ? await read(0, size) : void 0;
+    const bytes = whole ?? EMPTY;
+    const entries = whole === void 0 ? await readZipDirectory(read, size, context.budget.maxNodes, maxRead) : parseZipArchive(whole, context.budget.maxNodes);
+    const containerEntries = await zipEntryTable(
+      entries,
+      whole === void 0 ? read : async (offset, length) => whole.subarray(offset, offset + length),
+      size
+    );
     const files = entries.filter((entry) => entry.kind === "file");
     const directories = entries.length - files.length;
     const uncompressedBytes = files.reduce((total, entry) => total + BigInt(entry.size), 0n);
-    const model = archiveEditModel(bytes, entries);
+    const model = whole === void 0 ? refusal(
+      "x3.codec/zip-edit-too-large",
+      `the archive (${size} bytes) is larger than the edit budget of ${maxRead} bytes`
+    ) : archiveEditModel(whole, entries);
     const editable = !("code" in model);
     const tree = createTreeDataSource({
       kind: "archive",
@@ -1820,8 +2339,8 @@ var definition = Object.freeze({
         preview: entry.kind === "file" ? `${entry.size} bytes, method ${entry.method}` : "directory"
       }))
     });
-    const byId = new Map(entries.map((entry) => [entry.id, entry]));
     return {
+      containerEntries,
       summary: {
         format: "zip",
         entries: entries.length,
@@ -1851,7 +2370,7 @@ var definition = Object.freeze({
           id: "container.compression",
           parameters: { methods: [...new Set(files.map((item) => item.method))] }
         },
-        { id: "content.binary", parameters: { bytes: String(bytes.byteLength) } }
+        { id: "content.binary", parameters: { bytes: String(size) } }
       ],
       diagnostics: editable ? [] : [
         {
@@ -1863,20 +2382,9 @@ var definition = Object.freeze({
         }
       ],
       dataSources: {
-        "common.view/tree-data-source": tree,
-        "common.view/namespace-entry-source": namespaceSource(entries, context.source)
+        "common.view/tree-data-source": tree
       },
       handlers: {
-        "extract-entry": async (input) => {
-          if (input === null || typeof input !== "object" || Array.isArray(input)) {
-            throw new TypeError("container.extract requires {entryId}");
-          }
-          const entry = byId.get(String(input.entryId ?? ""));
-          if (entry === void 0 || entry.kind !== "file") {
-            throw new TypeError("ZIP file entry id was not found");
-          }
-          return { kind: "bytes", value: await extractZipArchiveEntry(bytes, entry) };
-        },
         "edit-structure": editStructureHandler(
           bytes,
           entries,
@@ -1903,5 +2411,6 @@ export {
   abiVersion,
   createCodec,
   extractZipArchiveEntry,
-  parseZipArchive
+  parseZipArchive,
+  readZipByRanges
 };

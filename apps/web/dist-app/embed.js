@@ -14,30 +14,29 @@ import {
   nestedSubjectServices,
   openNestedSubjectRef,
   requestWriteAccess,
+  resolveCommonPresentationPlan,
   resolveFormatWriter,
   sourceRevisionToken,
   sourceUriFor,
   stageIdOf
-} from "./chunks/chunk-CATIUVBH.js";
-import "./chunks/chunk-3TK45GO7.js";
-import "./chunks/chunk-NRZMIBZ5.js";
-import "./chunks/chunk-WPREPMVL.js";
-import "./chunks/chunk-XYGFUUGH.js";
-import "./chunks/chunk-4NP7CN3Z.js";
-import "./chunks/chunk-QDB3CCKD.js";
-import "./chunks/chunk-T7WKIGHN.js";
-import "./chunks/chunk-BJE5PUXA.js";
+} from "./chunks/chunk-SXET6GN4.js";
+import "./chunks/chunk-CRISB2AX.js";
+import "./chunks/chunk-SEUGETBF.js";
+import "./chunks/chunk-VOGOVPZF.js";
+import "./chunks/chunk-3LR6PKE2.js";
+import "./chunks/chunk-SIU5GHDB.js";
+import "./chunks/chunk-MTC3X2NC.js";
 import {
   element,
   setPart,
   setState,
   setViewerText
-} from "./chunks/chunk-EYZUVLIL.js";
+} from "./chunks/chunk-6G2KODMW.js";
 import {
   parseSubjectRef,
   revisionId,
   serializeSubjectRef
-} from "./chunks/chunk-BPQKZDVH.js";
+} from "./chunks/chunk-ICUJ3IVS.js";
 import {
   define_MODKIT_EMBED_EXTENSION_ORIGINS_default,
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
@@ -358,7 +357,7 @@ function bytesSource(name, bytes, token, sourceUri) {
   };
 }
 var openCount = 0;
-function embedPreviewSession(host, opened, grant, budget, sessionId, onNavigate) {
+async function embedPreviewSession(host, opened, grant, budget, sessionId, onNavigate, preferred) {
   const session = opened.session;
   const key = descriptorKey(opened.descriptor);
   const operations = session.operations();
@@ -382,7 +381,7 @@ function embedPreviewSession(host, opened, grant, budget, sessionId, onNavigate)
       if (nested?.result.state !== "opened")
         return { state: "rejected", reason: "target-unavailable" };
       openCount += 1;
-      const child = embedPreviewSession(
+      const child = await embedPreviewSession(
         host,
         nested.result,
         grant,
@@ -399,11 +398,25 @@ function embedPreviewSession(host, opened, grant, budget, sessionId, onNavigate)
       }
     }
   });
+  const plannedDefault = (await resolveCommonPresentationPlan(
+    await session.descriptor(),
+    {
+      sessionId,
+      providerId: opened.selected.contributionId,
+      variantId: opened.selected.variantId
+    },
+    { availableStageIds: host.stages.map(stageIdOf) }
+  ))?.plan.activeStage;
+  const defaultStages = [
+    ...preferred === void 0 ? [] : [preferred],
+    ...plannedDefault === void 0 ? [] : [plannedDefault]
+  ];
   let disposed = false;
   return {
     opened,
     grant,
     budget,
+    defaultStages,
     ...managed === void 0 ? {} : { subjectNavigation: managed.port },
     descriptor: () => session.descriptor(),
     dataSource: (contract, major) => session.dataSource(contract, major),
@@ -448,7 +461,8 @@ async function openEmbedSession(host, entry, bytes, options, signal) {
     grant,
     budget,
     `modkit-embed-${openCount}`,
-    options.onNavigate
+    options.onNavigate,
+    options.preferred
   );
 }
 var RELOADING_ATTRIBUTES = Object.freeze(["src", "name", "asset-base", "extension-catalog"]);
@@ -833,9 +847,10 @@ function defineModkitElements(options = {}) {
             if (preopened?.session === session) preopened = void 0;
           }
         };
+        const preferredView = this.getAttribute("view");
         previewer = createCodecPreview({
           supported: host.services.supportedExtensions,
-          stages: preferStage(host.stages, this.getAttribute("view") ?? void 0),
+          stages: preferStage(host.stages, preferredView ?? void 0),
           fallback: host.fallback,
           editorPorts: () => editorPorts,
           openSession: async (openedEntry, openedBytes, signal) => {
@@ -849,6 +864,7 @@ function defineModkitElements(options = {}) {
                 token,
                 writable,
                 onNavigate: openNavigatedSubject,
+                ...preferredView === null ? {} : { preferred: preferredView },
                 ...sourceUri === void 0 ? {} : { sourceUri }
               },
               signal

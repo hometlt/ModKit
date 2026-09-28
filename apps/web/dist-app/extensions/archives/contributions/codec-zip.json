@@ -39,7 +39,7 @@
     "artifactStages": ["authored", "compiled"],
     "openIntents": ["probe", "inspect", "full", "export"],
     "match": {
-      "extensions": ["zip"],
+      "extensions": ["zip", "jar"],
       "mediaTypes": ["application/zip"],
       "signatures": [
         {
@@ -101,13 +101,6 @@
         "mutatesSource": false,
         "requiredPermissions": ["read-source"],
         "outputKinds": ["none"]
-      },
-      {
-        "id": "export.raw",
-        "handlerId": "export-raw",
-        "mutatesSource": false,
-        "requiredPermissions": ["read-source"],
-        "outputKinds": ["bytes"]
       },
       {
         "id": "container.extract",

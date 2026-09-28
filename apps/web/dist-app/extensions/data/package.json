@@ -14,6 +14,8 @@
     "./formats/tsv/provider": "./src/families/delimited/entrypoints/tsv-provider.js",
     "./formats/ini/codec": "./src/ini/codec.js",
     "./formats/ini/provider": "./src/ini/provider.js",
+    "./formats/slk/codec": "./src/slk/codec.js",
+    "./formats/slk/provider": "./src/slk/provider.js",
     "./formats/toml/codec": "./src/toml/codec.js",
     "./formats/toml/provider": "./src/toml/provider.js",
     "./formats/xml/codec": "./src/xml/codec.js",

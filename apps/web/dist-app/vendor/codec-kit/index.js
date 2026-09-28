@@ -1,26 +1,30 @@
+import {
+  createTableDataSource
+} from "../../chunks/chunk-XYU4XXWE.js";
 import "../../chunks/chunk-OVW5EXOM.js";
 import {
   assembleSubjectDescriptor,
   createAssetSession,
   createUtf8TextDataSource
-} from "../../chunks/chunk-5GA6R5US.js";
+} from "../../chunks/chunk-JFXF7H5K.js";
 import "../../chunks/chunk-JHPOUH6S.js";
 import {
+  containerEntryRevision,
   contributionSettingsFor
-} from "../../chunks/chunk-SCKD5U6H.js";
-import "../../chunks/chunk-GGIVOOBZ.js";
+} from "../../chunks/chunk-47QWC2WU.js";
 import "../../chunks/chunk-YYQ3QKXM.js";
 import "../../chunks/chunk-KL23KRQT.js";
 import {
   revisionId,
   toPortableProjectionReceipt
-} from "../../chunks/chunk-NMXLVS6H.js";
+} from "../../chunks/chunk-MYUZP6E2.js";
+import "../../chunks/chunk-GGIVOOBZ.js";
 import {
   ModkitError,
   canonicalJsonStringify,
   createReferenceIndex,
   diagnostic
-} from "../../chunks/chunk-HUU44HII.js";
+} from "../../chunks/chunk-LX6GSJ3D.js";
 import "../../chunks/chunk-CQ52GEHY.js";
 
 // packages/codec-kit/src/paging.ts
@@ -30,6 +34,49 @@ function pageStart(cursor) {
   const value = Number(cursor);
   if (!Number.isSafeInteger(value)) throw new TypeError("page cursor exceeds safe integer range");
   return value;
+}
+
+// packages/codec-kit/src/raster/ops.ts
+var at = (pixels, index) => pixels[index];
+function checked(image) {
+  if (image.pixels.length !== image.width * image.height * 4) {
+    throw new TypeError(
+      `image: expected ${image.width * image.height * 4} bytes, got ${image.pixels.length}`
+    );
+  }
+  return image;
+}
+function resizeRgba(image, width, height) {
+  checked(image);
+  if (width === image.width && height === image.height) {
+    return { width, height, pixels: image.pixels.slice() };
+  }
+  const out = new Uint8Array(width * height * 4);
+  const xScale = image.width / width;
+  const yScale = image.height / height;
+  for (let y = 0; y < height; y += 1) {
+    const sourceY = Math.min(image.height - 1, (y + 0.5) * yScale - 0.5);
+    const y0 = Math.max(0, Math.floor(sourceY));
+    const y1 = Math.min(image.height - 1, y0 + 1);
+    const fy = sourceY - y0;
+    for (let x = 0; x < width; x += 1) {
+      const sourceX = Math.min(image.width - 1, (x + 0.5) * xScale - 0.5);
+      const x0 = Math.max(0, Math.floor(sourceX));
+      const x1 = Math.min(image.width - 1, x0 + 1);
+      const fx = sourceX - x0;
+      const target = (y * width + x) * 4;
+      for (let channel = 0; channel < 4; channel += 1) {
+        const p00 = at(image.pixels, (y0 * image.width + x0) * 4 + channel);
+        const p10 = at(image.pixels, (y0 * image.width + x1) * 4 + channel);
+        const p01 = at(image.pixels, (y1 * image.width + x0) * 4 + channel);
+        const p11 = at(image.pixels, (y1 * image.width + x1) * 4 + channel);
+        out[target + channel] = Math.round(
+          p00 * (1 - fx) * (1 - fy) + p10 * fx * (1 - fy) + p01 * (1 - fx) * fy + p11 * fx * fy
+        );
+      }
+    }
+  }
+  return { width, height, pixels: out };
 }
 
 // packages/codec-kit/src/json-snapshot.ts
@@ -285,7 +332,385 @@ function createProjectionReceipt(receipt) {
   });
 }
 
+// packages/codec-kit/src/container-entries.ts
+var CONTAINER_EXTRACT_HANDLER_ID = "extract-entry";
+function throwIfCancelled(signal) {
+  if (signal?.aborted) throw new DOMException("operation cancelled", "AbortError");
+}
+var offsetOf = (storage, signal) => storage.locate === void 0 ? Promise.resolve(storage.offset) : storage.locate(signal);
+function validPath(path) {
+  return path !== "" && path.split("/").every((part) => part !== "" && part !== "." && part !== "..");
+}
+function containerEntryAccess(table, context) {
+  const fold = (path) => table.caseSensitivity === "insensitive" ? path.toLowerCase() : path;
+  const byPath = /* @__PURE__ */ new Map();
+  for (const entry of table.entries) {
+    if (!validPath(entry.path))
+      throw new TypeError(`container entry path \xAB${entry.path}\xBB is invalid`);
+    if (typeof entry.size !== "bigint" || entry.size < 0n)
+      throw new TypeError(`container entry ${entry.path} has an invalid size`);
+    const key = fold(entry.path);
+    if (byPath.has(key)) throw new TypeError(`container entry path \xAB${entry.path}\xBB is not unique`);
+    byPath.set(key, entry);
+  }
+  const entries = [...byPath.values()];
+  const containerRevision = revisionId(String(context.source.revision));
+  const directories = (table.directories ?? []).map(({ path, hidden }) => {
+    if (!validPath(path)) throw new TypeError(`container folder path \xAB${path}\xBB is invalid`);
+    return Object.freeze({
+      id: `${path}/`,
+      path: `${path}/`,
+      name: path.slice(path.lastIndexOf("/") + 1),
+      kind: "directory",
+      ...hidden === true ? { hidden: true } : {},
+      // a plain string: a branded RevisionId would leak an unexported brand into the declarations
+      revision: String(context.source.revision)
+    });
+  });
+  const maximum = Number(context.budget.maxInputBytes);
+  const storedSize = (entry) => entry.storage.kind === "stored" ? entry.storage.length : entry.storage.kind === "custom" ? void 0 : entry.storage.compressedLength;
+  const toItem = (entry) => {
+    const stored = storedSize(entry);
+    return Object.freeze({
+      id: entry.path,
+      path: entry.path,
+      name: entry.path.slice(entry.path.lastIndexOf("/") + 1),
+      kind: "file",
+      size: entry.size,
+      ...stored === void 0 || stored === entry.size ? {} : { storedSize: stored },
+      ...entry.storage.kind !== "custom" ? { compression: entry.storage.kind } : entry.storage.compression === void 0 ? {} : { compression: entry.storage.compression },
+      ...entry.modifiedAt === void 0 ? {} : { modifiedAt: entry.modifiedAt },
+      ...entry.checksum === void 0 ? {} : { checksum: entry.checksum },
+      ...entry.hidden === true ? { hidden: true } : {},
+      ...entry.mediaType === void 0 ? {} : { mediaType: entry.mediaType },
+      // In place only within the container's own source; a companion's entry is extracted.
+      ...entry.storage.kind === "stored" && entry.storage.source === void 0 && entry.storage.locate === void 0 ? {
+        storedRange: Object.freeze({
+          offset: entry.storage.offset,
+          length: entry.storage.length
+        })
+      } : {},
+      // Readable by range without extraction: stored data in a companion, a RefPack stream (decoded
+      // from checkpoints), or a custom entry whose storage promises a range source.
+      ...entry.storage.kind === "stored" && (entry.storage.source !== void 0 || entry.storage.locate !== void 0) || entry.storage.kind === "refpack" || entry.storage.kind === "custom" && entry.storage.rangeAccess === true ? { rangeAccess: true } : {},
+      revision: containerEntryRevision(containerRevision, entry.path, entry.size)
+    });
+  };
+  const found = /* @__PURE__ */ new Map();
+  const entryAt = async (path, signal) => {
+    const key = fold(path);
+    const known = byPath.get(key) ?? found.get(key);
+    if (known !== void 0 || table.find === void 0 || !validPath(path)) return known;
+    const entry = await table.find(path, signal);
+    if (entry === void 0) return void 0;
+    if (fold(entry.path) !== key || typeof entry.size !== "bigint" || entry.size < 0n) {
+      throw new TypeError(`container lookup of \xAB${path}\xBB answered another or an invalid entry`);
+    }
+    found.set(key, entry);
+    return entry;
+  };
+  const namespace = Object.freeze({
+    async list(prefix, page, signal) {
+      throwIfCancelled(signal);
+      if (!Number.isSafeInteger(page.limit) || page.limit <= 0)
+        throw new TypeError("page limit must be a positive safe integer");
+      const start = page.cursor === void 0 ? 0 : Number(page.cursor);
+      if (!Number.isSafeInteger(start) || start < 0)
+        throw new TypeError("invalid container entry cursor");
+      const wanted = fold(prefix);
+      const under = wanted.endsWith("/") ? wanted : `${wanted}/`;
+      const matching = prefix === "" ? entries : entries.filter((entry) => {
+        const path = fold(entry.path);
+        return path === wanted || path.startsWith(under);
+      });
+      const folders = directories.filter((folder) => {
+        const path = fold(folder.path);
+        return prefix === "" || path === `${wanted}/` || path.startsWith(under);
+      });
+      const all = [...matching.map(toItem), ...folders];
+      const items = all.slice(start, start + page.limit);
+      return Object.freeze({
+        items: Object.freeze(items),
+        ...start + items.length < all.length ? { nextCursor: String(start + items.length) } : {}
+      });
+    },
+    ...table.nestedContext === void 0 ? {} : {
+      async nestedContext(signal) {
+        throwIfCancelled(signal);
+        return table.nestedContext;
+      }
+    },
+    ...table.preamble === void 0 ? {} : {
+      async readPreamble(maxBytes, signal) {
+        throwIfCancelled(signal);
+        if (!Number.isSafeInteger(maxBytes) || maxBytes < 0)
+          throw new TypeError("preamble maxBytes must be a non-negative safe integer");
+        const bytes = await table.preamble(maxBytes, signal);
+        if (bytes.byteLength > maxBytes)
+          throw new RangeError("container preamble exceeds the requested bound");
+        return bytes.byteOffset === 0 && bytes.byteLength === bytes.buffer.byteLength ? bytes : bytes.slice();
+      }
+    },
+    async lookup(path, signal) {
+      throwIfCancelled(signal);
+      const entry = await entryAt(path, signal);
+      return entry === void 0 ? void 0 : toItem(entry);
+    },
+    async openEntrySource(entryId, signal) {
+      throwIfCancelled(signal);
+      const entry = await entryAt(entryId, signal);
+      if (entry === void 0) throw new TypeError(`unknown container entry ${entryId}`);
+      const storage = entry.storage;
+      if (storage.kind === "stored" || storage.kind === "refpack") {
+        let holder;
+        if (storage.source === void 0) {
+          holder = { source: context.byteSource, release: async () => void 0 };
+        } else {
+          if (context.companionSource === void 0)
+            throw new TypeError(
+              `container entry data lives in companion \xAB${storage.source}\xBB, which this open does not carry`
+            );
+          holder = await context.companionSource(storage.source, signal);
+        }
+        try {
+          const start = await offsetOf(storage, signal);
+          const extent = storage.kind === "stored" ? storage.length : storage.compressedLength;
+          const window = Object.freeze({
+            size: async () => extent,
+            async read(offset, length, readSignal) {
+              if (offset < 0n || offset + BigInt(length) > extent)
+                throw new RangeError("container entry read is outside the entry");
+              return holder.source.read(start + offset, length, readSignal);
+            }
+          });
+          if (storage.kind === "stored")
+            return Object.freeze({ value: window, release: () => holder.release() });
+          const { refPackRangeSource } = await import("../../chunks/refpack-AYKQA6ZH.js");
+          const decoded = await refPackRangeSource(window, { compressedLength: extent });
+          return Object.freeze({ value: decoded, release: () => holder.release() });
+        } catch (error) {
+          await holder.release();
+          throw error;
+        }
+      }
+      if (storage.kind === "custom" && storage.rangeAccess === true) {
+        const opened = await storage.open(signal);
+        if (Symbol.asyncIterator in opened)
+          throw new TypeError(`container entry ${entry.path} promised a range source, not a stream`);
+        return Object.freeze({ value: opened, release: async () => void 0 });
+      }
+      throw new TypeError(`container entry ${entry.path} is not readable by range; extract it`);
+    },
+    async openEntry(entryId, signal) {
+      throwIfCancelled(signal);
+      const entry = await entryAt(entryId, signal);
+      if (entry === void 0) throw new TypeError(`unknown container entry ${entryId}`);
+      return simpleLease(
+        Object.freeze({
+          id: `${context.source.ref.id}!/${entry.path}`,
+          // segments encoded: a `#` or `?` in a name (Emperor `#M61 …/test.xbf`) is not a fragment
+          uri: `${context.scheme}:${encodeURIComponent(context.source.ref.uri)}!/${entry.path.split("/").map(encodeURIComponent).join("/")}`,
+          parentIds: Object.freeze([context.source.ref.id])
+        })
+      );
+    }
+  });
+  const readRange = async (offset, length, signal, bindingId) => {
+    if (length > BigInt(maximum))
+      throw new RangeError(
+        `container entry range of ${length} bytes exceeds the read budget of ${maximum}`
+      );
+    let bytes;
+    if (bindingId === void 0) {
+      bytes = await context.byteSource.read(offset, Number(length), signal);
+    } else {
+      if (context.companionSource === void 0) {
+        throw new TypeError(
+          `container entry data lives in companion \xAB${bindingId}\xBB, which this open does not carry`
+        );
+      }
+      const companion = await context.companionSource(bindingId, signal);
+      try {
+        bytes = await companion.source.read(offset, Number(length), signal);
+      } finally {
+        await companion.release();
+      }
+    }
+    if (BigInt(bytes.byteLength) !== length) throw new RangeError("container entry is truncated");
+    return bytes;
+  };
+  const extractEntry = (entry, signal) => decodeContainerEntry(entry, maximum, readRange, signal);
+  const extract = async (input, operation) => {
+    const entryId = input !== null && typeof input === "object" && !Array.isArray(input) ? input.entryId : void 0;
+    const entry = typeof entryId === "string" ? await entryAt(entryId, operation.signal) : void 0;
+    if (entry === void 0) throw new TypeError("container.extract requires a known {entryId}");
+    return { kind: "bytes", value: await extractEntry(entry, operation.signal) };
+  };
+  const decodedTotal = entries.reduce((total, entry) => total + entry.size, 0n);
+  return Object.freeze({ namespace, extract, extractEntry, decodedTotal });
+}
+async function decodeContainerEntry(entry, maximum, readRange, signal) {
+  if (entry.size > BigInt(maximum)) {
+    throw new RangeError(
+      `container entry ${entry.path} (${entry.size} bytes) exceeds the extraction budget of ${maximum}`
+    );
+  }
+  const size = Number(entry.size);
+  const storage = entry.storage;
+  let bytes;
+  switch (storage.kind) {
+    case "stored":
+      bytes = await readRange(
+        await offsetOf(storage, signal),
+        storage.length,
+        signal,
+        storage.source
+      );
+      break;
+    case "deflate":
+    case "zlib":
+    case "gzip": {
+      const { decompressBounded } = await import("../../chunks/bounded-IDBTTMRX.js");
+      const format = storage.kind === "deflate" ? "deflate-raw" : storage.kind === "zlib" ? "deflate" : "gzip";
+      bytes = await decompressBounded(
+        await readRange(
+          await offsetOf(storage, signal),
+          storage.compressedLength,
+          signal,
+          storage.source
+        ),
+        format,
+        {
+          maxOutputBytes: size,
+          ...signal === void 0 ? {} : { signal }
+        }
+      );
+      break;
+    }
+    case "zstd": {
+      const { decodeZstd } = await import("../../chunks/zstd-VDM4IETD.js");
+      bytes = decodeZstd(
+        await readRange(
+          await offsetOf(storage, signal),
+          storage.compressedLength,
+          signal,
+          storage.source
+        ),
+        {
+          expectedLength: size,
+          maxOutputBytes: size
+        }
+      );
+      break;
+    }
+    case "lz4-block": {
+      const { decodeLz4Block } = await import("../../chunks/lz4-Y2UGFKVI.js");
+      bytes = decodeLz4Block(
+        await readRange(
+          await offsetOf(storage, signal),
+          storage.compressedLength,
+          signal,
+          storage.source
+        ),
+        size
+      );
+      break;
+    }
+    case "refpack": {
+      const { decodeRefPack } = await import("../../chunks/refpack-AYKQA6ZH.js");
+      bytes = decodeRefPack(
+        await readRange(
+          await offsetOf(storage, signal),
+          storage.compressedLength,
+          signal,
+          storage.source
+        ),
+        size
+      );
+      break;
+    }
+    case "custom": {
+      const opened = await storage.open(signal);
+      if (Symbol.asyncIterator in opened) {
+        const chunks = [];
+        let total = 0;
+        for await (const chunk of opened) {
+          throwIfCancelled(signal);
+          total += chunk.byteLength;
+          if (total > size)
+            throw new RangeError(`container entry ${entry.path} decodes past its size`);
+          chunks.push(chunk);
+        }
+        bytes = new Uint8Array(total);
+        let at2 = 0;
+        for (const chunk of chunks) {
+          bytes.set(chunk, at2);
+          at2 += chunk.byteLength;
+        }
+      } else {
+        bytes = await opened.read(0n, size, signal);
+      }
+      break;
+    }
+  }
+  if (bytes.byteLength !== size) {
+    throw new RangeError(
+      `container entry ${entry.path} decoded to ${bytes.byteLength} bytes, not ${size}`
+    );
+  }
+  return bytes;
+}
+function readContainerEntry(entry, source, options) {
+  return decodeContainerEntry(
+    entry,
+    options.maxBytes,
+    async (offset, length, signal, bindingId) => {
+      if (bindingId !== void 0)
+        throw new TypeError(`container entry ${entry.path} lives in companion \xAB${bindingId}\xBB`);
+      if (length > BigInt(options.maxBytes))
+        throw new RangeError(
+          `container entry range of ${length} bytes exceeds the read budget of ${options.maxBytes}`
+        );
+      const bytes = await source.read(offset, Number(length), signal);
+      if (BigInt(bytes.byteLength) !== length) throw new RangeError("container entry is truncated");
+      return bytes;
+    },
+    options.signal
+  );
+}
+var layerEntry = (entry) => ({
+  path: entry.path,
+  size: Number(entry.size),
+  ...entry.hidden === true ? { hidden: true } : {}
+});
+function containerEntryLayer(id, table, source, close = () => void 0) {
+  const keyOf = table.caseSensitivity === "insensitive" ? (path) => path.toLowerCase() : (path) => path;
+  const byPath = new Map(table.entries.map((entry) => [keyOf(entry.path), entry]));
+  const find = table.find?.bind(table);
+  return {
+    id,
+    entries: table.entries.map(layerEntry),
+    ...find === void 0 ? {} : {
+      async lookup(path, signal) {
+        const entry = await find(path, signal);
+        return entry === void 0 ? void 0 : layerEntry(entry);
+      }
+    },
+    async read(path, maxBytes, signal) {
+      const entry = byPath.get(keyOf(path)) ?? await find?.(path, signal);
+      if (entry === void 0) throw new RangeError(`${id} has no \xAB${path}\xBB`);
+      return readContainerEntry(
+        entry,
+        source,
+        signal === void 0 ? { maxBytes } : { maxBytes, signal }
+      );
+    },
+    close
+  };
+}
+
 // packages/codec-kit/src/model-math/sequence-pose.ts
+var CUBIC_SPLINE_LINE_TYPE = 4;
 function sampleTrackValue(track, timeSeconds, out, options = {}) {
   const keys = track.keys;
   const count = keys.length;
@@ -311,6 +736,22 @@ function sampleTrackValue(track, timeSeconds, out, options = {}) {
   if (track.lineType === 0) return copyVector(ka.vector, out);
   const span = kb.frame - ka.frame;
   const t = span > 0 ? Math.min(Math.max((time - ka.frame) / span, 0), 1) : 0;
+  if (track.lineType === CUBIC_SPLINE_LINE_TYPE) {
+    const t2 = t * t;
+    const t3 = t2 * t;
+    const h00 = 2 * t3 - 3 * t2 + 1;
+    const h10 = t3 - 2 * t2 + t;
+    const h01 = -2 * t3 + 3 * t2;
+    const h11 = t3 - t2;
+    out.length = ka.vector.length;
+    for (let i = 0; i < ka.vector.length; i += 1)
+      out[i] = h00 * ka.vector[i] + h10 * span * (ka.outTan?.[i] ?? 0) + h01 * (kb.vector[i] ?? ka.vector[i]) + h11 * span * (kb.inTan?.[i] ?? 0);
+    if (options.isQuat && out.length === 4) {
+      const len = Math.hypot(out[0], out[1], out[2], out[3]);
+      if (len > 0) for (let i = 0; i < 4; i += 1) out[i] /= len;
+    }
+    return out;
+  }
   if (options.isQuat && ka.vector.length === 4 && kb.vector.length === 4) {
     return slerpVector(ka.vector, kb.vector, t, out);
   }
@@ -469,7 +910,7 @@ function snapshotModelAnimations(value, budget = DEFAULT_MODEL_ANIMATION_BUDGET,
       if (channel.samples !== void 0 && !Array.isArray(channel.samples))
         throw new TypeError("invalid animation samples");
       if (channel.interpolation === void 0) continue;
-      if (!["step", "linear", "spherical-linear"].includes(channel.interpolation) || !channel.samples?.length) {
+      if (!["step", "linear", "spherical-linear", "cubic-spline"].includes(channel.interpolation) || !channel.samples?.length) {
         throw new TypeError("sampleable channel needs interpolation and keys");
       }
       let previous = -Infinity;
@@ -485,6 +926,13 @@ function snapshotModelAnimations(value, budget = DEFAULT_MODEL_ANIMATION_BUDGET,
           throw new TypeError("inconsistent animation key components");
         }
         for (const component of sample.value) finite(component, "key component");
+        if (channel.interpolation === "cubic-spline") {
+          for (const tangent of [sample.inTangent, sample.outTangent]) {
+            if (!Array.isArray(tangent) || tangent.length !== components)
+              throw new TypeError("cubic-spline keys need in and out tangents of the key width");
+            for (const component of tangent) finite(component, "key tangent");
+          }
+        }
       }
     }
   }
@@ -496,9 +944,14 @@ function createModelAnimationSampler(clip, budget, signal) {
     if (channel.interpolation === void 0 || channel.samples === void 0)
       throw new TypeError("channel has no sampling semantics");
     const track = {
-      lineType: channel.interpolation === "step" ? 0 : 1,
+      lineType: channel.interpolation === "step" ? 0 : channel.interpolation === "cubic-spline" ? CUBIC_SPLINE_LINE_TYPE : 1,
       globalSeqId: null,
-      keys: channel.samples.map((key) => ({ frame: key.timeSeconds, vector: key.value }))
+      keys: channel.samples.map((key) => ({
+        frame: key.timeSeconds,
+        vector: key.value,
+        ...key.inTangent === void 0 ? {} : { inTan: key.inTangent },
+        ...key.outTangent === void 0 ? {} : { outTan: key.outTangent }
+      }))
     };
     return { channel, track };
   });
@@ -727,13 +1180,19 @@ function editPlanFromInput(input, { planId, edits, fidelity, guarantee = "atomic
     diagnostics: Object.freeze([...diagnostics])
   });
 }
-function editPlanFromBinding(input, bindingId, { planId, edits, fidelity, guarantee = "atomic", diagnostics = [] }) {
+function editPlanFromBinding(input, bindingId, options) {
+  return editPlanFromBindings(input, [bindingId], options);
+}
+function editPlanFromBindings(input, bindingIds, { planId, edits, fidelity, guarantee = "atomic", diagnostics = [] }) {
   if (input.originKind !== "single" && input.originKind !== "bundle")
     throw new TypeError("editPlanFromBinding requires a physical subject");
   const primary = input.bindings.find((binding) => binding.bindingId === input.primaryBindingId);
-  const selected = input.bindings.find((binding) => binding.bindingId === bindingId);
-  if (primary === void 0 || selected === void 0 || selected.ownership !== "owned")
+  const owners = bindingIds.map(
+    (bindingId) => input.bindings.find((binding) => binding.bindingId === bindingId)
+  );
+  if (primary === void 0 || owners.length === 0 || new Set(bindingIds).size !== bindingIds.length || owners.some((owner) => owner === void 0 || owner.ownership !== "owned"))
     throw new TypeError("editPlanFromBinding requires an exact owned binding");
+  const selected = owners;
   const ids = /* @__PURE__ */ new Set(), sourceIds = /* @__PURE__ */ new Set(), uris = /* @__PURE__ */ new Set();
   const targets = input.bindings.map((binding) => {
     if (ids.has(binding.bindingId) || sourceIds.has(binding.source.id) || uris.has(binding.source.uri))
@@ -758,12 +1217,13 @@ function editPlanFromBinding(input, bindingId, { planId, edits, fidelity, guaran
     });
   });
   const prepared = edits.map((edit) => {
-    if (edit.targetId !== void 0 && edit.targetId !== bindingId || edit.source !== void 0 && canonicalJsonStringify(edit.source) !== canonicalJsonStringify(selected.source))
+    const owner = edit.targetId === void 0 ? selected.length === 1 ? selected[0] : void 0 : selected.find((binding) => binding.bindingId === edit.targetId);
+    if (owner === void 0 || edit.source !== void 0 && canonicalJsonStringify(edit.source) !== canonicalJsonStringify(owner.source))
       throw new TypeError("editPlanFromBinding edit belongs to a different owner");
     return Object.freeze({
       ...edit,
-      targetId: bindingId,
-      source: Object.freeze({ ...selected.source })
+      targetId: owner.bindingId,
+      source: Object.freeze({ ...owner.source })
     });
   });
   return Object.freeze({
@@ -983,7 +1443,14 @@ function frozenModelNode(node) {
     ...node,
     childIds: Object.freeze([...node.childIds]),
     meshIds: Object.freeze([...node.meshIds]),
-    transform: Object.freeze([...node.transform])
+    transform: Object.freeze([...node.transform]),
+    ...node.trs === void 0 ? {} : {
+      trs: Object.freeze({
+        translation: Object.freeze([...node.trs.translation]),
+        rotation: Object.freeze([...node.trs.rotation]),
+        scale: Object.freeze([...node.trs.scale])
+      })
+    }
   });
 }
 function frozenModelMesh(mesh) {
@@ -1161,7 +1628,11 @@ function createModelEffectSource({
 }) {
   const items = effects.map((effect) => ({
     ...effect,
-    ...effect.properties === void 0 ? {} : { properties: Object.freeze(effect.properties.map((one) => Object.freeze({ ...one }))) }
+    ...effect.properties === void 0 ? {} : {
+      properties: Object.freeze(
+        effect.properties.map((one) => Object.freeze({ ...one }))
+      )
+    }
   }));
   const byKind = {};
   for (const effect of items) byKind[effect.kind] = (byKind[effect.kind] ?? 0) + 1;
@@ -1244,8 +1715,7 @@ function createModelNodeBehaviourSource({
     }
   }));
   const byKind = {};
-  for (const behaviour of items)
-    byKind[behaviour.kind] = (byKind[behaviour.kind] ?? 0) + 1;
+  for (const behaviour of items) byKind[behaviour.kind] = (byKind[behaviour.kind] ?? 0) + 1;
   return facetSource(
     Object.freeze({ behaviours: items.length, byKind: Object.freeze(byKind) }),
     "behaviours",
@@ -1266,6 +1736,362 @@ function createModelSocketSource({
     "sockets",
     items
   );
+}
+function createModelLodSource({
+  levels
+}) {
+  const items = [...levels].sort((a, b) => a.order - b.order).map((level) => ({ ...level, nodeIds: Object.freeze([...level.nodeIds]) }));
+  return facetSource(Object.freeze({ levels: items.length }), "levels", items);
+}
+
+// packages/codec-kit/src/crypto/mpq.ts
+var encryptionTable = (() => {
+  let seed1 = 1048577;
+  const table = [];
+  for (let i = 0; i < 256; i++) {
+    let index = i;
+    for (let j = 0; j < 5; j++) {
+      seed1 = (seed1 * 125 + 3) % 2796203 >>> 0;
+      const temp1 = (seed1 & 65535) << 16;
+      seed1 = (seed1 * 125 + 3) % 2796203 >>> 0;
+      const temp2 = seed1 & 65535;
+      table[index] = (temp1 | temp2) >>> 0;
+      index += 256;
+    }
+  }
+  return table;
+})();
+var crcTable = (() => {
+  const table = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) {
+    let c = n;
+    for (let k = 0; k < 8; k++) {
+      c = c & 1 ? 3988292384 ^ c >>> 1 : c >>> 1;
+    }
+    table[n] = c >>> 0;
+  }
+  return table;
+})();
+
+// packages/codec-kit/src/checksum/index.ts
+var EDC = (() => {
+  const table = new Uint32Array(256);
+  for (let n = 0; n < 256; n += 1) {
+    let c = n;
+    for (let k = 0; k < 8; k += 1) c = c & 1 ? c >>> 1 ^ 3623976961 : c >>> 1;
+    table[n] = c >>> 0;
+  }
+  return table;
+})();
+var FORWARD = (() => {
+  const table = new Uint32Array(256);
+  for (let n = 0; n < 256; n += 1) {
+    let c = n << 24;
+    for (let k = 0; k < 8; k += 1) c = c & 2147483648 ? c << 1 ^ 79764919 : c << 1;
+    table[n] = c >>> 0;
+  }
+  return table;
+})();
+
+// packages/codec-kit/src/audio/ima.ts
+var IMA_STEP_TABLE = Object.freeze([
+  7,
+  8,
+  9,
+  10,
+  11,
+  12,
+  13,
+  14,
+  16,
+  17,
+  19,
+  21,
+  23,
+  25,
+  28,
+  31,
+  34,
+  37,
+  41,
+  45,
+  50,
+  55,
+  60,
+  66,
+  73,
+  80,
+  88,
+  97,
+  107,
+  118,
+  130,
+  143,
+  157,
+  173,
+  190,
+  209,
+  230,
+  253,
+  279,
+  307,
+  337,
+  371,
+  408,
+  449,
+  494,
+  544,
+  598,
+  658,
+  724,
+  796,
+  876,
+  963,
+  1060,
+  1166,
+  1282,
+  1411,
+  1552,
+  1707,
+  1878,
+  2066,
+  2272,
+  2499,
+  2749,
+  3024,
+  3327,
+  3660,
+  4026,
+  4428,
+  4871,
+  5358,
+  5894,
+  6484,
+  7132,
+  7845,
+  8630,
+  9493,
+  10442,
+  11487,
+  12635,
+  13899,
+  15289,
+  16818,
+  18500,
+  20350,
+  22385,
+  24623,
+  27086,
+  29794,
+  32767
+]);
+var IMA_INDEX_TABLE = Object.freeze([
+  -1,
+  -1,
+  -1,
+  -1,
+  2,
+  4,
+  6,
+  8,
+  -1,
+  -1,
+  -1,
+  -1,
+  2,
+  4,
+  6,
+  8
+]);
+
+// packages/codec-kit/src/audio/index.ts
+var PCM_BITS = [8, 16, 24, 32];
+function checkShape(channels, sampleRate) {
+  if (!Number.isInteger(channels) || channels < 1 || channels > 65535) {
+    throw new RangeError("WAV channels must be 1..65535");
+  }
+  if (!Number.isInteger(sampleRate) || sampleRate < 1 || sampleRate > 4294967295) {
+    throw new RangeError("WAV sample rate must be a positive 32-bit integer");
+  }
+}
+function formatChunk(format, dataBytes) {
+  checkShape(format.channels, format.sampleRate);
+  const { channels, sampleRate } = format;
+  if (format.encoding === "pcm") {
+    if (!PCM_BITS.includes(format.bitsPerSample)) {
+      throw new RangeError("WAV PCM is 8, 16, 24 or 32 bits");
+    }
+    const blockAlign2 = channels * (format.bitsPerSample / 8);
+    if (blockAlign2 > 65535) throw new RangeError("WAV frame exceeds 65535 bytes");
+    if (dataBytes % blockAlign2 !== 0) {
+      throw new RangeError(`WAV data is not a whole number of ${blockAlign2}-byte frames`);
+    }
+    if (sampleRate * blockAlign2 > 4294967295) throw new RangeError("WAV byte rate exceeds 32 bits");
+    const fmt2 = new DataView(new ArrayBuffer(16));
+    fmt2.setUint16(0, 1, true);
+    fmt2.setUint16(2, channels, true);
+    fmt2.setUint32(4, sampleRate, true);
+    fmt2.setUint32(8, sampleRate * blockAlign2, true);
+    fmt2.setUint16(12, blockAlign2, true);
+    fmt2.setUint16(14, format.bitsPerSample, true);
+    return { fmt: new Uint8Array(fmt2.buffer), fact: void 0 };
+  }
+  const { blockAlign } = format;
+  const header = 4 * channels;
+  if (!Number.isInteger(blockAlign) || blockAlign <= header || blockAlign > 65535 || (blockAlign - header) % header !== 0) {
+    throw new RangeError(
+      `IMA ADPCM block of ${blockAlign} bytes does not fit ${channels} channel(s)`
+    );
+  }
+  const samplesPerBlock = 1 + (blockAlign - header) * 2 / channels;
+  const tail = dataBytes % blockAlign;
+  const tailSamples = tail < header ? 0 : 1 + Math.floor((tail - header) / header) * 8;
+  const fmt = new DataView(new ArrayBuffer(20));
+  fmt.setUint16(0, 17, true);
+  fmt.setUint16(2, channels, true);
+  fmt.setUint32(4, sampleRate, true);
+  fmt.setUint32(8, Math.round(sampleRate * blockAlign / samplesPerBlock), true);
+  fmt.setUint16(12, blockAlign, true);
+  fmt.setUint16(14, 4, true);
+  fmt.setUint16(16, 2, true);
+  fmt.setUint16(18, samplesPerBlock, true);
+  return {
+    fmt: new Uint8Array(fmt.buffer),
+    fact: Math.floor(dataBytes / blockAlign) * samplesPerBlock + tailSamples
+  };
+}
+function wavHeader(format, dataBytes) {
+  if (!Number.isSafeInteger(dataBytes) || dataBytes < 0) {
+    throw new RangeError("WAV data size must be a non-negative integer");
+  }
+  const { fmt, fact: fact2 } = formatChunk(format, dataBytes);
+  const size = 12 + 8 + fmt.byteLength + (fact2 === void 0 ? 0 : 12) + 8;
+  const riffSize = size - 8 + dataBytes + (dataBytes & 1);
+  if (riffSize > 4294967295) throw new RangeError("WAV data exceeds the 4 GiB RIFF limit");
+  const bytes = new Uint8Array(size);
+  const view = new DataView(bytes.buffer);
+  let at2 = 0;
+  const chunk = (id, length) => {
+    for (let index = 0; index < 4; index += 1) bytes[at2 + index] = id.charCodeAt(index);
+    view.setUint32(at2 + 4, length, true);
+    at2 += 8;
+  };
+  chunk("RIFF", riffSize);
+  bytes.set([87, 65, 86, 69], at2);
+  at2 += 4;
+  chunk("fmt ", fmt.byteLength);
+  bytes.set(fmt, at2);
+  at2 += fmt.byteLength;
+  if (fact2 !== void 0) {
+    chunk("fact", 4);
+    view.setUint32(at2, fact2, true);
+    at2 += 4;
+  }
+  chunk("data", dataBytes);
+  return bytes;
+}
+function encodeWav(format, samples) {
+  const header = wavHeader({ ...format, encoding: "pcm" }, samples.byteLength);
+  const bytes = new Uint8Array(header.byteLength + samples.byteLength + (samples.byteLength & 1));
+  bytes.set(header);
+  bytes.set(samples, header.byteLength);
+  return bytes;
+}
+
+// packages/codec-kit/src/audio/pcm-audio.ts
+function convertToWav(summary = "Writes the decoded sound as a 16-bit PCM WAV file.") {
+  return Object.freeze({
+    id: "export.convert",
+    handlerId: "convert-audio",
+    mutatesSource: false,
+    requiredPermissions: Object.freeze(["read-source"]),
+    inputSchema: Object.freeze({
+      $ref: "modkit://codec-kit/audio-export-convert.v1",
+      document: Object.freeze({
+        schemaVersion: 1,
+        forms: Object.freeze([
+          Object.freeze({
+            id: "wav",
+            label: "WAV",
+            summary,
+            baseInput: Object.freeze({ target: "wav" }),
+            fields: Object.freeze([]),
+            writes: Object.freeze({
+              format: Object.freeze({ id: "wav", label: "WAV" }),
+              extension: ".wav",
+              mediaType: "audio/wav"
+            })
+          })
+        ])
+      })
+    }),
+    outputKinds: Object.freeze(["bytes"])
+  });
+}
+var CONVERT_TO_WAV = convertToWav();
+function refusalOf(stream, maxBytes) {
+  const wavBytes = 44 + stream.samples * stream.channels * 2;
+  return wavBytes > maxBytes ? `the decoded WAV (${String(wavBytes)} bytes) passes maxScalarBytes` : void 0;
+}
+async function wavOf(stream) {
+  const pcm = await stream.decode();
+  return encodeWav(
+    { channels: stream.channels, sampleRate: stream.sampleRate, bitsPerSample: 16 },
+    new Uint8Array(pcm.buffer, pcm.byteOffset, pcm.byteLength)
+  );
+}
+async function pcmAudio(stream, why, maxBytes, options = {}) {
+  const durationMs = stream === void 0 ? 0 : Math.round(stream.samples * 1e3 / stream.sampleRate);
+  const refusal = stream === void 0 ? why ?? "the stream holds no sound this codec decodes" : refusalOf(stream, maxBytes);
+  const wav = stream === void 0 || refusal !== void 0 ? void 0 : await wavOf(stream);
+  return {
+    durationMs,
+    refusal,
+    dataSources: wav === void 0 || stream === void 0 ? {} : {
+      "common.view/audio-media-source": createAudioMediaSource(wav, "audio/wav", {
+        durationMs,
+        seekable: true,
+        tracks: [
+          {
+            id: options.trackId ?? "sound",
+            codec: "pcm",
+            channels: stream.channels,
+            sampleRate: stream.sampleRate,
+            selected: true
+          }
+        ],
+        pcmAccess: false
+      })
+    },
+    handlers: {
+      "convert-audio": async (input) => {
+        const record2 = input !== null && typeof input === "object" && !Array.isArray(input) ? input : {};
+        if (record2["target"] !== "wav")
+          throw new TypeError("the sound converts to { target: 'wav' }");
+        const plain = Object.keys(record2).every((key) => key === "target");
+        if (plain || options.pick === void 0) {
+          if (wav === void 0) throw new TypeError(refusal);
+          return { kind: "bytes", value: wav.slice() };
+        }
+        const chosen = await options.pick(record2);
+        if (chosen === void 0) {
+          throw new TypeError(`no stream matches ${JSON.stringify(record2)}`);
+        }
+        if (chosen === stream && wav !== void 0)
+          return { kind: "bytes", value: wav.slice() };
+        const chosenRefusal = refusalOf(chosen, maxBytes);
+        if (chosenRefusal !== void 0) throw new TypeError(chosenRefusal);
+        return { kind: "bytes", value: await wavOf(chosen) };
+      }
+    },
+    operationStates: refusal === void 0 ? [] : [
+      {
+        id: "export.convert",
+        state: "disabled",
+        reason: refusal
+      }
+    ]
+  };
 }
 
 // packages/codec-kit/src/xml-scan.ts
@@ -1657,55 +2483,43 @@ function subjectFieldGroup(source, group, fields) {
   };
 }
 
-// packages/codec-kit/src/table-source.ts
-function createTableDataSource(options) {
-  const header = Object.freeze([...options.header]);
-  const rows = options.rows.map(
-    (cells, index) => Object.freeze({ index, cells: Object.freeze(cells.map(String)) })
-  );
-  const startOf = (request) => {
-    if (!Number.isSafeInteger(request.count) || request.count <= 0) {
-      throw new TypeError("table page count must be a positive safe integer");
-    }
-    const start = request.kind === "range" ? request.from : Number(request.cursor ?? 0);
-    if (!Number.isSafeInteger(start) || (start ?? -1) < 0) {
-      throw new TypeError("table page start is invalid");
-    }
-    return start;
-  };
-  return Object.freeze({
-    async shape() {
-      return { rows: rows.length, columns: header.length, header: [...header] };
-    },
-    async rows(request, signal) {
-      signal?.throwIfAborted();
-      const start = startOf(request);
-      const items = rows.slice(start, start + request.count);
-      return Object.freeze({
-        items: Object.freeze(items),
-        ...start + items.length < rows.length ? { nextCursor: String(start + items.length) } : {}
-      });
-    },
-    async cell(coord) {
-      const value = rows[coord.row]?.cells[coord.column];
-      if (value === void 0) throw new RangeError("table cell is outside the table");
-      return Object.freeze({ value, ...options.cellFacts?.(coord, value) ?? {} });
-    },
-    async *search(query, signal) {
-      const needle = query.pattern.toLocaleLowerCase();
-      for (const row of rows) {
-        for (let column = 0; column < row.cells.length; column += 1) {
-          signal?.throwIfAborted();
-          if (row.cells[column].toLocaleLowerCase().includes(needle)) {
-            yield { row: row.index, column };
-          }
-        }
-      }
-    }
+// packages/codec-kit/src/index.ts
+function codecRefusal(code, message, context) {
+  return new ModkitError({
+    code,
+    message,
+    ...context === void 0 ? {} : { context }
   });
 }
-
-// packages/codec-kit/src/index.ts
+async function readBoundCompanions(context, requirement) {
+  const input = context.input;
+  if (input.originKind !== "bundle") return [];
+  const companions = [];
+  for (const binding of input.bindingsFor(requirement)) {
+    const identity = { bindingId: binding.bindingId, uri: binding.source.uri };
+    try {
+      const lease = await input.openBinding(binding.bindingId, context.signal);
+      try {
+        const source = lease.value;
+        if (source.kind !== "bytes") throw new TypeError("the companion is not a byte source");
+        const size = source.size;
+        if (size === void 0) throw new TypeError("the companion has no known size");
+        if (size > BigInt(context.budget.maxInputBytes))
+          throw new RangeError("the companion exceeds the input budget");
+        companions.push({ ...identity, bytes: await source.read(0n, Number(size), context.signal) });
+      } finally {
+        await lease.release();
+      }
+    } catch (error) {
+      if (context.signal?.aborted) throw error;
+      companions.push({
+        ...identity,
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  }
+  return companions;
+}
 var INSPECTION_OPERATIONS = Object.freeze([
   Object.freeze({
     id: "view.inspect",
@@ -1741,15 +2555,26 @@ function simpleLease(value) {
 }
 function createTreeDataSource(rootNode) {
   const nodes = /* @__PURE__ */ new Map();
-  const register = (node, id) => {
-    const children = Array.isArray(node.children) ? node.children : [];
-    nodes.set(id, { node, childIds: children.map((_, index) => `${id}/${index}`) });
-    children.forEach((child, index) => register(child, `${id}/${index}`));
+  nodes.set("root", { node: rootNode });
+  const childIdsOf = (id) => {
+    const item = nodes.get(id);
+    if (item === void 0) return [];
+    if (item.childIds === void 0) {
+      const source = item.node.children;
+      const children = typeof source === "function" ? source() : source ?? [];
+      item.childIds = children.map((child, index) => {
+        const childId = `${id}/${index}`;
+        nodes.set(childId, { node: child });
+        return childId;
+      });
+    }
+    return item.childIds;
   };
-  register(rootNode, "root");
   const ref = (id) => {
     const item = nodes.get(id);
-    return Object.freeze({ id, hasChildren: (item?.childIds.length ?? 0) > 0 });
+    const source = item?.node.children;
+    const hasChildren = item?.childIds !== void 0 ? item.childIds.length > 0 : typeof source === "function" ? item?.node.hasChildren ?? true : (source?.length ?? 0) > 0;
+    return Object.freeze({ id, hasChildren });
   };
   return Object.freeze({
     async root() {
@@ -1761,7 +2586,7 @@ function createTreeDataSource(rootNode) {
         throw new TypeError("tree page limit must be a positive safe integer");
       }
       const start = pageStart(page.cursor);
-      const childIds = nodes.get(node.id)?.childIds ?? [];
+      const childIds = childIdsOf(node.id);
       const items = childIds.slice(start, start + page.limit).map(ref);
       return Object.freeze({
         items: Object.freeze(items),
@@ -1786,11 +2611,15 @@ function createTreeDataSource(rootNode) {
     },
     async *search(query, signal) {
       const needle = query.pattern.toLocaleLowerCase();
-      for (const [id, item] of nodes) {
+      const pending = ["root"];
+      while (pending.length > 0) {
         if (signal?.aborted) throw new DOMException("operation cancelled", "AbortError");
+        const id = pending.pop();
+        const item = nodes.get(id);
         const haystack = `${item.node.label}
 ${item.node.preview ?? ""}`.toLocaleLowerCase();
         if (haystack.includes(needle)) yield ref(id);
+        pending.push(...childIdsOf(id).toReversed());
       }
     }
   });
@@ -1975,7 +2804,63 @@ function createEncodedMediaSource(bytes, descriptor) {
     }
   });
 }
-function createRasterImageSource(bytes, mediaType, info, readRegion) {
+var COMPUTED_MIP_SOURCE_MAX_BYTES = 512 * 1024 * 1024;
+function withComputedMips(info, readRegion) {
+  const stored = info.mipLevels;
+  const full = Math.floor(Math.log2(Math.max(info.width, info.height))) + 1;
+  if (stored >= full || info.depth !== 1 || info.storedMipLevels !== void 0)
+    return { info, readRegion };
+  const size = (level) => ({
+    width: Math.max(1, Math.floor(info.width / 2 ** level)),
+    height: Math.max(1, Math.floor(info.height / 2 ** level))
+  });
+  return {
+    info: { ...info, mipLevels: full, storedMipLevels: stored },
+    async readRegion(request, signal) {
+      const level = request.mipLevel ?? 0;
+      if (level < stored) return readRegion(request, signal);
+      if (level >= full) throw new RangeError("raster mip level is out of range");
+      if (request.pixelFormat !== "rgba8")
+        throw new TypeError("a computed mip level is read as rgba8");
+      const target = size(level);
+      const { x, y, width, height } = request;
+      if (x < 0 || y < 0 || width <= 0 || height <= 0 || x + width > target.width || y + height > target.height)
+        throw new RangeError("raster region is outside the mip level");
+      if (width * height * 4 > request.maxBytes)
+        throw new RangeError("raster region exceeds maxBytes");
+      const source = size(stored - 1);
+      const decoded = await readRegion(
+        {
+          ...request,
+          x: 0,
+          y: 0,
+          ...source,
+          mipLevel: stored - 1,
+          maxBytes: COMPUTED_MIP_SOURCE_MAX_BYTES
+        },
+        signal
+      );
+      const packed = new Uint8Array(source.width * source.height * 4);
+      for (let row = 0; row < source.height; row += 1)
+        packed.set(
+          decoded.pixels.subarray(
+            row * decoded.rowStride,
+            row * decoded.rowStride + source.width * 4
+          ),
+          row * source.width * 4
+        );
+      const scaled = resizeRgba({ ...source, pixels: packed }, target.width, target.height);
+      const pixels = new Uint8Array(width * height * 4);
+      for (let row = 0; row < height; row += 1) {
+        const start = ((y + row) * target.width + x) * 4;
+        pixels.set(scaled.pixels.subarray(start, start + width * 4), row * width * 4);
+      }
+      return { width, height, rowStride: width * 4, pixelFormat: "rgba8", pixels };
+    }
+  };
+}
+function createRasterImageSource(bytes, mediaType, rawInfo, rawReadRegion) {
+  const { info, readRegion } = rawReadRegion === void 0 ? { info: rawInfo, readRegion: void 0 } : withComputedMips(rawInfo, rawReadRegion);
   const ownedInfo = Object.freeze({ ...info });
   const encoded = createEncodedMediaSource(bytes, { mediaType });
   const source = {
@@ -2017,9 +2902,9 @@ function createAudioMediaSource(bytes, mediaType, info, readPcm) {
   if (readPcm !== void 0) source.readPcm = readPcm;
   return Object.freeze(source);
 }
-function createVideoMediaSource(bytes, mediaType, info) {
+function createVideoMediaSource(bytes, mediaType, info, frames) {
   const tracks = Object.freeze(info.tracks.map((track) => Object.freeze({ ...track })));
-  const ownedInfo = Object.freeze({ ...info, tracks });
+  const ownedInfo = Object.freeze({ ...info, tracks, frameAccess: frames !== void 0 });
   const encoded = createEncodedMediaSource(bytes, {
     mediaType,
     codecs: tracks.map((track) => track.codec)
@@ -2032,6 +2917,23 @@ function createVideoMediaSource(bytes, mediaType, info) {
     async encoded(signal) {
       if (signal?.aborted) throw new DOMException("operation cancelled", "AbortError");
       return encoded;
+    },
+    ...frames === void 0 ? {} : {
+      async readFrame(request, signal) {
+        if (signal?.aborted) throw new DOMException("operation cancelled", "AbortError");
+        if (!tracks.some((track) => track.id === request.trackId && track.kind === "video"))
+          throw new RangeError(`${request.trackId} is not a video track`);
+        if (request.pixelFormat !== "rgba8")
+          throw new RangeError("video frames are decoded as rgba8 only");
+        return frames.decodeFrame({
+          // the host decoder may sit across a worker boundary, which takes only owned buffers
+          bytes: bytes.byteOffset === 0 && bytes.byteLength === bytes.buffer.byteLength ? bytes : bytes.slice(),
+          mediaType,
+          timestampMs: request.timestampMs,
+          maxBytes: request.maxBytes,
+          ...signal === void 0 ? {} : { signal }
+        });
+      }
     }
   });
 }
@@ -2119,6 +3021,7 @@ function inspectionOperations(declarations, states = []) {
     })
   );
 }
+var READ_ALL_CHUNK_BYTES = 4 * 1024 * 1024;
 async function readAll(source, budget, signal) {
   if (source.kind !== "bytes" || source.size === void 0) {
     throw new TypeError("inspection codecs require a sized byte source");
@@ -2131,7 +3034,11 @@ async function readAll(source, budget, signal) {
   let offset = 0;
   while (offset < total) {
     if (signal?.aborted) throw new DOMException("operation cancelled", "AbortError");
-    const chunk = await source.read(BigInt(offset), Math.min(64 * 1024, total - offset), signal);
+    const chunk = await source.read(
+      BigInt(offset),
+      Math.min(READ_ALL_CHUNK_BYTES, total - offset),
+      signal
+    );
     if (chunk.byteLength === 0) throw new RangeError("source ended before its declared size");
     result.set(chunk, offset);
     offset += chunk.byteLength;
@@ -2213,7 +3120,7 @@ function originFrom(input, primary, companions = []) {
   throw new TypeError("inspection codec requires a physical byte input");
 }
 function probeLength(plan, size) {
-  const first = plan.ranges[0];
+  const first = plan.ranges.find((range) => range.from === "start") ?? plan.ranges[0];
   const declared = Math.min(plan.maxBytes, first?.length ?? plan.maxBytes);
   const available = size === void 0 ? declared : Number(size);
   return Math.max(0, Math.min(declared, available));
@@ -2316,7 +3223,17 @@ function createInspectionCodec(definition, contributionContext) {
         probeLength(request.plan, request.source.size),
         signal
       );
-      const detected = await definition.detect(bytes, request.source.ref.uri);
+      const tail = request.plan.ranges.find((range) => range.from === "end");
+      const size = request.source.size;
+      const tailLength = tail === void 0 || size === void 0 ? 0 : (
+        // the host counts every probe byte against maxBytes: the tail gets what the prefix left
+        Math.max(
+          0,
+          Math.min(tail.length, request.plan.maxBytes - bytes.byteLength, Number(size))
+        )
+      );
+      const suffix = tail === void 0 || size === void 0 ? void 0 : tailLength === 0 ? new Uint8Array() : await request.source.read(size - BigInt(tailLength), tailLength, signal);
+      const detected = await definition.detect(bytes, request.source.ref.uri, suffix);
       return Object.freeze({
         codecId: definition.id,
         confidence: detected.confidence,
@@ -2328,7 +3245,13 @@ function createInspectionCodec(definition, contributionContext) {
           })
         ]),
         requiredRanges: Object.freeze([
-          Object.freeze({ byteOffset: "0", byteLength: String(bytes.byteLength) })
+          Object.freeze({ byteOffset: "0", byteLength: String(bytes.byteLength) }),
+          ...suffix === void 0 || size === void 0 || suffix.byteLength === 0 ? [] : [
+            Object.freeze({
+              byteOffset: String(size - BigInt(suffix.byteLength)),
+              byteLength: String(suffix.byteLength)
+            })
+          ]
         ])
       });
     },
@@ -2360,6 +3283,9 @@ function createInspectionCodec(definition, contributionContext) {
               contracts: contributionContext.contracts,
               ...contributionContext.modelResources === void 0 ? {} : { modelResources: contributionContext.modelResources },
               ...contributionContext.rasterResources === void 0 ? {} : { rasterResources: contributionContext.rasterResources },
+              ...contributionContext.videoFrames === void 0 ? {} : { videoFrames: contributionContext.videoFrames },
+              ...contributionContext.credentials === void 0 ? {} : { credentials: contributionContext.credentials },
+              ...contributionContext.containerContext === void 0 ? {} : { containerContext: contributionContext.containerContext },
               ...contributionContext.logicalResources === void 0 ? {} : { logicalResources: contributionContext.logicalResources }
             },
             budget,
@@ -2433,7 +3359,11 @@ function createInspectionCodec(definition, contributionContext) {
                 throw new TypeError(`${definition.id} does not publish ${contract}`);
               return simpleLease(value);
             },
-            release: [() => namespaceLease.release()]
+            release: [
+              () => namespaceLease.release(),
+              // released first: the host releases in reverse order
+              ...inspection.release === void 0 ? [] : [inspection.release]
+            ]
           }).session;
         } catch (error) {
           await namespaceLease.release();
@@ -2460,6 +3390,9 @@ function createInspectionCodec(definition, contributionContext) {
             contracts: contributionContext.contracts,
             ...contributionContext.modelResources === void 0 ? {} : { modelResources: contributionContext.modelResources },
             ...contributionContext.rasterResources === void 0 ? {} : { rasterResources: contributionContext.rasterResources },
+            ...contributionContext.videoFrames === void 0 ? {} : { videoFrames: contributionContext.videoFrames },
+            ...contributionContext.credentials === void 0 ? {} : { credentials: contributionContext.credentials },
+            ...contributionContext.containerContext === void 0 ? {} : { containerContext: contributionContext.containerContext },
             ...contributionContext.logicalResources === void 0 ? {} : { logicalResources: contributionContext.logicalResources }
           },
           budget,
@@ -2472,8 +3405,28 @@ function createInspectionCodec(definition, contributionContext) {
           input
         };
         const inspection = rangeDefinition !== void 0 ? await rangeDefinition.inspect(inspectionContext) : await definition.inspect(bytes, inspectionContext);
+        const entryAccess = inspection.containerEntries === void 0 ? void 0 : containerEntryAccess(inspection.containerEntries, {
+          scheme: definition.format.id,
+          source,
+          byteSource,
+          budget,
+          // A companion the input carries (`.rfd` beside `.rfh`), read by range under the same budget.
+          async companionSource(bindingId, companionSignal) {
+            const lease = await input.openBinding(bindingId, companionSignal);
+            try {
+              return {
+                source: rangeByteSource(lease.value, budget),
+                release: () => lease.release()
+              };
+            } catch (error) {
+              await lease.release();
+              throw error;
+            }
+          }
+        });
         const dataSources = new Map([
           ["common.view/byte-range-source", byteSource],
+          ...entryAccess === void 0 ? [] : [["common.view/namespace-entry-source", entryAccess.namespace]],
           ...Object.entries(inspection.dataSources ?? {})
         ]);
         if (inspection.text === true) {
@@ -2529,7 +3482,9 @@ function createInspectionCodec(definition, contributionContext) {
             seekable: true,
             randomAccess: true,
             trusted: false,
-            maxDecodedBytes: String(inspection.maxDecodedBytes ?? sourceSize),
+            maxDecodedBytes: String(
+              inspection.maxDecodedBytes ?? entryAccess?.decodedTotal ?? sourceSize
+            ),
             ...inspection.unsupportedFeatures === void 0 ? {} : { unsupportedFeatures: inspection.unsupportedFeatures }
           },
           dataSources: [...dataSources.keys()].map(
@@ -2545,6 +3500,12 @@ function createInspectionCodec(definition, contributionContext) {
           ["validate", async () => ({ kind: "none" })],
           ...bytes === void 0 ? [] : [
             ["export-raw", async () => ({ kind: "bytes", value: bytes })]
+          ],
+          ...entryAccess === void 0 ? [] : [
+            [
+              CONTAINER_EXTRACT_HANDLER_ID,
+              entryAccess.extract
+            ]
           ],
           ...Object.entries(inspection.handlers ?? {})
         ]);
@@ -2564,7 +3525,11 @@ function createInspectionCodec(definition, contributionContext) {
               throw new TypeError(`${definition.id} does not publish ${contract}`);
             return simpleLease(value);
           },
-          release: [() => sourceLease.release()]
+          release: [
+            () => sourceLease.release(),
+            // released first: the host releases in reverse order
+            ...inspection.release === void 0 ? [] : [inspection.release]
+          ]
         }).session;
       } catch (error) {
         await sourceLease.release();
@@ -2642,6 +3607,8 @@ function defineWriter({
   });
 }
 export {
+  CONTAINER_EXTRACT_HANDLER_ID,
+  CONVERT_TO_WAV,
   INSPECTION_OPERATIONS,
   PROJECTION_RECEIPT_METADATA_ID,
   TRANSPORT_OPERATIONS,
@@ -2649,6 +3616,9 @@ export {
   applyJsonEdit,
   assetRevisionFromInput,
   attrAt,
+  codecRefusal,
+  containerEntryLayer,
+  convertToWav,
   createAudioMediaSource,
   createEncodedMediaSource,
   createInspectionCodec,
@@ -2658,6 +3628,7 @@ export {
   createModelCollisionSource,
   createModelEffectSource,
   createModelLightSource,
+  createModelLodSource,
   createModelMaterialSource,
   createModelNodeBehaviourSource,
   createModelPhysicsSource,
@@ -2682,6 +3653,7 @@ export {
   decodeXmlEntities,
   defineWriter,
   editPlanFromBinding,
+  editPlanFromBindings,
   editPlanFromInput,
   elementPathAt,
   encodeXmlAttribute,
@@ -2694,8 +3666,11 @@ export {
   modelPrimitiveByteLength,
   pageOf,
   parseSubjectId,
+  pcmAudio,
   projectionReceiptMetadataGroup,
   provenanceOf,
+  readBoundCompanions,
+  readContainerEntry,
   replaceBytes,
   scanXml,
   simpleLease,

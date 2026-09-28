@@ -4,6 +4,7 @@ import {
 import "../../../chunks/chunk-CQ52GEHY.js";
 
 // packages/codec-kit/dist/compression/inflate.js
+var Z_SYNC_FLUSH = 2;
 var NODE_ZLIB = "node:zlib";
 var loaded = /* @__PURE__ */ new Map();
 function outputLimit(maximum) {
@@ -25,7 +26,7 @@ async function resolveInflate(format) {
     NODE_ZLIB
   ).catch(() => void 0);
   if (typeof zlib?.inflateSync === "function") {
-    const run = format === "zlib" ? zlib.inflateSync.bind(zlib) : format === "gzip" ? zlib.gunzipSync.bind(zlib) : zlib.inflateRawSync.bind(zlib);
+    const run = format === "zlib" ? zlib.inflateSync.bind(zlib) : format === "zlib-flushed" ? (payload, options) => zlib.inflateSync(payload, { ...options, finishFlush: Z_SYNC_FLUSH }) : format === "gzip" ? zlib.gunzipSync.bind(zlib) : zlib.inflateRawSync.bind(zlib);
     return (payload, maximum) => {
       try {
         const out = run(payload, { maxOutputLength: Math.max(1, maximum) });
@@ -52,9 +53,11 @@ async function loadPortableInflateSync(format = "zlib") {
         throw outputLimit(maximum);
       chunks.push(chunk);
     };
-    inflater.push(payload, true);
+    inflater.push(payload, format === "zlib-flushed" ? Z_SYNC_FLUSH : true);
     if (inflater.err !== 0)
       throw new Error(`inflate failed: ${inflater.msg}`);
+    if (format === "zlib-flushed" && inflater.strm.next_out > 0)
+      inflater.onData(inflater.strm.output.slice(0, inflater.strm.next_out));
     const out = new Uint8Array(total);
     let offset = 0;
     for (const chunk of chunks) {

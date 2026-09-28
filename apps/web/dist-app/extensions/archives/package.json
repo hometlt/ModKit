@@ -7,7 +7,10 @@
   "exports": {
     ".": "./src/index.js",
     "./linked": "./src/linked.js",
-    "./formats/zip/codec": "./src/zip/codec.js",
+    "./formats/zip/codec": {
+      "types": "./src/zip/codec.d.ts",
+      "default": "./src/zip/codec.js"
+    },
     "./formats/*/codec": "./src/*/codec.js",
     "./package.json": "./package.json"
   },

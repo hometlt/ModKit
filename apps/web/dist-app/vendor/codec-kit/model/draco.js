@@ -1,6 +1,6 @@
 import {
   ModkitError
-} from "../../../chunks/chunk-HUU44HII.js";
+} from "../../../chunks/chunk-LX6GSJ3D.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 
 // packages/codec-kit/dist/model/draco.js

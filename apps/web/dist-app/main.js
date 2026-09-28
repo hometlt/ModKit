@@ -49,15 +49,17 @@ import {
   stageIdOf,
   subjectFactsSourceFromWire,
   webExtensionSubjectCardBundle
-} from "./chunks/chunk-CATIUVBH.js";
-import "./chunks/chunk-3TK45GO7.js";
-import "./chunks/chunk-NRZMIBZ5.js";
-import "./chunks/chunk-WPREPMVL.js";
-import "./chunks/chunk-XYGFUUGH.js";
-import "./chunks/chunk-4NP7CN3Z.js";
+} from "./chunks/chunk-SXET6GN4.js";
+import "./chunks/chunk-CRISB2AX.js";
+import "./chunks/chunk-SEUGETBF.js";
+import "./chunks/chunk-VOGOVPZF.js";
 import {
   resolveModelViewerTextures
-} from "./chunks/chunk-QDB3CCKD.js";
+} from "./chunks/chunk-3LR6PKE2.js";
+import {
+  DEFAULT_UI_LOCALIZER,
+  contributionContractLabel
+} from "./chunks/chunk-SIU5GHDB.js";
 import {
   declaredMutatingOperations,
   editOffer,
@@ -66,11 +68,7 @@ import {
   isRejected,
   mountFieldEditor,
   subjectCandidateProviderLease
-} from "./chunks/chunk-T7WKIGHN.js";
-import {
-  DEFAULT_UI_LOCALIZER,
-  contributionContractLabel
-} from "./chunks/chunk-BJE5PUXA.js";
+} from "./chunks/chunk-MTC3X2NC.js";
 import {
   PANELS_FALLBACK_MESSAGES,
   SETTINGS_FALLBACK_MESSAGES,
@@ -86,7 +84,7 @@ import {
   setState,
   setViewerText,
   withEnglishUiFallback
-} from "./chunks/chunk-EYZUVLIL.js";
+} from "./chunks/chunk-6G2KODMW.js";
 import {
   CONTAINER_EXTRACT_OPERATION_ID,
   compareUtf8,
@@ -96,7 +94,7 @@ import {
   normalizeModkitIdentifier,
   presentationSlotId,
   revisionId
-} from "./chunks/chunk-BPQKZDVH.js";
+} from "./chunks/chunk-ICUJ3IVS.js";
 import {
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
 } from "./chunks/chunk-BLWUC7LO.js";
@@ -3591,7 +3589,7 @@ async function boot() {
   if (pageUrl.searchParams.has("format-smoke")) {
     const loaded = await loadPwaFormatSmokeAuthority(
       new URL("./format-smoke.v1.json", document.baseURI).href,
-      "sha256:c796c511b72d434e37a5c1c5c3e99824fbddc169bad7c0e4f89f41c1c13e0ed8"
+      "sha256:095ff06d89547feb4555fe6b0b6194218256da046931ccd7ee805128e5bb1fdd"
     );
     const control = createPwaFormatSmokeAcceptance({
       authority: loaded.authority,

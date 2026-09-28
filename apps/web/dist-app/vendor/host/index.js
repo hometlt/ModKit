@@ -5,21 +5,21 @@ import {
   createDescriptorFallbackSubjectFactsSource,
   createFieldRelationGraphSource,
   descriptorSubjectRef
-} from "../../chunks/chunk-7MGAMYGJ.js";
+} from "../../chunks/chunk-TSJGNAWL.js";
 import {
   ABI_ASSET_SESSION,
   createEndpoint,
   createStandardSurfaceRegistry,
   framePortFromMessagePort,
   protocolLimits
-} from "../../chunks/chunk-GC3F5TEI.js";
+} from "../../chunks/chunk-SPHGQBFD.js";
 import {
   assembleSubjectDescriptor,
   createAssetSession,
   createByteRangeSource,
   createLazyTableDataSource,
   createUtf8TextDataSource
-} from "../../chunks/chunk-5GA6R5US.js";
+} from "../../chunks/chunk-JFXF7H5K.js";
 import {
   metadataFieldProjections
 } from "../../chunks/chunk-JHPOUH6S.js";
@@ -71,6 +71,7 @@ import {
   WRITER_FACET_MATCHER_PROFILE,
   WRITER_SURFACE,
   activationRequiredPermissionClasses,
+  containerEntryRevision,
   createContributionContractRegistry,
   createHostTopology,
   definePresentationPlan,
@@ -78,6 +79,7 @@ import {
   hostRealmCacheKey,
   languageWorkspaceIsSemanticallyIncomplete,
   loadSubjectCandidatePage,
+  namespaceEntryEditTarget,
   normalizeExtensionManifest,
   normalizeModkitIdentifier,
   operationScopedPermissionClasses,
@@ -87,11 +89,7 @@ import {
   validateContributionManifest,
   writerOfferSatisfies,
   writerSelectionKey
-} from "../../chunks/chunk-SCKD5U6H.js";
-import {
-  SCENE_RENDERER_CONTRACT,
-  SCENE_RENDERER_MATCHER_PROFILE
-} from "../../chunks/chunk-GGIVOOBZ.js";
+} from "../../chunks/chunk-47QWC2WU.js";
 import {
   NATIVE_MODEL_ENCODER_CONTRACT,
   NATIVE_MODEL_ENCODER_MATCHER_PROFILE
@@ -116,7 +114,11 @@ import {
   serializeSubjectRef,
   snapshotJsonWireData,
   subjectRefEquals
-} from "../../chunks/chunk-NMXLVS6H.js";
+} from "../../chunks/chunk-MYUZP6E2.js";
+import {
+  SCENE_RENDERER_CONTRACT,
+  SCENE_RENDERER_MATCHER_PROFILE
+} from "../../chunks/chunk-GGIVOOBZ.js";
 import {
   CONTAINER_EXTRACT_OPERATION_ID,
   ModkitError,
@@ -139,7 +141,7 @@ import {
   satisfiesRange,
   throwIfAborted,
   uint64
-} from "../../chunks/chunk-HUU44HII.js";
+} from "../../chunks/chunk-LX6GSJ3D.js";
 import {
   __export
 } from "../../chunks/chunk-CQ52GEHY.js";
@@ -794,7 +796,8 @@ var DEFAULT_VFS_LIMITS = Object.freeze({
   maxEntries: 25e3,
   maxMaterializedBytes: 512n * 1024n * 1024n,
   maxFileBytes: 8n * 1024n * 1024n * 1024n * 1024n,
-  maxReadBytes: 512n * 1024n * 1024n,
+  // one read and one stream are bounded below; a lifetime total refused the 940th CASC texture
+  maxReadBytes: 2n ** 63n - 1n,
   maxReadRangeBytes: 16 * 1024 * 1024,
   maxStreamBytes: 512n * 1024n * 1024n,
   maxPathBytes: 4096
@@ -1411,9 +1414,15 @@ async function entryIdFor(session, wanted, signal) {
   const lease2 = await session.dataSource(NAMESPACE_ENTRY_SOURCE, 1);
   try {
     const namespace = lease2.value;
+    if (namespace.lookup !== void 0) {
+      const entry2 = await namespace.lookup(wanted, signal);
+      if (entry2 !== void 0)
+        return entry2.id;
+    }
+    const scope = namespace.lookup === void 0 ? "" : wanted;
     let cursor2;
     do {
-      const page = await namespace.list("", cursor2 === void 0 ? { limit: 512 } : { cursor: cursor2, limit: 512 }, signal);
+      const page = await namespace.list(scope, cursor2 === void 0 ? { limit: 512 } : { cursor: cursor2, limit: 512 }, signal);
       const found = page.items.find((item) => item.path === wanted || item.id === wanted);
       if (found !== void 0)
         return found.id;
@@ -2384,6 +2393,7 @@ function createResourceSession(options) {
   return {
     sessionId,
     revision: options.revision,
+    primaryLogicalId: options.origin.primaryLogicalId,
     state: () => state,
     async resolve(requirement, signal) {
       requirement = Object.freeze({
@@ -2792,10 +2802,11 @@ function resolveProvider(request, offers, preparation) {
       rejected: sortRejected(rejected2)
     }, request);
   }
-  const target = request.target;
   let sawToolReject = false;
+  const targetOf = (offer) => preparation?.targetFor?.(offer) ?? request.target;
   const targetOk = versionOk.filter((candidate) => {
     const constraint = candidate.offer.target;
+    const target = targetOf(candidate.offer);
     const envOk = constraint.environments === void 0 || constraint.environments.includes(target.environment);
     const osOk = constraint.operatingSystems === void 0 || constraint.operatingSystems.includes("any") || constraint.operatingSystems.includes(target.operatingSystem);
     const archOk = constraint.architectures === void 0 || constraint.architectures.includes("any") || constraint.architectures.includes(target.architecture);
@@ -2824,7 +2835,8 @@ function resolveProvider(request, offers, preparation) {
   }
   let sawPermissionReject = false;
   const permitted = targetOk.filter((candidate) => {
-    if (!isSubset(candidate.offer.requiredPermissions, [...target.grantedPermissions ?? []])) {
+    const granted = targetOf(candidate.offer).grantedPermissions ?? [];
+    if (!isSubset(candidate.offer.requiredPermissions, [...granted])) {
       reject(candidate.offer, "permission-required", void 0, candidate.contractOffer.offerId);
       sawPermissionReject = true;
       return false;
@@ -2862,7 +2874,8 @@ function resolveProvider(request, offers, preparation) {
   }
   const score = (candidate) => [
     request.operation !== void 0 && (candidate.offer.operations ?? []).includes(request.operation) ? 1 : 0,
-    preferredOutputs.filter((requirement) => (candidate.offer.outputs ?? []).some((offer) => traitOfferMatches(requirement, offer))).length
+    preferredOutputs.filter((requirement) => (candidate.offer.outputs ?? []).some((offer) => traitOfferMatches(requirement, offer))).length,
+    targetOf(candidate.offer) === request.target ? 1 : 0
   ];
   const compareTuple = (a, b) => {
     for (let i = 0; i < a.length; i += 1) {
@@ -3174,7 +3187,7 @@ function replayPolicyLock(request, offers, text) {
 }
 
 // packages/host/dist/resolution/service-resolver.js
-async function resolveServiceProvider(request, offers, definitions) {
+async function resolveServiceProvider(request, offers, definitions, targetFor) {
   const accepted = /* @__PURE__ */ new Set();
   const selectionKeys = /* @__PURE__ */ new Map();
   for (const offer of offers) {
@@ -3197,7 +3210,8 @@ async function resolveServiceProvider(request, offers, definitions) {
   }
   return resolveProvider(request, offers, {
     accepts: (_offer, logical) => accepted.has(logical),
-    selectionKey: (_offer, logical) => selectionKeys.get(logical)
+    selectionKey: (_offer, logical) => selectionKeys.get(logical),
+    ...targetFor === void 0 ? {} : { targetFor }
   });
 }
 function createContractResolverPort(options) {
@@ -3216,7 +3230,7 @@ function createContractResolverPort(options) {
       ...request.requiredOutputs === void 0 ? {} : { requiredOutputs: request.requiredOutputs },
       ...request.operation === void 0 ? {} : { operation: request.operation }
     };
-    const result = await resolveServiceProvider(providerRequest, options.offers, options.definitions);
+    const result = await resolveServiceProvider(providerRequest, options.offers, options.definitions, options.targetFor);
     if (result.state !== "resolved") {
       throw new ModkitError({
         code: "x3.host/service-contract-unresolved",
@@ -3260,7 +3274,7 @@ function bindingsOf(registry) {
 function invalid(message) {
   return new ModkitError({ code: "x3.host/invalid-execution-backend", message });
 }
-function createExecutionBackendRegistry(backends) {
+function createExecutionBackendRegistry(backends, options = {}) {
   const bindings = /* @__PURE__ */ new Map();
   for (const [index, backend] of backends.entries()) {
     if (typeof backend !== "object" || backend === null) {
@@ -3283,6 +3297,7 @@ function createExecutionBackendRegistry(backends) {
   const profiles = Object.freeze([...bindings.keys()].sort());
   const registry = {
     profiles,
+    ...options.inProcessTarget === void 0 ? {} : { inProcessTarget: options.inProcessTarget },
     supports(profile3, target, variant) {
       try {
         const binding = bindings.get(profile3);
@@ -3612,8 +3627,22 @@ async function activateContribution(request) {
 }
 
 // packages/host/dist/service-leases.js
+function serviceTargetFor(executionBackends, offer, target) {
+  const inProcess = executionBackends.inProcessTarget;
+  if (inProcess === void 0)
+    return target;
+  const contribution = inventoryBindingForOffer(offer)?.contribution;
+  const variant = contribution?.manifest?.runtimeVariants?.find((item) => item.variantId === offer.runtimeVariant);
+  if (contribution === void 0 || variant?.executionProfile !== "trusted-in-process" || inventoryRecordFor(contribution)?.execution.allowTrustedInProcess !== true) {
+    return target;
+  }
+  return Object.freeze({
+    ...inProcess,
+    ...target.grantedPermissions === void 0 ? {} : { grantedPermissions: target.grantedPermissions }
+  });
+}
 async function activateServiceProvider(options) {
-  const ticket = issueActivationTicket(options.result, options.target);
+  const ticket = issueActivationTicket(options.result, serviceTargetFor(options.executionBackends, options.result.selected.offer, options.target));
   const activation = await activateContribution({
     ticket,
     grant: options.grant,
@@ -3688,6 +3717,7 @@ function createHostServiceResolver(options) {
     offers,
     definitions: options.definitions,
     target,
+    targetFor: (offer) => serviceTargetFor(options.executionBackends, offer, target),
     onResolved(request, result) {
       locks.push(buildLockEntry(request, result));
     },
@@ -3712,6 +3742,7 @@ function createHostServiceResolver(options) {
           contracts: makePort(effectiveGrant, [...chain, key3]),
           budgets: options.budgets,
           ...chain.length !== 0 || options.logicalResourcesFor === void 0 ? {} : { logicalResources: options.logicalResourcesFor(effectiveGrant) },
+          ...chain.length !== 0 || options.installationProbes === void 0 ? {} : { installationProbes: options.installationProbes },
           diagnostics: {
             report(item) {
               diagnostics.push(item);
@@ -4087,6 +4118,32 @@ async function resolveResolvedDataWorkspace(request) {
       ]
     };
   }
+}
+var DATA_WORKSPACE_LISTING_LIMITS = Object.freeze({ maxQueries: 64, maxPaths: 16384 });
+async function planDataWorkspace(planner, request, listFiles) {
+  const first = await planner.plan(request);
+  const queries = first.listingQueries;
+  if (listFiles === void 0 || !Array.isArray(queries) || queries.length === 0)
+    return first;
+  if (queries.length > DATA_WORKSPACE_LISTING_LIMITS.maxQueries) {
+    throw new TypeError("resolved data provider asked for too many directory listings");
+  }
+  const roots = new Set(request.workspace.loadOrder.map((root) => root.rootId));
+  const listings = [];
+  for (const query of queries) {
+    if (!roots.has(query.rootId)) {
+      throw new TypeError(`resolved data provider asked to list unknown root ${query.rootId}`);
+    }
+    const prefix = query.prefix === "" ? "" : normalizeCompanionLogicalId(query.prefix);
+    const listed = await listFiles(query.rootId, prefix, DATA_WORKSPACE_LISTING_LIMITS.maxPaths, request.signal);
+    listings.push(Object.freeze({
+      rootId: query.rootId,
+      prefix,
+      paths: Object.freeze(listed.paths.slice(0, DATA_WORKSPACE_LISTING_LIMITS.maxPaths)),
+      complete: listed.complete && listed.paths.length <= DATA_WORKSPACE_LISTING_LIMITS.maxPaths
+    }));
+  }
+  return planner.plan({ ...request, listings: Object.freeze(listings) });
 }
 function createResolvedDataSubjectSelectorLease(analyzed, inputLimits) {
   if (analyzed.openSubjectFacts === void 0 || analyzed.openSubjectCalculations === void 0) {
@@ -4503,6 +4560,9 @@ function validateWorkspacePlan(plan, workspace, locales, maximum) {
     if (requirement.required !== void 0 && typeof requirement.required !== "boolean") {
       throw new TypeError(`workspace data requirement ${requirement.requirementId} has invalid required flag`);
     }
+    if (requirement.encoding !== void 0 && requirement.encoding !== "text" && requirement.encoding !== "binary") {
+      throw new TypeError(`workspace data requirement ${requirement.requirementId} has invalid encoding`);
+    }
     if (requirementIds.has(requirement.requirementId)) {
       throw new TypeError(`workspace data requirement ${requirement.requirementId} is duplicated`);
     }
@@ -4581,15 +4641,23 @@ async function readResourceText(resources, requirement, maxDocumentBytes, signal
     }
     const chunks = [];
     let bytes = 0;
-    for await (const chunk of source.stream(void 0, signal)) {
-      bytes += chunk.byteLength;
-      if (bytes > maxDocumentBytes) {
-        return {
-          state: "unresolved",
-          diagnostic: diagnostic("warning", "x3.host/resolved-data-document-budget-exceeded", `${requirement.path} exceeds maxDocumentBytes ${maxDocumentBytes}`)
-        };
+    try {
+      for await (const chunk of source.stream(void 0, signal)) {
+        bytes += chunk.byteLength;
+        if (bytes > maxDocumentBytes) {
+          return {
+            state: "unresolved",
+            diagnostic: diagnostic("warning", "x3.host/resolved-data-document-budget-exceeded", `${requirement.path} exceeds maxDocumentBytes ${maxDocumentBytes}`)
+          };
+        }
+        chunks.push(chunk);
       }
-      chunks.push(chunk);
+    } catch (error3) {
+      signal?.throwIfAborted();
+      return {
+        state: "unresolved",
+        diagnostic: diagnostic("warning", "x3.host/resolved-data-resource-read-failed", `${requirement.path}: ${error3 instanceof Error ? error3.message : String(error3)}`)
+      };
     }
     const content = new Uint8Array(bytes);
     let offset = 0;
@@ -4599,7 +4667,7 @@ async function readResourceText(resources, requirement, maxDocumentBytes, signal
     }
     return {
       state: "resolved",
-      text: new TextDecoder("utf-8", { fatal: false }).decode(content),
+      ...requirement.encoding === "binary" ? { text: "", bytes: content } : { text: new TextDecoder("utf-8", { fatal: false }).decode(content) },
       revision: resolved.revision,
       source: Object.freeze({ ...source.ref })
     };
@@ -4881,12 +4949,12 @@ async function analyzeResolvedDataWorkspace(request) {
   const diagnostics = [...resolution.diagnostics];
   const opened = [];
   try {
-    const plan = await resolution.workspace.plan({
+    const plan = await planDataWorkspace(resolution.workspace, {
       workspace: request.workspace,
       locales: request.locales,
       maxRequirements: limits.maxRequirements,
       ...request.signal === void 0 ? {} : { signal: request.signal }
-    });
+    }, request.listFiles);
     validateWorkspacePlan(plan, request.workspace, request.locales, limits.maxRequirements);
     const writableRoots = Object.freeze([...request.writableRoots ?? []]);
     const writableRootIds = /* @__PURE__ */ new Set();
@@ -4924,7 +4992,7 @@ async function analyzeResolvedDataWorkspace(request) {
         }
         continue;
       }
-      textBytes += new TextEncoder().encode(loaded.text).byteLength;
+      textBytes += loaded.bytes?.byteLength ?? new TextEncoder().encode(loaded.text).byteLength;
       if (textBytes > limits.maxTextBytes) {
         throw new TypeError(`workspace data exceeds maxTextBytes ${limits.maxTextBytes}`);
       }
@@ -4933,6 +5001,7 @@ async function analyzeResolvedDataWorkspace(request) {
         rootId: requirement.rootId,
         path: requirement.path,
         text: loaded.text,
+        ...loaded.bytes === void 0 ? {} : { bytes: loaded.bytes },
         revision: loaded.revision
       };
       if (requirement.kind === "catalog") {
@@ -5185,8 +5254,19 @@ function validatedLanguageSemanticContextRequirements(value) {
   const seen = /* @__PURE__ */ new Set();
   for (const item of value) {
     const keys = typeof item === "object" && item !== null ? Reflect.ownKeys(item) : [];
-    if (typeof item !== "object" || item === null || Array.isArray(item) || Object.getPrototypeOf(item) !== Object.prototype && Object.getPrototypeOf(item) !== null || keys.some((key3) => typeof key3 !== "string" || !["kind", "gameId", "languageIds"].includes(key3))) {
+    const knowledge = typeof item === "object" && item !== null && item.kind === "language-knowledge";
+    const allowed2 = knowledge ? ["kind", "fileNames"] : ["kind", "gameId", "languageIds", "localizationLanguageIds"];
+    if (typeof item !== "object" || item === null || Array.isArray(item) || Object.getPrototypeOf(item) !== Object.prototype && Object.getPrototypeOf(item) !== null || keys.some((key3) => typeof key3 !== "string" || !allowed2.includes(key3))) {
       throw new TypeError("language semantic context requirement is invalid");
+    }
+    if (knowledge) {
+      const fileNames = Object.getOwnPropertyDescriptor(item, "fileNames")?.value;
+      if (seen.has("\0language-knowledge") || !Array.isArray(fileNames) || fileNames.length === 0 || fileNames.length > 8 || !fileNames.every((name) => boundedText(name) && name.length <= 255 && !/[\\/:*?"<>|]/u.test(name) && name !== "." && name !== "..") || new Set(fileNames.map((name) => name.toLowerCase())).size !== fileNames.length) {
+        throw new TypeError("language semantic context requirement is invalid");
+      }
+      seen.add("\0language-knowledge");
+      requirements.push(Object.freeze({ kind: "language-knowledge", fileNames: Object.freeze([...fileNames]) }));
+      continue;
     }
     const descriptors = Object.getOwnPropertyDescriptors(item);
     if (keys.some((key3) => {
@@ -5200,20 +5280,57 @@ function validatedLanguageSemanticContextRequirements(value) {
     const kind = descriptors["kind"]?.value;
     const gameId = descriptors["gameId"]?.value;
     const languageIds = descriptors["languageIds"]?.value;
-    if (kind !== "resolved-data-snapshot" || !boundedText(gameId) || !Array.isArray(languageIds) || languageIds.length === 0 || languageIds.length > 16 || Object.keys(languageIds).length !== languageIds.length || !languageIds.every(boundedText) || new Set(languageIds).size !== languageIds.length || seen.has(gameId)) {
+    const localizationLanguageIds = descriptors["localizationLanguageIds"]?.value;
+    const idList = (value2) => Array.isArray(value2) && value2.length > 0 && value2.length <= 16 && Object.keys(value2).length === value2.length && value2.every(boundedText) && new Set(value2).size === value2.length;
+    if (kind !== "resolved-data-snapshot" || localizationLanguageIds !== void 0 && !idList(localizationLanguageIds) || !boundedText(gameId) || !Array.isArray(languageIds) || languageIds.length === 0 || languageIds.length > 16 || Object.keys(languageIds).length !== languageIds.length || !languageIds.every(boundedText) || new Set(languageIds).size !== languageIds.length || seen.has(gameId)) {
       throw new TypeError("language semantic context requirement is invalid");
     }
     seen.add(gameId);
     requirements.push(Object.freeze({
       kind,
       gameId,
-      languageIds: Object.freeze([...languageIds])
+      languageIds: Object.freeze([...languageIds]),
+      ...localizationLanguageIds === void 0 ? {} : { localizationLanguageIds: Object.freeze([...localizationLanguageIds]) }
     }));
   }
   return Object.freeze(requirements);
 }
+function semanticInputLocales(inputs) {
+  for (const input of inputs) {
+    if (input.kind !== "locale-set")
+      continue;
+    const locales = input.payload?.locales;
+    if (Array.isArray(locales) && locales.every(boundedText))
+      return Object.freeze([...locales]);
+  }
+  return Object.freeze([]);
+}
+function localeOfPath(path, locales) {
+  const segments = path.split("/").map((segment) => segment.toLowerCase());
+  return locales.find((locale) => segments.some((segment) => segment.startsWith(locale.toLowerCase())));
+}
 function prepareResolvedDataSemanticContext(request) {
   let complete = request.complete;
+  const locales = request.locales ?? [];
+  const localizationLanguageIds = request.requirement.localizationLanguageIds ?? [];
+  const localizationDocuments = request.documents.flatMap((document) => {
+    const origin = request.origins.get(document.uri);
+    if (!localizationLanguageIds.includes(document.languageId) || origin === void 0)
+      return [];
+    const locale = localeOfPath(origin.logicalId, locales);
+    return locale === void 0 ? [] : [
+      {
+        origin,
+        document: Object.freeze({
+          rootId: origin.layerId,
+          path: origin.logicalId,
+          text: document.text,
+          locale
+        })
+      }
+    ];
+  });
+  localizationDocuments.sort((left, right) => left.origin.precedence - right.origin.precedence || compareUtf8(left.origin.logicalId, right.origin.logicalId));
   const selected = request.documents.filter((document) => request.requirement.languageIds.includes(document.languageId)).map((document) => ({ document, origin: request.origins.get(document.uri) })).sort((left, right) => {
     if (left.origin === void 0)
       return right.origin === void 0 ? 0 : 1;
@@ -5243,9 +5360,17 @@ function prepareResolvedDataSemanticContext(request) {
       origin
     };
   });
+  const localizationIdentities = localizationDocuments.map(({ document, origin }) => ({
+    path: origin.logicalId,
+    layerId: origin.layerId,
+    locale: document.locale,
+    contentRevision: languageWorkspaceContextToken(document.text)
+  }));
   const key3 = languageWorkspaceContextToken({
     requirement: request.requirement,
     documents: identities,
+    locales,
+    localization: localizationIdentities,
     complete
   });
   const scopeKey = languageWorkspaceContextToken({
@@ -5266,6 +5391,8 @@ function prepareResolvedDataSemanticContext(request) {
     scopeKey,
     workspaceId: `language:${key3}`,
     documents: Object.freeze(documents),
+    locales,
+    localizationDocuments: Object.freeze(localizationDocuments.map((item) => item.document)),
     complete
   });
 }
@@ -5298,7 +5425,10 @@ async function analyzeResolvedDataSemanticContext(request) {
     }
     const maximumInputBytes = Number(request.budgets.maxInputBytes > BigInt(Number.MAX_SAFE_INTEGER) ? BigInt(Number.MAX_SAFE_INTEGER) : request.budgets.maxInputBytes);
     const maxTextBytes = Math.min(maximumInputBytes, LANGUAGE_WORKSPACE_SEMANTIC_PAYLOAD_MAX_BYTES);
-    const textBytes = request.prepared.documents.reduce((total, document) => total + new TextEncoder().encode(document.text).byteLength, 0);
+    const textBytes = [
+      ...request.prepared.documents,
+      ...request.prepared.localizationDocuments
+    ].reduce((total, document) => total + new TextEncoder().encode(document.text).byteLength, 0);
     if (maxTextBytes <= 0 || textBytes > maxTextBytes || request.budgets.maxNodes <= 0 || request.budgets.maxDepth <= 0) {
       return unavailable2("resolved Data context exceeds the language workspace resource budget");
     }
@@ -5319,14 +5449,14 @@ async function analyzeResolvedDataSemanticContext(request) {
         workspaceId: request.prepared.workspaceId,
         gameId: request.requirement.gameId,
         documents: request.prepared.documents,
-        localizationDocuments: [],
-        locales: [],
+        localizationDocuments: request.prepared.localizationDocuments,
+        locales: request.prepared.locales,
         localizationKeys: [],
         queries: [],
         plannedDocumentCount: request.prepared.documents.length + (request.prepared.complete ? 0 : 1),
         unresolvedRequirementIds: request.prepared.complete ? [] : ["language-workspace-incomplete"],
         snapshotId: request.prepared.key,
-        maxDocuments: request.prepared.documents.length,
+        maxDocuments: request.prepared.documents.length + request.prepared.localizationDocuments.length,
         maxTextBytes,
         maxEntities: Math.min(request.budgets.maxNodes, MAX_LANGUAGE_RESOLVED_DATA_ENTITIES),
         maxDepth: request.budgets.maxDepth,
@@ -5805,7 +5935,7 @@ function validProviderSemanticContextRequirements(value, languageIds) {
     return false;
   try {
     const allowed2 = new Set(languageIds);
-    return validatedLanguageSemanticContextRequirements(value).every((requirement) => requirement.languageIds.every((languageId) => allowed2.has(languageId)));
+    return validatedLanguageSemanticContextRequirements(value).every((requirement) => requirement.kind !== "resolved-data-snapshot" || requirement.languageIds.every((languageId) => allowed2.has(languageId)));
   } catch {
     return false;
   }
@@ -5847,10 +5977,11 @@ async function resolveLanguageProvider(request) {
     released = true;
     await resolver.release();
   };
+  const associated = request.extension !== void 0 && languageFileAssociations(request.services.inventory).some((association) => association.languageId === request.languageId && association.extension === normalizedExtension(request.extension));
   const facet = {
     languageId: request.languageId,
     ...request.documentKind === void 0 ? {} : { documentKind: request.documentKind },
-    ...request.extension === void 0 ? {} : { extension: request.extension }
+    ...request.extension === void 0 || associated ? {} : { extension: request.extension }
   };
   try {
     const lease2 = await resolver.port.resolve({
@@ -6075,6 +6206,14 @@ var LANGUAGE_DEFAULT_MAX_DOCUMENTS = 32;
 var LANGUAGE_MAX_DOCUMENTS = 4096;
 var LANGUAGE_DEFAULT_MAX_EDITS = 1024;
 var LANGUAGE_MAX_EDITS = 4096;
+function knowledgeFileNamesOf(provider) {
+  try {
+    const requirement = validatedLanguageSemanticContextRequirements(provider.semanticContextRequirements ?? []).find((item) => item.kind === "language-knowledge");
+    return requirement?.kind === "language-knowledge" ? { knowledgeFileNames: requirement.fileNames } : {};
+  } catch {
+    return {};
+  }
+}
 var SEMANTIC_CONTEXT_CACHE_MAX_BYTES = 64 * 1024 * 1024;
 var SEMANTIC_CONTEXT_PENDING_MAX = 16;
 var SEMANTIC_CONTEXT_SCOPE_MAX = 64;
@@ -6190,10 +6329,27 @@ function classifyLanguageFile(routes, path) {
   const named = routes.filter((route) => route.fileName !== void 0 && languageRouteServesFile(route, path));
   const matching = named.length > 0 ? named : routes.filter((route) => route.fileName === void 0 && languageRouteServesFile(route, path));
   const candidates = [...new Set(matching.map((route) => route.languageId))].sort(compareUtf8);
+  const dialects = [
+    ...new Set(matching.flatMap((route) => route.dialect === void 0 ? [] : [route.dialect]))
+  ];
   return Object.freeze({
     ...candidates.length === 1 ? { languageId: candidates[0] } : {},
+    ...candidates.length === 1 && dialects.length === 1 ? { dialect: dialects[0] } : {},
     candidates: Object.freeze(candidates)
   });
+}
+function languageFileAssociations(inventory) {
+  const seen = /* @__PURE__ */ new Map();
+  for (const extension of inventory.extensions)
+    for (const association of extension.manifest.languageFiles ?? []) {
+      const normalized = Object.freeze({
+        extension: normalizedExtension2(association.extension),
+        languageId: association.languageId,
+        ...association.dialect === void 0 ? {} : { dialect: association.dialect }
+      });
+      seen.set(canonicalJsonStringify(normalized), normalized);
+    }
+  return Object.freeze([...seen.entries()].sort(([a], [b]) => compareUtf8(a, b)).map(([, value]) => value));
 }
 function languageProviderRoutes(inventory) {
   const routes = /* @__PURE__ */ new Map();
@@ -6243,6 +6399,16 @@ function languageProviderRoutes(inventory) {
         }
       }
     }
+  }
+  const provided = new Set([...routes.values()].map((route) => route.languageId));
+  for (const association of languageFileAssociations(inventory)) {
+    if (!provided.has(association.languageId))
+      continue;
+    const identity = { languageId: association.languageId, extension: association.extension };
+    routes.set(canonicalJsonStringify({ ...identity, dialect: association.dialect ?? null }), Object.freeze({
+      ...identity,
+      ...association.dialect === void 0 ? {} : { dialect: association.dialect }
+    }));
   }
   return Object.freeze([...routes.entries()].sort(([left], [right]) => compareUtf8(left, right)).map(([, route]) => route));
 }
@@ -6354,7 +6520,7 @@ function validSubjectFilter(value) {
   const predicate = recordOf3(filter["predicate"]);
   return predicate !== void 0 && Object.keys(predicate).every((key3) => key3 === "id" || key3 === "params") && typeof predicate["id"] === "string" && predicate["id"].length > 0 && (predicate["params"] === void 0 || validJsonValue(predicate["params"]));
 }
-var validCompletionItem = (item, lengths) => typeof item["label"] === "string" && item["label"].length > 0 && typeof item["kind"] === "string" && COMPLETION_KINDS.has(item["kind"]) && (item["detail"] === void 0 || typeof item["detail"] === "string") && (item["documentation"] === void 0 || typeof item["documentation"] === "string") && (item["insertText"] === void 0 || typeof item["insertText"] === "string") && (item["insertTextFormat"] === void 0 || item["insertTextFormat"] === "plain-text" || item["insertTextFormat"] === "snippet") && (item["replacementRange"] === void 0 || validRange(item["replacementRange"], lengths)) && (item["sortText"] === void 0 || typeof item["sortText"] === "string");
+var validCompletionItem = (item, lengths) => typeof item["label"] === "string" && item["label"].length > 0 && typeof item["kind"] === "string" && COMPLETION_KINDS.has(item["kind"]) && (item["detail"] === void 0 || typeof item["detail"] === "string") && (item["documentation"] === void 0 || typeof item["documentation"] === "string") && (item["insertText"] === void 0 || typeof item["insertText"] === "string") && (item["insertTextFormat"] === void 0 || item["insertTextFormat"] === "plain-text" || item["insertTextFormat"] === "snippet") && (item["replacementRange"] === void 0 || validRange(item["replacementRange"], lengths)) && (item["sortText"] === void 0 || typeof item["sortText"] === "string") && (item["filterText"] === void 0 || typeof item["filterText"] === "string");
 function validateProviderCompletionList(value, request) {
   const list = recordOf3(value);
   const items = list?.["items"];
@@ -6651,8 +6817,8 @@ function createLanguageWorkspace(options) {
       latestSemanticContextKeys.delete(oldest);
     }
   };
-  const resolvedDataSemanticInputs = async (provider, routeLanguageId, snapshotDocuments, originsByUri, complete, signal, preferCached = false) => {
-    const requirements = validatedLanguageSemanticContextRequirements(provider.semanticContextRequirements ?? []).filter((requirement) => requirement.languageIds.includes(routeLanguageId));
+  const resolvedDataSemanticInputs = async (provider, routeLanguageId, snapshotDocuments, originsByUri, complete, signal, preferCached = false, locales = []) => {
+    const requirements = validatedLanguageSemanticContextRequirements(provider.semanticContextRequirements ?? []).filter((requirement) => requirement.kind === "resolved-data-snapshot" && requirement.languageIds.includes(routeLanguageId));
     if (requirements.length === 0)
       return Object.freeze({ inputs: Object.freeze([]), complete: true });
     const inputs = [];
@@ -6662,7 +6828,8 @@ function createLanguageWorkspace(options) {
         requirement,
         documents: snapshotDocuments,
         origins: originsByUri,
-        complete
+        complete,
+        locales
       });
       let resolved = cachedSemanticContext(prepared.key);
       let stale = false;
@@ -6784,6 +6951,7 @@ function createLanguageWorkspace(options) {
             workspaceDocumentOrigins: Object.freeze([...originsByUri.values()]),
             workspaceLanguageIds: Object.freeze([...acceptedLanguageIds].sort(compareUtf8)),
             maxDocuments: Math.max(0, maxDocuments - snapshotDocuments.length),
+            ...knowledgeFileNamesOf(entry2.resolution.provider),
             signal: controller.signal
           }));
         } catch (error3) {
@@ -6857,7 +7025,7 @@ function createLanguageWorkspace(options) {
           ...entry2.resolution.provider.semanticInputs ?? [],
           ...hostInputs
         ]);
-        semanticContexts = await resolvedDataSemanticInputs(entry2.resolution.provider, entry2.route.languageId, snapshotDocuments, originsByUri, baseSemanticComplete, controller.signal, preferCachedSemanticContext);
+        semanticContexts = await resolvedDataSemanticInputs(entry2.resolution.provider, entry2.route.languageId, snapshotDocuments, originsByUri, baseSemanticComplete, controller.signal, preferCachedSemanticContext, semanticInputLocales(baseSemanticInputs));
         semanticContextsComplete = semanticContexts.complete;
       } catch {
         throwIfAborted(controller.signal);
@@ -7155,6 +7323,21 @@ function createLanguageWorkspace(options) {
       end: positionAtOffset(document.text, start + length)
     };
   };
+  const mergeLocationLists = (...lists) => {
+    const present = lists.filter((list) => list !== void 0);
+    if (present.length === 0)
+      return void 0;
+    const seen = /* @__PURE__ */ new Set();
+    const locations = present.flatMap((list) => list.locations).filter((location) => {
+      const { start, end } = location.range;
+      const key3 = `${location.uri}#${start.line}:${start.character}-${end.line}:${end.character}`;
+      if (seen.has(key3))
+        return false;
+      seen.add(key3);
+      return true;
+    });
+    return { locations, isIncomplete: present.every((list) => list.isIncomplete) };
+  };
   const indexedReferenceLocations = async (provider, feature, position, mode, includeDeclaration = false) => {
     if (provider.referenceOccurrences === void 0 || feature.workspaceContext === void 0) {
       return void 0;
@@ -7356,11 +7539,12 @@ function createLanguageWorkspace(options) {
     references(request) {
       return invokeFeature(request, true, async (provider, feature) => {
         const indexed = await indexedReferenceLocations(provider, feature, request.position, "references", request.includeDeclaration === true);
-        return indexed !== void 0 && indexed.locations.length > 0 ? indexed : provider.references?.({
+        const answered = await provider.references?.({
           ...feature,
           position: request.position,
           ...request.includeDeclaration === void 0 ? {} : { includeDeclaration: request.includeDeclaration }
         });
+        return mergeLocationLists(indexed, answered);
       }, validateLocationList, {
         position: request.position,
         ...request.includeDeclaration === void 0 ? {} : { includeDeclaration: request.includeDeclaration }
@@ -7529,6 +7713,8 @@ function createLanguageWorkspace(options) {
 
 // packages/host/dist/content-dependencies.js
 var DEPENDENCY_SCOPE = Object.freeze(["workspace-dependency-layer"]);
+var KNOWLEDGE_FILE_MAX_BYTES = 8 * 1024 * 1024;
+var KNOWLEDGE_TOTAL_MAX_BYTES = 32 * 1024 * 1024;
 function nonEmpty(value, name) {
   if (typeof value !== "string" || value.length === 0 || value.length > 4096 || value.includes("\0")) {
     throw new TypeError(`${name} must be a bounded non-empty string`);
@@ -7649,13 +7835,16 @@ function createContentDependencyOrigin(contentSources, mounts, maximumEntryBytes
     async *enumerate(scope, enumeration, signal) {
       if (scope !== "workspace-dependency-layer")
         return;
-      const prefix = enumeration.prefix === "" ? "" : normalizeCompanionLogicalId(enumeration.prefix);
+      const prefix = enumeration.prefix === "" ? "" : `${normalizeCompanionLogicalId(enumeration.prefix)}${enumeration.prefix.endsWith("/") ? "/" : ""}`;
       const emitted = /* @__PURE__ */ new Set();
       for (const mount of overlay) {
         const rootScoped = relativeRequest(mount, prefix) !== void 0;
         const query = rootScoped ? prefix : joinPath(mount.logicalPrefix, prefix);
         for (const found of await findEntries(mount, query, signal)) {
-          const entry2 = rootScoped ? found : Object.freeze({ ...found, logicalId: found.logicalId.slice(mount.logicalPrefix.length + 1) });
+          const entry2 = rootScoped ? found : Object.freeze({
+            ...found,
+            logicalId: found.logicalId.slice(mount.logicalPrefix.length + 1)
+          });
           const key3 = fold2(entry2.logicalId);
           if (emitted.has(key3))
             continue;
@@ -7755,6 +7944,8 @@ function createContentDependencyLanguageDocumentSource(options) {
       const openUris = new Set(request.workspaceDocuments.map((document) => document.uri));
       const candidates = [];
       const contentPaths = /* @__PURE__ */ new Set();
+      const wantedKnowledge = new Set((request.knowledgeFileNames ?? []).map((name) => name.toLowerCase()));
+      const knowledge = [];
       let visited = 0;
       let complete = options.resolution.complete && mounts.every((mount) => mount.fingerprint !== void 0 && isRevisionId(mount.fingerprint));
       let pathIndexComplete = options.resolution.complete;
@@ -7789,6 +7980,10 @@ function createContentDependencyLanguageDocumentSource(options) {
             continue;
           }
           contentPaths.add(relative);
+          if (path === mount.sourcePath && wantedKnowledge.has(relative.toLowerCase())) {
+            knowledge.push({ mount, path: entry2.path, fileName: relative });
+            continue;
+          }
           const { languageId, candidates: claimants } = classifyLanguageFile(options.routes, relative);
           if (languageId === void 0) {
             if (claimants.some((id) => accepted.has(id)))
@@ -7822,7 +8017,8 @@ function createContentDependencyLanguageDocumentSource(options) {
       let totalBytes = 0;
       for (const candidate of candidates.slice(0, request.maxDocuments)) {
         request.signal.throwIfAborted();
-        const languageId = classifyLanguageFile(options.routes, candidate.relative).languageId;
+        const { languageId: classified, dialect } = classifyLanguageFile(options.routes, candidate.relative);
+        const languageId = classified;
         let bytes;
         try {
           bytes = await options.contentSources.read(candidate.mount.sourceId, candidate.path, Math.min(maxDocumentBytes, maxWorkspaceBytes - totalBytes));
@@ -7848,7 +8044,13 @@ function createContentDependencyLanguageDocumentSource(options) {
         const previous = revisions.get(uri);
         const version = previous === void 0 ? 1 : previous.signature === signature ? previous.version : previous.version + 1;
         revisions.set(uri, { signature, version });
-        documents.push(Object.freeze({ uri, languageId, version, text }));
+        documents.push(Object.freeze({
+          uri,
+          languageId,
+          version,
+          text,
+          ...dialect === void 0 ? {} : { dialect }
+        }));
         documentOrigins.push(Object.freeze({
           uri,
           layerId: `${contextId}:${candidate.mount.order}:${candidate.mount.dependencyId}`,
@@ -7856,6 +8058,44 @@ function createContentDependencyLanguageDocumentSource(options) {
           precedence: candidate.mount.order,
           sourceRevision: String(candidate.mount.revision),
           readOnly: true
+        }));
+      }
+      const knowledgeInputs = [];
+      let knowledgeBytes = 0;
+      for (const file of knowledge) {
+        request.signal.throwIfAborted();
+        const layerId2 = `${contextId}:${file.mount.order}:${file.mount.dependencyId}`;
+        const id = `${layerId2}/${file.fileName}`;
+        const unavailable4 = (message) => knowledgeInputs.push(Object.freeze({
+          kind: "semantic-context-status",
+          id: `language-knowledge:${id}`,
+          revision: languageWorkspaceContextToken({ id, message }),
+          payload: Object.freeze({
+            state: "unavailable",
+            requirement: "language-knowledge",
+            message
+          })
+        }));
+        let text;
+        try {
+          const bytes = await options.contentSources.read(file.mount.sourceId, file.path, KNOWLEDGE_FILE_MAX_BYTES);
+          if (bytes.byteLength > KNOWLEDGE_FILE_MAX_BYTES || knowledgeBytes + bytes.byteLength > KNOWLEDGE_TOTAL_MAX_BYTES) {
+            unavailable4(`${file.fileName} exceeds the knowledge budget (8 MiB a file, 32 MiB in all)`);
+            continue;
+          }
+          text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+          knowledgeBytes += bytes.byteLength;
+        } catch (error3) {
+          if (isCancellation(error3))
+            throw error3;
+          unavailable4(`${file.fileName} could not be read as UTF-8 within 8 MiB`);
+          continue;
+        }
+        knowledgeInputs.push(Object.freeze({
+          kind: "language-knowledge",
+          id,
+          revision: languageWorkspaceContextToken({ layer: String(file.mount.revision), text }),
+          payload: Object.freeze({ fileName: file.fileName, layerId: layerId2, text })
         }));
       }
       return Object.freeze({
@@ -7867,6 +8107,7 @@ function createContentDependencyLanguageDocumentSource(options) {
           semanticComplete: complete,
           documentOrigins: Object.freeze(documentOrigins),
           semanticInputs: Object.freeze([
+            ...knowledgeInputs,
             Object.freeze({
               kind: "dependency-closure",
               id: `${options.resolution.gameId}:${contextId}`,
@@ -8039,6 +8280,35 @@ async function resolveContentAssetOrigins(request) {
     })),
     diagnostics: closures.diagnostics,
     dependenciesComplete: closures.complete
+  });
+}
+function createContentAssetOrigin(request) {
+  let layers;
+  const resolved = () => layers ??= resolveContentAssetOrigins({
+    contentSources: request.contentSources,
+    subjects: [{ descriptor: {}, target: request.target }],
+    ...request.baseMods === void 0 ? {} : { baseMods: request.baseMods },
+    ...request.maximumEntryBytes === void 0 ? {} : { maximumEntryBytes: request.maximumEntryBytes }
+  }).then((result) => {
+    for (const item of result.diagnostics)
+      request.onDiagnostic?.(item);
+    return result.origins.length === 0 ? void 0 : createLayeredCompanionOrigin(result.origins);
+  });
+  return Object.freeze({
+    primaryLogicalId: "__content_dependency_workspace__",
+    caseSensitivity: "insensitive",
+    scopes: Object.freeze(["workspace-dependency-layer"]),
+    async *enumerate(scope, options, signal) {
+      const origin = await resolved();
+      if (origin !== void 0)
+        yield* origin.enumerate(scope, options, signal);
+    },
+    async open(logicalId, signal) {
+      const origin = await resolved();
+      if (origin === void 0)
+        throw new TypeError(`no mod layer holds \xAB${logicalId}\xBB`);
+      return origin.open(logicalId, signal);
+    }
   });
 }
 async function resolveContentLanguageSources(request) {
@@ -9150,6 +9420,13 @@ function createSubjectLogicalResources(options) {
         throw error3;
       }
     },
+    async identity(signal) {
+      signal?.throwIfAborted();
+      if (unavailable4() !== void 0)
+        return void 0;
+      const primaryLogicalId = options.state.resources?.primaryLogicalId;
+      return primaryLogicalId === void 0 || primaryLogicalId.length === 0 ? void 0 : Object.freeze({ primaryLogicalId });
+    },
     async provenance(signal) {
       assertLive(signal);
       const records = options.state.resources?.provenance() ?? [];
@@ -9170,12 +9447,6 @@ var NAMESPACE_SCOPES = Object.freeze([
   "enclosing-container"
 ]);
 var NESTED_ENTRY_NOT_FOUND = "x3.host/nested-entry-not-found";
-function containerEntryRevision(containerRevision, entryId, byteLength) {
-  return revisionIdFromRef({
-    kind: "provider-token",
-    value: `${String(containerRevision)}!${entryId}:${byteLength}`
-  });
-}
 function createNamespaceCompanionOrigin(options) {
   const pageLimit2 = options.pageLimit ?? 256;
   const caseSensitivity = options.caseSensitivity ?? "insensitive";
@@ -9234,8 +9505,11 @@ function createNamespaceCompanionOrigin(options) {
       throwIfAborted(signal);
       if (scope !== "current-mount" && scope !== "enclosing-container")
         return;
+      const namePrefix = enumeration.namePrefix === void 0 ? "" : fold2(enumeration.prefix + enumeration.namePrefix);
       for await (const entry2 of listing(enumeration.prefix, signal)) {
         throwIfAborted(signal);
+        if (namePrefix !== "" && !fold2(entry2.path).startsWith(namePrefix))
+          continue;
         yield Object.freeze({
           logicalId: entry2.path,
           ...entry2.size === void 0 ? {} : { size: entry2.size }
@@ -9557,7 +9831,7 @@ function createWorkspaceNamespaceCandidateDiscovery(options) {
         bytes: complete ? bytes : 0n,
         searches: receiptSearches
       });
-      const refused3 = (reason, message) => Object.freeze({
+      const refused4 = (reason, message) => Object.freeze({
         state: "refused",
         reason,
         message,
@@ -9577,11 +9851,11 @@ function createWorkspaceNamespaceCandidateDiscovery(options) {
           do {
             throwIfAborted(signal);
             if (pages >= maxPages) {
-              return refused3("budget-exceeded", `candidate discovery exceeded its ${maxPages}-page budget`);
+              return refused4("budget-exceeded", `candidate discovery exceeded its ${maxPages}-page budget`);
             }
             if (cursor2 !== void 0) {
               if (seenCursors.has(cursor2)) {
-                return refused3("namespace-invalid", "candidate discovery cursor repeated");
+                return refused4("namespace-invalid", "candidate discovery cursor repeated");
               }
               seenCursors.add(cursor2);
             }
@@ -9589,28 +9863,28 @@ function createWorkspaceNamespaceCandidateDiscovery(options) {
             pages += 1;
             throwIfAborted(signal);
             if (page === null || typeof page !== "object" || !Array.isArray(page.items) || page.nextCursor !== void 0 && (typeof page.nextCursor !== "string" || page.nextCursor === "")) {
-              return refused3("namespace-invalid", "candidate discovery received a malformed page");
+              return refused4("namespace-invalid", "candidate discovery received a malformed page");
             }
             if (page.items.length > pageItems2) {
-              return refused3("namespace-invalid", `candidate discovery page exceeded its requested ${pageItems2}-entry limit`);
+              return refused4("namespace-invalid", `candidate discovery page exceeded its requested ${pageItems2}-entry limit`);
             }
             for (const entry2 of page.items) {
               throwIfAborted(signal);
               if (entry2 === null || typeof entry2 !== "object" || typeof entry2.id !== "string" || entry2.id === "" || typeof entry2.path !== "string" || entry2.path === "" || typeof entry2.kind !== "string") {
-                return refused3("namespace-invalid", "candidate discovery received a malformed namespace entry");
+                return refused4("namespace-invalid", "candidate discovery received a malformed namespace entry");
               }
               entries += 1;
               if (entries > maxEntries) {
-                return refused3("budget-exceeded", `candidate discovery exceeded its ${maxEntries}-entry budget`);
+                return refused4("budget-exceeded", `candidate discovery exceeded its ${maxEntries}-entry budget`);
               }
               let path;
               try {
                 path = normalizeCompanionLogicalId(entry2.path);
               } catch {
-                return refused3("namespace-invalid", "candidate discovery received an invalid entry path");
+                return refused4("namespace-invalid", "candidate discovery received an invalid entry path");
               }
               if (entry2.kind === "file" && path !== entry2.path || namespacePrefix !== "" && !fold2(path).startsWith(fold2(namespacePrefix)) && !(entry2.kind !== "file" && fold2(path) === fold2(subtree))) {
-                return refused3("namespace-invalid", `namespace entry \xAB${entry2.path}\xBB escaped or changed requested subtree \xAB${subtree}\xBB of logical root \xAB${search.root.rootId}\xBB`);
+                return refused4("namespace-invalid", `namespace entry \xAB${entry2.path}\xBB escaped or changed requested subtree \xAB${subtree}\xBB of logical root \xAB${search.root.rootId}\xBB`);
               }
               if (entry2.kind !== "file" || !fold2(path).endsWith(extension))
                 continue;
@@ -9623,15 +9897,15 @@ function createWorkspaceNamespaceCandidateDiscovery(options) {
                 continue;
               const uncovered = roots.find((root) => root.rank < search.root.rank && (relativeRequest(root, logicalId)?.length ?? 0) > 0 && !searches.some((higher) => higher.root.rank === root.rank && (higher.logicalPrefix === "" || key3.startsWith(fold2(`${higher.logicalPrefix}/`)))));
               if (uncovered !== void 0)
-                return refused3("namespace-invalid", `candidate \xAB${logicalId}\xBB has incomplete precedence coverage for logical root \xAB${uncovered.rootId}\xBB; that root may serve the same logical id`);
+                return refused4("namespace-invalid", `candidate \xAB${logicalId}\xBB has incomplete precedence coverage for logical root \xAB${uncovered.rootId}\xBB; that root may serve the same logical id`);
               if (entry2.size === void 0 || typeof entry2.size !== "bigint" || entry2.size < 0n || entry2.size > BigInt(Number.MAX_SAFE_INTEGER)) {
-                return refused3("size-unavailable", `candidate \xAB${logicalId}\xBB has no bounded revision-safe size`);
+                return refused4("size-unavailable", `candidate \xAB${logicalId}\xBB has no bounded revision-safe size`);
               }
               if (candidates.size >= maxCandidates) {
-                return refused3("budget-exceeded", `candidate discovery exceeded its ${maxCandidates}-candidate budget`);
+                return refused4("budget-exceeded", `candidate discovery exceeded its ${maxCandidates}-candidate budget`);
               }
               if (bytes + entry2.size > maxBytes) {
-                return refused3("budget-exceeded", `candidate discovery exceeded its ${maxBytes}-byte budget`);
+                return refused4("budget-exceeded", `candidate discovery exceeded its ${maxBytes}-byte budget`);
               }
               bytes += entry2.size;
               candidates.set(key3, Object.freeze({
@@ -9653,6 +9927,47 @@ function createWorkspaceNamespaceCandidateDiscovery(options) {
         candidates: Object.freeze(ordered),
         receipt: receipt(true)
       });
+    }
+  });
+}
+function containerEntryRangeSource(ref2, revision, parent, range) {
+  const invalid2 = (message, context) => new ModkitError({ code: "x3.host/invalid-source-range", message, context: { uri: ref2.uri, ...context } });
+  if (range.offset < 0n || range.length < 0n)
+    throw invalid2(`entry range of \xAB${ref2.uri}\xBB is negative`, {});
+  const read = async (offset, length, signal) => {
+    throwIfAborted(signal);
+    if (offset < 0n || !Number.isSafeInteger(length) || length < 0) {
+      throw invalid2(`container entry read of \xAB${ref2.uri}\xBB must use a non-negative exact range`, {
+        offset: String(offset),
+        length
+      });
+    }
+    if (offset > range.length) {
+      throw invalid2(`container entry read of \xAB${ref2.uri}\xBB starts beyond the entry size`, {
+        offset: String(offset),
+        size: String(range.length)
+      });
+    }
+    const available = range.length - offset;
+    const wanted = BigInt(length) < available ? length : Number(available);
+    return wanted === 0 ? new Uint8Array() : parent.read(range.offset + offset, wanted, signal);
+  };
+  return Object.freeze({
+    kind: "bytes",
+    ref: ref2,
+    revision,
+    size: range.length,
+    read,
+    async *stream(window, signal) {
+      const start = window?.offset ?? 0n;
+      const end = window?.length === void 0 ? range.length : start + window.length;
+      for (let at = start; at < end && at < range.length; ) {
+        const chunk = await read(at, Number(end - at < 1048576n ? end - at : 1048576n), signal);
+        if (chunk.byteLength === 0)
+          return;
+        at += BigInt(chunk.byteLength);
+        yield chunk;
+      }
     }
   });
 }
@@ -9696,6 +10011,7 @@ var CONTAINER_EXTRACT = "container.extract";
 var CONTAINER_PACK = "container.pack";
 var EXPORT_RAW = "export.raw";
 var VIEW_INSPECT = "view.inspect";
+var CARRIER_EXTRACT_HANDLER = "x3.host/carrier-container-extract";
 var ENTRY_NOT_FOUND = "x3.host/namespace-entry-not-found";
 var PAGE_LIMIT = 256;
 var BASE64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -9857,6 +10173,8 @@ function composedOperations(options) {
         });
       }
       throwIfAborted(invokeOptions?.signal);
+      if (handlerId === CARRIER_EXTRACT_HANDLER && options.carrierExtractHandlerId !== void 0)
+        return options.parent.invoke(options.carrierExtractHandlerId, input, invokeOptions);
       const declaration = operationByHandler.get(handlerId);
       if (declaration?.id === EXPORT_RAW) {
         if (options.exportRawHandlerId === void 0) {
@@ -10010,6 +10328,13 @@ async function createContainerNamespaceComposition(options) {
         return entry2.kind === "file" ? { kind: "file", entry: entry2 } : { kind: "directory" };
       }
       return { kind: "directory" };
+    }
+    const found = await namespace.lookup?.(path, signal);
+    ensureLive(signal);
+    if (found !== void 0 && found !== null) {
+      const validated = validateEntry(found);
+      if (sameNamespacePath(validated.path, path) && validated.kind === "file")
+        return { kind: "file", entry: validated };
     }
     throw new ModkitError({
       code: ENTRY_NOT_FOUND,
@@ -10281,6 +10606,20 @@ async function createContainerNamespaceComposition(options) {
       };
       const parentInspectHandlerId = operationHandler(descriptor, VIEW_INSPECT);
       const semanticInspectHandlerId = operationHandler(semanticDescriptor, VIEW_INSPECT);
+      const namespaceOf = (item) => item.dataSources.some((entry2) => entry2.contract === NAMESPACE_ENTRY_SOURCE2 && entry2.major === 1);
+      const carrierExtract = descriptor.operations.find((item) => item.id === CONTAINER_EXTRACT && item.state === "available");
+      const lendsNamespace = !namespaceOf(semanticDescriptor) && namespaceOf(descriptor) && carrierExtract !== void 0;
+      const lend = (item) => !lendsNamespace || namespaceOf(item) ? item : Object.freeze({
+        ...item,
+        dataSources: Object.freeze([
+          ...item.dataSources,
+          Object.freeze({ contract: NAMESPACE_ENTRY_SOURCE2, major: 1 })
+        ]),
+        operations: Object.freeze([
+          ...item.operations.filter((operation) => operation.id !== CONTAINER_EXTRACT),
+          Object.freeze({ ...carrierExtract, handlerId: CARRIER_EXTRACT_HANDLER })
+        ])
+      });
       const operations = composedOperations({
         semantic: semantic.operations(),
         semanticSpec,
@@ -10291,13 +10630,14 @@ async function createContainerNamespaceComposition(options) {
         ...packHandlerId === void 0 ? {} : { packHandlerId },
         ...exportRawHandlerId === void 0 ? {} : { exportRawHandlerId },
         ...parentInspectHandlerId === void 0 ? {} : { parentInspectHandlerId },
-        ...semanticInspectHandlerId === void 0 ? {} : { semanticInspectHandlerId }
+        ...semanticInspectHandlerId === void 0 ? {} : { semanticInspectHandlerId },
+        ...lendsNamespace ? { carrierExtractHandlerId: carrierExtract.handlerId } : {}
       });
       return Object.freeze({
         revision: semantic.revision,
         state: () => semantic.state(),
-        descriptor: () => semantic.descriptor(),
-        dataSource: semantic.dataSource.bind(semantic),
+        descriptor: async () => lend(await semantic.descriptor()),
+        dataSource: ((contract, major) => lendsNamespace && contract === NAMESPACE_ENTRY_SOURCE2 && major === 1 ? parent.dataSource(NAMESPACE_ENTRY_SOURCE2, 1) : semantic.dataSource(contract, major)),
         operations: () => operations,
         events: (signal) => semantic.events(signal),
         dispose
@@ -11158,7 +11498,8 @@ function matchesGlob(path, glob) {
   return new RegExp(`${pattern}$`, "u").test(path);
 }
 function matchesSpec(spec, path, mediaType) {
-  const normalizedPath2 = path.replaceAll("\\", "/").split(/[?#]/u, 1)[0]?.toLocaleLowerCase() ?? "";
+  const uri = /^[a-z][a-z0-9+.-]+:/iu.test(path);
+  const normalizedPath2 = (uri ? path.split(/[?#]/u, 1)[0] ?? "" : path).replaceAll("\\", "/").toLocaleLowerCase();
   const extensionMatch = (spec.match.extensions ?? []).some((extension) => {
     const suffix = extension.toLocaleLowerCase().replace(/^\.+/u, "");
     return normalizedPath2.endsWith(`.${suffix}`) || normalizedPath2 === suffix;
@@ -11891,10 +12232,13 @@ async function openSubjectDirect(options, route = {}) {
         const nestedLocks = record3.nestedLocks;
         const makeContext = (grant, chain, contributionId2) => {
           const settings = contributionId2 === void 0 ? void 0 : options.contributionSettings?.(contributionId2);
+          const owner = contributionId2 === void 0 ? void 0 : offers.find((offer) => offer.providerId === contributionId2)?.extensionId;
+          const credentials = owner === void 0 ? void 0 : options.credentials?.portFor(owner);
           const contracts = options.serviceDefinitions === void 0 ? noServiceResolver() : createContractResolverPort({
             offers,
             definitions: options.serviceDefinitions,
             target,
+            targetFor: (offer) => serviceTargetFor(executionBackends, offer, target),
             onResolved(request2, result) {
               nestedLocks.push(buildLockEntry(request2, result));
             },
@@ -11927,6 +12271,9 @@ async function openSubjectDirect(options, route = {}) {
           return Object.freeze({
             contracts,
             ...settings === void 0 ? {} : { settings },
+            ...options.videoFrames === void 0 ? {} : { videoFrames: options.videoFrames },
+            ...credentials === void 0 ? {} : { credentials },
+            ...options.containerContext === void 0 ? {} : { containerContext: options.containerContext },
             logicalResources: createSubjectLogicalResources({
               state: record3.logicalState,
               budget: effectiveBudget,
@@ -11949,6 +12296,8 @@ async function openSubjectDirect(options, route = {}) {
                 budget: effectiveBudget,
                 executionBackends,
                 ...record3.rasterState.resources === void 0 ? {} : { resourceSession: record3.rasterState.resources },
+                ...options.videoFrames === void 0 ? {} : { videoFrames: options.videoFrames },
+                ...options.credentials === void 0 ? {} : { credentials: options.credentials },
                 ...options.resolveInput === void 0 ? {} : { resolveInput: options.resolveInput },
                 ...options.serviceDefinitions === void 0 ? {} : { serviceDefinitions: options.serviceDefinitions },
                 ...options.policy === void 0 ? {} : { policy: options.policy },
@@ -11964,6 +12313,7 @@ async function openSubjectDirect(options, route = {}) {
                   inventory: options.inventory,
                   source,
                   ...hint,
+                  ...resourceInputFor(options.resolveInput, hint.path),
                   target,
                   intent: "full",
                   grant: { ...grant, classes: ["read-source"] },
@@ -12251,6 +12601,7 @@ async function openSubjectDirect(options, route = {}) {
         inventory: options.inventory,
         source,
         ...hint,
+        ...resourceInputFor(options.resolveInput, hint.path),
         target: options.target,
         intent: "full",
         grant: { ...best.effectiveGrant, classes: ["read-source"] },
@@ -12374,6 +12725,10 @@ function withDiagnostics(result, extra) {
 async function disposeOpened(result) {
   if (result.state === "opened")
     await result.session.dispose();
+}
+function resourceInputFor(resolveInput, logicalId) {
+  const nested = logicalId === void 0 ? void 0 : resolveInput?.forResource?.(logicalId);
+  return nested === void 0 ? {} : { resolveInput: nested };
 }
 async function openSubject(request) {
   const policies = request.logicalResourceDiscovery;
@@ -12505,6 +12860,7 @@ async function openSubject(request) {
       ...semantic,
       session,
       lockText,
+      carrier: Object.freeze({ descriptor: parent.descriptor, selected: parent.selected }),
       candidates: Object.freeze([...parent.candidates, ...semantic.candidates]),
       diagnostics: Object.freeze([...parent.diagnostics, ...semantic.diagnostics])
     });
@@ -12629,7 +12985,8 @@ function compilePatterns(requirementId, patterns, caseSensitivity) {
       const name = logicalId.split("/").at(-1) ?? logicalId;
       return expressions.some((item) => item.expression.test(item.whole ? logicalId : name));
     },
-    prefixes: enumerationPrefixes(patterns, caseSensitivity)
+    prefixes: enumerationPrefixes(patterns, caseSensitivity),
+    namePrefix: enumerationNamePrefix(patterns, caseSensitivity)
   };
 }
 function enumerationPrefixes(patterns, caseSensitivity) {
@@ -12643,6 +13000,30 @@ function enumerationPrefixes(patterns, caseSensitivity) {
       unique.set(key3, path);
   }
   return [...unique.values()];
+}
+function enumerationNamePrefix(patterns, caseSensitivity) {
+  const directory = enumerationPrefix(patterns);
+  if (directory === "")
+    return "";
+  const fold2 = (value) => caseSensitivity === "insensitive" ? value.toLowerCase() : value;
+  const starts = patterns.map((pattern) => {
+    const normalized = pattern.replaceAll("\\", "/");
+    const wildcard = normalized.search(/[*?]/u);
+    if (wildcard === -1 || !fold2(normalized).startsWith(fold2(directory)))
+      return void 0;
+    const literal = normalized.slice(directory.length, wildcard);
+    return literal.includes("/") ? void 0 : literal;
+  });
+  if (starts.some((start) => start === void 0))
+    return "";
+  let common = starts[0];
+  for (const start of starts.slice(1)) {
+    let length = 0;
+    while (length < common.length && length < start.length && fold2(common[length]) === fold2(start[length]))
+      length += 1;
+    common = common.slice(0, length);
+  }
+  return common;
 }
 function enumerationPrefix(patterns) {
   const safe = patterns.map((pattern) => {
@@ -12798,8 +13179,8 @@ function createCompanionInputResolver(origin, options = {}) {
     const served = new Set(origin.scopes);
     if (explicit !== void 0)
       served.add("explicit-user-selection");
-    const enumerateScope = async (scope, prefix) => {
-      const key3 = canonicalJsonStringify([scope, prefix]);
+    const enumerateScope = async (scope, prefix, namePrefix = "") => {
+      const key3 = canonicalJsonStringify([scope, prefix, namePrefix]);
       const cached = enumerated.get(key3);
       if (cached !== void 0)
         return cached;
@@ -12809,7 +13190,7 @@ function createCompanionInputResolver(origin, options = {}) {
           ids.push(normalizeCompanionLogicalId(value, { scope }));
         }
       } else {
-        for await (const entry2 of origin.enumerate(scope, { prefix }, signal)) {
+        for await (const entry2 of origin.enumerate(scope, namePrefix === "" ? { prefix } : { prefix, namePrefix }, signal)) {
           checkpoint(`enumerate:${scope}`);
           budget.entries += 1;
           if (budget.entries > limits.maxEntries)
@@ -12848,7 +13229,8 @@ function createCompanionInputResolver(origin, options = {}) {
       const matched = [];
       for (const [rank, scope] of usable.entries()) {
         for (const prefix of patterns.prefixes) {
-          for (const logicalId of await enumerateScope(scope, prefix)) {
+          const namePrefix = patterns.prefixes.length === 1 ? patterns.namePrefix : "";
+          for (const logicalId of await enumerateScope(scope, prefix, namePrefix)) {
             if (scope === "explicit-user-selection" && !(explicit?.[requirement.id] ?? []).some((value) => fold2(normalizeCompanionLogicalId(value)) === fold2(logicalId))) {
               continue;
             }
@@ -12953,7 +13335,22 @@ function createCompanionInputResolver(origin, options = {}) {
         usedBindingIds.add(bindingId);
         let identity = pinned.get(logicalId);
         if (identity === void 0) {
-          const lease2 = await origin.open(logicalId, signal);
+          let lease2;
+          try {
+            lease2 = await origin.open(logicalId, signal);
+          } catch (error3) {
+            throwIfAborted(signal);
+            if (requirement.required)
+              throw error3;
+            report?.(diagnostic("information", COMPANION_UNAVAILABLE, `optional companion \xAB${requirement.role}\xBB (${logicalId}) could not be opened; the dependent capability stays unavailable`, [requirement.id], {
+              ...detail,
+              reason: "open-failed",
+              error: error3 instanceof Error ? error3.message : String(error3)
+            }));
+            usedBindingIds.delete(bindingId);
+            budget.bindings -= 1;
+            continue;
+          }
           try {
             identity = { ref: lease2.value.ref, revision: lease2.value.revision };
             pinned.set(logicalId, identity);
@@ -12973,7 +13370,15 @@ function createCompanionInputResolver(origin, options = {}) {
     return buildAssetInput(context, plan, origin, selected, signal);
   };
   return Object.assign(resolver, {
-    openResources: (request) => createResourceSession({ ...request, origin })
+    openResources: (request) => createResourceSession({ ...request, origin }),
+    // a resource of this origin opened as a subject (a map's texture): its own companions are
+    // found in the same origin, with the resource as the primary
+    forResource: (logicalId) => createCompanionInputResolver(Object.freeze({
+      ...origin,
+      primaryLogicalId: logicalId,
+      enumerate: origin.enumerate.bind(origin),
+      open: origin.open.bind(origin)
+    }), options)
   });
 }
 function countingSource(source, onBytes) {
@@ -13351,8 +13756,29 @@ function snapshotGrant(grant) {
   return Object.freeze({
     snapshotId: String(grant.snapshotId),
     permissions: Object.freeze([...grant.permissions]),
-    sourceIds: Object.freeze([...grant.sourceIds])
+    sourceIds: Object.freeze([...grant.sourceIds]),
+    ...grant.namespaceRoots === void 0 ? {} : { namespaceRoots: Object.freeze([...grant.namespaceRoots]) }
   });
+}
+function withinGrantedNamespace(uri, grant) {
+  if (grant.namespaceRoots === void 0)
+    return false;
+  try {
+    const url = new URL(uri);
+    const path = url.searchParams.get("vfs-path");
+    if (path === null || path.split("/").some((part) => part === "" || part === "." || part === ".."))
+      return false;
+    url.search = "";
+    url.hash = "";
+    return grant.namespaceRoots.some((root) => {
+      const granted = new URL(root);
+      granted.search = "";
+      granted.hash = "";
+      return granted.href === url.href;
+    });
+  } catch {
+    return false;
+  }
 }
 function grantIsValid(options, grant) {
   try {
@@ -13362,13 +13788,14 @@ function grantIsValid(options, grant) {
   }
 }
 function createGrantSnapshot(value) {
-  if (!isNonBlank2(value.snapshotId) || !Array.isArray(value.permissions) || !value.permissions.every((permission) => PERMISSION_CLASSES.includes(permission)) || !Array.isArray(value.sourceIds) || !value.sourceIds.every(isNonBlank2)) {
+  if (!isNonBlank2(value.snapshotId) || !Array.isArray(value.permissions) || !value.permissions.every((permission) => PERMISSION_CLASSES.includes(permission)) || !Array.isArray(value.sourceIds) || !value.sourceIds.every(isNonBlank2) || value.namespaceRoots !== void 0 && (!Array.isArray(value.namespaceRoots) || !value.namespaceRoots.every(isNonBlank2))) {
     throw new TypeError("grant snapshot is malformed");
   }
   const snapshot2 = Object.freeze({
     snapshotId: value.snapshotId,
     permissions: Object.freeze([...new Set(value.permissions)].sort(compareUtf8)),
-    sourceIds: Object.freeze([...new Set(value.sourceIds)].sort(compareUtf8))
+    sourceIds: Object.freeze([...new Set(value.sourceIds)].sort(compareUtf8)),
+    ...value.namespaceRoots === void 0 || value.namespaceRoots.length === 0 ? {} : { namespaceRoots: Object.freeze([...new Set(value.namespaceRoots)].sort(compareUtf8)) }
   });
   issuedGrantSnapshots.add(snapshot2);
   return snapshot2;
@@ -13593,7 +14020,7 @@ function derive(plan, targets, grant, options) {
   entries.sort((left, right) => compareUtf8(left.targetId, right.targetId) || compareUtf8(left.source.id, right.source.id) || compareUtf8(left.mode, right.mode));
   const requiredPermissions = plan.semantics.mutationMode === "mutate" ? ["write-source"] : [];
   const missing = requiredPermissions.filter((permission) => !grant.permissions.includes(permission));
-  const scopeSatisfied = entries.every((entry2) => grant.sourceIds.includes(entry2.source.id));
+  const scopeSatisfied = entries.every((entry2) => grant.sourceIds.includes(entry2.source.id) || withinGrantedNamespace(entry2.source.uri, grant));
   const achievableGuarantee = strongestGuarantee([...backends.values()]);
   const writeSet = Object.freeze({
     entries: Object.freeze(entries),
@@ -14375,6 +14802,43 @@ function subjectEditTargetsFromDescriptor(descriptor) {
     })
   ]);
 }
+function namespaceEntryTargetOf(descriptor, target) {
+  const origin = descriptor.origin;
+  if (origin.kind !== "namespace")
+    return void 0;
+  let path;
+  try {
+    const url = new URL(target.ownerSource.uri);
+    path = url.searchParams.get("vfs-path");
+  } catch {
+    return void 0;
+  }
+  if (path === null || path.split("/").some((segment) => segment === "" || segment === "." || segment === "..")) {
+    return void 0;
+  }
+  const bindingIds = Object.keys(target.expectedRevision.bindings);
+  const revision = target.expectedRevision.bindings[target.ownerSource.id];
+  if (bindingIds.length !== 1 || revision === void 0)
+    return void 0;
+  const rebuilt = namespaceEntryEditTarget({
+    root: origin.root,
+    namespaceRevision: origin.revision,
+    entry: { path, size: 0 }
+  });
+  return Object.freeze({
+    ...rebuilt,
+    expectedRevision: Object.freeze({
+      bindings: Object.freeze({ [rebuilt.ownerSource.id]: revision }),
+      namespaceRevision: origin.revision,
+      compositionFingerprint: canonicalJsonStringify({
+        topology: "single",
+        bindingId: rebuilt.ownerSource.id,
+        source: { id: rebuilt.ownerSource.id, uri: rebuilt.ownerSource.uri },
+        revision
+      })
+    })
+  });
+}
 function editPlanFromOperationForDescriptor(descriptor, output) {
   if (output.kind !== "edit-plan") {
     throw new ModkitError({
@@ -14386,6 +14850,11 @@ function editPlanFromOperationForDescriptor(descriptor, output) {
   const plan = output.plan;
   const declaredTargetIds = /* @__PURE__ */ new Set();
   for (const target of plan.targets) {
+    if (!expectedTargets.has(target.targetId)) {
+      const entry2 = namespaceEntryTargetOf(descriptor, target);
+      if (entry2 !== void 0)
+        expectedTargets.set(target.targetId, entry2);
+    }
     const expectedTarget = expectedTargets.get(target.targetId);
     if (expectedTarget === void 0 || declaredTargetIds.has(target.targetId) || canonicalJsonStringify(target) !== canonicalJsonStringify(expectedTarget)) {
       throw new ModkitError({
@@ -14451,13 +14920,15 @@ async function stageOversizedPlan(plan, store, maximum, owned, signal) {
 }
 var defaultDigest = (value) => canonicalJsonStringify(JSON.parse(JSON.stringify(value)));
 function createSubjectEditing(options) {
-  const descriptor = options.opened.descriptor;
+  const descriptor = ("carrier" in options.opened ? options.opened.carrier?.descriptor : void 0) ?? options.opened.descriptor;
   const revision = assetRevisionFromDescriptor(descriptor);
   const targets = subjectEditTargetsFromDescriptor(descriptor);
   const grantSnapshot = createGrantSnapshot({
     snapshotId: options.snapshotId ?? `${options.grant.id}#edit`,
     permissions: options.grant.classes,
-    sourceIds: targets.filter((target) => descriptor.origin.kind !== "bundle" || descriptor.origin.bindings.find((binding) => binding.id === target.targetId)?.ownership === "owned").map((target) => target.ownerSource.id)
+    sourceIds: targets.filter((target) => descriptor.origin.kind !== "bundle" || descriptor.origin.bindings.find((binding) => binding.id === target.targetId)?.ownership === "owned").map((target) => target.ownerSource.id),
+    // A folder subject's files are named per plan, so its root is granted as a namespace.
+    ...descriptor.origin.kind === "namespace" ? { namespaceRoots: [descriptor.origin.root.uri] } : {}
   });
   const issued = /* @__PURE__ */ new Set([grantSnapshot.snapshotId]);
   const payloads = options.payloads ?? NO_STAGED_PAYLOADS;
@@ -14676,12 +15147,16 @@ var NESTED_SUBJECT_UNSUPPORTED = "x3.host/nested-subject-unsupported";
 var NESTED_ENTRY_UNREADABLE = "x3.host/nested-entry-unreadable";
 var CONTAINER_EXTRACT2 = "container.extract";
 var NAMESPACE_ENTRY_SOURCE3 = "common.view/namespace-entry-source";
+var BYTE_RANGE_SOURCE = "common.view/byte-range-source";
 function nestedSubjectServices(services) {
   return {
     inventory: services.inventory,
     target: services.target,
     executionBackends: services.executionBackends,
-    ...services.serviceDefinitions === void 0 ? {} : { serviceDefinitions: services.serviceDefinitions }
+    ...services.serviceDefinitions === void 0 ? {} : { serviceDefinitions: services.serviceDefinitions },
+    ...services.contributionSettings === void 0 ? {} : { contributionSettings: services.contributionSettings },
+    ...services.videoFrames === void 0 ? {} : { videoFrames: services.videoFrames },
+    ...services.credentials === void 0 ? {} : { credentials: services.credentials }
   };
 }
 var NESTED_SUBJECT_REF_UNAVAILABLE = "x3.host/nested-subject-ref-unavailable";
@@ -14700,6 +15175,9 @@ function extractHandlerOf(descriptor) {
   return operation.handlerId;
 }
 async function findEntry(namespace, entryId, pageLimit2, signal) {
+  const looked = await namespace.lookup?.(entryId, signal);
+  if (looked?.id === entryId)
+    return looked;
   let cursor2;
   do {
     throwIfAborted(signal);
@@ -14766,6 +15244,7 @@ async function openNestedSubjectRef(options) {
 async function openNestedSubject(options) {
   throwIfAborted(options.signal);
   const caseSensitivity = options.caseSensitivity;
+  const assetOrigins = options.assetOrigins === void 0 ? void 0 : [...options.assetOrigins];
   const logicalRoots = options.logicalRoots?.map((root) => {
     if (typeof root.rootId !== "string" || root.rootId.length === 0)
       throw new TypeError("nested logical root requires an id");
@@ -14811,6 +15290,12 @@ async function openNestedSubject(options) {
   try {
     const namespace = namespaceLease.value;
     const entry2 = await findEntry(namespace, options.entryId, pageLimit2, options.signal);
+    const containerContext = await namespace.nestedContext?.(options.signal);
+    if (containerContext !== void 0 && BigInt(new TextEncoder().encode(JSON.stringify(containerContext)).byteLength) > options.budget.maxInputBytes)
+      throw new ModkitError({
+        code: "x3.host/resource-budget-exceeded",
+        message: "the container context exceeds the nested input budget"
+      });
     const primaryLogicalId = logicalRoots === void 0 ? entry2.path : logicalEntryPath(entry2.path, logicalRoots, caseSensitivity);
     const extract = async (entryId, signal) => {
       throwIfAborted(signal ?? options.signal);
@@ -14830,18 +15315,30 @@ async function openNestedSubject(options) {
       return invoked.output.value;
     };
     const refLease = await namespace.openEntry(entry2.id, options.signal);
+    const entrySourceLease = entry2.rangeAccess === true && namespace.openEntrySource !== void 0 ? await namespace.openEntrySource(entry2.id, options.signal) : void 0;
+    const rangeLease = entrySourceLease === void 0 && entry2.storedRange !== void 0 && descriptor.dataSources.some((item) => item.contract === BYTE_RANGE_SOURCE && item.major === 1) ? await options.parent.dataSource(BYTE_RANGE_SOURCE, 1) : void 0;
     const previousRelease = release;
     let refReleased = false;
     const releaseAll = async () => {
       if (!refReleased) {
         refReleased = true;
         await refLease.release();
+        await rangeLease?.release();
+        await entrySourceLease?.release();
       }
       await previousRelease();
     };
     try {
-      const bytes = await extract(entry2.id, options.signal);
-      const source = containerEntrySource(refLease.value, containerEntryRevision(descriptor.revision, entry2.id, bytes.byteLength), bytes);
+      let source;
+      if (entrySourceLease !== void 0) {
+        const size = await entrySourceLease.value.size();
+        source = containerEntryRangeSource(refLease.value, containerEntryRevision(descriptor.revision, entry2.id, size), entrySourceLease.value, { offset: 0n, length: size });
+      } else if (rangeLease !== void 0 && entry2.storedRange !== void 0) {
+        source = containerEntryRangeSource(refLease.value, containerEntryRevision(descriptor.revision, entry2.id, entry2.storedRange.length), rangeLease.value, entry2.storedRange);
+      } else {
+        const bytes = await extract(entry2.id, options.signal);
+        source = containerEntrySource(refLease.value, containerEntryRevision(descriptor.revision, entry2.id, bytes.byteLength), bytes);
+      }
       const originOptions = {
         namespace,
         primaryLogicalId,
@@ -14850,10 +15347,11 @@ async function openNestedSubject(options) {
         ...caseSensitivity === void 0 ? {} : { caseSensitivity },
         pageLimit: pageLimit2
       };
-      const origin = logicalRoots === void 0 ? createNamespaceCompanionOrigin(originOptions) : createWorkspaceNamespaceCompanionOrigin({
+      const containerOrigin = logicalRoots === void 0 ? createNamespaceCompanionOrigin(originOptions) : createWorkspaceNamespaceCompanionOrigin({
         ...originOptions,
         logicalRoots
       });
+      const origin = assetOrigins === void 0 || assetOrigins.length === 0 ? containerOrigin : createLayeredCompanionOrigin([containerOrigin, ...assetOrigins]);
       const logicalResourceDiscovery = resourceDiscovery?.map((policy) => Object.freeze({
         role: policy.role,
         extension: policy.extension,
@@ -14897,6 +15395,8 @@ async function openNestedSubject(options) {
         inventory: options.inventory,
         source,
         path: entry2.path,
+        // An entry with no extension or signature (Emperor BAG sounds) says what it holds.
+        ...entry2.mediaType === void 0 ? {} : { mediaType: entry2.mediaType },
         intent: options.intent ?? "full",
         target: options.target,
         grant: options.grant,
@@ -14911,6 +15411,10 @@ async function openNestedSubject(options) {
         ...options.executionBackends === void 0 ? {} : { executionBackends: options.executionBackends },
         ...options.policy === void 0 ? {} : { policy: options.policy },
         ...options.serviceDefinitions === void 0 ? {} : { serviceDefinitions: options.serviceDefinitions },
+        ...options.contributionSettings === void 0 ? {} : { contributionSettings: options.contributionSettings },
+        ...options.videoFrames === void 0 ? {} : { videoFrames: options.videoFrames },
+        ...options.credentials === void 0 ? {} : { credentials: options.credentials },
+        ...containerContext === void 0 ? {} : { containerContext },
         ...options.minimumConfidence === void 0 ? {} : { minimumConfidence: options.minimumConfidence },
         ...options.maxCandidates === void 0 ? {} : { maxCandidates: options.maxCandidates },
         ...options.signal === void 0 ? {} : { signal: options.signal }
@@ -15153,7 +15657,13 @@ function createModContextDataWorkspaceInputs(context, options) {
     if (sourceIds.has(layer.sourceId))
       return [];
     sourceIds.add(layer.sourceId);
-    return [Object.freeze({ sourceId: layer.sourceId, kind: "mod-context", location: layer.sourcePath })];
+    return [
+      Object.freeze({
+        sourceId: layer.sourceId,
+        kind: "mod-context",
+        location: layer.sourcePath
+      })
+    ];
   }));
   const workspace = Object.freeze({
     schemaVersion: 1,
@@ -15246,8 +15756,34 @@ function createModContextDataWorkspaceInputs(context, options) {
       return Object.freeze({ value: source, release: async () => void 0 });
     }
   });
+  const listFiles = async (rootId, prefix, maximum, signal) => {
+    const item = layers.find((candidate) => candidate.layer.id === rootId);
+    if (item === void 0)
+      throw new RangeError(`ModContext has no layer ${rootId}`);
+    const wanted = prefix === "" ? "" : normalizeCompanionLogicalId(prefix);
+    const paths = [];
+    let cursor2;
+    do {
+      signal?.throwIfAborted();
+      const page = await context.files(item.readLayerId, {
+        limit: PAGE_SIZE,
+        prefix: [item.readPrefix, wanted].filter(Boolean).join("/"),
+        ...cursor2 === void 0 ? {} : { cursor: cursor2 }
+      });
+      for (const native of page.items) {
+        const path = normalizeCompanionLogicalId(native);
+        const relative = item.readPrefix === "" ? path : path.slice(item.readPrefix.length + 1);
+        if (paths.length === maximum)
+          return { paths, complete: false };
+        paths.push(relative);
+      }
+      cursor2 = page.nextCursor;
+    } while (cursor2 !== void 0);
+    return { paths, complete: true };
+  };
   return Object.freeze({
     workspace,
+    listFiles,
     resources: createResourceSession({
       origin,
       revision: revisionId(`provider-token:${encodeURIComponent(context.contextId)}`),
@@ -17331,16 +17867,58 @@ function registerStandardModelEncodingDefinitions(definitions) {
   ]);
 }
 
+// packages/host/dist/compression-definitions.js
+var STANDARD_COMPRESSION_OWNER = "modkit/compression";
+var OODLE_DECODER = "common.compression/oodle-decoder";
+var OODLE_DECODER_CONTRACT_DEFINITION = Object.freeze({
+  schemaVersion: 1,
+  kind: "service",
+  contract: OODLE_DECODER,
+  major: 1,
+  offerFacet: Object.freeze({ presence: "forbidden" }),
+  requestFacet: Object.freeze({ presence: "forbidden" }),
+  matching: Object.freeze({ profile: FACETLESS_SERVICE_MATCHER_PROFILE, major: 1 }),
+  conformanceProfile: "common.compression/oodle-decoder-v1",
+  surface: Object.freeze({
+    fields: Object.freeze(["contract"]),
+    methods: Object.freeze({
+      decompressBlocks: Object.freeze({
+        kind: "value",
+        signal: Object.freeze({ arg: 0, key: "signal" })
+      })
+    })
+  })
+});
+function registerStandardCompressionDefinitions(definitions) {
+  const definition = OODLE_DECODER_CONTRACT_DEFINITION;
+  return definitions.replaceOwnerInventory(STANDARD_COMPRESSION_OWNER, [
+    {
+      definition,
+      provenance: {
+        ownerExtensionId: STANDARD_COMPRESSION_OWNER,
+        extensionVersion: "1.0.0",
+        inventoryRecordId: `host:${definition.contract}@${definition.major}`,
+        manifestDigest: `host:${definition.contract}@${definition.major}`,
+        artifactDigest: "host:standard-compression-definitions",
+        artifactRoot: "host:",
+        manifestPath: "host:standard-compression-definitions"
+      }
+    }
+  ]);
+}
+
 // packages/host/dist/games/index.js
 var STANDARD_GAMES_OWNER = "modkit/games";
-var OFFER_KEYS6 = /* @__PURE__ */ new Set(["gameIds"]);
+var OFFER_KEYS6 = /* @__PURE__ */ new Set(["gameIds", "markers", "searchFolders"]);
+var FOLDER_NAME = /^[^\\/:*?"<>|\u0000-\u001f]{1,255}$/u;
 var REQUEST_KEYS5 = /* @__PURE__ */ new Set(["gameId"]);
 var ORIGINS = /* @__PURE__ */ new Set([
   "configured-path",
   "default-directory",
   "registry",
   "steam",
-  "epic"
+  "epic",
+  "search-folder"
 ]);
 function recordOf8(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value) ? value : void 0;
@@ -17360,12 +17938,62 @@ function originList(value) {
   const origins = value.flatMap((item) => typeof item === "string" && ORIGINS.has(item) ? [item] : []);
   return origins.length === value.length && new Set(origins).size === origins.length ? origins : void 0;
 }
+function nameList(value) {
+  const names = stringList5(value);
+  return names?.every((name) => FOLDER_NAME.test(name) && name !== "." && name !== "..") ? names : void 0;
+}
 function parseOffer7(value) {
   const record3 = recordOf8(value);
   if (record3 === void 0 || Object.keys(record3).some((key3) => !OFFER_KEYS6.has(key3)))
     return void 0;
   const gameIds = stringList5(record3["gameIds"]);
-  return gameIds === void 0 ? void 0 : { gameIds };
+  if (gameIds === void 0)
+    return void 0;
+  const markers = [];
+  if (record3["markers"] !== void 0) {
+    if (!Array.isArray(record3["markers"]))
+      return void 0;
+    for (const item of record3["markers"]) {
+      const marker = recordOf8(item);
+      const files = nameList(marker?.["files"]);
+      if (marker === void 0 || Object.keys(marker).some((key3) => key3 !== "gameId" && key3 !== "files") || typeof marker["gameId"] !== "string" || !gameIds.includes(marker["gameId"]) || files === void 0)
+        return void 0;
+      markers.push({ gameId: marker["gameId"], files });
+    }
+  }
+  const searchFolders = record3["searchFolders"] === void 0 ? void 0 : nameList(record3["searchFolders"]);
+  if (record3["searchFolders"] !== void 0 && searchFolders === void 0)
+    return void 0;
+  return {
+    gameIds,
+    ...markers.length === 0 ? {} : { markers },
+    ...searchFolders === void 0 ? {} : { searchFolders }
+  };
+}
+function gameInstallationSearchOf(inventory) {
+  const markers = [];
+  const searchFolders = /* @__PURE__ */ new Map();
+  for (const extension of inventory.extensions) {
+    for (const contribution of extension.contributions) {
+      const manifest = contribution.manifest;
+      if (!contribution.activationEligible || manifest?.contract.id !== SERVICE_PROVIDER_CONTRIBUTION_CONTRACT || manifest.contract.major !== 1)
+        continue;
+      const spec = manifest.spec;
+      for (const offer of spec.provides) {
+        if (offer.contract !== GAME_INSTALLATION_DISCOVERY_CONTRACT || offer.major !== 1)
+          continue;
+        const facet = parseOffer7(offer.facet);
+        markers.push(...facet?.markers ?? []);
+        for (const folder of facet?.searchFolders ?? [])
+          if (!searchFolders.has(folder.toLowerCase()))
+            searchFolders.set(folder.toLowerCase(), folder);
+      }
+    }
+  }
+  return Object.freeze({
+    markers: Object.freeze(markers),
+    searchFolders: Object.freeze([...searchFolders.values()])
+  });
 }
 function parseRequest7(value) {
   const record3 = recordOf8(value);
@@ -17514,6 +18142,7 @@ async function resolveGameInstallationDiscovery(request) {
     definitions,
     grant: request.grant,
     budgets: request.budgets,
+    ...request.services.installationProbes === void 0 ? {} : { installationProbes: request.services.installationProbes },
     ...request.signal === void 0 ? {} : { signal: request.signal }
   });
   try {
@@ -17561,6 +18190,7 @@ async function discoverGameInstallations(request) {
     const result = await resolution.discovery.discover({
       gameId: request.gameId,
       ...request.configuredPaths === void 0 ? {} : { configuredPaths: request.configuredPaths },
+      ...request.searchPaths === void 0 || request.searchPaths.length === 0 ? {} : { searchPaths: request.searchPaths },
       maxCandidates: request.maxCandidates,
       ...request.signal === void 0 ? {} : { signal: request.signal }
     });
@@ -17607,7 +18237,8 @@ function validGameLaunchPlan(value, request) {
   const resource = recordOf8(record3?.["resource"]);
   const argumentsValue = record3?.["arguments"];
   const argumentIndex = record3?.["resourceArgumentIndex"];
-  return record3 !== void 0 && record3["schemaVersion"] === 1 && nonEmptyString5(record3["planId"]) && record3["gameId"] === request.gameId && record3["installationRoot"] === request.installation.normalizedPath && resource?.["kind"] === request.resource.kind && resource["path"] === request.resource.path.trim() && validRelativeProcessPath(record3["executableRelativePath"], false) && validRelativeProcessPath(record3["workingDirectoryRelativePath"], true) && Array.isArray(argumentsValue) && argumentsValue.length > 0 && argumentsValue.length <= 64 && argumentsValue.every((argument) => typeof argument === "string" && argument.length <= 32767 && !argument.includes("\0")) && Number.isSafeInteger(argumentIndex) && argumentIndex >= 0 && argumentIndex < argumentsValue.length && argumentsValue[argumentIndex] === resource["path"] && record3["mode"] === "detached" && record3["stdio"] === "ignore" && validProcessNames(record3["runningProcessNames"]) && validLogLocation(record3["logs"]);
+  return record3 !== void 0 && record3["schemaVersion"] === 1 && nonEmptyString5(record3["planId"]) && record3["gameId"] === request.gameId && record3["installationRoot"] === request.installation.normalizedPath && resource?.["kind"] === request.resource.kind && resource["path"] === request.resource.path.trim() && validRelativeProcessPath(record3["executableRelativePath"], false) && validRelativeProcessPath(record3["workingDirectoryRelativePath"], true) && Array.isArray(argumentsValue) && argumentsValue.length <= 64 && argumentsValue.every((argument) => typeof argument === "string" && argument.length <= 32767 && !argument.includes("\0")) && // either the exact resource path at its index, or no resource on the command line at all
+  (argumentIndex === null ? !argumentsValue.includes(resource["path"]) : Number.isSafeInteger(argumentIndex) && argumentIndex >= 0 && argumentIndex < argumentsValue.length && argumentsValue[argumentIndex] === resource["path"]) && record3["mode"] === "detached" && record3["stdio"] === "ignore" && validProcessNames(record3["runningProcessNames"]) && validLogLocation(record3["logs"]);
 }
 function validProcessNames(value) {
   return value === void 0 || Array.isArray(value) && value.length <= 8 && value.every((name) => nonEmptyString5(name) && name.length <= 260 && !/[\\/:\0*?]/u.test(name));
@@ -17778,12 +18409,19 @@ function treeFacts(value) {
 }
 var LoadedModResourceSessions = class _LoadedModResourceSessions {
   sources;
+  options;
   mods = /* @__PURE__ */ new Map();
   /** Loads in flight: concurrent callers for the same target share one `openModContext`. */
   pending = /* @__PURE__ */ new Map();
   disposed = false;
-  constructor(sources) {
+  constructor(sources, options = {}) {
     this.sources = sources;
+    this.options = options;
+  }
+  /** The request fields every open carries: the locales chosen now, when the host has any. */
+  localeFields() {
+    const locales = this.options.locales?.();
+    return locales === void 0 || locales.length === 0 ? {} : { locales: [...locales] };
   }
   list() {
     return [...this.mods.values()].map((mod) => ({ id: mod.id, label: mod.label, contextId: mod.context.contextId }));
@@ -17795,7 +18433,7 @@ var LoadedModResourceSessions = class _LoadedModResourceSessions {
     if (open === void 0)
       return false;
     return this.once(`load|${JSON.stringify([target, baseMods ?? []])}`, async () => {
-      const context = await open({ schemaVersion: 1, target, ...baseMods ? { baseMods } : {} });
+      const context = await open({ schemaVersion: 1, target, ...baseMods ? { baseMods } : {}, ...this.localeFields() });
       let changed = false;
       for (const layer of context.layers.slice(0, -1)) {
         if (layer.kind !== "package")
@@ -17804,7 +18442,7 @@ var LoadedModResourceSessions = class _LoadedModResourceSessions {
         if (this.mods.has(id))
           continue;
         const dependencyTarget = layer.sourceId === "host" ? layer.sourcePath : { sourceId: layer.sourceId, path: layer.sourcePath };
-        changed = await this.once(`dependency|${id}`, async () => this.register(await open({ schemaVersion: 1, target: dependencyTarget }), dependencyTarget, void 0, false)) || changed;
+        changed = await this.once(`dependency|${id}`, async () => this.register(await open({ schemaVersion: 1, target: dependencyTarget, ...this.localeFields() }), dependencyTarget, void 0, false)) || changed;
       }
       return await this.register(context, target, baseMods, true) || changed;
     });
@@ -17848,7 +18486,7 @@ var LoadedModResourceSessions = class _LoadedModResourceSessions {
   /** Reopen all loaded contexts after their shared content source invalidated a package. */
   async reloadAll() {
     const opened = [...this.mods.values()];
-    const replacement = new _LoadedModResourceSessions(this.sources);
+    const replacement = new _LoadedModResourceSessions(this.sources, this.options);
     try {
       for (const mod of opened) {
         if (mod.opened)
@@ -18107,6 +18745,114 @@ async function resolveModWorkspaceComposition(request) {
   }
 }
 
+// packages/host/dist/maps/single-file-namespace.js
+var NAMESPACE = "common.view/namespace-entry-source";
+var BYTE_RANGE = "common.view/byte-range-source";
+var EXTRACT_HANDLER = "x3.host/single-file-extract";
+var ENTRY_ID = "subject";
+function fileNameOf(subjectUri) {
+  const path = subjectUri.replace(/[?#].*$/u, "");
+  const last = path.slice(path.lastIndexOf("/") + 1);
+  try {
+    return decodeURIComponent(last) || "subject";
+  } catch {
+    return last || "subject";
+  }
+}
+async function singleFileAsContainer(session, maxBytes) {
+  const descriptor = await session.descriptor();
+  const has = (contract) => descriptor.dataSources.some((item) => item.contract === contract && item.major === 1);
+  if (descriptor.interpretation === "none" || has(NAMESPACE) || !has(BYTE_RANGE))
+    return session;
+  const name = fileNameOf(descriptor.subjectUri);
+  const entry2 = Object.freeze({
+    id: ENTRY_ID,
+    path: name,
+    name,
+    kind: "file",
+    revision: descriptor.revision
+  });
+  const namespace = Object.freeze({
+    async list(prefix) {
+      const items = name.toLowerCase().startsWith(prefix.toLowerCase()) ? [entry2] : [];
+      return Object.freeze({ items: Object.freeze(items) });
+    },
+    async lookup(path) {
+      return path.toLowerCase() === name.toLowerCase() ? entry2 : void 0;
+    },
+    // the preview reads the file through container.extract; nothing opens it as a nested subject
+    async openEntry() {
+      throw new TypeError("a single-file map is read through container.extract");
+    }
+  });
+  const extract = async (signal) => {
+    const lease2 = await session.dataSource(BYTE_RANGE, 1);
+    try {
+      const source = lease2.value;
+      const size = await source.size();
+      if (size > maxBytes || size > BigInt(Number.MAX_SAFE_INTEGER)) {
+        throw new ModkitError({
+          code: "x3.host/map-preview-subject-too-large",
+          message: `the map file (${size} bytes) exceeds the preview input budget`,
+          context: { size: String(size), maxBytes: String(maxBytes) }
+        });
+      }
+      return await source.read(0n, Number(size), signal);
+    } finally {
+      await lease2.release();
+    }
+  };
+  const extended = Object.freeze({
+    ...descriptor,
+    dataSources: Object.freeze([
+      ...descriptor.dataSources,
+      Object.freeze({ contract: NAMESPACE, major: 1 })
+    ]),
+    operations: Object.freeze([
+      ...descriptor.operations,
+      Object.freeze({
+        id: "container.extract",
+        handlerId: EXTRACT_HANDLER,
+        mutatesSource: false,
+        state: "available"
+      })
+    ])
+  });
+  const operations = () => {
+    const inner = session.operations();
+    return Object.freeze({
+      async invoke(handlerId, input, options) {
+        if (handlerId !== EXTRACT_HANDLER)
+          return inner.invoke(handlerId, input, options);
+        const entryId = input?.entryId;
+        if (entryId !== ENTRY_ID)
+          throw new RangeError(`the map file has no entry ${String(entryId)}`);
+        return {
+          state: "ok",
+          output: { kind: "bytes", value: await extract(options?.signal) },
+          diagnostics: []
+        };
+      },
+      dispose: () => inner.dispose()
+    });
+  };
+  return Object.freeze({
+    get revision() {
+      return session.revision;
+    },
+    state: () => session.state(),
+    descriptor: async () => extended,
+    async dataSource(contract, major) {
+      if (contract === NAMESPACE && major === 1)
+        return { value: namespace, release: async () => void 0 };
+      return session.dataSource(contract, major);
+    },
+    operations,
+    events: (signal) => session.events(signal),
+    dispose: () => session.dispose()
+  });
+}
+
 // packages/host/dist/maps/world-source.js
 function positiveLimit(value, maximum) {
   if (!Number.isSafeInteger(value) || value <= 0 || value > maximum) {
@@ -18311,6 +19057,45 @@ function canonicalObjectRotation(rotation, nativeUnit) {
   const y = Math.sin(half);
   const w = Math.cos(half);
   return Object.freeze([0, y === 0 ? 0 : y, 0, w === 0 ? 0 : w]);
+}
+async function readAllPages(read, pageLimit2, cap) {
+  const items = [];
+  let cursor2;
+  do {
+    const page = await read({
+      limit: Math.min(pageLimit2, cap - items.length),
+      ...cursor2 === void 0 ? {} : { cursor: cursor2 }
+    });
+    items.push(...page.items);
+    cursor2 = page.nextCursor;
+  } while (cursor2 !== void 0 && items.length < cap);
+  return { items, complete: cursor2 === void 0 };
+}
+var MODEL_FACET_ITEM_CAP = 65536;
+function primitiveByteLength(primitive) {
+  let total = 0;
+  const visit2 = (value, depth) => {
+    if (ArrayBuffer.isView(value))
+      total += value.byteLength;
+    else if (depth < 3 && typeof value === "object" && value !== null)
+      for (const child of Object.values(value))
+        visit2(child, depth + 1);
+  };
+  visit2(primitive, 0);
+  return total;
+}
+function consistentNodes(nodes, meshIds) {
+  const present = new Set(nodes.map((node) => node.id));
+  let pruned = false;
+  const out = nodes.map((node) => {
+    const childIds = node.childIds.filter((id) => present.has(id));
+    const meshes = node.meshIds?.filter((id) => meshIds.has(id));
+    if (childIds.length === node.childIds.length && meshes?.length === node.meshIds?.length)
+      return node;
+    pruned = true;
+    return Object.freeze({ ...node, childIds, ...meshes === void 0 ? {} : { meshIds: meshes } });
+  });
+  return { nodes: out, pruned };
 }
 function yawRootNodes(nodes, yaw) {
   if (yaw === 0)
@@ -18720,7 +19505,8 @@ function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize, mode
       ambientIntensity: snapshot2.lighting.ambientIntensity,
       directional: snapshot2.lighting.directional,
       ...snapshot2.lighting.terrain === void 0 ? {} : { terrain: snapshot2.lighting.terrain },
-      ...snapshot2.lighting.toneMapping === void 0 ? {} : { toneMapping: snapshot2.lighting.toneMapping }
+      ...snapshot2.lighting.toneMapping === void 0 ? {} : { toneMapping: snapshot2.lighting.toneMapping },
+      ...snapshot2.lighting.shadowRange === void 0 ? {} : { shadowRange: snapshot2.lighting.shadowRange }
     })
   ]);
   const contentRevisions = Object.freeze({
@@ -19202,14 +19988,15 @@ function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize, mode
               complete: false
             });
           }
-          const meshPage = await lease2.value.meshes({ limit: request.maxMeshes }, signal);
-          const nodePage = lease2.value.nodes === void 0 ? void 0 : await lease2.value.nodes({ limit: maxNodes }, signal);
-          const [skeletonPage, animationPage, materialPage, resourcePage, socketPage] = await Promise.all([
-            lease2.value.skeletonBindings?.({ limit: maxNodes }, signal),
-            lease2.value.animationClips?.({ limit: maxNodes }, signal),
-            lease2.value.materials?.({ limit: maxNodes }, signal),
-            lease2.value.resourceReferences?.({ limit: maxResources }, signal),
-            lease2.value.sockets?.({ limit: maxNodes }, signal)
+          const facet = (read, pageLimit2) => read === void 0 ? void 0 : readAllPages((page) => read(page, signal), pageLimit2, MODEL_FACET_ITEM_CAP);
+          const meshPage = await facet(lease2.value.meshes.bind(lease2.value), request.maxMeshes);
+          const [nodePage, skeletonPage, animationPage, materialPage, resourcePage, socketPage] = await Promise.all([
+            facet(lease2.value.nodes?.bind(lease2.value), maxNodes),
+            facet(lease2.value.skeletonBindings?.bind(lease2.value), maxNodes),
+            facet(lease2.value.animationClips?.bind(lease2.value), maxNodes),
+            facet(lease2.value.materials?.bind(lease2.value), maxNodes),
+            facet(lease2.value.resourceReferences?.bind(lease2.value), maxResources),
+            facet(lease2.value.sockets?.bind(lease2.value), maxNodes)
           ]);
           let materials = materialPage?.items;
           let resourceItems = resourcePage?.items ?? [];
@@ -19227,7 +20014,8 @@ function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize, mode
                 try {
                   if (skin.value.result.state === "unresolved")
                     return void 0;
-                  return (await skin.value.materials?.({ limit: maxNodes }, signal))?.items;
+                  const read = skin.value.materials;
+                  return read === void 0 ? void 0 : (await readAllPages((page) => read.call(skin.value, page, signal), maxNodes, MODEL_FACET_ITEM_CAP)).items;
                 } finally {
                   await skin.release();
                 }
@@ -19246,10 +20034,25 @@ function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize, mode
             }
           }
           const allPrimitiveIds = meshPage.items.flatMap((mesh) => mesh.primitiveIds);
-          const primitiveIds = allPrimitiveIds.slice(0, request.maxPrimitives);
-          if (primitiveIds.length > 0 && lease2.value.primitive === void 0)
+          if (allPrimitiveIds.length > 0 && lease2.value.primitive === void 0)
             throw new TypeError("model publishes primitive ids without a primitive reader");
-          const primitives = await Promise.all(primitiveIds.map((primitiveId) => lease2.value.primitive(primitiveId, { maxBytes: request.maxPrimitiveBytes }, signal)));
+          const primitives = [];
+          let primitiveBytes = 0;
+          for (let start = 0; start < allPrimitiveIds.length && primitiveBytes < request.maxBytes; start += request.maxPrimitives) {
+            const batch = await Promise.all(allPrimitiveIds.slice(start, start + request.maxPrimitives).map((primitiveId) => lease2.value.primitive(primitiveId, { maxBytes: request.maxPrimitiveBytes }, signal)));
+            for (const primitive of batch) {
+              const bytes = primitiveByteLength(primitive);
+              if (primitiveBytes + bytes > request.maxBytes)
+                break;
+              primitiveBytes += bytes;
+              primitives.push(primitive);
+            }
+            if (primitives.length < Math.min(start + request.maxPrimitives, allPrimitiveIds.length))
+              break;
+          }
+          const loadedPrimitives = new Set(primitives.map((primitive) => primitive.id));
+          const meshes = meshPage.items.filter((mesh) => mesh.primitiveIds.every((id) => loadedPrimitives.has(id)));
+          const graph = nodePage === void 0 ? void 0 : consistentNodes(nodePage.items, new Set(meshes.map((mesh) => mesh.id)));
           const textureDiagnostics = [];
           const textures = [];
           const publishedResources = [...resourceItems];
@@ -19330,21 +20133,24 @@ function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize, mode
             state: "converted",
             sourceKey: result.sourceKey,
             uvmBytes: result.bytes.slice(),
-            ...nodePage === void 0 ? {} : { nodes: Object.freeze(yawRootNodes(nodePage.items, chosen.yaw)) },
+            ...graph === void 0 ? {} : { nodes: Object.freeze(yawRootNodes(graph.nodes, chosen.yaw)) },
             ...skeletonPage === void 0 ? {} : { skeleton: Object.freeze([...skeletonPage.items]) },
             ...animationPage === void 0 ? {} : { animations: Object.freeze([...animationPage.items]) },
             ...materials === void 0 ? {} : { materials: Object.freeze([...materials]) },
             ...publishedResources.length === 0 ? {} : { resources: Object.freeze(publishedResources) },
             ...socketPage === void 0 ? {} : { sockets: Object.freeze([...socketPage.items]) },
             ...publishedResources.length === 0 ? {} : { textures: Object.freeze(textures) },
-            meshes: Object.freeze([...meshPage.items]),
+            meshes: Object.freeze(meshes),
             primitives: Object.freeze(primitives),
             diagnostics: Object.freeze([
               ...result.diagnostics,
               ...skinDiagnostics,
-              ...textureDiagnostics
+              ...textureDiagnostics,
+              ...graph?.pruned === true ? [
+                diagnostic("warning", "x3.host/world-model-graph-truncated", `model ${modelRequirement.logicalId} was cut (${MODEL_FACET_ITEM_CAP} items per facet, ${request.maxBytes} primitive bytes); nodes and meshes left out are dropped from their parents`)
+              ] : []
             ]),
-            complete: meshPage.nextCursor === void 0 && nodePage?.nextCursor === void 0 && skeletonPage?.nextCursor === void 0 && animationPage?.nextCursor === void 0 && materialPage?.nextCursor === void 0 && resourcePage?.nextCursor === void 0 && socketPage?.nextCursor === void 0 && textureReferences.length === textures.length && allPrimitiveIds.length <= request.maxPrimitives
+            complete: meshPage.complete && nodePage?.complete !== false && skeletonPage?.complete !== false && animationPage?.complete !== false && materialPage?.complete !== false && resourcePage?.complete !== false && socketPage?.complete !== false && textureReferences.length === textures.length && primitives.length === allPrimitiveIds.length
           });
         } finally {
           await lease2.release();
@@ -19388,7 +20194,12 @@ function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize, mode
           ...commonWaterMaterials.flatMap((candidate) => [
             ...candidate.baseColorResourceId === requestedResourceId && candidate.baseColorResource !== void 0 ? [candidate.baseColorResource] : [],
             ...candidate.secondaryColorResourceId === requestedResourceId && candidate.secondaryColorResource !== void 0 ? [candidate.secondaryColorResource] : [],
-            ...candidate.causticsResourceId === requestedResourceId && candidate.causticsResource !== void 0 ? [candidate.causticsResource] : []
+            ...candidate.causticsResourceId === requestedResourceId && candidate.causticsResource !== void 0 ? [candidate.causticsResource] : [],
+            ...candidate.normalResourceId === requestedResourceId && candidate.normalResource !== void 0 ? [candidate.normalResource] : [],
+            ...(candidate.causticsFrameResourceIds ?? []).flatMap((resourceId2, index) => {
+              const frame = candidate.causticsFrameResources?.[index];
+              return resourceId2 === requestedResourceId && frame !== void 0 ? [frame] : [];
+            })
           ])
         ][0];
         if (requirement === void 0) {
@@ -19937,16 +20748,25 @@ async function readResourceBytes(resources, requirement, maxDocumentBytes, remai
     }
     const chunks = [];
     let byteLength = 0;
-    for await (const chunk of source.stream(void 0, signal)) {
-      byteLength += chunk.byteLength;
-      if (byteLength > maxDocumentBytes || byteLength > remainingTotalBytes) {
-        return {
-          state: "unresolved",
-          diagnostic: diagnostic("warning", byteLength > remainingTotalBytes ? "x3.host/resolved-map-total-budget-exceeded" : "x3.host/resolved-map-document-budget-exceeded", byteLength > remainingTotalBytes ? `${requirement.path} exceeds remaining maxTotalBytes ${remainingTotalBytes}` : `${requirement.path} exceeds maxDocumentBytes ${maxDocumentBytes}`),
-          consumedBytes: byteLength
-        };
+    try {
+      for await (const chunk of source.stream(void 0, signal)) {
+        byteLength += chunk.byteLength;
+        if (byteLength > maxDocumentBytes || byteLength > remainingTotalBytes) {
+          return {
+            state: "unresolved",
+            diagnostic: diagnostic("warning", byteLength > remainingTotalBytes ? "x3.host/resolved-map-total-budget-exceeded" : "x3.host/resolved-map-document-budget-exceeded", byteLength > remainingTotalBytes ? `${requirement.path} exceeds remaining maxTotalBytes ${remainingTotalBytes}` : `${requirement.path} exceeds maxDocumentBytes ${maxDocumentBytes}`),
+            consumedBytes: byteLength
+          };
+        }
+        chunks.push(chunk);
       }
-      chunks.push(chunk);
+    } catch (error3) {
+      signal?.throwIfAborted();
+      return {
+        state: "unresolved",
+        diagnostic: diagnostic("warning", "x3.host/resolved-map-document-read-failed", `${requirement.path}: ${error3 instanceof Error ? error3.message : String(error3)}`),
+        consumedBytes: byteLength
+      };
     }
     const bytes = new Uint8Array(byteLength);
     let offset = 0;
@@ -20054,6 +20874,7 @@ async function analyzeResolvedMapWorkspace(request) {
       mapId: plan.mapId,
       documents,
       ...catalog === void 0 ? {} : { catalog },
+      ...request.subjectOperationIds === void 0 ? {} : { subjectOperationIds: request.subjectOperationIds },
       maxDocuments: limits.maxRequirements,
       maxDocumentBytes: limits.maxDocumentBytes,
       maxTotalBytes: limits.maxTotalBytes,
@@ -20913,6 +21734,10 @@ async function coordinateMapPreviewAssetSession(request) {
   const maxRoots = positiveCoordinatorLimit(request.maxRoots, "maxRoots");
   const maxDepth = positiveCoordinatorLimit(request.maxDepth, "maxDepth");
   request.signal?.throwIfAborted();
+  request = {
+    ...request,
+    original: await singleFileAsContainer(request.original, request.budgets.maxInputBytes)
+  };
   const descriptor = await request.original.descriptor();
   let subject;
   try {
@@ -21062,12 +21887,18 @@ async function coordinateMapPreviewAssetSession(request) {
   ]);
   const workspaceRootIds = new Set(workspace.loadOrder.map((root) => root.rootId));
   if (plannedRootIds.size !== workspaceRootIds.size || [...plannedRootIds].some((rootId) => !workspaceRootIds.has(rootId))) {
+    const unreached = [...plannedRootIds].filter((rootId) => !workspaceRootIds.has(rootId));
+    const unplanned = [...workspaceRootIds].filter((rootId) => !plannedRootIds.has(rootId));
+    const named = (rootIds) => rootIds.map((rootId) => {
+      const root = prepared.plan.workspace.roots.find((item) => item.rootId === rootId);
+      return root === void 0 ? rootId : `${rootId} (${root.sourcePath})`;
+    });
     return {
       state: "unresolved",
       diagnostics: Object.freeze([
         ...preparationFindings,
         ...workspaceDiagnostics(workspace),
-        diagnostic("error", "x3.host/map-preview-resource-root-mismatch", "the resource plan must map every resolved workspace root exactly once")
+        diagnostic("error", "x3.host/map-preview-resource-root-mismatch", `the resource plan must map every resolved workspace root exactly once${unreached.length === 0 ? "" : `; not reached from the map: ${named(unreached).join(", ")}`}${unplanned.length === 0 ? "" : `; without resources: ${named(unplanned).join(", ")}`}`, void 0, { unreached, unplanned })
       ])
     };
   }
@@ -21123,11 +21954,17 @@ async function coordinateMapPreviewAssetSession(request) {
   const releasePreparedResources = releaseOnce(resourceResolution.release);
   let resources;
   try {
+    const dependencies = request.contentSources === void 0 ? void 0 : await resolveContentAssetOrigins({
+      contentSources: request.contentSources,
+      subjects: [{ descriptor }],
+      ...request.signal === void 0 ? {} : { signal: request.signal }
+    });
+    const origin = dependencies === void 0 || dependencies.origins.length === 0 ? resourceResolution.origin : createLayeredCompanionOrigin([resourceResolution.origin, ...dependencies.origins]);
     resources = createResourceSession({
-      origin: resourceResolution.origin,
+      origin,
       revision: resourceResolution.revision
     });
-    const inputResolver = createCompanionInputResolver(resourceResolution.origin);
+    const inputResolver = createCompanionInputResolver(origin);
     const catalogEntities = request.catalog === void 0 ? resourceResolution.catalogEntities : void 0;
     const enrichment = catalogEntities === void 0 ? await enrichMapPreviewCatalog(request, workspace, resources) : Object.freeze({ diagnostics: Object.freeze([]) });
     const opened = await openMapPreviewAssetSession({
@@ -21138,6 +21975,7 @@ async function coordinateMapPreviewAssetSession(request) {
       resources,
       inputResolver,
       subjectUri: descriptor.subjectUri,
+      subjectOperationIds: Object.freeze(descriptor.operations.map((operation) => operation.id)),
       ...request.onModelResourceProfile === void 0 ? {} : { onModelResourceProfile: request.onModelResourceProfile },
       ...enrichment.catalog === void 0 ? {} : { catalog: enrichment.catalog },
       ...catalogEntities === void 0 ? {} : { catalogEntities },
@@ -21232,7 +22070,9 @@ function createSubjectServices(options) {
     ...options.minimumConfidence === void 0 ? {} : { minimumConfidence: options.minimumConfidence },
     ...options.maxCandidates === void 0 ? {} : { maxCandidates: options.maxCandidates },
     ...options.contributionSettings === void 0 ? {} : { contributionSettings: options.contributionSettings },
-    ...options.subjectCatalog === void 0 ? {} : { subjectCatalog: options.subjectCatalog }
+    ...options.subjectCatalog === void 0 ? {} : { subjectCatalog: options.subjectCatalog },
+    ...options.videoFrames === void 0 ? {} : { videoFrames: options.videoFrames },
+    ...options.credentials === void 0 ? {} : { credentials: options.credentials }
   };
   const services = {
     inventory: options.inventory,
@@ -21242,6 +22082,8 @@ function createSubjectServices(options) {
     supportedExtensions: supportedExtensionHints(options.inventory),
     ...options.serviceDefinitions === void 0 ? {} : { serviceDefinitions: options.serviceDefinitions },
     ...options.contributionSettings === void 0 ? {} : { contributionSettings: options.contributionSettings },
+    ...options.videoFrames === void 0 ? {} : { videoFrames: options.videoFrames },
+    ...options.credentials === void 0 ? {} : { credentials: options.credentials },
     open: (request) => openSubject({ ...fixed, ...request })
   };
   return Object.freeze(services);
@@ -21275,6 +22117,7 @@ async function registerServiceDefinitionsOrThrow(inventory, definitions) {
   const serviceOperations = await registerStandardServiceOperationDefinitions(definitions);
   const renderer = await registerStandardRendererDefinitions(definitions);
   const modelEncoding = await registerStandardModelEncodingDefinitions(definitions);
+  const compression = await registerStandardCompressionDefinitions(definitions);
   const games = await registerStandardGameDefinitions(definitions);
   const mods = await registerStandardModDefinitions(definitions);
   const data = await registerStandardDataDefinitions(definitions);
@@ -21286,6 +22129,7 @@ async function registerServiceDefinitionsOrThrow(inventory, definitions) {
     serviceOperations,
     renderer,
     modelEncoding,
+    compression,
     games,
     mods,
     data,
@@ -22037,6 +22881,17 @@ function codecFidelityEvidenceRecords(inventory, selection) {
   }
   return Object.freeze(records);
 }
+function subjectFidelityEvidenceRecords(inventory, opened, acceptedOrigins) {
+  const selections = [opened, ...opened.carrier === void 0 ? [] : [opened.carrier]];
+  return Object.freeze(selections.flatMap(({ selected, descriptor }) => (
+    // an uninterpreted source has no codec that could write it
+    "identity" in descriptor ? codecFidelityEvidenceRecords(inventory, {
+      codecId: selected.contributionId,
+      formatId: descriptor.identity.formatId,
+      ...acceptedOrigins === void 0 ? {} : { acceptedOrigins }
+    }) : []
+  )));
+}
 function writerFacet(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value) ? value : void 0;
 }
@@ -22345,7 +23200,7 @@ async function packEntries(pack, source) {
   const { entriesPath, ...inline } = pack.spec;
   if (entriesPath === void 0)
     return { entries: pack.spec.entries ?? [] };
-  const refused3 = (message) => ({
+  const refused4 = (message) => ({
     diagnostic: Object.freeze({
       code: "x3.knowledge/entries-file-refused",
       message: `knowledge pack ${pack.manifest.id}: ${message}`,
@@ -22353,7 +23208,7 @@ async function packEntries(pack, source) {
     })
   });
   if (source === void 0) {
-    return refused3(`its entries are in ${entriesPath}, and this catalog was given no way to read it`);
+    return refused4(`its entries are in ${entriesPath}, and this catalog was given no way to read it`);
   }
   try {
     const bytes = await readAttestedArtifactFile(pack.contribution, entriesPath, {
@@ -22365,17 +23220,17 @@ async function packEntries(pack, source) {
     const document = JSON.parse(entriesDecoder.decode(bytes));
     const entries = document !== null && typeof document === "object" && !Array.isArray(document) ? document.entries : void 0;
     if (!Array.isArray(entries))
-      return refused3(`${entriesPath} has no "entries" array`);
+      return refused4(`${entriesPath} has no "entries" array`);
     const validated = await validateContributionManifest({ ...pack.manifest, spec: { ...inline, entries } }, createHostContributionContractRegistry().validationRegistry());
     if (!validated.inventoryEligible || validated.manifest === void 0) {
       const first = validated.diagnostics.find((item) => item.severity === "error");
-      return refused3(`${entriesPath} does not validate${first === void 0 ? "" : `: ${first.code} ${first.message}`}`);
+      return refused4(`${entriesPath} does not validate${first === void 0 ? "" : `: ${first.code} ${first.message}`}`);
     }
     return {
       entries: validated.manifest.spec.entries ?? []
     };
   } catch (error3) {
-    return refused3(error3 instanceof Error ? error3.message : String(error3));
+    return refused4(error3 instanceof Error ? error3.message : String(error3));
   }
 }
 var collect = async (packs, limits, source) => {
@@ -22633,6 +23488,502 @@ function createKnowledgeCatalog(inventory, requestedLimits = {}, entriesSource) 
             severity: "information"
           }
         ])
+      });
+    }
+  });
+}
+
+// packages/host/dist/content-index.js
+var ALPHABET = 38;
+var TRIGRAMS = ALPHABET * ALPHABET * ALPHABET;
+var MAGIC = 1229146957;
+var VERSION2 = 1;
+var OTHER = 37;
+var CLASS = (() => {
+  const table = new Uint8Array(256).fill(OTHER);
+  for (let code = 48; code <= 57; code++)
+    table[code] = code - 48;
+  for (let code = 97; code <= 122; code++)
+    table[code] = code - 87;
+  for (let code = 65; code <= 90; code++)
+    table[code] = code - 55;
+  table[95] = 36;
+  return table;
+})();
+function trigramsOf(bytes, seen, out) {
+  out.length = 0;
+  if (bytes.length < 3)
+    return;
+  let a = CLASS[bytes[0]];
+  let b = CLASS[bytes[1]];
+  for (let index = 2; index < bytes.length; index++) {
+    const c = CLASS[bytes[index]];
+    const trigram = (a * ALPHABET + b) * ALPHABET + c;
+    if (seen[trigram] === 0) {
+      seen[trigram] = 1;
+      out.push(trigram);
+    }
+    a = b;
+    b = c;
+  }
+  for (const trigram of out)
+    seen[trigram] = 0;
+}
+var isText = (bytes) => !bytes.subarray(0, 8192).includes(0);
+function createContentIndexBuilder() {
+  const paths = [];
+  const postings = new Array(TRIGRAMS);
+  const counts = new Uint32Array(TRIGRAMS);
+  const seen = new Uint8Array(TRIGRAMS);
+  const found = [];
+  return {
+    add(path, bytes) {
+      if (path.includes("\n"))
+        throw new TypeError("a content index path cannot contain a newline");
+      if (!isText(bytes))
+        return false;
+      const file = paths.push(path) - 1;
+      trigramsOf(bytes, seen, found);
+      for (const trigram of found) {
+        let list = postings[trigram];
+        const count = counts[trigram];
+        if (list === void 0 || count === list.length) {
+          const grown = new Uint32Array(Math.max(4, count * 2));
+          if (list !== void 0)
+            grown.set(list);
+          postings[trigram] = list = grown;
+        }
+        list[count] = file;
+        counts[trigram] = count + 1;
+      }
+      return true;
+    },
+    encode() {
+      const names = new TextEncoder().encode(paths.join("\n"));
+      let total = 0;
+      for (const count of counts)
+        total += count;
+      const header = 16 + names.length;
+      const tableStart = header + (4 - header % 4) % 4;
+      const postingStart = tableStart + TRIGRAMS * 8;
+      const bytes = new Uint8Array(postingStart + total * 4);
+      const view = new DataView(bytes.buffer);
+      view.setUint32(0, MAGIC, true);
+      view.setUint32(4, VERSION2, true);
+      view.setUint32(8, paths.length, true);
+      view.setUint32(12, names.length, true);
+      bytes.set(names, 16);
+      let offset = 0;
+      for (let trigram = 0; trigram < TRIGRAMS; trigram++) {
+        const count = counts[trigram];
+        view.setUint32(tableStart + trigram * 8, offset, true);
+        view.setUint32(tableStart + trigram * 8 + 4, count, true);
+        if (count > 0) {
+          const list = postings[trigram];
+          for (let index = 0; index < count; index++)
+            view.setUint32(postingStart + (offset + index) * 4, list[index], true);
+        }
+        offset += count;
+      }
+      return bytes;
+    }
+  };
+}
+async function openContentIndex(read) {
+  const head = await read(0, 16);
+  const view = new DataView(head.buffer, head.byteOffset, head.byteLength);
+  if (view.getUint32(0, true) !== MAGIC || view.getUint32(4, true) !== VERSION2)
+    throw new TypeError("not a content index of this version");
+  const fileCount = view.getUint32(8, true);
+  const nameLength = view.getUint32(12, true);
+  const paths = nameLength === 0 ? [] : new TextDecoder().decode(await read(16, nameLength)).split("\n");
+  if (paths.length !== fileCount)
+    throw new TypeError("content index path list is damaged");
+  const header = 16 + nameLength;
+  const tableStart = header + (4 - header % 4) % 4;
+  const postingStart = tableStart + TRIGRAMS * 8;
+  const table = await read(tableStart, TRIGRAMS * 8);
+  const entries = new DataView(table.buffer, table.byteOffset, table.byteLength);
+  const postingsOf = async (trigram) => {
+    const offset = entries.getUint32(trigram * 8, true);
+    const count = entries.getUint32(trigram * 8 + 4, true);
+    if (count === 0)
+      return new Uint32Array(0);
+    const bytes = await read(postingStart + offset * 4, count * 4);
+    const list = new Uint32Array(count);
+    const data = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    for (let index = 0; index < count; index++)
+      list[index] = data.getUint32(index * 4, true);
+    return list;
+  };
+  return Object.freeze({
+    fileCount,
+    async candidates(query) {
+      const found = [];
+      trigramsOf(new TextEncoder().encode(query), new Uint8Array(TRIGRAMS), found);
+      if (found.length === 0)
+        return paths;
+      const lists = (await Promise.all(found.map(postingsOf))).sort((a, b) => a.length - b.length);
+      let result = lists[0];
+      for (const list of lists.slice(1)) {
+        if (result.length === 0)
+          break;
+        const keep = new Set(list);
+        result = result.filter((file) => keep.has(file));
+      }
+      return Array.from(result, (file) => paths[file]);
+    }
+  });
+}
+
+// packages/host/dist/credentials.js
+var DEFAULT_MAX_BYTES = 64 * 1024 * 1024;
+var REDIRECTS = /* @__PURE__ */ new Set([301, 302, 303, 307, 308]);
+var MAX_REDIRECTS = 5;
+var EXPIRY_MARGIN_MS = 3e4;
+var refused3 = (code, message) => new ModkitError({ code: `x3.host/credential-${code}`, message });
+function symmetricKeyHex(value) {
+  const text = value.trim().replace(/^0x/iu, "");
+  if (/^[0-9a-fA-F]+$/u.test(text) && [32, 48, 64].includes(text.length))
+    return text.toLowerCase();
+  if (!/^[A-Za-z0-9+/_-]+={0,2}$/u.test(text))
+    return void 0;
+  let binary;
+  try {
+    binary = atob(text.replace(/-/gu, "+").replace(/_/gu, "/"));
+  } catch {
+    return void 0;
+  }
+  if (![16, 24, 32].includes(binary.length))
+    return void 0;
+  return [...binary].map((char) => char.charCodeAt(0).toString(16).padStart(2, "0")).join("");
+}
+var hexBytes = (hex) => Uint8Array.from({ length: hex.length / 2 }, (_, index) => parseInt(hex.slice(index * 2, index * 2 + 2), 16));
+function credentialAudienceAllows(url, audience) {
+  let target;
+  try {
+    target = new URL(url);
+  } catch {
+    return false;
+  }
+  if (target.username !== "" || target.password !== "")
+    return false;
+  return audience.some((entry2) => {
+    try {
+      const base = new URL(entry2);
+      return target.origin === base.origin && target.pathname.startsWith(base.pathname);
+    } catch {
+      return false;
+    }
+  });
+}
+function createMemoryCredentialStore() {
+  const values = /* @__PURE__ */ new Map();
+  return Object.freeze({
+    get: async (key3) => values.get(key3),
+    set: async (key3, value) => void values.set(key3, value),
+    delete: async (key3) => void values.delete(key3)
+  });
+}
+function createCredentialBroker(options) {
+  const now = options.now ?? Date.now;
+  const send = options.fetch ?? globalThis.fetch;
+  const declarations = /* @__PURE__ */ new Map();
+  for (const extension of options.inventory.extensions) {
+    const coordinate2 = `${extension.manifest.publisher}/${extension.manifest.id}`;
+    for (const requirement of extension.manifest.credentials ?? [])
+      if (!declarations.has(requirement.id))
+        declarations.set(requirement.id, Object.freeze({ extension: coordinate2, requirement }));
+  }
+  const declaration = (id) => {
+    const found = declarations.get(id);
+    if (found === void 0)
+      throw refused3("undeclared", `no extension declares the credential ${id}`);
+    return found;
+  };
+  const scopeOf = (requirement, scope) => {
+    if (scope === void 0 || requirement.scopeFormat !== "hex")
+      return scope;
+    const hex = scope.trim().replace(/^0x/iu, "").replace(/[-{}]/gu, "").toLowerCase();
+    if (!/^[0-9a-f]+$/u.test(hex))
+      throw refused3("invalid", `the scope of ${requirement.id} is not a hex identifier`);
+    return /^0+$/u.test(hex) ? void 0 : hex;
+  };
+  const keyOf = (requirement, rawScope) => {
+    const scope = scopeOf(requirement, rawScope);
+    if (scope !== void 0 && (scope.length === 0 || scope.length > 128 || /[\u0000-\u001f]/u.test(scope)))
+      throw refused3("invalid", `the scope of ${requirement.id} is not a short printable name`);
+    return `modkit.credential/${requirement.id}${requirement.scoped === true && scope !== void 0 ? `#${scope}` : ""}`;
+  };
+  const fromEnvironment = (key3) => {
+    const [id = "", scope] = key3.slice("modkit.credential/".length).split(/#(.*)/su);
+    const requirement = declarations.get(id)?.requirement;
+    const raw = requirement?.environment === void 0 ? void 0 : options.environment?.[requirement.environment]?.trim();
+    if (requirement === void 0 || raw === void 0 || raw === "")
+      return void 0;
+    let value = raw;
+    if (requirement.scoped === true) {
+      const entries = raw.split(/[;\n]/u).map((entry2) => entry2.trim()).filter((entry2) => entry2 !== "");
+      if (entries.every((entry2) => entry2.includes(":"))) {
+        const pairs = /* @__PURE__ */ new Map();
+        for (const entry2 of entries) {
+          const at = entry2.indexOf(":");
+          try {
+            pairs.set(scopeOf(requirement, entry2.slice(0, at).trim()) ?? "", entry2.slice(at + 1).trim());
+          } catch {
+          }
+        }
+        value = pairs.get(scope ?? "");
+      }
+    }
+    if (value === void 0 || value === "")
+      return void 0;
+    if (requirement.kind === "symmetric-key")
+      return symmetricKeyHex(value);
+    if (requirement.kind === "oauth2-pkce")
+      return JSON.stringify({ accessToken: value });
+    return value;
+  };
+  const read = async (key3) => await options.store.get(key3) ?? fromEnvironment(key3);
+  const tokensOf = (text) => {
+    if (text === void 0)
+      return void 0;
+    try {
+      const value = JSON.parse(text);
+      return typeof value.accessToken === "string" ? value : void 0;
+    } catch {
+      return void 0;
+    }
+  };
+  const readTokens = async (key3) => tokensOf(await read(key3));
+  const expired = (tokens) => tokens.expiresAt !== void 0 && tokens.expiresAt <= now() + EXPIRY_MARGIN_MS;
+  const clientIdOf = (entry2) => {
+    const oauth = entry2.requirement.oauth;
+    const fromSetting = oauth?.clientIdSetting === void 0 ? void 0 : options.setting?.(entry2.extension, oauth.clientIdSetting);
+    const clientId = typeof fromSetting === "string" && fromSetting !== "" ? fromSetting : oauth?.clientId;
+    if (oauth === void 0 || clientId === void 0)
+      throw refused3("unconfigured", `${entry2.requirement.id} has no OAuth client id (setting ${oauth?.clientIdSetting ?? "\u2014"})`);
+    return clientId;
+  };
+  const status = async (entry2, scope) => {
+    const key3 = keyOf(entry2.requirement, scope);
+    if (entry2.requirement.kind === "oauth2-pkce") {
+      const tokens = await readTokens(key3);
+      if (tokens === void 0)
+        return "missing";
+      return expired(tokens) && tokens.refreshToken === void 0 ? "expired" : "available";
+    }
+    return await read(key3) === void 0 ? "missing" : "available";
+  };
+  const refreshing = /* @__PURE__ */ new Map();
+  const acquiring = /* @__PURE__ */ new Map();
+  const accessToken = async (entry2, scope, force, signal) => {
+    const key3 = keyOf(entry2.requirement, scope);
+    const pending = refreshing.get(key3);
+    if (pending !== void 0)
+      return pending;
+    const tokens = await readTokens(key3);
+    if (tokens === void 0)
+      return void 0;
+    if (!force && !expired(tokens))
+      return tokens.accessToken;
+    const again = refreshing.get(key3);
+    if (again !== void 0)
+      return again;
+    const { oauth } = options;
+    if (tokens.refreshToken === void 0 || oauth === void 0)
+      return void 0;
+    const refreshToken = tokens.refreshToken;
+    const renewal = (async () => {
+      const renewed = await oauth.refresh({
+        requirement: entry2.requirement,
+        clientId: clientIdOf(entry2),
+        refreshToken,
+        ...signal === void 0 ? {} : { signal }
+      });
+      const kept = { ...renewed, refreshToken: renewed.refreshToken ?? refreshToken };
+      await options.store.set(key3, JSON.stringify(kept));
+      return kept.accessToken;
+    })().finally(() => refreshing.delete(key3));
+    refreshing.set(key3, renewal);
+    return renewal;
+  };
+  const acquire = async (entry2, acquireOptions, signal) => {
+    const { requirement } = entry2;
+    const scope = acquireOptions.scope;
+    const current = await status(entry2, scope);
+    if (current === "available" || !acquireOptions.interactive || options.prompter === void 0)
+      return current;
+    const key3 = keyOf(requirement, scope);
+    const prompt = {
+      id: requirement.id,
+      kind: requirement.kind,
+      label: requirement.label,
+      reason: acquireOptions.reason,
+      ...scope === void 0 ? {} : { scope }
+    };
+    if (requirement.kind === "api-key") {
+      const value = (await options.prompter.secret(prompt))?.trim();
+      if (value !== void 0 && value !== "")
+        await options.store.set(key3, value);
+    } else if (requirement.kind === "symmetric-key") {
+      const value = await options.prompter.secret(prompt);
+      if (value !== void 0) {
+        const hex = symmetricKeyHex(value);
+        if (hex === void 0)
+          throw refused3("invalid", `${requirement.label}: expected a 128/192/256-bit key in hex or base64`);
+        await options.store.set(key3, hex);
+      }
+    } else if (requirement.kind === "oauth2-pkce") {
+      if (options.oauth === void 0)
+        throw refused3("unsupported", "this host has no OAuth engine");
+      const tokens = await options.oauth.authorize({
+        requirement,
+        clientId: clientIdOf(entry2),
+        prompter: options.prompter,
+        ...signal === void 0 ? {} : { signal }
+      });
+      await options.store.set(key3, JSON.stringify(tokens));
+    }
+    return status(entry2, scope);
+  };
+  const fetchWith = async (entry2, request, signal) => {
+    const { requirement } = entry2;
+    if (requirement.kind !== "api-key" && requirement.kind !== "oauth2-pkce")
+      throw refused3("not-exposed", `${requirement.id} is a ${requirement.kind}; fetch serves API keys and OAuth`);
+    if (!credentialAudienceAllows(request.url, requirement.audience ?? []))
+      throw refused3("audience", `${requirement.id} may not be sent to that address (outside its declared audience)`);
+    const header = requirement.kind === "api-key" ? requirement.header ?? "x-api-key" : "authorization";
+    const attempt = async (force) => {
+      const value = requirement.kind === "api-key" ? await read(keyOf(requirement, request.scope)) : await accessToken(entry2, request.scope, force, signal);
+      if (value === void 0)
+        throw refused3("missing", `${requirement.id} is not available; acquire it first`);
+      const headers2 = {};
+      for (const [name, text] of Object.entries(request.headers ?? {}))
+        if (name.toLowerCase() !== header.toLowerCase() && name.toLowerCase() !== "authorization")
+          headers2[name] = text;
+      headers2[header] = requirement.kind === "api-key" ? value : `Bearer ${value}`;
+      return send(request.url, {
+        method: request.method ?? "GET",
+        headers: headers2,
+        // a redirect must not carry the credential elsewhere: the extension sees it and asks again
+        redirect: "manual",
+        ...request.body === void 0 ? {} : {
+          body: typeof request.body === "string" ? request.body : Uint8Array.from(request.body)
+        },
+        ...signal === void 0 ? {} : { signal }
+      });
+    };
+    let response = await attempt(false);
+    if (response.status === 401 && requirement.kind === "oauth2-pkce")
+      response = await attempt(true);
+    const followable = (request.method ?? "GET").toUpperCase() === "GET";
+    for (let hops = 0; followable && REDIRECTS.has(response.status); hops += 1) {
+      const location = response.headers.get("location");
+      if (location === null)
+        break;
+      if (hops === MAX_REDIRECTS)
+        throw refused3("redirects", `more than ${MAX_REDIRECTS} redirects`);
+      const next = new URL(location, response.url || request.url);
+      if (next.protocol !== "https:")
+        throw refused3("audience", "a redirect left https");
+      await response.body?.cancel();
+      response = await send(next.href, {
+        method: "GET",
+        redirect: "manual",
+        ...signal === void 0 ? {} : { signal }
+      });
+    }
+    const limit = request.maxBytes ?? DEFAULT_MAX_BYTES;
+    const declared = Number(response.headers.get("content-length") ?? "0");
+    if (declared > limit)
+      throw refused3("too-large", `the response exceeds ${limit} bytes`);
+    const body = new Uint8Array(await response.arrayBuffer());
+    if (body.byteLength > limit)
+      throw refused3("too-large", `the response exceeds ${limit} bytes`);
+    const headers = {};
+    response.headers.forEach((text, name) => {
+      headers[name.toLowerCase()] = text;
+    });
+    return Object.freeze({ status: response.status, headers: Object.freeze(headers), body });
+  };
+  const secret = async (entry2, scope) => {
+    const { requirement } = entry2;
+    if (requirement.kind !== "symmetric-key" && requirement.kind !== "provider-session")
+      throw refused3("not-exposed", `${requirement.id} is a ${requirement.kind}; its value stays with the host`);
+    const value = await read(keyOf(requirement, scope));
+    if (value === void 0)
+      return void 0;
+    return requirement.kind === "symmetric-key" ? hexBytes(value) : new TextEncoder().encode(value);
+  };
+  const forget = async (entry2, scope, signal) => {
+    const key3 = keyOf(entry2.requirement, scope);
+    if (entry2.requirement.kind === "oauth2-pkce" && options.oauth?.revoke !== void 0) {
+      const tokens = tokensOf(await options.store.get(key3));
+      const token = tokens?.refreshToken ?? tokens?.accessToken;
+      if (token !== void 0 && entry2.requirement.oauth?.revocationEndpoint !== void 0) {
+        try {
+          await options.oauth.revoke({
+            requirement: entry2.requirement,
+            clientId: clientIdOf(entry2),
+            token,
+            ...signal === void 0 ? {} : { signal }
+          });
+        } catch {
+        }
+      }
+    }
+    await options.store.delete(key3);
+  };
+  return Object.freeze({
+    declared: () => Object.freeze([...declarations.values()]),
+    status: async (id, scope) => status(declaration(id), scope),
+    signOut: async (id, scope) => forget(declaration(id), scope),
+    async adopt(id, value, scope) {
+      const { requirement } = declaration(id);
+      if (requirement.kind === "oauth2-pkce")
+        throw refused3("not-exposed", `${id} is an OAuth sign-in; it is acquired, not adopted`);
+      const key3 = keyOf(requirement, scope);
+      if (await options.store.get(key3) !== void 0)
+        return "kept";
+      const kept = requirement.kind === "symmetric-key" ? symmetricKeyHex(value) : value.trim();
+      if (kept === void 0 || kept === "")
+        throw refused3("invalid", `${requirement.label}: the value to adopt is empty or malformed`);
+      await options.store.set(key3, kept);
+      return "adopted";
+    },
+    portFor(extension) {
+      const own = (id) => {
+        const entry2 = declaration(id);
+        if (entry2.extension !== extension)
+          throw refused3("undeclared", `${extension} did not declare the credential ${id}`);
+        return entry2;
+      };
+      return Object.freeze({
+        status: async (id, scope) => status(own(id), scope),
+        async acquire(id, acquireOptions, signal) {
+          const entry2 = own(id);
+          if (!acquireOptions.interactive)
+            return acquire(entry2, acquireOptions, signal);
+          const key3 = keyOf(entry2.requirement, acquireOptions.scope);
+          const pending = acquiring.get(key3);
+          if (pending !== void 0)
+            return pending;
+          const attempt = acquire(entry2, acquireOptions, signal).finally(() => acquiring.delete(key3));
+          acquiring.set(key3, attempt);
+          return attempt;
+        },
+        fetch: async (id, request, signal) => fetchWith(own(id), request, signal),
+        secret: async (id, scope) => secret(own(id), scope),
+        async remember(id, value, scope) {
+          const entry2 = own(id);
+          if (entry2.requirement.kind !== "provider-session")
+            throw refused3("not-exposed", `${id} is not a provider session; the broker acquires it`);
+          if (value === "")
+            throw refused3("invalid", `${id}: an empty ticket is not kept`);
+          await options.store.set(keyOf(entry2.requirement, scope), value);
+        },
+        forget: async (id, scope, signal) => forget(own(id), scope, signal)
       });
     }
   });
@@ -23426,6 +24777,7 @@ async function resolveCommonPresentationPlan(descriptor, selection, options = {}
     return {
       ...entry2.slot,
       bindings: Object.freeze([...entry2.slot.bindings, ...optional]),
+      ...optional.length === 0 ? {} : { optionalBindingIds: Object.freeze(optional.map((binding) => binding.bindingId)) },
       eligible: eligibility.eligible,
       missing: eligibility.missing
     };
@@ -23548,8 +24900,21 @@ function createPresentationPlanValidator(options) {
     }
   });
 }
+function hostFedOnly(slot, descriptor) {
+  const hostOffers = descriptor.hostDataSources ?? [];
+  if (hostOffers.length === 0)
+    return false;
+  const offered = (list, source) => list.some((item) => item.contract === source.contract && item.major === source.major);
+  const optional = new Set(slot.optionalBindingIds ?? []);
+  const sources = slot.bindings.filter((binding) => !optional.has(binding.bindingId)).map((binding) => "dataSource" in binding ? binding.dataSource : binding).filter((source) => offered(descriptor.dataSources, source));
+  return sources.length > 0 && sources.every((source) => offered(hostOffers, source));
+}
 async function resolvePresentationPlan(options) {
-  const eligible = sortedSlots(options.candidates.filter((item) => item.eligible && (item.missing?.length ?? 0) === 0));
+  const byPriority = sortedSlots(options.candidates.filter((item) => item.eligible && (item.missing?.length ?? 0) === 0));
+  const eligible = [
+    ...byPriority.filter((slot) => !hostFedOnly(slot, options.descriptor)),
+    ...byPriority.filter((slot) => hostFedOnly(slot, options.descriptor))
+  ];
   const unsatisfied = options.candidates.filter((item) => !item.eligible || (item.missing?.length ?? 0) > 0).map((item) => ({ contributionId: item.contributionId, missing: [...item.missing ?? []] })).sort((left, right) => compareUtf8(left.contributionId, right.contributionId) || compareUtf8(left.missing.join("\0"), right.missing.join("\0")));
   const selectedStages = [];
   const seenGroups = /* @__PURE__ */ new Set();
@@ -27081,6 +28446,7 @@ export {
   DATA_CATALOG_CONTRACT_DEFINITION,
   DATA_CATALOG_MATCHER,
   DATA_EDIT_SELECTION_REQUIRED,
+  DATA_WORKSPACE_LISTING_LIMITS,
   DEFAULT_COMMAND_MAX_CONCURRENT_RUNS,
   DEFAULT_EXECUTION_BACKENDS,
   DEFAULT_SUBJECT_RELATION_PROJECTION_BUDGET,
@@ -27128,6 +28494,7 @@ export {
   NESTED_SUBJECT_REF_UNAVAILABLE,
   NESTED_SUBJECT_UNSUPPORTED,
   NO_STAGED_PAYLOADS,
+  OODLE_DECODER_CONTRACT_DEFINITION,
   PROVIDER_OFFER_INVENTORY_FACT,
   RESOLVED_DATA_WORKSPACE_CONTRACT_DEFINITION,
   RESOLVED_DATA_WORKSPACE_MATCHER,
@@ -27152,6 +28519,7 @@ export {
   SERVICE_OPERATION_INVOKE_COMMAND,
   SERVICE_OPERATION_MATCHER,
   SERVICE_OPERATION_PROVIDER_CONTRACT_DEFINITION,
+  STANDARD_COMPRESSION_OWNER,
   STANDARD_DATA_OWNER,
   STANDARD_EDITING_DEFINITIONS,
   STANDARD_EDITING_OWNER,
@@ -27215,12 +28583,16 @@ export {
   createCandidateWorldSceneLease,
   createCommandRuntime,
   createCommitCoordinator,
+  createCompanionInputResolver,
   createCompositeRelationGraphSource,
   createCompositeSubjectFactsSource,
   createCompositeWorkspaceNamespaceCompanionOrigin,
   createContainerNamespaceComposition,
+  createContentAssetOrigin,
   createContentDependencyLanguageDocumentSource,
+  createContentIndexBuilder,
   createContractResolverPort,
+  createCredentialBroker,
   createDescriptorFallbackSubjectFactsSource,
   createEditSession,
   createEvidenceRegistry,
@@ -27234,6 +28606,7 @@ export {
   createLanguageWorkspace,
   createLayeredCompanionOrigin,
   createLazyTableDataSource,
+  createMemoryCredentialStore,
   createModContextDataWorkspaceInputs,
   createModkitCommandRuntime,
   createPresentationPlanValidator,
@@ -27255,6 +28628,7 @@ export {
   createWorkspaceNamespaceCandidateDiscovery,
   createWorkspaceNamespaceCompanionOrigin,
   createWorkspaceReferenceIndex,
+  credentialAudienceAllows,
   defineBuiltinModule,
   defineLinkedExtension,
   describeCommandContracts,
@@ -27271,12 +28645,14 @@ export {
   expandSubjectReferenceCompletions,
   explainProviderResolution,
   exposeSubjectRpc,
+  gameInstallationSearchOf,
   interpretGameLaunchLog,
   inventoryHasErrors,
   invokeContainerPack,
   invokeServiceOperation,
   isDetectionUntieRule,
   isolationChangeFromDataGraphProposal,
+  languageFileAssociations,
   languageFileExtension,
   languageProviderRoutes,
   languageProviderTriggerCharacters,
@@ -27290,6 +28666,7 @@ export {
   modContextResolution,
   nestedSubjectServices,
   offersFromInventory,
+  openContentIndex,
   openMapPreviewAssetSession,
   openModContextLayerSource,
   openNestedSubject,
@@ -27299,10 +28676,13 @@ export {
   operationCatalogQueries,
   parseCodecDetectionSelection,
   parsePolicyLock,
+  planDataWorkspace,
   planGameLaunch,
   presentationSemanticHash,
+  readResourceText,
   registerServiceContractDefinitionsFromInventory,
   registerServiceDefinitionsOrThrow,
+  registerStandardCompressionDefinitions,
   registerStandardDataDefinitions,
   registerStandardEditingDefinitions,
   registerStandardGameDefinitions,
@@ -27347,12 +28727,15 @@ export {
   serviceProviderFidelityEvidenceRecord,
   subjectCatalogEntities,
   subjectEditTargetsFromDescriptor,
+  subjectFidelityEvidenceRecords,
   subjectOpenSnapshot,
   subjectRpcSurfaces,
   subjectTarget,
   summarizeEditPlan,
   supportedExtensionHints,
   switchPresentationStage,
+  symmetricKeyHex,
+  validGameLaunchPlan,
   validateServiceOperationProvider,
   validateServiceOperationResult,
   withNativeTextModules

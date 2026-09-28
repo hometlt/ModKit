@@ -134,23 +134,28 @@ const definition = Object.freeze({
           ? 'program-stream'
           : 'elementary-stream'
     const sequence = parsed.sequence
-    const video = createVideoMediaSource(bytes, 'video/mpeg', {
-      durationMs: 'unknown', // duration needs the presentation timestamps this port does not read
-      seekable: false,
-      tracks: [
-        {
-          id: 'video-0',
-          kind: 'video',
-          codec: 'mpeg-video',
-          ...(sequence === undefined ? {} : { width: sequence.width, height: sequence.height }),
-          ...(sequence === undefined || sequence.frameRate === 0
-            ? {}
-            : { frameRate: sequence.frameRate }),
-          selected: true,
-        },
-      ],
-      frameAccess: false,
-    })
+    const video = createVideoMediaSource(
+      bytes,
+      'video/mpeg',
+      {
+        durationMs: 'unknown', // duration needs the presentation timestamps this port does not read
+        seekable: false,
+        tracks: [
+          {
+            id: 'video-0',
+            kind: 'video',
+            codec: 'mpeg-video',
+            ...(sequence === undefined ? {} : { width: sequence.width, height: sequence.height }),
+            ...(sequence === undefined || sequence.frameRate === 0
+              ? {}
+              : { frameRate: sequence.frameRate }),
+            selected: true,
+          },
+        ],
+        frameAccess: false,
+      },
+      context.videoFrames,
+    )
     const counts = new Map()
     for (const entry of parsed.codes) counts.set(entry.name, (counts.get(entry.name) ?? 0) + 1)
     const tree = createTreeDataSource({

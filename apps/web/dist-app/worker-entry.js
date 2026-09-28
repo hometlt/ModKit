@@ -6,15 +6,15 @@ import {
   framePortFromMessagePort,
   logicalResourcesFromWire,
   protocolLimits
-} from "./chunks/chunk-GC3F5TEI.js";
-import "./chunks/chunk-SCKD5U6H.js";
-import "./chunks/chunk-GGIVOOBZ.js";
+} from "./chunks/chunk-SPHGQBFD.js";
+import "./chunks/chunk-47QWC2WU.js";
 import "./chunks/chunk-YYQ3QKXM.js";
 import "./chunks/chunk-KL23KRQT.js";
-import "./chunks/chunk-NMXLVS6H.js";
+import "./chunks/chunk-MYUZP6E2.js";
+import "./chunks/chunk-GGIVOOBZ.js";
 import {
   ModkitError
-} from "./chunks/chunk-HUU44HII.js";
+} from "./chunks/chunk-LX6GSJ3D.js";
 import "./chunks/chunk-CQ52GEHY.js";
 
 // packages/host/dist/execution/frame-json.js
@@ -45,6 +45,10 @@ function contributionContext(wire) {
     ...wire.modelResources === void 0 ? {} : { modelResources: wire.modelResources },
     ...wire.logicalResources === void 0 ? {} : { logicalResources: logicalResourcesFromWire(wire.logicalResources) },
     ...wire.rasterResources === void 0 ? {} : { rasterResources: wire.rasterResources },
+    ...wire.installationProbes === void 0 ? {} : { installationProbes: wire.installationProbes },
+    ...wire.videoFrames === void 0 ? {} : { videoFrames: wire.videoFrames },
+    ...wire.credentials === void 0 ? {} : { credentials: wire.credentials },
+    ...wire.containerContext === void 0 ? {} : { containerContext: wire.containerContext },
     ...wire.providerIdentity === void 0 ? {} : { providerIdentity: Object.freeze({ ...wire.providerIdentity }) },
     ...wire.settings === void 0 ? {} : { settings: wire.settings }
   };

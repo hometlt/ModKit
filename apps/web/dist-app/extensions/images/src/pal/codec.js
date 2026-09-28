@@ -3,131 +3,9 @@ import {
   createRasterImageSource,
   createTreeDataSource,
 } from '@modkit/codec-kit'
+import { isJascPalette, isRiffPalette, parsePalette } from '@modkit/codec-kit/raster/palette'
 
 const ID = 'modkit/pal'
-const latin1 = new TextDecoder('latin1')
-
-function tag(bytes, offset) {
-  return latin1.decode(bytes.subarray(offset, offset + 4))
-}
-
-function u16(bytes, offset) {
-  if (offset < 0 || offset + 2 > bytes.byteLength) throw new RangeError('PAL field is truncated')
-  return new DataView(bytes.buffer, bytes.byteOffset + offset, 2).getUint16(0, true)
-}
-
-function u32(bytes, offset) {
-  if (offset < 0 || offset + 4 > bytes.byteLength) throw new RangeError('PAL field is truncated')
-  return new DataView(bytes.buffer, bytes.byteOffset + offset, 4).getUint32(0, true)
-}
-
-function isJasc(bytes) {
-  return latin1.decode(bytes.subarray(0, Math.min(bytes.byteLength, 16))).startsWith('JASC-PAL')
-}
-
-function isRiff(bytes) {
-  return bytes.byteLength >= 12 && tag(bytes, 0) === 'RIFF' && tag(bytes, 8) === 'PAL '
-}
-
-function emptyColors() {
-  const colors = new Uint8Array(256 * 4)
-  for (let index = 3; index < colors.length; index += 4) colors[index] = 255
-  return colors
-}
-
-function parseJasc(bytes, maxNodes) {
-  const text = new TextDecoder('utf-8', { fatal: true }).decode(bytes).replace(/\r\n/g, '\n')
-  const lines = text
-    .split('\n')
-    .map(line => line.trim())
-    .filter(Boolean)
-  if (lines[0] !== 'JASC-PAL' || lines.length < 3 || lines.length > maxNodes) {
-    throw new TypeError('JASC-PAL header or line count is invalid')
-  }
-  const version = lines[1]
-  const count = Number(lines[2])
-  if (!/^\d{4}$/u.test(version) || !Number.isSafeInteger(count) || count < 1 || count > 256) {
-    throw new TypeError('JASC-PAL version or color count is invalid')
-  }
-  if (lines.length !== count + 3)
-    throw new TypeError('JASC-PAL color count does not match its rows')
-  const colors = emptyColors()
-  for (let index = 0; index < count; index += 1) {
-    const values = lines[index + 3].split(/\s+/u).map(Number)
-    if (
-      values.length !== 3 ||
-      !values.every(value => Number.isSafeInteger(value) && value >= 0 && value <= 255)
-    ) {
-      throw new TypeError(`JASC-PAL color ${index} is invalid`)
-    }
-    colors.set(values, index * 4)
-  }
-  return Object.freeze({ format: 'jasc-pal', count, version, colors })
-}
-
-function parseRiff(bytes, maxNodes) {
-  const end = 8 + u32(bytes, 4)
-  if (end !== bytes.byteLength)
-    throw new TypeError('RIFF PAL declared size does not match the source')
-  let offset = 12
-  let nodes = 0
-  while (offset < end) {
-    if (nodes >= maxNodes) throw new RangeError('RIFF PAL chunk count exceeds maxNodes budget')
-    nodes += 1
-    if (offset + 8 > end) throw new TypeError('RIFF PAL chunk header is truncated')
-    const id = tag(bytes, offset)
-    const size = u32(bytes, offset + 4)
-    const payload = offset + 8
-    if (payload + size > end) throw new TypeError(`RIFF PAL ${id} chunk is truncated`)
-    if (id === 'data') {
-      if (size < 4) throw new TypeError('RIFF PAL data chunk is too short')
-      const version = u16(bytes, payload)
-      const count = u16(bytes, payload + 2)
-      if (count < 1 || count > 256 || 4 + count * 4 > size) {
-        throw new TypeError('RIFF PAL entry count is invalid')
-      }
-      const colors = emptyColors()
-      for (let index = 0; index < count; index += 1) {
-        const source = payload + 4 + index * 4
-        colors[index * 4] = bytes[source] ?? 0
-        colors[index * 4 + 1] = bytes[source + 1] ?? 0
-        colors[index * 4 + 2] = bytes[source + 2] ?? 0
-      }
-      return Object.freeze({
-        format: 'riff-pal',
-        count,
-        version: `0x${version.toString(16)}`,
-        colors,
-      })
-    }
-    offset = payload + size + (size & 1)
-  }
-  throw new TypeError('RIFF PAL data chunk is missing')
-}
-
-function parseBinary(bytes) {
-  if (bytes.byteLength !== 768) throw new TypeError('raw PAL must contain exactly 256 RGB entries')
-  const sixBit = bytes.every(value => value <= 63)
-  const colors = emptyColors()
-  for (let index = 0; index < 256; index += 1) {
-    for (let channel = 0; channel < 3; channel += 1) {
-      const value = bytes[index * 3 + channel] ?? 0
-      colors[index * 4 + channel] = sixBit ? (value << 2) | (value >>> 4) : value
-    }
-  }
-  return Object.freeze({
-    format: sixBit ? 'westwood-6bit' : 'rgb-8bit',
-    count: 256,
-    version: 'raw',
-    colors,
-  })
-}
-
-function parsePalette(bytes, maxNodes) {
-  if (isJasc(bytes)) return parseJasc(bytes, maxNodes)
-  if (isRiff(bytes)) return parseRiff(bytes, maxNodes)
-  return parseBinary(bytes)
-}
 
 function regionReader(palette) {
   return async request => {
@@ -174,10 +52,13 @@ const definition = Object.freeze({
   id: ID,
   format: Object.freeze({ id: 'pal', label: 'Palette image' }),
   async detect(prefix) {
-    if (isJasc(prefix)) return { confidence: 0.99, kind: 'structure', note: 'jasc-pal' }
-    if (isRiff(prefix)) return { confidence: 0.98, kind: 'structure', note: 'riff-pal' }
+    if (isJascPalette(prefix)) return { confidence: 0.99, kind: 'structure', note: 'jasc-pal' }
+    if (isRiffPalette(prefix)) return { confidence: 0.98, kind: 'structure', note: 'riff-pal' }
     if (prefix.byteLength === 768)
       return { confidence: 0.7, kind: 'structure', note: 'raw-256-rgb' }
+    // 256 RGBx entries: Total Annihilation's PALETTE.PAL, StarCraft's tileset .wpe
+    if (prefix.byteLength === 1024)
+      return { confidence: 0.6, kind: 'structure', note: 'raw-256-rgbx' }
     return { confidence: 0, kind: 'structure', note: 'signature-mismatch' }
   },
   async inspect(bytes, context) {

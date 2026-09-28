@@ -134,24 +134,29 @@ const definition = Object.freeze({
     if (found?.theora === undefined) throw new TypeError('Ogg stream carries no Theora header')
     const theora = found.theora
     const streams = new Set(found.pages.map(page => page.serialNumber))
-    const video = createVideoMediaSource(bytes, 'video/ogg', {
-      durationMs: 'unknown', // the granule position of the last page is past the bounded walk
-      seekable: false,
-      tracks: [
-        {
-          id: 'theora-0',
-          kind: 'video',
-          codec: 'theora',
-          width: theora.width,
-          height: theora.height,
-          selected: true,
-        },
-        ...(found.hasVorbis
-          ? [{ id: 'vorbis-0', kind: 'audio', codec: 'vorbis', selected: false }]
-          : []),
-      ],
-      frameAccess: false,
-    })
+    const video = createVideoMediaSource(
+      bytes,
+      'video/ogg',
+      {
+        durationMs: 'unknown', // the granule position of the last page is past the bounded walk
+        seekable: false,
+        tracks: [
+          {
+            id: 'theora-0',
+            kind: 'video',
+            codec: 'theora',
+            width: theora.width,
+            height: theora.height,
+            selected: true,
+          },
+          ...(found.hasVorbis
+            ? [{ id: 'vorbis-0', kind: 'audio', codec: 'vorbis', selected: false }]
+            : []),
+        ],
+        frameAccess: false,
+      },
+      context.videoFrames,
+    )
     const tree = createTreeDataSource({
       kind: 'movie',
       label: 'Ogg Theora',

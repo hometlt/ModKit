@@ -2,61 +2,10 @@ import {
   createSelectedProvider,
   createTextSyntaxProvider as createRuntimeProvider,
   encodeText,
-  failure,
   lease,
-  span,
+  parseIni,
 } from '@modkit/codec-kit/text'
 import { definition } from './definition.js'
-
-function parseIni(decoded, dialect) {
-  const sections = []
-  let current = { name: '', entries: [], range: span(decoded.text, 0, 0) }
-  sections.push(current)
-  const seen = new Set()
-  let offset = 0
-  for (const line of decoded.text.split(/\r\n|\r|\n/u)) {
-    const trimmed = line.trim()
-    if (trimmed === '' || trimmed.startsWith(';') || trimmed.startsWith('#')) {
-      offset += line.length + 1
-      continue
-    }
-    const section = /^\[([^\]]+)\]$/u.exec(trimmed)
-    if (section) {
-      current = { name: section[1], entries: [], range: span(decoded.text, offset, line.length) }
-      sections.push(current)
-    } else {
-      const equals = line.indexOf('=')
-      if (equals <= 0) {
-        return failure(
-          'modkit/text-data-ini-parse',
-          'INI entry requires a non-empty key',
-          decoded.text,
-          offset,
-          line.length,
-        )
-      }
-      const key = line.slice(0, equals).trim()
-      const identity = `${current.name}\0${key}`
-      if (dialect === 'ini-basic' && seen.has(identity)) {
-        return failure(
-          'modkit/text-data-ini-duplicate',
-          `duplicate key ${key}`,
-          decoded.text,
-          offset,
-          line.length,
-        )
-      }
-      seen.add(identity)
-      current.entries.push({
-        key,
-        value: line.slice(equals + 1).trim(),
-        range: span(decoded.text, offset, line.length),
-      })
-    }
-    offset += line.length + 1
-  }
-  return { state: 'ok', document: { sections, source: decoded.source }, diagnostics: [] }
-}
 
 function createIniSyntaxProvider() {
   return createRuntimeProvider({
