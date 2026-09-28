@@ -539,8 +539,30 @@ export interface WorldWebGlModelMaterialScene {
 
 const batch = (): MutableBatch => ({ positions: [], normals: [], colors: [] })
 
+/**
+ * The clip an object plays of a model, kept per model result and object: a plan asks for it several
+ * times per object, and an animated map builds a plan every frame for ~10 000 objects.
+ */
+const selectedWorldModelAnimations = new WeakMap<
+  object,
+  WeakMap<WorldSceneObjectItem, ReturnType<typeof selectWorldModelAnimation> | null>
+>()
+
 /** Actor animation properties select a named sequence, not the first clip with keyframes. */
 export function worldModelAnimation(
+  result: Extract<WorldSceneModelResult, { state: 'converted' }>,
+  item: WorldSceneObjectItem,
+) {
+  let byItem = selectedWorldModelAnimations.get(result)
+  if (byItem === undefined) selectedWorldModelAnimations.set(result, (byItem = new WeakMap()))
+  const cached = byItem.get(item)
+  if (cached !== undefined) return cached ?? undefined
+  const clip = selectWorldModelAnimation(result, item)
+  byItem.set(item, clip ?? null)
+  return clip
+}
+
+function selectWorldModelAnimation(
   result: Extract<WorldSceneModelResult, { state: 'converted' }>,
   item: WorldSceneObjectItem,
 ) {
@@ -2143,7 +2165,20 @@ function worldMaterialsFollowTime(result: WorldModelSample['result']): boolean {
   return follows
 }
 
+const animatedWorldModelGeometry = new WeakMap<object, WeakMap<WorldSceneObjectItem, boolean>>()
+
 function worldModelHasAnimatedGeometry(
+  result: WorldModelSample['result'],
+  item: WorldSceneObjectItem,
+): boolean {
+  let byItem = animatedWorldModelGeometry.get(result)
+  if (byItem === undefined) animatedWorldModelGeometry.set(result, (byItem = new WeakMap()))
+  let animated = byItem.get(item)
+  if (animated === undefined) byItem.set(item, (animated = selectAnimatedGeometry(result, item)))
+  return animated
+}
+
+function selectAnimatedGeometry(
   result: WorldModelSample['result'],
   item: WorldSceneObjectItem,
 ): boolean {
