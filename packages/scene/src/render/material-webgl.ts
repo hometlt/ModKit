@@ -161,6 +161,10 @@ export function materialWebGlDraws(
     program?: WebGLProgram
     vertexArray?: WebGLVertexArrayObject
     readonly units: (WebGlMaterialProgram['textureUnits'][number] | undefined)[]
+    /** The texture unit this sequence last made active. */
+    activeUnit?: number
+    /** The unit a binding change last concerned: the one a sequence leaves active (see restore). */
+    lastUnit?: number
     readonly constants: Map<number, Float32Array>
     colorMask?: boolean
     depthMask?: boolean
@@ -536,23 +540,31 @@ export function materialWebGlDraws(
     state.units.forEach((binding, unit) => {
       if (binding !== undefined) gl.bindSampler(unit, null)
     })
+    // A sequence has always left the unit of its last binding change active.
+    if (state.lastUnit !== undefined && state.activeUnit !== state.lastUnit)
+      gl.activeTexture(gl.TEXTURE0 + state.lastUnit)
     gl.bindVertexArray(null)
     gl.colorMask(true, true, true, true)
     gl.disable(gl.CULL_FACE)
   }
   const bindTextureUnits = (lease: WebGlMaterialProgram, state: SequenceState) => {
+    // Only what changes is set: a unit keeps its texture and its sampler apart (materials mostly
+    // share samplers), and the active unit changes only for a texture of another unit.
     lease.textureUnits.forEach((binding, unit) => {
       const bound = state.units[unit]
-      if (
-        bound !== undefined &&
-        bound.texture === binding.texture &&
-        bound.sampler === binding.sampler &&
-        bound.target === binding.target
-      )
-        return
-      gl.activeTexture(gl.TEXTURE0 + unit)
-      gl.bindTexture(binding.target, binding.texture)
-      gl.bindSampler(unit, binding.sampler)
+      const texture =
+        bound === undefined || bound.texture !== binding.texture || bound.target !== binding.target
+      const sampler = bound === undefined || bound.sampler !== binding.sampler
+      if (!texture && !sampler) return
+      state.lastUnit = unit
+      if (texture) {
+        if (state.activeUnit !== unit) {
+          gl.activeTexture(gl.TEXTURE0 + unit)
+          state.activeUnit = unit
+        }
+        gl.bindTexture(binding.target, binding.texture)
+      }
+      if (sampler) gl.bindSampler(unit, binding.sampler)
       state.units[unit] = binding
     })
   }

@@ -170,6 +170,31 @@ it('sets the placement columns once for consecutive draws of one placement', () 
   assert.equal(writes([here('a'), there('b')]), one + 1)
 })
 
+it('changes only the texture of a unit when materials share its sampler', () => {
+  const { gl, count } = context()
+  const renderer = materialWebGlDraws(
+    gl,
+    new Map([
+      ['albedo.png', {}],
+      ['other.png', {}],
+    ]),
+    { checkEachDraw: false },
+  )
+  const other = { ...source }
+  const otherMaterial = { textures: new Map([['albedo', { id: 'other.png' }]]) }
+  const draws = [
+    [source, material],
+    [other, otherMaterial],
+    [source, material],
+  ].map(([program, surface], index) => ({
+    draw: { primitive: mesh(`m${index}`), program, material: surface },
+  }))
+  renderer.drawSequence(draws, camera)
+  assert.equal(count('bindTexture'), 3)
+  assert.equal(count('activeTexture'), 1) // unit 0 stays active
+  assert.equal(count('bindSampler'), 2) // the shared sampler once, and the restore
+})
+
 it('shares one sampler object between leases with equal sampling and deletes it on release', () => {
   const { gl, count } = context()
   const renderer = materialWebGlDraws(gl, new Map([['albedo.png', {}]]), { checkEachDraw: false })
