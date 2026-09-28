@@ -73,12 +73,13 @@ function textFiles(directory: string): string[] {
 
 const dataExtension = {
   packageName: 'modkit-extension-data',
-  formats: ['csv', 'tsv', 'ini', 'toml', 'xml', 'yaml'],
+  formats: ['csv', 'tsv', 'ini', 'slk', 'toml', 'xml', 'yaml'],
   dependencies: ['@modkit/codec-kit', '@rgrove/parse-xml', 'smol-toml', 'yaml'],
   samples: [
     ['csv', 'common.text-data/csv-syntax', 'csv-rfc4180', 'x,y\n1,2\n'],
     ['tsv', 'common.text-data/tsv-syntax', 'tsv-iana', 'x\ty\n1\t2\n'],
     ['ini', 'common.text-data/ini-syntax', 'ini-basic', '[x]\ny=1\n'],
+    ['slk', 'common.text-data/slk-syntax', 'sylk', 'ID;P\nC;X1;Y1;K"x"\nC;X1;Y2;K1\nE\n'],
     ['toml', 'common.text-data/toml-syntax', 'toml-1.0', 'x = 1\n'],
     ['xml', 'common.text-data/xml-syntax', 'xml-1.0', '<x/>'],
     ['yaml', 'common.text-data/yaml-syntax', 'yaml-1.2-core', 'x: 1\n'],

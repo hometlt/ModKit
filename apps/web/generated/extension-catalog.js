@@ -3311,13 +3311,15 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:4a36477d3753f95d46efaf0c2b4b9e781ed87c7011d74237fbab95a112b72186',
+        artifactDigest: 'sha256:ebeff7f72f64e9225eb5d718a0579225c049977ecbe9af7f240e8bf35bc3b5f6',
         fileDigests: {
-          'README.md': 'sha256:96b749c43f62ad801f0aeb648aaa173263c721a114e99ad2bc1cbe4b7b3694d7',
+          'README.md': 'sha256:d60db89c50c84178db9aacd92249a01ebcfac3611c058472d393a6cf1fba29cd',
           'contributions/codec-csv.json':
             'sha256:0a7db78590cdb45ce63e95daa555db31dd61f51eb8f77e7dfbe58221545081d4',
           'contributions/codec-ini.json':
             'sha256:aac632872ce58a2b4c00726e2bf764303d0713549d0609f8d80ed9536ffd931e',
+          'contributions/codec-slk.json':
+            'sha256:1a20d05e1d88e17d4a8e6653b335c14a52ee280e0c506835b6032711c5d13ae5',
           'contributions/codec-toml.json':
             'sha256:420c6ead4ca5ac4bf7a0b7177e1438e92addaf829d92b19d640002bab1a43d05',
           'contributions/codec-tsv.json':
@@ -3330,6 +3332,8 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:05093156ccee597a43ed06c72a2591f9be95589fac3299e67eb7404b291a2089',
           'contributions/contract-ini-syntax.json':
             'sha256:dd6347882d3708873d696683bdbe50be7d839ae45530ee8e1006299283f5bdc4',
+          'contributions/contract-slk-syntax.json':
+            'sha256:3fa6c48bc87290b1231a9439e7f69e995b0d6cf99e4ed42a86e313b572f2a922',
           'contributions/contract-toml-syntax.json':
             'sha256:32a54ff9bd40c3ff3a7d5bd92732a74104af753727e6d7eb1e77d7f1a349815f',
           'contributions/contract-tsv-syntax.json':
@@ -3342,6 +3346,8 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:87a416035905049f7fb873686255cea1a020f21bc3f64ea69eaf2536b04b77e3',
           'contributions/provider-ini-default.json':
             'sha256:dd1acdb1be69f65b2701cbe97b90ef26d494e0ebc63b7725290f54747f9cda9d',
+          'contributions/provider-slk-default.json':
+            'sha256:193e1e8f1b39662837a6cac33a1664ca4061783f7d1937debbbdbef128d48b88',
           'contributions/provider-toml-default.json':
             'sha256:916e8d874a3c0c5d2f9fc04b378376fbc8dc06aa640add847c68973add2fa044',
           'contributions/provider-tsv-default.json':
@@ -3360,7 +3366,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:180381c6debe4601baab965509491ac096cd7956d752dcb1af16be8f0d38d6c1',
           'contributions/writer-yaml.json':
             'sha256:55fc8a10a9f61c905bb31d1e9288fc4ff80534af71fd264fc14fb4926fba814a',
-          'package.json': 'sha256:b095eab5e8c8ee54364f0cc994931dbeb902419174a178ef96b377365e61aa98',
+          'package.json': 'sha256:d75eb4498d04aaaef0f275d0af8b533a08aa575b98c7f9e8acc5e43a5df25947',
           'src/csv/codec.js':
             'sha256:96a13181712645f9e74bb51dc549a3af2df36bd1e6218d3c1954e370d25abed5',
           'src/csv/provider.js':
@@ -3394,7 +3400,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'src/families/delimited/provider.js':
             'sha256:15d73a508eb6d7ac83113c6e92f50258386226fddd01cc265f1637afef09d56b',
           'src/formats.js':
-            'sha256:d6f7fb9793cd63475e20149a5e360a364a73cc8a1701a3faa7cedaaba61888d8',
+            'sha256:7dd050cb5330c44740459119ad731ffc70f9556c9aa8a31b2a1d5a61e445e49c',
           'src/index.js': 'sha256:4d3c1f65a922238a9b5cd20832700b890e95abd3e1485f07bd472d9a074227d2',
           'src/ini/codec.js':
             'sha256:cc660481f5508b960a1ce2889ea819548d51246df54ad5720269f3ad25fa8cee',
@@ -3403,7 +3409,13 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'src/ini/provider.js':
             'sha256:1005e0cb9372113a2b63cdd0ed4037073dd486ba99d56f251b790153cd21f397',
           'src/linked.js':
-            'sha256:c740633e0d59de1aef4d05018b633c55875566c16152fe27b56b186b77126ab0',
+            'sha256:d314cebbe05047d9b8eaec8d46cd2c6187f28eab5a22ca06fa1dd52e00761997',
+          'src/slk/codec.js':
+            'sha256:21474cb76bff9058f6f8555fd6379cfd94cccbdabf5f71ec78f28997b79cc548',
+          'src/slk/definition.js':
+            'sha256:02892d12897acd4b181be34b7c1c9526f76a1aa6b6f3118cea037ad0f113899d',
+          'src/slk/provider.js':
+            'sha256:a2fb026bc1d99519485bf46c7671accaa8f3a1d510316c2ffeea378635c5d629',
           'src/toml/codec.js':
             'sha256:2e3d8cf1bc12d59783e94beb6f7a8f08d58cf1cc128886b477f3bed146a55b7f',
           'src/toml/definition.js':
@@ -3432,7 +3444,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:205a176ec39d8c1adeebd8f9419ff9c9b8e2e2d45f4387541adc7e96c2090df9',
         },
         inventoryRecordId:
-          'artifact:sha256:4a36477d3753f95d46efaf0c2b4b9e781ed87c7011d74237fbab95a112b72186',
+          'artifact:sha256:ebeff7f72f64e9225eb5d718a0579225c049977ecbe9af7f240e8bf35bc3b5f6',
       },
       artifactRoot: 'extensions/data/',
       containers: {
@@ -3451,6 +3463,8 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             './formats/csv/provider': './src/families/delimited/entrypoints/csv-provider.js',
             './formats/ini/codec': './src/ini/codec.js',
             './formats/ini/provider': './src/ini/provider.js',
+            './formats/slk/codec': './src/slk/codec.js',
+            './formats/slk/provider': './src/slk/provider.js',
             './formats/toml/codec': './src/toml/codec.js',
             './formats/toml/provider': './src/toml/provider.js',
             './formats/tsv/codec': './src/families/delimited/entrypoints/tsv-codec.js',
@@ -3509,6 +3523,10 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'sha256:aac632872ce58a2b4c00726e2bf764303d0713549d0609f8d80ed9536ffd931e',
         ],
         [
+          'contributions/codec-slk.json',
+          'sha256:1a20d05e1d88e17d4a8e6653b335c14a52ee280e0c506835b6032711c5d13ae5',
+        ],
+        [
           'contributions/codec-toml.json',
           'sha256:420c6ead4ca5ac4bf7a0b7177e1438e92addaf829d92b19d640002bab1a43d05',
         ],
@@ -3533,6 +3551,10 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'sha256:dd6347882d3708873d696683bdbe50be7d839ae45530ee8e1006299283f5bdc4',
         ],
         [
+          'contributions/contract-slk-syntax.json',
+          'sha256:3fa6c48bc87290b1231a9439e7f69e995b0d6cf99e4ed42a86e313b572f2a922',
+        ],
+        [
           'contributions/contract-toml-syntax.json',
           'sha256:32a54ff9bd40c3ff3a7d5bd92732a74104af753727e6d7eb1e77d7f1a349815f',
         ],
@@ -3555,6 +3577,10 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         [
           'contributions/provider-ini-default.json',
           'sha256:dd1acdb1be69f65b2701cbe97b90ef26d494e0ebc63b7725290f54747f9cda9d',
+        ],
+        [
+          'contributions/provider-slk-default.json',
+          'sha256:193e1e8f1b39662837a6cac33a1664ca4061783f7d1937debbbdbef128d48b88',
         ],
         [
           'contributions/provider-toml-default.json',
@@ -3905,6 +3931,171 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
               traitDeclarations: [
                 {
                   id: 'structure.hierarchy',
+                  presence: 'will-expose',
+                  representation: 'source',
+                },
+                {
+                  id: 'content.text',
+                  presence: 'will-expose',
+                  representation: 'source',
+                },
+                {
+                  id: 'content.binary',
+                  presence: 'will-expose',
+                  representation: 'source',
+                },
+              ],
+            },
+          },
+        ],
+        [
+          'contributions/codec-slk.json',
+          {
+            contract: {
+              id: 'modkit/codec-contribution',
+              major: 1,
+            },
+            displayName: 'SYLK spreadsheet',
+            id: 'modkit/text-slk',
+            runtimeVariants: [
+              {
+                entrypoint: './src/slk/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/slk/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored'],
+              budgets: {
+                maxDepth: 256,
+                maxDiagnostics: 10000,
+                maxInputBytes: '1073741824',
+                maxNodes: 1000000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: 'slk',
+                  label: 'SYLK',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                extensions: ['slk'],
+              },
+              openIntents: ['probe', 'inspect', 'full', 'stream', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'search',
+                  id: 'asset.search',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'parse',
+                  id: 'data.parse',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'serialize',
+                  id: 'data.serialize',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'scan',
+                  id: 'data.scan',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 8192,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 8192,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/table-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/text-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.text-data/slk-document',
+                  id: 'syntax-document',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              requires: [
+                {
+                  contract: 'common.text-data/slk-syntax',
+                  major: 1,
+                  range: '^1.0.0',
+                },
+              ],
+              roles: ['semantic'],
+              sourceTopology: 'single',
+              traitDeclarations: [
+                {
+                  id: 'table.cells',
                   presence: 'will-expose',
                   representation: 'source',
                 },
@@ -4690,6 +4881,66 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           },
         ],
         [
+          'contributions/contract-slk-syntax.json',
+          {
+            contract: {
+              id: 'modkit/contract-definition',
+              major: 1,
+            },
+            displayName: 'SYLK syntax service contract',
+            id: 'modkit/slk-syntax-contract',
+            schemaVersion: 1,
+            spec: {
+              conformanceProfile: 'common.text-data/slk-syntax-v1',
+              contract: 'common.text-data/slk-syntax',
+              kind: 'service',
+              major: 1,
+              matching: {
+                major: 1,
+                profile: 'modkit/facetless-matcher',
+              },
+              offerFacet: {
+                presence: 'forbidden',
+              },
+              requestFacet: {
+                presence: 'forbidden',
+              },
+              schemaVersion: 1,
+              surface: {
+                fields: ['contract'],
+                methods: {
+                  dataSource: {
+                    kind: 'lease',
+                    result: {
+                      contract: 'common.view/table-data-source',
+                      major: 1,
+                    },
+                    signal: {
+                      arg: 0,
+                      key: 'signal',
+                    },
+                    wrapper: 'lease',
+                  },
+                  parse: {
+                    kind: 'value',
+                    signal: {
+                      arg: 0,
+                      key: 'signal',
+                    },
+                  },
+                  serialize: {
+                    kind: 'value',
+                    signal: {
+                      arg: 0,
+                      key: 'signal',
+                    },
+                  },
+                },
+              },
+            },
+          },
+        ],
+        [
           'contributions/contract-toml-syntax.json',
           {
             contract: {
@@ -5023,6 +5274,56 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                   contract: 'common.text-data/ini-syntax',
                   major: 1,
                   offerId: 'ini-syntax-default-v1',
+                  version: '1.0.0',
+                },
+              ],
+            },
+          },
+        ],
+        [
+          'contributions/provider-slk-default.json',
+          {
+            contract: {
+              id: 'modkit/service-provider-contribution',
+              major: 1,
+            },
+            displayName: 'slk syntax provider',
+            id: 'modkit/slk-syntax-default',
+            runtimeVariants: [
+              {
+                entrypoint: './src/slk/provider.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: [],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/slk/provider.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: [],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              lifecycleScope: 'session',
+              outputs: [
+                {
+                  id: 'table.cells',
+                  presence: 'will-expose',
+                  representation: 'runtime',
+                },
+              ],
+              provides: [
+                {
+                  contract: 'common.text-data/slk-syntax',
+                  major: 1,
+                  offerId: 'slk-syntax-default-v1',
                   version: '1.0.0',
                 },
               ],
@@ -5458,18 +5759,21 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         'README.md',
         'contributions/codec-csv.json',
         'contributions/codec-ini.json',
+        'contributions/codec-slk.json',
         'contributions/codec-toml.json',
         'contributions/codec-tsv.json',
         'contributions/codec-xml.json',
         'contributions/codec-yaml.json',
         'contributions/contract-csv-syntax.json',
         'contributions/contract-ini-syntax.json',
+        'contributions/contract-slk-syntax.json',
         'contributions/contract-toml-syntax.json',
         'contributions/contract-tsv-syntax.json',
         'contributions/contract-xml-syntax.json',
         'contributions/contract-yaml-syntax.json',
         'contributions/provider-csv-default.json',
         'contributions/provider-ini-default.json',
+        'contributions/provider-slk-default.json',
         'contributions/provider-toml-default.json',
         'contributions/provider-tsv-default.json',
         'contributions/provider-xml-default.json',
@@ -5502,6 +5806,9 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         'src/ini/definition.js',
         'src/ini/provider.js',
         'src/linked.js',
+        'src/slk/codec.js',
+        'src/slk/definition.js',
+        'src/slk/provider.js',
         'src/toml/codec.js',
         'src/toml/definition.js',
         'src/toml/provider.js',

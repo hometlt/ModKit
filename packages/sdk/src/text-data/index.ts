@@ -179,6 +179,37 @@ export interface DelimitedSnapshot {
   readonly source: TextSourceFacts
 }
 
+/** A cell of a SYLK (`.slk`) sheet: the `K` value of one `C` record. */
+export interface SylkCell {
+  /** 1-based column (`X`). */
+  readonly column: number
+  /** Text without its quotes, or a number, boolean or error as it is spelled. */
+  readonly value: string
+  /** `K"…"`: text, rather than a number, boolean or error. */
+  readonly quoted: boolean
+  /** The `C` record the value came from. */
+  readonly range: SourceSpan
+}
+
+export interface SylkRow {
+  /** 1-based row (`Y`). */
+  readonly index: number
+  /** The row's cells in column order; a column without a `C` record has none. */
+  readonly cells: readonly SylkCell[]
+}
+
+/**
+ * A SYLK sheet as spreadsheets and Warcraft III write it: the cells of its `C` records, rows and
+ * cells in order. Formats and pictures (`F`, `P`, `O`) are not kept; `B` is not trusted, as
+ * Warcraft III ships files whose `B` understates the sheet.
+ */
+export interface SylkDocument {
+  /** The highest column a cell uses. */
+  readonly columns: number
+  readonly rows: readonly SylkRow[]
+  readonly source: TextSourceFacts
+}
+
 export interface TextDocumentMap {
   'common.text-data/json-syntax': JsonDocument
   'common.text-data/jsonc-syntax': JsonDocument
@@ -188,6 +219,7 @@ export interface TextDocumentMap {
   'common.text-data/ini-syntax': IniDocument
   'common.text-data/csv-syntax': DelimitedSnapshot
   'common.text-data/tsv-syntax': DelimitedSnapshot
+  'common.text-data/slk-syntax': SylkDocument
 }
 
 export type TextDataContractId = keyof TextDocumentMap
@@ -201,6 +233,7 @@ export interface TextDataSourceMap {
   'common.text-data/ini-syntax': TreeDataSource
   'common.text-data/csv-syntax': TableDataSource
   'common.text-data/tsv-syntax': TableDataSource
+  'common.text-data/slk-syntax': TableDataSource
 }
 
 export type TextInput =
@@ -278,6 +311,7 @@ declare module '../service-contracts.js' {
     'common.text-data/ini-syntax': { 1: TextSyntaxProvider<'common.text-data/ini-syntax'> }
     'common.text-data/csv-syntax': { 1: TextSyntaxProvider<'common.text-data/csv-syntax'> }
     'common.text-data/tsv-syntax': { 1: TextSyntaxProvider<'common.text-data/tsv-syntax'> }
+    'common.text-data/slk-syntax': { 1: TextSyntaxProvider<'common.text-data/slk-syntax'> }
   }
 
   interface ContractRequestMap {
@@ -289,6 +323,7 @@ declare module '../service-contracts.js' {
     'common.text-data/ini-syntax': { 1: { presence: 'forbidden' } }
     'common.text-data/csv-syntax': { 1: { presence: 'forbidden' } }
     'common.text-data/tsv-syntax': { 1: { presence: 'forbidden' } }
+    'common.text-data/slk-syntax': { 1: { presence: 'forbidden' } }
   }
 
   interface ContractOfferMap {
@@ -300,5 +335,6 @@ declare module '../service-contracts.js' {
     'common.text-data/ini-syntax': { 1: { presence: 'forbidden' } }
     'common.text-data/csv-syntax': { 1: { presence: 'forbidden' } }
     'common.text-data/tsv-syntax': { 1: { presence: 'forbidden' } }
+    'common.text-data/slk-syntax': { 1: { presence: 'forbidden' } }
   }
 }

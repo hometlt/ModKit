@@ -38,6 +38,7 @@ const extensionNameByFormat: Readonly<Record<string, string>> = Object.freeze({
   csv: 'common-data',
   tsv: 'common-data',
   ini: 'common-data',
+  slk: 'common-data',
   xml: 'common-data',
   yaml: 'common-data',
   toml: 'common-data',
@@ -60,6 +61,7 @@ const providerFormatByContract = Object.freeze({
   'common.text-data/ini-syntax': 'ini',
   'common.text-data/csv-syntax': 'csv',
   'common.text-data/tsv-syntax': 'tsv',
+  'common.text-data/slk-syntax': 'slk',
 } satisfies Readonly<Record<TextDataContractId, string>>)
 
 const familyByFormat: Readonly<Partial<Record<string, string>>> = Object.freeze({
@@ -204,6 +206,9 @@ const defaultTextOffers: readonly ProviderOffer[] = [
   providerOffer('modkit/tsv-syntax-default', [
     { contract: 'common.text-data/tsv-syntax', offerId: 'tsv-syntax-default-v1' },
   ]),
+  providerOffer('modkit/slk-syntax-default', [
+    { contract: 'common.text-data/slk-syntax', offerId: 'slk-syntax-default-v1' },
+  ]),
 ]
 
 const alternateXmlOffer = providerOffer('org.example/xml-syntax-parse-xml', [
@@ -307,6 +312,7 @@ const cases = [
   ['common.text-data/ini-syntax', 'ini-basic', '[main]\nname=Modkit\n'],
   ['common.text-data/csv-syntax', 'csv-rfc4180', 'name,count\nModkit,2\n'],
   ['common.text-data/tsv-syntax', 'tsv-iana', 'name\tcount\nModkit\t2\n'],
+  ['common.text-data/slk-syntax', 'sylk', 'ID;P\nC;X1;Y1;K"name"\nC;X2;K"count"\nC;X1;Y2;K"Modkit"\nC;X2;K2\nE\n'],
 ] as const
 
 describe('13B text-data providers and codecs', () => {
@@ -328,8 +334,8 @@ describe('13B text-data providers and codecs', () => {
       )
     ).flat()
     const manifests = manifestsWithRoots.map(item => item.manifest)
-    expect(manifests).toHaveLength(32)
-    expect(new Set(manifests.map(manifest => manifest.id)).size).toBe(32)
+    expect(manifests).toHaveLength(35)
+    expect(new Set(manifests.map(manifest => manifest.id)).size).toBe(35)
     const registry = createSpecSchemaRegistry(A1_SPEC_SCHEMA_ENTRIES)
     for (const { manifest, root } of manifestsWithRoots) {
       const result = await validateContributionManifest(manifest, registry)
@@ -343,14 +349,14 @@ describe('13B text-data providers and codecs', () => {
         ).resolves.toBeInstanceOf(Buffer)
       }
     }
-    expect(manifests.filter(manifest => manifest.contract.id.includes('codec'))).toHaveLength(9)
-    // eight syntax providers plus the external writers and Core's JSON/plain writers.
+    expect(manifests.filter(manifest => manifest.contract.id.includes('codec'))).toHaveLength(10)
+    // nine syntax providers plus the external writers and Core's JSON/plain writers.
     expect(
       manifests.filter(manifest => manifest.contract.id.includes('service-provider')),
-    ).toHaveLength(15)
+    ).toHaveLength(16)
     expect(
       manifests.filter(manifest => manifest.contract.id.includes('contract-definition')),
-    ).toHaveLength(8)
+    ).toHaveLength(9)
     expect(
       manifests.every(
         manifest => JSON.stringify(manifest).includes('"mutatesSource":true') === false,
@@ -486,6 +492,11 @@ describe('13B text-data providers and codecs', () => {
         const source = dataLease.value as TableDataSource
         expect(await source.shape()).toMatchObject({ rows: 'unknown', columns: 2 })
         expect((await source.rows({ kind: 'range', from: 0, count: 1 })).items).toHaveLength(1)
+      } else if (contract.endsWith('/slk-syntax')) {
+        // Row 1 of a sheet is its header; the number of rows is known.
+        const source = dataLease.value as TableDataSource
+        expect(await source.shape()).toMatchObject({ rows: 1, columns: 2, header: ['name', 'count'] })
+        expect((await source.rows({ kind: 'range', from: 0, count: 1 })).items[0]?.cells).toEqual(['Modkit', '2'])
       } else {
         const source = dataLease.value as TreeDataSource
         const root = await source.root()
