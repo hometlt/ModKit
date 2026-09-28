@@ -13,13 +13,25 @@ import {
   type ResourceBudget,
 } from '@modkit/sdk'
 // A function declaration is initialised at instantiation, so this cycle with index.ts is safe.
-import { simpleLease, type ContainerEntry, type ContainerEntryTable } from './index.js'
+import {
+  simpleLease,
+  type ContainerEntry,
+  type ContainerEntryStorage,
+  type ContainerEntryTable,
+} from './index.js'
 
 export const CONTAINER_EXTRACT_HANDLER_ID = 'extract-entry'
 
 function throwIfCancelled(signal: AbortSignal | undefined): void {
   if (signal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
 }
+
+/** An entry's data offset: its `offset`, or where `locate` finds the data from there. */
+const offsetOf = (
+  storage: Extract<ContainerEntryStorage, { readonly offset: bigint }>,
+  signal?: AbortSignal,
+): Promise<bigint> =>
+  storage.locate === undefined ? Promise.resolve(storage.offset) : storage.locate(signal)
 
 function validPath(path: string): boolean {
   return path !== '' && path.split('/').every(part => part !== '' && part !== '.' && part !== '..')
@@ -92,7 +104,9 @@ export function containerEntryAccess(
       ...(entry.hidden === true ? { hidden: true as const } : {}),
       ...(entry.mediaType === undefined ? {} : { mediaType: entry.mediaType }),
       // In place only within the container's own source; a companion's entry is extracted.
-      ...(entry.storage.kind === 'stored' && entry.storage.source === undefined
+      ...(entry.storage.kind === 'stored' &&
+      entry.storage.source === undefined &&
+      entry.storage.locate === undefined
         ? {
             storedRange: Object.freeze({
               offset: entry.storage.offset,
@@ -102,7 +116,8 @@ export function containerEntryAccess(
         : {}),
       // Readable by range without extraction: stored data in a companion, or a custom entry whose
       // storage promises a range source.
-      ...((entry.storage.kind === 'stored' && entry.storage.source !== undefined) ||
+      ...((entry.storage.kind === 'stored' &&
+        (entry.storage.source !== undefined || entry.storage.locate !== undefined)) ||
       (entry.storage.kind === 'custom' && entry.storage.rangeAccess === true)
         ? { rangeAccess: true as const }
         : {}),
@@ -195,21 +210,33 @@ export function containerEntryAccess(
       const entry = await entryAt(entryId, signal)
       if (entry === undefined) throw new TypeError(`unknown container entry ${entryId}`)
       const storage = entry.storage
-      if (storage.kind === 'stored' && storage.source !== undefined) {
-        if (context.companionSource === undefined)
-          throw new TypeError(
-            `container entry data lives in companion «${storage.source}», which this open does not carry`,
-          )
-        const companion = await context.companionSource(storage.source, signal)
-        const window = Object.freeze<ByteRangeSource>({
-          size: async () => storage.length,
-          async read(offset, length, readSignal) {
-            if (offset < 0n || offset + BigInt(length) > storage.length)
-              throw new RangeError('container entry read is outside the entry')
-            return companion.source.read(storage.offset + offset, length, readSignal)
-          },
-        })
-        return Object.freeze({ value: window, release: () => companion.release() })
+      if (storage.kind === 'stored') {
+        // the container's own source, or a companion the input carries
+        let holder: { readonly source: ByteRangeSource; release(): Promise<void> }
+        if (storage.source === undefined) {
+          holder = { source: context.byteSource, release: async () => undefined }
+        } else {
+          if (context.companionSource === undefined)
+            throw new TypeError(
+              `container entry data lives in companion «${storage.source}», which this open does not carry`,
+            )
+          holder = await context.companionSource(storage.source, signal)
+        }
+        try {
+          const start = await offsetOf(storage, signal)
+          const window = Object.freeze<ByteRangeSource>({
+            size: async () => storage.length,
+            async read(offset, length, readSignal) {
+              if (offset < 0n || offset + BigInt(length) > storage.length)
+                throw new RangeError('container entry read is outside the entry')
+              return holder.source.read(start + offset, length, readSignal)
+            },
+          })
+          return Object.freeze({ value: window, release: () => holder.release() })
+        } catch (error) {
+          await holder.release()
+          throw error
+        }
       }
       if (storage.kind === 'custom' && storage.rangeAccess === true) {
         const opened = await storage.open(signal)
@@ -307,7 +334,12 @@ async function decodeContainerEntry(
   let bytes: Uint8Array
   switch (storage.kind) {
     case 'stored':
-      bytes = await readRange(storage.offset, storage.length, signal, storage.source)
+      bytes = await readRange(
+        await offsetOf(storage, signal),
+        storage.length,
+        signal,
+        storage.source,
+      )
       break
     case 'deflate':
     case 'zlib':
@@ -316,7 +348,12 @@ async function decodeContainerEntry(
       const format =
         storage.kind === 'deflate' ? 'deflate-raw' : storage.kind === 'zlib' ? 'deflate' : 'gzip'
       bytes = await decompressBounded(
-        await readRange(storage.offset, storage.compressedLength, signal, storage.source),
+        await readRange(
+          await offsetOf(storage, signal),
+          storage.compressedLength,
+          signal,
+          storage.source,
+        ),
         format,
         {
           maxOutputBytes: size,
@@ -328,7 +365,12 @@ async function decodeContainerEntry(
     case 'zstd': {
       const { decodeZstd } = await import('./compression/zstd.js')
       bytes = decodeZstd(
-        await readRange(storage.offset, storage.compressedLength, signal, storage.source),
+        await readRange(
+          await offsetOf(storage, signal),
+          storage.compressedLength,
+          signal,
+          storage.source,
+        ),
         {
           expectedLength: size,
           maxOutputBytes: size,
@@ -339,7 +381,12 @@ async function decodeContainerEntry(
     case 'lz4-block': {
       const { decodeLz4Block } = await import('./compression/lz4.js')
       bytes = decodeLz4Block(
-        await readRange(storage.offset, storage.compressedLength, signal, storage.source),
+        await readRange(
+          await offsetOf(storage, signal),
+          storage.compressedLength,
+          signal,
+          storage.source,
+        ),
         size,
       )
       break
@@ -347,7 +394,12 @@ async function decodeContainerEntry(
     case 'refpack': {
       const { decodeRefPack } = await import('./compression/refpack.js')
       bytes = decodeRefPack(
-        await readRange(storage.offset, storage.compressedLength, signal, storage.source),
+        await readRange(
+          await offsetOf(storage, signal),
+          storage.compressedLength,
+          signal,
+          storage.source,
+        ),
         size,
       )
       break

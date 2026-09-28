@@ -313,6 +313,23 @@ describe('readContainerEntry', () => {
       new TextDecoder().decode(await readContainerEntry(entry, source, { maxBytes: 64 })),
     ).toBe('hello, stored entry')
     await expect(readContainerEntry(entry, source, { maxBytes: 4 })).rejects.toThrow(RangeError)
+    // an offset found on first use: `offset` is a nearby position, `locate` the data's start
+    let located = 0
+    const lazy = {
+      ...entry,
+      storage: {
+        ...entry.storage,
+        offset: 0n,
+        locate: async () => {
+          located += 1
+          return BigInt(zlibbed.byteLength)
+        },
+      },
+    }
+    expect(new TextDecoder().decode(await readContainerEntry(lazy, source, { maxBytes: 64 }))).toBe(
+      'hello, stored entry',
+    )
+    expect(located).toBe(1)
   })
 })
 

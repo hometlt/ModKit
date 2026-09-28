@@ -221,10 +221,18 @@ export type InspectionOperationState =
  * `codec-kit/compression`, bounded by the entry's decoded `size`. `custom` is for what no shared
  * decoder covers (Halo ERA `decryptRange`, a proprietary codec): the format opens the entry itself.
  */
+/**
+ * Where an entry's data starts when the index knows only a position near it: a ZIP entry's data
+ * follows a local header whose length only that header says. `offset` is then that position, and
+ * the host calls `locate` (memoized by the codec) on first use instead of reading it.
+ */
+export type ContainerEntryLocate = (signal?: AbortSignal) => Promise<bigint>
+
 export type ContainerEntryStorage =
   | {
       readonly kind: 'stored'
       readonly offset: bigint
+      readonly locate?: ContainerEntryLocate
       readonly length: bigint
       /** Binding id of the input's companion holding the bytes (`.rfd` beside `.rfh`, `.ucas`
        * beside `.utoc`); absent means the container source itself. */
@@ -233,6 +241,7 @@ export type ContainerEntryStorage =
   | {
       readonly kind: 'deflate' | 'zlib' | 'gzip' | 'zstd' | 'lz4-block' | 'refpack'
       readonly offset: bigint
+      readonly locate?: ContainerEntryLocate
       readonly compressedLength: bigint
       readonly source?: string
     }
