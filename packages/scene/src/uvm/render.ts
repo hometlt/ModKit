@@ -240,7 +240,7 @@ async function prepareUvmRender(
   const stageBytes = Math.floor((sceneAvailable - rasterBudget) / 4)
   const samplers = array(document, 'samplers')
   const samplerDiagnostics: SceneRendererDiagnostic[] = []
-  const samplerByIndex = new Map<number, Pick<SceneRendererTexture, 'wrapU' | 'wrapV'>>()
+  const samplerByIndex = new Map<number, Pick<SceneRendererTexture, 'wrapU' | 'wrapV' | 'filter'>>()
   const textureSampler = (index: number) => {
     const existing = samplerByIndex.get(index)
     if (existing !== undefined) return existing
@@ -260,8 +260,16 @@ async function prepareUvmRender(
         `texture ${index} ${axis} mode ${String(mode)} is not supported by the scene renderer`,
       )
     }
-    const settings = { wrapU: wrap('wrapS'), wrapV: wrap('wrapT') }
-    if (sampler['magFilter'] !== undefined || sampler['minFilter'] !== undefined)
+    // glTF NEAREST (9728) / LINEAR (9729) magnification is the scene's first-surface filter
+    const magnified = sampler['magFilter']
+    const filter: SceneRendererTexture['filter'] =
+      magnified === 9728 ? 'nearest' : magnified === 9729 ? 'linear' : undefined
+    const settings = {
+      wrapU: wrap('wrapS'),
+      wrapV: wrap('wrapT'),
+      ...(filter === undefined ? {} : { filter }),
+    }
+    if (magnified !== undefined && filter === undefined)
       samplerDiagnostics.push({
         severity: 'warning',
         code: 'common.uvm/texture-filter-unrendered',

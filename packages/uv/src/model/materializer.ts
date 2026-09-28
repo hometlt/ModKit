@@ -45,10 +45,39 @@ export interface ModelProjection {
       readonly role: string
       readonly logicalId: string
       readonly mediaHint?: string | null
+      /**
+       * How the image is meant to be magnified: `nearest` keeps pixel art sharp (Minecraft's
+       * 16×16 block textures). Written as the texture's glTF sampler; absent means the renderer's
+       * default (linear).
+       */
+      readonly filter?: 'nearest' | 'linear'
     }[]
     readonly unavailable?: readonly { readonly logicalId: string }[]
   }
 }
+/** glTF filter enums (NEAREST 9728, LINEAR 9729). */
+const GLTF_FILTER = { nearest: 9728, linear: 9729 } as const
+
+/** One texture per image; an image with a stated filter gets a sampler naming it, shared by filter. */
+function texturesWithSamplers(filters: readonly ('nearest' | 'linear' | undefined)[]): {
+  readonly textures: UvmJsonObject[]
+  readonly samplers?: UvmJsonObject[]
+} {
+  const samplers: UvmJsonObject[] = []
+  const samplerOf = new Map<'nearest' | 'linear', number>()
+  const textures = filters.map((filter, index) => {
+    if (filter === undefined) return { source: index }
+    let sampler = samplerOf.get(filter)
+    if (sampler === undefined) {
+      sampler = samplers.length
+      samplerOf.set(filter, sampler)
+      samplers.push({ magFilter: GLTF_FILTER[filter], minFilter: GLTF_FILTER[filter] })
+    }
+    return { source: index, sampler }
+  })
+  return samplers.length === 0 ? { textures } : { textures, samplers }
+}
+
 export interface MaterializationOptions {
   readonly digest?: (bytes: Uint8Array) => string
   /** Bounds the aggregate material definitions, including shader keys and composite passes. */
@@ -732,6 +761,8 @@ export function materializeUvmCore(
   // --- planes this profile cannot carry from the base contract alone --------------------------
   const closure = projection.resourceClosure
   const resourceImages = []
+  /** glTF filter per image index, for the images whose closure entry names one. */
+  const imageFilters: ('nearest' | 'linear' | undefined)[] = []
   if (closure !== undefined && closure !== null) {
     if (closure.mode !== 'logical' && closure.mode !== 'content-qualified') {
       fail('resourceClosure.mode must be logical or content-qualified')
@@ -741,10 +772,14 @@ export function materializeUvmCore(
       if (typeof entry.logicalId !== 'string' || entry.logicalId === '') {
         fail('every image/texture resource-closure entry needs a non-empty logicalId')
       }
+      if (entry.filter !== undefined && entry.filter !== 'nearest' && entry.filter !== 'linear') {
+        fail('a resource-closure filter is nearest or linear')
+      }
       resourceImages.push({
         uri: entry.logicalId,
         ...(typeof entry.mediaHint === 'string' ? { mimeType: entry.mediaHint } : {}),
       })
+      imageFilters.push(entry.filter)
     }
     const uncarried = (closure.entries ?? []).filter(
       entry => entry?.role !== 'image' && entry?.role !== 'texture',
@@ -1251,7 +1286,7 @@ export function materializeUvmCore(
       ? {}
       : {
           images: resourceImages,
-          textures: resourceImages.map((_image, index) => ({ source: index })),
+          ...texturesWithSamplers(imageFilters),
         }),
     accessors,
     bufferViews: buffers.views,
