@@ -63,6 +63,20 @@ describe('the host’s folder search for installed games', () => {
     expect(limited.complete).toBe(false)
   })
 
+  it('searches only the common folders the user kept, when the application names them', async () => {
+    const kept = await searchInstallationFolders({
+      markers,
+      commonFolders: ['XboxGames'],
+      platform: 'win32',
+      drives: [drive],
+      environment: { LOCALAPPDATA: join(drive, 'Games') },
+    })
+    // `Games` is neither kept nor reached through %LOCALAPPDATA%
+    expect(kept.found).toEqual({
+      'wz2100project/warzone-2100': [join(drive, 'XboxGames', 'Warzone 2100')],
+    })
+  })
+
   it('takes the local drives Windows mounts itself, never a mapped share', async () => {
     const asked: string[][] = []
     const search = await searchInstallationFolders({

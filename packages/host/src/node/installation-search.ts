@@ -25,6 +25,12 @@ export interface InstallationFolderSearchOptions {
   readonly markers: readonly GameInstallationMarker[]
   /** Store and publisher folders games name, searched at every local drive root. */
   readonly searchFolders?: readonly string[]
+  /**
+   * The common install folders searched at every local drive root, replacing the host's list
+   * (`Program Files`, `Games`, …) and the implicit `%LOCALAPPDATA%\Programs`: a user who removed one
+   * from the application's setting is not searched there.
+   */
+  readonly commonFolders?: readonly string[]
   /** Folders the user added (a network share among them), searched as they are. */
   readonly folders?: readonly string[]
   /** Folders one search reads at most; beyond it the answer says it is incomplete. */
@@ -81,11 +87,12 @@ async function searchRoots(options: InstallationFolderSearchOptions): Promise<re
   const environment = options.environment ?? process.env
   const roots: string[] = []
   if (platform === 'win32') {
-    const names = [...COMMON_FOLDERS, ...(options.searchFolders ?? [])]
+    const names = [...(options.commonFolders ?? COMMON_FOLDERS), ...(options.searchFolders ?? [])]
     for (const drive of await localDrives(options))
       for (const name of names) roots.push(join(drive, name))
     const local = environment['LOCALAPPDATA']
-    if (local !== undefined && local !== '') roots.push(join(local, 'Programs'))
+    if (options.commonFolders === undefined && local !== undefined && local !== '')
+      roots.push(join(local, 'Programs'))
   } else {
     const home = environment['HOME'] ?? homedir()
     roots.push(
