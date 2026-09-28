@@ -1,5 +1,5 @@
 import type { BigIntStats } from 'node:fs'
-import { open, readdir, realpath, stat } from 'node:fs/promises'
+import { open, readdir, realpath, stat, type FileHandle } from 'node:fs/promises'
 import { isAbsolute, relative, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
@@ -76,6 +76,12 @@ function fileSizeLimitError(path: string, size: bigint, maximum: bigint): Modkit
 
 class FileRandomAccessSource implements RandomAccessSource {
   private disposed = false
+  /**
+   * One descriptor for every read until dispose: opening a file costs far more than reading it on
+   * Windows (a 30 MB jar: ~96 ms an open under antivirus), and a chunk mesh reads hundreds of small
+   * jar entries. Node opens it sharing read, write and delete, so a game or editor still saves.
+   */
+  private handle: Promise<FileHandle> | undefined
 
   constructor(
     readonly id: string,
@@ -104,7 +110,10 @@ class FileRandomAccessSource implements RandomAccessSource {
     assertReadRangeLimit(this.id, length, this.limits)
     const reservation = this.readBudget.reserve(length, this.id)
     try {
-      const current = snapshotOf(await stat(this.path, { bigint: true }))
+      const handle = await this.fileHandle()
+      // the open file's own stat: an in-place write changes its size or time; a file replaced at
+      // the path keeps the handle on the bytes this source was opened for
+      const current = snapshotOf(await handle.stat({ bigint: true }))
       if (!sameSnapshot(this.snapshot, current)) {
         throw new ModkitError({
           code: 'x3.vfs/file-revision-changed',
@@ -112,8 +121,7 @@ class FileRandomAccessSource implements RandomAccessSource {
           context: { sourceId: this.id, revision: fileRevision(this.snapshot) },
         })
       }
-      const handle = await open(this.path, 'r')
-      try {
+      {
         const bytes = new Uint8Array(length)
         let filled = 0
         while (filled < length) {
@@ -132,12 +140,22 @@ class FileRandomAccessSource implements RandomAccessSource {
           })
         }
         return bytes
-      } finally {
-        await handle.close()
       }
     } finally {
       reservation.release()
     }
+  }
+
+  private fileHandle(): Promise<FileHandle> {
+    if (this.handle === undefined) {
+      const opening = open(this.path, 'r')
+      this.handle = opening
+      // a failed open is not remembered: the next read tries again
+      opening.catch(() => {
+        if (this.handle === opening) this.handle = undefined
+      })
+    }
+    return this.handle
   }
 
   stream(
@@ -173,8 +191,15 @@ class FileRandomAccessSource implements RandomAccessSource {
     })
   }
 
-  dispose(): void {
+  async dispose(): Promise<void> {
     this.disposed = true
+    const handle = this.handle
+    this.handle = undefined
+    // closed before dispose resolves, so the file can be removed right after (Windows)
+    await handle?.then(
+      opened => opened.close(),
+      () => undefined,
+    )
   }
 
   private assertLive(): void {
