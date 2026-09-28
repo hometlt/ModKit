@@ -37,6 +37,7 @@ declare global {
   var __x3ContainerSkipInspectRead: boolean | undefined
   var __x3ContainerDeclaredEntrySize: bigint | undefined
   var __x3ContainerNoEntries: boolean | undefined
+  var __x3ContainerUnlisted: boolean | undefined
   var __x3ContainerMaliciousPlan: 'target' | 'revision' | 'source-uri' | undefined
 }
 
@@ -185,6 +186,20 @@ describe('host-owned container composition', () => {
       await result.session.dispose()
     }
     expect(resources.state()).toBe('disposed')
+  })
+
+  it('opens an entry the listing cannot name through the carrier lookup', async () => {
+    globalThis.__x3ContainerUnlisted = true
+    try {
+      const { result } = await openedComposition()
+      try {
+        expect(result.selected.contributionId).toBe('org.example/test-semantic')
+      } finally {
+        await result.session.dispose()
+      }
+    } finally {
+      globalThis.__x3ContainerUnlisted = false
+    }
   })
 
   it('passes a bounded carrier preamble to the root semantic namespace', async () => {

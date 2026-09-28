@@ -565,6 +565,15 @@ export async function createContainerNamespaceComposition(
       }
       return { kind: 'directory' }
     }
+    // A path the listing cannot name (an MPQ without its listfile: protected SC:R and Warcraft III
+    // maps) may still be found by the container, as extraction and nested opens already ask.
+    const found = await namespace.lookup?.(path, signal)
+    ensureLive(signal)
+    if (found !== undefined && found !== null) {
+      const validated = validateEntry(found)
+      if (sameNamespacePath(validated.path, path) && validated.kind === 'file')
+        return { kind: 'file', entry: validated }
+    }
     throw new ModkitError({
       code: ENTRY_NOT_FOUND,
       message: `namespace entry «${path}» does not exist`,

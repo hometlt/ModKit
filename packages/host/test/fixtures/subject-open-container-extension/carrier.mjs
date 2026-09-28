@@ -60,8 +60,11 @@ function namespaceSource(source) {
     },
     async list(prefix, page, signal) {
       if (signal?.aborted) throw new DOMException('cancelled', 'AbortError')
+      // __x3ContainerUnlisted: the listing cannot name the file by its own path (an MPQ without a
+      // listfile answers only whole-archive pages), only lookup finds it
       const items =
-        globalThis.__x3ContainerNoEntries === true
+        globalThis.__x3ContainerNoEntries === true ||
+        (globalThis.__x3ContainerUnlisted === true && prefix === entry.path)
           ? []
           : entry.path.startsWith(prefix)
             ? [entry]
@@ -77,6 +80,15 @@ function namespaceSource(source) {
             }),
           ),
         ),
+      })
+    },
+    async lookup(path, signal) {
+      if (signal?.aborted) throw new DOMException('cancelled', 'AbortError')
+      if (path !== entry.path || globalThis.__x3ContainerNoEntries === true) return undefined
+      return Object.freeze({
+        ...entry,
+        size: globalThis.__x3ContainerDeclaredEntrySize ?? BigInt(entryBytes.byteLength),
+        revision: source.revision,
       })
     },
     async openEntry(entryId, signal) {
