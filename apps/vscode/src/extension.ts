@@ -292,6 +292,8 @@ import {
   SELECTED_SOURCES_KEY,
   BATTLENET_CONNECTIONS_KEY,
   CATALOGUE_KEY,
+  ICON_THEME_ID,
+  ICON_THEME_OFFERED_KEY,
 } from './constants.js'
 import {
   type FormatSmokeRouteStep,
@@ -11260,6 +11262,28 @@ async function activateModkit(
     if (stale.length > 0) log(`[associations] reopened ${stale.length} tab(s) this sync claimed`)
   }
   void syncEditorAssociations('activation').then(reopenNewlyAssociatedTabs)
+
+  /*
+   * VS Code never turns on a contributed icon theme by itself, so the Modkit icons showed nowhere
+   * until the user went looking for them. They are offered once; whatever the answer, not again.
+   */
+  const workbench = vscode.workspace.getConfiguration('workbench')
+  if (
+    context.globalState.get(ICON_THEME_OFFERED_KEY) !== true &&
+    workbench.get('iconTheme') !== ICON_THEME_ID
+  ) {
+    void context.globalState.update(ICON_THEME_OFFERED_KEY, true)
+    void vscode.window
+      .showInformationMessage(
+        localizer.text('vscode.iconTheme.offer'),
+        localizer.text('vscode.iconTheme.enable'),
+      )
+      .then(choice =>
+        choice === undefined
+          ? undefined
+          : workbench.update('iconTheme', ICON_THEME_ID, vscode.ConfigurationTarget.Global),
+      )
+  }
 
   // ---------------------------------------------------------------- views
   /*

@@ -90,3 +90,7 @@ export const SELECTED_SOURCES_KEY = 'modkit.selectedContentSources'
 export const BATTLENET_CONNECTIONS_KEY = 'modkit.sources.knownConnections'
 /** The last listing read for each account's root, so a new window can show it before connecting. */
 export const CATALOGUE_KEY = 'modkit.sources.catalogue'
+/** The file icon theme this extension contributes (`contributes.iconThemes`). */
+export const ICON_THEME_ID = 'modkit-file-icons'
+/** Set once the icon theme has been offered, whatever the answer was. */
+export const ICON_THEME_OFFERED_KEY = 'modkit.iconThemeOffered'

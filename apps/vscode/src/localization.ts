@@ -420,6 +420,9 @@ const EN_MESSAGES = Object.freeze({
     'Unsaved changes to {name} were kept from the last session. Apply them to the file?',
   'vscode.document.keptApply': 'Apply to file',
   'vscode.document.keptDiscard': 'Discard',
+  'vscode.iconTheme.offer':
+    'Turn on Modkit file icons? They show game formats (models, textures, maps, archives) in the Explorer. You can switch back under Preferences → File Icon Theme.',
+  'vscode.iconTheme.enable': 'Turn on',
   'vscode.edit.noneDrivable':
     '{unsupported} of {declared} mutating operation(s) declared; none can be driven here',
   'vscode.edit.counts': '{forms} form(s) over {declared} mutating operation(s)',
@@ -921,6 +924,9 @@ const RU_MESSAGES: Readonly<Record<keyof typeof EN_MESSAGES, string>> = Object.f
     'С прошлого сеанса остались несохранённые правки {name}. Применить их к файлу?',
   'vscode.document.keptApply': 'Применить к файлу',
   'vscode.document.keptDiscard': 'Отбросить',
+  'vscode.iconTheme.offer':
+    'Включить значки файлов Modkit? Они показывают форматы игр (модели, текстуры, карты, архивы) в проводнике. Вернуть прежнюю тему можно в «Параметры → Тема значков файлов».',
+  'vscode.iconTheme.enable': 'Включить',
   'vscode.edit.noneDrivable':
     'Объявлено операций изменения: {declared}; недоступно здесь: {unsupported}',
   'vscode.edit.counts': 'Форм: {forms}; операций изменения: {declared}',

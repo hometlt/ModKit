@@ -3,6 +3,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { expandContributionManifests } from '@modkit/sdk'
+import { ICON_THEME_ID } from '../src/constants.js'
 
 /**
  * The «Modkit File Icons» theme (plan 8.20): every format a Modkit extension claims has an icon, so
@@ -96,6 +97,10 @@ describe('the Modkit file icon theme', () => {
       language => language.id,
     )
     expect(languages.filter(id => theme.languageIds[id] === undefined)).toEqual([])
+    // the theme activation offers is the one the manifest contributes
+    expect(manifest.contributes.iconThemes.map((entry: { id: string }) => entry.id)).toEqual([
+      ICON_THEME_ID,
+    ])
   })
 
   it('has a plain file and folder icon for everything it does not know', () => {
