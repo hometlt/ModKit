@@ -59,7 +59,13 @@ export function parseSylk(decoded: DecodedText, limits?: SylkLimits): ParseResul
     const [kind = '', ...fields] = fieldsOf(line)
     if (!started) {
       if (kind !== 'ID')
-        return failure('modkit/text-data-slk-parse', 'SYLK starts with an ID record', text, offset, line.length)
+        return failure(
+          'modkit/text-data-slk-parse',
+          'SYLK starts with an ID record',
+          text,
+          offset,
+          line.length,
+        )
       started = true
       continue
     }
@@ -71,7 +77,13 @@ export function parseSylk(decoded: DecodedText, limits?: SylkLimits): ParseResul
       if (code === 'X' || code === 'Y') {
         const coordinate = /^\d+$/u.test(field.slice(1)) ? Number(field.slice(1)) : 0
         if (coordinate < 1 || coordinate > (code === 'X' ? MAX_COLUMNS : MAX_ROWS))
-          return failure('modkit/text-data-slk-parse', `SYLK coordinate ${field} is out of range`, text, offset, line.length)
+          return failure(
+            'modkit/text-data-slk-parse',
+            `SYLK coordinate ${field} is out of range`,
+            text,
+            offset,
+            line.length,
+          )
         if (code === 'X') column = coordinate
         else row = coordinate
       } else if (code === 'K' && kind === 'C') value = field.slice(1)
@@ -80,31 +92,54 @@ export function parseSylk(decoded: DecodedText, limits?: SylkLimits): ParseResul
     const quoted = value.startsWith('"')
     const cell: SylkCell = {
       column,
-      value: quoted ? value.slice(1, value.length > 1 && value.endsWith('"') ? -1 : undefined) : value,
+      value: quoted
+        ? value.slice(1, value.length > 1 && value.endsWith('"') ? -1 : undefined)
+        : value,
       quoted,
       range: span(offset, line.length),
     }
     const cellsOfRow = rows.get(row) ?? new Map<number, SylkCell>()
-    rows.set(row, cellsOfRow)
     if (cellsOfRow.has(column))
       diagnostics.push(
-        diagnostic('warning', 'modkit/text-data-slk-duplicate-cell', `cell X${String(column)};Y${String(row)} is written twice; the later value is kept`, undefined, undefined, cell.range),
+        diagnostic(
+          'warning',
+          'modkit/text-data-slk-duplicate-cell',
+          `cell X${String(column)};Y${String(row)} is written twice; the later value is kept`,
+          undefined,
+          undefined,
+          cell.range,
+        ),
       )
-    else cells += 1
+    else {
+      // truncated only when a cell past the limit exists, not when the last one fills it
+      if (limits !== undefined && cells >= limits.maxNodes)
+        return {
+          state: 'truncated',
+          document: documentOf(rows, columns, decoded),
+          truncated: { limit: 'maxNodes' },
+          diagnostics,
+        }
+      cells += 1
+    }
+    rows.set(row, cellsOfRow)
     cellsOfRow.set(column, cell)
     columns = Math.max(columns, column)
-    if (limits !== undefined && cells >= limits.maxNodes) {
-      return { state: 'truncated', document: documentOf(rows, columns, decoded), truncated: { limit: 'maxNodes' }, diagnostics }
-    }
   }
   if (!started) return failure('modkit/text-data-slk-parse', 'SYLK starts with an ID record', text)
   return { state: 'ok', document: documentOf(rows, columns, decoded), diagnostics }
 }
 
-function documentOf(rows: ReadonlyMap<number, ReadonlyMap<number, SylkCell>>, columns: number, decoded: DecodedText): SylkDocument {
+function documentOf(
+  rows: ReadonlyMap<number, ReadonlyMap<number, SylkCell>>,
+  columns: number,
+  decoded: DecodedText,
+): SylkDocument {
   const ordered: SylkRow[] = [...rows]
     .sort(([left], [right]) => left - right)
-    .map(([index, cells]) => ({ index, cells: [...cells.values()].sort((left, right) => left.column - right.column) }))
+    .map(([index, cells]) => ({
+      index,
+      cells: [...cells.values()].sort((left, right) => left.column - right.column),
+    }))
   return { columns, rows: ordered, source: decoded.source }
 }
 
@@ -135,7 +170,8 @@ export function sylkTableDataSource(document: SylkDocument): TableDataSource {
     for (const cell of byRow.get(index)?.cells ?? []) values[cell.column - 1] = cell.value
     return values
   }
-  const cellAt = (row: number, column: number) => byRow.get(row)?.cells.find(cell => cell.column === column)
+  const cellAt = (row: number, column: number) =>
+    byRow.get(row)?.cells.find(cell => cell.column === column)
   return createTableDataSource({
     header: dense(1),
     rows: Array.from({ length: Math.max(0, height - 1) }, (_, offset) => dense(offset + 2)),

@@ -28,9 +28,28 @@ describe('SYLK', () => {
     const { document } = result
     // B says 3 × 2; the cells say 4 × 3. The cells win, and nothing after E is read.
     expect(document.columns).toBe(4)
-    expect(document.rows.map(row => [row.index, row.cells.map(cell => [cell.column, cell.value, cell.quoted])])).toEqual([
-      [1, [[1, 'unitBalanceID', true], [2, 'goldcost', true], [4, 'comment;s', true]]],
-      [3, [[1, 'hfoo', true], [2, '135', false], [3, 'TRUE', false]]],
+    expect(
+      document.rows.map(row => [
+        row.index,
+        row.cells.map(cell => [cell.column, cell.value, cell.quoted]),
+      ]),
+    ).toEqual([
+      [
+        1,
+        [
+          [1, 'unitBalanceID', true],
+          [2, 'goldcost', true],
+          [4, 'comment;s', true],
+        ],
+      ],
+      [
+        3,
+        [
+          [1, 'hfoo', true],
+          [2, '135', false],
+          [3, 'TRUE', false],
+        ],
+      ],
     ])
     expect(document.rows[1]!.cells[1]!.range.line).toBe(8)
   })
@@ -42,7 +61,9 @@ describe('SYLK', () => {
     const twice = parseSylk(decoded('ID;P\nC;X1;Y1;K1\nC;X1;Y1;K2\nE\n'))
     if (twice.state !== 'ok') throw new Error('expected ok')
     expect(twice.document.rows[0]!.cells.map(cell => cell.value)).toEqual(['2'])
-    expect(twice.diagnostics.map(item => item.code)).toEqual(['modkit/text-data-slk-duplicate-cell'])
+    expect(twice.diagnostics.map(item => item.code)).toEqual([
+      'modkit/text-data-slk-duplicate-cell',
+    ])
   })
 
   it('stops at maxNodes cells with a truncated document', () => {
@@ -50,17 +71,27 @@ describe('SYLK', () => {
     expect(result.state).toBe('truncated')
     if (result.state !== 'truncated') return
     expect(result.document.rows[0]!.cells.map(cell => cell.value)).toEqual(['1', '2'])
+    // exactly maxNodes cells is the whole sheet, not a cut one
+    expect(parseSylk(decoded('ID;P\nC;X1;Y1;K1\nC;X2;K2\nE\n'), { maxNodes: 2 }).state).toBe('ok')
   })
 
   it('writes the cells back to SYLK that reads the same', () => {
     const first = parseSylk(decoded(UNIT_BALANCE))
     if (first.state !== 'ok') throw new Error('expected ok')
     const text = formatSylk(first.document)
-    expect(text.split('\n').slice(0, 4)).toEqual(['ID;PWXL;N;E', 'B;X4;Y3;D0', 'C;X1;Y1;K"unitBalanceID"', 'C;X2;K"goldcost"'])
+    expect(text.split('\n').slice(0, 4)).toEqual([
+      'ID;PWXL;N;E',
+      'B;X4;Y3;D0',
+      'C;X1;Y1;K"unitBalanceID"',
+      'C;X2;K"goldcost"',
+    ])
     const again = parseSylk(decoded(text))
     if (again.state !== 'ok') throw new Error('expected ok')
     const cells = (document: typeof first.document) =>
-      document.rows.map(row => [row.index, row.cells.map(cell => [cell.column, cell.value, cell.quoted])])
+      document.rows.map(row => [
+        row.index,
+        row.cells.map(cell => [cell.column, cell.value, cell.quoted]),
+      ])
     expect(cells(again.document)).toEqual(cells(first.document))
   })
 
