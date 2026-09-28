@@ -182,6 +182,16 @@ export function preferredStage(
   applicable: readonly string[],
   planActive: string | undefined,
 ): string | undefined {
+  const chosen = plannedStage(applicable, planActive)
+  // A timed world (a replay) opens on its playback: the play controls and the timeline live there,
+  // while the world stage only follows the clock.
+  return chosen === 'world' && applicable.includes('playback') ? 'playback' : chosen
+}
+
+function plannedStage(
+  applicable: readonly string[],
+  planActive: string | undefined,
+): string | undefined {
   /*
    * A media subject opens on its render view, not on its card.
    *

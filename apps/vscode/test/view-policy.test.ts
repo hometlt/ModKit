@@ -359,4 +359,16 @@ describe('VS Code view policy', () => {
       expect(preferredStage(applicable, 'hex')).toBe('hex')
     }
   })
+
+  it('opens a timed world on its playback, where the play controls are', () => {
+    // a replay: the plan ranks world above playback, but the world stage only follows the clock
+    const replay = ['world', 'playback', 'archive', 'card', 'hex']
+    for (const planned of [undefined, 'world', 'card', 'archive']) {
+      expect(preferredStage(replay, planned)).toBe('playback')
+    }
+    expect(preferredStage(replay, 'hex')).toBe('hex')
+    // a map has no transport, and audio with a timeline keeps its own render stage
+    expect(preferredStage(['world', 'archive', 'card'], 'world')).toBe('world')
+    expect(preferredStage(['audio', 'playback', 'card'], 'audio')).toBe('audio')
+  })
 })
