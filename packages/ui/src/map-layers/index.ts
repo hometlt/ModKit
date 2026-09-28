@@ -17,6 +17,7 @@ import {
   type MapLayerGrid,
   type MapLayerList,
   type MapLayerMeaning,
+  type MapPictureDescriptor,
 } from '@modkit/sdk/maps'
 import type { ImageExportFile, ImageExportOutcome } from '../image/index.js'
 import { MAP_LAYERS_FALLBACK_MESSAGES } from '../localization/fallback-catalogs.generated.js'
@@ -78,36 +79,70 @@ export interface MapLayerPicture {
   readonly height: number
   /** RGBA, row 0 at the map's north edge. */
   readonly rgba: Uint8ClampedArray<ArrayBuffer>
-  /** The colour of each value present, when the layer is drawn as classes; empty for a ramp. */
-  readonly classes: readonly { readonly value: number; readonly colour: string }[]
+  /**
+   * The colour of each value present, when the layer is drawn as classes, and the game's name for
+   * it when the layer's legend gives one; empty for a ramp.
+   */
+  readonly classes: readonly { readonly value: number; readonly colour: string; readonly label?: string }[]
+}
+
+/** `#rrggbb` as a colour; anything else is none. */
+function hexColour(value: string | undefined): readonly [number, number, number] | undefined {
+  const hex = value === undefined ? undefined : /^#([0-9a-f]{6})$/iu.exec(value)?.[1]
+  if (hex === undefined) return undefined
+  const rgb = Number.parseInt(hex, 16)
+  return [rgb >> 16, (rgb >> 8) & 255, rgb & 255]
 }
 
 /**
- * A layer's samples as a picture: classes (cliff levels, pathing, flags) with few enough values get
- * a colour each, anything else is a grey ramp from the layer's minimum (black) to its maximum.
+ * A layer's samples as a picture: a layer with a legend (`categories`: biomes, top blocks) is drawn
+ * in the game's colours, classes (cliff levels, pathing, flags) with few enough values get a colour
+ * each, anything else is a grey ramp from the layer's minimum (black) to its maximum.
  */
 export function mapLayerPicture(layer: MapLayerDescriptor, grid: MapLayerGrid): MapLayerPicture {
   const span = layer.maximum - layer.minimum
-  const classed = CLASS_MEANINGS.has(layer.meaning) && span < CLASS_COLOURS.length
+  const named = new Map((layer.categories ?? []).map(item => [item.value, item] as const))
+  const classed = named.size > 0 || (CLASS_MEANINGS.has(layer.meaning) && span < CLASS_COLOURS.length)
+  // A value the legend gives no colour takes the next distinct one, round again past the last.
+  const colours = new Map<number, readonly [number, number, number]>()
+  const colourOf = (value: number) => {
+    let colour = colours.get(value)
+    if (colour === undefined) {
+      colour = hexColour(named.get(value)?.color) ?? CLASS_COLOURS[(value - layer.minimum) % CLASS_COLOURS.length] ?? [0, 0, 0]
+      colours.set(value, colour)
+    }
+    return colour
+  }
   const rgba = new Uint8ClampedArray(grid.width * grid.height * 4)
-  const present = new Set<number>()
   for (let index = 0; index < grid.width * grid.height; index += 1) {
     const value = Math.min(layer.maximum, Math.max(layer.minimum, grid.values[index] ?? layer.minimum))
     let colour: readonly [number, number, number]
-    if (classed) {
-      present.add(value)
-      colour = CLASS_COLOURS[value - layer.minimum] ?? [0, 0, 0]
-    } else {
+    if (classed) colour = colourOf(value)
+    else {
       const grey = span === 0 ? 0 : Math.round(((value - layer.minimum) / span) * 255)
       colour = [grey, grey, grey]
     }
     rgba.set([...colour, 255], index * 4)
   }
-  const classes = [...present].sort((a, b) => a - b).map(value => {
-    const [r, g, b] = CLASS_COLOURS[value - layer.minimum] ?? [0, 0, 0]
-    return { value, colour: `rgb(${r} ${g} ${b})` }
+  const classes = [...colours.keys()].sort((a, b) => a - b).map(value => {
+    const [r, g, b] = colourOf(value)
+    const label = named.get(value)?.label
+    return { value, colour: `rgb(${r} ${g} ${b})`, ...(label === undefined ? {} : { label }) }
   })
   return { width: grid.width, height: grid.height, rgba, classes }
+}
+
+/** A picture the codec draws itself: the PNG its `view.render` answers for `{ layer: id }`. */
+export async function renderMapPicture(request: {
+  readonly descriptor: AnyDescriptor
+  readonly operations: OperationSession
+  readonly picture: MapPictureDescriptor
+  readonly signal?: AbortSignal
+}): Promise<Uint8Array> {
+  const { descriptor, operations, picture, signal } = request
+  const rendered = await invokeOperation(descriptor, operations, 'view.render', { layer: picture.id }, signal === undefined ? {} : { signal })
+  if (rendered.state !== 'ok' || rendered.output.kind !== 'bytes') throw new Error(rendered.state === 'ok' ? rendered.output.kind : rendered.reason)
+  return rendered.output.value
 }
 
 /** A sample as the world value the layer declares (`valueOffset + sample * valueScale` in `unit`). */
@@ -121,6 +156,12 @@ function drawPicture(canvas: HTMLCanvasElement, picture: MapLayerPicture): void 
   canvas.width = picture.width
   canvas.height = picture.height
   canvas.getContext('2d')?.putImageData(new ImageData(picture.rgba, picture.width, picture.height), 0, 0)
+}
+
+function drawBitmap(canvas: HTMLCanvasElement, bitmap: ImageBitmap): void {
+  canvas.width = bitmap.width
+  canvas.height = bitmap.height
+  canvas.getContext('2d')?.drawImage(bitmap, 0, 0)
 }
 
 /** Read a layer, write it as a grey PNG through the host's writer; the written file's name. */
@@ -174,14 +215,20 @@ export function createMapLayersViewer(options: MapLayersViewerOptions = {}): Vie
           failed(listed.state === 'ok' ? listed.output.kind : listed.reason)
           return
         }
-        const layers = (listed.output.value as unknown as MapLayerList).layers
-        if (layers.length === 0) say(localizer.text('viewer.mapLayersEmpty'))
+        const { layers, pictures: drawn = [] } = listed.output.value as unknown as MapLayerList
+        if (layers.length === 0 && drawn.length === 0) say(localizer.text('viewer.mapLayersEmpty'))
         const writable = descriptor.operations.some(item => item.id === MAP_LAYER_WRITE_OPERATION)
         // The chosen layer drawn large, with what its colours mean.
         const view = element(root, 'div', { part: 'map-layers.view' })
         view.hidden = true
         const image = element(view, 'canvas', { part: 'map-layers.image' }) as HTMLCanvasElement
         const legend = element(view, 'div', { part: 'map-layers.legend' })
+        const showDrawn = (label: string, bitmap: ImageBitmap): void => {
+          view.hidden = false
+          drawBitmap(image, bitmap)
+          image.setAttribute('aria-label', label)
+          legend.replaceChildren()
+        }
         const show = (layer: MapLayerDescriptor, picture: MapLayerPicture): void => {
           view.hidden = false
           drawPicture(image, picture)
@@ -198,7 +245,7 @@ export function createMapLayersViewer(options: MapLayersViewerOptions = {}): Vie
           for (const item of picture.classes) {
             const swatch = element(legend, 'span', { part: 'map-layers.swatch' })
             swatch.style.background = item.colour
-            element(legend, 'span', { text: mapLayerValue(layer, item.value) })
+            element(legend, 'span', { text: item.label ?? mapLayerValue(layer, item.value) })
           }
         }
         const pictures: { readonly layer: MapLayerDescriptor; readonly thumbnail: HTMLCanvasElement; readonly size: HTMLElement }[] = []
@@ -272,6 +319,52 @@ export function createMapLayersViewer(options: MapLayersViewerOptions = {}): Vie
           } catch (error) {
             thumbnail.hidden = true
             setViewerText(size, localizer.text('viewer.mapLayersFailed', { reason: reasonOf(error) }))
+          }
+        }
+        // The pictures the codec draws itself (an overview, an overlay, texture masks): shown, and
+        // exported as the PNG they are.
+        for (const picture of drawn) {
+          const row = element(root, 'div', { part: 'form.row' })
+          const thumbnail = element(row, 'canvas', { part: 'map-layers.thumbnail' }) as HTMLCanvasElement
+          thumbnail.tabIndex = 0
+          thumbnail.setAttribute('role', 'button')
+          thumbnail.setAttribute('aria-label', localizer.text('viewer.mapLayersShow', { layer: picture.label }))
+          element(row, 'span', { part: 'form.label', text: picture.label })
+          const note = element(row, 'span', { part: 'form.description' })
+          const actions = element(row, 'div', { part: 'form.actions' })
+          const exportButton = element(actions, 'button', { part: 'form.button', text: localizer.text('viewer.mapLayersExport') }) as HTMLButtonElement
+          exportButton.disabled = true
+          try {
+            const png = await renderMapPicture({ descriptor, operations: args.operations, picture, signal: scope.signal })
+            const bitmap = await createImageBitmap(new Blob([png as Uint8Array<ArrayBuffer>], { type: 'image/png' }))
+            drawBitmap(thumbnail, bitmap)
+            const pick = () => showDrawn(picture.label, bitmap)
+            thumbnail.addEventListener('click', pick)
+            thumbnail.addEventListener('keydown', event => {
+              if (event.key !== 'Enter' && event.key !== ' ') return
+              event.preventDefault()
+              pick()
+            })
+            if (!shown) pick()
+            shown = true
+            const exportBytes = options.exportBytes
+            if (exportBytes === undefined) exportButton.title = localizer.text('viewer.mapLayersNoWriter')
+            else {
+              exportButton.disabled = false
+              exportButton.addEventListener('click', () => {
+                const name = `${options.exportBaseName?.(descriptor) ?? 'map'}.${picture.id}.png`
+                void exportBytes([{ name, mediaType: 'image/png', bytes: png }], scope.signal).then(
+                  outcome =>
+                    outcome.state === 'written'
+                      ? say(localizer.text('viewer.mapLayersExported', { name: outcome.names[0] ?? name }))
+                      : failed(outcome.reason),
+                  error => failed(reasonOf(error)),
+                )
+              })
+            }
+          } catch (error) {
+            thumbnail.hidden = true
+            setViewerText(note, localizer.text('viewer.mapLayersFailed', { reason: reasonOf(error) }))
           }
         }
       }

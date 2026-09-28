@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { encodeGreyPng, decodePngSamples } from '@modkit/codec-kit/raster'
 import type { AnyDescriptor, AssetEditPlan, OperationSession } from '@modkit/sdk'
 import type { MapLayerDescriptor } from '@modkit/sdk/maps'
-import { exportMapLayerPng, importMapLayerPng, mapLayerPicture, mapLayerValue } from '../src/map-layers/index.js'
+import { exportMapLayerPng, importMapLayerPng, mapLayerPicture, mapLayerValue, renderMapPicture } from '../src/map-layers/index.js'
 
 /*
  * The map-layer panel owns the image and nothing about a game: a codec's numbers go out as a grey
@@ -104,6 +104,47 @@ describe('map layers as images', () => {
     // more values than colours: amounts after all
     const many = mapLayerPicture({ ...pathing, maximum: 255 }, { layer: 'pathing', width: 3, height: 1, values: [0, 255, 0] })
     expect(many.classes).toEqual([])
+  })
+
+  it('draws a layer with a legend in the game colours and names, whatever its span', () => {
+    const biome: MapLayerDescriptor = {
+      ...layer,
+      id: 'biome',
+      meaning: 'flags',
+      width: 3,
+      height: 1,
+      maximum: 255,
+      categories: [
+        { value: 1, label: 'Plains', color: '#8db360' },
+        { value: 7, label: 'River' },
+      ],
+    }
+    const picture = mapLayerPicture(biome, { layer: 'biome', width: 3, height: 1, values: [1, 7, 20] })
+    expect(picture.classes).toEqual([
+      { value: 1, colour: 'rgb(141 179 96)', label: 'Plains' },
+      // no colour in the legend: the palette's, by value
+      { value: 7, colour: 'rgb(70 240 240)', label: 'River' },
+      // not in the legend: no name, and the palette goes round past its last colour
+      { value: 20, colour: 'rgb(67 99 216)' },
+    ])
+    expect([...picture.rgba.slice(0, 4)]).toEqual([141, 179, 96, 255])
+  })
+
+  it('asks the codec to draw a picture it lists, and hands back its PNG', async () => {
+    const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47])
+    const calls: { handler: string; input: unknown }[] = []
+    const operations = {
+      async invoke(handler: string, input: unknown) {
+        calls.push({ handler, input })
+        return { state: 'ok', output: { kind: 'bytes', value: png } }
+      },
+    } as unknown as OperationSession
+    const drawing = {
+      operations: [{ id: 'view.render', handlerId: 'render-preview', state: 'available' }],
+    } as unknown as AnyDescriptor
+    const bytes = await renderMapPicture({ descriptor: drawing, operations, picture: { id: 'overview', label: 'Overview' } })
+    expect(bytes).toBe(png)
+    expect(calls).toEqual([{ handler: 'render-preview', input: { layer: 'overview' } }])
   })
 
   it('names a sample by the world value the layer declares', () => {
