@@ -13,6 +13,13 @@ import { field } from './values.js'
 
 export interface UvmEffectSource {
   readonly hasProjectors: boolean
+  /** Particles or ribbons: a frame simulates them up to its clock. */
+  readonly liveEffects: boolean
+  /**
+   * Whether `project` can answer differently at another clock: a projector track, or a projector
+   * (or the effect space) on a node the clip moves. Otherwise every clock projects the same decals.
+   */
+  readonly projectionsFollowTime: boolean
   project(
     time: number,
     materials: readonly SceneRendererMaterial[],
@@ -72,6 +79,41 @@ export function createUvmEffectSource(
     },
   )
   const activeNodes = new Set(scene.nodes.map(node => node.id))
+  const effects = field(document['extensions'], 'UV_game_effects')
+  const entries = (key: string): readonly unknown[] => {
+    const value = field(effects, key)
+    return Array.isArray(value) ? value : []
+  }
+  // Nodes whose world transform the clip moves: its targets, their children and the bones below
+  // them, as the pose sampler composes them.
+  const animatedNodes = new Set<string>()
+  if (clip?.kind === 'animation') {
+    const below = new Map<string, string[]>()
+    for (const node of scene.nodes) below.set(node.id, [...(node.childIds ?? [])])
+    const bones = new Map(rig.bindings.map(binding => [binding.boneIndex, binding]))
+    for (const binding of rig.bindings) {
+      const parent =
+        binding.parentBoneIndex == null ? undefined : bones.get(binding.parentBoneIndex)
+      if (parent?.nodeId === undefined || binding.nodeId === undefined) continue
+      below.set(parent.nodeId, [...(below.get(parent.nodeId) ?? []), binding.nodeId])
+    }
+    const pending = clip.channels
+      .filter(channel => channel.kind !== 'visibility' && (channel.samples?.length ?? 0) > 0)
+      .map(channel => channel.target)
+    for (let id = pending.pop(); id !== undefined; id = pending.pop()) {
+      if (animatedNodes.has(id)) continue
+      animatedNodes.add(id)
+      pending.push(...(below.get(id) ?? []))
+    }
+  }
+  const spaceNode = field(effects, 'spaceNode')
+  const projectionsFollowTime =
+    (typeof spaceNode === 'number' && animatedNodes.has(`node-${spaceNode}`)) ||
+    entries('projectors').some(
+      entry =>
+        field(entry, 'sequenceAnimation') !== undefined ||
+        animatedNodes.has(`node-${String(field(entry, 'node'))}`),
+    )
   // This document is private to the source and never changes: every instance and frame reads one
   // snapshot of its effects instead of copying the whole extension per call.
   let snapshot: JsonValue | undefined
@@ -97,10 +139,9 @@ export function createUvmEffectSource(
   // only builds its sprites (see UvmEffectFrameCache).
   const frames = createUvmEffectFrameCache()
   return Object.freeze<UvmEffectSource>({
-    hasProjectors:
-      Array.isArray(field(field(document['extensions'], 'UV_game_effects'), 'projectors')) &&
-      (field(field(document['extensions'], 'UV_game_effects'), 'projectors') as unknown[]).length >
-        0,
+    hasProjectors: entries('projectors').length > 0,
+    liveEffects: entries('particles').length + entries('ribbons').length > 0,
+    projectionsFollowTime,
     project: (time, materials, receivers) =>
       createUvmProjectorFrame(document, {
         time,

@@ -2115,19 +2115,21 @@ function worldStaticObjectKey(
 
 /**
  * Whether anything a model contributes to an object follows the object's clock: sampled geometry
- * (keyed TRS or visibility), material tracks, or effects, which are simulated and projected at that
- * time. A clip that moves none of these (an empty Stand, a material-only sequence) leaves the
- * object's contribution the same at every clock, so it is kept while the map animates.
+ * (keyed TRS or visibility), material tracks, live effects (simulated at that time) or decals whose
+ * projection does. A clip that moves none of these (an empty Stand, a material-only sequence, a
+ * still blob shadow) leaves the object's contribution the same at every clock, so it is kept while
+ * the map animates.
  */
 function worldObjectFollowsTime(
   result: WorldModelSample['result'],
   item: WorldSceneObjectItem,
 ): boolean {
   if (worldModelHasAnimatedGeometry(result, item) || worldMaterialsFollowTime(result)) return true
-  return (
-    result.uvmBytes !== undefined &&
-    uvmEffectSource(result.uvmBytes, worldModelAnimation(result, item)?.sequenceIndex) !== undefined
-  )
+  const source =
+    result.uvmBytes === undefined
+      ? undefined
+      : uvmEffectSource(result.uvmBytes, worldModelAnimation(result, item)?.sequenceIndex)
+  return source !== undefined && (source.liveEffects || source.projectionsFollowTime)
 }
 
 const sameWorldStaticObjectKey = (left: readonly unknown[], right: readonly unknown[]) =>
@@ -4162,7 +4164,8 @@ export function createWorldWebGlPlan(
             }),
           )
       }
-      if (effectSource !== undefined)
+      // Decals are projected above; only particles and ribbons are drawn per frame from here.
+      if (effectSource?.liveEffects === true)
         modelEffects.push(
           Object.freeze({
             source: effectSource,

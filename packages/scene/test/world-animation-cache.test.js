@@ -282,7 +282,7 @@ it('renderer picking reuses its retained plan, counts dynamic updates honestly a
   assert.throws(() => renderer.pick(next, screen), /disposed/)
 })
 
-function effectModel({ decal = false, particles = false } = {}) {
+function effectModel({ decal = false, particles = false, animatedAlpha = true } = {}) {
   const layer = (slot, animated = false) => ({
     slot,
     texturePath: 'effect.png',
@@ -319,7 +319,7 @@ function effectModel({ decal = false, particles = false } = {}) {
   // Particles take their material by its converted index name.
   const effectId = particles ? 'material-0' : 'effect'
   const standard = {
-    layers: { diffuse: layer('diffuse'), alpha1: layer('alpha1', true) },
+    layers: { diffuse: layer('diffuse'), alpha1: layer('alpha1', animatedAlpha) },
     blendMode: 1,
     priority: 0,
     specularity: 10,
@@ -481,9 +481,14 @@ it('retains terrain while sequence-only material programs, live effects and proj
   const nextInput = { ...input, timeSeconds: 0.5 }
   const next = createWorldWebGlPlan(nextInput, first)
   assert.equal(next.splatTriangles, first.splatTriangles)
-  assert.equal(first.modelEffects.length, 1)
-  assert.equal(next.modelEffects[0].source, first.modelEffects[0].source)
-  assert.equal(next.modelEffects[0].time, 0.5)
+  // Decals are projected into the plan; only particles and ribbons are live effects.
+  assert.equal(first.modelEffects.length, 0)
+  const live = { ...input, models: new Map([['actor', effectModel({ particles: true })]]) }
+  const liveFirst = createWorldWebGlPlan(live)
+  const liveNext = createWorldWebGlPlan({ ...live, timeSeconds: 0.5 }, liveFirst)
+  assert.equal(liveFirst.modelEffects.length, 1)
+  assert.equal(liveNext.modelEffects[0].source, liveFirst.modelEffects[0].source)
+  assert.equal(liveNext.modelEffects[0].time, 0.5)
   // The first material scene is projected onto the retained terrain receiver.
   assert.equal(first.modelMaterialScenes.length, 2)
   const alpha = plan =>
@@ -678,6 +683,25 @@ it('takes unchanged shared batches, water depth and transparent order from the p
   assert.notEqual(after.transparentTexturedTriangles[0], before.transparentTexturedTriangles[0])
   assert.equal(after.opaqueTriangles, before.opaqueTriangles)
   assert.equal(values(after), values(createWorldWebGlPlan({ ...scrolling, timeSeconds: 0.5 })))
+})
+
+it('keeps an object whose decals stay put while the clock runs', () => {
+  const values = plan =>
+    JSON.stringify(plan, (_, value) => (value instanceof Map ? [...value] : value))
+  // Materials without tracks and a projector on a node no clip moves: a simple-effect decal.
+  const model = effectModel({ decal: true, animatedAlpha: false })
+  const input = { ...world(), models: new Map([['actor', model]]) }
+  const decals = plan =>
+    plan.transparentTexturedTriangles.filter(batch => batch.texture.id === 'decal.png')
+  const first = createWorldWebGlPlan(input)
+  assert.equal(first.modelEffects.length, 0)
+  assert.equal(decals(first).length, 1)
+  const nextInput = { ...input, timeSeconds: 0.5 }
+  const next = createWorldWebGlPlan(nextInput, first)
+  assert.equal(next.picking.objects.at(-1), first.picking.objects.at(-1))
+  assert.equal(next.modelMaterialScenes[0], first.modelMaterialScenes[0])
+  assert.equal(decals(next)[0], decals(first)[0])
+  assert.equal(values(next), values(createWorldWebGlPlan(nextInput)))
 })
 
 it('keeps procedural cliff skirts until the model covering each edge has loaded', () => {
