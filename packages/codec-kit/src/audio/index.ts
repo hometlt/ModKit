@@ -6,6 +6,14 @@
  */
 import { createCrc32Msb } from '../checksum/index.js'
 
+export {
+  decodeEaXa,
+  decodeEaXas,
+  EA_XA_FRAME_SAMPLES,
+  EA_XAS_FRAME_BYTES,
+  EA_XAS_FRAME_SAMPLES,
+  type EaXaRevision,
+} from './ea-xa.js'
 export { decodeFadpcm, fadpcmFrames } from './fadpcm.js'
 export { decodeXaAdpcm, XA_SOUND_GROUP_BYTES, XA_SOUND_GROUP_SAMPLES } from './xa-adpcm.js'
 
