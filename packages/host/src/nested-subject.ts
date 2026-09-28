@@ -46,8 +46,10 @@ import type { ExecutionBackendRegistry } from './execution/backend.js'
 import type { Inventory } from './inventory.js'
 import {
   createCompanionInputResolver,
+  createLayeredCompanionOrigin,
   normalizeCompanionLogicalId,
   type CompanionCaseSensitivity,
+  type CompanionOrigin,
   type CompanionResolutionLimits,
   type CompanionTraitProbe,
 } from './input-resolution.js'
@@ -116,6 +118,12 @@ export interface NestedSubjectOptions {
   /** Explicit active/dependency roots in this container, in precedence order. When supplied,
    * resource-relative names are confined to these roots instead of the whole archive. */
   readonly logicalRoots?: readonly WorkspaceNamespaceLogicalRoot[]
+  /**
+   * Places searched behind the container, as `createPathSubjectOpener` puts them behind a file's
+   * folder: the layers of the mod the entry belongs to (`createContentAssetOrigin`), so a model in
+   * a zipped resource pack finds the game's textures.
+   */
+  readonly assetOrigins?: readonly CompanionOrigin[]
   /** Optional bounded searches chosen by the game/workspace host; never supplied by a codec. */
   readonly resourceDiscovery?: readonly NestedLogicalResourceSearch[]
   /** Entries per listing page requested from the container. */
@@ -308,6 +316,7 @@ export async function openNestedSubject(
   throwIfAborted(options.signal)
   // Capture caller-owned context before the parent descriptor/listing can yield.
   const caseSensitivity = options.caseSensitivity
+  const assetOrigins = options.assetOrigins === undefined ? undefined : [...options.assetOrigins]
   const logicalRoots = options.logicalRoots?.map(root => {
     if (typeof root.rootId !== 'string' || root.rootId.length === 0)
       throw new TypeError('nested logical root requires an id')
@@ -477,13 +486,17 @@ export async function openNestedSubject(
         ...(caseSensitivity === undefined ? {} : { caseSensitivity }),
         pageLimit,
       }
-      const origin =
+      const containerOrigin =
         logicalRoots === undefined
           ? createNamespaceCompanionOrigin(originOptions)
           : createWorkspaceNamespaceCompanionOrigin({
               ...originOptions,
               logicalRoots,
             })
+      const origin =
+        assetOrigins === undefined || assetOrigins.length === 0
+          ? containerOrigin
+          : createLayeredCompanionOrigin([containerOrigin, ...assetOrigins])
       const logicalResourceDiscovery: readonly HostLogicalResourceDiscoveryPolicy[] | undefined =
         resourceDiscovery?.map(policy =>
           Object.freeze({

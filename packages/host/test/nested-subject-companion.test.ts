@@ -733,6 +733,44 @@ describe('a container entry opens as its own subject, with companions from the s
     await stillListing.release()
   })
 
+  it('finds a companion the container lacks in the places searched behind it', async () => {
+    const { model: modelBytes, skin: skinBytes } = payloads()
+    const archive = await openArchive([{ path: 'assets/models/cube.mesh', bytes: modelBytes }])
+    openSessions.push(archive)
+    const subjects = await nestedServices()
+    // the game's layers behind a zipped pack, as createContentAssetOrigin serves them
+    const gameLayers = {
+      primaryLogicalId: '__game__',
+      caseSensitivity: 'insensitive' as const,
+      scopes: ['current-mount' as const],
+      async *enumerate() {
+        yield { logicalId: 'vanilla/textures/cube.texture', size: BigInt(skinBytes.byteLength) }
+      },
+      async open() {
+        return { value: byteSource(skinBytes, 'cube.texture'), release: async () => undefined }
+      },
+    }
+    const { result } = await openNestedSubject({
+      parent: archive,
+      entryId: await entryIdOf(archive, 'assets/models/cube.mesh'),
+      inventory: subjects.inventory,
+      executionBackends: subjects.executionBackends,
+      target,
+      grant,
+      budget,
+      assetOrigins: [gameLayers],
+    })
+    if (result.state !== 'opened') throw new Error(JSON.stringify(result.diagnostics))
+    const inspected = await result.session.operations().invoke('inspect', {})
+    if (inspected.state !== 'ok' || inspected.output.kind !== 'json') {
+      throw new Error('the nested codec did not inspect')
+    }
+    expect((inspected.output.value as { readonly skin: readonly number[] | null }).skin).toEqual(
+      Array.from(skinBytes),
+    )
+    await result.session.dispose()
+  })
+
   it('refuses to choose between two entries that share the declared name', async () => {
     const { model: modelBytes, skin: skinBytes } = payloads()
     const archive = await openArchive([
