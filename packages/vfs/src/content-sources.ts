@@ -31,6 +31,12 @@ export interface ContentSourceRoot {
   readonly product?: string
   /** The game or format family this root reads, for index caches (`starcraft2`, `roblox`). */
   readonly game?: string
+  /**
+   * Paths this root hides by its convention ({@link hiddenPathMatcher} patterns, such as
+   * `versions.*archive`). Listings and file pages leave them out unless asked for hidden entries;
+   * a read by exact path still reads them.
+   */
+  readonly hiddenPaths?: readonly string[]
 }
 /** A region; `credentialId` names the declared credential that signs it in. */
 export interface ContentSourceRegion {
@@ -87,6 +93,13 @@ export interface ContentSourceFilesQuery {
   readonly cursor?: string
   /** Files one page may hold (1..10000). A page may hold fewer and still have a next one. */
   readonly limit: number
+  /** Hidden files too, each marked `hidden`; by default a page leaves them out. */
+  readonly includeHidden?: boolean
+}
+/** What a {@link ContentSources.list} asks about hidden entries. */
+export interface ContentSourceListOptions {
+  /** Hidden entries too, each marked `hidden`; by default a listing leaves them out. */
+  readonly includeHidden?: boolean
 }
 export interface ContentSourceFilesPage {
   readonly items: readonly ContentSourceFile[]
@@ -254,7 +267,11 @@ export interface ContentSources {
   add(resultId: string): Promise<void>
   remove(sourceId: string, path: string): Promise<void>
   refresh(sourceId: string): Promise<void>
-  list(sourceId: string, path: string): Promise<readonly ContentSourceEntry[]>
+  list(
+    sourceId: string,
+    path: string,
+    options?: ContentSourceListOptions,
+  ): Promise<readonly ContentSourceEntry[]>
   read(sourceId: string, path: string, maxBytes: number): Promise<Uint8Array>
   /**
    * Every file beneath `path`, in pages, narrowed inside the source: what a workspace search walks
@@ -374,9 +391,13 @@ function filesQuery(raw: unknown): ContentSourceFilesQuery {
   if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
     throw new TypeError('Invalid source file query')
   }
-  const { pattern, extensions, cursor, limit, ...rest } = raw as Record<string, unknown>
+  const { pattern, extensions, cursor, limit, includeHidden, ...rest } = raw as Record<
+    string,
+    unknown
+  >
   if (
     Object.keys(rest).length > 0 ||
+    (includeHidden !== undefined && typeof includeHidden !== 'boolean') ||
     (pattern !== undefined && (typeof pattern !== 'string' || pattern.length > 512)) ||
     (extensions !== undefined &&
       (!Array.isArray(extensions) ||
@@ -395,7 +416,98 @@ function filesQuery(raw: unknown): ContentSourceFilesQuery {
     ...(pattern === undefined ? {} : { pattern: pattern as string }),
     ...(extensions === undefined ? {} : { extensions: extensions as string[] }),
     ...(cursor === undefined ? {} : { cursor: cursor as string }),
+    ...(includeHidden === undefined ? {} : { includeHidden: includeHidden as boolean }),
   }
+}
+
+/** Check {@link ContentSourceListOptions} crossing the IPC boundary. */
+function listOptions(raw: unknown): ContentSourceListOptions | undefined {
+  if (raw === undefined) return undefined
+  const invalid = () => new TypeError('Invalid source list options')
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) throw invalid()
+  const { includeHidden, ...rest } = raw as Record<string, unknown>
+  if (
+    Object.keys(rest).length > 0 ||
+    (includeHidden !== undefined && typeof includeHidden !== 'boolean')
+  )
+    throw invalid()
+  return includeHidden === undefined ? {} : { includeHidden: includeHidden as boolean }
+}
+
+/**
+ * The one matcher of hidden-path rules ({@link ContentSourceRoot.hiddenPaths}): `/`-separated
+ * patterns, `*` and `?` within one segment, `**` any number of folders, letter case ignored. A path
+ * is hidden when a pattern names it or one of its folders.
+ */
+export function hiddenPathMatcher(patterns: readonly string[]): (path: string) => boolean {
+  const sources = patterns.flatMap(pattern => {
+    const segments = pattern.replaceAll('\\', '/').split('/').filter(Boolean)
+    // a folder's contents are hidden with it, so a trailing `**` adds nothing
+    while (segments.at(-1) === '**') segments.pop()
+    if (segments.length === 0) return []
+    return [
+      segments
+        .map((segment, index) =>
+          segment === '**'
+            ? '(?:[^/]+/)*'
+            : segment
+                .replace(/[.+^${}()|[\]\\]/gu, '\\$&')
+                .replaceAll('*', '[^/]*')
+                .replaceAll('?', '[^/]') + (index < segments.length - 1 ? '/' : ''),
+        )
+        .join(''),
+    ]
+  })
+  if (sources.length === 0) return () => false
+  const expression = new RegExp(`^(?:${sources.join('|')})(?:/|$)`, 'iu')
+  return path => expression.test(path.replaceAll('\\', '/').replace(/^\/+/u, ''))
+}
+
+/**
+ * A source whose listings and file pages leave out what is hidden — marked `hidden` by the source or
+ * named by its root's `hiddenPaths` — unless asked for hidden entries, which then come marked. The
+ * one place the rule is applied; reads by exact path are untouched.
+ */
+function withHiddenEntries(part: ContentSources): ContentSources {
+  let rules = new Map<string, (path: string) => boolean>()
+  const snapshot = async (): Promise<ContentSourceSnapshot> => {
+    const taken = await part.snapshot()
+    rules = new Map(taken.roots.map(root => [root.id, hiddenPathMatcher(root.hiddenPaths ?? [])]))
+    return taken
+  }
+  const hiddenIn = async (sourceId: string) => {
+    if (!rules.has(sourceId)) await snapshot()
+    return rules.get(sourceId) ?? (() => false)
+  }
+  const keep = <T extends { readonly path: string; readonly hidden?: true }>(
+    items: readonly T[],
+    hidden: (path: string) => boolean,
+    include: boolean | undefined,
+  ): T[] =>
+    items.flatMap(item => {
+      if (item.hidden !== true && !hidden(item.path)) return [item]
+      if (include !== true) return []
+      return [item.hidden === true ? item : { ...item, hidden: true as const }]
+    })
+  const list: ContentSources['list'] = async (sourceId, path, options) =>
+    keep(await part.list(sourceId, path, options), await hiddenIn(sourceId), options?.includeHidden)
+  const files: ContentSources['files'] = async (sourceId, path, query) => {
+    const page = await part.files?.(sourceId, path, query)
+    return page === undefined
+      ? undefined
+      : { ...page, items: keep(page.items, await hiddenIn(sourceId), query.includeHidden) }
+  }
+  return new Proxy(part, {
+    get(target, key) {
+      if (key === 'snapshot') return snapshot
+      if (key === 'list') return list
+      if (key === 'files') return target.files === undefined ? undefined : files
+      const value: unknown = Reflect.get(target, key, target)
+      return typeof value === 'function'
+        ? (value as (...args: unknown[]) => unknown).bind(target)
+        : value
+    },
+  })
 }
 
 /** Validate the small IPC surface before invoking a trusted host-owned provider. */
@@ -495,7 +607,7 @@ export async function callContentSources(
       return value
     }
     case 'list':
-      return source.list(string(0), path(1))
+      return source.list(string(0), path(1), listOptions(args[2]))
     case 'files': {
       if (!source.files) return undefined
       return source.files(string(0), path(1), filesQuery(args[2]))
@@ -522,9 +634,11 @@ export async function callContentSources(
  * its snapshot names — an id two parts both name is refused — and every call keyed by one of them
  * goes to its owner. A host-path mod context goes to the first part whose `locateModPackage`
  * places it in a package, else to the first part that opens contexts (a loose file opens inside
- * that game's base mods, as a single provider did). One part is returned unchanged.
+ * that game's base mods, as a single provider did). One part is returned as it is, save that every
+ * part's listings leave hidden entries out unless asked (`includeHidden`).
  */
-export function composeContentSources(parts: readonly ContentSources[]): ContentSources {
+export function composeContentSources(given: readonly ContentSources[]): ContentSources {
+  const parts = given.map(withHiddenEntries)
   if (parts.length === 1) return parts[0]!
   const owners = {
     region: new Map<string, ContentSources>(),
@@ -616,8 +730,8 @@ export function composeContentSources(parts: readonly ContentSources[]): Content
     async refresh(sourceId) {
       return (await bySource(sourceId)).refresh(sourceId)
     },
-    async list(sourceId, path) {
-      return (await bySource(sourceId)).list(sourceId, path)
+    async list(sourceId, path, options) {
+      return (await bySource(sourceId)).list(sourceId, path, options)
     },
     async read(sourceId, path, maxBytes) {
       return (await bySource(sourceId)).read(sourceId, path, maxBytes)

@@ -47,7 +47,13 @@ describe('desktop source IPC boundary', () => {
         return { items: [{ path: 'Mods/a.xml', size: 1 }] }
       },
     } as unknown as ContentSources
-    const query = { pattern: 'unitdata', extensions: ['xml', ''], cursor: '42', limit: 100 }
+    const query = {
+      pattern: 'unitdata',
+      extensions: ['xml', ''],
+      cursor: '42',
+      limit: 100,
+      includeHidden: true,
+    }
     expect(await callContentSources(indexed, 'files', ['local:casc', 'Mods', query])).toEqual({
       items: [{ path: 'Mods/a.xml', size: 1 }],
     })
@@ -58,12 +64,35 @@ describe('desktop source IPC boundary', () => {
       { limit: 1, extensions: ['.xml'] },
       { limit: 1, pattern: 'x'.repeat(513) },
       { limit: 1, script: 'unexpected' },
+      { limit: 1, includeHidden: 'yes' },
     ]) {
       await expect(callContentSources(indexed, 'files', ['local:casc', '', malformed])).rejects.toThrow(
         'Invalid source file query',
       )
     }
     expect(await callContentSources(source, 'files', ['local:casc', '', { limit: 1 }])).toBeUndefined()
+  })
+
+  it('forwards list options that ask for hidden entries, and refuses any other', async () => {
+    const asked: unknown[] = []
+    const listing = {
+      ...source,
+      list: async (...args: unknown[]) => {
+        asked.push(args)
+        return []
+      },
+    } as unknown as ContentSources
+    await callContentSources(listing, 'list', ['local:casc', ''])
+    await callContentSources(listing, 'list', ['local:casc', 'Mods', { includeHidden: true }])
+    expect(asked).toEqual([
+      ['local:casc', '', undefined],
+      ['local:casc', 'Mods', { includeHidden: true }],
+    ])
+    for (const malformed of [{ includeHidden: 1 }, { recursive: true }, 'hidden', null]) {
+      await expect(callContentSources(listing, 'list', ['local:casc', '', malformed])).rejects.toThrow(
+        'Invalid source list options',
+      )
+    }
   })
 
   it('forwards only a well-formed provider-owned local reveal target', async () => {
