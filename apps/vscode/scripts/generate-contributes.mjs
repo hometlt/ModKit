@@ -146,6 +146,26 @@ if (
 ) {
   throw new TypeError('fileSystemSchemes must contain unique non-empty strings')
 }
+/*
+ * No `onStartupFinished` (plan 8.6): a window with nothing of Modkit's in it does not activate it
+ * and pays nothing. A workspace that holds a package `workspaceMarkers` names, or a file of a
+ * language Modkit contributes (named as the language names its files), activates it at startup;
+ * opening such a file does too (VS Code's implicit `onLanguage`), as do a Modkit view, editor,
+ * file system, debug type or command.
+ */
+const workspaceMarkers = [
+  ...new Set([
+    ...(input.workspaceMarkers ?? []),
+    ...languages.flatMap(language => [
+      ...(language.extensions ?? []).map(extension => `**/*${extension}`),
+      ...(language.filenames ?? []).map(name => `**/${name}`),
+      ...(language.filenamePatterns ?? []),
+    ]),
+  ]),
+].sort(compareUtf8)
+if (workspaceMarkers.some(glob => typeof glob !== 'string' || glob.length === 0)) {
+  throw new TypeError('workspaceMarkers must be non-empty glob strings')
+}
 const activationEvents = [
   ...commands.map(row => `onCommand:${row.command}`),
   ...customEditors.map(row => `onCustomEditor:${row.viewType}`),
@@ -154,12 +174,7 @@ const activationEvents = [
     .map(row => `onView:${row.id}`),
   ...fileSystemSchemes.map(scheme => `onFileSystem:${scheme}`),
   ...debuggers.map(row => `onDebugResolve:${row.type}`),
-  /*
-   * Language routes come from the configured extension directories at runtime, so no static
-   * `onLanguage` event can name them. Activate once startup has finished so opening an SC2 or other
-   * extension-routed document gets diagnostics, navigation and tokens without first opening a panel.
-   */
-  'onStartupFinished',
+  ...workspaceMarkers.map(glob => `workspaceContains:${glob}`),
 ]
 
 if (check) {

@@ -11518,7 +11518,7 @@ async function activateModkit(
   /*
    * Editors that were already on screen when this activation claimed their format.
    *
-   * `onStartupFinished` fires after the workbench has restored its tabs, and the association map is
+   * Activation comes after the workbench has restored its tabs, and the association map is
    * only written once the host has composed — so on a first run, and on any run where a model tab
    * was restored, the file is already open in the text editor that `workbench.editorAssociations`
    * would now have kept it out of. Reopening a folder fixed it because the second activation found

@@ -1410,6 +1410,14 @@
     "modkit-container",
     "modkit-source"
   ],
+  "workspaceMarkers": [
+    "**/*.SC2Campaign",
+    "**/*.SC2Components",
+    "**/*.SC2Map",
+    "**/*.SC2Mod",
+    "**/*.SC2Replay",
+    "**/modkit.workspace.json"
+  ],
   "debuggers": [
     {
       "type": "modkit-launch",
