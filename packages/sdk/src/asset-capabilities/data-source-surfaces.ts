@@ -170,6 +170,13 @@ const namespaceEntrySourceSurface = {
     nestedContext: { kind: 'value', optional: true, ...sig },
     /** `Lease<AssetSourceRef>`: the ref crosses by copy, the lease is a release-only handle. */
     openEntry: { kind: 'leased-value', ...sig },
+    openEntrySource: {
+      kind: 'lease',
+      result: { contract: contractId('common.view/byte-range-source'), major: 1 },
+      wrapper: 'lease',
+      optional: true,
+      ...sig,
+    },
   },
 } as const satisfies SurfaceOf<NamespaceEntrySource>
 

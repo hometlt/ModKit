@@ -420,7 +420,14 @@ export async function openNestedSubject(
     const refLease = await namespace.openEntry(entry.id, options.signal)
     // An uncompressed entry is read in place from the parent's byte-range source, so an entry of any
     // size opens without being extracted; everything else is extracted within the open budget.
+    // An entry the container decodes by range (block-compressed, or stored in a companion) is read
+    // through its own range source, also without extraction.
+    const entrySourceLease =
+      entry.rangeAccess === true && namespace.openEntrySource !== undefined
+        ? await namespace.openEntrySource(entry.id, options.signal)
+        : undefined
     const rangeLease =
+      entrySourceLease === undefined &&
       entry.storedRange !== undefined &&
       descriptor.dataSources.some(item => item.contract === BYTE_RANGE_SOURCE && item.major === 1)
         ? await options.parent.dataSource(BYTE_RANGE_SOURCE, 1)
@@ -432,13 +439,22 @@ export async function openNestedSubject(
         refReleased = true
         await refLease.release()
         await rangeLease?.release()
+        await entrySourceLease?.release()
       }
       await previousRelease()
     }
 
     try {
       let source: ReturnType<typeof containerEntrySource>
-      if (rangeLease !== undefined && entry.storedRange !== undefined) {
+      if (entrySourceLease !== undefined) {
+        const size = await entrySourceLease.value.size()
+        source = containerEntryRangeSource(
+          refLease.value,
+          containerEntryRevision(descriptor.revision, entry.id, size),
+          entrySourceLease.value,
+          { offset: 0n, length: size },
+        )
+      } else if (rangeLease !== undefined && entry.storedRange !== undefined) {
         source = containerEntryRangeSource(
           refLease.value,
           containerEntryRevision(descriptor.revision, entry.id, entry.storedRange.length),

@@ -654,6 +654,12 @@ export interface NamespaceEntry {
    */
   readonly storedRange?: { readonly offset: bigint; readonly length: bigint }
   /**
+   * The entry's decoded bytes can be read by range through `openEntrySource` — stored data in a
+   * companion file, or a block-compressed entry the container decodes block by block. A host opens
+   * such an entry as a nested subject without extracting it, whatever its size.
+   */
+  readonly rangeAccess?: true
+  /**
    * Hidden by the container's own convention (a dot folder, `__MACOSX/`, `.DS_Store`); a viewer
    * shows it only when the user asks for hidden files. An entry under a hidden folder is hidden too,
    * and a flat listing marks each such entry itself.
@@ -801,6 +807,11 @@ export interface NamespaceEntrySource {
   nestedContext?(signal?: AbortSignal): Promise<JsonValue | undefined>
   /** Returns a leased source reference, never eager decoded bytes. */
   openEntry(entryId: string, signal?: AbortSignal): Promise<Lease<AssetSourceRef>>
+  /**
+   * The decoded bytes of an entry marked `rangeAccess`, by range; released with the lease. Refuses
+   * an entry without `rangeAccess` (that one is extracted).
+   */
+  openEntrySource?(entryId: string, signal?: AbortSignal): Promise<Lease<ByteRangeSource>>
 }
 
 export interface RelationGraphNode {

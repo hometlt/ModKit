@@ -233,6 +233,11 @@ export type ContainerEntryStorage =
       readonly kind: 'custom'
       /** What the listing names as the entry's compression (`oodle`, `aes+zlib`); not interpreted. */
       readonly compression?: string
+      /**
+       * `open` always answers a range source (a block-compressed entry decoded block by block), so a
+       * host may open the entry in place however large it is, instead of extracting it.
+       */
+      readonly rangeAccess?: true
       /** A range source of the decoded entry, or its decoded bytes as a stream (read once). */
       open(signal?: AbortSignal): Promise<ByteRangeSource | AsyncIterable<Uint8Array>>
     }

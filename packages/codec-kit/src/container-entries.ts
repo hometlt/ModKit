@@ -88,6 +88,12 @@ export function containerEntryAccess(
             }),
           }
         : {}),
+      // Readable by range without extraction: stored data in a companion, or a custom entry whose
+      // storage promises a range source.
+      ...((entry.storage.kind === 'stored' && entry.storage.source !== undefined) ||
+      (entry.storage.kind === 'custom' && entry.storage.rangeAccess === true)
+        ? { rangeAccess: true as const }
+        : {}),
       revision: containerEntryRevision(containerRevision, entry.path, entry.size),
     })
   }
@@ -168,6 +174,35 @@ export function containerEntryAccess(
       throwIfCancelled(signal)
       const entry = await entryAt(path, signal)
       return entry === undefined ? undefined : toItem(entry)
+    },
+    async openEntrySource(entryId: string, signal?: AbortSignal) {
+      throwIfCancelled(signal)
+      const entry = await entryAt(entryId, signal)
+      if (entry === undefined) throw new TypeError(`unknown container entry ${entryId}`)
+      const storage = entry.storage
+      if (storage.kind === 'stored' && storage.source !== undefined) {
+        if (context.companionSource === undefined)
+          throw new TypeError(
+            `container entry data lives in companion «${storage.source}», which this open does not carry`,
+          )
+        const companion = await context.companionSource(storage.source, signal)
+        const window = Object.freeze<ByteRangeSource>({
+          size: async () => storage.length,
+          async read(offset, length, readSignal) {
+            if (offset < 0n || offset + BigInt(length) > storage.length)
+              throw new RangeError('container entry read is outside the entry')
+            return companion.source.read(storage.offset + offset, length, readSignal)
+          },
+        })
+        return Object.freeze({ value: window, release: () => companion.release() })
+      }
+      if (storage.kind === 'custom' && storage.rangeAccess === true) {
+        const opened = await storage.open(signal)
+        if (Symbol.asyncIterator in opened)
+          throw new TypeError(`container entry ${entry.path} promised a range source, not a stream`)
+        return Object.freeze({ value: opened, release: async () => undefined })
+      }
+      throw new TypeError(`container entry ${entry.path} is not readable by range; extract it`)
     },
     async openEntry(entryId: string, signal?: AbortSignal) {
       throwIfCancelled(signal)

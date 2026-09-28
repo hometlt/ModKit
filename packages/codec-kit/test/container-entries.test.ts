@@ -197,6 +197,37 @@ describe('a container entry table gives listing and extraction for free', () => 
     await session.operations().dispose()
   })
 
+  it('reads a companion-stored entry by range, without extraction', async () => {
+    const session = await open()
+    const lease = await session.dataSource('common.view/namespace-entry-source', 1)
+    const namespace = lease.value as typeof lease.value & {
+      openEntrySource(
+        id: string,
+      ): Promise<{
+        value: { size(): Promise<bigint>; read(o: bigint, n: number): Promise<Uint8Array> }
+        release(): Promise<void>
+      }>
+    }
+    const entry = await lease.value.lookup?.('data/companion.bin')
+    expect((entry as { rangeAccess?: true } | undefined)?.rangeAccess).toBe(true)
+    // an entry in the container's own source says where it is instead (storedRange)
+    expect(
+      ((await lease.value.lookup?.('docs/stored.txt')) as { rangeAccess?: true }).rangeAccess,
+    ).toBeUndefined()
+    const source = await namespace.openEntrySource('data/companion.bin')
+    try {
+      expect(await source.value.size()).toBe(BigInt(companion.byteLength - 4))
+      expect(new TextDecoder().decode(await source.value.read(6n, 4))).toBe('kept')
+      await expect(source.value.read(0n, 10_000)).rejects.toThrow(RangeError)
+    } finally {
+      await source.release()
+    }
+    // a compressed entry is not readable by range: it is extracted
+    await expect(namespace.openEntrySource('docs/zlib.txt')).rejects.toThrow(/extract/)
+    await lease.release()
+    await session.operations().dispose()
+  })
+
   it('extracts stored, zlib and custom entries, decoded and bounded by their size', async () => {
     const session = await open()
     const extract = async (entryId: string) => {
