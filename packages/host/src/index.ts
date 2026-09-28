@@ -263,6 +263,7 @@ export {
 } from './service-leases.js'
 export {
   codecFidelityEvidenceRecords,
+  subjectFidelityEvidenceRecords,
   serviceProviderFidelityEvidenceRecord,
   createEvidenceRegistry,
   createRawWriter,

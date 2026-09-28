@@ -204,6 +204,16 @@ export interface OpenedSubject {
   }
   readonly candidates: readonly SubjectOpenCandidateExplanation[]
   readonly diagnostics: readonly Diagnostic[]
+  /**
+   * The container a semantic subject was composed over (a map inside its MPQ, a `.wz` package
+   * inside its zip). Every mutating operation of such a subject returns this container's edit
+   * plan, so editing targets, grants and fidelity evidence belong to the carrier, not to
+   * `descriptor`. Absent for a subject opened directly.
+   */
+  readonly carrier?: {
+    readonly descriptor: AnyDescriptor
+    readonly selected: OpenedSubject['selected']
+  }
 }
 
 export interface UnresolvedSubject {
@@ -2432,6 +2442,7 @@ export async function openSubject(request: OpenSubjectOptions): Promise<OpenSubj
       ...semantic,
       session,
       lockText,
+      carrier: Object.freeze({ descriptor: parent.descriptor, selected: parent.selected }),
       candidates: Object.freeze([...parent.candidates, ...semantic.candidates]),
       diagnostics: Object.freeze([...parent.diagnostics, ...semantic.diagnostics]),
     })

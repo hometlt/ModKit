@@ -424,7 +424,11 @@ const defaultDigest = (value: unknown): string =>
   canonicalJsonStringify(JSON.parse(JSON.stringify(value)) as never)
 
 export function createSubjectEditing(options: SubjectEditingOptions): SubjectEditing {
-  const descriptor = options.opened.descriptor
+  // A subject composed over a container is written as that container: its mutating operations
+  // return the carrier's edit plan (see OpenedSubject.carrier).
+  const descriptor =
+    ('carrier' in options.opened ? options.opened.carrier?.descriptor : undefined) ??
+    options.opened.descriptor
   const revision = assetRevisionFromDescriptor(descriptor)
   const targets = subjectEditTargetsFromDescriptor(descriptor)
   const grantSnapshot = createGrantSnapshot({

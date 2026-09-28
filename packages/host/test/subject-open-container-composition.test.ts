@@ -13,6 +13,7 @@ import {
 } from '@modkit/host'
 import { loadExtensionDirectory } from '@modkit/host/node'
 import { createCompanionInputResolver } from '../src/input-resolution.js'
+import { createSubjectEditing } from '../src/subject-editing.js'
 import {
   revisionId,
   type ArtifactByteSource,
@@ -495,6 +496,16 @@ describe('host-owned container composition', () => {
       carrierPackCalls: 1,
       semanticRawCalls: 0,
     })
+    // the subject is written as its carrier: the editing facade accepts the outer plan
+    expect(result.carrier?.selected.contributionId).toBe('org.example/test-carrier')
+    const editing = createSubjectEditing({
+      opened: result,
+      grant: { id: 'container-composition', classes: ['read-source', 'write-source'] },
+      backendFor: () => undefined,
+      evidenceFor: () => undefined,
+    })
+    expect(editing.planFromOperation(edited.output).edits).toHaveLength(1)
+    await editing.dispose()
     await result.session.dispose()
   })
 

@@ -277,6 +277,35 @@ export function codecFidelityEvidenceRecords(
   return Object.freeze(records)
 }
 
+/**
+ * The proof records for whatever writes an opened subject: its codec, and for a subject composed
+ * over a container also the carrier's codec, whose `container.pack` produces every plan of it.
+ * Applications build their evidence registry from this instead of naming one codec.
+ */
+export function subjectFidelityEvidenceRecords(
+  inventory: Inventory,
+  opened: {
+    readonly selected: { readonly contributionId: string }
+    readonly descriptor: { readonly identity: { readonly formatId: string } }
+    readonly carrier?: {
+      readonly selected: { readonly contributionId: string }
+      readonly descriptor: { readonly identity: { readonly formatId: string } }
+    }
+  },
+  acceptedOrigins?: readonly ExtensionOrigin[],
+): readonly FidelityEvidenceRecord[] {
+  const selections = [opened, ...(opened.carrier === undefined ? [] : [opened.carrier])]
+  return Object.freeze(
+    selections.flatMap(item =>
+      codecFidelityEvidenceRecords(inventory, {
+        codecId: item.selected.contributionId,
+        formatId: item.descriptor.identity.formatId,
+        ...(acceptedOrigins === undefined ? {} : { acceptedOrigins }),
+      }),
+    ),
+  )
+}
+
 function writerFacet(value: unknown): Readonly<Record<string, unknown>> | undefined {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
     ? (value as Readonly<Record<string, unknown>>)
