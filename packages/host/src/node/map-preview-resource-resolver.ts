@@ -11,7 +11,9 @@ import {
 } from '@modkit/core'
 import {
   revisionIdFromRef,
+  type ArtifactNamespaceSource,
   type AssetSession,
+  type NamespaceEntry,
   type NamespaceEntrySource,
   type PermissionGrant,
   type RevisionId,
@@ -104,7 +106,8 @@ type GameInstallationResourceLocator =
   GameInstallationArchiveLocator | GameInstallationSubjectLocator
 
 export interface NamespaceMount {
-  readonly session: AssetSession
+  /** The container's session; absent for a plain folder read by the host itself. */
+  readonly session?: AssetSession
   readonly namespace: NamespaceEntrySource
   readonly namespaceRelease: () => Promise<void>
   readonly revision: RevisionId
@@ -325,6 +328,98 @@ async function releaseAll(releases: readonly (() => Promise<void>)[]): Promise<v
     }
   }
   if (firstError !== undefined) throw firstError
+}
+
+/**
+ * A folder on disk as a map's resource namespace, read by the host itself: every file under it,
+ * `/` separated, ids = paths, extracted whole within `maxBytes`. For a game's data folder that no
+ * codec opens, so a game does not write a folder codec of its own.
+ */
+async function folderNamespaceMount(
+  folder: ArtifactNamespaceSource,
+  maxBytes: bigint,
+): Promise<NamespaceMount> {
+  const lease = await folder.openNamespace()
+  const namespace = lease.value
+  const entryOf = (item: { readonly path: string; readonly size?: bigint }): NamespaceEntry =>
+    Object.freeze({
+      id: item.path,
+      path: item.path,
+      name: item.path.slice(item.path.lastIndexOf('/') + 1),
+      kind: 'file' as const,
+      ...(item.size === undefined ? {} : { size: item.size }),
+      revision: namespace.revision,
+    })
+  const filesUnder = async (prefix: string, signal?: AbortSignal): Promise<NamespaceEntry[]> => {
+    // the folder listing takes a directory: list the one a prefix sits in, then narrow to it
+    const directory = prefix.slice(0, prefix.lastIndexOf('/') + 1).replace(/\/$/u, '')
+    const folded = prefix.toLowerCase()
+    const files: NamespaceEntry[] = []
+    for await (const item of namespace.list(directory, signal))
+      if (item.kind === 'file' && item.path.toLowerCase().startsWith(folded))
+        files.push(entryOf(item))
+    return files.sort((left, right) =>
+      left.path < right.path ? -1 : left.path > right.path ? 1 : 0,
+    )
+  }
+  const entries: NamespaceEntrySource = Object.freeze({
+    async list(
+      prefix: string,
+      page: { readonly cursor?: string; readonly limit: number },
+      signal?: AbortSignal,
+    ) {
+      const files = await filesUnder(prefix, signal)
+      const start = page.cursor === undefined ? 0 : Number(page.cursor)
+      const end = start + page.limit
+      return Object.freeze({
+        items: Object.freeze(files.slice(start, end)),
+        ...(end < files.length ? { nextCursor: String(end) } : {}),
+      })
+    },
+    async lookup(path: string, signal?: AbortSignal) {
+      return (await filesUnder(path, signal)).find(
+        entry => entry.path.toLowerCase() === path.toLowerCase(),
+      )
+    },
+    async openEntry(entryId: string) {
+      const uri = `${folder.ref.uri.replace(/\/+$/u, '')}/${entryId.split('/').map(encodeURIComponent).join('/')}`
+      return {
+        value: Object.freeze({ id: `${folder.ref.id}!/${entryId}`, uri }),
+        release: async () => undefined,
+      }
+    },
+  }) as NamespaceEntrySource
+  return Object.freeze({
+    namespace: entries,
+    namespaceRelease: () => lease.release(),
+    revision: namespace.revision,
+    async extract(entryId: string, signal?: AbortSignal): Promise<Uint8Array> {
+      const opened = await namespace.open(entryId, signal)
+      try {
+        const source = opened.value
+        if (source.kind !== 'bytes') throw new TypeError(`${entryId} is not a file`)
+        if (source.size !== undefined && source.size > maxBytes)
+          throw new RangeError(`${entryId} (${source.size} bytes) exceeds the preview input budget`)
+        const chunks: Uint8Array[] = []
+        let length = 0
+        for await (const chunk of source.stream(undefined, signal)) {
+          length += chunk.byteLength
+          if (BigInt(length) > maxBytes)
+            throw new RangeError(`${entryId} exceeds the preview input budget`)
+          chunks.push(chunk)
+        }
+        const bytes = new Uint8Array(length)
+        let at = 0
+        for (const chunk of chunks) {
+          bytes.set(chunk, at)
+          at += chunk.byteLength
+        }
+        return bytes
+      } finally {
+        await opened.release()
+      }
+    },
+  })
 }
 
 export async function namespaceMount(session: AssetSession): Promise<NamespaceMount> {
@@ -772,6 +867,7 @@ export function createNodeMapPreviewResourcePlanResolver(
                 opening: (async (): Promise<SharedArchive> => {
                   let opened: Awaited<ReturnType<SubjectServices['open']>>
                   let releaseSource = async (): Promise<void> => undefined
+                  let folder: ArtifactNamespaceSource | undefined
                   try {
                     const resourceInfo = await stat(resourcePath)
                     if (resourceInfo.isDirectory()) {
@@ -791,9 +887,10 @@ export function createNodeMapPreviewResourcePlanResolver(
                           request.signal === undefined ? {} : { signal: request.signal },
                         )
                         releaseSource = async () => vfs.dispose()
+                        folder = artifactNamespaceSourceFromVfsMount(vfsMount)
                         opened = await openSubject({
                           inventory: options.subjects.inventory,
-                          source: artifactNamespaceSourceFromVfsMount(vfsMount),
+                          source: folder,
                           path: resourcePath,
                           intent: 'inspect',
                           target: options.subjects.target,
@@ -845,6 +942,27 @@ export function createNodeMapPreviewResourcePlanResolver(
                       `ordinary subject opening failed for ${resourcePath} (${error instanceof Error ? error.message : String(error)})`,
                     )
                   }
+                  // a data folder no codec claims (Dune 2000's `data`) is read as a plain folder
+                  if (opened.state !== 'opened' && folder !== undefined) {
+                    try {
+                      const plain = await folderNamespaceMount(
+                        folder,
+                        request.budgets.maxInputBytes,
+                      )
+                      timing(`open and index ${resourcePath} as a folder`, archiveStartedAt)
+                      return Object.freeze({
+                        mount: plain,
+                        close: () => releaseAll([plain.namespaceRelease, releaseSource]),
+                      })
+                    } catch (error) {
+                      await releaseSource()
+                      throw new ArchiveOpenFailure(
+                        'x3.host/map-preview-installation-folder-unreadable',
+                        error instanceof Error ? error.message : String(error),
+                        opened.diagnostics,
+                      )
+                    }
+                  }
                   if (opened.state !== 'opened') {
                     await releaseSource()
                     throw new ArchiveOpenFailure(
@@ -871,7 +989,7 @@ export function createNodeMapPreviewResourcePlanResolver(
                     close: () =>
                       releaseAll([
                         releaseSource,
-                        () => openedMount.session.dispose(),
+                        async () => openedMount.session?.dispose(),
                         openedMount.namespaceRelease,
                       ]),
                   })

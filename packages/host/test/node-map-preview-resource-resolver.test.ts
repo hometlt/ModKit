@@ -405,6 +405,55 @@ describe('Node game-installation map-preview resource resolver', () => {
     expect(open).not.toHaveBeenCalled()
   })
 
+  it('reads an installation folder no codec opens as a plain folder', async () => {
+    const root = await installationRoot()
+    await mkdir(join(root, 'data', 'bin'), { recursive: true })
+    await writeFile(join(root, 'data', 'bin', 'tileset.bin'), 'tiles')
+    const mpPath = join(root, 'data', 'mp.wz')
+    await writeFile(mpPath, 'mp')
+    mocks.discover.mockResolvedValue({
+      state: 'discovered',
+      result: discovery(root),
+      diagnostics: [],
+    })
+    const original = await namespaceSession(
+      pathToFileURL(mpPath).href,
+      new Map([['multiplay/maps/demo/game.map', new Uint8Array([1])]]),
+    )
+    const {
+      buildInventory,
+      createExecutionBackendRegistry,
+      createHostContributionContractRegistry,
+    } = await import('../src/index.js')
+    const inventory = await buildInventory([], createHostContributionContractRegistry())
+    const resolver = createNodeMapPreviewResourcePlanResolver({
+      installationRetentionMs: 0,
+      subjects: {
+        open: vi.fn(),
+        inventory,
+        target: { environment: 'node', operatingSystem: 'windows', architecture: 'x64' },
+        executionBackends: createExecutionBackendRegistry([]),
+      } as unknown as Pick<SubjectServices, 'open'>,
+      configuredPaths: { [GAME_ID]: [root] },
+    })
+    const result = await resolver.resolve(
+      await requestFixture(
+        plan([
+          { rootId: 'mp', locator: locator(['data/mp.wz'], 'prefer-matching-opened-subject') },
+          { rootId: 'base', locator: locator(['data'], 'installation-only') },
+        ]),
+        mpPath,
+        original.session,
+      ),
+    )
+    if (result.state !== 'resolved') throw new Error(JSON.stringify(result.diagnostics))
+    const source = await result.origin.open('base/bin/tileset.bin')
+    if (source.value.kind !== 'bytes') throw new Error('not bytes')
+    expect(new TextDecoder().decode(await source.value.read(0n, 16))).toBe('tiles')
+    await source.release()
+    await result.release()
+  })
+
   it('keeps a released installation for its retention so the next pass reuses it', async () => {
     const root = await installationRoot()
     const mpPath = join(root, 'data', 'mp.wz')
@@ -564,7 +613,9 @@ describe('Node game-installation map-preview resource resolver', () => {
       await requestFixture(plan(), originalPath, original.session),
     )
     expect(
-      (chosen.diagnostics ?? []).some(item => item.code === 'x3.host/map-preview-installation-ambiguous'),
+      (chosen.diagnostics ?? []).some(
+        item => item.code === 'x3.host/map-preview-installation-ambiguous',
+      ),
     ).toBe(false)
   })
 
