@@ -41,7 +41,7 @@
         "modkit/m4a",
         "modkit/wav"
       ],
-      "digest": "sha256:30aaab36c51c69bc67262e3e1648107c70f945d4611c72ef6b3c8a5477bba556"
+      "digest": "sha256:c2e844edcefd48c22b1d25da66ff9c5412b2728c53655087138ae986bed322dd"
     },
     {
       "name": "data",

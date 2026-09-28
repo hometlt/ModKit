@@ -7,10 +7,10 @@
  * bounded by the frame window the caller asks for, and the viewer plays what comes back.
  */
 
-import { IMA_STEP_TABLE as STEP_TABLE } from '@modkit/codec-kit/audio'
-
-/** IMA ADPCM step index adjustment per 4-bit nibble magnitude. */
-const INDEX_TABLE = Object.freeze([-1, -1, -1, -1, 2, 4, 6, 8, -1, -1, -1, -1, 2, 4, 6, 8])
+import {
+  IMA_INDEX_TABLE as INDEX_TABLE,
+  IMA_STEP_TABLE as STEP_TABLE,
+} from '@modkit/codec-kit/audio'
 
 const clampSample = value => (value < -32_768 ? -32_768 : value > 32_767 ? 32_767 : value)
 
