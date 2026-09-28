@@ -35,7 +35,11 @@ import {
   unknownSourceLease,
   ViewerMountScope,
 } from '../viewer/index.js'
-import { createMediaShell } from '../media-shell/index.js'
+import {
+  createMediaShell,
+  mountContributedSections,
+  type MediaShellContribution,
+} from '../media-shell/index.js'
 import {
   createImageEditing,
   type EditRect,
@@ -406,14 +410,7 @@ export interface ImagePixelOperationPort {
  * same arguments this stage received. That is the whole extension point: a game extension ships a
  * module and a title, and this viewer never learns the game exists.
  */
-export interface ImageSidebarSection {
-  readonly id: string
-  readonly title: string
-  /** Codicon name for the section header. */
-  readonly icon?: string
-  readonly collapsed?: boolean
-  readonly module: ViewerModule
-}
+export type ImageSidebarSection = MediaShellContribution
 
 const ZOOM_CHOICES = [0.25, 0.5, 1, 2, 4, 8] as const
 const CHANNELS: readonly ImageChannel[] = ['rgb', 'r', 'g', 'b', 'a']
@@ -1313,19 +1310,7 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
             paint()
           })
         }
-        for (const contributed of options.sections ?? []) {
-          const section = shell.section(contributed.id, contributed.title, {
-            ...(contributed.icon === undefined ? {} : { icon: contributed.icon }),
-            collapsed: contributed.collapsed ?? true,
-          })
-          void contributed.module
-            .mount({ ...args, container: section.body })
-            .then(mounted => {
-              scope.cleanup(() => void mounted.unmount())
-            })
-            // A section whose module cannot bind (no such data source here) is removed, not empty.
-            .catch(() => section.root.remove())
-        }
+        mountContributedSections(shell, options.sections, args, unmount => scope.cleanup(unmount))
         renderPixelOperations()
         /*
          * The codec's own metadata, without the host's technical groups: identity and traits are

@@ -146,6 +146,10 @@
       "types": "./dist/map-layers/index.d.ts",
       "default": "./dist/map-layers/index.js"
     },
+    "./export": {
+      "types": "./dist/export/index.d.ts",
+      "default": "./dist/export/index.js"
+    },
     "./template": {
       "types": "./dist/template/index.d.ts",
       "default": "./dist/template/index.js"

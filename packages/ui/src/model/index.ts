@@ -34,7 +34,7 @@ export {
   MODEL_MAXIMUM_PRIMITIVES,
 } from './source.js'
 export type { ModelStageModel } from './source.js'
-import { createMediaShell } from '../media-shell/index.js'
+import { createMediaShell, mountContributedSections } from '../media-shell/index.js'
 import { PART_ATTRIBUTE } from '../parts.js'
 import { commitOperationWrite } from '../field-write/index.js'
 import { exportOffer, type EditOperationForm } from '../field-editor/index.js'
@@ -1241,19 +1241,7 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
             setViewerText(element(row, 'dd', { part: 'metadata.value' }), value, 160)
           }
         }
-        for (const contributed of options.sections ?? []) {
-          const section = shell.section(contributed.id, contributed.title, {
-            ...(contributed.icon === undefined ? {} : { icon: contributed.icon }),
-            collapsed: contributed.collapsed ?? true,
-          })
-          void contributed.module
-            .mount({ ...args, container: section.body })
-            .then(mounted => {
-              scope.cleanup(() => void mounted.unmount())
-            })
-            // A section whose module cannot bind (no such data source here) is removed, not empty.
-            .catch(() => section.root.remove())
-        }
+        mountContributedSections(shell, options.sections, args, unmount => scope.cleanup(unmount))
         /*
          * One section per list the format names, each row a field the record itself carries.
          * A record is shown as its own fields rather than as a rendered sentence, because the

@@ -215,6 +215,14 @@ export const EXPLORER_PREVIEW_FALLBACK_MESSAGES = {
   'explorer.text': 'Text',
 } as const satisfies UiMessageCatalog
 
+export const EXPORT_FALLBACK_MESSAGES = {
+  'viewer.export': 'Export',
+  'viewer.exportDone': 'Exported {name}',
+  'viewer.exportNoWriter': 'This window cannot write files.',
+  'viewer.exportRefused': 'Export failed: {reason}',
+  'viewer.exportRunning': 'Exporting {format}…',
+} as const satisfies UiMessageCatalog
+
 export const FILTER_FALLBACK_MESSAGES = {
   'filter.matchCase': 'Match case',
   'filter.placeholder': 'Filter',

@@ -6,7 +6,11 @@
  * to MP3, Vorbis, Opus, or any native library.
  */
 import type { AnyDescriptor, AudioMediaSource, MetadataGroup, ViewerModule } from '@modkit/sdk'
-import { createMediaShell } from '../media-shell/index.js'
+import {
+  createMediaShell,
+  mountContributedSections,
+  type MediaShellContribution,
+} from '../media-shell/index.js'
 import {
   createSurface,
   createViewerMount,
@@ -261,6 +265,11 @@ const clock = (seconds: number): string => {
 
 export interface AudioViewerOptions {
   readonly localizer?: UiLocalizer
+  /**
+   * Extra sidebar sections after the facts, e.g. the codec's conversions. They are mounted even
+   * when this view cannot play the stream: a codec may convert what the player cannot decode.
+   */
+  readonly sections?: readonly MediaShellContribution[]
 }
 
 /** `AnyDescriptor` also covers the unresolved arm, which carries no metadata. */
@@ -565,6 +574,8 @@ export function createAudioViewer(options: AudioViewerOptions = {}): ViewerModul
           }),
         })
       }
+
+      mountContributedSections(shell, options.sections, args, unmount => scope.cleanup(unmount))
 
       return createViewerMount(root, scope, args, ({ descriptor }) => {
         root.dataset['revision'] = descriptor.revision

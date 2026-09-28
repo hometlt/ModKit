@@ -1,6 +1,10 @@
 import type { AnyDescriptor, MetadataGroup, VideoMediaSource, ViewerModule } from '@modkit/sdk'
 import { collectEncodedMedia } from '../media/encoded.js'
-import { createMediaShell } from '../media-shell/index.js'
+import {
+  createMediaShell,
+  mountContributedSections,
+  type MediaShellContribution,
+} from '../media-shell/index.js'
 import { type UiLocalizer } from '../localization/index.js'
 import { VIDEO_FALLBACK_MESSAGES } from '../localization/fallback-catalogs.generated.js'
 import { withEnglishUiFallback } from '../localization/fallback.js'
@@ -19,6 +23,11 @@ export const VIDEO_MAXIMUM_BYTES = 256 * 1024 * 1024
 
 export interface VideoViewerOptions {
   readonly localizer?: UiLocalizer
+  /**
+   * Extra sidebar sections after the facts, e.g. the codec's conversions. They are mounted even
+   * when this view cannot play the stream: a codec may convert what the player cannot decode.
+   */
+  readonly sections?: readonly MediaShellContribution[]
 }
 
 /** `AnyDescriptor` also covers the unresolved arm, which carries no metadata. */
@@ -147,6 +156,8 @@ export function createVideoViewer(options: VideoViewerOptions = {}): ViewerModul
           }),
         })
       }
+
+      mountContributedSections(shell, options.sections, args, unmount => scope.cleanup(unmount))
 
       return createViewerMount(root, scope, args, ({ descriptor }) => {
         root.dataset['revision'] = descriptor.revision

@@ -11,7 +11,7 @@
  * (collapsed unless they hold the open file or a filter is typed), list / small / big views,
  * thumbnails only for expanded groups, and the case / word / regex quick filter.
  */
-import type { ViewerGalleryItem, ViewerGalleryPort } from '@modkit/sdk'
+import type { ViewerGalleryItem, ViewerGalleryPort, ViewerModule } from '@modkit/sdk'
 import { setPart, setState, type PartName } from '../parts.js'
 import { icon, iconButton } from '../icons/index.js'
 import { createFilterWidget, textMatches } from '../filter/index.js'
@@ -69,6 +69,39 @@ export interface MediaShell {
   /** Refill the gallery from the port. */
   refreshGallery(signal?: AbortSignal): Promise<void>
   destroy(): void
+}
+
+/** A sidebar section a host or an extension adds to a media view: a viewer module of its own. */
+export interface MediaShellContribution {
+  readonly id: string
+  readonly title: string
+  /** Codicon name for the section header. */
+  readonly icon?: string
+  readonly collapsed?: boolean
+  readonly module: ViewerModule
+}
+
+/**
+ * Mount contributed sections into the sidebar, each module over the view's own arguments; each
+ * mounted section's teardown goes to `onMounted`. A section whose module cannot bind here (no such
+ * data source, nothing to offer) is removed rather than left empty.
+ */
+export function mountContributedSections(
+  shell: MediaShell,
+  sections: readonly MediaShellContribution[] | undefined,
+  args: Parameters<ViewerModule['mount']>[0],
+  onMounted: (unmount: () => void) => void,
+): void {
+  for (const contributed of sections ?? []) {
+    const section = shell.section(contributed.id, contributed.title, {
+      ...(contributed.icon === undefined ? {} : { icon: contributed.icon }),
+      collapsed: contributed.collapsed ?? true,
+    })
+    void contributed.module
+      .mount({ ...args, container: section.body })
+      .then(mounted => onMounted(() => void mounted.unmount()))
+      .catch(() => section.root.remove())
+  }
 }
 
 const MIN_PANE = 120
