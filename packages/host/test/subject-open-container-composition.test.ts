@@ -18,6 +18,7 @@ import {
   revisionId,
   type ArtifactByteSource,
   type ArtifactNamespaceSource,
+  type NamespaceEntrySource,
   type ResourceBudget,
 } from '@modkit/sdk'
 
@@ -507,6 +508,31 @@ describe('host-owned container composition', () => {
     expect(editing.planFromOperation(edited.output).edits).toHaveLength(1)
     await editing.dispose()
     await result.session.dispose()
+  })
+
+  it('lists and extracts through the carrier when the semantic codec has no namespace', async () => {
+    const { result } = await openedComposition()
+    try {
+      const descriptor = await result.session.descriptor()
+      expect(
+        descriptor.dataSources.some(item => item.contract === 'common.view/namespace-entry-source'),
+      ).toBe(true)
+      const extract = descriptor.operations.find(item => item.id === 'container.extract')
+      expect(extract?.handlerId).toBe('x3.host/carrier-container-extract')
+      const lease = await result.session.dataSource('common.view/namespace-entry-source', 1)
+      const page = await (lease.value as NamespaceEntrySource).list('', { limit: 100 })
+      await lease.release()
+      const world = page.items.find(item => item.path.endsWith('world.bin'))
+      if (world === undefined) throw new Error('the carrier listed no world.bin')
+      const extracted = await result.session
+        .operations()
+        .invoke(extract!.handlerId, { entryId: world.id })
+      if (extracted.state !== 'ok' || extracted.output.kind !== 'bytes')
+        throw new Error('the carrier did not extract')
+      expect(new TextDecoder().decode(extracted.output.value)).toBe('old-world')
+    } finally {
+      await result.session.dispose()
+    }
   })
 
   it('delegates export.raw to the carrier without invoking semantic raw code', async () => {

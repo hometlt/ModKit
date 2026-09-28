@@ -38,6 +38,8 @@ const CONTAINER_EXTRACT = 'container.extract'
 const CONTAINER_PACK = 'container.pack'
 const EXPORT_RAW = 'export.raw'
 const VIEW_INSPECT = 'view.inspect'
+/** The composed session's handler for the carrier's `container.extract`, kept apart from the codec's. */
+const CARRIER_EXTRACT_HANDLER = 'x3.host/carrier-container-extract'
 const ENTRY_NOT_FOUND = 'x3.host/namespace-entry-not-found'
 const PAGE_LIMIT = 256
 const BASE64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
@@ -318,6 +320,8 @@ function composedOperations(options: {
   readonly exportRawHandlerId?: string
   readonly parentInspectHandlerId?: string
   readonly semanticInspectHandlerId?: string
+  /** The carrier's `container.extract` handler, when the composed session publishes it. */
+  readonly carrierExtractHandlerId?: string
 }): OperationSession {
   const operationByHandler = new Map(
     options.semanticSpec.operations.map(operation => [operation.handlerId, operation]),
@@ -343,6 +347,8 @@ function composedOperations(options: {
         })
       }
       throwIfAborted(invokeOptions?.signal)
+      if (handlerId === CARRIER_EXTRACT_HANDLER && options.carrierExtractHandlerId !== undefined)
+        return options.parent.invoke(options.carrierExtractHandlerId, input, invokeOptions)
       const declaration = operationByHandler.get(handlerId)
       if (declaration?.id === EXPORT_RAW) {
         if (options.exportRawHandlerId === undefined) {
@@ -914,6 +920,31 @@ export async function createContainerNamespaceComposition(
       }
       const parentInspectHandlerId = operationHandler(descriptor, VIEW_INSPECT)
       const semanticInspectHandlerId = operationHandler(semanticDescriptor, VIEW_INSPECT)
+      // A map over an archive whose codec publishes no namespace of its own lists and extracts through
+      // the carrier's, so map codecs need not copy the archive's listing (SC2, Spring, WC3 did).
+      const namespaceOf = (item: AnyDescriptor) =>
+        item.dataSources.some(
+          entry => entry.contract === NAMESPACE_ENTRY_SOURCE && entry.major === 1,
+        )
+      const carrierExtract = descriptor.operations.find(
+        item => item.id === CONTAINER_EXTRACT && item.state === 'available',
+      )
+      const lendsNamespace =
+        !namespaceOf(semanticDescriptor) && namespaceOf(descriptor) && carrierExtract !== undefined
+      const lend = (item: AnyDescriptor): AnyDescriptor =>
+        !lendsNamespace || namespaceOf(item)
+          ? item
+          : (Object.freeze({
+              ...item,
+              dataSources: Object.freeze([
+                ...item.dataSources,
+                Object.freeze({ contract: NAMESPACE_ENTRY_SOURCE, major: 1 }),
+              ]),
+              operations: Object.freeze([
+                ...item.operations.filter(operation => operation.id !== CONTAINER_EXTRACT),
+                Object.freeze({ ...carrierExtract!, handlerId: CARRIER_EXTRACT_HANDLER }),
+              ]),
+            }) as AnyDescriptor)
       const operations = composedOperations({
         semantic: semantic.operations(),
         semanticSpec,
@@ -925,12 +956,16 @@ export async function createContainerNamespaceComposition(
         ...(exportRawHandlerId === undefined ? {} : { exportRawHandlerId }),
         ...(parentInspectHandlerId === undefined ? {} : { parentInspectHandlerId }),
         ...(semanticInspectHandlerId === undefined ? {} : { semanticInspectHandlerId }),
+        ...(lendsNamespace ? { carrierExtractHandlerId: carrierExtract!.handlerId } : {}),
       })
       return Object.freeze({
         revision: semantic.revision,
         state: () => semantic.state(),
-        descriptor: () => semantic.descriptor(),
-        dataSource: semantic.dataSource.bind(semantic) as AssetSession['dataSource'],
+        descriptor: async () => lend(await semantic.descriptor()),
+        dataSource: ((contract: string, major: number) =>
+          lendsNamespace && contract === NAMESPACE_ENTRY_SOURCE && major === 1
+            ? parent.dataSource(NAMESPACE_ENTRY_SOURCE, 1)
+            : semantic.dataSource(contract as never, major as never)) as AssetSession['dataSource'],
         operations: () => operations,
         events: (signal?: AbortSignal) => semantic.events(signal),
         dispose,
