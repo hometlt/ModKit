@@ -614,14 +614,24 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-ea/test/receipts/k1/cnc3-data.audit.json",
+          "sha256": "ceb70e9359553b52ad7a63503c5bd867aa39a424823c4783977e9f669330e04a"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/cnc3-data/audit",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-ea/test/receipts/k1/cnc3-data.view-inspect.json",
+          "sha256": "501a050d3d7649e65d781a24bf526a192c1e431ce2f83335fbd3784c091f7c04"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/cnc3-data/operation/view.inspect",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [
@@ -3678,9 +3688,14 @@
       "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-ea/test/receipts/k1/sage-asset-bundle.audit.json",
+          "sha256": "5a22c377202dff8a21a85d6d64a5f4b4c051fbe476120bd404423d44bee2ac9f"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sage-asset-bundle/audit",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [

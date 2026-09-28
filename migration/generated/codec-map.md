@@ -29,7 +29,7 @@ Pending requires source copy, behavioral evidence and the declared acceptance su
 | cab | other | core:modkit/cab | pending | 3 / 3 | pending |
 | casc | sc2 | blizzard:blizzard/casc | available | 0 / 9 | evidence-ready |
 | cdr | other | other:modkit/cdr | pending | 5 / 5 | pending |
-| cnc3-data | other | ea:ea/cnc3-data | pending | 2 / 2 | pending |
+| cnc3-data | other | ea:ea/cnc3-data | pending | 0 / 2 | evidence-ready |
 | cnc3-localization | other | ea:ea/cnc3-localization | pending | 0 / 2 | evidence-ready |
 | cnc3-map | other | ea:ea/cnc3-map | pending | 0 / 2 | evidence-ready |
 | cps | other | ea:ea/cps | pending | 0 / 2 | evidence-ready |
@@ -130,7 +130,7 @@ Pending requires source copy, behavioral evidence and the declared acceptance su
 | rsh | other | other:modkit/rsh | pending | 0 / 4 | evidence-ready |
 | rtf | other | core:modkit/document-rtf | pending | 5 / 5 | pending |
 | rtx | other | other:modkit/rtx | pending | 0 / 4 | evidence-ready |
-| sage-asset-bundle | other | none | pending | 1 / 1 | pending |
+| sage-asset-bundle | other | none | pending | 0 / 1 | evidence-ready |
 | sage-skudef | other | ea:ea/sage-skudef | pending | 0 / 2 | evidence-ready |
 | sage-w3x | other | ea:ea/sage-w3x | pending | 3 / 3 | pending |
 | sc2-bank | sc2 | blizzard:blizzard/sc2-bank, blizzard:blizzard/sc2-bank | available | 0 / 27 | evidence-ready |

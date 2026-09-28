@@ -32,7 +32,7 @@
       ]
     }
   ],
-  "contributionCount": 287,
+  "contributionCount": 290,
   "inventorySha256": "08c3bdad48056914277c7f95a0f97ef4feb85c8ec86a2fa8faf47bd7f9817e8c",
   "legacyCount": 206,
   "rows": [
@@ -437,11 +437,11 @@
       "codec": "cnc3-data",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 2,
+      "pending": 0,
       "requirements": 2,
       "source": "extensions/ea/sage/codecs/cnc3-data/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/cnc3-data",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -2081,11 +2081,11 @@
       "codec": "sage-asset-bundle",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 1,
+      "pending": 0,
       "requirements": 1,
       "source": "extensions/ea/sage/codecs/sage-asset-bundle/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/sage-asset-bundle",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [

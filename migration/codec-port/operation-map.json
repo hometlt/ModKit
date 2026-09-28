@@ -376,11 +376,11 @@
       "targetOperation": null
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-ea/sage/contributions/codec-cnc3-data.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/cnc3-data/operation/view.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
       "contribution": "modkit-extensions-ea/sage/contributions/codec-cnc3-localization.json",
