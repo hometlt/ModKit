@@ -2290,8 +2290,7 @@ function resourceInputFor(
   resolveInput: SubjectInputResolver | undefined,
   logicalId: string | undefined,
 ): { readonly resolveInput?: SubjectInputResolver } {
-  const nested =
-    logicalId === undefined ? undefined : resolveInput?.forResource?.(logicalId)
+  const nested = logicalId === undefined ? undefined : resolveInput?.forResource?.(logicalId)
   return nested === undefined ? {} : { resolveInput: nested }
 }
 
