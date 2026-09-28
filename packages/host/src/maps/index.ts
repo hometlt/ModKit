@@ -76,7 +76,13 @@ import type {
 } from '@modkit/sdk'
 import { answerCatalogQueries, type CatalogEntities } from '../catalog-questions.js'
 import type { ExecutionBackendRegistry } from '../execution/backend.js'
-import { createCompanionInputResolver, type CompanionOrigin } from '../input-resolution.js'
+import {
+  createCompanionInputResolver,
+  createLayeredCompanionOrigin,
+  type CompanionOrigin,
+} from '../input-resolution.js'
+import { resolveContentAssetOrigins } from '../content-dependency-operations.js'
+import type { ContentSources } from '@modkit/vfs/content-sources'
 import type { Inventory } from '../inventory.js'
 import { createWorkspaceNamespaceCompanionOrigin } from '../namespace-origin.js'
 import { createResourceSession } from '../resource-session.js'
@@ -1484,6 +1490,12 @@ export interface CoordinateMapPreviewAssetSessionRequest {
   readonly catalog?: DataCatalogSnapshot
   /** Optional host-local observer for the lazy model resources of the resulting world. */
   readonly onModelResourceProfile?: (profile: ModelResourceProfile) => void
+  /**
+   * The window's content sources. With them the world's models also reach the subject's mod
+   * dependency layers (downloaded Roblox assets, a game's shipped textures) behind the map's own
+   * resources, as an ordinary open of the same file does.
+   */
+  readonly contentSources?: ContentSources
   readonly signal?: AbortSignal
 }
 
@@ -2794,11 +2806,25 @@ export async function coordinateMapPreviewAssetSession(
   const releasePreparedResources = releaseOnce(resourceResolution.release)
   let resources: ResourceSessionPort | undefined
   try {
+    // The subject's dependency layers answer `workspace-dependency-layer` behind the map's own
+    // resources (one overlay per subject, strongest layer first), as an ordinary open does.
+    const dependencies =
+      request.contentSources === undefined
+        ? undefined
+        : await resolveContentAssetOrigins({
+            contentSources: request.contentSources,
+            subjects: [{ descriptor }],
+            ...(request.signal === undefined ? {} : { signal: request.signal }),
+          })
+    const origin =
+      dependencies === undefined || dependencies.origins.length === 0
+        ? resourceResolution.origin
+        : createLayeredCompanionOrigin([resourceResolution.origin, ...dependencies.origins])
     resources = createResourceSession({
-      origin: resourceResolution.origin,
+      origin,
       revision: resourceResolution.revision,
     })
-    const inputResolver = createCompanionInputResolver(resourceResolution.origin)
+    const inputResolver = createCompanionInputResolver(origin)
     // A resolver that holds the merged catalog answers what the map places; the whole-catalog
     // enrichment is only for a resolver that does not.
     const catalogEntities =
