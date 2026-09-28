@@ -6,6 +6,7 @@ import {
   createWorldWebGlCameraFrame,
   createWorldWebGlPlan,
   createWorldWebGlRenderer,
+  createWorldWebGlTransparentDrawPlan,
   pickWorldWebGl,
   worldModelEffectDraws,
 } from '../src/world/webgl.js'
@@ -514,6 +515,7 @@ it('replays the projected decal triangles of an object kept from the previous pl
   const next = createWorldWebGlPlan(nextInput, first)
   assert.equal(next.modelMaterialScenes[0], first.modelMaterialScenes[0])
   assert.deepEqual([...decals(next)[0].positions], [...decals(first)[0].positions])
+  assert.equal(decals(next)[0], decals(first)[0])
   const values = plan =>
     JSON.stringify(plan, (_, value) => (value instanceof Map ? [...value] : value))
   assert.equal(values(next), values(createWorldWebGlPlan(nextInput)))
@@ -645,6 +647,37 @@ it('keeps an object whose clip moves neither geometry, materials nor effects whi
   const movingNext = createWorldWebGlPlan({ ...moving, timeSeconds: 0.5 }, movingFirst)
   assert.notEqual(movingNext.modelMaterialScenes[0], movingFirst.modelMaterialScenes[0])
   assert.equal(values(movingNext), values(createWorldWebGlPlan({ ...moving, timeSeconds: 0.5 })))
+})
+
+it('takes unchanged shared batches, water depth and transparent order from the previous plan', () => {
+  const values = plan =>
+    JSON.stringify(plan, (_, value) => (value instanceof Map ? [...value] : value))
+  const base = world()
+  // Fallback geometry (no materials) that nothing moves, and water whose texture does not scroll.
+  const input = {
+    ...base,
+    models: new Map([['actor', { ...animatedModel(), animations: [] }]]),
+    waterMaterials: base.waterMaterials.map(material => ({ ...material, scroll: [0, 0] })),
+  }
+  const first = createWorldWebGlPlan(input)
+  const firstDraws = createWorldWebGlTransparentDrawPlan(first)
+  assert.ok(first.opaqueTriangles.positions.length > 0)
+  assert.equal(first.transparentTexturedTriangles.length, 1)
+  const nextInput = { ...input, timeSeconds: 0.5 }
+  const next = createWorldWebGlPlan(nextInput, first)
+  assert.equal(next.opaqueTriangles, first.opaqueTriangles)
+  assert.equal(next.transparentTexturedTriangles[0], first.transparentTexturedTriangles[0])
+  assert.equal(next.waterSurfaceDepth, first.waterSurfaceDepth)
+  assert.equal(next.picking.objects.at(-1), first.picking.objects.at(-1))
+  assert.equal(createWorldWebGlTransparentDrawPlan(next), firstDraws)
+  assert.equal(values(next), values(createWorldWebGlPlan(nextInput)))
+  // Scrolling water moves its texture coordinates: that batch alone is written again.
+  const scrolling = { ...input, waterMaterials: base.waterMaterials }
+  const before = createWorldWebGlPlan(scrolling)
+  const after = createWorldWebGlPlan({ ...scrolling, timeSeconds: 0.5 }, before)
+  assert.notEqual(after.transparentTexturedTriangles[0], before.transparentTexturedTriangles[0])
+  assert.equal(after.opaqueTriangles, before.opaqueTriangles)
+  assert.equal(values(after), values(createWorldWebGlPlan({ ...scrolling, timeSeconds: 0.5 })))
 })
 
 it('keeps procedural cliff skirts until the model covering each edge has loaded', () => {

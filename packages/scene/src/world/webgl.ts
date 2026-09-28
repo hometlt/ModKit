@@ -837,6 +837,106 @@ function clippedWaterGround(
   return triangles
 }
 
+/** A water zone's writes: its plane (untextured water) and its surface triangles. */
+interface WorldWaterZone {
+  readonly texture: MutableTexturedBatch['texture'] | undefined
+  readonly secondaryTexture: MutableTexturedBatch['texture'] | undefined
+  /** The clock of scrolling texture coordinates; undefined when they do not move. */
+  readonly time: number | undefined
+  readonly plane: WorldBatchWrite | undefined
+  readonly triangles: WorldBatchWrite
+  readonly emitted: boolean
+}
+
+/**
+ * Water zones by terrain preparation, material and box: the same zone writes the same triangles
+ * into every plan until the terrain, the material or (for scrolling textures) the clock changes.
+ */
+const worldWaterZones = new WeakMap<object, WeakMap<object, Map<string, WorldWaterZone>>>()
+const NO_WATER_MATERIAL = Object.freeze({})
+
+function worldWaterZone(
+  preparation: Parameters<typeof clippedWaterGround>[0],
+  material: MapWaterMaterialDefinition | undefined,
+  texture: MutableTexturedBatch['texture'] | undefined,
+  secondaryTexture: MutableTexturedBatch['texture'] | undefined,
+  minimum: Readonly<{ x: number; z: number }>,
+  maximum: Readonly<{ x: number; z: number }>,
+  elevation: number,
+  timeSeconds: number,
+): WorldWaterZone {
+  let byMaterial = worldWaterZones.get(preparation)
+  if (byMaterial === undefined) worldWaterZones.set(preparation, (byMaterial = new WeakMap()))
+  let zones = byMaterial.get(material ?? NO_WATER_MATERIAL)
+  if (zones === undefined) byMaterial.set(material ?? NO_WATER_MATERIAL, (zones = new Map()))
+  const key = `${minimum.x}:${minimum.z}:${maximum.x}:${maximum.z}:${elevation}`
+  const textured = material !== undefined && texture !== undefined
+  const time =
+    textured && (material.scroll ?? []).some(value => value !== 0) ? timeSeconds : undefined
+  const cached = zones.get(key)
+  if (
+    cached !== undefined &&
+    cached.texture === texture &&
+    cached.secondaryTexture === secondaryTexture &&
+    cached.time === time
+  )
+    return cached
+  let plane: WorldBatchWrite | undefined
+  if (!textured) {
+    // The same zone as a plane at its elevation, for a renderer that measures the depth under the
+    // water against the drawn scene instead of the height grid (see WorldWebGlWaterPlane).
+    const written = batch()
+    const color = material?.color ?? WATER_DEFAULT_COLOR
+    const a = [minimum.x, elevation, minimum.z] as const
+    const b = [maximum.x, elevation, minimum.z] as const
+    const c = [maximum.x, elevation, maximum.z] as const
+    const d = [minimum.x, elevation, maximum.z] as const
+    for (const vertex of [a, c, b, a, d, c])
+      pushVertex(written, vertex, WATER_SURFACE_NORMAL, color)
+    plane = written
+  }
+  let triangles: MutableBatch
+  let push: (ground: readonly [WaterGroundVertex, WaterGroundVertex, WaterGroundVertex]) => void
+  if (material !== undefined && texture !== undefined) {
+    const surface = material
+    const target: MutableTexturedBatch = {
+      ...batch(),
+      textureCoordinates: [],
+      ...(secondaryTexture === undefined ? {} : { secondaryTextureCoordinates: [] }),
+      texture,
+    }
+    triangles = target
+    push = ground => pushTexturedWaterTriangle(target, ground, elevation, surface, timeSeconds)
+  } else {
+    const target = batch()
+    triangles = target
+    push = ground => pushWaterTriangle(target, ground, elevation, material)
+  }
+  let emitted = false
+  if (material?.shorelineMode === 'terrain-clipped' && preparation.terrain.length > 0) {
+    const ground = clippedWaterGround(preparation, minimum, maximum, elevation)
+    for (let offset = 0; offset < ground.length; offset += 9) {
+      push([
+        [ground[offset]!, ground[offset + 1]!, ground[offset + 2]!],
+        [ground[offset + 3]!, ground[offset + 4]!, ground[offset + 5]!],
+        [ground[offset + 6]!, ground[offset + 7]!, ground[offset + 8]!],
+      ])
+      emitted = true
+    }
+  } else {
+    const a = [minimum.x, elevation - 1, minimum.z] as const
+    const b = [maximum.x, elevation - 1, minimum.z] as const
+    const c = [maximum.x, elevation - 1, maximum.z] as const
+    const d = [minimum.x, elevation - 1, maximum.z] as const
+    push([a, c, b])
+    push([a, d, c])
+    emitted = true
+  }
+  const zone = Object.freeze({ texture, secondaryTexture, time, plane, triangles, emitted })
+  zones.set(key, zone)
+  return zone
+}
+
 function waterVertexColor(
   material: MapWaterMaterialDefinition | undefined,
   elevation: number,
@@ -1602,7 +1702,7 @@ function modelMaterialShadowPolicy(material: ModelMaterialRef | undefined): Read
   })
 }
 
-function finitePlan(plan: readonly MutableBatch[]) {
+function finitePlan(plan: readonly WorldBatchWrite[]) {
   for (const item of plan) {
     for (const values of [item.positions, item.normals, item.colors]) {
       for (const value of values) if (!Number.isFinite(value)) return false
@@ -1725,8 +1825,8 @@ interface WorldStaticObject {
   readonly key: readonly unknown[]
   readonly scenes: readonly WorldWebGlModelMaterialScene[]
   readonly effects: readonly WorldWebGlModelEffectInstance[]
-  /** Triangles the object appended to the plan's shared projector batches, in order. */
-  readonly projectorWrites: readonly WorldProjectorWrite[]
+  /** Triangles the object wrote to the plan's shared batches (projector decals, fallback), in order. */
+  readonly batchWrites: readonly WorldObjectBatchWrite[]
   readonly pickMesh: WorldObjectPickMesh
   readonly modelTriangles: number
   readonly shadowTriangles: number
@@ -1740,17 +1840,218 @@ interface WorldObjectPickMesh {
   readonly placeholder: boolean
 }
 
-/** One projector's simple-effect triangles, as appended to its shared textured batch. */
-interface WorldProjectorWrite {
-  readonly texture: MutableTexturedBatch['texture']
+/**
+ * The triangles one contributor adds to a shared plan batch: a water zone, a projector decal or a
+ * primitive the fallback path draws. A plan assembles each shared batch from its writes in order,
+ * and a batch whose writes are exactly the previous plan's (retained objects and the water cache
+ * hand in the same write objects) takes the previous frozen batch as it is: no copy, no upload, and
+ * its transparent order stays sorted.
+ */
+interface WorldBatchWrite {
   readonly positions: readonly number[]
   readonly normals: readonly number[]
   readonly colors: readonly number[]
-  readonly textureCoordinates: readonly number[]
+  readonly textureCoordinates?: readonly number[]
+  readonly secondaryTextureCoordinates?: readonly number[]
 }
 
-function appendNumbers(target: number[], values: readonly number[]) {
-  for (const value of values) target.push(value)
+type WorldControlledBatch = MutableBatch & {
+  readonly castShadows: boolean
+  readonly receiveShadows: boolean
+}
+type WorldTransparentTexturedBatch = MutableTexturedBatch & {
+  readonly blendMode: 'blend' | 'additive'
+  readonly receiveShadows: boolean
+}
+
+/**
+ * A retained object's write and the shared batch it goes to. `target` is the batch as the write's
+ * first plan created it: a plan that has no batch under `key` yet adds that one. Shared batches
+ * only describe the batch (texture, blending, shadows); their triangles are the writes.
+ */
+type WorldObjectBatchWrite =
+  | { readonly collection: 'opaque'; readonly write: WorldBatchWrite }
+  | {
+      readonly collection: 'controlled'
+      readonly key: string
+      readonly target: WorldControlledBatch
+      readonly write: WorldBatchWrite
+    }
+  | {
+      readonly collection: 'textured'
+      readonly key: string
+      readonly target: MutableTexturedBatch
+      readonly write: WorldBatchWrite
+    }
+  | {
+      readonly collection: 'transparentTextured'
+      readonly key: string
+      readonly target: WorldTransparentTexturedBatch
+      readonly write: WorldBatchWrite
+    }
+
+/** Writes and pick meshes whose coordinates (and texture coordinates) a plan has already checked. */
+const checkedWorldWrites = new WeakSet<WorldBatchWrite>()
+const checkedWorldPickMeshes = new WeakSet<WorldObjectPickMesh>()
+
+/** Bounds of a positions array (minimum xyz, maximum xyz); kept for writes and pick meshes. */
+const worldPositionBounds = new WeakMap<readonly number[], readonly number[]>()
+
+function positionBounds(positions: readonly number[]): readonly number[] {
+  let bounds = worldPositionBounds.get(positions)
+  if (bounds === undefined) {
+    let minX = Infinity,
+      minY = Infinity,
+      minZ = Infinity,
+      maxX = -Infinity,
+      maxY = -Infinity,
+      maxZ = -Infinity
+    for (let offset = 0; offset < positions.length; offset += 3) {
+      minX = Math.min(minX, positions[offset]!)
+      maxX = Math.max(maxX, positions[offset]!)
+      minY = Math.min(minY, positions[offset + 1]!)
+      maxY = Math.max(maxY, positions[offset + 1]!)
+      minZ = Math.min(minZ, positions[offset + 2]!)
+      maxZ = Math.max(maxZ, positions[offset + 2]!)
+    }
+    bounds = Object.freeze([minX, minY, minZ, maxX, maxY, maxZ])
+    worldPositionBounds.set(positions, bounds)
+  }
+  return bounds
+}
+
+/** Concatenates one attribute of a batch's writes, as `Float32Array.from` would convert them. */
+function writtenAttribute(
+  writes: readonly WorldBatchWrite[],
+  attribute: 'positions' | 'normals' | 'colors' | 'textureCoordinates' | 'secondaryTextureCoordinates',
+): Float32Array {
+  let length = 0
+  for (const write of writes) length += write[attribute]?.length ?? 0
+  const result = new Float32Array(length)
+  let offset = 0
+  for (const write of writes) {
+    const values = write[attribute]
+    if (values === undefined) continue
+    result.set(values, offset)
+    offset += values.length
+  }
+  return result
+}
+
+function writtenBatch(writes: readonly WorldBatchWrite[]): WorldWebGlBatch {
+  return Object.freeze({
+    positions: writtenAttribute(writes, 'positions'),
+    normals: writtenAttribute(writes, 'normals'),
+    colors: writtenAttribute(writes, 'colors'),
+  })
+}
+
+function writtenTexturedBatch(
+  template: MutableTexturedBatch,
+  writes: readonly WorldBatchWrite[],
+): WorldWebGlTexturedBatch {
+  return Object.freeze({
+    ...writtenBatch(writes),
+    textureCoordinates: writtenAttribute(writes, 'textureCoordinates'),
+    ...(template.secondaryTextureCoordinates === undefined
+      ? {}
+      : { secondaryTextureCoordinates: writtenAttribute(writes, 'secondaryTextureCoordinates') }),
+    texture: template.texture,
+    ...(template.normalTexture === undefined ? {} : { normalTexture: template.normalTexture }),
+    ...(template.secondaryTexture === undefined
+      ? {}
+      : { secondaryTexture: template.secondaryTexture }),
+    ...(template.alphaCutoff === undefined ? {} : { alphaCutoff: template.alphaCutoff }),
+    ...(template.castShadows === undefined ? {} : { castShadows: template.castShadows }),
+    ...(template.receiveShadows === undefined ? {} : { receiveShadows: template.receiveShadows }),
+  })
+}
+
+/**
+ * Each object's projector writes of its last build. An object with live effects is rebuilt at
+ * every clock, but its decals usually come out the same: it then hands in the previous write
+ * objects, so the shared decal batches are kept (see WorldBatchWrite).
+ */
+const lastProjectorWrites = new WeakMap<
+  WorldSceneObjectItem,
+  readonly { readonly key: string; readonly write: WorldBatchWrite }[]
+>()
+
+function sameNumbers(left: readonly number[] | undefined, right: readonly number[] | undefined) {
+  if (left === right) return true
+  if (left === undefined || right === undefined || left.length !== right.length) return false
+  for (let index = 0; index < left.length; index++)
+    if (!Object.is(left[index], right[index])) return false
+  return true
+}
+
+function sameWriteContent(left: WorldBatchWrite, right: WorldBatchWrite): boolean {
+  return (
+    sameNumbers(left.positions, right.positions) &&
+    sameNumbers(left.normals, right.normals) &&
+    sameNumbers(left.colors, right.colors) &&
+    sameNumbers(left.textureCoordinates, right.textureCoordinates) &&
+    sameNumbers(left.secondaryTextureCoordinates, right.secondaryTextureCoordinates)
+  )
+}
+
+const sameWrites = (left: readonly unknown[], right: readonly unknown[]) =>
+  left.length === right.length && left.every((value, index) => value === right[index])
+
+/** What a shared batch looks like apart from its triangles: equal ones draw the same way. */
+function sameBatchTemplate(left: object, right: object): boolean {
+  const a = left as Partial<WorldTransparentTexturedBatch & WorldControlledBatch>
+  const b = right as Partial<WorldTransparentTexturedBatch & WorldControlledBatch>
+  return (
+    a.texture === b.texture &&
+    a.normalTexture === b.normalTexture &&
+    a.secondaryTexture === b.secondaryTexture &&
+    (a.secondaryTextureCoordinates === undefined) ===
+      (b.secondaryTextureCoordinates === undefined) &&
+    a.alphaCutoff === b.alphaCutoff &&
+    a.castShadows === b.castShadows &&
+    a.receiveShadows === b.receiveShadows &&
+    a.blendMode === b.blendMode &&
+    (left as { colorFalloff?: number }).colorFalloff ===
+      (right as { colorFalloff?: number }).colorFalloff
+  )
+}
+
+/** The shared batches of a plan with their writes, for the next plan to take unchanged ones. */
+interface WorldPlanBatches {
+  readonly batches: ReadonlyMap<
+    string,
+    { readonly template: object; readonly writes: readonly WorldBatchWrite[]; readonly frozen: unknown }
+  >
+  readonly water: readonly WorldBatchWrite[]
+  readonly waterSurfaceDepth: Float32Array
+  readonly opaque: Readonly<{
+    staticBatch: WorldWebGlBatch
+    dynamicBatch: WorldWebGlBatch
+    batch: WorldWebGlBatch
+  }>
+}
+
+const worldPlanBatches = new WeakMap<WorldWebGlPlan, WorldPlanBatches>()
+
+/** The water surface an ambient-occlusion pass measures depth against: visible water triangles. */
+function worldWaterSurfaceDepth(writes: readonly WorldBatchWrite[]): Float32Array {
+  const positions: number[] = []
+  for (const source of writes) {
+    for (let offset = 0; offset < source.positions.length; offset += 9) {
+      const color = (offset / 3) * 4
+      if (
+        Math.max(
+          source.colors[color + 3]!,
+          source.colors[color + 7]!,
+          source.colors[color + 11]!,
+        ) <= 0.01
+      )
+        continue
+      positions.push(...source.positions.slice(offset, offset + 9))
+    }
+  }
+  return Float32Array.from(positions)
 }
 
 /**
@@ -3163,6 +3464,25 @@ const worldStaticPreparations = new WeakMap<
   }
 >()
 
+function appendFrozenWorldBatch(
+  staticBatch: WorldWebGlBatch,
+  dynamicBatch: WorldWebGlBatch,
+): WorldWebGlBatch {
+  if (dynamicBatch.positions.length === 0) return staticBatch
+  if (staticBatch.positions.length === 0) return dynamicBatch
+  const append = (left: Float32Array, right: Float32Array) => {
+    const result = new Float32Array(left.length + right.length)
+    result.set(left)
+    result.set(right, left.length)
+    return result
+  }
+  return Object.freeze({
+    positions: append(staticBatch.positions, dynamicBatch.positions),
+    normals: append(staticBatch.normals, dynamicBatch.normals),
+    colors: append(staticBatch.colors, dynamicBatch.colors),
+  })
+}
+
 function appendWorldBatch(
   staticBatch: WorldWebGlBatch,
   dynamicBatch: MutableBatch,
@@ -3187,25 +3507,42 @@ export function createWorldWebGlPlan(
   input: WorldWebGlInput,
   previousPlan?: WorldWebGlPlan,
 ): WorldWebGlPlan {
+  // Shared batches: `opaque`, `transparent` and the maps' entries only describe a batch; its
+  // triangles are the writes journaled to it (see WorldBatchWrite). Lines and points are built here.
   const opaque = batch()
   const modelMaterialScenes: WorldWebGlModelMaterialScene[] = []
   const modelEffects: WorldWebGlModelEffectInstance[] = []
   let modelMaterialShadowTriangles = 0
-  const shadowControlledOpaque = new Map<
-    string,
-    MutableBatch & { readonly castShadows: boolean; readonly receiveShadows: boolean }
-  >()
+  const shadowControlledOpaque = new Map<string, WorldControlledBatch>()
   const transparent = batch()
   const lines = batch()
   const points = batch()
   const textured = new Map<string, MutableTexturedBatch>()
-  const transparentTextured = new Map<
-    string,
-    MutableTexturedBatch & {
-      readonly blendMode: 'blend' | 'additive'
-      readonly receiveShadows: boolean
+  const transparentTextured = new Map<string, WorldTransparentTexturedBatch>()
+  const batchWrites = new Map<object, WorldBatchWrite[]>()
+  const journal = (target: object, write: WorldBatchWrite) => {
+    const writes = batchWrites.get(target)
+    if (writes === undefined) batchWrites.set(target, [write])
+    else writes.push(write)
+  }
+  const writesOf = (target: object): readonly WorldBatchWrite[] => batchWrites.get(target) ?? []
+  const texturedTargets = () => [...textured.values(), ...transparentTextured.values()]
+  const journalObjectWrite = (entry: WorldObjectBatchWrite) => {
+    if (entry.collection === 'opaque') return journal(opaque, entry.write)
+    if (entry.collection === 'controlled') {
+      const target = shadowControlledOpaque.get(entry.key) ?? entry.target
+      shadowControlledOpaque.set(entry.key, target)
+      return journal(target, entry.write)
     }
-  >()
+    if (entry.collection === 'textured') {
+      const target = textured.get(entry.key) ?? entry.target
+      textured.set(entry.key, target)
+      return journal(target, entry.write)
+    }
+    const target = transparentTextured.get(entry.key) ?? entry.target
+    transparentTextured.set(entry.key, target)
+    return journal(target, entry.write)
+  }
   const objectPickMeshes: WorldObjectPickMesh[] = []
   const planSamples = new Map<
     string,
@@ -3305,9 +3642,17 @@ export function createWorldWebGlPlan(
             transparentTextured.set(key, current)
             return current
           })()
-    if (texturedTarget === undefined) {
-      // The same zone as a plane at its elevation, for a renderer that measures the depth under the
-      // water against the drawn scene instead of the height grid (see WorldWebGlWaterPlane).
+    const zone = worldWaterZone(
+      preparation,
+      material,
+      texture,
+      secondaryTexture,
+      minimum,
+      maximum,
+      elevation,
+      timeSeconds,
+    )
+    if (zone.plane !== undefined) {
       const key = material?.materialId ?? ''
       const plane = waterPlaneBatches.get(key) ?? {
         batch: batch(),
@@ -3315,65 +3660,24 @@ export function createWorldWebGlPlan(
         receiveShadows: material?.receiveShadows ?? false,
       }
       waterPlaneBatches.set(key, plane)
-      const color = material?.color ?? WATER_DEFAULT_COLOR
-      const a = [minimum.x, elevation, minimum.z] as const
-      const b = [maximum.x, elevation, minimum.z] as const
-      const c = [maximum.x, elevation, maximum.z] as const
-      const d = [minimum.x, elevation, maximum.z] as const
-      for (const vertex of [a, c, b, a, d, c]) pushVertex(plane.batch, vertex, WATER_SURFACE_NORMAL, color)
+      journal(plane, zone.plane)
     }
-    let emitted = false
-    if (material?.shorelineMode === 'terrain-clipped' && terrain.length > 0) {
-      const ground = clippedWaterGround(preparation, minimum, maximum, elevation)
-      for (let offset = 0; offset < ground.length; offset += 9) {
-        const clipped = [
-          [ground[offset]!, ground[offset + 1]!, ground[offset + 2]!],
-          [ground[offset + 3]!, ground[offset + 4]!, ground[offset + 5]!],
-          [ground[offset + 6]!, ground[offset + 7]!, ground[offset + 8]!],
-        ] as const
-        if (texturedTarget === undefined)
-          pushWaterTriangle(transparent, clipped, elevation, material)
-        else pushTexturedWaterTriangle(texturedTarget, clipped, elevation, material!, timeSeconds)
-        emitted = true
-      }
-    } else {
-      const a = [minimum.x, elevation - 1, minimum.z] as const
-      const b = [maximum.x, elevation - 1, minimum.z] as const
-      const c = [maximum.x, elevation - 1, maximum.z] as const
-      const d = [minimum.x, elevation - 1, maximum.z] as const
-      for (const triangle of [
-        [a, c, b],
-        [a, d, c],
-      ] as const) {
-        if (texturedTarget === undefined)
-          pushWaterTriangle(transparent, triangle, elevation, material)
-        else pushTexturedWaterTriangle(texturedTarget, triangle, elevation, material!, timeSeconds)
-      }
-      emitted = true
-    }
-    if (!emitted && material?.shorelineMode === 'terrain-clipped') continue
+    journal(texturedTarget ?? transparent, zone.triangles)
+    if (!zone.emitted && material?.shorelineMode === 'terrain-clipped') continue
     waterPolygons += 1
   }
   // Nothing but water has entered the untextured transparent batch yet.
-  const transparentWaterTriangles = transparent.positions.length / 9
+  const transparentWaterTriangles =
+    writesOf(transparent).reduce((sum, write) => sum + write.positions.length, 0) / 9
 
   // Capture before models append their transparent geometry: particles must not become AO surfaces.
-  const waterDepthPositions: number[] = []
-  for (const source of [transparent, ...transparentTextured.values()]) {
-    for (let offset = 0; offset < source.positions.length; offset += 9) {
-      const color = (offset / 3) * 4
-      if (
-        Math.max(
-          source.colors[color + 3]!,
-          source.colors[color + 7]!,
-          source.colors[color + 11]!,
-        ) <= 0.01
-      )
-        continue
-      waterDepthPositions.push(...source.positions.slice(offset, offset + 9))
-    }
-  }
-  const waterSurfaceDepth = Float32Array.from(waterDepthPositions)
+  const previousBatches =
+    previousPlan === undefined ? undefined : worldPlanBatches.get(previousPlan)
+  const waterWrites = [transparent, ...transparentTextured.values()].flatMap(writesOf)
+  const waterSurfaceDepth =
+    previousBatches !== undefined && sameWrites(previousBatches.water, waterWrites)
+      ? previousBatches.waterSurfaceDepth
+      : worldWaterSurfaceDepth(waterWrites)
 
   const objects = input.items.filter(
     (item): item is WorldSceneObjectItem => item.facet === 'objects',
@@ -3401,13 +3705,7 @@ export function createWorldWebGlPlan(
     if (retainedObject !== undefined && sameWorldStaticObjectKey(retainedObject.key, staticKey!)) {
       for (const scene of retainedObject.scenes) modelMaterialScenes.push(scene)
       for (const effect of retainedObject.effects) modelEffects.push(effect)
-      for (const write of retainedObject.projectorWrites) {
-        const target = projectorBatch(write.texture)
-        appendNumbers(target.positions, write.positions)
-        appendNumbers(target.normals, write.normals)
-        appendNumbers(target.colors, write.colors)
-        appendNumbers(target.textureCoordinates, write.textureCoordinates)
-      }
+      for (const entry of retainedObject.batchWrites) journalObjectWrite(entry)
       objectPickMeshes.push(retainedObject.pickMesh)
       modelTriangles += retainedObject.modelTriangles
       modelMaterialShadowTriangles += retainedObject.shadowTriangles
@@ -3415,7 +3713,9 @@ export function createWorldWebGlPlan(
     }
     const scenesBefore = modelMaterialScenes.length
     const effectsBefore = modelEffects.length
-    const projectorWrites: WorldProjectorWrite[] = []
+    const objectBatchWrites: WorldObjectBatchWrite[] = []
+    const previousProjectorWrites = lastProjectorWrites.get(item)
+    const projectorWrites: { readonly key: string; readonly write: WorldBatchWrite }[] = []
     const trianglesBefore = modelTriangles
     const shadowTrianglesBefore = modelMaterialShadowTriangles
     // Cleared by anything that writes into the plan's shared batches instead of its own scenes.
@@ -3615,8 +3915,7 @@ export function createWorldWebGlPlan(
           }
           continue
         }
-        // The fallback writes the plan's shared batches: such an object is rebuilt with the plan.
-        retainable = false
+        // The fallback writes shared batches; the writes are kept with the object (see WorldBatchWrite).
         const layer = material?.layers?.find(candidate =>
           BASE_COLOR_SLOTS.has(materialSlot(candidate.slot)),
         )
@@ -3649,8 +3948,9 @@ export function createWorldWebGlPlan(
               ? colorHash(primitive.materialId ?? item.kind)
               : ([1, 1, 1, 1] as const)
         // Every triangle of the primitive writes the same batch: find or add it at the first one.
-        let texturedTarget: MutableTexturedBatch | undefined
-        let controlledTarget: MutableBatch | undefined
+        let written: WorldObjectBatchWrite | undefined
+        let texturedWrite: MutableTexturedBatch | undefined
+        let plainWrite: MutableBatch | undefined
         for (const triangle of primitiveTriangles(primitive)) {
           const vertices = triangle.map(index =>
             instanceVertex(
@@ -3671,7 +3971,7 @@ export function createWorldWebGlPlan(
             textureCoordinates !== undefined &&
             textureCoordinates.length >= (primitive.positions.length / 3) * 2
           ) {
-            if (texturedTarget === undefined) {
+            if (texturedWrite === undefined) {
               const key = `${result.sourceKey}\u0000${texture.id}\u0000${normalTexture?.id ?? ''}\u0000${blendMode ?? 'opaque'}\u0000${String(coverage.cutoff)}\u0000${String(shadowPolicy.castShadows)}\u0000${String(shadowPolicy.receiveShadows)}`
               const collection = blendMode === undefined ? textured : transparentTextured
               const target = collection.get(key) ?? {
@@ -3684,17 +3984,20 @@ export function createWorldWebGlPlan(
                 receiveShadows: shadowPolicy.receiveShadows,
                 ...(coverage.cutoff === 0 ? {} : { alphaCutoff: coverage.cutoff }),
               }
-              collection.set(
-                key,
-                target as MutableTexturedBatch & {
-                  readonly blendMode: 'blend' | 'additive'
-                  readonly receiveShadows: boolean
-                },
-              )
-              texturedTarget = target
+              collection.set(key, target as WorldTransparentTexturedBatch)
+              texturedWrite = { ...batch(), textureCoordinates: [], texture }
+              written =
+                blendMode === undefined
+                  ? { collection: 'textured', key, target, write: texturedWrite }
+                  : {
+                      collection: 'transparentTextured',
+                      key,
+                      target: target as WorldTransparentTexturedBatch,
+                      write: texturedWrite,
+                    }
             }
             pushTexturedTriangle(
-              texturedTarget,
+              texturedWrite,
               vertices,
               triangle.map(index => [
                 textureCoordinates[index * 2] ?? 0,
@@ -3707,9 +4010,13 @@ export function createWorldWebGlPlan(
               color,
             )
           } else if (shadowPolicy.castShadows && shadowPolicy.receiveShadows) {
-            pushTriangle(opaque, vertices[0], vertices[1], vertices[2], color)
+            if (plainWrite === undefined) {
+              plainWrite = batch()
+              written = { collection: 'opaque', write: plainWrite }
+            }
+            pushTriangle(plainWrite, vertices[0], vertices[1], vertices[2], color)
           } else {
-            if (controlledTarget === undefined) {
+            if (plainWrite === undefined) {
               const key = `${String(shadowPolicy.castShadows)}:${String(shadowPolicy.receiveShadows)}`
               const target = shadowControlledOpaque.get(key) ?? {
                 ...batch(),
@@ -3717,13 +4024,18 @@ export function createWorldWebGlPlan(
                 receiveShadows: shadowPolicy.receiveShadows,
               }
               shadowControlledOpaque.set(key, target)
-              controlledTarget = target
+              plainWrite = batch()
+              written = { collection: 'controlled', key, target, write: plainWrite }
             }
-            pushTriangle(controlledTarget, vertices[0], vertices[1], vertices[2], color)
+            pushTriangle(plainWrite, vertices[0], vertices[1], vertices[2], color)
           }
           for (const vertex of vertices) pickTriangles.push(vertex[0], vertex[1], vertex[2])
           modelTriangles += 1
           rendered = true
+        }
+        if (written !== undefined) {
+          journalObjectWrite(written)
+          objectBatchWrites.push(written)
         }
       }
       const effectSource =
@@ -3775,10 +4087,7 @@ export function createWorldWebGlPlan(
           const texture = scene.textures.find(candidate => candidate.id === textureId)
           if (!texture || !primitive.textureCoordinates) continue
           const target = projectorBatch(texture)
-          const positionsBefore = target.positions.length
-          const normalsBefore = target.normals.length
-          const colorsBefore = target.colors.length
-          const coordinatesBefore = target.textureCoordinates.length
+          const write: MutableTexturedBatch = { ...batch(), textureCoordinates: [], texture }
           for (const triangle of primitiveTriangles(primitive)) {
             const vertices = triangle.map(index => {
               const p = transformedComponentVertex(
@@ -3788,7 +4097,7 @@ export function createWorldWebGlPlan(
               return [p[0], p[1] + 0.005, p[2]] as const
             })
             pushTexturedTriangle(
-              target,
+              write,
               vertices as unknown as Parameters<typeof pushTexturedTriangle>[1],
               triangle.map(index => [
                 primitive.textureCoordinates![index * 2]!,
@@ -3797,15 +4106,15 @@ export function createWorldWebGlPlan(
               [1, 1, 1, material?.baseColor?.[3] ?? 1],
             )
           }
-          projectorWrites.push(
-            Object.freeze({
-              texture,
-              positions: target.positions.slice(positionsBefore),
-              normals: target.normals.slice(normalsBefore),
-              colors: target.colors.slice(colorsBefore),
-              textureCoordinates: target.textureCoordinates.slice(coordinatesBefore),
-            }),
-          )
+          const key = `projector:${texture.id}`
+          const previous = previousProjectorWrites?.[projectorWrites.length]
+          const kept =
+            previous !== undefined && previous.key === key && sameWriteContent(previous.write, write)
+              ? previous.write
+              : write
+          projectorWrites.push({ key, write: kept })
+          journal(target, kept)
+          objectBatchWrites.push({ collection: 'transparentTextured', key, target, write: kept })
         }
         if (projectedMaterialPrimitives.length > 0)
           modelMaterialScenes.push(
@@ -3848,6 +4157,7 @@ export function createWorldWebGlPlan(
       diagnosticPlaceholders += 1
       retainable = false
     }
+    lastProjectorWrites.set(item, projectorWrites)
     const pickMesh: WorldObjectPickMesh = {
       objectId: item.objectId,
       center: translation,
@@ -3863,7 +4173,7 @@ export function createWorldWebGlPlan(
           key: staticKey,
           scenes: Object.freeze(modelMaterialScenes.slice(scenesBefore)),
           effects: Object.freeze(modelEffects.slice(effectsBefore)),
-          projectorWrites: Object.freeze(projectorWrites),
+          batchWrites: Object.freeze(objectBatchWrites),
           pickMesh,
           modelTriangles: modelTriangles - trianglesBefore,
           shadowTriangles: modelMaterialShadowTriangles - shadowTrianglesBefore,
@@ -3929,56 +4239,43 @@ export function createWorldWebGlPlan(
     }
   }
 
-  if (
-    !finitePlan([
-      opaque,
-      transparent,
-      lines,
-      points,
-      ...textured.values(),
-      ...transparentTextured.values(),
-    ])
-  )
+  // Writes are checked once: a retained object's or water zone's writes were checked by the plan
+  // that made them (an unchecked one, left by a plan that threw, is checked again here).
+  const texturedWrites = [...textured.values(), ...transparentTextured.values()]
+    .flatMap(writesOf)
+    .filter(write => !checkedWorldWrites.has(write))
+  const uncheckedWrites = [opaque, transparent]
+    .flatMap(writesOf)
+    .filter(write => !checkedWorldWrites.has(write))
+    .concat(texturedWrites)
+  if (!finitePlan([lines, points, ...uncheckedWrites]))
     throw new TypeError('world WebGL plan contains a non-finite coordinate')
   for (const item of objectPickMeshes)
-    if (!item.triangles.every(Number.isFinite))
+    if (!checkedWorldPickMeshes.has(item) && !item.triangles.every(Number.isFinite))
       throw new TypeError('world WebGL plan contains a non-finite model coordinate')
-  for (const item of textured.values())
-    if (!item.textureCoordinates.every(Number.isFinite))
+  for (const write of texturedWrites)
+    if (!(write.textureCoordinates ?? []).every(Number.isFinite))
       throw new TypeError('world WebGL plan contains a non-finite texture coordinate')
-  for (const item of transparentTextured.values())
-    if (!item.textureCoordinates.every(Number.isFinite))
-      throw new TypeError('world WebGL plan contains a non-finite texture coordinate')
-  const positionSets: readonly (readonly number[] | Float32Array)[] = [
-    opaque,
-    transparent,
-    lines,
-    points,
-    ...shadowControlledOpaque.values(),
-    ...textured.values(),
-    ...transparentTextured.values(),
-  ].map(item => item.positions)
+  for (const write of uncheckedWrites) checkedWorldWrites.add(write)
+  for (const item of objectPickMeshes) checkedWorldPickMeshes.add(item)
+  const positionSets: readonly (readonly number[])[] = [
+    lines.positions,
+    points.positions,
+    ...[opaque, transparent, ...shadowControlledOpaque.values(), ...texturedTargets()]
+      .flatMap(writesOf)
+      .map(write => write.positions),
+    ...objectPickMeshes.map(item => item.triangles),
+  ]
   const minimum: [number, number, number] = [...preparation.minimum]
   const maximum: [number, number, number] = [...preparation.maximum]
   let hasPositions = preparation.hasPositions
-  for (const positions of [...positionSets, ...objectPickMeshes.map(item => item.triangles)]) {
+  for (const positions of positionSets) {
     if (positions.length > 0) hasPositions = true
-    let [minX, minY, minZ] = minimum
-    let [maxX, maxY, maxZ] = maximum
-    for (let offset = 0; offset < positions.length; offset += 3) {
-      minX = Math.min(minX, positions[offset]!)
-      maxX = Math.max(maxX, positions[offset]!)
-      minY = Math.min(minY, positions[offset + 1]!)
-      maxY = Math.max(maxY, positions[offset + 1]!)
-      minZ = Math.min(minZ, positions[offset + 2]!)
-      maxZ = Math.max(maxZ, positions[offset + 2]!)
+    const bounds = positionBounds(positions)
+    for (const axis of [0, 1, 2] as const) {
+      minimum[axis] = Math.min(minimum[axis], bounds[axis]!)
+      maximum[axis] = Math.max(maximum[axis], bounds[axis + 3]!)
     }
-    minimum[0] = minX
-    minimum[1] = minY
-    minimum[2] = minZ
-    maximum[0] = maxX
-    maximum[1] = maxY
-    maximum[2] = maxZ
   }
   for (const item of objectPickMeshes) {
     for (const primitive of item.primitives) {
@@ -3998,59 +4295,88 @@ export function createWorldWebGlPlan(
   const ambient: readonly [number, number, number] = lighting?.ambientColor ?? [1, 1, 1]
   const direction: readonly [number, number, number] = directional?.direction ?? [-0.45, -1, -0.35]
   const lightColor: readonly [number, number, number] = directional?.color ?? [1, 0.97, 0.9]
+  // Each shared batch from its writes, or the previous plan's batch when its writes are the same.
+  const currentBatches = new Map<
+    string,
+    { readonly template: object; readonly writes: readonly WorldBatchWrite[]; readonly frozen: unknown }
+  >()
+  const frozenWrites = <T>(name: string, template: object, build: (writes: readonly WorldBatchWrite[]) => T): T => {
+    const writes = writesOf(template)
+    const previous = previousBatches?.batches.get(name)
+    const frozen =
+      previous !== undefined &&
+      sameWrites(previous.writes, writes) &&
+      sameBatchTemplate(previous.template, template)
+        ? (previous.frozen as T)
+        : build(writes)
+    currentBatches.set(name, { template, writes, frozen })
+    return frozen
+  }
+  const dynamicOpaque = frozenWrites('opaque', opaque, writtenBatch)
+  const previousOpaque = previousBatches?.opaque
+  const opaqueTriangles =
+    previousOpaque !== undefined &&
+    previousOpaque.staticBatch === preparation.opaqueTriangles &&
+    previousOpaque.dynamicBatch === dynamicOpaque
+      ? previousOpaque.batch
+      : appendFrozenWorldBatch(preparation.opaqueTriangles, dynamicOpaque)
+  const waterPlanes = [...waterPlaneBatches].map(([key, plane]) =>
+    frozenWrites(`plane\u0000${key}`, plane, writes =>
+      Object.freeze({
+        batch: writtenBatch(writes),
+        colorFalloff: plane.colorFalloff,
+        receiveShadows: plane.receiveShadows,
+      }),
+    ),
+  )
+  const controlledTriangles = [...shadowControlledOpaque].map(([key, item]) =>
+    frozenWrites(`controlled\u0000${key}`, item, writes =>
+      Object.freeze({
+        ...writtenBatch(writes),
+        castShadows: item.castShadows,
+        receiveShadows: item.receiveShadows,
+      }),
+    ),
+  )
+  const dynamicTextured = [...textured].map(([key, item]) =>
+    frozenWrites(`textured\u0000${key}`, item, writes => writtenTexturedBatch(item, writes)),
+  )
+  const transparentTexturedTriangles = [...transparentTextured].map(([key, item]) =>
+    frozenWrites(`transparentTextured\u0000${key}`, item, writes =>
+      Object.freeze({
+        ...writtenTexturedBatch(item, writes),
+        blendMode: item.blendMode,
+        receiveShadows: item.receiveShadows,
+      }),
+    ),
+  )
+  const transparentTriangles = frozenWrites('transparent', transparent, writtenBatch)
   const shadowCasterTriangles =
     preparation.shadowCasterTriangles +
     modelMaterialShadowTriangles +
-    (opaque.positions.length +
-      [...shadowControlledOpaque.values()].reduce(
+    (dynamicOpaque.positions.length +
+      controlledTriangles.reduce(
         (sum, item) => sum + (item.castShadows ? item.positions.length : 0),
         0,
       ) +
-      [...textured.values()].reduce(
+      dynamicTextured.reduce(
         (sum, item) => sum + (item.castShadows === false ? 0 : item.positions.length),
         0,
       )) /
       9
   const plan: WorldWebGlPlan = Object.freeze({
-    opaqueTriangles: appendWorldBatch(preparation.opaqueTriangles, opaque),
+    opaqueTriangles,
     terrainShadowCasters: preparation.terrainShadowCasters,
     waterSurfaceDepth,
-    waterPlanes: Object.freeze(
-      [...waterPlaneBatches.values()].map(plane =>
-        Object.freeze({
-          batch: frozenBatch(plane.batch),
-          colorFalloff: plane.colorFalloff,
-          receiveShadows: plane.receiveShadows,
-        }),
-      ),
-    ),
+    waterPlanes: Object.freeze(waterPlanes),
     transparentWaterTriangles,
     modelMaterialScenes: Object.freeze(modelMaterialScenes),
     modelEffects: Object.freeze(modelEffects),
-    shadowControlledOpaqueTriangles: Object.freeze(
-      [...shadowControlledOpaque.values()].map(item =>
-        Object.freeze({
-          ...frozenBatch(item),
-          castShadows: item.castShadows,
-          receiveShadows: item.receiveShadows,
-        }),
-      ),
-    ),
-    texturedTriangles: Object.freeze([
-      ...preparation.texturedTriangles,
-      ...[...textured.values()].map(frozenTexturedBatch),
-    ]),
-    transparentTexturedTriangles: Object.freeze(
-      [...transparentTextured.values()].map(item =>
-        Object.freeze({
-          ...frozenTexturedBatch(item),
-          blendMode: item.blendMode,
-          receiveShadows: item.receiveShadows,
-        }),
-      ),
-    ),
+    shadowControlledOpaqueTriangles: Object.freeze(controlledTriangles),
+    texturedTriangles: Object.freeze([...preparation.texturedTriangles, ...dynamicTextured]),
+    transparentTexturedTriangles: Object.freeze(transparentTexturedTriangles),
     splatTriangles: preparation.splatTriangles,
-    transparentTriangles: frozenBatch(transparent),
+    transparentTriangles,
     lines: appendWorldBatch(preparation.lines, lines),
     points: appendWorldBatch(preparation.points, points),
     picking: Object.freeze({
@@ -4101,6 +4427,26 @@ export function createWorldWebGlPlan(
     }),
   })
   worldStaticPreparations.set(plan, { input: snapshotWorldPlanInput(input), preparation })
+  worldPlanBatches.set(plan, {
+    batches: currentBatches,
+    water: waterWrites,
+    waterSurfaceDepth,
+    opaque: Object.freeze({
+      staticBatch: preparation.opaqueTriangles,
+      dynamicBatch: dynamicOpaque,
+      batch: opaqueTriangles,
+    }),
+  })
+  // The same transparent batches sort the same way: the next frame keeps the sorted runs.
+  const previousTransparentDraws =
+    previousPlan === undefined ? undefined : transparentDrawPlans.get(previousPlan)
+  if (
+    previousTransparentDraws !== undefined &&
+    previousPlan!.transparentTriangles === transparentTriangles &&
+    previousPlan!.transparentWaterTriangles === transparentWaterTriangles &&
+    sameWrites(previousPlan!.transparentTexturedTriangles, transparentTexturedTriangles)
+  )
+    transparentDrawPlans.set(plan, previousTransparentDraws)
   return plan
 }
 
