@@ -101,3 +101,36 @@ it('gives textured water no plane: its surface UVs belong to the clipped triangl
   assert.equal(plan.transparentWaterTriangles, 0)
   assert.equal(plan.transparentTexturedTriangles.length, 1)
 })
+
+it('gives a water plane the caustics frames that arrived, the same object while none change', () => {
+  const frame = id => ({ id, width: 1, height: 1, data: new Uint8Array([200, 220, 255, 255]) })
+  const caustic = {
+    ...waterMaterials[0],
+    causticsScale: [0.225, 0.225],
+    causticsFramesPerSecond: 15,
+    causticsFalloff: 1.56,
+    causticsResourceId: 'caustics:1',
+    causticsFrameResourceIds: ['caustics:1', 'caustics:2'],
+  }
+  const first = frame('caustics:1')
+  const input = {
+    items: [...terrain, water],
+    waterMaterials: [caustic],
+    terrainTextures: new Map([['caustics:1', first]]),
+  }
+  const early = createWorldWebGlPlan(input).waterPlanes[0].caustics
+  assert.deepEqual(early, { frames: [first], scale: [0.225, 0.225], falloff: 1.56, framesPerSecond: 15 })
+  assert.equal(createWorldWebGlPlan(input).waterPlanes[0].caustics, early)
+  const second = frame('caustics:2')
+  const later = createWorldWebGlPlan({
+    ...input,
+    terrainTextures: new Map([...input.terrainTextures, ['caustics:2', second]]),
+  }).waterPlanes[0].caustics
+  assert.deepEqual(later.frames, [first, second])
+  // No falloff, no caustics: the state casts none.
+  const { causticsFalloff: _falloff, ...plain } = caustic
+  assert.equal(
+    createWorldWebGlPlan({ ...input, waterMaterials: [plain] }).waterPlanes[0].caustics,
+    undefined,
+  )
+})

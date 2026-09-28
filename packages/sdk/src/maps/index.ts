@@ -750,8 +750,20 @@ export interface MapWaterMaterialDefinition {
   readonly reflectivityPower?: number
   readonly causticsResourceId?: string
   readonly causticsResource?: LogicalResourceRequirement
+  /**
+   * The caustics flip-book in playing order, at `causticsFramesPerSecond`; ids join
+   * `causticsFrameResources` by index. `causticsResourceId` stays the first frame for consumers that
+   * draw one image.
+   */
+  readonly causticsFrameResourceIds?: readonly string[]
+  readonly causticsFrameResources?: readonly LogicalResourceRequirement[]
   readonly causticsScale?: readonly [number, number]
   readonly causticsFramesPerSecond?: number
+  /**
+   * How strongly caustics light the bottom with water depth: saturate(causticsFalloff × depth) in world
+   * units (SC2 CWater State CausticsFallOff). Absent means the surface casts no caustics.
+   */
+  readonly causticsFalloff?: number
   readonly receiveShadows?: boolean
 }
 

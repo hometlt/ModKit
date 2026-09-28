@@ -815,4 +815,56 @@ describe('common world source native visual facets', () => {
       await lease.release()
     }
   })
+
+  it('reads every caustics frame of a water material by its scoped requirement', async () => {
+    const frame = (index: number) => ({
+      id: `caustics:${String(index)}`,
+      logicalId: `base.assets/Water/Caustics_00${String(index)}.dds`,
+      role: 'texture' as const,
+      scopes: ['current-mount' as const],
+    })
+    const requested: string[] = []
+    const rasterResources = {
+      async read(request: { requirement: { logicalId: string } }) {
+        requested.push(request.requirement.logicalId)
+        return {
+          state: 'decoded',
+          info: { orientation: 'top-left' },
+          region: { width: 1, height: 1, rowStride: 4, pixels: Uint8Array.of(1, 2, 3, 255) },
+          diagnostics: [],
+        }
+      },
+    }
+    const lease = createSourceWorldSceneLease(
+      {
+        ...snapshot,
+        water: {
+          ...snapshot.water!,
+          materials: [
+            {
+              materialId: 'water',
+              color: [0.1, 0.3, 0.5, 0.3],
+              causticsResourceId: 'caustics:1',
+              causticsResource: frame(1),
+              causticsFrameResourceIds: ['caustics:1', 'caustics:2'],
+              causticsFrameResources: [frame(1), frame(2)],
+              causticsFalloff: 1.56,
+            },
+          ],
+        },
+      } as ResolvedMapWorkspaceSnapshot,
+      [],
+      32,
+      undefined,
+      undefined,
+      rasterResources as never,
+    )
+    try {
+      const second = await lease.value.texture?.('caustics:2', { maxBytes: 1024 })
+      expect(second).toMatchObject({ state: 'decoded', texture: { id: 'caustics:2', width: 1 } })
+      expect(requested).toEqual(['base.assets/Water/Caustics_002.dds'])
+    } finally {
+      await lease.release()
+    }
+  })
 })

@@ -296,6 +296,52 @@ export interface WorldWebGlWaterPlane {
   readonly batch: WorldWebGlBatch
   readonly colorFalloff: number
   readonly receiveShadows: boolean
+  readonly caustics?: WorldWebGlWaterCaustics
+}
+
+/**
+ * Light the water throws on the bottom (SC2 Water.fx): the flip-book frame of the moment, sampled at
+ * the bottom's map position times `scale`, shadowed like the surface and stronger with depth as
+ * saturate(falloff × depth).
+ */
+export interface WorldWebGlWaterCaustics {
+  readonly frames: readonly SceneRendererTexture[]
+  readonly scale: readonly [number, number]
+  readonly falloff: number
+  readonly framesPerSecond: number
+}
+
+const waterCausticsCache = new WeakMap<object, WorldWebGlWaterCaustics>()
+
+/** The caustics of a water material whose frames have arrived; one object while nothing changes. */
+function waterCausticsOf(
+  material: NonNullable<WorldWebGlInput['waterMaterials']>[number] | undefined,
+  textures: WorldWebGlInput['terrainTextures'],
+): WorldWebGlWaterCaustics | undefined {
+  if (material?.causticsFalloff === undefined || material.causticsScale === undefined) return undefined
+  const ids =
+    material.causticsFrameResourceIds ??
+    (material.causticsResourceId === undefined ? [] : [material.causticsResourceId])
+  const frames = ids.flatMap(id => {
+    const texture = textures?.get(id)
+    return texture === undefined ? [] : [texture]
+  })
+  if (frames.length === 0) return undefined
+  const cached = waterCausticsCache.get(material)
+  if (
+    cached !== undefined &&
+    cached.frames.length === frames.length &&
+    cached.frames.every((frame, index) => frame === frames[index])
+  )
+    return cached
+  const caustics = Object.freeze({
+    frames: Object.freeze(frames),
+    scale: material.causticsScale,
+    falloff: material.causticsFalloff,
+    framesPerSecond: material.causticsFramesPerSecond ?? 0,
+  })
+  waterCausticsCache.set(material, caustics)
+  return caustics
 }
 
 export interface WorldWebGlPlan {
@@ -2570,7 +2616,9 @@ function sameBatchTemplate(left: object, right: object): boolean {
     a.receiveShadows === b.receiveShadows &&
     a.blendMode === b.blendMode &&
     (left as { colorFalloff?: number }).colorFalloff ===
-      (right as { colorFalloff?: number }).colorFalloff
+      (right as { colorFalloff?: number }).colorFalloff &&
+    (left as { caustics?: WorldWebGlWaterCaustics }).caustics ===
+      (right as { caustics?: WorldWebGlWaterCaustics }).caustics
   )
 }
 
@@ -4322,7 +4370,12 @@ export function createWorldWebGlPlan(
   let waterPolygons = 0
   const waterPlaneBatches = new Map<
     string,
-    { readonly batch: MutableBatch; readonly colorFalloff: number; readonly receiveShadows: boolean }
+    {
+      readonly batch: MutableBatch
+      readonly colorFalloff: number
+      readonly receiveShadows: boolean
+      readonly caustics?: WorldWebGlWaterCaustics
+    }
   >()
   for (const item of worldFacetItems(preparation, input.items, 'water')) {
     const minimum = item.uvwMinimum ?? { x: item.minimum.x, z: item.minimum.y }
@@ -4373,10 +4426,12 @@ export function createWorldWebGlPlan(
     )
     if (zone.plane !== undefined) {
       const key = material?.materialId ?? ''
+      const caustics = waterCausticsOf(material, input.terrainTextures)
       const plane = waterPlaneBatches.get(key) ?? {
         batch: batch(),
         colorFalloff: material?.colorFalloff ?? WATER_COLOR_FALLOFF,
         receiveShadows: material?.receiveShadows ?? false,
+        ...(caustics === undefined ? {} : { caustics }),
       }
       waterPlaneBatches.set(key, plane)
       journal(plane, zone.plane)
@@ -5099,6 +5154,7 @@ export function createWorldWebGlPlan(
         batch: writtenBatch(writes),
         colorFalloff: plane.colorFalloff,
         receiveShadows: plane.receiveShadows,
+        ...(plane.caustics === undefined ? {} : { caustics: plane.caustics }),
       }),
     ),
   )
@@ -5348,6 +5404,11 @@ uniform sampler2D sceneDepthMap;
 uniform vec2 waterDepthScale;
 uniform float waterFalloff;
 uniform float waterShoreFade;
+uniform float causticsMode;
+uniform sampler2D causticsMap;
+uniform vec2 causticsScale;
+uniform float causticsFalloff;
+uniform vec3 waterViewForward;
 // A cliff surface drawn as terrain: kept only where its blend mask (secondaryColorMap, channel
 // picked by the selector) is clear, the complement of the rock's alpha test.
 uniform float cliffMaskMode;
@@ -5513,6 +5574,7 @@ void main() {
   }
   if (cliffMaskMode > 0.5 && dot(texture(secondaryColorMap, secondaryTextureCoordinate), cliffMaskSelector) >= 0.5)
     discard;
+  vec3 causticsLight = vec3(0.0);
   if (waterDepthMode > 0.5) {
     // The shoreline is where the drawn scene rises through the plane (cliff meshes included), and
     // the colour deepens with the water over whatever lies under the pixel - SC2 water reads the
@@ -5525,6 +5587,15 @@ void main() {
       vertexColor.rgb * (1.0 - 0.35 * saturation),
       (vertexColor.a + (1.0 - vertexColor.a) * saturation) * min(1.0, waterDepth / waterShoreFade)
     );
+    if (causticsMode > 0.5) {
+      // SC2 Water.fx: the bottom under the pixel, along the view ray; the flip-book frame by its map
+      // position (v flipped as the game does), shadowed, stronger with depth up to 1.
+      float along = (sceneDepth - gl_FragCoord.z) * waterDepthScale.x;
+      vec3 bottom = worldPosition + waterViewForward * along;
+      vec2 causticsUv = causticsScale * vec2(bottom.x, -bottom.z);
+      causticsUv.y = 1.0 - causticsUv.y;
+      causticsLight = texture(causticsMap, causticsUv).rgb * shadow * clamp(causticsFalloff * along, 0.0, 1.0);
+    }
   }
   if (alphaCutoff > 0.0 && surface.a < alphaCutoff) discard;
   vec3 specular = vec3(0.0);
@@ -5544,7 +5615,10 @@ void main() {
     // with useSpecular false (their diffuse carries the ambient occlusion instead).
     specular = specColor * terrainLighting.z * lightSpecularRadiance * pow(max(dot(resolvedNormal, normalize(view + key)), 0.0), exponent) * step(0.000001, diffuse) * shadow;
   }
-  outColor = vec4(surface.rgb * lighting + specular, surface.a);
+  // Caustics add to the bottom seen through the water (SC2 adds them to the refraction): blended
+  // under this surface they are the share of what shows through, (1 - alpha).
+  vec3 causticsShare = causticsLight * (1.0 - surface.a) / max(surface.a, 0.001);
+  outColor = vec4(surface.rgb * lighting + specular + causticsShare, surface.a);
 }`
 
 function compile(gl: WebGL2RenderingContext, type: number, source: string) {
@@ -8024,6 +8098,9 @@ function drawWorldWebGlWithResources(
     // The water pass samples the scene depth here; every other draw keeps a compatible 2D texture.
     bindSentinelTexture2d(resources, WATER_SCENE_DEPTH_UNIT)
     gl.uniform1i(uniformLocation(gl, program, 'sceneDepthMap'), WATER_SCENE_DEPTH_UNIT)
+    bindSentinelTexture2d(resources, WATER_CAUSTICS_UNIT)
+    gl.uniform1i(uniformLocation(gl, program, 'causticsMap'), WATER_CAUSTICS_UNIT)
+    gl.uniform1f(uniformLocation(gl, program, 'causticsMode'), 0)
     gl.uniform1f(uniformLocation(gl, program, 'waterDepthMode'), 0)
     gl.uniform1f(uniformLocation(gl, program, 'cliffMaskMode'), 0)
     const sceneCamera = createWorldWebGlCameraFrame(plan, canvas.width, canvas.height, input.camera)
@@ -8205,11 +8282,26 @@ function drawWorldWebGlWithResources(
       gl.uniform1f(uniformLocation(gl, program, 'splatTextured'), 0)
       gl.uniform1f(uniformLocation(gl, program, 'alphaCutoff'), 0)
       gl.disable(gl.POLYGON_OFFSET_FILL)
+      gl.uniform3f(uniformLocation(gl, program, 'waterViewForward'), forward.x, forward.y, forward.z)
       for (const plane of plan.waterPlanes) {
         gl.uniform1f(uniformLocation(gl, program, 'waterFalloff'), plane.colorFalloff)
         gl.uniform1f(uniformLocation(gl, program, 'shadowReceiver'), plane.receiveShadows ? 1 : 0)
+        const caustics = plane.caustics
+        if (caustics === undefined) gl.uniform1f(uniformLocation(gl, program, 'causticsMode'), 0)
+        else {
+          // The flip-book frame of the moment, as the game plays it at CausticsFPS.
+          const frame =
+            caustics.framesPerSecond > 0
+              ? Math.floor((input.timeSeconds ?? 0) * caustics.framesPerSecond) % caustics.frames.length
+              : 0
+          bindTexture2d(resources, caustics.frames[frame]!, WATER_CAUSTICS_UNIT)
+          gl.uniform1f(uniformLocation(gl, program, 'causticsMode'), 1)
+          gl.uniform2f(uniformLocation(gl, program, 'causticsScale'), caustics.scale[0], caustics.scale[1])
+          gl.uniform1f(uniformLocation(gl, program, 'causticsFalloff'), caustics.falloff)
+        }
         drawBatch(resources, program, plane.batch, gl.TRIANGLES)
       }
+      gl.uniform1f(uniformLocation(gl, program, 'causticsMode'), 0)
       gl.uniform1f(uniformLocation(gl, program, 'waterDepthMode'), 0)
       assertNoWebGlError(resources, 'water pass')
     }
@@ -8472,6 +8564,8 @@ const WORLD_TEXTURE_KEY_SAMPLES = 256
 const WATER_SURFACE_NORMAL = [0, 1, 0] as const
 /** Texture unit of the scene depth copy the water pass reads (units 0-8 hold the terrain and shadow). */
 const WATER_SCENE_DEPTH_UNIT = 9
+/** The water's caustics flip-book frame; every other draw keeps a 2D sentinel here. */
+const WATER_CAUSTICS_UNIT = 10
 /** Water colour and opacity at depth zero when a material states none. */
 const WATER_DEFAULT_COLOR = [0.12, 0.52, 0.82, 0.48] as const
 

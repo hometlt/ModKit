@@ -570,6 +570,7 @@ export async function inspectCandidateWorld(
             material.baseColorResourceId,
             material.secondaryColorResourceId,
             material.causticsResourceId,
+            ...(material.causticsFrameResourceIds ?? []),
           ].filter((resourceId): resourceId is string => resourceId !== undefined),
         ),
         ...(layer.weightRasters ?? []).map(raster => raster.resourceId),
@@ -1569,8 +1570,11 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
       const currentWorldTime = () => (view?.performance.now() ?? Date.now()) / 1000 - worldEpoch
       const hasAnimatedWater = () =>
         currentModel?.layers.some(layer =>
-          layer.layer.waterMaterials?.some(material =>
-            material.scroll?.some(component => component !== 0),
+          layer.layer.waterMaterials?.some(
+            material =>
+              material.scroll?.some(component => component !== 0) ||
+              ((material.causticsFrameResourceIds?.length ?? 0) > 1 &&
+                (material.causticsFramesPerSecond ?? 0) > 0),
           ),
         ) === true
       const currentAnimationTimes = () => {
