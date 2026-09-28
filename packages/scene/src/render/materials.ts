@@ -38,6 +38,20 @@ export function prepareSceneMaterialPrograms(
   )
 }
 
+/**
+ * `prepareSceneMaterialPrograms` over a sampler created before for the same materials and
+ * textures: callers that keep a sampler across moments sample it with the same checks.
+ */
+export function sampleSceneMaterialPrograms(
+  sampler: SceneMaterialProgramSampler,
+  context: SceneRendererMaterialContext | undefined,
+  diagnostics: SceneRendererDiagnostic[],
+  signal?: AbortSignal,
+): ReadonlyMap<string, SceneMaterialPrograms> {
+  validateMaterialContext(context)
+  return sampler.sample(context, diagnostics, signal)
+}
+
 export interface SceneMaterialProgramSampler {
   /** The programs of one moment: playback time, sequence, team colour and lighting. */
   sample(

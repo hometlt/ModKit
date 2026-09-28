@@ -33,6 +33,75 @@ interface Options {
   readonly sequenceIndex?: number
   readonly signal?: AbortSignal
   readonly warn: (message: string) => void
+  /** One placement's projectors at its previous frame (see UvmProjectorFrameCache). */
+  readonly cache?: UvmProjectorFrameCache
+}
+
+/**
+ * What one placement's projectors clipped and which materials they made at its previous frame, by
+ * projector. A projector on a node the clip moves is sampled again every frame, yet mostly stands
+ * where it stood (on Amphion all 30 of them): the same projector volume over the same receiver
+ * buffer, transform and budget clips the same triangles, and the same material, id, alpha and budget
+ * make the same material, so both are taken as they were. Clip output and materials are immutable.
+ * One cache belongs to one placement, so placements never share the arrays or materials they draw.
+ */
+export interface UvmProjectorFrameCache {
+  readonly clips: Map<string, Readonly<{ key: string; geometry: ProjectorClip }>>
+  readonly materials: Map<
+    string,
+    Readonly<{
+      base: SceneRendererMaterial
+      key: string
+      material: SceneRendererMaterial | undefined
+    }>
+  >
+}
+
+export function createUvmProjectorFrameCache(): UvmProjectorFrameCache {
+  return { clips: new Map(), materials: new Map() }
+}
+
+type ProjectorClip = ReturnType<typeof clipProjectorReceivers>
+
+const bufferIds = new WeakMap<object, number>()
+let bufferIdCount = 0
+const bufferId = (buffer: object) => {
+  let id = bufferIds.get(buffer)
+  if (id === undefined) bufferIds.set(buffer, (id = ++bufferIdCount))
+  return id
+}
+/** Every double apart: String keeps each value exactly except -0. */
+const exact = (value: number) => (Object.is(value, -0) ? '-0' : String(value))
+
+/** Everything clipProjectorReceivers reads: each field of the volume, each receiver, the budget. */
+function projectorClipKey(
+  frame: ProjectorFrame,
+  receivers: readonly {
+    readonly primitive: SceneRendererPrimitive
+    readonly transform: readonly number[]
+  }[],
+  maxBytes: number,
+  maxTriangles: number,
+): string {
+  const parts: string[] = []
+  for (const [name, value] of Object.entries(frame))
+    parts.push(
+      name,
+      typeof value === 'number'
+        ? exact(value)
+        : Array.isArray(value)
+          ? value.map(exact).join(' ')
+          : String(value),
+    )
+  for (const { primitive, transform } of receivers)
+    parts.push(
+      primitive.topology,
+      String(bufferId(primitive.positions)),
+      primitive.indices === undefined ? '-' : String(bufferId(primitive.indices)),
+      transform.map(exact).join(' '),
+    )
+  parts.push(String(maxBytes), String(maxTriangles))
+  return parts.join('|')
 }
 const scalar = (value: unknown): number => {
   if (typeof value !== 'number' || !Number.isFinite(value))
@@ -96,6 +165,35 @@ export function createUvmProjectorFrame(document: JsonObject, options: Options) 
     }))
   let bytes = options.receivers.length * 192 + 512,
     work = options.receivers.length
+  const clip = (slot: string, frame: ProjectorFrame, maxBytes: number, maxTriangles: number) => {
+    const cache = options.cache
+    const key =
+      cache === undefined ? '' : projectorClipKey(frame, receivers, maxBytes, maxTriangles)
+    const kept = cache?.clips.get(slot)
+    if (kept !== undefined && kept.key === key) return kept.geometry
+    const geometry = clipProjectorReceivers(frame, receivers, {
+      maxBytes,
+      maxTriangles,
+      ...(options.signal === undefined ? {} : { signal: options.signal }),
+    })
+    cache?.clips.set(slot, { key, geometry })
+    return geometry
+  }
+  const materialOf = (
+    slot: string,
+    base: SceneRendererMaterial,
+    id: string,
+    alpha: number,
+    maxNodes: number,
+    maxBytes: number,
+  ) => {
+    const key = `${id}|${exact(alpha)}|${maxNodes}|${maxBytes}`
+    const kept = options.cache?.materials.get(slot)
+    if (kept !== undefined && kept.base === base && kept.key === key) return kept.material
+    const material = projectorMaterial(base, id, alpha, maxNodes, maxBytes, options.signal)
+    options.cache?.materials.set(slot, { base, key, material })
+    return material
+  }
   for (const [index, raw] of projectors.entries()) {
     options.signal?.throwIfAborted()
     if (++work > options.maxNodes) throw new RangeError('projector frame exceeds node budget')
@@ -283,24 +381,25 @@ export function createUvmProjectorFrame(document: JsonObject, options: Options) 
     const authoredAlpha = scalar(entry['alphaInit']) || 1,
       alpha = Math.min(1, Math.max(0, authoredAlpha > 1 ? authoredAlpha / 255 : authoredAlpha))
     bytes += 1024
-    const geometry = clipProjectorReceivers(frame, receivers, {
-      maxBytes: options.maxBytes - bytes,
-      maxTriangles: options.maxNodes - work,
-      ...(options.signal === undefined ? {} : { signal: options.signal }),
-    })
+    const geometry = clip(
+      `projector-${index}`,
+      frame,
+      options.maxBytes - bytes,
+      options.maxNodes - work,
+    )
     work += geometry.triangles
     bytes += geometry.byteLength
     if (geometry.indices.length === 0) continue
     const id = `uvm-projector-${index}`
     // The pinned live-effect shader uses white vertex RGB and one alpha factor.
     // Keep the referenced material untouched; this is a separate simple effect draw.
-    const material = projectorMaterial(
+    const material = materialOf(
+      `projector-${index}`,
       base,
       id,
       alpha,
       options.maxNodes - work,
       options.maxBytes - bytes,
-      options.signal,
     )
     if (material === undefined) continue
     materials.push(material)
@@ -348,22 +447,23 @@ export function createUvmProjectorFrame(document: JsonObject, options: Options) 
         base = options.materials[template.materialIndex]
       if (base === undefined) throw new TypeError('impact projector material absent')
       bytes += 1024
-      const geometry = clipProjectorReceivers(frame, receivers, {
-        maxBytes: options.maxBytes - bytes,
-        maxTriangles: options.maxNodes - work,
-        ...(options.signal === undefined ? {} : { signal: options.signal }),
-      })
+      const geometry = clip(
+        `impact-${splat.slot}`,
+        frame,
+        options.maxBytes - bytes,
+        options.maxNodes - work,
+      )
       work += geometry.triangles
       bytes += geometry.byteLength
       if (geometry.indices.length === 0) continue
       const id = `uvm-projector-impact-${splat.slot}`
-      const material = projectorMaterial(
+      const material = materialOf(
+        `impact-${splat.slot}`,
         base,
         id,
         splat.alpha,
         options.maxNodes - work,
         options.maxBytes - bytes,
-        options.signal,
       )
       if (material === undefined) continue
       materials.push(material)

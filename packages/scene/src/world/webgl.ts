@@ -22,6 +22,7 @@ import type { SceneRendererMaterialContext } from '@modkit/sdk/renderer'
 import { boundsOf } from '@modkit/codec-kit/model/bounds'
 import { createModelSceneSampler } from '../model/index.js'
 import { createUvmEffectSource, type UvmEffectSource } from '../uvm/effect-source.js'
+import { createUvmProjectorFrameCache, type UvmProjectorFrameCache } from '../uvm/projectors.js'
 import {
   materialCanInstance,
   materialWebGlDraws,
@@ -33,7 +34,7 @@ import { primitiveTint } from '../render/tint.js'
 import { materialIsSolid, sceneMaterialDraws, type MaterialDraw } from '../render/material-draws.js'
 import {
   createSceneMaterialProgramSampler,
-  prepareSceneMaterialPrograms,
+  sampleSceneMaterialPrograms,
   type SceneMaterialProgramSampler,
   type SceneMaterialPrograms,
 } from '../render/materials.js'
@@ -2414,6 +2415,59 @@ const worldObjectProjections = new WeakMap<
 >()
 
 /**
+ * One placement's projectors between plans, per component: what they clipped and made at its last
+ * frame (UvmProjectorFrameCache), and the program sampler of the materials they made. A projector
+ * on a node the clip moves projects again every frame, mostly into the same material objects: their
+ * sampler, with its compiled shader sources, stays while they do, and samples each frame's moment.
+ */
+interface WorldProjectorSlot {
+  readonly frames: UvmProjectorFrameCache
+  programs?: Readonly<{
+    materials: readonly SceneRendererMaterial[]
+    textures: readonly SceneRendererTexture[]
+    sampler: SceneMaterialProgramSampler
+  }>
+}
+const worldProjectorSlots = new WeakMap<WorldSceneObjectItem, Map<string, WorldProjectorSlot>>()
+
+function worldProjectorSlot(item: WorldSceneObjectItem, componentId: string): WorldProjectorSlot {
+  let slots = worldProjectorSlots.get(item)
+  if (slots === undefined) worldProjectorSlots.set(item, (slots = new Map()))
+  let slot = slots.get(componentId)
+  if (slot === undefined)
+    slots.set(componentId, (slot = { frames: createUvmProjectorFrameCache() }))
+  return slot
+}
+
+/** prepareSceneMaterialPrograms through the slot's sampler while the materials are the same. */
+function worldProjectorPrograms(
+  slot: WorldProjectorSlot,
+  materials: readonly SceneRendererMaterial[],
+  textures: readonly SceneRendererTexture[],
+  context: SceneRendererMaterialContext,
+): ReadonlyMap<string, SceneMaterialPrograms> {
+  let kept = slot.programs
+  if (
+    kept === undefined ||
+    kept.textures !== textures ||
+    kept.materials.length !== materials.length ||
+    kept.materials.some((material, index) => material !== materials[index])
+  ) {
+    delete slot.programs
+    kept = Object.freeze({
+      materials: [...materials],
+      textures,
+      sampler: createSceneMaterialProgramSampler(
+        materials,
+        new Map(textures.map(texture => [texture.id, texture])),
+      ),
+    })
+    slot.programs = kept
+  }
+  return sampleSceneMaterialPrograms(kept.sampler, context, [])
+}
+
+/**
  * Each object's projector writes of its last build. An object with live effects is rebuilt at
  * every clock, but its decals usually come out the same: it then hands in the previous write
  * objects, so the shared decal batches are kept (see WorldBatchWrite).
@@ -4537,25 +4591,31 @@ export function createWorldWebGlPlan(
           kept.materials === scene.materials &&
           kept.ground === projectorGround &&
           sameOptionalMatrix(kept.transform, receiverTransform)
+        const slot = worldProjectorSlot(item, component.id)
         const projected = reuse
           ? kept.projected
-          : effectSource.project(time, scene.materials, [
-              {
-                id: 'world-terrain-receiver',
-                topology: 'triangles',
-                positions: projectorGround,
-                transform: receiverTransform,
-              },
-            ])
+          : effectSource.project(
+              time,
+              scene.materials,
+              [
+                {
+                  id: 'world-terrain-receiver',
+                  topology: 'triangles',
+                  positions: projectorGround,
+                  transform: receiverTransform,
+                },
+              ],
+              slot.frames,
+            )
         let projectedPrograms: ReadonlyMap<string, SceneMaterialPrograms> = new Map()
         if (reuse && kept.programs !== undefined) projectedPrograms = kept.programs
         else
           try {
-            projectedPrograms = prepareSceneMaterialPrograms(
+            projectedPrograms = worldProjectorPrograms(
+              slot,
               projected.materials,
-              new Map(scene.textures.map(texture => [texture.id, texture])),
+              scene.textures,
               materialContext,
-              [],
             )
           } catch {
             // Unsupported projector materials remain isolated from the rest of the map.

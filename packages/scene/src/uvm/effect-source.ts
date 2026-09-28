@@ -1,5 +1,5 @@
 import type { SceneRendererMaterial, SceneRendererPrimitive } from '@modkit/sdk/renderer'
-import { createUvmProjectorFrame } from './projectors.js'
+import { createUvmProjectorFrame, type UvmProjectorFrameCache } from './projectors.js'
 import { readUvmContainer } from '@modkit/uv/model/container'
 import { createModelSceneSampler } from '../model/sampler.js'
 import {
@@ -20,10 +20,12 @@ export interface UvmEffectSource {
    * (or the effect space) on a node the clip moves. Otherwise every clock projects the same decals.
    */
   readonly projectionsFollowTime: boolean
+  /** `cache` belongs to one placement: its projectors keep what they clipped and made last time. */
   project(
     time: number,
     materials: readonly SceneRendererMaterial[],
     receivers: readonly SceneRendererPrimitive[],
+    cache?: UvmProjectorFrameCache,
   ): ReturnType<typeof createUvmProjectorFrame>
   /** Seconds of the looping clip whose sequence drives emission, when the model has one. */
   readonly clipSeconds?: number
@@ -145,8 +147,9 @@ export function createUvmEffectSource(
     hasProjectors: entries('projectors').length > 0,
     liveEffects: entries('particles').length + entries('ribbons').length > 0,
     projectionsFollowTime,
-    project: (time, materials, receivers) =>
+    project: (time, materials, receivers, cache) =>
       createUvmProjectorFrame(document, {
+        ...(cache === undefined ? {} : { cache }),
         time,
         materials,
         receivers,
