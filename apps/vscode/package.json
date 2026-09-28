@@ -164,6 +164,7 @@
         "title": "%command.openExplorer%",
         "icon": "$(folder-library)"
       },
+      { "command": "modkit.openLogFolder", "title": "%command.openLogFolder%" },
       { "command": "modkit.openMap2D", "title": "%command.openMap2D%", "icon": "$(layers)" },
       { "command": "modkit.openMap3D", "title": "%command.openMap3D%", "icon": "$(globe)" },
       { "command": "modkit.openWith", "title": "%command.openActiveFile%" },
@@ -205,6 +206,7 @@
       { "command": "modkit.setCodecDefaultEditor", "title": "%command.setCodecDefaultEditor%" },
       { "command": "modkit.showDiagnostics", "title": "%command.showDiagnostics%" },
       { "command": "modkit.showHostProfile", "title": "%command.openWorkbench%" },
+      { "command": "modkit.showLog", "title": "%command.showLog%" },
       {
         "command": "modkit.sources.addPublic",
         "title": "%command.addPublicSource%",
@@ -1076,6 +1078,7 @@
     "onCommand:modkit.navigateResource",
     "onCommand:modkit.openArchiveEntry",
     "onCommand:modkit.openExplorer",
+    "onCommand:modkit.openLogFolder",
     "onCommand:modkit.openMap2D",
     "onCommand:modkit.openMap3D",
     "onCommand:modkit.openWith",
@@ -1093,6 +1096,7 @@
     "onCommand:modkit.setCodecDefaultEditor",
     "onCommand:modkit.showDiagnostics",
     "onCommand:modkit.showHostProfile",
+    "onCommand:modkit.showLog",
     "onCommand:modkit.sources.addPublic",
     "onCommand:modkit.sources.clearCache",
     "onCommand:modkit.sources.deletePublication",

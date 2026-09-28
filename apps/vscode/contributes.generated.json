@@ -152,6 +152,10 @@
       "icon": "$(folder-library)"
     },
     {
+      "command": "modkit.openLogFolder",
+      "title": "%command.openLogFolder%"
+    },
+    {
       "command": "modkit.openMap2D",
       "title": "%command.openMap2D%",
       "icon": "$(layers)"
@@ -226,6 +230,10 @@
     {
       "command": "modkit.showHostProfile",
       "title": "%command.openWorkbench%"
+    },
+    {
+      "command": "modkit.showLog",
+      "title": "%command.showLog%"
     },
     {
       "command": "modkit.sources.addPublic",

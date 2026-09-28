@@ -110,5 +110,7 @@
   "command.openMap3D": "Modkit: открыть карту в 3D",
   "command.openMap2D": "Modkit: слои карты (2D)",
   "customEditor.worldViewer": "Modkit: 3D-мир",
-  "customEditor.mapLayersViewer": "Modkit: слои карты (2D)"
+  "customEditor.mapLayersViewer": "Modkit: слои карты (2D)",
+  "command.showLog": "Modkit: показать журнал",
+  "command.openLogFolder": "Modkit: открыть папку журналов"
 }

@@ -221,6 +221,7 @@ createDiagnosticJournal,
 GAME_LOCALES,
 gameLocales,
 installationGameIds,
+logLevelOf,
 installationsAtFolder,
 regionsToConnect,
 selectedContentSource,
@@ -427,8 +428,17 @@ async function activateModkit(
   if (activeLanguageShutdown !== undefined) await activeLanguageShutdown()
   const activationStarted = Date.now()
   const languageOnly = process.env.MODKIT_VSCODE_LANGUAGE_ONLY === '1'
-  const output = vscode.window.createOutputChannel('Modkit MK3')
+  // A log channel: VS Code keeps it on disk and «Developer: Set Log Level…» filters it.
+  const output = vscode.window.createOutputChannel('Modkit MK3', { log: true })
   context.subscriptions.push(output)
+  // Registered first: the log is wanted most when the rest of activation fails.
+  context.subscriptions.push(
+    vscode.commands.registerCommand('modkit.showLog', () => output.show(true)),
+    vscode.commands.registerCommand('modkit.openLogFolder', async () => {
+      await vscode.workspace.fs.createDirectory(context.logUri)
+      await vscode.commands.executeCommand('revealFileInOS', context.logUri)
+    }),
+  )
   /** Where the time goes on the paths a person waits on; see `./timing.ts`. */
   const timing = createPhaseLog(line => {
     output.appendLine(line)
@@ -440,7 +450,10 @@ async function activateModkit(
   let localizer = createVscodeLocalizer(vscode.env.language)
   const log = (line: string): void => {
     journal.append(line)
-    output.appendLine(line)
+    const level = logLevelOf(line)
+    if (level === 'error') output.error(line)
+    else if (level === 'warning') output.warn(line)
+    else output.info(line)
   }
 
   const extensionRoot = context.extensionUri.fsPath
@@ -11590,7 +11603,12 @@ async function activateModkit(
   }
 
   const activationMs = Date.now() - activationStarted
-  log(`Modkit MK3 activated in ${activationMs} ms`)
+  log(
+    `Modkit MK3 ${String((context.extension.packageJSON as { version?: unknown }).version)} activated in ` +
+      `${activationMs} ms: ${host.extensions.bundled.length} bundled and ` +
+      `${host.extensions.installed.length} installed extension roots, ` +
+      `${host.extensions.failures.length} failed, ${host.contributions.length} contributions`,
+  )
   return Object.freeze({
     activationMs,
     /*

@@ -110,5 +110,7 @@
   "command.openMap3D": "Modkit: Open Map in 3D",
   "command.openMap2D": "Modkit: Open Map Layers (2D)",
   "customEditor.worldViewer": "Modkit 3D World",
-  "customEditor.mapLayersViewer": "Modkit Map Layers (2D)"
+  "customEditor.mapLayersViewer": "Modkit Map Layers (2D)",
+  "command.showLog": "Modkit: Show Log",
+  "command.openLogFolder": "Modkit: Open Log Folder"
 }

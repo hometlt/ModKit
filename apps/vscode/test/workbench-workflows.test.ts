@@ -10,6 +10,7 @@ import {
   createDiagnosticJournal,
   gameLocales,
   installationGameIds,
+  logLevelOf,
   installationsAtFolder,
   regionsToConnect,
   searchContainerIndex,
@@ -157,6 +158,13 @@ describe('generic source lifecycle', () => {
     expect(regionsToConnect(['roblox:assets'], roots, regions, [])).toEqual(['open-cloud'])
     expect(regionsToConnect(['roblox:assets'], roots, regions, ['open-cloud'])).toEqual([])
     expect(regionsToConnect(['unknown'], roots, regions, [])).toEqual([])
+  })
+
+  it('files journal lines by the severity word the product writes', () => {
+    expect(logLevelOf('[container] warning x3.host/capped: listing capped')).toBe('warning')
+    expect(logLevelOf('[subject-rpc] error x3.abi/closed: gone')).toBe('error')
+    expect(logLevelOf('[extensions] no errors in 12 roots')).toBe('info')
+    expect(logLevelOf('Modkit MK3 0.1.0 activated in 4000 ms')).toBe('info')
   })
 
   it('takes the game-string locale from modkit.locale, else from the display language, then enUS', () => {

@@ -217,6 +217,15 @@ export function regionsToConnect(
     .map(region => region.id)
 }
 
+/**
+ * The log level of one journal line. The product writes `[area] error …` and `[area] warning …`
+ * (a diagnostic's own severity word); everything else is information.
+ */
+export function logLevelOf(line: string): 'error' | 'warning' | 'info' {
+  const level = /^\[[^\]]+\] (error|warning)\b/u.exec(line)?.[1]
+  return level === 'error' || level === 'warning' ? level : 'info'
+}
+
 /** Game-data locales the picker offers; `modkit.locale` also takes any other code. */
 export const GAME_LOCALES: readonly string[] = Object.freeze([
   'enUS',
