@@ -182,6 +182,8 @@ interface IndexedEntry {
   readonly entryId: string
   readonly path: string
   readonly size?: bigint
+  /** The container reads it by range (`openEntrySource`), without extracting it. */
+  readonly rangeAccess?: true
   readonly revision: RevisionId
 }
 
@@ -253,6 +255,7 @@ export function createNamespaceCompanionOrigin(
               entryId: entry.id,
               path: entry.path,
               ...(entry.size === undefined ? {} : { size: entry.size }),
+              ...(entry.rangeAccess === true ? { rangeAccess: true as const } : {}),
               revision: entry.revision,
             }
             built.set(key, value)
@@ -325,6 +328,9 @@ export function createNamespaceCompanionOrigin(
           context: { logicalId },
         })
       }
+      // an entry the container reads by range (a RefPack stream) is never extracted, whatever its size
+      if (entry.rangeAccess === true && options.namespace.openEntrySource !== undefined)
+        return rangeEntryLease(options.namespace, entry.entryId, options.containerRevision, signal)
       if (
         options.maxSourceBytes !== undefined &&
         entry.size !== undefined &&
@@ -502,6 +508,7 @@ export function createCompositeWorkspaceNamespaceCompanionOrigin(
         entryId: entry.id,
         path: entry.path,
         ...(entry.size === undefined ? {} : { size: entry.size }),
+        ...(entry.rangeAccess === true ? { rangeAccess: true as const } : {}),
         revision: entry.revision,
         namespace: root.namespace,
         containerRevision: root.containerRevision,
@@ -591,6 +598,8 @@ export function createCompositeWorkspaceNamespaceCompanionOrigin(
           context: { logicalId },
         })
       }
+      if (entry.rangeAccess === true && entry.namespace.openEntrySource !== undefined)
+        return rangeEntryLease(entry.namespace, entry.entryId, entry.containerRevision, signal)
       const refLease = await entry.namespace.openEntry(entry.entryId, signal)
       let bytes: Uint8Array
       try {
@@ -977,6 +986,42 @@ export function containerEntryRangeSource(
       }
     },
   })
+}
+
+/** An entry the container reads by range, as a source of its own; both leases go with it. */
+async function rangeEntryLease(
+  namespace: NamespaceEntrySource,
+  entryId: string,
+  containerRevision: RevisionId,
+  signal?: AbortSignal,
+): Promise<Lease<ArtifactSource>> {
+  const refLease = await namespace.openEntry(entryId, signal)
+  let sourceLease: Lease<ByteRangeSource>
+  try {
+    sourceLease = await namespace.openEntrySource!(entryId, signal)
+  } catch (error) {
+    await refLease.release()
+    throw error
+  }
+  try {
+    const size = await sourceLease.value.size()
+    return Object.freeze({
+      value: containerEntryRangeSource(
+        refLease.value,
+        containerEntryRevision(containerRevision, entryId, size),
+        sourceLease.value,
+        { offset: 0n, length: size },
+      ),
+      release: async () => {
+        await sourceLease.release()
+        await refLease.release()
+      },
+    })
+  } catch (error) {
+    await sourceLease.release()
+    await refLease.release()
+    throw error
+  }
 }
 
 export function containerEntrySource(
