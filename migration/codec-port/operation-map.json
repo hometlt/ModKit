@@ -53,14 +53,14 @@
       "contribution": "modkit-extensions-other/extensions/microsoft-age-series/contributions/codec-age-drs.json",
       "handlerId": "extract-entry",
       "id": "legacy/codec-manifest/modkit/age-drs/operation/archive.extract",
-      "status": "adapted",
+      "status": "owner-dropped",
       "targetOperation": "container.extract"
     },
     {
       "contribution": "modkit-extensions-other/extensions/microsoft-age-series/contributions/codec-age-drs.json",
       "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/age-drs/operation/archive.inspect",
-      "status": "adapted",
+      "status": "owner-dropped",
       "targetOperation": "view.inspect"
     },
     {
@@ -529,7 +529,7 @@
       "contribution": null,
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/def/operation/image.inspect",
-      "status": "pending",
+      "status": "owner-dropped",
       "targetOperation": null
     },
     {
@@ -1041,28 +1041,28 @@
       "contribution": "modkit-extensions-other/extensions/new-world-computing-heroes-3/contributions/codec-heroes3-lod.json",
       "handlerId": "extract-entry",
       "id": "legacy/codec-manifest/modkit/heroes3-lod/operation/archive.extract",
-      "status": "adapted",
+      "status": "owner-dropped",
       "targetOperation": "container.extract"
     },
     {
       "contribution": "modkit-extensions-other/extensions/new-world-computing-heroes-3/contributions/codec-heroes3-lod.json",
       "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/heroes3-lod/operation/archive.inspect",
-      "status": "adapted",
+      "status": "owner-dropped",
       "targetOperation": "view.inspect"
     },
     {
       "contribution": null,
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/heroes4-resource/operation/archive.extract",
-      "status": "pending",
+      "status": "owner-dropped",
       "targetOperation": null
     },
     {
       "contribution": null,
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/heroes4-resource/operation/archive.inspect",
-      "status": "pending",
+      "status": "owner-dropped",
       "targetOperation": null
     },
     {
@@ -2539,14 +2539,14 @@
       "contribution": null,
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/sld/operation/image.inspect",
-      "status": "pending",
+      "status": "owner-dropped",
       "targetOperation": null
     },
     {
       "contribution": null,
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/slp/operation/image.inspect",
-      "status": "pending",
+      "status": "owner-dropped",
       "targetOperation": null
     },
     {
@@ -2567,14 +2567,14 @@
       "contribution": null,
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/smp/operation/image.inspect",
-      "status": "pending",
+      "status": "owner-dropped",
       "targetOperation": null
     },
     {
       "contribution": null,
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/smx/operation/image.inspect",
-      "status": "pending",
+      "status": "owner-dropped",
       "targetOperation": null
     },
     {

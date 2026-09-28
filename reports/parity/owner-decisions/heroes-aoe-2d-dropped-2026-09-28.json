@@ -1,0 +1,198 @@
+{
+  "schemaVersion": 1,
+  "kind": "owner-decision/owner-dropped",
+  "date": "2026-09-28",
+  "reason": "Owner decision 2026-09-28 (relayed by [Games] Other and recorded in AGENTS.md §10): the 2D strategy games Heroes of Might and Magic III/IV and Age of Empires I/II are dropped from the project — codecs def, heroes3-lod, heroes4-resource, age-drs, sld, slp, smp and smx, removed from modkit-extensions-other in other 4c5b8a9. Age of Empires III / Age of Mythology and Heroes VI stay. Receipts already accepted for age-drs and heroes3-lod remain pinned as evidence (ratchet); nothing in MK3 consumes these codecs.",
+  "rows": [
+    {
+      "id": "legacy/codec-manifest/modkit/age-drs/audit",
+      "class": "removed-by-owner",
+      "mk2Manifest": {
+        "path": "references/modkitmk2/extensions/microsoft/age-series/codecs/age-drs/codec.manifest.json",
+        "commit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+        "sha256Lf": "d10d99849144e8c8571db559e7f5ab632fa0929317f34e5b62c3c5ba994e6ac3"
+      },
+      "where": "the MK3 codec was removed from modkit-extensions-other in other 4c5b8a9 by owner decision"
+    },
+    {
+      "id": "legacy/codec-manifest/modkit/age-drs/operation/archive.extract",
+      "class": "removed-by-owner",
+      "mk2Manifest": {
+        "path": "references/modkitmk2/extensions/microsoft/age-series/codecs/age-drs/codec.manifest.json",
+        "commit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+        "sha256Lf": "d10d99849144e8c8571db559e7f5ab632fa0929317f34e5b62c3c5ba994e6ac3"
+      },
+      "where": "the MK3 codec was removed from modkit-extensions-other in other 4c5b8a9 by owner decision"
+    },
+    {
+      "id": "legacy/codec-manifest/modkit/age-drs/operation/archive.inspect",
+      "class": "removed-by-owner",
+      "mk2Manifest": {
+        "path": "references/modkitmk2/extensions/microsoft/age-series/codecs/age-drs/codec.manifest.json",
+        "commit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+        "sha256Lf": "d10d99849144e8c8571db559e7f5ab632fa0929317f34e5b62c3c5ba994e6ac3"
+      },
+      "where": "the MK3 codec was removed from modkit-extensions-other in other 4c5b8a9 by owner decision"
+    },
+    {
+      "id": "legacy/codec-manifest/modkit/def/audit",
+      "class": "removed-by-owner",
+      "mk2Manifest": {
+        "path": "references/modkitmk2/extensions/new-world-computing/heroes-3/codecs/def/codec.manifest.json",
+        "commit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+        "sha256Lf": "0bfc3d2c45e45cd707700b03c1a6d991684c56925432318d62c5043f8ec37e0d"
+      },
+      "where": "the MK3 codec was removed from modkit-extensions-other in other 4c5b8a9 by owner decision"
+    },
+    {
+      "id": "legacy/codec-manifest/modkit/def/operation/image.inspect",
+      "class": "removed-by-owner",
+      "mk2Manifest": {
+        "path": "references/modkitmk2/extensions/new-world-computing/heroes-3/codecs/def/codec.manifest.json",
+        "commit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+        "sha256Lf": "0bfc3d2c45e45cd707700b03c1a6d991684c56925432318d62c5043f8ec37e0d"
+      },
+      "where": "the MK3 codec was removed from modkit-extensions-other in other 4c5b8a9 by owner decision"
+    },
+    {
+      "id": "legacy/codec-manifest/modkit/heroes3-lod/audit",
+      "class": "removed-by-owner",
+      "mk2Manifest": {
+        "path": "references/modkitmk2/extensions/new-world-computing/heroes-3/codecs/heroes3-lod/codec.manifest.json",
+        "commit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+        "sha256Lf": "ad442ef297daba1f1d562ba52de7acb539f5581eebb1740db3a03109b1c063dd"
+      },
+      "where": "the MK3 codec was removed from modkit-extensions-other in other 4c5b8a9 by owner decision"
+    },
+    {
+      "id": "legacy/codec-manifest/modkit/heroes3-lod/operation/archive.extract",
+      "class": "removed-by-owner",
+      "mk2Manifest": {
+        "path": "references/modkitmk2/extensions/new-world-computing/heroes-3/codecs/heroes3-lod/codec.manifest.json",
+        "commit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+        "sha256Lf": "ad442ef297daba1f1d562ba52de7acb539f5581eebb1740db3a03109b1c063dd"
+      },
+      "where": "the MK3 codec was removed from modkit-extensions-other in other 4c5b8a9 by owner decision"
+    },
+    {
+      "id": "legacy/codec-manifest/modkit/heroes3-lod/operation/archive.inspect",
+      "class": "removed-by-owner",
+      "mk2Manifest": {
+        "path": "references/modkitmk2/extensions/new-world-computing/heroes-3/codecs/heroes3-lod/codec.manifest.json",
+        "commit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+        "sha256Lf": "ad442ef297daba1f1d562ba52de7acb539f5581eebb1740db3a03109b1c063dd"
+      },
+      "where": "the MK3 codec was removed from modkit-extensions-other in other 4c5b8a9 by owner decision"
+    },
+    {
+      "id": "legacy/codec-manifest/modkit/heroes4-resource/audit",
+      "class": "removed-by-owner",
+      "mk2Manifest": {
+        "path": "references/modkitmk2/extensions/new-world-computing/heroes-4/codecs/heroes4-resource/codec.manifest.json",
+        "commit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+        "sha256Lf": "848da12afa04dd004896a700c9ef93fb056ca13d2c9c9cc9f3d9db3e9239dad4"
+      },
+      "where": "the MK3 codec was removed from modkit-extensions-other in other 4c5b8a9 by owner decision"
+    },
+    {
+      "id": "legacy/codec-manifest/modkit/heroes4-resource/operation/archive.extract",
+      "class": "removed-by-owner",
+      "mk2Manifest": {
+        "path": "references/modkitmk2/extensions/new-world-computing/heroes-4/codecs/heroes4-resource/codec.manifest.json",
+        "commit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+        "sha256Lf": "848da12afa04dd004896a700c9ef93fb056ca13d2c9c9cc9f3d9db3e9239dad4"
+      },
+      "where": "the MK3 codec was removed from modkit-extensions-other in other 4c5b8a9 by owner decision"
+    },
+    {
+      "id": "legacy/codec-manifest/modkit/heroes4-resource/operation/archive.inspect",
+      "class": "removed-by-owner",
+      "mk2Manifest": {
+        "path": "references/modkitmk2/extensions/new-world-computing/heroes-4/codecs/heroes4-resource/codec.manifest.json",
+        "commit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+        "sha256Lf": "848da12afa04dd004896a700c9ef93fb056ca13d2c9c9cc9f3d9db3e9239dad4"
+      },
+      "where": "the MK3 codec was removed from modkit-extensions-other in other 4c5b8a9 by owner decision"
+    },
+    {
+      "id": "legacy/codec-manifest/modkit/sld/audit",
+      "class": "removed-by-owner",
+      "mk2Manifest": {
+        "path": "references/modkitmk2/extensions/microsoft/age-series/codecs/sld/codec.manifest.json",
+        "commit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+        "sha256Lf": "4e193ba9caa8f166d8a9b821a7c174d69800b116daa3281eca113a739a410550"
+      },
+      "where": "the MK3 codec was removed from modkit-extensions-other in other 4c5b8a9 by owner decision"
+    },
+    {
+      "id": "legacy/codec-manifest/modkit/sld/operation/image.inspect",
+      "class": "removed-by-owner",
+      "mk2Manifest": {
+        "path": "references/modkitmk2/extensions/microsoft/age-series/codecs/sld/codec.manifest.json",
+        "commit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+        "sha256Lf": "4e193ba9caa8f166d8a9b821a7c174d69800b116daa3281eca113a739a410550"
+      },
+      "where": "the MK3 codec was removed from modkit-extensions-other in other 4c5b8a9 by owner decision"
+    },
+    {
+      "id": "legacy/codec-manifest/modkit/slp/audit",
+      "class": "removed-by-owner",
+      "mk2Manifest": {
+        "path": "references/modkitmk2/extensions/microsoft/age-series/codecs/slp/codec.manifest.json",
+        "commit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+        "sha256Lf": "ded00e8a2f6fe0aa4595d91595d2a0276b543f08b6d11c46eb8ea07f36e76eac"
+      },
+      "where": "the MK3 codec was removed from modkit-extensions-other in other 4c5b8a9 by owner decision"
+    },
+    {
+      "id": "legacy/codec-manifest/modkit/slp/operation/image.inspect",
+      "class": "removed-by-owner",
+      "mk2Manifest": {
+        "path": "references/modkitmk2/extensions/microsoft/age-series/codecs/slp/codec.manifest.json",
+        "commit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+        "sha256Lf": "ded00e8a2f6fe0aa4595d91595d2a0276b543f08b6d11c46eb8ea07f36e76eac"
+      },
+      "where": "the MK3 codec was removed from modkit-extensions-other in other 4c5b8a9 by owner decision"
+    },
+    {
+      "id": "legacy/codec-manifest/modkit/smp/audit",
+      "class": "removed-by-owner",
+      "mk2Manifest": {
+        "path": "references/modkitmk2/extensions/microsoft/age-series/codecs/smp/codec.manifest.json",
+        "commit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+        "sha256Lf": "4b764da08620755052c7b2304ec0e63e6838f7e8c3eadabe0cc80e4e5b07e000"
+      },
+      "where": "the MK3 codec was removed from modkit-extensions-other in other 4c5b8a9 by owner decision"
+    },
+    {
+      "id": "legacy/codec-manifest/modkit/smp/operation/image.inspect",
+      "class": "removed-by-owner",
+      "mk2Manifest": {
+        "path": "references/modkitmk2/extensions/microsoft/age-series/codecs/smp/codec.manifest.json",
+        "commit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+        "sha256Lf": "4b764da08620755052c7b2304ec0e63e6838f7e8c3eadabe0cc80e4e5b07e000"
+      },
+      "where": "the MK3 codec was removed from modkit-extensions-other in other 4c5b8a9 by owner decision"
+    },
+    {
+      "id": "legacy/codec-manifest/modkit/smx/audit",
+      "class": "removed-by-owner",
+      "mk2Manifest": {
+        "path": "references/modkitmk2/extensions/microsoft/age-series/codecs/smx/codec.manifest.json",
+        "commit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+        "sha256Lf": "1a22c9ab422ea4dd1edd2865a045258d5aa7ce1234ea8753ae9390f5b3643bd7"
+      },
+      "where": "the MK3 codec was removed from modkit-extensions-other in other 4c5b8a9 by owner decision"
+    },
+    {
+      "id": "legacy/codec-manifest/modkit/smx/operation/image.inspect",
+      "class": "removed-by-owner",
+      "mk2Manifest": {
+        "path": "references/modkitmk2/extensions/microsoft/age-series/codecs/smx/codec.manifest.json",
+        "commit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+        "sha256Lf": "1a22c9ab422ea4dd1edd2865a045258d5aa7ce1234ea8753ae9390f5b3643bd7"
+      },
+      "where": "the MK3 codec was removed from modkit-extensions-other in other 4c5b8a9 by owner decision"
+    }
+  ]
+}

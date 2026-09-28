@@ -123,11 +123,25 @@
       "status": "adapted"
     },
     {
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-28",
+        "path": "modkit-core/reports/parity/owner-decisions/heroes-aoe-2d-dropped-2026-09-28.json",
+        "reason": "Owner decision 2026-09-28 (relayed by [Games] Other and recorded in AGENTS.md §10): the 2D strategy games Heroes of Might and Magic III/IV and Age of Empires I/II are dropped from the project — codecs def, heroes3-lod, heroes4-resource, age-drs, sld, slp, smp and smx, removed from modkit-extensions-other in other 4c5b8a9. Age of Empires III / Age of Mythology and Heroes VI stay. Receipts already accepted for age-drs and heroes3-lod remain pinned as evidence (ratchet); nothing in MK3 consumes these codecs.",
+        "sha256": "713a120186783d50bf9fdd4d9acd2a1e307c5a43f52b23ee8e7364e80a95966c"
+      },
       "evidence": [],
       "id": "legacy/codec-manifest/modkit/age-drs/audit",
-      "status": "pending"
+      "status": "owner-dropped"
     },
     {
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-28",
+        "path": "modkit-core/reports/parity/owner-decisions/heroes-aoe-2d-dropped-2026-09-28.json",
+        "reason": "Owner decision 2026-09-28 (relayed by [Games] Other and recorded in AGENTS.md §10): the 2D strategy games Heroes of Might and Magic III/IV and Age of Empires I/II are dropped from the project — codecs def, heroes3-lod, heroes4-resource, age-drs, sld, slp, smp and smx, removed from modkit-extensions-other in other 4c5b8a9. Age of Empires III / Age of Mythology and Heroes VI stay. Receipts already accepted for age-drs and heroes3-lod remain pinned as evidence (ratchet); nothing in MK3 consumes these codecs.",
+        "sha256": "713a120186783d50bf9fdd4d9acd2a1e307c5a43f52b23ee8e7364e80a95966c"
+      },
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/age-drs-archive.extract.json",
@@ -135,9 +149,16 @@
         }
       ],
       "id": "legacy/codec-manifest/modkit/age-drs/operation/archive.extract",
-      "status": "adapted"
+      "status": "owner-dropped"
     },
     {
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-28",
+        "path": "modkit-core/reports/parity/owner-decisions/heroes-aoe-2d-dropped-2026-09-28.json",
+        "reason": "Owner decision 2026-09-28 (relayed by [Games] Other and recorded in AGENTS.md §10): the 2D strategy games Heroes of Might and Magic III/IV and Age of Empires I/II are dropped from the project — codecs def, heroes3-lod, heroes4-resource, age-drs, sld, slp, smp and smx, removed from modkit-extensions-other in other 4c5b8a9. Age of Empires III / Age of Mythology and Heroes VI stay. Receipts already accepted for age-drs and heroes3-lod remain pinned as evidence (ratchet); nothing in MK3 consumes these codecs.",
+        "sha256": "713a120186783d50bf9fdd4d9acd2a1e307c5a43f52b23ee8e7364e80a95966c"
+      },
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/age-drs-archive.inspect.json",
@@ -145,7 +166,7 @@
         }
       ],
       "id": "legacy/codec-manifest/modkit/age-drs/operation/archive.inspect",
-      "status": "adapted"
+      "status": "owner-dropped"
     },
     {
       "evidence": [],
@@ -738,14 +759,28 @@
       "status": "pending"
     },
     {
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-28",
+        "path": "modkit-core/reports/parity/owner-decisions/heroes-aoe-2d-dropped-2026-09-28.json",
+        "reason": "Owner decision 2026-09-28 (relayed by [Games] Other and recorded in AGENTS.md §10): the 2D strategy games Heroes of Might and Magic III/IV and Age of Empires I/II are dropped from the project — codecs def, heroes3-lod, heroes4-resource, age-drs, sld, slp, smp and smx, removed from modkit-extensions-other in other 4c5b8a9. Age of Empires III / Age of Mythology and Heroes VI stay. Receipts already accepted for age-drs and heroes3-lod remain pinned as evidence (ratchet); nothing in MK3 consumes these codecs.",
+        "sha256": "713a120186783d50bf9fdd4d9acd2a1e307c5a43f52b23ee8e7364e80a95966c"
+      },
       "evidence": [],
       "id": "legacy/codec-manifest/modkit/def/audit",
-      "status": "pending"
+      "status": "owner-dropped"
     },
     {
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-28",
+        "path": "modkit-core/reports/parity/owner-decisions/heroes-aoe-2d-dropped-2026-09-28.json",
+        "reason": "Owner decision 2026-09-28 (relayed by [Games] Other and recorded in AGENTS.md §10): the 2D strategy games Heroes of Might and Magic III/IV and Age of Empires I/II are dropped from the project — codecs def, heroes3-lod, heroes4-resource, age-drs, sld, slp, smp and smx, removed from modkit-extensions-other in other 4c5b8a9. Age of Empires III / Age of Mythology and Heroes VI stay. Receipts already accepted for age-drs and heroes3-lod remain pinned as evidence (ratchet); nothing in MK3 consumes these codecs.",
+        "sha256": "713a120186783d50bf9fdd4d9acd2a1e307c5a43f52b23ee8e7364e80a95966c"
+      },
       "evidence": [],
       "id": "legacy/codec-manifest/modkit/def/operation/image.inspect",
-      "status": "pending"
+      "status": "owner-dropped"
     },
     {
       "decision": {
@@ -1855,11 +1890,25 @@
       "status": "pending"
     },
     {
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-28",
+        "path": "modkit-core/reports/parity/owner-decisions/heroes-aoe-2d-dropped-2026-09-28.json",
+        "reason": "Owner decision 2026-09-28 (relayed by [Games] Other and recorded in AGENTS.md §10): the 2D strategy games Heroes of Might and Magic III/IV and Age of Empires I/II are dropped from the project — codecs def, heroes3-lod, heroes4-resource, age-drs, sld, slp, smp and smx, removed from modkit-extensions-other in other 4c5b8a9. Age of Empires III / Age of Mythology and Heroes VI stay. Receipts already accepted for age-drs and heroes3-lod remain pinned as evidence (ratchet); nothing in MK3 consumes these codecs.",
+        "sha256": "713a120186783d50bf9fdd4d9acd2a1e307c5a43f52b23ee8e7364e80a95966c"
+      },
       "evidence": [],
       "id": "legacy/codec-manifest/modkit/heroes3-lod/audit",
-      "status": "pending"
+      "status": "owner-dropped"
     },
     {
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-28",
+        "path": "modkit-core/reports/parity/owner-decisions/heroes-aoe-2d-dropped-2026-09-28.json",
+        "reason": "Owner decision 2026-09-28 (relayed by [Games] Other and recorded in AGENTS.md §10): the 2D strategy games Heroes of Might and Magic III/IV and Age of Empires I/II are dropped from the project — codecs def, heroes3-lod, heroes4-resource, age-drs, sld, slp, smp and smx, removed from modkit-extensions-other in other 4c5b8a9. Age of Empires III / Age of Mythology and Heroes VI stay. Receipts already accepted for age-drs and heroes3-lod remain pinned as evidence (ratchet); nothing in MK3 consumes these codecs.",
+        "sha256": "713a120186783d50bf9fdd4d9acd2a1e307c5a43f52b23ee8e7364e80a95966c"
+      },
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/heroes3-lod-archive.extract.json",
@@ -1867,9 +1916,16 @@
         }
       ],
       "id": "legacy/codec-manifest/modkit/heroes3-lod/operation/archive.extract",
-      "status": "adapted"
+      "status": "owner-dropped"
     },
     {
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-28",
+        "path": "modkit-core/reports/parity/owner-decisions/heroes-aoe-2d-dropped-2026-09-28.json",
+        "reason": "Owner decision 2026-09-28 (relayed by [Games] Other and recorded in AGENTS.md §10): the 2D strategy games Heroes of Might and Magic III/IV and Age of Empires I/II are dropped from the project — codecs def, heroes3-lod, heroes4-resource, age-drs, sld, slp, smp and smx, removed from modkit-extensions-other in other 4c5b8a9. Age of Empires III / Age of Mythology and Heroes VI stay. Receipts already accepted for age-drs and heroes3-lod remain pinned as evidence (ratchet); nothing in MK3 consumes these codecs.",
+        "sha256": "713a120186783d50bf9fdd4d9acd2a1e307c5a43f52b23ee8e7364e80a95966c"
+      },
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/heroes3-lod-archive.inspect.json",
@@ -1877,22 +1933,43 @@
         }
       ],
       "id": "legacy/codec-manifest/modkit/heroes3-lod/operation/archive.inspect",
-      "status": "adapted"
+      "status": "owner-dropped"
     },
     {
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-28",
+        "path": "modkit-core/reports/parity/owner-decisions/heroes-aoe-2d-dropped-2026-09-28.json",
+        "reason": "Owner decision 2026-09-28 (relayed by [Games] Other and recorded in AGENTS.md §10): the 2D strategy games Heroes of Might and Magic III/IV and Age of Empires I/II are dropped from the project — codecs def, heroes3-lod, heroes4-resource, age-drs, sld, slp, smp and smx, removed from modkit-extensions-other in other 4c5b8a9. Age of Empires III / Age of Mythology and Heroes VI stay. Receipts already accepted for age-drs and heroes3-lod remain pinned as evidence (ratchet); nothing in MK3 consumes these codecs.",
+        "sha256": "713a120186783d50bf9fdd4d9acd2a1e307c5a43f52b23ee8e7364e80a95966c"
+      },
       "evidence": [],
       "id": "legacy/codec-manifest/modkit/heroes4-resource/audit",
-      "status": "pending"
+      "status": "owner-dropped"
     },
     {
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-28",
+        "path": "modkit-core/reports/parity/owner-decisions/heroes-aoe-2d-dropped-2026-09-28.json",
+        "reason": "Owner decision 2026-09-28 (relayed by [Games] Other and recorded in AGENTS.md §10): the 2D strategy games Heroes of Might and Magic III/IV and Age of Empires I/II are dropped from the project — codecs def, heroes3-lod, heroes4-resource, age-drs, sld, slp, smp and smx, removed from modkit-extensions-other in other 4c5b8a9. Age of Empires III / Age of Mythology and Heroes VI stay. Receipts already accepted for age-drs and heroes3-lod remain pinned as evidence (ratchet); nothing in MK3 consumes these codecs.",
+        "sha256": "713a120186783d50bf9fdd4d9acd2a1e307c5a43f52b23ee8e7364e80a95966c"
+      },
       "evidence": [],
       "id": "legacy/codec-manifest/modkit/heroes4-resource/operation/archive.extract",
-      "status": "pending"
+      "status": "owner-dropped"
     },
     {
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-28",
+        "path": "modkit-core/reports/parity/owner-decisions/heroes-aoe-2d-dropped-2026-09-28.json",
+        "reason": "Owner decision 2026-09-28 (relayed by [Games] Other and recorded in AGENTS.md §10): the 2D strategy games Heroes of Might and Magic III/IV and Age of Empires I/II are dropped from the project — codecs def, heroes3-lod, heroes4-resource, age-drs, sld, slp, smp and smx, removed from modkit-extensions-other in other 4c5b8a9. Age of Empires III / Age of Mythology and Heroes VI stay. Receipts already accepted for age-drs and heroes3-lod remain pinned as evidence (ratchet); nothing in MK3 consumes these codecs.",
+        "sha256": "713a120186783d50bf9fdd4d9acd2a1e307c5a43f52b23ee8e7364e80a95966c"
+      },
       "evidence": [],
       "id": "legacy/codec-manifest/modkit/heroes4-resource/operation/archive.inspect",
-      "status": "pending"
+      "status": "owner-dropped"
     },
     {
       "evidence": [],
@@ -6914,24 +6991,52 @@
       "status": "adapted"
     },
     {
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-28",
+        "path": "modkit-core/reports/parity/owner-decisions/heroes-aoe-2d-dropped-2026-09-28.json",
+        "reason": "Owner decision 2026-09-28 (relayed by [Games] Other and recorded in AGENTS.md §10): the 2D strategy games Heroes of Might and Magic III/IV and Age of Empires I/II are dropped from the project — codecs def, heroes3-lod, heroes4-resource, age-drs, sld, slp, smp and smx, removed from modkit-extensions-other in other 4c5b8a9. Age of Empires III / Age of Mythology and Heroes VI stay. Receipts already accepted for age-drs and heroes3-lod remain pinned as evidence (ratchet); nothing in MK3 consumes these codecs.",
+        "sha256": "713a120186783d50bf9fdd4d9acd2a1e307c5a43f52b23ee8e7364e80a95966c"
+      },
       "evidence": [],
       "id": "legacy/codec-manifest/modkit/sld/audit",
-      "status": "pending"
+      "status": "owner-dropped"
     },
     {
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-28",
+        "path": "modkit-core/reports/parity/owner-decisions/heroes-aoe-2d-dropped-2026-09-28.json",
+        "reason": "Owner decision 2026-09-28 (relayed by [Games] Other and recorded in AGENTS.md §10): the 2D strategy games Heroes of Might and Magic III/IV and Age of Empires I/II are dropped from the project — codecs def, heroes3-lod, heroes4-resource, age-drs, sld, slp, smp and smx, removed from modkit-extensions-other in other 4c5b8a9. Age of Empires III / Age of Mythology and Heroes VI stay. Receipts already accepted for age-drs and heroes3-lod remain pinned as evidence (ratchet); nothing in MK3 consumes these codecs.",
+        "sha256": "713a120186783d50bf9fdd4d9acd2a1e307c5a43f52b23ee8e7364e80a95966c"
+      },
       "evidence": [],
       "id": "legacy/codec-manifest/modkit/sld/operation/image.inspect",
-      "status": "pending"
+      "status": "owner-dropped"
     },
     {
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-28",
+        "path": "modkit-core/reports/parity/owner-decisions/heroes-aoe-2d-dropped-2026-09-28.json",
+        "reason": "Owner decision 2026-09-28 (relayed by [Games] Other and recorded in AGENTS.md §10): the 2D strategy games Heroes of Might and Magic III/IV and Age of Empires I/II are dropped from the project — codecs def, heroes3-lod, heroes4-resource, age-drs, sld, slp, smp and smx, removed from modkit-extensions-other in other 4c5b8a9. Age of Empires III / Age of Mythology and Heroes VI stay. Receipts already accepted for age-drs and heroes3-lod remain pinned as evidence (ratchet); nothing in MK3 consumes these codecs.",
+        "sha256": "713a120186783d50bf9fdd4d9acd2a1e307c5a43f52b23ee8e7364e80a95966c"
+      },
       "evidence": [],
       "id": "legacy/codec-manifest/modkit/slp/audit",
-      "status": "pending"
+      "status": "owner-dropped"
     },
     {
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-28",
+        "path": "modkit-core/reports/parity/owner-decisions/heroes-aoe-2d-dropped-2026-09-28.json",
+        "reason": "Owner decision 2026-09-28 (relayed by [Games] Other and recorded in AGENTS.md §10): the 2D strategy games Heroes of Might and Magic III/IV and Age of Empires I/II are dropped from the project — codecs def, heroes3-lod, heroes4-resource, age-drs, sld, slp, smp and smx, removed from modkit-extensions-other in other 4c5b8a9. Age of Empires III / Age of Mythology and Heroes VI stay. Receipts already accepted for age-drs and heroes3-lod remain pinned as evidence (ratchet); nothing in MK3 consumes these codecs.",
+        "sha256": "713a120186783d50bf9fdd4d9acd2a1e307c5a43f52b23ee8e7364e80a95966c"
+      },
       "evidence": [],
       "id": "legacy/codec-manifest/modkit/slp/operation/image.inspect",
-      "status": "pending"
+      "status": "owner-dropped"
     },
     {
       "evidence": [],
@@ -6949,24 +7054,52 @@
       "status": "pending"
     },
     {
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-28",
+        "path": "modkit-core/reports/parity/owner-decisions/heroes-aoe-2d-dropped-2026-09-28.json",
+        "reason": "Owner decision 2026-09-28 (relayed by [Games] Other and recorded in AGENTS.md §10): the 2D strategy games Heroes of Might and Magic III/IV and Age of Empires I/II are dropped from the project — codecs def, heroes3-lod, heroes4-resource, age-drs, sld, slp, smp and smx, removed from modkit-extensions-other in other 4c5b8a9. Age of Empires III / Age of Mythology and Heroes VI stay. Receipts already accepted for age-drs and heroes3-lod remain pinned as evidence (ratchet); nothing in MK3 consumes these codecs.",
+        "sha256": "713a120186783d50bf9fdd4d9acd2a1e307c5a43f52b23ee8e7364e80a95966c"
+      },
       "evidence": [],
       "id": "legacy/codec-manifest/modkit/smp/audit",
-      "status": "pending"
+      "status": "owner-dropped"
     },
     {
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-28",
+        "path": "modkit-core/reports/parity/owner-decisions/heroes-aoe-2d-dropped-2026-09-28.json",
+        "reason": "Owner decision 2026-09-28 (relayed by [Games] Other and recorded in AGENTS.md §10): the 2D strategy games Heroes of Might and Magic III/IV and Age of Empires I/II are dropped from the project — codecs def, heroes3-lod, heroes4-resource, age-drs, sld, slp, smp and smx, removed from modkit-extensions-other in other 4c5b8a9. Age of Empires III / Age of Mythology and Heroes VI stay. Receipts already accepted for age-drs and heroes3-lod remain pinned as evidence (ratchet); nothing in MK3 consumes these codecs.",
+        "sha256": "713a120186783d50bf9fdd4d9acd2a1e307c5a43f52b23ee8e7364e80a95966c"
+      },
       "evidence": [],
       "id": "legacy/codec-manifest/modkit/smp/operation/image.inspect",
-      "status": "pending"
+      "status": "owner-dropped"
     },
     {
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-28",
+        "path": "modkit-core/reports/parity/owner-decisions/heroes-aoe-2d-dropped-2026-09-28.json",
+        "reason": "Owner decision 2026-09-28 (relayed by [Games] Other and recorded in AGENTS.md §10): the 2D strategy games Heroes of Might and Magic III/IV and Age of Empires I/II are dropped from the project — codecs def, heroes3-lod, heroes4-resource, age-drs, sld, slp, smp and smx, removed from modkit-extensions-other in other 4c5b8a9. Age of Empires III / Age of Mythology and Heroes VI stay. Receipts already accepted for age-drs and heroes3-lod remain pinned as evidence (ratchet); nothing in MK3 consumes these codecs.",
+        "sha256": "713a120186783d50bf9fdd4d9acd2a1e307c5a43f52b23ee8e7364e80a95966c"
+      },
       "evidence": [],
       "id": "legacy/codec-manifest/modkit/smx/audit",
-      "status": "pending"
+      "status": "owner-dropped"
     },
     {
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-28",
+        "path": "modkit-core/reports/parity/owner-decisions/heroes-aoe-2d-dropped-2026-09-28.json",
+        "reason": "Owner decision 2026-09-28 (relayed by [Games] Other and recorded in AGENTS.md §10): the 2D strategy games Heroes of Might and Magic III/IV and Age of Empires I/II are dropped from the project — codecs def, heroes3-lod, heroes4-resource, age-drs, sld, slp, smp and smx, removed from modkit-extensions-other in other 4c5b8a9. Age of Empires III / Age of Mythology and Heroes VI stay. Receipts already accepted for age-drs and heroes3-lod remain pinned as evidence (ratchet); nothing in MK3 consumes these codecs.",
+        "sha256": "713a120186783d50bf9fdd4d9acd2a1e307c5a43f52b23ee8e7364e80a95966c"
+      },
       "evidence": [],
       "id": "legacy/codec-manifest/modkit/smx/operation/image.inspect",
-      "status": "pending"
+      "status": "owner-dropped"
     },
     {
       "evidence": [
