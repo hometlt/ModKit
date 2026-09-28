@@ -30,6 +30,8 @@ import {
   createSignatureTraitProbe,
   type CompanionOrigin,
 } from '../input-resolution.js'
+import type { ContentSources } from '@modkit/vfs/content-sources'
+import { createContentAssetOrigin, type BaseModSetting } from '../content-dependency-operations.js'
 import { createFilesystemCompanionOrigin } from './companion-origin.js'
 import { openPathArtifactSource } from './directory-artifact-source.js'
 import type {
@@ -56,6 +58,14 @@ export interface PathSubjectOpenerOptions {
   readonly onStream?: (event: FileArtifactStreamTelemetry) => void
   /** Sources mounted behind the subject's own directory; see `FilesystemInputResolverOptions`. */
   readonly assetOrigins?: readonly CompanionOrigin[]
+  /**
+   * The games' content sources: behind everything else, each opened file reaches the layers of the
+   * mod it belongs to (`createContentAssetOrigin`) — a map on disk its tileset in the installation,
+   * a model in a resource pack its textures in the game. Resolved only when a codec asks.
+   */
+  readonly contentSources?: ContentSources
+  /** Packages a file outside any package opens inside, per host path. */
+  readonly baseMods?: BaseModSetting
 }
 
 export const DEFAULT_SUBJECT_OPEN_BUDGET: ResourceBudget = Object.freeze({
@@ -198,7 +208,19 @@ export function createPathSubjectOpener(options: PathSubjectOpenerOptions): Subj
           roots,
           inventory: options.subjects.inventory,
           onDiagnostic: item => companionDiagnostics.push(item),
-          ...(options.assetOrigins === undefined ? {} : { assetOrigins: options.assetOrigins }),
+          assetOrigins: [
+            ...(options.assetOrigins ?? []),
+            ...(options.contentSources === undefined
+              ? []
+              : [
+                  createContentAssetOrigin({
+                    contentSources: options.contentSources,
+                    target: path,
+                    ...(options.baseMods === undefined ? {} : { baseMods: options.baseMods }),
+                    onDiagnostic: item => companionDiagnostics.push(item),
+                  }),
+                ]),
+          ],
           ...(budget.deadlineMs === undefined ? {} : { deadlineMs: budget.deadlineMs }),
         })
       : undefined

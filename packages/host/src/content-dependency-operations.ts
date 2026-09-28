@@ -11,7 +11,7 @@ import {
   createContentDependencyLanguageDocumentSource,
 } from './content-dependencies.js'
 import { createContentDependencyAssetOrigin } from './content-dependencies.js'
-import type { CompanionOrigin } from './input-resolution.js'
+import { createLayeredCompanionOrigin, type CompanionOrigin } from './input-resolution.js'
 
 import type {
   LanguageDocument,
@@ -277,6 +277,53 @@ export async function resolveContentAssetOrigins(
     diagnostics: closures.diagnostics,
     dependenciesComplete: closures.complete,
   })
+}
+
+export interface ContentAssetOriginRequest {
+  readonly contentSources: ContentSources
+  /** The subject being opened: a host path, or a path inside one of the content sources. */
+  readonly target: ModContextTarget
+  readonly baseMods?: BaseModSetting
+  readonly maximumEntryBytes?: number
+  /** Why the subject's mod gave no resources (no context, a failed closure), when it did not. */
+  readonly onDiagnostic?: (item: Diagnostic) => void
+}
+
+/**
+ * The resources of the mod one subject belongs to, for an ordinary open: the same closure as
+ * {@link resolveContentAssetOrigins}, resolved only when a codec first asks for a resource in the
+ * `workspace-dependency-layer` scope. A file that needs nothing from its mod opens without a mod
+ * context; a map on disk that asks for its tileset, or a model for its texture, gets the layers.
+ */
+export function createContentAssetOrigin(request: ContentAssetOriginRequest): CompanionOrigin {
+  let layers: Promise<CompanionOrigin | undefined> | undefined
+  // No caller's signal here: the closure is shared by every later request of this open.
+  const resolved = () =>
+    (layers ??= resolveContentAssetOrigins({
+      contentSources: request.contentSources,
+      subjects: [{ descriptor: {}, target: request.target }],
+      ...(request.baseMods === undefined ? {} : { baseMods: request.baseMods }),
+      ...(request.maximumEntryBytes === undefined
+        ? {}
+        : { maximumEntryBytes: request.maximumEntryBytes }),
+    }).then(result => {
+      for (const item of result.diagnostics) request.onDiagnostic?.(item)
+      return result.origins.length === 0 ? undefined : createLayeredCompanionOrigin(result.origins)
+    }))
+  return Object.freeze({
+    primaryLogicalId: '__content_dependency_workspace__',
+    caseSensitivity: 'insensitive' as const,
+    scopes: Object.freeze(['workspace-dependency-layer'] as const),
+    async *enumerate(scope, options, signal) {
+      const origin = await resolved()
+      if (origin !== undefined) yield* origin.enumerate(scope, options, signal)
+    },
+    async open(logicalId, signal) {
+      const origin = await resolved()
+      if (origin === undefined) throw new TypeError(`no mod layer holds «${logicalId}»`)
+      return origin.open(logicalId, signal)
+    },
+  } satisfies CompanionOrigin)
 }
 
 export interface ContentLanguageSourceLimits {

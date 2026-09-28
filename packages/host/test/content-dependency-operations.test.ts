@@ -9,6 +9,7 @@ import type { LanguageWorkspaceDocumentSource } from '../src/language/workspace.
 import {
   baseModsFor,
   composeLanguageDocumentSources,
+  createContentAssetOrigin,
   resolveContentAssetOrigins,
   resolveContentLanguageSources,
   resolveSubjectClosure,
@@ -206,6 +207,51 @@ describe('subject closures through mod contexts', () => {
       ['casc', 'Mods/Base', 'base'],
       ['wizards', '', 'dependency'],
     ])
+  })
+
+  it('opens a subject’s mod for its resources only when a codec first asks, and once', async () => {
+    const openModContext = vi.fn(async (request: ModContextRequest) => context(request, [core]))
+    const listed: string[] = []
+    const contentSources: ContentSources = {
+      ...sources(openModContext),
+      async list(sourceId, path) {
+        listed.push(`${sourceId}:${path}`)
+        return path === 'Mods/Core/tileset'
+          ? [{ path: 'Mods/Core/tileset/jungle.cv5', name: 'jungle.cv5', directory: false, size: 4 }]
+          : []
+      },
+    }
+    const diagnostics: unknown[] = []
+    const origin = createContentAssetOrigin({
+      contentSources,
+      target: 'C:/Maps/Lost Temple.scm',
+      baseMods: { '*': ['Mods/Void'] },
+      onDiagnostic: item => diagnostics.push(item),
+    })
+    expect(origin.scopes).toEqual(['workspace-dependency-layer'])
+    expect(openModContext).not.toHaveBeenCalled()
+    const found: string[] = []
+    for await (const entry of origin.enumerate('workspace-dependency-layer', { prefix: 'tileset/' }))
+      found.push(entry.logicalId)
+    for await (const entry of origin.enumerate('workspace-dependency-layer', { prefix: 'tileset/j' }))
+      found.push(entry.logicalId)
+    expect(found).toEqual(['tileset/jungle.cv5', 'tileset/jungle.cv5'])
+    expect(listed).toEqual(['casc:Mods/Core/tileset', 'casc:Mods/Core/tileset'])
+    expect(openModContext).toHaveBeenCalledOnce()
+    expect(openModContext.mock.calls[0]?.[0]).toEqual({
+      schemaVersion: 1,
+      target: 'C:/Maps/Lost Temple.scm',
+      baseMods: ['Mods/Void'],
+    })
+    expect(diagnostics).toEqual([])
+
+    const unavailable = createContentAssetOrigin({
+      contentSources: sources(),
+      target: 'C:/Maps/Lost Temple.scm',
+      onDiagnostic: item => diagnostics.push(item),
+    })
+    await expect(unavailable.open('tileset/jungle.cv5')).rejects.toThrow(/no mod layer holds/)
+    expect(diagnostics).toEqual([expect.objectContaining({ code: 'x3.host/mod-context-unavailable' })])
   })
 
   it('picks the longest setting key that holds a path', () => {

@@ -221,8 +221,12 @@ function createContentDependencyOrigin(
       signal?: AbortSignal,
     ) {
       if (scope !== 'workspace-dependency-layer') return
+      // a prefix ending in `/` is a folder to list (`tileset/` of `tileset/*.cv5`), not a name in
+      // its parent; normalizing drops that slash, so it is put back
       const prefix =
-        enumeration.prefix === '' ? '' : normalizeCompanionLogicalId(enumeration.prefix)
+        enumeration.prefix === ''
+          ? ''
+          : `${normalizeCompanionLogicalId(enumeration.prefix)}${enumeration.prefix.endsWith('/') ? '/' : ''}`
       const emitted = new Set<string>()
       for (const mount of overlay) {
         const rootScoped = relativeRequest(mount, prefix) !== undefined
