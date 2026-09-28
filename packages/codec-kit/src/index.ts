@@ -1,4 +1,5 @@
 import { pageStart } from './paging.js'
+import { resizeRgba } from './raster/ops.js'
 import { deferAssetSession } from './deferred-session.js'
 import { PROJECTION_RECEIPT_METADATA_ID } from './projection.js'
 import { CONTAINER_EXTRACT_HANDLER_ID, containerEntryAccess } from './container-entries.js'
@@ -810,12 +811,89 @@ export function createEncodedMediaSource(
   })
 }
 
+/** Most decoded bytes of the stored level a computed mip level is downscaled from. */
+const COMPUTED_MIP_SOURCE_MAX_BYTES = 512 * 1024 * 1024
+
+/**
+ * Mip levels below the smallest stored one, computed on request: a 2D RGBA read of such a level
+ * decodes the smallest stored level (up to {@link COMPUTED_MIP_SOURCE_MAX_BYTES}) and downscales it,
+ * so a texture without a mip chain is not refused by a viewer's decoded-byte budget.
+ */
+function withComputedMips(
+  info: RasterImageInfo,
+  readRegion: NonNullable<RasterImageSource['readRegion']>,
+): { info: RasterImageInfo; readRegion: NonNullable<RasterImageSource['readRegion']> } {
+  const stored = info.mipLevels
+  const full = Math.floor(Math.log2(Math.max(info.width, info.height))) + 1
+  if (stored >= full || info.depth !== 1 || info.storedMipLevels !== undefined)
+    return { info, readRegion }
+  const size = (level: number) => ({
+    width: Math.max(1, Math.floor(info.width / 2 ** level)),
+    height: Math.max(1, Math.floor(info.height / 2 ** level)),
+  })
+  return {
+    info: { ...info, mipLevels: full, storedMipLevels: stored },
+    async readRegion(request, signal) {
+      const level = request.mipLevel ?? 0
+      if (level < stored) return readRegion(request, signal)
+      if (level >= full) throw new RangeError('raster mip level is out of range')
+      if (request.pixelFormat !== 'rgba8')
+        throw new TypeError('a computed mip level is read as rgba8')
+      const target = size(level)
+      const { x, y, width, height } = request
+      if (
+        x < 0 ||
+        y < 0 ||
+        width <= 0 ||
+        height <= 0 ||
+        x + width > target.width ||
+        y + height > target.height
+      )
+        throw new RangeError('raster region is outside the mip level')
+      if (width * height * 4 > request.maxBytes)
+        throw new RangeError('raster region exceeds maxBytes')
+      const source = size(stored - 1)
+      const decoded = await readRegion(
+        {
+          ...request,
+          x: 0,
+          y: 0,
+          ...source,
+          mipLevel: stored - 1,
+          maxBytes: COMPUTED_MIP_SOURCE_MAX_BYTES,
+        },
+        signal,
+      )
+      const packed = new Uint8Array(source.width * source.height * 4)
+      for (let row = 0; row < source.height; row += 1)
+        packed.set(
+          decoded.pixels.subarray(
+            row * decoded.rowStride,
+            row * decoded.rowStride + source.width * 4,
+          ),
+          row * source.width * 4,
+        )
+      const scaled = resizeRgba({ ...source, pixels: packed }, target.width, target.height)
+      const pixels = new Uint8Array(width * height * 4)
+      for (let row = 0; row < height; row += 1) {
+        const start = ((y + row) * target.width + x) * 4
+        pixels.set(scaled.pixels.subarray(start, start + width * 4), row * width * 4)
+      }
+      return { width, height, rowStride: width * 4, pixelFormat: 'rgba8', pixels }
+    },
+  }
+}
+
 export function createRasterImageSource(
   bytes: Uint8Array,
   mediaType: string,
-  info: RasterImageInfo,
-  readRegion?: NonNullable<RasterImageSource['readRegion']>,
+  rawInfo: RasterImageInfo,
+  rawReadRegion?: NonNullable<RasterImageSource['readRegion']>,
 ): RasterImageSource {
+  const { info, readRegion } =
+    rawReadRegion === undefined
+      ? { info: rawInfo, readRegion: undefined }
+      : withComputedMips(rawInfo, rawReadRegion)
   const ownedInfo = Object.freeze({ ...info })
   const encoded = createEncodedMediaSource(bytes, { mediaType })
   const source: RasterImageSource = {

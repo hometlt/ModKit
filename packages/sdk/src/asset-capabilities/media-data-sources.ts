@@ -34,6 +34,11 @@ export interface RasterImageInfo {
   readonly layers: number
   readonly faces: number
   readonly mipLevels: number
+  /**
+   * Levels the file stores, when fewer than `mipLevels`: the rest are computed by downscaling the
+   * smallest stored level, so an image larger than a viewer's budget still shows. Absent: all stored.
+   */
+  readonly storedMipLevels?: number
   readonly frames: number
   readonly channels: number
   readonly bitDepth: number
