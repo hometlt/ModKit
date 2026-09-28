@@ -167,7 +167,12 @@ export {
   type CompositeWorkspaceNamespaceRoot,
   type WorkspaceNamespaceCompanionOriginOptions,
 } from './namespace-origin.js'
-export { createLayeredCompanionOrigin, type CompanionOrigin } from './input-resolution.js'
+export {
+  createCompanionInputResolver,
+  createLayeredCompanionOrigin,
+  type CompanionInputResolverOptions,
+  type CompanionOrigin,
+} from './input-resolution.js'
 export {
   createWorkspaceNamespaceCandidateDiscovery,
   type WorkspaceNamespaceCandidateDiscovery,

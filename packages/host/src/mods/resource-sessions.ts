@@ -48,7 +48,17 @@ export class LoadedModResourceSessions {
   private readonly pending = new Map<string, Promise<boolean>>()
   private disposed = false
 
-  constructor(private readonly sources: ContentSources) {}
+  constructor(
+    private readonly sources: ContentSources,
+    /** `locales` is read at every open (reloads too): the string files the contexts load. */
+    private readonly options: { readonly locales?: () => readonly string[] } = {},
+  ) {}
+
+  /** The request fields every open carries: the locales chosen now, when the host has any. */
+  private localeFields(): { readonly locales?: readonly string[] } {
+    const locales = this.options.locales?.()
+    return locales === undefined || locales.length === 0 ? {} : { locales: [...locales] }
+  }
 
   list(): readonly { id: string; label: string; contextId: string }[] {
     return [...this.mods.values()].map(mod => ({ id: mod.id, label: mod.label, contextId: mod.context.contextId }))
@@ -59,7 +69,7 @@ export class LoadedModResourceSessions {
     const open = this.sources.openModContext?.bind(this.sources)
     if (open === undefined) return false
     return this.once(`load|${JSON.stringify([target, baseMods ?? []])}`, async () => {
-      const context = await open({ schemaVersion: 1, target, ...(baseMods ? { baseMods } : {}) })
+      const context = await open({ schemaVersion: 1, target, ...(baseMods ? { baseMods } : {}), ...this.localeFields() })
       let changed = false
       for (const layer of context.layers.slice(0, -1)) {
         if (layer.kind !== 'package') continue
@@ -68,7 +78,7 @@ export class LoadedModResourceSessions {
         const dependencyTarget: ModContextTarget = layer.sourceId === 'host'
           ? layer.sourcePath : { sourceId: layer.sourceId, path: layer.sourcePath }
         changed = (await this.once(`dependency|${id}`, async () =>
-          this.register(await open({ schemaVersion: 1, target: dependencyTarget }), dependencyTarget, undefined, false))) || changed
+          this.register(await open({ schemaVersion: 1, target: dependencyTarget, ...this.localeFields() }), dependencyTarget, undefined, false))) || changed
       }
       return (await this.register(context, target, baseMods, true)) || changed
     })
@@ -114,7 +124,7 @@ export class LoadedModResourceSessions {
   /** Reopen all loaded contexts after their shared content source invalidated a package. */
   async reloadAll(): Promise<void> {
     const opened = [...this.mods.values()]
-    const replacement = new LoadedModResourceSessions(this.sources)
+    const replacement = new LoadedModResourceSessions(this.sources, this.options)
     try {
       for (const mod of opened) {
         if (mod.opened) await replacement.load(mod.target, mod.baseMods)
