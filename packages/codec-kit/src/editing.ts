@@ -90,14 +90,33 @@ export function editPlanFromInput(
 export function editPlanFromBinding(
   input: AssetInput,
   bindingId: string,
+  options: EditPlanFromInputOptions,
+): AssetEditPlan {
+  return editPlanFromBindings(input, [bindingId], options)
+}
+
+/** Path A over several owned bindings of one physical subject, as one atomic plan: a string key
+ * renamed in every locale's file. Each edit names its owner by `targetId` (it may omit it only when
+ * one owner is selected); every bundle member stays a revision guard. */
+export function editPlanFromBindings(
+  input: AssetInput,
+  bindingIds: readonly string[],
   { planId, edits, fidelity, guarantee = 'atomic', diagnostics = [] }: EditPlanFromInputOptions,
 ): AssetEditPlan {
   if (input.originKind !== 'single' && input.originKind !== 'bundle')
     throw new TypeError('editPlanFromBinding requires a physical subject')
   const primary = input.bindings.find(binding => binding.bindingId === input.primaryBindingId)
-  const selected = input.bindings.find(binding => binding.bindingId === bindingId)
-  if (primary === undefined || selected === undefined || selected.ownership !== 'owned')
+  const owners = bindingIds.map(bindingId =>
+    input.bindings.find(binding => binding.bindingId === bindingId),
+  )
+  if (
+    primary === undefined ||
+    owners.length === 0 ||
+    new Set(bindingIds).size !== bindingIds.length ||
+    owners.some(owner => owner === undefined || owner.ownership !== 'owned')
+  )
     throw new TypeError('editPlanFromBinding requires an exact owned binding')
+  const selected = owners as ResolvedAssetInputBinding[]
   const ids = new Set<string>(),
     sourceIds = new Set<string>(),
     uris = new Set<string>()
@@ -128,16 +147,22 @@ export function editPlanFromBinding(
     })
   })
   const prepared = edits.map(edit => {
+    const owner =
+      edit.targetId === undefined
+        ? selected.length === 1
+          ? selected[0]
+          : undefined
+        : selected.find(binding => binding.bindingId === edit.targetId)
     if (
-      (edit.targetId !== undefined && edit.targetId !== bindingId) ||
+      owner === undefined ||
       (edit.source !== undefined &&
-        canonicalJsonStringify(edit.source) !== canonicalJsonStringify(selected.source))
+        canonicalJsonStringify(edit.source) !== canonicalJsonStringify(owner.source))
     )
       throw new TypeError('editPlanFromBinding edit belongs to a different owner')
     return Object.freeze({
       ...edit,
-      targetId: bindingId,
-      source: Object.freeze({ ...selected.source }),
+      targetId: owner.bindingId,
+      source: Object.freeze({ ...owner.source }),
     })
   })
   return Object.freeze({

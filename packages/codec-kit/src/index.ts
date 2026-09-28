@@ -473,6 +473,7 @@ export {
   assetRevisionFromInput,
   editPlanFromInput,
   editPlanFromBinding,
+  editPlanFromBindings,
   replaceBytes,
   type EditPlanFromInputOptions,
 } from './editing.js'
