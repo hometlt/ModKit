@@ -856,6 +856,92 @@
     ]
   },
   "menus": {
+    "commandPalette": [
+      {
+        "command": "modkit.navigateResource",
+        "when": "false"
+      },
+      {
+        "command": "modkit.resources.open",
+        "when": "false"
+      },
+      {
+        "command": "modkit.sources.open",
+        "when": "false"
+      },
+      {
+        "command": "modkit.sources.openInstallation",
+        "when": "false"
+      },
+      {
+        "command": "modkit.sources.revealLocal",
+        "when": "false"
+      },
+      {
+        "command": "modkit.sources.editCopy",
+        "when": "false"
+      },
+      {
+        "command": "modkit.sources.unmount",
+        "when": "false"
+      },
+      {
+        "command": "modkit.sources.download",
+        "when": "false"
+      },
+      {
+        "command": "modkit.sources.clearCache",
+        "when": "false"
+      },
+      {
+        "command": "modkit.sources.detach",
+        "when": "false"
+      },
+      {
+        "command": "modkit.sources.disconnect",
+        "when": "false"
+      },
+      {
+        "command": "modkit.sources.publish",
+        "when": "false"
+      },
+      {
+        "command": "modkit.sources.deletePublication",
+        "when": "false"
+      },
+      {
+        "command": "modkit.extensions.openExtension",
+        "when": "false"
+      },
+      {
+        "command": "modkit.extensions.openContribution",
+        "when": "false"
+      },
+      {
+        "command": "modkit.extensions.enableAllCodecs",
+        "when": "false"
+      },
+      {
+        "command": "modkit.extensions.disableAllCodecs",
+        "when": "false"
+      },
+      {
+        "command": "modkit.extensions.installGameSupport",
+        "when": "false"
+      },
+      {
+        "command": "modkit.extensions.completeGameSupport",
+        "when": "false"
+      },
+      {
+        "command": "modkit.extensions.removeGameSupport",
+        "when": "false"
+      },
+      {
+        "command": "modkit.extensions.removeVendorSupport",
+        "when": "false"
+      }
+    ],
     "editor/title": [
       {
         "command": "modkit.verifyDocument",
