@@ -1,0 +1,125 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "JASS",
+  "scopeName": "source.jass",
+  "comment": "Warcraft III JASS 2, written for Modkit (GAME-WARCRAFT3, 2026-09-28). Covers the language of common.j, Blizzard.j, common.ai and war3map.j; vJASS extensions are not part of it.",
+  "patterns": [
+    { "include": "#comment" },
+    { "include": "#type-declaration" },
+    { "include": "#function-declaration" },
+    { "include": "#keyword" },
+    { "include": "#type" },
+    { "include": "#constant" },
+    { "include": "#number" },
+    { "include": "#rawcode" },
+    { "include": "#string" },
+    { "include": "#call" },
+    { "include": "#operator" },
+    { "include": "#punctuation" }
+  ],
+  "repository": {
+    "comment": {
+      "match": "//.*$",
+      "name": "comment.line.double-slash.jass"
+    },
+    "type-declaration": {
+      "comment": "type unit extends widget",
+      "match": "\\b(type)\\s+([A-Za-z_][A-Za-z0-9_]*)\\s+(extends)\\s+([A-Za-z_][A-Za-z0-9_]*)",
+      "captures": {
+        "1": { "name": "keyword.declaration.type.jass" },
+        "2": { "name": "entity.name.type.jass" },
+        "3": { "name": "keyword.other.extends.jass" },
+        "4": { "name": "entity.other.inherited-class.jass" }
+      }
+    },
+    "function-declaration": {
+      "comment": "function Name takes …, constant native Name takes …",
+      "match": "\\b(?:(constant)\\s+)?(function|native)\\s+([A-Za-z_][A-Za-z0-9_]*)",
+      "captures": {
+        "1": { "name": "storage.modifier.constant.jass" },
+        "2": { "name": "keyword.declaration.function.jass" },
+        "3": { "name": "entity.name.function.jass" }
+      }
+    },
+    "keyword": {
+      "patterns": [
+        {
+          "match": "\\b(globals|endglobals|function|endfunction|native|takes|returns|local|array|type|extends|constant)\\b",
+          "name": "keyword.declaration.jass"
+        },
+        {
+          "match": "\\b(if|then|elseif|else|endif|loop|exitwhen|endloop|return)\\b",
+          "name": "keyword.control.jass"
+        },
+        {
+          "match": "\\b(set|call|debug)\\b",
+          "name": "keyword.other.statement.jass"
+        },
+        {
+          "match": "\\b(and|or|not)\\b",
+          "name": "keyword.operator.logical.jass"
+        }
+      ]
+    },
+    "type": {
+      "comment": "The primitive types; handle-derived types are named by their type declarations.",
+      "match": "\\b(integer|real|boolean|string|handle|code|nothing)\\b",
+      "name": "storage.type.primitive.jass"
+    },
+    "constant": {
+      "match": "\\b(true|false|null)\\b",
+      "name": "constant.language.jass"
+    },
+    "number": {
+      "patterns": [
+        {
+          "comment": "Hexadecimal, with 0x or $",
+          "match": "(?:\\b0[xX][0-9A-Fa-f]+\\b|\\$[0-9A-Fa-f]+\\b)",
+          "name": "constant.numeric.hex.jass"
+        },
+        {
+          "match": "(?:\\b[0-9]+\\.[0-9]*|\\.[0-9]+)\\b",
+          "name": "constant.numeric.float.jass"
+        },
+        {
+          "match": "\\b[0-9]+\\b",
+          "name": "constant.numeric.integer.jass"
+        }
+      ]
+    },
+    "rawcode": {
+      "comment": "A four-character code ('hfoo') or a single character ('A'): an integer written as characters.",
+      "match": "'(?:[^'\\\\]|\\\\.){1,4}'",
+      "name": "constant.character.rawcode.jass"
+    },
+    "string": {
+      "begin": "\"",
+      "end": "\"",
+      "name": "string.quoted.double.jass",
+      "patterns": [
+        { "match": "\\\\[\"\\\\bfnrt]", "name": "constant.character.escape.jass" },
+        { "match": "\\|[cC][0-9A-Fa-f]{8}|\\|[rRnN]", "name": "constant.character.format.jass" }
+      ]
+    },
+    "call": {
+      "match": "\\b([A-Za-z_][A-Za-z0-9_]*)\\s*(?=\\()",
+      "captures": {
+        "1": { "name": "entity.name.function.call.jass" }
+      }
+    },
+    "operator": {
+      "patterns": [
+        { "match": "==|!=|<=|>=|<|>", "name": "keyword.operator.comparison.jass" },
+        { "match": "=", "name": "keyword.operator.assignment.jass" },
+        { "match": "[-+*/]", "name": "keyword.operator.arithmetic.jass" }
+      ]
+    },
+    "punctuation": {
+      "patterns": [
+        { "match": ",", "name": "punctuation.separator.comma.jass" },
+        { "match": "[()]", "name": "punctuation.brackets.round.jass" },
+        { "match": "[\\[\\]]", "name": "punctuation.brackets.square.jass" }
+      ]
+    }
+  }
+}

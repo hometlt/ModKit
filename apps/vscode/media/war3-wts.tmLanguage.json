@@ -1,0 +1,47 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Warcraft III Strings",
+  "scopeName": "source.war3-wts",
+  "comment": "Warcraft III trigger strings (war3map.wts), written for Modkit (GAME-WARCRAFT3, 2026-09-28): STRING <n> headers, // comments between them, and each text in braces, with the game's |c colour, |r reset and |n newline codes.",
+  "patterns": [
+    { "include": "#comment" },
+    { "include": "#header" },
+    { "include": "#text" }
+  ],
+  "repository": {
+    "comment": {
+      "match": "^\\s*//.*$",
+      "name": "comment.line.double-slash.war3-wts"
+    },
+    "header": {
+      "match": "^\\s*(STRING)\\s+(\\d+)\\s*$",
+      "captures": {
+        "1": { "name": "keyword.other.string.war3-wts" },
+        "2": { "name": "constant.numeric.integer.war3-wts" }
+      }
+    },
+    "text": {
+      "comment": "A string's text runs from a line holding { to the next line holding }.",
+      "begin": "^\\s*(\\{)\\s*$",
+      "end": "^\\s*(\\})\\s*$",
+      "beginCaptures": { "1": { "name": "punctuation.definition.block.begin.war3-wts" } },
+      "endCaptures": { "1": { "name": "punctuation.definition.block.end.war3-wts" } },
+      "contentName": "string.unquoted.text.war3-wts",
+      "patterns": [{ "include": "#format" }]
+    },
+    "format": {
+      "patterns": [
+        {
+          "match": "(\\|[cC])([0-9A-Fa-f]{2})([0-9A-Fa-f]{6})",
+          "captures": {
+            "1": { "name": "keyword.operator.colour.war3-wts" },
+            "2": { "name": "constant.numeric.hex.alpha.war3-wts" },
+            "3": { "name": "constant.numeric.hex.colour.war3-wts" }
+          }
+        },
+        { "match": "\\|[rR]", "name": "keyword.operator.reset.war3-wts" },
+        { "match": "\\|[nN]", "name": "constant.character.escape.newline.war3-wts" }
+      ]
+    }
+  }
+}

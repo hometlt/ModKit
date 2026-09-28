@@ -92,7 +92,10 @@
     "jsonc": "_modkit_document",
     "ini": "_modkit_document",
     "yaml": "_modkit_document",
-    "markdown": "_modkit_document"
+    "markdown": "_modkit_document",
+    "jass": "_modkit_script",
+    "war3-wts": "_modkit_localized_strings",
+    "war3-fdf": "_modkit_sc2layout"
   },
   "fileExtensions": {
     "galaxy": "_modkit_galaxy",
@@ -283,6 +286,10 @@
     "sdp": "_modkit_archive",
     "sd7": "_modkit_map",
     "w3g": "_modkit_replay",
+    "fdf": "_modkit_sc2layout",
+    "sdf": "_modkit_replay",
+    "sdfz": "_modkit_replay",
+    "slk": "_modkit_document",
     "wz": "_modkit_archive",
     "exe": "_modkit_archive",
     "dll": "_modkit_archive",

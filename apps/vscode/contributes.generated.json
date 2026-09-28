@@ -588,6 +588,11 @@
       "path": "./media/galaxy.tmLanguage.json"
     },
     {
+      "language": "jass",
+      "scopeName": "source.jass",
+      "path": "./media/jass.tmLanguage.json"
+    },
+    {
       "language": "sc2-data",
       "scopeName": "text.xml.sc2-data",
       "path": "./media/sc2-data.tmLanguage.json"
@@ -621,6 +626,16 @@
       "language": "texturereductionvalues",
       "scopeName": "source.texturereductionvalues",
       "path": "./media/texture-reduction-values.tmLanguage.json"
+    },
+    {
+      "language": "war3-fdf",
+      "scopeName": "source.war3-fdf",
+      "path": "./media/war3-fdf.tmLanguage.json"
+    },
+    {
+      "language": "war3-wts",
+      "scopeName": "source.war3-wts",
+      "path": "./media/war3-wts.tmLanguage.json"
     }
   ],
   "iconThemes": [
@@ -640,6 +655,13 @@
     {
       "id": "ini",
       "extensions": [".SC2Hotkeys", ".sc2hotkeys"]
+    },
+    {
+      "id": "jass",
+      "aliases": ["JASS"],
+      "extensions": [".j"],
+      "filenamePatterns": ["**/[Ss]cripts/*.ai"],
+      "configuration": "./media/jass-language-configuration.json"
     },
     {
       "id": "lua",
@@ -722,6 +744,18 @@
       "id": "texturereductionvalues",
       "aliases": ["StarCraft II Texture Reduction Values"],
       "filenames": ["TextureReductionValues.txt"]
+    },
+    {
+      "id": "war3-fdf",
+      "aliases": ["Warcraft III Frame Definitions"],
+      "extensions": [".fdf"],
+      "configuration": "./media/war3-fdf-language-configuration.json"
+    },
+    {
+      "id": "war3-wts",
+      "aliases": ["Warcraft III Strings"],
+      "extensions": [".wts"],
+      "configuration": "./media/war3-wts-language-configuration.json"
     },
     {
       "id": "xml",

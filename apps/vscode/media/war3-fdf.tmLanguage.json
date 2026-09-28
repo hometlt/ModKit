@@ -1,0 +1,70 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Warcraft III Frame Definitions",
+  "scopeName": "source.war3-fdf",
+  "comment": "Warcraft III frame definition files (.fdf), written for Modkit (GAME-WARCRAFT3, 2026-09-28): blocks with a kind, a type and a name, INHERITS, comma-terminated properties, UPPER-CASE constants such as anchor points and frame types.",
+  "patterns": [{ "include": "#statement" }],
+  "repository": {
+    "statement": {
+      "patterns": [
+        { "include": "#comment" },
+        { "include": "#block-keyword" },
+        { "include": "#inherit" },
+        { "include": "#property" },
+        { "include": "#string" },
+        { "include": "#number" },
+        { "include": "#constant" },
+        { "include": "#punctuation" }
+      ]
+    },
+    "comment": {
+      "patterns": [
+        { "match": "//.*$", "name": "comment.line.double-slash.war3-fdf" },
+        { "begin": "/\\*", "end": "\\*/", "name": "comment.block.war3-fdf" }
+      ]
+    },
+    "block-keyword": {
+      "comment": "What opens a definition or pulls one in: Frame, Texture, String, Layer, StringList, IncludeFile.",
+      "match": "\\b(Frame|Texture|String|Layer|StringList|IncludeFile)\\b",
+      "name": "keyword.declaration.war3-fdf"
+    },
+    "inherit": {
+      "match": "\\b(INHERITS)\\b(?:\\s+(WITHCHILDREN)\\b)?",
+      "captures": {
+        "1": { "name": "keyword.other.inherits.war3-fdf" },
+        "2": { "name": "keyword.other.withchildren.war3-fdf" }
+      }
+    },
+    "property": {
+      "comment": "A property is the first word of a statement: Width 0.2, SetPoint TOPLEFT, …",
+      "match": "^\\s*(?!(?:Frame|Texture|String|Layer|StringList|IncludeFile)\\b)([A-Z][A-Za-z0-9_]*[a-z][A-Za-z0-9_]*)\\b",
+      "captures": {
+        "1": { "name": "variable.other.property.war3-fdf" }
+      }
+    },
+    "string": {
+      "begin": "\"",
+      "end": "\"",
+      "name": "string.quoted.double.war3-fdf",
+      "patterns": [
+        { "match": "\\|[cC][0-9A-Fa-f]{8}|\\|[rRnN]", "name": "constant.character.format.war3-fdf" }
+      ]
+    },
+    "number": {
+      "match": "(?<![A-Za-z0-9_])-?(?:[0-9]+\\.[0-9]*|\\.[0-9]+|[0-9]+)f?\\b",
+      "name": "constant.numeric.war3-fdf"
+    },
+    "constant": {
+      "comment": "Anchor points, frame types, alignments and flags are written in upper case.",
+      "match": "\\b[A-Z][A-Z0-9_]+\\b",
+      "name": "constant.language.war3-fdf"
+    },
+    "punctuation": {
+      "patterns": [
+        { "match": ",", "name": "punctuation.terminator.statement.war3-fdf" },
+        { "match": "\\{", "name": "punctuation.definition.block.begin.war3-fdf" },
+        { "match": "\\}", "name": "punctuation.definition.block.end.war3-fdf" }
+      ]
+    }
+  }
+}
