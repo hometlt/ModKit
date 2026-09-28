@@ -3,27 +3,27 @@
   "scanned": [
     {
       "repository": "modkit-core",
-      "sourceFiles": 1128
+      "sourceFiles": 1147
     },
     {
       "repository": "modkit-extensions-blizzard",
-      "sourceFiles": 919
+      "sourceFiles": 941
     },
     {
       "repository": "modkit-extensions-ea",
-      "sourceFiles": 78
+      "sourceFiles": 93
     },
     {
       "repository": "modkit-extensions-other",
-      "sourceFiles": 322
+      "sourceFiles": 332
     },
     {
       "repository": "modkit-extensions-spring",
-      "sourceFiles": 17
+      "sourceFiles": 18
     },
     {
       "repository": "modkit-extensions-warzone",
-      "sourceFiles": 53
+      "sourceFiles": 61
     }
   ],
   "implementations": [
@@ -123,6 +123,17 @@
       "reason": "codec-kit owns shared algorithms"
     },
     {
+      "id": "modkit-core/packages/codec-kit/src/crypto/sha1-digest.ts:sha1Digest#0",
+      "repository": "modkit-core",
+      "path": "modkit-core/packages/codec-kit/src/crypto/sha1-digest.ts",
+      "symbol": "sha1Digest#0",
+      "name": "sha1Digest",
+      "line": 6,
+      "implementationSha256": "d41a75eeea8ee6854d29ff429ec525c5524d06bb9d2a2eeb501805ddc3d15602",
+      "disposition": "canonical-owned",
+      "reason": "codec-kit owns shared algorithms"
+    },
+    {
       "id": "modkit-core/packages/codec-kit/src/crypto/sha1.ts:sha1Hex#0",
       "repository": "modkit-core",
       "path": "modkit-core/packages/codec-kit/src/crypto/sha1.ts",
@@ -150,8 +161,8 @@
       "path": "modkit-core/packages/codec-kit/src/model-math/transform.ts",
       "symbol": "decomposeMatrix4#0",
       "name": "decomposeMatrix4",
-      "line": 20,
-      "implementationSha256": "e054b5eb90eb4b570ba0c7462269bb7bcb37eda0094e5a9c3a2a0ddc61700262",
+      "line": 24,
+      "implementationSha256": "88743e9803ab8ac600beecd5fdcf2ed14d5489019663f4702e54fd003c133308",
       "disposition": "canonical-owned",
       "reason": "codec-kit owns shared algorithms"
     },
@@ -161,7 +172,7 @@
       "path": "modkit-core/packages/codec-kit/src/model-math/transform.ts",
       "symbol": "invertAffine#0",
       "name": "invertAffine",
-      "line": 80,
+      "line": 93,
       "implementationSha256": "3cbc97e3014655fa719cc03f12834d0ae06ee41c2de8eeaf329764fa2baa5a89",
       "disposition": "canonical-owned",
       "reason": "codec-kit owns shared algorithms"
@@ -172,7 +183,7 @@
       "path": "modkit-core/packages/codec-kit/src/model-math/transform.ts",
       "symbol": "quaternionFromRotationMatrix#0",
       "name": "quaternionFromRotationMatrix",
-      "line": 46,
+      "line": 59,
       "implementationSha256": "58de83bca9335e40ca6bcfe264eebc82298be46e9117d7bd41da2d2b634a097a",
       "disposition": "canonical-owned",
       "reason": "codec-kit owns shared algorithms"
@@ -194,7 +205,7 @@
       "path": "modkit-core/packages/codec-kit/src/raster/palette.ts",
       "symbol": "applyPalette#0",
       "name": "applyPalette",
-      "line": 212,
+      "line": 224,
       "implementationSha256": "78187d15f4254bac6b1adfd09bc4005f7bfd312dd2dbbda606dfd0b737cba59d",
       "disposition": "canonical-owned",
       "reason": "codec-kit owns shared algorithms"
@@ -205,8 +216,41 @@
       "path": "modkit-core/packages/codec-kit/src/raster/palette.ts",
       "symbol": "parsePalette#0",
       "name": "parsePalette",
-      "line": 140,
+      "line": 152,
       "implementationSha256": "221848a8b538a3629a8cf672eda80945a361ae27cabf840795ec3bbeed7ff0d3",
+      "disposition": "canonical-owned",
+      "reason": "codec-kit owns shared algorithms"
+    },
+    {
+      "id": "modkit-core/packages/codec-kit/src/raster/tga.ts:decodeTga#0",
+      "repository": "modkit-core",
+      "path": "modkit-core/packages/codec-kit/src/raster/tga.ts",
+      "symbol": "decodeTga#0",
+      "name": "decodeTga",
+      "line": 204,
+      "implementationSha256": "b7ffa249f6745aca416d49653327bfd64e7ec05330168f150fdc131e0cab9e25",
+      "disposition": "canonical-owned",
+      "reason": "codec-kit owns shared algorithms"
+    },
+    {
+      "id": "modkit-core/packages/codec-kit/src/raster/tga.ts:decodeTgaPixels#0",
+      "repository": "modkit-core",
+      "path": "modkit-core/packages/codec-kit/src/raster/tga.ts",
+      "symbol": "decodeTgaPixels#0",
+      "name": "decodeTgaPixels",
+      "line": 152,
+      "implementationSha256": "369282bfca31bd58846edce0a50a7837b49c65caa17122c24c3b39c501256328",
+      "disposition": "canonical-owned",
+      "reason": "codec-kit owns shared algorithms"
+    },
+    {
+      "id": "modkit-core/packages/codec-kit/src/raster/tga.ts:parseTga#0",
+      "repository": "modkit-core",
+      "path": "modkit-core/packages/codec-kit/src/raster/tga.ts",
+      "symbol": "parseTga#0",
+      "name": "parseTga",
+      "line": 73,
+      "implementationSha256": "ecdb1dfae32830f3a906e699068525920d18f15dd38d30904425090d874bd8fb",
       "disposition": "canonical-owned",
       "reason": "codec-kit owns shared algorithms"
     },
@@ -250,16 +294,6 @@
       "name": "boundsOf",
       "line": 151,
       "implementationSha256": "4729b8bd7ad4d7f91a15038f093ddbb588b5106bb6821dba71410aa383d126a4",
-      "disposition": "existing-debt"
-    },
-    {
-      "id": "modkit-extensions-blizzard/mpq/src/mpq/native-preserving.js:inflate#0",
-      "repository": "modkit-extensions-blizzard",
-      "path": "modkit-extensions-blizzard/mpq/src/mpq/native-preserving.js",
-      "symbol": "inflate#0",
-      "name": "inflate",
-      "line": 364,
-      "implementationSha256": "c819c447297be3ffe20a99fd1bb17098f833a26869e5ffdbdea5613b30e7a980",
       "disposition": "existing-debt"
     },
     {

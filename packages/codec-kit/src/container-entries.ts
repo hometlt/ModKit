@@ -61,7 +61,8 @@ export function containerEntryAccess(
       name: path.slice(path.lastIndexOf('/') + 1),
       kind: 'directory' as const,
       ...(hidden === true ? { hidden: true as const } : {}),
-      revision: containerRevision,
+      // a plain string: a branded RevisionId would leak an unexported brand into the declarations
+      revision: String(context.source.revision),
     })
   })
   const maximum = Number(context.budget.maxInputBytes)
