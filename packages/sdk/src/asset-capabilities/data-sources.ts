@@ -264,6 +264,11 @@ export interface TreeNodeFacts {
   /** Stable subject address opened when a host activates this node. */
   readonly subjectId?: string
   readonly range?: SourceSpan
+  /**
+   * Where the node's entity is written, when that is another subject than the one `subjectId`
+   * opens (the card): its subject and, optionally, the span there. A host offers "Go to declaration".
+   */
+  readonly declaration?: { readonly subjectId: string; readonly range?: SourceSpan }
   readonly semanticPath?: readonly string[]
   /** Exact lookup coordinate for optional help provided by the host. */
   readonly knowledgeTarget?: KnowledgeTarget
