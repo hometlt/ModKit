@@ -17,6 +17,24 @@ export function crc32Range(bytes: Uint8Array, start: number, end: number): numbe
   return crc32(bytes.subarray(start, end))
 }
 
+/** CD-ROM EDC (ECMA-130 annex): polynomial 0x8001801B fed LSB first, register 0, no final XOR. */
+const EDC = (() => {
+  const table = new Uint32Array(256)
+  for (let n = 0; n < 256; n += 1) {
+    let c = n
+    for (let k = 0; k < 8; k += 1) c = c & 1 ? (c >>> 1) ^ 0xd8018001 : c >>> 1
+    table[n] = c >>> 0
+  }
+  return table
+})()
+
+/** The EDC of a CD-ROM sector's covered bytes (Mode 2 Form 1: subheader + 2048; Form 2: + 2324). */
+export function cdRomEdc(bytes: Uint8Array): number {
+  let edc = 0
+  for (const byte of bytes) edc = ((edc >>> 8) ^ (EDC[(edc ^ byte) & 0xff] as number)) >>> 0
+  return edc
+}
+
 /** The IEEE polynomial fed MSB first (0x04C11DB7): BZip2's block CRC and Ogg's page CRC. */
 const FORWARD = (() => {
   const table = new Uint32Array(256)

@@ -7,6 +7,7 @@
 import { createCrc32Msb } from '../checksum/index.js'
 
 export { decodeFadpcm, fadpcmFrames } from './fadpcm.js'
+export { decodeXaAdpcm, XA_SOUND_GROUP_BYTES, XA_SOUND_GROUP_SAMPLES } from './xa-adpcm.js'
 
 /**
  * The 89 quantiser step sizes of IMA ADPCM (IMA Digital Audio Focus, 1992), shared by every ADPCM
