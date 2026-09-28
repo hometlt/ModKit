@@ -8003,9 +8003,14 @@
       "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-blizzard/blizzard-warcraft-3/test/receipts/k1/warcraft3-object-data.audit.json",
+          "sha256": "0040cfab0fadb823517067ee7d894b17dd02f8f2fdd7f9978f7d7fd25a58cf42"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/warcraft3-object-data/audit",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [

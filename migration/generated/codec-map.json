@@ -32,7 +32,7 @@
       ]
     }
   ],
-  "contributionCount": 281,
+  "contributionCount": 282,
   "inventorySha256": "08c3bdad48056914277c7f95a0f97ef4feb85c8ec86a2fa8faf47bd7f9817e8c",
   "legacyCount": 206,
   "rows": [
@@ -3000,11 +3000,11 @@
       "codec": "warcraft3-object-data",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 1,
+      "pending": 0,
       "requirements": 1,
       "source": "extensions/blizzard/warcraft-3/codecs/warcraft3-object-data/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/warcraft3-object-data",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [],
