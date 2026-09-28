@@ -992,6 +992,31 @@ function flattenedWorldLayersOf(layers: readonly CandidateWorldViewerLayer[]) {
 }
 
 /** Draws a bounded game-neutral isometric scene from common terrain/world facets. */
+/** Overlay facets the viewer can switch off; the terrain, water and objects always draw. */
+export type WorldOverlayFacet = 'regions' | 'navigation' | 'gateways'
+const WORLD_OVERLAY_FACETS: readonly WorldOverlayFacet[] = ['regions', 'navigation', 'gateways']
+const shownItemsCache = new WeakMap<readonly WorldSceneItem[], Map<string, readonly WorldSceneItem[]>>()
+
+/**
+ * The items without the hidden overlay facets. The same filtered array comes back for the same
+ * items and choice, so the renderer keeps its plan between frames.
+ */
+function shownWorldItems(
+  items: readonly WorldSceneItem[],
+  hidden: ReadonlySet<WorldOverlayFacet> | undefined,
+): readonly WorldSceneItem[] {
+  if (hidden === undefined || hidden.size === 0) return items
+  const key = WORLD_OVERLAY_FACETS.filter(facet => hidden.has(facet)).join(',')
+  let byChoice = shownItemsCache.get(items)
+  if (byChoice === undefined) shownItemsCache.set(items, (byChoice = new Map()))
+  let shown = byChoice.get(key)
+  if (shown === undefined) {
+    shown = Object.freeze(items.filter(item => !hidden.has(item.facet as WorldOverlayFacet)))
+    byChoice.set(key, shown)
+  }
+  return shown
+}
+
 export function drawCandidateWorld(
   canvas: HTMLCanvasElement,
   model: CandidateWorldViewerModel,
@@ -1000,9 +1025,10 @@ export function drawCandidateWorld(
   animationTimes?: ReadonlyMap<number, number>,
   timeSeconds = 0,
   renderer?: WorldWebGlRenderer,
+  hiddenOverlays?: ReadonlySet<WorldOverlayFacet>,
 ): WorldRenderStats {
   const flattened = flattenedWorldLayersOf(model.layers)
-  const worldItems = flattened.items
+  const worldItems = shownWorldItems(flattened.items, hiddenOverlays)
   const selectedObjectId = typeof selection === 'number' ? selection : selection?.selectedObjectId
   const webGlInput = {
     items: worldItems,
@@ -1462,6 +1488,32 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
       latticeButton.type = sceneButton.type = 'button'
       latticeButton.dataset['worldView'] = 'lattice'
       sceneButton.dataset['worldView'] = '3d'
+      // Overlays the 3D view can hide; each button shows once the map publishes that facet.
+      const hiddenOverlays = new Set<WorldOverlayFacet>()
+      const overlayLabels: Readonly<Record<WorldOverlayFacet, string>> = {
+        regions: localizer.text('viewer.worldRegions'),
+        navigation: localizer.text('viewer.worldNavigation'),
+        gateways: localizer.text('viewer.worldGateways'),
+      }
+      const overlayButtons = new Map(
+        WORLD_OVERLAY_FACETS.map(facet => {
+          const button = element(toolbar, 'button', { text: overlayLabels[facet] }) as HTMLButtonElement
+          button.type = 'button'
+          button.hidden = true
+          button.dataset['worldOverlay'] = facet
+          button.title = `${localizer.text('viewer.worldOverlays')}: ${overlayLabels[facet]}`
+          button.setAttribute('aria-pressed', 'true')
+          return [facet, button] as const
+        }),
+      )
+      const kindLabels: Readonly<Record<WorldSceneObjectItem['kind'], string>> = {
+        unit: localizer.text('viewer.worldKindUnit'),
+        structure: localizer.text('viewer.worldKindStructure'),
+        feature: localizer.text('viewer.worldKindFeature'),
+        doodad: localizer.text('viewer.worldKindDoodad'),
+        point: localizer.text('viewer.worldKindPoint'),
+        camera: localizer.text('viewer.worldKindCamera'),
+      }
       const canvas = element(stage, 'canvas', { part: 'model.canvas' }) as HTMLCanvasElement
       const latticeCanvas = element(stage, 'canvas', { part: 'model.canvas' }) as HTMLCanvasElement
       canvas.width = 720
@@ -1471,6 +1523,7 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
       latticeCanvas.setAttribute('role', 'img')
       latticeCanvas.setAttribute('aria-label', localizer.text('viewer.worldLattice'))
       latticeCanvas.dataset['worldRenderer'] = 'lattice-2d'
+      element(details, 'p', { part: 'model.readout', text: localizer.text('viewer.worldControls') })
       const editStatus = element(details, 'output', { part: 'model.readout' })
       const saveMove = element(details, 'button', {
         text: localizer.text('viewer.worldSaveMove'),
@@ -1565,7 +1618,7 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
               latticeLayers = currentModel.layers
             }
             if (latticePlan !== undefined)
-              drawWorldLattice(latticeCanvas, latticePlan, edit.selectedObjectId)
+              drawWorldLattice(latticeCanvas, latticePlan, edit.selectedObjectId, kindLabels)
           } else {
             webGlRenderer ??= createWorldWebGlRenderer(canvas)
             const stats = drawCandidateWorld(
@@ -1576,6 +1629,7 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
               currentAnimationTimes(),
               currentWorldTime(),
               webGlRenderer,
+              hiddenOverlays,
             )
             canvas.dataset['worldRenderer'] = webGlRenderer === undefined ? 'isometric-2d' : 'webgl'
             canvas.dataset['worldModelTriangles'] = String(stats.modelTriangles)
@@ -1657,6 +1711,18 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
         }
         const available = model.layers.filter(layer => layer.page.state === 'available')
         const itemCount = available.reduce((total, layer) => total + layer.page.items.length, 0)
+        const allItems = model.layers.flatMap(layer => layer.page.items)
+        for (const [facet, button] of overlayButtons)
+          button.hidden = !allItems.some(item => item.facet === facet)
+        // Placed objects by kind, in the legend's order (MK2's status line counted units and doodads).
+        const kindCounts = new Map<WorldSceneObjectItem['kind'], number>()
+        for (const item of allItems)
+          if (item.facet === 'objects' && item.derivedFrom !== 'cliffs')
+            kindCounts.set(item.kind, (kindCounts.get(item.kind) ?? 0) + 1)
+        const kindSummary = (Object.keys(kindLabels) as WorldSceneObjectItem['kind'][])
+          .filter(kind => (kindCounts.get(kind) ?? 0) > 0)
+          .map(kind => `${kindLabels[kind]} ${String(kindCounts.get(kind))}`)
+          .join(' · ')
         const modelAssets = worldModelAssetStatus(model)
         const partial =
           model.nextLayerCursor !== undefined ||
@@ -1672,7 +1738,8 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
             items: itemCount,
             bounded: partial ? localizer.text('viewer.boundedPreview') : '',
           }) +
-            ` · ${String(modelAssets.converted)}/${String(modelAssets.total)} ${localizer.text('viewer.modelResources')}`,
+            ` · ${String(modelAssets.converted)}/${String(modelAssets.total)} ${localizer.text('viewer.modelResources')}` +
+            (kindSummary.length === 0 ? '' : ` · ${kindSummary}`),
         )
         if (itemCount > 0) redraw()
         if (itemCount === 0) {
@@ -1691,6 +1758,16 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
       const onScene = () => setViewMode('3d')
       latticeButton.addEventListener('click', onLattice)
       sceneButton.addEventListener('click', onScene)
+      for (const [facet, button] of overlayButtons) {
+        const onOverlay = () => {
+          if (hiddenOverlays.has(facet)) hiddenOverlays.delete(facet)
+          else hiddenOverlays.add(facet)
+          button.setAttribute('aria-pressed', String(!hiddenOverlays.has(facet)))
+          redraw()
+        }
+        button.addEventListener('click', onOverlay)
+        scope.cleanup(() => button.removeEventListener('click', onOverlay))
+      }
       redraw()
       const resizeObserver =
         typeof ResizeObserver === 'undefined'
