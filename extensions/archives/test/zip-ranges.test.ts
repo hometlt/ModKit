@@ -1,7 +1,6 @@
 import { crc32 } from '@modkit/codec-kit/checksum'
 import { deflateRawSync } from 'node:zlib'
 import { describe, expect, it } from 'vitest'
-// @ts-expect-error the ZIP codec is a JS module without declarations
 import { createCodec, readZipByRanges } from '../src/zip/codec.js'
 
 const MAX_U32 = 0xffffffff
