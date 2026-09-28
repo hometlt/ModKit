@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { it } from 'node:test'
 
-import { materialWebGlDraws } from '../src/render/material-webgl.js'
+import { leaseShaderSources, materialWebGlDraws } from '../src/render/material-webgl.js'
 
 const identity = Float32Array.of(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
 const camera = { viewProjection: identity, viewMatrix: identity }
@@ -166,4 +166,24 @@ it('deletes a linked program once no lease draws with it', () => {
   renderer.sweep()
   assert.equal(count('deleteProgram'), 1)
   assert.equal(count('createProgram'), 2)
+})
+
+it('builds the final shader sources of a compiled variant once for all its samples', () => {
+  const defines = { uvSetCount: 1 }
+  const first = leaseShaderSources({ ...source, defines }, material)
+  // Another sample of the same template: a new program object with the same variant.
+  const sampled = { ...source, defines, uniforms: { u_specularity: 0.7 } }
+  assert.equal(leaseShaderSources(sampled, material), first)
+  // What the sources read beyond the variant keeps its own: two sides, blending, texture filters.
+  assert.notEqual(leaseShaderSources({ ...source, defines, twoSided: true }, material), first)
+  assert.notEqual(leaseShaderSources({ ...source, defines, blend: 'add' }, material), first)
+  const nearest = { textures: new Map([['albedo', { id: 'albedo.png', filter: 'nearest' }]]) }
+  const filtered = leaseShaderSources({ ...source, defines }, nearest)
+  assert.notEqual(filtered, first)
+  assert.match(filtered.fragmentSource, /texelFetch/)
+  // Another fragment source under the same defines object is built anew.
+  const edited = { ...source, defines, fragmentSource: `${source.fragmentSource}
+` }
+  assert.notEqual(leaseShaderSources(edited, material), first)
+  assert.equal(leaseShaderSources(sampled, material).fragmentSource, first.fragmentSource)
 })

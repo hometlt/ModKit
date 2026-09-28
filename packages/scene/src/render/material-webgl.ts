@@ -720,8 +720,37 @@ export type MaterialSceneLight = SceneRendererDirectionalLight & {
 }
 import { primitiveTint } from './tint.js'
 
+/**
+ * Final shader sources by compiled variant: every sample of one material template shares its
+ * `defines` (and fragment source), and the string key holds the rest these sources read. Materials
+ * that follow the clock bring new program objects every frame, and building the sources ran several
+ * regular expressions over each shader for every lease.
+ */
+const leasedShaderSources = new WeakMap<
+  object,
+  Map<string, Readonly<{ fragment: string; sources: ReturnType<typeof buildLeaseShaderSources> }>>
+>()
+
 /** Final GPU shader sources of a material lease: nearest-filtered samplers and the instance tint. */
-function leaseShaderSources(
+export function leaseShaderSources(
+  source: StandardMaterialProgram,
+  material: NonNullable<MaterialDraw['material']>,
+) {
+  let key = `${String(source.twoSided)}|${source.blend}|${String(source.environment !== undefined)}|${String(source.normalBlendPolicy !== undefined)}|${source.normalMapSpace}`
+  for (const binding of source.textures)
+    key += `|${binding.slot}:${binding.resourceId}:${binding.uniform}:${binding.dimension ?? ''}:${binding.wrapU}:${binding.wrapV}`
+  for (const [resource, texture] of material.textures)
+    key += `|${resource}=${texture.filter ?? 'linear'}`
+  let variants = leasedShaderSources.get(source.defines)
+  if (variants === undefined) leasedShaderSources.set(source.defines, (variants = new Map()))
+  const cached = variants.get(key)
+  if (cached !== undefined && cached.fragment === source.fragmentSource) return cached.sources
+  const sources = buildLeaseShaderSources(source, material)
+  variants.set(key, Object.freeze({ fragment: source.fragmentSource, sources }))
+  return sources
+}
+
+function buildLeaseShaderSources(
   source: StandardMaterialProgram,
   material: NonNullable<MaterialDraw['material']>,
 ) {
