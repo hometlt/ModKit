@@ -2524,11 +2524,16 @@
       "targetOperation": null
     },
     {
-      "contribution": null,
+      "contribution": "modkit-extensions-ea/westwood/contributions/writer-shp.json",
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/shp/operation/image.write",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": null,
+      "targetWriter": {
+        "contract": "common.edit/writer",
+        "major": 1,
+        "offerId": "shp-rgba8-encoder"
+      }
     },
     {
       "contribution": null,

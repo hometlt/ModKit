@@ -3143,9 +3143,14 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-ea/test/receipts/k1/red-alert2-vxl.audit.json",
+          "sha256": "ba627cf412322ff993ef7ad475abe1cb06ce877c00ce399df3d7b5c055ef8f62"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/red-alert2-vxl/audit",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [
@@ -6841,9 +6846,14 @@
       "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-ea/test/receipts/k1/shp.audit.json",
+          "sha256": "fe67683288fe393551d3a5d6a624c1c752421f6cfa5ddb42f50715383fae3b6a"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/shp/audit",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [
@@ -6866,9 +6876,14 @@
       "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-ea/test/receipts/k1/shp.image-write.json",
+          "sha256": "07c49c717aa0b8270d837a7aecc12c35558528cfefbcade4bc7028eb905eb492"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/shp/operation/image.write",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],

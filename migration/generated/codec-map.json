@@ -32,7 +32,7 @@
       ]
     }
   ],
-  "contributionCount": 271,
+  "contributionCount": 274,
   "inventorySha256": "08c3bdad48056914277c7f95a0f97ef4feb85c8ec86a2fa8faf47bd7f9817e8c",
   "legacyCount": 206,
   "rows": [
@@ -804,11 +804,11 @@
       "codec": "earth-tex",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 3,
+      "pending": 0,
       "requirements": 3,
       "source": "extensions/realitypump/earth-2150/codecs/earth-tex/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/earth-tex",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -1907,11 +1907,11 @@
       "codec": "red-alert2-vxl",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 1,
+      "pending": 0,
       "requirements": 3,
       "source": "extensions/ea/tiberian-sun/codecs/red-alert2-vxl/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/red-alert2-vxl",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -1976,15 +1976,21 @@
       "status": "evidence-ready"
     },
     {
-      "candidates": [],
+      "candidates": [
+        {
+          "id": "modkit/relic-ucs",
+          "path": "extensions/relic-essence/contributions/codec-relic-ucs.json",
+          "repository": "other"
+        }
+      ],
       "codec": "relic-ucs",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 1,
+      "pending": 0,
       "requirements": 1,
       "source": "extensions/relic/essence/codecs/relic-ucs/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/relic-ucs",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -2364,11 +2370,11 @@
       "codec": "shp",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 2,
+      "pending": 0,
       "requirements": 4,
       "source": "extensions/ea/westwood/codecs/shp/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/shp",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -2748,11 +2754,11 @@
       "codec": "uasset",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 1,
+      "pending": 0,
       "requirements": 4,
       "source": "extensions/epic-games/unreal-engine/codecs/uasset/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/uasset",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -2765,11 +2771,11 @@
       "codec": "unity",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 1,
+      "pending": 0,
       "requirements": 3,
       "source": "extensions/unity/engine/codecs/unity/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/unity",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -2782,11 +2788,11 @@
       "codec": "unity-assets",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 1,
+      "pending": 0,
       "requirements": 3,
       "source": "extensions/unity/engine/codecs/unity-assets/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/unity-assets",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -2799,11 +2805,11 @@
       "codec": "unity-mesh",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 1,
+      "pending": 0,
       "requirements": 3,
       "source": "extensions/unity/engine/codecs/unity-mesh/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/unity-mesh",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -2850,11 +2856,11 @@
       "codec": "unreal-actorx",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 1,
+      "pending": 0,
       "requirements": 3,
       "source": "extensions/epic-games/unreal-engine/codecs/unreal-actorx/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/unreal-actorx",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -2867,11 +2873,11 @@
       "codec": "unreal-iostore",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 1,
+      "pending": 0,
       "requirements": 3,
       "source": "extensions/epic-games/unreal-engine/codecs/unreal-iostore/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/unreal-iostore",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -2884,11 +2890,11 @@
       "codec": "unreal-pak",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 1,
+      "pending": 0,
       "requirements": 3,
       "source": "extensions/epic-games/unreal-engine/codecs/unreal-pak/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/unreal-pak",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -2901,11 +2907,11 @@
       "codec": "unreal-uasset",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 1,
+      "pending": 0,
       "requirements": 3,
       "source": "extensions/epic-games/unreal-engine/codecs/unreal-uasset/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/unreal-uasset",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -2918,11 +2924,11 @@
       "codec": "unreal-uasset-texture",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 1,
+      "pending": 0,
       "requirements": 3,
       "source": "extensions/epic-games/unreal-engine/codecs/unreal-uasset-texture/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/unreal-uasset-texture",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -2935,11 +2941,11 @@
       "codec": "unreal-uasset-video",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 2,
+      "pending": 0,
       "requirements": 4,
       "source": "extensions/epic-games/unreal-engine/codecs/unreal-uasset-video/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/unreal-uasset-video",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -3014,11 +3020,11 @@
       "codec": "warcraft2-pud",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 1,
+      "pending": 0,
       "requirements": 1,
       "source": "extensions/blizzard/warcraft-2/codecs/warcraft2-pud/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/warcraft2-pud",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [],
