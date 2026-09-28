@@ -533,7 +533,8 @@ function validConfirmedInstallation(value: GameInstallation, gameId: string): bo
   )
 }
 
-function validGameLaunchPlan(
+/** Exported for its test only. */
+export function validGameLaunchPlan(
   value: unknown,
   request: PlanGameLaunchRequest,
 ): value is GameLaunchPlan {
@@ -552,16 +553,18 @@ function validGameLaunchPlan(
     validRelativeProcessPath(record['executableRelativePath'], false) &&
     validRelativeProcessPath(record['workingDirectoryRelativePath'], true) &&
     Array.isArray(argumentsValue) &&
-    argumentsValue.length > 0 &&
     argumentsValue.length <= 64 &&
     argumentsValue.every(
       argument =>
         typeof argument === 'string' && argument.length <= 32_767 && !argument.includes('\0'),
     ) &&
-    Number.isSafeInteger(argumentIndex) &&
-    (argumentIndex as number) >= 0 &&
-    (argumentIndex as number) < argumentsValue.length &&
-    argumentsValue[argumentIndex as number] === resource['path'] &&
+    // either the exact resource path at its index, or no resource on the command line at all
+    (argumentIndex === null
+      ? !argumentsValue.includes(resource['path'])
+      : Number.isSafeInteger(argumentIndex) &&
+        (argumentIndex as number) >= 0 &&
+        (argumentIndex as number) < argumentsValue.length &&
+        argumentsValue[argumentIndex as number] === resource['path']) &&
     record['mode'] === 'detached' &&
     record['stdio'] === 'ignore' &&
     validProcessNames(record['runningProcessNames']) &&
@@ -591,7 +594,9 @@ function validLogLocation(value: unknown): boolean {
     Array.isArray(patterns) &&
     patterns.length > 0 &&
     patterns.length <= 8 &&
-    patterns.every(pattern => nonEmptyString(pattern) && pattern.length <= 260 && !/[\\/:\0?]/u.test(pattern))
+    patterns.every(
+      pattern => nonEmptyString(pattern) && pattern.length <= 260 && !/[\\/:\0?]/u.test(pattern),
+    )
   )
 }
 
@@ -701,7 +706,9 @@ export async function interpretGameLaunchLog(
     const diagnostics = Array.isArray(report?.diagnostics)
       ? report.diagnostics.filter(
           item =>
-            (item?.severity === 'error' || item?.severity === 'warning' || item?.severity === 'information') &&
+            (item?.severity === 'error' ||
+              item?.severity === 'warning' ||
+              item?.severity === 'information') &&
             nonEmptyString(item.code) &&
             nonEmptyString(item.message) &&
             (item.path === undefined || nonEmptyString(item.path)) &&

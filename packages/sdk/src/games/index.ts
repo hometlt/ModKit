@@ -125,8 +125,12 @@ export interface GameLaunchPlan {
   readonly executableRelativePath: string
   readonly workingDirectoryRelativePath: string
   readonly arguments: readonly string[]
-  /** Index of the exact resource path in `arguments`, preventing hidden path substitution. */
-  readonly resourceArgumentIndex: number
+  /**
+   * Index of the exact resource path in `arguments`, preventing hidden path substitution; `null`
+   * when the game takes no resource on its command line and finds it itself (Emperor scans
+   * `DATA\MAPS`), so the plan passes no path at all.
+   */
+  readonly resourceArgumentIndex: number | null
   readonly mode: 'detached'
   readonly stdio: 'ignore'
   /** Process image names of the running game, so a host can offer to close it before a relaunch. */
