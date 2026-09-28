@@ -8045,15 +8045,16 @@ const lastWorldInstanceMatrices = [
 ]
 
 function groupWorldMaterialDraws(plan: WorldWebGlPlan, shadow: boolean): WorldWebGlMaterialBatches {
-  const groups = new Map<
-    string,
-    {
-      draw: WorldWebGlMaterialGroup['draw']
-      geometryKey: string
-      transforms: Float32Array[]
-      seen: Set<Float32Array>
-    }
-  >()
+  interface Group {
+    readonly draw: WorldWebGlMaterialGroup['draw']
+    readonly geometryKey: string
+    readonly transforms: Float32Array[]
+    readonly seen: Set<Float32Array>
+  }
+  // Groups by program, material and geometry key, in the order they first appear: the parts of a
+  // draw's group key, without building a key string for each of a frame's ~15 000 draws.
+  const groupsBy = new Map<unknown, Map<unknown, Map<string, Group>>>()
+  const groups: Group[] = []
   const singles: MaterialDraw[] = []
   const transparentScenes: WorldWebGlModelMaterialScene[] = []
   const current = worldCurrentPrograms.get(plan)
@@ -8064,15 +8065,21 @@ function groupWorldMaterialDraws(plan: WorldWebGlPlan, shadow: boolean): WorldWe
         singles.push(draw)
         continue
       }
-      // A kept scene's draw groups with the draws of the programs it stands for, as a new scene's.
+      // A kept scene's draw groups with the draws of the programs it stands for, as a new scene's
+      // (the scene's key names its own program and material: worldSceneSolidDrawsOf).
       const pass = current?.passes.get(draw.program)
-      const groupKey =
-        pass === undefined
-          ? key
-          : `${worldGroupId(pass)}|${worldGroupId(current!.materials.get(draw.material!))}|${geometryKey}`
-      let group = groups.get(groupKey)
-      if (group === undefined)
-        groups.set(groupKey, (group = { draw, geometryKey, transforms: [], seen: new Set() }))
+      const program: unknown = pass ?? draw.program
+      const material: unknown =
+        pass === undefined ? draw.material : current!.materials.get(draw.material!)
+      let byMaterial = groupsBy.get(program)
+      if (byMaterial === undefined) groupsBy.set(program, (byMaterial = new Map()))
+      let byGeometry = byMaterial.get(material)
+      if (byGeometry === undefined) byMaterial.set(material, (byGeometry = new Map()))
+      let group = byGeometry.get(geometryKey)
+      if (group === undefined) {
+        byGeometry.set(geometryKey, (group = { draw, geometryKey, transforms: [], seen: new Set() }))
+        groups.push(group)
+      }
       const transform = draw.primitive.transform ?? IDENTITY_VIEW_PROJECTION
       // A primitive drawn twice into the same depth (two solid passes) writes it once.
       if (shadow) {
@@ -8088,7 +8095,7 @@ function groupWorldMaterialDraws(plan: WorldWebGlPlan, shadow: boolean): WorldWe
     string,
     Readonly<{ transforms: readonly Float32Array[]; matrices: Float32Array }>
   >()
-  const instanced = [...groups.values()].map(({ draw, geometryKey, transforms }) => {
+  const instanced = groups.map(({ draw, geometryKey, transforms }) => {
     const previous = kept.get(geometryKey) ?? last.get(geometryKey)
     let matrices = previous?.matrices
     if (
