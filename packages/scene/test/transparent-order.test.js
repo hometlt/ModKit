@@ -122,3 +122,41 @@ it('matches the pairwise definition on random decal fields', () => {
     assert.deepEqual(Array.from(levels), bruteForceLevels(boxes, batches, 0.01))
   }
 })
+
+it('matches the pairwise definition on stacked decals, with boxes that cover all or nothing', () => {
+  let seed = 777
+  const random = () => {
+    seed = (Math.imul(seed, 1103515245) + 12345) >>> 0
+    return seed / 2 ** 32
+  }
+  // Decals piled on a small area climb to high levels: an item's newest neighbours set its level.
+  const boxes = []
+  const batches = []
+  for (let item = 0; item < 1500; item += 1) {
+    const x = random() * 12
+    const y = random() * 12
+    const roll = random()
+    if (roll < 0.01) boxes.push(-Infinity, 0, Infinity, 1)
+    else if (roll < 0.02) boxes.push(5, 5, 4, 4)
+    else boxes.push(x, y, x + 1 + random() * 3, y + 1 + random() * 3)
+    batches.push(random() < 0.05 ? -1 : Math.floor(random() * 4))
+  }
+  const levels = transparentOrderLevels(Float64Array.from(boxes), Int32Array.from(batches), 0.01)
+  // A box with a non-finite bound covers everything; an empty one covers nothing and stays at 0.
+  const kept = []
+  const covering = []
+  batches.forEach((_, item) => {
+    const box = boxes.slice(item * 4, item * 4 + 4)
+    if (box.every(Number.isFinite) && (box[0] > box[2] || box[1] > box[3])) return
+    kept.push(item)
+    covering.push(...(box.every(Number.isFinite) ? box : [-Infinity, -Infinity, Infinity, Infinity]))
+  })
+  const expected = new Array(batches.length).fill(0)
+  bruteForceLevels(
+    covering,
+    kept.map(item => batches[item]),
+    0.01,
+  ).forEach((level, index) => (expected[kept[index]] = level))
+  assert.ok(Math.max(...levels) > 50)
+  assert.deepEqual(Array.from(levels), expected)
+})

@@ -3,6 +3,11 @@ const GRID_MAX_SIDE = 512
 /** An item covering more cells than this is compared with every earlier item instead. */
 const LARGE_ITEM_CELLS = 1024
 
+const EMPTY = 0
+const IN_CELLS = 1
+const LARGE = 2
+const EVERYWHERE = 3
+
 /**
  * Levels for depth-sorted transparent draws. The blending order changes the picture only where two
  * draws cover the same pixel, so an item may move past any earlier item it does not overlap on screen.
@@ -50,66 +55,109 @@ export function transparentOrderLevels(
   const cellHeight = maximumY > minimumY ? (maximumY - minimumY) / side : 1
   const cellOf = (value: number, minimum: number, size: number) =>
     Math.min(side - 1, Math.max(0, Math.floor((value - minimum) / size)))
-  const cells: (number[] | undefined)[] = new Array<number[] | undefined>(side * side)
-  const large: number[] = []
-  const visited = new Int32Array(count).fill(-1)
-  let item = 0
-  let x0 = 0
-  let y0 = 0
-  let x1 = 0
-  let y1 = 0
-  let batch = -1
-  let level = 0
-  const visit = (other: number) => {
-    if (visited[other] === item) return
-    visited[other] = item
-    const offset = other * 4
-    if (
-      boxes[offset]! > x1 ||
-      boxes[offset + 2]! < x0 ||
-      boxes[offset + 1]! > y1 ||
-      boxes[offset + 3]! < y0
-    )
-      return
-    const required = levels[other]! + (batch >= 0 && batches[other] === batch ? 0 : 1)
-    if (required > level) level = required
-  }
-  for (; item < count; item += 1) {
+  // Each item's cells (with epsilon), then every cell's items in ascending order: an item compares
+  // with the earlier items of the cells it covers, so each cell's list is read up to the item itself.
+  const kinds = new Uint8Array(count)
+  const ranges = new Int32Array(count * 4)
+  const starts = new Int32Array(side * side + 1)
+  for (let item = 0; item < count; item += 1) {
     const offset = item * 4
-    x0 = boxes[offset]! - epsilon
-    y0 = boxes[offset + 1]! - epsilon
-    x1 = boxes[offset + 2]! + epsilon
-    y1 = boxes[offset + 3]! + epsilon
-    batch = batches[item]!
-    level = 0
-    if (x0 > x1 || y0 > y1) {
-      // Empty: overlaps nothing, before or after.
-      levels[item] = 0
+    const x0 = boxes[offset]! - epsilon
+    const y0 = boxes[offset + 1]! - epsilon
+    const x1 = boxes[offset + 2]! + epsilon
+    const y1 = boxes[offset + 3]! + epsilon
+    if (x0 > x1 || y0 > y1) continue // Empty: overlaps nothing, before or after.
+    if (!Number.isFinite(x0 + y0 + x1 + y1)) {
+      kinds[item] = EVERYWHERE
       continue
     }
-    for (const other of large) visit(other)
-    const finite = Number.isFinite(x0 + y0 + x1 + y1)
-    const cx0 = finite ? cellOf(x0, minimumX, cellWidth) : 0
-    const cx1 = finite ? cellOf(x1, minimumX, cellWidth) : side - 1
-    const cy0 = finite ? cellOf(y0, minimumY, cellHeight) : 0
-    const cy1 = finite ? cellOf(y1, minimumY, cellHeight) : side - 1
-    const oversized = !finite || (cx1 - cx0 + 1) * (cy1 - cy0 + 1) > LARGE_ITEM_CELLS
-    if (oversized) for (let other = 0; other < item; other += 1) visit(other)
-    else
-      for (let cy = cy0; cy <= cy1; cy += 1)
-        for (let cx = cx0; cx <= cx1; cx += 1) {
-          const members = cells[cy * side + cx]
-          if (members !== undefined) for (const other of members) visit(other)
+    const cx0 = cellOf(x0, minimumX, cellWidth)
+    const cx1 = cellOf(x1, minimumX, cellWidth)
+    const cy0 = cellOf(y0, minimumY, cellHeight)
+    const cy1 = cellOf(y1, minimumY, cellHeight)
+    ranges[offset] = cx0
+    ranges[offset + 1] = cx1
+    ranges[offset + 2] = cy0
+    ranges[offset + 3] = cy1
+    if ((cx1 - cx0 + 1) * (cy1 - cy0 + 1) > LARGE_ITEM_CELLS) {
+      kinds[item] = LARGE
+      continue
+    }
+    kinds[item] = IN_CELLS
+    for (let cy = cy0; cy <= cy1; cy += 1)
+      for (let cx = cx0; cx <= cx1; cx += 1) starts[cy * side + cx + 1]! += 1
+  }
+  for (let cell = 0; cell < side * side; cell += 1) starts[cell + 1]! += starts[cell]!
+  const members = new Int32Array(starts[side * side]!)
+  const fill = starts.slice(0, side * side)
+  for (let item = 0; item < count; item += 1) {
+    if (kinds[item] !== IN_CELLS) continue
+    const offset = item * 4
+    for (let cy = ranges[offset + 2]!; cy <= ranges[offset + 3]!; cy += 1)
+      for (let cx = ranges[offset]!; cx <= ranges[offset + 1]!; cx += 1)
+        members[fill[cy * side + cx]!++] = item
+  }
+  // Per cell, one above the highest level among its members up to each one (members are placed in
+  // order): read from the newest earlier member back, a cell's rest cannot raise the level being
+  // found once its ceiling there does not exceed it. `placed` counts each cell's placed members.
+  const ceilings = new Int32Array(members.length)
+  const placed = starts.slice(0, side * side)
+  const large: number[] = []
+  let largeCeiling = 0
+  const visited = new Int32Array(count).fill(-1)
+  for (let item = 0; item < count; item += 1) {
+    const kind = kinds[item]!
+    if (kind === EMPTY) continue
+    const offset = item * 4
+    const x0 = boxes[offset]! - epsilon
+    const y0 = boxes[offset + 1]! - epsilon
+    const x1 = boxes[offset + 2]! + epsilon
+    const y1 = boxes[offset + 3]! + epsilon
+    const batch = batches[item]!
+    let level = 0
+    // The level an earlier item requires, or -1 where it cannot raise the level found (placed at or
+    // below it less one, seen already, or apart on screen).
+    const required = (other: number, found: number) => {
+      const placedAt = levels[other]!
+      if (placedAt + 1 <= found || visited[other] === item) return -1
+      visited[other] = item
+      const at = other * 4
+      if (boxes[at]! > x1 || boxes[at + 2]! < x0 || boxes[at + 1]! > y1 || boxes[at + 3]! < y0)
+        return -1
+      return placedAt + (batch >= 0 && batches[other] === batch ? 0 : 1)
+    }
+    if (kind === EVERYWHERE)
+      for (let other = 0; other < item; other += 1) {
+        const value = required(other, level)
+        if (value > level) level = value
+      }
+    else {
+      // Every earlier item the box overlaps is a large one or in a cell the box covers.
+      for (let cy = ranges[offset + 2]!; cy <= ranges[offset + 3]!; cy += 1)
+        for (let cx = ranges[offset]!; cx <= ranges[offset + 1]!; cx += 1) {
+          const cell = cy * side + cx
+          for (let at = placed[cell]! - 1, first = starts[cell]!; at >= first; at -= 1) {
+            if (ceilings[at]! <= level) break
+            const value = required(members[at]!, level)
+            if (value > level) level = value
+          }
         }
+      if (largeCeiling > level)
+        for (const other of large) {
+          const value = required(other, level)
+          if (value > level) level = value
+        }
+    }
     levels[item] = level
-    if (oversized) large.push(item)
-    else
-      for (let cy = cy0; cy <= cy1; cy += 1)
-        for (let cx = cx0; cx <= cx1; cx += 1) {
-          const index = cy * side + cx
-          const members = cells[index]
-          if (members === undefined) cells[index] = [item]
-          else members.push(item)
+    if (kind !== IN_CELLS) {
+      large.push(item)
+      if (level + 1 > largeCeiling) largeCeiling = level + 1
+    } else
+      for (let cy = ranges[offset + 2]!; cy <= ranges[offset + 3]!; cy += 1)
+        for (let cx = ranges[offset]!; cx <= ranges[offset + 1]!; cx += 1) {
+          const cell = cy * side + cx
+          const at = placed[cell]!++
+          ceilings[at] = at > starts[cell]! ? Math.max(ceilings[at - 1]!, level + 1) : level + 1
         }
   }
   return levels
