@@ -308,6 +308,13 @@ const EN_MESSAGES = Object.freeze({
   'vscode.game.specifyFolder': 'Specify folder…',
   'vscode.game.folderNotInstallation':
     'No installed game extension recognised a game installation in {path}.',
+  'vscode.indexCaches.title': 'Index caches · {size} MiB',
+  'vscode.indexCaches.pick': 'Pick the caches to remove; each is rebuilt when it is next needed',
+  'vscode.indexCaches.names': 'file names · {size} MiB',
+  'vscode.indexCaches.content': 'file contents · {size} MiB',
+  'vscode.indexCaches.none': 'There are no index caches yet.',
+  'vscode.indexCaches.inUse':
+    'Could not remove {names}: the cache is in use. Reload the window and try again.',
   'vscode.game.unloadSource': 'Unload a selected content source',
   'vscode.game.openMapFirst': 'Open a local map file before starting a game.',
   'vscode.game.selectInstallationFirst':
@@ -789,6 +796,13 @@ const RU_MESSAGES: Readonly<Record<keyof typeof EN_MESSAGES, string>> = Object.f
   'vscode.game.specifyFolder': 'Указать папку…',
   'vscode.game.folderNotInstallation':
     'Установленные игровые расширения не нашли установку игры в папке {path}.',
+  'vscode.indexCaches.title': 'Кэши индексов · {size} МиБ',
+  'vscode.indexCaches.pick': 'Выберите кэши для удаления; каждый построится заново, когда понадобится',
+  'vscode.indexCaches.names': 'имена файлов · {size} МиБ',
+  'vscode.indexCaches.content': 'содержимое файлов · {size} МиБ',
+  'vscode.indexCaches.none': 'Кэшей индексов пока нет.',
+  'vscode.indexCaches.inUse':
+    'Не удалось удалить {names}: кэш занят. Перезагрузите окно и повторите.',
   'vscode.game.unloadSource': 'Отключить выбранный источник содержимого',
   'vscode.game.openMapFirst': 'Перед запуском игры откройте локальный файл карты.',
   'vscode.game.selectInstallationFirst':

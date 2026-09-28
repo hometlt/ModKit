@@ -279,6 +279,46 @@ export function looksBinary(bytes: Uint8Array): boolean {
   return false
 }
 
+/**
+ * Whether a text search may take its files from a content index (host `content-index`). The index
+ * answers a literal query of printable ASCII over the default text files: every other byte folds
+ * into one class, so an encoding would change such a query's trigrams. A regular expression, any
+ * other character or a "files to include" choice is searched by reading every file, as before.
+ */
+export function contentIndexApplies(query: TextQuery, includes: readonly string[]): boolean {
+  if (query.isRegExp === true || includes.length > 0) return false
+  for (let index = 0; index < query.pattern.length; index++) {
+    const code = query.pattern.charCodeAt(index)
+    if (code !== 9 && (code < 32 || code > 126)) return false
+  }
+  return true
+}
+
+/** Bytes as the content index should see them: the index skips NULs, so UTF-16 becomes UTF-8. */
+export function indexableText(bytes: Uint8Array): Uint8Array {
+  const utf16 = (bytes[0] === 0xff && bytes[1] === 0xfe) || (bytes[0] === 0xfe && bytes[1] === 0xff)
+  return utf16 ? new TextEncoder().encode(decodeText(bytes, undefined)) : bytes
+}
+
+/**
+ * `read` runs up to `width` items ahead of the consumer; results come in order. A content index is
+ * built from one file at a time, and one read at a time would make the first search the slowest.
+ * `read` must not reject: a later read would fail unobserved while an earlier one is awaited.
+ */
+export async function* readAhead<T, R>(
+  items: AsyncIterable<T>,
+  read: (item: T) => Promise<R>,
+  width: number,
+): AsyncGenerator<R> {
+  const pending: Promise<R>[] = []
+  for await (const item of items) {
+    pending.push(read(item))
+    const next = pending.length >= width ? pending.shift() : undefined
+    if (next !== undefined) yield await next
+  }
+  for (const next of pending) yield await next
+}
+
 /** Text of a file in the encoding the search asked for; a byte-order mark wins, as in VS Code. */
 export function decodeText(bytes: Uint8Array, encoding: string | undefined): string {
   let label = (encoding ?? 'utf8').toLowerCase()

@@ -106,14 +106,19 @@ createContentSourceMapPreviewResourcePlanResolver,
 createNodeMapPreviewResourcePlanResolver,
 flushArtifactDigestCache,
 launchNodeGameResource,
+listIndexCaches,
+openCachedContentIndex,
+removeIndexCache,
 resolveContentSources,
 runningGameProcesses,
 stopGameProcesses,
 useArtifactDigestCache,
 watchGameLaunchLogs,
+type CachedContentIndex,
 type GameLaunchLogWatch,
 type NodeGameLaunchReceipt,
 } from '@modkit/host/node'
+import { configuredIndexCaches, indexCacheEnabled } from './contribution-settings.js'
 import type {
 AnyDescriptor,
 AssetSession,
@@ -536,6 +541,17 @@ async function activateModkit(
   const composing = timing.phase('compose host (catalog roots, inventory, realms)')
   // The broker's application ports: secrets in SecretStorage, prompts in the editor's own boxes.
   const credentialPrompter = createEditorCredentialPrompter(() => localizer)
+  // One directory of index caches for every codec and content source: an installation's name and
+  // content indexes are built once, whichever asked first, and listed and cleared in one place.
+  const indexCacheDirectory = join(context.globalStorageUri.fsPath, 'index-cache')
+  // Content indexes of source roots this window opened, one per root revision (see the search).
+  const contentIndexes = new Map<string, Promise<CachedContentIndex>>()
+  const closeContentIndexes = async (): Promise<void> => {
+    const open = [...contentIndexes.values()]
+    contentIndexes.clear()
+    await Promise.all(open.map(opened => opened.then(index => index.close()).catch(() => undefined)))
+  }
+  context.subscriptions.push({ dispose: () => void closeContentIndexes() })
   const host = await createVsCodeSubjectHost({
     credentials: {
       store: createSecretCredentialStore(context.secrets),
@@ -571,6 +587,8 @@ async function activateModkit(
     // Where a contribution may keep what it wants between windows (a parsed index, a digest
     // table). One subdirectory per contribution id; the host names it, the contribution fills it.
     contributionCacheDirectory: join(context.globalStorageUri.fsPath, 'contribution-cache'),
+    indexCacheDirectory,
+    configuredIndexCaches: vscode.workspace.getConfiguration('modkit').get('indexCaches'),
     // the bootstrap this extension ships beside its own bundle: a CommonJS entry has no
     // `import.meta.url` for the backend to resolve it from
     bootstrapUrl: pathToFileURL(join(extensionRoot, 'dist-app', 'worker-bootstrap.js')),
@@ -1038,6 +1056,7 @@ async function activateModkit(
         extensionRoots: extensionRootPaths(),
         ...(configured === undefined ? {} : { configPath: configured }),
         storage,
+        indexCacheDirectory,
         moduleOptions: extension => {
           const installationDirectory = selectedInstallationDirectory(
             host.services.host.inventory,
@@ -3073,6 +3092,42 @@ async function activateModkit(
               maxBytes,
               signal,
             ),
+          /*
+           * A root whose source states its revision keeps a content index in the shared cache: the
+           * first text search builds it, later ones read only the files that may hold the query.
+           */
+          async contentIndex(folder, files, signal) {
+            const { id, path } = sourceLocation(folder)
+            // one index per root: a folder inside one is searched by reading
+            if (path !== '') return undefined
+            const sources = await requireContentSources()
+            const root = (await sources.snapshot()).roots.find(item => item.id === id)
+            if (root?.revision === undefined) return undefined
+            const switches = configuredIndexCaches(
+              vscode.workspace.getConfiguration('modkit').get('indexCaches'),
+            )
+            if (!indexCacheEnabled(switches, root.product, 'content')) return undefined
+            const key = `${id}\n${root.revision}`
+            let opened = contentIndexes.get(key)
+            if (opened === undefined) {
+              opened = openCachedContentIndex({
+                directory: indexCacheDirectory,
+                manifest: {
+                  // ponytail: a root names no game; its product stands in until roots carry one
+                  game: root.product ?? root.region,
+                  ...(root.product === undefined ? {} : { product: root.product }),
+                  installation: root.storageOf ?? root.label,
+                },
+                root: id,
+                revision: root.revision,
+                files,
+                signal,
+              })
+              contentIndexes.set(key, opened)
+              void opened.catch(() => contentIndexes.delete(key))
+            }
+            return opened
+          },
         },
         log,
       ),
@@ -10200,6 +10255,59 @@ async function activateModkit(
         await publishSelectedSources(withSelectedContentSource(selectedSources, source))
         log(`selected content source: ${source.displayName} (${source.installPath})`)
         return source
+      })(),
+    ),
+
+    /** The shared index caches and their sizes; the picked ones go and are rebuilt when needed. */
+    vscode.commands.registerCommand('modkit.indexCaches', () =>
+      (async () => {
+        const caches = await listIndexCaches(indexCacheDirectory)
+        if (caches.length === 0) {
+          void vscode.window.showInformationMessage(
+            `Modkit: ${localizer.text('vscode.indexCaches.none')}`,
+          )
+          return
+        }
+        const mebibytes = (bytes: number) => (bytes / (1024 * 1024)).toFixed(1)
+        const picked = await vscode.window.showQuickPick(
+          caches.map(cache => ({
+            label: [
+              ...new Set([cache.manifest.game, cache.manifest.product].filter(part => part)),
+            ].join(' · '),
+            description: localizer.text(
+              cache.manifest.kind === 'names'
+                ? 'vscode.indexCaches.names'
+                : 'vscode.indexCaches.content',
+              { size: mebibytes(cache.bytes) },
+            ),
+            detail: cache.manifest.installation,
+            cache,
+          })),
+          {
+            canPickMany: true,
+            title: localizer.text('vscode.indexCaches.title', {
+              size: mebibytes(caches.reduce((sum, cache) => sum + cache.bytes, 0)),
+            }),
+            placeHolder: localizer.text('vscode.indexCaches.pick'),
+          },
+        )
+        if (picked === undefined || picked.length === 0) return
+        // an open index holds its file, and Windows refuses to delete an open file
+        await closeContentIndexes()
+        const failed: string[] = []
+        for (const item of picked) {
+          try {
+            await removeIndexCache(indexCacheDirectory, item.cache.folder)
+          } catch (error) {
+            failed.push(item.label)
+            log(`[index-cache] ${item.cache.folder}: ${String(error)}`)
+          }
+        }
+        log(`[index-cache] removed ${String(picked.length - failed.length)} of ${String(picked.length)}`)
+        if (failed.length > 0)
+          void vscode.window.showWarningMessage(
+            `Modkit: ${localizer.text('vscode.indexCaches.inUse', { names: failed.join(', ') })}`,
+          )
       })(),
     ),
 

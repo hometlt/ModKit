@@ -13,12 +13,15 @@
 import * as vscode from 'vscode'
 
 import {
+  contentIndexApplies,
   createQuickOpenRanking,
   decodeText,
   findTextMatches,
   globMatcher,
+  indexableText,
   looksBinary,
   quickOpenNeedle,
+  readAhead,
   textSearchRegExp,
   type LineRange,
 } from './workspace-search-core.js'
@@ -27,6 +30,11 @@ import {
 export interface SearchFolderFile {
   readonly path: string
   readonly size?: number
+}
+
+/** A root's content index: the paths that may hold a query (host `content-index`). */
+export interface SearchContentIndex {
+  candidates(query: string): Promise<readonly string[]>
 }
 
 /** What a Modkit folder scheme answers a search with. */
@@ -41,6 +49,16 @@ export interface WorkspaceSearchBackend {
     signal: AbortSignal,
   ): AsyncIterable<readonly SearchFolderFile[]>
   read(folder: vscode.Uri, path: string, maxBytes: number, signal: AbortSignal): Promise<Uint8Array>
+  /**
+   * The content index of `folder` when it is a root that can keep one: opened from the shared index
+   * cache, or built once from `files` — the root's text files, which the search hands over and
+   * matches its own query in as they pass. Undefined: the folder is searched by reading.
+   */
+  contentIndex?(
+    folder: vscode.Uri,
+    files: () => AsyncIterable<{ readonly path: string; readonly bytes: Uint8Array }>,
+    signal: AbortSignal,
+  ): Promise<SearchContentIndex | undefined>
 }
 
 /** Files read at once by one text search: a CASC read is a disk read and a decode. */
@@ -154,6 +172,9 @@ export function registerWorkspaceSearch(
           skipped++
           return
         }
+        match(file, bytes)
+      }
+      const match = (file: SearchFolderFile, bytes: Uint8Array): void => {
         if (remaining <= 0 || signal.aborted || looksBinary(bytes)) return
         const found = findTextMatches(decodeText(bytes, options.encoding), regexp, {
           multiline: query.isMultiline === true,
@@ -173,22 +194,88 @@ export function registerWorkspaceSearch(
       }
 
       const reading = new Set<Promise<void>>()
-      try {
-        for await (const page of backend.files(
-          options.folder,
-          known === undefined ? {} : { extensions: [...known] },
-          signal,
-        )) {
-          for (const file of page) {
-            if (remaining <= 0 || signal.aborted) break
-            if (exclude(file.path) || (include !== undefined && !include(file.path))) continue
-            if (known !== undefined && !known.has(extensionOf(file.path))) continue
-            if (file.size !== undefined && file.size > maxBytes) continue
-            if (reading.size >= TEXT_SEARCH_READS) await Promise.race(reading)
-            const task: Promise<void> = scan(file).finally(() => reading.delete(task))
-            reading.add(task)
+      const queue = async (file: SearchFolderFile): Promise<void> => {
+        if (reading.size >= TEXT_SEARCH_READS) await Promise.race(reading)
+        const task: Promise<void> = scan(file).finally(() => reading.delete(task))
+        reading.add(task)
+      }
+      const wanted = (file: SearchFolderFile): boolean =>
+        !exclude(file.path) &&
+        (include === undefined || include(file.path)) &&
+        (known === undefined || known.has(extensionOf(file.path))) &&
+        (file.size === undefined || file.size <= maxBytes)
+
+      // What an index is built from: every default text file of the root, whatever this search
+      // excludes, read a few ahead; this search's own query is matched in each as it passes.
+      const indexFiles = async function* (kinds: ReadonlySet<string>) {
+        const textFiles = async function* () {
+          for await (const page of backend.files(
+            options.folder,
+            { extensions: [...kinds] },
+            signal,
+          ))
+            for (const file of page)
+              if (kinds.has(extensionOf(file.path)) && (file.size ?? 0) <= MAX_READ_BYTES)
+                yield file
+        }
+        const read = async (file: SearchFolderFile) => {
+          try {
+            return {
+              file,
+              bytes: await backend.read(options.folder, file.path, MAX_READ_BYTES, signal),
+            }
+          } catch {
+            skipped++
+            return { file, bytes: undefined }
           }
-          if (remaining <= 0 || signal.aborted) break
+        }
+        for await (const { file, bytes } of readAhead(textFiles(), read, TEXT_SEARCH_READS)) {
+          if (bytes === undefined) continue
+          if (!exclude(file.path) && bytes.byteLength <= maxBytes) match(file, bytes)
+          yield { path: file.path, bytes: indexableText(bytes) }
+        }
+      }
+      // A root with a content index reads only the files that may hold the query.
+      let indexed = false
+      const index =
+        backend.contentIndex === undefined ||
+        known === undefined ||
+        !contentIndexApplies(query, options.includes)
+          ? undefined
+          : await backend
+              .contentIndex(
+                options.folder,
+                () => {
+                  indexed = true
+                  return indexFiles(known)
+                },
+                signal,
+              )
+              .catch((error: unknown) => {
+                if (!signal.aborted)
+                  log(`[search] ${options.folder.toString()}: content index: ${String(error)}`)
+                return undefined
+              })
+      try {
+        if (indexed) {
+          // building the index read and matched every text file already
+        } else if (index !== undefined) {
+          for (const path of await index.candidates(query.pattern)) {
+            if (remaining <= 0 || signal.aborted) break
+            if (wanted({ path })) await queue({ path })
+          }
+        } else {
+          for await (const page of backend.files(
+            options.folder,
+            known === undefined ? {} : { extensions: [...known] },
+            signal,
+          )) {
+            for (const file of page) {
+              if (remaining <= 0 || signal.aborted) break
+              if (wanted(file)) await queue(file)
+            }
+            if (remaining <= 0 || signal.aborted) break
+          }
         }
         await Promise.all(reading)
       } catch (error) {

@@ -162,6 +162,11 @@
       "icon": "$(folder-library)"
     },
     {
+      "command": "modkit.indexCaches",
+      "title": "%command.indexCaches%",
+      "icon": "$(database)"
+    },
+    {
       "command": "modkit.sources.openInstallation",
       "title": "%command.openGameInstallation%",
       "icon": "$(plug)"
@@ -425,6 +430,23 @@
           "type": "object"
         },
         "markdownDescription": "%configuration.contributionSettings.description%"
+      },
+      "modkit.indexCaches": {
+        "type": "object",
+        "default": {},
+        "additionalProperties": {
+          "type": "object",
+          "properties": {
+            "names": {
+              "type": "boolean"
+            },
+            "content": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        },
+        "markdownDescription": "%configuration.indexCaches.description%"
       }
     }
   },
@@ -844,6 +866,11 @@
         "command": "modkit.sources.refresh",
         "when": "view == modkit.sources",
         "group": "navigation@3"
+      },
+      {
+        "command": "modkit.indexCaches",
+        "when": "view == modkit.sources",
+        "group": "1_cache@1"
       },
       {
         "command": "modkit.resources.search",

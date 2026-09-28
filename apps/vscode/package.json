@@ -148,6 +148,7 @@
       },
       { "command": "modkit.game.launchActiveMap", "title": "%command.launchActiveMap%" },
       { "command": "modkit.game.launchActiveMod", "title": "%command.launchActiveMod%" },
+      { "command": "modkit.indexCaches", "title": "%command.indexCaches%", "icon": "$(database)" },
       {
         "command": "modkit.materializeContainerEntry",
         "title": "%command.materializeContainerMember%"
@@ -347,6 +348,16 @@
           },
           "markdownDescription": "%configuration.extensions.description%",
           "type": "array"
+        },
+        "modkit.indexCaches": {
+          "additionalProperties": {
+            "additionalProperties": false,
+            "properties": { "content": { "type": "boolean" }, "names": { "type": "boolean" } },
+            "type": "object"
+          },
+          "default": {},
+          "markdownDescription": "%configuration.indexCaches.description%",
+          "type": "object"
         },
         "modkit.launch.documentsDirectory": {
           "default": "",
@@ -876,6 +887,7 @@
           "when": "view == modkit.sources",
           "group": "navigation@1"
         },
+        { "command": "modkit.indexCaches", "when": "view == modkit.sources", "group": "1_cache@1" },
         {
           "command": "modkit.resources.refresh",
           "when": "view == modkit.resources",
@@ -953,6 +965,7 @@
     "onCommand:modkit.extensions.update",
     "onCommand:modkit.game.launchActiveMap",
     "onCommand:modkit.game.launchActiveMod",
+    "onCommand:modkit.indexCaches",
     "onCommand:modkit.materializeContainerEntry",
     "onCommand:modkit.navigateResource",
     "onCommand:modkit.openArchiveEntry",

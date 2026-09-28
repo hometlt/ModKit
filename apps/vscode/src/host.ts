@@ -379,6 +379,10 @@ export interface VsCodeSubjectHostOptions {
   readonly configuredContributionSettings?: unknown
   /** The host storage this window may cache into; each contribution gets a subdirectory. */
   readonly contributionCacheDirectory?: string
+  /** The one directory of index caches every contribution shares (sdk `index-caches`). */
+  readonly indexCacheDirectory?: string
+  /** Raw value of `modkit.indexCaches`: per game product, the name and content index switches. */
+  readonly configuredIndexCaches?: unknown
   /**
    * The worker bootstrap this extension shipped beside its bundle. Required in a packaged build:
    * the backend default resolves it through `import.meta.url`, which a CommonJS extension entry
@@ -518,6 +522,12 @@ export async function createVsCodeSubjectHost(
     ...(options.contributionCacheDirectory === undefined
       ? {}
       : { cacheDirectory: options.contributionCacheDirectory }),
+    ...(options.indexCacheDirectory === undefined
+      ? {}
+      : { indexCacheDirectory: options.indexCacheDirectory }),
+    ...(options.configuredIndexCaches === undefined
+      ? {}
+      : { indexCaches: options.configuredIndexCaches }),
   })
   const switchedOff = configuredDisabledContributions(options.configuredDisabledContributions)
   const switchedOffExtensions = configuredDisabledExtensions(options.configuredDisabledExtensions)

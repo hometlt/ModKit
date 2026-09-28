@@ -1,13 +1,57 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  contentIndexApplies,
   createQuickOpenRanking,
   decodeText,
   findTextMatches,
   globMatcher,
+  indexableText,
   looksBinary,
+  readAhead,
   textSearchRegExp,
 } from '../src/workspace-search-core.js'
+
+describe('content index use', () => {
+  it('answers a literal printable-ASCII query over the default files only', () => {
+    expect(contentIndexApplies({ pattern: 'CUnit Marine' }, [])).toBe(true)
+    expect(contentIndexApplies({ pattern: 'Marine', isCaseSensitive: true }, [])).toBe(true)
+    expect(contentIndexApplies({ pattern: 'Mar.ne', isRegExp: true }, [])).toBe(false)
+    expect(contentIndexApplies({ pattern: 'Marine' }, ['**/*.dds'])).toBe(false)
+    // other bytes fold into one class, so their trigrams depend on the file's encoding
+    expect(contentIndexApplies({ pattern: 'Морпех' }, [])).toBe(false)
+    expect(contentIndexApplies({ pattern: 'line\nbreak' }, [])).toBe(false)
+  })
+
+  it('hands the index UTF-16 text as UTF-8 and everything else as it is', () => {
+    const utf16 = new Uint8Array([0xff, 0xfe, 0x4d, 0x00, 0x61, 0x00])
+    expect(new TextDecoder().decode(indexableText(utf16))).toBe('Ma')
+    const utf8 = new TextEncoder().encode('Marine')
+    expect(indexableText(utf8)).toBe(utf8)
+  })
+
+  it('reads ahead and still yields in order', async () => {
+    const started: number[] = []
+    const items = async function* () {
+      yield* [1, 2, 3, 4, 5]
+    }
+    const results: number[] = []
+    for await (const value of readAhead(
+      items(),
+      async item => {
+        started.push(item)
+        await new Promise(done => setTimeout(done, 6 - item))
+        return item * 10
+      },
+      3,
+    )) {
+      // three reads were already running when the first result arrived
+      if (results.length === 0) expect(started.length).toBeGreaterThanOrEqual(3)
+      results.push(value)
+    }
+    expect(results).toEqual([10, 20, 30, 40, 50])
+  })
+})
 
 const preview = { matchLines: 100, charsPerLine: 10_000 }
 
