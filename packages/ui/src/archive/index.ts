@@ -89,7 +89,17 @@ export interface ArchiveViewerOptions {
 
 /** What the Explorer offers on a file, a folder or the archive itself. */
 export type ArchiveAction =
-  'open' | 'new-file' | 'new-folder' | 'rename' | 'delete' | 'copy-path' | 'copy-relative-path'
+  | 'open'
+  | 'new-file'
+  | 'new-folder'
+  | 'rename'
+  | 'delete'
+  | 'copy-path'
+  | 'copy-relative-path'
+  /** Write the file, the folder or (on the archive itself) everything out to disk. */
+  | 'extract'
+  /** Pick files on disk and put them into the folder or the archive. */
+  | 'add-files'
 
 /** A path inside the archive (`''` for the archive itself) and what is there. */
 export interface ArchiveTarget {
@@ -463,10 +473,13 @@ export function createArchiveViewer(options: ArchiveViewerOptions = {}): ViewerM
 
       /** VS Code's Explorer menu, per kind: what a file, a folder or the archive itself offers. */
       const MENU: Readonly<Record<ArchiveTarget['kind'], readonly (ArchiveAction | '-')[]>> = {
-        file: ['open', '-', 'rename', 'delete', '-', 'copy-path', 'copy-relative-path'],
+        file: ['open', 'extract', '-', 'rename', 'delete', '-', 'copy-path', 'copy-relative-path'],
         folder: [
           'new-file',
           'new-folder',
+          'add-files',
+          '-',
+          'extract',
           '-',
           'rename',
           'delete',
@@ -474,7 +487,7 @@ export function createArchiveViewer(options: ArchiveViewerOptions = {}): ViewerM
           'copy-path',
           'copy-relative-path',
         ],
-        root: ['new-file', 'new-folder', '-', 'copy-path'],
+        root: ['new-file', 'new-folder', 'add-files', '-', 'extract', '-', 'copy-path'],
       }
       const LABEL: Readonly<Record<ArchiveAction, Parameters<typeof localizer.text>[0]>> = {
         open: 'viewer.archiveOpenInTab',
@@ -484,6 +497,8 @@ export function createArchiveViewer(options: ArchiveViewerOptions = {}): ViewerM
         delete: 'viewer.archiveDelete',
         'copy-path': 'viewer.archiveCopyPath',
         'copy-relative-path': 'viewer.archiveCopyRelativePath',
+        extract: 'viewer.archiveExtract',
+        'add-files': 'viewer.archiveAddFiles',
       }
       /** `open` needs a way to reach the file; every other action needs the host's file manager. */
       const isAvailable = (action: ArchiveAction): boolean =>
@@ -505,7 +520,11 @@ export function createArchiveViewer(options: ArchiveViewerOptions = {}): ViewerM
           const item = element(node, 'button', {
             part: 'explorer.tabmenu-item',
             role: 'menuitem',
-            text: localizer.text(LABEL[action]),
+            text: localizer.text(
+              action === 'extract' && target.kind === 'root'
+                ? 'viewer.archiveExtractAll'
+                : LABEL[action],
+            ),
           }) as HTMLButtonElement
           item.type = 'button'
           item.addEventListener('click', () => {

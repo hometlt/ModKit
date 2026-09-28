@@ -290,6 +290,30 @@ describe('archive viewer', () => {
     expect(opened).toEqual(['a'])
   })
 
+  it('offers Extract on a file and hands it to the host as an action (plan 7.28)', async () => {
+    const source: NamespaceEntrySource = {
+      async list() {
+        return { items: [entry('a', 'a.txt')] }
+      },
+      async openEntry(id) {
+        return { value: { id, uri: `mem://${id}` } as never, async release() {} }
+      },
+    }
+    const acted: string[] = []
+    const { root } = await mountArchive(source, {
+      act: async (action, target) => {
+        acted.push(`${action}:${target.kind}:${target.path}`)
+        return false
+      },
+    })
+    rowNamed(root, 'a.txt')?.dispatchEvent(CONTEXTMENU)
+    const items = partsIn(root, 'explorer.tabmenu-item')
+    const extract = items.find(item => item.textContent === 'Extract…')
+    expect(extract).toBeDefined()
+    extract?.dispatchEvent(CLICK)
+    expect(acted).toEqual(['extract:file:a.txt'])
+  })
+
   it('lists the root via children() and fetches a folder\'s children only once it is expanded', async () => {
     const calls: string[] = []
     const source: NamespaceEntrySource = {

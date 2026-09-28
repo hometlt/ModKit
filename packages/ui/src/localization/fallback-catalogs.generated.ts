@@ -3,12 +3,15 @@ import type { UiMessageCatalog } from './index.js'
 
 export const ARCHIVE_FALLBACK_MESSAGES = {
   'viewer.archive': 'Archive',
+  'viewer.archiveAddFiles': 'Add Files…',
   'viewer.archiveCapped': 'Listed (incomplete)',
   'viewer.archiveCopyPath': 'Copy Path',
   'viewer.archiveCopyRelativePath': 'Copy Relative Path',
   'viewer.archiveDelete': 'Delete',
   'viewer.archiveEmpty': 'This archive holds no files.',
   'viewer.archiveEntry': 'Selected file',
+  'viewer.archiveExtract': 'Extract…',
+  'viewer.archiveExtractAll': 'Extract All…',
   'viewer.archiveFileCount': '{count} files',
   'viewer.archiveFiles': 'Files',
   'viewer.archiveFolders': 'Folders',
