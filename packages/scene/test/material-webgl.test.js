@@ -207,8 +207,11 @@ it('shares a VAO across placed instances, new uniform leases and frames without 
   assert.deepEqual(renderer.stats(), firstStats)
   assert.deepEqual(submissions.at(-1).constants.get(3), [1, 1, 1, 1])
   assert.equal(submissions.at(-1).vao, submissions[0].vao)
-  renderer.sweep() // No use this frame: VAOs and their buffers must both be evicted.
+  renderer.sweep() // No use this frame: VAOs are evicted, buffers wait one frame as spares.
   assert.equal(live.vao.size, 0)
+  assert.equal(live.buffer.size, 3)
+  assert.deepEqual(renderer.stats(), { ...firstStats, vertexArrayEntries: 0 })
+  renderer.sweep() // Spares no draw took are deleted.
   assert.equal(live.buffer.size, 0)
   assert.deepEqual(renderer.stats(), emptyStats)
   renderer.draw(draw(mesh), camera)
@@ -217,6 +220,32 @@ it('shares a VAO across placed instances, new uniform leases and frames without 
   renderer.release()
   assert.deepEqual(renderer.stats(), emptyStats)
   assert.equal(firstStats.bufferEntries, 3) // Old snapshots do not track live state.
+  for (const resources of Object.values(live)) assert.equal(resources.size, 0)
+})
+
+it('uploads a new array into the buffer an array of its size left behind', () => {
+  const { gl, calls, live } = context()
+  const renderer = materialWebGlDraws(gl, new Map())
+  const mesh = primitive()
+  renderer.draw(draw(mesh), camera)
+  renderer.sweep()
+  renderer.sweep() // The first arrays are spares now.
+  const moved = {
+    ...mesh,
+    positions: mesh.positions.map(value => value + 1),
+    textureCoordinates: mesh.textureCoordinates.slice(),
+    indices: mesh.indices.slice(),
+  }
+  renderer.draw(draw(moved), camera)
+  assert.equal(calls.get('createBuffer'), 3)
+  assert.equal(calls.get('deleteBuffer') ?? 0, 0)
+  assert.equal(calls.get('bufferData'), 6)
+  assert.equal(live.buffer.size, 3)
+  assert.deepEqual(
+    new Set([...live.buffer].map(buffer => buffer.data)),
+    new Set([moved.positions, moved.textureCoordinates, moved.indices]),
+  )
+  renderer.release()
   for (const resources of Object.values(live)) assert.equal(resources.size, 0)
 })
 

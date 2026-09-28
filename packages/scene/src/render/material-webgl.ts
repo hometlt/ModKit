@@ -106,6 +106,7 @@ export function materialWebGlDraws(
   // did not touch, `release()` drops everything.
   interface BufferEntry {
     buffer: WebGLBuffer
+    target: number
     byteLength: number
     used: boolean
   }
@@ -119,6 +120,14 @@ export function materialWebGlDraws(
     used: boolean
   }
   const retained = new Map<ArrayBufferView, BufferEntry>()
+  // Buffers of arrays a frame stopped drawing, by target and size, for the next frame's new arrays:
+  // an animated scene draws new sprite and skin arrays of the same sizes every frame (on Amphion
+  // ~1 500 buffers), and creating and deleting a buffer for each was half of its GPU process work.
+  // A new array respecifies a spare's storage (bufferData), so a frame still in flight is not waited
+  // for.
+  const spareBuffers = new Map<string, WebGLBuffer[]>()
+  let spareBytes = 0
+  const MAX_SPARE_BYTES = 64 * 1024 * 1024
   // Instances share arrays, but not primitive objects. Attribute layouts belong to the linked
   // program; uniforms (including transform/tint) do not belong in the VAO key.
   const vertexArrays = new Map<WebGLProgram, Map<Float32Array, VertexArrayEntry[]>>()
@@ -205,11 +214,13 @@ export function materialWebGlDraws(
   const retainedBuffer = (target: number, data: ArrayBufferView) => {
     let entry = retained.get(data)
     if (entry === undefined) {
-      const buffer = gl.createBuffer()
+      const spare = spareBuffers.get(`${target}:${data.byteLength}`)?.pop()
+      if (spare !== undefined) spareBytes -= data.byteLength
+      const buffer = spare ?? gl.createBuffer()
       if (buffer === null) throw new TypeError('could not allocate material geometry')
       gl.bindBuffer(target, buffer)
       gl.bufferData(target, data, gl.STATIC_DRAW)
-      entry = { buffer, byteLength: data.byteLength, used: true }
+      entry = { buffer, target, byteLength: data.byteLength, used: true }
       retained.set(data, entry)
     } else gl.bindBuffer(target, entry.buffer)
     entry.used = true
@@ -621,16 +632,19 @@ export function materialWebGlDraws(
      * Snapshot before/after a pass or frame for its direct draw count. */
     drawCalls: () => drawCalls,
     /** Snapshot of this renderer's owned GPU geometry; no GL queries or frame-state changes.
-     * Each retained entry owns one distinct buffer, even for views sharing CPU backing storage.
+     * Each retained entry owns one distinct buffer, even for views sharing CPU backing storage;
+     * spare buffers waiting for the next frame's arrays count as held.
      * Bytes describe uploaded buffer storage, excluding textures and driver VAO/program overhead. */
     stats() {
-      let bufferBytesRetained = 0
+      let bufferBytesRetained = spareBytes
       for (const entry of retained.values()) bufferBytesRetained += entry.byteLength
+      let spares = 0
+      for (const buffers of spareBuffers.values()) spares += buffers.length
       let vertexArrayEntries = 0
       for (const geometries of vertexArrays.values())
         for (const variants of geometries.values()) vertexArrayEntries += variants.length
       return Object.freeze({
-        bufferEntries: retained.size,
+        bufferEntries: retained.size + spares,
         bufferBytesRetained,
         vertexArrayEntries,
       })
@@ -661,6 +675,10 @@ export function materialWebGlDraws(
       samplers.clear()
       for (const entry of retained.values()) gl.deleteBuffer(entry.buffer)
       retained.clear()
+      for (const buffers of spareBuffers.values())
+        for (const buffer of buffers) gl.deleteBuffer(buffer)
+      spareBuffers.clear()
+      spareBytes = 0
     },
     sweep() {
       // Per-frame materials (effects, playback-time uniforms) must not accumulate leases.
@@ -695,11 +713,25 @@ export function materialWebGlDraws(
         }
         if (geometries.size === 0) vertexArrays.delete(program)
       }
+      // Spares nothing took since the last sweep are deleted; this frame's released buffers wait
+      // for the next one.
+      for (const buffers of spareBuffers.values())
+        for (const buffer of buffers) gl.deleteBuffer(buffer)
+      spareBuffers.clear()
+      spareBytes = 0
       for (const [data, entry] of retained) {
         if (entry.used) entry.used = false
         else {
-          gl.deleteBuffer(entry.buffer)
           retained.delete(data)
+          if (spareBytes + entry.byteLength > MAX_SPARE_BYTES) {
+            gl.deleteBuffer(entry.buffer)
+            continue
+          }
+          const key = `${entry.target}:${entry.byteLength}`
+          const buffers = spareBuffers.get(key)
+          if (buffers === undefined) spareBuffers.set(key, [entry.buffer])
+          else buffers.push(entry.buffer)
+          spareBytes += entry.byteLength
         }
       }
     },
