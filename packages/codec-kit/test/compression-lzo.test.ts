@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { COMPRESSION_OUTPUT_LIMIT } from '../src/compression/bounded.js'
-import { decodeLzo1x, LZO_MALFORMED } from '../src/compression/lzo.js'
+import { decodeLzo1x, encodeLzo1x, LZO_MALFORMED } from '../src/compression/lzo.js'
 
 const encoder = new TextEncoder()
 const bytes = (...parts: (number | string | Uint8Array)[]) =>
@@ -86,5 +86,21 @@ describe('LZO1X', () => {
     expect(() => decodeLzo1x(bytes(17 + 4, 'abcd', ...END), 2)).toThrow(
       expect.objectContaining({ code: COMPRESSION_OUTPUT_LIMIT }),
     )
+  })
+})
+
+describe('LZO1X storing encoder', () => {
+  it('writes streams the decoder reads back, across the short, extended and empty runs', () => {
+    let seed = 11
+    const random = () => ((seed = (seed * 1103515245 + 12345) & 0x7fffffff) >> 8) & 0xff
+    for (const length of [0, 1, 3, 4, 238, 239, 273, 274, 529, 8192, 70_000]) {
+      const bytes = Uint8Array.from({ length }, random)
+      const stream = encodeLzo1x(bytes)
+      expect(decodeLzo1x(stream, length), `${length} bytes`).toEqual(bytes)
+    }
+    expect([...encodeLzo1x(new Uint8Array())]).toEqual([0x11, 0, 0])
+    expect([...encodeLzo1x(Uint8Array.of(7))]).toEqual([18, 7, 0x11, 0, 0])
+    // 18 + 255 + 1: a zero opener, one 255 step, then 1
+    expect([...encodeLzo1x(new Uint8Array(274)).subarray(0, 3)]).toEqual([0, 0, 1])
   })
 })

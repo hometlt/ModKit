@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { COMPRESSION_OUTPUT_LIMIT } from '../src/compression/bounded.js'
-import { applyFormat40, decodeLcw, LCW_MALFORMED } from '../src/compression/lcw.js'
+import { applyFormat40, decodeLcw, encodeLcw, LCW_MALFORMED } from '../src/compression/lcw.js'
 
 const encoder = new TextEncoder()
 const bytes = (...parts: (number | string)[]) =>
@@ -84,5 +84,27 @@ describe('Format40', () => {
     expect(() => applyFormat40(bytes(0x03, 1), new Uint8Array(8))).toThrow(
       expect.objectContaining({ code: LCW_MALFORMED }),
     )
+  })
+})
+
+describe('LCW encoder', () => {
+  it('fills runs of four or more and stores the rest, as the decoder reads back', () => {
+    let seed = 5
+    const random = () => ((seed = (seed * 1103515245 + 12345) & 0x7fffffff) >> 8) & 0xff
+    const overlay = new Uint8Array(8192).fill(0xff)
+    overlay.set([1, 2, 3], 500)
+    for (const bytes of [
+      new Uint8Array(),
+      Uint8Array.from({ length: 1000 }, random),
+      overlay,
+      new Uint8Array(70_000),
+    ]) {
+      const { output, written } = decodeLcw(encodeLcw(bytes), bytes.byteLength)
+      expect(written).toBe(bytes.byteLength)
+      expect(output).toEqual(bytes)
+    }
+    // an all-0xFF overlay chunk of 8192 around three bytes: two fills and one literal run
+    expect(encodeLcw(overlay).byteLength).toBe(4 + 4 + 4 + 1)
+    expect([...encodeLcw(Uint8Array.of(9, 9, 9))]).toEqual([0x83, 9, 9, 9, 0x80])
   })
 })

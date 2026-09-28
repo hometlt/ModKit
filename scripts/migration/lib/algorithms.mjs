@@ -5,7 +5,7 @@ import ts from 'typescript'
 import { sha256 } from './legacy-oracle.mjs'
 
 export const algorithmPattern =
-  /^(?:crc32|adler32|inflate\w*|mpqHash|parseXml\w*|boundsOf|invertAffine|decompose\w*|quaternionFrom\w*|decodeBc\w*|encodeDxt\w*|parsePalette|applyPalette|wavHeader|encodeWav|encodeOgg|decodeFadpcm|decodeXaAdpcm|vorbisIdentificationHeader|vorbisCommentHeader|vorbisModeBlockflags|vorbisPacketsToOgg|decodeEaXa\w*|refPackRangeSource|cdRomEdc|edc32|decodeTga\w*|parseTga|decodePcx\w*|parsePcx|parseSylk|decodeAdpcm\w*|decodeImaWs|decodeWsAdpcm|decodeLcw\w*|applyFormat40|decodeLzo\w*|sha1\w*|md5\w*)$/iu
+  /^(?:crc32|adler32|inflate\w*|mpqHash|parseXml\w*|boundsOf|invertAffine|decompose\w*|quaternionFrom\w*|decodeBc\w*|encodeDxt\w*|parsePalette|applyPalette|wavHeader|encodeWav|encodeOgg|decodeFadpcm|decodeXaAdpcm|vorbisIdentificationHeader|vorbisCommentHeader|vorbisModeBlockflags|vorbisPacketsToOgg|decodeEaXa\w*|refPackRangeSource|cdRomEdc|edc32|decodeTga\w*|parseTga|decodePcx\w*|parsePcx|parseSylk|decodeAdpcm\w*|decodeImaWs|decodeWsAdpcm|decodeLcw\w*|encodeLcw\w*|applyFormat40|decodeLzo\w*|encodeLzo\w*|sha1\w*|md5\w*)$/iu
 export const algorithmRepositories = [
   'modkit-core',
   'modkit-extensions-blizzard',

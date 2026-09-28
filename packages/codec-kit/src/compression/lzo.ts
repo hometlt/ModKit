@@ -1,7 +1,7 @@
 /**
  * LZO1X decompression (the format of Oberhumer's `lzo1x_decompress_safe`), as the IsoMapPack5 and
- * PreviewPack of Tiberian Sun and Red Alert 2 maps carry it in their "format 5" chunks. Only
- * decompression: nothing in Modkit writes LZO.
+ * PreviewPack of Tiberian Sun and Red Alert 2 maps carry it in their "format 5" chunks, and a
+ * storing encoder for the packs a map writer re-packs.
  *
  * A stream is literal runs and matches: M1 (2 bytes near, or 3 bytes 2 KiB back right after a
  * literal run), M2 (3–8 bytes up to 2 KiB back), M3 (up to 16 KiB back) and M4 (16–48 KiB back);
@@ -143,4 +143,28 @@ export function decodeLzo1x(input: Uint8Array, outputBytes: number): Uint8Array 
       }
     }
   }
+}
+
+/**
+ * `bytes` as an LZO1X stream that `decodeLzo1x` (and the games) read back: one literal run and the
+ * end marker. ponytail: stores, does not compress (the stream is 3–5 bytes plus 1 per 255 longer
+ * than its input); a matching encoder when map packs must stay small.
+ */
+export function encodeLzo1x(bytes: Uint8Array): Uint8Array {
+  if (!(bytes instanceof Uint8Array)) throw new TypeError('LZO1X input must be bytes')
+  const n = bytes.byteLength
+  const head: number[] = []
+  if (n > 0 && n <= 238) head.push(17 + n)
+  else if (n > 238) {
+    // a first byte of 0 opens a run of 18 + the zero-extended count
+    head.push(0)
+    let rest = n - 18
+    for (; rest > 255; rest -= 255) head.push(0)
+    head.push(rest)
+  }
+  const out = new Uint8Array(head.length + n + 3)
+  out.set(head)
+  out.set(bytes, head.length)
+  out.set([0x11, 0, 0], head.length + n)
+  return out
 }

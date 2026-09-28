@@ -147,3 +147,35 @@ export function applyFormat40(input: Uint8Array, target: Uint8Array): void {
     }
   }
 }
+
+/**
+ * `bytes` as an absolute LCW stream that `decodeLcw` (and the games) read back: runs of
+ * four or more equal bytes as fills, the rest as literal runs of up to 63, then the end command.
+ * ponytail: no back references, so repeated patterns other than runs stay as they are.
+ */
+export function encodeLcw(bytes: Uint8Array): Uint8Array {
+  if (!(bytes instanceof Uint8Array)) throw new TypeError('LCW input must be bytes')
+  const out: number[] = []
+  let literalStart = 0
+  const flush = (end: number): void => {
+    for (let at = literalStart; at < end; at += 63) {
+      const count = Math.min(63, end - at)
+      out.push(0x80 | count)
+      for (let index = at; index < at + count; index += 1) out.push(bytes[index] ?? 0)
+    }
+  }
+  let at = 0
+  while (at < bytes.byteLength) {
+    let run = 1
+    while (at + run < bytes.byteLength && run < 0xffff && bytes[at + run] === bytes[at]) run += 1
+    if (run >= 4) {
+      flush(at)
+      out.push(0xfe, run & 0xff, run >>> 8, bytes[at] ?? 0)
+      at += run
+      literalStart = at
+    } else at += run
+  }
+  flush(bytes.byteLength)
+  out.push(0x80)
+  return Uint8Array.from(out)
+}
