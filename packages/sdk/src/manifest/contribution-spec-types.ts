@@ -146,6 +146,12 @@ export interface ContainerTopologyAlias {
    * suffix (per-locale asset folders). Absent means the container root only.
    */
   readonly assetRoots?: readonly string[]
+  /**
+   * File names that make a folder this container, unpacked, when the container has no extension of
+   * its own (a Minecraft resource pack is any folder holding `pack.mcmeta`). Compared
+   * case-insensitively; the nearest such folder above a file bounds its `enclosing-container` scope.
+   */
+  readonly markers?: readonly string[]
 }
 
 export interface DerivedProbePlan {

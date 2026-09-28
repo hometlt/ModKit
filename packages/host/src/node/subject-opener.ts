@@ -127,6 +127,7 @@ export function createFilesystemInputResolver(
     roots: options.roots.map(root => resolve(root)),
     containerExtensions: containerExtensionsOf(options.inventory),
     containerAssetRoots: containerAssetRootsOf(options.inventory),
+    containerMarkers: containerMarkersOf(options.inventory),
   })
   return createCompanionInputResolver(
     options.assetOrigins === undefined || options.assetOrigins.length === 0
@@ -154,6 +155,22 @@ function containerAssetRootsOf(inventory: Inventory): Readonly<Record<string, re
     }
   }
   return Object.freeze(roots)
+}
+
+/** Per marker file a container codec declares (`pack.mcmeta`), that container's asset directories. */
+function containerMarkersOf(inventory: Inventory): Readonly<Record<string, readonly string[]>> {
+  const markers: Record<string, readonly string[]> = {}
+  for (const extension of inventory.extensions) {
+    for (const contribution of extension.contributions) {
+      const manifest = contribution.manifest
+      if (manifest?.contract.id !== CODEC_CONTRIBUTION_CONTRACT) continue
+      const spec = manifest.spec as unknown as CodecContributionSpecV1Wire
+      if (spec.sourceTopology !== 'namespace') continue
+      for (const marker of spec.container?.markers ?? [])
+        markers[marker.toLowerCase()] ??= spec.container?.assetRoots ?? ['']
+    }
+  }
+  return Object.freeze(markers)
 }
 
 /**

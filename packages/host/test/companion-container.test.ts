@@ -60,6 +60,34 @@ describe('filesystem enclosing-container scope', () => {
     ])
   })
 
+  it('takes a folder holding a declared marker file as its container (a resource pack)', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'x3-container-'))
+    temporaries.push(root)
+    const pack = join(root, 'Faithful')
+    const models = join(pack, 'assets', 'minecraft', 'models', 'block')
+    const textures = join(pack, 'assets', 'minecraft', 'textures', 'block')
+    await mkdir(models, { recursive: true })
+    await mkdir(textures, { recursive: true })
+    await writeFile(join(pack, 'pack.mcmeta'), '{"pack":{"pack_format":34}}')
+    await writeFile(join(models, 'stone.json'), '{}')
+    await writeFile(join(textures, 'stone.png'), 'png')
+    const origin = createFilesystemCompanionOrigin({
+      primaryPath: join(models, 'stone.json'),
+      roots: [root],
+      containerMarkers: { 'pack.mcmeta': [''] },
+    })
+    expect(origin.scopes).toEqual(['sibling-directory', 'enclosing-container'])
+    const texture = 'assets/minecraft/textures/block/stone.png'
+    expect(await ids(origin.enumerate('enclosing-container', { prefix: texture }))).toEqual([
+      texture,
+    ])
+    // without the marker the pack is only a folder
+    expect(
+      createFilesystemCompanionOrigin({ primaryPath: join(models, 'stone.json'), roots: [root] })
+        .scopes,
+    ).toEqual(['sibling-directory'])
+  })
+
   it('offers no container without a matching ancestor inside the granted roots', async () => {
     const { root, primary } = await mod()
     expect(createFilesystemCompanionOrigin({ primaryPath: primary, roots: [root] }).scopes).toEqual(

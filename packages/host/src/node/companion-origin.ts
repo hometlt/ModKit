@@ -11,6 +11,7 @@
  * never call.
  */
 
+import { existsSync } from 'node:fs'
 import { opendir, lstat } from 'node:fs/promises'
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { ModkitError, throwIfAborted } from '@modkit/core'
@@ -61,6 +62,11 @@ export interface FilesystemCompanionOriginOptions {
    * suffix). An extension without an entry serves its root only.
    */
   readonly containerAssetRoots?: Readonly<Record<string, readonly string[]>>
+  /**
+   * Per lower-case marker file name, the asset directories of the container it marks: a folder
+   * holding one (`pack.mcmeta`) is that container unpacked, as a folder named like its extension is.
+   */
+  readonly containerMarkers?: Readonly<Record<string, readonly string[]>>
 }
 
 function insideRoot(root: string, path: string): boolean {
@@ -99,12 +105,19 @@ export function createFilesystemCompanionOrigin(
   const caseSensitivity = options.caseSensitivity ?? platformCaseSensitivity()
   const fold = (value: string): string =>
     caseSensitivity === 'insensitive' ? value.toLowerCase() : value
-  const container = enclosingContainer(root, roots, options.containerExtensions ?? [])
+  const enclosing = enclosingContainer(
+    root,
+    roots,
+    options.containerExtensions ?? [],
+    options.containerMarkers ?? {},
+  )
+  const container = enclosing?.path
   const assetRootPatterns =
-    container === undefined
+    enclosing === undefined
       ? ['']
-      : (Object.entries(options.containerAssetRoots ?? {}).find(([extension]) =>
-          basename(container).toLowerCase().endsWith(`.${extension.toLowerCase()}`),
+      : (enclosing.assetRoots ??
+        Object.entries(options.containerAssetRoots ?? {}).find(([extension]) =>
+          basename(enclosing.path).toLowerCase().endsWith(`.${extension.toLowerCase()}`),
         )?.[1] ?? [''])
   /** The container's asset directories that exist, in lookup order (resolved once). */
   let assetBases: Promise<readonly string[]> | undefined
@@ -256,14 +269,19 @@ function enclosingContainer(
   directory: string,
   roots: readonly string[],
   extensions: readonly string[],
-): string | undefined {
-  if (extensions.length === 0) return undefined
+  markers: Readonly<Record<string, readonly string[]>>,
+): { readonly path: string; readonly assetRoots?: readonly string[] } | undefined {
+  const markerNames = Object.keys(markers)
+  if (extensions.length === 0 && markerNames.length === 0) return undefined
   const suffixes = extensions.map(extension => `.${extension.toLowerCase()}`)
   for (let current = directory; ; current = dirname(current)) {
     if (!roots.some(value => insideRoot(value, current))) return undefined
     const name = basename(current).toLowerCase()
     if (suffixes.some(suffix => name.endsWith(suffix) && name.length > suffix.length))
-      return current
+      return { path: current }
+    // ponytail: one stat per marker per ancestor; a directory listing if codecs declare many
+    const marker = markerNames.find(file => existsSync(join(current, file)))
+    if (marker !== undefined) return { path: current, assetRoots: markers[marker] ?? [''] }
     if (dirname(current) === current) return undefined
   }
 }

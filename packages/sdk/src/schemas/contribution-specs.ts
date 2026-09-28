@@ -471,6 +471,11 @@ export const codecContributionSpecV1Schema = {
           properties: {
             formatId: nonEmptyString,
             assetRoots: { type: 'array', maxItems: 16, items: { type: 'string', maxLength: 256 } },
+            markers: {
+              type: 'array',
+              maxItems: 8,
+              items: { type: 'string', minLength: 1, maxLength: 256, pattern: '^[^/\\\\]+$' },
+            },
           },
         },
         probe: probePlanSchema.oneOf[1],
