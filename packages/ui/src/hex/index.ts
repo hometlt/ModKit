@@ -14,6 +14,17 @@ import { withEnglishUiFallback } from '../localization/fallback.js'
 
 export const HEX_WINDOW_BYTES = 4096
 
+/**
+ * A byte offset as a person types it: `0x1F` and bare hex such as `ff` are hexadecimal, plain
+ * digits decimal. Undefined for anything else. (`BigInt('ff')` throws, so the field never passes
+ * its text to `BigInt` unchecked.)
+ */
+export function parseByteOffset(text: string): bigint | undefined {
+  const raw = text.trim()
+  if (/^0x[0-9a-f]+$/iu.test(raw) || /^[0-9]+$/u.test(raw)) return BigInt(raw)
+  return /^[0-9a-f]+$/iu.test(raw) ? BigInt(`0x${raw}`) : undefined
+}
+
 export interface HexWindow {
   readonly offset: bigint
   readonly bytes: Uint8Array
@@ -82,10 +93,7 @@ export function createHexViewer(options: HexViewerOptions = {}): ViewerModule {
       content.tabIndex = 0
 
       const render = async () => {
-        const value = /^(?:0x)?[0-9a-f]+$/iu.test(offset.value.trim())
-          ? BigInt(offset.value.trim())
-          : -1n
-        const window = await model.read(value, scope.signal)
+        const window = await model.read(parseByteOffset(offset.value) ?? -1n, scope.signal)
         setViewerText(content, window.text)
         content.dataset['offset'] = window.offset.toString(10)
       }

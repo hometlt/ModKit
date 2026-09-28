@@ -19,7 +19,7 @@ import {
   setViewerText,
   ViewerMountScope,
 } from '../viewer/index.js'
-import { HexWindowModel, HEX_WINDOW_BYTES } from '../hex/index.js'
+import { HexWindowModel, HEX_WINDOW_BYTES, parseByteOffset } from '../hex/index.js'
 import { handleEditorSaveRequest } from '../editor/commands.js'
 import { type UiLocalizer } from '../localization/index.js'
 import { HEX_EDITOR_FALLBACK_MESSAGES } from '../localization/fallback-catalogs.generated.js'
@@ -205,9 +205,7 @@ export function createHexEditor(options: HexEditorOptions = {}): EditorModule {
       }
 
       const renderWindow = async (): Promise<void> => {
-        const raw = offsetInput.value.trim()
-        const parsed = /^(?:0x)?[0-9a-f]+$/iu.test(raw) ? BigInt(raw) : 0n
-        const view = await model.read(parsed, scope.signal)
+        const view = await model.read(parseByteOffset(offsetInput.value) ?? 0n, scope.signal)
         windowOffset = view.offset
         original = view.bytes
         pending.clear()
