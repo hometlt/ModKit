@@ -220,6 +220,7 @@ assertMaterializationBound,
 createDiagnosticJournal,
 installationGameIds,
 installationsAtFolder,
+regionsToConnect,
 selectedContentSource,
 selectedContentSources,
 selectedInstallationDirectory,
@@ -2681,14 +2682,17 @@ async function activateModkit(
             )
             return
           }
-          // A download that needs a key asks for it once, here, rather than failing every asset.
-          const connected = new Set(
-            ((await source.snapshot()).connections ?? []).map(item => item.region),
-          )
-          for (const region of (await source.snapshot()).regions ?? []) {
-            if (region.credentialId !== undefined && !connected.has(region.id)) {
-              await connectAccount(source, region.id)
-            }
+          // A download that needs a key asks for it once, here, rather than failing every asset —
+          // only for the regions these downloads come from: another game's account (Battle.net)
+          // has nothing to do with them, and its failed sign-in stopped the command.
+          const current = await source.snapshot()
+          for (const region of regionsToConnect(
+            [...wanted.values()].map(item => item.sourceId),
+            downloaders,
+            current.regions ?? [],
+            (current.connections ?? []).map(item => item.region),
+          )) {
+            await connectAccount(source, region)
           }
           let downloaded = 0
           let present = 0

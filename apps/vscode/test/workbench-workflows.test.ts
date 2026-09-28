@@ -10,6 +10,7 @@ import {
   createDiagnosticJournal,
   installationGameIds,
   installationsAtFolder,
+  regionsToConnect,
   searchContainerIndex,
   selectedContentSources,
   selectedInstallationDirectory,
@@ -139,6 +140,22 @@ describe('generic source lifecycle', () => {
         ],
       }),
     ).toEqual([alpha.gameId, beta.gameId])
+  })
+
+  it('signs in only to the regions the reference downloads come from', () => {
+    const roots = [
+      { id: 'roblox:assets', region: 'open-cloud' },
+      { id: 'battlenet:public', region: 'eu' },
+    ]
+    const regions = [
+      { id: 'eu', credentialId: 'blizzard/battlenet' },
+      { id: 'open-cloud', credentialId: 'roblox/open-cloud' },
+      { id: 'local' },
+    ]
+    // a Roblox download does not touch the Battle.net account, whose sign-in may fail
+    expect(regionsToConnect(['roblox:assets'], roots, regions, [])).toEqual(['open-cloud'])
+    expect(regionsToConnect(['roblox:assets'], roots, regions, ['open-cloud'])).toEqual([])
+    expect(regionsToConnect(['unknown'], roots, regions, [])).toEqual([])
   })
 
   it('hands each extension the selected installation of the game its own discovery names', () => {

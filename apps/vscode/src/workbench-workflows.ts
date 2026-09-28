@@ -196,6 +196,27 @@ export function selectedInstallationDirectory(
   return selected.find(source => gameIds.includes(source.gameId))?.installPath
 }
 
+/**
+ * The regions a reference download signs in to first: those of the roots it downloads from that
+ * declare a credential and are not connected yet. A region no download needs is left alone.
+ */
+export function regionsToConnect(
+  sourceIds: readonly string[],
+  roots: readonly { readonly id: string; readonly region: string }[],
+  regions: readonly { readonly id: string; readonly credentialId?: string }[],
+  connected: readonly string[],
+): readonly string[] {
+  const needed = new Set(sourceIds.map(id => roots.find(root => root.id === id)?.region))
+  return regions
+    .filter(
+      region =>
+        region.credentialId !== undefined &&
+        needed.has(region.id) &&
+        !connected.includes(region.id),
+    )
+    .map(region => region.id)
+}
+
 /** The installation-discovery game ids of each extension, keyed by its `publisher/id`. */
 function installationGameIdsByExtension(
   inventory: unknown,
