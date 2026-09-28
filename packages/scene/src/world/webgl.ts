@@ -484,12 +484,11 @@ export function worldModelEffectDraws(
       else {
         const frame = effect.source.frame(time, effect.materials, localView)
         // Stable program objects keep the GPU leases across frames that reuse this entry.
-        const programs = prepareSceneMaterialPrograms(
-          frame.materials,
-          new Map(effect.textures.map(texture => [texture.id, texture])),
-          { ...effect.context, time, sequenceTime: time },
-          [],
-        )
+        const programs = effectMaterialPrograms(frame.materials, effect.textures, {
+          ...effect.context,
+          time,
+          sequenceTime: time,
+        })
         frames.current.set(key, (cached = { frame, programs }))
       }
       const { frame, programs } = cached
@@ -527,6 +526,40 @@ export function worldModelEffectDraws(
   }
   effectDrawPlans.set(plan, { cameraKey, draws })
   return draws
+}
+
+/**
+ * Program samplers of effect materials, per material and texture list. An effect source hands out
+ * one material object per emitter for all its frames (see createUvmEffectFrame), so each is
+ * snapshotted and compiled once and only sampled at each new clock.
+ */
+const effectProgramSamplers = new WeakMap<
+  SceneRendererMaterial,
+  WeakMap<readonly SceneRendererTexture[], SceneMaterialProgramSampler>
+>()
+
+/** The programs of an effect frame's materials at one moment, as prepareSceneMaterialPrograms. */
+function effectMaterialPrograms(
+  materials: readonly SceneRendererMaterial[],
+  textures: readonly SceneRendererTexture[],
+  context: SceneRendererMaterialContext,
+): ReadonlyMap<string, SceneMaterialPrograms> {
+  const programs = new Map<string, SceneMaterialPrograms>()
+  for (const material of materials) {
+    let byTextures = effectProgramSamplers.get(material)
+    if (byTextures === undefined) effectProgramSamplers.set(material, (byTextures = new WeakMap()))
+    let sampler = byTextures.get(textures)
+    if (sampler === undefined)
+      byTextures.set(
+        textures,
+        (sampler = createSceneMaterialProgramSampler(
+          [material],
+          new Map(textures.map(texture => [texture.id, texture])),
+        )),
+      )
+    for (const [id, program] of sampler.sample(context, [])) programs.set(id, program)
+  }
+  return programs
 }
 
 export interface WorldWebGlModelMaterialScene {

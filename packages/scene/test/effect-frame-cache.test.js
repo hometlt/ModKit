@@ -111,3 +111,23 @@ test('a cached effect frame is the uncached frame at its step time for every vie
   assert.notEqual(cache.preparation.prepared, prepared)
   assert.notEqual(cache.simulations.get(0.5).simulated, simulated)
 })
+
+test('every sprite of an emitter draws with one material, the same object in every frame', () => {
+  const frames = [0.5, 1.25].map(time =>
+    createUvmEffectFrame(document, { ...options, time, viewMatrix: identity }),
+  )
+  for (const frame of frames) {
+    const sprites = frame.primitives.filter(primitive =>
+      primitive.id.startsWith('uvm-effect-particle-'),
+    )
+    assert.ok(sprites.length > 1)
+    assert.equal(new Set(sprites.map(sprite => sprite.materialId)).size, 1)
+    assert.deepEqual(
+      frame.materials.map(material => material.id),
+      [...new Set(frame.primitives.map(primitive => primitive.materialId))],
+    )
+  }
+  assert.equal(frames[1].materials.length, frames[0].materials.length)
+  for (const [index, material] of frames[0].materials.entries())
+    assert.equal(frames[1].materials[index], material)
+})

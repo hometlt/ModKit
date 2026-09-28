@@ -374,7 +374,9 @@ function gridEffectTime(time: number): number {
   const steps = Math.floor(time * EFFECT_STEPS_PER_SECOND + 1e-7)
   if (steps <= 0) return 0
   const grid = steps / EFFECT_STEPS_PER_SECOND
-  return Math.ceil(grid / (1 / EFFECT_STEPS_PER_SECOND)) > steps ? grid * (1 - Number.EPSILON) : grid
+  return Math.ceil(grid / (1 / EFFECT_STEPS_PER_SECOND)) > steps
+    ? grid * (1 - Number.EPSILON)
+    : grid
 }
 
 /** Emitters, fields, projectors and collision shapes of an effect: the same for every frame. */
@@ -953,26 +955,33 @@ function uvmEffectFrameGeometry(
   })
   bytes += particleGeometry.bytes + particleMaterialBytes
   meshNodes += particleGeometry.nodes
+  // Every sprite of an emitter draws with its emitter's material (see emitterMaterial).
+  const frameMaterials = new Map<number, SceneRendererMaterial | null>()
   for (const geometry of particleGeometry.entries) {
     signal?.throwIfAborted()
     const emitter = particles[geometry.emitter]
     if (emitter === undefined) throw new TypeError('particle geometry emitter absent')
     const base = materialById.get(`material-${emitter.materialIndex}`)
     if (base === undefined) throw new TypeError('particle geometry material absent')
-    const id = `uvm-effect-particle-${geometry.slot}`,
-      material = effectSurfaceMaterial(
-        base,
-        id,
-        options.maxNodes - emitterCount - meshNodes - primitives.length,
-        options.maxBytes - bytes,
-        emitter.texturePath,
-        signal,
-      ),
-      uv = emitter.screenSpaceUv
-    if (material === undefined) continue
+    let material = frameMaterials.get(geometry.emitter)
+    if (material === undefined) {
+      material =
+        emitterMaterial(
+          base,
+          `uvm-effect-particle-emitter-${geometry.emitter}`,
+          emitter.texturePath,
+          emitter.screenSpaceUv,
+          options.maxNodes - emitterCount - meshNodes - primitives.length,
+          options.maxBytes - bytes,
+          signal,
+        ) ?? null
+      frameMaterials.set(geometry.emitter, material)
+      if (material !== null) materials.push(material)
+    }
+    if (material === null) continue
     const geometryPrimitive = {
-      id,
-      materialId: id,
+      id: `uvm-effect-particle-${geometry.slot}`,
+      materialId: material.id,
       topology: 'triangles' as const,
       positions: geometry.positions,
       indices: geometry.indices,
@@ -982,10 +991,8 @@ function uvmEffectFrameGeometry(
     }
     if (material.simpleEffect === undefined) {
       // Full material program: the sprite's lifecycle color and alpha are one per-sprite multiplier.
-      // ponytail: screen-space UV (screenSpaceUv) is only applied by the simple pass.
       // ponytail: sprites carry one UV rectangle; mask layers authored on UV1-3 reuse it.
       const c = geometry.colors
-      materials.push(material)
       primitives.push({
         ...geometryPrimitive,
         textureCoordinateSets: [1, 2, 3].map(set => ({
@@ -996,29 +1003,6 @@ function uvmEffectFrameGeometry(
       })
       continue
     }
-    const texturedMaterial = {
-      ...material,
-      simpleEffect: {
-        ...material.simpleEffect,
-        ...(emitter.texturePath === undefined ? {} : { textureResource: emitter.texturePath }),
-      },
-    }
-    materials.push(
-      uv === undefined
-        ? texturedMaterial
-        : {
-            ...texturedMaterial,
-            simpleEffect: {
-              ...texturedMaterial.simpleEffect,
-              screenUv: {
-                offset: uv.offset,
-                tiling: uv.tiling,
-                angle: uv.angle[2],
-                threshold: Math.max(0, uv.threshold),
-              },
-            },
-          },
-    )
     primitives.push(geometryPrimitive)
   }
   const ribbonGeometry = createUvmRibbonGeometry(simulation.ribbons, ribbons, {
@@ -1038,19 +1022,20 @@ function uvmEffectFrameGeometry(
     const base = materialById.get(`material-${emitter.materialIndex}`)
     if (base === undefined) throw new TypeError('ribbon material absent')
     const id = `uvm-effect-ribbon-${ribbonOrdinals[geometry.emitter]}`
-    const material = effectSurfaceMaterial(
+    const material = emitterMaterial(
       base,
       id,
+      emitter.texturePath,
+      undefined,
       options.maxNodes - emitterCount - meshNodes - primitives.length,
       options.maxBytes - bytes,
-      emitter.texturePath,
       signal,
     )
     if (material === undefined) continue
+    materials.push(material)
     // Ribbons are camera-facing strips too; see the particle note above.
     if (material.simpleEffect === undefined) {
       const c = geometry.colors
-      materials.push(material)
       primitives.push({
         id,
         materialId: id,
@@ -1068,14 +1053,6 @@ function uvmEffectFrameGeometry(
       })
       continue
     }
-    materials.push({
-      ...material,
-      simpleEffect: {
-        ...material.simpleEffect,
-        doubleSided: true,
-        ...(emitter.texturePath === undefined ? {} : { textureResource: emitter.texturePath }),
-      },
-    })
     primitives.push({
       id,
       materialId: id,
@@ -1094,4 +1071,55 @@ function uvmEffectFrameGeometry(
     signal,
   )
   return { primitives, materials, diagnostics, collisionSplats, modelParticles }
+}
+
+/**
+ * Effect emitter materials per base material, id, texture and screen-space UV: an emitter's
+ * material depends on nothing else, so every sprite of every frame draws with one material object,
+ * and an owner that keeps programs per material (the world) compiles each once, not per sprite and
+ * frame.
+ */
+const emitterMaterials = new WeakMap<
+  SceneRendererMaterial,
+  Map<string, SceneRendererMaterial | null>
+>()
+
+/**
+ * An emitter's material: effectSurfaceMaterial of its base material (whose simple pass is already
+ * two-sided and carries the emitter's texture) with the emitter's screen-space UV on the simple
+ * pass. Undefined for a colorless presentation.
+ */
+function emitterMaterial(
+  base: SceneRendererMaterial,
+  id: string,
+  texturePath: string | undefined,
+  // ponytail: screen-space UV (screenSpaceUv) is only applied by the simple pass.
+  uv: RenderParticleEmitter['screenSpaceUv'],
+  maxNodes: number,
+  maxBytes: number,
+  signal: AbortSignal | undefined,
+): SceneRendererMaterial | undefined {
+  let byEmitter = emitterMaterials.get(base)
+  if (byEmitter === undefined) emitterMaterials.set(base, (byEmitter = new Map()))
+  const key = `${id}\u0000${texturePath ?? ''}\u0000${uv === undefined ? '' : JSON.stringify(uv)}`
+  const kept = byEmitter.get(key)
+  if (kept !== undefined) return kept ?? undefined
+  const surface = effectSurfaceMaterial(base, id, maxNodes, maxBytes, texturePath, signal)
+  const material =
+    surface?.simpleEffect === undefined || uv === undefined
+      ? surface
+      : {
+          ...surface,
+          simpleEffect: {
+            ...surface.simpleEffect,
+            screenUv: {
+              offset: uv.offset,
+              tiling: uv.tiling,
+              angle: uv.angle[2],
+              threshold: Math.max(0, uv.threshold),
+            },
+          },
+        }
+  byEmitter.set(key, material ?? null)
+  return material
 }
