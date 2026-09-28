@@ -33,6 +33,14 @@ export interface MaterialSequenceDraw {
   readonly instances?: MaterialInstances
 }
 
+/**
+ * For draws a caller keeps across frames while their materials play: the program each draw's
+ * program stands for at this frame, of the same layout (shader, textures, blend and uniform names).
+ * The draw keeps its GPU lease; uniform values, the material frame and pipeline state come from the
+ * program it stands for.
+ */
+export type MaterialSequencePrograms = ReadonlyMap<StandardMaterialProgram, StandardMaterialProgram>
+
 const IDENTITY_MATRIX = Float32Array.of(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
 const worldToMaterialMatrices = new WeakMap<StandardMaterialProgram, Float32Array>()
 
@@ -118,6 +126,7 @@ export function materialWebGlDraws(
   // and skip uploads that would repeat it. Frame uniforms follow the camera and light (`frames`).
   const programFrames = new WeakMap<WebGLProgram, number>()
   const programLeases = new WeakMap<WebGLProgram, WebGlMaterialProgram>()
+  const programUniforms = new WeakMap<WebGLProgram, StandardMaterialProgram['uniforms']>()
   const programWorldToMaterial = new WeakMap<WebGLProgram, Float32Array>()
   const programTints = new WeakMap<WebGLProgram, readonly number[]>()
   // Leases with equal sampling parameters share one sampler object; per-time leases of animated
@@ -517,9 +526,13 @@ export function materialWebGlDraws(
     { draw, instances }: MaterialSequenceDraw,
     frame: MaterialFrame,
     state: SequenceState,
+    programs: MaterialSequencePrograms | undefined,
   ): number => {
-    const { program: source, material, primitive } = draw
-    if (source === undefined || material === undefined) throw new TypeError('missing GPU material')
+    const { program: leased, material, primitive } = draw
+    if (leased === undefined || material === undefined) throw new TypeError('missing GPU material')
+    // A draw kept from an earlier frame leases its program's layout; this frame's values and state
+    // are those of the program it stands for now.
+    const source = programs?.get(leased) ?? leased
     if (instances !== undefined) {
       if (!materialCanInstance(source))
         throw new TypeError('object-space normal materials cannot be instanced')
@@ -537,16 +550,17 @@ export function materialWebGlDraws(
     const mode = topologyMode(primitive)
     if (mode === undefined || instances?.count === 0) return 0
     const model = instances === undefined ? materialModelMatrix(primitive) : undefined
-    const lease = leaseFor(source, material)
+    const lease = leaseFor(leased, material)
     const program = lease.program
-    const geometry = bindGeometry(program, source, primitive, instances?.matrices, state)
+    const geometry = bindGeometry(program, leased, primitive, instances?.matrices, state)
     if (state.program !== program) {
       gl.useProgram(program)
       state.program = program
     }
-    if (programLeases.get(program) !== lease) {
-      lease.uploadUniforms()
+    if (programLeases.get(program) !== lease || programUniforms.get(program) !== source.uniforms) {
+      lease.uploadUniforms(source === leased ? undefined : source.uniforms)
       programLeases.set(program, lease)
+      programUniforms.set(program, source.uniforms)
     }
     bindTextureUnits(lease, state)
     // The placement vertex stage reads the model matrix from attributes: constants for one draw.
@@ -589,12 +603,13 @@ export function materialWebGlDraws(
     draws: Iterable<MaterialSequenceDraw>,
     camera: SceneRendererCamera,
     light?: MaterialSceneLight,
+    programs?: MaterialSequencePrograms,
   ): number => {
     const frame = frameOf(camera, light)
     const state: SequenceState = { units: [], constants: new Map() }
     let triangles = 0
     try {
-      for (const item of draws) triangles += drawInSequence(item, frame, state)
+      for (const item of draws) triangles += drawInSequence(item, frame, state, programs)
     } finally {
       restore(state)
     }

@@ -9,6 +9,7 @@ import {
   createWorldWebGlTransparentDrawPlan,
   pickWorldWebGl,
   worldModelEffectDraws,
+  worldWebGlScenePrograms,
 } from '../src/world/webgl.js'
 
 const identity = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
@@ -496,16 +497,28 @@ it('retains terrain while sequence-only material programs, live effects and proj
   assert.equal(liveNext.modelEffects[0].time, 0.5)
   // The first material scene is projected onto the retained terrain receiver.
   assert.equal(first.modelMaterialScenes.length, 2)
+  // The next plan keeps the scenes; they stand for programs sampled at its clock.
+  assert.deepEqual(next.modelMaterialScenes, first.modelMaterialScenes)
   const alpha = plan =>
     plan.modelMaterialScenes.map(
-      scene => [...scene.programs.values()][0].passes[0].uniforms.u_alpha1Multiply,
+      scene =>
+        [...worldWebGlScenePrograms(plan, scene).values()][0].passes[0].uniforms.u_alpha1Multiply,
     )
   assert.deepEqual(alpha(first), [0, 0])
   assert.deepEqual(alpha(next), [0.5, 0.5])
   // Compiled programs own sampler callbacks; compare their serializable values and actual sampled
   // uniforms above, rather than requiring independently compiled closures to share identity.
   const values = plan =>
-    JSON.stringify(plan, (_, value) => (value instanceof Map ? [...value] : value))
+    JSON.stringify(
+      {
+        ...plan,
+        modelMaterialScenes: plan.modelMaterialScenes.map(scene => ({
+          ...scene,
+          programs: worldWebGlScenePrograms(plan, scene),
+        })),
+      },
+      (_, value) => (value instanceof Map ? [...value] : value),
+    )
   assert.equal(values(next), values(createWorldWebGlPlan(nextInput)))
 })
 

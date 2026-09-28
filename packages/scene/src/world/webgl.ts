@@ -28,6 +28,7 @@ import {
   type MaterialInstances,
   type MaterialSequenceDraw,
 } from '../render/material-webgl.js'
+import type { StandardMaterialProgram } from '../materials/index.js'
 import { primitiveTint } from '../render/tint.js'
 import { materialIsSolid, sceneMaterialDraws, type MaterialDraw } from '../render/material-draws.js'
 import {
@@ -1989,55 +1990,151 @@ function worldObjectMaterialClock(item: WorldSceneObjectItem, input: WorldWebGlI
   return clock
 }
 
-/** What decides a scene's draws besides the uniform values: materials and their pass layout. */
-const programLayouts = new WeakMap<ReadonlyMap<string, SceneMaterialPrograms>, string>()
-function programLayout(programs: ReadonlyMap<string, SceneMaterialPrograms>): string {
-  let layout = programLayouts.get(programs)
-  if (layout === undefined) {
-    layout = [...programs]
-      .map(
-        ([id, entry]) =>
-          `${id}:${entry.passes
-            .map(
-              pass =>
-                `${pass.key}/${pass.blend}/${pass.depthPrepass}/${pass.priority}/${pass.twoSided}`,
-            )
-            .join(',')}`,
-      )
-      .join('\u0000')
-    programLayouts.set(programs, layout)
+/**
+ * Whether two passes differ only in what a kept draw takes from the pass it stands for (see
+ * WorldCurrentPrograms): uniform values, and the world-to-material frame and environment of the
+ * frame uniforms. Shader, pipeline state, texture bindings, geometry preparation and the uniforms'
+ * names and sizes are the same.
+ */
+function samePassLayout(left: StandardMaterialProgram, right: StandardMaterialProgram): boolean {
+  if (
+    left.key !== right.key ||
+    left.vertexSource !== right.vertexSource ||
+    left.fragmentSource !== right.fragmentSource ||
+    left.blend !== right.blend ||
+    left.depthPrepass !== right.depthPrepass ||
+    left.priority !== right.priority ||
+    left.twoSided !== right.twoSided ||
+    left.normalMapSpace !== right.normalMapSpace ||
+    left.tangentGeneration?.texCoord !== right.tangentGeneration?.texCoord ||
+    left.textures.length !== right.textures.length
+  )
+    return false
+  for (let index = 0; index < left.textures.length; index++) {
+    const one = left.textures[index]!,
+      other = right.textures[index]!
+    if (
+      one.slot !== other.slot ||
+      one.resourceId !== other.resourceId ||
+      one.uniform !== other.uniform ||
+      one.wrapU !== other.wrapU ||
+      one.wrapV !== other.wrapV ||
+      one.dimension !== other.dimension
+    )
+      return false
   }
-  return layout
+  const names = Object.keys(left.uniforms)
+  if (names.length !== Object.keys(right.uniforms).length) return false
+  for (const name of names) {
+    const one = left.uniforms[name],
+      other = right.uniforms[name]
+    if (
+      other === undefined ||
+      (typeof one === 'number'
+        ? typeof other !== 'number'
+        : typeof other === 'number' || one!.length !== other.length)
+    )
+      return false
+  }
+  return true
 }
 
 /**
- * A kept object's scenes in this plan: as kept, or, once the clock its materials follow has moved,
- * with programs sampled at the new moment. Undefined when a program's pass layout changed, since
- * the kept scenes were split by it: the object is then built anew.
+ * Whether programs sampled at another moment keep the layout of a kept scene's programs: the same
+ * materials with the same bound textures, and passes of the same layout (samePassLayout).
+ */
+const programLayoutMatches = new WeakMap<
+  ReadonlyMap<string, SceneMaterialPrograms>,
+  Readonly<{ kept: ReadonlyMap<string, SceneMaterialPrograms>; same: boolean }>
+>()
+function sameProgramLayout(
+  kept: ReadonlyMap<string, SceneMaterialPrograms>,
+  now: ReadonlyMap<string, SceneMaterialPrograms>,
+): boolean {
+  const known = programLayoutMatches.get(now)
+  if (known?.kept === kept) return known.same
+  let same = kept.size === now.size
+  for (const [id, entry] of kept) {
+    if (!same) break
+    const other = now.get(id)
+    same =
+      other !== undefined &&
+      other.passes.length === entry.passes.length &&
+      other.textures.size === entry.textures.size &&
+      [...entry.textures].every(
+        ([resource, texture]) => other.textures.get(resource) === texture,
+      ) &&
+      entry.passes.every((pass, index) => samePassLayout(pass, other.passes[index]!))
+  }
+  programLayoutMatches.set(now, Object.freeze({ kept, same }))
+  return same
+}
+
+/**
+ * What the programs of kept scenes stand for in one plan (see keptWorldObjectScenes). A kept scene
+ * keeps the programs it was built with, and with them its draws, instanced groups and GPU leases;
+ * each of its passes stands for the pass of the programs sampled at the plan's clock, whose uniform
+ * values it draws with (`passes`, for MaterialSequencePrograms), and its draws group with the draws
+ * of those programs as a new scene's would (`materials` and `passes`).
+ */
+interface WorldCurrentPrograms {
+  readonly passes: Map<StandardMaterialProgram, StandardMaterialProgram>
+  readonly materials: Map<SceneMaterialPrograms, SceneMaterialPrograms>
+}
+
+const worldCurrentPrograms = new WeakMap<WorldWebGlPlan, WorldCurrentPrograms>()
+
+/**
+ * The programs a plan's material scene draws with at the plan's clock: its own, or, for a scene
+ * kept from an earlier plan while its materials play, the programs its programs stand for.
+ */
+export function worldWebGlScenePrograms(
+  plan: WorldWebGlPlan,
+  scene: WorldWebGlModelMaterialScene,
+): ReadonlyMap<string, SceneMaterialPrograms> {
+  const current = worldCurrentPrograms.get(plan)
+  if (current === undefined) return scene.programs
+  return new Map(
+    [...scene.programs].map(([id, entry]) => [id, current.materials.get(entry) ?? entry] as const),
+  )
+}
+
+/**
+ * A kept object's scenes in this plan. Once the clock its materials follow has moved, the scenes
+ * stay as kept and stand for the programs sampled at the new moment (see WorldCurrentPrograms).
+ * Undefined when those programs changed layout, since the kept scenes were split by it, or when
+ * another kept object with the same programs stands for others in this plan (its clock differs):
+ * the object is then built anew, with programs of its own.
  */
 function keptWorldObjectScenes(
   item: WorldSceneObjectItem,
   kept: WorldStaticObject,
   input: WorldWebGlInput,
   planPrograms: WorldPlanPrograms,
+  current: WorldCurrentPrograms,
 ): readonly WorldWebGlModelMaterialScene[] | undefined {
   if (kept.resamplers === undefined) return kept.scenes
-  const clock = worldObjectMaterialClock(item, input)
-  if (clock === kept.materialClock) return kept.scenes
-  const scenes: WorldWebGlModelMaterialScene[] = []
+  // At its own clock a kept scene stands for its own programs.
+  const moved = worldObjectMaterialClock(item, input) !== kept.materialClock
+  const stands = new Map<SceneMaterialPrograms, SceneMaterialPrograms>()
   for (const [index, scene] of kept.scenes.entries()) {
     const resample = kept.resamplers[index]
-    if (resample === undefined) {
-      scenes.push(scene)
-      continue
+    if (resample === undefined) continue
+    const programs = moved ? resample(input, planPrograms) : scene.programs
+    if (programs !== scene.programs && !sameProgramLayout(scene.programs, programs))
+      return undefined
+    for (const [id, entry] of scene.programs) {
+      const now = programs.get(id)!
+      const standing = current.materials.get(entry) ?? stands.get(entry)
+      if (standing !== undefined && standing !== now) return undefined
+      stands.set(entry, now)
     }
-    const programs = resample(input, planPrograms)
-    if (programLayout(programs) !== programLayout(scene.programs)) return undefined
-    scenes.push(Object.freeze({ ...scene, programs }))
   }
-  const frozen = Object.freeze(scenes)
-  retainedStaticObjects.set(item, Object.freeze({ ...kept, scenes: frozen, materialClock: clock }))
-  return frozen
+  for (const [entry, now] of stands) {
+    current.materials.set(entry, now)
+    entry.passes.forEach((pass, index) => current.passes.set(pass, now.passes[index]!))
+  }
+  return kept.scenes
 }
 
 // Programs of clock-independent materials, per converted model and presentation key. Bounded by the
@@ -4061,6 +4158,7 @@ export function createWorldWebGlPlan(
   let modelTriangles = 0
   let diagnosticPlaceholders = 0
   const planPrograms: WorldPlanPrograms = new Map()
+  const currentPrograms: WorldCurrentPrograms = { passes: new Map(), materials: new Map() }
   const projectorBatch = (texture: MutableTexturedBatch['texture']) => {
     const key = `projector:${texture.id}`
     const target = transparentTextured.get(key) ?? {
@@ -4079,7 +4177,7 @@ export function createWorldWebGlPlan(
     const retainedObject = staticKey === undefined ? undefined : retainedStaticObjects.get(item)
     const keptScenes =
       retainedObject !== undefined && sameWorldStaticObjectKey(retainedObject.key, staticKey!)
-        ? keptWorldObjectScenes(item, retainedObject, input, planPrograms)
+        ? keptWorldObjectScenes(item, retainedObject, input, planPrograms, currentPrograms)
         : undefined
     if (retainedObject !== undefined && keptScenes !== undefined) {
       for (const scene of keptScenes) modelMaterialScenes.push(scene)
@@ -4827,6 +4925,7 @@ export function createWorldWebGlPlan(
     }),
   })
   worldStaticPreparations.set(plan, { input: snapshotWorldPlanInput(input), preparation })
+  if (currentPrograms.materials.size > 0) worldCurrentPrograms.set(plan, currentPrograms)
   worldPlanBatches.set(plan, {
     batches: currentBatches,
     water: waterWrites,
@@ -6121,6 +6220,7 @@ function renderWorldShadowMap(
         worldMaterialBatchesOf(plan, true).sequence,
         sceneCamera,
         sceneLight,
+        worldCurrentPrograms.get(plan)?.passes,
       )
       gl.colorMask(false, false, false, false)
     }
@@ -7501,6 +7601,7 @@ function groupWorldMaterialDraws(plan: WorldWebGlPlan, shadow: boolean): WorldWe
   >()
   const singles: MaterialDraw[] = []
   const transparentScenes: WorldWebGlModelMaterialScene[] = []
+  const current = worldCurrentPrograms.get(plan)
   for (const scene of plan.modelMaterialScenes) {
     const solid = worldSceneSolidDrawsOf(scene, shadow)
     for (const { key, geometryKey, draw } of solid.draws) {
@@ -7508,9 +7609,15 @@ function groupWorldMaterialDraws(plan: WorldWebGlPlan, shadow: boolean): WorldWe
         singles.push(draw)
         continue
       }
-      let group = groups.get(key)
+      // A kept scene's draw groups with the draws of the programs it stands for, as a new scene's.
+      const pass = current?.passes.get(draw.program)
+      const groupKey =
+        pass === undefined
+          ? key
+          : `${worldGroupId(pass)}|${worldGroupId(current!.materials.get(draw.material!))}|${geometryKey}`
+      let group = groups.get(groupKey)
       if (group === undefined)
-        groups.set(key, (group = { draw, geometryKey, transforms: [], seen: new Set() }))
+        groups.set(groupKey, (group = { draw, geometryKey, transforms: [], seen: new Set() }))
       const transform = draw.primitive.transform ?? IDENTITY_VIEW_PROJECTION
       // A primitive drawn twice into the same depth (two solid passes) writes it once.
       if (shadow) {
@@ -7740,7 +7847,12 @@ function drawWorldWebGlWithResources(
       ...effectDraws.map(entry => entry.draw),
     ])
     if (batches.sequence.length > 0) {
-      resources.materialDraws.drawSequence(batches.sequence, sceneCamera, sceneLight)
+      resources.materialDraws.drawSequence(
+        batches.sequence,
+        sceneCamera,
+        sceneLight,
+        worldCurrentPrograms.get(plan)?.passes,
+      )
       gl.useProgram(program)
       gl.disable(gl.POLYGON_OFFSET_FILL)
     }
@@ -7814,7 +7926,12 @@ function drawWorldWebGlWithResources(
           for (const draw of worldBlendedMaterialPasses(candidate.draw)) run.push({ draw })
           index = next
         }
-        resources.materialDraws.drawSequence(run, sceneCamera, sceneLight)
+        resources.materialDraws.drawSequence(
+          run,
+          sceneCamera,
+          sceneLight,
+          worldCurrentPrograms.get(plan)?.passes,
+        )
         continue
       }
       const item = entry.draw

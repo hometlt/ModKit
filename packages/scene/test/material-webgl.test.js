@@ -28,10 +28,12 @@ const draw = (geometry, program = source, options = {}) => ({
 })
 
 // Models the VAO-owned element/attribute bindings and context-owned generic attributes separately.
-function context() {
+// With `uniforms`, uniform locations are named and scalar and vec4 uploads are recorded.
+function context({ uniforms = false } = {}) {
   const noop = () => undefined
   const calls = new Map(),
-    live = { vao: new Set(), buffer: new Set(), program: new Set() }
+    live = { vao: new Set(), buffer: new Set(), program: new Set() },
+    uniformCalls = []
   let vao, arrayBuffer, depthMask, colorMask, blendFunction
   const constants = new Map(),
     enabled = new Set(),
@@ -82,7 +84,13 @@ function context() {
     createProgram: () => allocate('program'),
     deleteProgram: handle => remove('program', handle),
     useProgram: handle => assert.ok(live.program.has(handle)),
-    getUniformLocation: () => null,
+    getUniformLocation: uniforms ? (_, name) => ({ name }) : () => null,
+    ...(uniforms
+      ? {
+          uniform1f: (location, value) => uniformCalls.push([location.name, value]),
+          uniform4fv: (location, value) => uniformCalls.push([location.name, [...value]]),
+        }
+      : {}),
     createVertexArray: () =>
       Object.assign(allocate('vao'), { attributes: new Map(), indices: null }),
     deleteVertexArray: handle => remove('vao', handle),
@@ -156,7 +164,7 @@ function context() {
       }
     },
   })
-  return { gl: proxy, calls, live, submissions }
+  return { gl: proxy, calls, live, submissions, uniformCalls }
 }
 
 it('shares a VAO across placed instances, new uniform leases and frames without rebinding geometry', () => {
@@ -337,4 +345,26 @@ it('cleans up a VAO when buffer allocation fails and can retry without stale bin
   renderer.draw(draw(primitive()), camera)
   renderer.release()
   for (const resources of Object.values(live)) assert.equal(resources.size, 0)
+})
+
+it('draws a kept draw with the uniform values of the program it stands for', () => {
+  const { gl, uniformCalls } = context({ uniforms: true })
+  const renderer = materialWebGlDraws(gl, new Map(), { checkEachDraw: false })
+  const kept = { ...source, uniforms: { u_alpha: 0.25, u_color: [1, 0, 0, 1] } }
+  const standFor = uniforms => new Map([[kept, { ...kept, uniforms }]])
+  const valuesOf = name =>
+    uniformCalls.filter(([uniform]) => uniform === name).map(([, value]) => value)
+  const drawKept = programs =>
+    renderer.drawSequence([{ draw: draw(primitive(), kept) }], camera, undefined, programs)
+  drawKept(standFor({ u_alpha: 0.75, u_color: [0, 1, 0, 1] }))
+  assert.deepEqual(valuesOf('u_alpha'), [0.75])
+  assert.deepEqual(valuesOf('u_color'), [[0, 1, 0, 1]])
+  // The next frame stands for other values: the same lease uploads them.
+  drawKept(standFor({ u_alpha: 0.5, u_color: [0, 0, 1, 1] }))
+  assert.deepEqual(valuesOf('u_alpha'), [0.75, 0.5])
+  // Standing for nothing, the draw uploads its own values again; a repeat uploads nothing.
+  drawKept(undefined)
+  drawKept(undefined)
+  assert.deepEqual(valuesOf('u_alpha'), [0.75, 0.5, 0.25])
+  assert.equal(renderer.programCompilations(), 1)
 })

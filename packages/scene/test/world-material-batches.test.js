@@ -5,6 +5,7 @@ import {
   createWorldWebGlPlan,
   worldBlendedMaterialPasses,
   worldMaterialBatchesOf,
+  worldWebGlScenePrograms,
 } from '../src/world/webgl.js'
 
 const item = (objectId, resourceId, x) => ({
@@ -190,30 +191,33 @@ it('keeps an object in later plans until its clock or inputs change', () => {
   const items = [item(1, 'rock', 0), item(2, 'glow', 3)]
   const sceneOf = (plan, key) =>
     plan.modelMaterialScenes.find(scene => scene.primitives[0].id === `${key}-triangle`)
-  const alphaOf = plan =>
-    sceneOf(plan, 'glow').programs.get('surface').passes[0].uniforms.u_diffuseAlphaFactor
+  const surfaceOf = plan =>
+    worldWebGlScenePrograms(plan, sceneOf(plan, 'glow')).get('surface').passes[0]
+  const alphaOf = plan => surfaceOf(plan).uniforms.u_diffuseAlphaFactor
   // The glowing material samples its alpha at the object's own clock.
   const at = (time, previous, extra = {}) =>
-    createWorldWebGlPlan({ items, models, animationTimes: new Map([[2, time]]), ...extra }, previous)
+    createWorldWebGlPlan(
+      { items, models, animationTimes: new Map([[2, time]]), ...extra },
+      previous,
+    )
   const first = at(0)
   const second = at(1, first)
   // The rock does not move or animate: the same scene and pick entry, so its draws keep their group.
   assert.equal(sceneOf(second, 'rock'), sceneOf(first, 'rock'))
   assert.equal(second.picking.objects[0], first.picking.objects[0])
   assert.equal(second.stats.modelTriangles, first.stats.modelTriangles)
-  assert.notEqual(sceneOf(second, 'glow'), sceneOf(first, 'glow'))
+  // Only its materials follow the clock: the object is kept with its scene, and the scene stands
+  // for programs sampled at the new clock as a plan built anew samples them.
+  assert.equal(sceneOf(second, 'glow'), sceneOf(first, 'glow'))
   assert.notEqual(alphaOf(second), alphaOf(first))
-  // Only its materials follow the clock: the object is kept, and its programs are sampled at the
-  // new clock as a plan built anew samples them.
   assert.equal(second.picking.objects[1], first.picking.objects[1])
-  assert.equal(sceneOf(second, 'glow').primitives, sceneOf(first, 'glow').primitives)
   const fresh = createWorldWebGlPlan({
     items: items.map(entry => ({ ...entry })),
     models,
     animationTimes: new Map([[2, 1]]),
   })
   assert.deepEqual(
-    sceneOf(second, 'glow').programs.get('surface').passes[0].uniforms,
+    surfaceOf(second).uniforms,
     sceneOf(fresh, 'glow').programs.get('surface').passes[0].uniforms,
   )
   // Its clock unchanged, the glowing object is kept as well.
@@ -265,4 +269,59 @@ it('keeps the instance matrices of groups whose placements did not change betwee
   const moved = matricesOf(at(1, secondPlan, [items[0], item(2, 'rock', 7), items[2]]))
   assert.notEqual(moved.get('rock-triangle'), first.get('rock-triangle'))
   assert.notDeepEqual([...moved.get('rock-triangle')], [...first.get('rock-triangle')])
+})
+
+it('groups kept draws by the programs they stand for, and builds anew an object whose clock parts', () => {
+  const models = new Map([['glow', model('glow', 0, false, true)]])
+  const items = [item(1, 'glow', 0), item(2, 'glow', 3), item(3, 'glow', 6)]
+  const at = (times, previous, list = items) =>
+    createWorldWebGlPlan(
+      {
+        items: list,
+        models,
+        animationTimes: new Map(times.map((time, index) => [index + 1, time])),
+      },
+      previous,
+    )
+  const groupsOf = plan =>
+    worldMaterialBatchesOf(plan).groups.map(group => [
+      group.instances.count,
+      worldWebGlScenePrograms(
+        plan,
+        plan.modelMaterialScenes.find(
+          scene => scene.primitives[0].transform === group.draw.primitive.transform,
+        ),
+      ).get('surface').passes[0].uniforms.u_diffuseAlphaFactor,
+    ])
+  // The three objects share their programs at the first clock: one group.
+  const first = at([0, 0, 0])
+  assert.deepEqual(
+    groupsOf(first).map(([count]) => count),
+    [3],
+  )
+  // All move on together: kept, one group standing for the programs of the new clock.
+  const second = at([1, 1, 1], first)
+  assert.deepEqual(second.modelMaterialScenes, first.modelMaterialScenes)
+  const fresh = times =>
+    at(
+      times,
+      undefined,
+      items.map(entry => ({ ...entry })),
+    )
+  assert.deepEqual(groupsOf(second), groupsOf(fresh([1, 1, 1])))
+  // The third object's clock parts from the others: kept programs cannot stand for two clocks, so it
+  // is built anew with programs of its own, and groups as a plan built anew groups.
+  const third = at([2, 2, 1.5], second)
+  assert.equal(third.modelMaterialScenes[0], first.modelMaterialScenes[0])
+  assert.notEqual(third.modelMaterialScenes[2], first.modelMaterialScenes[2])
+  assert.deepEqual(groupsOf(third), groupsOf(fresh([2, 2, 1.5])))
+  // From then on both keep their scenes.
+  const fourth = at([3, 3, 2.5], third)
+  assert.deepEqual(fourth.modelMaterialScenes, third.modelMaterialScenes)
+  assert.deepEqual(groupsOf(fourth), groupsOf(fresh([3, 3, 2.5])))
+  // Met at one clock again, kept scenes of different programs draw in one group.
+  const fifth = at([4, 4, 4], fourth)
+  assert.deepEqual(fifth.modelMaterialScenes, fourth.modelMaterialScenes)
+  assert.deepEqual(groupsOf(fifth).map(([count]) => count), [3])
+  assert.deepEqual(groupsOf(fifth), groupsOf(fresh([4, 4, 4])))
 })

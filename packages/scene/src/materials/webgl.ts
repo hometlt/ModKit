@@ -9,8 +9,10 @@ export interface WebGlMaterialProgram {
   /**
    * Upload the material uniforms and sampler units into `program`, which must be current. Uniform
    * values stay in the program, so a caller that tracks the last upload can skip repeating it.
+   * `uniforms` uploads the values of another program of this layout (the same uniform names): the
+   * program a draw kept from an earlier frame stands for at this one.
    */
-  uploadUniforms(): void
+  uploadUniforms(uniforms?: StandardMaterialProgram['uniforms']): void
   /** The texture and sampler `bind` puts on each unit, in unit order. */
   readonly textureUnits: readonly Readonly<{
     texture: WebGLTexture
@@ -162,6 +164,7 @@ export function createWebGlMaterialProgram(
       options.programCache?.set(cacheKey, program)
     }
     const values = Object.entries(source.uniforms).map(([name, value]) => ({
+      name,
       location: uniformLocation(gl, program, name),
       value: typeof value === 'number' ? value : Float32Array.from(value),
     }))
@@ -196,10 +199,13 @@ export function createWebGlMaterialProgram(
         location: uniformLocation(gl, program, binding.uniform),
       }
     })
-    const uploadUniforms = () => {
+    const uploadUniforms = (uniforms?: StandardMaterialProgram['uniforms']) => {
       if (!live) throw new TypeError('material program has been released')
-      for (const { location, value } of values) {
+      for (const { name, location, value: own } of values) {
         if (location === null) continue
+        // WebGL reads a plain array into float32 as it reads the lease's own Float32Array copy.
+        const value = (uniforms === undefined ? own : uniforms[name]) as number | Float32List
+        if (value === undefined) throw new TypeError(`material uniform ${name} has no value`)
         if (typeof value === 'number') gl.uniform1f(location, value)
         else if (value.length === 2) gl.uniform2fv(location, value)
         else if (value.length === 3) gl.uniform3fv(location, value)
