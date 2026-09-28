@@ -665,6 +665,12 @@ export interface MapTerrainMaterialDefinition {
   readonly baseColorResourceId?: string
   /** Host-resolvable source texture. The id remains the portable UVW join key. */
   readonly baseColorResource?: LogicalResourceRequirement
+  /**
+   * Exactly glTF `pbrMetallicRoughness.baseColorFactor`: linear RGBA 0..1 multiplying the base
+   * colour texture, or the colour itself without one (Roblox `Terrain.MaterialColors`). Absent means
+   * [1, 1, 1, 1]; alpha does not make the terrain transparent.
+   */
+  readonly baseColorFactor?: readonly [number, number, number, number]
   readonly normalResourceId?: string
   readonly normalResource?: LogicalResourceRequirement
   /**
