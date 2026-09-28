@@ -53,6 +53,17 @@ export function containerEntryAccess(
   }
   const entries = [...byPath.values()]
   const containerRevision = revisionId(String(context.source.revision))
+  const directories = (table.directories ?? []).map(({ path, hidden }) => {
+    if (!validPath(path)) throw new TypeError(`container folder path «${path}» is invalid`)
+    return Object.freeze({
+      id: `${path}/`,
+      path: `${path}/`,
+      name: path.slice(path.lastIndexOf('/') + 1),
+      kind: 'directory' as const,
+      ...(hidden === true ? { hidden: true as const } : {}),
+      revision: containerRevision,
+    })
+  })
   const maximum = Number(context.budget.maxInputBytes)
   const storedSize = (entry: ContainerEntry): bigint | undefined =>
     entry.storage.kind === 'stored'
@@ -138,12 +149,15 @@ export function containerEntryAccess(
               const path = fold(entry.path)
               return path === wanted || path.startsWith(under)
             })
-      const items = matching.slice(start, start + page.limit).map(toItem)
+      const folders = directories.filter(folder => {
+        const path = fold(folder.path)
+        return prefix === '' || path === `${wanted}/` || path.startsWith(under)
+      })
+      const all = [...matching.map(toItem), ...folders]
+      const items = all.slice(start, start + page.limit)
       return Object.freeze({
         items: Object.freeze(items),
-        ...(start + items.length < matching.length
-          ? { nextCursor: String(start + items.length) }
-          : {}),
+        ...(start + items.length < all.length ? { nextCursor: String(start + items.length) } : {}),
       })
     },
     ...(table.nestedContext === undefined

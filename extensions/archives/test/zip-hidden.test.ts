@@ -1,4 +1,4 @@
-import { crc32 } from 'node:zlib'
+import { crc32 } from '@modkit/codec-kit/checksum'
 import { describe, expect, it } from 'vitest'
 // @ts-expect-error the ZIP codec is a JS module without declarations
 import { createCodec } from '../src/zip/codec.js'

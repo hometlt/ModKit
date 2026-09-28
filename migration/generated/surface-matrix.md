@@ -2,7 +2,7 @@
 
 # Format × surface matrix
 
-Inventory projection: **73** format rows, **496** applicable surface claims. Generic smoke: **0 pass / 73 missing**. Missing smoke remains visible here until P7 owner receipts exist; this generator does not manufacture evidence.
+Inventory projection: **74** format rows, **509** applicable surface claims. Generic smoke: **0 pass / 74 missing**. Missing smoke remains visible here until P7 owner receipts exist; this generator does not manufacture evidence.
 
 | Repository | Format     | Codec contribution         | sections | tree     | hex      | card     | preview  | relations | selector | mcp-inspect | script   | no-op-edit | Smoke      |
 | ---------- | ---------- | -------------------------- | -------- | -------- | -------- | -------- | -------- | --------- | -------- | ----------- | -------- | ---------- | ---------- |
@@ -20,7 +20,7 @@ Inventory projection: **73** format rows, **496** applicable surface claims. Gen
 | core       | `brotli`   | `modkit/brotli`            | required | required | required | required | —        | —         | —        | required    | required | —          | ❌ missing |
 | core       | `bzip2`    | `modkit/bzip2`             | required | required | required | required | —        | —         | —        | required    | required | —          | ❌ missing |
 | core       | `cab`      | `modkit/cab`               | required | required | required | required | —        | —         | —        | required    | required | —          | ❌ missing |
-| core       | `cur`      | `modkit/cur`               | required | required | required | required | required | —         | —        | required    | required | —          | ❌ missing |
+| core       | `cur`      | `modkit/cur`               | required | required | required | required | required | —         | —        | required    | required | required   | ❌ missing |
 | core       | `dae`      | `modkit/dae`               | required | required | required | required | required | —         | —        | required    | required | —          | ❌ missing |
 | core       | `dds`      | `modkit/dds`               | required | required | required | required | required | —         | —        | required    | required | required   | ❌ missing |
 | core       | `dmg`      | `modkit/dmg`               | required | required | required | required | —        | —         | —        | required    | required | —          | ❌ missing |
@@ -32,7 +32,7 @@ Inventory projection: **73** format rows, **496** applicable surface claims. Gen
 | core       | `gif`      | `modkit/gif`               | required | required | required | required | required | —         | —        | required    | required | —          | ❌ missing |
 | core       | `gzip`     | `modkit/gzip`              | required | required | required | required | —        | —         | —        | required    | required | —          | ❌ missing |
 | core       | `hdr`      | `modkit/hdr`               | required | required | required | required | required | —         | —        | required    | required | —          | ❌ missing |
-| core       | `ico`      | `modkit/ico`               | required | required | required | required | required | —         | —        | required    | required | —          | ❌ missing |
+| core       | `ico`      | `modkit/ico`               | required | required | required | required | required | —         | —        | required    | required | required   | ❌ missing |
 | core       | `jpeg`     | `modkit/image-jpeg`        | required | required | required | required | required | —         | —        | required    | required | required   | ❌ missing |
 | core       | `png`      | `modkit/image-png`         | required | required | required | required | required | —         | —        | required    | required | required   | ❌ missing |
 | core       | `iso`      | `modkit/iso`               | required | required | required | required | —        | —         | —        | required    | required | —          | ❌ missing |
@@ -40,10 +40,10 @@ Inventory projection: **73** format rows, **496** applicable surface claims. Gen
 | core       | `ktx2`     | `modkit/ktx2`              | required | required | required | required | required | —         | —        | required    | required | —          | ❌ missing |
 | core       | `lzma`     | `modkit/lzma`              | required | required | required | required | —        | —         | —        | required    | required | —          | ❌ missing |
 | core       | `m4a`      | `modkit/m4a`               | required | required | required | required | required | —         | —        | required    | required | —          | ❌ missing |
-| core       | `glb`      | `modkit/model-gltf`        | required | required | required | required | required | required  | —        | required    | required | —          | ❌ missing |
-| core       | `gltf`     | `modkit/model-gltf`        | required | required | required | required | required | required  | —        | required    | required | —          | ❌ missing |
+| core       | `glb`      | `modkit/model-gltf`        | required | required | required | required | required | required  | —        | required    | required | required   | ❌ missing |
+| core       | `gltf`     | `modkit/model-gltf`        | required | required | required | required | required | required  | —        | required    | required | required   | ❌ missing |
 | core       | `obj`      | `modkit/model-obj`         | required | required | required | required | required | —         | —        | required    | required | —          | ❌ missing |
-| core       | `uvm`      | `modkit/model-uvm`         | required | required | required | required | required | —         | —        | required    | required | —          | ❌ missing |
+| core       | `uvm`      | `modkit/model-uvm`         | required | required | required | required | required | —         | —        | required    | required | required   | ❌ missing |
 | core       | `mpeg`     | `modkit/mpeg`              | required | required | required | required | required | —         | —        | required    | required | —          | ❌ missing |
 | core       | `odg`      | `modkit/odg`               | required | required | required | required | required | —         | —        | required    | required | —          | ❌ missing |
 | core       | `odp`      | `modkit/odp`               | required | required | required | required | required | —         | —        | required    | required | —          | ❌ missing |
@@ -67,9 +67,10 @@ Inventory projection: **73** format rows, **496** applicable surface claims. Gen
 | core       | `tsv`      | `modkit/text-tsv`          | required | —        | required | required | —        | —         | —        | required    | required | required   | ❌ missing |
 | core       | `xml`      | `modkit/text-xml`          | required | required | required | required | —        | —         | —        | required    | required | required   | ❌ missing |
 | core       | `yaml`     | `modkit/text-yaml`         | required | required | required | required | —        | —         | —        | required    | required | required   | ❌ missing |
-| core       | `tga`      | `modkit/tga`               | required | required | required | required | required | —         | —        | required    | required | —          | ❌ missing |
+| core       | `tga`      | `modkit/tga`               | required | required | required | required | required | —         | —        | required    | required | required   | ❌ missing |
 | core       | `tiff`     | `modkit/tiff`              | required | required | required | required | required | —         | —        | required    | required | —          | ❌ missing |
 | core       | `txt`      | `modkit/txt`               | required | required | required | required | —        | —         | —        | required    | required | required   | ❌ missing |
+| core       | `font`     | `modkit/vector-font`       | required | required | required | required | required | —         | —        | required    | required | —          | ❌ missing |
 | core       | `svg`      | `modkit/vector-svg`        | required | required | required | required | required | —         | —        | required    | required | —          | ❌ missing |
 | core       | `mp4`      | `modkit/video-mp4`         | required | required | required | required | required | —         | —        | required    | required | —          | ❌ missing |
 | core       | `webm`     | `modkit/video-webm`        | required | required | required | required | required | —         | —        | required    | required | —          | ❌ missing |

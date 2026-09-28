@@ -291,6 +291,11 @@ export interface ContainerEntryTable {
    * header), at most `maxBytes`. Published as the namespace's `readPreamble`.
    */
   preamble?(maxBytes: number, signal?: AbortSignal): Promise<Uint8Array>
+  /**
+   * Folders the container records as their own entries (a ZIP folder record), so an empty folder
+   * is listed; without a trailing `/`. Folders that only follow from file paths need no record.
+   */
+  readonly directories?: readonly { readonly path: string; readonly hidden?: true }[]
 }
 
 export interface InspectionResult {

@@ -103,13 +103,6 @@
         "outputKinds": ["none"]
       },
       {
-        "id": "export.raw",
-        "handlerId": "export-raw",
-        "mutatesSource": false,
-        "requiredPermissions": ["read-source"],
-        "outputKinds": ["bytes"]
-      },
-      {
         "id": "container.extract",
         "handlerId": "extract-entry",
         "mutatesSource": false,
