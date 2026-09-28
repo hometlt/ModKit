@@ -18,7 +18,6 @@ import {
   type ArtifactByteSource,
   type AssetEditPlan,
   type ChangeSet,
-  type AnyDescriptor,
 } from '@modkit/sdk'
 import type { OpenedSubject, SubjectEditorPorts } from '@modkit/host'
 import { WEB_EXTENSION_CATALOG } from '../generated/extension-catalog.js'
@@ -568,9 +567,12 @@ describe('what this app accepts as proof of a fidelity claim', () => {
   const zipEvidence = async () => {
     const host = await services()
     return webEditEvidence(host.main.inventory, {
-      interpretation: 'codec',
-      identity: { codecId: 'modkit/archive-zip', formatId: 'zip' },
-    } as unknown as AnyDescriptor)
+      selected: { contributionId: 'modkit/archive-zip' },
+      descriptor: {
+        interpretation: 'codec',
+        identity: { codecId: 'modkit/archive-zip', formatId: 'zip' },
+      },
+    } as unknown as Parameters<typeof webEditEvidence>[1])
   }
 
   it('proves the raw writer byte-identical claim by construction', async () => {

@@ -39,7 +39,6 @@
 import { diagnostic, type Diagnostic } from '@modkit/core'
 import type {
   AssetEditPlan,
-  AnyDescriptor,
   ChangeSet,
   CommitCoordinator,
   CommitRejection,
@@ -53,7 +52,7 @@ import type {
   Writer,
 } from '@modkit/sdk'
 import {
-  codecFidelityEvidenceRecords,
+  subjectFidelityEvidenceRecords,
   createEvidenceRegistry,
   createRawWriter,
   createSubjectEditing,
@@ -360,21 +359,22 @@ const firstMessage = (diagnostics: readonly Diagnostic[]): string | undefined =>
 
 /**
  * This app accepts the raw writer's structural record plus declarations from the bundled codec
- * that actually opened the subject. Provider version and artifact digest come from inventory;
- * installed extensions cannot self-vouch because the host helper's default origin is bundled.
+ * that actually opened the subject, and from the container codec it came through when it is a
+ * container's member. Provider version and artifact digest come from inventory; installed
+ * extensions cannot self-vouch because the host helper's default origin is bundled.
  */
 export function webEditEvidence(
   inventory: Inventory,
-  descriptor: AnyDescriptor,
+  opened: Pick<OpenedSubject, 'selected' | 'descriptor' | 'carrier'>,
   selectedWriter?: Writer,
 ) {
-  let registry = createEvidenceRegistry()
-  if (descriptor.interpretation === 'codec') {
-    registry = codecFidelityEvidenceRecords(inventory, {
-      codecId: descriptor.identity.codecId,
-      formatId: descriptor.identity.formatId,
-    }).reduce((current, record) => current.with(record), registry)
-  }
+  let registry = subjectFidelityEvidenceRecords(inventory, {
+    selected: opened.selected,
+    descriptor: opened.descriptor,
+    ...(opened.carrier?.descriptor.interpretation === 'codec'
+      ? { carrier: { selected: opened.carrier.selected, descriptor: opened.carrier.descriptor } }
+      : {}),
+  }).reduce((current, record) => current.with(record), createEvidenceRegistry())
   if (selectedWriter !== undefined) {
     const writerRecord = serviceProviderFidelityEvidenceRecord(inventory, {
       writer: selectedWriter,
@@ -686,11 +686,7 @@ export function createWebEditingArm(options: WebEditingArmOptions): WebEditingAr
       let editing: SubjectEditing
       try {
         const selectedWriter = request.writer ?? writer
-        const evidence = webEditEvidence(
-          options.inventory,
-          request.opened.descriptor,
-          request.writer,
-        )
+        const evidence = webEditEvidence(options.inventory, request.opened, request.writer)
         editing = createSubjectEditing({
           opened: request.opened,
           grant: request.grant,
