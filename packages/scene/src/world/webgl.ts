@@ -7402,22 +7402,26 @@ function worldSceneSolidDrawsOf(
   const cache = shadow ? worldSceneCasterDraws : worldSceneSolidDraws
   const cached = cache.get(scene)
   if (cached !== undefined) return cached
-  let transparent = false
+  const primitives = shadow ? scene.shadowPrimitives : scene.primitives
+  // Blended passes draw per frame in depth order (transparentScenes): only note that there are some.
+  const transparent = primitives.some(primitive =>
+    scene.programs
+      .get(primitive.materialId ?? '')
+      ?.passes.some(program => !materialIsSolid(program)),
+  )
   const draws: { key: string | undefined; draw: WorldWebGlMaterialGroup['draw'] }[] = []
   for (const found of sceneMaterialDraws(
-    shadow ? scene.shadowPrimitives : scene.primitives,
+    primitives,
     scene.materials,
     scene.programs,
     IDENTITY_VIEW_PROJECTION,
     [],
     1,
+    undefined,
+    true,
   )) {
     const program = found.program
-    if (program === undefined || found.depthOnly === true) continue
-    if (!materialIsSolid(program)) {
-      transparent = true
-      continue
-    }
+    if (program === undefined) continue
     const draw = shadow
       ? {
           ...found,
@@ -7481,8 +7485,10 @@ function groupWorldMaterialDraws(plan: WorldWebGlPlan, shadow: boolean): WorldWe
       if (group === undefined) groups.set(key, (group = { draw, transforms: [], seen: new Set() }))
       const transform = draw.primitive.transform ?? IDENTITY_VIEW_PROJECTION
       // A primitive drawn twice into the same depth (two solid passes) writes it once.
-      if (shadow && group.seen.has(transform)) continue
-      group.seen.add(transform)
+      if (shadow) {
+        if (group.seen.has(transform)) continue
+        group.seen.add(transform)
+      }
       group.transforms.push(transform)
     }
     if (solid.transparent && !shadow) transparentScenes.push(scene)

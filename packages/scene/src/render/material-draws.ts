@@ -119,7 +119,11 @@ function preparedMaterialGeometry(
   return result
 }
 
-/** One draw schedule for both providers, including composite passes and requested depth prepasses. */
+/**
+ * One draw schedule for both providers, including composite passes and requested depth prepasses.
+ * `solidOnly` keeps only the solid (opaque and alpha-tested) passes of programmed primitives, in the
+ * order the full schedule gives them (their input order): no depth ordering of blended ones.
+ */
 export function sceneMaterialDraws(
   primitives: readonly SceneRendererPrimitive[],
   materials: readonly SceneRendererMaterial[],
@@ -128,6 +132,7 @@ export function sceneMaterialDraws(
   diagnostics: SceneRendererDiagnostic[],
   clearAlpha: number,
   maxGeometryBytes = 256 * 1024 * 1024,
+  solidOnly = false,
 ): readonly MaterialDraw[] {
   if (!Number.isSafeInteger(maxGeometryBytes) || maxGeometryBytes < 0)
     throw new TypeError('invalid material geometry byte budget')
@@ -172,7 +177,7 @@ export function sceneMaterialDraws(
   for (const source of primitives) {
     const material = programs.get(source.materialId ?? '')
     if (material === undefined) {
-      entries.set(source, { primitive: source })
+      if (!solidOnly) entries.set(source, { primitive: source })
       continue
     }
     for (const pass of material.passes)
@@ -196,14 +201,17 @@ export function sceneMaterialDraws(
           throw new TypeError(`primitive ${source.id} lacks TEXCOORD_${set}`)
       }
     for (const program of material.passes) {
+      if (solidOnly && !materialIsSolid(program)) continue
       const primitive = prepare(source, program)
       const key = { ...primitive }
       entries.set(key, { primitive, material, program })
-      if (program.depthPrepass) prepasses.push({ primitive, material, program, depthOnly: true })
+      if (program.depthPrepass && !solidOnly)
+        prepasses.push({ primitive, material, program, depthOnly: true })
       if (clearAlpha !== 1 && !materialIsSolid(program) && program.blend !== 'blend')
         emissionWarning = true
     }
   }
+  if (solidOnly) return [...entries.values()]
   if (emissionWarning)
     diagnostics.push({
       severity: 'warning',
