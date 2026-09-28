@@ -1124,6 +1124,16 @@
             "formatId": {
               "minLength": 1,
               "type": "string"
+            },
+            "markers": {
+              "items": {
+                "maxLength": 256,
+                "minLength": 1,
+                "pattern": "^[^/\\\\]+$",
+                "type": "string"
+              },
+              "maxItems": 8,
+              "type": "array"
             }
           },
           "required": [
