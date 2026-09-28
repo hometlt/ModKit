@@ -907,9 +907,11 @@ function simulateUvmEffectFrame(
   }
   validateSplineFrames()
   const spawnBudget = Math.min(capacity, 256)
+  // The lane's own list of particle emitters: once spent it holds silent ones (see continueTo).
+  const laneParticles = [...particles]
   const simulation = new ModelEffectSimulation(
     {
-      particles,
+      particles: laneParticles,
       ribbons,
       forces: fields.forces,
       warps: fields.warps,
@@ -973,9 +975,9 @@ function simulateUvmEffectFrame(
   // A seek spends one particle spawn budget over all its steps (ribbons have one per step). A lane
   // steps through `update`, whose budget is per step, so it takes a step only where the seek's
   // remaining budget could not bind: before the budget is spent, a step must leave some of it;
-  // once it is spent, the seek spawns no more particles, which is a step without spawning when no
-  // ribbon emitter needs spawning either.
-  const spawnsRibbons = ribbons.some(ribbon => (ribbon.splineEndpoints?.length ?? 0) === 0)
+  // once it is spent, the seek spawns no more particles, which the lane's silent particle emitters
+  // reproduce while its ribbons spawn as before.
+  let silenced = false
   let steps = effectSeekSteps(options.time)
   // A seek's step at a time, as `update` takes it.
   const stepFrame = {
@@ -1000,19 +1002,22 @@ function simulateUvmEffectFrame(
         steps.count === 0 ||
         ahead.count <= steps.count ||
         ahead.step !== steps.step ||
-        lane.time !== steps.count * ahead.step ||
-        (spent && spawnsRibbons)
+        lane.time !== steps.count * ahead.step
       )
         return false
       signal = next.signal
       checkWork(target)
+      if (spent && !silenced) {
+        for (const [index, emitter] of particles.entries())
+          laneParticles[index] = silentParticleEmitter(emitter)
+        silenced = true
+      }
       lane.time = Number.NaN
       for (let index = steps.count; index < ahead.count; index += 1) {
         const time = index === ahead.count - 1 ? target : (index + 1) * ahead.step
         sampleAt(time)
         stepFrame.sequenceTimeSeconds = time
         stepFrame.animationTime = time
-        stepFrame.allowSpawn = !spent
         const step = simulation.update(ahead.step, stepFrame)
         dropped += step.droppedParticles + step.droppedRibbons + step.droppedProjectorSplats
         spawned += step.spawnedParticles
@@ -1028,10 +1033,31 @@ function simulateUvmEffectFrame(
       !clamped &&
       steps.count > 0 &&
       steps.step === EFFECT_STEP_SECONDS &&
-      lane.time === steps.count * EFFECT_STEP_SECONDS &&
-      !(spawned >= spawnBudget && spawnsRibbons),
+      lane.time === steps.count * EFFECT_STEP_SECONDS,
   }
   return lane
+}
+
+/**
+ * A particle emitter that spawns nothing and is otherwise the same. The simulator reads a particle
+ * emitter's visibility only to decide whether it spawns, and passes over an invisible one before
+ * counting its emission or drawing a random number, as it passes over every emitter once a seek has
+ * spent its spawn budget.
+ */
+function silentParticleEmitter(emitter: RenderParticleEmitter): RenderParticleEmitter {
+  const { animation, sequenceAnimation, ...rest } = emitter
+  const silent: RenderParticleEmitter = { ...rest, visibility: 0 }
+  if (animation !== undefined) {
+    const { visibility, ...tracks } = animation
+    void visibility
+    silent.animation = tracks
+  }
+  if (sequenceAnimation !== undefined) {
+    const { visibility, ...tracks } = sequenceAnimation
+    void visibility
+    silent.sequenceAnimation = tracks
+  }
+  return silent
 }
 
 /** An effect frame from its preparation and simulation, for one view. */

@@ -184,14 +184,17 @@ test('after a seek spends its particle budget, a continued simulation spawns no 
   }
   assert.equal(spent[1].simulation, spent[0].simulation)
   assert.equal(spent[2].simulation, spent[0].simulation)
-  // Ribbon emitters keep spawning on their own budget, which a continued step cannot tell apart:
-  // every clock then simulates anew.
+  // Ribbon emitters keep spawning on their own budget while the particles stay silent.
   const ribbons = framesThroughCache(
     withParticles({ emissionRate: 300, lifeSpan: 2, maxParticles: 1024 }, true),
-    [1, 1.25],
+    [1, 1.25, 1.5],
   )
-  for (const { frame, fresh } of ribbons) assert.deepEqual(frame, fresh)
-  assert.notEqual(ribbons[1].simulation, ribbons[0].simulation)
+  for (const { frame, fresh } of ribbons) {
+    assert.ok(frame.primitives.some(primitive => primitive.id.startsWith('uvm-effect-ribbon')))
+    assert.deepEqual(frame, fresh)
+  }
+  assert.equal(ribbons[1].simulation, ribbons[0].simulation)
+  assert.equal(ribbons[2].simulation, ribbons[0].simulation)
   // A continuation that would spend the budget stops and simulates the clock anew; later clocks
   // continue that simulation. 100 particles a second spend 256 spawns at 2.56 s.
   const steady = framesThroughCache(
