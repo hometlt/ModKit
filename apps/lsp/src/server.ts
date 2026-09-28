@@ -688,6 +688,7 @@ export function createModkitLanguageServer(
                         ),
                       }),
                   ...(item.sortText === undefined ? {} : { sortText: item.sortText }),
+                  ...(item.filterText === undefined ? {} : { filterText: item.filterText }),
                 }) satisfies CompletionItem,
             ),
           }

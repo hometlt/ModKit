@@ -129,6 +129,12 @@ export interface LanguageCompletionItem {
   /** Document range replaced when this item is accepted. Defaults to the editor's current word. */
   readonly replacementRange?: LanguageRange
   readonly sortText?: string
+  /**
+   * The text the editor matches what is typed against, when it is not the label: an item whose
+   * `replacementRange` starts at a shortcut character (`:`, `.`, `@`, `/`) names that character
+   * here too, or the editor filters it out.
+   */
+  readonly filterText?: string
 }
 
 /**

@@ -290,6 +290,7 @@ export function bridgeLanguageProvider(
               ...(plain.detail === undefined ? {} : { detail: plain.detail }),
               ...(plain.documentation === undefined ? {} : { documentation: plain.documentation }),
               ...(plain.sortText === undefined ? {} : { sortText: plain.sortText }),
+              ...(plain.filterText === undefined ? {} : { filterText: plain.filterText }),
               ...(plain.insertTextFormat === 'snippet'
                 ? { insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet }
                 : {}),

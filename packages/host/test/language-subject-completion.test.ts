@@ -121,6 +121,7 @@ const provider: LanguageProvider = {
           kind: 'snippet',
           insertText: '<Expanded>$0</Expanded>',
           insertTextFormat: 'snippet',
+          filterText: '<expanded',
           replacementRange: {
             start: { line: 0, character: 0 },
             end: { line: 0, character: 1 },
@@ -1698,6 +1699,7 @@ describe('language subject completion lifecycle', () => {
       expect(result?.items).toEqual([
         expect.objectContaining({
           label: 'expanded',
+          filterText: '<expanded',
           replacementRange: {
             start: { line: 0, character: 0 },
             end: { line: 0, character: 1 },

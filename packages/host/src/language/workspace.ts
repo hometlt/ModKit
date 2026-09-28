@@ -950,7 +950,8 @@ const validCompletionItem = (
     item['insertTextFormat'] === 'snippet') &&
   (item['replacementRange'] === undefined ||
     validRange(item['replacementRange'] as LanguageRange, lengths)) &&
-  (item['sortText'] === undefined || typeof item['sortText'] === 'string')
+  (item['sortText'] === undefined || typeof item['sortText'] === 'string') &&
+  (item['filterText'] === undefined || typeof item['filterText'] === 'string')
 
 function validateProviderCompletionList(
   value: unknown,
