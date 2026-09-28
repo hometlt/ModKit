@@ -14,7 +14,8 @@ import type { InstallationProbes, KnownFolder, RegistryHive } from '@modkit/sdk'
 
 const execFileAsync = promisify(execFile)
 const MAX_TEXT_BYTES = 4 * 1024 * 1024
-const SAFE_KEY = /^[\w .()&'+,\\-]{1,512}$/u
+// `:` names keys like `Dune 2000: Gruntmods Edition`; reg.exe gets its arguments without a shell
+const SAFE_KEY = /^[\w .()&'+,:\\-]{1,512}$/u
 const SAFE_NAME = /^[\w .()-]{0,256}$/u
 
 export interface NodeInstallationProbeOptions {
@@ -115,6 +116,18 @@ export function createNodeInstallationProbes(
       }
       for (const name of names)
         if (found[name] === undefined && values[name] !== undefined) found[name] = values[name]
+      // '' is the key's default value, whose displayed name reg.exe localizes: ask for it alone
+      if (names.includes('') && found[''] === undefined) {
+        try {
+          const lines = registryLines(
+            await runRegistry(['query', `${hive}\\${key}`, '/ve', view], signal),
+          )
+          const value = Object.values(lines)[0]
+          if (value !== undefined && value !== '') found[''] = value
+        } catch {
+          // no default value in this view
+        }
+      }
     }
     return Object.freeze(found)
   }

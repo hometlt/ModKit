@@ -116,4 +116,22 @@ describe('installation probes of a desktop host', () => {
       await createNodeInstallationProbes({ platform: 'linux' }).knownFolder('program-data'),
     ).toBeUndefined()
   })
+
+  it('reads a key with a colon and its default value under a localized name', async () => {
+    const probes = createNodeInstallationProbes({
+      platform: 'win32',
+      async runRegistry(args) {
+        if (!args.includes('/reg:64')) return ''
+        return args.includes('/ve')
+          ? '    (По умолчанию)    REG_SZ    D:/Games/Dune 2000\r\n'
+          : '    Language    REG_SZ    ru\r\n'
+      },
+    })
+    expect(
+      await probes.registryValues('HKLM', 'SOFTWARE\\Dune 2000: Gruntmods Edition', [
+        '',
+        'Language',
+      ]),
+    ).toEqual({ '': 'D:/Games/Dune 2000', Language: 'ru' })
+  })
 })
