@@ -184,6 +184,13 @@ export const PARTS = Object.freeze([
   'image.convert',
   'image.metadata',
 
+  // map layers: the chosen layer drawn large, a thumbnail per layer, what its colours mean
+  'map-layers.view',
+  'map-layers.image',
+  'map-layers.thumbnail',
+  'map-layers.legend',
+  'map-layers.swatch',
+
   // image editing surface (MK2 assetsTextureViewer parity)
   'imageedit',
   'imageedit.tools',

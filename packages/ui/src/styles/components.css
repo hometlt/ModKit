@@ -1040,6 +1040,43 @@
     image-rendering: pixelated;
   }
 
+  [data-mk-part='map-layers.view'] {
+    display: grid;
+    gap: var(--mk-space-2);
+    margin-block-end: var(--mk-space-3);
+  }
+
+  [data-mk-part='map-layers.image'] {
+    display: block;
+    inline-size: 100%;
+    max-inline-size: 768px;
+    image-rendering: pixelated;
+  }
+
+  [data-mk-part='map-layers.thumbnail'] {
+    display: block;
+    inline-size: 64px;
+    image-rendering: pixelated;
+    cursor: pointer;
+    border: 1px solid var(--mk-color-border);
+  }
+
+  [data-mk-part='map-layers.legend'] {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--mk-space-2);
+    align-items: center;
+    color: var(--mk-color-fg-muted);
+    font-size: var(--mk-font-size-xs);
+  }
+
+  [data-mk-part='map-layers.swatch'] {
+    display: inline-block;
+    inline-size: 12px;
+    block-size: 12px;
+    border: 1px solid var(--mk-color-border);
+  }
+
   [data-mk-part='image.readout'],
   [data-mk-part='audio.readout'] {
     color: var(--mk-color-fg-muted);

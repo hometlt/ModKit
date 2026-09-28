@@ -403,7 +403,9 @@ export const MAP_LAYERS_FALLBACK_MESSAGES = {
   'viewer.mapLayersImported': 'Imported {layer}: {message}',
   'viewer.mapLayersNoEditing': 'This view cannot save edits to the map.',
   'viewer.mapLayersNoWriter': 'This window cannot write files.',
+  'viewer.mapLayersRamp': 'Black is {minimum}, white is {maximum}',
   'viewer.mapLayersReadOnly': 'The format cannot write this layer.',
+  'viewer.mapLayersShow': 'Show layer {layer}',
   'viewer.mapLayersSize': '{width} × {height}, values {minimum}–{maximum}',
 } as const satisfies UiMessageCatalog
 

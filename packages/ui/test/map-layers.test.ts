@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { encodeGreyPng, decodePngSamples } from '@modkit/codec-kit/raster'
 import type { AnyDescriptor, AssetEditPlan, OperationSession } from '@modkit/sdk'
 import type { MapLayerDescriptor } from '@modkit/sdk/maps'
-import { exportMapLayerPng, importMapLayerPng } from '../src/map-layers/index.js'
+import { exportMapLayerPng, importMapLayerPng, mapLayerPicture, mapLayerValue } from '../src/map-layers/index.js'
 
 /*
  * The map-layer panel owns the image and nothing about a game: a codec's numbers go out as a grey
@@ -88,5 +88,26 @@ describe('map layers as images', () => {
       }),
     ).rejects.toThrow(/3x1/)
     expect(calls).toEqual([])
+  })
+  it('draws amounts as a grey ramp and classes in a colour each', () => {
+    const ramp = mapLayerPicture({ ...layer, width: 3, height: 1, maximum: 100 }, { layer: 'height', width: 3, height: 1, values: [0, 100, 250] })
+    // a sample past the declared maximum is drawn at the maximum
+    expect([...ramp.rgba]).toEqual([0, 0, 0, 255, 255, 255, 255, 255, 255, 255, 255, 255])
+    expect(ramp.classes).toEqual([])
+    const pathing: MapLayerDescriptor = { ...layer, id: 'pathing', meaning: 'pathing', width: 3, height: 1, maximum: 2 }
+    const classes = mapLayerPicture(pathing, { layer: 'pathing', width: 3, height: 1, values: [2, 0, 2] })
+    expect(classes.classes).toEqual([
+      { value: 0, colour: 'rgb(32 32 32)' },
+      { value: 2, colour: 'rgb(60 180 75)' },
+    ])
+    expect([...classes.rgba.slice(0, 8)]).toEqual([60, 180, 75, 255, 32, 32, 32, 255])
+    // more values than colours: amounts after all
+    const many = mapLayerPicture({ ...pathing, maximum: 255 }, { layer: 'pathing', width: 3, height: 1, values: [0, 255, 0] })
+    expect(many.classes).toEqual([])
+  })
+
+  it('names a sample by the world value the layer declares', () => {
+    expect(mapLayerValue(layer, 5)).toBe('5')
+    expect(mapLayerValue({ ...layer, valueScale: 0.25, valueOffset: -16, unit: 'm' }, 72)).toBe('2 m')
   })
 })
