@@ -145,6 +145,18 @@ export function materialWebGlDraws(
    * Context state the previous draw of a sequence left behind; unset fields are unknown. Nothing
    * but the sequence touches the context while it runs, so draws skip what is already in place.
    */
+  /**
+   * Whether a generic attribute holds these four values: every generic attribute write of a sequence
+   * is recorded in its state, so equal values (defaults of different vertex arrays, the columns of
+   * one placement's consecutive draws) need no call.
+   */
+  const holdsAttribute = (held: Float32Array | undefined, values: Float32Array, from: number) =>
+    held !== undefined &&
+    held.length === 4 &&
+    Object.is(held[0], values[from]) &&
+    Object.is(held[1], values[from + 1]) &&
+    Object.is(held[2], values[from + 2]) &&
+    Object.is(held[3], values[from + 3])
   interface SequenceState {
     program?: WebGLProgram
     vertexArray?: WebGLVertexArrayObject
@@ -327,7 +339,7 @@ export function materialWebGlDraws(
     // Generic attribute values are context state, not VAO state: other draws and passes change
     // them, so set missing normal/tangent/color/UV defaults unless this sequence already did.
     for (const { location, value } of entry.constants)
-      if (state.constants.get(location) !== value) {
+      if (!holdsAttribute(state.constants.get(location), value, 0)) {
         gl.vertexAttrib4fv(location, value)
         state.constants.set(location, value)
       }
@@ -586,10 +598,19 @@ export function materialWebGlDraws(
     }
     bindTextureUnits(lease, state)
     // The placement vertex stage reads the model matrix from attributes: constants for one draw.
+    // Consecutive draws of one placement find its columns already set.
     if (model !== undefined)
       geometry.placement.forEach((location, column) => {
         if (location < 0) return
-        const value = model.subarray(column * 4, column * 4 + 4)
+        const from = column * 4
+        if (holdsAttribute(state.constants.get(location), model, from)) return
+        // A copy: what the attribute holds must not follow a later change of the matrix.
+        const value = Float32Array.of(
+          model[from]!,
+          model[from + 1]!,
+          model[from + 2]!,
+          model[from + 3]!,
+        )
         gl.vertexAttrib4fv(location, value)
         state.constants.set(location, value)
       })

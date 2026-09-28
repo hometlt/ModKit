@@ -152,6 +152,24 @@ it('asks a linked program for its attribute locations once, whatever geometry it
   assert.equal(count('getAttribLocation'), 9)
 })
 
+it('sets the placement columns once for consecutive draws of one placement', () => {
+  const at = transform => id => ({
+    draw: { primitive: { ...mesh(id), transform }, program: source, material },
+  })
+  const here = at(Float32Array.of(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 2, 3, 4, 1))
+  const there = at(Float32Array.of(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 5, 3, 4, 1))
+  const writes = draws => {
+    const { gl, count } = context()
+    const renderer = materialWebGlDraws(gl, new Map([['albedo.png', {}]]), { checkEachDraw: false })
+    renderer.drawSequence(draws, camera)
+    return count('vertexAttrib4fv')
+  }
+  const one = writes([here('a')])
+  assert.equal(writes([here('a'), here('b'), here('c')]), one)
+  // Only the translation column differs at another placement.
+  assert.equal(writes([here('a'), there('b')]), one + 1)
+})
+
 it('shares one sampler object between leases with equal sampling and deletes it on release', () => {
   const { gl, count } = context()
   const renderer = materialWebGlDraws(gl, new Map([['albedo.png', {}]]), { checkEachDraw: false })
