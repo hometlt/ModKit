@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { encodeWav, wavHeader } from '../dist/audio/index.js'
+import { encodeWav, wavEntrySource, wavHeader } from '../dist/audio/index.js'
 
 const ascii = (bytes, at) => String.fromCharCode(...bytes.subarray(at, at + 4))
 
@@ -98,4 +98,34 @@ test('wavHeader for PCM is the header encodeWav writes, and refuses blocks that 
   assert.throws(() => wavHeader({ ...ima, blockAlign: 8 }, 0), /does not fit 2 channel/u)
   assert.throws(() => wavHeader({ ...ima, blockAlign: 20 }, 0), /does not fit 2 channel/u)
   assert.throws(() => wavHeader({ encoding: 'pcm', ...pcm }, -1), /non-negative/u)
+})
+
+test('wavEntrySource is the header, the container range and the pad byte, read in any window', async () => {
+  // Three 8-bit mono samples at offset 5 of a container: an odd stream, so a pad byte follows.
+  const container = Uint8Array.of(9, 9, 9, 9, 9, 0x80, 0xa0, 0x60, 9, 9)
+  const reads = []
+  const format = { encoding: 'pcm', channels: 1, sampleRate: 8000, bitsPerSample: 8 }
+  const source = wavEntrySource(
+    async (offset, length) => {
+      reads.push([offset, length])
+      return container.slice(offset, offset + length)
+    },
+    format,
+    5,
+    3,
+  )
+  const header = wavHeader(format, 3)
+  assert.equal(await source.size(), 48n)
+  assert.deepEqual([...(await source.read(0n, 48))], [...header, 0x80, 0xa0, 0x60, 0])
+  // A window across the end of the header and one past the stream read only what they cover.
+  reads.length = 0
+  assert.deepEqual([...(await source.read(42n, 4))], [...header.subarray(42), 0x80, 0xa0])
+  assert.deepEqual([...(await source.read(46n, 10))], [0x60, 0])
+  assert.deepEqual(reads, [
+    [5, 2],
+    [7, 1],
+  ])
+  await assert.rejects(source.read(49n, 1), /outside the entry/u)
+  const short = wavEntrySource(async () => new Uint8Array(1), format, 0, 3)
+  await assert.rejects(short.read(0n, 48), /truncated/u)
 })

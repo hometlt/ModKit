@@ -4,6 +4,7 @@
  * BAG, FMOD FSB5, ...). Narrow on purpose: no compression or WASM, so importing it costs a codec
  * nothing.
  */
+import type { ByteRangeSource } from '@modkit/sdk'
 import { createCrc32Msb } from '../checksum/index.js'
 
 export {
@@ -148,6 +149,58 @@ export function wavHeader(format: WavFormat, dataBytes: number): Uint8Array {
   }
   chunk('data', dataBytes)
   return bytes
+}
+
+/**
+ * A container entry holding a headerless stream (PCM, IMA ADPCM) as a WAV, without copying the
+ * stream: `wavHeader` for `format` and `length`, then the `length` bytes `read` returns from
+ * `offset` of the container, then the RIFF pad byte when `length` is odd. A container codec returns
+ * it from the entry's custom `open` and gives the entry `mediaType: 'audio/wav'`. `read` gets any
+ * window of the stream and must return all of it.
+ */
+export function wavEntrySource(
+  read: (offset: number, length: number, signal?: AbortSignal) => Promise<Uint8Array>,
+  format: WavFormat,
+  offset: number,
+  length: number,
+): ByteRangeSource {
+  if (!Number.isSafeInteger(offset) || offset < 0) {
+    throw new RangeError('WAV entry offset must be a non-negative integer')
+  }
+  const header = wavHeader(format, length)
+  const streamEnd = header.byteLength + length
+  const total = streamEnd + (length & 1)
+  return Object.freeze({
+    size: async () => BigInt(total),
+    async read(start: bigint, count: number, signal?: AbortSignal) {
+      const from = Number(start)
+      if (
+        !Number.isSafeInteger(from) ||
+        from < 0 ||
+        from > total ||
+        !Number.isSafeInteger(count) ||
+        count < 0
+      ) {
+        throw new RangeError('WAV entry range is outside the entry')
+      }
+      const end = Math.min(total, from + count)
+      const out = new Uint8Array(end - from)
+      let cursor = from
+      if (cursor < header.byteLength) {
+        const take = Math.min(header.byteLength, end) - cursor
+        out.set(header.subarray(cursor, cursor + take))
+        cursor += take
+      }
+      if (cursor < Math.min(streamEnd, end)) {
+        const take = Math.min(streamEnd, end) - cursor
+        const bytes = await read(offset + cursor - header.byteLength, take, signal)
+        if (bytes.byteLength !== take) throw new RangeError('WAV entry stream read is truncated')
+        out.set(bytes, cursor - from)
+      }
+      // The pad byte, when the window reaches it, is already zero.
+      return out
+    },
+  })
 }
 
 /**
