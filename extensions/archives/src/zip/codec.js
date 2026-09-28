@@ -14,8 +14,6 @@ const ZIP_EOCD = 0x06054b50
 const ZIP_DESCRIPTOR = 0x08074b50
 const ZIP64_LOCATOR = 0x07064b50
 const ZIP64_EOCD = 0x06064b50
-/** Local headers closer together than this are read in one range. */
-const LOCAL_HEADER_WINDOW = 64 * 1024
 const FLAG_ENCRYPTED = 0x0001
 const FLAG_COMPRESSION_OPTIONS = 0x0006
 const FLAG_DESCRIPTOR = 0x0008
@@ -285,36 +283,24 @@ async function readZipDirectory(read, size, maxEntries, maxRead) {
 }
 
 /**
- * Where each file's data starts: past its local header, whose name and extra lengths may differ
- * from the central record's. Headers within LOCAL_HEADER_WINDOW of each other share one read.
+ * Where a file's data starts: past its local header, whose name and extra lengths may differ from
+ * the central record's. Read on first use (one 30-byte read) and remembered, so opening an archive
+ * reads only its directory.
  */
-async function localDataOffsets(files, read, size) {
-  const sorted = [...files].sort((left, right) => left.localOffset - right.localOffset)
-  const offsets = new Map()
-  for (let first = 0; first < sorted.length;) {
-    const start = sorted[first].localOffset
-    let last = first
-    while (
-      last + 1 < sorted.length &&
-      sorted[last + 1].localOffset + 30 - start <= LOCAL_HEADER_WINDOW
-    )
-      last += 1
-    const end = sorted[last].localOffset + 30
-    if (end > size) throw new TypeError(`the local header of «${sorted[last].name}» is truncated`)
-    const window = await read(start, end - start)
-    for (let index = first; index <= last; index += 1) {
-      const entry = sorted[index]
-      const at = entry.localOffset - start
-      if (u32(window, at) !== ZIP_LOCAL)
+function localDataLocator(entry, read, size) {
+  let located
+  return () =>
+    (located ??= (async () => {
+      if (entry.localOffset + 30 > size)
+        throw new TypeError(`the local header of «${entry.name}» is truncated`)
+      const header = await read(entry.localOffset, 30)
+      if (u32(header, 0) !== ZIP_LOCAL)
         throw new TypeError(`the local header of «${entry.name}» is invalid`)
-      const dataOffset = entry.localOffset + 30 + u16(window, at + 26) + u16(window, at + 28)
+      const dataOffset = entry.localOffset + 30 + u16(header, 26) + u16(header, 28)
       if (dataOffset + entry.compressedSize > size)
         throw new TypeError(`the data of «${entry.name}» is truncated`)
-      offsets.set(entry.id, dataOffset)
-    }
-    first = last + 1
-  }
-  return offsets
+      return BigInt(dataOffset)
+    })())
 }
 
 /**
@@ -338,11 +324,12 @@ export async function readZipByRanges(byteSource, budget, signal) {
 /** ZIP entries as the host's entry table: listing, extraction and in-place nested opens. */
 async function zipEntryTable(entries, read, size) {
   const files = entries.filter(entry => entry.kind === 'file')
-  const offsets = await localDataOffsets(files, read, size)
   // a name the directory repeats: the last record wins, as extractors do
   const byPath = new Map()
   for (const entry of files) {
-    const offset = BigInt(offsets.get(entry.id))
+    // the local header's position; the data starts where `locate` finds it
+    const offset = BigInt(entry.localOffset)
+    const locate = localDataLocator(entry, read, size)
     const compressedLength = BigInt(entry.compressedSize)
     const unreadable =
       (entry.flags & (FLAG_ENCRYPTED | FLAG_STRONG_ENCRYPTION)) !== 0
@@ -364,8 +351,8 @@ async function zipEntryTable(entries, read, size) {
               },
             }
           : entry.method === STORED
-            ? { kind: 'stored', offset, length: compressedLength }
-            : { kind: entry.method === 8 ? 'deflate' : 'zstd', offset, compressedLength },
+            ? { kind: 'stored', offset, locate, length: compressedLength }
+            : { kind: entry.method === 8 ? 'deflate' : 'zstd', offset, locate, compressedLength },
       ...(modifiedAt === undefined ? {} : { modifiedAt }),
       // the container's own CRC-32, not a digest this codec computed
       checksum: { algorithm: 'crc-32', value: entry.crc.toString(16).padStart(8, '0') },

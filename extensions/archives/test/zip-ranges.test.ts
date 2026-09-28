@@ -142,6 +142,9 @@ describe('ZIP by ranges', () => {
     const { session, reads } = await open(zip, 700n)
     expect(zip.byteLength).toBeGreaterThan(700)
     expect(Math.max(...reads)).toBeLessThanOrEqual(700)
+    // opening reads the directory only (probe, tail, ZIP64 record, central directory), no local headers
+    const opened = reads.length
+    expect(opened).toBeLessThanOrEqual(4)
     const lease = await session.dataSource('common.view/namespace-entry-source', 1)
     const { items } = await lease.value.list('', { limit: 10 })
     expect(
