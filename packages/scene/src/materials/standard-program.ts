@@ -281,17 +281,20 @@ function compilePass(
       const frame =
         ((Math.floor(layer.flipbook.frame.value) % (rows * cols)) + rows * cols) % (rows * cols)
       const frameSize = layer.flipbook.frameSize
+      // The shader samples (uv + offset) * tiling; the frame's cell lies after tiling, so it enters
+      // the offset divided by the tiling (a zero tiling samples one texel whatever the offset).
+      const beforeTiling = (cell: number, scale: number) => (scale === 0 ? 0 : cell / scale)
       if (frameSize === undefined) {
         uniforms[`${prefix}UvTiling`] = [tiling[0] / cols, tiling[1] / rows]
         uniforms[`${prefix}UvOffset`] = [
-          (offset[0] + (frame % cols)) / cols,
-          (offset[1] + Math.floor(frame / cols)) / rows,
+          offset[0] + beforeTiling(frame % cols, tiling[0]),
+          offset[1] + beforeTiling(Math.floor(frame / cols), tiling[1]),
         ]
       } else {
         uniforms[`${prefix}UvTiling`] = tiling
         uniforms[`${prefix}UvOffset`] = [
-          offset[0] + (frame % cols) * frameSize[0],
-          offset[1] + Math.floor(frame / cols) * frameSize[1],
+          offset[0] + beforeTiling((frame % cols) * frameSize[0], tiling[0]),
+          offset[1] + beforeTiling(Math.floor(frame / cols) * frameSize[1], tiling[1]),
         ]
       }
     }

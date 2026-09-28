@@ -1443,13 +1443,13 @@ function cliffMaskLayer(
     // M3 colour channels: 1 RGBA and 2 AAAA read alpha, 3/4/5 read one colour channel.
     channel: channels === 3 ? 0 : channels === 4 ? 1 : channels === 5 ? 2 : 3,
     uvSource: typeof layer?.['uvSource'] === 'number' ? layer['uvSource'] : 0,
-    // The material's layer transform: rotate about the centre, then tile and offset.
+    // The material's layer transform, as the shader: rotate about the centre, offset, then tile.
     transform: (u: number, v: number) => {
       const cu = u - 0.5,
         cv = v - 0.5
       return [
-        (cos * cu + sin * cv + 0.5) * tiling[0]! + offset[0]!,
-        (-sin * cu + cos * cv + 0.5) * tiling[1]! + offset[1]!,
+        (cos * cu + sin * cv + 0.5 + offset[0]!) * tiling[0]!,
+        (-sin * cu + cos * cv + 0.5 + offset[1]!) * tiling[1]!,
       ] as const
     },
   })

@@ -633,6 +633,8 @@ describe('define building + GLSL sources', () => {
     expect(defines.layers[0]?.hasUvTransform).toBe(true)
     expect(fragment).toContain('uniform vec2 u_diffuseUvOffset;')
     expect(fragment).toContain('uniform vec2 u_diffuseUvTiling;')
+    // M3 offsets are in mesh UV units: applied before tiling.
+    expect(fragment).toContain('((rotateUv(v_uv0, u_diffuseUvAngle.z) + u_diffuseUvOffset) * u_diffuseUvTiling)')
   })
 
   it('applies animated Euler UV rotation and axis-specific triplanar projection', () => {

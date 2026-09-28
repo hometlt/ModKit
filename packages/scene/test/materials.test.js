@@ -540,7 +540,7 @@ it('retains environment mask channel semantics and evaluates Fresnel with actual
   close(f.shade({ eyeToVertex: [0, 0, -1] }).rgba, [0.00002, 0.00004, 0.00006, 0.00005])
 })
 
-it('builds shader uniforms from UV animation and flipbooks with the MK2 atlas convention', () => {
+it('builds shader uniforms from UV animation and flipbooks, the cell after tiling', () => {
   const p = program(
     material({
       layers: {
@@ -552,7 +552,8 @@ it('builds shader uniforms from UV animation and flipbooks with the MK2 atlas co
       },
     }),
   )
-  close(p.uniforms.u_diffuseUvOffset, [0.6, 0.7])
+  // Frame 3 of 2x2: ((uv + 0.2) * 2 + 1) / 2 = (uv + 0.7) * 1.
+  close(p.uniforms.u_diffuseUvOffset, [0.7, 0.9])
   close(p.uniforms.u_diffuseUvTiling, [1, 1])
   assert.match(p.fragmentSource, /#version 300 es/)
   assert.match(p.fragmentSource, /out vec4 materialColor/)
@@ -574,8 +575,9 @@ it('preserves authored UV scale for stride-based atlas animation', () => {
       },
     }),
   )
+  // Frame 5 (column 1, row 2): (uv + 0.1) * 2 + 0.4 = (uv + 0.3) * 2, likewise 0.2 + 0.25 / 3.
   close(p.uniforms.u_diffuseUvTiling, [2, 3])
-  close(p.uniforms.u_diffuseUvOffset, [0.5, 0.45])
+  close(p.uniforms.u_diffuseUvOffset, [0.3, 0.2 + 0.25 / 3])
 })
 
 it('uses bound normal channels for lighting and keeps a prepared frame independent of later bindings', () => {
