@@ -930,24 +930,38 @@ async function readResourceBytes(
     }
     const chunks: Uint8Array[] = []
     let byteLength = 0
-    for await (const chunk of source.stream(undefined, signal)) {
-      byteLength += chunk.byteLength
-      if (byteLength > maxDocumentBytes || byteLength > remainingTotalBytes) {
-        return {
-          state: 'unresolved',
-          diagnostic: diagnostic(
-            'warning',
-            byteLength > remainingTotalBytes
-              ? 'x3.host/resolved-map-total-budget-exceeded'
-              : 'x3.host/resolved-map-document-budget-exceeded',
-            byteLength > remainingTotalBytes
-              ? `${requirement.path} exceeds remaining maxTotalBytes ${remainingTotalBytes}`
-              : `${requirement.path} exceeds maxDocumentBytes ${maxDocumentBytes}`,
-          ),
-          consumedBytes: byteLength,
+    try {
+      for await (const chunk of source.stream(undefined, signal)) {
+        byteLength += chunk.byteLength
+        if (byteLength > maxDocumentBytes || byteLength > remainingTotalBytes) {
+          return {
+            state: 'unresolved',
+            diagnostic: diagnostic(
+              'warning',
+              byteLength > remainingTotalBytes
+                ? 'x3.host/resolved-map-total-budget-exceeded'
+                : 'x3.host/resolved-map-document-budget-exceeded',
+              byteLength > remainingTotalBytes
+                ? `${requirement.path} exceeds remaining maxTotalBytes ${remainingTotalBytes}`
+                : `${requirement.path} exceeds maxDocumentBytes ${maxDocumentBytes}`,
+            ),
+            consumedBytes: byteLength,
+          }
         }
+        chunks.push(chunk)
       }
-      chunks.push(chunk)
+    } catch (error) {
+      // opened but unreadable (its data in an absent companion): unresolved, like an absent document
+      signal?.throwIfAborted()
+      return {
+        state: 'unresolved',
+        diagnostic: diagnostic(
+          'warning',
+          'x3.host/resolved-map-document-read-failed',
+          `${requirement.path}: ${error instanceof Error ? error.message : String(error)}`,
+        ),
+        consumedBytes: byteLength,
+      }
     }
     const bytes = new Uint8Array(byteLength)
     let offset = 0

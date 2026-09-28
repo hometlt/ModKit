@@ -45,3 +45,50 @@ describe('a binary data document', () => {
     expect(text.text.startsWith('W3do')).toBe(true)
   })
 })
+
+describe('a data document that opens but cannot be read', () => {
+  it('is unresolved with the reason, not a failed workspace', async () => {
+    let released = 0
+    const broken = {
+      state: () => 'live',
+      async resolve() {
+        return {
+          state: 'resolved',
+          revision,
+          provenance: {},
+          lease: {
+            value: {
+              kind: 'bytes',
+              ref: { id: 'Rules.txt', uri: 'test:Rules.txt' },
+              revision,
+              size: 10n,
+              // eslint-disable-next-line require-yield
+              async *stream() {
+                throw new Error('retail RFH entry Rules.txt is stored in the sibling RFD')
+              },
+            },
+            release: async () => {
+              released += 1
+            },
+          },
+        }
+      },
+    } as unknown as ResourceSessionPort
+    const loaded = await readResourceText(
+      broken,
+      {
+        requirementId: 'rules',
+        rootId: 'game',
+        path: 'Rules.txt',
+        kind: 'catalog',
+        required: false,
+      },
+      1024,
+    )
+    expect(loaded.state).toBe('unresolved')
+    if (loaded.state !== 'unresolved') return
+    expect(loaded.diagnostic.code).toBe('x3.host/resolved-data-resource-read-failed')
+    expect(loaded.diagnostic.message).toContain('sibling RFD')
+    expect(released).toBe(1)
+  })
+})

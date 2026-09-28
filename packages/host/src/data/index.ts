@@ -1475,19 +1475,33 @@ export async function readResourceText(
     }
     const chunks: Uint8Array[] = []
     let bytes = 0
-    for await (const chunk of source.stream(undefined, signal)) {
-      bytes += chunk.byteLength
-      if (bytes > maxDocumentBytes) {
-        return {
-          state: 'unresolved',
-          diagnostic: diagnostic(
-            'warning',
-            'x3.host/resolved-data-document-budget-exceeded',
-            `${requirement.path} exceeds maxDocumentBytes ${maxDocumentBytes}`,
-          ),
+    try {
+      for await (const chunk of source.stream(undefined, signal)) {
+        bytes += chunk.byteLength
+        if (bytes > maxDocumentBytes) {
+          return {
+            state: 'unresolved',
+            diagnostic: diagnostic(
+              'warning',
+              'x3.host/resolved-data-document-budget-exceeded',
+              `${requirement.path} exceeds maxDocumentBytes ${maxDocumentBytes}`,
+            ),
+          }
         }
+        chunks.push(chunk)
       }
-      chunks.push(chunk)
+    } catch (error) {
+      // a document that opens but cannot be read (its data in an absent companion) is unresolved,
+      // as one that does not open is: an optional one then drops out, a required one is named
+      signal?.throwIfAborted()
+      return {
+        state: 'unresolved',
+        diagnostic: diagnostic(
+          'warning',
+          'x3.host/resolved-data-resource-read-failed',
+          `${requirement.path}: ${error instanceof Error ? error.message : String(error)}`,
+        ),
+      }
     }
     const content = new Uint8Array(bytes)
     let offset = 0

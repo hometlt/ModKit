@@ -34,6 +34,7 @@ import type {
 import type { SubjectServices } from '../subject-services.js'
 import { artifactNamespaceSourceFromVfsMount } from '../vfs-source.js'
 import { openFileArtifactSource } from './file-artifact-source.js'
+import { createFilesystemInputResolver } from './subject-opener.js'
 
 /** One installed archive shared by the concurrent passes of a single map open. */
 interface SharedArchive {
@@ -812,6 +813,18 @@ export function createNodeMapPreviewResourcePlanResolver(
                         throw error
                       }
                     } else {
+                      // an installation archive may keep its data in a sibling (an Emperor RFH in
+                      // its RFD): companions resolve inside the confirmed installation, as an
+                      // ordinary open of that file does
+                      const inventory = options.subjects.inventory
+                      const resolveInput =
+                        inventory === undefined
+                          ? undefined
+                          : createFilesystemInputResolver({
+                              primaryPath: resourcePath,
+                              roots: [await realpath(resolve(installation.installPath))],
+                              inventory,
+                            })
                       opened = await options.subjects.open({
                         source: await openFileArtifactSource(
                           resourcePath,
@@ -821,6 +834,7 @@ export function createNodeMapPreviewResourcePlanResolver(
                         intent: 'inspect',
                         grant: request.grant,
                         budget: request.budgets,
+                        ...(resolveInput === undefined ? {} : { resolveInput }),
                         ...(request.signal === undefined ? {} : { signal: request.signal }),
                       })
                     }
