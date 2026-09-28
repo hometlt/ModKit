@@ -114,10 +114,11 @@ export function containerEntryAccess(
             }),
           }
         : {}),
-      // Readable by range without extraction: stored data in a companion, or a custom entry whose
-      // storage promises a range source.
+      // Readable by range without extraction: stored data in a companion, a RefPack stream (decoded
+      // from checkpoints), or a custom entry whose storage promises a range source.
       ...((entry.storage.kind === 'stored' &&
         (entry.storage.source !== undefined || entry.storage.locate !== undefined)) ||
+      entry.storage.kind === 'refpack' ||
       (entry.storage.kind === 'custom' && entry.storage.rangeAccess === true)
         ? { rangeAccess: true as const }
         : {}),
@@ -210,7 +211,7 @@ export function containerEntryAccess(
       const entry = await entryAt(entryId, signal)
       if (entry === undefined) throw new TypeError(`unknown container entry ${entryId}`)
       const storage = entry.storage
-      if (storage.kind === 'stored') {
+      if (storage.kind === 'stored' || storage.kind === 'refpack') {
         // the container's own source, or a companion the input carries
         let holder: { readonly source: ByteRangeSource; release(): Promise<void> }
         if (storage.source === undefined) {
@@ -224,15 +225,21 @@ export function containerEntryAccess(
         }
         try {
           const start = await offsetOf(storage, signal)
+          const extent = storage.kind === 'stored' ? storage.length : storage.compressedLength
           const window = Object.freeze<ByteRangeSource>({
-            size: async () => storage.length,
+            size: async () => extent,
             async read(offset, length, readSignal) {
-              if (offset < 0n || offset + BigInt(length) > storage.length)
+              if (offset < 0n || offset + BigInt(length) > extent)
                 throw new RangeError('container entry read is outside the entry')
               return holder.source.read(start + offset, length, readSignal)
             },
           })
-          return Object.freeze({ value: window, release: () => holder.release() })
+          if (storage.kind === 'stored')
+            return Object.freeze({ value: window, release: () => holder.release() })
+          // the companion stays open while the decoded stream is read (static_common.bin)
+          const { refPackRangeSource } = await import('./compression/refpack.js')
+          const decoded = await refPackRangeSource(window, { compressedLength: extent })
+          return Object.freeze({ value: decoded, release: () => holder.release() })
         } catch (error) {
           await holder.release()
           throw error
