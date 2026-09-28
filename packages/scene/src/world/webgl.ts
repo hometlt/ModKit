@@ -8475,6 +8475,11 @@ function drawWorldWebGlWithResources(
       transparentMaterialDraws,
       waterByDepth,
     )
+    // What the last batch entry left set: undefined at first and after a material run, else
+    // whether its blending adds. A batch draw changes only its textures (units 4-6), vertex array
+    // and uniforms, so the next batch entry keeps the program, blending, depth writes and the
+    // shadow map's unit; a material run leaves its own.
+    let batchAdditive: boolean | undefined
     for (let index = 0; index < transparentEntries.length; index++) {
       const entry = transparentEntries[index]!
       if (entry.kind === 'material') {
@@ -8492,18 +8497,24 @@ function drawWorldWebGlWithResources(
           sceneLight,
           worldCurrentPrograms.get(plan)?.passes,
         )
+        batchAdditive = undefined
         continue
       }
       const item = entry.draw
-      gl.useProgram(program)
-      gl.disable(gl.POLYGON_OFFSET_FILL)
-      if (shadow !== undefined) {
-        gl.activeTexture(gl.TEXTURE7)
-        gl.bindTexture(gl.TEXTURE_2D, shadow.texture)
+      const additive = item.blendMode === 'additive'
+      if (batchAdditive === undefined) {
+        gl.useProgram(program)
+        gl.disable(gl.POLYGON_OFFSET_FILL)
+        if (shadow !== undefined) {
+          gl.activeTexture(gl.TEXTURE7)
+          gl.bindTexture(gl.TEXTURE_2D, shadow.texture)
+        }
+        gl.enable(gl.BLEND)
+        gl.depthMask(false)
       }
-      gl.enable(gl.BLEND)
-      gl.depthMask(false)
-      gl.blendFunc(gl.SRC_ALPHA, item.blendMode === 'additive' ? gl.ONE : gl.ONE_MINUS_SRC_ALPHA)
+      if (batchAdditive !== additive)
+        gl.blendFunc(gl.SRC_ALPHA, additive ? gl.ONE : gl.ONE_MINUS_SRC_ALPHA)
+      batchAdditive = additive
       worldUniform1f(gl, program, 'shadowReceiver', item.receiveShadows ? 1 : 0)
       if (item.kind === 'textured') {
         drawTexturedBatch(resources, program, item.batch, item.range)
