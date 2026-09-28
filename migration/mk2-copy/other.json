@@ -632,33 +632,6 @@
       ]
     },
     {
-      "source": "references/modkitmk2/extensions/microsoft/age-series/codecs/age-drs/src/index.ts",
-      "destination": "modkit-extensions-other/extensions/microsoft-age-series/src/lib/mk2/age-series/codecs/age-drs/src/index.ts",
-      "sha256Mk2": "971831d021fc1039186f044e373b1c4a09dc27ab102642c86a8c2af711c4d8ea",
-      "sha256Mk3": "0a66d9835b59fcd4bb5aaa27d52d3d1255eca066eb689579ab5ffb36d616f1cd",
-      "rewrites": [
-        "line-ending-normalization"
-      ]
-    },
-    {
-      "source": "references/modkitmk2/extensions/microsoft/age-series/codecs/age-drs/test/archive.spec.ts",
-      "destination": "modkit-extensions-other/extensions/microsoft-age-series/src/lib/mk2/age-series/codecs/age-drs/test/archive.spec.ts",
-      "sha256Mk2": "41c214d52ff666ca974e5d1300e15a9cc3b60456bbc5931d6cf3b755f3142524",
-      "sha256Mk3": "d2279e3f522d682d6f085b51888b751e534778878c46e9380721d13543df52df",
-      "rewrites": [
-        "line-ending-normalization"
-      ]
-    },
-    {
-      "source": "references/modkitmk2/extensions/microsoft/age-series/codecs/age-drs/test/manifest.spec.ts",
-      "destination": "modkit-extensions-other/extensions/microsoft-age-series/src/lib/mk2/age-series/codecs/age-drs/test/manifest.spec.ts",
-      "sha256Mk2": "8db8dd0f54de5d90c558d25f5e12c470b27966d157b027927a69eb4dc868e30a",
-      "sha256Mk3": "00fe2913e2246c5d54f13228e134f1582c550a94a990e173088d50c1df16e761",
-      "rewrites": [
-        "line-ending-normalization"
-      ]
-    },
-    {
       "source": "references/modkitmk2/extensions/microsoft/age-series/codecs/age-of-mythology-brg/codec.manifest.json",
       "destination": "modkit-extensions-other/extensions/microsoft-age-series/src/lib/mk2/age-series/codecs/age-of-mythology-brg/codec.manifest.json",
       "sha256Mk2": "667bee1cae4d2ae1370b64c10a76b6ba81fb81d56b6d415ee96c65a47012503a",
@@ -711,60 +684,6 @@
       ]
     },
     {
-      "source": "references/modkitmk2/extensions/microsoft/age-series/codecs/sld/src/index.ts",
-      "destination": "modkit-extensions-other/extensions/microsoft-age-series/src/lib/mk2/age-series/codecs/sld/src/index.ts",
-      "sha256Mk2": "eae0db504974f8634c25e2fb3ddf27293542bc6eb41414332a7d82d81f5ea77a",
-      "sha256Mk3": "2bf0bcc9b7b196671e58e7f748a2ee8643d2511fda6af9a950cb0b5122855285",
-      "rewrites": [
-        "line-ending-normalization"
-      ]
-    },
-    {
-      "source": "references/modkitmk2/extensions/microsoft/age-series/codecs/slp/src/detect.ts",
-      "destination": "modkit-extensions-other/extensions/microsoft-age-series/src/lib/mk2/age-series/codecs/slp/src/detect.ts",
-      "sha256Mk2": "4395dbc831c517c312c78e676ebebd3835bf519063e8d2eefd6565ee83ac87ca",
-      "sha256Mk3": "c88b845ebbeff551f8085741d5b85204530b735cac8e325cc669c51d8c92947f",
-      "rewrites": [
-        "line-ending-normalization"
-      ]
-    },
-    {
-      "source": "references/modkitmk2/extensions/microsoft/age-series/codecs/slp/src/index.ts",
-      "destination": "modkit-extensions-other/extensions/microsoft-age-series/src/lib/mk2/age-series/codecs/slp/src/index.ts",
-      "sha256Mk2": "24c92ead08664b7a43a7870e3a966accfbdb0f11ccbd399301673ce5a0963d03",
-      "sha256Mk3": "ffd601149ee17685c5574a6ea90ec0f4eb3cf9474350fd1aa932d19ea7efd16b",
-      "rewrites": [
-        "line-ending-normalization"
-      ]
-    },
-    {
-      "source": "references/modkitmk2/extensions/microsoft/age-series/codecs/smp/src/index.ts",
-      "destination": "modkit-extensions-other/extensions/microsoft-age-series/src/lib/mk2/age-series/codecs/smp/src/index.ts",
-      "sha256Mk2": "c0e2135804f9a98688b10e54baaa779faa285f6a1fcbc6486288e9c5d9c9db39",
-      "sha256Mk3": "6c9f54ca973fa4ef5c693af0d6a60adf97b394dd5dc9ef63b13937e73f15c499",
-      "rewrites": [
-        "line-ending-normalization"
-      ]
-    },
-    {
-      "source": "references/modkitmk2/extensions/microsoft/age-series/codecs/smx/src/aoe-de-sprite.ts",
-      "destination": "modkit-extensions-other/extensions/microsoft-age-series/src/lib/mk2/age-series/codecs/smx/src/aoe-de-sprite.ts",
-      "sha256Mk2": "5064f34aa9bdc1abf2a872f85a574c5a8941c2a9a932f172e96bebf9c8b3cff5",
-      "sha256Mk3": "9433e219d2c9f4a3b3bd598ad223461066ac451aa91acb0f92d64431d827696f",
-      "rewrites": [
-        "line-ending-normalization"
-      ]
-    },
-    {
-      "source": "references/modkitmk2/extensions/microsoft/age-series/codecs/smx/src/index.ts",
-      "destination": "modkit-extensions-other/extensions/microsoft-age-series/src/lib/mk2/age-series/codecs/smx/src/index.ts",
-      "sha256Mk2": "00e31438c37f41215581dea933eec320a7ccb301743cc0a47d9103b8229b7cb8",
-      "sha256Mk3": "da4dd97e9c6bdf8498c9d9f128e0f0ad431e4ff3b04ec23dcb89c1a3ee42cc87",
-      "rewrites": [
-        "line-ending-normalization"
-      ]
-    },
-    {
       "source": "references/modkitmk2/extensions/microsoft/halo-wars/codecs/halo-era/src/detect.ts",
       "destination": "modkit-extensions-other/extensions/microsoft-halo-wars/src/lib/mk2/halo-wars/codecs/halo-era/src/detect.ts",
       "sha256Mk2": "dddb6980979acc72d2273a7758eea37d899e73e208e7b192c3b23ab2a27baf12",
@@ -804,76 +723,6 @@
       "sha256Mk2": "3f18327de458fde7bc59fa570fc022be8499338efcc652e97b1882ff11943ff4",
       "sha256Mk3": "3f18327de458fde7bc59fa570fc022be8499338efcc652e97b1882ff11943ff4",
       "rewrites": []
-    },
-    {
-      "source": "references/modkitmk2/extensions/new-world-computing/heroes-3/codecs/def/src/index.ts",
-      "destination": "modkit-extensions-other/extensions/new-world-computing-heroes-3/src/lib/mk2/heroes-3/codecs/def/src/index.ts",
-      "sha256Mk2": "74345c8c1a144b3841fd7f47ada7a75c50d5202e3b94f28f7d2f6b2b31ca8d85",
-      "sha256Mk3": "1a2fb8bf918a510d957362ee7282d7b2119147386e3f4536f815aa3c7e26dd5c",
-      "rewrites": [
-        "line-ending-normalization"
-      ]
-    },
-    {
-      "source": "references/modkitmk2/extensions/new-world-computing/heroes-3/codecs/heroes3-lod/src/detect.ts",
-      "destination": "modkit-extensions-other/extensions/new-world-computing-heroes-3/src/lib/mk2/heroes-3/codecs/heroes3-lod/src/detect.ts",
-      "sha256Mk2": "484d959c720da05a9f6967efd2248425b684cc3c411e98be8bcaa805ebf0d9bf",
-      "sha256Mk3": "3d24a6bfc1d0f52e181d43fc367193ed7f98004993fdc38bb07ae5d1cc7fd512",
-      "rewrites": [
-        "line-ending-normalization"
-      ]
-    },
-    {
-      "source": "references/modkitmk2/extensions/new-world-computing/heroes-3/codecs/heroes3-lod/src/index.ts",
-      "destination": "modkit-extensions-other/extensions/new-world-computing-heroes-3/src/lib/mk2/heroes-3/codecs/heroes3-lod/src/index.ts",
-      "sha256Mk2": "d531aa7c96fc4b8bb26fbf165e72475432daf2170eb1c548c3a7f7774dc95b93",
-      "sha256Mk3": "43590a15642e795abe8b6f82b9edc30a1c8f072eea97607aaacf663aeeae6b88",
-      "rewrites": [
-        "line-ending-normalization"
-      ]
-    },
-    {
-      "source": "references/modkitmk2/extensions/new-world-computing/heroes-3/codecs/heroes3-lod/test/archive.spec.ts",
-      "destination": "modkit-extensions-other/extensions/new-world-computing-heroes-3/src/lib/mk2/heroes-3/codecs/heroes3-lod/test/archive.spec.ts",
-      "sha256Mk2": "0d3cc52f8616b8cf7b28e3f6076abd18ebe9231c41160379984c6c406814edba",
-      "sha256Mk3": "2da3bd678931828a8d2fd260cd104831a8847dc24264d0cfab76e8fe7f75f9bc",
-      "rewrites": [
-        "line-ending-normalization"
-      ]
-    },
-    {
-      "source": "references/modkitmk2/extensions/new-world-computing/heroes-3/codecs/heroes3-lod/test/manifest.spec.ts",
-      "destination": "modkit-extensions-other/extensions/new-world-computing-heroes-3/src/lib/mk2/heroes-3/codecs/heroes3-lod/test/manifest.spec.ts",
-      "sha256Mk2": "0e1a38a0920ecc8b09e080f7fa1aaee04099a5c91f59b87189d3da0c70e8f09c",
-      "sha256Mk3": "0e1a38a0920ecc8b09e080f7fa1aaee04099a5c91f59b87189d3da0c70e8f09c",
-      "rewrites": []
-    },
-    {
-      "source": "references/modkitmk2/extensions/new-world-computing/heroes-4/codecs/heroes4-resource/src/index.ts",
-      "destination": "modkit-extensions-other/extensions/new-world-computing-heroes-4/src/lib/mk2/heroes-4/codecs/heroes4-resource/src/index.ts",
-      "sha256Mk2": "1d26f1ef811431795e7235d5bb824981d33947dda573eb9756990b3065a9c26c",
-      "sha256Mk3": "eed77f31832cad440d39154baac28c5dc5962a1a6dd2bcfc11e740f8d0f3f5d9",
-      "rewrites": [
-        "line-ending-normalization"
-      ]
-    },
-    {
-      "source": "references/modkitmk2/extensions/new-world-computing/heroes-4/codecs/heroes4-resource/test/archive.spec.ts",
-      "destination": "modkit-extensions-other/extensions/new-world-computing-heroes-4/src/lib/mk2/heroes-4/codecs/heroes4-resource/test/archive.spec.ts",
-      "sha256Mk2": "128fe870a574b4f8f02b21f28fcfbb83180077f7b6b105f567fa70bfd7d22353",
-      "sha256Mk3": "f3ab18f1693fca40ddb42cdc347df16f18ec012062797e45a4c2f1625ab02790",
-      "rewrites": [
-        "line-ending-normalization"
-      ]
-    },
-    {
-      "source": "references/modkitmk2/extensions/new-world-computing/heroes-4/codecs/heroes4-resource/test/manifest.spec.ts",
-      "destination": "modkit-extensions-other/extensions/new-world-computing-heroes-4/src/lib/mk2/heroes-4/codecs/heroes4-resource/test/manifest.spec.ts",
-      "sha256Mk2": "310383b8dd277b5a191be39da502dd6dc849fb3638ee0765e3309fc962d15483",
-      "sha256Mk3": "a5d8d64b577868f6ec3b8285c1e248b26700b8f8cb9f0f700ca0df857854d0e9",
-      "rewrites": [
-        "line-ending-normalization"
-      ]
     },
     {
       "source": "references/modkitmk2/extensions/petroglyph/glyphx/codecs/grey-goo-alo/src/codec.browser.ts",

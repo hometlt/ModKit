@@ -2,7 +2,7 @@
 
 # Format × surface matrix
 
-Inventory projection: **74** format rows, **509** applicable surface claims. Generic smoke: **0 pass / 74 missing**. Missing smoke remains visible here until P7 owner receipts exist; this generator does not manufacture evidence.
+Inventory projection: **75** format rows, **514** applicable surface claims. Generic smoke: **0 pass / 75 missing**. Missing smoke remains visible here until P7 owner receipts exist; this generator does not manufacture evidence.
 
 | Repository | Format     | Codec contribution         | sections | tree     | hex      | card     | preview  | relations | selector | mcp-inspect | script   | no-op-edit | Smoke      |
 | ---------- | ---------- | -------------------------- | -------- | -------- | -------- | -------- | -------- | --------- | -------- | ----------- | -------- | ---------- | ---------- |
@@ -63,6 +63,7 @@ Inventory projection: **74** format rows, **509** applicable surface claims. Gen
 | core       | `ini`      | `modkit/text-ini`          | required | required | required | required | —        | —         | —        | required    | required | required   | ❌ missing |
 | core       | `json`     | `modkit/text-json`         | required | required | required | required | —        | —         | —        | required    | required | required   | ❌ missing |
 | core       | `jsonc`    | `modkit/text-jsonc`        | required | required | required | required | —        | —         | —        | required    | required | required   | ❌ missing |
+| core       | `slk`      | `modkit/text-slk`          | required | —        | required | required | —        | —         | —        | required    | required | —          | ❌ missing |
 | core       | `toml`     | `modkit/text-toml`         | required | required | required | required | —        | —         | —        | required    | required | required   | ❌ missing |
 | core       | `tsv`      | `modkit/text-tsv`          | required | —        | required | required | —        | —         | —        | required    | required | required   | ❌ missing |
 | core       | `xml`      | `modkit/text-xml`          | required | required | required | required | —        | —         | —        | required    | required | required   | ❌ missing |

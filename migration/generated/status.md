@@ -78,9 +78,9 @@ Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`
 
 | allocation       | Строк | migrationState         | Строк | evidenceLevel | Строк |
 | ---------------- | ----- | ---------------------- | ----- | ------------- | ----- |
-| `absent`         | 83    | `equivalent-better`    | 21    | E0            | 82    |
-| `covered`        | 195   | `implemented`          | 218   | E1            | 133   |
-| `not-applicable` | 1     | `missing`              | 83    | E2            | 59    |
+| `absent`         | 90    | `equivalent-better`    | 21    | E0            | 89    |
+| `covered`        | 188   | `implemented`          | 211   | E1            | 126   |
+| `not-applicable` | 1     | `missing`              | 90    | E2            | 59    |
 | `superseded`     | 52    | `partial`              | 8     | E3            | 24    |
 |                  |       | `relocated-multiverse` | 1     | E4            | 33    |
 

@@ -2349,23 +2349,18 @@ capabilities:
       - 'legacy:extensions/microsoft/age-series/codecs/age-drs/codec.manifest.json'
     hostFacilities:
       - 'read-source'
-    mk3Contributions:
-      - 'modkit/age-drs'
-    mk3Operations:
-      - 'asset.validate'
-      - 'container.extract'
-      - 'export.raw'
-      - 'view.inspect'
+    mk3Contributions: []
+    mk3Operations: []
     allocation:
-      state: 'covered'
-      x3ContributionId: 'modkit/age-drs'
-      portFamily: 'mk2/microsoft-age-series'
+      state: 'absent'
+      x3ContributionId: null
+      portFamily: null
       portVerdict: null
-    migrationState: 'implemented'
-    supportState: 'supported'
-    runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E1'
-    hostEvidence: 'node'
+    migrationState: 'missing'
+    supportState: 'unsupported'
+    runtimeAvailability: 'none'
+    evidenceLevel: 'E0'
+    hostEvidence: 'none'
     writerEvidence: 'not-declared'
     parityEvidence:
       coverageStatus: null
@@ -2386,7 +2381,8 @@ capabilities:
         validate: null
         read: null
         materialize: null
-    knownLoss: []
+    knownLoss:
+      - 'dropped by owner decision 2026-09-28: Heroes III/IV and Age of Empires I/II left the project (other 4c5b8a9)'
     receipts:
       projection: null
       materialization: null
@@ -4372,22 +4368,18 @@ capabilities:
       - 'legacy:extensions/new-world-computing/heroes-3/codecs/def/codec.manifest.json'
     hostFacilities:
       - 'read-source'
-    mk3Contributions:
-      - 'modkit/def'
-    mk3Operations:
-      - 'asset.validate'
-      - 'export.raw'
-      - 'view.inspect'
+    mk3Contributions: []
+    mk3Operations: []
     allocation:
-      state: 'covered'
-      x3ContributionId: 'modkit/def'
-      portFamily: 'mk2/new-world-computing-heroes-3'
+      state: 'absent'
+      x3ContributionId: null
+      portFamily: null
       portVerdict: null
-    migrationState: 'implemented'
-    supportState: 'partial'
-    runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E1'
-    hostEvidence: 'node'
+    migrationState: 'missing'
+    supportState: 'unsupported'
+    runtimeAvailability: 'none'
+    evidenceLevel: 'E0'
+    hostEvidence: 'none'
     writerEvidence: 'not-declared'
     parityEvidence:
       coverageStatus: null
@@ -4408,7 +4400,8 @@ capabilities:
         validate: null
         read: null
         materialize: null
-    knownLoss: []
+    knownLoss:
+      - 'dropped by owner decision 2026-09-28: Heroes III/IV and Age of Empires I/II left the project (other 4c5b8a9)'
     receipts:
       projection: null
       materialization: null
@@ -6642,22 +6635,18 @@ capabilities:
       - 'legacy:extensions/new-world-computing/heroes-3/codecs/heroes3-lod/codec.manifest.json'
     hostFacilities:
       - 'read-source'
-    mk3Contributions:
-      - 'modkit/heroes3-lod'
-    mk3Operations:
-      - 'asset.validate'
-      - 'export.raw'
-      - 'view.inspect'
+    mk3Contributions: []
+    mk3Operations: []
     allocation:
-      state: 'covered'
-      x3ContributionId: 'modkit/heroes3-lod'
-      portFamily: 'mk2/new-world-computing-heroes-3'
+      state: 'absent'
+      x3ContributionId: null
+      portFamily: null
       portVerdict: null
-    migrationState: 'implemented'
-    supportState: 'supported'
-    runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E1'
-    hostEvidence: 'node'
+    migrationState: 'missing'
+    supportState: 'unsupported'
+    runtimeAvailability: 'none'
+    evidenceLevel: 'E0'
+    hostEvidence: 'none'
     writerEvidence: 'not-declared'
     parityEvidence:
       coverageStatus: null
@@ -6678,7 +6667,8 @@ capabilities:
         validate: null
         read: null
         materialize: null
-    knownLoss: []
+    knownLoss:
+      - 'dropped by owner decision 2026-09-28: Heroes III/IV and Age of Empires I/II left the project (other 4c5b8a9)'
     receipts:
       projection: null
       materialization: null
@@ -6703,22 +6693,18 @@ capabilities:
       - 'legacy:extensions/new-world-computing/heroes-4/codecs/heroes4-resource/codec.manifest.json'
     hostFacilities:
       - 'read-source'
-    mk3Contributions:
-      - 'modkit/heroes4-resource'
-    mk3Operations:
-      - 'asset.validate'
-      - 'export.raw'
-      - 'view.inspect'
+    mk3Contributions: []
+    mk3Operations: []
     allocation:
-      state: 'covered'
-      x3ContributionId: 'modkit/heroes4-resource'
-      portFamily: 'mk2/new-world-computing-heroes-4'
+      state: 'absent'
+      x3ContributionId: null
+      portFamily: null
       portVerdict: null
-    migrationState: 'implemented'
-    supportState: 'partial'
-    runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E1'
-    hostEvidence: 'node'
+    migrationState: 'missing'
+    supportState: 'unsupported'
+    runtimeAvailability: 'none'
+    evidenceLevel: 'E0'
+    hostEvidence: 'none'
     writerEvidence: 'not-declared'
     parityEvidence:
       coverageStatus: null
@@ -6739,7 +6725,8 @@ capabilities:
         validate: null
         read: null
         materialize: null
-    knownLoss: []
+    knownLoss:
+      - 'dropped by owner decision 2026-09-28: Heroes III/IV and Age of Empires I/II left the project (other 4c5b8a9)'
     receipts:
       projection: null
       materialization: null
@@ -9807,18 +9794,23 @@ capabilities:
     legacyEvidence:
       - 'legacy:extensions/relic/essence/codecs/relic-ucs/codec.manifest.json'
     hostFacilities: []
-    mk3Contributions: []
-    mk3Operations: []
+    mk3Contributions:
+      - 'modkit/relic-ucs'
+    mk3Operations:
+      - 'asset.validate'
+      - 'edit.content'
+      - 'edit.field'
+      - 'view.inspect'
     allocation:
-      state: 'absent'
-      x3ContributionId: null
-      portFamily: null
+      state: 'covered'
+      x3ContributionId: 'modkit/relic-ucs'
+      portFamily: 'mk2/relic-essence'
       portVerdict: null
-    migrationState: 'missing'
-    supportState: 'unsupported'
-    runtimeAvailability: 'none'
-    evidenceLevel: 'E0'
-    hostEvidence: 'none'
+    migrationState: 'implemented'
+    supportState: 'partial'
+    runtimeAvailability: 'browser-and-node'
+    evidenceLevel: 'E1'
+    hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
       coverageStatus: null
@@ -9839,8 +9831,7 @@ capabilities:
         validate: null
         read: null
         materialize: null
-    knownLoss:
-      - 'no MK3 contribution exists for this legacy route yet'
+    knownLoss: []
     receipts:
       projection: null
       materialization: null
@@ -11279,22 +11270,18 @@ capabilities:
       - 'legacy:extensions/microsoft/age-series/codecs/sld/codec.manifest.json'
     hostFacilities:
       - 'read-source'
-    mk3Contributions:
-      - 'modkit/sld'
-    mk3Operations:
-      - 'asset.validate'
-      - 'export.raw'
-      - 'view.inspect'
+    mk3Contributions: []
+    mk3Operations: []
     allocation:
-      state: 'covered'
-      x3ContributionId: 'modkit/sld'
-      portFamily: 'mk2/microsoft-age-series'
+      state: 'absent'
+      x3ContributionId: null
+      portFamily: null
       portVerdict: null
-    migrationState: 'implemented'
-    supportState: 'partial'
-    runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E1'
-    hostEvidence: 'node'
+    migrationState: 'missing'
+    supportState: 'unsupported'
+    runtimeAvailability: 'none'
+    evidenceLevel: 'E0'
+    hostEvidence: 'none'
     writerEvidence: 'not-declared'
     parityEvidence:
       coverageStatus: null
@@ -11315,7 +11302,8 @@ capabilities:
         validate: null
         read: null
         materialize: null
-    knownLoss: []
+    knownLoss:
+      - 'dropped by owner decision 2026-09-28: Heroes III/IV and Age of Empires I/II left the project (other 4c5b8a9)'
     receipts:
       projection: null
       materialization: null
@@ -11340,22 +11328,18 @@ capabilities:
       - 'legacy:extensions/microsoft/age-series/codecs/slp/codec.manifest.json'
     hostFacilities:
       - 'read-source'
-    mk3Contributions:
-      - 'modkit/slp'
-    mk3Operations:
-      - 'asset.validate'
-      - 'export.raw'
-      - 'view.inspect'
+    mk3Contributions: []
+    mk3Operations: []
     allocation:
-      state: 'covered'
-      x3ContributionId: 'modkit/slp'
-      portFamily: 'mk2/microsoft-age-series'
+      state: 'absent'
+      x3ContributionId: null
+      portFamily: null
       portVerdict: null
-    migrationState: 'implemented'
-    supportState: 'partial'
-    runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E1'
-    hostEvidence: 'node'
+    migrationState: 'missing'
+    supportState: 'unsupported'
+    runtimeAvailability: 'none'
+    evidenceLevel: 'E0'
+    hostEvidence: 'none'
     writerEvidence: 'not-declared'
     parityEvidence:
       coverageStatus: null
@@ -11376,7 +11360,8 @@ capabilities:
         validate: null
         read: null
         materialize: null
-    knownLoss: []
+    knownLoss:
+      - 'dropped by owner decision 2026-09-28: Heroes III/IV and Age of Empires I/II left the project (other 4c5b8a9)'
     receipts:
       projection: null
       materialization: null
@@ -11462,22 +11447,18 @@ capabilities:
       - 'legacy:extensions/microsoft/age-series/codecs/smp/codec.manifest.json'
     hostFacilities:
       - 'read-source'
-    mk3Contributions:
-      - 'modkit/smp'
-    mk3Operations:
-      - 'asset.validate'
-      - 'export.raw'
-      - 'view.inspect'
+    mk3Contributions: []
+    mk3Operations: []
     allocation:
-      state: 'covered'
-      x3ContributionId: 'modkit/smp'
-      portFamily: 'mk2/microsoft-age-series'
+      state: 'absent'
+      x3ContributionId: null
+      portFamily: null
       portVerdict: null
-    migrationState: 'implemented'
-    supportState: 'partial'
-    runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E1'
-    hostEvidence: 'node'
+    migrationState: 'missing'
+    supportState: 'unsupported'
+    runtimeAvailability: 'none'
+    evidenceLevel: 'E0'
+    hostEvidence: 'none'
     writerEvidence: 'not-declared'
     parityEvidence:
       coverageStatus: null
@@ -11498,7 +11479,8 @@ capabilities:
         validate: null
         read: null
         materialize: null
-    knownLoss: []
+    knownLoss:
+      - 'dropped by owner decision 2026-09-28: Heroes III/IV and Age of Empires I/II left the project (other 4c5b8a9)'
     receipts:
       projection: null
       materialization: null
@@ -11523,22 +11505,18 @@ capabilities:
       - 'legacy:extensions/microsoft/age-series/codecs/smx/codec.manifest.json'
     hostFacilities:
       - 'read-source'
-    mk3Contributions:
-      - 'modkit/smx'
-    mk3Operations:
-      - 'asset.validate'
-      - 'export.raw'
-      - 'view.inspect'
+    mk3Contributions: []
+    mk3Operations: []
     allocation:
-      state: 'covered'
-      x3ContributionId: 'modkit/smx'
-      portFamily: 'mk2/microsoft-age-series'
+      state: 'absent'
+      x3ContributionId: null
+      portFamily: null
       portVerdict: null
-    migrationState: 'implemented'
-    supportState: 'partial'
-    runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E1'
-    hostEvidence: 'node'
+    migrationState: 'missing'
+    supportState: 'unsupported'
+    runtimeAvailability: 'none'
+    evidenceLevel: 'E0'
+    hostEvidence: 'none'
     writerEvidence: 'not-declared'
     parityEvidence:
       coverageStatus: null
@@ -11559,7 +11537,8 @@ capabilities:
         validate: null
         read: null
         materialize: null
-    knownLoss: []
+    knownLoss:
+      - 'dropped by owner decision 2026-09-28: Heroes III/IV and Age of Empires I/II left the project (other 4c5b8a9)'
     receipts:
       projection: null
       materialization: null

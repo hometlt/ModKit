@@ -16,7 +16,7 @@
     "script",
     "no-op-edit"
   ],
-  "counts": { "rows": 74, "applicableClaims": 509, "smokePassed": 0, "smokeMissing": 74 },
+  "counts": { "rows": 75, "applicableClaims": 514, "smokePassed": 0, "smokeMissing": 75 },
   "rows": [
     {
       "rowId": "modkit/7z#7z",
@@ -4506,6 +4506,100 @@
           "applicable": true,
           "sources": ["contributions/writer-json.json#spec.provides[1]"]
         }
+      },
+      "smoke": { "status": "missing", "receiptIds": [] }
+    },
+    {
+      "rowId": "modkit/text-slk#slk",
+      "repository": "core",
+      "extensionId": "modkit/data",
+      "contributionId": "modkit/text-slk",
+      "contributionPath": "contributions/codec-slk.json",
+      "format": { "id": "slk", "label": "SYLK", "source": "spec.formatRefs[0]" },
+      "dataSources": [
+        {
+          "contract": "common.view/table-data-source",
+          "major": 1,
+          "source": "spec.publishesDataSources[0]"
+        },
+        {
+          "contract": "common.view/text-data-source",
+          "major": 1,
+          "source": "spec.publishesDataSources[1]"
+        },
+        {
+          "contract": "common.view/byte-range-source",
+          "major": 1,
+          "source": "spec.publishesDataSources[2]"
+        }
+      ],
+      "operations": [
+        {
+          "id": "view.inspect",
+          "handlerId": "inspect",
+          "mutatesSource": false,
+          "outputKinds": ["json"],
+          "source": "spec.operations[0]"
+        },
+        {
+          "id": "asset.validate",
+          "handlerId": "validate",
+          "mutatesSource": false,
+          "outputKinds": ["none"],
+          "source": "spec.operations[1]"
+        },
+        {
+          "id": "asset.search",
+          "handlerId": "search",
+          "mutatesSource": false,
+          "outputKinds": ["json"],
+          "source": "spec.operations[2]"
+        },
+        {
+          "id": "export.raw",
+          "handlerId": "export-raw",
+          "mutatesSource": false,
+          "outputKinds": ["bytes"],
+          "source": "spec.operations[3]"
+        },
+        {
+          "id": "data.parse",
+          "handlerId": "parse",
+          "mutatesSource": false,
+          "outputKinds": ["json"],
+          "source": "spec.operations[4]"
+        },
+        {
+          "id": "data.serialize",
+          "handlerId": "serialize",
+          "mutatesSource": false,
+          "outputKinds": ["bytes"],
+          "source": "spec.operations[5]"
+        },
+        {
+          "id": "data.scan",
+          "handlerId": "scan",
+          "mutatesSource": false,
+          "outputKinds": ["json"],
+          "source": "spec.operations[6]"
+        }
+      ],
+      "writerOffers": [],
+      "languageProviders": [],
+      "runtimeProviders": [],
+      "subjectKinds": [],
+      "projections": [],
+      "surfaces": {
+        "sections": { "applicable": true, "sources": ["spec.operations[0]"] },
+        "tree": { "applicable": false, "sources": [] },
+        "hex": { "applicable": true, "sources": ["spec.publishesDataSources[2]"] },
+        "card": { "applicable": true, "sources": ["spec.operations[0]:metadata-fallback"] },
+        "preview": { "applicable": false, "sources": [] },
+        "relations": { "applicable": false, "sources": [] },
+        "selector": { "applicable": false, "sources": [] },
+        "mcp-inspect": { "applicable": true, "sources": ["spec.operations[0]"] },
+        "script": { "applicable": true, "sources": ["spec.operations[0]:metadata-projection"] },
+        "no-op-edit": { "applicable": false, "sources": [] }
       },
       "smoke": { "status": "missing", "receiptIds": [] }
     },

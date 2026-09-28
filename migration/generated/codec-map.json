@@ -32,7 +32,7 @@
       ]
     }
   ],
-  "contributionCount": 274,
+  "contributionCount": 280,
   "inventorySha256": "08c3bdad48056914277c7f95a0f97ef4feb85c8ec86a2fa8faf47bd7f9817e8c",
   "legacyCount": 206,
   "rows": [
@@ -88,21 +88,15 @@
       "status": "pending"
     },
     {
-      "candidates": [
-        {
-          "id": "modkit/age-drs",
-          "path": "extensions/microsoft-age-series/contributions/codec-age-drs.json",
-          "repository": "other"
-        }
-      ],
+      "candidates": [],
       "codec": "age-drs",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 1,
+      "pending": 0,
       "requirements": 3,
       "source": "extensions/microsoft/age-series/codecs/age-drs/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/age-drs",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [],
@@ -460,11 +454,11 @@
       "codec": "cnc3-localization",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 2,
+      "pending": 0,
       "requirements": 2,
       "source": "extensions/ea/sage/codecs/cnc3-localization/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/cnc3-localization",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -477,11 +471,11 @@
       "codec": "cnc3-map",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 2,
+      "pending": 0,
       "requirements": 2,
       "source": "extensions/ea/sage/codecs/cnc3-map/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/cnc3-map",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -603,21 +597,15 @@
       "status": "pending"
     },
     {
-      "candidates": [
-        {
-          "id": "modkit/def",
-          "path": "extensions/new-world-computing-heroes-3/contributions/codec-def.json",
-          "repository": "other"
-        }
-      ],
+      "candidates": [],
       "codec": "def",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 2,
+      "pending": 0,
       "requirements": 2,
       "source": "extensions/new-world-computing/heroes-3/codecs/def/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/def",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [],
@@ -749,7 +737,13 @@
       "status": "pending"
     },
     {
-      "candidates": [],
+      "candidates": [
+        {
+          "id": "ea/dune2000-map",
+          "path": "dune-2000/contributions/codec-dune2000-map.json",
+          "repository": "ea"
+        }
+      ],
       "codec": "dune2000-map",
       "family": "other",
       "featureAudit": "pending",
@@ -1184,38 +1178,26 @@
       "status": "pending"
     },
     {
-      "candidates": [
-        {
-          "id": "modkit/heroes3-lod",
-          "path": "extensions/new-world-computing-heroes-3/contributions/codec-heroes3-lod.json",
-          "repository": "other"
-        }
-      ],
+      "candidates": [],
       "codec": "heroes3-lod",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 1,
+      "pending": 0,
       "requirements": 3,
       "source": "extensions/new-world-computing/heroes-3/codecs/heroes3-lod/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/heroes3-lod",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
-      "candidates": [
-        {
-          "id": "modkit/heroes4-resource",
-          "path": "extensions/new-world-computing-heroes-4/contributions/codec-heroes4-resource.json",
-          "repository": "other"
-        }
-      ],
+      "candidates": [],
       "codec": "heroes4-resource",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 3,
+      "pending": 0,
       "requirements": 3,
       "source": "extensions/new-world-computing/heroes-4/codecs/heroes4-resource/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/heroes4-resource",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -2377,38 +2359,26 @@
       "status": "evidence-ready"
     },
     {
-      "candidates": [
-        {
-          "id": "modkit/sld",
-          "path": "extensions/microsoft-age-series/contributions/codec-sld.json",
-          "repository": "other"
-        }
-      ],
+      "candidates": [],
       "codec": "sld",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 2,
+      "pending": 0,
       "requirements": 2,
       "source": "extensions/microsoft/age-series/codecs/sld/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/sld",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
-      "candidates": [
-        {
-          "id": "modkit/slp",
-          "path": "extensions/microsoft-age-series/contributions/codec-slp.json",
-          "repository": "other"
-        }
-      ],
+      "candidates": [],
       "codec": "slp",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 2,
+      "pending": 0,
       "requirements": 2,
       "source": "extensions/microsoft/age-series/codecs/slp/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/slp",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -2428,38 +2398,26 @@
       "status": "pending"
     },
     {
-      "candidates": [
-        {
-          "id": "modkit/smp",
-          "path": "extensions/microsoft-age-series/contributions/codec-smp.json",
-          "repository": "other"
-        }
-      ],
+      "candidates": [],
       "codec": "smp",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 2,
+      "pending": 0,
       "requirements": 2,
       "source": "extensions/microsoft/age-series/codecs/smp/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/smp",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
-      "candidates": [
-        {
-          "id": "modkit/smx",
-          "path": "extensions/microsoft-age-series/contributions/codec-smx.json",
-          "repository": "other"
-        }
-      ],
+      "candidates": [],
       "codec": "smx",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 2,
+      "pending": 0,
       "requirements": 2,
       "source": "extensions/microsoft/age-series/codecs/smx/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/smx",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -2472,7 +2430,7 @@
       "codec": "spring-rapid",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 3,
+      "pending": 1,
       "requirements": 3,
       "source": "extensions/opensource/spring/codecs/spring-rapid/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/spring-rapid",
@@ -2489,11 +2447,11 @@
       "codec": "spring-s3o",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 1,
+      "pending": 0,
       "requirements": 1,
       "source": "extensions/opensource/spring/codecs/spring-s3o/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/spring-s3o",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -2506,7 +2464,7 @@
       "codec": "spring-vfs",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 4,
+      "pending": 3,
       "requirements": 4,
       "source": "extensions/opensource/spring/codecs/spring-vfs/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/spring-vfs",
@@ -3031,11 +2989,11 @@
       "codec": "warcraft3-map",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 1,
+      "pending": 0,
       "requirements": 1,
       "source": "extensions/blizzard/warcraft-3/codecs/warcraft3-map/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/warcraft3-map",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [],
@@ -3053,33 +3011,33 @@
       "codec": "warcraft3-replay",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 1,
+      "pending": 0,
       "requirements": 1,
       "source": "extensions/blizzard/warcraft-3/codecs/warcraft3-replay/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/warcraft3-replay",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [],
       "codec": "warcraft3-script",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 1,
+      "pending": 0,
       "requirements": 1,
       "source": "extensions/blizzard/warcraft-3/codecs/warcraft3-script/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/warcraft3-script",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [],
       "codec": "warcraft3-wts",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 1,
+      "pending": 0,
       "requirements": 1,
       "source": "extensions/blizzard/warcraft-3/codecs/warcraft3-wts/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/warcraft3-wts",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
