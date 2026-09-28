@@ -1249,6 +1249,36 @@ function rotateQuaternion(
   ]
 }
 
+/**
+ * A primitive's own vertex normal in the world, through its node transform and the object's scale and
+ * rotation (scale divides, as the inverse transpose does for an axis-aligned scale). Undefined without
+ * normals or for a degenerate one.
+ */
+function instanceNormal(
+  primitive: SceneRendererPrimitive,
+  index: number,
+  item: WorldSceneObjectItem,
+): readonly [number, number, number] | undefined {
+  const normals = primitive.normals
+  if (normals === undefined) return undefined
+  let x = normals[index * 3] ?? 0
+  let y = normals[index * 3 + 1] ?? 0
+  let z = normals[index * 3 + 2] ?? 0
+  const transform = primitive.transform
+  if (transform !== undefined)
+    [x, y, z] = [
+      transform[0]! * x + transform[4]! * y + transform[8]! * z,
+      transform[1]! * x + transform[5]! * y + transform[9]! * z,
+      transform[2]! * x + transform[6]! * y + transform[10]! * z,
+    ]
+  const scale = item.uvwScale ?? item.scale ?? { x: 1, y: 1, z: 1 }
+  const rotated = instanceVertex([x / scale.x, y / scale.y, z / scale.z], { ...item, uvwScale: { x: 1, y: 1, z: 1 } }, [0, 0, 0])
+  const length = Math.hypot(rotated[0], rotated[1], rotated[2])
+  return length > 1e-9 && Number.isFinite(length)
+    ? [rotated[0] / length, rotated[1] / length, rotated[2] / length]
+    : undefined
+}
+
 function instanceVertex(
   point: readonly [number, number, number],
   item: WorldSceneObjectItem,
@@ -1297,6 +1327,33 @@ function primitiveTriangles(
       triangles.push([source[0]!, source[index]!, source[index + 1]!])
   }
   return triangles
+}
+
+const terrainProjectionIds = new WeakMap<object, ReadonlySet<string>>()
+const NO_TERRAIN_PROJECTION: ReadonlySet<string> = new Set()
+
+/**
+ * Materials of a model that show the terrain on its surface instead of a colour of their own
+ * (`renderModel.presentation` 'terrain-projection', SC2 TER_): they draw with the ground.
+ */
+function terrainProjectionMaterialIds(
+  model: WorldSceneModelResult | undefined,
+): ReadonlySet<string> {
+  if (model?.state !== 'converted') return NO_TERRAIN_PROJECTION
+  let ids = terrainProjectionIds.get(model)
+  if (ids === undefined) {
+    ids = new Set(
+      (model.materials ?? [])
+        .filter(
+          material =>
+            record(material.shader?.parameters?.['renderModel'])?.['presentation'] ===
+            'terrain-projection',
+        )
+        .map(material => material.id),
+    )
+    terrainProjectionIds.set(model, ids.size === 0 ? NO_TERRAIN_PROJECTION : ids)
+  }
+  return ids
 }
 
 /**
@@ -3224,6 +3281,7 @@ function prepareWorldStaticTerrain(
     return best
   }
   const cliffFills: CliffFill[] = []
+  const cliffReceiverTriangles: number[] = []
   if (exactRasterSplat !== undefined)
     for (const item of input.items) {
       if (
@@ -3291,7 +3349,9 @@ function prepareWorldStaticTerrain(
                   ) as [readonly [number, number], readonly [number, number], readonly [number, number]],
               ),
               [],
-              [normal, normal, normal],
+              // The mesh's own normals, as PSTerrainDoodad lights the ground on a cliff: face normals
+              // showed every facet of the rock through the ground.
+              order.map(corner => instanceNormal(primitive, triangle[corner]!, item) ?? normal) as unknown as CliffTriangle,
               grid.map(([x, y]) => terrainAoAt(x, y)),
             )
             maskTarget.weightTextureCoordinates!.push(
@@ -3308,7 +3368,12 @@ function prepareWorldStaticTerrain(
           }
           if (normal[1] < 0.05) continue
           cover.push({ vertices: upward, normal })
-          if (normal[1] >= 0.5) raw.push({ vertices: upward, normal })
+          if (normal[1] >= 0.5) {
+            raw.push({ vertices: upward, normal })
+            // Splats land on a cliff piece's floor as on the ground (SC2 cliff materials accept splats):
+            // a platform's rim is cliff geometry, and decals there were hidden beneath it.
+            cliffReceiverTriangles.push(...upward.flat())
+          }
         }
       }
       if (raw.length === 0) continue
@@ -3475,6 +3540,67 @@ function prepareWorldStaticTerrain(
       terrainTriangles += 1
     }
   }
+  // Ground a model shows on its own surface (renderModel.presentation 'terrain-projection', SC2 TER_ drawn
+  // by PSTerrainDoodad): the torn skirt of a geyser or mineral field takes the terrain textures by map
+  // position and the mesh's own shape, so the ground seems to break open around it.
+  if (exactRasterSplat !== undefined)
+    for (const item of input.items) {
+      if (
+        item.facet !== 'objects' ||
+        item.derivedFrom === 'cliffs' ||
+        item.resourceId === undefined
+      )
+        continue
+      const ids = terrainProjectionMaterialIds(input.models?.get(item.resourceId))
+      if (ids.size === 0) continue
+      const sampled = sampleSharedModel(item.resourceId, item)
+      if (sampled === undefined) continue
+      const translation = objectPosition(item, input)
+      const target = rasterSplatBatch()
+      for (const primitive of sampled.primitives) {
+        if (primitive.materialId === undefined || !ids.has(primitive.materialId)) continue
+        for (const triangle of primitiveTriangles(primitive)) {
+          const vertices = triangle.map(index =>
+            instanceVertex(transformedPrimitiveVertex(primitive, index), item, translation),
+          ) as unknown as CliffTriangle
+          let normal = faceNormal(vertices[0], vertices[1], vertices[2])
+          if (!Number.isFinite(normal[0] + normal[1] + normal[2])) continue
+          if (normal[1] < 0) normal = [-normal[0], -normal[1], -normal[2]]
+          const grid = vertices.map(gridOf) as [
+            readonly [number, number],
+            readonly [number, number],
+            readonly [number, number],
+          ]
+          pushSplatTriangle(
+            target,
+            vertices,
+            exactRasterSplat.definitions.map(
+              definition =>
+                grid.map(point =>
+                  terrainSurfaceUv(
+                    { x: Math.floor(point[0]), y: Math.floor(point[1]) },
+                    [point[0] - Math.floor(point[0]), point[1] - Math.floor(point[1])],
+                    undefined,
+                    definition.uvTransform,
+                  ),
+                ) as [
+                  readonly [number, number],
+                  readonly [number, number],
+                  readonly [number, number],
+                ],
+            ),
+            [],
+            triangle.map(index => instanceNormal(primitive, index, item) ?? normal) as unknown as CliffTriangle,
+            grid.map(([x, y]) => terrainAoAt(x, y)),
+          )
+          target.weightTextureCoordinates!.push(
+            ...grid.map(point => rasterUv(point[0], point[1])).flat(),
+          )
+          terrainTexturedTriangles += 1
+          terrainTriangles += 1
+        }
+      }
+    }
   /** A height-field vertex, snapped onto a cliff piece's surface where one covers it. */
   const snappedTerrainPosition = (
     item: WorldSceneTerrainItem,
@@ -3985,6 +4111,11 @@ function prepareWorldStaticTerrain(
     lines: frozenBatch(lines),
     points: frozenBatch(points),
     terrainTriangles: Float32Array.from(terrainPickTriangles),
+    /** What projectors land on: the terrain and the floors of cliff pieces. */
+    projectorReceivers:
+      cliffReceiverTriangles.length === 0
+        ? Float32Array.from(terrainPickTriangles)
+        : Float32Array.from([...terrainPickTriangles, ...cliffReceiverTriangles]),
     terrainShadowCasters: Float32Array.from(cutShadowCasters),
     shadowCasterTriangles:
       (cutShadowCasters.length +
@@ -4268,7 +4399,7 @@ export function createWorldWebGlPlan(
       : worldWaterSurfaceDepth(waterWrites)
 
   const objects = worldFacetItems(preparation, input.items, 'objects')
-  const projectorGround = preparation.terrainTriangles
+  const projectorGround = preparation.projectorReceivers
   let modelTriangles = 0
   let diagnosticPlaceholders = 0
   const planPrograms: WorldPlanPrograms = new Map()
@@ -5022,7 +5153,7 @@ export function createWorldWebGlPlan(
     lines: appendWorldBatch(preparation.lines, lines),
     points: appendWorldBatch(preparation.points, points),
     picking: Object.freeze({
-      terrainTriangles: projectorGround,
+      terrainTriangles: preparation.terrainTriangles,
       objects: Object.freeze(objectPickMeshes.map(item => item.pick)),
     }),
     bounds: Object.freeze({ minimum: Object.freeze(minimum), maximum: Object.freeze(maximum) }),
@@ -5896,8 +6027,19 @@ function sameWorldStaticInput(left: WorldWebGlInput, right: WorldWebGlInput): bo
   )
     return false
   for (const item of right.items) {
-    if (item.facet !== 'objects' || item.derivedFrom !== 'cliffs' || item.resourceId === undefined)
+    if (item.facet !== 'objects' || item.resourceId === undefined) continue
+    if (item.derivedFrom !== 'cliffs') {
+      // A model that shows the ground on its surface draws with the terrain: its arrival renews it.
+      const before = left.models?.get(item.resourceId)
+      const after = right.models?.get(item.resourceId)
+      if (
+        before !== after &&
+        (terrainProjectionMaterialIds(before).size > 0 ||
+          terrainProjectionMaterialIds(after).size > 0)
+      )
+        return false
       continue
+    }
     const model = right.models?.get(item.resourceId)
     if (model !== left.models?.get(item.resourceId)) return false
     const [lx, ly, lz] = objectPosition(item, left)
