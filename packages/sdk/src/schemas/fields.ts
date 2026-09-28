@@ -184,6 +184,12 @@ export const fieldTypeValueSchema = {
     {
       type: 'object',
       additionalProperties: false,
+      required: ['kind'],
+      properties: { kind: { const: 'text-runs' } },
+    },
+    {
+      type: 'object',
+      additionalProperties: false,
       required: ['kind', 'typeId'],
       properties: { kind: { const: 'custom' }, typeId: id, params: json },
     },

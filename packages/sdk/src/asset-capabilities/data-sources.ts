@@ -905,6 +905,12 @@ export interface SubjectFactGroup {
   readonly label: string
   /** Count over the complete group, not the current page. */
   readonly factCount: number
+  /**
+   * How the producer means the group to be read: `fields` (label and value, the default), `grid`
+   * (a compact table of short values, stats) or `cards` (each fact a tile: abilities, weapons). A
+   * hint; a surface that cannot draw it draws fields.
+   */
+  readonly presentation?: 'fields' | 'grid' | 'cards'
 }
 
 export interface SubjectFact {

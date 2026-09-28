@@ -53,6 +53,11 @@ export type FieldType =
       readonly listDelimiter?: string
     }
   | { readonly kind: 'json'; readonly schema?: JsonSchemaRef }
+  /**
+   * Text the producer already styled: the value is `GameTemplateTextRun[]` (colour, emphasis,
+   * inline icons by logical id), as a description reads in the game.
+   */
+  | { readonly kind: 'text-runs' }
   | { readonly kind: 'custom'; readonly typeId: string; readonly params?: JsonValue }
 
 export interface FieldSchema {
