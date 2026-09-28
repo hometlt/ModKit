@@ -102,7 +102,13 @@ export interface InspectionTreeNode {
   /** Stable root or nested-subject address for generic host navigation. */
   readonly subjectId?: string
   readonly semanticPath?: readonly string[]
-  readonly children?: readonly InspectionTreeNode[]
+  /**
+   * The node's children, or a function that builds them when a client first opens the node: a large
+   * tree (a place of 70 000 instances with all their properties) never exists in memory at once.
+   */
+  readonly children?: readonly InspectionTreeNode[] | (() => readonly InspectionTreeNode[])
+  /** With lazy `children`: whether there are any, so listing the parent does not build them. */
+  readonly hasChildren?: boolean
   /**
    * Typed value for this node, passed through to `TreeNodeFacts` untouched.
    *
@@ -509,16 +515,34 @@ export function simpleLease<Value>(value: Value): Lease<Value> & {
 
 /** Build a bounded lazy tree from inert nodes shaped as `{kind,label,preview?,children?}`. */
 export function createTreeDataSource(rootNode: InspectionTreeNode): TreeDataSource {
-  const nodes = new Map<string, { node: InspectionTreeNode; childIds: string[] }>()
-  const register = (node: InspectionTreeNode, id: string): void => {
-    const children = Array.isArray(node.children) ? node.children : []
-    nodes.set(id, { node, childIds: children.map((_, index) => `${id}/${index}`) })
-    children.forEach((child, index) => register(child, `${id}/${index}`))
+  // Nodes are registered as they are reached: a child list — built or lazy — is expanded on the
+  // first `children()` of its parent, or by a search walking the whole tree.
+  const nodes = new Map<string, { node: InspectionTreeNode; childIds?: string[] }>()
+  nodes.set('root', { node: rootNode })
+  const childIdsOf = (id: string): string[] => {
+    const item = nodes.get(id)
+    if (item === undefined) return []
+    if (item.childIds === undefined) {
+      const source = item.node.children
+      const children = typeof source === 'function' ? source() : (source ?? [])
+      item.childIds = children.map((child, index) => {
+        const childId = `${id}/${index}`
+        nodes.set(childId, { node: child })
+        return childId
+      })
+    }
+    return item.childIds
   }
-  register(rootNode, 'root')
   const ref = (id: string) => {
     const item = nodes.get(id)
-    return Object.freeze({ id, hasChildren: (item?.childIds.length ?? 0) > 0 })
+    const source = item?.node.children
+    const hasChildren =
+      item?.childIds !== undefined
+        ? item.childIds.length > 0
+        : typeof source === 'function'
+          ? (item?.node.hasChildren ?? true)
+          : (source?.length ?? 0) > 0
+    return Object.freeze({ id, hasChildren })
   }
   return Object.freeze<TreeDataSource>({
     async root() {
@@ -530,7 +554,7 @@ export function createTreeDataSource(rootNode: InspectionTreeNode): TreeDataSour
         throw new TypeError('tree page limit must be a positive safe integer')
       }
       const start = pageStart(page.cursor)
-      const childIds = nodes.get(node.id)?.childIds ?? []
+      const childIds = childIdsOf(node.id)
       const items = childIds.slice(start, start + page.limit).map(ref)
       return Object.freeze({
         items: Object.freeze(items),
@@ -559,10 +583,15 @@ export function createTreeDataSource(rootNode: InspectionTreeNode): TreeDataSour
     },
     async *search(query, signal) {
       const needle = query.pattern.toLocaleLowerCase()
-      for (const [id, item] of nodes) {
+      // depth-first, parents before children, expanding lazy lists on the way
+      const pending = ['root']
+      while (pending.length > 0) {
         if (signal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
+        const id = pending.pop()!
+        const item = nodes.get(id)!
         const haystack = `${item.node.label}\n${item.node.preview ?? ''}`.toLocaleLowerCase()
         if (haystack.includes(needle)) yield ref(id)
+        pending.push(...childIdsOf(id).toReversed())
       }
     },
   })
