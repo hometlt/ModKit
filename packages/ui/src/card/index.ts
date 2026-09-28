@@ -240,7 +240,11 @@ export interface SubjectCardOptions {
   readonly knowledge?: KnowledgeCatalog
   readonly knowledgeLocales?: readonly string[]
   onNavigate?(ref: CardRef): void
-  /** False drops the identity header; the host's own chrome already names the subject. */
+  /**
+   * False drops the subject's name and kind chips, which the host's own chrome already shows. The
+   * rest of the header — portrait, stats, description, locale, sources and notes — is the card's
+   * content and stays.
+   */
   readonly header?: boolean
   /** Host-owned image lookup for `portraitImage`; the card never turns an id into a path. */
   resolveImage?(id: string, signal: AbortSignal): Promise<CardImage | undefined>
@@ -765,6 +769,8 @@ function renderHeader(
   signal: AbortSignal,
   onNavigate?: (ref: CardRef) => void,
   resolveImage?: SubjectCardOptions['resolveImage'],
+  /** False: the host names the subject, so the title and kind chips are left out. */
+  named = true,
 ): void {
   const header = document.createElement('div')
   header.className = 'modkit-card__header'
@@ -804,11 +810,13 @@ function renderHeader(
   setPart(identity, 'card.identity')
   header.append(identity)
 
-  const title = document.createElement('h2')
-  title.className = 'modkit-card__title'
-  title.textContent = safeViewerText(section.title, 256)
-  setPart(title, 'card.title')
-  identity.append(title)
+  if (named) {
+    const title = document.createElement('h2')
+    title.className = 'modkit-card__title'
+    title.textContent = safeViewerText(section.title, 256)
+    setPart(title, 'card.title')
+    identity.append(title)
+  }
 
   if (section.refs !== undefined && section.refs.length > 0) {
     const subtitle = document.createElement('div')
@@ -818,7 +826,7 @@ function renderHeader(
     identity.append(subtitle)
   }
 
-  if (section.chips !== undefined && section.chips.length > 0) {
+  if (named && section.chips !== undefined && section.chips.length > 0) {
     const chips = document.createElement('div')
     chips.className = 'modkit-card__chips'
     setPart(chips, 'card.chips')
@@ -894,7 +902,9 @@ function renderHeader(
     header.append(select)
   }
 
-  host.append(header)
+  // without its name, a header that holds nothing else is not drawn at all
+  if (identity.childElementCount === 0) identity.remove()
+  if (header.childElementCount > 0) host.append(header)
 }
 
 function renderFields(
@@ -958,13 +968,11 @@ export function createSubjectCard(document: Document, options: SubjectCardOption
 
   const images = new AbortController()
   /*
-   * The header repeats what the host's own chrome already says — the subject's name, its format,
-   * its portrait — so a host that has chrome of its own switches it off and keeps the facts.
+   * The subject's name and kind repeat what the host's own chrome already says, so a host with
+   * chrome of its own leaves them out; the stats, portrait, description, locale and sources beside
+   * them are facts no chrome shows, and stay.
    */
-  const header =
-    options.header === false
-      ? undefined
-      : options.sections.find(section => section.kind === 'header')
+  const header = options.sections.find(section => section.kind === 'header')
   if (header !== undefined)
     renderHeader(
       document,
@@ -974,6 +982,7 @@ export function createSubjectCard(document: Document, options: SubjectCardOption
       images.signal,
       options.onNavigate,
       options.resolveImage,
+      options.header !== false,
     )
 
   const knowledge = document.createElement('aside')

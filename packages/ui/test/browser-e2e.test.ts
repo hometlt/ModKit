@@ -376,6 +376,61 @@ describe('13C real-browser viewer host', () => {
     })
   })
 
+  it('leaves out only the name and kind when the host names the subject itself', async () => {
+    const result = await page.evaluate(() => {
+      const { ui } = (globalThis as unknown as { modkit: { ui: Record<string, unknown> } }).modkit
+      const createSubjectCard = ui['createSubjectCard'] as (
+        document: Document,
+        options: Record<string, unknown>,
+      ) => { root: HTMLElement; destroy(): void }
+      const header = {
+        kind: 'header',
+        title: 'Marine',
+        chips: [{ label: 'CUnit' }],
+        stats: [{ name: 'Life', icon: '♥', value: '45' }],
+        description: 'Terran infantry.',
+        refs: [{ label: 'UnitData.xml:12' }],
+        aside: { options: ['enUS', 'ruRU'], value: 'enUS' },
+        notes: ['Related subjects were capped.'],
+      }
+      const card = createSubjectCard(document, {
+        label: 'Marine',
+        header: false,
+        sections: [header],
+      })
+      const empty = createSubjectCard(document, {
+        label: 'Bare',
+        header: false,
+        sections: [{ kind: 'header', title: 'Bare', chips: [{ label: 'CUnit' }] }],
+      })
+      const part = (root: HTMLElement, name: string) =>
+        root.querySelector(`[data-mk-part="${name}"]`) !== null
+      const found = {
+        title: part(card.root, 'card.title'),
+        chips: part(card.root, 'card.chips'),
+        stats: part(card.root, 'card.statrow'),
+        description: part(card.root, 'card.description'),
+        source: part(card.root, 'card.subtitle'),
+        locale: part(card.root, 'card.locale'),
+        note: part(card.root, 'card.note'),
+        emptyHeader: part(empty.root, 'card.header'),
+      }
+      card.destroy()
+      empty.destroy()
+      return found
+    })
+    expect(result).toEqual({
+      title: false,
+      chips: false,
+      stats: true,
+      description: true,
+      source: true,
+      locale: true,
+      note: true,
+      emptyHeader: false,
+    })
+  })
+
   it('opens a live relation target from the shared card and leaves dead targets inert', async () => {
     const result = await page.evaluate(() => {
       const { ui } = (globalThis as unknown as { modkit: { ui: Record<string, unknown> } }).modkit
