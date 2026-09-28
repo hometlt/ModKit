@@ -80,6 +80,8 @@ const options = {
   maxBytes: 8 * 1024 * 1024,
   maxNodes: 10000,
 }
+/** The simulation a cache keeps at a clock. */
+const laneAt = (cache, time) => cache.lanes.find(entry => entry.lane.time === time)?.lane
 
 test('a cached effect frame is the uncached frame at its step time for every view, simulated once per step', () => {
   const cache = createUvmEffectFrameCache()
@@ -90,15 +92,15 @@ test('a cached effect frame is the uncached frame at its step time for every vie
       assert.deepEqual(cached, createUvmEffectFrame(document, { ...options, time, viewMatrix }))
     }
   // Another view at a clock the cache holds takes its simulation instead of simulating again.
-  const simulated = cache.simulations.get(0.5).simulated
+  const simulated = laneAt(cache, 0.5).simulated
   createUvmEffectFrame(document, { ...options, time: 0.5, viewMatrix: turned, cache })
-  assert.equal(cache.simulations.get(0.5).simulated, simulated)
+  assert.equal(laneAt(cache, 0.5).simulated, simulated)
   // A clock within the same 1/60 s step shows that step's frame and simulation.
   assert.deepEqual(
     createUvmEffectFrame(document, { ...options, time: 0.505, viewMatrix: turned, cache }),
     createUvmEffectFrame(document, { ...options, time: 0.5, viewMatrix: turned }),
   )
-  assert.equal(cache.simulations.get(0.5).simulated, simulated)
+  assert.equal(laneAt(cache, 0.5).simulated, simulated)
   // Other budgets are another preparation: the cache starts over.
   const prepared = cache.preparation.prepared
   createUvmEffectFrame(document, {
@@ -109,7 +111,97 @@ test('a cached effect frame is the uncached frame at its step time for every vie
     cache,
   })
   assert.notEqual(cache.preparation.prepared, prepared)
-  assert.notEqual(cache.simulations.get(0.5).simulated, simulated)
+  assert.notEqual(laneAt(cache, 0.5).simulated, simulated)
+})
+
+/** The effects document with one particle emitter (and the ribbon emitter when asked). */
+const withParticles = (particle, ribbons = false) => ({
+  ...document,
+  extensions: {
+    UV_game_effects: {
+      ...document.extensions.UV_game_effects,
+      particles: [{ ...document.extensions.UV_game_effects.particles[0], ...particle }],
+      ribbons: ribbons ? document.extensions.UV_game_effects.ribbons : [],
+    },
+  },
+})
+// Random spread, speed, life and noise: a continued simulation must match to the last bit.
+const lively = withParticles({
+  emissionRate: 40,
+  lifeSpan: 1.5,
+  lifeSpanRandom: 0.5,
+  speed: 2,
+  speedRandom: 0.5,
+  emitSpreadX: 0.4,
+  emitSpreadY: 0.3,
+  noiseAmplitude: 0.2,
+  noiseFrequency: 1.5,
+  maxParticles: 512,
+})
+/** Frames of one effect through one cache, each beside the frame of a new cache at its clock. */
+const framesThroughCache = (effect, times) => {
+  const cache = createUvmEffectFrameCache()
+  return times.map(time => {
+    const at = { ...options, time, viewMatrix: turned }
+    const frame = createUvmEffectFrame(effect, { ...at, cache })
+    const fresh = createUvmEffectFrame(effect, { ...at, cache: createUvmEffectFrameCache() })
+    return { frame, fresh, simulation: cache.lanes.at(-1).lane.simulated.simulation }
+  })
+}
+
+test('a later clock continues the cached simulation and draws what a new simulation draws there', () => {
+  // 0.77 s lies on a step the others do not continue to (its seek steps an ulp shorter): it takes
+  // a simulation of its own, and 0.8 s continues the one at 0.75 s.
+  const times = [0.5, 0.6, 0.75, 0.77, 0.8, 1.25, 0.6, 0.7, 2]
+  const frames = framesThroughCache(lively, times)
+  for (const [index, { frame, fresh }] of frames.entries()) {
+    assert.ok(frame.primitives.length > 0, `particles at ${times[index]} s`)
+    assert.deepEqual(frame, fresh, `frame at ${times[index]} s`)
+  }
+  const simulations = frames.map(({ simulation }) => simulation)
+  // 0.5 -> 0.6 -> 0.75 continue; 0.77 is new; 0.8 and 1.25 continue 0.75; going back to 0.6 is new
+  // and 0.7 continues it; 2 continues the nearest earlier clock, 1.25.
+  assert.deepEqual(
+    simulations.map(simulation => simulations.indexOf(simulation)),
+    [0, 0, 0, 3, 0, 0, 6, 6, 0],
+  )
+  // A seek to 1.85 s steps like the others, but its last step ends at 1.85, where the seek to 2 s
+  // passes an ulp later: 1.8 continues to 1.85, and 2 cannot continue 1.85.
+  const joined = framesThroughCache(lively, [1.8, 1.85, 2])
+  for (const { frame, fresh } of joined) assert.deepEqual(frame, fresh)
+  assert.equal(joined[1].simulation, joined[0].simulation)
+  assert.notEqual(joined[2].simulation, joined[1].simulation)
+})
+
+test('after a seek spends its particle budget, a continued simulation spawns no more', () => {
+  // 300 particles a second spend the 256 spawns of a seek before 0.9 s.
+  const heavy = withParticles({ emissionRate: 300, lifeSpan: 2, maxParticles: 1024 })
+  const spent = framesThroughCache(heavy, [1, 1.25, 1.5])
+  for (const { frame, fresh } of spent) {
+    assert.ok(frame.primitives.length > 0)
+    assert.deepEqual(frame, fresh)
+    assert.ok(frame.diagnostics.some(item => item.code === 'common.uvm/effect-capacity-clamped'))
+  }
+  assert.equal(spent[1].simulation, spent[0].simulation)
+  assert.equal(spent[2].simulation, spent[0].simulation)
+  // Ribbon emitters keep spawning on their own budget, which a continued step cannot tell apart:
+  // every clock then simulates anew.
+  const ribbons = framesThroughCache(
+    withParticles({ emissionRate: 300, lifeSpan: 2, maxParticles: 1024 }, true),
+    [1, 1.25],
+  )
+  for (const { frame, fresh } of ribbons) assert.deepEqual(frame, fresh)
+  assert.notEqual(ribbons[1].simulation, ribbons[0].simulation)
+  // A continuation that would spend the budget stops and simulates the clock anew; later clocks
+  // continue that simulation. 100 particles a second spend 256 spawns at 2.56 s.
+  const steady = framesThroughCache(
+    withParticles({ emissionRate: 100, lifeSpan: 3, maxParticles: 1024 }),
+    [2, 2.25, 2.75, 3],
+  )
+  for (const { frame, fresh } of steady) assert.deepEqual(frame, fresh)
+  assert.equal(steady[1].simulation, steady[0].simulation)
+  assert.notEqual(steady[2].simulation, steady[0].simulation)
+  assert.equal(steady[3].simulation, steady[2].simulation)
 })
 
 test('every sprite of an emitter draws with one material, the same object in every frame', () => {

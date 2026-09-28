@@ -239,25 +239,26 @@ export function snapshotUvmEffectExtension(
  * Keeps what an effect frame shares across calls of one owner whose document and options other than
  * the time, materials and view never change (a reusable effect source): the prepared emitters, and
  * the simulations of the latest clocks. All instances of a model at one clock then simulate once;
- * each view only builds its sprites.
+ * each view only builds its sprites, and a later clock continues a simulation (see UvmEffectLane).
  */
 export interface UvmEffectFrameCache {
   preparation?: {
     readonly inputs: readonly unknown[]
     readonly prepared: ReturnType<typeof prepareUvmEffectFrame>
   }
-  readonly simulations: Map<
-    number,
-    { readonly inputs: readonly unknown[]; readonly simulated: UvmEffectSimulation }
-  >
+  /** Least recently used first. */
+  readonly lanes: { readonly inputs: readonly unknown[]; readonly lane: UvmEffectLane }[]
 }
 
 export function createUvmEffectFrameCache(): UvmEffectFrameCache {
-  return { simulations: new Map() }
+  return { lanes: [] }
 }
 
-/** Simulations a cache keeps: an owner's instances share one clock, or a few random start phases. */
-const CACHED_EFFECT_SIMULATIONS = 2
+/**
+ * Simulations a cache keeps: an owner's instances share one clock, or a few random start phases,
+ * and a clock whose steps no lane continues to takes one more.
+ */
+const CACHED_EFFECT_SIMULATIONS = 3
 
 type UvmEffectPreparation = Extract<ReturnType<typeof prepareUvmEffectFrame>, { empty: false }>
 type UvmEffectSimulation = Readonly<{
@@ -273,6 +274,19 @@ type UvmEffectSimulation = Readonly<{
   toLocal: readonly number[]
   warnings: readonly { readonly message: string; readonly code: string }[]
 }>
+
+/**
+ * An effect simulation that later clocks of its owner take on instead of simulating from time zero
+ * again. `continueTo` steps it to a later clock only when that ends in the state a new simulation's
+ * seek builds there, and otherwise answers false; `time` is NaN once it stopped between clocks.
+ */
+interface UvmEffectLane {
+  time: number
+  simulated: UvmEffectSimulation
+  readonly continueTo: (options: UvmEffectFrameOptions) => boolean
+  /** Whether a later clock on the step grid can continue it (a cache evicts other lanes first). */
+  readonly continuable: () => boolean
+}
 
 const sameInputs = (left: readonly unknown[], right: readonly unknown[]) =>
   left.length === right.length && left.every((value, index) => value === right[index])
@@ -318,7 +332,7 @@ export function createUvmEffectFrame(
   const preparation = cached ?? prepareUvmEffectFrame(document, options)
   if (cache !== undefined && cached === undefined) {
     cache.preparation = { inputs: preparationInputs, prepared: preparation }
-    cache.simulations.clear()
+    cache.lanes.length = 0
   }
   const diagnostics = [...preparation.diagnostics]
   if (preparation.empty)
@@ -340,25 +354,74 @@ export function createUvmEffectFrame(
     throw new TypeError('effect viewMatrix must be finite')
   // A cached owner's frames stop on the effect step grid (see gridEffectTime).
   const frame = cache === undefined ? options : { ...options, time: gridEffectTime(options.time) }
-  const simulationInputs = [preparation, frame.nodeTransformsAt, frame.collisionProvider]
-  const kept = cache?.simulations.get(frame.time)
-  let simulated =
-    kept !== undefined && sameInputs(kept.inputs, simulationInputs) ? kept.simulated : undefined
-  if (simulated === undefined) {
-    simulated = simulateUvmEffectFrame(preparation, frame)
-    if (cache !== undefined) {
-      cache.simulations.delete(frame.time)
-      if (cache.simulations.size >= CACHED_EFFECT_SIMULATIONS)
-        cache.simulations.delete(cache.simulations.keys().next().value!)
-      cache.simulations.set(frame.time, { inputs: simulationInputs, simulated })
-    }
-  }
+  const simulated =
+    cache === undefined
+      ? simulateUvmEffectFrame(preparation, frame).simulated
+      : cachedUvmEffectSimulation(
+          cache,
+          preparation,
+          [preparation, frame.nodeTransformsAt, frame.collisionProvider],
+          frame,
+        )
   for (const { message, code } of simulated.warnings) warn(message, code)
   return uvmEffectFrameGeometry(preparation, simulated, frame, view, diagnostics)
 }
 
+/**
+ * A cached owner's simulation at a frame's clock: the lane standing at it, else the latest earlier
+ * lane continued to it, else a new lane in place of the least recently used one (lanes no later
+ * clock can continue go first).
+ */
+function cachedUvmEffectSimulation(
+  cache: UvmEffectFrameCache,
+  prepared: UvmEffectPreparation,
+  inputs: readonly unknown[],
+  options: UvmEffectFrameOptions,
+): UvmEffectSimulation {
+  const { lanes } = cache
+  const use = (entry: (typeof lanes)[number]) => {
+    lanes.splice(lanes.indexOf(entry), 1)
+    lanes.push(entry)
+    return entry.lane.simulated
+  }
+  const own = lanes.filter(entry => sameInputs(entry.inputs, inputs))
+  const kept = own.find(entry => entry.lane.time === options.time)
+  if (kept !== undefined) return use(kept)
+  const earlier = own
+    .filter(entry => entry.lane.time < options.time)
+    .sort((left, right) => right.lane.time - left.lane.time)
+  for (const entry of earlier) {
+    let continued = false
+    try {
+      continued = entry.lane.continueTo(options)
+    } finally {
+      if (Number.isNaN(entry.lane.time)) lanes.splice(lanes.indexOf(entry), 1)
+    }
+    if (continued) return use(entry)
+  }
+  const entry = { inputs, lane: simulateUvmEffectFrame(prepared, options) }
+  if (lanes.length >= CACHED_EFFECT_SIMULATIONS) {
+    const stuck = lanes.findIndex(other => !other.lane.continuable())
+    lanes.splice(stuck === -1 ? 0 : stuck, 1)
+  }
+  lanes.push(entry)
+  return entry.lane.simulated
+}
+
 /** Seek steps per second (the simulator's default fixed step). */
 const EFFECT_STEPS_PER_SECOND = 60
+const EFFECT_STEP_SECONDS = 1 / EFFECT_STEPS_PER_SECOND
+/** Steps an effect seek takes at most; a longer seek integrates with a coarser step. */
+const EFFECT_MAX_SEEK_STEPS = 3600
+
+/**
+ * The steps ModelEffectSimulation.seek divides a time into: `count` equal steps of `step` seconds,
+ * the last ending at the time itself, or a coarser division (`clamped`) past the step limit.
+ */
+function effectSeekSteps(time: number) {
+  const count = time > 0 ? Math.max(1, Math.ceil(time / EFFECT_STEP_SECONDS)) : 0
+  return { count, step: count === 0 ? 0 : time / count, clamped: count > EFFECT_MAX_SEEK_STEPS }
+}
 
 /**
  * The time a cached owner shows an effect at: the last whole 1/60 s step at or below the clock, at
@@ -374,9 +437,7 @@ function gridEffectTime(time: number): number {
   const steps = Math.floor(time * EFFECT_STEPS_PER_SECOND + 1e-7)
   if (steps <= 0) return 0
   const grid = steps / EFFECT_STEPS_PER_SECOND
-  return Math.ceil(grid / (1 / EFFECT_STEPS_PER_SECOND)) > steps
-    ? grid * (1 - Number.EPSILON)
-    : grid
+  return Math.ceil(grid / EFFECT_STEP_SECONDS) > steps ? grid * (1 - Number.EPSILON) : grid
 }
 
 /** Emitters, fields, projectors and collision shapes of an effect: the same for every frame. */
@@ -736,14 +797,14 @@ function prepareUvmEffectFrame(document: JsonObject, options: UvmEffectFrameOpti
 }
 
 /**
- * The effect simulated up to the frame time with the node transforms it read. Nothing here depends
- * on the view, so every view and instance at one clock shares it.
+ * The effect simulated up to the frame time with the node transforms it read, as a lane later clocks
+ * can continue. Nothing here depends on the view, so every view and instance at one clock shares it.
  */
 function simulateUvmEffectFrame(
   prepared: UvmEffectPreparation,
   options: UvmEffectFrameOptions,
-): UvmEffectSimulation {
-  const { signal } = options
+): UvmEffectLane {
+  let { signal } = options
   const {
     effect,
     nodeCount,
@@ -783,9 +844,14 @@ function simulateUvmEffectFrame(
       emitter.trailEmitterIndex === undefined ? rate : Math.max(rate, emitter.trailEmitRate ?? 0),
     0,
   )
-  const trailWork = capacity * maxTrailRate * options.time
-  if (!Number.isFinite(trailWork) || trailWork > options.maxNodes - emitterCount - meshNodes)
-    throw new RangeError('effect trail emission exceeds seek work budget')
+  // The work of simulating up to a time; a lane checks it again for every clock it continues to.
+  const checkWork = (time: number) => {
+    const trailWork = capacity * maxTrailRate * time
+    if (!Number.isFinite(trailWork) || trailWork > options.maxNodes - emitterCount - meshNodes)
+      throw new RangeError('effect trail emission exceeds seek work budget')
+    assertUvmEffectSplineWork(particleSplineWork, ribbonSplineWork, time, Math.min(capacity, 256))
+  }
+  checkWork(options.time)
   const localMatrix = (node: number) => {
     const matrix = transforms.get(`node-${node}`)
     if (matrix === undefined) throw new TypeError('effect node world transform absent')
@@ -827,12 +893,6 @@ function simulateUvmEffectFrame(
       out.zAxis[2] = 1
     } else provide(kind, index, node, time, out)
   }
-  assertUvmEffectSplineWork(
-    particleSplineWork,
-    ribbonSplineWork,
-    options.time,
-    Math.min(capacity, 256),
-  )
   const splineAnchor: MutableEffectEmitterAnchor = {
     position: new Float32Array(3),
     xAxis: new Float32Array(3),
@@ -846,6 +906,7 @@ function simulateUvmEffectFrame(
     }
   }
   validateSplineFrames()
+  const spawnBudget = Math.min(capacity, 256)
   const simulation = new ModelEffectSimulation(
     {
       particles,
@@ -866,38 +927,111 @@ function simulateUvmEffectFrame(
       ...(options.collisionProvider === undefined
         ? {}
         : { collisionProvider: options.collisionProvider }),
-      maxSpawnPerStep: Math.min(capacity, 256),
-      maxSeekSteps: 3600,
+      maxSpawnPerStep: spawnBudget,
+      fixedStepSeconds: EFFECT_STEP_SECONDS,
+      maxSeekSteps: EFFECT_MAX_SEEK_STEPS,
     },
   )
+  const sequenceId = options.sequenceIndex ?? null
+  const sampleAt = (time: number) => {
+    signal?.throwIfAborted()
+    transforms = options.nodeTransformsAt(time)
+    validateSplineFrames()
+    fields.sample(time, sequenceId)
+  }
   const stats = simulation.seek(
     options.time,
     (time, frame) => {
-      signal?.throwIfAborted()
-      transforms = options.nodeTransformsAt(time)
-      validateSplineFrames()
-      fields.sample(time, options.sequenceIndex ?? null)
+      sampleAt(time)
       frame.anchorProvider = simulationProvider
     },
-    options.sequenceIndex ?? null,
+    sequenceId,
   )
-  const warnings: { message: string; code: string }[] = []
-  const warn = (message: string, code: string) => warnings.push({ message, code })
-  if (stats.seekClamped)
-    warn(
-      'Effect seek exceeded 3600 fixed steps; integration uses a coarser bounded step.',
-      'common.uvm/effect-seek-clamped',
-    )
-  if (stats.droppedParticles + stats.droppedRibbons + stats.droppedProjectorSplats > 0)
-    warn(
-      'Effect capacity/spawn budget dropped emitted objects.',
-      'common.uvm/effect-capacity-clamped',
-    )
-  transforms = options.nodeTransformsAt(options.time)
-  validateSplineFrames()
-  const toWorld = simulationFrame(),
-    toLocal = invertMaterialFrame(toWorld)
-  return { simulation, provide, toWorld, toLocal, warnings }
+  const clamped = stats.seekClamped
+  // Counted from time zero, as the seek counts them, over the steps a lane adds as well.
+  let spawned = stats.spawnedParticles,
+    dropped = stats.droppedParticles + stats.droppedRibbons + stats.droppedProjectorSplats
+  const at = (time: number): UvmEffectSimulation => {
+    const warnings: { message: string; code: string }[] = []
+    const warn = (message: string, code: string) => warnings.push({ message, code })
+    if (clamped)
+      warn(
+        `Effect seek exceeded ${EFFECT_MAX_SEEK_STEPS} fixed steps; integration uses a coarser bounded step.`,
+        'common.uvm/effect-seek-clamped',
+      )
+    if (dropped > 0)
+      warn(
+        'Effect capacity/spawn budget dropped emitted objects.',
+        'common.uvm/effect-capacity-clamped',
+      )
+    transforms = options.nodeTransformsAt(time)
+    validateSplineFrames()
+    const toWorld = simulationFrame(),
+      toLocal = invertMaterialFrame(toWorld)
+    return { simulation, provide, toWorld, toLocal, warnings }
+  }
+  // A seek spends one particle spawn budget over all its steps (ribbons have one per step). A lane
+  // steps through `update`, whose budget is per step, so it takes a step only where the seek's
+  // remaining budget could not bind: before the budget is spent, a step must leave some of it;
+  // once it is spent, the seek spawns no more particles, which is a step without spawning when no
+  // ribbon emitter needs spawning either.
+  const spawnsRibbons = ribbons.some(ribbon => (ribbon.splineEndpoints?.length ?? 0) === 0)
+  let steps = effectSeekSteps(options.time)
+  // A seek's step at a time, as `update` takes it.
+  const stepFrame = {
+    sequenceId,
+    sequenceTimeSeconds: 0,
+    animationTime: 0,
+    allowSpawn: true,
+    anchorProvider: simulationProvider,
+  }
+  const lane: UvmEffectLane = {
+    time: options.time,
+    simulated: at(options.time),
+    continueTo(next) {
+      const target = next.time,
+        ahead = effectSeekSteps(target),
+        spent = spawned >= spawnBudget
+      // The seek to the target takes this lane's steps first: same step size, and its step at this
+      // lane's step count ends at this lane's time.
+      if (
+        clamped ||
+        ahead.clamped ||
+        steps.count === 0 ||
+        ahead.count <= steps.count ||
+        ahead.step !== steps.step ||
+        lane.time !== steps.count * ahead.step ||
+        (spent && spawnsRibbons)
+      )
+        return false
+      signal = next.signal
+      checkWork(target)
+      lane.time = Number.NaN
+      for (let index = steps.count; index < ahead.count; index += 1) {
+        const time = index === ahead.count - 1 ? target : (index + 1) * ahead.step
+        sampleAt(time)
+        stepFrame.sequenceTimeSeconds = time
+        stepFrame.animationTime = time
+        stepFrame.allowSpawn = !spent
+        const step = simulation.update(ahead.step, stepFrame)
+        dropped += step.droppedParticles + step.droppedRibbons + step.droppedProjectorSplats
+        spawned += step.spawnedParticles
+        if (!spent && spawned >= spawnBudget) return false
+      }
+      const simulated = at(target)
+      steps = ahead
+      lane.time = target
+      lane.simulated = simulated
+      return true
+    },
+    continuable: () =>
+      !clamped &&
+      steps.count > 0 &&
+      steps.step === EFFECT_STEP_SECONDS &&
+      lane.time === steps.count * EFFECT_STEP_SECONDS &&
+      !(spawned >= spawnBudget && spawnsRibbons),
+  }
+  return lane
 }
 
 /** An effect frame from its preparation and simulation, for one view. */
