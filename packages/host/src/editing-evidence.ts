@@ -33,6 +33,7 @@ import {
   SERVICE_PROVIDER_CONTRIBUTION_CONTRACT,
   type CodecContributionSpecV1,
   type ServiceProviderContributionSpecV1,
+  type AnyDescriptor,
   type AssetEditPlan,
   type ChangeSet,
   type FidelityClaim,
@@ -284,26 +285,27 @@ export function codecFidelityEvidenceRecords(
  */
 export function subjectFidelityEvidenceRecords(
   inventory: Inventory,
-  opened: {
-    readonly selected: { readonly contributionId: string }
-    readonly descriptor: { readonly identity: { readonly formatId: string } }
-    readonly carrier?: {
-      readonly selected: { readonly contributionId: string }
-      readonly descriptor: { readonly identity: { readonly formatId: string } }
-    }
-  },
+  opened: EvidenceSelection & { readonly carrier?: EvidenceSelection },
   acceptedOrigins?: readonly ExtensionOrigin[],
 ): readonly FidelityEvidenceRecord[] {
   const selections = [opened, ...(opened.carrier === undefined ? [] : [opened.carrier])]
   return Object.freeze(
-    selections.flatMap(item =>
-      codecFidelityEvidenceRecords(inventory, {
-        codecId: item.selected.contributionId,
-        formatId: item.descriptor.identity.formatId,
-        ...(acceptedOrigins === undefined ? {} : { acceptedOrigins }),
-      }),
+    selections.flatMap(({ selected, descriptor }) =>
+      // an uninterpreted source has no codec that could write it
+      'identity' in descriptor
+        ? codecFidelityEvidenceRecords(inventory, {
+            codecId: selected.contributionId,
+            formatId: descriptor.identity.formatId,
+            ...(acceptedOrigins === undefined ? {} : { acceptedOrigins }),
+          })
+        : [],
     ),
   )
+}
+
+interface EvidenceSelection {
+  readonly selected: { readonly contributionId: string }
+  readonly descriptor: AnyDescriptor | { readonly identity: { readonly formatId: string } }
 }
 
 function writerFacet(value: unknown): Readonly<Record<string, unknown>> | undefined {

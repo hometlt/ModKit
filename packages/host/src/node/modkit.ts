@@ -45,7 +45,7 @@ import { resolveFormatWriter } from '../format-writer.js'
 import { DEFAULT_SUBJECT_OPEN_BUDGET } from './subject-opener.js'
 import { linkedExtensionInputs, type LinkedExtension } from '../linked.js'
 import {
-  codecFidelityEvidenceRecords,
+  subjectFidelityEvidenceRecords,
   createEvidenceRegistry,
   createRawWriter,
   serviceProviderFidelityEvidenceRecord,
@@ -369,17 +369,12 @@ export async function createModkit(options: ModkitOptions): Promise<Modkit> {
               : serviceProviderFidelityEvidenceRecord(services.inventory, {
                   writer: resolution.writer,
                 })
-          // The opened codec's own declared proofs, as the VS Code containers path cites them. A
-          // user-installed extension cannot vouch for itself; bundled and linked code can.
+          // The opened codec's own declared proofs, and its carrier's for a subject over a container,
+          // as VS Code cites them. A user-installed extension cannot vouch for itself; bundled and
+          // linked code can.
           const sessionEvidence = [
             ...(selectedEvidence === undefined ? [] : [selectedEvidence]),
-            ...(opened.descriptor.interpretation === 'none'
-              ? []
-              : codecFidelityEvidenceRecords(services.inventory, {
-                  codecId: opened.descriptor.identity.codecId,
-                  formatId: opened.descriptor.identity.formatId,
-                  acceptedOrigins: ['bundled', 'linked'],
-                })),
+            ...subjectFidelityEvidenceRecords(services.inventory, opened, ['bundled', 'linked']),
           ].reduce((registry, record) => registry.with(record), evidence)
           editing = createSubjectEditing({
             opened,
