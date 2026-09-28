@@ -130,6 +130,11 @@ export interface SubjectInputResolver {
   (context: SubjectInputResolutionContext): AssetInput | Promise<AssetInput>
   /** Same closed host origin, separate post-open leases. No enumeration handle crosses this API. */
   openResources?(options: Omit<ResourceSessionOptions, 'origin'>): ResourceSessionPort
+  /**
+   * The resolver for a resource of the same origin opened as a subject of its own (a texture of
+   * the opened map): its companions come from the same place, with it as the primary.
+   */
+  forResource?(logicalId: string): SubjectInputResolver
 }
 
 export interface OpenSubjectOptions {
@@ -1666,6 +1671,7 @@ async function openSubjectDirect(
                         inventory: options.inventory,
                         source,
                         ...hint,
+                        ...resourceInputFor(options.resolveInput, hint.path),
                         target,
                         intent: 'full',
                         grant: { ...grant, classes: ['read-source'] },
@@ -2070,6 +2076,7 @@ async function openSubjectDirect(
                 inventory: options.inventory,
                 source,
                 ...hint,
+                ...resourceInputFor(options.resolveInput, hint.path),
                 target: options.target,
                 intent: 'full',
                 grant: { ...best.effectiveGrant, classes: ['read-source'] },
@@ -2275,6 +2282,19 @@ async function disposeOpened(result: OpenSubjectResult): Promise<void> {
  * the already-open generic container is returned; ambiguity and composition failures do not fall
  * back to another interpretation.
  */
+/**
+ * A raster resource opened as its own subject gets its companions from the subject's origin
+ * (BAR's `.smf` texture needs its `.smt` tiles beside it; without them it fell back to 1024²).
+ */
+function resourceInputFor(
+  resolveInput: SubjectInputResolver | undefined,
+  logicalId: string | undefined,
+): { readonly resolveInput?: SubjectInputResolver } {
+  const nested =
+    logicalId === undefined ? undefined : resolveInput?.forResource?.(logicalId)
+  return nested === undefined ? {} : { resolveInput: nested }
+}
+
 export async function openSubject(request: OpenSubjectOptions): Promise<OpenSubjectResult> {
   const policies = request.logicalResourceDiscovery
   const options: OpenSubjectOptions = {

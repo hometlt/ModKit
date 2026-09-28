@@ -957,6 +957,18 @@ export function createCompanionInputResolver(
   return Object.assign(resolver, {
     openResources: (request: Omit<ResourceSessionOptions, 'origin'>) =>
       createResourceSession({ ...request, origin }),
+    // a resource of this origin opened as a subject (a map's texture): its own companions are
+    // found in the same origin, with the resource as the primary
+    forResource: (logicalId: string) =>
+      createCompanionInputResolver(
+        Object.freeze({
+          ...origin,
+          primaryLogicalId: logicalId,
+          enumerate: origin.enumerate.bind(origin),
+          open: origin.open.bind(origin),
+        }),
+        options,
+      ),
   })
 }
 
