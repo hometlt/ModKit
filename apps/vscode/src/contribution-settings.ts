@@ -26,7 +26,11 @@
 import { createHash } from 'node:crypto'
 import { join } from 'node:path'
 
-import { INDEX_CACHE_DIRECTORY_SETTING, type ContributionSettings } from '@modkit/sdk'
+import {
+  INDEX_CACHE_DIRECTORY_SETTING,
+  type ContributionSettings,
+  type IndexCacheSwitches,
+} from '@modkit/sdk'
 
 export interface ContributionSettingsOptions {
   /** Raw value of `modkit.contributionSettings`, exactly as the editor returned it. */
@@ -39,14 +43,15 @@ export interface ContributionSettingsOptions {
   readonly indexCaches?: unknown
 }
 
-/** `modkit.indexCaches`: per game product, the index switches the user turned. Unset means on. */
-export interface IndexCacheSwitches {
-  readonly byProduct: ReadonlyMap<string, { readonly names?: boolean; readonly content?: boolean }>
+/**
+ * `modkit.indexCaches` checked: the switches per game product, in the sdk's form (sdk
+ * `indexCacheEnabled` reads them), and what in the setting was malformed.
+ */
+export function configuredIndexCaches(value: unknown): {
+  readonly switches: IndexCacheSwitches
   readonly problems: readonly string[]
-}
-
-export function configuredIndexCaches(value: unknown): IndexCacheSwitches {
-  const byProduct = new Map<string, { names?: boolean; content?: boolean }>()
+} {
+  const switches: Record<string, { names?: boolean; content?: boolean }> = {}
   const problems: string[] = []
   if (value !== undefined && value !== null && !isRecord(value))
     problems.push('modkit.indexCaches must be an object keyed by game product')
@@ -55,24 +60,15 @@ export function configuredIndexCaches(value: unknown): IndexCacheSwitches {
       problems.push(`modkit.indexCaches['${product}'] must be an object`)
       continue
     }
-    const switches: { names?: boolean; content?: boolean } = {}
+    const turned: { names?: boolean; content?: boolean } = {}
     for (const kind of ['names', 'content'] as const) {
-      if (typeof entry[kind] === 'boolean') switches[kind] = entry[kind]
+      if (typeof entry[kind] === 'boolean') turned[kind] = entry[kind]
       else if (entry[kind] !== undefined)
         problems.push(`modkit.indexCaches['${product}'].${kind} must be true or false`)
     }
-    byProduct.set(product, switches)
+    switches[product] = turned
   }
-  return Object.freeze({ byProduct, problems: Object.freeze(problems) })
-}
-
-/** Whether a product's index of this kind is kept; every index is, unless turned off. */
-export function indexCacheEnabled(
-  switches: IndexCacheSwitches,
-  product: string | undefined,
-  kind: 'names' | 'content',
-): boolean {
-  return product === undefined || switches.byProduct.get(product)?.[kind] !== false
+  return Object.freeze({ switches: Object.freeze(switches), problems: Object.freeze(problems) })
 }
 
 export interface ContributionSettingsResult {
@@ -133,10 +129,10 @@ export function configuredContributionSettings(
     }
   }
 
-  const switches = configuredIndexCaches(options.indexCaches)
-  problems.push(...switches.problems)
-  // A name index the user turned off, as the per-game switch a codec reads (`games.<product>`).
-  const nameSwitches = [...switches.byProduct].flatMap(([product, item]) =>
+  const indexCaches = configuredIndexCaches(options.indexCaches)
+  problems.push(...indexCaches.problems)
+  // A name index switch, as the per-game setting a codec reads (`games.<product>.cacheIndex`).
+  const nameSwitches = Object.entries(indexCaches.switches).flatMap(([product, item]) =>
     item.names === undefined ? [] : [[product, item.names] as const],
   )
 

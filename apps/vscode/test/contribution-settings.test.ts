@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
+import { indexCacheEnabled } from '@modkit/sdk'
+
 import {
   configuredContributionSettings,
   configuredIndexCaches,
-  indexCacheEnabled,
 } from '../src/contribution-settings.js'
 
 describe('configuredContributionSettings', () => {
@@ -79,14 +80,18 @@ describe('configuredContributionSettings', () => {
     })
   })
 
-  it('keeps every index unless a product turns it off, and reports a malformed switch', () => {
-    const switches = configuredIndexCaches({ s2: { content: false }, d3: { names: 'no' } })
+  it('reads the setting into the sdk switches and reports a malformed switch', () => {
+    const { switches, problems } = configuredIndexCaches({
+      s2: { content: false },
+      d3: { names: 'no' },
+    })
 
+    expect(switches).toEqual({ s2: { content: false }, d3: {} })
+    // the sdk's one rule: an absent product or kind stays enabled
     expect(indexCacheEnabled(switches, 's2', 'content')).toBe(false)
     expect(indexCacheEnabled(switches, 's2', 'names')).toBe(true)
     expect(indexCacheEnabled(switches, 'wow', 'content')).toBe(true)
-    expect(indexCacheEnabled(switches, undefined, 'content')).toBe(true)
-    expect(switches.problems).toEqual(["modkit.indexCaches['d3'].names must be true or false"])
+    expect(problems).toEqual(["modkit.indexCaches['d3'].names must be true or false"])
     expect(configuredIndexCaches([1]).problems).toHaveLength(1)
   })
 })

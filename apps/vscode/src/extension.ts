@@ -118,7 +118,7 @@ type CachedContentIndex,
 type GameLaunchLogWatch,
 type NodeGameLaunchReceipt,
 } from '@modkit/host/node'
-import { configuredIndexCaches, indexCacheEnabled } from './contribution-settings.js'
+import { configuredIndexCaches } from './contribution-settings.js'
 import type {
 AnyDescriptor,
 AssetSession,
@@ -129,7 +129,7 @@ SubjectCandidateScope,
 TreeDataSource,
 TreeNodeFacts
 } from '@modkit/sdk'
-import { createSubjectCandidateProvider } from '@modkit/sdk'
+import { createSubjectCandidateProvider, indexCacheEnabled } from '@modkit/sdk'
 import { isModkitError } from '@modkit/core'
 import {
 CONTAINER_ENTRY_EXISTS,
@@ -1057,6 +1057,10 @@ async function activateModkit(
         ...(configured === undefined ? {} : { configPath: configured }),
         storage,
         indexCacheDirectory,
+        // the user's per-product switches: a module keeps no name index its product turned off
+        indexCaches: configuredIndexCaches(
+          vscode.workspace.getConfiguration('modkit').get('indexCaches'),
+        ).switches,
         moduleOptions: extension => {
           const installationDirectory = selectedInstallationDirectory(
             host.services.host.inventory,
@@ -2785,7 +2789,12 @@ async function activateModkit(
         return true
       }),
       vscode.workspace.onDidChangeConfiguration(event => {
-        if (!event.affectsConfiguration('modkit.contentSourceConfig')) return
+        // content sources are composed with both: a new provider file, or new index switches
+        if (
+          !event.affectsConfiguration('modkit.contentSourceConfig') &&
+          !event.affectsConfiguration('modkit.indexCaches')
+        )
+          return
         resetContentSources()
         sourcesView.refresh()
         resourcesView.refresh()
@@ -3103,10 +3112,11 @@ async function activateModkit(
             const sources = await requireContentSources()
             const root = (await sources.snapshot()).roots.find(item => item.id === id)
             if (root?.revision === undefined) return undefined
-            const switches = configuredIndexCaches(
+            const { switches } = configuredIndexCaches(
               vscode.workspace.getConfiguration('modkit').get('indexCaches'),
             )
-            if (!indexCacheEnabled(switches, root.product, 'content')) return undefined
+            if (root.product !== undefined && !indexCacheEnabled(switches, root.product, 'content'))
+              return undefined
             const key = `${id}\n${root.revision}`
             let opened = contentIndexes.get(key)
             if (opened === undefined) {
