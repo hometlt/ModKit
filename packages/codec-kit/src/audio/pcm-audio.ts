@@ -4,6 +4,8 @@
  * writing the same file, or, with `pick`, another stream of a bank. A sound whose WAV would pass
  * the open's `maxScalarBytes` is described but not played, and the conversion says why. Lifted from
  * the copies SAGE (EA-XA) and Westwood (AUD, VQA) had written, which ps1-xa and fsb had by hand too.
+ * Exported from the package root (@modkit/codec-kit) beside createAudioMediaSource, not from
+ * @modkit/codec-kit/audio, which does not import the root module.
  */
 import { createAudioMediaSource, type InspectionCodecDefinition } from '../index.js'
 import { encodeWav } from './index.js'

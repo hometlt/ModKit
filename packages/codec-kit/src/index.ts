@@ -1075,6 +1075,15 @@ export {
 // ProjectionReceipt — the native → live boundary (§2.6, block 12 item 5)
 
 export { PROJECTION_RECEIPT_METADATA_ID, createProjectionReceipt } from './projection.js'
+// A decoded sound as the audio source and its WAV conversion; lives beside the audio writers but is
+// published here, so `@modkit/codec-kit/audio` stays free of the root module.
+export {
+  CONVERT_TO_WAV,
+  convertToWav,
+  pcmAudio,
+  type PcmAudioOptions,
+  type PcmStream,
+} from './audio/pcm-audio.js'
 
 /**
  * JSON-safe deep copy: the descriptor carries `JsonValue`, and `bytesRead` is a `bigint`.
