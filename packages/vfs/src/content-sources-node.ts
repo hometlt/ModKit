@@ -1,8 +1,9 @@
 /** Explicit trusted desktop configuration; never load executable paths received from a webview. */
-import { readFile, mkdir } from 'node:fs/promises'
-import { isAbsolute, join } from 'node:path'
+import { open, readdir, readFile, mkdir } from 'node:fs/promises'
+import { isAbsolute, join, relative, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { CONTENT_SOURCE_METHODS, type ContentSources } from './content-sources.js'
+import type { LayerArchive } from './layered-archive-sources.js'
 
 /**
  * What the host hands a module beside its options — `@modkit/sdk`'s `ContentSourceModuleContext`
@@ -102,4 +103,57 @@ export async function loadContentSourceModule(
     throw new TypeError('Source module does not implement the desktop catalogue contract')
   }
   return source
+}
+
+export interface FolderLayerOptions {
+  /** Files one folder may hold; a larger one is refused rather than listed in part (100 000). */
+  readonly maxFiles?: number
+  /** Names left out with everything under them (a game that ignores `.git`, say). */
+  readonly ignore?: (name: string) => boolean
+}
+
+/**
+ * A folder on disk as one archive of an installation tree (`createLayeredArchiveContentSources`):
+ * an unpacked mod, the user's maps and replays folder. Lists its files once, recursively, `/`
+ * separated and sorted; reads only a listed file, refusing one over `maxBytes` before reading it.
+ */
+export async function folderLayer(
+  root: string,
+  options: FolderLayerOptions = {},
+): Promise<LayerArchive> {
+  const maxFiles = options.maxFiles ?? 100_000
+  const paths: string[] = []
+  const visit = async (directory: string): Promise<void> => {
+    for (const entry of await readdir(directory, { withFileTypes: true })) {
+      if (options.ignore?.(entry.name) === true) continue
+      const path = join(directory, entry.name)
+      if (entry.isDirectory()) await visit(path)
+      else if (entry.isFile()) {
+        paths.push(relative(root, path).split(sep).join('/'))
+        if (paths.length > maxFiles)
+          throw new RangeError(`${root} holds more than ${maxFiles} files`)
+      }
+    }
+  }
+  await visit(root)
+  paths.sort()
+  const listed = new Set(paths)
+  return Object.freeze({
+    id: root,
+    entries: Object.freeze(paths.map(path => Object.freeze({ path }))),
+    async read(file: string, maxBytes: number, signal?: AbortSignal): Promise<Uint8Array> {
+      signal?.throwIfAborted()
+      if (!listed.has(file)) throw new RangeError(`${root} has no «${file}»`)
+      const handle = await open(join(root, ...file.split('/')), 'r')
+      try {
+        const { size } = await handle.stat()
+        if (size > maxBytes)
+          throw new RangeError(`${file} (${size} bytes) exceeds ${maxBytes} bytes`)
+        return new Uint8Array(await handle.readFile())
+      } finally {
+        await handle.close()
+      }
+    },
+    close() {},
+  })
 }
