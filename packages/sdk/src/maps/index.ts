@@ -937,7 +937,15 @@ export interface MapWorldCanonicalTransform {
   }>
   readonly proof: Readonly<{
     readonly kind: 'adapter-qualification'
-    readonly method: 'sealed-legacy-differential' | 'official-reference-differential'
+    /**
+     * The oracle compared against: the sealed legacy (MK2) adapter, the publisher's own reference,
+     * or an open third-party reference the owner accepted (`references/mdx-m3-viewer`, MIT, for
+     * Warcraft III terrain); `oracle` names which.
+     */
+    readonly method:
+      | 'sealed-legacy-differential'
+      | 'official-reference-differential'
+      | 'third-party-reference-differential'
     readonly oracle: string
     readonly corpus: string
     readonly sourceDigests: Readonly<Record<string, `sha256:${string}`>>
