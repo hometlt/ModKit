@@ -82,13 +82,23 @@ export function boundUvmRig(
         id === undefined ||
         extent === undefined ||
         channel.samples === undefined ||
-        !['step', 'linear', 'spherical-linear'].includes(channel.interpolation ?? '')
+        !['step', 'linear', 'spherical-linear', 'cubic-spline'].includes(
+          channel.interpolation ?? '',
+        )
       )
         throw new TypeError('bounds require ordinary complete joint tracks')
+      const cubic = channel.interpolation === 'cubic-spline'
       let translation = extent.translation,
         scale = extent.scale
       for (const sample of channel.samples) {
         tick()
+        if (cubic) {
+          const width = channel.kind === 'rotation' ? 4 : channel.kind === 'visibility' ? 1 : 3
+          vector(sample.inTangent ?? [], width)
+          vector(sample.outTangent ?? [], width)
+        }
+        // A rotation, sampled spherically or as a normalized cubic, stays a rotation: it turns
+        // extents without growing them, so only its keys are checked.
         if (channel.kind === 'rotation') rotation(sample.value)
         else if (channel.kind === 'translation') {
           vector(sample.value, 3)
@@ -103,6 +113,33 @@ export function boundUvmRig(
           vector(sample.value, 1)
         } else throw new TypeError('bounds cannot ignore a non-TRS channel')
       }
+      // Between two keys a cubic Hermite segment leaves the hull of its ends by at most
+      // (4/27)·Δt·(|m0| + |m1|): h00 and h01 are non-negative and sum to one, and |h10|, |h11|
+      // peak at 4/27 (t = 1/3, 2/3). The tangents are derivatives per second, so Δt is seconds.
+      if (cubic && (channel.kind === 'translation' || channel.kind === 'scale'))
+        for (let index = 1; index < channel.samples.length; index += 1) {
+          tick()
+          const from = channel.samples[index - 1]!,
+            to = channel.samples[index]!
+          const reach = (4 / 27) * ((to.timeSeconds ?? NaN) - (from.timeSeconds ?? NaN))
+          if (!(reach >= 0)) throw new TypeError('bounds require ordered timed cubic keys')
+          const leaving = from.outTangent!,
+            arriving = to.inTangent!
+          if (channel.kind === 'translation')
+            translation = Math.max(
+              translation,
+              Math.max(Math.hypot(...from.value), Math.hypot(...to.value)) +
+                reach * (Math.hypot(...leaving) + Math.hypot(...arriving)) +
+                spatialError,
+            )
+          else
+            for (let axis = 0; axis < 3; axis += 1)
+              scale = Math.max(
+                scale,
+                Math.max(Math.abs(from.value[axis]!), Math.abs(to.value[axis]!)) +
+                  reach * (Math.abs(leaving[axis]!) + Math.abs(arriving[axis]!)),
+              )
+        }
       local.set(id, { translation, scale })
     }
   }
@@ -288,10 +325,12 @@ export function boundUvmRootFrame(
         channel.samples.length === 0 ||
         !['translation', 'rotation', 'scale'].includes(channel.kind) ||
         (channel.interpolation !== 'step' &&
+          channel.interpolation !== 'cubic-spline' &&
           channel.interpolation !== (channel.kind === 'rotation' ? 'spherical-linear' : 'linear'))
       )
         throw new TypeError('root bounds require unique ordinary TRS tracks')
       kinds.add(channel.kind)
+      const cubic = channel.interpolation === 'cubic-spline'
       let priorTime = -Infinity,
         previousScale: readonly number[] | undefined
       for (const sample of channel.samples) {
@@ -304,6 +343,11 @@ export function boundUvmRootFrame(
         )
           throw new TypeError('root bounds require increasing finite sample times')
         priorTime = sample.timeSeconds
+        if (cubic) {
+          vector(sample.inTangent ?? [], sample.value.length)
+          vector(sample.outTangent ?? [], sample.value.length)
+        }
+        // A normalized cubic rotation is a rotation, as a spherical one is: keys alone are checked.
         if (channel.kind === 'translation') translate(sample.value)
         else if (channel.kind === 'rotation') rotation(sample.value)
         else
@@ -312,6 +356,38 @@ export function boundUvmRootFrame(
             channel.interpolation === 'linear' ? previousScale : undefined,
           )
       }
+      // A cubic segment leaves the hull of its keys by at most (4/27)·Δt·(|m0| + |m1|) (see
+      // boundUvmRig): past them for a translation, below them for a scale, which must then
+      // keep its sign and stay invertible over the whole segment.
+      if (cubic && channel.kind !== 'rotation')
+        for (let index = 1; index < channel.samples.length; index += 1) {
+          tick()
+          const from = channel.samples[index - 1]!,
+            to = channel.samples[index]!
+          const reach = (4 / 27) * (to.timeSeconds! - from.timeSeconds!)
+          const leaving = from.outTangent!,
+            arriving = to.inTangent!
+          if (channel.kind === 'translation') {
+            const far =
+              Math.max(Math.hypot(...from.value), Math.hypot(...to.value)) +
+              reach * (Math.hypot(...leaving) + Math.hypot(...arriving))
+            translation = Math.max(translation, finite(far * 1.000001 + spatialError))
+          } else
+            for (let axis = 0; axis < 3; axis += 1) {
+              const [a, b] = [from.value[axis]!, to.value[axis]!]
+              const largest = Math.max(Math.abs(a), Math.abs(b))
+              const lower =
+                Math.min(Math.abs(a), Math.abs(b)) -
+                reach * (Math.abs(leaving[axis]!) + Math.abs(arriving[axis]!)) -
+                largest * 1e-6 -
+                4 * 2 ** -149
+              if (Math.sign(a) !== Math.sign(b) || !(lower > 0))
+                throw new TypeError('root frame cubic scale may cross zero between its keys')
+              if (!Number.isFinite(Math.fround(1 / lower)))
+                throw new RangeError('root frame inverse scale exceeds proven float32 range')
+              minimumScale = Math.min(minimumScale, lower)
+            }
+        }
     }
   }
   // For |norm(q)-1|<=1e-4, R(q)'s least singular value is at least

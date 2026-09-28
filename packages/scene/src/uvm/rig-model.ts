@@ -11,6 +11,7 @@ import {
   multiplyMaterialFrames,
 } from '../materials/frame.js'
 import { quaternionFromRotationMatrix } from '@modkit/codec-kit/model-math/transform'
+import { CUBIC_SPLINE_LINE_TYPE } from '@modkit/codec-kit/model-math/sequence-pose'
 import { multiplyQuat } from '../model/billboard-math.js'
 import { boundUvmRig, boundUvmRootFrame } from './rig-bounds.js'
 
@@ -295,6 +296,13 @@ export function projectUvmRigModel(
           : kind === 'scale'
             ? frame.scale(value)
             : value
+  // A cubic key's tangents are derivatives: the frame's linear part turns them as it turns the value
+  // (a rotation's by the same quaternion product, unnormalized), and its offset does not move them.
+  const foldTangent = (kind: string, value: readonly number[]): readonly number[] => {
+    if (frame === undefined || kind !== 'translation') return fold(kind, value)
+    const origin = frame.translation([0, 0, 0])
+    return frame.translation(value).map((component, axis) => component - origin[axis]!)
+  }
   const rigBindings: readonly ModelBoneBinding[] =
     frame === undefined || unframe === undefined
       ? sorted
@@ -329,6 +337,12 @@ export function projectUvmRigModel(
                         samples: channel.samples.map(sample => ({
                           ...sample,
                           value: fold(channel.kind, sample.value),
+                          ...(sample.inTangent === undefined
+                            ? {}
+                            : { inTangent: foldTangent(channel.kind, sample.inTangent) }),
+                          ...(sample.outTangent === undefined
+                            ? {}
+                            : { outTangent: foldTangent(channel.kind, sample.outTangent) }),
                         })),
                       },
                 ),
@@ -526,15 +540,23 @@ export function projectUvmRigModel(
         throw new TypeError('clip requires supported bone TRS/visibility channels')
       const boneIndex = required(nodeToBone.get(channel.target), 'animation bone target')
       const track = nodeTracks.get(boneIndex) ?? { boneIndex }
-      if (!['step', 'linear', 'spherical-linear'].includes(channel.interpolation ?? ''))
+      if (!['step', 'linear', 'spherical-linear', 'cubic-spline'].includes(channel.interpolation ?? ''))
         throw new TypeError('unsupported clip interpolation')
+      const cubic = channel.interpolation === 'cubic-spline'
       track[channel.kind] = {
-        lineType: channel.interpolation === 'step' ? 0 : 1,
+        // A cubic key keeps its tangents, derivatives per second as the shared sampler reads them.
+        lineType: channel.interpolation === 'step' ? 0 : cubic ? CUBIC_SPLINE_LINE_TYPE : 1,
         ...(channel.concurrent === undefined ? {} : { concurrent: channel.concurrent }),
         ...(channel.wrapSeconds === undefined ? {} : { wrapSeconds: channel.wrapSeconds }),
         keys: required(channel.samples, 'channel samples').map(sample => ({
           frame: required(sample.timeSeconds, 'sample time'),
           vector: [...sample.value],
+          ...(cubic
+            ? {
+                inTan: [...required(sample.inTangent, 'cubic sample tangent')],
+                outTan: [...required(sample.outTangent, 'cubic sample tangent')],
+              }
+            : {}),
         })),
       }
       nodeTracks.set(boneIndex, track)

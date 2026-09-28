@@ -55,7 +55,7 @@ const renderModel = {
  * A two-joint rig under a source coordinate frame, the shape a z-up game exports: vertices,
  * inverse binds and the root track in native axes, the tip joint also an attachment point.
  */
-function framedRig(frame = FRAME) {
+function framedRig(frame = FRAME, { cubic } = {}) {
   const document = {
     asset: { version: '2.0', extras: { uv: { format: 'UVM', version: '1.0', profile: 'core' } } },
     scene: 0,
@@ -101,7 +101,13 @@ function framedRig(frame = FRAME) {
       { type: 'VEC4', values: Float32Array.of(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0) },
       { type: 'MAT4', values: Float32Array.from([...translate(0, 0, -1), ...translate(0, 0, -3)]) },
       { type: 'SCALAR', values: Float32Array.of(0, 1) },
-      { type: 'VEC3', values: Float32Array.of(0, 0, 1, 0, 0, 2) },
+      {
+        type: 'VEC3',
+        // CUBICSPLINE keeps [in, value, out] per key; the ends' outer tangents are zero.
+        values: cubic
+          ? Float32Array.of(0, 0, 0, 0, 0, 1, ...cubic.leaving, ...cubic.arriving, 0, 0, 2, 0, 0, 0)
+          : Float32Array.of(0, 0, 1, 0, 0, 2),
+      },
     ],
   )
   const container = structuredClone(written.container)
@@ -124,7 +130,7 @@ function framedRig(frame = FRAME) {
     {
       name: 'Stand',
       extras: { uv: { sourceSequenceIndex: 0, sourceDurationSeconds: 1 } },
-      samplers: [{ input: times, output: rootTrack, interpolation: 'LINEAR' }],
+      samplers: [{ input: times, output: rootTrack, interpolation: cubic ? 'CUBICSPLINE' : 'LINEAR' }],
       channels: [{ sampler: 0, target: { node: 1, path: 'translation' } }],
     },
   ]
@@ -194,6 +200,48 @@ test('a source coordinate frame over the skeleton is baked, keeping every world 
     [1, 4, 3, 1, 6, 3],
     'root translation keys',
   )
+})
+
+test('a cubic root track keeps its tangents, turned by the frame and not moved by it', () => {
+  const cubic = { leaving: [0, 1, 0], arriving: [1, 0, 0] }
+  const result = projectUvmRigModel(framedRig(FRAME, { cubic }), budget)
+  const { translation } = result.model.animations[0].nodeTracks.find(entry => entry.boneIndex === 0)
+  // The shared sampler's cubic line type: glTF CUBICSPLINE tangents, derivatives per second.
+  assert.equal(translation.lineType, 4)
+  close(translation.keys.flatMap(key => key.vector), [1, 4, 3, 1, 6, 3], 'values: F * t')
+  // A derivative takes only the linear part (x, y, z) -> 2 * (x, z, -y); the offset (1, 2, 3) is
+  // not added to it.
+  close(translation.keys[0].outTan, [0, 0, -2], 'leaving tangent')
+  close(translation.keys[1].inTan, [2, 0, 0], 'arriving tangent')
+  close(translation.keys[0].inTan, [0, 0, 0], 'first arriving tangent')
+})
+
+test('the bounds cover a cubic track that overshoots both of its keys', () => {
+  // Root z goes 1 -> 2 in one second, leaving at +6/s and arriving at -6/s: between the keys the
+  // curve p(t) = -2t^3 - 3t^2 + 6t + 1 peaks near 3.09, past both of them.
+  const cubic = { leaving: [0, 0, 6], arriving: [0, 0, -6] }
+  const result = projectUvmRigModel(framedRig(translate(0, 0, 0), { cubic }), budget)
+  const p = t => {
+    const [h00, h10, h01, h11] = [
+      2 * t ** 3 - 3 * t ** 2 + 1,
+      t ** 3 - 2 * t ** 2 + t,
+      -2 * t ** 3 + 3 * t ** 2,
+      t ** 3 - t ** 2,
+    ]
+    return h00 * 1 + h10 * 6 + h01 * 2 + h11 * -6
+  }
+  let farthest = 0,
+    peak = 0
+  for (let step = 0; step <= 1000; step += 1) {
+    const z = p(step / 1000)
+    peak = Math.max(peak, z)
+    // Skinned vertices: (0,0,0) and (1,0,0) ride the root at z - 1, (0,0,4) the tip at z + 3.
+    farthest = Math.max(farthest, Math.abs(z - 1), Math.hypot(1, z - 1), Math.abs(z + 3))
+  }
+  assert.ok(peak > 3, `the curve overshoots its keys (${peak})`)
+  // The keys alone would put the tip vertex at 5; the curve takes it past that, and the bound too.
+  assert.ok(farthest > 5)
+  assert.ok(result.bounds.radius >= farthest, `${result.bounds.radius} covers ${farthest}`)
 })
 
 test('an identity frame changes nothing', () => {
