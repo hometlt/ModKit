@@ -12,6 +12,7 @@ import {
   installationsAtFolder,
   searchContainerIndex,
   selectedContentSources,
+  selectedInstallationDirectory,
   withSelectedContentSource,
   withoutSelectedContentSource,
 } from '../src/workbench-workflows.js'
@@ -138,6 +139,41 @@ describe('generic source lifecycle', () => {
         ],
       }),
     ).toEqual([alpha.gameId, beta.gameId])
+  })
+
+  it('hands each extension the selected installation of the game its own discovery names', () => {
+    const extension = (id: string, gameIds: readonly string[]) => ({
+      manifest: { publisher: 'org.example', id },
+      contributions: [
+        {
+          manifest: {
+            spec: {
+              provides: [
+                { contract: 'common.game/installation-discovery', major: 1, facet: { gameIds } },
+              ],
+            },
+          },
+        },
+      ],
+    })
+    const inventory = {
+      extensions: [
+        extension('alpha', [alpha.gameId]),
+        extension('beta', [beta.gameId]),
+        extension('images', []),
+      ],
+    }
+    expect(selectedInstallationDirectory(inventory, [alpha, beta], 'org.example/alpha')).toBe(
+      alpha.installPath,
+    )
+    expect(selectedInstallationDirectory(inventory, [alpha, beta], 'org.example/beta')).toBe(
+      beta.installPath,
+    )
+    // no discovery of its own, or its game not selected: the module gets no installation
+    expect(selectedInstallationDirectory(inventory, [alpha, beta], 'org.example/images')).toBe(
+      undefined,
+    )
+    expect(selectedInstallationDirectory(inventory, [alpha], 'org.example/beta')).toBe(undefined)
   })
 })
 

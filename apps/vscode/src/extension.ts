@@ -217,6 +217,7 @@ installationGameIds,
 installationsAtFolder,
 selectedContentSource,
 selectedContentSources,
+selectedInstallationDirectory,
 withSelectedContentSource,
 withoutSelectedContentSource,
 type SelectedContentSource,
@@ -1009,9 +1010,6 @@ async function activateModkit(
   let contentSources: Promise<ContentSources | undefined> | undefined
   /** The roots the inventory loaded, one per extension, for the content-source modules they declare. */
   const extensionRootPaths = (): string[] => contentSourceRoots(host.services.host.inventory)
-  /** The StarCraft II installation the user chose, which its content sources read. */
-  const selectedStarcraft2 = (): string | undefined =>
-    selectedSources.find(item => item.gameId === 'blizzard/starcraft-2')?.installPath
   const resetContentSources = (): void => {
     const previous = contentSources
     contentSources = undefined
@@ -1028,9 +1026,9 @@ async function activateModkit(
       typeof configuredSetting === 'string' && configuredSetting.trim().length > 0
         ? configuredSetting.trim()
         : undefined
-    // Without an explicit configuration every extension's declared sources compose; StarCraft II's
-    // module learns the chosen installation through moduleOptions and keeps its state (the public
-    // Battle.net catalogue included) in the host's `<storage>/state`.
+    // Without an explicit configuration every extension's declared sources compose; each module
+    // learns the chosen installation of its own game through moduleOptions and keeps its state (the
+    // public Battle.net catalogue included) in the host's `<storage>/state`.
     const configured =
       process.env['MODKIT_CONTENT_SOURCE_CONFIG'] ??
       configuredPath ??
@@ -1041,8 +1039,11 @@ async function activateModkit(
         ...(configured === undefined ? {} : { configPath: configured }),
         storage,
         moduleOptions: extension => {
-          const installationDirectory =
-            extension === 'blizzard/starcraft2' ? selectedStarcraft2() : undefined
+          const installationDirectory = selectedInstallationDirectory(
+            host.services.host.inventory,
+            selectedSources,
+            extension,
+          )
           return installationDirectory === undefined ? undefined : { installationDirectory }
         },
         // each extension's module reaches only the credentials that extension declared

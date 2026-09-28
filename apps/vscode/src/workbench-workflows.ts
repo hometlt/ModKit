@@ -178,10 +178,34 @@ export function installationsAtFolder(
  * installation-discovery offer facet, so a future game extension appears without a VS Code edit.
  */
 export function installationGameIds(inventory: unknown): readonly string[] {
-  const ids = new Set<string>()
+  return Object.freeze(
+    [...new Set([...installationGameIdsByExtension(inventory).values()].flat())].sort(),
+  )
+}
+
+/**
+ * The installation an extension's content sources read: the selected one of a game that extension's
+ * own installation discovery names. The offer facts say which game is whose; there is no game list.
+ */
+export function selectedInstallationDirectory(
+  inventory: unknown,
+  selected: readonly SelectedContentSource[],
+  extension: string,
+): string | undefined {
+  const gameIds = installationGameIdsByExtension(inventory).get(extension) ?? []
+  return selected.find(source => gameIds.includes(source.gameId))?.installPath
+}
+
+/** The installation-discovery game ids of each extension, keyed by its `publisher/id`. */
+function installationGameIdsByExtension(
+  inventory: unknown,
+): ReadonlyMap<string, readonly string[]> {
+  const byExtension = new Map<string, string[]>()
   const extensions = recordOf(inventory)?.['extensions']
-  if (!Array.isArray(extensions)) return Object.freeze([])
+  if (!Array.isArray(extensions)) return byExtension
   for (const extension of extensions) {
+    const identity = recordOf(recordOf(extension)?.['manifest'])
+    const key = `${String(identity?.['publisher'])}/${String(identity?.['id'])}`
     const contributions = recordOf(extension)?.['contributions']
     if (!Array.isArray(contributions)) continue
     for (const contribution of contributions) {
@@ -196,12 +220,15 @@ export function installationGameIds(inventory: unknown): readonly string[] {
         if (!Array.isArray(gameIds)) continue
         for (const gameId of gameIds) {
           const id = nonBlank(gameId)
-          if (id !== undefined) ids.add(id)
+          if (id === undefined) continue
+          const ids = byExtension.get(key) ?? []
+          if (!ids.includes(id)) ids.push(id)
+          byExtension.set(key, ids)
         }
       }
     }
   }
-  return Object.freeze([...ids].sort())
+  return byExtension
 }
 
 export interface DiagnosticJournal {
