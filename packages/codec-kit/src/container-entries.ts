@@ -440,6 +440,15 @@ async function decodeContainerEntry(
       `container entry ${entry.path} decoded to ${bytes.byteLength} bytes, not ${size}`,
     )
   }
+  // the container's own CRC-32 of the entry (a zip's), checked as the format's readers check it
+  if (entry.checksum?.algorithm === 'crc-32') {
+    const { crc32 } = await import('./checksum/index.js')
+    const actual = (crc32(bytes) >>> 0).toString(16).padStart(8, '0')
+    if (actual !== entry.checksum.value.toLowerCase().padStart(8, '0'))
+      throw new RangeError(
+        `container entry ${entry.path} fails its CRC-32 (${actual}, the container says ${entry.checksum.value})`,
+      )
+  }
   return bytes
 }
 

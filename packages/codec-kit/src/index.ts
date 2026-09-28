@@ -436,6 +436,8 @@ export interface RangeInspectionCodecDefinition extends Omit<
   'access' | 'inspect'
 > {
   readonly access: 'ranges'
+  /** Bytes `detect` needs from the start (its probe plan's window); 64 KiB by default. */
+  readonly detectBytes?: number
   inspect(context: InspectionContext): Promise<InspectionResult>
 }
 
@@ -1651,7 +1653,11 @@ export function createInspectionCodec(
           BigInt(budget.maxInputBytes) < sourceSize ? BigInt(budget.maxInputBytes) : sourceSize
         const prefix =
           bytes ??
-          (await byteSource.read(0n, Math.min(RANGE_DETECT_PREFIX_BYTES, Number(readable)), signal))
+          (await byteSource.read(
+            0n,
+            Math.min(rangeDefinition?.detectBytes ?? RANGE_DETECT_PREFIX_BYTES, Number(readable)),
+            signal,
+          ))
         const detected = await (
           definition.detect as (
             prefix: Uint8Array,
