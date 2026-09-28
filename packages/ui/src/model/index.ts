@@ -890,6 +890,12 @@ export async function resolveModelViewerTextures(
   let remaining = maximumBytes
   let index = 0
   const textures = new Map<string, SceneRendererTexture>()
+  /*
+   * Each texture gets its share of the budget and comes as its most detailed mip that fits: one
+   * 4096² texture (64 MiB at mip 0) took the whole budget and left the model's other maps out.
+   */
+  const wanted = new Set(references.filter(item => item.role === 'texture').map(item => item.id))
+  const share = Math.max(4 * 1024 * 1024, Math.floor(maximumBytes / Math.max(1, wanted.size)))
   for (const reference of references) {
     signal?.throwIfAborted()
     if (reference.role !== 'texture' || textures.has(reference.id) || remaining <= 0) continue
@@ -908,8 +914,8 @@ export async function resolveModelViewerTextures(
             'enclosing-container',
           ],
         },
-        maxBytes: remaining,
-        selection: { face: 'all' },
+        maxBytes: Math.min(remaining, share),
+        selection: { face: 'all', mipLevel: 'fit' },
       },
       signal,
     )
@@ -923,11 +929,22 @@ export async function resolveModelViewerTextures(
         ? result.surfaces
         : [
             {
-              subresource: { frame: 0, mipLevel: 0, layer: 0, face: 0, slice: 0 },
+              subresource: result.subresource ?? {
+                frame: 0,
+                mipLevel: 0,
+                layer: 0,
+                face: 0,
+                slice: 0,
+              },
               region: result.region,
             },
           ]
-    const faceBytes = result.info.width * result.info.height * 4
+    // The mip the host chose: every face is that one level, of that level's size.
+    const chosen = surfaces[0]
+    if (chosen === undefined) continue
+    const { width, height } = chosen.region
+    const mipLevel = chosen.subresource.mipLevel
+    const faceBytes = width * height * 4
     const byteLength = faceBytes * faces
     if (surfaces.length !== faces || byteLength > remaining) continue
     const rgba = new Uint8Array(byteLength)
@@ -938,11 +955,11 @@ export async function resolveModelViewerTextures(
       if (
         selected.face !== face ||
         selected.frame !== 0 ||
-        selected.mipLevel !== 0 ||
+        selected.mipLevel !== mipLevel ||
         selected.layer !== 0 ||
         selected.slice !== 0 ||
-        region.width !== result.info.width ||
-        region.height !== result.info.height ||
+        region.width !== width ||
+        region.height !== height ||
         region.pixelFormat !== 'rgba8' ||
         region.rowStride < region.width * 4 ||
         region.rowStride * (region.height - 1) + region.width * 4 > region.pixels.length
@@ -963,8 +980,8 @@ export async function resolveModelViewerTextures(
     remaining -= byteLength
     textures.set(reference.id, {
       id: textureId,
-      width: result.info.width,
-      height: result.info.height,
+      width,
+      height,
       rgba,
       ...(faces === 6 ? { dimension: 'cube' as const } : {}),
       ...(result.info.channelLayout === undefined
