@@ -3128,8 +3128,8 @@ async function activateModkit(
               opened = openCachedContentIndex({
                 directory: indexCacheDirectory,
                 manifest: {
-                  // ponytail: a root names no game; its product stands in until roots carry one
-                  game: root.product ?? root.region,
+                  // a source that does not say which game its root reads is grouped by product
+                  game: root.game ?? root.product ?? root.region,
                   ...(root.product === undefined ? {} : { product: root.product }),
                   installation: root.storageOf ?? root.label,
                 },
