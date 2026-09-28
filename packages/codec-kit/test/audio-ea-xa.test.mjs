@@ -48,13 +48,15 @@ function block(samples, channelData, bigEndian = false) {
 
 test('decodeEaXa scales each code by its shift and predicts from the filter', () => {
   // Filter 1 weighs the previous sample by 240/256; shift 20: code 1 -> 4096, then 3840, 3600.
-  assert.deepEqual([...decodeEaXa([block(28, [frame(0x10, [1])])], 2, 1).slice(0, 4)], [
-    4096, 3840, 3600, 3375,
-  ])
+  assert.deepEqual(
+    [...decodeEaXa([block(28, [frame(0x10, [1])])], 2, 1).slice(0, 4)],
+    [4096, 3840, 3600, 3375],
+  )
   // Filter 2 also weighs the sample before by -208/256: (7360 * 460 - 4096 * 208) >> 8 = 9897.
-  assert.deepEqual([...decodeEaXa([block(28, [frame(0x20, [1])])], 2, 1).slice(0, 3)], [
-    4096, 7360, 9897,
-  ])
+  assert.deepEqual(
+    [...decodeEaXa([block(28, [frame(0x20, [1])])], 2, 1).slice(0, 3)],
+    [4096, 7360, 9897],
+  )
   // Code 15 is -1; shift 20 - 12 = 8 leaves code 1 as 1.
   assert.equal(decodeEaXa([block(28, [frame(0x00, [15])])], 2, 1)[0], -4096)
   assert.equal(decodeEaXa([block(28, [frame(0x0c, [1])])], 2, 1)[0], 1)
@@ -105,7 +107,11 @@ test('decodeEaXa interleaves channels found by their offsets and ends inside the
   assert.equal(pcm.length, 60)
   assert.deepEqual([...pcm.slice(0, 2)], [4096, -4096])
   assert.deepEqual([...pcm.slice(58)], [4096, -4096])
-  assert.throws(() => decodeEaXa([block(56, [frame(0x10)])], 2, 1), /ends inside a frame/u)
+  // A count the frames cannot hold is refused before anything is allocated for it.
+  assert.throws(() => decodeEaXa([block(56, [frame(0x10)])], 2, 1), /fewer frames than/u)
+  assert.throws(() => decodeEaXa([block(200_000_000, [frame(0x10)])], 2, 1), /fewer frames/u)
+  const cut = rawFrame(0, 0, []).subarray(0, 20)
+  assert.throws(() => decodeEaXa([block(28, [cut])], 2, 1), /ends inside a frame/u)
   assert.throws(() => decodeEaXa([new Uint8Array(6)], 2, 1), /shorter than its header/u)
   assert.throws(() => decodeEaXa([], 4, 1), /revision is 1, 2 or 3/u)
   assert.throws(() => decodeEaXa([], 2, 0), /1 to 64 channels/u)

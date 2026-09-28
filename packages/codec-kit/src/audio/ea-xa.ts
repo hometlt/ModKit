@@ -63,6 +63,12 @@ export function decodeEaXa(
     const header = 4 + 4 * channels
     if (block.byteLength < header) throw new RangeError('EA-XA block is shorter than its header')
     const samples = view.getUint32(0, littleEndian)
+    // Every channel's frames lie in the block (15 bytes at least each): checked before allocating,
+    // so a damaged count cannot ask for gigabytes.
+    const frames = Math.ceil(samples / EA_XA_FRAME_SAMPLES)
+    if (channels * (frames * 15 + (revision === 1 ? 4 : 0)) > block.byteLength - header) {
+      throw new RangeError('EA-XA block holds fewer frames than its sample count')
+    }
     const out = new Int16Array(samples * channels)
     for (let channel = 0; channel < channels; channel += 1) {
       let at = header + view.getUint32(4 + 4 * channel, littleEndian)
