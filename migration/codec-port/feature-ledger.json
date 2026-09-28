@@ -279,24 +279,44 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-ea/test/receipts/k1/big.audit.json",
+          "sha256": "9c516aaa92cd75ac8a4309282ba37cc49d16dd76be26f983fa61405fac5e1042"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/big/audit",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-ea/test/receipts/k1/big.archive-extract.json",
+          "sha256": "d1be5c8d3367e77fc5fe4c54b249160f2806099bfd6652e7fa1bd63cd161a976"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/big/operation/archive.extract",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-ea/test/receipts/k1/big.archive-inspect.json",
+          "sha256": "5edba426053ab77ffcba48382f402994e12253c9cadeb887fd54a03d414da562"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/big/operation/archive.inspect",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-ea/test/receipts/k1/big.archive-write.json",
+          "sha256": "ceb6cc31ac8c7f141eb31eebbc0f2360c9aeee6ee203f4dd271f296ddc5df7a6"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/big/operation/archive.write",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -7149,9 +7169,14 @@
       "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-spring/test/receipts/k1/spring-vfs.audit.json",
+          "sha256": "67ffe44cd3add4c3a71aa96a6940ebaaea81ee5be18dd0cf2c549a64b68b629d"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/spring-vfs/audit",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],

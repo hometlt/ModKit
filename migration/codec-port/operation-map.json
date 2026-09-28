@@ -169,25 +169,25 @@
       "targetOperation": null
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-ea/big/contributions/codec-big.json",
+      "handlerId": "extract-entry",
       "id": "legacy/codec-manifest/modkit/big/operation/archive.extract",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "container.extract"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-ea/big/contributions/codec-big.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/big/operation/archive.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-ea/big/contributions/codec-big.json",
+      "handlerId": "pack-container",
       "id": "legacy/codec-manifest/modkit/big/operation/archive.write",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "container.pack"
     },
     {
       "contribution": null,

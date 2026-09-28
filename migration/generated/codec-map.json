@@ -32,7 +32,7 @@
       ]
     }
   ],
-  "contributionCount": 280,
+  "contributionCount": 281,
   "inventorySha256": "08c3bdad48056914277c7f95a0f97ef4feb85c8ec86a2fa8faf47bd7f9817e8c",
   "legacyCount": 206,
   "rows": [
@@ -222,11 +222,11 @@
       "codec": "big",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 4,
+      "pending": 0,
       "requirements": 4,
       "source": "extensions/ea/sage/codecs/big/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/big",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -2464,7 +2464,7 @@
       "codec": "spring-vfs",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 3,
+      "pending": 2,
       "requirements": 4,
       "source": "extensions/opensource/spring/codecs/spring-vfs/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/spring-vfs",
