@@ -6,7 +6,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
   extensions: [
     {
       artifact: {
-        artifactDigest: 'sha256:ed0db02fe16fd0ea7345114181282cb2dbe88ff0e3f53d51fb069b0dd144a60a',
+        artifactDigest: 'sha256:911482e17a79829388acd94099c790383fa7ab05f26212a5082077f2e21f01ea',
         fileDigests: {
           'MIGRATION-NOTES-common-archives.json':
             'sha256:4e1d77808583a26fb61d65d660ef09c3f4c222915c2e3581d793b202cbde4b44',
@@ -36,7 +36,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-xz.json':
             'sha256:b945ae5d8901c20343b9dfee344832375c2874acc24e2c791da9978baf28555e',
           'contributions/codec-zip.json':
-            'sha256:aa19a7ee9f28758bd084a3f2d80cb5244a12fbc97b158adc94a51fdbe4e42b5f',
+            'sha256:988718adc4f5ebdb14af9d72a78227100ad1119b848c66602d8deacc2a059db8',
           'contributions/codec-zstd.json':
             'sha256:79c03b955edaea1e248258cbe2429c8c7923e9301b824eed67d6e6672e6c3591',
           'package.json': 'sha256:0f450dab994733b1f04493efbe9a07bb0f7f702969fbf9350675f2d425600c04',
@@ -103,7 +103,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:74a5cab68793e3872c97feb5c564e0c4c0eae69d1f49df96d60239407ceccda8',
         },
         inventoryRecordId:
-          'artifact:sha256:ed0db02fe16fd0ea7345114181282cb2dbe88ff0e3f53d51fb069b0dd144a60a',
+          'artifact:sha256:911482e17a79829388acd94099c790383fa7ab05f26212a5082077f2e21f01ea',
       },
       artifactRoot: 'extensions/archives/',
       containers: {
@@ -203,7 +203,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         ],
         [
           'contributions/codec-zip.json',
-          'sha256:aa19a7ee9f28758bd084a3f2d80cb5244a12fbc97b158adc94a51fdbe4e42b5f',
+          'sha256:988718adc4f5ebdb14af9d72a78227100ad1119b848c66602d8deacc2a059db8',
         ],
         [
           'contributions/codec-zstd.json',
@@ -1873,7 +1873,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                 claimed: 1,
               },
               match: {
-                extensions: ['zip'],
+                extensions: ['zip', 'jar'],
                 mediaTypes: ['application/zip'],
                 signatures: [
                   {
