@@ -779,6 +779,32 @@ describe('a member is a subject in its own right', () => {
     })
   }, 180_000)
 
+  it('prepares an opened member as a file open prepares a map (plan 6.11)', async () => {
+    const { host, archive, workspace } = await registryFor()
+    const prepared: string[] = []
+    const containers = createContainerRegistry({
+      services: host.services,
+      roots: () => [workspace],
+      grant: { id: 'prepared-member-test', classes: ['read-source'] },
+      budget: containerBudget,
+      prepareOpened: async ({ opened }) => {
+        prepared.push(opened.selected.contributionId)
+        // what a map preview adds when a world cannot be built
+        const note = {
+          severity: 'information' as const,
+          code: 'x3.test/prepared',
+          message: 'prepared',
+        }
+        return { ...opened, diagnostics: [...opened.diagnostics, note] }
+      },
+    })
+    cleanup.push(() => containers.dispose())
+    const answer = await containers.open(containerUriText(archive, 'hello.txt'))
+    expect(prepared).toEqual(['modkit/txt'])
+    expect(answer.snapshot.diagnostics.map(item => item.code)).toContain('x3.test/prepared')
+    await answer.session?.dispose()
+  }, 180_000)
+
   it('reaches the page over the same subject RPC a file does', async () => {
     const { host, workspace, archive } = await stage()
     const containers = host.containers({ roots: () => [workspace] })

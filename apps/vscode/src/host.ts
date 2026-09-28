@@ -117,6 +117,7 @@ import {
   containerMemberEditingBackend,
   createContainerRegistry,
   type ContainerRegistry,
+  type ContainerRegistryOptions,
 } from './containers.js'
 import { describeInventoryContributions, type ContributionRow } from './contributions.js'
 import { prepareVsCodeMapPreview, type VsCodeMapPreviewCandidate } from './map-preview.js'
@@ -349,6 +350,11 @@ export interface VsCodeContainerOptions {
   }) => void
   /** Whether listings include entries the codec calls hidden; read per request. */
   readonly showHidden?: () => boolean
+  /** What a map member's world is resolved with — the same inputs a served page's maps use. */
+  readonly mapPreview?: Pick<
+    VsCodeServeOptions,
+    'mapPreviewResourcePlanResolver' | 'gameLocales' | 'contentSources' | 'localizer'
+  >
 }
 
 export interface VsCodeSubjectHostOptions {
@@ -658,6 +664,9 @@ export async function createVsCodeSubjectHost(
         ...(container.onDiagnostic === undefined ? {} : { onDiagnostic: container.onDiagnostic }),
         ...(container.onExtract === undefined ? {} : { onExtract: container.onExtract }),
         ...(container.showHidden === undefined ? {} : { showHidden: container.showHidden }),
+        ...(container.mapPreview === undefined
+          ? {}
+          : { prepareOpened: mapMemberPreview(services, container.mapPreview) }),
       }),
     serve: (served: VsCodeServeOptions) =>
       serveVsCode(services, served, { extensions, contributions }),
@@ -1139,6 +1148,30 @@ function requireInside(roots: readonly string[], requested: string): string {
     throw new Error(`«${requested}» is outside the folders this window granted`)
   }
   return path
+}
+
+/** A map member of a container opened into its world, with the inputs a served page's maps use. */
+function mapMemberPreview(
+  services: SubjectServices,
+  inputs: NonNullable<VsCodeContainerOptions['mapPreview']>,
+): NonNullable<ContainerRegistryOptions['prepareOpened']> {
+  return async ({ opened, grant, budget, signal }) => {
+    const contentSources = await inputs.contentSources?.()
+    const preview = await prepareVsCodeMapPreview({
+      services,
+      opened,
+      grant,
+      budgets: budget,
+      ...(inputs.localizer === undefined ? {} : { localizer: inputs.localizer }),
+      ...(inputs.gameLocales === undefined ? {} : { locales: inputs.gameLocales() }),
+      ...(contentSources === undefined ? {} : { contentSources }),
+      ...(inputs.mapPreviewResourcePlanResolver === undefined
+        ? {}
+        : { resourcePlanResolver: inputs.mapPreviewResourcePlanResolver }),
+      ...(signal === undefined ? {} : { signal }),
+    })
+    return preview.opened
+  }
 }
 
 function serveVsCode(

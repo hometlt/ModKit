@@ -808,6 +808,13 @@ async function activateModkit(
   const containers: ContainerRegistry = host.containers({
     roots,
     showHidden: showHiddenEntries,
+    // A map inside a zip or a campaign opens into its world, as the same map on disk does.
+    mapPreview: {
+      mapPreviewResourcePlanResolver,
+      gameLocales: configuredGameLocales,
+      contentSources: () => requireContentSources().catch(() => undefined),
+      localizer,
+    },
     onDiagnostic: item =>
       log(`[container] ${item.severity ?? 'information'} ${item.code}: ${item.message}`),
     ...(process.env[PACKAGE_INSTALL_GATE_ENV] === '1'

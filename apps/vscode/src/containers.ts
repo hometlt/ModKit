@@ -66,6 +66,7 @@ import {
   openNestedSubject,
   openSubject,
   subjectOpenSnapshot,
+  type OpenedSubject,
   type SubjectOpener,
   type SubjectOpenedSnapshot,
   type SubjectServices,
@@ -129,6 +130,16 @@ export interface ContainerRegistryOptions {
    * applies to the next listing. Absent means they are left out; opening one by path always works.
    */
   readonly showHidden?: () => boolean
+  /**
+   * Turns an opened member into the subject its view shows, as a file open does — a map into its
+   * world. Absent, the member is shown as its codec opened it.
+   */
+  readonly prepareOpened?: (request: {
+    readonly opened: OpenedSubject
+    readonly grant: PermissionGrant
+    readonly budget: ResourceBudget
+    readonly signal?: AbortSignal
+  }) => Promise<OpenedSubject>
 }
 
 export interface ContainerRegistry {
@@ -794,6 +805,24 @@ export function createContainerRegistry(options: ContainerRegistryOptions): Cont
     }
   }
 
+  const prepared = (opened: OpenedSubject, signal?: AbortSignal): Promise<OpenedSubject> =>
+    options.prepareOpened === undefined
+      ? Promise.resolve(opened)
+      : options.prepareOpened({
+          opened,
+          grant: writeGrant(),
+          budget: options.budget,
+          ...(signal === undefined ? {} : { signal }),
+        })
+
+  /** What preparing added to a member's diagnostics (a map's world that could not be built). */
+  const addedDiagnostics = (before: OpenedSubject, after: OpenedSubject) =>
+    after.diagnostics.slice(before.diagnostics.length).map(item => ({
+      code: item.code,
+      message: item.message,
+      severity: item.severity,
+    }))
+
   /**
    * One member of a held container, opened as a subject in its own right — the parent's retainer
    * is the caller's to take and give back.
@@ -837,10 +866,11 @@ export function createContainerRegistry(options: ContainerRegistryOptions): Cont
         }),
       }
     }
+    const opened = await prepared(nested.result, signal)
     const snapshot = subjectOpenSnapshot({
-      result: nested.result,
+      result: opened,
       sessionId: () => `container:${randomUUID()}`,
-      diagnostics: carried,
+      diagnostics: [...carried, ...addedDiagnostics(nested.result, opened)],
     })
     const selectedRoute = Object.freeze([
       ...holder.selectedRoute,
@@ -848,7 +878,7 @@ export function createContainerRegistry(options: ContainerRegistryOptions): Cont
     ])
     return {
       snapshot: selectedRoute.length === 0 ? snapshot : { ...snapshot, selectedRoute },
-      session: nested.result.session,
+      session: opened.session,
     }
   }
 
@@ -948,10 +978,11 @@ export function createContainerRegistry(options: ContainerRegistryOptions): Cont
           releaseResources: async () => undefined,
         }
       }
+      const opened = await prepared(result, signal)
       const snapshot = subjectOpenSnapshot({
-        result,
+        result: opened,
         sessionId: () => `container-directory:${randomUUID()}`,
-        diagnostics,
+        diagnostics: [...diagnostics, ...addedDiagnostics(result, opened)],
       })
       const selectedRoute = Object.freeze([
         ...holder.selectedRoute,
@@ -960,7 +991,7 @@ export function createContainerRegistry(options: ContainerRegistryOptions): Cont
       return {
         answer: {
           snapshot: selectedRoute.length === 0 ? snapshot : { ...snapshot, selectedRoute },
-          session: result.session,
+          session: opened.session,
         },
         releaseResources,
       }
