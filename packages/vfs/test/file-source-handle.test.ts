@@ -13,7 +13,10 @@ afterAll(() => rm(root, { recursive: true, force: true }))
 describe('a file source keeps one descriptor', () => {
   it('reads many ranges, still refuses a file written in place, and lets it go on dispose', async () => {
     const path = join(root, 'archive.jar')
-    await writeFile(path, Uint8Array.from({ length: 64 }, (_, index) => index))
+    await writeFile(
+      path,
+      Uint8Array.from({ length: 64 }, (_, index) => index),
+    )
     const mount = await createFileVfsProvider().open(pathToFileURL(root).href, {
       limits: DEFAULT_VFS_LIMITS,
     })
