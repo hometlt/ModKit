@@ -3912,7 +3912,10 @@ function prepareWorldStaticTerrain(
         material?.normalResourceId === undefined
           ? undefined
           : input.terrainTextures?.get(material.normalResourceId)
-      const color = [1, 1, 1, 1] as const
+      // glTF baseColorFactor: multiplies the texture, or is the colour without one; never transparent
+      const factor = material?.baseColorFactor
+      const color =
+        factor === undefined ? ([1, 1, 1, 1] as const) : ([factor[0], factor[1], factor[2], 1] as const)
       const resolvedSplat = declaredWeights.flatMap(weight => {
         const definition = input.terrainMaterials?.find(
           candidate => candidate.materialId === weight.materialId,
@@ -3997,7 +4000,12 @@ function prepareWorldStaticTerrain(
           const vertices = tri(quad, index),
             normals = tri(cornerNormals, index)
           for (const corner of [0, 1, 2] as const)
-            pushVertex(opaque, vertices[corner], normals[corner], heightColor(vertices[corner][1]))
+            pushVertex(
+              opaque,
+              vertices[corner],
+              normals[corner],
+              factor === undefined ? heightColor(vertices[corner][1]) : color,
+            )
         }
       } else {
         const key = `terrain\u0000${texture.id}\u0000${normalTexture?.id ?? ''}`
