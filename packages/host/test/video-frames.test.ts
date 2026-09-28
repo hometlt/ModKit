@@ -74,5 +74,7 @@ describe('video frames of a desktop host', () => {
         }),
       ).rejects.toThrow(/no video\/mp4 frame|ffmpeg/u)
     },
+    // a frame past the end is asked twice (input seek, then output seek from the start)
+    30_000,
   )
 })

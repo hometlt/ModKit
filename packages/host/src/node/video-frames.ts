@@ -10,7 +10,7 @@ import { existsSync } from 'node:fs'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { delimiter, join } from 'node:path'
-import { ModkitError } from '@modkit/core'
+import { isModkitError, ModkitError } from '@modkit/core'
 import type { VideoFrame, VideoFrameDecodeRequest, VideoFrameDecoder } from '@modkit/sdk'
 
 export interface NodeVideoFrameDecoderOptions {
@@ -75,17 +75,27 @@ export function createNodeVideoFrameDecoder(
       try {
         const input = join(directory, 'input')
         await writeFile(input, request.bytes)
-        const output = await run(
-          ffmpeg,
-          [
-            ['-v', 'error', '-nostdin'],
-            ['-ss', (request.timestampMs / 1000).toFixed(3), '-i', input],
-            ['-frames:v', '1', '-f', 'image2pipe', '-c:v', 'pam', '-pix_fmt', 'rgba', 'pipe:1'],
-          ].flat(),
-          request.maxBytes + 4096,
-          timeoutMs,
-          request.signal,
-        )
+        const at = (request.timestampMs / 1000).toFixed(3)
+        const decode = (seek: readonly string[]) =>
+          run(
+            ffmpeg,
+            [
+              ['-v', 'error', '-nostdin'],
+              seek,
+              ['-frames:v', '1', '-f', 'image2pipe', '-c:v', 'pam', '-pix_fmt', 'rgba', 'pipe:1'],
+            ].flat(),
+            request.maxBytes + 4096,
+            timeoutMs,
+            request.signal,
+          )
+        // Seeking the input is fast, but some demuxers cannot seek at all (Westwood VQA `wsvqa`
+        // yields nothing, even at 0): then seek the output, decoding from the start.
+        let output = await decode(['-ss', at, '-i', input]).catch((error: unknown) => {
+          if (isModkitError(error) && error.code === 'x3.host/video-frame-decode-failed')
+            return new Uint8Array()
+          throw error
+        })
+        if (output.byteLength === 0) output = await decode(['-i', input, '-ss', at])
         if (output.byteLength === 0)
           throw failed(`no ${request.mediaType} frame at ${request.timestampMs} ms`)
         const { width, height, pixels } = parsePam(output)
