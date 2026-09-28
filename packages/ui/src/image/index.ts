@@ -308,6 +308,12 @@ export interface ImageViewerOptions {
   ) => Promise<ImageSaveOutcome>
   /** Why saving is unavailable, when `savePixels` is absent. */
   readonly editableReason?: string
+  /**
+   * Why the subject on show cannot be saved even though this host can save (its codec has no
+   * encoder, its source is read-only); undefined when it can. Asked for each subject, so the Edit
+   * section offers tools only where Save will work instead of refusing at Save.
+   */
+  readonly saveRefusal?: (descriptor: AnyDescriptor) => string | undefined
   /** Unsaved pixels; the host marks its document dirty, so its own Save applies to them. */
   onEditingChange?(dirty: boolean): void
   /** One committed edit, for a host whose editor owns the undo stack. */
@@ -1272,15 +1278,18 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
             collapsed: true,
           })
           editing?.destroy()
+          const refusal =
+            options.savePixels === undefined
+              ? options.editableReason
+              : options.saveRefusal?.(descriptor)
+          const writable = options.savePixels !== undefined && refusal === undefined
           editing = createImageEditing(section.body, {
             localizer,
             surface: editSurface,
             overlay: stage,
-            editable: options.savePixels !== undefined,
-            ...(options.editableReason === undefined
-              ? {}
-              : { unavailableReason: options.editableReason }),
-            ...(options.savePixels === undefined ? {} : { onSave: saveEdits }),
+            editable: writable,
+            ...(refusal === undefined ? {} : { unavailableReason: refusal }),
+            ...(writable ? { onSave: saveEdits } : {}),
             onDirty(dirty) {
               options.onEditingChange?.(dirty)
             },
