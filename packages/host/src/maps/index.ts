@@ -99,6 +99,7 @@ import {
   createResolvedDataSubjectSelectorLease,
   type ResolvedDataWorkspaceLimits,
 } from '../data/index.js'
+import { singleFileAsContainer } from './single-file-namespace.js'
 import { createCandidateWorldSceneLease } from './world-source.js'
 
 export { createCandidateWorldSceneLease } from './world-source.js'
@@ -2501,6 +2502,11 @@ export async function coordinateMapPreviewAssetSession(
   const maxRoots = positiveCoordinatorLimit(request.maxRoots, 'maxRoots')
   const maxDepth = positiveCoordinatorLimit(request.maxDepth, 'maxDepth')
   request.signal?.throwIfAborted()
+  // a map of one file answers as a container of that file, on this route only
+  request = {
+    ...request,
+    original: await singleFileAsContainer(request.original, request.budgets.maxInputBytes),
+  }
 
   const descriptor = await request.original.descriptor()
   let subject: MapPreviewPreparationRequest['subject']
