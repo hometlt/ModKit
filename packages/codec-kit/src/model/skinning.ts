@@ -3,6 +3,12 @@ import type { ModelBonePoseSample } from './skeleton.js'
 import { skinInterleaved } from './legacy/skinning-kernels.js'
 import { invertAffine } from '../model-math/transform.js'
 
+/**
+ * The kernel's interleaved output, shared by every deform: a deform runs to completion and copies
+ * the attributes its frame owns out of it, so one buffer of the largest skin serves them all.
+ */
+let kernelOutput = new Float32Array(0)
+
 /** Compile buffer layout and sparse bone joins once. Output frames own their deformed attributes. */
 export function createModelSkinDeformer(
   primitive: ModelPrimitive,
@@ -93,18 +99,39 @@ export function createModelSkinDeformer(
       }
       for (let slot = 0; slot < matrices.length; slot++)
         if (matrices[slot] === undefined) throw new TypeError('skin pose is incomplete')
-      const deformed = skinInterleaved(source, mesh, matrices)
-      if (!deformed.every(Number.isFinite))
-        throw new RangeError('deformed skin exceeds finite float range')
+      if (kernelOutput.length < source.length) kernelOutput = new Float32Array(source.length)
+      const deformed = skinInterleaved(
+        source,
+        mesh,
+        matrices,
+        kernelOutput.subarray(0, source.length),
+      )
+      for (let index = 0; index < deformed.length; index++)
+        if (!Number.isFinite(deformed[index]!))
+          throw new RangeError('deformed skin exceeds finite float range')
+      // Plain element copies: a subarray view per vertex and attribute cost more than the kernel.
       const positions = new Float32Array(count * 3)
       const normals = primitive.normals ? new Float32Array(count * 3) : undefined
       const tangents = primitive.tangents ? new Float32Array(primitive.tangents) : undefined
       for (let vertex = 0; vertex < count; vertex++) {
         if ((vertex & 1023) === 0 && requestSignal?.aborted)
           throw new DOMException('operation cancelled', 'AbortError')
-        positions.set(deformed.subarray(vertex * 9, vertex * 9 + 3), vertex * 3)
-        normals?.set(deformed.subarray(vertex * 9 + 3, vertex * 9 + 6), vertex * 3)
-        tangents?.set(deformed.subarray(vertex * 9 + 6, vertex * 9 + 9), vertex * 4)
+        const from = vertex * 9,
+          to = vertex * 3
+        positions[to] = deformed[from]!
+        positions[to + 1] = deformed[from + 1]!
+        positions[to + 2] = deformed[from + 2]!
+        if (normals !== undefined) {
+          normals[to] = deformed[from + 3]!
+          normals[to + 1] = deformed[from + 4]!
+          normals[to + 2] = deformed[from + 5]!
+        }
+        if (tangents !== undefined) {
+          const tangent = vertex * 4
+          tangents[tangent] = deformed[from + 6]!
+          tangents[tangent + 1] = deformed[from + 7]!
+          tangents[tangent + 2] = deformed[from + 8]!
+        }
       }
       // Discard bind-pose bounds and skin buffers: these positions are already deformed.
       const {
