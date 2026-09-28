@@ -190,6 +190,10 @@
       "types": "./dist/compression/lcw.d.ts",
       "default": "./dist/compression/lcw.js"
     },
+    "./compression/lzo": {
+      "types": "./dist/compression/lzo.d.ts",
+      "default": "./dist/compression/lzo.js"
+    },
     "./compression/refpack": {
       "types": "./dist/compression/refpack.d.ts",
       "default": "./dist/compression/refpack.js"

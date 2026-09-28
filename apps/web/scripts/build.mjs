@@ -282,6 +282,14 @@ const workerBuild = await build({
       'compression',
       'lcw.js',
     ),
+    'vendor/codec-kit/compression/lzo': join(
+      repoRoot,
+      'packages',
+      'codec-kit',
+      'dist',
+      'compression',
+      'lzo.js',
+    ),
     'vendor/codec-kit/compression/refpack': join(
       repoRoot,
       'packages',
