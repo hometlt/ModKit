@@ -305,6 +305,9 @@ const EN_MESSAGES = Object.freeze({
   'vscode.game.noVerifiedInstallation':
     'No verified installation was found by the installed game extensions.',
   'vscode.game.selectInstallation': 'Select a game installation as a content source',
+  'vscode.game.specifyFolder': 'Specify folder…',
+  'vscode.game.folderNotInstallation':
+    'No installed game extension recognised a game installation in {path}.',
   'vscode.game.unloadSource': 'Unload a selected content source',
   'vscode.game.openMapFirst': 'Open a local map file before starting a game.',
   'vscode.game.selectInstallationFirst':
@@ -783,6 +786,9 @@ const RU_MESSAGES: Readonly<Record<keyof typeof EN_MESSAGES, string>> = Object.f
   'vscode.game.noVerifiedInstallation':
     'Установленные игровые расширения не нашли проверенную установку игры.',
   'vscode.game.selectInstallation': 'Выбрать установку игры как источник содержимого',
+  'vscode.game.specifyFolder': 'Указать папку…',
+  'vscode.game.folderNotInstallation':
+    'Установленные игровые расширения не нашли установку игры в папке {path}.',
   'vscode.game.unloadSource': 'Отключить выбранный источник содержимого',
   'vscode.game.openMapFirst': 'Перед запуском игры откройте локальный файл карты.',
   'vscode.game.selectInstallationFirst':

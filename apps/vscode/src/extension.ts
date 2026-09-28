@@ -214,6 +214,8 @@ import {
 assertMaterializationBound,
 createDiagnosticJournal,
 installationGameIds,
+installationsAtFolder,
+selectedContentSource,
 selectedContentSources,
 withSelectedContentSource,
 withoutSelectedContentSource,
@@ -10109,11 +10111,11 @@ async function activateModkit(
     vscode.commands.registerCommand('modkit.selectGameInstallation', () =>
       (async () => {
         const gameIds = installationGameIds(host.services.host.inventory)
-        const candidates: SelectedContentSource[] = []
-        for (const gameId of gameIds) {
+        const discover = async (gameId: string, configuredPaths: readonly string[]) => {
           const discovery = await discoverGameInstallations({
             services: host.services,
             gameId,
+            ...(configuredPaths.length === 0 ? {} : { configuredPaths }),
             maxCandidates: 32,
             grant: {
               id: 'vscode-game-installation-discovery',
@@ -10127,42 +10129,76 @@ async function activateModkit(
           for (const item of discovery.diagnostics) {
             log(`[installation] ${item.severity} ${item.code}: ${item.message}`)
           }
-          if (discovery.state !== 'discovered') continue
-          for (const installation of discovery.result.installations) {
-            candidates.push({
-              gameId: installation.gameId,
-              displayName: installation.displayName,
-              installPath: installation.installPath,
-              normalizedPath: installation.normalizedPath,
-              ...(installation.version === undefined ? {} : { version: installation.version }),
-              ...(installation.buildName === undefined
-                ? {}
-                : { buildName: installation.buildName }),
-              ...(installation.buildUid === undefined ? {} : { buildUid: installation.buildUid }),
-            })
+          return discovery.state === 'discovered' ? discovery.result.installations : []
+        }
+        const candidates: SelectedContentSource[] = []
+        for (const gameId of gameIds) {
+          // A folder chosen by hand is not in the registry: it comes back as a configured path.
+          const chosen = selectedSources
+            .filter(source => source.gameId === gameId)
+            .map(source => source.installPath)
+          for (const installation of await discover(gameId, chosen)) {
+            if (!candidates.some(item => item.normalizedPath === installation.normalizedPath))
+              candidates.push(selectedContentSource(installation))
           }
         }
-        if (candidates.length === 0) {
-          void vscode.window.showWarningMessage(
-            `Modkit: ${localizer.text('vscode.game.noVerifiedInstallation')}`,
-          )
-          return undefined
-        }
-        const picked = await vscode.window.showQuickPick(
-          candidates.map(source => ({
+        type SourcePick = vscode.QuickPickItem & { readonly source?: SelectedContentSource }
+        const items = (sources: readonly SelectedContentSource[]): SourcePick[] =>
+          sources.map(source => ({
             label: source.displayName,
             description:
               source.version === undefined ? source.gameId : `${source.gameId} · ${source.version}`,
             detail: source.installPath,
             source,
-          })),
-          { title: localizer.text('vscode.game.selectInstallation') },
+          }))
+        const title = localizer.text('vscode.game.selectInstallation')
+        const picked = await vscode.window.showQuickPick<SourcePick>(
+          [
+            ...items(candidates),
+            ...(candidates.length === 0
+              ? []
+              : [{ label: '', kind: vscode.QuickPickItemKind.Separator }]),
+            { label: `$(folder-opened) ${localizer.text('vscode.game.specifyFolder')}` },
+          ],
+          {
+            title,
+            ...(candidates.length === 0
+              ? { placeHolder: localizer.text('vscode.game.noVerifiedInstallation') }
+              : {}),
+          },
         )
         if (picked === undefined) return undefined
-        granted.add(resolve(picked.source.installPath))
-        await publishSelectedSources(withSelectedContentSource(selectedSources, picked.source))
-        log(`selected content source: ${picked.source.displayName} (${picked.source.installPath})`)
-        return picked.source
+        let source = picked.source
+        if (source === undefined) {
+          // The provider still proves the folder; a path the user typed is never trusted as is.
+          const folder = (
+            await vscode.window.showOpenDialog({
+              canSelectFiles: false,
+              canSelectFolders: true,
+              canSelectMany: false,
+              title: localizer.text('vscode.game.specifyFolder'),
+            })
+          )?.[0]?.fsPath
+          if (folder === undefined) return undefined
+          const verified: SelectedContentSource[] = []
+          for (const gameId of gameIds)
+            verified.push(...installationsAtFolder(await discover(gameId, [folder]), folder))
+          source =
+            verified.length > 1
+              ? (await vscode.window.showQuickPick(items(verified), { title }))?.source
+              : verified[0]
+          if (source === undefined) {
+            if (verified.length === 0)
+              void vscode.window.showWarningMessage(
+                `Modkit: ${localizer.text('vscode.game.folderNotInstallation', { path: folder })}`,
+              )
+            return undefined
+          }
+        }
+        granted.add(resolve(source.installPath))
+        await publishSelectedSources(withSelectedContentSource(selectedSources, source))
+        log(`selected content source: ${source.displayName} (${source.installPath})`)
+        return source
       })(),
     ),
 

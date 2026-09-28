@@ -7,6 +7,10 @@
  * their results into native pickers, documents and workspace writes.
  */
 
+import { relative, resolve } from 'node:path'
+
+import type { GameInstallation } from '@modkit/sdk/games'
+
 import type { ContainerIndex, ContainerNode } from './container-uri.js'
 
 export const VSCODE_CONTAINER_SEARCH_LIMIT = 200
@@ -135,6 +139,38 @@ export function withoutSelectedContentSource(
   normalizedPath: string,
 ): readonly SelectedContentSource[] {
   return Object.freeze(current.filter(item => item.normalizedPath !== normalizedPath))
+}
+
+/** The selection stored for one provider-verified installation. */
+export function selectedContentSource(installation: GameInstallation): SelectedContentSource {
+  return Object.freeze({
+    gameId: installation.gameId,
+    displayName: installation.displayName,
+    installPath: installation.installPath,
+    normalizedPath: installation.normalizedPath,
+    ...(installation.version === undefined ? {} : { version: installation.version }),
+    ...(installation.buildName === undefined ? {} : { buildName: installation.buildName }),
+    ...(installation.buildUid === undefined ? {} : { buildUid: installation.buildUid }),
+  })
+}
+
+/**
+ * The installations a provider proved at the folder the user chose by hand. The same discovery also
+ * reports what it found through the registry or default folders; those do not answer for the folder.
+ */
+export function installationsAtFolder(
+  installations: readonly GameInstallation[],
+  folder: string,
+): readonly SelectedContentSource[] {
+  return Object.freeze(
+    installations
+      .filter(
+        item =>
+          item.origins.includes('configured-path') &&
+          relative(resolve(folder), resolve(item.installPath)) === '',
+      )
+      .map(selectedContentSource),
+  )
 }
 
 /**

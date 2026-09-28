@@ -9,6 +9,7 @@ import {
   assertMaterializationBound,
   createDiagnosticJournal,
   installationGameIds,
+  installationsAtFolder,
   searchContainerIndex,
   selectedContentSources,
   withSelectedContentSource,
@@ -80,6 +81,39 @@ describe('generic source lifecycle', () => {
       { ...alpha, displayName: 'ALPHA' },
     ])
     expect(withoutSelectedContentSource([alpha, beta], alpha.normalizedPath)).toEqual([beta])
+  })
+
+  it('selects only the installation a provider proved at the folder the user chose', () => {
+    const installation = (installPath: string, origin: 'configured-path' | 'registry') => ({
+      gameId: 'org.example/game-alpha',
+      displayName: 'Example Game Alpha',
+      installPath,
+      normalizedPath: installPath.toLowerCase(),
+      origins: [origin],
+      evidence: [],
+      version: '1.06',
+    })
+    const chosen = join('F:', 'Games', 'Alpha')
+    // The same discovery also reports the stale registry root; it does not answer for the folder.
+    expect(
+      installationsAtFolder(
+        [
+          installation(join('C:', 'Apps', 'Alpha'), 'registry'),
+          installation(join(chosen, '.'), 'configured-path'),
+          installation(join('F:', 'Games', 'Other'), 'configured-path'),
+        ],
+        chosen,
+      ),
+    ).toEqual([
+      {
+        gameId: 'org.example/game-alpha',
+        displayName: 'Example Game Alpha',
+        installPath: join(chosen, '.'),
+        normalizedPath: join(chosen, '.').toLowerCase(),
+        version: '1.06',
+      },
+    ])
+    expect(installationsAtFolder([installation(chosen, 'registry')], chosen)).toEqual([])
   })
 
   it('derives supported game ids from standard installation offer facts, not an app allowlist', () => {
