@@ -34,4 +34,31 @@ describe('INI', () => {
     expect(parseIni(decoded('[a]\nk=1\nk=2\n'), 'ini-basic').state).toBe('failed')
     expect(parseIni(decoded('[a]\nk=1\nk=2\n')).state).toBe('ok')
   })
+
+  it('keeps true offsets in a CRLF file', () => {
+    const result = parseIni(decoded('[a]\r\nk=1\r\nlong=2\r\n'))
+    if (result.state !== 'ok') throw new Error('expected ok')
+    const range = result.document.sections[1]!.entries[1]!.range
+    expect([range.line, range.column, range.utf16Offset]).toEqual([2, 0, 10])
+  })
+
+  it('reads Westwood INI: trailing comments, // lines, lines without = skipped', () => {
+    const text = '[ROCK] ; Rocketeer\r\n// note\r\n***Crazy Ivan stuff***\r\nImage=ROCK ; art\r\n'
+    expect(parseIni(decoded(text)).state).toBe('failed')
+    const result = parseIni(decoded(text), 'ini-westwood')
+    if (result.state !== 'ok') throw new Error('expected ok')
+    expect(result.document.sections[1]).toMatchObject({
+      name: 'ROCK',
+      entries: [{ key: 'Image', value: 'ROCK' }],
+    })
+    expect(result.diagnostics.map(item => item.code)).toEqual(['modkit/text-data-ini-skipped-line'])
+  })
+
+  it('is linear in the size of the file', () => {
+    const big = `[s]\r\n${'Key=Value ; c\r\n'.repeat(100_000)}`
+    const started = performance.now()
+    const result = parseIni(decoded(big), 'ini-westwood')
+    expect(result.state).toBe('ok')
+    expect(performance.now() - started).toBeLessThan(5_000)
+  })
 })

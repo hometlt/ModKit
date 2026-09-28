@@ -82,6 +82,41 @@ export function span(text: string, offset = 0, length = text.length) {
   })
 }
 
+/**
+ * {@link span} for many ranges of one text in increasing order, in linear time overall: bytes and
+ * lines are counted from the previous range, not from the start (a 1.6 MB INI took 95 s by `span`).
+ * A range before the previous one restarts the count.
+ */
+export function spanner(text: string): (offset: number, length: number) => ReturnType<typeof span> {
+  const encoder = new TextEncoder()
+  let at = 0
+  let bytes = 0
+  let line = 0
+  let lineStart = 0
+  return (offset, length) => {
+    if (offset < at) at = bytes = line = lineStart = 0
+    const between = text.slice(at, offset)
+    bytes += encoder.encode(between).byteLength
+    for (
+      let index = between.indexOf('\n');
+      index !== -1;
+      index = between.indexOf('\n', index + 1)
+    ) {
+      line += 1
+      lineStart = at + index + 1
+    }
+    at = offset
+    return Object.freeze({
+      byteOffset: uint64(BigInt(bytes)),
+      byteLength: uint64(BigInt(encoder.encode(text.slice(offset, offset + length)).byteLength)),
+      utf16Offset: offset,
+      utf16Length: length,
+      line,
+      column: offset - lineStart,
+    })
+  }
+}
+
 export function failure(
   code: string,
   message: string,
