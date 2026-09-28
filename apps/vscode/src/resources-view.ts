@@ -261,15 +261,24 @@ export class ResourcesView implements vscode.TreeDataProvider<ResourceTreeNode>,
     item.tooltip = node.facts.preview ?? node.facts.label
     item.contextValue =
       node.facts.subjectId === undefined ? 'modkitResource.node' : 'modkitResource.openable'
-    item.iconPath = new vscode.ThemeIcon(
-      node.facts.kind === 'mod'
-        ? 'package'
-        : node.ref.hasChildren
-          ? 'symbol-folder'
-          : /file|document|script|layout|string|style/iu.test(node.facts.kind)
-            ? 'file'
+    const fileLike =
+      !node.ref.hasChildren && /file|document|script|layout|string|style/iu.test(node.facts.kind)
+    if (fileLike) {
+      // The file icon theme picks the icon by the file's name, as in the Explorer (MK2's trees did).
+      item.resourceUri = vscode.Uri.from({
+        scheme: 'modkit-resource',
+        path: `/${node.facts.label}`,
+      })
+      item.iconPath = vscode.ThemeIcon.File
+    } else {
+      item.iconPath = new vscode.ThemeIcon(
+        node.facts.kind === 'mod'
+          ? 'package'
+          : node.ref.hasChildren
+            ? 'symbol-folder'
             : 'symbol-field',
-    )
+      )
+    }
     if (node.facts.subjectId !== undefined) {
       item.command = {
         command: 'modkit.resources.open',

@@ -80,7 +80,11 @@ export class SourcesView implements vscode.TreeDataProvider<SourceTreeNode>, vsc
           : vscode.TreeItemCollapsibleState.Expanded,
     )
     item.id = node.id
-    item.iconPath = new vscode.ThemeIcon(node.icon)
+    // A publication is a file: the icon theme picks its icon by the name its URI carries.
+    item.iconPath =
+      node.kind === 'publication' && node.resourceUri !== undefined
+        ? vscode.ThemeIcon.File
+        : new vscode.ThemeIcon(node.icon)
     // The host decorates by URI, which is what greys a row that is not connected or not downloaded.
     if (node.resourceUri !== undefined) item.resourceUri = vscode.Uri.parse(node.resourceUri)
     if (node.contextValue !== undefined) item.contextValue = node.contextValue
