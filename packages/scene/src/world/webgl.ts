@@ -7373,10 +7373,14 @@ const worldMaterialBatches = new WeakMap<WorldWebGlPlan, WorldWebGlMaterialBatch
 const worldShadowMaterialBatches = new WeakMap<WorldWebGlPlan, WorldWebGlMaterialBatches>()
 const SHADOW_DEPTH_BIAS = Object.freeze({ slopeScale: 1.1, units: 4 })
 
-/** A scene's solid draws with their group keys (undefined: the draw cannot instance). */
+/**
+ * A scene's solid draws with their group keys (undefined: the draw cannot instance) and the part of
+ * the key that is not the program and material: geometry, depth use, bias and tint.
+ */
 interface WorldSceneSolidDraws {
   readonly draws: readonly Readonly<{
     key: string | undefined
+    geometryKey: string | undefined
     draw: WorldWebGlMaterialGroup['draw']
   }>[]
   readonly transparent: boolean
@@ -7409,7 +7413,11 @@ function worldSceneSolidDrawsOf(
       .get(primitive.materialId ?? '')
       ?.passes.some(program => !materialIsSolid(program)),
   )
-  const draws: { key: string | undefined; draw: WorldWebGlMaterialGroup['draw'] }[] = []
+  const draws: {
+    key: string | undefined
+    geometryKey: string | undefined
+    draw: WorldWebGlMaterialGroup['draw']
+  }[] = []
   for (const found of sceneMaterialDraws(
     primitives,
     scene.materials,
@@ -7431,14 +7439,12 @@ function worldSceneSolidDrawsOf(
         }
       : { ...found, program }
     if (!materialCanInstance(program)) {
-      draws.push({ key: undefined, draw })
+      draws.push({ key: undefined, geometryKey: undefined, draw })
       continue
     }
     const primitive = draw.primitive
     const bias = primitive.depthBias
-    const key = [
-      worldGroupId(program),
-      worldGroupId(draw.material),
+    const geometryKey = [
       draw.depthOnly === true ? 'depth' : 'colour',
       primitive.topology,
       worldGroupId(primitive.positions),
@@ -7453,7 +7459,11 @@ function worldSceneSolidDrawsOf(
       bias === undefined ? '-' : `${bias.slopeScale}:${bias.units}`,
       primitiveTint(primitive).join(':'),
     ].join('|')
-    draws.push({ key, draw })
+    draws.push({
+      key: `${worldGroupId(program)}|${worldGroupId(draw.material)}|${geometryKey}`,
+      geometryKey,
+      draw,
+    })
   }
   const result = Object.freeze({ draws: Object.freeze(draws), transparent })
   cache.set(scene, result)
@@ -7467,22 +7477,40 @@ function worldSceneSolidDrawsOf(
  * prepasses are left to their blended passes (`worldBlendedMaterialPasses`). `shadow` builds the
  * depth-only casters of the shadow map instead.
  */
+/**
+ * Instance matrices of the latest grouping, per geometry key (see WorldSceneSolidDraws): every
+ * animated frame groups a new plan, and a group whose placements are the same transform objects in
+ * the same order takes the matrices it had instead of new ones. The same array keeps its uploaded
+ * buffer and vertex array in the renderer, where a new one allocated both again for every group
+ * at every frame. A program sampled at a new clock changes the group key, not the geometry key.
+ */
+const lastWorldInstanceMatrices = [
+  new Map<string, Readonly<{ transforms: readonly Float32Array[]; matrices: Float32Array }>>(),
+  new Map<string, Readonly<{ transforms: readonly Float32Array[]; matrices: Float32Array }>>(),
+]
+
 function groupWorldMaterialDraws(plan: WorldWebGlPlan, shadow: boolean): WorldWebGlMaterialBatches {
   const groups = new Map<
     string,
-    { draw: WorldWebGlMaterialGroup['draw']; transforms: Float32Array[]; seen: Set<Float32Array> }
+    {
+      draw: WorldWebGlMaterialGroup['draw']
+      geometryKey: string
+      transforms: Float32Array[]
+      seen: Set<Float32Array>
+    }
   >()
   const singles: MaterialDraw[] = []
   const transparentScenes: WorldWebGlModelMaterialScene[] = []
   for (const scene of plan.modelMaterialScenes) {
     const solid = worldSceneSolidDrawsOf(scene, shadow)
-    for (const { key, draw } of solid.draws) {
-      if (key === undefined) {
+    for (const { key, geometryKey, draw } of solid.draws) {
+      if (key === undefined || geometryKey === undefined) {
         singles.push(draw)
         continue
       }
       let group = groups.get(key)
-      if (group === undefined) groups.set(key, (group = { draw, transforms: [], seen: new Set() }))
+      if (group === undefined)
+        groups.set(key, (group = { draw, geometryKey, transforms: [], seen: new Set() }))
       const transform = draw.primitive.transform ?? IDENTITY_VIEW_PROJECTION
       // A primitive drawn twice into the same depth (two solid passes) writes it once.
       if (shadow) {
@@ -7493,11 +7521,29 @@ function groupWorldMaterialDraws(plan: WorldWebGlPlan, shadow: boolean): WorldWe
     }
     if (solid.transparent && !shadow) transparentScenes.push(scene)
   }
-  const instanced = [...groups.values()].map(({ draw, transforms }) => {
-    const matrices = new Float32Array(transforms.length * 16)
-    transforms.forEach((transform, index) => matrices.set(transform, index * 16))
-    return Object.freeze({ draw, instances: Object.freeze({ matrices, count: transforms.length }) })
+  const last = lastWorldInstanceMatrices[shadow ? 1 : 0]!
+  const kept = new Map<
+    string,
+    Readonly<{ transforms: readonly Float32Array[]; matrices: Float32Array }>
+  >()
+  const instanced = [...groups.values()].map(({ draw, geometryKey, transforms }) => {
+    const previous = kept.get(geometryKey) ?? last.get(geometryKey)
+    let matrices = previous?.matrices
+    if (
+      previous === undefined ||
+      previous.transforms.length !== transforms.length ||
+      previous.transforms.some((transform, index) => transform !== transforms[index])
+    ) {
+      matrices = new Float32Array(transforms.length * 16)
+      transforms.forEach((transform, index) => matrices!.set(transform, index * 16))
+    }
+    if (!kept.has(geometryKey)) kept.set(geometryKey, { transforms, matrices: matrices! })
+    return Object.freeze({
+      draw,
+      instances: Object.freeze({ matrices: matrices!, count: transforms.length }),
+    })
   })
+  lastWorldInstanceMatrices[shadow ? 1 : 0] = kept
   return Object.freeze({
     groups: Object.freeze(instanced),
     singles: Object.freeze(singles),

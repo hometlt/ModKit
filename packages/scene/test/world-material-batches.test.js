@@ -237,3 +237,32 @@ it('keeps an object in later plans until its clock or inputs change', () => {
     worldMaterialBatchesOf(third).groups.map(group => group.instances.count),
   )
 })
+
+it('keeps the instance matrices of groups whose placements did not change between plans', () => {
+  const models = new Map([
+    ['rock', model('rock', 0)],
+    ['glow', model('glow', 0, false, true)],
+  ])
+  const items = [item(1, 'rock', 0), item(2, 'rock', 5), item(3, 'glow', 3)]
+  const at = (time, previous, list = items) =>
+    createWorldWebGlPlan({ items: list, models, animationTimes: new Map([[3, time]]) }, previous)
+  const matricesOf = plan =>
+    new Map(
+      worldMaterialBatchesOf(plan).groups.map(group => [
+        group.draw.primitive.id,
+        group.instances.matrices,
+      ]),
+    )
+  const firstPlan = at(0)
+  const first = matricesOf(firstPlan)
+  const secondPlan = at(1, firstPlan)
+  const second = matricesOf(secondPlan)
+  // The rocks keep their placements; the glowing object samples a new program at its new clock,
+  // which changes its group but not where it stands.
+  assert.equal(second.get('rock-triangle'), first.get('rock-triangle'))
+  assert.equal(second.get('glow-triangle'), first.get('glow-triangle'))
+  // A rock moved elsewhere is a new placement list.
+  const moved = matricesOf(at(1, secondPlan, [items[0], item(2, 'rock', 7), items[2]]))
+  assert.notEqual(moved.get('rock-triangle'), first.get('rock-triangle'))
+  assert.notDeepEqual([...moved.get('rock-triangle')], [...first.get('rock-triangle')])
+})
