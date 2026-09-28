@@ -280,6 +280,11 @@ export interface ContainerEntryTable {
    * container knows that its entries need (IoStore: the global script object names).
    */
   readonly nestedContext?: JsonValue
+  /**
+   * Bytes the container keeps before its entries (an MPQ user-data block, where a replay keeps its
+   * header), at most `maxBytes`. Published as the namespace's `readPreamble`.
+   */
+  preamble?(maxBytes: number, signal?: AbortSignal): Promise<Uint8Array>
 }
 
 export interface InspectionResult {

@@ -141,6 +141,22 @@ export function containerEntryAccess(
             return table.nestedContext
           },
         }),
+    ...(table.preamble === undefined
+      ? {}
+      : {
+          async readPreamble(maxBytes: number, signal?: AbortSignal) {
+            throwIfCancelled(signal)
+            if (!Number.isSafeInteger(maxBytes) || maxBytes < 0)
+              throw new TypeError('preamble maxBytes must be a non-negative safe integer')
+            const bytes = await table.preamble!(maxBytes, signal)
+            if (bytes.byteLength > maxBytes)
+              throw new RangeError('container preamble exceeds the requested bound')
+            // an owned buffer: the namespace crosses worker boundaries
+            return bytes.byteOffset === 0 && bytes.byteLength === bytes.buffer.byteLength
+              ? bytes
+              : bytes.slice()
+          },
+        }),
     async lookup(path: string, signal?: AbortSignal) {
       throwIfCancelled(signal)
       const entry = await entryAt(path, signal)

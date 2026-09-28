@@ -118,4 +118,72 @@ describe('inspection session release', () => {
     await lease.release()
     await session.dispose()
   })
+
+  it('publishes the entry table preamble through the namespace, bounded', async () => {
+    const bytes = Uint8Array.of(1, 2, 3, 4)
+    const source = {
+      kind: 'bytes',
+      ref: { id: 'fixture', uri: 'memory:nested' },
+      revision: 'provider-token:nested',
+      size: BigInt(bytes.byteLength),
+      async read(offset: bigint, length: number) {
+        return bytes.slice(Number(offset), Number(offset) + length)
+      },
+    }
+    const input = {
+      originKind: 'single',
+      primaryBindingId: 'content',
+      revisions: { topology: 'single', revision: source.revision },
+      bindings: [
+        {
+          bindingId: 'content',
+          role: 'content',
+          source: source.ref,
+          sourceKind: 'candidate',
+          ownership: 'owned',
+          revision: source.revision,
+        },
+      ],
+      async openBinding() {
+        return { value: source, release: async () => undefined }
+      },
+    }
+    const codec = createInspectionCodec({
+      id: 'example/nested',
+      access: 'ranges',
+      format: { id: 'example/nested', label: 'Nested' },
+      detect: async () => ({ confidence: 1, kind: 'magic' }),
+      async inspect() {
+        return {
+          summary: null,
+          metadata: [],
+          traits: [],
+          containerEntries: {
+            entries: [
+              { path: 'a.bin', size: 4n, storage: { kind: 'stored', offset: 0n, length: 4n } },
+            ],
+            caseSensitivity: 'insensitive',
+            complete: true,
+            async preamble(maxBytes: number) {
+              return Uint8Array.of(0x4d, 0x50, 0x51, 0x1b, 9, 9).subarray(0, Math.max(maxBytes, 6))
+            },
+          },
+        }
+      },
+    } as never)
+    const session = await codec.open(input as never, 'full', {
+      maxInputBytes: 1024n,
+      maxScalarBytes: 1024,
+      maxDepth: 8,
+      maxNodes: 100,
+      maxDiagnostics: 10,
+    } as never)
+    const lease = await session.dataSource('common.view/namespace-entry-source', 1)
+    const namespace = lease.value as { readPreamble?: (maxBytes: number) => Promise<Uint8Array> }
+    // a table answering more than asked is refused rather than trusted
+    await expect(namespace.readPreamble!(4)).rejects.toThrow(RangeError)
+    expect(await namespace.readPreamble!(6)).toEqual(Uint8Array.of(0x4d, 0x50, 0x51, 0x1b, 9, 9))
+    await lease.release()
+    await session.dispose()
+  })
 })

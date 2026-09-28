@@ -29,6 +29,8 @@ export interface ContentSourceRoot {
   readonly revision?: string
   /** The product or build line this root reads, for index caches (`s2`, `wow_classic`). */
   readonly product?: string
+  /** The game or format family this root reads, for index caches (`starcraft2`, `roblox`). */
+  readonly game?: string
 }
 /** A region; `credentialId` names the declared credential that signs it in. */
 export interface ContentSourceRegion {
