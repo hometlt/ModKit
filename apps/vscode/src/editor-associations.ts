@@ -34,6 +34,11 @@ export interface AssociationInputs {
   readonly defaultViewType: string
   /** When false, formats VS Code edits as text keep their built-in editor. */
   readonly includeTextFormats: boolean
+  /**
+   * Extensions of the text languages this extension contributes (`.SC2Style`, `.galaxy`…): with
+   * language support of their own, they open as text too unless `includeTextFormats` says otherwise.
+   */
+  readonly textLanguageExtensions?: readonly string[]
 }
 
 export interface AssociationPlan {
@@ -58,16 +63,23 @@ export interface AssociationPlan {
  */
 export const TEXT_FIRST_EXTENSIONS: readonly string[] = Object.freeze([
   'cfg',
+  'conf',
   'csv',
   'galaxy',
   'htm',
   'html',
   'ini',
   'json',
+  'jsonc',
   'log',
+  'lua',
+  'luau',
   'md',
   'markdown',
+  'mdown',
+  'mkd',
   'sc2layout',
+  'tab',
   'toml',
   'tsv',
   'txt',
@@ -75,6 +87,20 @@ export const TEXT_FIRST_EXTENSIONS: readonly string[] = Object.freeze([
   'yaml',
   'yml',
 ])
+
+/** The file extensions of the languages an extension manifest contributes (`contributes.languages`). */
+export function contributedLanguageExtensions(packageJson: unknown): readonly string[] {
+  const languages = (packageJson as { contributes?: { languages?: unknown } } | undefined)
+    ?.contributes?.languages
+  if (!Array.isArray(languages)) return Object.freeze([])
+  const extensions = new Set<string>()
+  for (const language of languages as { extensions?: unknown }[]) {
+    if (!Array.isArray(language.extensions)) continue
+    for (const item of language.extensions)
+      if (typeof item === 'string') extensions.add(normalizedExtension(item))
+  }
+  return Object.freeze([...extensions].sort())
+}
 
 const normalizedExtension = (value: string): string => value.replace(/^\./u, '').toLowerCase()
 
@@ -92,9 +118,16 @@ export const anchorAssociationPattern = (name: string): string => `**/${name}`
  * about that codec, and the other one still wants to be the default for the format.
  */
 export function defaultAssociationPatterns(
-  inputs: Pick<AssociationInputs, 'contributions' | 'nonDefault' | 'includeTextFormats'>,
+  inputs: Pick<
+    AssociationInputs,
+    'contributions' | 'nonDefault' | 'includeTextFormats' | 'textLanguageExtensions'
+  >,
 ): readonly string[] {
   const excluded = new Set(inputs.nonDefault)
+  const text = new Set([
+    ...TEXT_FIRST_EXTENSIONS,
+    ...(inputs.textLanguageExtensions ?? []).map(normalizedExtension),
+  ])
   const patterns = new Set<string>()
   for (const contribution of inputs.contributions) {
     if (contribution.disabled) continue
@@ -102,7 +135,7 @@ export function defaultAssociationPatterns(
     for (const extension of contribution.fileExtensions) {
       const normalized = normalizedExtension(extension)
       if (normalized.length === 0) continue
-      if (!inputs.includeTextFormats && TEXT_FIRST_EXTENSIONS.includes(normalized)) continue
+      if (!inputs.includeTextFormats && text.has(normalized)) continue
       patterns.add(associationPattern(normalized))
     }
     // An anchor has no extension, so it keys on its name. VS Code matches an association key as a

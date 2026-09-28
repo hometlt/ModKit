@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   associationPattern,
+  contributedLanguageExtensions,
   defaultAssociationPatterns,
   planEditorAssociations,
   TEXT_FIRST_EXTENSIONS,
@@ -118,6 +119,33 @@ describe('which formats an enabled codec claims by default', () => {
       defaultAssociationPatterns({ contributions, nonDefault: [], includeTextFormats: true }),
     ).toEqual(['*.dds', '*.xml'])
     expect(TEXT_FIRST_EXTENSIONS).toContain('xml')
+  })
+
+  it("opens this extension's own text languages as text, read from its manifest", () => {
+    const manifest = {
+      contributes: {
+        languages: [
+          { id: 'sc2-style', extensions: ['.SC2Style', '.sc2style'] },
+          { id: 'sc2-data', filenamePatterns: ['**/GameData/*.xml'] },
+        ],
+      },
+    }
+    const textLanguageExtensions = contributedLanguageExtensions(manifest)
+    expect(textLanguageExtensions).toEqual(['sc2style'])
+    const contributions = [
+      codec('blizzard/sc2-style', ['SC2Style']),
+      codec('modkit/jsonc', ['jsonc']),
+      codec('modkit/dds', ['dds']),
+    ]
+    // a style sheet and a jsonc file open in the text editor with their language; a texture does not
+    expect(
+      defaultAssociationPatterns({
+        contributions,
+        nonDefault: [],
+        includeTextFormats: false,
+        textLanguageExtensions,
+      }),
+    ).toEqual(['*.dds'])
   })
 })
 
