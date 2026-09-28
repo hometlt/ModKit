@@ -282,7 +282,12 @@ it('renderer picking reuses its retained plan, counts dynamic updates honestly a
   assert.throws(() => renderer.pick(next, screen), /disposed/)
 })
 
-function effectModel({ decal = false, particles = false, animatedAlpha = true } = {}) {
+function effectModel({
+  decal = false,
+  particles = false,
+  projector = !particles,
+  animatedAlpha = true,
+} = {}) {
   const layer = (slot, animated = false) => ({
     slot,
     texturePath: 'effect.png',
@@ -372,7 +377,7 @@ function effectModel({ decal = false, particles = false, animatedAlpha = true } 
             ]
           : [],
         ribbons: [],
-        projectors: particles
+        projectors: !projector
           ? []
           : [
               {
@@ -701,6 +706,23 @@ it('keeps an object whose decals stay put while the clock runs', () => {
   assert.equal(next.picking.objects.at(-1), first.picking.objects.at(-1))
   assert.equal(next.modelMaterialScenes[0], first.modelMaterialScenes[0])
   assert.equal(decals(next)[0], decals(first)[0])
+  assert.equal(values(next), values(createWorldWebGlPlan(nextInput)))
+})
+
+it('projects the still decals of an object rebuilt for its particles once', () => {
+  const values = plan =>
+    JSON.stringify(plan, (_, value) => (value instanceof Map ? [...value] : value))
+  const model = effectModel({ particles: true, projector: true })
+  const input = { ...world(), models: new Map([['actor', model]]), timeSeconds: 0.25 }
+  const first = createWorldWebGlPlan(input)
+  assert.equal(first.modelEffects.length, 1)
+  // The first material scene is the decal projected onto the terrain.
+  assert.equal(first.modelMaterialScenes.length, 2)
+  const nextInput = { ...input, timeSeconds: 0.5 }
+  const next = createWorldWebGlPlan(nextInput, first)
+  // Rebuilt for its particles, but its decals come from the projection it made before.
+  assert.notEqual(next.picking.objects.at(-1), first.picking.objects.at(-1))
+  assert.equal(next.modelMaterialScenes[0].materials, first.modelMaterialScenes[0].materials)
   assert.equal(values(next), values(createWorldWebGlPlan(nextInput)))
 })
 

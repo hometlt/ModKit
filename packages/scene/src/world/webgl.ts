@@ -2095,6 +2095,26 @@ function writtenTexturedBatch(
 }
 
 /**
+ * Decals an object projected, per component, when its effect source projects the same at every
+ * clock: an object rebuilt each frame for its particles keeps them instead of projecting again.
+ * The programs are kept too while the model's materials do not follow the clock.
+ */
+const worldObjectProjections = new WeakMap<
+  WorldSceneObjectItem,
+  Map<
+    string,
+    Readonly<{
+      source: UvmEffectSource
+      materials: readonly SceneRendererMaterial[]
+      ground: unknown
+      transform: Float32Array
+      projected: ReturnType<UvmEffectSource['project']>
+      programs?: ReadonlyMap<string, SceneMaterialPrograms>
+    }>
+  >
+>()
+
+/**
  * Each object's projector writes of its last build. An object with live effects is rebuilt at
  * every clock, but its decals usually come out the same: it then hands in the previous write
  * objects, so the shared decal batches are kept (see WorldBatchWrite).
@@ -4193,24 +4213,54 @@ export function createWorldWebGlPlan(
           ? undefined
           : uvmEffectSource(result.uvmBytes, selectedAnimation?.sequenceIndex)
       if (effectSource?.hasProjectors && scene.materials.length > 0) {
-        const projected = effectSource.project(time, scene.materials, [
-          {
-            id: 'world-terrain-receiver',
-            topology: 'triangles',
-            positions: projectorGround,
-            transform: Float32Array.from(invertMaterialFrame(Array.from(instanceTransform))),
-          },
-        ])
+        const receiverTransform = Float32Array.from(
+          invertMaterialFrame(Array.from(instanceTransform)),
+        )
+        const still = !effectSource.projectionsFollowTime
+        let projections = worldObjectProjections.get(item)
+        const kept = still ? projections?.get(component.id) : undefined
+        const reuse =
+          kept !== undefined &&
+          kept.source === effectSource &&
+          kept.materials === scene.materials &&
+          kept.ground === projectorGround &&
+          sameOptionalMatrix(kept.transform, receiverTransform)
+        const projected = reuse
+          ? kept.projected
+          : effectSource.project(time, scene.materials, [
+              {
+                id: 'world-terrain-receiver',
+                topology: 'triangles',
+                positions: projectorGround,
+                transform: receiverTransform,
+              },
+            ])
         let projectedPrograms: ReadonlyMap<string, SceneMaterialPrograms> = new Map()
-        try {
-          projectedPrograms = prepareSceneMaterialPrograms(
-            projected.materials,
-            new Map(scene.textures.map(texture => [texture.id, texture])),
-            materialContext,
-            [],
+        if (reuse && kept.programs !== undefined) projectedPrograms = kept.programs
+        else
+          try {
+            projectedPrograms = prepareSceneMaterialPrograms(
+              projected.materials,
+              new Map(scene.textures.map(texture => [texture.id, texture])),
+              materialContext,
+              [],
+            )
+          } catch {
+            // Unsupported projector materials remain isolated from the rest of the map.
+          }
+        if (still && !reuse) {
+          if (projections === undefined) worldObjectProjections.set(item, (projections = new Map()))
+          projections.set(
+            component.id,
+            Object.freeze({
+              source: effectSource,
+              materials: scene.materials,
+              ground: projectorGround,
+              transform: receiverTransform,
+              projected,
+              ...(worldMaterialsFollowTime(result) ? {} : { programs: projectedPrograms }),
+            }),
           )
-        } catch {
-          // Unsupported projector materials remain isolated from the rest of the map.
         }
         const projectedMaterialPrimitives: SceneRendererPrimitive[] = []
         for (const primitive of projected.primitives) {
