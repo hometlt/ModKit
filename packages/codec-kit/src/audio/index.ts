@@ -1,9 +1,12 @@
 /**
- * Writers for the standard audio files a browser plays natively, shared by every game codec that
- * turns its own stream into one (Wwise WEM, Emperor BAG, ...). Narrow on purpose: no decoder and no
- * compression code, so importing it costs a codec nothing.
+ * Writers for the standard audio files a browser plays natively, and decoders of game ADPCMs no
+ * browser plays, shared by every game codec that turns its own stream into one (Wwise WEM, Emperor
+ * BAG, FMOD FSB5, ...). Narrow on purpose: no compression or WASM, so importing it costs a codec
+ * nothing.
  */
 import { createCrc32Msb } from '../checksum/index.js'
+
+export { decodeFadpcm, fadpcmFrames } from './fadpcm.js'
 
 /**
  * The 89 quantiser step sizes of IMA ADPCM (IMA Digital Audio Focus, 1992), shared by every ADPCM
