@@ -82,11 +82,32 @@ export interface MapLayerDescriptor {
   readonly unit?: string
   /** Samples on the grid's vertices (a heightfield) or inside its cells. */
   readonly sampling?: 'vertex' | 'cell'
+  /**
+   * The legend of a layer whose samples name classes (biomes, top blocks, pathing flags): each
+   * listed value's name and, optionally, its colour as `#rrggbb`. Values not listed have no name.
+   */
+  readonly categories?: readonly MapLayerCategory[]
+}
+
+export interface MapLayerCategory {
+  readonly value: number
+  readonly label: string
+  readonly color?: string
+}
+
+/**
+ * A picture the codec draws itself (an overview, an overlay of units and regions, texture masks):
+ * the PNG its `view.render` returns for `{ layer: id }`. It is shown, not exported as numbers.
+ */
+export interface MapPictureDescriptor {
+  readonly id: string
+  readonly label: string
 }
 
 /** `map.layers` output. */
 export interface MapLayerList {
   readonly layers: readonly MapLayerDescriptor[]
+  readonly pictures?: readonly MapPictureDescriptor[]
 }
 
 /**
@@ -148,7 +169,7 @@ export const MAP_LAYERS_INPUT_SCHEMA: JsonSchemaRef = Object.freeze({
   document: {
     $id: 'modkit://map/layers.v1',
     description:
-      'Lists the grid layers of a map. Each layer names its size, integer sample bounds, whether it is editable, and optionally what a sample means in the world: world value = valueOffset + sample * valueScale, in unit, sampled at grid vertices or in cells.',
+      'Lists the grid layers of a map. Each layer names its size, integer sample bounds, whether it is editable, and optionally what a sample means in the world: world value = valueOffset + sample * valueScale, in unit, sampled at grid vertices or in cells; a layer of classes may carry a legend (categories: value, label, colour). pictures lists images the codec draws itself, rendered by view.render with { layer: id }.',
     anyOf: [{ type: 'null' }, { type: 'object', properties: {}, additionalProperties: false }],
   },
 })
