@@ -344,9 +344,14 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-blizzard/blizzard-starcraft-1/test/receipts/k1/blizzard-tbl.audit.json",
+          "sha256": "9a629037b480d598c3821cb43e4faaf1b165ad700b559f55c90b1a8bb57b3963"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/blizzard-tbl/audit",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -384,24 +389,44 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/bnk.audit.json",
+          "sha256": "dbba747dac9c9cb24bcc440810235f4ba3924c431c231c44251d59686b6d77f3"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/bnk/audit",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/bnk.audio-export.json",
+          "sha256": "873b38b5592f12852aaead291f93b1c780cf875df6217f59f35ef88e0b4e7eaa"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/bnk/operation/audio.export",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/bnk.audio-extract.json",
+          "sha256": "17116b98ca83404bc3937aed594f2c5fc279aeef24527fbf89245a4106182f3e"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/bnk/operation/audio.extract",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/bnk.audio-inspect.json",
+          "sha256": "f7d8f74850bde6eea1f83ded4e6173841edda43f8d4955a004097b1f7ed09941"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/bnk/operation/audio.inspect",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -1300,24 +1325,44 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/fsb.audit.json",
+          "sha256": "c2d85b1e82a1f33e8e57f9ef60c8637d3bc3cfe41fa6b23b87b4aa3025d35461"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/fsb/audit",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/fsb.audio-decode.json",
+          "sha256": "40cd4769d4b001697a37529531ce74604d233ce27c4d31b06f9149b9c11c7c94"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/fsb/operation/audio.decode",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/fsb.audio-export.json",
+          "sha256": "01bbf68df3e156d0d6790523ee0bc854e88391586cc8307b19283738a49a9383"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/fsb/operation/audio.export",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/fsb.audio-inspect.json",
+          "sha256": "f8545054dc47d689d4b4910b0174fb3babd6c2e74acc6082617bc0d7724b6c62"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/fsb/operation/audio.inspect",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [
@@ -3138,29 +3183,54 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/ps1-cue-bin-archive.extract.json",
+          "sha256": "277a4dcb971b32ab8fbf7a5851b6f33c1a4b0bf649f18f9b629cd0fc8d6e9fa2"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/ps1-cue-bin/operation/archive.extract",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/ps1-cue-bin-archive.inspect.json",
+          "sha256": "f52daf5b027cc749241608fe7cfc54ec55a9f00c8fc4fb4c4671505e819ffdb4"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/ps1-cue-bin/operation/archive.inspect",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/ps1-xa.audit.json",
+          "sha256": "4033d05c460a0f299a42c6ad72ddd40bf37f708929d5e63e27b4e1172ab7d05b"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/ps1-xa/audit",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/ps1-xa-archive.extract.json",
+          "sha256": "eff2a92ae484611442a2f1a9c6fc7e34e44a45916876f1240ffdc9df2e5764ba"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/ps1-xa/operation/archive.extract",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/ps1-xa-archive.inspect.json",
+          "sha256": "460d0ca65a702d824ada373cefdfa8c8a537dcbbd34ab1dba378c3b5125a2e08"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/ps1-xa/operation/archive.inspect",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -7214,14 +7284,24 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-blizzard/blizzard-starcraft-1/test/receipts/k1/starcraft-chk.audit.json",
+          "sha256": "6350eed06ade815fd8b4bd2ca6991d9cb66937018733b715374278aff79c5ea3"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/starcraft-chk/audit",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-blizzard/blizzard-starcraft-1/test/receipts/k1/starcraft-grp.audit.json",
+          "sha256": "b06de872db687650ae3a1613d6f1f35c64234d59ac14bc50e781471157b81cee"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/starcraft-grp/audit",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -8252,19 +8332,34 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/wem.audit.json",
+          "sha256": "15daf7e23b22edb96cf53c789020104ddc7d47102e05086138d1a174ac23fa45"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/wem/audit",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/wem.audio-export.json",
+          "sha256": "4a08fac5a22eaa0c590926af39a00bbb2fef6195518a0f23b3e9c9f132c190f1"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/wem/operation/audio.export",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/wem.audio-inspect.json",
+          "sha256": "6a14ce2b64a3bd7b12f904d2eb38eb59b9d4e6ea182f92dfc5c44de58d626ebd"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/wem/operation/audio.inspect",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -8372,19 +8467,34 @@
       "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/wwise-pck.audit.json",
+          "sha256": "192cb9c54a4064cc420424f6ca03e91b5e2adc9ef673a869252fb208703fbcbe"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/wwise-pck/audit",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/wwise-pck-archive.extract.json",
+          "sha256": "b4f268bf3a294b1a66560dc6616052ff857fb61ee2386cdf87b5c902ad4507d3"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/wwise-pck/operation/archive.extract",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/wwise-pck-archive.inspect.json",
+          "sha256": "b9f74616a6446d3f4860c8bda57d168a67c94138f252778077f45b80e48c6c9c"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/wwise-pck/operation/archive.inspect",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],

@@ -16719,18 +16719,26 @@ capabilities:
       - 'legacy/game-manifest/modkit/starcraft-1'
     legacyEvidence:
       - 'legacy:extensions/blizzard/starcraft-1/games/starcraft-1/game.manifest.json'
-    hostFacilities: []
-    mk3Contributions: []
+    hostFacilities:
+      - 'read-source'
+      - 'installation-discovery'
+    mk3Contributions:
+      - 'blizzard/starcraft1-chk'
+      - 'blizzard/starcraft1-dat'
+      - 'blizzard/starcraft1-grp'
+      - 'blizzard/starcraft1-installation'
+      - 'blizzard/starcraft1-map'
+      - 'blizzard/starcraft1-tbl'
     mk3Operations: []
     allocation:
-      state: 'absent'
-      x3ContributionId: null
+      state: 'covered'
+      x3ContributionId: 'blizzard/starcraft1-installation'
       portFamily: null
       portVerdict: null
-    migrationState: 'missing'
+    migrationState: 'implemented'
     supportState: 'partial'
-    runtimeAvailability: 'none'
-    evidenceLevel: 'E0'
+    runtimeAvailability: 'node-only'
+    evidenceLevel: 'E1'
     hostEvidence: 'none'
     writerEvidence: 'not-declared'
     parityEvidence:
@@ -16753,7 +16761,7 @@ capabilities:
         read: null
         materialize: null
     knownLoss:
-      - 'ни одного MK3 game-provider для этой игры не существует; строка ждёт своей вертикали'
+      - 'blizzard/starcraft1-installation (blizzard 6875837a, 72b3ff81) finds StarCraft: Remastered and opens its CASC content; CHK/SCM/SCX maps, GRP, .dat and TBL codecs are synthetic-tested; replays and the map world are not yet ported'
     receipts:
       projection: null
       materialization: null

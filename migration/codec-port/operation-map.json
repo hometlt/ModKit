@@ -246,25 +246,29 @@
       "targetOperation": null
     },
     {
-      "contribution": null,
+      "contribution": "modkit-extensions-other/extensions/audiokinetic-wwise/contributions/codec-bnk.json",
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/bnk/operation/audio.export",
-      "status": "pending",
+      "status": "adapted",
+      "targetDataSource": {
+        "contract": "common.view/audio-media-source",
+        "major": 1
+      },
       "targetOperation": null
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-other/extensions/audiokinetic-wwise/contributions/codec-bnk.json",
+      "handlerId": "extract-entry",
       "id": "legacy/codec-manifest/modkit/bnk/operation/audio.extract",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "container.extract"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-other/extensions/audiokinetic-wwise/contributions/codec-bnk.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/bnk/operation/audio.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
       "contribution": null,
@@ -842,25 +846,29 @@
       "targetOperation": null
     },
     {
-      "contribution": null,
+      "contribution": "modkit-extensions-other/extensions/firelight-fmod/contributions/codec-fsb.json",
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/fsb/operation/audio.decode",
-      "status": "pending",
+      "status": "adapted",
+      "targetDataSource": {
+        "contract": "common.view/audio-media-source",
+        "major": 1
+      },
       "targetOperation": null
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-other/extensions/firelight-fmod/contributions/codec-fsb.json",
+      "handlerId": "convert-audio",
       "id": "legacy/codec-manifest/modkit/fsb/operation/audio.export",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "export.convert"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-other/extensions/firelight-fmod/contributions/codec-fsb.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/fsb/operation/audio.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
       "contribution": "modkit-extensions-other/extensions/cavedog-total-annihilation/contributions/codec-gaf.json",
@@ -1710,32 +1718,32 @@
       "targetOperation": null
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-other/extensions/ps1/contributions/codec-ps1-cue-bin.json",
+      "handlerId": "extract-entry",
       "id": "legacy/codec-manifest/modkit/ps1-cue-bin/operation/archive.extract",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "container.extract"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-other/extensions/ps1/contributions/codec-ps1-cue-bin.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/ps1-cue-bin/operation/archive.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-other/extensions/ps1/contributions/codec-ps1-xa.json",
+      "handlerId": "extract-entry",
       "id": "legacy/codec-manifest/modkit/ps1-xa/operation/archive.extract",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "container.extract"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-other/extensions/ps1/contributions/codec-ps1-xa.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/ps1-xa/operation/archive.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
       "contribution": null,
@@ -3239,18 +3247,18 @@
       "targetOperation": null
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-other/extensions/audiokinetic-wwise/contributions/codec-wem.json",
+      "handlerId": "convert-audio",
       "id": "legacy/codec-manifest/modkit/wem/operation/audio.export",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "export.convert"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-other/extensions/audiokinetic-wwise/contributions/codec-wem.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/wem/operation/audio.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
       "contribution": null,
@@ -3325,18 +3333,18 @@
       }
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-other/extensions/audiokinetic-wwise/contributions/codec-wwise-pck.json",
+      "handlerId": "extract-entry",
       "id": "legacy/codec-manifest/modkit/wwise-pck/operation/archive.extract",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "container.extract"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-other/extensions/audiokinetic-wwise/contributions/codec-wwise-pck.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/wwise-pck/operation/archive.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
       "contribution": null,

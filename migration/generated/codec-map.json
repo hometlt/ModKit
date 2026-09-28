@@ -32,7 +32,7 @@
       ]
     }
   ],
-  "contributionCount": 282,
+  "contributionCount": 287,
   "inventorySha256": "08c3bdad48056914277c7f95a0f97ef4feb85c8ec86a2fa8faf47bd7f9817e8c",
   "legacyCount": 206,
   "rows": [
@@ -267,11 +267,11 @@
       "codec": "blizzard-tbl",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 1,
+      "pending": 0,
       "requirements": 1,
       "source": "extensions/blizzard/common-formats/codecs/blizzard-tbl/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/blizzard-tbl",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -318,11 +318,11 @@
       "codec": "bnk",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 4,
+      "pending": 0,
       "requirements": 4,
       "source": "extensions/audiokinetic/wwise/codecs/bnk/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/bnk",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -1002,11 +1002,11 @@
       "codec": "fsb",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 4,
+      "pending": 0,
       "requirements": 4,
       "source": "extensions/firelight/fmod/codecs/fsb/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/fsb",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -1770,7 +1770,7 @@
       "codec": "ps1-cue-bin",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 3,
+      "pending": 1,
       "requirements": 3,
       "source": "extensions/common/containers/codecs/ps1-cue-bin/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/ps1-cue-bin",
@@ -1787,11 +1787,11 @@
       "codec": "ps1-xa",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 3,
+      "pending": 0,
       "requirements": 3,
       "source": "extensions/common/archives/codecs/ps1-xa/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/ps1-xa",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -2492,22 +2492,22 @@
       "codec": "starcraft-chk",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 1,
+      "pending": 0,
       "requirements": 1,
       "source": "extensions/blizzard/starcraft-1/codecs/starcraft-chk/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/starcraft-chk",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [],
       "codec": "starcraft-grp",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 1,
+      "pending": 0,
       "requirements": 1,
       "source": "extensions/blizzard/starcraft-1/codecs/starcraft-grp/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/starcraft-grp",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [],
@@ -3220,11 +3220,11 @@
       "codec": "wem",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 3,
+      "pending": 0,
       "requirements": 3,
       "source": "extensions/audiokinetic/wwise/codecs/wem/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/wem",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -3333,11 +3333,11 @@
       "codec": "wwise-pck",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 3,
+      "pending": 0,
       "requirements": 3,
       "source": "extensions/audiokinetic/wwise/codecs/wwise-pck/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/wwise-pck",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
