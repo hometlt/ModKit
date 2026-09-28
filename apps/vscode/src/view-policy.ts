@@ -201,9 +201,10 @@ function plannedStage(
    */
   const media = applicable.find(id => MEDIA_STAGE_IDS.includes(id))
   // A map package or model may also publish a thumbnail or archive entries. The subject's
-  // render area wins over those defaults; explicit inspector/hex choices remain available.
+  // render area wins over those defaults — for a map with no world to show, its layers drawn in
+  // 2D; explicit inspector/hex choices remain available.
   if (planActive === undefined || ['card', 'archive', 'image'].includes(planActive)) {
-    const scene = ['world', 'model'].find(id => applicable.includes(id))
+    const scene = ['world', 'model', 'map-layers'].find(id => applicable.includes(id))
     if (scene !== undefined) return scene
   }
   if (planActive === 'card' && media !== undefined) return media

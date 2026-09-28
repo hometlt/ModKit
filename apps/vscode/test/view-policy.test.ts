@@ -351,13 +351,15 @@ describe('VS Code view policy', () => {
   })
 
   it('opens maps and models on their render area even when a thumbnail or archive is available', () => {
-    for (const scene of ['world', 'model']) {
+    for (const scene of ['world', 'model', 'map-layers']) {
       const applicable = ['image', scene, 'archive', 'card', 'hex']
       for (const planned of [undefined, 'image', 'archive', 'card']) {
         expect(preferredStage(applicable, planned)).toBe(scene)
       }
       expect(preferredStage(applicable, 'hex')).toBe('hex')
     }
+    // the 2D layers are for a map whose world cannot be shown; a world comes first
+    expect(preferredStage(['world', 'map-layers', 'archive', 'card'], 'archive')).toBe('world')
   })
 
   it('opens a timed world on its playback, where the play controls are', () => {
