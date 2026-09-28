@@ -297,6 +297,45 @@ export interface WorldWebGlWaterPlane {
   readonly colorFalloff: number
   readonly receiveShadows: boolean
   readonly caustics?: WorldWebGlWaterCaustics
+  readonly waves?: WorldWebGlWaterWaves
+}
+
+/**
+ * The surface's wave normals (SC2 Water.fx WaterNormal): one image holding two normals (red/green and
+ * blue/alpha), sampled at the map position times `tiling`, moved by `scroll` (two pairs, UV per
+ * second); they light the surface and its key-light highlight (`specularity`, `specularScale`).
+ */
+export interface WorldWebGlWaterWaves {
+  readonly texture: SceneRendererTexture
+  readonly tiling: readonly [number, number]
+  readonly scroll: readonly [number, number, number, number]
+  readonly specularity: number
+  readonly specularScale: number
+}
+
+const waterWavesCache = new WeakMap<object, WorldWebGlWaterWaves>()
+
+/** The wave normals of a water material whose image has arrived; one object while nothing changes. */
+function waterWavesOf(
+  material: NonNullable<WorldWebGlInput['waterMaterials']>[number] | undefined,
+  textures: WorldWebGlInput['terrainTextures'],
+): WorldWebGlWaterWaves | undefined {
+  if (material?.normalResourceId === undefined) return undefined
+  const texture = textures?.get(material.normalResourceId)
+  if (texture === undefined) return undefined
+  const cached = waterWavesCache.get(material)
+  if (cached?.texture === texture) return cached
+  const scale = material.uvScale ?? [0.125, 0.125]
+  const scroll = material.scroll ?? [0, 0, 0, 0]
+  const waves = Object.freeze({
+    texture,
+    tiling: Object.freeze([scale[0], scale[1]] as const),
+    scroll: Object.freeze([scroll[0], scroll[1], scroll[2] ?? 0, scroll[3] ?? 0] as const),
+    specularity: material.specularity ?? 0,
+    specularScale: material.specularScale ?? 0,
+  })
+  waterWavesCache.set(material, waves)
+  return waves
 }
 
 /**
@@ -2618,7 +2657,8 @@ function sameBatchTemplate(left: object, right: object): boolean {
     (left as { colorFalloff?: number }).colorFalloff ===
       (right as { colorFalloff?: number }).colorFalloff &&
     (left as { caustics?: WorldWebGlWaterCaustics }).caustics ===
-      (right as { caustics?: WorldWebGlWaterCaustics }).caustics
+      (right as { caustics?: WorldWebGlWaterCaustics }).caustics &&
+    (left as { waves?: WorldWebGlWaterWaves }).waves === (right as { waves?: WorldWebGlWaterWaves }).waves
   )
 }
 
@@ -4375,6 +4415,7 @@ export function createWorldWebGlPlan(
       readonly colorFalloff: number
       readonly receiveShadows: boolean
       readonly caustics?: WorldWebGlWaterCaustics
+      readonly waves?: WorldWebGlWaterWaves
     }
   >()
   for (const item of worldFacetItems(preparation, input.items, 'water')) {
@@ -4427,11 +4468,13 @@ export function createWorldWebGlPlan(
     if (zone.plane !== undefined) {
       const key = material?.materialId ?? ''
       const caustics = waterCausticsOf(material, input.terrainTextures)
+      const waves = waterWavesOf(material, input.terrainTextures)
       const plane = waterPlaneBatches.get(key) ?? {
         batch: batch(),
         colorFalloff: material?.colorFalloff ?? WATER_COLOR_FALLOFF,
         receiveShadows: material?.receiveShadows ?? false,
         ...(caustics === undefined ? {} : { caustics }),
+        ...(waves === undefined ? {} : { waves }),
       }
       waterPlaneBatches.set(key, plane)
       journal(plane, zone.plane)
@@ -5155,6 +5198,7 @@ export function createWorldWebGlPlan(
         colorFalloff: plane.colorFalloff,
         receiveShadows: plane.receiveShadows,
         ...(plane.caustics === undefined ? {} : { caustics: plane.caustics }),
+        ...(plane.waves === undefined ? {} : { waves: plane.waves }),
       }),
     ),
   )
@@ -5409,6 +5453,12 @@ uniform sampler2D causticsMap;
 uniform vec2 causticsScale;
 uniform float causticsFalloff;
 uniform vec3 waterViewForward;
+uniform float waterWavesMode;
+uniform sampler2D waterNormalMap;
+uniform vec2 waterWaveTiling;
+uniform vec4 waterWaveScroll;
+uniform vec2 waterSpecular;
+uniform float waterTime;
 // A cliff surface drawn as terrain: kept only where its blend mask (secondaryColorMap, channel
 // picked by the selector) is clear, the complement of the rock's alpha test.
 uniform float cliffMaskMode;
@@ -5494,6 +5544,19 @@ vec3 fillLight(vec3 resolvedNormal, vec3 direction, vec3 radiance) {
 }
 void main() {
   vec3 resolvedNormal = normalize(worldNormal);
+  if (waterWavesMode > 0.5) {
+    // SC2 Water.fx WaterNormal: two normals of one image at the map position times the tiling (v
+    // flipped), each moved by its scroll pair; x/y of the first in red/green, of the second in
+    // blue/alpha. Tangent space is the map's (x east, y north, z up); the world's y is up, z south.
+    vec2 waveUv = vec2(worldPosition.x, -worldPosition.z) * waterWaveTiling;
+    waveUv.y = 1.0 - waveUv.y;
+    vec2 wave0 = texture(waterNormalMap, waveUv + waterWaveScroll.xy * waterTime).xy * 2.0 - 1.0;
+    vec2 wave1 = texture(waterNormalMap, waveUv + waterWaveScroll.zw * waterTime).zw * 2.0 - 1.0;
+    vec3 waves = vec3(wave0, sqrt(max(0.0, 1.0 - dot(wave0, wave0)))) + vec3(wave1, sqrt(max(0.0, 1.0 - dot(wave1, wave1))));
+    // Smaller at the shore: the game leans it back to straight up by saturate(depth).
+    float waveDepth = (texelFetch(sceneDepthMap, ivec2(gl_FragCoord.xy), 0).r - gl_FragCoord.z) * waterDepthScale.x;
+    resolvedNormal = normalize(mix(vec3(0.0, 1.0, 0.0), normalize(vec3(waves.x, waves.z, -waves.y)), clamp(waveDepth, 0.0, 1.0)));
+  }
   if (normalTextured > 0.5) {
     vec3 positionDx = dFdx(worldPosition);
     vec3 positionDy = dFdy(worldPosition);
@@ -5615,9 +5678,16 @@ void main() {
     // with useSpecular false (their diffuse carries the ambient occlusion instead).
     specular = specColor * terrainLighting.z * lightSpecularRadiance * pow(max(dot(resolvedNormal, normalize(view + key)), 0.0), exponent) * step(0.000001, diffuse) * shadow;
   }
-  // Caustics add to the bottom seen through the water (SC2 adds them to the refraction): blended
-  // under this surface they are the share of what shows through, (1 - alpha).
-  vec3 causticsShare = causticsLight * (1.0 - surface.a) / max(surface.a, 0.001);
+  if (waterWavesMode > 0.5 && waterSpecular.y > 0.0) {
+    // Water.fx adds the key light's highlight on the wave normal, times SpecularScaler, over the
+    // blend: divided by alpha here so the blend leaves it whole.
+    vec3 view = normalize(eyePosition - worldPosition);
+    vec3 key = normalize(-lightDirection);
+    specular = lightSpecularRadiance * pow(max(dot(resolvedNormal, normalize(view + key)), 0.0), max(waterSpecular.x, 1.0)) * step(0.000001, diffuse) * shadow * waterSpecular.y / max(surface.a, 0.001);
+  }
+  // Caustics add to the bottom seen through the water, and SC2 lights that refraction by the
+  // surface's diffuse light; blended under this surface they are the share of what shows through.
+  vec3 causticsShare = causticsLight * lighting * (1.0 - surface.a) / max(surface.a, 0.001);
   outColor = vec4(surface.rgb * lighting + specular + causticsShare, surface.a);
 }`
 
@@ -8107,6 +8177,9 @@ function drawWorldWebGlWithResources(
     bindSentinelTexture2d(resources, WATER_CAUSTICS_UNIT)
     gl.uniform1i(uniformLocation(gl, program, 'causticsMap'), WATER_CAUSTICS_UNIT)
     gl.uniform1f(uniformLocation(gl, program, 'causticsMode'), 0)
+    bindSentinelTexture2d(resources, WATER_NORMAL_UNIT)
+    gl.uniform1i(uniformLocation(gl, program, 'waterNormalMap'), WATER_NORMAL_UNIT)
+    gl.uniform1f(uniformLocation(gl, program, 'waterWavesMode'), 0)
     gl.uniform1f(uniformLocation(gl, program, 'waterDepthMode'), 0)
     gl.uniform1f(uniformLocation(gl, program, 'cliffMaskMode'), 0)
     const sceneCamera = createWorldWebGlCameraFrame(plan, canvas.width, canvas.height, input.camera)
@@ -8305,9 +8378,20 @@ function drawWorldWebGlWithResources(
           gl.uniform2f(uniformLocation(gl, program, 'causticsScale'), caustics.scale[0], caustics.scale[1])
           gl.uniform1f(uniformLocation(gl, program, 'causticsFalloff'), caustics.falloff)
         }
+        const waves = plane.waves
+        if (waves === undefined) gl.uniform1f(uniformLocation(gl, program, 'waterWavesMode'), 0)
+        else {
+          bindTexture2d(resources, waves.texture, WATER_NORMAL_UNIT)
+          gl.uniform1f(uniformLocation(gl, program, 'waterWavesMode'), 1)
+          gl.uniform2f(uniformLocation(gl, program, 'waterWaveTiling'), waves.tiling[0], waves.tiling[1])
+          gl.uniform4f(uniformLocation(gl, program, 'waterWaveScroll'), ...waves.scroll)
+          gl.uniform2f(uniformLocation(gl, program, 'waterSpecular'), waves.specularity, waves.specularScale)
+          gl.uniform1f(uniformLocation(gl, program, 'waterTime'), input.timeSeconds ?? 0)
+        }
         drawBatch(resources, program, plane.batch, gl.TRIANGLES)
       }
       gl.uniform1f(uniformLocation(gl, program, 'causticsMode'), 0)
+      gl.uniform1f(uniformLocation(gl, program, 'waterWavesMode'), 0)
       gl.uniform1f(uniformLocation(gl, program, 'waterDepthMode'), 0)
       assertNoWebGlError(resources, 'water pass')
     }
@@ -8572,6 +8656,8 @@ const WATER_SURFACE_NORMAL = [0, 1, 0] as const
 const WATER_SCENE_DEPTH_UNIT = 9
 /** The water's caustics flip-book frame; every other draw keeps a 2D sentinel here. */
 const WATER_CAUSTICS_UNIT = 10
+/** The water's wave normal image; a 2D sentinel for every other draw. */
+const WATER_NORMAL_UNIT = 11
 /** Water colour and opacity at depth zero when a material states none. */
 const WATER_DEFAULT_COLOR = [0.12, 0.52, 0.82, 0.48] as const
 

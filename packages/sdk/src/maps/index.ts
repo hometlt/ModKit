@@ -754,6 +754,14 @@ export interface MapWaterMaterialDefinition {
   readonly specularity?: number
   readonly specularScale?: number
   readonly reflectivityPower?: number
+  /**
+   * The surface's wave normals (SC2 Water.fx): two tangent-space normals packed in one image, x/y in
+   * red/green and in blue/alpha, sampled at the map position times `uvScale` (first pair) and
+   * moved by the first and second `scroll` pair. They light the surface and its highlight
+   * (`specularity` exponent, `specularScale`).
+   */
+  readonly normalResourceId?: string
+  readonly normalResource?: LogicalResourceRequirement
   readonly causticsResourceId?: string
   readonly causticsResource?: LogicalResourceRequirement
   /**

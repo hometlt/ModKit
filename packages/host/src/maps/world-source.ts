@@ -2175,6 +2175,10 @@ export function createCandidateWorldSceneLease(
                 candidate.causticsResource !== undefined
                   ? [candidate.causticsResource]
                   : []),
+                ...(candidate.normalResourceId === requestedResourceId &&
+                candidate.normalResource !== undefined
+                  ? [candidate.normalResource]
+                  : []),
                 ...(candidate.causticsFrameResourceIds ?? []).flatMap((resourceId, index) => {
                   const frame = candidate.causticsFrameResources?.[index]
                   return resourceId === requestedResourceId && frame !== undefined ? [frame] : []

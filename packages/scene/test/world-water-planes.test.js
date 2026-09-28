@@ -134,3 +134,27 @@ it('gives a water plane the caustics frames that arrived, the same object while 
     undefined,
   )
 })
+
+it('gives a water plane its wave normals once the image arrived, with the material tiling and scroll', () => {
+  const normals = { id: 'water-normal', width: 1, height: 1, data: new Uint8Array([128, 128, 128, 128]) }
+  const material = {
+    ...waterMaterials[0],
+    uvScale: [0.125, 0.25, 0.5, 0.5],
+    scroll: [0.03, 0.03, -0.03, -0.03],
+    specularity: 100,
+    specularScale: 2.45,
+    normalResourceId: 'water-normal',
+  }
+  const input = { items: [...terrain, water], waterMaterials: [material] }
+  assert.equal(createWorldWebGlPlan(input).waterPlanes[0].waves, undefined)
+  const arrived = { ...input, terrainTextures: new Map([['water-normal', normals]]) }
+  const waves = createWorldWebGlPlan(arrived).waterPlanes[0].waves
+  assert.deepEqual(waves, {
+    texture: normals,
+    tiling: [0.125, 0.25],
+    scroll: [0.03, 0.03, -0.03, -0.03],
+    specularity: 100,
+    specularScale: 2.45,
+  })
+  assert.equal(createWorldWebGlPlan(arrived).waterPlanes[0].waves, waves)
+})

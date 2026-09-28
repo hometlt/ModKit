@@ -570,6 +570,7 @@ export async function inspectCandidateWorld(
             material.baseColorResourceId,
             material.secondaryColorResourceId,
             material.causticsResourceId,
+            material.normalResourceId,
             ...(material.causticsFrameResourceIds ?? []),
           ].filter((resourceId): resourceId is string => resourceId !== undefined),
         ),
