@@ -110,42 +110,6 @@
       "rewrites": []
     },
     {
-      "source": "references/modkitmk2/extensions/cavedog/total-annihilation/codecs/gaf/src/index.ts",
-      "destination": "modkit-extensions-other/extensions/cavedog-total-annihilation/src/lib/mk2/total-annihilation/codecs/gaf/src/index.ts",
-      "sha256Mk2": "57f028b29aa000e8d5d989b03717b3be4ec5e9f791af8bea11fb6b567a5f36be",
-      "sha256Mk3": "6174156d59b8c2029276731206fcd5673f0c58531d17c51c057f91ba978946ba",
-      "rewrites": [
-        "line-ending-normalization"
-      ]
-    },
-    {
-      "source": "references/modkitmk2/extensions/cavedog/total-annihilation/codecs/ta-hpi/src/index.ts",
-      "destination": "modkit-extensions-other/extensions/cavedog-total-annihilation/src/lib/mk2/total-annihilation/codecs/ta-hpi/src/index.ts",
-      "sha256Mk2": "d8688be67124a0d21b02dced137402a6ec46588c9cdf61b4e4443cead47dc189",
-      "sha256Mk3": "2ef9f172a69e2882619052314e940fee0a2c03a680cfe2e6a6f3b1e9c2ec352d",
-      "rewrites": [
-        "line-ending-normalization"
-      ]
-    },
-    {
-      "source": "references/modkitmk2/extensions/cavedog/total-annihilation/codecs/ta-hpi/test/archive.spec.ts",
-      "destination": "modkit-extensions-other/extensions/cavedog-total-annihilation/src/lib/mk2/total-annihilation/codecs/ta-hpi/test/archive.spec.ts",
-      "sha256Mk2": "0d42df4eb22c3a28f5b7641bee3ad43772f7e77e70d84e33f0235a25d34009cc",
-      "sha256Mk3": "2a7f4ed46456faf20a9160a13a927d94b6f6184d22c24016cc0aff88413728dd",
-      "rewrites": [
-        "line-ending-normalization"
-      ]
-    },
-    {
-      "source": "references/modkitmk2/extensions/cavedog/total-annihilation/codecs/ta-hpi/test/manifest.spec.ts",
-      "destination": "modkit-extensions-other/extensions/cavedog-total-annihilation/src/lib/mk2/total-annihilation/codecs/ta-hpi/test/manifest.spec.ts",
-      "sha256Mk2": "02ac4e9c820dd296b388e07115af902e1e4a828abbd35ebfabf22b4096c3425d",
-      "sha256Mk3": "dc2713031a94066079922a79a3ba87b8aa2e656af98b3a0214d6ae73f9ba6796",
-      "rewrites": [
-        "line-ending-normalization"
-      ]
-    },
-    {
       "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/uasset/src/index.ts",
       "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/uasset/src/index.ts",
       "sha256Mk2": "17253f97bb85b86120791e26272a1834a681d96ce72e3d3a433af494022c7940",

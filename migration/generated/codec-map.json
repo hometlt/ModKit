@@ -32,7 +32,7 @@
       ]
     }
   ],
-  "contributionCount": 290,
+  "contributionCount": 292,
   "inventorySha256": "08c3bdad48056914277c7f95a0f97ef4feb85c8ec86a2fa8faf47bd7f9817e8c",
   "legacyCount": 206,
   "rows": [
@@ -737,13 +737,7 @@
       "status": "pending"
     },
     {
-      "candidates": [
-        {
-          "id": "ea/dune2000-map",
-          "path": "dune-2000/contributions/codec-dune2000-map.json",
-          "repository": "ea"
-        }
-      ],
+      "candidates": [],
       "codec": "dune2000-map",
       "family": "other",
       "featureAudit": "pending",
@@ -2548,11 +2542,11 @@
       "codec": "supcom-scm",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 1,
+      "pending": 0,
       "requirements": 3,
       "source": "extensions/annihilation/gas-powered/codecs/supcom-scm/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/supcom-scm",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
