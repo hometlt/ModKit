@@ -7621,6 +7621,10 @@
         {
           "path": "modkit-extensions-other/test/receipts/k1/unity.image-read.json",
           "sha256": "e8028e50aef0cc6a8f9a4c62adfa4f26b90bb2fc3c100af154a8b9bd8261f4a3"
+        },
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/unity.image-read.r2.json",
+          "sha256": "ffd502f1947cf4cf7caea650a0dc4fddc003fe564b9d801cc80b7ff00ad6cfcb"
         }
       ],
       "id": "legacy/codec-manifest/modkit/unity/operation/image.read",
