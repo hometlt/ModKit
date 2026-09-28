@@ -621,7 +621,7 @@ describe('a container entry opens as its own subject, with companions from the s
     expect(summary.skin).toEqual(Array.from(skinBytes))
     expect(summary.boundBindingIds).toEqual(['skin#assets/textures/cube.texture'])
     // the codec reports the reference the host bound; it never built that URI
-    expect(summary.skinSource[0]).toMatch(/^zip-entry:/u)
+    expect(summary.skinSource[0]).toMatch(/^zip:/u)
 
     await result.session.dispose()
   })
@@ -826,7 +826,8 @@ describe('a container entry opens as its own subject, with companions from the s
     const archive = await openArchive(await standardEntries())
     openSessions.push(archive)
     const subjects = await nestedServices()
-    const entryId = await entryIdOf(archive, 'assets/models/cube.mesh')
+    // a deflated entry: a stored one is read in place by range and needs no extraction at all
+    const entryId = await entryIdOf(archive, 'assets/textures/cube.texture')
     const operations = archive.operations()
     const refusing: AssetSession = Object.freeze({
       ...archive,
