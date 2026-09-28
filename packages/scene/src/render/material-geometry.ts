@@ -447,7 +447,12 @@ export function prepareMaterialGeometry(
     for (let i = 1; i + 1 < length; i++) append(0, i, i + 1)
   else return primitive
   if (!allBelow(triangles, count)) throw new TypeError('material geometry index is out of range')
+  // One expansion per source array: UV sets that share coordinates (a sprite's UV0-3) share the
+  // expanded array too, and with it one GPU buffer.
+  const expanded = new Map<Float32Array, Float32Array>()
   const expand = (source: Float32Array, width: number) => {
+    const kept = expanded.get(source)
+    if (kept !== undefined && kept.length === triangles.length * width) return kept
     const output = new Float32Array(triangles.length * width)
     for (let target = 0; target < triangles.length; target++) {
       const from = triangles[target]! * width,
@@ -455,6 +460,7 @@ export function prepareMaterialGeometry(
       for (let component = 0; component < width; component++)
         output[to + component] = source[from + component]!
     }
+    expanded.set(source, output)
     return output
   }
   const positions = expand(primitive.positions, 3),
