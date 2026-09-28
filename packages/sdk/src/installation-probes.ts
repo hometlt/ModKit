@@ -6,6 +6,7 @@
  * Every answer is `undefined` (or an empty record) when the platform, key or product is absent.
  */
 import type { CredentialPort } from './credentials.js'
+import type { IndexCacheSwitches } from './index-caches.js'
 
 export type RegistryHive = 'HKLM' | 'HKCU'
 
@@ -42,4 +43,6 @@ export interface ContentSourceModuleContext {
   readonly credentials?: CredentialPort
   /** The host's one directory of index caches (see `index-caches.ts`), shared with codecs. */
   readonly indexCacheDirectory?: string
+  /** The user's index cache switches per product; read them with `indexCacheEnabled`. */
+  readonly indexCaches?: IndexCacheSwitches
 }

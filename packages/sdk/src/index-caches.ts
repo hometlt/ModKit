@@ -16,6 +16,20 @@ export const INDEX_CACHE_DIRECTORY_SETTING = 'indexCacheDirectory'
 /** The manifest file inside each cache folder. */
 export const INDEX_CACHE_MANIFEST = 'cache.json'
 
+/** The user's switches per product (`s2`, `d3`): an absent product or kind means enabled. */
+export type IndexCacheSwitches = Readonly<
+  Record<string, { readonly names?: boolean; readonly content?: boolean }>
+>
+
+/** Whether an index of this kind may be kept for this product. */
+export function indexCacheEnabled(
+  switches: IndexCacheSwitches | undefined,
+  product: string,
+  kind: 'names' | 'content',
+): boolean {
+  return switches?.[product]?.[kind] !== false
+}
+
 export interface IndexCacheManifest {
   /** The game or format family (`starcraft2`, `roblox`). */
   readonly game: string

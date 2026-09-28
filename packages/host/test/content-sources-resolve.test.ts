@@ -2,6 +2,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, describe, expect, it } from 'vitest'
+import { indexCacheEnabled } from '../../sdk/src/index-caches.js'
 import { resolveContentSources } from '../src/node/content-sources.js'
 
 const work = await mkdtemp(join(tmpdir(), 'modkit-content-sources-'))
@@ -33,7 +34,8 @@ async function extension(name: string, contentSources: string | undefined): Prom
     snapshot: async () => ({ label: ${JSON.stringify(name)}, regions: [], connections: [],
       roots: [{ id: ${JSON.stringify(`${name}:root`)}, label: JSON.stringify(options.installationDirectory ?? null), region: 'local', kind: 'local',
         probes: context?.installationProbes?.name ?? typeof context?.installationProbes,
-        credentials: context?.credentials?.name ?? null }] }),
+        credentials: context?.credentials?.name ?? null,
+        names: context?.indexCaches?.s2?.names ?? null }] }),
     connect: noop, disconnect: noop, search: async () => [], add: noop, remove: noop, refresh: noop,
     list: async () => [], read: async () => new Uint8Array(), dispose: noop,
   }
@@ -57,16 +59,18 @@ describe('the content sources extensions declare', () => {
       // and the credential port of its own extension only
       credentials: extension =>
         extension === 'example/roblox' ? ({ name: 'roblox-port' } as never) : undefined,
+      // and the user's index cache switches
+      indexCaches: { s2: { names: false } },
     })
     const snapshot = await sources?.snapshot()
     expect(
       snapshot?.roots.map(root => {
-        const extra = root as { probes?: unknown; credentials?: unknown }
-        return [root.id, root.label, extra.probes, extra.credentials]
+        const extra = root as { probes?: unknown; credentials?: unknown; names?: unknown }
+        return [root.id, root.label, extra.probes, extra.credentials, extra.names]
       }),
     ).toEqual([
-      ['sc2:root', '"C:/Games/SC2"', 'fixture-probes', null],
-      ['roblox:root', 'null', 'fixture-probes', 'roblox-port'],
+      ['sc2:root', '"C:/Games/SC2"', 'fixture-probes', null, false],
+      ['roblox:root', 'null', 'fixture-probes', 'roblox-port', false],
     ])
     await sources?.dispose()
   })
@@ -85,6 +89,14 @@ describe('the content sources extensions declare', () => {
     })
     expect((await sources?.snapshot())?.roots.map(root => root.id)).toEqual(['twin:root'])
     await sources?.dispose()
+  })
+
+  it('reads index cache switches: an absent product or kind is enabled', () => {
+    const switches = { s2: { names: false } }
+    expect(indexCacheEnabled(switches, 's2', 'names')).toBe(false)
+    expect(indexCacheEnabled(switches, 's2', 'content')).toBe(true)
+    expect(indexCacheEnabled(switches, 'd3', 'names')).toBe(true)
+    expect(indexCacheEnabled(undefined, 's2', 'names')).toBe(true)
   })
 
   it('has none when no extension declares a module, and refuses one outside its root', async () => {

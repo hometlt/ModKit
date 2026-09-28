@@ -6,7 +6,7 @@ import {
   loadContentSources,
   readContentSourceConfig,
 } from '@modkit/vfs/content-sources/node'
-import type { CredentialPort, InstallationProbes } from '@modkit/sdk'
+import type { CredentialPort, IndexCacheSwitches, InstallationProbes } from '@modkit/sdk'
 import { createNodeInstallationProbes } from './installation-probes.js'
 
 export interface ResolveContentSourcesOptions {
@@ -27,6 +27,8 @@ export interface ResolveContentSourcesOptions {
   readonly credentials?: (extension: string) => CredentialPort | undefined
   /** The host's one directory of index caches, handed to every module (shared with codecs). */
   readonly indexCacheDirectory?: string
+  /** The user's index cache switches per product, handed to every module. */
+  readonly indexCaches?: IndexCacheSwitches
 }
 
 /**
@@ -42,6 +44,7 @@ export async function resolveContentSources(
     ...(options.indexCacheDirectory === undefined
       ? {}
       : { indexCacheDirectory: options.indexCacheDirectory }),
+    ...(options.indexCaches === undefined ? {} : { indexCaches: options.indexCaches }),
   }
   // a module reaches only its own extension's credentials; an unowned configuration gets none
   const contextOf = (extension: string | undefined) => {
