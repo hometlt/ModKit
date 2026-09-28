@@ -635,6 +635,18 @@
           "additionalProperties": false,
           "properties": {
             "kind": {
+              "const": "text-runs"
+            }
+          },
+          "required": [
+            "kind"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
               "const": "custom"
             },
             "params": {
