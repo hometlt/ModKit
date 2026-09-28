@@ -36,6 +36,7 @@ import { orderStages } from './view-policy.js'
 import {
   createVsCodeEditPanel,
   createVsCodePixelSaver,
+  pixelSaveRefusal,
   type EditPanelOptions,
 } from './edit-panel.js'
 import type { UiLocalizer } from '@modkit/ui/localization'
@@ -92,6 +93,8 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
         exportBaseName: descriptor => context.exportBaseName?.(descriptor) ?? 'image',
         // The Edit section's Save: pixels → the codec's `replace` transform → the editing arm.
         savePixels: createVsCodePixelSaver(context),
+        // Asked per subject, so the tools appear only where that Save can write.
+        saveRefusal: descriptor => pixelSaveRefusal(context, descriptor),
         // The editor owns Undo, Redo, the dirty marker and Save; the section draws none of them.
         ...(context.registerPixelEditing === undefined
           ? {}
