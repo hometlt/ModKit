@@ -1,11 +1,15 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { revisionId, type ArtifactByteSource } from '@modkit/sdk'
+import type { Diagnostic } from '@modkit/core'
 import {
+  createCompanionInputResolver,
+  createContentAssetOrigin,
   subjectOpenSnapshot,
   resolveCommonPresentationPlan,
   type SubjectServices,
   type SubjectOpener,
 } from '@modkit/host'
+import type { ContentSources } from '@modkit/vfs/content-sources'
 import { STAGE_ORDER } from './view-policy.js'
 
 export type ContentSourceReader = (
@@ -13,15 +17,35 @@ export type ContentSourceReader = (
   maxBytes: number,
   signal?: AbortSignal,
 ) => Promise<Uint8Array>
-/** Read-only source route shared by the native Explorer's custom editor and palette commands. */
+/** The source and path a `modkit-source://<authority>/<source>/<path>` subject names. */
+export function contentSourceTarget(
+  requested: string,
+): { readonly sourceId: string; readonly path: string } | undefined {
+  if (!URL.canParse(requested)) return undefined
+  const [sourceId, ...parts] = new URL(requested).pathname
+    .split('/')
+    .filter(Boolean)
+    .map(decodeURIComponent)
+  return sourceId === undefined ? undefined : { sourceId, path: parts.join('/') }
+}
+
+/**
+ * Read-only source route shared by the native Explorer's custom editor and palette commands. With
+ * the window's `contentSources` the file reaches the resources of its mod, as a file on disk does
+ * (a model in the game's storage, its texture in another package of the chain).
+ */
 export function contentSourceOpener(
   services: SubjectServices,
   read: ContentSourceReader,
+  contentSources?: () => Promise<ContentSources | undefined>,
 ): SubjectOpener {
   return async (requested, signal) => {
     signal?.throwIfAborted()
     const bytes = await read(requested, 64 * 1024 * 1024, signal)
     signal?.throwIfAborted()
+    const sources = await contentSources?.()
+    const target = contentSourceTarget(requested)
+    const companionDiagnostics: Diagnostic[] = []
     const source: ArtifactByteSource = {
       kind: 'bytes',
       ref: { id: requested, uri: requested },
@@ -43,6 +67,17 @@ export function contentSourceOpener(
       path: requested,
       intent: 'full',
       grant: { id: `content-source:${randomUUID()}`, classes: ['read-source'] },
+      ...(sources === undefined || target === undefined
+        ? {}
+        : {
+            resolveInput: createCompanionInputResolver(
+              createContentAssetOrigin({
+                contentSources: sources,
+                target,
+                onDiagnostic: item => companionDiagnostics.push(item),
+              }),
+            ),
+          }),
       budget: {
         maxInputBytes: BigInt(bytes.length || 1),
         maxDepth: 256,
@@ -57,7 +92,7 @@ export function contentSourceOpener(
     const snapshot = subjectOpenSnapshot({
       result,
       sessionId: () => id,
-      diagnostics: result.diagnostics.map(item => ({
+      diagnostics: [...result.diagnostics, ...companionDiagnostics].map(item => ({
         code: item.code,
         message: item.message,
         severity: item.severity,

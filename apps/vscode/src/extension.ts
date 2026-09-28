@@ -6146,7 +6146,10 @@ async function activateModkit(
     if (loadedSessions === undefined || loadedSessionSource !== source) {
       const previous = loadedSessions
       loadedSessionSource = source
-      loadedSessions = Promise.resolve(new LoadedModResourceSessions(source))
+      // Entity names in Resources come in the chosen game locale (`modkit.locale`), read per open.
+      loadedSessions = Promise.resolve(
+        new LoadedModResourceSessions(source, { locales: configuredGameLocales }),
+      )
       // The new sessions start empty: every document must load its mod again.
       forgetResourcePaths()
       await previous?.then(sessions => sessions.dispose())
@@ -11624,6 +11627,11 @@ async function activateModkit(
       showLocaleStatus()
       // Answers already in flight were computed in the old locale.
       languageWorkspace.invalidate('game-string locale changed')
+      // The loaded mods read their names in the new locale.
+      void loadedSessions
+        ?.then(sessions => sessions.reloadAll())
+        .then(() => resourcesView.refresh())
+        .catch(error => log(`[resources] ${error instanceof Error ? error.message : String(error)}`))
     }),
     vscode.commands.registerCommand('modkit.selectGameLocale', async () => {
       const current = vscode.workspace.getConfiguration('modkit').get<string>('locale') ?? ''

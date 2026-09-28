@@ -1104,7 +1104,11 @@ export function createVsCodeCommandOpener(options: {
   return async (requested, signal) => {
     if (requested.startsWith('modkit-source:')) {
       if (!options.readContentSource) throw new Error('Content source provider is unavailable')
-      return contentSourceOpener(options.services, options.readContentSource)(requested, signal)
+      return contentSourceOpener(
+        options.services,
+        options.readContentSource,
+        options.subjectCatalog?.contentSources,
+      )(requested, signal)
     }
     if (isContainerUriText(requested)) {
       if (options.containers === undefined) {
@@ -1346,7 +1350,11 @@ function serveVsCode(
     const generation = beginsSubjectOpen()
     if (requested.startsWith('modkit-source:')) {
       if (!options.readContentSource) throw new Error('Content source provider is unavailable')
-      const answer = await contentSourceOpener(services, options.readContentSource)(
+      const answer = await contentSourceOpener(
+        services,
+        options.readContentSource,
+        composed.subjectCatalog?.contentSources,
+      )(
         requested,
         signal,
       )
