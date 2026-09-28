@@ -1348,6 +1348,15 @@ function validateWorkspacePlan(
         `workspace data requirement ${requirement.requirementId} has invalid required flag`,
       )
     }
+    if (
+      requirement.encoding !== undefined &&
+      requirement.encoding !== 'text' &&
+      requirement.encoding !== 'binary'
+    ) {
+      throw new TypeError(
+        `workspace data requirement ${requirement.requirementId} has invalid encoding`,
+      )
+    }
     if (requirementIds.has(requirement.requirementId)) {
       throw new TypeError(`workspace data requirement ${requirement.requirementId} is duplicated`)
     }
@@ -1400,7 +1409,8 @@ function validateWorkspacePlan(
   }
 }
 
-async function readResourceText(
+/** Exported for its test only. */
+export async function readResourceText(
   resources: ResourceSessionPort,
   requirement: DataWorkspaceDocumentRequirement,
   maxDocumentBytes: number,
@@ -1409,6 +1419,8 @@ async function readResourceText(
   | {
       readonly state: 'resolved'
       readonly text: string
+      /** Present for a requirement read as `encoding: 'binary'`; `text` is then empty. */
+      readonly bytes?: Uint8Array
       readonly revision: RevisionId
       readonly source: AssetSourceRef
     }
@@ -1485,7 +1497,9 @@ async function readResourceText(
     }
     return {
       state: 'resolved',
-      text: new TextDecoder('utf-8', { fatal: false }).decode(content),
+      ...(requirement.encoding === 'binary'
+        ? { text: '', bytes: content }
+        : { text: new TextDecoder('utf-8', { fatal: false }).decode(content) }),
       revision: resolved.revision,
       source: Object.freeze({ ...source.ref }),
     }
@@ -1936,7 +1950,8 @@ export async function analyzeResolvedDataWorkspace(
         }
         continue
       }
-      textBytes += new TextEncoder().encode(loaded.text).byteLength
+      // a binary document counts its bytes against the same workspace budget
+      textBytes += loaded.bytes?.byteLength ?? new TextEncoder().encode(loaded.text).byteLength
       if (textBytes > limits.maxTextBytes) {
         throw new TypeError(`workspace data exceeds maxTextBytes ${limits.maxTextBytes}`)
       }
@@ -1945,6 +1960,7 @@ export async function analyzeResolvedDataWorkspace(
         rootId: requirement.rootId,
         path: requirement.path,
         text: loaded.text,
+        ...(loaded.bytes === undefined ? {} : { bytes: loaded.bytes }),
         revision: loaded.revision,
       }
       if (requirement.kind === 'catalog') {

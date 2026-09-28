@@ -52,7 +52,14 @@ export interface DataTypeSchema {
 export interface DataCatalogDocument {
   readonly rootId: string
   readonly path: string
+  /** The document decoded as UTF-8; empty for a document read as `encoding: 'binary'`. */
   readonly text: string
+  /**
+   * The document's bytes, present exactly when its requirement asked for `encoding: 'binary'`:
+   * a binary catalog (Warcraft III `.w3u` object edits) or string table (C&C `.csf`) that the game
+   * provider decodes with its own codec. One path for text and binary data documents.
+   */
+  readonly bytes?: Uint8Array
   readonly revision?: RevisionId
 }
 
@@ -75,6 +82,8 @@ export interface DataWorkspaceDocumentRequirement {
   readonly locale?: string
   /** Missing optional catalog/localization files are normal and do not make the snapshot partial. */
   readonly required?: boolean
+  /** `binary`: hand the document over as `bytes`, undecoded. Default `text` (UTF-8). */
+  readonly encoding?: 'text' | 'binary'
 }
 
 /** A directory of one workspace root that a planner needs listed before it can name its documents. */
