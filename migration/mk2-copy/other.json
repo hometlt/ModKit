@@ -110,56 +110,6 @@
       "rewrites": []
     },
     {
-      "source": "references/modkitmk2/extensions/audiokinetic/wwise/codecs/bnk/src/index.ts",
-      "destination": "modkit-extensions-other/extensions/audiokinetic-wwise/src/lib/mk2/wwise/codecs/bnk/src/index.ts",
-      "sha256Mk2": "ee4b2372ee08e2d478f430c907e222e432abab942be0337774c823bf6f984e71",
-      "sha256Mk3": "8e9e2010acc8cb0c5193cee65f92a618a5282f2e2daa67f73c16313d4c8246bb",
-      "rewrites": [
-        "line-ending-normalization"
-      ]
-    },
-    {
-      "source": "references/modkitmk2/extensions/audiokinetic/wwise/codecs/wem/src/index.ts",
-      "destination": "modkit-extensions-other/extensions/audiokinetic-wwise/src/lib/mk2/wwise/codecs/wem/src/index.ts",
-      "sha256Mk2": "301d18f090b3465f071197d83fa7f3199960ffd26010c3d22442bd56f17deaa0",
-      "sha256Mk3": "c47b22dec7a68c96dced96f3117a1c403e68acde008c3a882ce66933a7f56849",
-      "rewrites": [
-        "line-ending-normalization"
-      ]
-    },
-    {
-      "source": "references/modkitmk2/extensions/audiokinetic/wwise/codecs/wem/test/manifests.spec.ts",
-      "destination": "modkit-extensions-other/extensions/audiokinetic-wwise/src/lib/mk2/wwise/codecs/wem/test/manifests.spec.ts",
-      "sha256Mk2": "f57711c4f459c6cfb64c666fc234de9567acfd4fb29c47f3d75621592da7cdf5",
-      "sha256Mk3": "f57711c4f459c6cfb64c666fc234de9567acfd4fb29c47f3d75621592da7cdf5",
-      "rewrites": []
-    },
-    {
-      "source": "references/modkitmk2/extensions/audiokinetic/wwise/codecs/wwise-pck/src/index.ts",
-      "destination": "modkit-extensions-other/extensions/audiokinetic-wwise/src/lib/mk2/wwise/codecs/wwise-pck/src/index.ts",
-      "sha256Mk2": "e41968488a67b146c09d6dc8e966eef8172e6b41624d10a561bd412202ec3bd1",
-      "sha256Mk3": "9fee48d46ac2e1adccc5731a8eed8f57acdbcf783ad324af0a09b93bbe4be59b",
-      "rewrites": [
-        "line-ending-normalization"
-      ]
-    },
-    {
-      "source": "references/modkitmk2/extensions/audiokinetic/wwise/codecs/wwise-pck/test/manifest.spec.ts",
-      "destination": "modkit-extensions-other/extensions/audiokinetic-wwise/src/lib/mk2/wwise/codecs/wwise-pck/test/manifest.spec.ts",
-      "sha256Mk2": "760e68bff069e5539ee852d849443e9e6b62c25dd63d08431854266888256b65",
-      "sha256Mk3": "693aef96e627e194599eed4d63e8bc0db91e5108be27996f617c063dcb711cc2",
-      "rewrites": [
-        "line-ending-normalization"
-      ]
-    },
-    {
-      "source": "references/modkitmk2/extensions/audiokinetic/wwise/codecs/wwise-pck/test/parse.spec.ts",
-      "destination": "modkit-extensions-other/extensions/audiokinetic-wwise/src/lib/mk2/wwise/codecs/wwise-pck/test/parse.spec.ts",
-      "sha256Mk2": "ca3b13d9017f827d435cb065174dbf89bcfdd0552e4c368a6e2327be9a16a64d",
-      "sha256Mk3": "ca3b13d9017f827d435cb065174dbf89bcfdd0552e4c368a6e2327be9a16a64d",
-      "rewrites": []
-    },
-    {
       "source": "references/modkitmk2/extensions/cavedog/total-annihilation/codecs/gaf/src/index.ts",
       "destination": "modkit-extensions-other/extensions/cavedog-total-annihilation/src/lib/mk2/total-annihilation/codecs/gaf/src/index.ts",
       "sha256Mk2": "57f028b29aa000e8d5d989b03717b3be4ec5e9f791af8bea11fb6b567a5f36be",
@@ -492,22 +442,6 @@
       "rewrites": [
         "line-ending-normalization: CRLF -> LF"
       ]
-    },
-    {
-      "source": "references/modkitmk2/extensions/firelight/fmod/codecs/fsb/src/index.ts",
-      "destination": "modkit-extensions-other/extensions/firelight-fmod/src/lib/mk2/fmod/codecs/fsb/src/index.ts",
-      "sha256Mk2": "dda8879a810894cddded8276934941ee196d7acff9c5e3759953e17198633735",
-      "sha256Mk3": "b2b4c51287b2187c831df341f5574ab6bd14f995b39cc36a86e06a64c177dd2e",
-      "rewrites": [
-        "line-ending-normalization"
-      ]
-    },
-    {
-      "source": "references/modkitmk2/extensions/firelight/fmod/codecs/fsb/test/manifest.spec.ts",
-      "destination": "modkit-extensions-other/extensions/firelight-fmod/src/lib/mk2/fmod/codecs/fsb/test/manifest.spec.ts",
-      "sha256Mk2": "a04a3578dcaa16f76e210378439279abde91e12a2a0e6900c45fe8cbf3092cf2",
-      "sha256Mk3": "a04a3578dcaa16f76e210378439279abde91e12a2a0e6900c45fe8cbf3092cf2",
-      "rewrites": []
     },
     {
       "source": "references/modkitmk2/extensions/frost-giant/stormgate/games/stormgate/src/codec.ts",
