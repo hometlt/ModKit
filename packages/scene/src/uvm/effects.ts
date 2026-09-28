@@ -338,21 +338,43 @@ export function createUvmEffectFrame(
   }
   if (view.length !== 16 || !view.every(Number.isFinite))
     throw new TypeError('effect viewMatrix must be finite')
-  const simulationInputs = [preparation, options.nodeTransformsAt, options.collisionProvider]
-  const kept = cache?.simulations.get(options.time)
+  // A cached owner's frames stop on the effect step grid (see gridEffectTime).
+  const frame = cache === undefined ? options : { ...options, time: gridEffectTime(options.time) }
+  const simulationInputs = [preparation, frame.nodeTransformsAt, frame.collisionProvider]
+  const kept = cache?.simulations.get(frame.time)
   let simulated =
     kept !== undefined && sameInputs(kept.inputs, simulationInputs) ? kept.simulated : undefined
   if (simulated === undefined) {
-    simulated = simulateUvmEffectFrame(preparation, options)
+    simulated = simulateUvmEffectFrame(preparation, frame)
     if (cache !== undefined) {
-      cache.simulations.delete(options.time)
+      cache.simulations.delete(frame.time)
       if (cache.simulations.size >= CACHED_EFFECT_SIMULATIONS)
         cache.simulations.delete(cache.simulations.keys().next().value!)
-      cache.simulations.set(options.time, { inputs: simulationInputs, simulated })
+      cache.simulations.set(frame.time, { inputs: simulationInputs, simulated })
     }
   }
   for (const { message, code } of simulated.warnings) warn(message, code)
-  return uvmEffectFrameGeometry(preparation, simulated, options, view, diagnostics)
+  return uvmEffectFrameGeometry(preparation, simulated, frame, view, diagnostics)
+}
+
+/** Seek steps per second (the simulator's default fixed step). */
+const EFFECT_STEPS_PER_SECOND = 60
+
+/**
+ * The time a cached owner shows an effect at: the last whole 1/60 s step at or below the clock, at
+ * most 1/60 s behind it. A seek divides its time into equal steps, so with a free time every frame
+ * stepped through new times and sampled the rig again at each (most of an animated frame's effect
+ * work); on this grid the steps fall on the same times every frame, and the owner's pose cache
+ * answers them. A frame at a grid time is the frame an uncached owner draws at that time. For some
+ * grid times the seek's ceil(time / step) rounds up past the step count and would divide the time
+ * into one more, shorter, step; those are taken an ulp or two lower, which keeps the count (and
+ * changes nothing a float32 vertex can show).
+ */
+function gridEffectTime(time: number): number {
+  const steps = Math.floor(time * EFFECT_STEPS_PER_SECOND + 1e-7)
+  if (steps <= 0) return 0
+  const grid = steps / EFFECT_STEPS_PER_SECOND
+  return Math.ceil(grid / (1 / EFFECT_STEPS_PER_SECOND)) > steps ? grid * (1 - Number.EPSILON) : grid
 }
 
 /** Emitters, fields, projectors and collision shapes of an effect: the same for every frame. */

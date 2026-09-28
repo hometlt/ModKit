@@ -81,7 +81,7 @@ const options = {
   maxNodes: 10000,
 }
 
-test('a cached effect frame is the uncached frame for every view and clock, simulated once per clock', () => {
+test('a cached effect frame is the uncached frame at its step time for every view, simulated once per step', () => {
   const cache = createUvmEffectFrameCache()
   for (const time of [0.5, 1.25, 0.5])
     for (const viewMatrix of [identity, turned]) {
@@ -92,6 +92,12 @@ test('a cached effect frame is the uncached frame for every view and clock, simu
   // Another view at a clock the cache holds takes its simulation instead of simulating again.
   const simulated = cache.simulations.get(0.5).simulated
   createUvmEffectFrame(document, { ...options, time: 0.5, viewMatrix: turned, cache })
+  assert.equal(cache.simulations.get(0.5).simulated, simulated)
+  // A clock within the same 1/60 s step shows that step's frame and simulation.
+  assert.deepEqual(
+    createUvmEffectFrame(document, { ...options, time: 0.505, viewMatrix: turned, cache }),
+    createUvmEffectFrame(document, { ...options, time: 0.5, viewMatrix: turned }),
+  )
   assert.equal(cache.simulations.get(0.5).simulated, simulated)
   // Other budgets are another preparation: the cache starts over.
   const prepared = cache.preparation.prepared

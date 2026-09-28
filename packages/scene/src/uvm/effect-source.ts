@@ -123,15 +123,18 @@ export function createUvmEffectSource(
       maxNodes: MAX_NODES,
     }))
   // Seeking to one clock samples the same historical times whatever the view, so a new camera (or
-  // another instance at that clock) reuses the poses instead of re-sampling the rig.
+  // another instance at that clock) reuses the poses instead of re-sampling the rig. Frames seek on
+  // a fixed step grid (see createUvmEffectFrame), whose step times agree between frames to far below
+  // a microsecond: poses are kept by microsecond, so the next frame samples only its new steps.
   // ponytail: whole-map clear at a fixed size; an LRU if clocks start varying per frame.
   const poses = new Map<number, ReturnType<typeof pose.sample>['nodeTransforms']>()
   const nodeTransformsAt = (at: number) => {
-    let transforms = poses.get(at)
+    const key = Math.round(at * 1e6)
+    let transforms = poses.get(key)
     if (transforms === undefined) {
       if (poses.size >= MAX_CACHED_POSES) poses.clear()
       transforms = pose.sample(at).nodeTransforms
-      poses.set(at, transforms)
+      poses.set(key, transforms)
     }
     return transforms
   }
