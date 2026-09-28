@@ -2,7 +2,11 @@ import type { SceneRendererMaterial, SceneRendererPrimitive } from '@modkit/sdk/
 import { createUvmProjectorFrame } from './projectors.js'
 import { readUvmContainer } from '@modkit/uv/model/container'
 import { createModelSceneSampler } from '../model/sampler.js'
-import { createUvmEffectFrame, snapshotUvmEffectExtension } from './effects.js'
+import {
+  createUvmEffectFrame,
+  createUvmEffectFrameCache,
+  snapshotUvmEffectExtension,
+} from './effects.js'
 import type { JsonValue } from '@modkit/sdk'
 import { readUvmModel } from './model.js'
 import { field } from './values.js'
@@ -72,7 +76,10 @@ export function createUvmEffectSource(
   // snapshot of its effects instead of copying the whole extension per call.
   let snapshot: JsonValue | undefined
   const effectSnapshot = (): JsonValue =>
-    (snapshot ??= snapshotUvmEffectExtension(document, { maxBytes: MAX_BYTES, maxNodes: MAX_NODES }))
+    (snapshot ??= snapshotUvmEffectExtension(document, {
+      maxBytes: MAX_BYTES,
+      maxNodes: MAX_NODES,
+    }))
   // Seeking to one clock samples the same historical times whatever the view, so a new camera (or
   // another instance at that clock) reuses the poses instead of re-sampling the rig.
   // ponytail: whole-map clear at a fixed size; an LRU if clocks start varying per frame.
@@ -86,6 +93,9 @@ export function createUvmEffectSource(
     }
     return transforms
   }
+  // Every instance at one clock shares the prepared emitters and one simulation; a view or instance
+  // only builds its sprites (see UvmEffectFrameCache).
+  const frames = createUvmEffectFrameCache()
   return Object.freeze<UvmEffectSource>({
     hasProjectors:
       Array.isArray(field(field(document['extensions'], 'UV_game_effects'), 'projectors')) &&
@@ -117,6 +127,7 @@ export function createUvmEffectSource(
         nodeTransformsAt,
         viewMatrix,
         extensionSnapshot: effectSnapshot(),
+        cache: frames,
       }),
   })
 }

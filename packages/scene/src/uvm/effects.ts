@@ -235,22 +235,61 @@ export function snapshotUvmEffectExtension(
 /** Deterministic bounded effect preview over the public UVM extension. Native extras are never read.
  * The existing simulator owns emission/integration. This adapter owns node anchors and neutral quads.
  * Unsupported properties stay in the document and receive explicit per-emitter diagnostics. */
-export function createUvmEffectFrame(document: JsonObject, options: UvmEffectFrameOptions) {
-  const { signal } = options
+/**
+ * Keeps what an effect frame shares across calls of one owner whose document and options other than
+ * the time, materials and view never change (a reusable effect source): the prepared emitters, and
+ * the simulations of the latest clocks. All instances of a model at one clock then simulate once;
+ * each view only builds its sprites.
+ */
+export interface UvmEffectFrameCache {
+  preparation?: {
+    readonly inputs: readonly unknown[]
+    readonly prepared: ReturnType<typeof prepareUvmEffectFrame>
+  }
+  readonly simulations: Map<
+    number,
+    { readonly inputs: readonly unknown[]; readonly simulated: UvmEffectSimulation }
+  >
+}
+
+export function createUvmEffectFrameCache(): UvmEffectFrameCache {
+  return { simulations: new Map() }
+}
+
+/** Simulations a cache keeps: an owner's instances share one clock, or a few random start phases. */
+const CACHED_EFFECT_SIMULATIONS = 2
+
+type UvmEffectPreparation = Extract<ReturnType<typeof prepareUvmEffectFrame>, { empty: false }>
+type UvmEffectSimulation = Readonly<{
+  simulation: ModelEffectSimulation
+  provide: (
+    kind: string,
+    index: number,
+    node: number,
+    time: number,
+    out: MutableEffectEmitterAnchor,
+  ) => void
+  toWorld: readonly number[]
+  toLocal: readonly number[]
+  warnings: readonly { readonly message: string; readonly code: string }[]
+}>
+
+const sameInputs = (left: readonly unknown[], right: readonly unknown[]) =>
+  left.length === right.length && left.every((value, index) => value === right[index])
+
+export function createUvmEffectFrame(
+  document: JsonObject,
+  options: UvmEffectFrameOptions & { readonly cache?: UvmEffectFrameCache },
+) {
+  const { signal, cache } = options
   signal?.throwIfAborted()
   const primitives: SceneRendererPrimitive[] = [],
     materials: SceneRendererMaterial[] = []
-  const diagnostics: SceneRendererDiagnostic[] = []
-  let collisionSplats: readonly UvmCollisionSplat[] = []
+  const collisionSplats: readonly UvmCollisionSplat[] = []
   const modelParticles: (UvmModelParticleDraw & { readonly transform: readonly number[] })[] = []
-  const warn = (message: string, code = 'common.uvm/effect-preview-limitation') => {
-    if (diagnostics.length >= (options.maxDiagnostics ?? options.maxNodes))
-      throw new RangeError('effect diagnostics exceed budget')
-    diagnostics.push({ severity: 'warning', code, message })
-  }
   const extension = field(document['extensions'], 'UV_game_effects')
   if (extension === undefined)
-    return { primitives, materials, diagnostics, collisionSplats, modelParticles }
+    return { primitives, materials, diagnostics: [], collisionSplats, modelParticles }
   if (
     !Number.isSafeInteger(options.maxBytes) ||
     options.maxBytes < 0 ||
@@ -260,6 +299,71 @@ export function createUvmEffectFrame(document: JsonObject, options: UvmEffectFra
     options.time < 0
   )
     throw new RangeError('invalid effect budget/time')
+  const preparationInputs = [
+    document,
+    options.activeNodes,
+    options.sequenceIndex,
+    options.maxBytes,
+    options.maxNodes,
+    options.maxDiagnostics,
+    options.binary,
+    options.projectorsHandled,
+    options.collisionProvider,
+    options.extensionSnapshot,
+  ]
+  const cached =
+    cache?.preparation !== undefined && sameInputs(cache.preparation.inputs, preparationInputs)
+      ? cache.preparation.prepared
+      : undefined
+  const preparation = cached ?? prepareUvmEffectFrame(document, options)
+  if (cache !== undefined && cached === undefined) {
+    cache.preparation = { inputs: preparationInputs, prepared: preparation }
+    cache.simulations.clear()
+  }
+  const diagnostics = [...preparation.diagnostics]
+  if (preparation.empty)
+    return { primitives, materials, diagnostics, collisionSplats, modelParticles }
+  const warn = (message: string, code = 'common.uvm/effect-preview-limitation') => {
+    if (diagnostics.length >= (options.maxDiagnostics ?? options.maxNodes))
+      throw new RangeError('effect diagnostics exceed budget')
+    diagnostics.push({ severity: 'warning', code, message })
+  }
+  const view = options.viewMatrix
+  if (view === undefined) {
+    warn(
+      'Effect billboards require camera.viewMatrix; effect geometry was not drawn.',
+      'common.uvm/effect-camera-required',
+    )
+    return { primitives, materials, diagnostics, collisionSplats, modelParticles }
+  }
+  if (view.length !== 16 || !view.every(Number.isFinite))
+    throw new TypeError('effect viewMatrix must be finite')
+  const simulationInputs = [preparation, options.nodeTransformsAt, options.collisionProvider]
+  const kept = cache?.simulations.get(options.time)
+  let simulated =
+    kept !== undefined && sameInputs(kept.inputs, simulationInputs) ? kept.simulated : undefined
+  if (simulated === undefined) {
+    simulated = simulateUvmEffectFrame(preparation, options)
+    if (cache !== undefined) {
+      cache.simulations.delete(options.time)
+      if (cache.simulations.size >= CACHED_EFFECT_SIMULATIONS)
+        cache.simulations.delete(cache.simulations.keys().next().value!)
+      cache.simulations.set(options.time, { inputs: simulationInputs, simulated })
+    }
+  }
+  for (const { message, code } of simulated.warnings) warn(message, code)
+  return uvmEffectFrameGeometry(preparation, simulated, options, view, diagnostics)
+}
+
+/** Emitters, fields, projectors and collision shapes of an effect: the same for every frame. */
+function prepareUvmEffectFrame(document: JsonObject, options: UvmEffectFrameOptions) {
+  const { signal } = options
+  const diagnostics: SceneRendererDiagnostic[] = []
+  const warn = (message: string, code = 'common.uvm/effect-preview-limitation') => {
+    if (diagnostics.length >= (options.maxDiagnostics ?? options.maxNodes))
+      throw new RangeError('effect diagnostics exceed budget')
+    diagnostics.push({ severity: 'warning', code, message })
+  }
   const effect = object(
     options.extensionSnapshot ?? snapshotUvmEffectExtension(document, options, signal),
     'UV_game_effects',
@@ -555,8 +659,7 @@ export function createUvmEffectFrame(document: JsonObject, options: UvmEffectFra
   emitterCount += fields.count
   if (array(effect, 'projectors').length > 0 && options.projectorsHandled !== true)
     warn('projectors: receiver geometry is not connected to the preview.')
-  if (particles.length + ribbons.length === 0)
-    return { primitives, materials, diagnostics, collisionSplats, modelParticles }
+  if (particles.length + ribbons.length === 0) return { diagnostics, empty: true as const }
   const projectorTemplates = readEffectProjectors(
     document,
     options.maxNodes - emitterCount - meshNodes,
@@ -588,16 +691,50 @@ export function createUvmEffectFrame(document: JsonObject, options: UvmEffectFra
         'terrain collision requires the existing trusted provider; no terrain surface was invented.',
       )
   }
-  const view = options.viewMatrix
-  if (view === undefined) {
-    warn(
-      'Effect billboards require camera.viewMatrix; effect geometry was not drawn.',
-      'common.uvm/effect-camera-required',
-    )
-    return { primitives, materials, diagnostics, collisionSplats, modelParticles }
+  return {
+    diagnostics,
+    empty: false as const,
+    effect,
+    nodeCount,
+    particles,
+    ribbons,
+    ribbonOrdinals,
+    splineNodes,
+    particleSplineWork,
+    ribbonSplineWork,
+    emitterCount,
+    meshBytes,
+    meshNodes,
+    fields,
+    projectorTemplates,
+    collisionInput,
   }
-  if (view.length !== 16 || !view.every(Number.isFinite))
-    throw new TypeError('effect viewMatrix must be finite')
+}
+
+/**
+ * The effect simulated up to the frame time with the node transforms it read. Nothing here depends
+ * on the view, so every view and instance at one clock shares it.
+ */
+function simulateUvmEffectFrame(
+  prepared: UvmEffectPreparation,
+  options: UvmEffectFrameOptions,
+): UvmEffectSimulation {
+  const { signal } = options
+  const {
+    effect,
+    nodeCount,
+    particles,
+    ribbons,
+    splineNodes,
+    particleSplineWork,
+    ribbonSplineWork,
+    emitterCount,
+    meshBytes,
+    meshNodes,
+    fields,
+    projectorTemplates,
+    collisionInput,
+  } = prepared
   let transforms = options.nodeTransformsAt(0)
   const spaceNode =
     effect['spaceNode'] === undefined
@@ -609,8 +746,6 @@ export function createUvmEffectFrame(document: JsonObject, options: UvmEffectFra
     if (frame === undefined) throw new TypeError('effect simulation space transform is absent')
     return Array.from(frame)
   }
-  const worldRight: Vec3 = [number(view[0], 0), number(view[4], 0), number(view[8], 0)]
-  const worldUp: Vec3 = [number(view[1], 0), number(view[5], 0), number(view[9], 0)]
   // Conservative allowance includes simulator pools, frame geometry/material objects and snapshots.
   const capacity = Math.min(
     1024,
@@ -722,6 +857,8 @@ export function createUvmEffectFrame(document: JsonObject, options: UvmEffectFra
     },
     options.sequenceIndex ?? null,
   )
+  const warnings: { message: string; code: string }[] = []
+  const warn = (message: string, code: string) => warnings.push({ message, code })
   if (stats.seekClamped)
     warn(
       'Effect seek exceeded 3600 fixed steps; integration uses a coarser bounded step.',
@@ -736,6 +873,27 @@ export function createUvmEffectFrame(document: JsonObject, options: UvmEffectFra
   validateSplineFrames()
   const toWorld = simulationFrame(),
     toLocal = invertMaterialFrame(toWorld)
+  return { simulation, provide, toWorld, toLocal, warnings }
+}
+
+/** An effect frame from its preparation and simulation, for one view. */
+function uvmEffectFrameGeometry(
+  prepared: UvmEffectPreparation,
+  simulated: UvmEffectSimulation,
+  options: UvmEffectFrameOptions,
+  view: Float32Array,
+  diagnostics: SceneRendererDiagnostic[],
+) {
+  const { signal } = options
+  const { particles, ribbons, ribbonOrdinals, emitterCount } = prepared
+  let { meshNodes } = prepared
+  const { simulation, provide, toWorld, toLocal } = simulated
+  const primitives: SceneRendererPrimitive[] = [],
+    materials: SceneRendererMaterial[] = []
+  let collisionSplats: readonly UvmCollisionSplat[] = []
+  const modelParticles: (UvmModelParticleDraw & { readonly transform: readonly number[] })[] = []
+  const worldRight: Vec3 = [number(view[0], 0), number(view[4], 0), number(view[8], 0)]
+  const worldUp: Vec3 = [number(view[1], 0), number(view[5], 0), number(view[9], 0)]
   const direction = (value: Vec3): Vec3 =>
     normalize(
       [0, 1, 2].map(
@@ -747,7 +905,7 @@ export function createUvmEffectFrame(document: JsonObject, options: UvmEffectFra
     )
   const right = direction(worldRight),
     up = direction(worldUp)
-  let bytes = emitterCount * 4096 + meshBytes
+  let bytes = emitterCount * 4096 + prepared.meshBytes
   const materialById = new Map(options.materials.map(material => [material.id, material]))
   const cameraWorld = transform([0, 0, 0], invertMaterialFrame(Array.from(view))),
     cameraLocal = transform(cameraWorld, toLocal)
