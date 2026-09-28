@@ -8,6 +8,7 @@ import {
   type GameInstallation,
   type GameInstallationDiscovery,
   type GameInstallationDiscoveryResult,
+  type GameInstallationMarker,
   type GameInstallationOfferFacet,
   type GameInstallationOrigin,
   type GameInstallationRequestFacet,
@@ -16,18 +17,20 @@ import {
   type GameLaunchPlanner,
   type GameLaunchResource,
 } from '@modkit/sdk/games'
-import type {
-  DefinitionInventoryResult,
-  InstallationProbes,
-  JsonValue,
-  PermissionGrant,
-  ResourceBudget,
-  RuntimeTarget,
-  ServiceContractDefinitionRegistry,
-  ServiceContractDefinitionSpecV1Wire,
-  ServiceFacetMatchContext,
-  ServiceFacetMatchResult,
-  ServiceFacetMatcherProfile,
+import {
+  SERVICE_PROVIDER_CONTRIBUTION_CONTRACT,
+  type DefinitionInventoryResult,
+  type InstallationProbes,
+  type JsonValue,
+  type PermissionGrant,
+  type ResourceBudget,
+  type RuntimeTarget,
+  type ServiceContractDefinitionRegistry,
+  type ServiceContractDefinitionSpecV1Wire,
+  type ServiceFacetMatchContext,
+  type ServiceFacetMatchResult,
+  type ServiceFacetMatcherProfile,
+  type ServiceProviderContributionSpecV1,
 } from '@modkit/sdk'
 import type { ExecutionBackendRegistry } from '../execution/backend.js'
 import type { Inventory } from '../inventory.js'
@@ -36,7 +39,9 @@ import { createHostServiceResolver } from '../service-leases.js'
 /** Owner id under which the standard installation-discovery definition is registered. */
 export const STANDARD_GAMES_OWNER = 'modkit/games'
 
-const OFFER_KEYS = new Set(['gameIds'])
+const OFFER_KEYS = new Set(['gameIds', 'markers', 'searchFolders'])
+/** A marker names files of one folder and a search folder one folder of a drive root: plain names. */
+const FOLDER_NAME = /^[^\\/:*?"<>|\u0000-\u001f]{1,255}$/u
 const REQUEST_KEYS = new Set(['gameId'])
 const ORIGINS = new Set<GameInstallationOrigin>([
   'configured-path',
@@ -44,6 +49,7 @@ const ORIGINS = new Set<GameInstallationOrigin>([
   'registry',
   'steam',
   'epic',
+  'search-folder',
 ])
 
 function recordOf(value: unknown): Readonly<Record<string, unknown>> | undefined {
@@ -74,12 +80,85 @@ function originList(value: unknown): readonly GameInstallationOrigin[] | undefin
     : undefined
 }
 
+function nameList(value: unknown): readonly string[] | undefined {
+  const names = stringList(value)
+  return names?.every(name => FOLDER_NAME.test(name) && name !== '.' && name !== '..')
+    ? names
+    : undefined
+}
+
 function parseOffer(value: unknown): GameInstallationOfferFacet | undefined {
   const record = recordOf(value)
   if (record === undefined || Object.keys(record).some(key => !OFFER_KEYS.has(key)))
     return undefined
   const gameIds = stringList(record['gameIds'])
-  return gameIds === undefined ? undefined : { gameIds }
+  if (gameIds === undefined) return undefined
+  const markers: GameInstallationMarker[] = []
+  if (record['markers'] !== undefined) {
+    if (!Array.isArray(record['markers'])) return undefined
+    for (const item of record['markers']) {
+      const marker = recordOf(item)
+      const files = nameList(marker?.['files'])
+      if (
+        marker === undefined ||
+        Object.keys(marker).some(key => key !== 'gameId' && key !== 'files') ||
+        typeof marker['gameId'] !== 'string' ||
+        !gameIds.includes(marker['gameId']) ||
+        files === undefined
+      )
+        return undefined
+      markers.push({ gameId: marker['gameId'], files })
+    }
+  }
+  const searchFolders =
+    record['searchFolders'] === undefined ? undefined : nameList(record['searchFolders'])
+  if (record['searchFolders'] !== undefined && searchFolders === undefined) return undefined
+  return {
+    gameIds,
+    ...(markers.length === 0 ? {} : { markers }),
+    ...(searchFolders === undefined ? {} : { searchFolders }),
+  }
+}
+
+/** What the host's folder search looks for, gathered from every installation-discovery offer. */
+export interface GameInstallationSearch {
+  readonly markers: readonly GameInstallationMarker[]
+  /** Store and publisher folders the games name, searched at every local drive root. */
+  readonly searchFolders: readonly string[]
+}
+
+/**
+ * The markers and search folders every activation-eligible installation-discovery offer of the
+ * inventory declares — manifest data, read without activating a provider — for
+ * `searchInstallationFolders` of `@modkit/host/node`. An offer that is not well formed adds nothing.
+ */
+export function gameInstallationSearchOf(inventory: Inventory): GameInstallationSearch {
+  const markers: GameInstallationMarker[] = []
+  const searchFolders = new Map<string, string>()
+  for (const extension of inventory.extensions) {
+    for (const contribution of extension.contributions) {
+      const manifest = contribution.manifest
+      if (
+        !contribution.activationEligible ||
+        manifest?.contract.id !== SERVICE_PROVIDER_CONTRIBUTION_CONTRACT ||
+        manifest.contract.major !== 1
+      )
+        continue
+      const spec = manifest.spec as unknown as ServiceProviderContributionSpecV1
+      for (const offer of spec.provides) {
+        if (offer.contract !== GAME_INSTALLATION_DISCOVERY_CONTRACT || offer.major !== 1) continue
+        const facet = parseOffer(offer.facet)
+        markers.push(...(facet?.markers ?? []))
+        for (const folder of facet?.searchFolders ?? [])
+          if (!searchFolders.has(folder.toLowerCase()))
+            searchFolders.set(folder.toLowerCase(), folder)
+      }
+    }
+  }
+  return Object.freeze({
+    markers: Object.freeze(markers),
+    searchFolders: Object.freeze([...searchFolders.values()]),
+  })
 }
 
 function parseRequest(value: unknown): GameInstallationRequestFacet | undefined {
@@ -235,6 +314,8 @@ export type GameInstallationResolution =
 /** One complete, host-owned installation-discovery operation. */
 export interface DiscoverGameInstallationsRequest extends ResolveGameInstallationRequest {
   readonly configuredPaths?: readonly string[]
+  /** This game's folders from `searchInstallationFolders`; the provider confirms them last. */
+  readonly searchPaths?: readonly string[]
   readonly maxCandidates: number
 }
 
@@ -440,6 +521,9 @@ export async function discoverGameInstallations(
       ...(request.configuredPaths === undefined
         ? {}
         : { configuredPaths: request.configuredPaths }),
+      ...(request.searchPaths === undefined || request.searchPaths.length === 0
+        ? {}
+        : { searchPaths: request.searchPaths }),
       maxCandidates: request.maxCandidates,
       ...(request.signal === undefined ? {} : { signal: request.signal }),
     })

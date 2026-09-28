@@ -129,6 +129,11 @@ export {
   type NodeInstallationProbeOptions,
 } from './installation-probes.js'
 export {
+  searchInstallationFolders,
+  type InstallationFolderSearch,
+  type InstallationFolderSearchOptions,
+} from './installation-search.js'
+export {
   createNodeVideoFrameDecoder,
   findFfmpeg,
   parsePam,

@@ -12,8 +12,9 @@ export const GAME_LAUNCH_PLAN_CONTRACT = 'common.game/launch-plan' as const
 /** Host-owned matcher profile for exact game-id routing. */
 export const GAME_INSTALLATION_MATCHER_PROFILE = 'modkit/game-installation-matcher' as const
 
+/** `search-folder`: the host found the folder while walking its search folders (`searchPaths`). */
 export type GameInstallationOrigin =
-  'configured-path' | 'default-directory' | 'registry' | 'steam' | 'epic'
+  'configured-path' | 'default-directory' | 'registry' | 'steam' | 'epic' | 'search-folder'
 
 /** One bounded place worth probing; it is not an installation until evidence confirms it. */
 export interface GameInstallationCandidate {
@@ -162,6 +163,12 @@ export interface GameInstallationDiscoveryRequest {
   readonly gameId: string
   /** Roots explicitly selected or configured by the user; still verified by the provider. */
   readonly configuredPaths?: readonly string[]
+  /**
+   * Folders the host's search found shaped like this game's installation (its offer's `markers`),
+   * candidates of origin `search-folder`. The provider confirms them with its own checks, after its
+   * registry and store candidates: they never take those candidates' place within `maxCandidates`.
+   */
+  readonly searchPaths?: readonly string[]
   /** Hard ceiling over candidates probed by this call. */
   readonly maxCandidates: number
   readonly signal?: AbortSignal
@@ -185,9 +192,26 @@ export interface GameInstallationDiscovery {
   discover(request: GameInstallationDiscoveryRequest): Promise<GameInstallationDiscoveryResult>
 }
 
+/**
+ * What an installation folder of one game holds, so the host recognises it while walking its search
+ * folders without asking the game: every name in `files` (its own executable, `.build.info`), letter
+ * case ignored. Several markers of one game are alternatives.
+ */
+export interface GameInstallationMarker {
+  readonly gameId: string
+  readonly files: readonly string[]
+}
+
 /** JSON-safe route advertised by a discovery contribution. */
 export interface GameInstallationOfferFacet {
   readonly gameIds: readonly string[]
+  /** The shapes of these games' installation folders, for the host's folder search. */
+  readonly markers?: readonly GameInstallationMarker[]
+  /**
+   * Folders at the root of every local drive where these games' stores and publishers install
+   * (`XboxGames`, `GOG Games`, `Epic Games`), searched besides the host's common ones.
+   */
+  readonly searchFolders?: readonly string[]
 }
 
 /** JSON-safe route supplied by a consumer selecting one named game. */
