@@ -2411,6 +2411,8 @@ type WorldTransparentTexturedBatch = MutableTexturedBatch & {
  */
 type WorldObjectBatchWrite =
   | { readonly collection: 'opaque'; readonly write: WorldBatchWrite }
+  /** Untextured blended triangles, drawn with the water after it. */
+  | { readonly collection: 'transparent'; readonly write: WorldBatchWrite }
   | {
       readonly collection: 'controlled'
       readonly key: string
@@ -4340,6 +4342,7 @@ export function createWorldWebGlPlan(
   const texturedTargets = () => [...textured.values(), ...transparentTextured.values()]
   const journalObjectWrite = (entry: WorldObjectBatchWrite) => {
     if (entry.collection === 'opaque') return journal(opaque, entry.write)
+    if (entry.collection === 'transparent') return journal(transparent, entry.write)
     if (entry.collection === 'controlled') {
       const target = shadowControlledOpaque.get(entry.key) ?? entry.target
       shadowControlledOpaque.set(entry.key, target)
@@ -4802,6 +4805,14 @@ export function createWorldWebGlPlan(
               ],
               triangleColor(triangle),
             )
+          } else if (blendMode !== undefined) {
+            // a see-through material without a texture (a Roblox part of transparency 0.75) blends
+            // its vertex alpha, as a textured one does
+            if (plainWrite === undefined) {
+              plainWrite = batch()
+              written = { collection: 'transparent', write: plainWrite }
+            }
+            pushTriangle(plainWrite, vertices[0], vertices[1], vertices[2], triangleColor(triangle))
           } else if (shadowPolicy.castShadows && shadowPolicy.receiveShadows) {
             if (plainWrite === undefined) {
               plainWrite = batch()
