@@ -1713,15 +1713,85 @@ function modelMaterialCoverage(material: ModelMaterialRef | undefined): Readonly
   return Object.freeze({ mode, cutoff: mode === 'mask' ? (cutoff ?? 0.5) : 0 })
 }
 
-function modelMaterialShadowPolicy(material: ModelMaterialRef | undefined): Readonly<{
-  castShadows: boolean
-  receiveShadows: boolean
-}> {
-  const flags = new Set(material?.flagNames ?? [])
-  return Object.freeze({
-    castShadows: material?.castShadows ?? !flags.has('no-shadows-cast'),
-    receiveShadows: material?.receiveShadows ?? !flags.has('no-shadows-receive'),
-  })
+type ModelMaterialShadowPolicy = Readonly<{ castShadows: boolean; receiveShadows: boolean }>
+
+const DEFAULT_SHADOW_POLICY: ModelMaterialShadowPolicy = Object.freeze({
+  castShadows: true,
+  receiveShadows: true,
+})
+/** Materials are immutable model results: their policy is read once, not per primitive and plan. */
+const materialShadowPolicies = new WeakMap<ModelMaterialRef, ModelMaterialShadowPolicy>()
+
+function modelMaterialShadowPolicy(material: ModelMaterialRef | undefined): ModelMaterialShadowPolicy {
+  if (material === undefined) return DEFAULT_SHADOW_POLICY
+  let policy = materialShadowPolicies.get(material)
+  if (policy === undefined) {
+    const flags = new Set(material.flagNames ?? [])
+    policy = Object.freeze({
+      castShadows: material.castShadows ?? !flags.has('no-shadows-cast'),
+      receiveShadows: material.receiveShadows ?? !flags.has('no-shadows-receive'),
+    })
+    materialShadowPolicies.set(material, policy)
+  }
+  return policy
+}
+
+/** A model's materials by id (the first of each id, as `find` would), once per material list. */
+const materialsById = new WeakMap<readonly ModelMaterialRef[], ReadonlyMap<unknown, ModelMaterialRef>>()
+
+function modelMaterialById(
+  materials: readonly ModelMaterialRef[],
+  id: string | undefined,
+): ModelMaterialRef | undefined {
+  let byId = materialsById.get(materials)
+  if (byId === undefined) {
+    const map = new Map<unknown, ModelMaterialRef>()
+    for (const material of materials) if (!map.has(material.id)) map.set(material.id, material)
+    materialsById.set(materials, (byId = map))
+  }
+  return byId.get(id)
+}
+
+/**
+ * The model resources an object places, in order and without repeats, and the components that
+ * place them: once per item, not per plan.
+ */
+const worldObjectResources = new WeakMap<
+  WorldSceneObjectItem,
+  Readonly<{
+    keyed: readonly string[]
+    components: readonly MapModelComponentPlacement[]
+  }>
+>()
+
+function worldObjectResourcesOf(item: WorldSceneObjectItem) {
+  let resources = worldObjectResources.get(item)
+  if (resources === undefined) {
+    const resourceIds = [
+      ...new Set([
+        ...(item.resourceId === undefined ? [] : [item.resourceId]),
+        ...(item.resourceIds ?? []),
+      ]),
+    ]
+    resources = Object.freeze({
+      keyed: Object.freeze([
+        ...new Set([
+          ...(item.resourceId === undefined ? [] : [item.resourceId]),
+          ...(item.resourceIds ?? []),
+          ...(item.modelComponents ?? []).map(component => component.resourceId),
+        ]),
+      ]),
+      components:
+        item.modelComponents ??
+        Object.freeze(
+          resourceIds.map((resourceId, index) =>
+            Object.freeze({ id: `implicit-${String(index)}`, resourceId }),
+          ),
+        ),
+    })
+    worldObjectResources.set(item, resources)
+  }
+  return resources
 }
 
 function finitePlan(plan: readonly WorldBatchWrite[]) {
@@ -1916,6 +1986,41 @@ type WorldObjectBatchWrite =
 const checkedWorldWrites = new WeakSet<WorldBatchWrite>()
 const checkedWorldPickMeshes = new WeakSet<WorldObjectPickMesh>()
 
+/**
+ * Bounds of a pick mesh's triangles and primitives (minimum xyz, maximum xyz), or null when it has
+ * neither; a retained object keeps its pick mesh, so its bounds are taken once.
+ */
+const worldPickMeshBounds = new WeakMap<WorldObjectPickMesh, readonly number[] | null>()
+
+function pickMeshBounds(item: WorldObjectPickMesh): readonly number[] | null {
+  let bounds = worldPickMeshBounds.get(item)
+  if (bounds === undefined) {
+    const triangles = positionBounds(item.triangles)
+    let [minX, minY, minZ, maxX, maxY, maxZ] = triangles as [
+      number,
+      number,
+      number,
+      number,
+      number,
+      number,
+    ]
+    for (const primitive of item.primitives) {
+      minX = Math.min(minX, primitive.minimum[0])
+      maxX = Math.max(maxX, primitive.maximum[0])
+      minY = Math.min(minY, primitive.minimum[1])
+      maxY = Math.max(maxY, primitive.maximum[1])
+      minZ = Math.min(minZ, primitive.minimum[2])
+      maxZ = Math.max(maxZ, primitive.maximum[2])
+    }
+    bounds =
+      item.triangles.length > 0 || item.primitives.length > 0
+        ? Object.freeze([minX, minY, minZ, maxX, maxY, maxZ])
+        : null
+    worldPickMeshBounds.set(item, bounds)
+  }
+  return bounds
+}
+
 /** Bounds of a positions array (minimum xyz, maximum xyz); kept for writes and pick meshes. */
 const worldPositionBounds = new WeakMap<readonly number[], readonly number[]>()
 
@@ -2099,11 +2204,7 @@ function worldStaticObjectKey(
     item.presentationTeamColor ??
     (item.player === undefined ? undefined : input.teamColors?.get(item.player))
   const key: unknown[] = [preparation, teamColor?.join(',') ?? '']
-  for (const resourceId of new Set([
-    ...(item.resourceId === undefined ? [] : [item.resourceId]),
-    ...(item.resourceIds ?? []),
-    ...(item.modelComponents ?? []).map(component => component.resourceId),
-  ])) {
+  for (const resourceId of worldObjectResourcesOf(item).keyed) {
     const result = input.models?.get(resourceId)
     key.push(resourceId, result)
     if (result?.state !== 'converted' || !worldObjectFollowsTime(result, item)) continue
@@ -3493,6 +3594,31 @@ function prepareWorldStaticTerrain(
   }
 }
 
+/**
+ * The items of each facet, grouped in one pass per terrain preparation: a plan reuses a preparation
+ * only while its items are the same, element by element (see sameWorldStaticInput), and scanning
+ * all ~72 000 items once per facet took several milliseconds of every plan.
+ */
+const worldPreparationFacets = new WeakMap<object, ReadonlyMap<string, readonly WorldSceneItem[]>>()
+
+function worldFacetItems<F extends WorldSceneItem['facet']>(
+  preparation: object,
+  items: readonly WorldSceneItem[],
+  facet: F,
+): readonly Extract<WorldSceneItem, { facet: F }>[] {
+  let facets = worldPreparationFacets.get(preparation)
+  if (facets === undefined) {
+    const grouped = new Map<string, WorldSceneItem[]>()
+    for (const item of items) {
+      const list = grouped.get(item.facet)
+      if (list === undefined) grouped.set(item.facet, [item])
+      else list.push(item)
+    }
+    worldPreparationFacets.set(preparation, (facets = grouped))
+  }
+  return (facets.get(facet) ?? []) as readonly Extract<WorldSceneItem, { facet: F }>[]
+}
+
 const worldStaticPreparations = new WeakMap<
   WorldWebGlPlan,
   {
@@ -3642,7 +3768,7 @@ export function createWorldWebGlPlan(
     string,
     { readonly batch: MutableBatch; readonly colorFalloff: number; readonly receiveShadows: boolean }
   >()
-  for (const item of input.items.filter(item => item.facet === 'water')) {
+  for (const item of worldFacetItems(preparation, input.items, 'water')) {
     const minimum = item.uvwMinimum ?? { x: item.minimum.x, z: item.minimum.y }
     const maximum = item.uvwMaximum ?? { x: item.maximum.x, z: item.maximum.y }
     const elevation = item.uvwElevation ?? item.elevation
@@ -3716,9 +3842,7 @@ export function createWorldWebGlPlan(
       ? previousBatches.waterSurfaceDepth
       : worldWaterSurfaceDepth(waterWrites)
 
-  const objects = input.items.filter(
-    (item): item is WorldSceneObjectItem => item.facet === 'objects',
-  )
+  const objects = worldFacetItems(preparation, input.items, 'objects')
   const projectorGround = preparation.terrainTriangles
   let modelTriangles = 0
   let diagnosticPlaceholders = 0
@@ -3760,18 +3884,7 @@ export function createWorldWebGlPlan(
     const translation = objectPosition(item, input)
     const pickTriangles: number[] = []
     const pickPrimitives: WorldWebGlPickPrimitive[] = []
-    const resourceIds = [
-      ...new Set([
-        ...(item.resourceId === undefined ? [] : [item.resourceId]),
-        ...(item.resourceIds ?? []),
-      ]),
-    ]
-    const components: readonly MapModelComponentPlacement[] =
-      item.modelComponents ??
-      resourceIds.map((resourceId, index) => ({
-        id: `implicit-${String(index)}`,
-        resourceId,
-      }))
+    const { components } = worldObjectResourcesOf(item)
     const componentTransforms = new Map<string, Float32Array>()
     const samples = new Map<
       string,
@@ -3915,7 +4028,7 @@ export function createWorldWebGlPlan(
       let primitiveIndex = -1
       for (const primitive of primitives) {
         primitiveIndex += 1
-        const material = presented.find(candidate => candidate.id === primitive.materialId)
+        const material = modelMaterialById(presented, primitive.materialId)
         const shadowPolicy = modelMaterialShadowPolicy(material)
         const prepared = programs.get(primitive.materialId ?? '')
         // A prepared material without color passes (distortion, terrain projection) draws nothing;
@@ -4220,7 +4333,7 @@ export function createWorldWebGlPlan(
   }
 
   let navigationSamples = 0
-  for (const item of input.items.filter(item => item.facet === 'navigation')) {
+  for (const item of worldFacetItems(preparation, input.items, 'navigation')) {
     if (item.flags === 0) continue
     const position =
       item.uvwPosition === undefined
@@ -4231,7 +4344,7 @@ export function createWorldWebGlPlan(
   }
 
   let regionShapes = 0
-  for (const item of input.items.filter(item => item.facet === 'regions')) {
+  for (const item of worldFacetItems(preparation, input.items, 'regions')) {
     const shapes = item.uvwShapes ?? item.shapes
     for (const shape of shapes) {
       const color = [1, 0.75, 0.12, 1] as const
@@ -4302,7 +4415,6 @@ export function createWorldWebGlPlan(
     ...[opaque, transparent, ...shadowControlledOpaque.values(), ...texturedTargets()]
       .flatMap(writesOf)
       .map(write => write.positions),
-    ...objectPickMeshes.map(item => item.triangles),
   ]
   const minimum: [number, number, number] = [...preparation.minimum]
   const maximum: [number, number, number] = [...preparation.maximum]
@@ -4316,19 +4428,21 @@ export function createWorldWebGlPlan(
     }
   }
   for (const item of objectPickMeshes) {
-    for (const primitive of item.primitives) {
-      hasPositions = true
-      for (const axis of [0, 1, 2] as const) {
-        minimum[axis] = Math.min(minimum[axis], primitive.minimum[axis])
-        maximum[axis] = Math.max(maximum[axis], primitive.maximum[axis])
-      }
-    }
+    const bounds = pickMeshBounds(item)
+    if (bounds === null) continue
+    hasPositions = true
+    minimum[0] = Math.min(minimum[0], bounds[0]!)
+    minimum[1] = Math.min(minimum[1], bounds[1]!)
+    minimum[2] = Math.min(minimum[2], bounds[2]!)
+    maximum[0] = Math.max(maximum[0], bounds[3]!)
+    maximum[1] = Math.max(maximum[1], bounds[4]!)
+    maximum[2] = Math.max(maximum[2], bounds[5]!)
   }
   if (!hasPositions) {
     minimum.fill(-0.5)
     maximum.fill(0.5)
   }
-  const lighting = input.items.find(item => item.facet === 'lighting')
+  const lighting = worldFacetItems(preparation, input.items, 'lighting')[0]
   const directional = lighting?.directional[0]
   const ambient: readonly [number, number, number] = lighting?.ambientColor ?? [1, 1, 1]
   const direction: readonly [number, number, number] = directional?.direction ?? [-0.45, -1, -0.35]
