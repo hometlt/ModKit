@@ -723,3 +723,13 @@ const OPTIONAL_CONTENT_SOURCE_METHODS = [
   'openModContext',
   'locateModPackage',
 ] as const satisfies readonly (keyof ContentSources)[]
+
+export {
+  createLayeredArchiveContentSources,
+  type ArchiveLayers,
+  type LayerArchive,
+  type LayerArchiveEntry,
+  type LayeredArchiveContentSources,
+  type LayeredRoot,
+  type LayerOrigin,
+} from './layered-archive-sources.js'

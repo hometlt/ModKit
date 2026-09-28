@@ -412,3 +412,70 @@ export function readContainerEntry(
     options.signal,
   )
 }
+
+/** One file of a {@link ContainerEntryLayer}: as it is named, and its decoded size. */
+export interface ContainerLayerEntry {
+  readonly path: string
+  readonly size: number
+  readonly hidden?: true
+}
+
+/**
+ * A container as one archive of a game's layered content source — the shape of `LayerArchive` in
+ * `@modkit/vfs/content-sources` (vfs cannot import codec-kit, nor codec-kit vfs), which
+ * `createLayeredArchiveContentSources` merges with the game's other archives.
+ */
+export interface ContainerEntryLayer {
+  readonly id: string
+  readonly entries: readonly ContainerLayerEntry[]
+  lookup?(path: string, signal?: AbortSignal): Promise<ContainerLayerEntry | undefined>
+  read(path: string, maxBytes: number, signal?: AbortSignal): Promise<Uint8Array>
+  close(): void | Promise<void>
+}
+
+const layerEntry = (entry: ContainerEntry): ContainerLayerEntry => ({
+  path: entry.path,
+  size: Number(entry.size),
+  ...(entry.hidden === true ? { hidden: true } : {}),
+})
+
+/**
+ * `table` as the archive `id` of a layered content source: its entries named, a path they do not
+ * name found through `find`, every entry decoded by {@link readContainerEntry} from `source`.
+ * `close` releases whatever the caller opened `source` over.
+ */
+export function containerEntryLayer(
+  id: string,
+  table: ContainerEntryTable,
+  source: ByteRangeSource,
+  close: () => void | Promise<void> = () => undefined,
+): ContainerEntryLayer {
+  const keyOf =
+    table.caseSensitivity === 'insensitive'
+      ? (path: string) => path.toLowerCase()
+      : (path: string) => path
+  const byPath = new Map(table.entries.map(entry => [keyOf(entry.path), entry]))
+  const find = table.find?.bind(table)
+  return {
+    id,
+    entries: table.entries.map(layerEntry),
+    ...(find === undefined
+      ? {}
+      : {
+          async lookup(path: string, signal?: AbortSignal) {
+            const entry = await find(path, signal)
+            return entry === undefined ? undefined : layerEntry(entry)
+          },
+        }),
+    async read(path, maxBytes, signal) {
+      const entry = byPath.get(keyOf(path)) ?? (await find?.(path, signal))
+      if (entry === undefined) throw new RangeError(`${id} has no «${path}»`)
+      return readContainerEntry(
+        entry,
+        source,
+        signal === undefined ? { maxBytes } : { maxBytes, signal },
+      )
+    },
+    close,
+  }
+}

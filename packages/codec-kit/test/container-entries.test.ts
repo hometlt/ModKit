@@ -1,7 +1,11 @@
 import { deflateSync } from 'node:zlib'
 import { describe, expect, it } from 'vitest'
 import { CONTAINER_EXTRACT_HANDLER_ID, createInspectionCodec } from '../src/index.js'
-import { containerEntryAccess, readContainerEntry } from '../src/container-entries.js'
+import {
+  containerEntryAccess,
+  containerEntryLayer,
+  readContainerEntry,
+} from '../src/container-entries.js'
 
 // A tiny range container: a 4-byte magic, then three entries' bytes. The codec only maps its index
 // to a ContainerEntryTable; listing and extraction come from codec-kit (S3 stage 1).
@@ -309,5 +313,80 @@ describe('readContainerEntry', () => {
       new TextDecoder().decode(await readContainerEntry(entry, source, { maxBytes: 64 })),
     ).toBe('hello, stored entry')
     await expect(readContainerEntry(entry, source, { maxBytes: 4 })).rejects.toThrow(RangeError)
+  })
+})
+
+describe('containerEntryLayer', () => {
+  it('serves a table as one archive of a layered source: named, found by path, decoded', async () => {
+    const source = {
+      size: async () => BigInt(container.byteLength),
+      read: async (offset: bigint, length: number) =>
+        container.slice(Number(offset), Number(offset) + length),
+    }
+    const closed: string[] = []
+    const found: string[] = []
+    const unnamed = {
+      path: 'patch/hidden.txt',
+      size: BigInt(stored.byteLength),
+      storage: { kind: 'stored' as const, offset: 4n, length: BigInt(stored.byteLength) },
+    }
+    const layer = containerEntryLayer(
+      'fixture.cntr',
+      {
+        caseSensitivity: 'insensitive',
+        complete: false,
+        entries: [
+          {
+            path: 'Data/Stored.txt',
+            size: BigInt(stored.byteLength),
+            storage: { kind: 'stored', offset: 4n, length: BigInt(stored.byteLength) },
+          },
+          {
+            path: 'data/zlib.txt',
+            size: BigInt(plain.byteLength),
+            storage: {
+              kind: 'zlib',
+              offset: BigInt(4 + stored.byteLength),
+              compressedLength: BigInt(zlibbed.byteLength),
+            },
+            hidden: true,
+          },
+        ],
+        async find(path) {
+          found.push(path)
+          return path.toLowerCase() === unnamed.path ? unnamed : undefined
+        },
+      },
+      source,
+      () => void closed.push('fixture.cntr'),
+    )
+    expect(layer.id).toBe('fixture.cntr')
+    expect(layer.entries).toEqual([
+      { path: 'Data/Stored.txt', size: stored.byteLength },
+      { path: 'data/zlib.txt', size: plain.byteLength, hidden: true },
+    ])
+    const decode = (bytes: Uint8Array) => new TextDecoder().decode(bytes)
+    expect(decode(await layer.read('data/stored.TXT', 64))).toBe('hello, stored entry')
+    expect(decode(await layer.read('data/zlib.txt', 4096))).toBe('zlib entry '.repeat(40))
+    await expect(layer.read('data/zlib.txt', 16)).rejects.toThrow(/budget/u)
+    expect(await layer.lookup?.('Patch/Hidden.txt')).toEqual({
+      path: 'patch/hidden.txt',
+      size: stored.byteLength,
+    })
+    expect(decode(await layer.read('patch/hidden.txt', 64))).toBe('hello, stored entry')
+    await expect(layer.read('nowhere.txt', 64)).rejects.toThrow(
+      /fixture.cntr has no «nowhere.txt»/u,
+    )
+    expect(found).toEqual(['Patch/Hidden.txt', 'patch/hidden.txt', 'nowhere.txt'])
+    await layer.close()
+    expect(closed).toEqual(['fixture.cntr'])
+    // a table without `find` has no lookup: its listing is the whole archive
+    const listed = containerEntryLayer(
+      'listed',
+      { caseSensitivity: 'sensitive', complete: true, entries: [] },
+      source,
+    )
+    expect(listed.lookup).toBeUndefined()
+    await expect(listed.read('Data/Stored.txt', 64)).rejects.toThrow(/listed has no/u)
   })
 })

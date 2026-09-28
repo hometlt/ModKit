@@ -3,7 +3,13 @@ import { resizeRgba } from './raster/ops.js'
 import { deferAssetSession } from './deferred-session.js'
 import { PROJECTION_RECEIPT_METADATA_ID } from './projection.js'
 import { CONTAINER_EXTRACT_HANDLER_ID, containerEntryAccess } from './container-entries.js'
-export { CONTAINER_EXTRACT_HANDLER_ID, readContainerEntry } from './container-entries.js'
+export {
+  CONTAINER_EXTRACT_HANDLER_ID,
+  containerEntryLayer,
+  readContainerEntry,
+  type ContainerEntryLayer,
+  type ContainerLayerEntry,
+} from './container-entries.js'
 import type { SourceSpan } from '@modkit/core'
 import { ModkitError } from '@modkit/core'
 

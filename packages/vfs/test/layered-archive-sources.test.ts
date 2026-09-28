@@ -1,0 +1,227 @@
+import { describe, expect, it } from 'vitest'
+import {
+  createLayeredArchiveContentSources,
+  type ContentSourceRoot,
+  type LayerArchive,
+  type LayerArchiveEntry,
+} from '../src/content-sources.js'
+
+const text = (value: string) => new TextEncoder().encode(value)
+const decode = (bytes: Uint8Array) => new TextDecoder().decode(bytes)
+const key = (path: string) => path.replaceAll('\\', '/').toLowerCase()
+
+interface Log {
+  readonly closed: string[]
+  readonly lookups: string[]
+}
+
+/**
+ * An archive in memory: `named` is what its listing names, `unnamed` what it holds without a name
+ * (found only by `lookup`, as an MPQ patch without its file list).
+ */
+function archive(
+  id: string,
+  named: Readonly<Record<string, string>>,
+  log: Log,
+  options: { readonly unnamed?: Readonly<Record<string, string>>; readonly hidden?: string } = {},
+): LayerArchive {
+  const contents = new Map(
+    Object.entries({ ...named, ...options.unnamed }).map(([path, value]) => [key(path), value]),
+  )
+  const sizeOf = (path: string) => text(contents.get(key(path)) ?? '').byteLength
+  const entry = (path: string): LayerArchiveEntry => ({
+    path,
+    size: sizeOf(path),
+    ...(path === options.hidden ? { hidden: true } : {}),
+  })
+  return {
+    id,
+    entries: Object.keys(named).map(entry),
+    ...(options.unnamed === undefined
+      ? {}
+      : {
+          async lookup(path: string) {
+            log.lookups.push(`${id}:${path}`)
+            return contents.has(key(path)) ? { path, size: sizeOf(path) } : undefined
+          },
+        }),
+    async read(path, maxBytes) {
+      const value = contents.get(key(path))
+      if (value === undefined) throw new RangeError(`${id} has no ${path}`)
+      const bytes = text(value)
+      if (bytes.byteLength > maxBytes)
+        throw new RangeError(`${path} is more than ${String(maxBytes)}`)
+      return bytes
+    },
+    close() {
+      log.closed.push(id)
+    },
+  }
+}
+
+const root = (id: string): ContentSourceRoot => ({ id, label: id, region: 'local', kind: 'local' })
+
+/** A patch in front of an expansion in front of a base, as a SAGE SkuDef orders them. */
+function chain(log: Log): LayerArchive[] {
+  return [
+    archive('patch.big', { 'Data\\INI\\eva.ini': 'patched eva', 'data/new.txt': 'new' }, log),
+    archive('expansion.big', { 'data/ini/eva.ini': 'expansion eva', 'art/unit.dds': 'dds' }, log),
+    archive(
+      'base.big',
+      {
+        'data/ini/eva.ini': 'shipped eva',
+        'data/ini/gamedata.ini': 'gamedata',
+        'readme.txt': 'hi',
+      },
+      log,
+    ),
+  ]
+}
+
+describe('archives as the one tree a game reads', () => {
+  it('serves each path from the highest archive and spells it as the highest names it', async () => {
+    const log: Log = { closed: [], lookups: [] }
+    const sources = createLayeredArchiveContentSources('Game', [
+      { root: root('local:game'), open: async () => chain(log) },
+    ])
+    expect(await sources.snapshot()).toEqual({
+      label: 'Game',
+      regions: [],
+      connections: [],
+      roots: [root('local:game')],
+    })
+    expect(await sources.list('local:game', '')).toEqual([
+      { path: 'art', name: 'art', directory: true },
+      { path: 'Data', name: 'Data', directory: true },
+      { path: 'readme.txt', name: 'readme.txt', directory: false, size: 2 },
+    ])
+    // each file keeps the spelling of the archive that names it highest
+    expect((await sources.list('local:game', 'DATA/ini')).map(entry => entry.path)).toEqual([
+      'Data/INI/eva.ini',
+      'data/ini/gamedata.ini',
+    ])
+    expect(decode(await sources.read('local:game', 'data/ini/EVA.ini', 64))).toBe('patched eva')
+    expect(decode(await sources.read('local:game', 'data/ini/gamedata.ini', 64))).toBe('gamedata')
+
+    const layers = await sources.layers('local:game')
+    expect(layers.archives).toEqual(['patch.big', 'expansion.big', 'base.big'])
+    expect(layers.shadowedCount).toBe(1)
+    expect(layers.owner('data/ini/eva.ini')).toEqual({ archive: 'patch.big', rank: 0 })
+    expect(layers.shadowedBy('DATA\\INI\\EVA.INI')).toEqual([
+      { archive: 'expansion.big', rank: 1 },
+      { archive: 'base.big', rank: 2 },
+    ])
+    expect(layers.owner('nowhere.txt')).toBeUndefined()
+    // a hidden copy is still read by its rank
+    expect(decode(await layers.read('data/ini/eva.ini', 64, 2))).toBe('shipped eva')
+    await expect(layers.read('data/ini/gamedata.ini', 64, 0)).rejects.toThrow(/patch.big holds no/u)
+    await expect(sources.read('local:game', 'data/ini/eva.ini', 4)).rejects.toThrow(/more than 4/u)
+    await expect(sources.read('local:game', 'missing.ini', 64)).rejects.toThrow(
+      /Game has no file «missing.ini»/u,
+    )
+    await expect(sources.list('local:game', 'nowhere')).rejects.toThrow(/was not found/u)
+    await expect(sources.list('local:other', '')).rejects.toThrow(/no Game content source/u)
+    await sources.dispose()
+    expect(log.closed).toEqual(['patch.big', 'expansion.big', 'base.big'])
+  })
+
+  it('pages files beneath a folder, narrowed by extension and by an in-order pattern', async () => {
+    const log: Log = { closed: [], lookups: [] }
+    const sources = createLayeredArchiveContentSources('Game', [
+      { root: root('local:game'), open: async () => chain(log) },
+    ])
+    const first = await sources.files('local:game', 'data', { pattern: 'ini', limit: 1 })
+    expect(first).toEqual({ items: [{ path: 'Data/INI/eva.ini', size: 11 }], nextCursor: '2' })
+    expect(
+      await sources.files('local:game', 'data', {
+        pattern: 'ini',
+        cursor: first.nextCursor ?? '',
+        limit: 5,
+      }),
+    ).toEqual({ items: [{ path: 'data/ini/gamedata.ini', size: 8 }] })
+    expect(await sources.files('local:game', '', { extensions: ['txt'], limit: 10 })).toEqual({
+      items: [
+        { path: 'data/new.txt', size: 3 },
+        { path: 'readme.txt', size: 2 },
+      ],
+    })
+    await expect(sources.files('local:game', '', { limit: 0 })).rejects.toThrow(/page limit/u)
+    await expect(sources.files('local:game', '', { cursor: '-1', limit: 1 })).rejects.toThrow(
+      /cursor/u,
+    )
+    await sources.dispose()
+  })
+
+  it('lets an archive without names serve what it finds by path, and read what nobody names', async () => {
+    const log: Log = { closed: [], lookups: [] }
+    const patch = archive('patch.mpq', {}, log, {
+      unnamed: { 'units\\unitdata.slk': 'patched slk', 'scripts\\war3patch.j': 'patch only' },
+    })
+    const base = archive(
+      'war3.mpq',
+      { 'Units\\UnitData.slk': 'shipped slk', '(listfile)': 'names' },
+      log,
+      { hidden: '(listfile)' },
+    )
+    const sources = createLayeredArchiveContentSources('Warcraft III', [
+      { root: root('local:war3'), open: async () => [patch, base] },
+    ])
+    // the name comes from the base's list, the bytes from the patch that holds the path
+    expect(decode(await sources.read('local:war3', 'units/unitdata.slk', 64))).toBe('patched slk')
+    expect(await sources.files('local:war3', '', { limit: 10 })).toEqual({
+      items: [
+        { path: '(listfile)', size: 5, hidden: true },
+        { path: 'Units/UnitData.slk', size: 11 },
+      ],
+    })
+    const layers = await sources.layers('local:war3')
+    expect(layers.owner('units/unitdata.slk')).toEqual({ archive: 'patch.mpq', rank: 0 })
+    expect(layers.shadowedCount).toBe(1)
+    // nobody names it, so it is not listed, but a read finds it in the patch by path
+    expect(decode(await sources.read('local:war3', 'Scripts/war3patch.j', 64))).toBe('patch only')
+    expect(log.lookups).toContain('patch.mpq:Units/UnitData.slk')
+    await sources.dispose()
+  })
+
+  it('opens on first use, retries a refused open, and reopens after refresh', async () => {
+    const log: Log = { closed: [], lookups: [] }
+    let opens = 0
+    const sources = createLayeredArchiveContentSources('Game', [
+      {
+        root: root('local:game'),
+        async open() {
+          opens += 1
+          if (opens === 1) throw new Error('the game is patching')
+          return chain(log)
+        },
+      },
+    ])
+    expect(opens).toBe(0)
+    await expect(sources.list('local:game', '')).rejects.toThrow(/patching/u)
+    expect((await sources.list('local:game', '')).length).toBe(3)
+    await sources.read('local:game', 'readme.txt', 8)
+    expect(opens).toBe(2)
+    await sources.refresh('local:game')
+    expect(log.closed).toEqual(['patch.big', 'expansion.big', 'base.big'])
+    await sources.list('local:game', '')
+    expect(opens).toBe(3)
+    await sources.dispose()
+    await expect(sources.connect('local')).rejects.toThrow(/Game content sources have no accounts/u)
+    await expect(sources.search('local', 'x')).rejects.toThrow(/no catalogue/u)
+  })
+
+  it('closes the archives it was given when merging them fails', async () => {
+    const log: Log = { closed: [], lookups: [] }
+    const failing: LayerArchive = {
+      ...archive('broken.mpq', {}, log, { unnamed: {} }),
+      async lookup() {
+        throw new Error('hash table damaged')
+      },
+    }
+    const sources = createLayeredArchiveContentSources('Game', [
+      { root: root('local:game'), open: async () => [failing, ...chain(log)] },
+    ])
+    await expect(sources.list('local:game', '')).rejects.toThrow(/damaged/u)
+    expect(log.closed).toEqual(['broken.mpq', 'patch.big', 'expansion.big', 'base.big'])
+  })
+})
