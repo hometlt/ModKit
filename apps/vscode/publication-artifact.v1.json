@@ -20,6 +20,7 @@
     "extensions/data",
     "extensions/documents",
     "extensions/images",
+    "extensions/java",
     "extensions/lua",
     "extensions/models",
     "extensions/translation",
