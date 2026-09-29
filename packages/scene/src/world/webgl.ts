@@ -581,7 +581,8 @@ export function worldModelEffectDraws(
       let cached = frames.current.get(key) ?? frames.previous.get(key)
       if (cached !== undefined) frames.current.set(key, cached)
       else {
-        const frame = effect.source.frame(time, effect.materials, localView)
+        // The pass: copies at other random start phases step simulations of their own.
+        const frame = effect.source.frame(time, effect.materials, localView, effectPass)
         // Stable program objects keep the GPU leases across frames that reuse this entry.
         const programs = effectMaterialPrograms(frame.materials, effect.textures, {
           ...effect.context,

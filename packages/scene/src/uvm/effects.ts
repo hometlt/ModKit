@@ -57,6 +57,12 @@ export interface UvmEffectFrameOptions {
    * changes (a reusable effect source), so each frame does not copy the whole extension again.
    */
   readonly extensionSnapshot?: JsonValue
+  /**
+   * The caller's frame, for a cached owner: a simulation one frame took to a clock is not stepped
+   * on to another clock of the same frame, so copies at several random start phases keep a
+   * simulation each and step it from frame to frame (see cachedUvmEffectSimulation).
+   */
+  readonly pass?: unknown
   readonly signal?: AbortSignal
 }
 
@@ -255,10 +261,11 @@ export function createUvmEffectFrameCache(): UvmEffectFrameCache {
 }
 
 /**
- * Simulations a cache keeps: an owner's instances share one clock, or a few random start phases,
- * and a clock whose steps no lane continues to takes one more.
+ * Simulations a cache keeps: an owner's instances share one clock, or one per random start phase
+ * (a world spreads a looping clip's copies over eight), and a clock whose steps no lane continues to
+ * takes one more.
  */
-const CACHED_EFFECT_SIMULATIONS = 3
+const CACHED_EFFECT_SIMULATIONS = 10
 
 type UvmEffectPreparation = Extract<ReturnType<typeof prepareUvmEffectFrame>, { empty: false }>
 type UvmEffectSimulation = Readonly<{
@@ -283,6 +290,8 @@ type UvmEffectSimulation = Readonly<{
 interface UvmEffectLane {
   time: number
   simulated: UvmEffectSimulation
+  /** The caller's frame that last took it (UvmEffectFrameOptions.pass). */
+  pass?: unknown
   readonly continueTo: (options: UvmEffectFrameOptions) => boolean
   /** Whether a later clock on the step grid can continue it (a cache evicts other lanes first). */
   readonly continuable: () => boolean
@@ -370,7 +379,10 @@ export function createUvmEffectFrame(
 /**
  * A cached owner's simulation at a frame's clock: the lane standing at it, else the latest earlier
  * lane continued to it, else a new lane in place of the least recently used one (lanes no later
- * clock can continue go first).
+ * clock can continue go first). A lane the caller's frame (`pass`) already took to one clock is not
+ * stepped on to another: the phases of one frame, taken in any order, each step their own lane.
+ * Every lane builds what a new simulation's seek builds, so which lane a clock takes changes only
+ * the work.
  */
 function cachedUvmEffectSimulation(
   cache: UvmEffectFrameCache,
@@ -382,13 +394,18 @@ function cachedUvmEffectSimulation(
   const use = (entry: (typeof lanes)[number]) => {
     lanes.splice(lanes.indexOf(entry), 1)
     lanes.push(entry)
+    entry.lane.pass = options.pass
     return entry.lane.simulated
   }
   const own = lanes.filter(entry => sameInputs(entry.inputs, inputs))
   const kept = own.find(entry => entry.lane.time === options.time)
   if (kept !== undefined) return use(kept)
   const earlier = own
-    .filter(entry => entry.lane.time < options.time)
+    .filter(
+      entry =>
+        entry.lane.time < options.time &&
+        (options.pass === undefined || entry.lane.pass !== options.pass),
+    )
     .sort((left, right) => right.lane.time - left.lane.time)
   for (const entry of earlier) {
     let continued = false
@@ -405,6 +422,7 @@ function cachedUvmEffectSimulation(
     lanes.splice(stuck === -1 ? 0 : stuck, 1)
   }
   lanes.push(entry)
+  entry.lane.pass = options.pass
   return entry.lane.simulated
 }
 

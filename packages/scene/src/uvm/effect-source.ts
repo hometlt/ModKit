@@ -29,10 +29,12 @@ export interface UvmEffectSource {
   ): ReturnType<typeof createUvmProjectorFrame>
   /** Seconds of the looping clip whose sequence drives emission, when the model has one. */
   readonly clipSeconds?: number
+  /** `pass`: the caller's frame (UvmEffectFrameOptions.pass). */
   frame(
     time: number,
     materials: readonly SceneRendererMaterial[],
     viewMatrix: Float32Array,
+    pass?: unknown,
   ): ReturnType<typeof createUvmEffectFrame>
 }
 
@@ -157,8 +159,14 @@ export function createUvmEffectSource(
         warn: () => {},
       }),
     ...(clip?.durationSeconds === undefined ? {} : { clipSeconds: clip.durationSeconds }),
-    frame: (time: number, materials: readonly SceneRendererMaterial[], viewMatrix: Float32Array) =>
+    frame: (
+      time: number,
+      materials: readonly SceneRendererMaterial[],
+      viewMatrix: Float32Array,
+      pass?: unknown,
+    ) =>
       createUvmEffectFrame(document, {
+        ...(pass === undefined ? {} : { pass }),
         projectorsHandled: true,
         binary,
         time,
