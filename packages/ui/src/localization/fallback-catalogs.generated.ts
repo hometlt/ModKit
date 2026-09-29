@@ -381,6 +381,8 @@ export const IMAGE_FALLBACK_MESSAGES = {
   'viewer.imageDecodeError':
     'The platform decoder cannot render these bytes: {reason}. A format-specific decoder provider is required.',
   'viewer.imageDimensions': 'Dimensions',
+  'viewer.imageEditBaseOnly':
+    'Edits are saved as the whole image, so they are made on mip 0 of the first layer; this view shows {subresource}.',
   'viewer.imageExportRefused': 'export refused: {reason}',
   'viewer.imageExported': 'exported {count} file(s)',
   'viewer.imageFormat': 'Format',

@@ -163,6 +163,8 @@ const EN_MESSAGES = Object.freeze({
   'viewer.imageSummary': '{width}×{height} · {size} KiB · {scale}%{channel}',
   'viewer.imageMipFit':
     'Shown from mip {level}: the full image ({width}×{height}) is over the viewer budget.',
+  'viewer.imageEditBaseOnly':
+    'Edits are saved as the whole image, so they are made on mip 0 of the first layer; this view shows {subresource}.',
   'viewer.imageChannel': ' · channel {channel}',
   'viewer.imageSubresources': 'Subresource, comparison and export',
   'viewer.imageSubresource': 'subresource {subresource}',
@@ -1081,6 +1083,8 @@ const RU_MESSAGES: Readonly<Record<CoreUiMessageKey, string>> = Object.freeze({
   'viewer.imageSummary': '{width}×{height} · {size} КиБ · {scale}%{channel}',
   'viewer.imageMipFit':
     'Показан уровень mip {level}: полный размер ({width}×{height}) больше бюджета просмотрщика.',
+  'viewer.imageEditBaseOnly':
+    'Правка сохраняется как всё изображение, поэтому делается на mip 0 первого слоя; сейчас показан {subresource}.',
   'viewer.imageChannel': ' · канал {channel}',
   'viewer.imageSubresources': 'Субресурс, сравнение и экспорт',
   'viewer.imageSubresource': 'субресурс {subresource}',

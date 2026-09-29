@@ -1292,10 +1292,23 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
             collapsed: true,
           })
           editing?.destroy()
+          /*
+           * A save writes the edited pixels as the whole image. Edits to a smaller mip or another
+           * layer would replace the full image with them, so the tools work on the base image only.
+           */
+          const base =
+            subresource.mipLevel === 0 &&
+            subresource.layer === 0 &&
+            subresource.face === 0 &&
+            subresource.slice === 0
           const refusal =
             options.savePixels === undefined
               ? options.editableReason
-              : options.saveRefusal?.(descriptor)
+              : !base
+                ? localizer.text('viewer.imageEditBaseOnly', {
+                    subresource: subresourceLabel(info, subresource),
+                  })
+                : options.saveRefusal?.(descriptor)
           const writable = options.savePixels !== undefined && refusal === undefined
           editing = createImageEditing(section.body, {
             localizer,
