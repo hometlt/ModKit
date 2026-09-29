@@ -27,11 +27,11 @@ import {
   normalizeQuat
 } from "./chunk-WYUQ3HXR.js";
 import {
-  sampleTrackValue
-} from "./chunk-5SBJANAJ.js";
-import {
   snapshotJson
 } from "./chunk-ZSDVUSRM.js";
+import {
+  sampleTrackValue
+} from "./chunk-5SBJANAJ.js";
 
 // ../MODDING/modkit-core/packages/scene/dist/model/billboard-math.js
 function invertQuat(rotation2) {

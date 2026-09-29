@@ -24,15 +24,15 @@ import {
   DEFAULT_MODEL_SKELETON_BUDGET,
   createModelSkeletonNodes,
   snapshotModelSkeleton
-} from "../../../chunks/chunk-EJHSGAMM.js";
+} from "../../../chunks/chunk-UWXEC6C3.js";
 import {
   DEFAULT_MODEL_ANIMATION_BUDGET,
   snapshotModelAnimations
-} from "../../../chunks/chunk-TAC5RUBM.js";
+} from "../../../chunks/chunk-GMWDAJID.js";
+import "../../../chunks/chunk-ZSDVUSRM.js";
 import {
   composeTrsMatrix
 } from "../../../chunks/chunk-5SBJANAJ.js";
-import "../../../chunks/chunk-ZSDVUSRM.js";
 import "../../../chunks/chunk-TKIPZ6HV.js";
 import "../../../chunks/chunk-NUFRM6SI.js";
 import "../../../chunks/chunk-W2UBWFML.js";
@@ -557,6 +557,36 @@ var BufferBuilder2 = class {
     return this.buffer.finish();
   }
 };
+var MATERIALIZER_GAME_EXTENSIONS = /* @__PURE__ */ new Set([
+  "UV_game_socket",
+  "UV_game_material",
+  "UV_game_material_team_color",
+  "UV_game_animation_clips",
+  "UV_game_variants"
+]);
+function isJsonValue(value, depth) {
+  if (depth > 64)
+    return false;
+  if (value === null || typeof value === "string" || typeof value === "boolean")
+    return true;
+  if (typeof value === "number")
+    return Number.isFinite(value);
+  if (Array.isArray(value))
+    return value.every((item) => isJsonValue(item, depth + 1));
+  if (typeof value !== "object" || Object.getPrototypeOf(value) !== Object.prototype)
+    return false;
+  return Object.values(value).every((item) => isJsonValue(item, depth + 1));
+}
+function gameExtensionsOf(projection) {
+  const entries = Object.entries(projection.gameExtensions ?? {});
+  for (const [name, value] of entries) {
+    if (!/^UV_game_[a-z0-9]+(?:_[a-z0-9]+)*$/u.test(name) || MATERIALIZER_GAME_EXTENSIONS.has(name))
+      throw new TypeError(`game extension ${name} is not a UV_game_<id> record a projection writes`);
+    if (typeof value !== "object" || Array.isArray(value) || !isJsonValue(value, 0))
+      throw new TypeError(`game extension ${name} is not a JSON object`);
+  }
+  return entries.sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0);
+}
 function materializeUvmCore(projection, request, { digest, materialBudget = DEFAULT_MODEL_MATERIAL_BUDGET, skeletonBudget = DEFAULT_MODEL_SKELETON_BUDGET, animationBudget = DEFAULT_MODEL_ANIMATION_BUDGET, signal } = {}) {
   if (signal?.aborted)
     throw new DOMException("operation cancelled", "AbortError");
@@ -1191,6 +1221,7 @@ function materializeUvmCore(projection, request, { digest, materialBudget = DEFA
   if (animation !== void 0 && animation.animations.length > 0)
     note("common.view/model-animation-source@1", "value-differs", void 0, "clip and target identities are positional; native frame indices, provenance, bounds and movement speed are not glTF TRS fields");
   const binary = buffers.build();
+  const gameExtensions = gameExtensionsOf(projection);
   const document = {
     asset: {
       version: "2.0",
@@ -1207,9 +1238,11 @@ function materializeUvmCore(projection, request, { digest, materialBudget = DEFA
       ...animation === void 0 || animation.visibility.length === 0 ? [] : ["UV_game_variants", "KHR_animation_pointer"],
       ...unitsExtension === void 0 ? [] : ["UV_units"],
       ...projection.lods !== void 0 && projection.lods.length > 0 ? ["MSFT_lod"] : [],
-      ...lodSelection === void 0 ? [] : ["MODKITX_lod_selection"]
+      ...lodSelection === void 0 ? [] : ["MODKITX_lod_selection"],
+      ...gameExtensions.map(([name]) => name)
     ],
     extensions: {
+      ...Object.fromEntries(gameExtensions),
       ...unitsExtension === void 0 ? {} : { UV_units: unitsExtension },
       ...lodSelection === void 0 ? {} : { MODKITX_lod_selection: lodSelection },
       ...animation === void 0 || animation.visibility.length === 0 ? {} : {

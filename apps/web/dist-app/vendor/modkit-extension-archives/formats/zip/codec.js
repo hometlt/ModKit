@@ -4,16 +4,16 @@ import {
 import "../../../../chunks/chunk-COUIZZOL.js";
 import {
   pageStart
-} from "../../../../chunks/chunk-ML5A3Z3U.js";
+} from "../../../../chunks/chunk-TUA4SHSK.js";
 import "../../../../chunks/chunk-IBG4CEKN.js";
 import "../../../../chunks/chunk-I675VFQQ.js";
-import "../../../../chunks/chunk-EJHSGAMM.js";
-import "../../../../chunks/chunk-TAC5RUBM.js";
-import "../../../../chunks/chunk-5SBJANAJ.js";
+import "../../../../chunks/chunk-UWXEC6C3.js";
+import "../../../../chunks/chunk-GMWDAJID.js";
 import {
   snapshotJson
 } from "../../../../chunks/chunk-ZSDVUSRM.js";
-import "../../../../chunks/chunk-QKMZKIXC.js";
+import "../../../../chunks/chunk-5SBJANAJ.js";
+import "../../../../chunks/chunk-ZQEAQJ3E.js";
 import {
   decompressBounded
 } from "../../../../chunks/chunk-GDKG5J25.js";
@@ -44,7 +44,7 @@ import "../../../../chunks/chunk-NUFRM6SI.js";
 import "../../../../chunks/chunk-UDFSUVGJ.js";
 import {
   crc32
-} from "../../../../chunks/chunk-U5HQC5XA.js";
+} from "../../../../chunks/chunk-TWH75SBL.js";
 import "../../../../chunks/chunk-CQ52GEHY.js";
 
 // ../MODDING/modkit-core/packages/codec-kit/dist/deferred-session.js
@@ -886,6 +886,7 @@ function createInspectionCodec(definition2, contributionContext) {
   }
   const namespaceDefinition = definition2.namespace;
   const rangeDefinition = definition2.access === "ranges" ? definition2 : void 0;
+  let endWindow;
   const customOperations = Object.freeze([...definition2.operations ?? []]);
   const sharedOperations = namespaceDefinition === void 0 && rangeDefinition === void 0 ? INSPECTION_OPERATIONS : INSPECTION_OPERATIONS.filter((operation) => operation.handlerId !== "export-raw");
   const customIds = /* @__PURE__ */ new Set();
@@ -960,6 +961,8 @@ function createInspectionCodec(definition2, contributionContext) {
         // the host counts every probe byte against maxBytes: the tail gets what the prefix left
         Math.max(0, Math.min(tail.length, request.plan.maxBytes - bytes.byteLength, Number(size)))
       );
+      if (tail !== void 0)
+        endWindow = Math.max(0, Math.min(tail.length, request.plan.maxBytes - probeLength(request.plan)));
       const suffix = tail === void 0 || size === void 0 ? void 0 : tailLength === 0 ? new Uint8Array() : await request.source.read(size - BigInt(tailLength), tailLength, signal);
       const detected = await definition2.detect(bytes, request.source.ref.uri, suffix);
       return Object.freeze({
@@ -1111,7 +1114,9 @@ function createInspectionCodec(definition2, contributionContext) {
         const sourceSize = await byteSource.size();
         const readable = BigInt(budget.maxInputBytes) < sourceSize ? BigInt(budget.maxInputBytes) : sourceSize;
         const prefix = bytes ?? await byteSource.read(0n, Math.min(rangeDefinition?.detectBytes ?? RANGE_DETECT_PREFIX_BYTES, Number(readable)), signal);
-        const detected = await definition2.detect(prefix, primary.source.uri);
+        const suffixLength = endWindow === void 0 ? 0 : Math.min(endWindow, Number(sourceSize), Number(readable));
+        const suffix = endWindow === void 0 ? void 0 : bytes !== void 0 ? bytes.subarray(bytes.byteLength - suffixLength) : suffixLength === 0 ? new Uint8Array() : await byteSource.read(sourceSize - BigInt(suffixLength), suffixLength, signal);
+        const detected = await definition2.detect(prefix, primary.source.uri, suffix);
         const inspectionContext = {
           ...contributionContext === void 0 ? {} : {
             contracts: contributionContext.contracts,

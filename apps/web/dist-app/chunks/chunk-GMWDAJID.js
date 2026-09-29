@@ -1,10 +1,10 @@
 import {
+  snapshotJson
+} from "./chunk-ZSDVUSRM.js";
+import {
   CUBIC_SPLINE_LINE_TYPE,
   sampleTrackValue
 } from "./chunk-5SBJANAJ.js";
-import {
-  snapshotJson
-} from "./chunk-ZSDVUSRM.js";
 
 // ../MODDING/modkit-core/packages/codec-kit/dist/model/animation.js
 var DEFAULT_MODEL_ANIMATION_BUDGET = Object.freeze({

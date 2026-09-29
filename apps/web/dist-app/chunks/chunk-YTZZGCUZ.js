@@ -1463,6 +1463,47 @@ function createNodePoseSampler(nodes, options) {
 
 // ../MODDING/modkit-core/packages/scene/dist/model/sampler.js
 var IDENTITY = new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+function skinVertices(primitive, slots) {
+  const authored = present(primitive.boneIndices, "skin indices");
+  const source = present(primitive.boneWeights, "skin weights");
+  const identity = slots.size;
+  const joints = identity < 256 ? new Uint8Array(authored.length) : new Uint16Array(authored.length);
+  const weights = new Float32Array(authored.length);
+  for (let vertex = 0; vertex < authored.length; vertex += 4) {
+    let sum = 0;
+    for (let influence = 0; influence < 4; influence++)
+      sum += source[vertex + influence];
+    for (let influence = 0; influence < 4; influence++) {
+      const weight = source[vertex + influence];
+      joints[vertex + influence] = weight > 0 ? present(slots.get(authored[vertex + influence]), "skin slot") : identity;
+      weights[vertex + influence] = weight > 0 ? weight / sum : 0;
+    }
+    if (sum === 0)
+      weights[vertex] = 1;
+  }
+  return { joints, weights };
+}
+function skinPalette(bones, slots) {
+  const palette = new Float32Array((slots.size + 1) * 16);
+  const filled = new Uint8Array(slots.size);
+  for (const bone of bones) {
+    const slot = slots.get(bone.boneIndex);
+    if (slot === void 0)
+      continue;
+    const matrix2 = bone.skinningMatrix;
+    if (filled[slot] === 1 || matrix2?.length !== 16 || !matrix2.every(Number.isFinite))
+      throw new TypeError("skin needs a unique explicit inverse-bind pose for each bone");
+    palette.set(matrix2, slot * 16);
+    filled[slot] = 1;
+  }
+  if (filled.includes(0))
+    throw new TypeError("skin pose is incomplete");
+  palette.set(IDENTITY, slots.size * 16);
+  for (let index = 0; index < palette.length; index++)
+    if (!Number.isFinite(palette[index]))
+      throw new RangeError("deformed skin exceeds finite float range");
+  return palette;
+}
 function present(value, label) {
   if (value === void 0)
     throw new TypeError(`missing scene ${label}`);
@@ -1470,6 +1511,7 @@ function present(value, label) {
 }
 function createModelSceneSampler(projection, options = {}) {
   const { signal, clip } = options;
+  const gpuSkinning = options.skinning === "gpu";
   const poseTime = options.poseTime ?? 0;
   if (!Number.isFinite(poseTime))
     throw new TypeError("pose reference time must be finite");
@@ -1703,6 +1745,8 @@ function createModelSceneSampler(projection, options = {}) {
     }
   }
   const deformers = /* @__PURE__ */ new Map();
+  const gpuSkins = /* @__PURE__ */ new Map();
+  const hierarchySlots = /* @__PURE__ */ new Map();
   let workingBytes = projection.primitives.reduce((sum, primitive) => sum + modelPrimitiveByteLength(primitive), nodeMatrixBytes + billboardBytes);
   workingBytes += poseBlendBytes;
   if (workingBytes > maxBytes)
@@ -1727,6 +1771,16 @@ function createModelSceneSampler(projection, options = {}) {
         throw new TypeError("skin has no explicit inverse bind matrix");
       const deformer = createModelSkinDeformer(primitive, bones.map((bone) => bone.boneIndex), maxBytes - workingBytes, signal);
       workingBytes += deformer.workingBytes;
+      if (gpuSkinning && primitive.normals !== void 0 && primitive.tangents !== void 0) {
+        workingBytes += primitive.positions.length * 8;
+        if (workingBytes > maxBytes)
+          throw new RangeError("skin deformation exceeds maxBytes");
+        let slots = hierarchySlots.get(hierarchyId);
+        if (slots === void 0)
+          hierarchySlots.set(hierarchyId, slots = new Map(bones.map((bone, slot) => [bone.boneIndex, slot])));
+        const { bounds: _bounds, boneIndices: _indices, boneWeights: _weights, hierarchyId: _hierarchy, ...bindPose } = primitive;
+        gpuSkins.set(primitive, { bindPose, vertices: skinVertices(primitive, slots) });
+      }
       deformers.set(primitive, deformer);
       if (deformer.zeroWeightVertices > 0)
         report("skin-zero-weights", `${deformer.zeroWeightVertices} vertices retain source positions under MK2 CPU skinning.`, primitive.id);
@@ -1767,6 +1821,7 @@ function createModelSceneSampler(projection, options = {}) {
       const localPoses = nodeSampler?.sample(timeSeconds, requestSignal);
       const faceBillboards = new Map(billboards.flatMap((item) => item.mode === "face-camera" ? [[item.nodeId, item]] : []));
       const joints = [];
+      const palettes = /* @__PURE__ */ new Map();
       for (const [hierarchyId, sampler] of poseSamplers) {
         const originalPose = sampler.sample(timeSeconds, requestSignal).bones;
         const pose = applyModelBillboards(originalPose, [...present(hierarchyBindings.get(hierarchyId), "billboard bindings").values()], billboards, billboardCamera, present(hierarchyFrames.get(hierarchyId), "billboard frame"), billboardBytes, requestSignal);
@@ -1814,15 +1869,34 @@ function createModelSceneSampler(projection, options = {}) {
           continue;
         const deformer = deformers.get(primitive);
         if (deformer !== void 0) {
-          const deformed = deformer.deform(present(poses.get(present(primitive.hierarchyId, "skin hierarchy")), "skin pose"), requestSignal);
-          const frame = primitive.hierarchyId === void 0 ? void 0 : hierarchyFrames.get(primitive.hierarchyId);
+          const hierarchyId = present(primitive.hierarchyId, "skin hierarchy");
+          const pose = present(poses.get(hierarchyId), "skin pose");
+          const gpu = gpuSkins.get(primitive);
+          let deformed;
+          let skin;
+          if (gpu === void 0)
+            deformed = deformer.deform(pose, requestSignal);
+          else {
+            let palette = palettes.get(hierarchyId);
+            if (palette === void 0)
+              palettes.set(hierarchyId, palette = skinPalette(pose, present(hierarchySlots.get(hierarchyId), "skin slots")));
+            skin = Object.freeze({
+              ...gpu.vertices,
+              palette,
+              deformed: () => deformed ??= deformer.deform(pose)
+            });
+          }
+          const frame = hierarchyFrames.get(hierarchyId);
           const transformed = frame !== void 0 && !frame.every((value, i) => value === IDENTITY[i]);
           const instances2 = primitiveNodes.get(primitive.id)?.length ?? 1;
-          for (let instance = 0; instance < instances2; instance++)
-            primitives.push({
-              ...deformed,
-              ...transformed ? { transform: new Float32Array(frame) } : {}
-            });
+          for (let instance = 0; instance < instances2; instance++) {
+            const posed = {
+              ...skin === void 0 ? present(deformed, "deformed skin") : gpu.bindPose,
+              ...transformed ? { transform: new Float32Array(frame) } : {},
+              ...skin === void 0 ? {} : { skin }
+            };
+            primitives.push(posed);
+          }
         } else {
           for (const node of primitiveNodes.get(primitive.id) ?? [void 0]) {
             const transform = node === void 0 ? void 0 : animatedWorlds.get(node) ?? worlds.get(node);

@@ -1,4 +1,12 @@
+import {
+  init_define_MODKIT_EMBED_EXTENSION_ORIGINS
+} from "./chunk-BLWUC7LO.js";
+
+// ../MODDING/modkit-core/packages/codec-kit/dist/checksum/index.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
 // ../MODDING/modkit-core/packages/codec-kit/dist/crypto/mpq.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var encryptionTable = (() => {
   let seed1 = 1048577;
   const table = [];
@@ -35,6 +43,7 @@ function crc32(data) {
 }
 
 // ../MODDING/modkit-core/packages/codec-kit/dist/compression/adler32.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 function createAdler32() {
   let a = 1;
   let b = 0;
@@ -59,6 +68,7 @@ function adler32(bytes) {
 }
 
 // ../MODDING/modkit-core/packages/codec-kit/dist/checksum/xxhash32.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var PRIME1 = 2654435761;
 var PRIME2 = 2246822519;
 var PRIME3 = 3266489917;
@@ -99,6 +109,22 @@ function xxHash32(bytes, seed = 0) {
 // ../MODDING/modkit-core/packages/codec-kit/dist/checksum/index.js
 function crc32Range(bytes, start, end) {
   return crc32(bytes.subarray(start, end));
+}
+var CASTAGNOLI = (() => {
+  const table = new Uint32Array(256);
+  for (let n = 0; n < 256; n += 1) {
+    let c = n;
+    for (let k = 0; k < 8; k += 1)
+      c = c & 1 ? c >>> 1 ^ 2197175160 : c >>> 1;
+    table[n] = c >>> 0;
+  }
+  return table;
+})();
+function crc32c(bytes, start = 0, end = bytes.byteLength) {
+  let crc = 4294967295;
+  for (let index = start; index < end; index += 1)
+    crc = crc >>> 8 ^ CASTAGNOLI[(crc ^ (bytes[index] ?? 0)) & 255];
+  return (crc ^ 4294967295) >>> 0;
 }
 var EDC = (() => {
   const table = new Uint32Array(256);
@@ -144,6 +170,7 @@ export {
   adler32,
   xxHash32,
   crc32Range,
+  crc32c,
   cdRomEdc,
   createCrc32Msb
 };

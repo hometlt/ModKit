@@ -25,7 +25,7 @@ import {
   snapshotJson,
   snapshotModelAnimations,
   snapshotModelSkeleton
-} from "./chunk-LTARHUCB.js";
+} from "./chunk-YTZZGCUZ.js";
 import {
   createImageViewer,
   createNamespaceViewer,
@@ -47018,6 +47018,30 @@ function headlessDepthBias(vertices, value2) {
 
 // ../MODDING/modkit-core/packages/scene/dist/render/alpha.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
+// ../MODDING/modkit-core/packages/scene/dist/render/material-skin.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+function materialSkinOf(primitive) {
+  return primitive.skin;
+}
+function materialPosedPositions(primitive) {
+  return materialSkinOf(primitive)?.deformed().positions ?? primitive.positions;
+}
+function materialPosedPrimitive(primitive) {
+  const skin = materialSkinOf(primitive);
+  if (skin === void 0)
+    return primitive;
+  const deformed = skin.deformed();
+  const { skin: _skin, ...rest } = primitive;
+  return {
+    ...rest,
+    positions: deformed.positions,
+    ...deformed.normals === void 0 ? {} : { normals: deformed.normals },
+    ...deformed.tangents === void 0 ? {} : { tangents: deformed.tangents }
+  };
+}
+
+// ../MODDING/modkit-core/packages/scene/dist/render/alpha.js
 function materialAlpha(material) {
   const effect = readSimpleEffect(material?.simpleEffect);
   if (effect !== void 0)
@@ -47055,7 +47079,7 @@ function alphaDrawOrder(primitives, alphaFor, viewProjection) {
       opaque.push(primitive);
       continue;
     }
-    const positions = primitive.positions;
+    const positions = materialPosedPositions(primitive);
     if (!(positions instanceof Float32Array) || positions.length % 3 !== 0)
       throw new TypeError("blend primitive positions must be an xyz Float32Array");
     let center = boundsCenter(positions);
@@ -49087,6 +49111,9 @@ function prepareMaterialGeometry(primitive, maxBytes, options) {
   ])
     if (buffer !== void 0 && (!(buffer instanceof Float32Array) || buffer.length !== count * width2 || !allFinite(buffer)))
       throw new TypeError("invalid material vertex attributes");
+  const skin = materialSkinOf(primitive);
+  if (skin !== void 0 && (primitive.normals === void 0 || primitive.tangents === void 0 || skin.joints.length !== count * 4 || skin.weights.length !== count * 4 || !allFinite(skin.weights)))
+    throw new TypeError("invalid material skin");
   const uvSets = /* @__PURE__ */ new Set();
   for (const set of primitive.textureCoordinateSets ?? []) {
     if (!Number.isInteger(set.set) || set.set < 0 || set.set > 4 || uvSets.has(set.set))
@@ -49213,8 +49240,21 @@ function placementLocals(worldGeometry) {
   mat3 viewNormalMatrix=sceneCofactor(mat3(modelView))*orientation;
   mat3 worldNormalMatrix=sceneCofactor(mat3(materialWorld))*sceneOrientationOf(mat3(materialWorld));${worldGeometry ? "\n  float objectOrientation=sceneOrientationOf(mat3(model));\n  mat3 objectNormalMatrix=sceneCofactor(mat3(model))*objectOrientation;" : ""}`;
 }
-function sceneMaterialVertexSource(defines, environmentEnabled = false, worldShading = false, placementAttributes = false) {
+var SKIN_DECLARATIONS = `in vec4 a_skinJoints, a_skinWeights;
+uniform highp sampler2D u_skinPalette;
+uniform int u_skinBase;
+mat4 skinMatrix(float joint){int texel=u_skinBase+int(joint)*4,width=textureSize(u_skinPalette,0).x;ivec2 at=ivec2(texel%width,texel/width);
+  return mat4(texelFetch(u_skinPalette,at,0),texelFetch(u_skinPalette,at+ivec2(1,0),0),texelFetch(u_skinPalette,at+ivec2(2,0),0),texelFetch(u_skinPalette,at+ivec2(3,0),0));}
+`;
+var SKIN_LOCALS = `
+  mat4 skin=skinMatrix(a_skinJoints.x)*a_skinWeights.x+skinMatrix(a_skinJoints.y)*a_skinWeights.y+skinMatrix(a_skinJoints.z)*a_skinWeights.z+skinMatrix(a_skinJoints.w)*a_skinWeights.w;
+  vec3 skinPosition=(skin*vec4(a_position,1.0)).xyz,skinNormal=mat3(skin)*a_normal;
+  vec4 skinTangent=vec4(mat3(skin)*a_tangent.xyz,a_tangent.w);`;
+function sceneMaterialVertexSource(defines, environmentEnabled = false, worldShading = false, placementAttributes = false, skinned = false) {
   const worldGeometry = environmentEnabled || worldShading;
+  const position = skinned ? "skinPosition" : "a_position";
+  const normal2 = skinned ? "skinNormal" : "a_normal";
+  const tangent = skinned ? "skinTangent" : "a_tangent";
   const name = placementAttributes ? {
     model: "model",
     modelView: "modelView",
@@ -49241,34 +49281,34 @@ uniform vec3 u_lightDirection;
 ${defines.sceneLighting ? "uniform vec3 u_sceneFillViewDirection0, u_sceneFillViewDirection1;\nout vec3 v_sceneFillDir0, v_sceneFillDir1;" : ""}
 ${worldGeometry && !placementAttributes ? "uniform mat3 u_sceneWorldNormalMatrix;\nuniform float u_sceneWorldOrientation;\n" : ""}uniform float ${placementAttributes ? "" : "u_orientation, "}u_orthographic;
 in vec3 a_position, a_normal; in vec4 a_tangent;
-${Array.from({ length: defines.uvSetCount }, (_, i2) => `in vec2 a_uv${i2}; out vec2 v_uv${i2};`).join("\n")}
+${skinned ? SKIN_DECLARATIONS : ""}${Array.from({ length: defines.uvSetCount }, (_, i2) => `in vec2 a_uv${i2}; out vec2 v_uv${i2};`).join("\n")}
 ${defines.usesVertexAlpha || defines.usesVertexColor ? "in vec4 a_color; out vec4 v_vertexColor;" : ""}
 out vec3 v_normal, v_lightDir, v_halfVec, v_viewDir, v_viewPosition, v_viewNormal;
 out vec3 v_modelPosition, v_modelNormal, v_worldPosition, v_worldNormal;
 ${worldGeometry ? "out vec3 v_sceneWorldPosition, v_sceneWorldNormal, v_sceneWorldTangent, v_sceneWorldBitangent;\n" : ""}out vec4 v_clipPosition;
 vec3 unit(vec3 v,vec3 fallback){float len=length(v);return len>1e-9?v/len:fallback;}
-${placementAttributes ? PLACEMENT_DECLARATIONS : ""}void main(){${placementAttributes ? placementLocals(worldGeometry) : ""}
-  vec4 world=${name.model}*vec4(a_position,1.0);
-  vec3 view=(${name.modelView}*vec4(a_position,1.0)).xyz;
-  vec3 n=unit(${name.viewNormal}*a_normal,vec3(0.0,0.0,1.0));
-  vec3 rawT=mat3(${name.modelView})*a_tangent.xyz;
+${placementAttributes ? PLACEMENT_DECLARATIONS : ""}void main(){${placementAttributes ? placementLocals(worldGeometry) : ""}${skinned ? SKIN_LOCALS : ""}
+  vec4 world=${name.model}*vec4(${position},1.0);
+  vec3 view=(${name.modelView}*vec4(${position},1.0)).xyz;
+  vec3 n=unit(${name.viewNormal}*${normal2},vec3(0.0,0.0,1.0));
+  vec3 rawT=mat3(${name.modelView})*${tangent}.xyz;
   vec3 fallback=unit(cross(abs(n.z)<0.9?vec3(0.0,0.0,1.0):vec3(0.0,1.0,0.0),n),vec3(1.0,0.0,0.0));
   vec3 t=unit(rawT-n*dot(n,rawT),fallback);
-  vec3 b=cross(n,t)*(a_tangent.w<0.0?-1.0:1.0)*${name.orientation};
+  vec3 b=cross(n,t)*(${tangent}.w<0.0?-1.0:1.0)*${name.orientation};
   mat3 tbn=transpose(mat3(t,b,n));
   vec3 eye=u_orthographic>0.5?vec3(0.0,0.0,1.0):unit(-view,vec3(0.0,0.0,1.0));
   v_normal=vec3(0.0,0.0,1.0); v_lightDir=tbn*u_lightDirection;
 ${defines.sceneLighting ? "  v_sceneFillDir0=tbn*u_sceneFillViewDirection0; v_sceneFillDir1=tbn*u_sceneFillViewDirection1;" : ""}
   v_halfVec=tbn*(-unit(eye+u_lightDirection,vec3(0.0,0.0,1.0))); v_viewDir=tbn*eye;
   v_viewPosition=u_orthographic>0.5?vec3(0.0,0.0,-1.0):view; v_viewNormal=n;
-${worldGeometry ? `  vec3 sceneN=unit(${name.objectNormal}*a_normal,vec3(0.0,0.0,1.0));
-  vec3 sceneRawT=mat3(${name.model})*a_tangent.xyz;
+${worldGeometry ? `  vec3 sceneN=unit(${name.objectNormal}*${normal2},vec3(0.0,0.0,1.0));
+  vec3 sceneRawT=mat3(${name.model})*${tangent}.xyz;
   vec3 sceneFallback=unit(cross(abs(sceneN.z)<0.9?vec3(0.0,0.0,1.0):vec3(0.0,1.0,0.0),sceneN),vec3(1.0,0.0,0.0));
   vec3 sceneT=unit(sceneRawT-sceneN*dot(sceneN,sceneRawT),sceneFallback);
   v_sceneWorldPosition=world.xyz;v_sceneWorldNormal=sceneN;v_sceneWorldTangent=sceneT;
-  v_sceneWorldBitangent=cross(sceneN,sceneT)*(a_tangent.w<0.0?-1.0:1.0)*${name.objectOrientation};
-` : ""}  v_modelPosition=a_position;v_modelNormal=unit(a_normal,vec3(0.0,0.0,1.0));
-  v_worldPosition=(${name.materialWorld}*vec4(a_position,1.0)).xyz;v_worldNormal=unit(${name.worldNormal}*a_normal,vec3(0.0,0.0,1.0));
+  v_sceneWorldBitangent=cross(sceneN,sceneT)*(${tangent}.w<0.0?-1.0:1.0)*${name.objectOrientation};
+` : ""}  v_modelPosition=${position};v_modelNormal=unit(${normal2},vec3(0.0,0.0,1.0));
+  v_worldPosition=(${name.materialWorld}*vec4(${position},1.0)).xyz;v_worldNormal=unit(${name.worldNormal}*${normal2},vec3(0.0,0.0,1.0));
   v_clipPosition=u_viewProjection*world;gl_Position=v_clipPosition;
   ${Array.from({ length: defines.uvSetCount }, (_, i2) => `v_uv${i2}=a_uv${i2};`).join("\n")}
   ${defines.usesVertexAlpha || defines.usesVertexColor ? "v_vertexColor=a_color;" : ""}
@@ -50383,11 +50423,15 @@ var sameNumbers = (left, right) => {
   return true;
 };
 var materialCanInstance = (program) => program.normalMapSpace !== "object";
+var SKIN_PALETTE_WIDTH = 1024;
+var SKIN_PALETTE_UNIT = 15;
 function materialWebGlDraws(gl, textures, options = {}) {
   const programs = /* @__PURE__ */ new Map();
+  const skinnedPrograms = /* @__PURE__ */ new Map();
   const linked = /* @__PURE__ */ new Map();
   const pendingPrograms = /* @__PURE__ */ new Set();
   const usedPrograms = /* @__PURE__ */ new Set();
+  const usedSkinnedPrograms = /* @__PURE__ */ new Set();
   let programCompilations = 0;
   let drawCalls = 0;
   const retained = /* @__PURE__ */ new Map();
@@ -50429,6 +50473,60 @@ function materialWebGlDraws(gl, textures, options = {}) {
     }
     return lastFrame;
   };
+  let skinTexture = null;
+  let skinRows = 0;
+  let skinData = new Float32Array(0);
+  let skinTexels = 0;
+  let skinBases = /* @__PURE__ */ new Map();
+  const skinUnits = /* @__PURE__ */ new WeakSet();
+  const programSkinBases = /* @__PURE__ */ new WeakMap();
+  const reserveSkinTexels = (texels) => {
+    const rows = Math.ceil(texels / SKIN_PALETTE_WIDTH);
+    if (skinData.length >= rows * SKIN_PALETTE_WIDTH * 4)
+      return;
+    const grown = new Float32Array(Math.max(rows, 2 * skinData.length / (SKIN_PALETTE_WIDTH * 4)) * SKIN_PALETTE_WIDTH * 4);
+    grown.set(skinData);
+    skinData = grown;
+  };
+  const uploadSkinRows = (first) => {
+    const rows = Math.ceil(skinTexels / SKIN_PALETTE_WIDTH);
+    gl.activeTexture(gl.TEXTURE0 + SKIN_PALETTE_UNIT);
+    if (skinTexture === null) {
+      skinTexture = gl.createTexture();
+      if (skinTexture === null)
+        throw new TypeError("could not allocate the skin palette texture");
+      gl.bindTexture(gl.TEXTURE_2D, skinTexture);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    } else
+      gl.bindTexture(gl.TEXTURE_2D, skinTexture);
+    if (rows > skinRows) {
+      skinRows = Math.max(rows, skinRows * 2, 16);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, SKIN_PALETTE_WIDTH, skinRows, 0, gl.RGBA, gl.FLOAT, null);
+      first = 0;
+    }
+    if (rows > first)
+      gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, first, SKIN_PALETTE_WIDTH, rows - first, gl.RGBA, gl.FLOAT, skinData, first * SKIN_PALETTE_WIDTH * 4);
+  };
+  const checkPalette = (palette) => {
+    if (palette.length === 0 || palette.length % 16 !== 0)
+      throw new TypeError("invalid skin palette");
+  };
+  const skinBase = (palette) => {
+    const known2 = skinBases.get(palette);
+    if (known2 !== void 0)
+      return known2;
+    checkPalette(palette);
+    const base = skinTexels;
+    reserveSkinTexels(base + palette.length / 4);
+    skinData.set(palette, base * 4);
+    skinTexels = base + palette.length / 4;
+    skinBases.set(palette, base);
+    uploadSkinRows(Math.floor(base / SKIN_PALETTE_WIDTH));
+    return void 0;
+  };
   const attributeLocations = /* @__PURE__ */ new WeakMap();
   const attributeLocation = (program, name) => {
     let locations = attributeLocations.get(program);
@@ -50466,7 +50564,8 @@ function materialWebGlDraws(gl, textures, options = {}) {
     ];
     for (let set = 0; set < source2.defines.uvSetCount; set++)
       attributes.push(primitive.textureCoordinateSets?.find((uv) => uv.set === set)?.coordinates ?? (set === 0 ? primitive.textureCoordinates : void 0));
-    const data = [...attributes, primitive.indices, instances];
+    const skin = materialSkinOf(primitive);
+    const data = [...attributes, primitive.indices, instances, skin?.joints, skin?.weights];
     const geometries = vertexArrays.get(program);
     const variants = geometries?.get(primitive.positions);
     let entry2 = variants?.find((candidate) => candidate.data.length === data.length && candidate.data.every((value2, index2) => value2 === data[index2]));
@@ -50505,6 +50604,22 @@ function materialWebGlDraws(gl, textures, options = {}) {
         attribute("a_color", 3, 4, [1, 1, 1, 1]);
         for (let set = 0; set < source2.defines.uvSetCount; set++)
           attribute(`a_uv${set}`, 4 + set, 2, [0, 0, 0, 1]);
+        if (skin !== void 0)
+          for (const [name, values, type] of [
+            [
+              "a_skinJoints",
+              skin.joints,
+              skin.joints instanceof Uint8Array ? gl.UNSIGNED_BYTE : gl.UNSIGNED_SHORT
+            ],
+            ["a_skinWeights", skin.weights, gl.FLOAT]
+          ]) {
+            const location = attributeLocation(program, name);
+            if (location < 0)
+              continue;
+            created.buffers.push(retainedBuffer(gl.ARRAY_BUFFER, values));
+            gl.enableVertexAttribArray(location);
+            gl.vertexAttribPointer(location, 4, type, false, 0, 0);
+          }
         if (primitive.indices !== void 0)
           entry2.buffers.push(retainedBuffer(gl.ELEMENT_ARRAY_BUFFER, primitive.indices));
         created.placement = [0, 1, 2, 3].map((column) => attributeLocation(program, `a_instanceMatrix${column}`));
@@ -50541,9 +50656,10 @@ function materialWebGlDraws(gl, textures, options = {}) {
       }
     return entry2;
   };
-  const leaseFor = (source2, material) => {
-    usedPrograms.add(source2);
-    let lease2 = programs.get(source2);
+  const leaseFor = (source2, material, skinned) => {
+    const leases = skinned ? skinnedPrograms : programs;
+    (skinned ? usedSkinnedPrograms : usedPrograms).add(source2);
+    let lease2 = leases.get(source2);
     if (lease2 === void 0) {
       const bound = /* @__PURE__ */ new Map();
       for (const [resource, texture] of material.textures) {
@@ -50552,7 +50668,7 @@ function materialWebGlDraws(gl, textures, options = {}) {
           throw new TypeError(`GPU material texture missing: ${resource}`);
         bound.set(resource, handle);
       }
-      const shaders = leaseShaderSources(source2, material);
+      const shaders = leaseShaderSources(source2, material, skinned);
       const { vertexSource, fragmentSource, filters } = shaders;
       lease2 = createWebGlMaterialProgram(gl, { ...source2, vertexSource, fragmentSource }, bound, {
         filters,
@@ -50563,7 +50679,7 @@ function materialWebGlDraws(gl, textures, options = {}) {
         ...options.mipmaps === true ? { mipmaps: true } : {}
       });
       programCompilations += 1;
-      programs.set(source2, lease2);
+      leases.set(source2, lease2);
     }
     return lease2;
   };
@@ -50749,12 +50865,39 @@ function materialWebGlDraws(gl, textures, options = {}) {
     if (mode === void 0 || instances?.count === 0)
       return 0;
     const model = instances === void 0 ? materialModelMatrix(primitive) : void 0;
-    const lease2 = leaseFor(leased, material);
+    const skin = materialSkinOf(primitive);
+    const lease2 = leaseFor(leased, material, skin !== void 0);
     const program = lease2.program;
     const geometry = bindGeometry(program, leased, primitive, instances?.matrices, state);
     if (state.program !== program) {
       gl.useProgram(program);
       state.program = program;
+    }
+    if (skin !== void 0) {
+      let base = skinBase(skin.palette);
+      if (base === void 0) {
+        base = skinBases.get(skin.palette);
+        state.activeUnit = SKIN_PALETTE_UNIT;
+        state.lastUnit = SKIN_PALETTE_UNIT;
+        state.skinPalettes = true;
+      }
+      if (state.skinPalettes !== true) {
+        if (state.activeUnit !== SKIN_PALETTE_UNIT) {
+          gl.activeTexture(gl.TEXTURE0 + SKIN_PALETTE_UNIT);
+          state.activeUnit = SKIN_PALETTE_UNIT;
+        }
+        gl.bindTexture(gl.TEXTURE_2D, skinTexture);
+        state.lastUnit = SKIN_PALETTE_UNIT;
+        state.skinPalettes = true;
+      }
+      if (!skinUnits.has(program)) {
+        gl.uniform1i(uniformLocation(gl, program, "u_skinPalette"), SKIN_PALETTE_UNIT);
+        skinUnits.add(program);
+      }
+      if (programSkinBases.get(program) !== base) {
+        gl.uniform1i(uniformLocation(gl, program, "u_skinBase"), base);
+        programSkinBases.set(program, base);
+      }
     }
     if (programLeases.get(program) !== lease2 || programUniforms.get(program) !== source2.uniforms) {
       lease2.uploadUniforms(source2 === leased ? void 0 : source2.uniforms);
@@ -50834,11 +50977,32 @@ function materialWebGlDraws(gl, textures, options = {}) {
       for (const draw of draws) {
         if (draw.program === void 0 || draw.material === void 0)
           continue;
-        if (programs.has(draw.program))
+        const skinned = materialSkinOf(draw.primitive) !== void 0;
+        if ((skinned ? skinnedPrograms : programs).has(draw.program))
           continue;
-        sources.add(leaseShaderSources(draw.program, draw.material));
+        sources.add(leaseShaderSources(draw.program, draw.material, skinned));
       }
       return linkWebGlMaterialProgramsInParallel(gl, sources, linked, pendingPrograms);
+    },
+    /**
+     * The skin palettes a frame's skinned draws use (see ModelSceneSkin), packed into the palette
+     * texture with one upload; a palette a draw brings later is appended with its own. Leaves the
+     * palette unit active.
+     */
+    prepareSkins(palettes) {
+      skinBases = /* @__PURE__ */ new Map();
+      skinTexels = 0;
+      for (const palette of palettes) {
+        if (skinBases.has(palette))
+          continue;
+        checkPalette(palette);
+        reserveSkinTexels(skinTexels + palette.length / 4);
+        skinData.set(palette, skinTexels * 4);
+        skinBases.set(palette, skinTexels);
+        skinTexels += palette.length / 4;
+      }
+      if (skinTexels > 0)
+        uploadSkinRows(0);
     },
     release() {
       for (const geometries of vertexArrays.values())
@@ -50850,6 +51014,17 @@ function materialWebGlDraws(gl, textures, options = {}) {
         lease2.release();
       programs.clear();
       usedPrograms.clear();
+      for (const lease2 of skinnedPrograms.values())
+        lease2.release();
+      skinnedPrograms.clear();
+      usedSkinnedPrograms.clear();
+      if (skinTexture !== null)
+        gl.deleteTexture(skinTexture);
+      skinTexture = null;
+      skinRows = 0;
+      skinData = new Float32Array(0);
+      skinTexels = 0;
+      skinBases = /* @__PURE__ */ new Map();
       for (const program of linked.values())
         gl.deleteProgram(program);
       linked.clear();
@@ -50867,14 +51042,23 @@ function materialWebGlDraws(gl, textures, options = {}) {
       spareBytes = 0;
     },
     sweep() {
-      for (const [source2, lease2] of programs)
-        if (!usedPrograms.has(source2)) {
-          lease2.release();
-          programs.delete(source2);
-        }
-      usedPrograms.clear();
+      for (const [leases, used] of [
+        [programs, usedPrograms],
+        [skinnedPrograms, usedSkinnedPrograms]
+      ]) {
+        for (const [source2, lease2] of leases)
+          if (!used.has(source2)) {
+            lease2.release();
+            leases.delete(source2);
+          }
+        used.clear();
+      }
+      skinBases = /* @__PURE__ */ new Map();
+      skinTexels = 0;
       const leased = /* @__PURE__ */ new Set();
       for (const lease2 of programs.values())
+        leased.add(lease2.program);
+      for (const lease2 of skinnedPrograms.values())
         leased.add(lease2.program);
       for (const [key3, program] of linked)
         if (!leased.has(program) && !pendingPrograms.has(program)) {
@@ -50939,8 +51123,8 @@ function materialWebGlDraws(gl, textures, options = {}) {
   };
 }
 var leasedShaderSources = /* @__PURE__ */ new WeakMap();
-function leaseShaderSources(source2, material) {
-  let key3 = `${String(source2.twoSided)}|${source2.blend}|${String(source2.environment !== void 0)}|${String(source2.normalBlendPolicy !== void 0)}|${source2.normalMapSpace}`;
+function leaseShaderSources(source2, material, skinned = false) {
+  let key3 = `${String(source2.twoSided)}|${source2.blend}|${String(source2.environment !== void 0)}|${String(source2.normalBlendPolicy !== void 0)}|${source2.normalMapSpace}|${String(skinned)}`;
   for (const binding of source2.textures)
     key3 += `|${binding.slot}:${binding.resourceId}:${binding.uniform}:${binding.dimension ?? ""}:${binding.wrapU}:${binding.wrapV}`;
   for (const [resource, texture] of material.textures)
@@ -50951,11 +51135,11 @@ function leaseShaderSources(source2, material) {
   const cached = variants.get(key3);
   if (cached !== void 0 && cached.fragment === source2.fragmentSource)
     return cached.sources;
-  const sources = buildLeaseShaderSources(source2, material);
+  const sources = buildLeaseShaderSources(source2, material, skinned);
   variants.set(key3, Object.freeze({ fragment: source2.fragmentSource, sources }));
   return sources;
 }
-function buildLeaseShaderSources(source2, material) {
+function buildLeaseShaderSources(source2, material, skinned) {
   const filters = /* @__PURE__ */ new Map();
   for (const [resource, texture] of material.textures)
     filters.set(resource, texture.filter ?? "linear");
@@ -51003,7 +51187,7 @@ ${declarations.join("\n")}`);
   const fragmentSource = fragment.replace(/void main\s*\(\s*\)/, "void materialMain()") + "\nuniform vec4 u_instanceTint;\nvoid main(){materialMain();materialColor*=u_instanceTint;" + // A solid pass covers its pixel whole: an alpha-tested leaf that survives the test is opaque.
   // Multiplying its colour by the texel alpha drew SC2 foliage (alpha 0.3-0.7) dark with black rims.
   (materialIsSolid(source2) ? (source2.defines.sceneLighting ? "" : "materialColor.rgb=clamp(materialColor.rgb,0.0,1.0);") + "materialColor.a=1.0;" : "") + "}\n";
-  const vertexSource = sceneMaterialVertexSource(source2.defines, source2.environment !== void 0, worldShading, true);
+  const vertexSource = sceneMaterialVertexSource(source2.defines, source2.environment !== void 0, worldShading, true, skinned);
   return { vertexSource, fragmentSource, filters };
 }
 
@@ -54493,6 +54677,36 @@ var BufferBuilder2 = class {
     return this.buffer.finish();
   }
 };
+var MATERIALIZER_GAME_EXTENSIONS = /* @__PURE__ */ new Set([
+  "UV_game_socket",
+  "UV_game_material",
+  "UV_game_material_team_color",
+  "UV_game_animation_clips",
+  "UV_game_variants"
+]);
+function isJsonValue(value2, depth) {
+  if (depth > 64)
+    return false;
+  if (value2 === null || typeof value2 === "string" || typeof value2 === "boolean")
+    return true;
+  if (typeof value2 === "number")
+    return Number.isFinite(value2);
+  if (Array.isArray(value2))
+    return value2.every((item) => isJsonValue(item, depth + 1));
+  if (typeof value2 !== "object" || Object.getPrototypeOf(value2) !== Object.prototype)
+    return false;
+  return Object.values(value2).every((item) => isJsonValue(item, depth + 1));
+}
+function gameExtensionsOf(projection3) {
+  const entries = Object.entries(projection3.gameExtensions ?? {});
+  for (const [name, value2] of entries) {
+    if (!/^UV_game_[a-z0-9]+(?:_[a-z0-9]+)*$/u.test(name) || MATERIALIZER_GAME_EXTENSIONS.has(name))
+      throw new TypeError(`game extension ${name} is not a UV_game_<id> record a projection writes`);
+    if (typeof value2 !== "object" || Array.isArray(value2) || !isJsonValue(value2, 0))
+      throw new TypeError(`game extension ${name} is not a JSON object`);
+  }
+  return entries.sort(([a2], [b2]) => a2 < b2 ? -1 : a2 > b2 ? 1 : 0);
+}
 function materializeUvmCore(projection3, request, { digest, materialBudget = DEFAULT_MODEL_MATERIAL_BUDGET, skeletonBudget = DEFAULT_MODEL_SKELETON_BUDGET, animationBudget = DEFAULT_MODEL_ANIMATION_BUDGET, signal } = {}) {
   if (signal?.aborted)
     throw new DOMException("operation cancelled", "AbortError");
@@ -55127,6 +55341,7 @@ function materializeUvmCore(projection3, request, { digest, materialBudget = DEF
   if (animation !== void 0 && animation.animations.length > 0)
     note("common.view/model-animation-source@1", "value-differs", void 0, "clip and target identities are positional; native frame indices, provenance, bounds and movement speed are not glTF TRS fields");
   const binary = buffers.build();
+  const gameExtensions = gameExtensionsOf(projection3);
   const document2 = {
     asset: {
       version: "2.0",
@@ -55143,9 +55358,11 @@ function materializeUvmCore(projection3, request, { digest, materialBudget = DEF
       ...animation === void 0 || animation.visibility.length === 0 ? [] : ["UV_game_variants", "KHR_animation_pointer"],
       ...unitsExtension === void 0 ? [] : ["UV_units"],
       ...projection3.lods !== void 0 && projection3.lods.length > 0 ? ["MSFT_lod"] : [],
-      ...lodSelection === void 0 ? [] : ["MODKITX_lod_selection"]
+      ...lodSelection === void 0 ? [] : ["MODKITX_lod_selection"],
+      ...gameExtensions.map(([name]) => name)
     ],
     extensions: {
+      ...Object.fromEntries(gameExtensions),
       ...unitsExtension === void 0 ? {} : { UV_units: unitsExtension },
       ...lodSelection === void 0 ? {} : { MODKITX_lod_selection: lodSelection },
       ...animation === void 0 || animation.visibility.length === 0 ? {} : {
@@ -56127,7 +56344,7 @@ async function decodeContainerEntry(entry2, maximum, readRange, signal) {
     throw new RangeError(`container entry ${entry2.path} decoded to ${bytes.byteLength} bytes, not ${size}`);
   }
   if (entry2.checksum?.algorithm === "crc-32") {
-    const { crc32 } = await import("./checksum-46N3MOI4.js");
+    const { crc32 } = await import("./checksum-2EQCFKBI.js");
     const actual = (crc32(bytes) >>> 0).toString(16).padStart(8, "0");
     if (actual !== entry2.checksum.value.toLowerCase().padStart(8, "0"))
       throw new RangeError(`container entry ${entry2.path} fails its CRC-32 (${actual}, the container says ${entry2.checksum.value})`);
@@ -56776,6 +56993,7 @@ function createInspectionCodec(definition2, contributionContext2) {
   }
   const namespaceDefinition = definition2.namespace;
   const rangeDefinition = definition2.access === "ranges" ? definition2 : void 0;
+  let endWindow;
   const customOperations = Object.freeze([...definition2.operations ?? []]);
   const sharedOperations = namespaceDefinition === void 0 && rangeDefinition === void 0 ? INSPECTION_OPERATIONS : INSPECTION_OPERATIONS.filter((operation) => operation.handlerId !== "export-raw");
   const customIds = /* @__PURE__ */ new Set();
@@ -56850,6 +57068,8 @@ function createInspectionCodec(definition2, contributionContext2) {
         // the host counts every probe byte against maxBytes: the tail gets what the prefix left
         Math.max(0, Math.min(tail.length, request.plan.maxBytes - bytes.byteLength, Number(size)))
       );
+      if (tail !== void 0)
+        endWindow = Math.max(0, Math.min(tail.length, request.plan.maxBytes - probeLength(request.plan)));
       const suffix = tail === void 0 || size === void 0 ? void 0 : tailLength === 0 ? new Uint8Array() : await request.source.read(size - BigInt(tailLength), tailLength, signal);
       const detected = await definition2.detect(bytes, request.source.ref.uri, suffix);
       return Object.freeze({
@@ -57001,7 +57221,9 @@ function createInspectionCodec(definition2, contributionContext2) {
         const sourceSize = await byteSource.size();
         const readable = BigInt(budget2.maxInputBytes) < sourceSize ? BigInt(budget2.maxInputBytes) : sourceSize;
         const prefix = bytes ?? await byteSource.read(0n, Math.min(rangeDefinition?.detectBytes ?? RANGE_DETECT_PREFIX_BYTES, Number(readable)), signal);
-        const detected = await definition2.detect(prefix, primary.source.uri);
+        const suffixLength = endWindow === void 0 ? 0 : Math.min(endWindow, Number(sourceSize), Number(readable));
+        const suffix = endWindow === void 0 ? void 0 : bytes !== void 0 ? bytes.subarray(bytes.byteLength - suffixLength) : suffixLength === 0 ? new Uint8Array() : await byteSource.read(sourceSize - BigInt(suffixLength), suffixLength, signal);
+        const detected = await definition2.detect(prefix, primary.source.uri, suffix);
         const inspectionContext = {
           ...contributionContext2 === void 0 ? {} : {
             contracts: contributionContext2.contracts,
@@ -63795,6 +64017,7 @@ var WEB_WORKER_MODULE_MAP = Object.freeze({
   "@modkit/codec-kit/compression/pkware-dcl": "vendor/codec-kit/compression/pkware-dcl.js",
   "@modkit/codec-kit/compression/lcw": "vendor/codec-kit/compression/lcw.js",
   "@modkit/codec-kit/compression/lzo": "vendor/codec-kit/compression/lzo.js",
+  "@modkit/codec-kit/storage/leveldb": "vendor/codec-kit/storage/leveldb.js",
   "@modkit/codec-kit/compression/refpack": "vendor/codec-kit/compression/refpack.js",
   "@modkit/codec-kit/compression/zstd": "vendor/codec-kit/compression/zstd.js",
   "@modkit/codec-kit/model/draco": "vendor/codec-kit/model/draco.js",
@@ -68005,7 +68228,7 @@ var PREVIEW_STAGES = [
 async function defaultPreviewStage(kind, localizer) {
   switch (kind) {
     case "model":
-      return (await import("./model-RV3H5XUE.js")).createModelViewer({ localizer });
+      return (await import("./model-MTMPTOHV.js")).createModelViewer({ localizer });
     case "image":
       return (await import("./image-OUUKGJCT.js")).createImageViewer({ localizer });
     case "video":
@@ -88555,6 +88778,24 @@ function transformedEnvelope(own, transform2) {
   return Float64Array.of(minX - reachX * 1e-12, minY - reachY * 1e-12, minZ - reachZ * 1e-12, maxX + reachX * 1e-12, maxY + reachY * 1e-12, maxZ + reachZ * 1e-12);
 }
 function sharedPickPrimitive(source2, primitive, owner, slot) {
+  if (materialSkinOf(primitive) !== void 0) {
+    let posed;
+    const entry2 = () => posed ??= sharedPickPrimitive(worldPosedPrimitive(source2), materialPosedPrimitive(primitive), owner, slot);
+    return Object.freeze({
+      get primitive() {
+        return entry2().primitive;
+      },
+      get minimum() {
+        return entry2().minimum;
+      },
+      get maximum() {
+        return entry2().maximum;
+      },
+      get envelope() {
+        return entry2().envelope;
+      }
+    });
+  }
   const referenced = referencedVertexIndices(source2);
   const envelope = transformedEnvelope(referencedBoundsOf(primitive.positions, referenced), primitive.transform);
   const slots = owner === void 0 ? void 0 : lastPickBounds.get(owner);
@@ -88869,7 +89110,10 @@ function worldModelSceneSampler(result, clip) {
       ...result.skeleton === void 0 ? {} : { skeleton: result.skeleton }
     }, {
       ...clip === void 0 ? {} : { clip },
-      maxBytes: 64 * 1024 * 1024
+      maxBytes: 64 * 1024 * 1024,
+      // Skins keep their bind-pose arrays (and GPU buffers) and take each pose in the vertex
+      // stage; what the plan reads on the CPU is posed there (worldPosedPrimitive).
+      skinning: "gpu"
     });
     samplers.set(key3, sampler);
   }
@@ -88883,12 +89127,33 @@ function restWorldModelSample(result) {
     const sampled = (result.nodes?.length ?? 0) === 0 ? { primitives: result.primitives, nodeTransforms: /* @__PURE__ */ new Map() } : worldModelSceneSampler(result, void 0).sample(0);
     sample = Object.freeze({
       result,
-      primitives: sampled.primitives,
+      primitives: Object.freeze(sampled.primitives.map(worldPosedPrimitive)),
       nodeTransforms: sampled.nodeTransforms
     });
     restWorldModelSamples.set(result, sample);
   }
   return sample;
+}
+var worldPosedPrimitives = /* @__PURE__ */ new WeakMap();
+function worldPosedPrimitive(primitive) {
+  if (materialSkinOf(primitive) === void 0)
+    return primitive;
+  let posed = worldPosedPrimitives.get(primitive);
+  if (posed === void 0)
+    worldPosedPrimitives.set(primitive, posed = materialPosedPrimitive(primitive));
+  return posed;
+}
+var worldPosedSamples = /* @__PURE__ */ new WeakMap();
+function worldPosedSample(sample) {
+  if (sample === void 0 || !sample.primitives.some((primitive) => materialSkinOf(primitive)))
+    return sample;
+  let posed = worldPosedSamples.get(sample);
+  if (posed === void 0)
+    worldPosedSamples.set(sample, posed = Object.freeze({
+      ...sample,
+      primitives: Object.freeze(sample.primitives.map(worldPosedPrimitive))
+    }));
+  return posed;
 }
 function worldComponentTransforms(components2, sampleOf) {
   const componentTransforms = /* @__PURE__ */ new Map();
@@ -90270,7 +90535,9 @@ function createWorldWebGlPlan(input, previousPlan) {
     const sample = (result.nodes?.length ?? 0) === 0 ? { primitives: result.primitives, nodeTransforms: /* @__PURE__ */ new Map() } : worldModelSceneSampler(result, clip).sample(time);
     const current = {
       result,
-      primitives: sample.primitives,
+      // A skin whose pose does not follow the clock is posed on the CPU once for every frame to
+      // draw: posed on the GPU, it would be posed again by every draw of every frame.
+      primitives: staticGeometry && sample.primitives.some((primitive) => materialSkinOf(primitive)) ? Object.freeze(sample.primitives.map(worldPosedPrimitive)) : sample.primitives,
       nodeTransforms: sample.nodeTransforms
     };
     planSamples.set(sharedKey, current);
@@ -90284,7 +90551,7 @@ function createWorldWebGlPlan(input, previousPlan) {
   };
   const previous = previousPlan === void 0 ? void 0 : worldStaticPreparations.get(previousPlan);
   const models = previous !== void 0 && sameWorldMap(previous.input.models, input.models) ? previous.models : ++worldModelGenerations;
-  const preparation = previous !== void 0 && sameWorldStaticInput(previous.input, input) ? previous.preparation : prepareWorldStaticTerrain(input, sampleSharedModel);
+  const preparation = previous !== void 0 && sameWorldStaticInput(previous.input, input) ? previous.preparation : prepareWorldStaticTerrain(input, (resourceId2, item) => worldPosedSample(sampleSharedModel(resourceId2, item)));
   const { terrain, liftedCliffPrimitives } = preparation;
   const timeSeconds = input.timeSeconds ?? 0;
   if (!Number.isFinite(timeSeconds) || timeSeconds < 0)
@@ -90394,7 +90661,7 @@ function createWorldWebGlPlan(input, previousPlan) {
       const previous2 = samples.get(resourceId2);
       if (previous2 !== void 0)
         return previous2;
-      const current = sampleSharedModel(resourceId2, item);
+      const current = item.derivedFrom === "cliffs" ? worldPosedSample(sampleSharedModel(resourceId2, item)) : sampleSharedModel(resourceId2, item);
       if (current !== void 0)
         samples.set(resourceId2, current);
       return current;
@@ -90448,11 +90715,12 @@ function createWorldWebGlPlan(input, previousPlan) {
         }
       }
       let primitiveIndex = -1;
-      for (const primitive of primitives) {
+      for (const drawn of primitives) {
         primitiveIndex += 1;
+        const prepared = programs.get(drawn.materialId ?? "");
+        const primitive = prepared === void 0 ? worldPosedPrimitive(drawn) : drawn;
         const material = modelMaterialById(presented, primitive.materialId);
         const shadowPolicy = modelMaterialShadowPolicy(material);
-        const prepared = programs.get(primitive.materialId ?? "");
         if (prepared !== void 0 && prepared.passes.length === 0)
           continue;
         const sharedMaterial = prepared !== void 0;
@@ -91700,6 +91968,10 @@ function retainedWorldPlanBytes(plan) {
   }
   for (const scene of plan.modelMaterialScenes) {
     for (const primitive of scene.primitives) {
+      const skin = materialSkinOf(primitive);
+      retain(skin?.joints);
+      retain(skin?.weights);
+      retain(skin?.palette);
       retain(primitive.positions);
       retain(primitive.normals);
       retain(primitive.tangents);
@@ -91953,6 +92225,14 @@ function prepareWorldMaterialResources(resources, plan) {
       seen.add(texture);
       resources.materialTextureHandles.set(texture, bindTexture2d(resources, texture, 0));
     }
+  const palettes = /* @__PURE__ */ new Set();
+  for (const scene of plan.modelMaterialScenes)
+    for (const primitive of scene.primitives) {
+      const skin = materialSkinOf(primitive);
+      if (skin !== void 0)
+        palettes.add(skin.palette);
+    }
+  resources.materialDraws.prepareSkins(palettes);
 }
 var worldShadowDiscards = /* @__PURE__ */ new WeakMap();
 function worldShadowEntryKey(entry2, passes) {
@@ -91966,6 +92246,7 @@ function worldShadowEntryKey(entry2, passes) {
   return [
     "material",
     primitive.positions,
+    materialSkinOf(primitive)?.palette,
     primitive.indices,
     primitive.topology,
     entry2.instances?.matrices ?? primitive.transform,
@@ -92677,7 +92958,7 @@ function createWorldWebGlCompositeTransparentDrawPlan(plan, requested, materialD
   const worldDraws = createWorldWebGlTransparentDrawPlan(plan, requested, { excludeClippedWater });
   const key3 = [worldDraws];
   for (const { draw } of materialDraws)
-    key3.push(draw.primitive.positions, draw.primitive.transform, draw.program);
+    key3.push(draw.primitive.positions, draw.primitive.transform, draw.program, materialSkinOf(draw.primitive)?.palette);
   const cached = compositeTransparentPacks.get(plan);
   if (cached !== void 0 && cached.key.length === key3.length && cached.key.every((value2, index2) => value2 === key3[index2]))
     return cached.draws;
@@ -92699,7 +92980,7 @@ function createWorldWebGlCompositeTransparentDrawPlan(plan, requested, materialD
     entries.push({
       value: Object.freeze({ kind: "material", ...entry2 }),
       priority: entry2.draw.program.priority,
-      depth: transparentProjectionDepth(entry2.draw.primitive.positions, direction, entry2.draw.primitive.transform),
+      depth: transparentProjectionDepth(materialPosedPositions(entry2.draw.primitive), direction, entry2.draw.primitive.transform),
       ordinal: entries.length
     });
   entries.sort((left, right) => left.priority - right.priority || left.depth - right.depth || left.ordinal - right.ordinal);
@@ -92727,7 +93008,7 @@ function worldViewPlaneBasis(view) {
   return { direction, right, up };
 }
 function primitiveScreenBox(primitive, basis2, box, offset) {
-  const { min, max } = cachedPrimitiveBounds(primitive.positions);
+  const { min, max } = cachedPrimitiveBounds(materialPosedPositions(primitive));
   if (!(min[0] <= max[0])) {
     box.set([Infinity, Infinity, -Infinity, -Infinity], offset);
     return;
@@ -93150,6 +93431,7 @@ function worldSceneSolidDrawsOf(scene, shadow) {
       worldGroupId(primitive.textureCoordinates),
       ...(primitive.textureCoordinateSets ?? []).map((set) => `${set.set}:${worldGroupId(set.coordinates)}`),
       worldGroupId(primitive.indices),
+      worldGroupId(materialSkinOf(primitive)?.palette),
       bias === void 0 ? "-" : `${bias.slopeScale}:${bias.units}`,
       primitiveTint(primitive).join(":")
     ].join("|");

@@ -50,14 +50,14 @@ import {
   subjectFactsSourceFromWire,
   webExtensionSubjectCardBundle,
   withoutHiddenEntries
-} from "./chunks/chunk-M25DQLRK.js";
-import "./chunks/chunk-46XPR3Z3.js";
+} from "./chunks/chunk-JP3EV444.js";
+import "./chunks/chunk-Q27WXNQ4.js";
 import "./chunks/chunk-BA6DD73E.js";
 import "./chunks/chunk-JDCQNX54.js";
 import "./chunks/chunk-JKB67RI6.js";
 import {
   resolveModelViewerTextures
-} from "./chunks/chunk-LTARHUCB.js";
+} from "./chunks/chunk-YTZZGCUZ.js";
 import {
   declaredMutatingOperations,
   editOffer,

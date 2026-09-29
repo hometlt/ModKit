@@ -33,7 +33,7 @@ import {
   resolveModelViewerTextures,
   sceneMaterials,
   skeletonJoints
-} from "./chunk-LTARHUCB.js";
+} from "./chunk-YTZZGCUZ.js";
 import "./chunk-Z2D6YWX3.js";
 import "./chunk-FBGUD7CM.js";
 import "./chunk-NCOJRWIO.js";

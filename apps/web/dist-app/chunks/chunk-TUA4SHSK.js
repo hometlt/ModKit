@@ -6,10 +6,10 @@ import {
 } from "./chunk-I675VFQQ.js";
 import {
   snapshotModelSkeleton
-} from "./chunk-EJHSGAMM.js";
+} from "./chunk-UWXEC6C3.js";
 import {
   snapshotModelAnimations
-} from "./chunk-TAC5RUBM.js";
+} from "./chunk-GMWDAJID.js";
 
 // ../MODDING/modkit-core/packages/codec-kit/dist/paging.js
 function pageStart(cursor) {

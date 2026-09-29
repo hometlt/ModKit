@@ -8,7 +8,7 @@ import {
   readUvmBillboards,
   readUvmModelStates,
   readUvmShadowMeshBindings
-} from "../../../chunks/chunk-GN5Q6WAS.js";
+} from "../../../chunks/chunk-E52YCAAC.js";
 import "../../../chunks/chunk-QONSPCLP.js";
 import {
   DEFAULT_UVM_CONTAINER_BUDGET,
@@ -36,10 +36,10 @@ import {
 } from "../../../chunks/chunk-3TRK5GFM.js";
 import "../../../chunks/chunk-WYUQ3HXR.js";
 import "../../../chunks/chunk-I675VFQQ.js";
-import "../../../chunks/chunk-5SBJANAJ.js";
 import {
   snapshotJson
 } from "../../../chunks/chunk-ZSDVUSRM.js";
+import "../../../chunks/chunk-5SBJANAJ.js";
 import "../../../chunks/chunk-TKIPZ6HV.js";
 import "../../../chunks/chunk-NUFRM6SI.js";
 import "../../../chunks/chunk-W2UBWFML.js";

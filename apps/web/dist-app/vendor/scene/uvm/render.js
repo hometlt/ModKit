@@ -11,7 +11,7 @@ import {
   readUvmModelStates,
   readUvmShadowMeshBindings,
   snapshotModelBillboards
-} from "../../../chunks/chunk-GN5Q6WAS.js";
+} from "../../../chunks/chunk-E52YCAAC.js";
 import "../../../chunks/chunk-QONSPCLP.js";
 import {
   readUvmContainer
@@ -58,7 +58,7 @@ import {
 } from "../../../chunks/chunk-4A3BDPFP.js";
 import {
   encodePng
-} from "../../../chunks/chunk-EPDJTBM6.js";
+} from "../../../chunks/chunk-4FPUQ2AH.js";
 import "../../../chunks/chunk-COUIZZOL.js";
 import "../../../chunks/chunk-WYUQ3HXR.js";
 import {
@@ -69,16 +69,16 @@ import {
   createModelPoseBlendSampler,
   createModelPoseSampler,
   snapshotModelSkeleton
-} from "../../../chunks/chunk-EJHSGAMM.js";
+} from "../../../chunks/chunk-UWXEC6C3.js";
 import {
   createModelAnimationSampler
-} from "../../../chunks/chunk-TAC5RUBM.js";
-import {
-  multiplyMat4
-} from "../../../chunks/chunk-5SBJANAJ.js";
+} from "../../../chunks/chunk-GMWDAJID.js";
 import {
   snapshotJson
 } from "../../../chunks/chunk-ZSDVUSRM.js";
+import {
+  multiplyMat4
+} from "../../../chunks/chunk-5SBJANAJ.js";
 import "../../../chunks/chunk-GDKG5J25.js";
 import {
   SCENE_RENDERER_CONTRACT
@@ -89,7 +89,7 @@ import {
 import "../../../chunks/chunk-TKIPZ6HV.js";
 import "../../../chunks/chunk-NUFRM6SI.js";
 import "../../../chunks/chunk-W2UBWFML.js";
-import "../../../chunks/chunk-U5HQC5XA.js";
+import "../../../chunks/chunk-TWH75SBL.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 
 // ../MODDING/modkit-core/packages/scene/dist/uvm/pose-samples.js
@@ -16260,6 +16260,47 @@ function createNodePoseSampler(nodes, options) {
 
 // ../MODDING/modkit-core/packages/scene/dist/model/sampler.js
 var IDENTITY = new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+function skinVertices(primitive, slots) {
+  const authored = present(primitive.boneIndices, "skin indices");
+  const source = present(primitive.boneWeights, "skin weights");
+  const identity = slots.size;
+  const joints = identity < 256 ? new Uint8Array(authored.length) : new Uint16Array(authored.length);
+  const weights = new Float32Array(authored.length);
+  for (let vertex = 0; vertex < authored.length; vertex += 4) {
+    let sum = 0;
+    for (let influence = 0; influence < 4; influence++)
+      sum += source[vertex + influence];
+    for (let influence = 0; influence < 4; influence++) {
+      const weight = source[vertex + influence];
+      joints[vertex + influence] = weight > 0 ? present(slots.get(authored[vertex + influence]), "skin slot") : identity;
+      weights[vertex + influence] = weight > 0 ? weight / sum : 0;
+    }
+    if (sum === 0)
+      weights[vertex] = 1;
+  }
+  return { joints, weights };
+}
+function skinPalette(bones, slots) {
+  const palette = new Float32Array((slots.size + 1) * 16);
+  const filled = new Uint8Array(slots.size);
+  for (const bone of bones) {
+    const slot = slots.get(bone.boneIndex);
+    if (slot === void 0)
+      continue;
+    const matrix = bone.skinningMatrix;
+    if (filled[slot] === 1 || matrix?.length !== 16 || !matrix.every(Number.isFinite))
+      throw new TypeError("skin needs a unique explicit inverse-bind pose for each bone");
+    palette.set(matrix, slot * 16);
+    filled[slot] = 1;
+  }
+  if (filled.includes(0))
+    throw new TypeError("skin pose is incomplete");
+  palette.set(IDENTITY, slots.size * 16);
+  for (let index = 0; index < palette.length; index++)
+    if (!Number.isFinite(palette[index]))
+      throw new RangeError("deformed skin exceeds finite float range");
+  return palette;
+}
 function present(value, label) {
   if (value === void 0)
     throw new TypeError(`missing scene ${label}`);
@@ -16267,6 +16308,7 @@ function present(value, label) {
 }
 function createModelSceneSampler(projection2, options = {}) {
   const { signal, clip } = options;
+  const gpuSkinning = options.skinning === "gpu";
   const poseTime = options.poseTime ?? 0;
   if (!Number.isFinite(poseTime))
     throw new TypeError("pose reference time must be finite");
@@ -16500,6 +16542,8 @@ function createModelSceneSampler(projection2, options = {}) {
     }
   }
   const deformers = /* @__PURE__ */ new Map();
+  const gpuSkins = /* @__PURE__ */ new Map();
+  const hierarchySlots = /* @__PURE__ */ new Map();
   let workingBytes = projection2.primitives.reduce((sum, primitive) => sum + modelPrimitiveByteLength(primitive), nodeMatrixBytes + billboardBytes);
   workingBytes += poseBlendBytes;
   if (workingBytes > maxBytes)
@@ -16524,6 +16568,16 @@ function createModelSceneSampler(projection2, options = {}) {
         throw new TypeError("skin has no explicit inverse bind matrix");
       const deformer = createModelSkinDeformer(primitive, bones.map((bone) => bone.boneIndex), maxBytes - workingBytes, signal);
       workingBytes += deformer.workingBytes;
+      if (gpuSkinning && primitive.normals !== void 0 && primitive.tangents !== void 0) {
+        workingBytes += primitive.positions.length * 8;
+        if (workingBytes > maxBytes)
+          throw new RangeError("skin deformation exceeds maxBytes");
+        let slots = hierarchySlots.get(hierarchyId);
+        if (slots === void 0)
+          hierarchySlots.set(hierarchyId, slots = new Map(bones.map((bone, slot) => [bone.boneIndex, slot])));
+        const { bounds: _bounds, boneIndices: _indices, boneWeights: _weights, hierarchyId: _hierarchy, ...bindPose } = primitive;
+        gpuSkins.set(primitive, { bindPose, vertices: skinVertices(primitive, slots) });
+      }
       deformers.set(primitive, deformer);
       if (deformer.zeroWeightVertices > 0)
         report("skin-zero-weights", `${deformer.zeroWeightVertices} vertices retain source positions under MK2 CPU skinning.`, primitive.id);
@@ -16564,6 +16618,7 @@ function createModelSceneSampler(projection2, options = {}) {
       const localPoses = nodeSampler?.sample(timeSeconds, requestSignal);
       const faceBillboards = new Map(billboards.flatMap((item) => item.mode === "face-camera" ? [[item.nodeId, item]] : []));
       const joints = [];
+      const palettes = /* @__PURE__ */ new Map();
       for (const [hierarchyId, sampler] of poseSamplers) {
         const originalPose = sampler.sample(timeSeconds, requestSignal).bones;
         const pose = applyModelBillboards(originalPose, [...present(hierarchyBindings.get(hierarchyId), "billboard bindings").values()], billboards, billboardCamera, present(hierarchyFrames.get(hierarchyId), "billboard frame"), billboardBytes, requestSignal);
@@ -16611,15 +16666,34 @@ function createModelSceneSampler(projection2, options = {}) {
           continue;
         const deformer = deformers.get(primitive);
         if (deformer !== void 0) {
-          const deformed = deformer.deform(present(poses.get(present(primitive.hierarchyId, "skin hierarchy")), "skin pose"), requestSignal);
-          const frame = primitive.hierarchyId === void 0 ? void 0 : hierarchyFrames.get(primitive.hierarchyId);
+          const hierarchyId = present(primitive.hierarchyId, "skin hierarchy");
+          const pose = present(poses.get(hierarchyId), "skin pose");
+          const gpu = gpuSkins.get(primitive);
+          let deformed;
+          let skin;
+          if (gpu === void 0)
+            deformed = deformer.deform(pose, requestSignal);
+          else {
+            let palette = palettes.get(hierarchyId);
+            if (palette === void 0)
+              palettes.set(hierarchyId, palette = skinPalette(pose, present(hierarchySlots.get(hierarchyId), "skin slots")));
+            skin = Object.freeze({
+              ...gpu.vertices,
+              palette,
+              deformed: () => deformed ??= deformer.deform(pose)
+            });
+          }
+          const frame = hierarchyFrames.get(hierarchyId);
           const transformed = frame !== void 0 && !frame.every((value, i) => value === IDENTITY[i]);
           const instances2 = primitiveNodes.get(primitive.id)?.length ?? 1;
-          for (let instance = 0; instance < instances2; instance++)
-            primitives.push({
-              ...deformed,
-              ...transformed ? { transform: new Float32Array(frame) } : {}
-            });
+          for (let instance = 0; instance < instances2; instance++) {
+            const posed = {
+              ...skin === void 0 ? present(deformed, "deformed skin") : gpu.bindPose,
+              ...transformed ? { transform: new Float32Array(frame) } : {},
+              ...skin === void 0 ? {} : { skin }
+            };
+            primitives.push(posed);
+          }
         } else {
           for (const node of primitiveNodes.get(primitive.id) ?? [void 0]) {
             const transform2 = node === void 0 ? void 0 : animatedWorlds.get(node) ?? worlds.get(node);
@@ -19957,8 +20031,21 @@ function placementLocals(worldGeometry) {
   mat3 viewNormalMatrix=sceneCofactor(mat3(modelView))*orientation;
   mat3 worldNormalMatrix=sceneCofactor(mat3(materialWorld))*sceneOrientationOf(mat3(materialWorld));${worldGeometry ? "\n  float objectOrientation=sceneOrientationOf(mat3(model));\n  mat3 objectNormalMatrix=sceneCofactor(mat3(model))*objectOrientation;" : ""}`;
 }
-function sceneMaterialVertexSource(defines, environmentEnabled = false, worldShading = false, placementAttributes = false) {
+var SKIN_DECLARATIONS = `in vec4 a_skinJoints, a_skinWeights;
+uniform highp sampler2D u_skinPalette;
+uniform int u_skinBase;
+mat4 skinMatrix(float joint){int texel=u_skinBase+int(joint)*4,width=textureSize(u_skinPalette,0).x;ivec2 at=ivec2(texel%width,texel/width);
+  return mat4(texelFetch(u_skinPalette,at,0),texelFetch(u_skinPalette,at+ivec2(1,0),0),texelFetch(u_skinPalette,at+ivec2(2,0),0),texelFetch(u_skinPalette,at+ivec2(3,0),0));}
+`;
+var SKIN_LOCALS = `
+  mat4 skin=skinMatrix(a_skinJoints.x)*a_skinWeights.x+skinMatrix(a_skinJoints.y)*a_skinWeights.y+skinMatrix(a_skinJoints.z)*a_skinWeights.z+skinMatrix(a_skinJoints.w)*a_skinWeights.w;
+  vec3 skinPosition=(skin*vec4(a_position,1.0)).xyz,skinNormal=mat3(skin)*a_normal;
+  vec4 skinTangent=vec4(mat3(skin)*a_tangent.xyz,a_tangent.w);`;
+function sceneMaterialVertexSource(defines, environmentEnabled = false, worldShading = false, placementAttributes = false, skinned = false) {
   const worldGeometry = environmentEnabled || worldShading;
+  const position = skinned ? "skinPosition" : "a_position";
+  const normal = skinned ? "skinNormal" : "a_normal";
+  const tangent = skinned ? "skinTangent" : "a_tangent";
   const name = placementAttributes ? {
     model: "model",
     modelView: "modelView",
@@ -19985,34 +20072,34 @@ uniform vec3 u_lightDirection;
 ${defines.sceneLighting ? "uniform vec3 u_sceneFillViewDirection0, u_sceneFillViewDirection1;\nout vec3 v_sceneFillDir0, v_sceneFillDir1;" : ""}
 ${worldGeometry && !placementAttributes ? "uniform mat3 u_sceneWorldNormalMatrix;\nuniform float u_sceneWorldOrientation;\n" : ""}uniform float ${placementAttributes ? "" : "u_orientation, "}u_orthographic;
 in vec3 a_position, a_normal; in vec4 a_tangent;
-${Array.from({ length: defines.uvSetCount }, (_, i) => `in vec2 a_uv${i}; out vec2 v_uv${i};`).join("\n")}
+${skinned ? SKIN_DECLARATIONS : ""}${Array.from({ length: defines.uvSetCount }, (_, i) => `in vec2 a_uv${i}; out vec2 v_uv${i};`).join("\n")}
 ${defines.usesVertexAlpha || defines.usesVertexColor ? "in vec4 a_color; out vec4 v_vertexColor;" : ""}
 out vec3 v_normal, v_lightDir, v_halfVec, v_viewDir, v_viewPosition, v_viewNormal;
 out vec3 v_modelPosition, v_modelNormal, v_worldPosition, v_worldNormal;
 ${worldGeometry ? "out vec3 v_sceneWorldPosition, v_sceneWorldNormal, v_sceneWorldTangent, v_sceneWorldBitangent;\n" : ""}out vec4 v_clipPosition;
 vec3 unit(vec3 v,vec3 fallback){float len=length(v);return len>1e-9?v/len:fallback;}
-${placementAttributes ? PLACEMENT_DECLARATIONS : ""}void main(){${placementAttributes ? placementLocals(worldGeometry) : ""}
-  vec4 world=${name.model}*vec4(a_position,1.0);
-  vec3 view=(${name.modelView}*vec4(a_position,1.0)).xyz;
-  vec3 n=unit(${name.viewNormal}*a_normal,vec3(0.0,0.0,1.0));
-  vec3 rawT=mat3(${name.modelView})*a_tangent.xyz;
+${placementAttributes ? PLACEMENT_DECLARATIONS : ""}void main(){${placementAttributes ? placementLocals(worldGeometry) : ""}${skinned ? SKIN_LOCALS : ""}
+  vec4 world=${name.model}*vec4(${position},1.0);
+  vec3 view=(${name.modelView}*vec4(${position},1.0)).xyz;
+  vec3 n=unit(${name.viewNormal}*${normal},vec3(0.0,0.0,1.0));
+  vec3 rawT=mat3(${name.modelView})*${tangent}.xyz;
   vec3 fallback=unit(cross(abs(n.z)<0.9?vec3(0.0,0.0,1.0):vec3(0.0,1.0,0.0),n),vec3(1.0,0.0,0.0));
   vec3 t=unit(rawT-n*dot(n,rawT),fallback);
-  vec3 b=cross(n,t)*(a_tangent.w<0.0?-1.0:1.0)*${name.orientation};
+  vec3 b=cross(n,t)*(${tangent}.w<0.0?-1.0:1.0)*${name.orientation};
   mat3 tbn=transpose(mat3(t,b,n));
   vec3 eye=u_orthographic>0.5?vec3(0.0,0.0,1.0):unit(-view,vec3(0.0,0.0,1.0));
   v_normal=vec3(0.0,0.0,1.0); v_lightDir=tbn*u_lightDirection;
 ${defines.sceneLighting ? "  v_sceneFillDir0=tbn*u_sceneFillViewDirection0; v_sceneFillDir1=tbn*u_sceneFillViewDirection1;" : ""}
   v_halfVec=tbn*(-unit(eye+u_lightDirection,vec3(0.0,0.0,1.0))); v_viewDir=tbn*eye;
   v_viewPosition=u_orthographic>0.5?vec3(0.0,0.0,-1.0):view; v_viewNormal=n;
-${worldGeometry ? `  vec3 sceneN=unit(${name.objectNormal}*a_normal,vec3(0.0,0.0,1.0));
-  vec3 sceneRawT=mat3(${name.model})*a_tangent.xyz;
+${worldGeometry ? `  vec3 sceneN=unit(${name.objectNormal}*${normal},vec3(0.0,0.0,1.0));
+  vec3 sceneRawT=mat3(${name.model})*${tangent}.xyz;
   vec3 sceneFallback=unit(cross(abs(sceneN.z)<0.9?vec3(0.0,0.0,1.0):vec3(0.0,1.0,0.0),sceneN),vec3(1.0,0.0,0.0));
   vec3 sceneT=unit(sceneRawT-sceneN*dot(sceneN,sceneRawT),sceneFallback);
   v_sceneWorldPosition=world.xyz;v_sceneWorldNormal=sceneN;v_sceneWorldTangent=sceneT;
-  v_sceneWorldBitangent=cross(sceneN,sceneT)*(a_tangent.w<0.0?-1.0:1.0)*${name.objectOrientation};
-` : ""}  v_modelPosition=a_position;v_modelNormal=unit(a_normal,vec3(0.0,0.0,1.0));
-  v_worldPosition=(${name.materialWorld}*vec4(a_position,1.0)).xyz;v_worldNormal=unit(${name.worldNormal}*a_normal,vec3(0.0,0.0,1.0));
+  v_sceneWorldBitangent=cross(sceneN,sceneT)*(${tangent}.w<0.0?-1.0:1.0)*${name.objectOrientation};
+` : ""}  v_modelPosition=${position};v_modelNormal=unit(${normal},vec3(0.0,0.0,1.0));
+  v_worldPosition=(${name.materialWorld}*vec4(${position},1.0)).xyz;v_worldNormal=unit(${name.worldNormal}*${normal},vec3(0.0,0.0,1.0));
   v_clipPosition=u_viewProjection*world;gl_Position=v_clipPosition;
   ${Array.from({ length: defines.uvSetCount }, (_, i) => `v_uv${i}=a_uv${i};`).join("\n")}
   ${defines.usesVertexAlpha || defines.usesVertexColor ? "v_vertexColor=a_color;" : ""}

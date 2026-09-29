@@ -3,16 +3,18 @@ import {
   cdRomEdc,
   crc32,
   crc32Range,
+  crc32c,
   createAdler32,
   createCrc32Msb,
   xxHash32
-} from "./chunk-46XPR3Z3.js";
-import "./chunk-BLWUC7LO.js";
+} from "./chunk-BCCCTFYJ.js";
+import "./chunk-CQ52GEHY.js";
 export {
   adler32,
   cdRomEdc,
   crc32,
   crc32Range,
+  crc32c,
   createAdler32,
   createCrc32Msb,
   xxHash32

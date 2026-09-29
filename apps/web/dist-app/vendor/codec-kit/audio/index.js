@@ -23,8 +23,8 @@ import {
   vorbisPacketsToOgg,
   wavEntrySource,
   wavHeader
-} from "../../../chunks/chunk-QKMZKIXC.js";
-import "../../../chunks/chunk-U5HQC5XA.js";
+} from "../../../chunks/chunk-ZQEAQJ3E.js";
+import "../../../chunks/chunk-TWH75SBL.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 export {
   EA_XAS_FRAME_BYTES,

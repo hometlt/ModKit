@@ -1,6 +1,6 @@
 import {
   createCrc32Msb
-} from "./chunk-U5HQC5XA.js";
+} from "./chunk-TWH75SBL.js";
 
 // ../MODDING/modkit-core/packages/codec-kit/dist/audio/ea-xa.js
 var EA_XA_FRAME_SAMPLES = 28;
