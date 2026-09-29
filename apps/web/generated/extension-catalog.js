@@ -11465,7 +11465,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:edd2abd39dd11fd9fcf1b760711da699d5fbcf18902c5ec39e6d6d4ca7672670',
+        artifactDigest: 'sha256:1ffa690b364fea6d767fca183d8b87aa32166fa82ff2973560b81abe8adfb1d8',
         fileDigests: {
           'README.md': 'sha256:eebf23501ef4156fbcefeb5b0bbacc7c5eabe56b10538c262dae1bec206acadf',
           'contributions/codec-java-class.json':
@@ -11479,13 +11479,13 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'dist/bytecode.js.map':
             'sha256:10ded0884423ef77d57ca15970f18cc01c1fbe412bc3bd4d7c26424ce8787bb3',
           'dist/class-file.d.ts':
-            'sha256:f38fc78496209974fc23131d845d99b2b756f7206c6613c9c23a55d6fd08a992',
+            'sha256:94fd02b192dbbb9def7d10209f7b8512b4251a7b21c60298d6de8912e7d56adb',
           'dist/class-file.d.ts.map':
-            'sha256:e7fd80d4d068157c4539c2e61b237f77d6e8e577d757a4890183fac25a0db2cf',
+            'sha256:7f80d0b4680b984f8e2a73c739927e02d45cfbe81721bfa7dc243050ac08a014',
           'dist/class-file.js':
-            'sha256:7369237e460d0a5a169fe5b956cf9c2b4b672b0250852421681402ad5b36a358',
+            'sha256:0443a5c78afde473c004f1509ac8a7fb9cdb4ad4c97ac3887c18fb385c56adc2',
           'dist/class-file.js.map':
-            'sha256:04dff6647a2231e24a87305206bb51557c6df4a5380584ff06123b344d5cda86',
+            'sha256:665879505418ab5e114c2c3f79942a394405a4d2898b029af268a4fa8b5fb5ee',
           'dist/codec.d.ts':
             'sha256:70f2272f5e6e96098c8408262420759a835f96084ccedf73b84bef08e4f7b479',
           'dist/codec.d.ts.map':
@@ -11503,33 +11503,33 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'dist/index.js.map':
             'sha256:4618118effa3f9dd6de4e26d5e3b13e083f0f445c3923245dea21a4d076cac58',
           'dist/interpreter.d.ts':
-            'sha256:7b41d4dd22fc96fa6cea3ebb48db0924eb9d66f9bb4c0edd46d2120795b901a2',
+            'sha256:153bafcafc7e40fd9b8a6b71c3244a8afd1de509e8d08bd2ee7998c8f1c04b57',
           'dist/interpreter.d.ts.map':
-            'sha256:d225966e02afec9524805873367584e3c349dc8ff09b4b2258c702abb6ad2bb9',
+            'sha256:0b9e344a2dd3f66237fefcd3d1c4a47bc5d15e1154227c3aca49b3700ed90d1f',
           'dist/interpreter.js':
-            'sha256:60e6e135c841fc366a7a38bcf6de639c0d11250c5ce34fce27994f687daf860a',
+            'sha256:b2fd7dfc5b52110007b16ddf1f74f4e05c15a154860a1eb228d7e3e3ff013efe',
           'dist/interpreter.js.map':
-            'sha256:022accf59cca48f9d8386d9bcd416e7a9c72e908e5c8ab8f7d6e95bb090bb05f',
+            'sha256:de28bd531344cba78ffb376eb489b623802c0a770676ea34767abb9229e579d9',
           'package.json': 'sha256:bbc40fcdf10b49710604f8019903157f4d221e58aaef96b298b5dc6f8118a952',
           'src/bytecode.ts':
             'sha256:c9beb7f1f6c92ad84b0fe6b842eef99be908f798db6b8bbca008d828893a31cd',
           'src/class-file.ts':
-            'sha256:4ef19e8e4457495b3b0d01815d771399e35b4aa758425cf8a2bda40bf515f8a4',
+            'sha256:08bab8bce935fb8a57134a87fbdc1920f718ecce267710ca6ed1fd297433f891',
           'src/codec.ts': 'sha256:0b11ebffa5132857c86d14d2426de9f4f754109ab1759b769663cec0fbfff97e',
           'src/index.ts': 'sha256:2542de1574c447ff09f0f2bd0edc5ab9d6073956f475aa2e7fbb6930994a996a',
           'src/interpreter.ts':
-            'sha256:5624e1354f5d9cd0e5218a90ceb053694a58dfa547ef1de653ceabfe1ffff28c',
+            'sha256:e3445639ed13c26463449422801e05ab1c8cbfde3ca5d1e8a84bdd0d71c51d38',
           'test/class-file.test.ts':
-            'sha256:38d8e06493d3eb451a0c609194ffcfe97bef35315da320a9ea7b28d98f249226',
+            'sha256:0b636ff59b13a75414a9fe072d3616e1ab06b7d312caa89b68533bfdfc5c2888',
           'test/fixtures/Sample.class':
-            'sha256:4c1c21e83044c0245f390f6a0ee77b348ab554e3145d7aa647511fd1b08dad0a',
+            'sha256:0e6bca2c5fc36451a73e353e247779f252db8a62a200cdc24752d938491bd900',
           'test/fixtures/Sample.java':
-            'sha256:0e5fa9e887ea0ed942da83a64a22b050a7538958ef26b852deab3474e9bbbe52',
+            'sha256:a232f456df6e55858e48d1b2bdc1727ee96b55013e147c5a14d544fa80f813be',
           'tsconfig.json':
             'sha256:daba80f2abbe46449d7ffad22c2029633475f729b9380cc79daeb850c2223492',
         },
         inventoryRecordId:
-          'artifact:sha256:edd2abd39dd11fd9fcf1b760711da699d5fbcf18902c5ec39e6d6d4ca7672670',
+          'artifact:sha256:1ffa690b364fea6d767fca183d8b87aa32166fa82ff2973560b81abe8adfb1d8',
       },
       artifactRoot: 'extensions/java/',
       containers: {

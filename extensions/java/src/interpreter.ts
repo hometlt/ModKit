@@ -1,9 +1,11 @@
 /**
- * The bounded constant interpreter (D2): walks one method's straight-line bytecode abstractly and
- * reports the calls it makes with their arguments as constants or as symbolic values (a static
- * field, a parameter, another call's result). Nothing is executed: a branch, a switch, a throw, an
- * exception handler or any instruction outside this subset refuses the whole method with the
- * program counter and the reason, so a caller can name what it skipped.
+ * The bounded constant interpreter (D2): walks one method's bytecode abstractly and reports the
+ * calls it makes, with their arguments as constants or as symbolic values (a static field, a
+ * parameter, another call's result). Nothing is executed. A branch or switch whose condition folds
+ * to a constant follows its side, so a loop over a constant bound unrolls, within an instruction
+ * budget; a condition over a symbol, a throw, an exception handler or any instruction outside this
+ * subset refuses the method with its program counter and reason, and hands back what was recorded
+ * up to there, so a caller can use it and name what it skipped.
  *
  * Builder code such as a model definition (`CubeListBuilder.create().texOffs(0, 0).addBox(...)`)
  * is straight-line with constant arguments and reads back as a list of calls.
@@ -19,6 +21,15 @@ export type JvmValue =
   | { readonly kind: 'null' }
   /** `ldc` of a class literal. */
   | { readonly kind: 'class'; readonly name: string }
+  | { readonly kind: 'methodType'; readonly descriptor: string }
+  /** A method handle constant: `referenceKind` 1–9 (JVMS §5.4.3.5), the member it names. */
+  | {
+      readonly kind: 'methodHandle'
+      readonly referenceKind: number
+      readonly owner: string
+      readonly name: string
+      readonly descriptor: string
+    }
   /** A method parameter (`this` is parameter 0 of an instance method). */
   | { readonly kind: 'parameter'; readonly index: number }
   | {
@@ -43,19 +54,31 @@ export type JvmValue =
       readonly elementType: string
       readonly elements: (JvmValue | undefined)[]
     }
-  /** Arithmetic or a conversion over values that are not all constants. */
+  /** Arithmetic, a comparison or a conversion over values that are not all constants. */
   | { readonly kind: 'operation'; readonly op: string; readonly operands: readonly JvmValue[] }
 
 export interface JvmCall {
   readonly pc: number
   readonly invoke:
     'invokevirtual' | 'invokespecial' | 'invokestatic' | 'invokeinterface' | 'invokedynamic'
+  /** The method's class; for `invokedynamic`, the bootstrap method's class. */
   readonly owner: string
+  /** The method's name; for `invokedynamic`, the call site's (`accept`, `makeConcatWithConstants`). */
   readonly name: string
   readonly descriptor: string
   /** Absent for static and dynamic calls. */
   readonly receiver?: JvmValue
   readonly args: readonly JvmValue[]
+  /**
+   * `invokedynamic` only: the bootstrap method and its static arguments — for a lambda, the
+   * LambdaMetafactory's method types and the implementation handle; for string concatenation,
+   * the recipe and its constants.
+   */
+  readonly bootstrap?: {
+    readonly name: string
+    readonly descriptor: string
+    readonly args: readonly JvmValue[]
+  }
 }
 
 export interface JvmStore {
@@ -73,7 +96,21 @@ export type InterpretResult =
       readonly stores: readonly JvmStore[]
       readonly returned?: JvmValue
     }
-  | { readonly state: 'refused'; readonly pc: number; readonly reason: string }
+  | {
+      readonly state: 'refused'
+      readonly pc: number
+      readonly reason: string
+      /** What the walk recorded before it stopped. */
+      readonly calls: readonly JvmCall[]
+      readonly stores: readonly JvmStore[]
+    }
+
+export interface InterpretOptions {
+  /** Values for the parameters (`this` first for an instance method); the rest stay symbolic. */
+  readonly args?: readonly (JvmValue | undefined)[]
+  /** Instructions walked at most, loops unrolled included. Default 100 000. */
+  readonly maxInstructions?: number
+}
 
 class Refusal extends Error {
   constructor(
@@ -110,14 +147,33 @@ const returnsValue = (descriptor: string) => !descriptor.endsWith(')V')
 
 const isWide = (value: JvmValue) => value.kind === 'long' || value.kind === 'double'
 
+const INT_MIN = -2147483648
+const INT_MAX = 2147483647
+const LONG_MIN = -(2n ** 63n)
+const LONG_MAX = 2n ** 63n - 1n
+
+type Numeric = { readonly kind: 'int' | 'float' | 'double'; readonly value: number }
+const isNumeric = (value: JvmValue | undefined): value is Numeric =>
+  value !== undefined && (value.kind === 'int' || value.kind === 'float' || value.kind === 'double')
+
+function toInt(value: number): number {
+  return Number.isNaN(value) ? 0 : Math.max(INT_MIN, Math.min(INT_MAX, Math.trunc(value)))
+}
+
+function toLong(value: number): bigint {
+  if (Number.isNaN(value)) return 0n
+  if (value >= 2 ** 63) return LONG_MAX
+  if (value <= -(2 ** 63)) return LONG_MIN
+  return BigInt(Math.trunc(value))
+}
+
+/** Fold `op` over constant operands with Java semantics; otherwise a symbolic operation. */
 function fold(op: string, operands: readonly JvmValue[]): JvmValue {
   const [a, b] = operands
-  const numeric = (value: JvmValue | undefined) =>
-    value !== undefined &&
-    (value.kind === 'int' || value.kind === 'float' || value.kind === 'double')
-  if (op.startsWith('l') && operands.every(value => value.kind === 'long')) {
-    const x = (a as { value: bigint }).value
-    const y = (b as { value: bigint } | undefined)?.value ?? 0n
+  const symbolic: JvmValue = { kind: 'operation', op, operands }
+  if (a?.kind === 'long' && (b === undefined || b.kind === 'long' || b.kind === 'int')) {
+    const x = a.value
+    const y = b === undefined ? 0n : b.kind === 'long' ? b.value : BigInt(b.value)
     const long = (value: bigint): JvmValue => ({ kind: 'long', value: BigInt.asIntN(64, value) })
     switch (op) {
       case 'ladd':
@@ -126,52 +182,107 @@ function fold(op: string, operands: readonly JvmValue[]): JvmValue {
         return long(x - y)
       case 'lmul':
         return long(x * y)
+      case 'ldiv':
+        return y === 0n ? symbolic : long(x / y)
+      case 'lrem':
+        return y === 0n ? symbolic : long(x % y)
       case 'lneg':
         return long(-x)
+      case 'land':
+        return long(x & y)
+      case 'lor':
+        return long(x | y)
+      case 'lxor':
+        return long(x ^ y)
+      case 'lshl':
+        return long(x << (y & 63n))
+      case 'lshr':
+        return long(x >> (y & 63n))
+      case 'lushr':
+        return long(BigInt.asUintN(64, x) >> (y & 63n))
+      case 'lcmp':
+        return { kind: 'int', value: x < y ? -1 : x > y ? 1 : 0 }
+      case 'l2i':
+        return { kind: 'int', value: Number(BigInt.asIntN(32, x)) }
+      case 'l2f':
+        return { kind: 'float', value: Math.fround(Number(x)) }
+      case 'l2d':
+        return { kind: 'double', value: Number(x) }
     }
+    return symbolic
   }
-  if (operands.every(numeric)) {
-    const x = (a as { value: number }).value
-    const y = (b as { value: number } | undefined)?.value ?? 0
-    const kind =
-      op[0] === 'i' ? 'int' : op[0] === 'f' ? 'float' : op[0] === 'd' ? 'double' : undefined
-    const typed = (value: number): JvmValue =>
-      kind === 'int'
-        ? { kind, value: value | 0 }
-        : kind === 'float'
-          ? { kind, value: Math.fround(value) }
-          : { kind: 'double', value }
-    switch (op.slice(1)) {
-      case 'add':
-        return typed(x + y)
-      case 'sub':
-        return typed(x - y)
-      case 'mul':
-        return kind === 'int' ? typed(Math.imul(x, y)) : typed(x * y)
-      case 'div':
-        if (kind === 'int') break // division by zero throws; keep it symbolic
-        return typed(x / y)
-      case 'neg':
-        return typed(-x)
-    }
-    switch (op) {
-      case 'i2f':
-      case 'd2f':
-        return { kind: 'float', value: Math.fround(x) }
-      case 'i2d':
-      case 'f2d':
-        return { kind: 'double', value: x }
-      case 'f2i':
-      case 'd2i':
-        return {
-          kind: 'int',
-          value: Number.isNaN(x) ? 0 : Math.max(-2147483648, Math.min(2147483647, Math.trunc(x))),
-        }
-      case 'i2l':
-        return { kind: 'long', value: BigInt(x) }
-    }
+  if (!operands.every(isNumeric)) return symbolic
+  const x = (a as Numeric).value
+  const y = (b as Numeric | undefined)?.value ?? 0
+  switch (op) {
+    case 'i2l':
+      return { kind: 'long', value: BigInt(x) }
+    case 'f2l':
+    case 'd2l':
+      return { kind: 'long', value: toLong(x) }
+    case 'i2f':
+    case 'd2f':
+      return { kind: 'float', value: Math.fround(x) }
+    case 'i2d':
+    case 'f2d':
+      return { kind: 'double', value: x }
+    case 'f2i':
+    case 'd2i':
+      return { kind: 'int', value: toInt(x) }
+    case 'i2b':
+      return { kind: 'int', value: (x << 24) >> 24 }
+    case 'i2c':
+      return { kind: 'int', value: x & 0xffff }
+    case 'i2s':
+      return { kind: 'int', value: (x << 16) >> 16 }
+    case 'fcmpl':
+    case 'fcmpg':
+    case 'dcmpl':
+    case 'dcmpg':
+      if (Number.isNaN(x) || Number.isNaN(y))
+        return { kind: 'int', value: op.endsWith('l') ? -1 : 1 }
+      return { kind: 'int', value: x < y ? -1 : x > y ? 1 : 0 }
   }
-  return { kind: 'operation', op, operands }
+  const kind =
+    op[0] === 'i' ? 'int' : op[0] === 'f' ? 'float' : op[0] === 'd' ? 'double' : undefined
+  if (kind === undefined) return symbolic
+  const typed = (value: number): JvmValue =>
+    kind === 'int'
+      ? { kind, value: value | 0 }
+      : kind === 'float'
+        ? { kind, value: Math.fround(value) }
+        : { kind, value }
+  switch (op.slice(1)) {
+    case 'add':
+      return typed(x + y)
+    case 'sub':
+      return typed(x - y)
+    case 'mul':
+      return kind === 'int' ? typed(Math.imul(x, y)) : typed(x * y)
+    case 'div':
+      // integer division by zero throws in the JVM: keep it symbolic
+      return kind === 'int' ? (y === 0 ? symbolic : typed(Math.trunc(x / y))) : typed(x / y)
+    case 'rem':
+      return kind === 'int' && y === 0 ? symbolic : typed(x % y)
+    case 'neg':
+      return typed(-x)
+  }
+  if (kind !== 'int') return symbolic
+  switch (op) {
+    case 'ishl':
+      return typed(x << (y & 31))
+    case 'ishr':
+      return typed(x >> (y & 31))
+    case 'iushr':
+      return typed(x >>> (y & 31))
+    case 'iand':
+      return typed(x & y)
+    case 'ior':
+      return typed(x | y)
+    case 'ixor':
+      return typed(x ^ y)
+  }
+  return symbolic
 }
 
 const ARITHMETIC = new Set([
@@ -207,6 +318,11 @@ const ARITHMETIC = new Set([
   'lor',
   'ixor',
   'lxor',
+  'lcmp',
+  'fcmpl',
+  'fcmpg',
+  'dcmpl',
+  'dcmpg',
 ])
 const UNARY = new Set([
   'ineg',
@@ -229,34 +345,86 @@ const UNARY = new Set([
   'i2c',
   'i2s',
 ])
+const NON_NULL = new Set(['string', 'class', 'object', 'array', 'methodType', 'methodHandle'])
+
+/** Whether a two-way branch is taken, or undefined when its condition is not a constant. */
+function branchTaken(name: string, operands: readonly JvmValue[]): boolean | undefined {
+  const [a, b] = operands
+  const compare = (x: number, y: number) => {
+    switch (name.replace('if_icmp', 'if')) {
+      case 'ifeq':
+        return x === y
+      case 'ifne':
+        return x !== y
+      case 'iflt':
+        return x < y
+      case 'ifge':
+        return x >= y
+      case 'ifgt':
+        return x > y
+      case 'ifle':
+        return x <= y
+    }
+    return undefined
+  }
+  if (name === 'ifnull' || name === 'ifnonnull') {
+    if (a === undefined) return undefined
+    const isNull = a.kind === 'null' ? true : NON_NULL.has(a.kind) ? false : undefined
+    return isNull === undefined ? undefined : name === 'ifnull' ? isNull : !isNull
+  }
+  if (name === 'if_acmpeq' || name === 'if_acmpne') {
+    if (a === undefined || b === undefined) return undefined
+    // the same tracked object, or two nulls, are equal; two different new objects are not
+    const same = a === b || (a.kind === 'null' && b.kind === 'null')
+    const different =
+      !same &&
+      (a.kind === 'object' || a.kind === 'array' || a.kind === 'null') &&
+      (b.kind === 'object' || b.kind === 'array' || b.kind === 'null')
+    if (!same && !different) return undefined
+    return name === 'if_acmpeq' ? same : !same
+  }
+  if (a?.kind !== 'int') return undefined
+  if (name.startsWith('if_icmp')) return b?.kind === 'int' ? compare(a.value, b.value) : undefined
+  return compare(a.value, 0)
+}
 
 /**
- * Interpret `method` of `file` over its straight-line code. `maxInstructions` bounds the walk (the
- * code itself is at most 64 KiB, and straight-line code runs each instruction once).
+ * Interpret `method` of `file`. Each instruction walked counts against `maxInstructions`, so a
+ * constant loop unrolls until the budget and then refuses.
  */
-export function interpretMethod(file: ClassFile, method: ClassMember): InterpretResult {
-  const code = method.code
-  if (code === undefined) return { state: 'refused', pc: 0, reason: 'the method has no code' }
-  if (code.exceptionHandlers.length > 0)
-    return {
-      state: 'refused',
-      pc: code.exceptionHandlers[0]?.startPc ?? 0,
-      reason: 'the method handles exceptions',
-    }
-  const pool = new ConstantPool(file.constantPool)
-  const locals = new Map<number, JvmValue>()
-  let slot = 0
-  if ((method.accessFlags & 0x0008) === 0) locals.set(slot++, { kind: 'parameter', index: 0 })
-  descriptorArguments(method.descriptor).forEach((argument, index) => {
-    locals.set(slot, {
-      kind: 'parameter',
-      index: index + ((method.accessFlags & 0x0008) === 0 ? 1 : 0),
-    })
-    slot += argument.wide ? 2 : 1
-  })
-  const stack: JvmValue[] = []
+export function interpretMethod(
+  file: ClassFile,
+  method: ClassMember,
+  options: InterpretOptions = {},
+): InterpretResult {
   const calls: JvmCall[] = []
   const stores: JvmStore[] = []
+  const refused = (pc: number, reason: string): InterpretResult => ({
+    state: 'refused',
+    pc,
+    reason,
+    calls,
+    stores,
+  })
+  const code = method.code
+  if (code === undefined) return refused(0, 'the method has no code')
+  if (code.exceptionHandlers.length > 0)
+    return refused(code.exceptionHandlers[0]?.startPc ?? 0, 'the method handles exceptions')
+  const pool = new ConstantPool(file.constantPool)
+  const isStatic = (method.accessFlags & 0x0008) !== 0
+  const locals = new Map<number, JvmValue>()
+  let slot = 0
+  let parameter = 0
+  const bind = (wide: boolean) => {
+    locals.set(slot, options.args?.[parameter] ?? { kind: 'parameter', index: parameter })
+    parameter += 1
+    slot += wide ? 2 : 1
+  }
+  if (!isStatic) bind(false)
+  for (const argument of descriptorArguments(method.descriptor)) bind(argument.wide)
+  const instructions = decodeInstructions(code.code)
+  const byPc = new Map(instructions.map((item, index) => [item.pc, index]))
+  const stack: JvmValue[] = []
   let objects = 0
   let instruction: Instruction | undefined
   const pc = () => instruction?.pc ?? 0
@@ -290,16 +458,37 @@ export function interpretMethod(file: ClassFile, method: ClassMember): Interpret
         return { kind: 'string', value: pool.utf8(entry.stringIndex) }
       case 'Class':
         return { kind: 'class', name: pool.className(index) }
+      case 'MethodType':
+        return { kind: 'methodType', descriptor: pool.utf8(entry.descriptorIndex) }
+      case 'MethodHandle': {
+        // the member's own `kind` (Methodref …) must not replace this value's
+        const { owner, name, descriptor } = pool.member(entry.referenceIndex)
+        return { kind: 'methodHandle', referenceKind: entry.kind, owner, name, descriptor }
+      }
       default:
-        throw new Refusal(pc(), `ldc of a ${entry.tag} constant is not interpreted`)
+        throw new Refusal(pc(), `a ${entry.tag} constant is not interpreted`)
     }
   }
+  const budget = options.maxInstructions ?? 100_000
+  let walked = 0
+  let index = 0
   try {
-    for (instruction of decodeInstructions(code.code)) {
+    for (;;) {
+      instruction = instructions[index]
+      if (instruction === undefined) return refused(pc(), 'the code runs off its end')
+      if ((walked += 1) > budget)
+        throw new Refusal(instruction.pc, `the instruction budget of ${budget} is spent`)
+      let next = index + 1
+      const jump = (target: number | undefined) => {
+        const at = target === undefined ? undefined : byPc.get(target)
+        if (at === undefined) throw new Refusal(pc(), `a branch to ${target} is not an instruction`)
+        next = at
+      }
       const name = instruction.mnemonic
       const operand = instruction.operand ?? 0
-      if (name === 'nop') continue
-      if (name === 'aconst_null') push({ kind: 'null' })
+      if (name === 'nop') {
+        // nothing
+      } else if (name === 'aconst_null') push({ kind: 'null' })
       else if (name.startsWith('iconst_'))
         push({ kind: 'int', value: name === 'iconst_m1' ? -1 : Number(name.slice(7)) })
       else if (name.startsWith('lconst_')) push({ kind: 'long', value: BigInt(name.slice(7)) })
@@ -313,11 +502,10 @@ export function interpretMethod(file: ClassFile, method: ClassMember): Interpret
         const value = pop()
         locals.set(name.includes('_') ? Number(name.slice(-1)) : operand, value)
       } else if (name === 'iinc') {
-        const index = operand
-        const value = locals.get(index)
+        const value = locals.get(operand)
         if (value === undefined)
-          throw new Refusal(pc(), `local ${index} is read before it is written`)
-        locals.set(index, fold('iadd', [value, { kind: 'int', value: instruction.second ?? 0 }]))
+          throw new Refusal(pc(), `local ${operand} is read before it is written`)
+        locals.set(operand, fold('iadd', [value, { kind: 'int', value: instruction.second ?? 0 }]))
       } else if (name === 'pop') pop()
       else if (name === 'pop2') {
         if (!isWide(pop())) pop()
@@ -353,7 +541,20 @@ export function interpretMethod(file: ClassFile, method: ClassMember): Interpret
         const left = pop()
         push(fold(name, [left, right]))
       } else if (UNARY.has(name)) push(fold(name, [pop()]))
-      else if (name === 'new')
+      else if (name.startsWith('if')) {
+        const operands = name.startsWith('if_') ? [pop(), pop()].reverse() : [pop()]
+        const taken = branchTaken(name, operands)
+        if (taken === undefined)
+          throw new Refusal(pc(), `${name} tests a value that is not a constant`)
+        if (taken) jump(instruction.targets?.[0])
+      } else if (name === 'goto' || name === 'goto_w') jump(instruction.targets?.[0])
+      else if (name === 'tableswitch' || name === 'lookupswitch') {
+        const key = pop()
+        if (key.kind !== 'int')
+          throw new Refusal(pc(), `${name} tests a value that is not a constant`)
+        const at = instruction.keys?.indexOf(key.value) ?? -1
+        jump(instruction.targets?.[at + 1])
+      } else if (name === 'new')
         push({ kind: 'object', className: pool.className(operand), id: objects++ })
       else if (name === 'newarray' || name === 'anewarray') {
         const length = pop()
@@ -364,18 +565,30 @@ export function interpretMethod(file: ClassFile, method: ClassMember): Interpret
           elementType: name === 'newarray' ? arrayTypeName(operand) : pool.className(operand),
           elements: new Array<JvmValue | undefined>(length.value).fill(undefined),
         })
+      } else if (name === 'arraylength') {
+        const array = pop()
+        if (array.kind !== 'array') throw new Refusal(pc(), 'arraylength of an unknown array')
+        push({ kind: 'int', value: array.elements.length })
+      } else if (/^[ilfdabcs]aload$/u.test(name)) {
+        const at = pop()
+        const array = pop()
+        const element =
+          array.kind === 'array' && at.kind === 'int' ? array.elements[at.value] : undefined
+        if (element === undefined)
+          throw new Refusal(pc(), 'an array load is not of a known element at a constant index')
+        push(element)
       } else if (/^[ilfdabcs]astore$/u.test(name)) {
         const value = pop()
-        const index = pop()
+        const at = pop()
         const array = pop()
         if (
           array.kind !== 'array' ||
-          index.kind !== 'int' ||
-          index.value < 0 ||
-          index.value >= array.elements.length
+          at.kind !== 'int' ||
+          at.value < 0 ||
+          at.value >= array.elements.length
         )
           throw new Refusal(pc(), 'an array store is not to a known array at a constant index')
-        array.elements[index.value] = value
+        array.elements[at.value] = value
       } else if (name === 'checkcast') {
         // the value is unchanged; the cast only narrows its static type
       } else if (name === 'getstatic') {
@@ -396,54 +609,66 @@ export function interpretMethod(file: ClassFile, method: ClassMember): Interpret
           value,
         })
       } else if (name.startsWith('invoke')) {
+        const invoke = name as JvmCall['invoke']
         let owner: string
-        let method: string
+        let called: string
         let descriptor: string
-        if (name === 'invokedynamic') {
+        let bootstrap: JvmCall['bootstrap']
+        if (invoke === 'invokedynamic') {
           const entry = pool.entry(operand)
           if (entry.tag !== 'InvokeDynamic')
             throw new Refusal(pc(), 'invokedynamic names no call site')
           const site = pool.nameAndType(entry.nameAndTypeIndex)
-          owner = `#bootstrap${entry.bootstrapIndex}`
-          method = site.name
+          const linked = file.bootstrapMethods[entry.bootstrapIndex]
+          if (linked === undefined) throw new Refusal(pc(), 'the call site has no bootstrap method')
+          const handle = constant(linked.methodIndex)
+          if (handle.kind !== 'methodHandle')
+            throw new Refusal(pc(), 'the bootstrap method is not a method handle')
+          owner = handle.owner
+          called = site.name
           descriptor = site.descriptor
+          bootstrap = {
+            name: handle.name,
+            descriptor: handle.descriptor,
+            args: linked.argumentIndexes.map(constant),
+          }
         } else {
           const member = pool.member(operand)
           owner = member.owner
-          method = member.name
+          called = member.name
           descriptor = member.descriptor
         }
-        const count = descriptorArguments(descriptor).length
         const args: JvmValue[] = []
-        for (let index = 0; index < count; index += 1) args.unshift(pop())
-        const invoke = name as JvmCall['invoke']
+        for (let count = descriptorArguments(descriptor).length; count > 0; count -= 1)
+          args.unshift(pop())
         const receiver = invoke === 'invokestatic' || invoke === 'invokedynamic' ? undefined : pop()
-        const index = calls.length
+        const at = calls.length
         calls.push({
           pc: pc(),
           invoke,
           owner,
-          name: method,
+          name: called,
           descriptor,
           ...(receiver === undefined ? {} : { receiver }),
           args,
+          ...(bootstrap === undefined ? {} : { bootstrap }),
         })
         if (
           invoke === 'invokespecial' &&
-          method === '<init>' &&
+          called === '<init>' &&
           receiver?.kind === 'object' &&
           receiver.init === undefined
         )
-          receiver.init = index
-        else if (returnsValue(descriptor)) push({ kind: 'result', call: index })
+          receiver.init = at
+        else if (returnsValue(descriptor)) push({ kind: 'result', call: at })
       } else if (/^[ilfda]?return$/u.test(name)) {
         const returned = name === 'return' ? undefined : pop()
         return { state: 'ok', calls, stores, ...(returned === undefined ? {} : { returned }) }
-      } else throw new Refusal(pc(), `${name} is outside the straight-line subset`)
+      } else throw new Refusal(pc(), `${name} is outside the interpreted subset`)
+      index = next
     }
-    return { state: 'refused', pc: pc(), reason: 'the code runs off its end' }
   } catch (error) {
-    if (error instanceof Refusal) return { state: 'refused', pc: error.pc, reason: error.message }
+    if (error instanceof Refusal) return refused(error.pc, error.message)
     throw error
   }
 }

@@ -38,6 +38,16 @@ public class Sample {
     return sample;
   }
 
+  /** A loop over a constant bound: unrolls into three parts. */
+  public static Sample rows(Sample sample) {
+    for (int i = 0; i < 3; i++) sample.add(new Part("row", i, 0, 0, 1, 1, 1));
+    return sample;
+  }
+
+  public static Runnable task() {
+    return () -> System.out.println(NAME);
+  }
+
   public static int loop(int n) {
     int total = 0;
     for (int i = 0; i < n; i++) total += i;

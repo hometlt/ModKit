@@ -93,7 +93,7 @@ describe('the bounded constant interpreter', () => {
     expect(result.returned).toEqual({ kind: 'result', call: 0 })
   })
 
-  it('keeps parameters and dynamic call sites symbolic', () => {
+  it('keeps parameters symbolic and records call sites with their bootstrap arguments', () => {
     const wide = interpretMethod(file, method(file, 'wide'))
     if (wide.state !== 'ok') throw new Error(wide.reason)
     expect(wide.returned?.kind).toBe('operation')
@@ -101,20 +101,73 @@ describe('the bounded constant interpreter', () => {
     if (greet.state !== 'ok') throw new Error(greet.reason)
     expect(greet.calls[0]).toMatchObject({
       invoke: 'invokedynamic',
+      owner: 'java/lang/invoke/StringConcatFactory',
       name: 'makeConcatWithConstants',
+      bootstrap: { name: 'makeConcatWithConstants' },
     })
     expect(greet.calls[0]?.args).toEqual([{ kind: 'parameter', index: 0 }])
+    // the recipe: constant text with one argument slot
+    expect(greet.calls[0]?.bootstrap?.args[0]).toEqual({
+      kind: 'string',
+      value: `hello ${String.fromCharCode(1)}`,
+    })
+    const task = interpretMethod(file, method(file, 'task'))
+    if (task.state !== 'ok') throw new Error(task.reason)
+    expect(task.calls[0]).toMatchObject({
+      owner: 'java/lang/invoke/LambdaMetafactory',
+      name: 'run',
+      bootstrap: { name: 'metafactory' },
+    })
+    expect(task.calls[0]?.bootstrap?.args[1]).toMatchObject({
+      kind: 'methodHandle',
+      owner: 'fixture/Sample',
+      name: 'lambda$task$0',
+      descriptor: '()V',
+    })
   })
 
-  it('refuses branches, switches and exception handlers by name', () => {
-    expect(interpretMethod(file, method(file, 'loop'))).toMatchObject({ state: 'refused' })
+  it('follows branches whose condition folds, within the instruction budget', () => {
+    const rows = interpretMethod(file, method(file, 'rows'))
+    if (rows.state !== 'ok') throw new Error(rows.reason)
+    const parts = rows.calls.filter(call => call.name === '<init>')
+    expect(parts.map(call => floats(call.args))).toEqual([
+      ['row', 0, 0, 0, 1, 1, 1],
+      ['row', 1, 0, 0, 1, 1, 1],
+      ['row', 2, 0, 0, 1, 1, 1],
+    ])
+    expect(interpretMethod(file, method(file, 'rows'), { maxInstructions: 20 })).toMatchObject({
+      state: 'refused',
+      reason: 'the instruction budget of 20 is spent',
+    })
+    const five = { kind: 'int', value: 5 } as const
+    expect(interpretMethod(file, method(file, 'loop'), { args: [five] })).toMatchObject({
+      state: 'ok',
+      returned: { kind: 'int', value: 10 },
+    })
+    expect(interpretMethod(file, method(file, 'pick'), { args: [five] })).toMatchObject({
+      returned: { kind: 'int', value: 50 },
+    })
+    expect(
+      interpretMethod(file, method(file, 'dense'), { args: [{ kind: 'int', value: 7 }] }),
+    ).toMatchObject({ returned: { kind: 'int', value: 0 } })
+  })
+
+  it('refuses a condition over a symbol and exception handlers, keeping what it recorded', () => {
+    expect(interpretMethod(file, method(file, 'loop'))).toMatchObject({
+      state: 'refused',
+      reason: 'if_icmpge tests a value that is not a constant',
+    })
     expect(interpretMethod(file, method(file, 'pick'))).toMatchObject({
       state: 'refused',
-      reason: 'lookupswitch is outside the straight-line subset',
+      reason: 'lookupswitch tests a value that is not a constant',
     })
     expect(interpretMethod(file, method(file, 'guarded'))).toMatchObject({
       state: 'refused',
       reason: 'the method handles exceptions',
     })
+    // a walk stopped by its budget hands back the parts made before
+    const stopped = interpretMethod(file, method(file, 'rows'), { maxInstructions: 40 })
+    expect(stopped.state).toBe('refused')
+    expect(stopped.calls.filter(call => call.name === '<init>').length).toBe(2)
   })
 })

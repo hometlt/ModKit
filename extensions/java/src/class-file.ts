@@ -75,6 +75,14 @@ export interface ClassFile {
   readonly fields: readonly ClassMember[]
   readonly methods: readonly ClassMember[]
   readonly attributes: readonly ClassAttribute[]
+  /** The `BootstrapMethods` attribute: what each `invokedynamic` call site links through. */
+  readonly bootstrapMethods: readonly BootstrapMethod[]
+}
+
+/** One bootstrap method: its `MethodHandle` constant and its static argument constants. */
+export interface BootstrapMethod {
+  readonly methodIndex: number
+  readonly argumentIndexes: readonly number[]
 }
 
 export interface ClassFileLimits {
@@ -404,6 +412,20 @@ export function parseClassFile(bytes: Uint8Array, limits: ClassFileLimits = {}):
   const attributes = readAttributes(cursor, pool, limit)
   if (cursor.position !== bytes.byteLength)
     throw new TypeError(`class file has ${bytes.byteLength - cursor.position} trailing bytes`)
+  const bootstrap = attributes.find(attribute => attribute.name === 'BootstrapMethods')
+  const bootstrapMethods: BootstrapMethod[] = []
+  if (bootstrap !== undefined) {
+    const body = new Cursor(bytes.subarray(bootstrap.offset, bootstrap.offset + bootstrap.length))
+    const count = body.u2('BootstrapMethods')
+    for (let index = 0; index < count; index += 1) {
+      const methodIndex = body.u2('bootstrap method')
+      const argumentIndexes: number[] = []
+      for (let argument = body.u2('bootstrap arguments'); argument > 0; argument -= 1)
+        argumentIndexes.push(body.u2('bootstrap argument'))
+      bootstrapMethods.push({ methodIndex, argumentIndexes })
+    }
+    if (body.position !== bootstrap.length) throw new TypeError('BootstrapMethods length disagrees')
+  }
   return {
     minorVersion,
     majorVersion,
@@ -415,6 +437,7 @@ export function parseClassFile(bytes: Uint8Array, limits: ClassFileLimits = {}):
     fields,
     methods,
     attributes,
+    bootstrapMethods,
   }
 }
 
