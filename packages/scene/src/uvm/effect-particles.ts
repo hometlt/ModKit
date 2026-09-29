@@ -28,6 +28,8 @@ interface ParticlePreviewAnchor {
   readonly width: number | undefined
   readonly length: number | undefined
   readonly tailLength: number | undefined
+  readonly tailClamped: boolean | undefined
+  readonly tailFixed: boolean | undefined
   readonly timeMiddle: number | undefined
   readonly rows: number | undefined
   readonly columns: number | undefined
@@ -124,6 +126,8 @@ const previewFields = [
   'modelSpace',
   'boneAnchored',
   'tailLength',
+  'tailClamped',
+  'tailFixed',
   'timeMiddle',
   'rows',
   'columns',
@@ -266,7 +270,14 @@ function validatePreviewEmitter(emitter: RenderParticleEmitter): void {
       ))
   )
     throw new TypeError('particle model references must be nonempty logical strings')
-  for (const field of ['xyQuad', 'modelSpace', 'boneAnchored', 'swapModelParticleYZ'] as const)
+  for (const field of [
+    'xyQuad',
+    'modelSpace',
+    'boneAnchored',
+    'swapModelParticleYZ',
+    'tailClamped',
+    'tailFixed',
+  ] as const)
     if (emitter[field] !== undefined && typeof emitter[field] !== 'boolean')
       throw new TypeError('particle preview flags must be booleans')
   const vector = (value: unknown): void => {
@@ -359,6 +370,8 @@ function prepareAnchor(
     width: dimension('width'),
     length: dimension('length'),
     tailLength: emitter.tailLength,
+    tailClamped: emitter.tailClamped,
+    tailFixed: emitter.tailFixed,
     timeMiddle: emitter.timeMiddle,
     rows: emitter.rows !== undefined && emitter.rows > 0 ? emitter.rows : undefined,
     columns: emitter.columns !== undefined && emitter.columns > 0 ? emitter.columns : undefined,
@@ -593,23 +606,44 @@ export function createUvmParticleGeometry(
     } else {
       const speed = lengthVec3(velocity),
         direction = speed > 0 ? velocity : anchor.localZ,
-        tailLength = Math.max(size[1], (anchor.tailLength ?? defaultSize) * speed),
         normal = normalizeVec3(direction)
-      let start: Vec3,
-        end = position
-      if (anchor.orientationMode === 'pinned') {
-        writeEffectParticleRenderOrigin(originBuffer, 0, state, slot, scratch)
-        start = tuple(originBuffer)
-      } else if (anchor.orientationMode === 'trail') {
-        end = subVec3(position, scaleVec3(normal, tailLength))
-        start = subVec3(end, scaleVec3(normal, tailLength))
-      } else start = subVec3(position, scaleVec3(normal, tailLength))
-      center = scaleVec3(addVec3(start, end), 0.5)
-      right = scaleVec3(
-        particleTailSide(direction, options.cameraPosition, position, options.cameraRight),
-        size[0] * 0.35,
-      )
-      up = scaleVec3(subVec3(end, start), 0.5)
+      if (anchor.orientationMode === 'tail' || anchor.orientationMode === 'trail') {
+        // M3 tail and trail particles as Particle.fx draws them: a quad `size` to either side across
+        // the view and `size × tail` along the travel, the tail being the authored length times the
+        // speed when that is longer (or the authored length alone when fixed); a clamped tail is no
+        // longer than the way travelled since birth, so a floodlight's beam starts at the lamp. A
+        // tail quad stands on its particle; a trail's ends there. Drawn behind the particle, `tail ×
+        // speed` long and a third of its size wide, the floodlights of Tokyo_Rooftops stood as bright
+        // stars of spikes through their lamps.
+        let tail = anchor.tailLength ?? 1
+        const lengthOf = (value: number) =>
+          anchor.tailFixed === true ? value : Math.max(value, value * speed)
+        if (anchor.tailClamped === true && speed > 0) {
+          writeEffectParticleRenderOrigin(originBuffer, 0, state, slot, scratch)
+          const travelled = lengthVec3(subVec3(position, tuple(originBuffer)))
+          const limit = (anchor.tailFixed === true ? tail * speed : lengthOf(tail)) * size[1]
+          if (travelled < limit) tail = Math.min(travelled / (speed * size[1]), tail)
+        }
+        up = scaleVec3(normal, size[1] * lengthOf(tail))
+        center = anchor.orientationMode === 'trail' ? subVec3(position, up) : position
+        right = scaleVec3(
+          particleTailSide(direction, options.cameraPosition, position, options.cameraRight),
+          size[0],
+        )
+      } else {
+        const tailLength = Math.max(size[1], (anchor.tailLength ?? defaultSize) * speed)
+        let start: Vec3
+        if (anchor.orientationMode === 'pinned') {
+          writeEffectParticleRenderOrigin(originBuffer, 0, state, slot, scratch)
+          start = tuple(originBuffer)
+        } else start = subVec3(position, scaleVec3(normal, tailLength))
+        center = scaleVec3(addVec3(start, position), 0.5)
+        right = scaleVec3(
+          particleTailSide(direction, options.cameraPosition, position, options.cameraRight),
+          size[0] * 0.35,
+        )
+        up = scaleVec3(subVec3(position, start), 0.5)
+      }
     }
     // The image's top row (v = uv[1], textures load top row first) goes on the +up side: up on screen
     // for a billboard, ahead for a quad along its travel. It went behind, so a shoreline wave's crest

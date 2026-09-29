@@ -160,6 +160,8 @@ const booleans = new Set([
   'randomizeLifeSpan',
   'randomizeMass',
   'squirt',
+  'tailClamped',
+  'tailFixed',
 ])
 const structures = new Set([
   'lifecycleSizeRandom',

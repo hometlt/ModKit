@@ -137,10 +137,12 @@ it('samples per-sequence lifecycle/random and RGBA segments before lifetime inte
 })
 
 it('uses birth origin for pinned tails and the preceding segment for trail tails', () => {
+  // Particle.fx: an M3 tail quad stands on its particle, `size` (2) to either side and size × tail
+  // (2 × max(2, 2 × speed 1) = 4) along the travel; a trail quad ends on it.
   const tails = {
-    tail: [-0.7, 0, 0, -0.7, 2, 0, 0.7, 2, 0, 0.7, 0, 0],
+    tail: [-2, -2, 0, -2, 6, 0, 2, 6, 0, 2, -2, 0],
     pinned: [-1.7, -2, 0, -0.7, 2, 0, 0.7, 2, 0, -0.3, -2, 0],
-    trail: [-0.7, -2, 0, -0.7, 0, 0, 0.7, 0, 0, 0.7, -2, 0],
+    trail: [-2, -6, 0, -2, 2, 0, 2, 2, 0, 2, -6, 0],
   }
   for (const [orientationMode, points] of Object.entries(tails)) {
     const emitter = {
@@ -339,4 +341,18 @@ it('uses decay atlas intervals and wraps cells independently for heads and tails
     [-0.7, 0, -2, -0.7, 0, 0, 0.7, 0, 0, 0.7, 0, -2],
     [0.5, 0.5, 0.5, 0, 0.75, 0, 0.75, 0.5],
   )
+})
+
+it('clamps an M3 tail to the way its particle travelled, as Tokyo floodlight beams start at the lamp', () => {
+  const emitter = { ...base, orientationMode: 'tail', tailLength: 7, tailClamped: true }
+  const { state } = fixture(emitter)
+  state.types[0] = 1
+  // Born at the lamp, one unit out at speed 2: a free tail would reach size × 7 × 2 = 28 each way.
+  state.positions.set([0, 1, 0])
+  state.spawnPositions.set([0, 0, 0])
+  state.velocities.set([0, 2, 0])
+  const entry = createUvmParticleGeometry(state, [emitter], options).entries[0]
+  const ys = [entry.positions[1], entry.positions[4], entry.positions[7], entry.positions[10]]
+  // Clamped, the quad reaches back exactly to where the particle was born.
+  assert.deepEqual([Math.min(...ys), Math.max(...ys)], [0, 2])
 })

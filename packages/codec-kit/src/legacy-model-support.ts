@@ -330,6 +330,13 @@ export interface RenderParticleEmitter {
   massRandom?: number
   randomizeMass?: boolean
   tailLength?: number
+  /**
+   * M3 `tail_clamp`: a tail is never longer than the way its particle has travelled from where it
+   * was born (Particle.fx CalculatePositionAndVelocity).
+   */
+  tailClamped?: boolean
+  /** M3 `tail_fix`: the tail keeps `tailLength` whatever the particle's speed. */
+  tailFixed?: boolean
   timeMiddle?: number
   rows?: number
   columns?: number
