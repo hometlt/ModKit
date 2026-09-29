@@ -55,6 +55,37 @@ export interface ModelProjection {
     readonly unavailable?: readonly { readonly logicalId: string }[]
   }
 }
+/**
+ * The one table from a publisher's material layer slot to the glTF slot a consumer that knows only
+ * glTF reads (SPEC_UVM §11.1: the PBR core is always present), so a model's textures survive into
+ * other tools and other games' exporters. Slots are compared case-insensitively; the first layer of a
+ * slot wins. A team-colour layer becomes UV_game_material_team_color (§11.2).
+ */
+const GLTF_LAYER_SLOTS: Readonly<
+  Record<string, 'baseColor' | 'normal' | 'occlusion' | 'emissive' | 'teamColor'>
+> = Object.freeze({
+  diffuse: 'baseColor',
+  basecolor: 'baseColor',
+  'base-color': 'baseColor',
+  albedo: 'baseColor',
+  color: 'baseColor',
+  normal: 'normal',
+  occlusion: 'occlusion',
+  ao: 'occlusion',
+  ambientocclusion: 'occlusion',
+  'ambient-occlusion': 'occlusion',
+  emissive: 'emissive',
+  emission: 'emissive',
+  teamcolor: 'teamColor',
+  'team-color': 'teamColor',
+  team: 'teamColor',
+})
+
+/** A single colour channel a publisher's channel mask names (bits r, g, b, a), if exactly one. */
+function singleChannel(mask: number | undefined): 'r' | 'g' | 'b' | 'a' | undefined {
+  return mask === 1 ? 'r' : mask === 2 ? 'g' : mask === 4 ? 'b' : mask === 8 ? 'a' : undefined
+}
+
 /** glTF filter enums (NEAREST 9728, LINEAR 9729). */
 const GLTF_FILTER = { nearest: 9728, linear: 9729 } as const
 
@@ -99,15 +130,34 @@ export interface DocumentAccessor extends UvmJsonObject {
   min?: number[]
   max?: number[]
 }
+interface UvmTextureRef {
+  index: number
+  texCoord?: number
+  channel?: 'r' | 'g' | 'b' | 'a'
+}
 export interface UvmMaterial {
-  pbrMetallicRoughness: { metallicFactor: number; roughnessFactor: number }
+  pbrMetallicRoughness: {
+    metallicFactor: number
+    roughnessFactor: number
+    baseColorTexture?: UvmTextureRef
+  }
+  normalTexture?: UvmTextureRef
+  occlusionTexture?: UvmTextureRef
+  emissiveTexture?: UvmTextureRef
+  emissiveFactor?: [number, number, number]
   name?: string
   alphaMode?: 'OPAQUE' | 'MASK' | 'BLEND'
   alphaCutoff?: number
   extensions?: {
-    UV_game_material: {
+    UV_game_material?: {
       shader: string
       params: NonNullable<ModelMaterialRef['shader']>['parameters']
+    }
+    UV_game_material_team_color?: {
+      maskSource: 'texture'
+      maskTexture: UvmTextureRef
+      targets: ['baseColor']
+      blend: 'multiply'
     }
   }
   extras?: {
@@ -818,6 +868,46 @@ export function materializeUvmCore(
       'the base model contract publishes a texture count but no texture identity; writing empty texture objects to make the count match would be inventing data',
     )
   }
+  // the glTF slots of every material whose layers name an image of the closure (GLTF_LAYER_SLOTS)
+  const imageIndex = new Map(resourceImages.map((image, index) => [image.uri, index] as const))
+  for (const definition of imageIndex.size === 0 ? [] : (definitions ?? [])) {
+    const target = materials[materialIndexById.get(definition.id)!]!
+    for (const layer of definition.layers ?? []) {
+      const slot = GLTF_LAYER_SLOTS[layer.slot.toLowerCase()]
+      const index = layer.resourceId === undefined ? undefined : imageIndex.get(layer.resourceId)
+      if (slot === undefined || index === undefined) continue
+      const ref: UvmTextureRef = {
+        index,
+        ...(layer.uvSource !== undefined &&
+        Number.isSafeInteger(layer.uvSource) &&
+        layer.uvSource > 0
+          ? { texCoord: layer.uvSource }
+          : {}),
+      }
+      if (slot === 'baseColor') target.pbrMetallicRoughness.baseColorTexture ??= ref
+      else if (slot === 'normal') target.normalTexture ??= ref
+      else if (slot === 'occlusion') target.occlusionTexture ??= ref
+      else if (slot === 'emissive' && target.emissiveTexture === undefined) {
+        target.emissiveTexture = ref
+        // glTF multiplies the emissive texture by emissiveFactor, black by default
+        target.emissiveFactor = [1, 1, 1]
+      } else if (
+        slot === 'teamColor' &&
+        target.extensions?.UV_game_material_team_color === undefined
+      ) {
+        const channel = singleChannel(layer.colorChannels)
+        target.extensions = {
+          ...target.extensions,
+          UV_game_material_team_color: {
+            maskSource: 'texture',
+            maskTexture: { ...ref, ...(channel === undefined ? {} : { channel }) },
+            targets: ['baseColor'],
+            blend: 'multiply',
+          },
+        }
+      }
+    }
+  }
   if (closure !== undefined && resourceImages.length !== Number(info.textures ?? 0)) {
     note(
       'uv.model/structure@1',
@@ -1234,6 +1324,9 @@ export function materializeUvmCore(
       ...(socketByNodeId.size === 0 ? [] : ['UV_game_socket']),
       ...(materials.some(material => material.extensions?.UV_game_material !== undefined)
         ? ['UV_game_material']
+        : []),
+      ...(materials.some(material => material.extensions?.UV_game_material_team_color !== undefined)
+        ? ['UV_game_material_team_color']
         : []),
       ...(animation === undefined || animation.catalog.length === 0
         ? []
