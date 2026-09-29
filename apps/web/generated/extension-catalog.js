@@ -6,7 +6,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
   extensions: [
     {
       artifact: {
-        artifactDigest: 'sha256:732c3b18355ef6ee7e521d01bf565c6a7d144d1754bb5c6237d39df6b2d98e79',
+        artifactDigest: 'sha256:eeeede03d99029d16b327b73532b07fe7da695e2e9e6666dd575dca80fd3f7e8',
         fileDigests: {
           'MIGRATION-NOTES-common-archives.json':
             'sha256:4e1d77808583a26fb61d65d660ef09c3f4c222915c2e3581d793b202cbde4b44',
@@ -41,7 +41,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:79c03b955edaea1e248258cbe2429c8c7923e9301b824eed67d6e6672e6c3591',
           'package.json': 'sha256:a8f6f9594c3c900e4b38797b0a66dcec14172c7ab0b13b38b40ab90d20a0f9e8',
           'src/7z/codec.js':
-            'sha256:bf31052ad1be7de6b9ef0f880f6a2c2f4ddaab72c0c6b46d065c98c71f8daae2',
+            'sha256:145693c6685a5a9c56f99f158fd15dacece826da516e4f70aa1c847eb51a431b',
           'src/brotli/codec.js':
             'sha256:e93f4d0c46b1e65cbcfb6e45a261a9e9bb1f121d1bd29ed4af693597578855e4',
           'src/bzip2/codec.js':
@@ -96,7 +96,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'test/fixtures/7z/plain-header.7z':
             'sha256:57143f60a3776ae9c9599db8b4c58ad56802ba21555af17eacfa8a3b7b1c7fce',
           'test/seven-zip-rar.test.ts':
-            'sha256:ba910f659d74ec19eec62ac888ce88f34cc9cabce16624368c2fc972c70cbe65',
+            'sha256:3050efe267cffe6ee574fa914002a72dab57d07aa5aec2560f03ca5b5711f493',
           'test/zip-hidden.test.ts':
             'sha256:353c75ccfca68bf7d4444c9004b85ab62e61cb3765a3bf378746034878bb9680',
           'test/zip-ranges.test.ts':
@@ -105,7 +105,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:74a5cab68793e3872c97feb5c564e0c4c0eae69d1f49df96d60239407ceccda8',
         },
         inventoryRecordId:
-          'artifact:sha256:732c3b18355ef6ee7e521d01bf565c6a7d144d1754bb5c6237d39df6b2d98e79',
+          'artifact:sha256:eeeede03d99029d16b327b73532b07fe7da695e2e9e6666dd575dca80fd3f7e8',
       },
       artifactRoot: 'extensions/archives/',
       containers: {
