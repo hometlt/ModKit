@@ -1992,4 +1992,8 @@ export {
   type TableColumn,
   type TableDataSourceOptions,
 } from './table-source.js'
+export {
+  createSnapshotDataWorkspace,
+  type SnapshotDataWorkspaceOptions,
+} from './data-workspace.js'
 export { snapshotJson, type JsonSnapshotBudget, type JsonSnapshotOptions } from './json-snapshot.js'
