@@ -72,4 +72,33 @@ describe('Runtime source read snapshot', () => {
     })
     expect((await snapshot.verify()).fileCount).toBe(0)
   })
+
+  it('binds file discovery and refuses an added file before launch', async () => {
+    const listed = ['Base.SC2Data/GameData/UnitData.xml']
+    const context = { ...source(new Map()),
+      async files(_layerId: string, page: { prefix?: string; limit: number }) {
+        return { items: listed.filter(path => path.startsWith(page.prefix ?? ''))
+          .slice(0, page.limit) }
+      },
+    } satisfies ModContext
+    const snapshot = captureRuntimeSourceReads(context)
+    await snapshot.context.files('base', { limit: 16, prefix: 'Base.SC2Data/GameData/' })
+    const digest = (await snapshot.verify()).digest
+    const identical = captureRuntimeSourceReads(context)
+    await identical.context.files('base', { limit: 16, prefix: 'Base.SC2Data/GameData/' })
+    expect((await identical.verify()).digest).toBe(digest)
+    listed.push('Base.SC2Data/GameData/ActorData.xml')
+    await expect(identical.verify()).rejects.toBeInstanceOf(RuntimeSourceChangedError)
+  })
+
+  it('binds path resolution, including a previously missing dependency', async () => {
+    let selected: { layerId: string; path: string } | undefined
+    const context = { ...source(new Map()),
+      async locate() { return selected },
+    } satisfies ModContext
+    const snapshot = captureRuntimeSourceReads(context)
+    expect(await snapshot.context.locate('Base.SC2Data/MapScript.galaxy')).toBeUndefined()
+    selected = { layerId: 'patch', path: 'Base.SC2Data/MapScript.galaxy' }
+    await expect(snapshot.verify()).rejects.toBeInstanceOf(RuntimeSourceChangedError)
+  })
 })

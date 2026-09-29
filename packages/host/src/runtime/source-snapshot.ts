@@ -1,6 +1,6 @@
-/** Bounded read evidence for a Runtime composition prepared from a live ModContext.
- * Every game still reads through its own canonical loader. The host records only bytes
- * actually consumed, and verifies them again before admitting an executable receipt.
+/** Bounded source evidence for a Runtime composition prepared from a live ModContext.
+ * Every game still reads through its own canonical loader. The host records consumed
+ * bytes, directory pages and path resolutions, then replays them before admission.
  */
 import type { ModContext } from '@modkit/vfs/content-sources'
 import { sha256 } from '../artifact-files.js'
@@ -8,6 +8,9 @@ import { sha256 } from '../artifact-files.js'
 const MAX_FILES = 4_096
 const MAX_TOTAL_BYTES = 512 * 1024 * 1024
 const MAX_PATH_LENGTH = 4_096
+const MAX_LIST_PAGES = 4_096
+const MAX_LIST_ITEMS = 262_144
+const MAX_LIST_BYTES = 64 * 1024 * 1024
 const encoder = new TextEncoder()
 
 interface SourceRead {
@@ -16,6 +19,18 @@ interface SourceRead {
   readonly maxBytes: number
   readonly size: number
   readonly digest: string
+}
+
+interface SourceListing {
+  readonly layerId: string
+  readonly request: Parameters<ModContext['files']>[1]
+  readonly items: readonly string[]
+  readonly nextCursor?: string
+}
+
+interface SourceLocation {
+  readonly path: string
+  readonly answer: Awaited<ReturnType<ModContext['locate']>>
 }
 
 export interface RuntimeSourceSnapshot {
@@ -69,9 +84,24 @@ function validAddress(layerId: string, path: string): boolean {
 /** The returned context is only for this open attempt; caller still owns the original lease. */
 export function captureRuntimeSourceReads(context: ModContext): RuntimeSourceSnapshot {
   const reads = new Map<string, SourceRead>()
+  const listings = new Map<string, SourceListing>()
+  const locations = new Map<string, SourceLocation>()
   let totalBytes = 0
+  let listedItems = 0
+  let listedBytes = 0
   let verifying = false
   let inFlight = 0
+  const same = (left: unknown, right: unknown): boolean => JSON.stringify(left) === JSON.stringify(right)
+  const listAnswer = (page: Awaited<ReturnType<ModContext['files']>>, limit: number) => {
+    if (!Array.isArray(page?.items) || page.items.length > limit
+      || page.items.length > MAX_LIST_ITEMS || page.items.some(item =>
+        typeof item !== 'string' || !validAddress('listed', item))
+      || (page.nextCursor !== undefined && (typeof page.nextCursor !== 'string'
+        || page.nextCursor.length > MAX_PATH_LENGTH)))
+      throw new RuntimeSourceBudgetError('Runtime source listing is invalid or unbounded')
+    return { items: [...page.items],
+      ...(page.nextCursor === undefined ? {} : { nextCursor: page.nextCursor }) }
+  }
   const wrapped: ModContext = Object.freeze({
     schemaVersion: context.schemaVersion,
     gameId: context.gameId,
@@ -79,8 +109,68 @@ export function captureRuntimeSourceReads(context: ModContext): RuntimeSourceSna
     layers: context.layers,
     unresolved: context.unresolved,
     diagnostics: context.diagnostics,
-    files: (...args: Parameters<ModContext['files']>) => context.files(...args),
-    locate: (...args: Parameters<ModContext['locate']>) => context.locate(...args),
+    async files(layerId: string, page: Parameters<ModContext['files']>[1]) {
+      if (verifying)
+        throw new RuntimeSourceChangedError('Runtime inputs changed during verification')
+      if (!validAddress(layerId, 'files') || !Number.isSafeInteger(page?.limit)
+        || page.limit < 1 || page.limit > MAX_LIST_ITEMS
+        || (page.prefix !== undefined && (typeof page.prefix !== 'string'
+          || !validAddress(layerId, page.prefix || 'files')))
+        || (page.cursor !== undefined && (typeof page.cursor !== 'string'
+          || page.cursor.length > MAX_PATH_LENGTH)))
+        throw new TypeError('Runtime source listing has invalid arguments')
+      const request = { limit: page.limit,
+        ...(page.prefix === undefined ? {} : { prefix: page.prefix }),
+        ...(page.cursor === undefined ? {} : { cursor: page.cursor }) }
+      const key = JSON.stringify([layerId, request])
+      inFlight += 1
+      try {
+        const answer = listAnswer(await context.files(layerId, request), request.limit)
+        const previous = listings.get(key)
+        if (previous !== undefined) {
+          if (!same(answer, { items: previous.items,
+            ...(previous.nextCursor === undefined ? {} : { nextCursor: previous.nextCursor }) }))
+            throw new RuntimeSourceChangedError(`Runtime source listing changed for ${layerId}`)
+          return answer
+        }
+        const bytes = encoder.encode(JSON.stringify(answer)).byteLength
+        if (listings.size >= MAX_LIST_PAGES || answer.items.length > MAX_LIST_ITEMS - listedItems
+          || bytes > MAX_LIST_BYTES - listedBytes)
+          throw new RuntimeSourceBudgetError('Runtime source listing exceeds its page or byte budget')
+        listings.set(key, { layerId, request, ...answer })
+        listedItems += answer.items.length
+        listedBytes += bytes
+        return answer
+      } finally {
+        inFlight -= 1
+      }
+    },
+    async locate(path: string) {
+      if (verifying)
+        throw new RuntimeSourceChangedError('Runtime inputs changed during verification')
+      if (!validAddress('locate', path))
+        throw new TypeError('Runtime source location has an invalid path')
+      inFlight += 1
+      try {
+        const found = await context.locate(path)
+        if (found !== undefined && !validAddress(found.layerId, found.path))
+          throw new RuntimeSourceBudgetError('Runtime source location is invalid')
+        const answer = found === undefined ? undefined
+          : { layerId: found.layerId, path: found.path }
+        const previous = locations.get(path)
+        if (previous !== undefined) {
+          if (!same(previous.answer, answer))
+            throw new RuntimeSourceChangedError(`Runtime source location changed for ${path}`)
+        } else {
+          if (locations.size >= MAX_FILES)
+            throw new RuntimeSourceBudgetError('Runtime source locations exceed their budget')
+          locations.set(path, { path, answer })
+        }
+        return answer
+      } finally {
+        inFlight -= 1
+      }
+    },
     ...(context.query === undefined
       ? {}
       : {
@@ -128,6 +218,37 @@ export function captureRuntimeSourceReads(context: ModContext): RuntimeSourceSna
         const second = `${b.layerId}\0${b.path}`
         return first < second ? -1 : first > second ? 1 : 0
       })
+      const orderedListings = [...listings.entries()].sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)
+      const orderedLocations = [...locations.values()].sort((a, b) =>
+        a.path < b.path ? -1 : a.path > b.path ? 1 : 0)
+      for (const [, listing] of orderedListings) {
+        signal?.throwIfAborted()
+        let answer: ReturnType<typeof listAnswer>
+        try { answer = listAnswer(await context.files(listing.layerId, listing.request),
+          listing.request.limit) }
+        catch (error) {
+          signal?.throwIfAborted()
+          throw new RuntimeSourceChangedError(`Runtime source listing is no longer readable: ${String(error)}`)
+        }
+        if (!same(answer, { items: listing.items,
+          ...(listing.nextCursor === undefined ? {} : { nextCursor: listing.nextCursor }) }))
+          throw new RuntimeSourceChangedError(`Runtime source listing changed for ${listing.layerId}`)
+      }
+      for (const location of orderedLocations) {
+        signal?.throwIfAborted()
+        let answer: Awaited<ReturnType<ModContext['locate']>>
+        try {
+          const found = await context.locate(location.path)
+          answer = found === undefined ? undefined
+            : { layerId: found.layerId, path: found.path }
+        }
+        catch (error) {
+          signal?.throwIfAborted()
+          throw new RuntimeSourceChangedError(`Runtime source location is no longer readable: ${String(error)}`)
+        }
+        if (!same(answer, location.answer))
+          throw new RuntimeSourceChangedError(`Runtime source location changed for ${location.path}`)
+      }
       for (const read of ordered) {
         signal?.throwIfAborted()
         let bytes: Uint8Array
@@ -142,7 +263,11 @@ export function captureRuntimeSourceReads(context: ModContext): RuntimeSourceSna
         if (bytes.byteLength !== read.size || (await sha256(bytes)) !== read.digest)
           throw new RuntimeSourceChangedError(`Runtime source changed while preparing ${read.path}`)
       }
-      const identity = ordered.map(read => [read.layerId, read.path, read.digest])
+      const identity: unknown[] = ordered.map(read => [read.layerId, read.path, read.digest])
+      identity.push(...orderedListings.map(([key, listing]) =>
+        ['files', key, listing.items, listing.nextCursor ?? null]))
+      identity.push(...orderedLocations.map(location =>
+        ['locate', location.path, location.answer ?? null]))
       return Object.freeze({
         digest: await sha256(encoder.encode(JSON.stringify(identity))),
         fileCount: ordered.length,
