@@ -73,4 +73,39 @@ describe('loaded mod resources', () => {
     expect(await sessions.load(target)).toBe(false)
     await sessions.dispose()
   })
+
+  it('reopens only the mods whose chain holds a changed file', async () => {
+    const opened: string[] = []
+    const released: string[] = []
+    const layer = (path: string, role: 'dependency' | 'primary') => ({ id: path, displayName: path, sourceId: 'host',
+      sourcePath: path, role, provenance: role === 'primary' ? 'opened' as const : 'implicit' as const, kind: 'package' as const })
+    let revision = 0
+    const source = { openModContext: async (request: { target: ModContextTarget }) => {
+      const path = typeof request.target === 'string' ? request.target : request.target.path
+      opened.push(path)
+      const id = `${path}#${revision}`
+      return { schemaVersion: 1, gameId: 'blizzard/starcraft-2', contextId: id,
+        layers: path === 'C:/Mods/Shared.SC2Mod' ? [layer(path, 'primary')]
+          : [layer('C:/Mods/Shared.SC2Mod', 'dependency'), layer(path, 'primary')],
+        unresolved: [], diagnostics: [], files: async () => ({ items: [] }), read: async () => new Uint8Array(),
+        locate: async () => undefined, dispose: async () => { released.push(id) } } satisfies ModContext
+    } } as ContentSources
+    const sessions = new LoadedModResourceSessions(source)
+    await sessions.load('C:/Mods/Alpha.SC2Mod')
+    await sessions.load('C:/Mods/Beta.SC2Mod')
+    opened.length = 0
+    revision = 1
+    // a string file of Alpha changes on disk: Beta and the shared dependency keep their contexts
+    expect(await sessions.reloadHolding('host', 'C:\\Mods\\Alpha.SC2Mod\\enUS.SC2Data\\LocalizedData\\GameStrings.txt')).toBe(true)
+    expect(opened).toEqual(['C:/Mods/Alpha.SC2Mod', 'C:/Mods/Shared.SC2Mod'])
+    expect(released.sort()).toEqual(['C:/Mods/Alpha.SC2Mod#0', 'C:/Mods/Shared.SC2Mod#1'])
+    expect(sessions.list().map(mod => mod.contextId).sort()).toEqual(
+      ['C:/Mods/Alpha.SC2Mod#1', 'C:/Mods/Beta.SC2Mod#0', 'C:/Mods/Shared.SC2Mod#0'])
+    // the shared dependency changes: every mod over it reopens
+    opened.length = 0
+    expect(await sessions.reloadHolding('host', 'c:/mods/shared.sc2mod/Base.SC2Data/GameData/UnitData.xml')).toBe(true)
+    expect(opened.filter(path => !path.includes('Shared')).sort()).toEqual(['C:/Mods/Alpha.SC2Mod', 'C:/Mods/Beta.SC2Mod'])
+    expect(await sessions.reloadHolding('host', 'C:/Elsewhere/readme.txt')).toBe(false)
+    await sessions.dispose()
+  })
 })

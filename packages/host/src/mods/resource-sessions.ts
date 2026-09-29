@@ -139,6 +139,42 @@ export class LoadedModResourceSessions {
     await Promise.allSettled(opened.map(mod => mod.context.dispose()))
   }
 
+  /**
+   * Reopen only the loaded mods whose chain holds a changed file (a layer is that file, or a folder
+   * above it), dependents included; the others keep their contexts. `true` when any was reopened.
+   * The caller refreshes the content source first, as for `reloadAll`.
+   */
+  async reloadHolding(sourceId: string, path: string): Promise<boolean> {
+    const spelled = (value: string) => value.replaceAll('\\', '/').replace(/\/+$/u, '').toLowerCase()
+    const changed = spelled(path)
+    const holds = (mod: Loaded) =>
+      mod.context.layers.some(layer => {
+        if (layer.sourceId !== sourceId) return false
+        const root = spelled(layer.sourcePath)
+        return changed === root || changed.startsWith(`${root}/`)
+      })
+    const affected = [...this.mods.values()].filter(holds)
+    if (affected.length === 0) return false
+    const replacement = new LoadedModResourceSessions(this.sources, this.options)
+    try {
+      for (const mod of affected) {
+        if (mod.opened) await replacement.load(mod.target, mod.baseMods)
+      }
+    } catch (error) {
+      await replacement.dispose()
+      throw error
+    }
+    for (const mod of affected) this.mods.delete(mod.id)
+    for (const [id, mod] of replacement.mods) {
+      // a dependency the change did not touch keeps the context it had
+      if (this.mods.has(id)) await mod.context.dispose()
+      else this.mods.set(id, mod)
+    }
+    replacement.mods.clear()
+    await Promise.allSettled(affected.map(mod => mod.context.dispose()))
+    return true
+  }
+
   async dispose(): Promise<void> {
     this.disposed = true
     const contexts = [...this.mods.values()].map(mod => mod.context)
