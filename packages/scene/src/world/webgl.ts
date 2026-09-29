@@ -11,6 +11,7 @@ import type {
   WorldToneMapping,
   WorldTerrainLighting,
   WorldShadowRange,
+  WorldHeightFog,
 } from '@modkit/sdk/maps'
 import type {
   ModelMaterialRef,
@@ -452,6 +453,8 @@ export interface WorldWebGlPlan {
     terrain?: WorldTerrainLighting
     /** Shadows only this far from the eye that frames the view (see WorldShadowRange). */
     shadowRange?: WorldShadowRange
+    /** Height fog, applied in the tone-mapping pass from worldFogEye. */
+    fog?: WorldHeightFog
     specularColor?: readonly [number, number, number]
     specularIntensity?: number
     useAmbientOcclusion?: boolean
@@ -5940,6 +5943,7 @@ export function createWorldWebGlPlan(
       ...(lighting?.toneMapping === undefined ? {} : { toneMapping: lighting.toneMapping }),
       ...(lighting?.terrain === undefined ? {} : { terrain: lighting.terrain }),
       ...(lighting?.shadowRange === undefined ? {} : { shadowRange: lighting.shadowRange }),
+      ...(lighting?.fog === undefined ? {} : { fog: lighting.fog }),
       specularColor: directional?.specularColor ?? lightColor,
       specularIntensity: directional?.specularIntensity ?? directional?.intensity ?? 0.9,
       useAmbientOcclusion: directional?.useAmbientOcclusion ?? true,
@@ -8868,6 +8872,22 @@ export function worldShadowRangeEye(
   })
 }
 
+/**
+ * Where the height fog's rays start: the perspective eye of the shadow range when the lighting names
+ * one (the game camera that frames this view), else the view's own camera.
+ */
+export function worldFogEye(
+  plan: WorldWebGlPlan,
+  width: number,
+  height: number,
+  requested?: WorldWebGlCamera,
+): readonly [number, number, number] {
+  const framing = worldShadowRangeEye(plan, width, height, requested)
+  if (framing !== undefined) return framing.eye
+  const { camera } = cameraFor(plan, width, height, requested)
+  return [camera.position.x, camera.position.y, camera.position.z] as const
+}
+
 /** Model material light: key color × intensity plus the authored ambient color, as terrain uses. */
 export function worldMaterialLight(plan: WorldWebGlPlan) {
   const { direction, color, intensity, ambient, ambientIntensity } = plan.light
@@ -9923,8 +9943,16 @@ function drawWorldWebGlWithResources(
       }
       assertNoWebGlError(resources, 'water surface depth pass')
     }
-    if (plan.light.toneMapping !== undefined)
-      resources.toneMapper?.finish(plan.light.toneMapping, sceneCamera.viewProjection)
+    if (plan.light.toneMapping !== undefined) {
+      const fog = plan.light.fog
+      resources.toneMapper?.finish(
+        plan.light.toneMapping,
+        sceneCamera.viewProjection,
+        fog === undefined
+          ? undefined
+          : { fog, eye: worldFogEye(plan, canvas.width, canvas.height, input.camera) },
+      )
+    }
     assertNoWebGlError(resources, 'postprocess pass')
     resources.frames += 1
     completed = true

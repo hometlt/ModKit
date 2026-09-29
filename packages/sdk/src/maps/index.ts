@@ -1124,6 +1124,22 @@ export interface WorldShadowRange {
   readonly fieldOfViewDegrees: number
 }
 
+/**
+ * Exponential height fog (SC2 CTerrain Fog*, Shaders/Common.fx FogDensity): at height `h` along the
+ * up axis of the lighting's coordinate space the fog is `density · exp((startingHeight − h) · falloff)`
+ * thick. A surface seen from the eye takes the integral of it along the eye ray, clamped to 0..1, as
+ * the weight of `color` over its own lit colour, before tone mapping.
+ */
+export interface WorldHeightFog {
+  /** 0..1 RGB, on the same scale as the light colours. */
+  readonly color: readonly [number, number, number]
+  /** Per world unit of ray, at `startingHeight`. */
+  readonly density: number
+  /** Per world unit of height; 0 keeps the fog equally thick at every height. */
+  readonly falloff: number
+  readonly startingHeight: number
+}
+
 /** One resolved, renderer-neutral world-lighting environment for a map snapshot. */
 export interface MapWorldLightingSummary {
   readonly coordinateSpaceId: string
@@ -1131,6 +1147,7 @@ export interface MapWorldLightingSummary {
   readonly ambientIntensity: number
   readonly toneMapping?: WorldToneMapping
   readonly shadowRange?: WorldShadowRange
+  readonly fog?: WorldHeightFog
   readonly terrain?: WorldTerrainLighting
   readonly directional: readonly Readonly<{
     readonly id: string
@@ -1417,6 +1434,7 @@ export interface WorldSceneLightingItem {
   readonly ambientIntensity: number
   readonly toneMapping?: WorldToneMapping
   readonly shadowRange?: WorldShadowRange
+  readonly fog?: WorldHeightFog
   readonly terrain?: WorldTerrainLighting
   readonly directional: readonly Readonly<{
     readonly id: string

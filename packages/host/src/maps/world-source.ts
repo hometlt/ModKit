@@ -948,6 +948,7 @@ export function createCandidateWorldSceneLease(
             ...(snapshot.lighting.terrain === undefined ? {} : { terrain: snapshot.lighting.terrain }),
             ...(snapshot.lighting.toneMapping === undefined ? {} : { toneMapping: snapshot.lighting.toneMapping }),
             ...(snapshot.lighting.shadowRange === undefined ? {} : { shadowRange: snapshot.lighting.shadowRange }),
+            ...(snapshot.lighting.fog === undefined ? {} : { fog: snapshot.lighting.fog }),
           }),
         ],
   )

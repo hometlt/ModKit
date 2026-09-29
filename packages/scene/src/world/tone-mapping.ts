@@ -1,4 +1,4 @@
-import type { WorldToneMapping } from '@modkit/sdk/maps'
+import type { WorldHeightFog, WorldToneMapping } from '@modkit/sdk/maps'
 import { uniformLocation } from '../materials/webgl.js'
 import { Matrix4 } from 'three'
 import { createWorldColorLut } from './colorization.js'
@@ -57,6 +57,9 @@ export function createWorldToneMapper(gl: WebGL2RenderingContext) {
     uniform vec2 pixelSize;
     uniform mat4 inverseViewProjection;
     uniform mat4 viewProjection;
+    uniform vec4 fogParameters;
+    uniform vec3 fogColor;
+    uniform vec3 fogEye;
     out vec4 outColor;
     vec3 positionAt(vec2 coord) {
       // NEAREST depth belongs to a texel centre, not the continuous kernel coordinate.
@@ -108,8 +111,25 @@ export function createWorldToneMapper(gl: WebGL2RenderingContext) {
       }
       return pow(clamp(1.0 - blocked / 12.0, 0.0, 1.0), max(aoSettings.w, 0.0));
     }
+    // Shaders/Common.fx FogDensity: density · exp((start − y) · falloff) integrated from the eye to the
+    // surface, clamped to 0..1. Written as the closed integral, which is the same value wherever
+    // Common.fx does not clamp its exponent, so a far eye does not underflow to no fog.
+    float heightFog(vec3 p) {
+      vec3 view = p - fogEye;
+      float density = fogParameters.x, falloff = fogParameters.y, start = fogParameters.z;
+      float integral = density * length(view);
+      float rise = fogEye.y - p.y;
+      if (falloff > 0.0 && abs(rise) > 0.01)
+        integral *= (exp((start - p.y) * falloff) - exp((start - fogEye.y) * falloff)) / (falloff * rise);
+      else
+        integral *= exp((start - p.y) * falloff);
+      return clamp(integral, 0.0, 1.0);
+    }
     void main() {
       vec3 color = max(texture(image, uv).rgb, vec3(0.0)) * occlusion();
+      // PSFog.fx: the lit colour is replaced by the fog colour by that weight, before tone mapping.
+      if (fogParameters.w > 0.0 && texture(depthMap, uv).r < 0.999999)
+        color = mix(color, fogColor, heightFog(positionAt(uv)));
       float luminance = dot(color, vec3(0.35, 0.5, 0.125));
       float exposed = pow(luminance, mapping.z) * mapping.x;
       float mapped = exposed * (1.0 + exposed / (mapping.y * mapping.y)) / (1.0 + exposed);
@@ -204,7 +224,15 @@ export function createWorldToneMapper(gl: WebGL2RenderingContext) {
         height = h
       }
     },
-    finish(settings: WorldToneMapping, viewProjection?: Float32Array) {
+    /**
+     * `fog` needs `viewProjection` to find each pixel's point; `eye` is where its rays start (a
+     * renderer with an orthographic view passes the perspective eye that frames it).
+     */
+    finish(
+      settings: WorldToneMapping,
+      viewProjection?: Float32Array,
+      fog?: Readonly<{ fog: WorldHeightFog; eye: readonly [number, number, number] }>,
+    ) {
       gl.bindFramebuffer(gl.FRAMEBUFFER, null)
       gl.disable(gl.DEPTH_TEST)
       gl.disable(gl.BLEND)
@@ -238,6 +266,16 @@ export function createWorldToneMapper(gl: WebGL2RenderingContext) {
       const matrix = viewProjection === undefined ? identity : new Matrix4().fromArray(viewProjection)
       gl.uniformMatrix4fv(uniformLocation(gl, program, 'viewProjection'), false, matrix.elements)
       gl.uniformMatrix4fv(uniformLocation(gl, program, 'inverseViewProjection'), false, matrix.clone().invert().elements)
+      const heightFog = viewProjection === undefined ? undefined : fog
+      gl.uniform4f(
+        uniformLocation(gl, program, 'fogParameters'),
+        heightFog?.fog.density ?? 0,
+        heightFog?.fog.falloff ?? 0,
+        heightFog?.fog.startingHeight ?? 0,
+        heightFog !== undefined && heightFog.fog.density > 0 ? 1 : 0,
+      )
+      gl.uniform3fv(uniformLocation(gl, program, 'fogColor'), Float32Array.from(heightFog?.fog.color ?? [0, 0, 0]))
+      gl.uniform3fv(uniformLocation(gl, program, 'fogEye'), Float32Array.from(heightFog?.eye ?? [0, 0, 0]))
       gl.uniform3f(
         uniformLocation(gl, program, 'mapping'),
         settings.exposure,
