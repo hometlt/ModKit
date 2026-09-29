@@ -93,6 +93,7 @@ export type WorldUvpMaterializationResult =
       readonly manifestBytes: Uint8Array
       readonly entries: ReadonlyMap<string, Uint8Array>
       readonly artifactDigest: `sha256:${string}`
+      readonly observedTerrainItems: number
       readonly packagedTextureCount: number
       readonly packagedModelCount: number
       readonly packagedMediaBytes: number
@@ -1343,6 +1344,7 @@ export async function materializeWorldToUvpMap(
       manifestBytes,
       entries,
       artifactDigest: await digest(manifestBytes),
+      observedTerrainItems: materialized.observedTerrainItems,
       packagedTextureCount: uniqueMedia.size,
       packagedModelCount: uniqueModels.size,
       packagedMediaBytes: encodedTotal,

@@ -434,6 +434,7 @@ describe('portable UVP map bundle', () => {
     expect(packed.state).toBe('materialized')
     if (packed.state !== 'materialized') throw new Error(JSON.stringify(packed.refusals))
     expect(packed.packagedTextureCount).toBe(1)
+    expect(Number.isSafeInteger(packed.observedTerrainItems)).toBe(true)
     expect([...packed.entries.keys()]).toEqual([
       'uvp.manifest.json',
       'world/main.uvw.json',
