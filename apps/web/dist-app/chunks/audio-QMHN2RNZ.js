@@ -8,9 +8,8 @@ import {
   collectCodecPcm,
   computePeaks,
   createAudioViewer
-} from "./chunk-SEUGETBF.js";
-import "./chunk-SIU5GHDB.js";
-import "./chunk-6G2KODMW.js";
+} from "./chunk-ZC5PHM3C.js";
+import "./chunk-J4F5HCFO.js";
 import "./chunk-BLWUC7LO.js";
 export {
   AUDIO_MAXIMUM_BYTES,

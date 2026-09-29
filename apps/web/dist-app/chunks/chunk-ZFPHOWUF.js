@@ -1,12 +1,12 @@
 import {
   createVideoViewer
-} from "./chunk-CRISB2AX.js";
+} from "./chunk-EPRAT4WK.js";
 import {
   createAudioViewer
-} from "./chunk-SEUGETBF.js";
+} from "./chunk-ZC5PHM3C.js";
 import {
   metadataFieldProjections
-} from "./chunk-VS7Y6TK6.js";
+} from "./chunk-K62FQND3.js";
 import {
   DEFAULT_MODEL_ANIMATION_BUDGET,
   DEFAULT_MODEL_SKELETON_BUDGET,
@@ -25,22 +25,17 @@ import {
   snapshotJson,
   snapshotModelAnimations,
   snapshotModelSkeleton
-} from "./chunk-BWYZLXYC.js";
-import {
-  DEFAULT_UI_LOCALIZER,
-  UI_MESSAGES,
-  createUiLocalizer,
-  parseUiCatalogDocument,
-  resolveUiLocale
-} from "./chunk-SIU5GHDB.js";
+} from "./chunk-P47BIBG7.js";
 import {
   createImageViewer,
+  createNamespaceViewer,
   invokeRefusalMessage
-} from "./chunk-GHVQN46Y.js";
+} from "./chunk-EP7EFG37.js";
 import {
   CALCULATIONS_FALLBACK_MESSAGES,
   CARD_FALLBACK_MESSAGES,
   CODE_FALLBACK_MESSAGES,
+  DEFAULT_UI_LOCALIZER,
   EDITOR_FALLBACK_MESSAGES,
   EXPLORER_EDITORS_FALLBACK_MESSAGES,
   EXPLORER_FALLBACK_MESSAGES,
@@ -49,7 +44,6 @@ import {
   HEX_EDITOR_FALLBACK_MESSAGES,
   HEX_FALLBACK_MESSAGES,
   METADATA_FALLBACK_MESSAGES,
-  NAMESPACE_FALLBACK_MESSAGES,
   PRIMITIVES_FILE_TREE_FALLBACK_MESSAGES,
   PRIMITIVES_SEARCH_FIELD_FALLBACK_MESSAGES,
   TABLE_FALLBACK_MESSAGES,
@@ -59,25 +53,32 @@ import {
   TRANSPORT_FALLBACK_MESSAGES,
   TRANSPORT_PLAYBACK_FALLBACK_MESSAGES,
   TREE_FALLBACK_MESSAGES,
+  UI_MESSAGES,
   VECTOR_FALLBACK_MESSAGES,
   ViewerMountScope,
   WORKBENCH_FALLBACK_MESSAGES,
   WORLD_FALLBACK_MESSAGES,
   bindingFor,
+  compileMatcher,
+  compilePattern,
   createMediaShell,
   createSurface,
+  createUiLocalizer,
   createViewerMount,
   defineViewerModule,
   element,
   invokeOperation,
+  parseUiCatalogDocument,
   requireContainer,
+  resolveUiLocale,
   safeViewerText,
   setPart,
   setState,
   setViewerText,
+  textMatches,
   unknownSourceLease,
   withEnglishUiFallback
-} from "./chunk-6G2KODMW.js";
+} from "./chunk-J4F5HCFO.js";
 import {
   A1_SPEC_SCHEMA_ENTRIES,
   AUXILIARY_DATA_SOURCE_SURFACES,
@@ -197,7 +198,7 @@ import {
   validateSubjectDescriptorV2,
   writerOfferSatisfies,
   writerSelectionKey
-} from "./chunk-47VUMMB3.js";
+} from "./chunk-WUWSXVRM.js";
 import {
   __export,
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
@@ -451,12 +452,12 @@ function createResourceSession(options) {
       }
       const key3 = JSON.stringify([fold(normalized, origin.caseSensitivity), servedScopes]);
       const cached = index2.get(key3);
-      let found;
+      let found2;
       let rootId;
       if (cached !== void 0) {
-        found = cached.found;
+        found2 = cached.found;
         rootId = cached.rootId;
-        if (found === void 0) {
+        if (found2 === void 0) {
           return unresolved2(requirement, "not-found", `resource \xAB${requirement.logicalId}\xBB is not in any scope this session serves`, true);
         }
       } else {
@@ -477,9 +478,9 @@ function createResourceSession(options) {
           found: located.found,
           ...located.rootId === void 0 ? {} : { rootId: located.rootId }
         });
-        found = located.found;
+        found2 = located.found;
         rootId = located.rootId;
-        if (found === void 0) {
+        if (found2 === void 0) {
           return unresolved2(requirement, "not-found", `resource \xAB${requirement.logicalId}\xBB is not in any scope this session serves`);
         }
       }
@@ -495,7 +496,7 @@ function createResourceSession(options) {
       opening += 1;
       let originLease;
       try {
-        originLease = await origin.open(found, signal);
+        originLease = await origin.open(found2, signal);
       } catch (error5) {
         if (isModkitError(error5) && error5.code === COMPANION_BUDGET_EXCEEDED)
           return unresolved2(requirement, "budget-exceeded", error5.message);
@@ -598,6 +599,663 @@ var encoder = new TextEncoder();
 // packages/host/dist/language/workspace.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
+// packages/host/dist/execution/frame-json.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
+// packages/host/dist/execution/protocol.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var CAPABILITY_RPC_DOMAIN = "x3.host/rpc";
+var CAPABILITY_RPC_VERSION = 1;
+var HANDLE_MARKER = "@x3.handle";
+var HANDLE_ID = /^[hw](?:0|[1-9]\d*)-(?:0|[1-9]\d*)$/u;
+var SUBSCRIPTION_ID = /^[hw]s(?:0|[1-9]\d*)-(?:0|[1-9]\d*)$/u;
+var METHOD_NAME = /^[a-z][a-zA-Z0-9]{0,63}$/u;
+var FORBIDDEN_KEYS = /* @__PURE__ */ new Set(["__proto__", "constructor", "prototype"]);
+var FRAME_TYPES = [
+  "load",
+  "ready",
+  "call",
+  "return",
+  "throw",
+  "cancel",
+  "next",
+  "done",
+  "subscribe",
+  "event",
+  "unsubscribe",
+  "progress",
+  "release",
+  "revoke",
+  "terminate"
+];
+var HANDLE_KINDS = ["lease", "iterator", "events"];
+function isHandleId(value2) {
+  return HANDLE_ID.test(value2);
+}
+function isSubscriptionId(value2) {
+  return SUBSCRIPTION_ID.test(value2);
+}
+function isMethodName(value2) {
+  return METHOD_NAME.test(value2);
+}
+var WIRE_TYPED_ARRAYS = Object.freeze({
+  bytes: Uint8Array,
+  i8: Int8Array,
+  u8c: Uint8ClampedArray,
+  i16: Int16Array,
+  u16: Uint16Array,
+  i32: Int32Array,
+  u32: Uint32Array,
+  f32: Float32Array,
+  f64: Float64Array,
+  i64: BigInt64Array,
+  u64: BigUint64Array
+});
+function wireTypedArrayCode(view) {
+  for (const [code, constructor] of Object.entries(WIRE_TYPED_ARRAYS)) {
+    if (view.constructor === constructor)
+      return code;
+  }
+  return void 0;
+}
+var MAX_OPTIONAL_METHODS = 64;
+function handleRef(id, kind, contract, data, has) {
+  return Object.freeze({
+    [HANDLE_MARKER]: Object.freeze({
+      id,
+      kind,
+      ...contract === void 0 ? {} : { contract: contract.contract, major: contract.major },
+      ...data === void 0 ? {} : { data },
+      ...has === void 0 ? {} : { has: Object.freeze([...has]) }
+    })
+  });
+}
+function isPresentList(value2) {
+  return Array.isArray(value2) && value2.length <= MAX_OPTIONAL_METHODS && value2.every((item) => typeof item === "string" && isMethodName(item)) && new Set(value2).size === value2.length;
+}
+function isHandleRef(value2) {
+  if (!isPlainObject(value2))
+    return false;
+  const keys = Object.keys(value2);
+  if (keys.length !== 1 || keys[0] !== HANDLE_MARKER)
+    return false;
+  const inner = value2[HANDLE_MARKER];
+  if (!isPlainObject(inner))
+    return false;
+  const record9 = inner;
+  const innerKeys = Object.keys(inner).filter((key3) => key3 !== "data" && key3 !== "has").sort();
+  const base = ["id", "kind"];
+  const withContract = ["contract", "id", "kind", "major"];
+  const shape = innerKeys.join(",") === base.join(",") || innerKeys.join(",") === withContract.join(",");
+  if (!shape)
+    return false;
+  if (record9["data"] !== void 0 && !isPlainObject(record9["data"]))
+    return false;
+  if (record9["has"] !== void 0 && !isPresentList(record9["has"]))
+    return false;
+  if (typeof record9["id"] !== "string" || !isHandleId(record9["id"]))
+    return false;
+  if (typeof record9["kind"] !== "string" || !HANDLE_KINDS.includes(record9["kind"]))
+    return false;
+  if (innerKeys.length === 4) {
+    if (typeof record9["contract"] !== "string" || !isQualifiedId(record9["contract"]))
+      return false;
+    if (!Number.isSafeInteger(record9["major"]) || record9["major"] < 0)
+      return false;
+  }
+  return true;
+}
+function isPlainObject(value2) {
+  if (typeof value2 !== "object" || value2 === null || Array.isArray(value2))
+    return false;
+  const proto = Object.getPrototypeOf(value2);
+  return proto === Object.prototype || proto === null;
+}
+var DEFAULT_PROTOCOL_LIMITS = Object.freeze({
+  maxDepth: 32,
+  // Resolved game catalogs legitimately carry tens of thousands of definitions and field nodes
+  // in one pinned snapshot. The byte, array, object-key, deadline and worker-memory ceilings still
+  // bound the frame; this node ceiling prevents valid schemas from being rejected first.
+  maxNodes: 4e6,
+  maxStringLength: 4 * 1024 * 1024,
+  maxArrayLength: 1e5,
+  maxObjectKeys: 1e4,
+  maxTransferBytes: 64 * 1024 * 1024,
+  maxArgs: 16,
+  maxPendingCalls: 256,
+  maxHandles: 4096,
+  maxIterators: 256,
+  maxSubscriptions: 64,
+  maxQueuedEvents: 1024,
+  defaultCallDeadlineMs: 3e4,
+  iteratorBatchItems: 1
+});
+function protocolLimits(overrides = {}) {
+  const merged = { ...DEFAULT_PROTOCOL_LIMITS, ...overrides };
+  for (const [key3, value2] of Object.entries(merged)) {
+    if (!Number.isSafeInteger(value2) || value2 < 0) {
+      throw new ModkitError({
+        code: "x3.host/rpc-invalid-limits",
+        message: `protocol limit ${key3} must be a non-negative safe integer`,
+        context: { key: key3 }
+      });
+    }
+  }
+  if (merged.iteratorBatchItems < 1 || merged.iteratorBatchItems > merged.maxArrayLength) {
+    throw new ModkitError({
+      code: "x3.host/rpc-invalid-limits",
+      message: "protocol limit iteratorBatchItems must be between 1 and maxArrayLength",
+      context: { key: "iteratorBatchItems" }
+    });
+  }
+  return Object.freeze(merged);
+}
+function violation(code, message, path) {
+  return {
+    ok: false,
+    violation: Object.freeze({ code, message, ...path === void 0 ? {} : { path } })
+  };
+}
+function protocolViolationError(item) {
+  return new ModkitError({
+    code: "x3.host/rpc-protocol-violation",
+    message: `capability-rpc protocol violation: ${item.message}`,
+    context: {
+      violation: item.code,
+      ...item.path === void 0 ? {} : { path: [...item.path] }
+    }
+  });
+}
+var SHARED = typeof SharedArrayBuffer === "function" ? SharedArrayBuffer : void 0;
+function validateInner(value2, limits, measure, depth, path, handles) {
+  measure.nodes += 1;
+  if (measure.nodes > limits.maxNodes) {
+    return { code: "nodes-exceeded", message: `value has more than ${limits.maxNodes} nodes` };
+  }
+  if (depth > limits.maxDepth) {
+    return { code: "depth-exceeded", message: `value nests deeper than ${limits.maxDepth}`, path };
+  }
+  switch (typeof value2) {
+    case "boolean":
+    case "bigint":
+      return void 0;
+    case "undefined":
+      return depth === 0 ? { code: "bad-value", message: "undefined is not a wire value", path } : void 0;
+    case "number":
+      return Number.isFinite(value2) ? void 0 : { code: "bad-value", message: "non-finite number", path };
+    case "string":
+      return value2.length <= limits.maxStringLength ? void 0 : { code: "string-too-long", message: `string longer than ${limits.maxStringLength}`, path };
+    case "object":
+      break;
+    default:
+      return { code: "bad-value", message: `${typeof value2} is not a wire value`, path };
+  }
+  if (value2 === null)
+    return void 0;
+  if (ArrayBuffer.isView(value2) && !(value2 instanceof DataView)) {
+    const kind = value2.constructor.name;
+    if (wireTypedArrayCode(value2) === void 0) {
+      return { code: "bad-value", message: `${kind} is not a wire value`, path };
+    }
+    if (SHARED !== void 0 && value2.buffer instanceof SHARED) {
+      return {
+        code: "shared-buffer",
+        message: "SharedArrayBuffer-backed bytes are not transferable",
+        path
+      };
+    }
+    if (value2.buffer.detached === true) {
+      return {
+        code: "bad-value",
+        message: `a ${kind} over a detached buffer cannot cross (it was transferred already)`,
+        path
+      };
+    }
+    if (value2.byteOffset !== 0 || value2.byteLength !== value2.buffer.byteLength) {
+      return {
+        code: "partial-typed-array",
+        message: `a ${kind} must own its whole buffer (slice() before sending)`,
+        path
+      };
+    }
+    measure.bytes += value2.byteLength;
+    if (measure.bytes > limits.maxTransferBytes) {
+      return {
+        code: "transfer-too-large",
+        message: `frame carries more than ${limits.maxTransferBytes} bytes`,
+        path
+      };
+    }
+    measure.buffers.push(value2.buffer);
+    return void 0;
+  }
+  if (value2 instanceof DataView || value2 instanceof ArrayBuffer) {
+    return {
+      code: "bad-value",
+      message: "binary payloads must be a typed array that names its element type",
+      path
+    };
+  }
+  if (Array.isArray(value2)) {
+    if (value2.length > limits.maxArrayLength) {
+      return { code: "array-too-long", message: `array longer than ${limits.maxArrayLength}`, path };
+    }
+    for (let index2 = 0; index2 < value2.length; index2 += 1) {
+      const found2 = validateInner(value2[index2], limits, measure, depth + 1, [...path, index2], handles);
+      if (found2 !== void 0)
+        return found2;
+    }
+    return void 0;
+  }
+  if (!isPlainObject(value2)) {
+    return { code: "bad-value", message: "only plain data objects may cross the boundary", path };
+  }
+  if (Object.hasOwn(value2, HANDLE_MARKER)) {
+    if (handles === "forbid") {
+      return {
+        code: "handle-not-allowed",
+        message: "a handle ref is not allowed at this position",
+        path
+      };
+    }
+    if (!isHandleRef(value2))
+      return { code: "bad-handle", message: "malformed handle ref", path };
+    const data = value2[HANDLE_MARKER].data;
+    return data === void 0 ? void 0 : validateInner(data, limits, measure, depth + 1, [...path, HANDLE_MARKER, "data"], "forbid");
+  }
+  const keys = Object.keys(value2);
+  if (keys.length > limits.maxObjectKeys) {
+    return {
+      code: "too-many-keys",
+      message: `object has more than ${limits.maxObjectKeys} keys`,
+      path
+    };
+  }
+  for (const key3 of keys) {
+    if (FORBIDDEN_KEYS.has(key3)) {
+      return { code: "forbidden-key", message: `key \xAB${key3}\xBB is forbidden`, path: [...path, key3] };
+    }
+    if (key3.length > limits.maxStringLength) {
+      return { code: "string-too-long", message: "object key too long", path: [...path, key3] };
+    }
+    const found2 = validateInner(value2[key3], limits, measure, depth + 1, [...path, key3], handles);
+    if (found2 !== void 0)
+      return found2;
+  }
+  return void 0;
+}
+function validateWireValue(value2, limits, handles = "forbid", path = []) {
+  const measure = { nodes: 0, bytes: 0, buffers: [] };
+  if (handles === "top" && isHandleRef(value2)) {
+    const data = value2[HANDLE_MARKER].data;
+    const found3 = data === void 0 ? void 0 : validateInner(data, limits, measure, 1, [...path, HANDLE_MARKER, "data"], "forbid");
+    if (found3 !== void 0)
+      return { ok: false, violation: Object.freeze(found3) };
+    return {
+      ok: true,
+      value: Object.freeze({
+        nodes: measure.nodes + 1,
+        transferBytes: measure.bytes,
+        transferables: Object.freeze(measure.buffers)
+      })
+    };
+  }
+  const found2 = validateInner(value2, limits, measure, 0, [...path], handles === "nested" ? "allow" : "forbid");
+  if (found2 !== void 0)
+    return { ok: false, violation: Object.freeze(found2) };
+  return {
+    ok: true,
+    value: Object.freeze({
+      nodes: measure.nodes,
+      transferBytes: measure.bytes,
+      transferables: Object.freeze(measure.buffers)
+    })
+  };
+}
+var RETRYABILITIES = ["never", "safe", "conditional"];
+var MAX_ERROR_MESSAGE = 8 * 1024;
+function toErrorDto(error5, limits) {
+  const clip = (text4) => text4.length > MAX_ERROR_MESSAGE ? `${text4.slice(0, MAX_ERROR_MESSAGE)}\u2026` : text4;
+  if (error5 instanceof OperationCancelledError) {
+    return Object.freeze({
+      code: error5.code,
+      message: clip(error5.message),
+      retryability: error5.retryability,
+      cancelled: true
+    });
+  }
+  if (isModkitError(error5)) {
+    let context;
+    let dropped = false;
+    if (error5.context !== void 0) {
+      const checked = validateWireValue(error5.context, limits, "forbid");
+      if (checked.ok && isPlainObject(error5.context)) {
+        context = error5.context;
+      } else {
+        dropped = true;
+      }
+    }
+    return Object.freeze({
+      code: error5.code,
+      message: clip(error5.message),
+      retryability: error5.retryability,
+      ...context === void 0 ? {} : { context },
+      ...dropped ? { contextDropped: true } : {}
+    });
+  }
+  const message = error5 instanceof Error ? error5.message : String(error5);
+  return Object.freeze({
+    code: "x3.host/rpc-foreign-error",
+    message: clip(message.length === 0 ? "unknown error" : message),
+    retryability: "never"
+  });
+}
+function fromErrorDto(dto) {
+  if (dto.cancelled === true)
+    return new OperationCancelledError(dto.message);
+  return new ModkitError({
+    code: dto.code,
+    message: dto.message,
+    retryability: dto.retryability,
+    ...dto.context === void 0 ? {} : { context: dto.context }
+  });
+}
+function validateErrorDto(value2, limits, path = []) {
+  if (!isPlainObject(value2))
+    return violation("bad-error", "error must be an object", path);
+  const record9 = value2;
+  const keys = Object.keys(record9);
+  const allowed2 = /* @__PURE__ */ new Set([
+    "code",
+    "message",
+    "retryability",
+    "context",
+    "cancelled",
+    "contextDropped"
+  ]);
+  for (const key3 of keys) {
+    if (!allowed2.has(key3))
+      return violation("bad-error", `unknown error key \xAB${key3}\xBB`, [...path, key3]);
+  }
+  const code = record9["code"];
+  if (typeof code !== "string" || !isQualifiedId(code)) {
+    return violation("bad-error", "error code must be a qualified id", [...path, "code"]);
+  }
+  const message = record9["message"];
+  if (typeof message !== "string" || message.length > MAX_ERROR_MESSAGE + 1) {
+    return violation("bad-error", "error message must be a bounded string", [...path, "message"]);
+  }
+  const retryability = record9["retryability"];
+  if (typeof retryability !== "string" || !RETRYABILITIES.includes(retryability)) {
+    return violation("bad-error", "error retryability is invalid", [...path, "retryability"]);
+  }
+  for (const flag2 of ["cancelled", "contextDropped"]) {
+    if (record9[flag2] !== void 0 && record9[flag2] !== true) {
+      return violation("bad-error", `error ${flag2} must be true or absent`, [...path, flag2]);
+    }
+  }
+  if (record9["context"] !== void 0) {
+    if (!isPlainObject(record9["context"])) {
+      return violation("bad-error", "error context must be an object", [...path, "context"]);
+    }
+    const checked = validateWireValue(record9["context"], limits, "forbid", [...path, "context"]);
+    if (!checked.ok)
+      return checked;
+  }
+  return { ok: true, value: Object.freeze({ ...record9 }) };
+}
+var ENVELOPE_KEYS = ["domain", "version", "session", "generation", "id", "t"];
+var FRAME_KEYS = {
+  load: {
+    required: ["moduleUrl", "contributionId", "variantId", "artifactDigest"],
+    optional: ["entrypointDigest"]
+  },
+  ready: { required: ["inReplyTo", "abiVersion", "exports", "root"], optional: [] },
+  call: { required: ["handle", "method", "args"], optional: ["deadlineMs"] },
+  return: { required: ["inReplyTo"], optional: ["value", "lease"] },
+  throw: { required: ["inReplyTo", "error"], optional: [] },
+  cancel: { required: ["target"], optional: [] },
+  next: { required: ["handle"], optional: ["max"] },
+  done: { required: ["handle"], optional: ["inReplyTo", "error"] },
+  subscribe: { required: ["handle"], optional: [] },
+  event: { required: ["subscription", "value"], optional: [] },
+  unsubscribe: { required: ["subscription"], optional: [] },
+  progress: { required: ["inReplyTo", "progress"], optional: [] },
+  release: { required: ["handle"], optional: [] },
+  revoke: { required: ["handle"], optional: [] },
+  terminate: { required: ["reason"], optional: [] }
+};
+function isMessageId(value2) {
+  return Number.isSafeInteger(value2) && value2 >= 1;
+}
+function checkExactKeys(record9, required4, optional) {
+  for (const key3 of required4) {
+    if (!Object.hasOwn(record9, key3))
+      return { code: "missing-key", message: `missing key \xAB${key3}\xBB`, path: [key3] };
+  }
+  const allowed2 = /* @__PURE__ */ new Set([...ENVELOPE_KEYS, ...required4, ...optional]);
+  for (const key3 of Object.keys(record9)) {
+    if (FORBIDDEN_KEYS.has(key3))
+      return { code: "forbidden-key", message: `key \xAB${key3}\xBB is forbidden`, path: [key3] };
+    if (!allowed2.has(key3))
+      return { code: "unknown-key", message: `unknown key \xAB${key3}\xBB`, path: [key3] };
+  }
+  return void 0;
+}
+function validateFrame(input, limits, expect) {
+  if (!isPlainObject(input))
+    return violation("not-an-object", "frame must be a plain object");
+  const record9 = input;
+  if (record9["domain"] !== CAPABILITY_RPC_DOMAIN || record9["version"] !== CAPABILITY_RPC_VERSION) {
+    return violation("bad-envelope", "frame domain/version mismatch");
+  }
+  if (record9["session"] !== expect.session)
+    return violation("bad-envelope", "frame session mismatch", ["session"]);
+  if (record9["generation"] !== expect.generation) {
+    return violation("stale-generation", "frame generation does not match the live generation", [
+      "generation"
+    ]);
+  }
+  if (!isMessageId(record9["id"]))
+    return violation("bad-id", "frame id must be a positive safe integer", ["id"]);
+  const type = record9["t"];
+  if (typeof type !== "string" || !FRAME_TYPES.includes(type)) {
+    return violation("bad-type", "unknown frame type", ["t"]);
+  }
+  const t3 = type;
+  const keys = FRAME_KEYS[t3];
+  const keyViolation = checkExactKeys(record9, keys.required, keys.optional);
+  if (keyViolation !== void 0)
+    return { ok: false, violation: keyViolation };
+  const str = (key3, test, code = "bad-value") => typeof record9[key3] === "string" && record9[key3].length > 0 && (test?.(record9[key3]) ?? true) ? void 0 : violation(code, `\xAB${key3}\xBB is malformed`, [key3]);
+  const replyId = (key3) => isMessageId(record9[key3]) ? void 0 : violation("bad-id", `\xAB${key3}\xBB must be a positive safe integer`, [key3]);
+  switch (t3) {
+    case "load": {
+      for (const key3 of ["moduleUrl", "artifactDigest"]) {
+        const bad2 = str(key3, (value2) => value2.length <= limits.maxStringLength);
+        if (bad2)
+          return bad2;
+      }
+      if (record9["entrypointDigest"] !== void 0) {
+        const bad2 = str("entrypointDigest", (value2) => value2.length <= 256);
+        if (bad2)
+          return bad2;
+      }
+      const bad = str("contributionId", isQualifiedId) ?? str("variantId", isSegment);
+      if (bad)
+        return bad;
+      break;
+    }
+    case "ready": {
+      const bad = replyId("inReplyTo");
+      if (bad)
+        return bad;
+      if (record9["abiVersion"] !== 1)
+        return violation("bad-value", "abiVersion must be 1", ["abiVersion"]);
+      const exports = record9["exports"];
+      if (!Array.isArray(exports) || exports.length > limits.maxArrayLength || !exports.every((item) => typeof item === "string" && item.length > 0 && item.length <= 256)) {
+        return violation("bad-value", "exports must be an array of short strings", ["exports"]);
+      }
+      if (!isHandleRef(record9["root"]))
+        return violation("bad-handle", "root must be a handle ref", ["root"]);
+      {
+        const checked = validateWireValue(record9["root"], limits, "top", ["root"]);
+        if (!checked.ok)
+          return checked;
+      }
+      break;
+    }
+    case "call": {
+      const bad = str("handle", isHandleId, "bad-handle") ?? str("method", isMethodName, "bad-method");
+      if (bad)
+        return bad;
+      const args = record9["args"];
+      if (!Array.isArray(args))
+        return violation("bad-value", "args must be an array", ["args"]);
+      if (args.length > limits.maxArgs)
+        return violation("too-many-args", `more than ${limits.maxArgs} args`, ["args"]);
+      const checked = validateWireValue(args, limits, "nested", ["args"]);
+      if (!checked.ok)
+        return checked;
+      if (record9["deadlineMs"] !== void 0 && (!Number.isSafeInteger(record9["deadlineMs"]) || record9["deadlineMs"] < 0)) {
+        return violation("bad-value", "deadlineMs must be a non-negative safe integer", [
+          "deadlineMs"
+        ]);
+      }
+      break;
+    }
+    case "return": {
+      const bad = replyId("inReplyTo");
+      if (bad)
+        return bad;
+      if (record9["value"] !== void 0) {
+        const checked = validateWireValue(record9["value"], limits, "top", ["value"]);
+        if (!checked.ok)
+          return checked;
+      }
+      if (record9["lease"] !== void 0) {
+        const lease2 = record9["lease"];
+        if (!isHandleRef(lease2) || lease2[HANDLE_MARKER].kind !== "lease") {
+          return violation("bad-handle", "lease must be a lease handle ref", ["lease"]);
+        }
+        if (record9["value"] !== void 0 && isHandleRef(record9["value"])) {
+          return violation("bad-value", "a leased value cannot itself be a handle", ["value"]);
+        }
+        const checked = validateWireValue(lease2, limits, "top", ["lease"]);
+        if (!checked.ok)
+          return checked;
+      }
+      break;
+    }
+    case "throw": {
+      const bad = replyId("inReplyTo");
+      if (bad)
+        return bad;
+      const checked = validateErrorDto(record9["error"], limits, ["error"]);
+      if (!checked.ok)
+        return checked;
+      break;
+    }
+    case "cancel":
+      {
+        const bad = replyId("target");
+        if (bad)
+          return bad;
+      }
+      break;
+    case "next": {
+      const bad = str("handle", isHandleId, "bad-handle");
+      if (bad)
+        return bad;
+      const max = record9["max"];
+      if (max !== void 0 && (!Number.isSafeInteger(max) || max < 1 || max > limits.maxArrayLength)) {
+        return violation("bad-value", `next.max must be an integer in 1..${limits.maxArrayLength}`, ["max"]);
+      }
+      break;
+    }
+    case "subscribe":
+    case "release":
+    case "revoke": {
+      const bad = str("handle", isHandleId, "bad-handle");
+      if (bad)
+        return bad;
+      break;
+    }
+    case "done": {
+      const bad = str("handle", isHandleId, "bad-handle");
+      if (bad)
+        return bad;
+      if (record9["inReplyTo"] !== void 0) {
+        const badReply = replyId("inReplyTo");
+        if (badReply)
+          return badReply;
+      }
+      if (record9["error"] !== void 0) {
+        const checked = validateErrorDto(record9["error"], limits, ["error"]);
+        if (!checked.ok)
+          return checked;
+      }
+      break;
+    }
+    case "event": {
+      const bad = str("subscription", isSubscriptionId, "bad-subscription");
+      if (bad)
+        return bad;
+      const checked = validateWireValue(record9["value"], limits, "forbid", ["value"]);
+      if (!checked.ok)
+        return checked;
+      break;
+    }
+    case "unsubscribe": {
+      const bad = str("subscription", isSubscriptionId, "bad-subscription");
+      if (bad)
+        return bad;
+      break;
+    }
+    case "progress": {
+      const bad = replyId("inReplyTo");
+      if (bad)
+        return bad;
+      const progress = record9["progress"];
+      if (!isPlainObject(progress))
+        return violation("bad-progress", "progress must be an object", ["progress"]);
+      const progressKeys = Object.keys(progress);
+      if (progressKeys.some((key3) => !["completed", "total", "message"].includes(key3))) {
+        return violation("bad-progress", "progress has unknown keys", ["progress"]);
+      }
+      if (typeof progress["completed"] !== "number" || !Number.isFinite(progress["completed"]) || progress["completed"] < 0) {
+        return violation("bad-progress", "progress.completed must be a non-negative number", [
+          "progress",
+          "completed"
+        ]);
+      }
+      if (progress["total"] !== void 0 && (typeof progress["total"] !== "number" || !Number.isFinite(progress["total"]) || progress["total"] < 0)) {
+        return violation("bad-progress", "progress.total must be a non-negative number", [
+          "progress",
+          "total"
+        ]);
+      }
+      if (progress["message"] !== void 0 && (typeof progress["message"] !== "string" || progress["message"].length > 1024)) {
+        return violation("bad-progress", "progress.message must be a short string", [
+          "progress",
+          "message"
+        ]);
+      }
+      break;
+    }
+    case "terminate": {
+      const bad = str("reason", (value2) => value2.length <= 1024);
+      if (bad)
+        return bad;
+      break;
+    }
+  }
+  return { ok: true, value: record9 };
+}
+
+// packages/host/dist/execution/frame-json.js
+var LITTLE_ENDIAN = new Uint8Array(new Uint16Array([1]).buffer)[0] === 1;
+
 // packages/host/dist/offers.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
@@ -671,11 +1329,11 @@ function serviceProjector(manifest, context) {
   }, spec.applicableVariants);
 }
 function entry(id) {
-  const found = A1_SPEC_SCHEMA_ENTRIES.find((item) => item.contract === id && item.major === 1);
-  if (found === void 0 || found.validateSemantics === void 0) {
+  const found2 = A1_SPEC_SCHEMA_ENTRIES.find((item) => item.contract === id && item.major === 1);
+  if (found2 === void 0 || found2.validateSemantics === void 0) {
     throw new TypeError(`missing A-1 schema/semantic authority for ${id}@1`);
   }
-  return found;
+  return found2;
 }
 function builtins() {
   const codec = entry(CODEC_CONTRIBUTION_CONTRACT);
@@ -2268,18 +2926,22 @@ function createHostServiceResolver(options) {
         ...options.policy === void 0 ? {} : { policy: options.policy },
         ...signal === void 0 ? {} : { signal },
         diagnostics,
-        contextFor: (effectiveGrant) => Object.freeze({
-          contracts: makePort(effectiveGrant, [...chain, key3]),
-          budgets: options.budgets,
-          ...chain.length !== 0 || options.logicalResourcesFor === void 0 ? {} : { logicalResources: options.logicalResourcesFor(effectiveGrant) },
-          ...chain.length !== 0 || options.installationProbes === void 0 ? {} : { installationProbes: options.installationProbes },
-          diagnostics: {
-            report(item) {
-              diagnostics.push(item);
-            }
-          },
-          ...options.signal === void 0 ? {} : { signal: options.signal }
-        })
+        contextFor: (effectiveGrant) => {
+          const settings = options.contributionSettings?.(result.selected.offer.providerId);
+          return Object.freeze({
+            contracts: makePort(effectiveGrant, [...chain, key3]),
+            budgets: options.budgets,
+            ...chain.length !== 0 || options.logicalResourcesFor === void 0 ? {} : { logicalResources: options.logicalResourcesFor(effectiveGrant) },
+            ...chain.length !== 0 || options.installationProbes === void 0 ? {} : { installationProbes: options.installationProbes },
+            diagnostics: {
+              report(item) {
+                diagnostics.push(item);
+              }
+            },
+            ...settings === void 0 ? {} : { settings },
+            ...options.signal === void 0 ? {} : { signal: options.signal }
+          });
+        }
       });
       activations.push(activation);
       activationFacts.push(Object.freeze({
@@ -3940,6 +4602,26 @@ var LANGUAGE_DOCUMENT_CONTRACT_DEFINITION = Object.freeze({
         optional: true,
         signal: Object.freeze({ arg: 0, key: "signal" })
       }),
+      foldingRanges: Object.freeze({
+        kind: "value",
+        optional: true,
+        signal: Object.freeze({ arg: 0, key: "signal" })
+      }),
+      documentLinks: Object.freeze({
+        kind: "value",
+        optional: true,
+        signal: Object.freeze({ arg: 0, key: "signal" })
+      }),
+      documentHighlights: Object.freeze({
+        kind: "value",
+        optional: true,
+        signal: Object.freeze({ arg: 0, key: "signal" })
+      }),
+      inlayHints: Object.freeze({
+        kind: "value",
+        optional: true,
+        signal: Object.freeze({ arg: 0, key: "signal" })
+      }),
       colorPresentations: Object.freeze({
         kind: "value",
         optional: true,
@@ -4104,8 +4786,14 @@ var COMPLETION_KINDS = /* @__PURE__ */ new Set([
   "parameter",
   "snippet",
   "text",
-  "type"
+  "type",
+  "color",
+  "file",
+  "folder",
+  "enum-member",
+  "event"
 ]);
+var ASSET_IMAGE_MAX_BYTES = 96 * 1024;
 
 // packages/host/dist/content-dependencies.js
 var DEPENDENCY_SCOPE = Object.freeze(["workspace-dependency-layer"]);
@@ -4236,10 +4924,10 @@ function createContentDependencyOrigin(contentSources, mounts, maximumEntryBytes
       for (const mount of overlay) {
         const rootScoped = relativeRequest(mount, prefix) !== void 0;
         const query2 = rootScoped ? prefix : joinPath(mount.logicalPrefix, prefix);
-        for (const found of await findEntries(mount, query2, signal)) {
-          const entry2 = rootScoped ? found : Object.freeze({
-            ...found,
-            logicalId: found.logicalId.slice(mount.logicalPrefix.length + 1)
+        for (const found2 of await findEntries(mount, query2, signal)) {
+          const entry2 = rootScoped ? found2 : Object.freeze({
+            ...found2,
+            logicalId: found2.logicalId.slice(mount.logicalPrefix.length + 1)
           });
           const key3 = fold2(entry2.logicalId);
           if (emitted.has(key3))
@@ -4259,8 +4947,8 @@ function createContentDependencyOrigin(contentSources, mounts, maximumEntryBytes
       if (mount === void 0) {
         for (const candidate of overlay) {
           const qualified = qualifiedIn(candidate);
-          const found = await findEntries(candidate, qualified, signal);
-          if (found.some((entry2) => fold2(entry2.logicalId) === fold2(qualified))) {
+          const found2 = await findEntries(candidate, qualified, signal);
+          if (found2.some((entry2) => fold2(entry2.logicalId) === fold2(qualified))) {
             mount = candidate;
             break;
           }
@@ -5278,7 +5966,7 @@ function sessionAdapter(realm, session, exposedInput, watch, openingSignal) {
 
 // packages/host/dist/session.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-var projection = () => import("./subject-projection-Q25656SP.js");
+var projection = () => import("./subject-projection-T472JT3D.js");
 function rejected(reason, message) {
   return {
     state: "rejected",
@@ -7982,10 +8670,10 @@ async function createContainerNamespaceComposition(options) {
       }
       return { kind: "directory" };
     }
-    const found = await namespace.lookup?.(path, signal);
+    const found2 = await namespace.lookup?.(path, signal);
     ensureLive(signal);
-    if (found !== void 0 && found !== null) {
-      const validated = validateEntry(found);
+    if (found2 !== void 0 && found2 !== null) {
+      const validated = validateEntry(found2);
       if (sameNamespacePath(validated.path, path) && validated.kind === "file")
         return { kind: "file", entry: validated };
     }
@@ -8061,9 +8749,9 @@ async function createContainerNamespaceComposition(options) {
           ensureLive(openSignal);
           const relativePath = normalizePath(requestedPath, false);
           const absolutePath = prefix === "" ? relativePath : `${prefix}/${relativePath}`;
-          const found = await lookup(absolutePath, openSignal);
+          const found2 = await lookup(absolutePath, openSignal);
           const refForEntry = childRef(options.root, absolutePath);
-          if (found.kind === "directory") {
+          if (found2.kind === "directory") {
             return Object.freeze({
               value: sourceAt(absolutePath, refForEntry, revisionIdFromRef({
                 kind: "provider-token",
@@ -8072,7 +8760,7 @@ async function createContainerNamespaceComposition(options) {
               release: async () => void 0
             });
           }
-          const refLease = await namespace.openEntry(found.entry.id, openSignal);
+          const refLease = await namespace.openEntry(found2.entry.id, openSignal);
           let released = false;
           const release = async () => {
             if (released)
@@ -8092,20 +8780,20 @@ async function createContainerNamespaceComposition(options) {
                 });
               }
             }
-            const sourceRevision = containerEntryRevision(options.revision, found.entry.id, found.entry.size ?? 0n);
+            const sourceRevision = containerEntryRevision(options.revision, found2.entry.id, found2.entry.size ?? 0n);
             const ref3 = refLease.value;
             const prior = bindings.get(ref3.id);
-            if (prior !== void 0 && (prior.entryId !== found.entry.id || prior.providerRevision !== found.entry.revision || prior.sourceRevision !== sourceRevision)) {
+            if (prior !== void 0 && (prior.entryId !== found2.entry.id || prior.providerRevision !== found2.entry.revision || prior.sourceRevision !== sourceRevision)) {
               throw new ModkitError({
                 code: "x3.host/container-entry-ref-collision",
                 message: `container reused entry ref ${ref3.id} for different content`
               });
             }
             bindings.set(ref3.id, Object.freeze({
-              entryId: found.entry.id,
+              entryId: found2.entry.id,
               path: absolutePath,
               ref: ref3,
-              providerRevision: found.entry.revision,
+              providerRevision: found2.entry.revision,
               sourceRevision
             }));
             let extracted;
@@ -8123,14 +8811,14 @@ async function createContainerNamespaceComposition(options) {
               ensureEntryLive(signal2);
               if (extracted !== void 0)
                 return extracted;
-              if (found.entry.size !== void 0 && found.entry.size > BigInt(options.budget.maxScalarBytes)) {
+              if (found2.entry.size !== void 0 && found2.entry.size > BigInt(options.budget.maxScalarBytes)) {
                 throw new ModkitError({
                   code: "x3.host/container-entry-scalar-budget-exceeded",
                   message: `container entry \xAB${absolutePath}\xBB exceeds maxScalarBytes`
                 });
               }
               extraction ??= (async () => {
-                const invoked = await parentOperations.invoke(extractHandlerId, { entryId: found.entry.id }, signal2 === void 0 ? {} : { signal: signal2 });
+                const invoked = await parentOperations.invoke(extractHandlerId, { entryId: found2.entry.id }, signal2 === void 0 ? {} : { signal: signal2 });
                 if (invoked.state !== "ok" || invoked.output.kind !== "bytes") {
                   throwIfAborted(signal2);
                   throw new ModkitError({
@@ -8145,10 +8833,10 @@ async function createContainerNamespaceComposition(options) {
                     message: `container entry \xAB${absolutePath}\xBB exceeds maxScalarBytes`
                   });
                 }
-                if (found.entry.size !== void 0 && found.entry.size !== BigInt(bytes.byteLength)) {
+                if (found2.entry.size !== void 0 && found2.entry.size !== BigInt(bytes.byteLength)) {
                   throw new ModkitError({
                     code: "x3.host/container-entry-size-mismatch",
-                    message: `container extracted ${bytes.byteLength} bytes for entry \xAB${absolutePath}\xBB, expected ${found.entry.size}`
+                    message: `container extracted ${bytes.byteLength} bytes for entry \xAB${absolutePath}\xBB, expected ${found2.entry.size}`
                   });
                 }
                 const total = extractedBytes + BigInt(bytes.byteLength);
@@ -8176,7 +8864,7 @@ async function createContainerNamespaceComposition(options) {
               kind: "bytes",
               ref: ref3,
               revision: sourceRevision,
-              ...found.entry.size === void 0 ? {} : { size: found.entry.size },
+              ...found2.entry.size === void 0 ? {} : { size: found2.entry.size },
               async read(offset, length, signal2) {
                 const bytes = await loadBytes(signal2);
                 return containerEntrySource(ref3, sourceRevision, bytes).read(offset, length, signal2);
@@ -11228,9 +11916,9 @@ async function findEntry(namespace, entryId, pageLimit, signal) {
   do {
     throwIfAborted(signal);
     const page2 = await namespace.list("", cursor5 === void 0 ? { limit: pageLimit } : { cursor: cursor5, limit: pageLimit }, signal);
-    const found = page2.items.find((item) => item.id === entryId);
-    if (found !== void 0)
-      return found;
+    const found2 = page2.items.find((item) => item.id === entryId);
+    if (found2 !== void 0)
+      return found2;
     cursor5 = page2.nextCursor;
   } while (cursor5 !== void 0);
   throw new ModkitError({
@@ -11987,659 +12675,6 @@ var Subscriptions = class {
 
 // packages/host/dist/execution/surface.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-
-// packages/host/dist/execution/protocol.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-var CAPABILITY_RPC_DOMAIN = "x3.host/rpc";
-var CAPABILITY_RPC_VERSION = 1;
-var HANDLE_MARKER = "@x3.handle";
-var HANDLE_ID = /^[hw](?:0|[1-9]\d*)-(?:0|[1-9]\d*)$/u;
-var SUBSCRIPTION_ID = /^[hw]s(?:0|[1-9]\d*)-(?:0|[1-9]\d*)$/u;
-var METHOD_NAME = /^[a-z][a-zA-Z0-9]{0,63}$/u;
-var FORBIDDEN_KEYS = /* @__PURE__ */ new Set(["__proto__", "constructor", "prototype"]);
-var FRAME_TYPES = [
-  "load",
-  "ready",
-  "call",
-  "return",
-  "throw",
-  "cancel",
-  "next",
-  "done",
-  "subscribe",
-  "event",
-  "unsubscribe",
-  "progress",
-  "release",
-  "revoke",
-  "terminate"
-];
-var HANDLE_KINDS = ["lease", "iterator", "events"];
-function isHandleId(value2) {
-  return HANDLE_ID.test(value2);
-}
-function isSubscriptionId(value2) {
-  return SUBSCRIPTION_ID.test(value2);
-}
-function isMethodName(value2) {
-  return METHOD_NAME.test(value2);
-}
-var WIRE_TYPED_ARRAYS = Object.freeze({
-  bytes: Uint8Array,
-  i8: Int8Array,
-  u8c: Uint8ClampedArray,
-  i16: Int16Array,
-  u16: Uint16Array,
-  i32: Int32Array,
-  u32: Uint32Array,
-  f32: Float32Array,
-  f64: Float64Array,
-  i64: BigInt64Array,
-  u64: BigUint64Array
-});
-function wireTypedArrayCode(view) {
-  for (const [code, constructor] of Object.entries(WIRE_TYPED_ARRAYS)) {
-    if (view.constructor === constructor)
-      return code;
-  }
-  return void 0;
-}
-var MAX_OPTIONAL_METHODS = 64;
-function handleRef(id, kind, contract, data, has) {
-  return Object.freeze({
-    [HANDLE_MARKER]: Object.freeze({
-      id,
-      kind,
-      ...contract === void 0 ? {} : { contract: contract.contract, major: contract.major },
-      ...data === void 0 ? {} : { data },
-      ...has === void 0 ? {} : { has: Object.freeze([...has]) }
-    })
-  });
-}
-function isPresentList(value2) {
-  return Array.isArray(value2) && value2.length <= MAX_OPTIONAL_METHODS && value2.every((item) => typeof item === "string" && isMethodName(item)) && new Set(value2).size === value2.length;
-}
-function isHandleRef(value2) {
-  if (!isPlainObject(value2))
-    return false;
-  const keys = Object.keys(value2);
-  if (keys.length !== 1 || keys[0] !== HANDLE_MARKER)
-    return false;
-  const inner = value2[HANDLE_MARKER];
-  if (!isPlainObject(inner))
-    return false;
-  const record9 = inner;
-  const innerKeys = Object.keys(inner).filter((key3) => key3 !== "data" && key3 !== "has").sort();
-  const base = ["id", "kind"];
-  const withContract = ["contract", "id", "kind", "major"];
-  const shape = innerKeys.join(",") === base.join(",") || innerKeys.join(",") === withContract.join(",");
-  if (!shape)
-    return false;
-  if (record9["data"] !== void 0 && !isPlainObject(record9["data"]))
-    return false;
-  if (record9["has"] !== void 0 && !isPresentList(record9["has"]))
-    return false;
-  if (typeof record9["id"] !== "string" || !isHandleId(record9["id"]))
-    return false;
-  if (typeof record9["kind"] !== "string" || !HANDLE_KINDS.includes(record9["kind"]))
-    return false;
-  if (innerKeys.length === 4) {
-    if (typeof record9["contract"] !== "string" || !isQualifiedId(record9["contract"]))
-      return false;
-    if (!Number.isSafeInteger(record9["major"]) || record9["major"] < 0)
-      return false;
-  }
-  return true;
-}
-function isPlainObject(value2) {
-  if (typeof value2 !== "object" || value2 === null || Array.isArray(value2))
-    return false;
-  const proto = Object.getPrototypeOf(value2);
-  return proto === Object.prototype || proto === null;
-}
-var DEFAULT_PROTOCOL_LIMITS = Object.freeze({
-  maxDepth: 32,
-  // Resolved game catalogs legitimately carry tens of thousands of definitions and field nodes
-  // in one pinned snapshot. The byte, array, object-key, deadline and worker-memory ceilings still
-  // bound the frame; this node ceiling prevents valid schemas from being rejected first.
-  maxNodes: 4e6,
-  maxStringLength: 4 * 1024 * 1024,
-  maxArrayLength: 1e5,
-  maxObjectKeys: 1e4,
-  maxTransferBytes: 64 * 1024 * 1024,
-  maxArgs: 16,
-  maxPendingCalls: 256,
-  maxHandles: 4096,
-  maxIterators: 256,
-  maxSubscriptions: 64,
-  maxQueuedEvents: 1024,
-  defaultCallDeadlineMs: 3e4,
-  iteratorBatchItems: 1
-});
-function protocolLimits(overrides = {}) {
-  const merged = { ...DEFAULT_PROTOCOL_LIMITS, ...overrides };
-  for (const [key3, value2] of Object.entries(merged)) {
-    if (!Number.isSafeInteger(value2) || value2 < 0) {
-      throw new ModkitError({
-        code: "x3.host/rpc-invalid-limits",
-        message: `protocol limit ${key3} must be a non-negative safe integer`,
-        context: { key: key3 }
-      });
-    }
-  }
-  if (merged.iteratorBatchItems < 1 || merged.iteratorBatchItems > merged.maxArrayLength) {
-    throw new ModkitError({
-      code: "x3.host/rpc-invalid-limits",
-      message: "protocol limit iteratorBatchItems must be between 1 and maxArrayLength",
-      context: { key: "iteratorBatchItems" }
-    });
-  }
-  return Object.freeze(merged);
-}
-function violation(code, message, path) {
-  return {
-    ok: false,
-    violation: Object.freeze({ code, message, ...path === void 0 ? {} : { path } })
-  };
-}
-function protocolViolationError(item) {
-  return new ModkitError({
-    code: "x3.host/rpc-protocol-violation",
-    message: `capability-rpc protocol violation: ${item.message}`,
-    context: {
-      violation: item.code,
-      ...item.path === void 0 ? {} : { path: [...item.path] }
-    }
-  });
-}
-var SHARED = typeof SharedArrayBuffer === "function" ? SharedArrayBuffer : void 0;
-function validateInner(value2, limits, measure, depth, path, handles) {
-  measure.nodes += 1;
-  if (measure.nodes > limits.maxNodes) {
-    return { code: "nodes-exceeded", message: `value has more than ${limits.maxNodes} nodes` };
-  }
-  if (depth > limits.maxDepth) {
-    return { code: "depth-exceeded", message: `value nests deeper than ${limits.maxDepth}`, path };
-  }
-  switch (typeof value2) {
-    case "boolean":
-    case "bigint":
-      return void 0;
-    case "undefined":
-      return depth === 0 ? { code: "bad-value", message: "undefined is not a wire value", path } : void 0;
-    case "number":
-      return Number.isFinite(value2) ? void 0 : { code: "bad-value", message: "non-finite number", path };
-    case "string":
-      return value2.length <= limits.maxStringLength ? void 0 : { code: "string-too-long", message: `string longer than ${limits.maxStringLength}`, path };
-    case "object":
-      break;
-    default:
-      return { code: "bad-value", message: `${typeof value2} is not a wire value`, path };
-  }
-  if (value2 === null)
-    return void 0;
-  if (ArrayBuffer.isView(value2) && !(value2 instanceof DataView)) {
-    const kind = value2.constructor.name;
-    if (wireTypedArrayCode(value2) === void 0) {
-      return { code: "bad-value", message: `${kind} is not a wire value`, path };
-    }
-    if (SHARED !== void 0 && value2.buffer instanceof SHARED) {
-      return {
-        code: "shared-buffer",
-        message: "SharedArrayBuffer-backed bytes are not transferable",
-        path
-      };
-    }
-    if (value2.buffer.detached === true) {
-      return {
-        code: "bad-value",
-        message: `a ${kind} over a detached buffer cannot cross (it was transferred already)`,
-        path
-      };
-    }
-    if (value2.byteOffset !== 0 || value2.byteLength !== value2.buffer.byteLength) {
-      return {
-        code: "partial-typed-array",
-        message: `a ${kind} must own its whole buffer (slice() before sending)`,
-        path
-      };
-    }
-    measure.bytes += value2.byteLength;
-    if (measure.bytes > limits.maxTransferBytes) {
-      return {
-        code: "transfer-too-large",
-        message: `frame carries more than ${limits.maxTransferBytes} bytes`,
-        path
-      };
-    }
-    measure.buffers.push(value2.buffer);
-    return void 0;
-  }
-  if (value2 instanceof DataView || value2 instanceof ArrayBuffer) {
-    return {
-      code: "bad-value",
-      message: "binary payloads must be a typed array that names its element type",
-      path
-    };
-  }
-  if (Array.isArray(value2)) {
-    if (value2.length > limits.maxArrayLength) {
-      return { code: "array-too-long", message: `array longer than ${limits.maxArrayLength}`, path };
-    }
-    for (let index2 = 0; index2 < value2.length; index2 += 1) {
-      const found = validateInner(value2[index2], limits, measure, depth + 1, [...path, index2], handles);
-      if (found !== void 0)
-        return found;
-    }
-    return void 0;
-  }
-  if (!isPlainObject(value2)) {
-    return { code: "bad-value", message: "only plain data objects may cross the boundary", path };
-  }
-  if (Object.hasOwn(value2, HANDLE_MARKER)) {
-    if (handles === "forbid") {
-      return {
-        code: "handle-not-allowed",
-        message: "a handle ref is not allowed at this position",
-        path
-      };
-    }
-    if (!isHandleRef(value2))
-      return { code: "bad-handle", message: "malformed handle ref", path };
-    const data = value2[HANDLE_MARKER].data;
-    return data === void 0 ? void 0 : validateInner(data, limits, measure, depth + 1, [...path, HANDLE_MARKER, "data"], "forbid");
-  }
-  const keys = Object.keys(value2);
-  if (keys.length > limits.maxObjectKeys) {
-    return {
-      code: "too-many-keys",
-      message: `object has more than ${limits.maxObjectKeys} keys`,
-      path
-    };
-  }
-  for (const key3 of keys) {
-    if (FORBIDDEN_KEYS.has(key3)) {
-      return { code: "forbidden-key", message: `key \xAB${key3}\xBB is forbidden`, path: [...path, key3] };
-    }
-    if (key3.length > limits.maxStringLength) {
-      return { code: "string-too-long", message: "object key too long", path: [...path, key3] };
-    }
-    const found = validateInner(value2[key3], limits, measure, depth + 1, [...path, key3], handles);
-    if (found !== void 0)
-      return found;
-  }
-  return void 0;
-}
-function validateWireValue(value2, limits, handles = "forbid", path = []) {
-  const measure = { nodes: 0, bytes: 0, buffers: [] };
-  if (handles === "top" && isHandleRef(value2)) {
-    const data = value2[HANDLE_MARKER].data;
-    const found2 = data === void 0 ? void 0 : validateInner(data, limits, measure, 1, [...path, HANDLE_MARKER, "data"], "forbid");
-    if (found2 !== void 0)
-      return { ok: false, violation: Object.freeze(found2) };
-    return {
-      ok: true,
-      value: Object.freeze({
-        nodes: measure.nodes + 1,
-        transferBytes: measure.bytes,
-        transferables: Object.freeze(measure.buffers)
-      })
-    };
-  }
-  const found = validateInner(value2, limits, measure, 0, [...path], handles === "nested" ? "allow" : "forbid");
-  if (found !== void 0)
-    return { ok: false, violation: Object.freeze(found) };
-  return {
-    ok: true,
-    value: Object.freeze({
-      nodes: measure.nodes,
-      transferBytes: measure.bytes,
-      transferables: Object.freeze(measure.buffers)
-    })
-  };
-}
-var RETRYABILITIES = ["never", "safe", "conditional"];
-var MAX_ERROR_MESSAGE = 8 * 1024;
-function toErrorDto(error5, limits) {
-  const clip = (text4) => text4.length > MAX_ERROR_MESSAGE ? `${text4.slice(0, MAX_ERROR_MESSAGE)}\u2026` : text4;
-  if (error5 instanceof OperationCancelledError) {
-    return Object.freeze({
-      code: error5.code,
-      message: clip(error5.message),
-      retryability: error5.retryability,
-      cancelled: true
-    });
-  }
-  if (isModkitError(error5)) {
-    let context;
-    let dropped = false;
-    if (error5.context !== void 0) {
-      const checked = validateWireValue(error5.context, limits, "forbid");
-      if (checked.ok && isPlainObject(error5.context)) {
-        context = error5.context;
-      } else {
-        dropped = true;
-      }
-    }
-    return Object.freeze({
-      code: error5.code,
-      message: clip(error5.message),
-      retryability: error5.retryability,
-      ...context === void 0 ? {} : { context },
-      ...dropped ? { contextDropped: true } : {}
-    });
-  }
-  const message = error5 instanceof Error ? error5.message : String(error5);
-  return Object.freeze({
-    code: "x3.host/rpc-foreign-error",
-    message: clip(message.length === 0 ? "unknown error" : message),
-    retryability: "never"
-  });
-}
-function fromErrorDto(dto) {
-  if (dto.cancelled === true)
-    return new OperationCancelledError(dto.message);
-  return new ModkitError({
-    code: dto.code,
-    message: dto.message,
-    retryability: dto.retryability,
-    ...dto.context === void 0 ? {} : { context: dto.context }
-  });
-}
-function validateErrorDto(value2, limits, path = []) {
-  if (!isPlainObject(value2))
-    return violation("bad-error", "error must be an object", path);
-  const record9 = value2;
-  const keys = Object.keys(record9);
-  const allowed2 = /* @__PURE__ */ new Set([
-    "code",
-    "message",
-    "retryability",
-    "context",
-    "cancelled",
-    "contextDropped"
-  ]);
-  for (const key3 of keys) {
-    if (!allowed2.has(key3))
-      return violation("bad-error", `unknown error key \xAB${key3}\xBB`, [...path, key3]);
-  }
-  const code = record9["code"];
-  if (typeof code !== "string" || !isQualifiedId(code)) {
-    return violation("bad-error", "error code must be a qualified id", [...path, "code"]);
-  }
-  const message = record9["message"];
-  if (typeof message !== "string" || message.length > MAX_ERROR_MESSAGE + 1) {
-    return violation("bad-error", "error message must be a bounded string", [...path, "message"]);
-  }
-  const retryability = record9["retryability"];
-  if (typeof retryability !== "string" || !RETRYABILITIES.includes(retryability)) {
-    return violation("bad-error", "error retryability is invalid", [...path, "retryability"]);
-  }
-  for (const flag2 of ["cancelled", "contextDropped"]) {
-    if (record9[flag2] !== void 0 && record9[flag2] !== true) {
-      return violation("bad-error", `error ${flag2} must be true or absent`, [...path, flag2]);
-    }
-  }
-  if (record9["context"] !== void 0) {
-    if (!isPlainObject(record9["context"])) {
-      return violation("bad-error", "error context must be an object", [...path, "context"]);
-    }
-    const checked = validateWireValue(record9["context"], limits, "forbid", [...path, "context"]);
-    if (!checked.ok)
-      return checked;
-  }
-  return { ok: true, value: Object.freeze({ ...record9 }) };
-}
-var ENVELOPE_KEYS = ["domain", "version", "session", "generation", "id", "t"];
-var FRAME_KEYS = {
-  load: {
-    required: ["moduleUrl", "contributionId", "variantId", "artifactDigest"],
-    optional: ["entrypointDigest"]
-  },
-  ready: { required: ["inReplyTo", "abiVersion", "exports", "root"], optional: [] },
-  call: { required: ["handle", "method", "args"], optional: ["deadlineMs"] },
-  return: { required: ["inReplyTo"], optional: ["value", "lease"] },
-  throw: { required: ["inReplyTo", "error"], optional: [] },
-  cancel: { required: ["target"], optional: [] },
-  next: { required: ["handle"], optional: ["max"] },
-  done: { required: ["handle"], optional: ["inReplyTo", "error"] },
-  subscribe: { required: ["handle"], optional: [] },
-  event: { required: ["subscription", "value"], optional: [] },
-  unsubscribe: { required: ["subscription"], optional: [] },
-  progress: { required: ["inReplyTo", "progress"], optional: [] },
-  release: { required: ["handle"], optional: [] },
-  revoke: { required: ["handle"], optional: [] },
-  terminate: { required: ["reason"], optional: [] }
-};
-function isMessageId(value2) {
-  return Number.isSafeInteger(value2) && value2 >= 1;
-}
-function checkExactKeys(record9, required4, optional) {
-  for (const key3 of required4) {
-    if (!Object.hasOwn(record9, key3))
-      return { code: "missing-key", message: `missing key \xAB${key3}\xBB`, path: [key3] };
-  }
-  const allowed2 = /* @__PURE__ */ new Set([...ENVELOPE_KEYS, ...required4, ...optional]);
-  for (const key3 of Object.keys(record9)) {
-    if (FORBIDDEN_KEYS.has(key3))
-      return { code: "forbidden-key", message: `key \xAB${key3}\xBB is forbidden`, path: [key3] };
-    if (!allowed2.has(key3))
-      return { code: "unknown-key", message: `unknown key \xAB${key3}\xBB`, path: [key3] };
-  }
-  return void 0;
-}
-function validateFrame(input, limits, expect) {
-  if (!isPlainObject(input))
-    return violation("not-an-object", "frame must be a plain object");
-  const record9 = input;
-  if (record9["domain"] !== CAPABILITY_RPC_DOMAIN || record9["version"] !== CAPABILITY_RPC_VERSION) {
-    return violation("bad-envelope", "frame domain/version mismatch");
-  }
-  if (record9["session"] !== expect.session)
-    return violation("bad-envelope", "frame session mismatch", ["session"]);
-  if (record9["generation"] !== expect.generation) {
-    return violation("stale-generation", "frame generation does not match the live generation", [
-      "generation"
-    ]);
-  }
-  if (!isMessageId(record9["id"]))
-    return violation("bad-id", "frame id must be a positive safe integer", ["id"]);
-  const type = record9["t"];
-  if (typeof type !== "string" || !FRAME_TYPES.includes(type)) {
-    return violation("bad-type", "unknown frame type", ["t"]);
-  }
-  const t3 = type;
-  const keys = FRAME_KEYS[t3];
-  const keyViolation = checkExactKeys(record9, keys.required, keys.optional);
-  if (keyViolation !== void 0)
-    return { ok: false, violation: keyViolation };
-  const str = (key3, test, code = "bad-value") => typeof record9[key3] === "string" && record9[key3].length > 0 && (test?.(record9[key3]) ?? true) ? void 0 : violation(code, `\xAB${key3}\xBB is malformed`, [key3]);
-  const replyId = (key3) => isMessageId(record9[key3]) ? void 0 : violation("bad-id", `\xAB${key3}\xBB must be a positive safe integer`, [key3]);
-  switch (t3) {
-    case "load": {
-      for (const key3 of ["moduleUrl", "artifactDigest"]) {
-        const bad2 = str(key3, (value2) => value2.length <= limits.maxStringLength);
-        if (bad2)
-          return bad2;
-      }
-      if (record9["entrypointDigest"] !== void 0) {
-        const bad2 = str("entrypointDigest", (value2) => value2.length <= 256);
-        if (bad2)
-          return bad2;
-      }
-      const bad = str("contributionId", isQualifiedId) ?? str("variantId", isSegment);
-      if (bad)
-        return bad;
-      break;
-    }
-    case "ready": {
-      const bad = replyId("inReplyTo");
-      if (bad)
-        return bad;
-      if (record9["abiVersion"] !== 1)
-        return violation("bad-value", "abiVersion must be 1", ["abiVersion"]);
-      const exports = record9["exports"];
-      if (!Array.isArray(exports) || exports.length > limits.maxArrayLength || !exports.every((item) => typeof item === "string" && item.length > 0 && item.length <= 256)) {
-        return violation("bad-value", "exports must be an array of short strings", ["exports"]);
-      }
-      if (!isHandleRef(record9["root"]))
-        return violation("bad-handle", "root must be a handle ref", ["root"]);
-      {
-        const checked = validateWireValue(record9["root"], limits, "top", ["root"]);
-        if (!checked.ok)
-          return checked;
-      }
-      break;
-    }
-    case "call": {
-      const bad = str("handle", isHandleId, "bad-handle") ?? str("method", isMethodName, "bad-method");
-      if (bad)
-        return bad;
-      const args = record9["args"];
-      if (!Array.isArray(args))
-        return violation("bad-value", "args must be an array", ["args"]);
-      if (args.length > limits.maxArgs)
-        return violation("too-many-args", `more than ${limits.maxArgs} args`, ["args"]);
-      const checked = validateWireValue(args, limits, "nested", ["args"]);
-      if (!checked.ok)
-        return checked;
-      if (record9["deadlineMs"] !== void 0 && (!Number.isSafeInteger(record9["deadlineMs"]) || record9["deadlineMs"] < 0)) {
-        return violation("bad-value", "deadlineMs must be a non-negative safe integer", [
-          "deadlineMs"
-        ]);
-      }
-      break;
-    }
-    case "return": {
-      const bad = replyId("inReplyTo");
-      if (bad)
-        return bad;
-      if (record9["value"] !== void 0) {
-        const checked = validateWireValue(record9["value"], limits, "top", ["value"]);
-        if (!checked.ok)
-          return checked;
-      }
-      if (record9["lease"] !== void 0) {
-        const lease2 = record9["lease"];
-        if (!isHandleRef(lease2) || lease2[HANDLE_MARKER].kind !== "lease") {
-          return violation("bad-handle", "lease must be a lease handle ref", ["lease"]);
-        }
-        if (record9["value"] !== void 0 && isHandleRef(record9["value"])) {
-          return violation("bad-value", "a leased value cannot itself be a handle", ["value"]);
-        }
-        const checked = validateWireValue(lease2, limits, "top", ["lease"]);
-        if (!checked.ok)
-          return checked;
-      }
-      break;
-    }
-    case "throw": {
-      const bad = replyId("inReplyTo");
-      if (bad)
-        return bad;
-      const checked = validateErrorDto(record9["error"], limits, ["error"]);
-      if (!checked.ok)
-        return checked;
-      break;
-    }
-    case "cancel":
-      {
-        const bad = replyId("target");
-        if (bad)
-          return bad;
-      }
-      break;
-    case "next": {
-      const bad = str("handle", isHandleId, "bad-handle");
-      if (bad)
-        return bad;
-      const max = record9["max"];
-      if (max !== void 0 && (!Number.isSafeInteger(max) || max < 1 || max > limits.maxArrayLength)) {
-        return violation("bad-value", `next.max must be an integer in 1..${limits.maxArrayLength}`, ["max"]);
-      }
-      break;
-    }
-    case "subscribe":
-    case "release":
-    case "revoke": {
-      const bad = str("handle", isHandleId, "bad-handle");
-      if (bad)
-        return bad;
-      break;
-    }
-    case "done": {
-      const bad = str("handle", isHandleId, "bad-handle");
-      if (bad)
-        return bad;
-      if (record9["inReplyTo"] !== void 0) {
-        const badReply = replyId("inReplyTo");
-        if (badReply)
-          return badReply;
-      }
-      if (record9["error"] !== void 0) {
-        const checked = validateErrorDto(record9["error"], limits, ["error"]);
-        if (!checked.ok)
-          return checked;
-      }
-      break;
-    }
-    case "event": {
-      const bad = str("subscription", isSubscriptionId, "bad-subscription");
-      if (bad)
-        return bad;
-      const checked = validateWireValue(record9["value"], limits, "forbid", ["value"]);
-      if (!checked.ok)
-        return checked;
-      break;
-    }
-    case "unsubscribe": {
-      const bad = str("subscription", isSubscriptionId, "bad-subscription");
-      if (bad)
-        return bad;
-      break;
-    }
-    case "progress": {
-      const bad = replyId("inReplyTo");
-      if (bad)
-        return bad;
-      const progress = record9["progress"];
-      if (!isPlainObject(progress))
-        return violation("bad-progress", "progress must be an object", ["progress"]);
-      const progressKeys = Object.keys(progress);
-      if (progressKeys.some((key3) => !["completed", "total", "message"].includes(key3))) {
-        return violation("bad-progress", "progress has unknown keys", ["progress"]);
-      }
-      if (typeof progress["completed"] !== "number" || !Number.isFinite(progress["completed"]) || progress["completed"] < 0) {
-        return violation("bad-progress", "progress.completed must be a non-negative number", [
-          "progress",
-          "completed"
-        ]);
-      }
-      if (progress["total"] !== void 0 && (typeof progress["total"] !== "number" || !Number.isFinite(progress["total"]) || progress["total"] < 0)) {
-        return violation("bad-progress", "progress.total must be a non-negative number", [
-          "progress",
-          "total"
-        ]);
-      }
-      if (progress["message"] !== void 0 && (typeof progress["message"] !== "string" || progress["message"].length > 1024)) {
-        return violation("bad-progress", "progress.message must be a short string", [
-          "progress",
-          "message"
-        ]);
-      }
-      break;
-    }
-    case "terminate": {
-      const bad = str("reason", (value2) => value2.length <= 1024);
-      if (bad)
-        return bad;
-      break;
-    }
-  }
-  return { ok: true, value: record9 };
-}
-
-// packages/host/dist/execution/surface.js
 function surfaceKey(contract, major) {
   return `${contract}@${major}`;
 }
@@ -16126,8 +16161,8 @@ var CONVERT = SUBJECT_COMMAND_TARGETS.convert.operationIds[0];
 var PREVIEW_COMMAND = SUBJECT_COMMAND_TARGETS.preview.commandId;
 var THUMBNAIL = SUBJECT_COMMAND_TARGETS.preview.operationIds[0];
 function availableOperation(descriptor, id) {
-  const found = (descriptor.operations ?? []).find((item) => item.id === id && item.state === "available" && item.mutatesSource !== true);
-  return found === void 0 ? void 0 : { handlerId: found.handlerId };
+  const found2 = (descriptor.operations ?? []).find((item) => item.id === id && item.state === "available" && item.mutatesSource !== true);
+  return found2 === void 0 ? void 0 : { handlerId: found2.handlerId };
 }
 function selectedOperation(descriptor, allowed2, requested) {
   const candidates = requested === void 0 ? allowed2 : typeof requested === "string" ? [requested] : [];
@@ -16269,9 +16304,9 @@ async function entryFor(session, wanted, signal) {
     let cursor5;
     do {
       const page2 = await namespace.list(scope, cursor5 === void 0 ? { limit: 512 } : { cursor: cursor5, limit: 512 }, signal);
-      const found = page2.items.find((item) => item.path === wanted || item.id === wanted);
-      if (found !== void 0)
-        return found;
+      const found2 = page2.items.find((item) => item.path === wanted || item.id === wanted);
+      if (found2 !== void 0)
+        return found2;
       cursor5 = page2.nextCursor;
     } while (cursor5 !== void 0);
     return void 0;
@@ -16298,17 +16333,17 @@ var extractCommand = {
         return unavailable(EXTRACT_COMMAND, `this subject is not a container this host can read into \u2014 ${publishedOperations(descriptor)}`, `run subject.inspect to see what it does publish; extraction needs both \xAB${CONTAINER_EXTRACT_OPERATION_ID2}\xBB and \xAB${NAMESPACE_ENTRY_SOURCE3}\xBB`, diagnostics);
       }
       context.progress?.({ step: "locate", message: `locating ${entry2}` });
-      const found = await entryFor(session, entry2, context.signal);
-      if (found === void 0) {
+      const found2 = await entryFor(session, entry2, context.signal);
+      if (found2 === void 0) {
         return failed(EXTRACT_COMMAND, "x3.command/entry-not-found", `this container lists no \xAB${entry2}\xBB`, diagnostics);
       }
       const name = entry2.slice(entry2.lastIndexOf("/") + 1);
-      const streamed = await streamEntry(session, descriptor, found, name, context);
+      const streamed = await streamEntry(session, descriptor, found2, name, context);
       if (streamed !== void 0) {
         return ok(EXTRACT_COMMAND, { ref: subject.ref, entry: entry2, ...streamed }, diagnostics);
       }
       context.progress?.({ step: "extract", message: `extracting ${entry2}` });
-      const answer = await invokeSubjectOperation(EXTRACT_COMMAND, context, session, operation.handlerId, { entryId: found.id }, diagnostics);
+      const answer = await invokeSubjectOperation(EXTRACT_COMMAND, context, session, operation.handlerId, { entryId: found2.id }, diagnostics);
       if (answer.state === "failed")
         return answer.result;
       if (answer.output.kind !== "bytes") {
@@ -42377,11 +42412,11 @@ function createDirectoryAccess(root, options = {}) {
   const files = /* @__PURE__ */ new Map();
   const sizes = /* @__PURE__ */ new Map();
   const requireDirectory = (entryId) => {
-    const found = directories.get(entryId ?? "");
-    if (found === void 0) {
+    const found2 = directories.get(entryId ?? "");
+    if (found2 === void 0) {
       throw new TypeError(`\xAB${entryId ?? ""}\xBB is not a folder this session has browsed`);
     }
-    return found;
+    return found2;
   };
   return {
     label: root.name === "" ? "Granted folder" : root.name,
@@ -55591,10 +55626,10 @@ function containerEntryAccess(table, context) {
       revision: containerEntryRevision(containerRevision, entry2.path, entry2.size)
     });
   };
-  const found = /* @__PURE__ */ new Map();
+  const found2 = /* @__PURE__ */ new Map();
   const entryAt = async (path, signal) => {
     const key3 = fold2(path);
-    const known2 = byPath.get(key3) ?? found.get(key3);
+    const known2 = byPath.get(key3) ?? found2.get(key3);
     if (known2 !== void 0 || table.find === void 0 || !validPath(path))
       return known2;
     const entry2 = await table.find(path, signal);
@@ -55603,7 +55638,7 @@ function containerEntryAccess(table, context) {
     if (fold2(entry2.path) !== key3 || typeof entry2.size !== "bigint" || entry2.size < 0n) {
       throw new TypeError(`container lookup of \xAB${path}\xBB answered another or an invalid entry`);
     }
-    found.set(key3, entry2);
+    found2.set(key3, entry2);
     return entry2;
   };
   const namespace = Object.freeze({
@@ -61302,10 +61337,6 @@ init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 // packages/host/dist/execution/index.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
-// packages/host/dist/execution/frame-json.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-var LITTLE_ENDIAN = new Uint8Array(new Uint16Array([1]).buffer)[0] === 1;
-
 // packages/host/dist/browser/worker-backend.js
 var WORKER_SHARED_ORIGIN_DIAGNOSTIC = "x3.host/worker-shared-origin";
 var DEFAULT_BROWSER_WORKER_POLICY = Object.freeze({
@@ -61684,11 +61715,11 @@ function createBrowserEditingBackend(options) {
   const revisionOf = options.revisionOf ?? defaultRevisionOf;
   const preImages = /* @__PURE__ */ new Map();
   const handle = (source2) => {
-    const found = options.handleFor(source2.id);
-    if (found === void 0) {
+    const found2 = options.handleFor(source2.id);
+    if (found2 === void 0) {
       throw editingError("x3.host/edit-source-not-writable", `\xAB${source2.uri}\xBB has no writable handle in this host`, { sourceId: source2.id });
     }
-    return found;
+    return found2;
   };
   const liveRevision = async (file, bindingId2, source2, namespaceRevision) => {
     const snapshot3 = await file.getFile();
@@ -62058,9 +62089,9 @@ function createIndexedDbExtensionStore(factory, databaseName = USER_EXTENSION_DA
   let knownToExist = false;
   const exists = async () => {
     if (knownToExist) return true;
-    const found = options.databaseExists !== void 0 ? await options.databaseExists(databaseName) : factory.databases !== void 0 ? (await factory.databases()).some((database) => database.name === databaseName) : await probeExistingDatabase(factory, databaseName);
-    if (found) knownToExist = true;
-    return found;
+    const found2 = options.databaseExists !== void 0 ? await options.databaseExists(databaseName) : factory.databases !== void 0 ? (await factory.databases()).some((database) => database.name === databaseName) : await probeExistingDatabase(factory, databaseName);
+    if (found2) knownToExist = true;
+    return found2;
   };
   const open = async () => {
     const request = factory.open(databaseName, 1);
@@ -62580,9 +62611,9 @@ function createIndexedDbManagedExtensionMetadataStore(factory, databaseName = MA
   let knownToExist = false;
   const exists = async () => {
     if (knownToExist) return true;
-    const found = options.databaseExists !== void 0 ? await options.databaseExists(databaseName) : factory.databases !== void 0 ? (await factory.databases()).some((database) => database.name === databaseName) : await probeExistingDatabase2(factory, databaseName);
-    if (found) knownToExist = true;
-    return found;
+    const found2 = options.databaseExists !== void 0 ? await options.databaseExists(databaseName) : factory.databases !== void 0 ? (await factory.databases()).some((database) => database.name === databaseName) : await probeExistingDatabase2(factory, databaseName);
+    if (found2) knownToExist = true;
+    return found2;
   };
   const open = async () => {
     const request = factory.open(databaseName, 1);
@@ -65142,139 +65173,6 @@ function createPropertiesTable(options = {}) {
 }
 var propertiesTable = createPropertiesTable();
 
-// packages/ui/dist/namespace/index.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-function normalizeNamespacePath(value2) {
-  if (value2.includes("\\") || value2.startsWith("/") || value2.includes("\0")) {
-    throw new TypeError("namespace path is not relative and portable");
-  }
-  const parts = value2.split("/").filter((part) => part !== "" && part !== ".");
-  if (parts.some((part) => part === ".."))
-    throw new TypeError("namespace traversal is forbidden");
-  return parts.join("/");
-}
-var NamespaceModel = class {
-  source;
-  #identities = /* @__PURE__ */ new Map();
-  constructor(source2) {
-    this.source = source2;
-  }
-  async list(prefix, cursor5, signal, includeHidden = false) {
-    const normalized = normalizeNamespacePath(prefix);
-    const page2 = await this.source.list(normalized, { limit: 200, ...cursor5 === void 0 ? {} : { cursor: cursor5 }, includeHidden }, signal);
-    for (const entry2 of page2.items) {
-      const path = normalizeNamespacePath(entry2.path);
-      const identity2 = `${path}\0${entry2.revision}`;
-      const existing = this.#identities.get(entry2.id);
-      if (existing !== void 0 && existing !== identity2) {
-        throw new TypeError(`namespace entry identity changed: ${entry2.id}`);
-      }
-      this.#identities.set(entry2.id, identity2);
-    }
-    return page2;
-  }
-};
-function createNamespaceViewer(options = {}) {
-  const localizer = withEnglishUiFallback(options.localizer, NAMESPACE_FALLBACK_MESSAGES);
-  return defineViewerModule({
-    abiVersion: 1,
-    async mount(args) {
-      const scope = new ViewerMountScope(args.signal);
-      const root = createSurface(args.container, localizer.text("viewer.namespace"));
-      root.setAttribute("role", "tree");
-      const lease2 = await unknownSourceLease(args.sources, args.slot, "common.view/namespace-entry-source");
-      if (lease2 === void 0)
-        throw new TypeError("namespace binding is unavailable");
-      scope.lease(lease2);
-      const source2 = lease2.value;
-      const model = new NamespaceModel(source2);
-      const list = element(root, "ul", { part: "namespace.list" });
-      list.setAttribute("role", "group");
-      const renderPrefix = async (prefix, parent) => {
-        const page2 = await model.list(prefix, void 0, scope.signal, options.showHidden?.() === true);
-        const seen = /* @__PURE__ */ new Set();
-        for (const entry2 of page2.items) {
-          if (seen.has(entry2.id))
-            throw new TypeError(`duplicate namespace entry id: ${entry2.id}`);
-          seen.add(entry2.id);
-          const item = element(parent, "li", { part: "namespace.item" });
-          item.setAttribute("role", "treeitem");
-          item.dataset["entryId"] = entry2.id;
-          item.dataset["revision"] = entry2.revision;
-          const button = element(item, "button", {
-            text: entry2.name,
-            part: "namespace.label"
-          });
-          button.type = "button";
-          const detail = describeEntry(entry2, localizer);
-          if (detail !== "") {
-            setViewerText(element(item, "span", { part: "namespace.detail" }), detail);
-          }
-          const activate = async () => {
-            if (entry2.kind === "directory") {
-              let nested = item.querySelector(":scope > ul");
-              if (nested === null) {
-                nested = element(item, "ul", { part: "namespace.children" });
-                nested.setAttribute("role", "group");
-                await renderPrefix(entry2.path, nested);
-              }
-              nested.hidden = !nested.hidden;
-              return;
-            }
-            const opened = await source2.openEntry(entry2.id, scope.signal);
-            try {
-              root.dispatchEvent(new CustomEvent("modkit-open-source", {
-                bubbles: true,
-                detail: { source: opened.value, entryId: entry2.id, revision: entry2.revision }
-              }));
-            } finally {
-              await opened.release();
-            }
-          };
-          button.addEventListener("click", activate);
-          scope.cleanup(() => button.removeEventListener("click", activate));
-          setViewerText(button, entry2.name);
-        }
-      };
-      await renderPrefix("", list);
-      return createViewerMount(root, scope, args, ({ descriptor }) => {
-        root.dataset["revision"] = descriptor.revision;
-      });
-    }
-  });
-}
-var namespaceViewer = createNamespaceViewer();
-function formatEntryBytes(value2) {
-  if (value2 < 1024n)
-    return `${value2} B`;
-  const units = ["KiB", "MiB", "GiB", "TiB"];
-  let scaled = Number(value2) / 1024;
-  let unit6 = 0;
-  while (scaled >= 1024 && unit6 < units.length - 1) {
-    scaled /= 1024;
-    unit6 += 1;
-  }
-  return `${scaled.toFixed(1)} ${units[unit6]}`;
-}
-function describeEntry(entry2, localizer) {
-  if (entry2.kind === "directory")
-    return "";
-  const parts = [];
-  if (entry2.size !== void 0)
-    parts.push(formatEntryBytes(entry2.size));
-  if (entry2.compression !== void 0) {
-    parts.push(entry2.storedSize === void 0 ? entry2.compression : `${entry2.compression} ${formatEntryBytes(entry2.storedSize)}`);
-  } else if (entry2.storedSize !== void 0) {
-    parts.push(localizer.text("viewer.storedSize", { size: formatEntryBytes(entry2.storedSize) }));
-  }
-  if (entry2.modifiedAt !== void 0) {
-    parts.push(`${new Date(entry2.modifiedAt).toISOString().replace("T", " ").slice(0, 19)} UTC`);
-  }
-  if (entry2.checksum !== void 0)
-    parts.push(`${entry2.checksum.algorithm} ${entry2.checksum.value}`);
-  return parts.join(" \xB7 ");
-}
-
 // packages/ui/dist/graph/index.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
@@ -67665,13 +67563,13 @@ var PREVIEW_STAGES = [
 async function defaultPreviewStage(kind, localizer) {
   switch (kind) {
     case "model":
-      return (await import("./model-NSVANOVT.js")).createModelViewer({ localizer });
+      return (await import("./model-XYIQ3NQD.js")).createModelViewer({ localizer });
     case "image":
-      return (await import("./image-BTGCWOVJ.js")).createImageViewer({ localizer });
+      return (await import("./image-3SSZLKAX.js")).createImageViewer({ localizer });
     case "video":
-      return (await import("./video-BVNA7YD2.js")).createVideoViewer({ localizer });
+      return (await import("./video-BUUWTSAO.js")).createVideoViewer({ localizer });
     case "audio":
-      return (await import("./audio-YIPIFKIK.js")).createAudioViewer({ localizer });
+      return (await import("./audio-QMHN2RNZ.js")).createAudioViewer({ localizer });
   }
 }
 function embedPreview(sections, args, scope, localizer, previews) {
@@ -68019,7 +67917,7 @@ function createToolbar(parent, spec, options = {}) {
       const onKey = (event) => {
         if (event.key === "Enter") {
           event.preventDefault();
-          item.onSubmit?.(input.value);
+          item.onSubmit?.(input.value, event.shiftKey);
         }
       };
       input.addEventListener("input", onInput);
@@ -68312,6 +68210,11 @@ var COMPARE_LABELS = {
   empty: "table.compareEmpty",
   orphaned: "table.compareOrphaned"
 };
+var MATCH_TOGGLES = [
+  ["case", "Aa", "filter.matchCase", "caseSensitive"],
+  ["word", "ab", "filter.wholeWord", "wholeWord"],
+  ["regex", ".*", "filter.regex", "regex"]
+];
 function drawRuns(cell, runs) {
   const document2 = cell.ownerDocument;
   cell.dataset["rendered"] = "true";
@@ -68352,6 +68255,40 @@ function drawRuns(cell, runs) {
     });
   }
 }
+function found(value2, pattern) {
+  pattern.lastIndex = 0;
+  return pattern.test(value2);
+}
+function markMatches(cell, pattern) {
+  const document2 = cell.ownerDocument;
+  const walker = document2.createTreeWalker(cell, NodeFilter.SHOW_TEXT);
+  const nodes = [];
+  for (let node = walker.nextNode(); node !== null; node = walker.nextNode())
+    nodes.push(node);
+  let marked = false;
+  for (const node of nodes) {
+    const parts = [];
+    let last = 0;
+    pattern.lastIndex = 0;
+    for (const match of node.data.matchAll(pattern)) {
+      if (match[0] === "")
+        continue;
+      const from = match.index ?? 0;
+      parts.push(document2.createTextNode(node.data.slice(last, from)));
+      const mark = document2.createElement("mark");
+      setPart(mark, "table.match");
+      mark.textContent = match[0];
+      parts.push(mark);
+      last = from + match[0].length;
+    }
+    if (parts.length === 0)
+      continue;
+    parts.push(document2.createTextNode(node.data.slice(last)));
+    node.replaceWith(...parts);
+    marked = true;
+  }
+  return marked;
+}
 var remembered = /* @__PURE__ */ new Map();
 async function mountVariantTable(args) {
   const text4 = withEnglishUiFallback(args.localizer, TABLE_VARIANTS_FALLBACK_MESSAGES).text;
@@ -68378,6 +68315,19 @@ async function mountVariantTable(args) {
   ];
   const state = remembered.get(args.descriptor.subjectUri) ?? {
     search: "",
+    caseSensitive: false,
+    wholeWord: false,
+    regex: false,
+    find: {
+      open: false,
+      replacing: false,
+      text: "",
+      caseSensitive: false,
+      wholeWord: false,
+      regex: false,
+      replace: "",
+      at: 0
+    },
     group: "",
     statuses: [],
     hidden: [],
@@ -68392,6 +68342,17 @@ async function mountVariantTable(args) {
   panel.hidden = true;
   args.before.before(bar, status, panel);
   const statuses = ["missing", "untranslated", "duplicate", "changed"];
+  const matchToggles = (target2, prefix, changed2) => MATCH_TOGGLES.map(([id, glyph, label, key3]) => ({
+    kind: "toggle",
+    id: `${prefix}-${id}`,
+    glyph,
+    label: text4(label),
+    active: target2[key3],
+    onToggle: (active) => {
+      target2[key3] = active;
+      changed2();
+    }
+  }));
   const toolbar = createToolbar(bar, {
     label: text4("table.filters"),
     items: [
@@ -68406,6 +68367,7 @@ async function mountVariantTable(args) {
           refresh();
         }
       },
+      ...matchToggles(state, "filter", () => refresh()),
       ...statuses.map((id) => ({
         kind: "chip",
         id,
@@ -68519,7 +68481,10 @@ async function mountVariantTable(args) {
     line.append(line.ownerDocument.createTextNode(` ${label}`));
     box.addEventListener("change", () => {
       state.hidden = box.checked ? state.hidden.filter((item) => item !== label) : [...state.hidden, label];
-      showColumns();
+      if (state.find.open)
+        seek();
+      else
+        showColumns();
     });
   });
   columns.hidden = header.length < 3;
@@ -68532,6 +68497,8 @@ async function mountVariantTable(args) {
   let shown = 0;
   let keyFilter;
   let drawnRows = [];
+  let filterMatcher = null;
+  let filterError = "";
   const matches2 = (row) => {
     const key3 = row.cells[keyColumn] ?? "";
     if (keyFilter !== void 0 && !keyFilter.has(key3))
@@ -68541,9 +68508,190 @@ async function mountVariantTable(args) {
     const flags2 = statusOf(row);
     if (state.statuses.length > 0 && !state.statuses.some((item) => flags2.includes(item)))
       return false;
-    const needle = state.search.toLocaleLowerCase();
-    return needle === "" || row.cells.some((cell) => cell.toLocaleLowerCase().includes(needle));
+    return filterMatcher === null || row.cells.some((cell) => textMatches(cell, filterMatcher));
   };
+  const replaceable = actions.addRow !== void 0 && variants.length > 0;
+  const find = element(args.root, "div", { part: "table.find" });
+  status.after(find);
+  let findPattern = null;
+  let findError = "";
+  let findRows = [];
+  const findToolbar = createToolbar(find, {
+    label: text4("table.find"),
+    items: [
+      {
+        kind: "search",
+        id: "find",
+        label: text4("table.find"),
+        placeholder: text4("table.find"),
+        value: state.find.text,
+        onInput: (value2) => {
+          state.find.text = value2;
+          state.find.at = 0;
+          seek();
+        },
+        onSubmit: (_value, backwards) => step(backwards ? -1 : 1)
+      },
+      ...matchToggles(state.find, "find", () => {
+        state.find.at = 0;
+        seek();
+      }),
+      { kind: "label", id: "count", text: "" },
+      {
+        kind: "action",
+        id: "previous",
+        glyph: "\u2191",
+        label: text4("table.findPrevious"),
+        onActivate: () => step(-1)
+      },
+      {
+        kind: "action",
+        id: "next",
+        glyph: "\u2193",
+        label: text4("table.findNext"),
+        onActivate: () => step(1)
+      },
+      ...replaceable ? [
+        {
+          kind: "toggle",
+          id: "replace",
+          glyph: "\u21C4",
+          label: text4("table.replaceToggle"),
+          active: state.find.replacing,
+          onToggle: (active) => {
+            state.find.replacing = active;
+            showFind();
+          }
+        }
+      ] : [],
+      {
+        kind: "action",
+        id: "close",
+        glyph: "\xD7",
+        label: text4("table.findClose"),
+        onActivate: () => closeFind()
+      }
+    ]
+  });
+  const replaceToolbar = createToolbar(find, {
+    label: text4("table.replaceWith"),
+    items: [
+      {
+        kind: "search",
+        id: "replace",
+        label: text4("table.replaceWith"),
+        placeholder: text4("table.replaceWith"),
+        value: state.find.replace,
+        onInput: (value2) => {
+          state.find.replace = value2;
+        },
+        onSubmit: () => void replaceNext()
+      },
+      {
+        kind: "action",
+        id: "replace-one",
+        label: text4("table.replaceOne"),
+        onActivate: () => void replaceNext()
+      },
+      {
+        kind: "action",
+        id: "replace-all",
+        label: text4("table.replaceAll"),
+        onActivate: () => void replaceAll()
+      }
+    ]
+  });
+  const findColumns = () => [keyColumn, ...variants.map((column) => column.index)].filter((column) => !isHidden(column));
+  const showFind = () => {
+    find.hidden = !state.find.open;
+    replaceToolbar.root.hidden = !(replaceable && state.find.replacing);
+    findToolbar.setActive("replace", state.find.replacing);
+  };
+  const recount = () => {
+    findError = "";
+    findPattern = state.find.open ? compilePattern(state.find, (message) => {
+      findError = message;
+    }) : null;
+    const pattern = findPattern;
+    const columns2 = findColumns();
+    findRows = pattern instanceof RegExp ? visible.flatMap((row, position) => columns2.some((column) => found(row.cells[column] ?? "", pattern)) ? [position] : []) : [];
+    state.find.at = findRows.length === 0 ? 0 : Math.min(state.find.at, findRows.length - 1);
+  };
+  const markCurrent = () => {
+    const current = findRows[state.find.at];
+    drawnRows.forEach((tr, position) => setState(tr, position === current ? ["active"] : []));
+    findToolbar.setText("count", findError !== "" ? findError : !(findPattern instanceof RegExp) ? "" : findRows.length === 0 ? text4("table.findNone") : text4("table.findCount", { current: state.find.at + 1, total: findRows.length }));
+    findToolbar.root.querySelector("input")?.setAttribute("aria-invalid", String(findError !== ""));
+  };
+  const decorate = () => {
+    const pattern = findPattern;
+    if (pattern instanceof RegExp) {
+      const columns2 = findColumns();
+      for (const tr of drawnRows) {
+        for (const column of columns2) {
+          const cell = tr.cells[column + 1];
+          if (cell !== void 0 && markMatches(cell, pattern))
+            cell.dataset["highlighted"] = "true";
+        }
+      }
+    }
+    markCurrent();
+  };
+  const reveal = (redraw) => {
+    const position = findRows[state.find.at];
+    if (position !== void 0 && position >= shown) {
+      shown = (Math.floor(position / VARIANT_PAGE_ROWS) + 1) * VARIANT_PAGE_ROWS;
+      redraw = true;
+    }
+    if (redraw)
+      draw();
+    else
+      markCurrent();
+    if (position !== void 0)
+      drawnRows[position]?.scrollIntoView({ block: "nearest" });
+  };
+  const seek = () => {
+    recount();
+    reveal(true);
+  };
+  const step = (delta) => {
+    if (findRows.length === 0)
+      return;
+    state.find.at = (state.find.at + delta + findRows.length) % findRows.length;
+    reveal(false);
+  };
+  const openFind = (replacing) => {
+    state.find.open = true;
+    if (replacing && replaceable)
+      state.find.replacing = true;
+    showFind();
+    seek();
+    const input = findToolbar.root.querySelector("input");
+    input?.focus();
+    input?.select();
+  };
+  const closeFind = () => {
+    state.find.open = false;
+    showFind();
+    recount();
+    draw();
+  };
+  args.root.addEventListener("keydown", (event) => {
+    const finding = (event.ctrlKey || event.metaKey) && event.code === "KeyF";
+    const replacing = event.ctrlKey && event.code === "KeyH";
+    if (!finding && !replacing || event.altKey || event.shiftKey)
+      return;
+    event.preventDefault();
+    event.stopPropagation();
+    openFind(replacing);
+  }, { signal: args.signal });
+  find.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape")
+      return;
+    event.preventDefault();
+    event.stopPropagation();
+    closeFind();
+  }, { signal: args.signal });
   const draw = () => {
     const page2 = visible.slice(0, shown);
     const drawn = args.render(page2);
@@ -68567,8 +68715,9 @@ async function mountVariantTable(args) {
     });
     drawnRows = drawn;
     showColumns();
+    decorate();
     more.hidden = shown >= visible.length;
-    say(text4("table.shown", { shown: Math.min(shown, visible.length), total: rows.length }));
+    say(filterError !== "" ? filterError : text4("table.shown", { shown: Math.min(shown, visible.length), total: rows.length }));
     void renderPage(drawn, page2).catch((error5) => {
       if (!args.signal.aborted) {
         say(text4("table.renderRefused", { reason: error5 instanceof Error ? error5.message : String(error5) }));
@@ -68614,6 +68763,8 @@ async function mountVariantTable(args) {
           return;
         const valid = runs.filter(isGameTemplateTextRun);
         drawRuns(item.cell, valid);
+        if (findPattern instanceof RegExp)
+          markMatches(item.cell, findPattern);
         for (const run of valid)
           if (run.asset !== void 0)
             assets.add(run.asset);
@@ -68640,11 +68791,16 @@ async function mountVariantTable(args) {
     }
   };
   const refresh = () => {
+    filterMatcher = compileMatcher({ ...state, text: state.search }, (message) => {
+      filterError = message;
+    });
+    toolbar.root.querySelector("input")?.setAttribute("aria-invalid", String(filterError !== ""));
     visible = rows.filter(matches2);
     shown = VARIANT_PAGE_ROWS;
     for (const id of statuses) {
       toolbar.setCount(id, rows.filter((row) => statusOf(row).includes(id)).length);
     }
+    recount();
     draw();
   };
   more.addEventListener("click", () => {
@@ -68658,7 +68814,7 @@ async function mountVariantTable(args) {
     ...args.authorization === void 0 ? {} : { authorization: args.authorization }
   };
   let writing = false;
-  const write = async (operation, input) => {
+  const write = async (operation, input, hint) => {
     if (writing || args.signal.aborted)
       return false;
     const stale = args.writeRefusal?.();
@@ -68666,23 +68822,90 @@ async function mountVariantTable(args) {
       say(text4("table.refused", { reason: stale }));
       return false;
     }
+    const refused3 = (reason) => {
+      say(text4("table.refused", { reason: hint === void 0 ? reason : `${reason} ${hint}` }));
+      return false;
+    };
     writing = true;
     try {
       say(text4("table.working"));
       const refusal = await commitOperationWrite(route, operation, input, args.signal);
-      if (refusal !== void 0) {
-        say(text4("table.refused", { reason: refusal }));
-        return false;
-      }
+      if (refusal !== void 0)
+        return refused3(refusal);
       say(text4("table.saved"));
       await args.committed();
       return true;
     } catch (error5) {
-      say(text4("table.refused", { reason: error5 instanceof Error ? error5.message : String(error5) }));
-      return false;
+      return refused3(error5 instanceof Error ? error5.message : String(error5));
     } finally {
       writing = false;
     }
+  };
+  const replaced = (value2) => {
+    const pattern = findPattern;
+    if (!(pattern instanceof RegExp) || value2 === "")
+      return value2;
+    const replacement = state.find.replace;
+    return state.find.regex ? value2.replace(pattern, replacement) : value2.replace(pattern, () => replacement);
+  };
+  const changesIn = (row) => variants.flatMap((column) => {
+    if (isHidden(column.index))
+      return [];
+    const value2 = row.cells[column.index] ?? "";
+    const next = replaced(value2);
+    return next === value2 ? [] : [{ row, column, value: next }];
+  });
+  const replaceNext = async () => {
+    for (let offset = 0; offset < findRows.length; offset += 1) {
+      const at = (state.find.at + offset) % findRows.length;
+      const row = visible[findRows[at] ?? -1];
+      const change = row === void 0 ? void 0 : changesIn(row)[0];
+      if (change === void 0)
+        continue;
+      state.find.at = at;
+      await replace([change]);
+      return;
+    }
+    say(text4("table.replaceNothing"));
+  };
+  const replaceAll = async () => {
+    const changes = findRows.flatMap((position) => {
+      const row = visible[position];
+      return row === void 0 ? [] : changesIn(row);
+    });
+    if (changes.length === 0)
+      say(text4("table.replaceNothing"));
+    else
+      await replace(changes);
+  };
+  const replace = async (changes) => {
+    const operation = actions.addRow;
+    if (operation === void 0)
+      return;
+    const keyOf = (change) => change.row.cells[keyColumn] ?? "";
+    const locales = new Set(changes.map((change) => change.column.variant ?? ""));
+    const [only] = locales;
+    const done = locales.size === 1 ? await write(operation, {
+      action: "set-many",
+      variant: only ?? "",
+      entries: changes.map((change) => ({ key: keyOf(change), value: change.value }))
+    }) : await write(operation, {
+      action: "set-variants",
+      entries: changes.map((change) => ({
+        key: keyOf(change),
+        variant: change.column.variant ?? "",
+        value: change.value
+      }))
+    }, text4("table.replaceLocalesHint"));
+    if (!done)
+      return;
+    for (const change of changes) {
+      ;
+      change.row.cells[change.column.index] = change.value;
+      changed.add(change.row.index);
+    }
+    refresh();
+    say(text4("table.replaced", { count: changes.length }));
   };
   const showAdd = () => {
     if (actions.addRow === void 0 || base === void 0)
@@ -68872,6 +69095,7 @@ async function mountVariantTable(args) {
         toolbar.setDisabled("translate", false);
     }
   };
+  showFind();
   refresh();
   return {
     written(row, column, value2) {
@@ -80758,7 +80982,7 @@ function createReceiverGrid(positions, indices) {
         stamps.fill(0);
         generation = 1;
       }
-      const found = [];
+      const found2 = [];
       for (let row = cellRow(minimum[v]); row <= cellRow(maximum[v]); row++)
         for (let column = cellColumn(minimum[u2]); column <= cellColumn(maximum[u2]); column++) {
           const cell = row * columns + column;
@@ -80767,10 +80991,10 @@ function createReceiverGrid(positions, indices) {
             if (stamps[offset / 3] === generation)
               continue;
             stamps[offset / 3] = generation;
-            found.push(offset);
+            found2.push(offset);
           }
         }
-      return Uint32Array.from(found).sort();
+      return Uint32Array.from(found2).sort();
     }
   });
 }
@@ -87107,9 +87331,9 @@ function transparentOrderLevels(source2, batches, epsilon) {
     const y1 = boxes[offset + 3] + epsilon;
     const batch2 = batches[item];
     let level = 0;
-    const required4 = (other, found) => {
+    const required4 = (other, found2) => {
       const placedAt = levels[other];
-      if (placedAt + 1 <= found || visited[other] === item)
+      if (placedAt + 1 <= found2 || visited[other] === item)
         return -1;
       visited[other] = item;
       const at = other * 4;
@@ -92191,16 +92415,16 @@ function worldSceneSolidDrawsOf(scene, shadow) {
   const primitives = shadow ? scene.shadowPrimitives : scene.primitives;
   const transparent = primitives.some((primitive) => scene.programs.get(primitive.materialId ?? "")?.passes.some((program) => !materialIsSolid(program)));
   const draws = [];
-  for (const found of sceneMaterialDraws(primitives, scene.materials, scene.programs, IDENTITY_VIEW_PROJECTION, [], 1, void 0, true)) {
-    const program = found.program;
+  for (const found2 of sceneMaterialDraws(primitives, scene.materials, scene.programs, IDENTITY_VIEW_PROJECTION, [], 1, void 0, true)) {
+    const program = found2.program;
     if (program === void 0)
       continue;
     const draw = shadow ? {
-      ...found,
+      ...found2,
       program,
-      primitive: { ...found.primitive, depthBias: SHADOW_DEPTH_BIAS },
+      primitive: { ...found2.primitive, depthBias: SHADOW_DEPTH_BIAS },
       depthOnly: true
-    } : { ...found, program };
+    } : { ...found2, program };
     if (!materialCanInstance(program)) {
       draws.push({ key: void 0, geometryKey: void 0, draw });
       continue;
@@ -94434,8 +94658,8 @@ function archiveStage(context) {
             args.signal
           );
           for (const item of listed.items) paths.set(item.id, item.path);
-          const found = paths.get(entryId);
-          if (found !== void 0) return found;
+          const found2 = paths.get(entryId);
+          if (found2 !== void 0) return found2;
           cursor5 = listed.nextCursor;
           if (cursor5 === void 0) break;
         }

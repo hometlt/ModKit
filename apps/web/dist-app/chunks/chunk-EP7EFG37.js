@@ -1,6 +1,7 @@
 import {
   IMAGE_EDITING_FALLBACK_MESSAGES,
   IMAGE_FALLBACK_MESSAGES,
+  NAMESPACE_FALLBACK_MESSAGES,
   ViewerMountScope,
   collectEncodedMedia,
   createMediaShell,
@@ -14,12 +15,12 @@ import {
   setViewerText,
   unknownSourceLease,
   withEnglishUiFallback
-} from "./chunk-6G2KODMW.js";
+} from "./chunk-J4F5HCFO.js";
 import {
   createSubjectCandidateProvider,
   isKnowledgeTarget,
   loadSubjectCandidatePage
-} from "./chunk-47VUMMB3.js";
+} from "./chunk-WUWSXVRM.js";
 import {
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
 } from "./chunk-BLWUC7LO.js";
@@ -775,6 +776,139 @@ function createImageEditing(parent, options) {
   syncColour();
   syncButtons();
   return editing;
+}
+
+// packages/ui/dist/namespace/index.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+function normalizeNamespacePath(value) {
+  if (value.includes("\\") || value.startsWith("/") || value.includes("\0")) {
+    throw new TypeError("namespace path is not relative and portable");
+  }
+  const parts = value.split("/").filter((part) => part !== "" && part !== ".");
+  if (parts.some((part) => part === ".."))
+    throw new TypeError("namespace traversal is forbidden");
+  return parts.join("/");
+}
+var NamespaceModel = class {
+  source;
+  #identities = /* @__PURE__ */ new Map();
+  constructor(source) {
+    this.source = source;
+  }
+  async list(prefix, cursor, signal, includeHidden = false) {
+    const normalized = normalizeNamespacePath(prefix);
+    const page = await this.source.list(normalized, { limit: 200, ...cursor === void 0 ? {} : { cursor }, includeHidden }, signal);
+    for (const entry of page.items) {
+      const path = normalizeNamespacePath(entry.path);
+      const identity = `${path}\0${entry.revision}`;
+      const existing = this.#identities.get(entry.id);
+      if (existing !== void 0 && existing !== identity) {
+        throw new TypeError(`namespace entry identity changed: ${entry.id}`);
+      }
+      this.#identities.set(entry.id, identity);
+    }
+    return page;
+  }
+};
+function createNamespaceViewer(options = {}) {
+  const localizer = withEnglishUiFallback(options.localizer, NAMESPACE_FALLBACK_MESSAGES);
+  return defineViewerModule({
+    abiVersion: 1,
+    async mount(args) {
+      const scope = new ViewerMountScope(args.signal);
+      const root = createSurface(args.container, localizer.text("viewer.namespace"));
+      root.setAttribute("role", "tree");
+      const lease = await unknownSourceLease(args.sources, args.slot, "common.view/namespace-entry-source");
+      if (lease === void 0)
+        throw new TypeError("namespace binding is unavailable");
+      scope.lease(lease);
+      const source = lease.value;
+      const model = new NamespaceModel(source);
+      const list = element(root, "ul", { part: "namespace.list" });
+      list.setAttribute("role", "group");
+      const renderPrefix = async (prefix, parent) => {
+        const page = await model.list(prefix, void 0, scope.signal, options.showHidden?.() === true);
+        const seen = /* @__PURE__ */ new Set();
+        for (const entry of page.items) {
+          if (seen.has(entry.id))
+            throw new TypeError(`duplicate namespace entry id: ${entry.id}`);
+          seen.add(entry.id);
+          const item = element(parent, "li", { part: "namespace.item" });
+          item.setAttribute("role", "treeitem");
+          item.dataset["entryId"] = entry.id;
+          item.dataset["revision"] = entry.revision;
+          const button = element(item, "button", {
+            text: entry.name,
+            part: "namespace.label"
+          });
+          button.type = "button";
+          const detail = describeEntry(entry, localizer);
+          if (detail !== "") {
+            setViewerText(element(item, "span", { part: "namespace.detail" }), detail);
+          }
+          const activate = async () => {
+            if (entry.kind === "directory") {
+              let nested = item.querySelector(":scope > ul");
+              if (nested === null) {
+                nested = element(item, "ul", { part: "namespace.children" });
+                nested.setAttribute("role", "group");
+                await renderPrefix(entry.path, nested);
+              }
+              nested.hidden = !nested.hidden;
+              return;
+            }
+            const opened = await source.openEntry(entry.id, scope.signal);
+            try {
+              root.dispatchEvent(new CustomEvent("modkit-open-source", {
+                bubbles: true,
+                detail: { source: opened.value, entryId: entry.id, revision: entry.revision }
+              }));
+            } finally {
+              await opened.release();
+            }
+          };
+          button.addEventListener("click", activate);
+          scope.cleanup(() => button.removeEventListener("click", activate));
+          setViewerText(button, entry.name);
+        }
+      };
+      await renderPrefix("", list);
+      return createViewerMount(root, scope, args, ({ descriptor }) => {
+        root.dataset["revision"] = descriptor.revision;
+      });
+    }
+  });
+}
+var namespaceViewer = createNamespaceViewer();
+function formatEntryBytes(value) {
+  if (value < 1024n)
+    return `${value} B`;
+  const units = ["KiB", "MiB", "GiB", "TiB"];
+  let scaled = Number(value) / 1024;
+  let unit = 0;
+  while (scaled >= 1024 && unit < units.length - 1) {
+    scaled /= 1024;
+    unit += 1;
+  }
+  return `${scaled.toFixed(1)} ${units[unit]}`;
+}
+function describeEntry(entry, localizer) {
+  if (entry.kind === "directory")
+    return "";
+  const parts = [];
+  if (entry.size !== void 0)
+    parts.push(formatEntryBytes(entry.size));
+  if (entry.compression !== void 0) {
+    parts.push(entry.storedSize === void 0 ? entry.compression : `${entry.compression} ${formatEntryBytes(entry.storedSize)}`);
+  } else if (entry.storedSize !== void 0) {
+    parts.push(localizer.text("viewer.storedSize", { size: formatEntryBytes(entry.storedSize) }));
+  }
+  if (entry.modifiedAt !== void 0) {
+    parts.push(`${new Date(entry.modifiedAt).toISOString().replace("T", " ").slice(0, 19)} UTC`);
+  }
+  if (entry.checksum !== void 0)
+    parts.push(`${entry.checksum.algorithm} ${entry.checksum.value}`);
+  return parts.join(" \xB7 ");
 }
 
 // packages/ui/dist/field-editor/index.js
@@ -1570,6 +1704,14 @@ function subresourceExtent(info, mipLevel) {
     height: Math.max(1, info.height >>> mipLevel)
   };
 }
+function firstShownMip(info) {
+  for (let level = 0; level < axisCount(info, "mipLevel"); level += 1) {
+    const { width, height } = subresourceExtent(info, level);
+    if (width * height * 4 <= IMAGE_MAXIMUM_BYTES)
+      return level;
+  }
+  return 0;
+}
 function exportSafeName(value) {
   const cleaned = value.replace(/[^A-Za-z0-9._-]+/gu, "-").replace(/\.{2,}/gu, ".");
   const trimmed = cleaned.replace(/^[^A-Za-z0-9]+/u, "").slice(0, 96);
@@ -1718,6 +1860,7 @@ function createImageViewer(options = {}) {
       const background = "checker";
       let channel = "rgb";
       let note = "";
+      let fileBytes;
       let descriptor = args.descriptor;
       const decoded = /* @__PURE__ */ new Map();
       let working;
@@ -1805,7 +1948,6 @@ function createImageViewer(options = {}) {
         if (current === void 0)
           return;
         const scale = currentScale();
-        const bytes = model?.bytes ?? 0;
         const items = [
           {
             id: "size",
@@ -1823,7 +1965,7 @@ function createImageViewer(options = {}) {
             align: "start",
             choices: formatChoices()
           },
-          { id: "bytes", text: `${(bytes / 1024).toFixed(1)} KiB`, align: "start" },
+          ...fileBytes === void 0 ? [] : [{ id: "bytes", text: formatEntryBytes(fileBytes), align: "start" }],
           {
             id: "channel",
             icon: "symbol-color",
@@ -2375,7 +2517,10 @@ function createImageViewer(options = {}) {
             collapsed: true
           });
           editing?.destroy();
-          const refusal = options.savePixels === void 0 ? options.editableReason : options.saveRefusal?.(descriptor);
+          const base = subresource.mipLevel === 0 && subresource.layer === 0 && subresource.face === 0 && subresource.slice === 0;
+          const refusal = options.savePixels === void 0 ? options.editableReason : !base ? localizer.text("viewer.imageEditBaseOnly", {
+            subresource: subresourceLabel(info, subresource)
+          }) : options.saveRefusal?.(descriptor);
           const writable = options.savePixels !== void 0 && refusal === void 0;
           editing = createImageEditing(section.body, {
             localizer,
@@ -2431,10 +2576,26 @@ function createImageViewer(options = {}) {
       }
       try {
         info = await source.info(scope.signal);
+        const level = info.decodedAccess && source.readRegion !== void 0 ? firstShownMip(info) : 0;
+        if (level > 0) {
+          subresource = Object.freeze({ ...subresource, mipLevel: level });
+          compareWith = subresource;
+          note = localizer.text("viewer.imageMipFit", {
+            level,
+            width: info.width,
+            height: info.height
+          });
+        }
         model = await modelFor(subresource);
         renderSections();
         setState(stage, []);
         paint();
+        void source.encoded(scope.signal).then((media) => media.descriptor()).then((value) => {
+          if (scope.signal.aborted)
+            return;
+          fileBytes = value.bytes;
+          publishStatus();
+        }, () => void 0);
       } catch (error) {
         setState(stage, ["error"]);
         canvas.remove();
@@ -2470,10 +2631,12 @@ export {
   invokeRefusalMessage,
   fidelityNote,
   isRejected,
+  createNamespaceViewer,
   IMAGE_MAXIMUM_BYTES,
   IMAGE_MAXIMUM_EXPORTED_SUBRESOURCES,
   convertedFileName,
   subresourceExtent,
+  firstShownMip,
   exportSafeName,
   subresourceLabel,
   enumerateSubresources,

@@ -6,19 +6,16 @@ import {
   framePortFromMessagePort,
   logicalResourcesFromWire,
   protocolLimits
-} from "./chunks/chunk-5VVC23DY.js";
-import "./chunks/chunk-7BES6HCK.js";
+} from "./chunks/chunk-FIXB2PMV.js";
+import "./chunks/chunk-S6QKYSGJ.js";
 import "./chunks/chunk-YYQ3QKXM.js";
 import "./chunks/chunk-KL23KRQT.js";
-import "./chunks/chunk-MYUZP6E2.js";
+import "./chunks/chunk-R7U42EZV.js";
 import "./chunks/chunk-GGIVOOBZ.js";
 import {
   ModkitError
 } from "./chunks/chunk-LX6GSJ3D.js";
 import "./chunks/chunk-CQ52GEHY.js";
-
-// packages/host/dist/execution/frame-json.js
-var LITTLE_ENDIAN = new Uint8Array(new Uint16Array([1]).buffer)[0] === 1;
 
 // packages/host/dist/execution/module-reassembly.js
 var unavailableResolver = {

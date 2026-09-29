@@ -1875,6 +1875,23 @@
     border-bottom: 1px solid var(--mk-color-separator);
   }
 
+  [data-mk-part='table.find'] {
+    display: flex;
+    flex-direction: column;
+    gap: var(--mk-space-1);
+  }
+
+  [data-mk-part='table.match'] {
+    color: inherit;
+    background: var(--mk-color-match-highlight);
+  }
+
+  /* the row the find bar stands on */
+  [data-mk-part='table.row'][data-mk-state~='active'] {
+    outline: 1px solid var(--mk-color-focus);
+    outline-offset: -1px;
+  }
+
   /* ---------------------------------------------------------------- transport */
   [data-mk-part='transport.controls'] {
     display: flex;
@@ -2459,6 +2476,43 @@
   [data-mk-part='image.canvas'] {
     display: block;
     image-rendering: pixelated;
+  }
+
+  [data-mk-part='map-layers.view'] {
+    display: grid;
+    gap: var(--mk-space-2);
+    margin-block-end: var(--mk-space-3);
+  }
+
+  [data-mk-part='map-layers.image'] {
+    display: block;
+    inline-size: 100%;
+    max-inline-size: 768px;
+    image-rendering: pixelated;
+  }
+
+  [data-mk-part='map-layers.thumbnail'] {
+    display: block;
+    inline-size: 64px;
+    image-rendering: pixelated;
+    cursor: pointer;
+    border: 1px solid var(--mk-color-border);
+  }
+
+  [data-mk-part='map-layers.legend'] {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--mk-space-2);
+    align-items: center;
+    color: var(--mk-color-fg-muted);
+    font-size: var(--mk-font-size-xs);
+  }
+
+  [data-mk-part='map-layers.swatch'] {
+    display: inline-block;
+    inline-size: 12px;
+    block-size: 12px;
+    border: 1px solid var(--mk-color-border);
   }
 
   [data-mk-part='image.readout'],

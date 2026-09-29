@@ -194,6 +194,23 @@ var credentialsSchema = {
           }
         }
       },
+      replacesApplicationSettings: {
+        type: "array",
+        maxItems: 16,
+        items: {
+          type: "object",
+          additionalProperties: false,
+          required: ["setting"],
+          properties: {
+            setting: {
+              type: "string",
+              pattern: "^[A-Za-z][A-Za-z0-9]*(?:\\.[A-Za-z0-9_-]+)+$",
+              maxLength: 128
+            },
+            scoped: { const: true }
+          }
+        }
+      },
       scopeFormat: { enum: ["hex"] }
     }
   }
@@ -2778,7 +2795,7 @@ deepFreeze(subjectDescriptorV2InferenceSchema);
 // packages/sdk/dist/manifest/validate.js
 var platformValidatorsPromise;
 function platformValidators() {
-  platformValidatorsPromise ??= import("./validators.generated-7GZHWJWC.js").then((module) => module.PRECOMPILED_SCHEMA_VALIDATORS);
+  platformValidatorsPromise ??= import("./validators.generated-GWJID6SC.js").then((module) => module.PRECOMPILED_SCHEMA_VALIDATORS);
   return platformValidatorsPromise;
 }
 function toPath(error) {

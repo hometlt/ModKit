@@ -5,21 +5,22 @@ import {
   createDescriptorFallbackSubjectFactsSource,
   createFieldRelationGraphSource,
   descriptorSubjectRef
-} from "../../chunks/chunk-TSJGNAWL.js";
+} from "../../chunks/chunk-C3YMJE7D.js";
 import {
   ABI_ASSET_SESSION,
+  base64Of,
   createEndpoint,
   createStandardSurfaceRegistry,
   framePortFromMessagePort,
   protocolLimits
-} from "../../chunks/chunk-5VVC23DY.js";
+} from "../../chunks/chunk-FIXB2PMV.js";
 import {
   assembleSubjectDescriptor,
   createAssetSession,
   createByteRangeSource,
   createLazyTableDataSource,
   createUtf8TextDataSource
-} from "../../chunks/chunk-DWLV5L2I.js";
+} from "../../chunks/chunk-PDO7AMOW.js";
 import {
   metadataFieldProjections
 } from "../../chunks/chunk-JHPOUH6S.js";
@@ -89,7 +90,7 @@ import {
   validateContributionManifest,
   writerOfferSatisfies,
   writerSelectionKey
-} from "../../chunks/chunk-7BES6HCK.js";
+} from "../../chunks/chunk-S6QKYSGJ.js";
 import {
   NATIVE_MODEL_ENCODER_CONTRACT,
   NATIVE_MODEL_ENCODER_MATCHER_PROFILE
@@ -114,7 +115,7 @@ import {
   serializeSubjectRef,
   snapshotJsonWireData,
   subjectRefEquals
-} from "../../chunks/chunk-MYUZP6E2.js";
+} from "../../chunks/chunk-R7U42EZV.js";
 import {
   SCENE_RENDERER_CONTRACT,
   SCENE_RENDERER_MATCHER_PROFILE
@@ -3793,18 +3794,22 @@ function createHostServiceResolver(options) {
         ...options.policy === void 0 ? {} : { policy: options.policy },
         ...signal === void 0 ? {} : { signal },
         diagnostics,
-        contextFor: (effectiveGrant) => Object.freeze({
-          contracts: makePort(effectiveGrant, [...chain, key3]),
-          budgets: options.budgets,
-          ...chain.length !== 0 || options.logicalResourcesFor === void 0 ? {} : { logicalResources: options.logicalResourcesFor(effectiveGrant) },
-          ...chain.length !== 0 || options.installationProbes === void 0 ? {} : { installationProbes: options.installationProbes },
-          diagnostics: {
-            report(item) {
-              diagnostics.push(item);
-            }
-          },
-          ...options.signal === void 0 ? {} : { signal: options.signal }
-        })
+        contextFor: (effectiveGrant) => {
+          const settings = options.contributionSettings?.(result.selected.offer.providerId);
+          return Object.freeze({
+            contracts: makePort(effectiveGrant, [...chain, key3]),
+            budgets: options.budgets,
+            ...chain.length !== 0 || options.logicalResourcesFor === void 0 ? {} : { logicalResources: options.logicalResourcesFor(effectiveGrant) },
+            ...chain.length !== 0 || options.installationProbes === void 0 ? {} : { installationProbes: options.installationProbes },
+            diagnostics: {
+              report(item) {
+                diagnostics.push(item);
+              }
+            },
+            ...settings === void 0 ? {} : { settings },
+            ...options.signal === void 0 ? {} : { signal: options.signal }
+          });
+        }
       });
       activations.push(activation);
       activationFacts.push(Object.freeze({
@@ -5839,6 +5844,26 @@ var LANGUAGE_DOCUMENT_CONTRACT_DEFINITION = Object.freeze({
         optional: true,
         signal: Object.freeze({ arg: 0, key: "signal" })
       }),
+      foldingRanges: Object.freeze({
+        kind: "value",
+        optional: true,
+        signal: Object.freeze({ arg: 0, key: "signal" })
+      }),
+      documentLinks: Object.freeze({
+        kind: "value",
+        optional: true,
+        signal: Object.freeze({ arg: 0, key: "signal" })
+      }),
+      documentHighlights: Object.freeze({
+        kind: "value",
+        optional: true,
+        signal: Object.freeze({ arg: 0, key: "signal" })
+      }),
+      inlayHints: Object.freeze({
+        kind: "value",
+        optional: true,
+        signal: Object.freeze({ arg: 0, key: "signal" })
+      }),
       colorPresentations: Object.freeze({
         kind: "value",
         optional: true,
@@ -6023,6 +6048,7 @@ async function resolveLanguageProvider(request) {
     definitions,
     grant: request.grant,
     budgets: request.budgets,
+    ...request.services.contributionSettings === void 0 ? {} : { contributionSettings: request.services.contributionSettings },
     ...request.signal === void 0 ? {} : { signal: request.signal }
   });
   let released = false;
@@ -6312,7 +6338,12 @@ var COMPLETION_KINDS = /* @__PURE__ */ new Set([
   "parameter",
   "snippet",
   "text",
-  "type"
+  "type",
+  "color",
+  "file",
+  "folder",
+  "enum-member",
+  "event"
 ]);
 var CODE_ACTION_KINDS = /* @__PURE__ */ new Set([
   "quickfix",
@@ -6526,6 +6557,22 @@ function validPosition(position, lengths) {
   const length = lengths[position.line];
   return Number.isSafeInteger(position.line) && Number.isSafeInteger(position.character) && position.line >= 0 && position.character >= 0 && length !== void 0 && position.character <= length;
 }
+function validLocationShape(value) {
+  const location = value;
+  const position = (item) => item !== void 0 && Number.isSafeInteger(item.line) && Number.isSafeInteger(item.character) && item.line >= 0 && item.character >= 0;
+  return typeof location === "object" && location !== null && typeof location.uri === "string" && location.uri.length > 0 && location.uri.length <= 4096 && position(location.range?.start) && position(location.range?.end);
+}
+function validCommand(value) {
+  const command = value;
+  if (typeof command !== "object" || command === null)
+    return false;
+  if (command["kind"] === "open-subject")
+    return Object.keys(command).every((key3) => ["kind", "subjectId", "view"].includes(key3)) && typeof command["subjectId"] === "string" && command["subjectId"].length > 0 && command["subjectId"].length <= 512 && (command["view"] === void 0 || ["card", "graph", "resolved"].includes(String(command["view"])));
+  return command["kind"] === "open-location" && Object.keys(command).every((key3) => key3 === "kind" || key3 === "location") && validLocationShape(command["location"]);
+}
+function validDiagnostic(item, lengths) {
+  return validRange(item.range, lengths) && typeof item.message === "string" && ["error", "warning", "information", "hint"].includes(item.severity) && (item.code === void 0 || typeof item.code === "string") && (item.source === void 0 || typeof item.source === "string") && (item.tags === void 0 || Array.isArray(item.tags) && item.tags.length <= 2 && item.tags.every((tag) => tag === "unnecessary" || tag === "deprecated")) && (item.relatedInformation === void 0 || Array.isArray(item.relatedInformation) && item.relatedInformation.length <= 32 && item.relatedInformation.every((related) => validLocationShape(related?.location) && typeof related.message === "string" && related.message.length <= 1024)) && (item.codeDescription === void 0 || typeof item.codeDescription === "string" && item.codeDescription.length <= 2048 && /^https?:\/\//u.test(item.codeDescription));
+}
 function validRange(range, lengths) {
   if (range === void 0)
     return false;
@@ -6575,7 +6622,7 @@ function validSubjectFilter(value) {
   const predicate = recordOf3(filter["predicate"]);
   return predicate !== void 0 && Object.keys(predicate).every((key3) => key3 === "id" || key3 === "params") && typeof predicate["id"] === "string" && predicate["id"].length > 0 && (predicate["params"] === void 0 || validJsonValue(predicate["params"]));
 }
-var validCompletionItem = (item, lengths) => typeof item["label"] === "string" && item["label"].length > 0 && typeof item["kind"] === "string" && COMPLETION_KINDS.has(item["kind"]) && (item["detail"] === void 0 || typeof item["detail"] === "string") && (item["documentation"] === void 0 || typeof item["documentation"] === "string") && (item["insertText"] === void 0 || typeof item["insertText"] === "string") && (item["insertTextFormat"] === void 0 || item["insertTextFormat"] === "plain-text" || item["insertTextFormat"] === "snippet") && (item["replacementRange"] === void 0 || validRange(item["replacementRange"], lengths)) && (item["sortText"] === void 0 || typeof item["sortText"] === "string") && (item["filterText"] === void 0 || typeof item["filterText"] === "string");
+var validCompletionItem = (item, lengths) => typeof item["label"] === "string" && item["label"].length > 0 && typeof item["kind"] === "string" && COMPLETION_KINDS.has(item["kind"]) && (item["detail"] === void 0 || typeof item["detail"] === "string") && (item["documentation"] === void 0 || typeof item["documentation"] === "string") && (item["insertText"] === void 0 || typeof item["insertText"] === "string") && (item["insertTextFormat"] === void 0 || item["insertTextFormat"] === "plain-text" || item["insertTextFormat"] === "snippet") && (item["replacementRange"] === void 0 || validRange(item["replacementRange"], lengths)) && (item["sortText"] === void 0 || typeof item["sortText"] === "string") && (item["filterText"] === void 0 || typeof item["filterText"] === "string") && (item["preselect"] === void 0 || typeof item["preselect"] === "boolean") && (item["retrigger"] === void 0 || typeof item["retrigger"] === "boolean") && (item["deprecated"] === void 0 || typeof item["deprecated"] === "boolean") && (item["commitCharacters"] === void 0 || Array.isArray(item["commitCharacters"]) && item["commitCharacters"].length <= 16 && item["commitCharacters"].every((character) => typeof character === "string" && [...character].length === 1));
 function validateProviderCompletionList(value, request) {
   const list = recordOf3(value);
   const items = list?.["items"];
@@ -6603,11 +6650,41 @@ function validateCompletionList(value, request) {
   }
   return list;
 }
+function validAssetRef(value) {
+  const asset = value;
+  return typeof asset === "object" && asset !== null && typeof asset.path === "string" && asset.path.length > 0 && asset.path.length <= 512 && (asset.label === void 0 || typeof asset.label === "string" && asset.label.length <= 256);
+}
+var ASSET_IMAGE_EDGE = 128;
+var ASSET_IMAGE_MAX_BYTES = 96 * 1024;
+async function languageAssetPictures(draw, request) {
+  const { documentUri, assets, signal } = request;
+  let markdown = "";
+  for (const asset of assets.slice(0, 4)) {
+    throwIfAborted(signal);
+    const image = await draw({
+      documentUri,
+      path: asset.path,
+      maxEdge: ASSET_IMAGE_EDGE,
+      ...signal === void 0 ? {} : { signal }
+    }).catch((error3) => {
+      if (isCancellation(error3))
+        throw error3;
+      return void 0;
+    });
+    if (image === void 0 || !(image.bytes instanceof Uint8Array) || image.bytes.byteLength > ASSET_IMAGE_MAX_BYTES || image.mediaType !== "image/png" && image.mediaType !== "image/svg+xml")
+      continue;
+    const label = (asset.label ?? asset.path).replace(/[[\]]/gu, "").replaceAll("\\", "/");
+    markdown += `
+
+![${label}](data:${image.mediaType};base64,${base64Of(image.bytes)})`;
+  }
+  return markdown;
+}
 function validateHover(value, request) {
   if (value === void 0)
     return void 0;
   const hover = value;
-  if (typeof hover !== "object" || hover === null || typeof hover.markdown !== "string" || hover.range !== void 0 && !validRange(hover.range, lineLengths(request.document.text)) || hover.provenance !== void 0 && typeof hover.provenance !== "string") {
+  if (typeof hover !== "object" || hover === null || typeof hover.markdown !== "string" || hover.range !== void 0 && !validRange(hover.range, lineLengths(request.document.text)) || hover.provenance !== void 0 && typeof hover.provenance !== "string" || hover.assets !== void 0 && (!Array.isArray(hover.assets) || hover.assets.length > 8 || !hover.assets.every(validAssetRef)) || hover.commands !== void 0 && (!Array.isArray(hover.commands) || hover.commands.length > 8 || !hover.commands.every((item) => typeof item?.title === "string" && item.title.length > 0 && item.title.length <= 256 && validCommand(item.command)))) {
     invalidFeature("language provider returned invalid hover information", request.document.uri);
   }
   return hover;
@@ -6704,7 +6781,7 @@ function validateWorkspaceSymbols(value, request) {
 function validateDiagnosticList(value, request) {
   const list = value;
   const lengths = lineLengths(request.document.text);
-  if (typeof list !== "object" || list === null || !Array.isArray(list.diagnostics) || list.diagnostics.length > request.maxResults || typeof list.isIncomplete !== "boolean" || !list.diagnostics.every((item) => validRange(item.range, lengths) && typeof item.message === "string" && ["error", "warning", "information", "hint"].includes(item.severity) && (item.code === void 0 || typeof item.code === "string") && (item.source === void 0 || typeof item.source === "string"))) {
+  if (typeof list !== "object" || list === null || !Array.isArray(list.diagnostics) || list.diagnostics.length > request.maxResults || typeof list.isIncomplete !== "boolean" || !list.diagnostics.every((item) => validDiagnostic(item, lengths))) {
     invalidFeature("language provider returned invalid or unbounded diagnostics", request.document.uri);
   }
   return {
@@ -6723,6 +6800,47 @@ function validateColorList(value, request) {
   }
   return list;
 }
+var optionalString = (value, maximum) => value === void 0 || typeof value === "string" && value.length <= maximum;
+function validateCodeLenses(value, request) {
+  const list = value;
+  const lengths = lineLengths(request.document.text);
+  if (typeof list !== "object" || list === null || !Array.isArray(list.lenses) || list.lenses.length > request.maxResults || typeof list.isIncomplete !== "boolean" || !list.lenses.every((item) => validRange(item.range, lengths) && typeof item.title === "string" && item.title.length > 0 && item.title.length <= 256 && (item.command === void 0 || validCommand(item.command)))) {
+    invalidFeature("language provider returned invalid or unbounded code lenses", request.document.uri);
+  }
+  return list;
+}
+function validateFoldingRanges(value, request) {
+  const list = value;
+  const lines = lineLengths(request.document.text).length;
+  if (typeof list !== "object" || list === null || !Array.isArray(list.ranges) || list.ranges.length > request.maxResults || typeof list.isIncomplete !== "boolean" || !list.ranges.every((item) => Number.isSafeInteger(item.startLine) && Number.isSafeInteger(item.endLine) && item.startLine >= 0 && item.startLine <= item.endLine && item.endLine < lines && (item.kind === void 0 || ["comment", "imports", "region"].includes(item.kind)))) {
+    invalidFeature("language provider returned invalid or unbounded folding ranges", request.document.uri);
+  }
+  return list;
+}
+function validateDocumentLinks(value, request) {
+  const list = value;
+  const lengths = lineLengths(request.document.text);
+  if (typeof list !== "object" || list === null || !Array.isArray(list.links) || list.links.length > request.maxResults || typeof list.isIncomplete !== "boolean" || !list.links.every((item) => validRange(item.range, lengths) && typeof item.target === "string" && item.target.length > 0 && item.target.length <= 4096 && optionalString(item.tooltip, 1024))) {
+    invalidFeature("language provider returned invalid or unbounded document links", request.document.uri);
+  }
+  return list;
+}
+function validateDocumentHighlights(value, request) {
+  const list = value;
+  const lengths = lineLengths(request.document.text);
+  if (typeof list !== "object" || list === null || !Array.isArray(list.highlights) || list.highlights.length > request.maxResults || typeof list.isIncomplete !== "boolean" || !list.highlights.every((item) => validRange(item.range, lengths) && (item.kind === void 0 || ["text", "read", "write"].includes(item.kind)))) {
+    invalidFeature("language provider returned invalid or unbounded highlights", request.document.uri);
+  }
+  return list;
+}
+function validateInlayHints(value, request) {
+  const list = value;
+  const lengths = lineLengths(request.document.text);
+  if (typeof list !== "object" || list === null || !Array.isArray(list.hints) || list.hints.length > request.maxResults || typeof list.isIncomplete !== "boolean" || !list.hints.every((item) => validPosition(item.position, lengths) && typeof item.label === "string" && item.label.length > 0 && item.label.length <= 256 && (item.kind === void 0 || item.kind === "type" || item.kind === "parameter") && optionalString(item.tooltip, 1024) && (item.paddingLeft === void 0 || typeof item.paddingLeft === "boolean") && (item.paddingRight === void 0 || typeof item.paddingRight === "boolean"))) {
+    invalidFeature("language provider returned invalid or unbounded inlay hints", request.document.uri);
+  }
+  return list;
+}
 function validateColorPresentations(value, request) {
   const list = value;
   const lengths = lineLengths(request.document.text);
@@ -6736,7 +6854,7 @@ function validateAnalysis(value, document) {
   let valid = false;
   try {
     const analysis = value;
-    valid = analysis.documentUri === document.uri && analysis.documentVersion === document.version && Array.isArray(analysis.tokens) && analysis.tokens.every((token) => validToken(token, lengths)) && Array.isArray(analysis.diagnostics) && analysis.diagnostics.every((item) => validRange(item.range, lengths) && typeof item.message === "string" && ["error", "warning", "information", "hint"].includes(item.severity) && (item.code === void 0 || typeof item.code === "string") && (item.source === void 0 || typeof item.source === "string")) && Array.isArray(analysis.symbols) && analysis.symbols.every((symbol) => validSymbol(symbol, lengths));
+    valid = analysis.documentUri === document.uri && analysis.documentVersion === document.version && Array.isArray(analysis.tokens) && analysis.tokens.every((token) => validToken(token, lengths)) && Array.isArray(analysis.diagnostics) && analysis.diagnostics.every((item) => validDiagnostic(item, lengths)) && Array.isArray(analysis.symbols) && analysis.symbols.every((symbol) => validSymbol(symbol, lengths));
   } catch {
     valid = false;
   }
@@ -6966,6 +7084,11 @@ function createLanguageWorkspace(options) {
     }
     return entry2;
   };
+  const assetPictures = (documentUri, assets, signal) => options.assetImage === void 0 ? Promise.resolve("") : languageAssetPictures(options.assetImage, {
+    documentUri,
+    assets,
+    ...signal === void 0 ? {} : { signal }
+  });
   const invokeFeature = async (workspaceRequest, positioned, call, validate, additions = {}, preferCachedSemanticContext = false) => {
     const entry2 = requireFeatureEntry(workspaceRequest, positioned);
     throwIfAborted(workspaceRequest.signal);
@@ -7217,9 +7340,10 @@ function createLanguageWorkspace(options) {
       const validCodes = diagnosticCodes === void 0 || Array.isArray(diagnosticCodes) && diagnosticCodes.length <= request.maxResults && diagnosticCodes.every((code) => typeof code === "string" && code.length > 0 && code.length <= 256);
       const edit = action["edit"];
       const disabledReason = action["disabledReason"];
-      const hasEdit = edit !== void 0;
+      const command = action["command"];
+      const hasEdit = edit !== void 0 || command !== void 0;
       const hasDisabledReason = disabledReason !== void 0;
-      if (typeof action["title"] !== "string" || action["title"].length === 0 || action["title"].length > 512 || action["kind"] !== void 0 && (typeof action["kind"] !== "string" || !CODE_ACTION_KINDS.has(action["kind"])) || action["isPreferred"] !== void 0 && typeof action["isPreferred"] !== "boolean" || !validCodes || hasEdit === hasDisabledReason || hasDisabledReason && (typeof disabledReason !== "string" || disabledReason.length === 0 || disabledReason.length > 1024)) {
+      if (typeof action["title"] !== "string" || action["title"].length === 0 || action["title"].length > 512 || action["kind"] !== void 0 && (typeof action["kind"] !== "string" || !CODE_ACTION_KINDS.has(action["kind"])) || action["isPreferred"] !== void 0 && typeof action["isPreferred"] !== "boolean" || !validCodes || hasEdit === hasDisabledReason || command !== void 0 && !validCommand(command) || hasDisabledReason && (typeof disabledReason !== "string" || disabledReason.length === 0 || disabledReason.length > 1024)) {
         invalidFeature("language provider returned an invalid code action", request.document.uri);
       }
       if (edit !== void 0) {
@@ -7544,6 +7668,11 @@ function createLanguageWorkspace(options) {
         ["document-colors", "documentColors"],
         ["color-presentations", "colorPresentations"],
         ["code-actions", "codeActions"],
+        ["code-lenses", "codeLenses"],
+        ["folding-ranges", "foldingRanges"],
+        ["document-links", "documentLinks"],
+        ["document-highlights", "documentHighlights"],
+        ["inlay-hints", "inlayHints"],
         ["workspace-symbols", "workspaceSymbols"]
       ];
       return Object.freeze({
@@ -7579,8 +7708,28 @@ function createLanguageWorkspace(options) {
         }
       }, { position: request.position }, request.semanticContextPolicy === "cached");
     },
-    hover(request) {
-      return invokeFeature(request, true, (provider, feature) => provider.hover?.({ ...feature, position: request.position }), validateHover, { position: request.position });
+    async hover(request) {
+      const hover = await invokeFeature(request, true, (provider, feature) => provider.hover?.({ ...feature, position: request.position }), validateHover, { position: request.position });
+      if (hover?.assets === void 0 || hover.assets.length === 0)
+        return hover;
+      const pictures = await assetPictures(request.uri, hover.assets, request.signal);
+      return pictures === "" ? hover : { ...hover, markdown: `${hover.markdown}${pictures}` };
+    },
+    async resolveCompletion(request) {
+      const resolved = await invokeFeature(request, true, (provider, feature) => provider.resolveCompletion?.({
+        ...feature,
+        position: request.position,
+        item: request.item
+      }) ?? Promise.resolve(request.item), (value, feature) => {
+        const item = recordOf3(value);
+        if (item === void 0 || !validCompletionItem(item, lineLengths(feature.document.text)) || item["label"] !== request.item.label || item["kind"] !== request.item.kind || item["asset"] !== void 0 && !validAssetRef(item["asset"]))
+          invalidFeature("language provider resolved a completion item into another one", feature.document.uri);
+        return value;
+      }, { position: request.position, item: request.item });
+      if (resolved?.asset === void 0)
+        return resolved;
+      const pictures = await assetPictures(request.uri, [resolved.asset], request.signal);
+      return pictures === "" ? resolved : { ...resolved, documentation: `${resolved.documentation ?? ""}${pictures}` };
     },
     signatureHelp(request) {
       return invokeFeature(request, true, (provider, feature) => provider.signatureHelp?.({ ...feature, position: request.position }), validateSignatureHelp, { position: request.position });
@@ -7657,6 +7806,27 @@ function createLanguageWorkspace(options) {
     documentColors(request) {
       return invokeFeature(request, false, (provider, feature) => provider.documentColors?.(feature), validateColorList);
     },
+    codeLenses(request) {
+      return invokeFeature(request, false, (provider, feature) => provider.codeLenses?.(feature), validateCodeLenses);
+    },
+    foldingRanges(request) {
+      return invokeFeature(request, false, (provider, feature) => provider.foldingRanges?.(feature), validateFoldingRanges);
+    },
+    documentLinks(request) {
+      return invokeFeature(request, false, (provider, feature) => provider.documentLinks?.(feature), validateDocumentLinks);
+    },
+    documentHighlights(request) {
+      return invokeFeature(request, true, (provider, feature) => provider.documentHighlights?.({ ...feature, position: request.position }), validateDocumentHighlights, { position: request.position });
+    },
+    inlayHints(request) {
+      const entry2 = requireFeatureEntry(request, false);
+      if (!validRange(request.range, lineLengths(entry2.document.text))) {
+        return Promise.reject(workspaceError(LANGUAGE_FEATURE_INVALID, "inlay hints need a range inside the document", {
+          uri: request.uri
+        }));
+      }
+      return invokeFeature(request, false, (provider, feature) => provider.inlayHints?.({ ...feature, range: request.range }), validateInlayHints, { range: request.range });
+    },
     colorPresentations(request) {
       const entry2 = requireFeatureEntry(request, false);
       if (!validColor(request.color) || !validRange(request.range, lineLengths(entry2.document.text))) {
@@ -7672,7 +7842,7 @@ function createLanguageWorkspace(options) {
     codeActions(request) {
       const entry2 = requireFeatureEntry(request, false);
       const lengths = lineLengths(entry2.document.text);
-      if (!validRange(request.range, lengths) || !Array.isArray(request.diagnostics) || request.diagnostics.length > (request.maxResults ?? LANGUAGE_DEFAULT_MAX_RESULTS) || !request.diagnostics.every((item) => validRange(item.range, lengths) && typeof item.message === "string" && ["error", "warning", "information", "hint"].includes(item.severity) && (item.code === void 0 || typeof item.code === "string") && (item.source === void 0 || typeof item.source === "string"))) {
+      if (!validRange(request.range, lengths) || !Array.isArray(request.diagnostics) || request.diagnostics.length > (request.maxResults ?? LANGUAGE_DEFAULT_MAX_RESULTS) || !request.diagnostics.every((item) => validDiagnostic(item, lengths))) {
         return Promise.reject(workspaceError(LANGUAGE_FEATURE_INVALID, "code actions need a valid range and bounded document diagnostics", { uri: request.uri }));
       }
       const maxEdits = boundedInteger(request.maxEdits, LANGUAGE_DEFAULT_MAX_EDITS, LANGUAGE_MAX_EDITS, "maxEdits");
@@ -7709,6 +7879,38 @@ function createLanguageWorkspace(options) {
         }));
       }
       return invokeFeature(request, false, (provider, feature) => provider.workspaceSymbols?.({ ...feature, query: request.query }), validateWorkspaceSymbols, { query: request.query });
+    },
+    projectDiagnostics(request) {
+      return invokeFeature(request, false, async (provider, feature) => {
+        const writable = new Set((feature.workspaceContext?.documentOrigins ?? []).filter((origin) => !origin.readOnly).map((origin) => origin.uri));
+        const found = [];
+        for (const document of feature.workspaceDocuments) {
+          if (documents.has(document.uri) || !writable.has(document.uri) || !provider.languageIds.includes(document.languageId))
+            continue;
+          throwIfAborted(feature.signal);
+          const analysis = await provider.analyze({
+            document,
+            include: { diagnostics: true },
+            ...feature.signal === void 0 ? {} : { signal: feature.signal }
+          });
+          found.push({
+            uri: document.uri,
+            version: document.version,
+            diagnostics: analysis.diagnostics
+          });
+        }
+        return { documents: found, isIncomplete: feature.workspaceIncomplete };
+      }, (value, feature) => {
+        const result = value;
+        const texts = new Map(feature.workspaceDocuments.map((item) => [item.uri, item.text]));
+        const valid = typeof result === "object" && result !== null && typeof result.isIncomplete === "boolean" && Array.isArray(result.documents) && result.documents.every((item) => {
+          const text = texts.get(item.uri);
+          return text !== void 0 && Array.isArray(item.diagnostics) && item.diagnostics.length <= feature.maxResults && item.diagnostics.every((diagnostic3) => validDiagnostic(diagnostic3, lineLengths(text)));
+        });
+        if (!valid)
+          invalidFeature("language provider returned invalid or unbounded project diagnostics", feature.document.uri);
+        return result;
+      });
     },
     diagnostics(request) {
       const entry2 = requireFeatureEntry(request, false);
@@ -17171,7 +17373,7 @@ function jsonBytes(value) {
     return void 0;
   }
 }
-function validDiagnostic(value) {
+function validDiagnostic2(value) {
   const record3 = recordOf5(value);
   if (record3 === void 0 || typeof record3["code"] !== "string" || !isQualifiedId(record3["code"]) || typeof record3["severity"] !== "string" || !DIAGNOSTIC_SEVERITIES.has(record3["severity"]) || typeof record3["message"] !== "string" || record3["message"].trim().length === 0) {
     return false;
@@ -17238,7 +17440,7 @@ function validateServiceOperationResult(value, operationId, maximumOutputBytes, 
   if (record3 === void 0 || state !== "completed" && state !== "refused" && state !== "failed") {
     return { valid: false, reason: "provider result state is invalid" };
   }
-  if (!exactKeys2(record3, RESULT_KEYS[state]) || record3["operationId"] !== operationId || !Array.isArray(record3["diagnostics"]) || record3["diagnostics"].length > maximumDiagnostics || !record3["diagnostics"].every(validDiagnostic)) {
+  if (!exactKeys2(record3, RESULT_KEYS[state]) || record3["operationId"] !== operationId || !Array.isArray(record3["diagnostics"]) || record3["diagnostics"].length > maximumDiagnostics || !record3["diagnostics"].every(validDiagnostic2)) {
     return {
       valid: false,
       reason: "provider result shape, operation id or diagnostics are invalid"
@@ -18640,6 +18842,45 @@ var LoadedModResourceSessions = class _LoadedModResourceSessions {
       this.mods.set(id, mod);
     replacement.mods.clear();
     await Promise.allSettled(opened.map((mod) => mod.context.dispose()));
+  }
+  /**
+   * Reopen only the loaded mods whose chain holds a changed file (a layer is that file, or a folder
+   * above it), dependents included; the others keep their contexts. `true` when any was reopened.
+   * The caller refreshes the content source first, as for `reloadAll`.
+   */
+  async reloadHolding(sourceId, path) {
+    const spelled = (value) => value.replaceAll("\\", "/").replace(/\/+$/u, "").toLowerCase();
+    const changed = spelled(path);
+    const holds = (mod) => mod.context.layers.some((layer) => {
+      if (layer.sourceId !== sourceId)
+        return false;
+      const root = spelled(layer.sourcePath);
+      return changed === root || changed.startsWith(`${root}/`);
+    });
+    const affected = [...this.mods.values()].filter(holds);
+    if (affected.length === 0)
+      return false;
+    const replacement = new _LoadedModResourceSessions(this.sources, this.options);
+    try {
+      for (const mod of affected) {
+        if (mod.opened)
+          await replacement.load(mod.target, mod.baseMods);
+      }
+    } catch (error3) {
+      await replacement.dispose();
+      throw error3;
+    }
+    for (const mod of affected)
+      this.mods.delete(mod.id);
+    for (const [id, mod] of replacement.mods) {
+      if (this.mods.has(id))
+        await mod.context.dispose();
+      else
+        this.mods.set(id, mod);
+    }
+    replacement.mods.clear();
+    await Promise.allSettled(affected.map((mod) => mod.context.dispose()));
+    return true;
   }
   async dispose() {
     this.disposed = true;
@@ -28868,6 +29109,7 @@ export {
   invokeServiceOperation,
   isDetectionUntieRule,
   isolationChangeFromDataGraphProposal,
+  languageAssetPictures,
   languageFileAssociations,
   languageFileExtension,
   languageProviderRoutes,

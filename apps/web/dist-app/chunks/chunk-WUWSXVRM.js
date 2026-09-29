@@ -992,6 +992,23 @@ var credentialsSchema = {
           }
         }
       },
+      replacesApplicationSettings: {
+        type: "array",
+        maxItems: 16,
+        items: {
+          type: "object",
+          additionalProperties: false,
+          required: ["setting"],
+          properties: {
+            setting: {
+              type: "string",
+              pattern: "^[A-Za-z][A-Za-z0-9]*(?:\\.[A-Za-z0-9_-]+)+$",
+              maxLength: 128
+            },
+            scoped: { const: true }
+          }
+        }
+      },
       scopeFormat: { enum: ["hex"] }
     }
   }
@@ -3422,7 +3439,7 @@ init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var platformValidatorsPromise;
 function platformValidators() {
-  platformValidatorsPromise ??= import("./validators.generated-YG2S4MWQ.js").then((module) => module.PRECOMPILED_SCHEMA_VALIDATORS);
+  platformValidatorsPromise ??= import("./validators.generated-PV23RD7L.js").then((module) => module.PRECOMPILED_SCHEMA_VALIDATORS);
   return platformValidatorsPromise;
 }
 function toPath(error) {
@@ -5037,6 +5054,9 @@ init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
 // packages/sdk/dist/index-caches.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
+// packages/sdk/dist/relation-graph-neighbourhood.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
 // packages/sdk/dist/language/index.js

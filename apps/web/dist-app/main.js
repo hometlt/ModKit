@@ -50,18 +50,14 @@ import {
   subjectFactsSourceFromWire,
   webExtensionSubjectCardBundle,
   withoutHiddenEntries
-} from "./chunks/chunk-ESS2A7DI.js";
+} from "./chunks/chunk-ZFPHOWUF.js";
 import "./chunks/chunk-EN2G6IFG.js";
-import "./chunks/chunk-CRISB2AX.js";
-import "./chunks/chunk-SEUGETBF.js";
-import "./chunks/chunk-VS7Y6TK6.js";
+import "./chunks/chunk-EPRAT4WK.js";
+import "./chunks/chunk-ZC5PHM3C.js";
+import "./chunks/chunk-K62FQND3.js";
 import {
   resolveModelViewerTextures
-} from "./chunks/chunk-BWYZLXYC.js";
-import {
-  DEFAULT_UI_LOCALIZER,
-  contributionContractLabel
-} from "./chunks/chunk-SIU5GHDB.js";
+} from "./chunks/chunk-P47BIBG7.js";
 import {
   declaredMutatingOperations,
   editOffer,
@@ -70,11 +66,13 @@ import {
   isRejected,
   mountFieldEditor,
   subjectCandidateProviderLease
-} from "./chunks/chunk-GHVQN46Y.js";
+} from "./chunks/chunk-EP7EFG37.js";
 import {
+  DEFAULT_UI_LOCALIZER,
   PANELS_FALLBACK_MESSAGES,
   SETTINGS_FALLBACK_MESSAGES,
   ViewerMountScope,
+  contributionContractLabel,
   createSurface,
   createViewerMount,
   defineViewerModule,
@@ -86,7 +84,7 @@ import {
   setState,
   setViewerText,
   withEnglishUiFallback
-} from "./chunks/chunk-6G2KODMW.js";
+} from "./chunks/chunk-J4F5HCFO.js";
 import {
   CONTAINER_EXTRACT_OPERATION_ID,
   compareUtf8,
@@ -96,7 +94,7 @@ import {
   normalizeModkitIdentifier,
   presentationSlotId,
   revisionId
-} from "./chunks/chunk-47VUMMB3.js";
+} from "./chunks/chunk-WUWSXVRM.js";
 import {
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
 } from "./chunks/chunk-BLWUC7LO.js";

@@ -2,7 +2,7 @@ import {
   AUXILIARY_DATA_SOURCE_SURFACES,
   STANDARD_DATA_SOURCE_SURFACES,
   STANDARD_EDITING_SURFACES
-} from "./chunk-7BES6HCK.js";
+} from "./chunk-S6QKYSGJ.js";
 import {
   ModkitError,
   OperationCancelledError,
@@ -2914,6 +2914,18 @@ function createEndpoint(options) {
   return new EndpointImpl(options);
 }
 
+// packages/host/dist/execution/frame-json.js
+function base64Of(bytes) {
+  if (typeof Buffer === "function")
+    return Buffer.from(bytes).toString("base64");
+  let binary = "";
+  for (let index = 0; index < bytes.byteLength; index += 1) {
+    binary += String.fromCharCode(bytes[index] ?? 0);
+  }
+  return btoa(binary);
+}
+var LITTLE_ENDIAN = new Uint8Array(new Uint16Array([1]).buffer)[0] === 1;
+
 // packages/host/dist/execution/abi-surfaces.js
 var ABI_CODEC_MODULE = { contract: "x3.abi/codec-module", major: 1 };
 var ABI_SERVICE_PROVIDER_MODULE = {
@@ -3372,6 +3384,7 @@ export {
   protocolLimits,
   createEndpoint,
   framePortFromMessagePort,
+  base64Of,
   ABI_CODEC_MODULE,
   ABI_SERVICE_PROVIDER_MODULE,
   ABI_ASSET_SESSION,

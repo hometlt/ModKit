@@ -22,18 +22,18 @@ import {
   assembleSubjectDescriptor,
   createAssetSession,
   createUtf8TextDataSource
-} from "../../../../chunks/chunk-DWLV5L2I.js";
+} from "../../../../chunks/chunk-PDO7AMOW.js";
 import "../../../../chunks/chunk-JHPOUH6S.js";
 import {
   containerEntryRevision,
   contributionSettingsFor
-} from "../../../../chunks/chunk-7BES6HCK.js";
+} from "../../../../chunks/chunk-S6QKYSGJ.js";
 import "../../../../chunks/chunk-YYQ3QKXM.js";
 import "../../../../chunks/chunk-KL23KRQT.js";
 import {
   revisionId,
   toPortableProjectionReceipt
-} from "../../../../chunks/chunk-MYUZP6E2.js";
+} from "../../../../chunks/chunk-R7U42EZV.js";
 import "../../../../chunks/chunk-GGIVOOBZ.js";
 import {
   ModkitError,

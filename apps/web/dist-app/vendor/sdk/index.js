@@ -102,6 +102,7 @@ import {
   operationScopedPermissionClasses,
   presentationSlotId,
   referenceTargetKey,
+  relationGraphNeighbourhood,
   resolveDataCatalog,
   resolveModWorkspaceGraph,
   runtimeTargetForHostRealm,
@@ -114,7 +115,7 @@ import {
   validateLocalizationContributionSemantics,
   writerOfferSatisfies,
   writerSelectionKey
-} from "../../chunks/chunk-7BES6HCK.js";
+} from "../../chunks/chunk-S6QKYSGJ.js";
 import {
   NATIVE_MODEL_ENCODER_CONTRACT,
   NATIVE_MODEL_ENCODER_MATCHER_PROFILE
@@ -209,7 +210,7 @@ import {
   viewerContributionSpecV1Schema,
   writerOfferV1Schema,
   writerRequirementV1Schema
-} from "../../chunks/chunk-MYUZP6E2.js";
+} from "../../chunks/chunk-R7U42EZV.js";
 import {
   SCENE_RENDERER_CONTRACT,
   SCENE_RENDERER_MATCHER_PROFILE
@@ -389,6 +390,7 @@ export {
   operationScopedPermissionClasses,
   presentationSlotId,
   referenceTargetKey,
+  relationGraphNeighbourhood,
   requirementScopeSchema,
   resolveDataCatalog,
   resolveModWorkspaceGraph,

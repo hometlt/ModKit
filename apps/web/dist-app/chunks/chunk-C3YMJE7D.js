@@ -1,30 +1,14 @@
 import {
-  compareUtf8,
+  referencePath
+} from "./chunk-JHPOUH6S.js";
+import {
   parseSubjectRef,
   rootSubject,
   serializeSubjectRef
-} from "./chunk-47VUMMB3.js";
+} from "./chunk-R7U42EZV.js";
 import {
-  init_define_MODKIT_EMBED_EXTENSION_ORIGINS
-} from "./chunk-BLWUC7LO.js";
-
-// packages/host/dist/subject-projection.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-
-// packages/host/dist/subject-field-projections.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-function referencePath(path, segment) {
-  return path === "" ? segment : `${path}.${segment}`;
-}
-function metadataFieldProjections(groups) {
-  return Object.freeze(groups.flatMap((group) => group.entries.flatMap((entry) => entry.type === void 0 ? [] : [{ path: referencePath(group.id, entry.key), type: entry.type, value: entry.value }])));
-}
-
-// packages/sdk/dist/subjects/index.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-
-// packages/sdk/dist/subjects/unknown-root.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+  compareUtf8
+} from "./chunk-LX6GSJ3D.js";
 
 // packages/host/dist/subject-projection.js
 var DEFAULT_SUBJECT_RELATION_PROJECTION_BUDGET = Object.freeze({
@@ -671,7 +655,6 @@ function descriptorSubjectRef(descriptor) {
 }
 
 export {
-  metadataFieldProjections,
   DEFAULT_SUBJECT_RELATION_PROJECTION_BUDGET,
   createFieldRelationGraphSource,
   createCompositeRelationGraphSource,
