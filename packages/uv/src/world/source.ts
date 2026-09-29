@@ -19,6 +19,7 @@ import {
   type UvwHeightfieldLayer,
   type UvwHeightfieldSpace,
   type UvwHeightfieldSpaceLayer,
+  type UvwParseLimits,
   type UvwProfileDocument,
 } from './index.js'
 
@@ -36,6 +37,8 @@ export interface UvwWorldSceneSourceOptions {
   /** Game-neutral UVM decoder supplied by the scene layer. The UVW package owns every byte and
    * passes a confined URI table; the decoder receives no ambient filesystem authority. */
   readonly modelDecoder?: UvwEmbeddedModelDecoder
+  /** The limits the document was parsed under; the defaults refuse a large terrain's weights. */
+  readonly limits?: UvwParseLimits
 }
 
 export interface UvwEmbeddedModelInput {
@@ -551,7 +554,7 @@ export function createUvwWorldSceneSource(
   if (options.snapshotId.length === 0) throw new TypeError('UVW snapshotId must not be empty')
   const maxPageSize = options.maxPageSize ?? 65_536
   positiveLimit(maxPageSize, Number.MAX_SAFE_INTEGER)
-  const document = canonicalizeUvwProfile(input)
+  const document = canonicalizeUvwProfile(input, options.limits)
   const layers: LayerRecord[] = document.spaces.flatMap(space =>
     space.layers.map(layer => {
       const id = `${encodeURIComponent(space.id)}/${encodeURIComponent(layer.id)}`

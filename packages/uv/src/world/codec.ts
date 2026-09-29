@@ -487,6 +487,7 @@ const definition = Object.freeze({
       snapshotId: context.input.revisions.revision,
       mapId: context.primary.source.id,
       maxPageSize: Math.max(1, Math.min(65_536, context.budget.maxNodes)),
+      limits: { maxDepth: context.budget.maxDepth, maxNodes: context.budget.maxNodes, maxSamples },
       ...(context.rasterResources === undefined
         ? {}
         : { rasterResources: context.rasterResources }),

@@ -158,6 +158,9 @@ export async function materializeWorldToUvw(
   }
   const maxFacetItems = options.maxFacetItems ?? options.maxTerrainItems
   const maxNativeOutputSamples = options.maxTerrainItems + maxFacetItems
+  // Every JSON value takes at least a byte, so the output budget already bounds the value count; a
+  // fixed node ceiling would refuse a terrain whose material weights fit the bytes (BAR 513²).
+  const maxNodes = Math.max(DEFAULT_UVW_PARSE_LIMITS.maxNodes, options.maxOutputBytes)
   if (!Number.isSafeInteger(maxNativeOutputSamples)) {
     refuse(
       'invalid-budget',
@@ -201,9 +204,13 @@ export async function materializeWorldToUvw(
         ...(options.signal === undefined ? {} : { signal: options.signal }),
       })
       pageRequests += rebuilt.pageRequests
-      const document = canonicalizeUvwProfile(rebuilt.document)
+      const document = canonicalizeUvwProfile(rebuilt.document, {
+        maxNodes,
+        maxSamples: maxFacetItems,
+      })
       const bytes = serializeUvwProfile(document, {
         maxBytes: options.maxOutputBytes,
+        maxNodes,
         maxSamples: maxFacetItems,
         ...(options.signal === undefined ? {} : { signal: options.signal }),
       })
@@ -455,10 +462,12 @@ export async function materializeWorldToUvw(
     connections: Object.freeze([]) as readonly [],
   })
   try {
-    const document = canonicalizeUvwProfile(builtDocument)
+    const maxSamples = Math.max(maxNativeOutputSamples, DEFAULT_UVW_PARSE_LIMITS.maxSamples)
+    const document = canonicalizeUvwProfile(builtDocument, { maxNodes, maxSamples })
     const bytes = serializeUvwProfile(document, {
       maxBytes: options.maxOutputBytes,
-      maxSamples: Math.max(maxNativeOutputSamples, DEFAULT_UVW_PARSE_LIMITS.maxSamples),
+      maxNodes,
+      maxSamples,
       ...(options.signal === undefined ? {} : { signal: options.signal }),
     })
     const digest = await sha256Hex(bytes)
