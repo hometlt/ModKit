@@ -2,7 +2,7 @@ import { MessageChannel } from 'node:worker_threads'
 import { afterEach, expect, it } from 'vitest'
 import { revisionId, type AssetSession, type NamespaceEntry } from '@modkit/sdk'
 import { rootSubject, serializeSubjectRef } from '@modkit/sdk/subjects'
-import { connectSubjectRpc, exposeSubjectRpc } from '../src/index.js'
+import { connectSubjectRpc, exposeSubjectRpc, withoutHiddenEntries } from '../src/index.js'
 
 const closers: (() => Promise<unknown>)[] = []
 afterEach(async () => {
@@ -90,4 +90,13 @@ it('an application lists hidden container entries only when it asks for them', a
   expect((await namespace.lookup('__MACOSX/._readme.txt'))?.hidden).toBe(true)
   await lease.release()
   await opened.session.dispose()
+})
+
+it('an application opening subjects in its own realm applies the same filter', async () => {
+  const lease = await session.dataSource('common.view/namespace-entry-source' as never, 1)
+  const namespace = withoutHiddenEntries(lease.value as never)
+  expect((await namespace.list('', { limit: 16 })).items.map(entry => entry.path)).toEqual([
+    'readme.txt',
+  ])
+  expect((await namespace.list('', { limit: 16, includeHidden: true })).items).toHaveLength(3)
 })

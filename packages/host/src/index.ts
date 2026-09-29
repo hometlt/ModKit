@@ -240,6 +240,7 @@ export {
   SUBJECT_SERVICES_URL,
   subjectOpenSnapshot,
   subjectRpcSurfaces,
+  withoutHiddenEntries,
   type ConnectSubjectRpcOptions,
   type ExposeSubjectRpcOptions,
   type OpenedSubjectLike,

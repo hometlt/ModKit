@@ -188,9 +188,11 @@ const NAMESPACE_ENTRY_SOURCE = 'common.view/namespace-entry-source'
 /**
  * What an application lists of a container: entries marked `hidden` only when it asks
  * (`includeHidden`) — the one filter, so no viewer keeps its own. Exact lookups and opens still
- * reach a hidden entry (a model names its texture in `versions.*`).
+ * reach a hidden entry (a model names its texture in `versions.*`). Subject RPC applies it to every
+ * session it serves; an application that opens subjects in its own realm (the web app) applies it
+ * to the container listings it shows. Codecs and host readers never get it: they need everything.
  */
-function withoutHiddenEntries(namespace: NamespaceEntrySource): NamespaceEntrySource {
+export function withoutHiddenEntries(namespace: NamespaceEntrySource): NamespaceEntrySource {
   const visible = async (
     answer: Promise<Page<NamespaceEntry>>,
     page: NamespacePageRequest,
