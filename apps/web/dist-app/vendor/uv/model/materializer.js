@@ -4,41 +4,41 @@ import {
   addJointAttribute,
   encodeAnimationChannel,
   encodeSkeleton
-} from "../../../chunks/chunk-DAR7PGR6.js";
+} from "../../../chunks/chunk-QONSPCLP.js";
 import {
   packUvmGlb
-} from "../../../chunks/chunk-GHGQXR4J.js";
+} from "../../../chunks/chunk-BC5RDUGA.js";
 import {
   materializeUvmAnimationMaterialTargets,
   uvmKeyTimesMetadata,
   uvmVisibilityPointer
-} from "../../../chunks/chunk-7BP5IQZS.js";
+} from "../../../chunks/chunk-3TRK5GFM.js";
 import {
   boundsOf
-} from "../../../chunks/chunk-IF5B6DHS.js";
+} from "../../../chunks/chunk-3YDZHAZL.js";
 import {
   DEFAULT_MODEL_MATERIAL_BUDGET,
   snapshotModelMaterials
-} from "../../../chunks/chunk-C4KZWCMG.js";
+} from "../../../chunks/chunk-I675VFQQ.js";
 import {
   DEFAULT_MODEL_SKELETON_BUDGET,
   createModelSkeletonNodes,
   snapshotModelSkeleton
-} from "../../../chunks/chunk-4UWK2KXO.js";
+} from "../../../chunks/chunk-EJHSGAMM.js";
 import {
   DEFAULT_MODEL_ANIMATION_BUDGET,
   snapshotModelAnimations
-} from "../../../chunks/chunk-7XI76P4Q.js";
+} from "../../../chunks/chunk-TAC5RUBM.js";
 import {
   composeTrsMatrix
-} from "../../../chunks/chunk-WXUQLAQ3.js";
-import "../../../chunks/chunk-3YDGNEY2.js";
-import "../../../chunks/chunk-3Q224KYR.js";
+} from "../../../chunks/chunk-5SBJANAJ.js";
+import "../../../chunks/chunk-ZSDVUSRM.js";
+import "../../../chunks/chunk-TKIPZ6HV.js";
 import "../../../chunks/chunk-NUFRM6SI.js";
-import "../../../chunks/chunk-LRCQXYKO.js";
+import "../../../chunks/chunk-W2UBWFML.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 
-// packages/uv/dist/model/rig.js
+// ../MODDING/modkit-core/packages/uv/dist/model/rig.js
 function refuse(message) {
   throw new TypeError(`UVM rig refused: ${message}`);
 }
@@ -431,7 +431,7 @@ function writeUvmAnimations(source, nodeIndices, boneByNode, storage, budget, si
   return { animations, catalog, visibility, losses };
 }
 
-// packages/uv/dist/model/materializer.js
+// ../MODDING/modkit-core/packages/uv/dist/model/materializer.js
 var GLTF_LAYER_SLOTS = Object.freeze({
   diffuse: "baseColor",
   basecolor: "baseColor",
@@ -658,11 +658,17 @@ function materializeUvmCore(projection, request, { digest, materialBudget = DEFA
           fail(`primitive ${primitive.id} tangent handedness must be -1 or 1`);
         }
         if (semantic === "NORMAL" || semantic === "TANGENT") {
+          for (let offset = 0; offset < data.length; offset += width) {
+            if (Math.hypot(data[offset], data[offset + 1], data[offset + 2]) !== 0)
+              continue;
+            const message = `${semantic} omitted: a vertex has a zero-length direction`;
+            losses.push(`primitive ${primitive.id}: ${message}`);
+            note("uv.model/geometry@1", "absent-in-artifact", `/primitives/${primitive.id}/${semantic}`, message);
+            return;
+          }
           let normalized = 0;
           for (let offset = 0; offset < data.length; offset += width) {
             const length = Math.hypot(data[offset], data[offset + 1], data[offset + 2]);
-            if (length === 0)
-              fail(`primitive ${primitive.id} ${semantic} has no direction`);
             if (Math.abs(length - 1) <= 1e-4)
               continue;
             for (let axis = 0; axis < 3; axis++)
@@ -685,7 +691,11 @@ function materializeUvmCore(projection, request, { digest, materialBudget = DEFA
       };
       if (primitive.normals != null)
         attribute("NORMAL", primitive.normals, 3);
-      if (primitive.tangents != null)
+      if (primitive.tangents != null && attributes["NORMAL"] === void 0) {
+        const message = "TANGENT omitted: the primitive has no normals";
+        losses.push(`primitive ${primitive.id}: ${message}`);
+        note("uv.model/geometry@1", "absent-in-artifact", `/primitives/${primitive.id}/TANGENT`, message);
+      } else if (primitive.tangents != null)
         attribute("TANGENT", primitive.tangents, 4);
       if (primitive.colors != null)
         attribute("COLOR_0", primitive.colors, 4);

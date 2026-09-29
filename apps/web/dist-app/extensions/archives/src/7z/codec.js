@@ -5,12 +5,12 @@ import {
 } from '@modkit/codec-kit'
 import {
   bcj2Decode,
-  bcjX86Decode,
+  bcjX86DecodeStream,
   bzip2Decompress,
   decompressBounded,
-  lzma2Decode,
+  lzma2DecodeStream,
   lzma2DictionarySize,
-  lzmaDecode,
+  lzmaDecodeStream,
   parseLzmaProperties,
 } from '@modkit/codec-kit/compression'
 import { crc32 } from '@modkit/codec-kit/checksum'
@@ -447,93 +447,156 @@ function methodsOf(folder) {
   return folder.coders.map(coder => coder.method)
 }
 
+/** Pack streams are read in pieces of at most this, within the per-read budget. */
+const PACK_READ_BYTES = 1 << 20
+/** Coders decoded by chunks: memory is a dictionary window at most, not the output. */
+const STREAMING = new Set(['Copy', 'LZMA', 'LZMA2', 'BCJ', 'Delta'])
+const EMPTY = new Uint8Array(0)
+
+async function* packStream(read, pack, chunk) {
+  for (let at = 0; at < pack.size; at += chunk) {
+    yield await read(pack.offset + at, Math.min(chunk, pack.size - at))
+  }
+}
+
+/** Exactly `size` bytes of `stream`: longer is cut, shorter is an error. */
+async function* exactly(stream, size, method) {
+  let left = size
+  for await (const chunk of stream) {
+    if (chunk.byteLength >= left) {
+      if (left > 0) yield chunk.subarray(0, left)
+      left = 0
+      break
+    }
+    left -= chunk.byteLength
+    yield chunk
+  }
+  if (left !== 0) throw new TypeError(`7z ${method} decoded size is invalid`)
+}
+
+async function collect(stream, size) {
+  const bytes = new Uint8Array(size)
+  let filled = 0
+  for await (const chunk of stream) {
+    if (chunk.byteLength > size - filled) throw new TypeError('7z stream exceeds its declared size')
+    bytes.set(chunk, filled)
+    filled += chunk.byteLength
+  }
+  if (filled !== size) throw new TypeError('7z stream is shorter than its declared size')
+  return bytes
+}
+
+async function* deltaStream(input, distance) {
+  const history = new Uint8Array(distance)
+  let position = 0
+  for await (const chunk of input) {
+    const out = chunk.slice()
+    for (let index = 0; index < out.byteLength; index += 1, position += 1) {
+      const slot = position % distance
+      out[index] = (out[index] + history[slot]) & 0xff
+      history[slot] = out[index]
+    }
+    yield out
+  }
+}
+
+function dictionaryOf(coder) {
+  const props = coder.properties ?? new Uint8Array(0)
+  return coder.method === 'LZMA'
+    ? parseLzmaProperties(props).dictionarySize
+    : lzma2DictionarySize(props[0] ?? 0xff)
+}
+
+async function* decodeCoder(coder, inputs, size, budget) {
+  const [first] = inputs
+  const props = coder.properties ?? new Uint8Array(0)
+  const window = { outputSize: size, maxDictionaryBytes: budget.maxScalarBytes }
+  switch (coder.method) {
+    case 'Copy':
+      yield* first.stream
+      return
+    case 'LZMA':
+      yield* lzmaDecodeStream(first.stream, parseLzmaProperties(props), {
+        ...window,
+        allowEndMarker: true,
+      })
+      return
+    case 'LZMA2':
+      yield* lzma2DecodeStream(first.stream, dictionaryOf(coder), window)
+      return
+    case 'BCJ':
+      yield* bcjX86DecodeStream(first.stream)
+      return
+    case 'Delta':
+      yield* deltaStream(first.stream, (props[0] ?? 0) + 1)
+      return
+  }
+  // decoded whole: every input and the output are held at once, each within maxScalarBytes
+  const whole = []
+  for (const item of inputs) whole.push(await collect(item.stream, item.size))
+  switch (coder.method) {
+    case 'BCJ2':
+      yield bcj2Decode(whole[0], whole[1], whole[2], whole[3], size)
+      return
+    case 'Deflate':
+      yield await decompressBounded(whole[0], 'deflate-raw', { maxOutputBytes: size })
+      return
+    case 'BZip2':
+      yield bzip2Decompress(whole[0], { maxOutputBytes: size })
+      return
+    default:
+      throw archiveError(
+        'archives/7z-method-unsupported',
+        `7z method ${coder.method} is not supported`,
+      )
+  }
+}
+
+/** The declared size of a coder input: its pack stream, or the output bound to it. */
+function inputSize(folder, inIndex) {
+  const packed = folder.packedStreams.indexOf(inIndex)
+  if (packed >= 0) return folder.packs[packed]?.size ?? 0
+  const pair = folder.bindPairs.find(item => item.inIndex === inIndex)
+  return pair === undefined ? 0 : (folder.unpackSizes[pair.outIndex] ?? 0)
+}
+
 /**
- * Decode one folder's main output, reading its pack streams by range. The caller has checked
- * methods and budgets.
+ * One folder's main output as a stream of chunks, its pack streams read by range. The caller has
+ * checked methods and budgets; the stream is lazy and reads nothing until iterated.
  */
-async function decodeFolder(read, folder, budget, signal) {
-  const outOf = new Map()
+function folderStream(read, folder, budget, maxRead) {
+  const used = new Set()
   const coderByOut = new Map(folder.coders.map(coder => [coder.outIndex, coder]))
-  const input = async inIndex => {
+  const chunk = Math.max(1, Math.min(PACK_READ_BYTES, maxRead))
+  const input = inIndex => {
     const packed = folder.packedStreams.indexOf(inIndex)
     if (packed >= 0) {
       const pack = folder.packs[packed]
-      return read(pack.offset, pack.size)
+      return { stream: packStream(read, pack, chunk), size: pack.size }
     }
     const pair = folder.bindPairs.find(item => item.inIndex === inIndex)
     if (pair === undefined) throw new TypeError('7z coder input is unbound')
-    return output(pair.outIndex)
+    return { stream: output(pair.outIndex), size: folder.unpackSizes[pair.outIndex] ?? 0 }
   }
-  const output = async outIndex => {
-    if (outOf.has(outIndex)) throw new TypeError('7z coder graph reuses a stream')
-    outOf.set(outIndex, true)
-    signal?.throwIfAborted()
+  const output = outIndex => {
+    if (used.has(outIndex)) throw new TypeError('7z coder graph reuses a stream')
+    used.add(outIndex)
     const coder = coderByOut.get(outIndex)
     const size = folder.unpackSizes[outIndex] ?? 0
-    if (size > budget.maxScalarBytes) {
-      throw new RangeError('7z folder exceeds maxScalarBytes budget')
-    }
     const inputs = []
     for (let index = 0; index < coder.inStreams; index += 1)
-      inputs.push(await input(coder.inIndex + index))
-    const [first] = inputs
-    const props = coder.properties ?? new Uint8Array(0)
-    let result
-    switch (coder.method) {
-      case 'Copy':
-        result = first.slice(0, size)
-        break
-      case 'LZMA':
-        result = lzmaDecode(first, parseLzmaProperties(props), {
-          outputSize: size,
-          allowEndMarker: true,
-        })
-        break
-      case 'LZMA2':
-        result = lzma2Decode(first, lzma2DictionarySize(props[0] ?? 0xff), { outputSize: size })
-        break
-      case 'BCJ':
-        result = bcjX86Decode(first.slice(0, size))
-        break
-      case 'BCJ2':
-        result = bcj2Decode(inputs[0], inputs[1], inputs[2], inputs[3], size)
-        break
-      case 'Delta': {
-        const distance = (props[0] ?? 0) + 1
-        result = first.slice(0, size)
-        for (let index = distance; index < result.byteLength; index += 1) {
-          result[index] = (result[index] + result[index - distance]) & 0xff
-        }
-        break
-      }
-      case 'Deflate':
-        result = await decompressBounded(first, 'deflate-raw', { maxOutputBytes: size, signal })
-        break
-      case 'BZip2':
-        result = bzip2Decompress(first, { maxOutputBytes: size, signal })
-        break
-      default:
-        throw archiveError(
-          'archives/7z-method-unsupported',
-          `7z method ${coder.method} is not supported`,
-        )
-    }
-    if (result.byteLength !== size)
-      throw new TypeError(`7z ${coder.method} decoded size is invalid`)
-    return result
+      inputs.push(input(coder.inIndex + index))
+    return exactly(decodeCoder(coder, inputs, size, budget), size, coder.method)
   }
-  const decoded = await output(folder.mainOut)
-  if (folder.crc !== undefined && crc32(decoded) !== folder.crc) {
-    throw new TypeError('7z folder CRC-32 is invalid')
-  }
-  return decoded
+  return output(folder.mainOut)
 }
 
+/**
+ * What a folder needs to be read: a supported, unencrypted method; an LZMA dictionary window within
+ * maxScalarBytes (a streamed output may be any size); and for a coder decoded whole (BCJ2,
+ * Deflate, BZip2) its output and inputs within maxScalarBytes.
+ */
 function checkFolderBudget(folder, budget) {
-  for (const size of folder.unpackSizes) {
-    if (size > budget.maxScalarBytes)
-      throw new RangeError('7z folder exceeds maxScalarBytes budget')
-  }
   if (folder.coders.some(coder => coder.method === 'AES-256')) {
     throw archiveError('archives/password-required', '7z archive is encrypted and needs a password')
   }
@@ -544,10 +607,23 @@ function checkFolderBudget(folder, budget) {
       `7z method ${unsupported.method} is not supported`,
     )
   }
+  for (const coder of folder.coders) {
+    const size = folder.unpackSizes[coder.outIndex] ?? 0
+    if (coder.method === 'LZMA' || coder.method === 'LZMA2') {
+      if (Math.min(dictionaryOf(coder), size) > budget.maxScalarBytes)
+        throw new RangeError('7z LZMA dictionary exceeds maxScalarBytes budget')
+    } else if (!STREAMING.has(coder.method)) {
+      const sizes = [size]
+      for (let index = 0; index < coder.inStreams; index += 1)
+        sizes.push(inputSize(folder, coder.inIndex + index))
+      if (sizes.some(value => value > budget.maxScalarBytes))
+        throw new RangeError('7z folder exceeds maxScalarBytes budget')
+    }
+  }
 }
 
 /** The archive's headers, read by range: the 32-byte start header, then the header it points at. */
-async function parse7z(read, size, budget) {
+async function parse7z(read, size, budget, maxRead) {
   if (size < 32) throw new TypeError('7z signature header is invalid')
   const start = await read(0, 32)
   if (!matches(start)) throw new TypeError('7z signature header is invalid')
@@ -583,7 +659,12 @@ async function parse7z(read, size, budget) {
     const folder = streams.folders[0]
     if (folder === undefined) throw new TypeError('7z encoded header has no folder')
     checkFolderBudget(folder, budget)
-    header = await decodeFolder(read, folder, budget)
+    const headerSize = folderSize(folder)
+    if (headerSize > budget.maxScalarBytes)
+      throw new RangeError('7z encoded header exceeds maxScalarBytes budget')
+    header = await collect(folderStream(read, folder, budget, maxRead), headerSize)
+    if (folder.crc !== undefined && crc32(header) !== folder.crc)
+      throw new TypeError('7z encoded header CRC-32 is invalid')
   }
 }
 
@@ -640,21 +721,66 @@ function assemble(main, files) {
 
 /**
  * The archive's files as the host's entry table: listing, extraction and nested opens. A file in a
- * Copy folder is read in place by range, whatever its size; any other is decoded with its folder
- * (bounded by `maxScalarBytes`), one decoded folder kept, as solid archives are extracted in order.
+ * Copy folder is read in place by range, whatever its size; any other is a range source over its
+ * folder's decoder stream. One decoder is kept where the last read stopped, so a solid folder read
+ * in order (extracting its entries, streaming one out) decodes once; a read behind that point
+ * starts the folder again.
  */
-function entryTable(archive, read, budget) {
-  let cached
-  const decoded = (index, signal) => {
-    if (cached?.index !== index) {
-      const pending = decodeFolder(read, archive.folders[index], budget, signal)
-      cached = { index, pending }
-      pending.catch(() => {
-        if (cached?.pending === pending) cached = undefined
-      })
+function entryTable(archive, read, budget, maxRead) {
+  let parked
+  /** `length` bytes of folder `index`'s output from `at`, in a buffer of their own. */
+  const readFolder = async (index, at, length, signal) => {
+    let cursor
+    if (parked?.folder === index && parked.position <= at) {
+      cursor = parked
+      parked = undefined
+    } else {
+      const stream = folderStream(read, archive.folders[index], budget, maxRead)
+      cursor = {
+        folder: index,
+        position: 0,
+        iterator: stream[Symbol.asyncIterator](),
+        carry: EMPTY,
+      }
     }
-    return cached.pending
+    const bytes = new Uint8Array(length)
+    const end = at + length
+    try {
+      while (cursor.position < end) {
+        signal?.throwIfAborted()
+        let chunk = cursor.carry
+        cursor.carry = EMPTY
+        if (chunk.byteLength === 0) {
+          const next = await cursor.iterator.next()
+          if (next.done === true) throw new TypeError('7z folder is shorter than its entries')
+          chunk = next.value
+        }
+        const from = Math.max(0, at - cursor.position)
+        const to = Math.min(chunk.byteLength, end - cursor.position)
+        if (to < chunk.byteLength) cursor.carry = chunk.subarray(to)
+        if (to > from) bytes.set(chunk.subarray(from, to), cursor.position + from - at)
+        cursor.position += to
+      }
+    } catch (error) {
+      await cursor.iterator.return?.()
+      throw error
+    }
+    const previous = parked
+    parked = cursor
+    await previous?.iterator.return?.()
+    return bytes
   }
+  const rangeSource = entry =>
+    Object.freeze({
+      size: async () => BigInt(entry.size),
+      async read(offset, length, signal) {
+        const start = Number(offset)
+        if (!Number.isSafeInteger(length) || length < 0 || start < 0 || start + length > entry.size)
+          throw new RangeError(`7z entry ${entry.path} read is outside the entry`)
+        if (length === 0) return new Uint8Array(0)
+        return readFolder(entry.folder, entry.offset + start, length, signal)
+      },
+    })
   const storage = entry => {
     const folder = entry.folder === undefined ? undefined : archive.folders[entry.folder]
     if (folder === undefined) return { kind: 'stored', offset: 0n, length: 0n }
@@ -669,16 +795,10 @@ function entryTable(archive, read, budget) {
     return {
       kind: 'custom',
       compression: entry.method,
-      async open(signal) {
+      rangeAccess: true,
+      async open() {
         checkFolderBudget(folder, budget)
-        const bytes = await decoded(entry.folder, signal)
-        // a buffer of its own: the worker boundary refuses a view into the decoded folder
-        const value = bytes.slice(entry.offset, entry.offset + entry.size)
-        if (value.byteLength !== entry.size)
-          throw new TypeError(`7z entry ${entry.path} is truncated`)
-        return (async function* () {
-          yield value
-        })()
+        return rangeSource(entry)
       },
     }
   }
@@ -800,7 +920,7 @@ const definition = Object.freeze({
     }
     let archive
     try {
-      archive = await parse7z(read, size, budget)
+      archive = await parse7z(read, size, budget, maxRead)
     } catch (error) {
       if (error?.code === 'archives/password-required') return encryptedHeaderInspection(size)
       throw error
@@ -812,7 +932,7 @@ const definition = Object.freeze({
     const payloadBytes = files.reduce((total, entry) => total + entry.size, 0)
     const solid = files.some(entry => entry.solid)
     return {
-      containerEntries: entryTable(archive, read, budget),
+      containerEntries: entryTable(archive, read, budget, maxRead),
       summary: {
         format: '7z',
         version: `${archive.major}.${archive.minor}`,

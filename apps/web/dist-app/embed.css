@@ -1,10 +1,10 @@
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/base/browser/ui/aria/aria.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/base/browser/ui/aria/aria.css */
 .monaco-aria-container {
   position: absolute;
   left: -999em;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/browser/widget/codeEditor/editor.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/browser/widget/codeEditor/editor.css */
 ::-ms-clear {
   display: none;
 }
@@ -102,7 +102,7 @@
   text-decoration-color: var(--vscode-editor-foreground, inherit);
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/base/browser/ui/scrollbar/media/scrollbars.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/base/browser/ui/scrollbar/media/scrollbars.css */
 .monaco-scrollable-element > .scrollbar > .scra {
   cursor: pointer;
   font-size: 11px !important;
@@ -167,7 +167,7 @@
   background: var(--vscode-scrollbarSlider-activeBackground);
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/browser/viewParts/blockDecorations/blockDecorations.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/browser/viewParts/blockDecorations/blockDecorations.css */
 .monaco-editor .blockDecorations-container {
   position: absolute;
   top: 0;
@@ -178,7 +178,7 @@
   box-sizing: border-box;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/browser/viewParts/currentLineHighlight/currentLineHighlight.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/browser/viewParts/currentLineHighlight/currentLineHighlight.css */
 .monaco-editor .view-overlays .current-line {
   display: block;
   position: absolute;
@@ -199,13 +199,13 @@
   border-right: 0;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/browser/viewParts/decorations/decorations.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/browser/viewParts/decorations/decorations.css */
 .monaco-editor .lines-content .cdr {
   position: absolute;
   height: 100%;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/browser/viewParts/glyphMargin/glyphMargin.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/browser/viewParts/glyphMargin/glyphMargin.css */
 .monaco-editor .glyph-margin {
   position: absolute;
   top: 0;
@@ -223,14 +223,14 @@
   transform: translate(-50%, -50%);
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/browser/viewParts/indentGuides/indentGuides.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/browser/viewParts/indentGuides/indentGuides.css */
 .monaco-editor .lines-content .core-guide {
   position: absolute;
   box-sizing: border-box;
   height: 100%;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/browser/viewParts/lineNumbers/lineNumbers.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/browser/viewParts/lineNumbers/lineNumbers.css */
 .monaco-editor .margin-view-overlays .line-numbers {
   bottom: 0;
   font-variant-numeric: tabular-nums;
@@ -256,12 +256,12 @@
   color: var(--vscode-editorLineNumber-activeForeground);
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/base/browser/ui/mouseCursor/mouseCursor.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/base/browser/ui/mouseCursor/mouseCursor.css */
 .monaco-mouse-cursor-text {
   cursor: text;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/browser/viewParts/viewLines/viewLines.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/browser/viewParts/viewLines/viewLines.css */
 .mtkcontrol {
   color: rgb(255, 255, 255) !important;
   background: rgb(150, 0, 0) !important;
@@ -317,7 +317,7 @@
   color: var(--vscode-editorWhitespace-foreground) !important;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/browser/viewParts/linesDecorations/linesDecorations.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/browser/viewParts/linesDecorations/linesDecorations.css */
 .monaco-editor .lines-decorations {
   position: absolute;
   top: 0;
@@ -328,12 +328,12 @@
   height: 100%;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/browser/viewParts/margin/margin.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/browser/viewParts/margin/margin.css */
 .monaco-editor .margin {
   background-color: var(--vscode-editorGutter-background);
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/browser/viewParts/marginDecorations/marginDecorations.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/browser/viewParts/marginDecorations/marginDecorations.css */
 .monaco-editor .margin-view-overlays .cmdr {
   position: absolute;
   left: 0;
@@ -341,7 +341,7 @@
   height: 100%;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/browser/viewParts/minimap/minimap.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/browser/viewParts/minimap/minimap.css */
 .monaco-editor .minimap.slider-mouseover .minimap-slider {
   opacity: 0;
   transition: opacity 100ms linear;
@@ -399,14 +399,14 @@
   opacity: 0.9;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/browser/viewParts/overlayWidgets/overlayWidgets.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/browser/viewParts/overlayWidgets/overlayWidgets.css */
 .monaco-editor .overlayWidgets {
   position: absolute;
   top: 0;
   left: 0;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/browser/viewParts/rulers/rulers.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/browser/viewParts/rulers/rulers.css */
 .monaco-editor .view-ruler {
   position: absolute;
   top: 0;
@@ -414,7 +414,7 @@
   pointer-events: none;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/browser/viewParts/scrollDecoration/scrollDecoration.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/browser/viewParts/scrollDecoration/scrollDecoration.css */
 .monaco-editor .scroll-decoration {
   position: absolute;
   top: 0;
@@ -423,7 +423,7 @@
   box-shadow: var(--vscode-scrollbar-shadow) 0 6px 6px -6px inset;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/browser/viewParts/selections/selections.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/browser/viewParts/selections/selections.css */
 .monaco-editor .lines-content .cslr {
   position: absolute;
 }
@@ -470,7 +470,7 @@
   border-bottom-right-radius: 0;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/browser/viewParts/viewCursors/viewCursors.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/browser/viewParts/viewCursors/viewCursors.css */
 .monaco-editor .cursors-layer {
   position: absolute;
   top: 0;
@@ -532,19 +532,19 @@
   animation: monaco-cursor-expand 0.5s ease-in-out 0s 20 alternate;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/browser/viewParts/whitespace/whitespace.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/browser/viewParts/whitespace/whitespace.css */
 .monaco-editor .mwh {
   position: absolute;
   color: var(--vscode-editorWhitespace-foreground) !important;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/browser/gpu/css/media/decorationCssRuleExtractor.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/browser/gpu/css/media/decorationCssRuleExtractor.css */
 .monaco-editor .monaco-decoration-css-rule-extractor {
   visibility: hidden;
   pointer-events: none;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/browser/controller/editContext/textArea/textAreaEditContext.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/browser/controller/editContext/textArea/textAreaEditContext.css */
 .monaco-editor .inputarea {
   min-width: 0;
   min-height: 0;
@@ -565,7 +565,7 @@
   color: var(--vscode-editor-foreground);
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/browser/controller/editContext/native/nativeEditContext.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/browser/controller/editContext/native/nativeEditContext.css */
 .monaco-editor .native-edit-context {
   margin: 0;
   padding: 0;
@@ -606,7 +606,7 @@
   border: 2px solid var(--vscode-editor-compositionBorder);
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/browser/viewParts/gpuMark/gpuMark.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/browser/viewParts/gpuMark/gpuMark.css */
 .monaco-editor .margin-view-overlays .gpu-mark {
   position: absolute;
   top: 0;
@@ -622,7 +622,7 @@
   background-color: var(--vscode-editorWarning-foreground);
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/base/browser/ui/selectBox/selectBox.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/base/browser/ui/selectBox/selectBox.css */
 .monaco-select-box {
   width: 100%;
   cursor: pointer;
@@ -648,7 +648,7 @@
   min-height: 24px;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/base/browser/ui/list/list.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/base/browser/ui/list/list.css */
 .monaco-list {
   position: relative;
   height: 100%;
@@ -711,7 +711,7 @@
   display: none;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/base/browser/ui/dnd/dnd.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/base/browser/ui/dnd/dnd.css */
 .monaco-drag-image {
   display: inline-block;
   padding: 1px 7px;
@@ -729,7 +729,7 @@
   white-space: nowrap;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/base/browser/ui/selectBox/selectBoxCustom.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/base/browser/ui/selectBox/selectBoxCustom.css */
 .monaco-select-box-dropdown-container {
   display: none;
   box-sizing: border-box;
@@ -842,7 +842,7 @@
   white-space: nowrap;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/base/browser/ui/actionbar/actionbar.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/base/browser/ui/actionbar/actionbar.css */
 .monaco-action-bar {
   white-space: nowrap;
   height: 100%;
@@ -944,7 +944,7 @@
   width: 1px;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/browser/widget/diffEditor/components/accessibleDiffViewer.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/browser/widget/diffEditor/components/accessibleDiffViewer.css */
 .monaco-diff-editor .diff-review {
   position: absolute;
 }
@@ -1003,7 +1003,7 @@
   background: var(--vscode-editorActionList-background);
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/base/browser/ui/sash/sash.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/base/browser/ui/sash/sash.css */
 :root {
   --vscode-sash-size: 4px;
   --vscode-sash-hover-size: 4px;
@@ -1119,7 +1119,7 @@
   background: red;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/base/browser/ui/dropdown/dropdown.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/base/browser/ui/dropdown/dropdown.css */
 .monaco-dropdown {
   height: 100%;
   padding: 0;
@@ -1160,7 +1160,7 @@
   background-repeat: no-repeat;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/base/browser/ui/toolbar/toolbar.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/base/browser/ui/toolbar/toolbar.css */
 .monaco-toolbar {
   height: 100%;
 }
@@ -1181,7 +1181,7 @@
   min-width: var(--vscode-toolbar-action-min-width, 20px);
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/platform/actions/browser/menuEntryActionViewItem.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/platform/actions/browser/menuEntryActionViewItem.css */
 .monaco-action-bar .action-item.menu-entry .action-label.icon {
   width: 16px;
   height: 16px;
@@ -1239,7 +1239,7 @@
   background-repeat: no-repeat;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/browser/widget/diffEditor/style.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/browser/widget/diffEditor/style.css */
 .monaco-editor .diff-hidden-lines-widget {
   width: 100%;
 }
@@ -1617,20 +1617,20 @@
   -webkit-user-select: text !important;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/anchorSelect/browser/anchorSelect.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/anchorSelect/browser/anchorSelect.css */
 .monaco-editor .selection-anchor {
   background-color: #007ACC;
   width: 2px !important;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/bracketMatching/browser/bracketMatching.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/bracketMatching/browser/bracketMatching.css */
 .monaco-editor .bracket-match {
   box-sizing: border-box;
   background-color: var(--vscode-editorBracketMatch-background);
   border: 1px solid var(--vscode-editorBracketMatch-border);
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/inlineProgress/browser/inlineProgressWidget.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/inlineProgress/browser/inlineProgressWidget.css */
 .inline-editor-progress-decoration {
   display: inline-block;
   width: 1em;
@@ -1653,7 +1653,7 @@
   font-family: var(--vscode-icon-x-font-family);
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/message/browser/messageController.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/message/browser/messageController.css */
 .monaco-editor .monaco-editor-overlaymessage {
   padding-bottom: 8px;
   z-index: 10000;
@@ -1730,7 +1730,7 @@
   top: -8px;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/base/browser/ui/button/button.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/base/browser/ui/button/button.css */
 .monaco-text-button {
   box-sizing: border-box;
   display: flex;
@@ -1888,7 +1888,7 @@
   background-color: var(--vscode-button-separator);
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/platform/actionWidget/browser/actionWidget.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/platform/actionWidget/browser/actionWidget.css */
 .action-widget {
   font-size: 13px;
   min-width: 100px;
@@ -2296,7 +2296,7 @@
   margin-bottom: 0;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/base/browser/ui/contextview/contextview.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/base/browser/ui/contextview/contextview.css */
 .context-view {
   position: absolute;
 }
@@ -2308,7 +2308,7 @@
   color: inherit;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/base/browser/ui/keybindingLabel/keybindingLabel.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/base/browser/ui/keybindingLabel/keybindingLabel.css */
 .monaco-keybinding {
   display: flex;
   align-items: center;
@@ -2339,7 +2339,7 @@
   width: 6px;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/dropOrPasteInto/browser/postEditWidget.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/dropOrPasteInto/browser/postEditWidget.css */
 .post-edit-widget {
   box-shadow: var(--vscode-shadow-lg);
   border: 1px solid var(--vscode-widget-border, transparent);
@@ -2360,7 +2360,7 @@
   margin: 0;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/base/browser/ui/codicons/codicon/codicon.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/base/browser/ui/codicons/codicon/codicon.css */
 @font-face {
   font-family: "codicon";
   font-display: block;
@@ -2379,7 +2379,7 @@
   -webkit-user-select: none;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/base/browser/ui/codicons/codicon/codicon-modifiers.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/base/browser/ui/codicons/codicon/codicon-modifiers.css */
 .codicon-wrench-subaction {
   opacity: 0.5;
 }
@@ -2401,7 +2401,7 @@
   opacity: 0.4;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/symbolIcons/browser/symbolIcons.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/symbolIcons/browser/symbolIcons.css */
 .monaco-editor .codicon.codicon-symbol-array,
 .monaco-workbench .codicon-colored.codicon.codicon-symbol-array {
   color: var(--vscode-symbolIcon-arrayForeground);
@@ -2537,7 +2537,7 @@
   color: var(--vscode-symbolIcon-variableForeground);
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/codeAction/browser/lightBulbWidget.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/codeAction/browser/lightBulbWidget.css */
 .monaco-editor .lightBulbWidget {
   display: flex;
   align-items: center;
@@ -2588,7 +2588,7 @@
   color: var(--vscode-editorLightBulbAi-foreground, var(--vscode-icon-foreground));
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/codelens/browser/codelensWidget.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/codelens/browser/codelensWidget.css */
 .monaco-editor .codelens-decoration {
   overflow: hidden;
   display: inline-flex !important;
@@ -2643,7 +2643,7 @@
   animation: fadein 0.1s linear;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/inlineCompletions/browser/hintsWidget/inlineCompletionsHintsWidget.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/inlineCompletions/browser/hintsWidget/inlineCompletionsHintsWidget.css */
 .monaco-editor .inlineSuggestionsHints {
   padding: 4px;
 }
@@ -2682,7 +2682,7 @@
   margin-right: 2px;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/base/browser/ui/hover/hoverWidget.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/base/browser/ui/hover/hoverWidget.css */
 .monaco-hover {
   cursor: default;
   position: absolute;
@@ -2852,7 +2852,7 @@
   user-select: none;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/base/browser/ui/toggle/toggle.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/base/browser/ui/toggle/toggle.css */
 .monaco-custom-toggle {
   margin-left: 2px;
   float: left;
@@ -2914,7 +2914,7 @@
   font-size: 12px;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/find/browser/findWidget.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/find/browser/findWidget.css */
 .monaco-editor .find-widget {
   position: absolute;
   z-index: 35;
@@ -3136,7 +3136,7 @@
   right: 4px;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/base/browser/ui/inputbox/inputBox.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/base/browser/ui/inputbox/inputBox.css */
 .monaco-inputbox {
   position: relative;
   display: block;
@@ -3220,7 +3220,7 @@
   color: var(--vscode-icon-foreground);
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/base/browser/ui/findinput/findInput.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/base/browser/ui/findinput/findInput.css */
 .monaco-findInput {
   position: relative;
 }
@@ -3288,7 +3288,7 @@
   }
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/colorPicker/browser/colorPicker.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/colorPicker/browser/colorPicker.css */
 .colorpicker-widget {
   height: 190px;
   user-select: none;
@@ -3470,7 +3470,7 @@
   background: var(--vscode-button-hoverBackground);
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/peekView/browser/media/peekViewWidget.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/peekView/browser/media/peekViewWidget.css */
 .monaco-editor .peekview-widget {
   box-shadow: var(--vscode-shadow-lg);
 }
@@ -3539,7 +3539,7 @@
   color: inherit !important;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/zoneWidget/browser/zoneWidget.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/zoneWidget/browser/zoneWidget.css */
 .monaco-editor .zone-widget {
   position: absolute;
   z-index: 10;
@@ -3552,7 +3552,7 @@
   position: relative;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/base/browser/ui/splitview/splitview.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/base/browser/ui/splitview/splitview.css */
 .monaco-split-view2 {
   position: relative;
   width: 100%;
@@ -3608,7 +3608,7 @@
   width: 100%;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/base/browser/ui/table/table.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/base/browser/ui/table/table.css */
 .monaco-table {
   display: flex;
   flex-direction: column;
@@ -3655,7 +3655,7 @@
   transition: border-color 0.2s ease-out;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/base/browser/ui/tree/media/tree.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/base/browser/ui/tree/media/tree.css */
 .monaco-tl-row {
   display: flex;
   height: 100%;
@@ -3787,7 +3787,7 @@
   outline: none;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/gotoSymbol/browser/peek/referencesWidget.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/gotoSymbol/browser/peek/referencesWidget.css */
 .monaco-editor .zone-widget .zone-widget-container.reference-zone-widget {
   border-top-width: 1px;
   border-bottom-width: 1px;
@@ -3854,7 +3854,7 @@
   box-sizing: border-box;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/base/browser/ui/countBadge/countBadge.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/base/browser/ui/countBadge/countBadge.css */
 .monaco-count-badge {
   padding: 3px 5px;
   border-radius: 11px;
@@ -3874,7 +3874,7 @@
   line-height: normal;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/base/browser/ui/iconLabel/iconlabel.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/base/browser/ui/iconLabel/iconlabel.css */
 .monaco-icon-label {
   display: flex;
   overflow: hidden;
@@ -3965,7 +3965,7 @@
   opacity: .8;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/hover/browser/hover.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/hover/browser/hover.css */
 .monaco-editor .hoverHighlight {
   background-color: var(--vscode-editor-hoverHighlightBackground);
 }
@@ -4063,7 +4063,7 @@
   color: var(--vscode-foreground);
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/dnd/browser/dnd.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/dnd/browser/dnd.css */
 .monaco-editor.vs .dnd-target,
 .monaco-editor.hc-light .dnd-target {
   border-right: 2px dotted black;
@@ -4090,7 +4090,7 @@
   cursor: copy;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/find/browser/findOptionsWidget.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/find/browser/findOptionsWidget.css */
 .monaco-editor .findOptionsWidget {
   background-color: var(--vscode-editorWidget-background);
   color: var(--vscode-editorWidget-foreground);
@@ -4098,7 +4098,7 @@
   border: 2px solid var(--vscode-contrastBorder);
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/folding/browser/folding.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/folding/browser/folding.css */
 .monaco-editor .margin-view-overlays .codicon-folding-manual-collapsed,
 .monaco-editor .margin-view-overlays .codicon-folding-manual-expanded,
 .monaco-editor .margin-view-overlays .codicon-folding-expanded,
@@ -4142,7 +4142,7 @@
   color: var(--vscode-editorGutter-foldingControlForeground) !important;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/gotoError/browser/media/gotoErrorWidget.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/gotoError/browser/media/gotoErrorWidget.css */
 .monaco-editor .peekview-widget .head .peekview-title .severity-icon {
   display: inline-block;
   vertical-align: text-top;
@@ -4199,7 +4199,7 @@
   color: var(--vscode-textLink-activeForeground);
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/base/browser/ui/severityIcon/media/severityIcon.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/base/browser/ui/severityIcon/media/severityIcon.css */
 .monaco-editor .zone-widget .codicon.codicon-error,
 .markers-panel .marker-icon.error,
 .markers-panel .marker-icon .codicon.codicon-error,
@@ -4227,7 +4227,7 @@
   color: var(--vscode-problemsInfoIcon-foreground);
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/snippet/browser/snippetSession.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/snippet/browser/snippetSession.css */
 .monaco-editor .snippet-placeholder {
   min-width: 2px;
   outline-style: solid;
@@ -4242,7 +4242,7 @@
   outline-color: var(--vscode-editor-snippetFinalTabstopHighlightBorder, transparent);
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/rename/browser/renameWidget.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/rename/browser/renameWidget.css */
 .monaco-editor .rename-box {
   z-index: 100;
   color: inherit;
@@ -4287,7 +4287,7 @@
   display: inherit;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/suggest/browser/media/suggest.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/suggest/browser/media/suggest.css */
 .monaco-editor .suggest-widget {
   width: 430px;
   z-index: 40;
@@ -4642,7 +4642,7 @@
   font-family: var(--monaco-monospace-font);
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/inlineCompletions/browser/view/ghostText/ghostTextView.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/inlineCompletions/browser/view/ghostText/ghostTextView.css */
 .monaco-editor .suggest-preview-additional-widget {
   white-space: nowrap;
 }
@@ -4708,7 +4708,7 @@
   background-color: var(--vscode-inlineEdit-modifiedChangedTextBackground);
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/stickyScroll/browser/stickyScroll.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/stickyScroll/browser/stickyScroll.css */
 .monaco-editor .sticky-widget {
   overflow: hidden;
   border-bottom: 1px solid var(--vscode-editorStickyScroll-border);
@@ -4768,7 +4768,7 @@
   cursor: pointer;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/inlineCompletions/browser/view/inlineEdits/view.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/inlineCompletions/browser/view/inlineEdits/view.css */
 .monaco-editor {
   --inline-edit-border-radius: 3px;
 }
@@ -4977,25 +4977,25 @@
   background-repeat: no-repeat;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/gotoSymbol/browser/link/goToDefinitionAtPosition.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/gotoSymbol/browser/link/goToDefinitionAtPosition.css */
 .monaco-editor .goto-definition-link {
   text-decoration: underline;
   cursor: pointer;
   color: var(--vscode-editorLink-activeForeground) !important;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/inPlaceReplace/browser/inPlaceReplace.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/inPlaceReplace/browser/inPlaceReplace.css */
 .monaco-editor.vs .valueSetReplacement {
   outline: solid 2px var(--vscode-editorBracketMatch-border);
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/linkedEditing/browser/linkedEditing.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/linkedEditing/browser/linkedEditing.css */
 .monaco-editor .linked-editing-decoration {
   background-color: var(--vscode-editor-linkedEditingBackground);
   min-width: 1px;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/links/browser/links.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/links/browser/links.css */
 .monaco-editor .detected-link,
 .monaco-editor .detected-link-active {
   text-decoration: underline;
@@ -5006,7 +5006,7 @@
   color: var(--vscode-editorLink-activeForeground) !important;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/middleScroll/browser/middleScroll.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/middleScroll/browser/middleScroll.css */
 .monaco-editor .scroll-editor-on-middle-click-dot {
   cursor: all-scroll;
   position: absolute;
@@ -5026,7 +5026,7 @@
   cursor: all-scroll;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/wordHighlighter/browser/highlightDecorations.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/wordHighlighter/browser/highlightDecorations.css */
 .monaco-editor .focused .selectionHighlight {
   background-color: var(--vscode-editor-selectionHighlightBackground);
   box-sizing: border-box;
@@ -5064,7 +5064,7 @@
   border-style: dotted;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/parameterHints/browser/parameterHints.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/parameterHints/browser/parameterHints.css */
 .monaco-editor .parameter-hints-widget {
   z-index: 39;
   display: flex;
@@ -5194,7 +5194,7 @@
   margin-right: 0.5em;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/placeholderText/browser/placeholderText.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/placeholderText/browser/placeholderText.css */
 .monaco-editor .editorPlaceholder {
   top: 0px;
   position: absolute;
@@ -5205,14 +5205,14 @@
   color: var(--vscode-editor-placeholder-foreground);
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/unicodeHighlighter/browser/unicodeHighlighter.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/unicodeHighlighter/browser/unicodeHighlighter.css */
 .monaco-editor .unicode-highlight {
   border: 1px solid var(--vscode-editorUnicodeHighlight-border);
   background-color: var(--vscode-editorUnicodeHighlight-background);
   box-sizing: border-box;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/unicodeHighlighter/browser/bannerController.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/unicodeHighlighter/browser/bannerController.css */
 .editor-banner {
   box-sizing: border-box;
   cursor: default;
@@ -5280,7 +5280,7 @@
   color: var(--vscode-banner-iconForeground);
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/platform/opener/browser/link.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/platform/opener/browser/link.css */
 .monaco-link {
   color: var(--vscode-textLink-foreground);
 }
@@ -5288,7 +5288,7 @@
   color: var(--vscode-textLink-activeForeground);
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/floatingMenu/browser/floatingMenu.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/contrib/floatingMenu/browser/floatingMenu.css */
 .floating-menu-overlay-widget {
   padding: 2px 4px;
   color: var(--vscode-foreground);
@@ -5363,7 +5363,7 @@
   box-shadow: none;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/standalone/browser/iPadShowKeyboard/iPadShowKeyboard.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/standalone/browser/iPadShowKeyboard/iPadShowKeyboard.css */
 .monaco-editor .iPadShowKeyboard {
   width: 58px;
   min-width: 0;
@@ -5383,7 +5383,7 @@
   border: 4px solid #252526;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/standalone/browser/inspectTokens/inspectTokens.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/standalone/browser/inspectTokens/inspectTokens.css */
 .monaco-editor .tokens-inspect-widget {
   z-index: 50;
   user-select: text;
@@ -5421,7 +5421,7 @@
   font-family: var(--monaco-monospace-font);
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/standalone/browser/standalone-tokens.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/standalone/browser/standalone-tokens.css */
 .monaco-editor {
   font-family:
     -apple-system,
@@ -5493,7 +5493,7 @@
   opacity: 1;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/platform/hover/browser/hover.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/platform/hover/browser/hover.css */
 .monaco-hover.workbench-hover {
   position: relative;
   font-size: 13px;
@@ -5615,7 +5615,7 @@
   margin-left: 16px;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/standalone/browser/quickInput/standaloneQuickInput.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/standalone/browser/quickInput/standaloneQuickInput.css */
 .quick-input-widget {
   font-size: 13px;
 }
@@ -5666,7 +5666,7 @@
   color: #ccc;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/platform/quickinput/browser/media/quickInput.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/platform/quickinput/browser/media/quickInput.css */
 .quick-input-widget {
   position: absolute;
   width: 600px;
@@ -6083,7 +6083,7 @@
   outline-offset: -1px;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/base/browser/ui/progressbar/progressbar.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/base/browser/ui/progressbar/progressbar.css */
 .monaco-progress-container {
   width: 100%;
   height: 2px;
@@ -6128,7 +6128,7 @@
   }
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/browser/widget/markdownRenderer/browser/renderedMarkdown.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/browser/widget/markdownRenderer/browser/renderedMarkdown.css */
 .monaco-editor .rendered-markdown kbd {
   background-color: var(--vscode-keybindingLabel-background);
   color: var(--vscode-keybindingLabel-foreground);
@@ -6145,7 +6145,7 @@
   list-style-type: none;
 }
 
-/* node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/browser/widget/multiDiffEditor/style.css */
+/* ../MODDING/modkit-core/node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/browser/widget/multiDiffEditor/style.css */
 .monaco-component.multiDiffEditor {
   background: var(--vscode-multiDiffEditor-background);
   position: relative;

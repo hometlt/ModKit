@@ -1,6 +1,6 @@
 import {
   boundsOf
-} from "../../../chunks/chunk-IF5B6DHS.js";
+} from "../../../chunks/chunk-3YDZHAZL.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 export {
   boundsOf

@@ -1,11 +1,11 @@
-import "../../../chunks/chunk-3Q224KYR.js";
+import "../../../chunks/chunk-TKIPZ6HV.js";
 import "../../../chunks/chunk-NUFRM6SI.js";
 import {
   ModkitError
-} from "../../../chunks/chunk-LRCQXYKO.js";
+} from "../../../chunks/chunk-W2UBWFML.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 
-// packages/codec-kit/dist/crypto/digest.js
+// ../MODDING/modkit-core/packages/codec-kit/dist/crypto/digest.js
 async function sha256Hex(bytes) {
   const subtle = globalThis.crypto?.subtle;
   if (!subtle) {

@@ -8,50 +8,50 @@ import {
   readUvmBillboards,
   readUvmModelStates,
   readUvmShadowMeshBindings
-} from "../../../chunks/chunk-UTQ6CE54.js";
-import "../../../chunks/chunk-DAR7PGR6.js";
+} from "../../../chunks/chunk-GN5Q6WAS.js";
+import "../../../chunks/chunk-QONSPCLP.js";
 import {
   DEFAULT_UVM_CONTAINER_BUDGET,
   checkUvmContainerBudget,
   readUvmContainer,
   writeUvmContainer
-} from "../../../chunks/chunk-GHGQXR4J.js";
+} from "../../../chunks/chunk-BC5RDUGA.js";
 import {
   array,
   field,
   object,
   required,
   safeIndex
-} from "../../../chunks/chunk-B5TWMJRH.js";
+} from "../../../chunks/chunk-I4Z5J3HX.js";
 import {
   readUvmAccessor,
   validateUvmDocument
-} from "../../../chunks/chunk-KZC7GO3A.js";
+} from "../../../chunks/chunk-A7Y3WO4R.js";
 import {
   readUvmAnimationClips,
   readUvmAnimationMaterialTargets,
   readUvmPrimitiveVisibility,
   uvmVisibilityPointer,
   uvmVisibilityTarget
-} from "../../../chunks/chunk-7BP5IQZS.js";
-import "../../../chunks/chunk-3EHD75HB.js";
-import "../../../chunks/chunk-C4KZWCMG.js";
-import "../../../chunks/chunk-WXUQLAQ3.js";
+} from "../../../chunks/chunk-3TRK5GFM.js";
+import "../../../chunks/chunk-WYUQ3HXR.js";
+import "../../../chunks/chunk-I675VFQQ.js";
+import "../../../chunks/chunk-5SBJANAJ.js";
 import {
   snapshotJson
-} from "../../../chunks/chunk-3YDGNEY2.js";
-import "../../../chunks/chunk-3Q224KYR.js";
+} from "../../../chunks/chunk-ZSDVUSRM.js";
+import "../../../chunks/chunk-TKIPZ6HV.js";
 import "../../../chunks/chunk-NUFRM6SI.js";
-import "../../../chunks/chunk-LRCQXYKO.js";
+import "../../../chunks/chunk-W2UBWFML.js";
 import {
   applyJsonEdit
-} from "../../../chunks/chunk-L5WKTLBK.js";
+} from "../../../chunks/chunk-UDFSUVGJ.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 
-// packages/scene/dist/uvm/json-edit.js
+// ../MODDING/modkit-core/packages/scene/dist/uvm/json-edit.js
 var applyUvmJsonEdit = applyJsonEdit;
 
-// packages/scene/dist/uvm/document.js
+// ../MODDING/modkit-core/packages/scene/dist/uvm/document.js
 var encoder = new TextEncoder();
 function openUvmDocument(bytes, options = {}) {
   const budget = Object.freeze({ ...options.budget ?? DEFAULT_UVM_CONTAINER_BUDGET });
@@ -256,7 +256,7 @@ function openUvmDocument(bytes, options = {}) {
   });
 }
 
-// packages/scene/dist/uvm/conversion-cache.js
+// ../MODDING/modkit-core/packages/scene/dist/uvm/conversion-cache.js
 function createUvmConversionCache(maxBytes) {
   if (!Number.isSafeInteger(maxBytes) || maxBytes < 0)
     throw new TypeError("invalid UVM conversion cache byte limit");
@@ -276,7 +276,7 @@ function createUvmConversionCache(maxBytes) {
   });
 }
 
-// packages/scene/dist/uvm/animation-materials.js
+// ../MODDING/modkit-core/packages/scene/dist/uvm/animation-materials.js
 var layerProperties = [
   "constantColor",
   "colorMultiply",
@@ -393,7 +393,7 @@ function attachMaterialSequences(source, target, sequenceMap, materialMap, budge
   return result;
 }
 
-// packages/scene/dist/uvm/animation-attachment.js
+// ../MODDING/modkit-core/packages/scene/dist/uvm/animation-attachment.js
 function nonnegative(value, label, maximum = Number.MAX_SAFE_INTEGER) {
   if (typeof value !== "number" || !Number.isSafeInteger(value) || value < 0 || value > maximum)
     throw new TypeError(`${label} must be a nonnegative integer`);
@@ -915,7 +915,7 @@ async function attachUvmAnimationBundle(document, expectedRevision, bundle, requ
   return Object.freeze({ ...result, status });
 }
 
-// packages/scene/dist/uvm/animation-operation.js
+// ../MODDING/modkit-core/packages/scene/dist/uvm/animation-operation.js
 async function prepareUvmAnimationAttachmentRequest(bytes, bundleBytes, input, options = {}) {
   const budget = options.budget ?? DEFAULT_UVM_CONTAINER_BUDGET;
   const document = openUvmDocument(bytes, { ...options, maxHistoryEntries: 0 });
@@ -929,7 +929,7 @@ async function prepareUvmAnimationAttachmentRequest(bytes, bundleBytes, input, o
   }
 }
 
-// packages/scene/dist/uvm/operations.js
+// ../MODDING/modkit-core/packages/scene/dist/uvm/operations.js
 function object2(value, label) {
   if (value === null || typeof value !== "object" || Array.isArray(value))
     throw new TypeError(`${label} must be an object`);
@@ -1019,7 +1019,7 @@ function prepareUvmEditRequest(bytes, input, options = {}) {
   }
 }
 
-// packages/scene/dist/uvm/edit-input-schema.js
+// ../MODDING/modkit-core/packages/scene/dist/uvm/edit-input-schema.js
 function createUvmJsonEditInputSchema(options) {
   return Object.freeze({
     $ref: options.reference,
@@ -1049,7 +1049,7 @@ function createUvmJsonEditInputSchema(options) {
   });
 }
 
-// packages/scene/dist/uvm/ordered-euler-chains.js
+// ../MODDING/modkit-core/packages/scene/dist/uvm/ordered-euler-chains.js
 var UVM_ORDERED_EULER_CHAINS = "UV_ordered_euler_chains";
 function readUvmOrderedEulerChains(document) {
   const raw = field(document["extensions"], UVM_ORDERED_EULER_CHAINS);

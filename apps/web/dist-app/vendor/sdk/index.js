@@ -94,6 +94,7 @@ import {
   languageWorkspaceIsSemanticallyIncomplete,
   loadSubjectCandidatePage,
   mapLayerWindow,
+  mapQualificationTupleBytes,
   namespaceEntryEditTarget,
   normalizeExtensionManifest,
   normalizeModkitIdentifier,
@@ -115,16 +116,16 @@ import {
   validateLocalizationContributionSemantics,
   writerOfferSatisfies,
   writerSelectionKey
-} from "../../chunks/chunk-S6QKYSGJ.js";
+} from "../../chunks/chunk-MAAPKCDG.js";
 import {
   NATIVE_MODEL_ENCODER_CONTRACT,
   NATIVE_MODEL_ENCODER_MATCHER_PROFILE
-} from "../../chunks/chunk-YYQ3QKXM.js";
+} from "../../chunks/chunk-R2P56FTH.js";
 import {
   GAME_TEMPLATE_PREVIEW_OPERATION_ID,
   GAME_TEMPLATE_PREVIEW_SCHEMA_VERSION,
   isGameTemplatePreviewResult
-} from "../../chunks/chunk-KL23KRQT.js";
+} from "../../chunks/chunk-P5QJHSUW.js";
 import {
   ADMITTED_DATA_SOURCE_CONTRACTS,
   ARCHITECTURES,
@@ -210,12 +211,12 @@ import {
   viewerContributionSpecV1Schema,
   writerOfferV1Schema,
   writerRequirementV1Schema
-} from "../../chunks/chunk-R7U42EZV.js";
+} from "../../chunks/chunk-VI4QBV4T.js";
 import {
   SCENE_RENDERER_CONTRACT,
   SCENE_RENDERER_MATCHER_PROFILE
-} from "../../chunks/chunk-GGIVOOBZ.js";
-import "../../chunks/chunk-LX6GSJ3D.js";
+} from "../../chunks/chunk-MT2JUZZJ.js";
+import "../../chunks/chunk-V3DESLW4.js";
 import "../../chunks/chunk-CQ52GEHY.js";
 export {
   A1_SPEC_SCHEMA_ENTRIES,
@@ -380,6 +381,7 @@ export {
   loadSubjectCandidatePage,
   localizationContributionSpecV1Schema,
   mapLayerWindow,
+  mapQualificationTupleBytes,
   modkitBlockSchema,
   namespaceEntryEditTarget,
   narrowGrant,

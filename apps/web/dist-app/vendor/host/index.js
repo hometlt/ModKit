@@ -5,7 +5,7 @@ import {
   createDescriptorFallbackSubjectFactsSource,
   createFieldRelationGraphSource,
   descriptorSubjectRef
-} from "../../chunks/chunk-C3YMJE7D.js";
+} from "../../chunks/chunk-24NQA5DY.js";
 import {
   ABI_ASSET_SESSION,
   base64Of,
@@ -13,17 +13,17 @@ import {
   createStandardSurfaceRegistry,
   framePortFromMessagePort,
   protocolLimits
-} from "../../chunks/chunk-FIXB2PMV.js";
+} from "../../chunks/chunk-QYMOBICX.js";
 import {
   assembleSubjectDescriptor,
   createAssetSession,
   createByteRangeSource,
   createLazyTableDataSource,
   createUtf8TextDataSource
-} from "../../chunks/chunk-PDO7AMOW.js";
+} from "../../chunks/chunk-QJZPE5FO.js";
 import {
   metadataFieldProjections
-} from "../../chunks/chunk-JHPOUH6S.js";
+} from "../../chunks/chunk-5GGWVEQJ.js";
 import {
   A1_SPEC_SCHEMA_ENTRIES,
   CODEC_CONTRIBUTION_CONTRACT,
@@ -90,12 +90,12 @@ import {
   validateContributionManifest,
   writerOfferSatisfies,
   writerSelectionKey
-} from "../../chunks/chunk-S6QKYSGJ.js";
+} from "../../chunks/chunk-MAAPKCDG.js";
 import {
   NATIVE_MODEL_ENCODER_CONTRACT,
   NATIVE_MODEL_ENCODER_MATCHER_PROFILE
-} from "../../chunks/chunk-YYQ3QKXM.js";
-import "../../chunks/chunk-KL23KRQT.js";
+} from "../../chunks/chunk-R2P56FTH.js";
+import "../../chunks/chunk-P5QJHSUW.js";
 import {
   PERMISSION_CLASSES,
   algorithmQualifiedDigest,
@@ -115,11 +115,11 @@ import {
   serializeSubjectRef,
   snapshotJsonWireData,
   subjectRefEquals
-} from "../../chunks/chunk-R7U42EZV.js";
+} from "../../chunks/chunk-VI4QBV4T.js";
 import {
   SCENE_RENDERER_CONTRACT,
   SCENE_RENDERER_MATCHER_PROFILE
-} from "../../chunks/chunk-GGIVOOBZ.js";
+} from "../../chunks/chunk-MT2JUZZJ.js";
 import {
   CONTAINER_EXTRACT_OPERATION_ID,
   ModkitError,
@@ -142,12 +142,12 @@ import {
   satisfiesRange,
   throwIfAborted,
   uint64
-} from "../../chunks/chunk-LX6GSJ3D.js";
+} from "../../chunks/chunk-V3DESLW4.js";
 import {
   __export
 } from "../../chunks/chunk-CQ52GEHY.js";
 
-// packages/host/dist/inventory.js
+// ../MODDING/modkit-core/packages/host/dist/inventory.js
 var validatedManifests = /* @__PURE__ */ new Map();
 var VALIDATED_MANIFEST_CACHE_LIMIT = 512;
 var registryFingerprints = /* @__PURE__ */ new WeakMap();
@@ -394,7 +394,7 @@ function inventoryHasErrors(inventory) {
   return hasErrors(inventory.diagnostics) || inventory.extensions.some((extension) => extension.contributions.some((contribution) => hasErrors(contribution.diagnostics)));
 }
 
-// packages/host/dist/contribution-registry.js
+// ../MODDING/modkit-core/packages/host/dist/contribution-registry.js
 var PROVIDER_OFFER_INVENTORY_FACT = contractId("modkit.inventory/provider-offer");
 var VIEWER_CONTRIBUTION_INVENTORY_FACT = contractId("modkit.inventory/viewer-contribution");
 function fact(contract, value, context) {
@@ -581,7 +581,7 @@ function createHostContributionContractRegistry(additional = []) {
   return createContributionContractRegistry([...builtins(), ...additional]);
 }
 
-// packages/host/dist/offers.js
+// ../MODDING/modkit-core/packages/host/dist/offers.js
 var offerBindings = /* @__PURE__ */ new WeakMap();
 function inventoryBindingForOffer(offer) {
   return offerBindings.get(offer);
@@ -734,7 +734,7 @@ function offersFromInventory(inventory) {
   return sorted;
 }
 
-// packages/vfs/dist/source.js
+// ../MODDING/modkit-core/packages/vfs/dist/source.js
 function rangeError(id, offset, length, size) {
   return new ModkitError({
     code: "x3.vfs/read-out-of-range",
@@ -789,7 +789,7 @@ function createMemorySource(id, bytes) {
   };
 }
 
-// packages/vfs/dist/vfs.js
+// ../MODDING/modkit-core/packages/vfs/dist/vfs.js
 var DEFAULT_VFS_LIMITS = Object.freeze({
   // Large installed-game indexes are normal inputs (the pinned BAR rapid package has 18,413
   // records). Providers still count before exposing an entry; this ceiling merely lets a caller
@@ -830,7 +830,7 @@ function normalizeVfsPath(path) {
   return parts.join("/");
 }
 
-// packages/host/dist/security/entrypoint.js
+// ../MODDING/modkit-core/packages/host/dist/security/entrypoint.js
 var SCHEME = /^[a-zA-Z][a-zA-Z0-9+.-]*:/;
 var WINDOWS_DRIVE = /^[a-zA-Z]:/;
 function refuse(entrypoint, why) {
@@ -872,7 +872,7 @@ function resolveContainedEntrypoint(baseUrl, entrypoint) {
   return resolved;
 }
 
-// packages/host/dist/artifact-files.js
+// ../MODDING/modkit-core/packages/host/dist/artifact-files.js
 var encoder = new TextEncoder();
 function confinedArtifactPath(authored, artifactRoot, label) {
   if (authored.startsWith("/") || authored.startsWith("\\") || authored.includes("\\")) {
@@ -945,7 +945,7 @@ async function readAttestedArtifactFile(contribution, authoredPath, options) {
   }
 }
 
-// packages/host/dist/localization.js
+// ../MODDING/modkit-core/packages/host/dist/localization.js
 var LOCALIZATION_CATALOG_MAXIMUM_JSON_BYTES = 8 * 1024 * 1024;
 var decoder = new TextDecoder("utf-8", { fatal: true });
 function extensionCoordinate(extension) {
@@ -1071,7 +1071,7 @@ async function loadLocalizationCatalogs(inventory, options) {
   });
 }
 
-// packages/host/dist/commands/runtime.js
+// ../MODDING/modkit-core/packages/host/dist/commands/runtime.js
 var COMMAND_CANCELLED = "x3.command/cancelled";
 var COMMAND_SUBJECT_UNRESOLVED = "x3.command/subject-unresolved";
 var COMMAND_INPUT_INVALID = "x3.command/input-invalid";
@@ -1120,7 +1120,7 @@ function isAbort(error3) {
   return error3 instanceof Error && (error3.name === "AbortError" || error3.name === "TimeoutError");
 }
 
-// packages/host/dist/commands/protocol.js
+// ../MODDING/modkit-core/packages/host/dist/commands/protocol.js
 var COMMAND_PROTOCOL_SCHEMA_VERSION = "modkit-command-protocol-1";
 var RESULT_STATES = Object.freeze(["ok", "unavailable", "failed"]);
 var immutableJson = (value) => {
@@ -1197,7 +1197,7 @@ async function executeCommandRequest(runtime, request, context) {
   });
 }
 
-// packages/host/dist/commands/immutable-command-targets.js
+// ../MODDING/modkit-core/packages/host/dist/commands/immutable-command-targets.js
 function deepFreeze(value) {
   if (value !== null && typeof value === "object" && !Object.isFrozen(value)) {
     for (const nested of Object.values(value))
@@ -1210,7 +1210,7 @@ function defineSubjectCommandTargets(targets) {
   return deepFreeze(targets);
 }
 
-// packages/host/dist/commands/subject-command-targets.js
+// ../MODDING/modkit-core/packages/host/dist/commands/subject-command-targets.js
 var SUBJECT_COMMAND_TARGETS = defineSubjectCommandTargets({
   open: {
     commandId: "subject.open",
@@ -1268,7 +1268,7 @@ var SUBJECT_COMMAND_TARGETS = defineSubjectCommandTargets({
   }
 });
 
-// packages/host/dist/commands/subject-commands.js
+// ../MODDING/modkit-core/packages/host/dist/commands/subject-commands.js
 var OPEN_COMMAND = SUBJECT_COMMAND_TARGETS.open.commandId;
 var INSPECT_COMMAND = SUBJECT_COMMAND_TARGETS.inspect.commandId;
 var VALIDATE_COMMAND = SUBJECT_COMMAND_TARGETS.validate.commandId;
@@ -1603,7 +1603,7 @@ var SUBJECT_COMMANDS = Object.freeze([
   previewCommand
 ]);
 
-// packages/host/dist/commands/service-operation-commands.js
+// ../MODDING/modkit-core/packages/host/dist/commands/service-operation-commands.js
 var SERVICE_OPERATIONS_COMMAND = "service.operations";
 var SERVICE_OPERATION_INVOKE_COMMAND = "service.invoke";
 var json = (value) => value;
@@ -1685,7 +1685,7 @@ var SERVICE_OPERATION_COMMAND_TARGETS = Object.freeze([
   })
 ]);
 
-// packages/host/dist/commands/edit-commands.js
+// ../MODDING/modkit-core/packages/host/dist/commands/edit-commands.js
 var SUBJECT_EDIT_COMMAND = "subject.edit";
 var SUBJECT_EDIT_OPERATION_IDS = Object.freeze([
   "edit.field",
@@ -1803,7 +1803,7 @@ var SUBJECT_EDIT_COMMAND_TARGETS = Object.freeze([
   })
 ]);
 
-// packages/host/dist/commands/subject-opener.js
+// ../MODDING/modkit-core/packages/host/dist/commands/subject-opener.js
 function commandSubjectsFrom(open) {
   return async (ref2, signal) => {
     const answer = await open(ref2, signal);
@@ -1822,7 +1822,7 @@ function commandSubjectsFrom(open) {
   };
 }
 
-// packages/host/dist/commands/endpoint.js
+// ../MODDING/modkit-core/packages/host/dist/commands/endpoint.js
 var DEFAULT_COMMAND_MAX_CONCURRENT_RUNS = 32;
 function createSubjectCommandEndpoint(options) {
   const maximum = options.maxConcurrentRuns ?? DEFAULT_COMMAND_MAX_CONCURRENT_RUNS;
@@ -1900,7 +1900,7 @@ function createSubjectCommandEndpoint(options) {
   });
 }
 
-// packages/host/dist/commands/index.js
+// ../MODDING/modkit-core/packages/host/dist/commands/index.js
 function createSubjectCommandRuntime() {
   return createCommandRuntime(SUBJECT_COMMANDS);
 }
@@ -1922,7 +1922,7 @@ function describeSubjectCommandContracts() {
   return describeCommandContracts(createSubjectCommandRuntime(), Object.values(SUBJECT_COMMAND_TARGETS));
 }
 
-// packages/host/dist/detection-selection.js
+// ../MODDING/modkit-core/packages/host/dist/detection-selection.js
 var EVIDENCE_KINDS = Object.freeze([
   "magic",
   "structure",
@@ -2077,7 +2077,7 @@ function replayCodecDetectionSelection(inventory, sourceRevision, text) {
   return selection;
 }
 
-// packages/host/dist/detection-rules.js
+// ../MODDING/modkit-core/packages/host/dist/detection-rules.js
 var DETECTION_EVIDENCE_LADDER = Object.freeze([
   "name-only",
   "generic-syntax",
@@ -2145,7 +2145,7 @@ function isDetectionUntieRule(id) {
   return DETECTION_UNTIE_RULES.some((rule) => rule.id === id);
 }
 
-// packages/host/dist/source-bridge.js
+// ../MODDING/modkit-core/packages/host/dist/source-bridge.js
 function invalidRange(sourceId, offset, length, size, message) {
   return new ModkitError({
     code: "x3.host/source-range-unrepresentable",
@@ -2253,7 +2253,7 @@ async function artifactByteSourceFromRandomAccess(source, options) {
   return Object.freeze(bridged);
 }
 
-// packages/host/dist/detection-index.js
+// ../MODDING/modkit-core/packages/host/dist/detection-index.js
 var MAX_SIGNATURE_WINDOW_BYTES = 4096 + 64;
 var clamp = (value) => Math.min(value, MAX_SIGNATURE_WINDOW_BYTES);
 function signatureNeeds(ruleSets) {
@@ -2309,7 +2309,7 @@ function matchesSignatures(rules, windows) {
   return false;
 }
 
-// packages/host/dist/resource-session.js
+// ../MODDING/modkit-core/packages/host/dist/resource-session.js
 var RESOURCE_NOT_FOUND = "x3.host/resource-not-found";
 var RESOURCE_NOT_ALLOWLISTED = "x3.host/resource-not-allowlisted";
 var RESOURCE_PATH_REFUSED = "x3.host/resource-path-refused";
@@ -2615,11 +2615,11 @@ function createResourceSession(options) {
   };
 }
 
-// packages/vfs/dist/content-sources.js
+// ../MODDING/modkit-core/packages/vfs/dist/content-sources.js
 var HOST_LAYER_SOURCE_ID = "host";
 var MOD_CONTEXT_MAX_QUERY_REFS = 1024;
 
-// packages/host/dist/language/context.js
+// ../MODDING/modkit-core/packages/host/dist/language/context.js
 var LANGUAGE_WORKSPACE_SEMANTIC_PAYLOAD_MAX_DEPTH = 64;
 var LANGUAGE_WORKSPACE_SEMANTIC_PAYLOAD_MAX_BYTES = 64 * 1024 * 1024;
 var LANGUAGE_WORKSPACE_SEMANTIC_INPUTS_MAX = 256;
@@ -2737,7 +2737,7 @@ var languageWorkspaceContextToken = (value) => {
   return `language-context-v1:${fnv64(canonical, 0xcbf29ce484222325n, false)}${fnv64(canonical, 0x84222325cbf29ce4n, true)}`;
 };
 
-// packages/host/dist/resolution/resolver.js
+// ../MODDING/modkit-core/packages/host/dist/resolution/resolver.js
 var RESOLVER_VERSION = 1;
 var resolverProducts = /* @__PURE__ */ new WeakMap();
 function requestProvenanceKey(request) {
@@ -2967,7 +2967,7 @@ function sortRejected(rejected2) {
   return keyed.map((entry2) => entry2.candidate);
 }
 
-// packages/host/dist/resolution/lock.js
+// ../MODDING/modkit-core/packages/host/dist/resolution/lock.js
 function normalizeTraitRequirements(values) {
   const normalized = /* @__PURE__ */ new Map();
   for (const value of values ?? []) {
@@ -3242,7 +3242,7 @@ function replayPolicyLock(request, offers, text) {
   }, available);
 }
 
-// packages/host/dist/resolution/service-resolver.js
+// ../MODDING/modkit-core/packages/host/dist/resolution/service-resolver.js
 async function resolveServiceProvider(request, offers, definitions, targetFor) {
   const accepted = /* @__PURE__ */ new Set();
   const selectionKeys = /* @__PURE__ */ new Map();
@@ -3313,7 +3313,7 @@ function createContractResolverPort(options) {
   };
 }
 
-// packages/host/dist/execution/backend.js
+// ../MODDING/modkit-core/packages/host/dist/execution/backend.js
 var PROFILE_VALUES = Object.freeze([
   "browser-sandbox",
   "worker-brokered",
@@ -3446,7 +3446,7 @@ function linkedInProcessBackend(linked) {
 }
 var DEFAULT_EXECUTION_BACKENDS = /* @__PURE__ */ createExecutionBackendRegistry([TRUSTED_IN_PROCESS_EXECUTION_BACKEND]);
 
-// packages/host/dist/security/gate.js
+// ../MODDING/modkit-core/packages/host/dist/security/gate.js
 var issuedTickets = /* @__PURE__ */ new WeakSet();
 var ticketBindings = /* @__PURE__ */ new WeakMap();
 function resolveForActivation(request, offers, operation) {
@@ -3682,7 +3682,7 @@ async function activateContribution(request) {
   };
 }
 
-// packages/host/dist/service-leases.js
+// ../MODDING/modkit-core/packages/host/dist/service-leases.js
 function serviceTargetFor(executionBackends, offer, target) {
   const inProcess = executionBackends.inProcessTarget;
   if (inProcess === void 0)
@@ -3850,7 +3850,7 @@ function createHostServiceResolver(options) {
   });
 }
 
-// packages/host/dist/data/index.js
+// ../MODDING/modkit-core/packages/host/dist/data/index.js
 var STANDARD_DATA_OWNER = "modkit/platform-data";
 var OFFER_KEYS = /* @__PURE__ */ new Set(["gameIds"]);
 var REQUEST_KEYS = /* @__PURE__ */ new Set(["gameId"]);
@@ -5301,7 +5301,7 @@ async function analyzeResolvedDataWorkspace(request) {
   }
 }
 
-// packages/host/dist/language/semantic-context.js
+// ../MODDING/modkit-core/packages/host/dist/language/semantic-context.js
 var MAX_SEMANTIC_CONTEXT_REQUIREMENTS = 8;
 var MAX_LANGUAGE_RESOLVED_DATA_ENTITIES = 1e5;
 var MAX_LANGUAGE_AUTHORING_INDEX_BYTES = 48 * 1024 * 1024;
@@ -5580,7 +5580,7 @@ async function analyzeResolvedDataSemanticContext(request) {
   }
 }
 
-// packages/host/dist/language/subject-completion.js
+// ../MODDING/modkit-core/packages/host/dist/language/subject-completion.js
 var candidateCompletion = (candidate) => Object.freeze({
   label: candidate.label,
   kind: "text",
@@ -5625,7 +5625,7 @@ async function expandSubjectReferenceCompletions(list, candidates, maxResults, s
   return Object.freeze({ items: Object.freeze(items), isIncomplete });
 }
 
-// packages/host/dist/language/index.js
+// ../MODDING/modkit-core/packages/host/dist/language/index.js
 var STANDARD_LANGUAGE_OWNER = "modkit/language";
 var OFFER_KEYS2 = /* @__PURE__ */ new Set([
   "languageIds",
@@ -6126,7 +6126,7 @@ async function resolveLanguageProvider(request) {
   }
 }
 
-// packages/host/dist/references.js
+// ../MODDING/modkit-core/packages/host/dist/references.js
 var bounded = (value) => typeof value === "string" && value.length > 0 && value.length <= 8192 && !value.includes("\0");
 var validSpan = (span2) => {
   const value = span2;
@@ -6271,7 +6271,7 @@ function createWorkspaceReferenceIndex() {
   return Object.freeze(api);
 }
 
-// packages/host/dist/language/workspace.js
+// ../MODDING/modkit-core/packages/host/dist/language/workspace.js
 var LANGUAGE_WORKSPACE_NOT_INITIALIZED = "x3.host/language-workspace-not-initialized";
 var LANGUAGE_WORKSPACE_SHUT_DOWN = "x3.host/language-workspace-shut-down";
 var LANGUAGE_DOCUMENT_ALREADY_OPEN = "x3.host/language-document-already-open";
@@ -7968,7 +7968,7 @@ function createLanguageWorkspace(options) {
   });
 }
 
-// packages/host/dist/content-dependencies.js
+// ../MODDING/modkit-core/packages/host/dist/content-dependencies.js
 var DEPENDENCY_SCOPE = Object.freeze(["workspace-dependency-layer"]);
 var KNOWLEDGE_FILE_MAX_BYTES = 8 * 1024 * 1024;
 var KNOWLEDGE_TOTAL_MAX_BYTES = 32 * 1024 * 1024;
@@ -8397,7 +8397,7 @@ function createContentDependencyAssetOrigin(options) {
   return createContentDependencyOrigin(options.contentSources, mounts, maximumEntryBytes);
 }
 
-// packages/host/dist/content-dependency-operations.js
+// ../MODDING/modkit-core/packages/host/dist/content-dependency-operations.js
 var foldHostPath = (value) => value.replaceAll("\\", "/").replace(/\/+$/u, "").toLowerCase();
 function baseModsFor(target, setting) {
   if (setting === void 0)
@@ -8674,7 +8674,7 @@ function composeLanguageDocumentSources(sources, noteCompleteness) {
   });
 }
 
-// packages/host/dist/catalog-questions.js
+// ../MODDING/modkit-core/packages/host/dist/catalog-questions.js
 var key = (ref2) => JSON.stringify([ref2.namespace, ref2.entityId]);
 async function answerCatalogQueries(options) {
   const asked = /* @__PURE__ */ new Set();
@@ -8754,7 +8754,7 @@ function operationCatalogQueries(result) {
   return queries.filter((ref2) => typeof ref2?.namespace === "string" && ref2.namespace !== "" && typeof ref2.entityId === "string" && ref2.entityId !== "");
 }
 
-// packages/host/dist/execution/consumer-adapters.js
+// ../MODDING/modkit-core/packages/host/dist/execution/consumer-adapters.js
 var codecReleases = /* @__PURE__ */ new WeakMap();
 async function releaseCodec(codec) {
   const release = codecReleases.get(codec);
@@ -8762,7 +8762,7 @@ async function releaseCodec(codec) {
   await release?.();
 }
 
-// packages/host/dist/raster-selection.js
+// ../MODDING/modkit-core/packages/host/dist/raster-selection.js
 var coordinates = ["frame", "mipLevel", "layer", "face", "slice"];
 function captureRasterSelection(value) {
   if (value === void 0)
@@ -8831,7 +8831,7 @@ function rasterSelectionPlan(info, selection, maxBytes) {
   return { width, height, subresources };
 }
 
-// packages/host/dist/raster-resources.js
+// ../MODDING/modkit-core/packages/host/dist/raster-resources.js
 function rasterSpellings(logicalId, rule) {
   const spellings = [logicalId];
   if (rule === void 0)
@@ -9043,7 +9043,7 @@ function createSubjectRasterResources(options) {
   });
 }
 
-// packages/host/dist/logical-resource-deadline.js
+// ../MODDING/modkit-core/packages/host/dist/logical-resource-deadline.js
 function logicalResourceDeadline(task, timeoutMs, parent) {
   parent?.throwIfAborted();
   if (timeoutMs <= 0)
@@ -9087,7 +9087,7 @@ function logicalResourceDeadline(task, timeoutMs, parent) {
   });
 }
 
-// packages/host/dist/logical-resource-batch.js
+// ../MODDING/modkit-core/packages/host/dist/logical-resource-batch.js
 function refused(reason, message) {
   return Object.freeze({
     state: "refused",
@@ -9328,7 +9328,7 @@ async function readLogicalResourceBatch(request, context, signal) {
   }
 }
 
-// packages/host/dist/logical-resources.js
+// ../MODDING/modkit-core/packages/host/dist/logical-resources.js
 var ROLES = ["texture", "sidecar", "buffer"];
 var SCOPES = [
   "sibling-directory",
@@ -9735,7 +9735,7 @@ function createSubjectLogicalResources(options) {
   return Object.freeze(port);
 }
 
-// packages/host/dist/namespace-origin.js
+// ../MODDING/modkit-core/packages/host/dist/namespace-origin.js
 var NAMESPACE_SCOPES = Object.freeze([
   "current-mount",
   "enclosing-container"
@@ -10329,7 +10329,7 @@ function containerEntrySource(ref2, revision, bytes) {
   });
 }
 
-// packages/host/dist/container-composition.js
+// ../MODDING/modkit-core/packages/host/dist/container-composition.js
 var NAMESPACE_ENTRY_SOURCE2 = "common.view/namespace-entry-source";
 var CONTAINER_EXTRACT = "container.extract";
 var CONTAINER_PACK = "container.pack";
@@ -10991,7 +10991,7 @@ async function createContainerNamespaceComposition(options) {
   return composition;
 }
 
-// packages/host/dist/model-projection-cache.js
+// ../MODDING/modkit-core/packages/host/dist/model-projection-cache.js
 function modelProjectionKey(opened, source, sourceKey, logicalId) {
   const descriptor = opened.descriptor;
   if (descriptor.interpretation !== "codec")
@@ -11125,7 +11125,7 @@ function createModelProjectionCache(state, maxScalarBytes) {
   };
 }
 
-// packages/host/dist/model-resources.js
+// ../MODDING/modkit-core/packages/host/dist/model-resources.js
 function uvmArtifactSource(source, bytes, conversionKey) {
   const owned = bytes;
   const size = BigInt(owned.byteLength);
@@ -11499,7 +11499,7 @@ function createSubjectModelResources(options) {
   };
 }
 
-// packages/host/dist/subject-models.js
+// ../MODDING/modkit-core/packages/host/dist/subject-models.js
 var FACTS = "common.view/subject-facts-source";
 var SELECTOR = "common.view/subject-selector-source";
 var MODEL_PREVIEW_BYTES = 64 * 1024 * 1024;
@@ -11639,7 +11639,7 @@ function subjectModelDataSources(dataSource, port) {
   });
 }
 
-// packages/host/dist/subject-open.js
+// ../MODDING/modkit-core/packages/host/dist/subject-open.js
 var DEFAULT_MINIMUM_CONFIDENCE = 0.5;
 var DEFAULT_MAX_CANDIDATES = 64;
 var WORKER_REFUSAL_CODES = /* @__PURE__ */ new Set([
@@ -12446,6 +12446,18 @@ async function unresolvedFallback(source, signal) {
   });
 }
 async function openSubjectDirect(options, route = {}) {
+  const catalog = options.subjectCatalog === void 0 ? void 0 : subjectCatalogEntities(options.subjectCatalog, async () => options.source.ref.uri);
+  try {
+    const result = await openSubjectDirectWith(options, route, catalog);
+    if (result.state !== "opened")
+      await catalog?.release();
+    return result;
+  } catch (error3) {
+    await catalog?.release();
+    throw error3;
+  }
+}
+async function openSubjectDirectWith(options, route, catalog) {
   throwIfAborted(options.signal);
   const minimumConfidence = options.minimumConfidence ?? DEFAULT_MINIMUM_CONFIDENCE;
   const maxCandidates = options.maxCandidates ?? DEFAULT_MAX_CANDIDATES;
@@ -12597,6 +12609,7 @@ async function openSubjectDirect(options, route = {}) {
             ...settings === void 0 ? {} : { settings },
             ...options.videoFrames === void 0 ? {} : { videoFrames: options.videoFrames },
             ...options.installationFiles === void 0 ? {} : { installationFiles: options.installationFiles },
+            ...catalog === void 0 ? {} : { catalog: Object.freeze({ entities: catalog.entities }) },
             ...credentials === void 0 ? {} : { credentials },
             ...options.containerContext === void 0 ? {} : { containerContext: options.containerContext },
             logicalResources: createSubjectLogicalResources({
@@ -12908,7 +12921,6 @@ async function openSubjectDirect(options, route = {}) {
         ...signal === void 0 ? {} : { signal }
       })
     });
-    const catalog = options.subjectCatalog === void 0 ? void 0 : subjectCatalogEntities(options.subjectCatalog, async () => (await session.descriptor()).subjectUri);
     if (catalog !== void 0)
       best.resources.add(() => catalog.release());
     const managedSession = sessionWithResources(session, best.resources, {
@@ -13218,7 +13230,7 @@ async function openSubject(request) {
   }
 }
 
-// packages/host/dist/input-resolution.js
+// ../MODDING/modkit-core/packages/host/dist/input-resolution.js
 var COMPANION_REQUIRED_MISSING = "x3.host/companion-required-missing";
 var COMPANION_AMBIGUOUS = "x3.host/companion-ambiguous";
 var COMPANION_PATH_REFUSED = "x3.host/companion-path-refused";
@@ -13854,7 +13866,7 @@ function buildAssetInput(context, plan, origin, selected, signal) {
   });
 }
 
-// packages/host/dist/vfs-source.js
+// ../MODDING/modkit-core/packages/host/dist/vfs-source.js
 function scopedPath(root, path) {
   const normalized = normalizeVfsPath(path);
   return root === "" ? normalized : normalized === "" ? root : `${root}/${normalized}`;
@@ -14050,7 +14062,7 @@ function artifactNamespaceSourceFromVfsMount(mount, options = {}) {
   return sourceAt(rootPath, rootRef, mount.revision);
 }
 
-// packages/host/dist/editing.js
+// ../MODDING/modkit-core/packages/host/dist/editing.js
 var GUARANTEE_STRENGTH = Object.freeze({
   "best-effort": 0,
   recoverable: 1,
@@ -15038,7 +15050,7 @@ function createEditSession(options) {
   });
 }
 
-// packages/host/dist/subject-editing.js
+// ../MODDING/modkit-core/packages/host/dist/subject-editing.js
 function unsupported(kind) {
   return new ModkitError({
     code: "x3.host/edit-topology-unsupported",
@@ -15337,7 +15349,7 @@ function createSubjectEditing(options) {
   return Object.freeze(editing);
 }
 
-// packages/host/dist/container-pack.js
+// ../MODDING/modkit-core/packages/host/dist/container-pack.js
 function invalidInput(message) {
   throw new ModkitError({ code: "x3.host/container-pack-input-invalid", message });
 }
@@ -15481,7 +15493,7 @@ async function invokeContainerPack(opened, input, options = {}) {
   return result;
 }
 
-// packages/host/dist/nested-subject.js
+// ../MODDING/modkit-core/packages/host/dist/nested-subject.js
 var NESTED_SUBJECT_UNSUPPORTED = "x3.host/nested-subject-unsupported";
 var NESTED_ENTRY_UNREADABLE = "x3.host/nested-entry-unreadable";
 var CONTAINER_EXTRACT2 = "container.extract";
@@ -15824,7 +15836,7 @@ function sessionHoldingContainer(session, release) {
   });
 }
 
-// packages/host/dist/mod-context-layer-source.js
+// ../MODDING/modkit-core/packages/host/dist/mod-context-layer-source.js
 var LIST_PAGE = 4096;
 var MAX_ENTRY_BYTES = 64 * 1024 * 1024;
 function nestedRef2(root, path) {
@@ -15933,7 +15945,7 @@ async function openModContextLayerSource(options) {
   return namespaceAt("", ref2);
 }
 
-// packages/host/dist/mod-context-data-workspace.js
+// ../MODDING/modkit-core/packages/host/dist/mod-context-data-workspace.js
 var PAGE_SIZE = 4096;
 var MAX_ENTRY_BYTES2 = 64 * 1024 * 1024;
 function createModContextDataWorkspaceInputs(context, options) {
@@ -16133,7 +16145,7 @@ function createModContextDataWorkspaceInputs(context, options) {
   });
 }
 
-// packages/host/dist/service-definitions.js
+// ../MODDING/modkit-core/packages/host/dist/service-definitions.js
 var FACETLESS_SERVICE_MATCHER_PROFILE = contractId("modkit/facetless-matcher");
 var facetlessMatcher = Object.freeze({
   profile: FACETLESS_SERVICE_MATCHER_PROFILE,
@@ -16367,7 +16379,7 @@ async function registerServiceContractDefinitionsFromInventory(inventory, regist
   return Object.freeze(results);
 }
 
-// packages/host/dist/editing-definitions.js
+// ../MODDING/modkit-core/packages/host/dist/editing-definitions.js
 var STANDARD_EDITING_OWNER = "modkit/editing";
 var REQUIREMENT_KEYS = ["formatId", "representationId", "mutationMode", "minimumRoundTrip"];
 var OFFER_KEYS3 = [...REQUIREMENT_KEYS, "providerId", "fidelityEvidenceId"];
@@ -16448,7 +16460,7 @@ function registerStandardEditingDefinitions(definitions) {
   })));
 }
 
-// packages/host/dist/runtime/preparer.js
+// ../MODDING/modkit-core/packages/host/dist/runtime/preparer.js
 var RUNTIME_PREPARER_MAJOR = 1;
 var ADAPTER_ID = /^[a-z0-9][a-z0-9-]*(?:\.[a-z0-9][a-z0-9-]*)*\/[a-z0-9][a-z0-9-]*$/u;
 var VERSION = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/u;
@@ -16484,7 +16496,7 @@ function resolveContentRuntimePreparer(contentSources, gameId) {
   return { state: "resolved", preparer: row };
 }
 
-// packages/host/dist/runtime/source-snapshot.js
+// ../MODDING/modkit-core/packages/host/dist/runtime/source-snapshot.js
 var MAX_FILES = 4096;
 var MAX_TOTAL_BYTES = 512 * 1024 * 1024;
 var MAX_PATH_LENGTH = 4096;
@@ -16592,7 +16604,7 @@ function captureRuntimeSourceReads(context) {
   };
 }
 
-// packages/host/dist/runtime/index.js
+// ../MODDING/modkit-core/packages/host/dist/runtime/index.js
 var STANDARD_RUNTIME_OWNER = "modkit/runtime";
 var OFFER_KEYS4 = /* @__PURE__ */ new Set(["runtimeIds"]);
 var REQUEST_KEYS3 = /* @__PURE__ */ new Set(["runtimeId"]);
@@ -16993,7 +17005,7 @@ async function resolveRuntimeSession(request, resourceState, inputs) {
   }
 }
 
-// packages/host/dist/service-operation-schema.js
+// ../MODDING/modkit-core/packages/host/dist/service-operation-schema.js
 var TYPES = /* @__PURE__ */ new Set(["null", "boolean", "object", "array", "number", "integer", "string"]);
 var KEYWORDS = /* @__PURE__ */ new Set([
   "$schema",
@@ -17245,7 +17257,7 @@ function createServiceOperationSchemaValidator(schema) {
   return Object.freeze(validator);
 }
 
-// packages/host/dist/service-operations.js
+// ../MODDING/modkit-core/packages/host/dist/service-operations.js
 var STANDARD_SERVICE_OPERATION_OWNER = "modkit/service-operations";
 var recordOf5 = (value) => typeof value === "object" && value !== null && !Array.isArray(value) ? value : void 0;
 var nonEmpty2 = (value) => typeof value === "string" && value.trim().length > 0;
@@ -17846,7 +17858,7 @@ async function invokeServiceOperation(request) {
   });
 }
 
-// packages/host/dist/renderer/index.js
+// ../MODDING/modkit-core/packages/host/dist/renderer/index.js
 var STANDARD_RENDERER_OWNER = "modkit/renderer";
 var OFFER_KEYS5 = /* @__PURE__ */ new Set(["rendererIds", "outputKinds"]);
 var REQUEST_KEYS4 = /* @__PURE__ */ new Set(["rendererId", "outputKind"]);
@@ -18124,7 +18136,7 @@ function createSceneRendererPort(options) {
   });
 }
 
-// packages/host/dist/model-encoding.js
+// ../MODDING/modkit-core/packages/host/dist/model-encoding.js
 var STANDARD_MODEL_ENCODING_OWNER = "modkit/model-encoding";
 var recordOf7 = (value) => typeof value === "object" && value !== null && !Array.isArray(value) ? value : void 0;
 var nonEmptyString4 = (value) => typeof value === "string" && value.trim().length > 0;
@@ -18208,7 +18220,7 @@ function registerStandardModelEncodingDefinitions(definitions) {
   ]);
 }
 
-// packages/host/dist/compression-definitions.js
+// ../MODDING/modkit-core/packages/host/dist/compression-definitions.js
 var STANDARD_COMPRESSION_OWNER = "modkit/compression";
 var OODLE_DECODER = "common.compression/oodle-decoder";
 var OODLE_DECODER_CONTRACT_DEFINITION = Object.freeze({
@@ -18248,7 +18260,7 @@ function registerStandardCompressionDefinitions(definitions) {
   ]);
 }
 
-// packages/host/dist/games/index.js
+// ../MODDING/modkit-core/packages/host/dist/games/index.js
 var STANDARD_GAMES_OWNER = "modkit/games";
 var OFFER_KEYS6 = /* @__PURE__ */ new Set(["gameIds", "markers", "searchFolders"]);
 var FOLDER_NAME = /^[^\\/:*?"<>|\u0000-\u001f]{1,255}$/u;
@@ -18720,7 +18732,7 @@ async function planGameLaunch(request) {
   }
 }
 
-// packages/host/dist/mods/resource-sessions.js
+// ../MODDING/modkit-core/packages/host/dist/mods/resource-sessions.js
 var ROOT = "loaded-mods";
 var MOD = "mod/";
 var NODE = "node/";
@@ -18968,7 +18980,7 @@ var LoadedModResourceSessions = class _LoadedModResourceSessions {
   }
 };
 
-// packages/host/dist/mods/index.js
+// ../MODDING/modkit-core/packages/host/dist/mods/index.js
 var STANDARD_MODS_OWNER = "modkit/mods";
 var OFFER_KEYS7 = /* @__PURE__ */ new Set(["gameIds"]);
 var REQUEST_KEYS6 = /* @__PURE__ */ new Set(["gameId"]);
@@ -19125,7 +19137,7 @@ async function resolveModWorkspaceComposition(request) {
   }
 }
 
-// packages/host/dist/maps/single-file-namespace.js
+// ../MODDING/modkit-core/packages/host/dist/maps/single-file-namespace.js
 var NAMESPACE = "common.view/namespace-entry-source";
 var BYTE_RANGE = "common.view/byte-range-source";
 var EXTRACT_HANDLER = "x3.host/single-file-extract";
@@ -19241,7 +19253,7 @@ async function singleFileAsContainer(session, maxBytes) {
   });
 }
 
-// packages/host/dist/maps/world-model.js
+// ../MODDING/modkit-core/packages/host/dist/maps/world-model.js
 function positiveLimit(value, maximum) {
   if (!Number.isSafeInteger(value) || value <= 0 || value > maximum) {
     throw new TypeError(`world page limit must be between 1 and ${maximum}`);
@@ -19521,7 +19533,7 @@ async function worldSceneModel(asset, request, options, signal) {
   });
 }
 
-// packages/host/dist/maps/world-source.js
+// ../MODDING/modkit-core/packages/host/dist/maps/world-source.js
 function resourceId(namespace, entityId) {
   return `resource:${encodeURIComponent(namespace)}/${encodeURIComponent(entityId)}`;
 }
@@ -20674,7 +20686,7 @@ function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize, mode
   });
 }
 
-// packages/host/dist/maps/index.js
+// ../MODDING/modkit-core/packages/host/dist/maps/index.js
 var STANDARD_MAPS_OWNER = "modkit/maps";
 var OFFER_KEYS8 = /* @__PURE__ */ new Set(["gameIds"]);
 var REQUEST_KEYS7 = /* @__PURE__ */ new Set(["gameId"]);
@@ -22451,7 +22463,7 @@ async function coordinateMapPreviewAssetSession(request) {
   }
 }
 
-// packages/host/dist/subject-services.js
+// ../MODDING/modkit-core/packages/host/dist/subject-services.js
 function describeInventoryContributions(inventory) {
   const rows = inventory.extensions.flatMap((extension) => {
     const owner = `${extension.manifest.publisher}/${extension.manifest.id}`;
@@ -22585,7 +22597,7 @@ function serviceDefinitionSurfaces(definitions) {
   ]);
 }
 
-// packages/host/dist/subject-navigation.js
+// ../MODDING/modkit-core/packages/host/dist/subject-navigation.js
 var OPENED = Object.freeze({ state: "opened" });
 function rejected(reason) {
   return Object.freeze({ state: "rejected", reason });
@@ -22680,7 +22692,7 @@ function createScopedViewerSubjectNavigation(options) {
   });
 }
 
-// packages/host/dist/subject-rpc.js
+// ../MODDING/modkit-core/packages/host/dist/subject-rpc.js
 var SUBJECT_SERVICES = Object.freeze({ contract: "x3.app/subject-services", major: 1 });
 var SUBJECT_EDITING = Object.freeze({ contract: "x3.app/subject-editing", major: 1 });
 var SUBJECT_SERVICES_URL = "x3-app://subject-services";
@@ -23217,7 +23229,7 @@ async function connectSubjectRpc(options) {
   };
 }
 
-// packages/host/dist/editing-evidence.js
+// ../MODDING/modkit-core/packages/host/dist/editing-evidence.js
 var HOST_RAW_WRITER_IDENTITY = Object.freeze({
   providerId: "modkit.host/raw-writer",
   providerVersion: "1.0.0",
@@ -23448,7 +23460,7 @@ function createEvidenceRegistry(records = [HOST_RAW_WRITER_EVIDENCE_RECORD]) {
   return Object.freeze(registry);
 }
 
-// packages/host/dist/knowledge/index.js
+// ../MODDING/modkit-core/packages/host/dist/knowledge/index.js
 var DEFAULT_PAGE_LIMIT = 20;
 var MAXIMUM_PAGE_LIMIT = 100;
 var MAXIMUM_SEARCH_TEXT_LENGTH = 1024;
@@ -23950,7 +23962,7 @@ function createKnowledgeCatalog(inventory, requestedLimits = {}, entriesSource) 
   });
 }
 
-// packages/host/dist/content-index.js
+// ../MODDING/modkit-core/packages/host/dist/content-index.js
 var ALPHABET = 38;
 var TRIGRAMS = ALPHABET * ALPHABET * ALPHABET;
 var MAGIC = 1229146957;
@@ -24093,7 +24105,7 @@ async function openContentIndex(read) {
   });
 }
 
-// packages/host/dist/credentials.js
+// ../MODDING/modkit-core/packages/host/dist/credentials.js
 var DEFAULT_MAX_BYTES = 64 * 1024 * 1024;
 var REDIRECTS = /* @__PURE__ */ new Set([301, 302, 303, 307, 308]);
 var MAX_REDIRECTS = 5;
@@ -24446,7 +24458,7 @@ function createCredentialBroker(options) {
   });
 }
 
-// packages/host/dist/resolution/explain.js
+// ../MODDING/modkit-core/packages/host/dist/resolution/explain.js
 function sameCandidate(item, offer, contractOffer) {
   return item.providerId === offer.providerId && item.runtimeVariant === offer.runtimeVariant && (item.offerId === void 0 || item.offerId === contractOffer.offerId);
 }
@@ -24494,7 +24506,7 @@ function renderProviderResolutionExplanation(explanation, json2 = false) {
 `;
 }
 
-// packages/host/dist/v1-projection.js
+// ../MODDING/modkit-core/packages/host/dist/v1-projection.js
 function unavailable3(message) {
   const item = Object.freeze({
     id: "v1-projection-unavailable",
@@ -24544,7 +24556,7 @@ function createV1DescriptorProjectionPort() {
   });
 }
 
-// packages/host/dist/presentation-catalog.generated.js
+// ../MODDING/modkit-core/packages/host/dist/presentation-catalog.generated.js
 var COMMON_PRESENTATION_CATALOG = Object.freeze([
   Object.freeze({
     slot: Object.freeze({
@@ -25135,7 +25147,7 @@ var COMMON_PRESENTATION_CATALOG = Object.freeze([
   })
 ]);
 
-// packages/host/dist/presentation.js
+// ../MODDING/modkit-core/packages/host/dist/presentation.js
 function evaluateViewerApplicability(rule, facts) {
   const missing = [];
   if (rule?.interpretation !== void 0 && rule.interpretation !== "any" && rule.interpretation !== facts.interpretation) {
@@ -25474,7 +25486,7 @@ function createViewerSources(resolved, open) {
   });
 }
 
-// packages/host/dist/presentation-semantic.js
+// ../MODDING/modkit-core/packages/host/dist/presentation-semantic.js
 function jsonValue(value, path = "$") {
   if (value === null || typeof value === "string" || typeof value === "boolean")
     return value;
@@ -25542,7 +25554,7 @@ async function presentationSemanticHash(request) {
   });
 }
 
-// packages/host/dist/editing-splice.js
+// ../MODDING/modkit-core/packages/host/dist/editing-splice.js
 var STAGED_CHUNK = 1024 * 1024;
 function editingError(code, message, context) {
   return new ModkitError({ code, message, ...context === void 0 ? {} : { context } });
@@ -25611,7 +25623,7 @@ async function replacedBytes(edit, original, payloads, maxPayloadBytes, signal) 
   return spliceUtf16(original, edit.range.offset, edit.range.length, new TextDecoder("utf-8", { fatal: true }).decode(replacement));
 }
 
-// packages/host/native-text/contributions/codec-json.json
+// ../MODDING/modkit-core/packages/host/native-text/contributions/codec-json.json
 var codec_json_default = {
   schemaVersion: 1,
   contract: {
@@ -25770,7 +25782,7 @@ var codec_json_default = {
   }
 };
 
-// packages/host/native-text/contributions/codec-jsonc.json
+// ../MODDING/modkit-core/packages/host/native-text/contributions/codec-jsonc.json
 var codec_jsonc_default = {
   schemaVersion: 1,
   contract: {
@@ -25929,7 +25941,7 @@ var codec_jsonc_default = {
   }
 };
 
-// packages/host/native-text/contributions/codec-txt.json
+// ../MODDING/modkit-core/packages/host/native-text/contributions/codec-txt.json
 var codec_txt_default = {
   schemaVersion: 1,
   contract: { id: "modkit/codec-contribution", major: 1 },
@@ -26027,7 +26039,7 @@ var codec_txt_default = {
   }
 };
 
-// packages/host/native-text/contributions/contract-json-syntax.json
+// ../MODDING/modkit-core/packages/host/native-text/contributions/contract-json-syntax.json
 var contract_json_syntax_default = {
   schemaVersion: 1,
   contract: {
@@ -26086,7 +26098,7 @@ var contract_json_syntax_default = {
   }
 };
 
-// packages/host/native-text/contributions/contract-jsonc-syntax.json
+// ../MODDING/modkit-core/packages/host/native-text/contributions/contract-jsonc-syntax.json
 var contract_jsonc_syntax_default = {
   schemaVersion: 1,
   contract: {
@@ -26145,7 +26157,7 @@ var contract_jsonc_syntax_default = {
   }
 };
 
-// packages/host/native-text/contributions/provider-json-default.json
+// ../MODDING/modkit-core/packages/host/native-text/contributions/provider-json-default.json
 var provider_json_default_default = {
   schemaVersion: 1,
   contract: {
@@ -26194,7 +26206,7 @@ var provider_json_default_default = {
   }
 };
 
-// packages/host/native-text/contributions/provider-jsonc-default.json
+// ../MODDING/modkit-core/packages/host/native-text/contributions/provider-jsonc-default.json
 var provider_jsonc_default_default = {
   schemaVersion: 1,
   contract: {
@@ -26243,7 +26255,7 @@ var provider_jsonc_default_default = {
   }
 };
 
-// packages/host/native-text/contributions/writer-json.json
+// ../MODDING/modkit-core/packages/host/native-text/contributions/writer-json.json
 var writer_json_default = {
   schemaVersion: 1,
   contract: {
@@ -26298,7 +26310,7 @@ var writer_json_default = {
   }
 };
 
-// packages/host/native-text/contributions/writer-plain-text.json
+// ../MODDING/modkit-core/packages/host/native-text/contributions/writer-plain-text.json
 var writer_plain_text_default = {
   schemaVersion: 1,
   contract: {
@@ -26339,14 +26351,14 @@ var writer_plain_text_default = {
   }
 };
 
-// packages/host/native-text/json/families/json/entrypoints/json-codec.js
+// ../MODDING/modkit-core/packages/host/native-text/json/families/json/entrypoints/json-codec.js
 var json_codec_exports = {};
 __export(json_codec_exports, {
   abiVersion: () => abiVersion,
   createCodec: () => createCodec
 });
 
-// packages/host/native-text/runtime/basic.js
+// ../MODDING/modkit-core/packages/host/native-text/runtime/basic.js
 function lease(value) {
   let released = false;
   return Object.freeze({
@@ -26480,7 +26492,7 @@ function defineWriter({
   });
 }
 
-// packages/host/native-text/runtime/text.js
+// ../MODDING/modkit-core/packages/host/native-text/runtime/text.js
 function decodeInput(input) {
   if (typeof input.text === "string") {
     return {
@@ -26918,7 +26930,7 @@ function createTextCodec(definition, context) {
   });
 }
 
-// packages/host/native-text/json/families/json/detect.js
+// ../MODDING/modkit-core/packages/host/native-text/json/families/json/detect.js
 function markerOutsideString(text, marker) {
   let quote = false;
   let escaped = false;
@@ -26950,7 +26962,7 @@ function detectJson(dialect, text, uri) {
   };
 }
 
-// packages/host/native-text/json/families/json/codec.js
+// ../MODDING/modkit-core/packages/host/native-text/json/families/json/codec.js
 function createJsonCodec(profile3, context) {
   return createTextCodec(
     {
@@ -26961,7 +26973,7 @@ function createJsonCodec(profile3, context) {
   );
 }
 
-// packages/host/native-text/json/families/json/profiles/json.js
+// ../MODDING/modkit-core/packages/host/native-text/json/families/json/profiles/json.js
 var profile = Object.freeze({
   format: "json",
   extensions: Object.freeze(["json"]),
@@ -26972,11 +26984,11 @@ var profile = Object.freeze({
   implementationTier: 1
 });
 
-// packages/host/native-text/json/families/json/entrypoints/json-codec.js
+// ../MODDING/modkit-core/packages/host/native-text/json/families/json/entrypoints/json-codec.js
 var abiVersion = 1;
 var createCodec = (context) => createJsonCodec(profile, context);
 
-// packages/host/native-text/json/families/json/entrypoints/json-provider.js
+// ../MODDING/modkit-core/packages/host/native-text/json/families/json/entrypoints/json-provider.js
 var json_provider_exports = {};
 __export(json_provider_exports, {
   abiVersion: () => abiVersion2,
@@ -26985,7 +26997,7 @@ __export(json_provider_exports, {
   provides: () => provides
 });
 
-// node_modules/.pnpm/jsonc-parser@3.3.1/node_modules/jsonc-parser/lib/esm/impl/scanner.js
+// ../MODDING/modkit-core/node_modules/.pnpm/jsonc-parser@3.3.1/node_modules/jsonc-parser/lib/esm/impl/scanner.js
 function createScanner(text, ignoreTrivia = false) {
   const len = text.length;
   let pos = 0, value = "", tokenOffset = 0, token = 16, lineNumber = 0, lineStartOffset = 0, tokenLineStartOffset = 0, prevTokenLineStartOffset = 0, scanError = 0;
@@ -27406,7 +27418,7 @@ var CharacterCodes;
   CharacterCodes2[CharacterCodes2["tab"] = 9] = "tab";
 })(CharacterCodes || (CharacterCodes = {}));
 
-// node_modules/.pnpm/jsonc-parser@3.3.1/node_modules/jsonc-parser/lib/esm/impl/string-intern.js
+// ../MODDING/modkit-core/node_modules/.pnpm/jsonc-parser@3.3.1/node_modules/jsonc-parser/lib/esm/impl/string-intern.js
 var cachedSpaces = new Array(20).fill(0).map((_, index) => {
   return " ".repeat(index);
 });
@@ -27436,7 +27448,7 @@ var cachedBreakLinesWithSpaces = {
   }
 };
 
-// node_modules/.pnpm/jsonc-parser@3.3.1/node_modules/jsonc-parser/lib/esm/impl/parser.js
+// ../MODDING/modkit-core/node_modules/.pnpm/jsonc-parser@3.3.1/node_modules/jsonc-parser/lib/esm/impl/parser.js
 var ParseOptions;
 (function(ParseOptions2) {
   ParseOptions2.DEFAULT = {
@@ -27827,7 +27839,7 @@ function getNodeType(value) {
   }
 }
 
-// node_modules/.pnpm/jsonc-parser@3.3.1/node_modules/jsonc-parser/lib/esm/main.js
+// ../MODDING/modkit-core/node_modules/.pnpm/jsonc-parser@3.3.1/node_modules/jsonc-parser/lib/esm/main.js
 var ScanError;
 (function(ScanError2) {
   ScanError2[ScanError2["None"] = 0] = "None";
@@ -27916,7 +27928,7 @@ function printParseErrorCode(code) {
   return "<unknown ParseErrorCode>";
 }
 
-// packages/host/native-text/json/families/json/provider.js
+// ../MODDING/modkit-core/packages/host/native-text/json/families/json/provider.js
 function jsonNode(node, text, counters, depth = 0) {
   counters.nodes += 1;
   counters.depth = Math.max(counters.depth, depth);
@@ -28005,20 +28017,20 @@ function createJsonSyntaxProvider(definition) {
   });
 }
 
-// packages/host/native-text/json/families/json/entrypoints/json-provider.js
+// ../MODDING/modkit-core/packages/host/native-text/json/families/json/entrypoints/json-provider.js
 var abiVersion2 = 1;
 var provides = Object.freeze([profile.contract]);
 var createTextSyntaxProvider2 = () => createJsonSyntaxProvider(profile);
 var createProvider = (selection) => lease(createSelectedProvider(profile, selection, createJsonSyntaxProvider));
 
-// packages/host/native-text/json/families/json/entrypoints/jsonc-codec.js
+// ../MODDING/modkit-core/packages/host/native-text/json/families/json/entrypoints/jsonc-codec.js
 var jsonc_codec_exports = {};
 __export(jsonc_codec_exports, {
   abiVersion: () => abiVersion3,
   createCodec: () => createCodec2
 });
 
-// packages/host/native-text/json/families/json/profiles/jsonc.js
+// ../MODDING/modkit-core/packages/host/native-text/json/families/json/profiles/jsonc.js
 var profile2 = Object.freeze({
   format: "jsonc",
   extensions: Object.freeze(["jsonc"]),
@@ -28029,11 +28041,11 @@ var profile2 = Object.freeze({
   implementationTier: 1
 });
 
-// packages/host/native-text/json/families/json/entrypoints/jsonc-codec.js
+// ../MODDING/modkit-core/packages/host/native-text/json/families/json/entrypoints/jsonc-codec.js
 var abiVersion3 = 1;
 var createCodec2 = (context) => createJsonCodec(profile2, context);
 
-// packages/host/native-text/json/families/json/entrypoints/jsonc-provider.js
+// ../MODDING/modkit-core/packages/host/native-text/json/families/json/entrypoints/jsonc-provider.js
 var jsonc_provider_exports = {};
 __export(jsonc_provider_exports, {
   abiVersion: () => abiVersion4,
@@ -28046,7 +28058,7 @@ var provides2 = Object.freeze([profile2.contract]);
 var createTextSyntaxProvider3 = () => createJsonSyntaxProvider(profile2);
 var createProvider2 = (selection) => lease(createSelectedProvider(profile2, selection, createJsonSyntaxProvider));
 
-// packages/host/native-text/json/editing/text-writer.js
+// ../MODDING/modkit-core/packages/host/native-text/json/editing/text-writer.js
 var text_writer_exports = {};
 __export(text_writer_exports, {
   abiVersion: () => abiVersion5,
@@ -28171,7 +28183,7 @@ async function createProvider3(selection) {
   return offered.createProvider(selection);
 }
 
-// packages/host/native-text/plain/txt/codec.js
+// ../MODDING/modkit-core/packages/host/native-text/plain/txt/codec.js
 var codec_exports = {};
 __export(codec_exports, {
   abiVersion: () => abiVersion6,
@@ -28509,7 +28521,7 @@ var createCodec3 = () => Object.freeze({
   }
 });
 
-// packages/host/native-text/plain/editing/text-writer.js
+// ../MODDING/modkit-core/packages/host/native-text/plain/editing/text-writer.js
 var text_writer_exports2 = {};
 __export(text_writer_exports2, {
   abiVersion: () => abiVersion7,
@@ -28592,7 +28604,7 @@ var { abiVersion: abiVersion7, provides: provides4, createProvider: createProvid
   }
 });
 
-// packages/host/dist/linked.js
+// ../MODDING/modkit-core/packages/host/dist/linked.js
 var variantsOf = (manifest) => {
   const list = manifest.runtimeVariants;
   return Array.isArray(list) ? list : [];
@@ -28737,7 +28749,7 @@ function linkedExtensionInputs(linked) {
   });
 }
 
-// packages/host/dist/native-text.js
+// ../MODDING/modkit-core/packages/host/dist/native-text.js
 var NATIVE_ENVIRONMENTS = Object.freeze(["node", "node-worker", "browser-main", "browser-worker"]);
 var nativeExecutable = (manifest, entrypoint) => {
   const document = manifest;
@@ -28809,7 +28821,7 @@ function withNativeTextModules(linked = /* @__PURE__ */ new Map()) {
   return new Map([...NATIVE_TEXT_MODULES, ...linked]);
 }
 
-// packages/host/dist/composition.js
+// ../MODDING/modkit-core/packages/host/dist/composition.js
 async function createHostComposition(options) {
   const topology = createHostTopology(options.topology);
   const profile3 = topology.realms.find((candidate) => candidate.realmId === options.realmId);
@@ -28834,7 +28846,7 @@ async function createHostComposition(options) {
   });
 }
 
-// packages/host/dist/format-writer.js
+// ../MODDING/modkit-core/packages/host/dist/format-writer.js
 var diagnostic2 = (severity, code, message) => ({ severity, code, message, path: [] });
 async function resolveFormatWriter(request) {
   const identity = request.opened.descriptor.identity;

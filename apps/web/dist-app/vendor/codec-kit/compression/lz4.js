@@ -1,6 +1,6 @@
 import "../../../chunks/chunk-CQ52GEHY.js";
 
-// packages/codec-kit/dist/compression/lz4.js
+// ../MODDING/modkit-core/packages/codec-kit/dist/compression/lz4.js
 var LZ4_MALFORMED = "codec-kit/lz4-malformed";
 function malformed(message) {
   const error = new RangeError(`LZ4 block ${message}`);

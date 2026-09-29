@@ -1,0 +1,51 @@
+{
+  "name": "modkit-extension-java",
+  "version": "1.0.0",
+  "license": "MIT",
+  "type": "module",
+  "description": "JVM class files for MK3: constant pool, members, a bytecode listing and a bounded constant interpreter.",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./codec": {
+      "types": "./dist/codec.d.ts",
+      "default": "./dist/codec.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "contributions",
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -b tsconfig.json"
+  },
+  "modkit": {
+    "schemaVersion": 1,
+    "publisher": "modkit",
+    "id": "java",
+    "presentation": {
+      "displayName": "Modkit Java",
+      "description": "JVM class files: constant pool, fields, methods, bytecode listing and constant interpretation.",
+      "vendor": {
+        "id": "modkit",
+        "displayName": "Modkit"
+      }
+    },
+    "contributionManifests": [
+      "./contributions/*.json"
+    ]
+  },
+  "dependencies": {
+    "@modkit/codec-kit": "workspace:*"
+  },
+  "peerDependencies": {
+    "@modkit/sdk": "workspace:*"
+  },
+  "devDependencies": {
+    "@modkit/sdk": "workspace:*"
+  }
+}

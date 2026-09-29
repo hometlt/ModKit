@@ -1,12 +1,12 @@
 import {
   Decompress
-} from "../../../chunks/chunk-4HPXBPET.js";
+} from "../../../chunks/chunk-LRQDZ5OG.js";
 import {
   COMPRESSION_OUTPUT_LIMIT
-} from "../../../chunks/chunk-JVAXQGJ2.js";
+} from "../../../chunks/chunk-GDKG5J25.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 
-// packages/codec-kit/dist/compression/zstd.js
+// ../MODDING/modkit-core/packages/codec-kit/dist/compression/zstd.js
 var ZSTD_MAGIC = Object.freeze([40, 181, 47, 253]);
 var ZSTD_MALFORMED = "codec-kit/zstd-malformed";
 function withCode(error, code) {

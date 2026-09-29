@@ -1,14 +1,14 @@
 import {
   createProjectionReceipt
-} from "../../../chunks/chunk-EBEE75BR.js";
+} from "../../../chunks/chunk-ZC6AMIVY.js";
 import {
   createJsonTreeSource
-} from "../../../chunks/chunk-LIDP4V2Q.js";
+} from "../../../chunks/chunk-KA3J6DLB.js";
 import {
   readCollisionMesh,
   readUvmModel,
   uvmImageResourceId
-} from "../../../chunks/chunk-SSYMT7CY.js";
+} from "../../../chunks/chunk-B7S5KEHR.js";
 import {
   array,
   field,
@@ -17,11 +17,11 @@ import {
   required,
   safeIndex,
   string
-} from "../../../chunks/chunk-B5TWMJRH.js";
+} from "../../../chunks/chunk-I4Z5J3HX.js";
 import {
   validateUvmDocument
-} from "../../../chunks/chunk-KZC7GO3A.js";
-import "../../../chunks/chunk-7BP5IQZS.js";
+} from "../../../chunks/chunk-A7Y3WO4R.js";
+import "../../../chunks/chunk-3TRK5GFM.js";
 import {
   createModelAnimationSource,
   createModelCollisionSource,
@@ -29,16 +29,16 @@ import {
   createModelSceneSource,
   createModelSkeletonSource,
   createModelSocketSource
-} from "../../../chunks/chunk-J4JPK5CS.js";
-import "../../../chunks/chunk-N7TDQTWE.js";
-import "../../../chunks/chunk-C4KZWCMG.js";
-import "../../../chunks/chunk-4UWK2KXO.js";
-import "../../../chunks/chunk-7XI76P4Q.js";
-import "../../../chunks/chunk-WXUQLAQ3.js";
-import "../../../chunks/chunk-3YDGNEY2.js";
+} from "../../../chunks/chunk-ML5A3Z3U.js";
+import "../../../chunks/chunk-IBG4CEKN.js";
+import "../../../chunks/chunk-I675VFQQ.js";
+import "../../../chunks/chunk-EJHSGAMM.js";
+import "../../../chunks/chunk-TAC5RUBM.js";
+import "../../../chunks/chunk-5SBJANAJ.js";
+import "../../../chunks/chunk-ZSDVUSRM.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 
-// packages/scene/dist/uvm/facets.js
+// ../MODDING/modkit-core/packages/scene/dist/uvm/facets.js
 function axis(value) {
   if (value === "+x" || value === "-x" || value === "+y" || value === "-y" || value === "+z" || value === "-z")
     return value;
@@ -258,7 +258,7 @@ function decodeEffects(document) {
   });
 }
 
-// packages/scene/dist/uvm/inspection.js
+// ../MODDING/modkit-core/packages/scene/dist/uvm/inspection.js
 var UVM_BASIS = Object.freeze({
   handedness: "right",
   upAxis: "y",

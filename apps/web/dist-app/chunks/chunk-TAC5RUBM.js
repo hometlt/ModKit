@@ -1,0 +1,143 @@
+import {
+  CUBIC_SPLINE_LINE_TYPE,
+  sampleTrackValue
+} from "./chunk-5SBJANAJ.js";
+import {
+  snapshotJson
+} from "./chunk-ZSDVUSRM.js";
+
+// ../MODDING/modkit-core/packages/codec-kit/dist/model/animation.js
+var DEFAULT_MODEL_ANIMATION_BUDGET = Object.freeze({
+  maxDepth: 64,
+  maxNodes: 1e6,
+  maxBytes: 134217728
+});
+function finite(value, label) {
+  if (typeof value !== "number" || !Number.isFinite(value))
+    throw new TypeError(`${label} must be finite`);
+}
+function snapshotModelAnimations(value, budget = DEFAULT_MODEL_ANIMATION_BUDGET, signal) {
+  const clips = snapshotJson(value, budget, signal);
+  if (!Array.isArray(clips))
+    throw new TypeError("model animations must be an array");
+  const ids = /* @__PURE__ */ new Set();
+  for (const clip of clips) {
+    if (clip === null || typeof clip !== "object" || typeof clip.id !== "string" || !clip.id || ids.has(clip.id)) {
+      throw new TypeError("animation clip needs a unique id");
+    }
+    ids.add(clip.id);
+    if (typeof clip.name !== "string" || !["animation", "rest-pose"].includes(clip.kind) || !["direct", "companion"].includes(clip.provenance) || !Number.isSafeInteger(clip.frames) || clip.frames < 0 || !Array.isArray(clip.channels))
+      throw new TypeError("invalid animation clip");
+    if (clip.durationSeconds !== void 0) {
+      finite(clip.durationSeconds, "clip duration");
+      if (clip.durationSeconds < 0)
+        throw new TypeError("negative clip duration");
+    }
+    if (clip.looping !== void 0 && typeof clip.looping !== "boolean")
+      throw new TypeError("invalid clip looping");
+    if (clip.repeatCount !== void 0 && (!Number.isSafeInteger(clip.repeatCount) || clip.repeatCount < 0))
+      throw new TypeError("invalid clip repeat count");
+    if (clip.sequenceIndex !== void 0 && (!Number.isSafeInteger(clip.sequenceIndex) || clip.sequenceIndex < 0))
+      throw new TypeError("invalid animation material sequence index");
+    if (clip.movementSpeed !== void 0)
+      finite(clip.movementSpeed, "clip movement speed");
+    if (clip.boundsSphere !== void 0) {
+      if (!Array.isArray(clip.boundsSphere.center) || clip.boundsSphere.center.length !== 3)
+        throw new TypeError("invalid clip bounds");
+      for (const component of clip.boundsSphere.center)
+        finite(component, "clip bounds center");
+      finite(clip.boundsSphere.radius, "clip bounds radius");
+      if (clip.boundsSphere.radius < 0)
+        throw new TypeError("negative clip bounds radius");
+    }
+    for (const channel of clip.channels) {
+      if (channel === null || typeof channel !== "object" || typeof channel.target !== "string" || typeof channel.kind !== "string")
+        throw new TypeError("invalid animation channel");
+      if (channel.concurrent !== void 0 && typeof channel.concurrent !== "boolean")
+        throw new TypeError("invalid concurrent flag");
+      if (channel.wrapSeconds !== void 0) {
+        finite(channel.wrapSeconds, "channel wrap");
+        if (channel.wrapSeconds <= 0 || channel.concurrent !== true)
+          throw new TypeError("invalid independent channel wrap");
+      }
+      if (channel.repeatCount !== void 0 && (!Number.isSafeInteger(channel.repeatCount) || channel.repeatCount < 0 || channel.concurrent !== true || channel.wrapSeconds === void 0))
+        throw new TypeError("invalid independent channel repeat count");
+      if (channel.samples !== void 0 && !Array.isArray(channel.samples))
+        throw new TypeError("invalid animation samples");
+      if (channel.interpolation === void 0)
+        continue;
+      if (!["step", "linear", "spherical-linear", "cubic-spline"].includes(channel.interpolation) || !channel.samples?.length) {
+        throw new TypeError("sampleable channel needs interpolation and keys");
+      }
+      let previous = -Infinity;
+      let components;
+      for (const sample of channel.samples) {
+        finite(sample.timeSeconds, "key time");
+        if (sample.timeSeconds < previous)
+          throw new TypeError("animation keys are not ordered");
+        previous = sample.timeSeconds;
+        if (!Array.isArray(sample.value) || sample.value.length === 0)
+          throw new TypeError("empty animation key");
+        components ??= sample.value.length;
+        if (components !== sample.value.length || channel.interpolation === "spherical-linear" && components !== 4) {
+          throw new TypeError("inconsistent animation key components");
+        }
+        for (const component of sample.value)
+          finite(component, "key component");
+        if (channel.interpolation === "cubic-spline") {
+          for (const tangent of [sample.inTangent, sample.outTangent]) {
+            if (!Array.isArray(tangent) || tangent.length !== components)
+              throw new TypeError("cubic-spline keys need in and out tangents of the key width");
+            for (const component of tangent)
+              finite(component, "key tangent");
+          }
+        }
+      }
+    }
+  }
+  return clips;
+}
+function createModelAnimationSampler(clip, budget, signal) {
+  const owned = snapshotModelAnimations([clip], budget, signal)[0];
+  const tracks = owned.channels.map((channel) => {
+    if (channel.interpolation === void 0 || channel.samples === void 0)
+      throw new TypeError("channel has no sampling semantics");
+    const track = {
+      lineType: channel.interpolation === "step" ? 0 : channel.interpolation === "cubic-spline" ? CUBIC_SPLINE_LINE_TYPE : 1,
+      globalSeqId: null,
+      keys: channel.samples.map((key) => ({
+        frame: key.timeSeconds,
+        vector: key.value,
+        ...key.inTangent === void 0 ? {} : { inTan: key.inTangent },
+        ...key.outTangent === void 0 ? {} : { outTan: key.outTangent }
+      }))
+    };
+    return { channel, track };
+  });
+  return Object.freeze({
+    sample(timeSeconds, requestSignal) {
+      if (requestSignal?.aborted)
+        throw new DOMException("operation cancelled", "AbortError");
+      finite(timeSeconds, "sample time");
+      return Object.freeze(tracks.map(({ channel, track }) => {
+        if (requestSignal?.aborted)
+          throw new DOMException("operation cancelled", "AbortError");
+        return Object.freeze({
+          target: channel.target,
+          kind: channel.kind,
+          ...channel.axis === void 0 ? {} : { axis: channel.axis },
+          value: Object.freeze(sampleTrackValue(track, timeSeconds, [], {
+            isQuat: channel.interpolation === "spherical-linear",
+            wrapSeconds: channel.concurrent ? channel.wrapSeconds : void 0
+          }))
+        });
+      }));
+    }
+  });
+}
+
+export {
+  DEFAULT_MODEL_ANIMATION_BUDGET,
+  snapshotModelAnimations,
+  createModelAnimationSampler
+};

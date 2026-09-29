@@ -9,20 +9,22 @@ import {
   decodeEaXa,
   decodeEaXas,
   decodeFadpcm,
+  decodeImaAdpcmBlock,
   decodeImaWs,
   decodeWsAdpcm,
   decodeXaAdpcm,
   encodeOgg,
   encodeWav,
   fadpcmFrames,
+  mpegAudioFrame,
   vorbisCommentHeader,
   vorbisIdentificationHeader,
   vorbisModeBlockflags,
   vorbisPacketsToOgg,
   wavEntrySource,
   wavHeader
-} from "../../../chunks/chunk-IABXXKTR.js";
-import "../../../chunks/chunk-RA3DJQH7.js";
+} from "../../../chunks/chunk-QKMZKIXC.js";
+import "../../../chunks/chunk-U5HQC5XA.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 export {
   EA_XAS_FRAME_BYTES,
@@ -35,12 +37,14 @@ export {
   decodeEaXa,
   decodeEaXas,
   decodeFadpcm,
+  decodeImaAdpcmBlock,
   decodeImaWs,
   decodeWsAdpcm,
   decodeXaAdpcm,
   encodeOgg,
   encodeWav,
   fadpcmFrames,
+  mpegAudioFrame,
   vorbisCommentHeader,
   vorbisIdentificationHeader,
   vorbisModeBlockflags,

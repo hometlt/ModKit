@@ -1,53 +1,53 @@
 import {
   PROJECTION_RECEIPT_METADATA_ID
-} from "../../../../chunks/chunk-EBEE75BR.js";
-import "../../../../chunks/chunk-NJ5SYYRG.js";
+} from "../../../../chunks/chunk-ZC6AMIVY.js";
+import "../../../../chunks/chunk-COUIZZOL.js";
 import {
   pageStart
-} from "../../../../chunks/chunk-J4JPK5CS.js";
-import "../../../../chunks/chunk-N7TDQTWE.js";
-import "../../../../chunks/chunk-C4KZWCMG.js";
-import "../../../../chunks/chunk-4UWK2KXO.js";
-import "../../../../chunks/chunk-7XI76P4Q.js";
-import "../../../../chunks/chunk-WXUQLAQ3.js";
+} from "../../../../chunks/chunk-ML5A3Z3U.js";
+import "../../../../chunks/chunk-IBG4CEKN.js";
+import "../../../../chunks/chunk-I675VFQQ.js";
+import "../../../../chunks/chunk-EJHSGAMM.js";
+import "../../../../chunks/chunk-TAC5RUBM.js";
+import "../../../../chunks/chunk-5SBJANAJ.js";
 import {
   snapshotJson
-} from "../../../../chunks/chunk-3YDGNEY2.js";
-import "../../../../chunks/chunk-IABXXKTR.js";
+} from "../../../../chunks/chunk-ZSDVUSRM.js";
+import "../../../../chunks/chunk-QKMZKIXC.js";
 import {
   decompressBounded
-} from "../../../../chunks/chunk-JVAXQGJ2.js";
-import "../../../../chunks/chunk-OVW5EXOM.js";
+} from "../../../../chunks/chunk-GDKG5J25.js";
+import "../../../../chunks/chunk-BFR65BLC.js";
 import {
   assembleSubjectDescriptor,
   createAssetSession,
   createUtf8TextDataSource
-} from "../../../../chunks/chunk-PDO7AMOW.js";
-import "../../../../chunks/chunk-JHPOUH6S.js";
+} from "../../../../chunks/chunk-QJZPE5FO.js";
+import "../../../../chunks/chunk-5GGWVEQJ.js";
 import {
   containerEntryRevision,
   contributionSettingsFor
-} from "../../../../chunks/chunk-S6QKYSGJ.js";
-import "../../../../chunks/chunk-YYQ3QKXM.js";
-import "../../../../chunks/chunk-KL23KRQT.js";
+} from "../../../../chunks/chunk-MAAPKCDG.js";
+import "../../../../chunks/chunk-R2P56FTH.js";
+import "../../../../chunks/chunk-P5QJHSUW.js";
 import {
   revisionId,
   toPortableProjectionReceipt
-} from "../../../../chunks/chunk-R7U42EZV.js";
-import "../../../../chunks/chunk-GGIVOOBZ.js";
+} from "../../../../chunks/chunk-VI4QBV4T.js";
+import "../../../../chunks/chunk-MT2JUZZJ.js";
 import {
   ModkitError,
   canonicalJsonStringify,
   diagnostic
-} from "../../../../chunks/chunk-LX6GSJ3D.js";
+} from "../../../../chunks/chunk-V3DESLW4.js";
 import "../../../../chunks/chunk-NUFRM6SI.js";
-import "../../../../chunks/chunk-L5WKTLBK.js";
+import "../../../../chunks/chunk-UDFSUVGJ.js";
 import {
   crc32
-} from "../../../../chunks/chunk-RA3DJQH7.js";
+} from "../../../../chunks/chunk-U5HQC5XA.js";
 import "../../../../chunks/chunk-CQ52GEHY.js";
 
-// packages/codec-kit/dist/deferred-session.js
+// ../MODDING/modkit-core/packages/codec-kit/dist/deferred-session.js
 function deferAssetSession(revision, initialize, budget, openingSignal) {
   const controller = new AbortController();
   const signal = openingSignal === void 0 ? controller.signal : AbortSignal.any([openingSignal, controller.signal]);
@@ -189,7 +189,7 @@ function deferAssetSession(revision, initialize, budget, openingSignal) {
   });
 }
 
-// packages/codec-kit/dist/container-entries.js
+// ../MODDING/modkit-core/packages/codec-kit/dist/container-entries.js
 var CONTAINER_EXTRACT_HANDLER_ID = "extract-entry";
 function throwIfCancelled(signal) {
   if (signal?.aborted)
@@ -483,7 +483,7 @@ async function decodeContainerEntry(entry, maximum, readRange, signal) {
   return bytes;
 }
 
-// packages/codec-kit/dist/editing.js
+// ../MODDING/modkit-core/packages/codec-kit/dist/editing.js
 function assetRevisionFromInput(input) {
   if (input.originKind !== "single" || input.revisions.topology !== "single") {
     throw new TypeError("assetRevisionFromInput: single-source subjects only");
@@ -526,7 +526,7 @@ function editPlanFromInput(input, { planId, edits, fidelity, guarantee = "atomic
   });
 }
 
-// packages/codec-kit/dist/audio/pcm-audio.js
+// ../MODDING/modkit-core/packages/codec-kit/dist/audio/pcm-audio.js
 function convertToWav(summary = "Writes the decoded sound as a 16-bit PCM WAV file.") {
   return Object.freeze({
     id: "export.convert",
@@ -558,7 +558,7 @@ function convertToWav(summary = "Writes the decoded sound as a 16-bit PCM WAV fi
 }
 var CONVERT_TO_WAV = convertToWav();
 
-// packages/codec-kit/dist/xml-scan.js
+// ../MODDING/modkit-core/packages/codec-kit/dist/xml-scan.js
 var NAMED_ENTITIES = Object.freeze({
   amp: "&",
   apos: "'",
@@ -567,7 +567,7 @@ var NAMED_ENTITIES = Object.freeze({
   quot: '"'
 });
 
-// packages/codec-kit/dist/index.js
+// ../MODDING/modkit-core/packages/codec-kit/dist/index.js
 var INSPECTION_OPERATIONS = Object.freeze([
   Object.freeze({
     id: "view.inspect",

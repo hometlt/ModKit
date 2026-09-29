@@ -50,14 +50,14 @@ import {
   subjectFactsSourceFromWire,
   webExtensionSubjectCardBundle,
   withoutHiddenEntries
-} from "./chunks/chunk-ZFPHOWUF.js";
-import "./chunks/chunk-EN2G6IFG.js";
-import "./chunks/chunk-EPRAT4WK.js";
-import "./chunks/chunk-ZC5PHM3C.js";
-import "./chunks/chunk-K62FQND3.js";
+} from "./chunks/chunk-M25DQLRK.js";
+import "./chunks/chunk-46XPR3Z3.js";
+import "./chunks/chunk-BA6DD73E.js";
+import "./chunks/chunk-JDCQNX54.js";
+import "./chunks/chunk-JKB67RI6.js";
 import {
   resolveModelViewerTextures
-} from "./chunks/chunk-P47BIBG7.js";
+} from "./chunks/chunk-LTARHUCB.js";
 import {
   declaredMutatingOperations,
   editOffer,
@@ -66,7 +66,7 @@ import {
   isRejected,
   mountFieldEditor,
   subjectCandidateProviderLease
-} from "./chunks/chunk-EP7EFG37.js";
+} from "./chunks/chunk-Z2D6YWX3.js";
 import {
   DEFAULT_UI_LOCALIZER,
   PANELS_FALLBACK_MESSAGES,
@@ -84,7 +84,7 @@ import {
   setState,
   setViewerText,
   withEnglishUiFallback
-} from "./chunks/chunk-J4F5HCFO.js";
+} from "./chunks/chunk-FBGUD7CM.js";
 import {
   CONTAINER_EXTRACT_OPERATION_ID,
   compareUtf8,
@@ -94,7 +94,7 @@ import {
   normalizeModkitIdentifier,
   presentationSlotId,
   revisionId
-} from "./chunks/chunk-WUWSXVRM.js";
+} from "./chunks/chunk-NCOJRWIO.js";
 import {
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
 } from "./chunks/chunk-BLWUC7LO.js";
@@ -102,10 +102,10 @@ import {
 // apps/web/src/shell.ts
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
-// packages/ui/dist/settings/index.js
+// ../MODDING/modkit-core/packages/ui/dist/settings/index.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
-// packages/ui/dist/settings/model.js
+// ../MODDING/modkit-core/packages/ui/dist/settings/model.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var RECENT_LIMIT = 10;
 var GAME_INSTALLATION_PATH_LIMIT = 16;
@@ -312,7 +312,7 @@ function serializeSettings(document2) {
 `;
 }
 
-// packages/ui/dist/settings/index.js
+// ../MODDING/modkit-core/packages/ui/dist/settings/index.js
 var APP_THEME_DOM_ID = "modkit-app-themes";
 var APP_THEME_ID = /^[a-z][a-z0-9-]{0,63}$/u;
 var APP_THEME_STYLESHEET = /^\.\/(?:modkit-ui|theme-[a-z][a-z0-9-]{0,63})\.css$/u;
@@ -1635,7 +1635,7 @@ function createEditPanel(options) {
 // apps/web/src/inspector.ts
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
-// packages/ui/dist/panels/index.js
+// ../MODDING/modkit-core/packages/ui/dist/panels/index.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 function renderDiagnostics(root, descriptor) {
   root.replaceChildren();

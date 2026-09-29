@@ -20,7 +20,7 @@ import {
   initializeGpuTextureWasmBrowser,
   unpack_crunch,
   unpack_unity_crunch
-} from "../../../chunks/chunk-WTZBZLOM.js";
+} from "../../../chunks/chunk-JTINH3FQ.js";
 import {
   DEFAULT_MAX_RGBA8_DECODE_BYTES,
   IMAGE_COMPRESSED_READ_OPERATION,
@@ -37,8 +37,8 @@ import {
   normalizedSampleToByte,
   validateCompressedTextureDescriptor,
   wrapDx10Dds
-} from "../../../chunks/chunk-IIVTGRG7.js";
-import "../../../chunks/chunk-LRCQXYKO.js";
+} from "../../../chunks/chunk-UKNXZNYU.js";
+import "../../../chunks/chunk-W2UBWFML.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 export {
   DEFAULT_MAX_RGBA8_DECODE_BYTES,

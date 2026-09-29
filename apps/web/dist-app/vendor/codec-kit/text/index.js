@@ -1,21 +1,21 @@
 import {
   createTableDataSource
 } from "../../../chunks/chunk-XYU4XXWE.js";
-import "../../../chunks/chunk-OVW5EXOM.js";
+import "../../../chunks/chunk-BFR65BLC.js";
 import {
   assembleSubjectDescriptor,
   createAssetSession,
   createUtf8TextDataSource
-} from "../../../chunks/chunk-PDO7AMOW.js";
-import "../../../chunks/chunk-JHPOUH6S.js";
+} from "../../../chunks/chunk-QJZPE5FO.js";
+import "../../../chunks/chunk-5GGWVEQJ.js";
 import {
   revisionId
-} from "../../../chunks/chunk-R7U42EZV.js";
+} from "../../../chunks/chunk-VI4QBV4T.js";
 import {
   diagnostic,
   throwIfAborted,
   uint64
-} from "../../../chunks/chunk-LX6GSJ3D.js";
+} from "../../../chunks/chunk-V3DESLW4.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 
 // packages/codec-kit/src/text/codec-runtime.ts
@@ -831,16 +831,102 @@ function sylkTableDataSource(document) {
     }
   });
 }
+
+// packages/codec-kit/src/text/csf.ts
+var HEADER_TAG = " FSC";
+var LABEL_TAG = " LBL";
+var STRING_TAG = " RTS";
+var STRING_WITH_NOTE_TAG = "WRTS";
+function isCsf(data) {
+  return data.length >= 4 && latin1(data, 0, 4) === HEADER_TAG;
+}
+function parseCsf(data) {
+  if (!isCsf(data)) throw new TypeError("not a CSF string table");
+  if (data.length < 24) throw new RangeError("CSF header is truncated");
+  const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
+  const version = view.getUint32(4, true);
+  const declaredLabels = view.getUint32(8, true);
+  const declaredStrings = view.getUint32(12, true);
+  const language = view.getUint32(20, true);
+  if (declaredLabels > (data.length - 24) / 12)
+    throw new RangeError(`CSF declares ${declaredLabels} labels in ${data.length} bytes`);
+  const u32 = (at) => {
+    if (at + 4 > data.length) throw new RangeError(`CSF read out of bounds at ${at}`);
+    return view.getUint32(at, true);
+  };
+  const entries = [];
+  let cursor = 24;
+  for (let index = 0; index < declaredLabels; index += 1) {
+    const labelTag = latin1(data, cursor, 4);
+    if (labelTag !== LABEL_TAG)
+      throw new TypeError(`CSF label ${index} has tag ${JSON.stringify(labelTag)} at ${cursor}`);
+    const pairs = u32(cursor + 4);
+    const nameLength = u32(cursor + 8);
+    cursor += 12;
+    const label = latin1(data, cursor, nameLength);
+    cursor += nameLength;
+    const values = [];
+    let note;
+    for (let pair = 0; pair < pairs; pair += 1) {
+      const valueTag = latin1(data, cursor, 4);
+      if (valueTag !== STRING_TAG && valueTag !== STRING_WITH_NOTE_TAG)
+        throw new TypeError(`CSF value tag ${JSON.stringify(valueTag)} at ${cursor}`);
+      const units = u32(cursor + 4);
+      cursor += 8;
+      if (cursor + units * 2 > data.length)
+        throw new RangeError(`CSF value of ${units} units runs past the end at ${cursor}`);
+      let value = "";
+      for (let start = 0; start < units; start += 4096) {
+        const chunk = [];
+        for (let unit = start; unit < Math.min(units, start + 4096); unit += 1)
+          chunk.push(~view.getUint16(cursor + unit * 2, true) & 65535);
+        value += String.fromCharCode(...chunk);
+      }
+      cursor += units * 2;
+      values.push(value);
+      if (valueTag === STRING_WITH_NOTE_TAG) {
+        const noteLength = u32(cursor);
+        cursor += 4;
+        note ??= latin1(data, cursor, noteLength);
+        cursor += noteLength;
+      }
+    }
+    entries.push({
+      label,
+      value: values[0] ?? "",
+      extraValues: values.slice(1),
+      ...note === void 0 ? {} : { note }
+    });
+  }
+  if (cursor !== data.length)
+    throw new RangeError(`CSF trailing data: consumed ${cursor} of ${data.length}`);
+  return { version, declaredLabels, declaredStrings, language, entries };
+}
+function csfToMap(file) {
+  const map = /* @__PURE__ */ new Map();
+  for (const entry of file.entries) map.set(entry.label, entry.value);
+  return map;
+}
+function latin1(data, offset, length) {
+  if (offset < 0 || length < 0 || offset + length > data.length)
+    throw new RangeError(`CSF read out of bounds at ${offset}+${length}`);
+  let out = "";
+  for (let index = 0; index < length; index += 1) out += String.fromCharCode(data[offset + index]);
+  return out;
+}
 export {
   createSelectedProvider,
   createTextCodec,
   createTextSyntaxProvider,
+  csfToMap,
   decodeInput,
   encodeText,
   failure,
   formatSylk,
+  isCsf,
   lease,
   newlineOf,
+  parseCsf,
   parseIni,
   parseSylk,
   plainNode,

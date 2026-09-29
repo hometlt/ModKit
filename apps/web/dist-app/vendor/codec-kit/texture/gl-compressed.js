@@ -2,14 +2,14 @@ import {
   astcBlockFromGl,
   bgraToRgba,
   decodeGpuPayload
-} from "../../../chunks/chunk-IIVTGRG7.js";
+} from "../../../chunks/chunk-UKNXZNYU.js";
 import {
   decodeBcSurface
-} from "../../../chunks/chunk-Y4UL3XCN.js";
-import "../../../chunks/chunk-LRCQXYKO.js";
+} from "../../../chunks/chunk-H37RD4QF.js";
+import "../../../chunks/chunk-W2UBWFML.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 
-// packages/codec-kit/dist/texture/gl-compressed.js
+// ../MODDING/modkit-core/packages/codec-kit/dist/texture/gl-compressed.js
 var layout = (kind, blockBytes, extra = {}) => ({ kind, blockWidth: 4, blockHeight: 4, blockBytes, ...extra });
 var GL_LAYOUTS = /* @__PURE__ */ new Map([
   [35841, layout("pvrtc2", 8, { blockWidth: 8 })],
@@ -102,7 +102,7 @@ async function decodeGlCompressed(payload, internalFormat, width, height) {
       throw new RangeError("truncated GL BC block payload");
     return { width, height, pixels: decodeBcSurface(payload, 0, width, height, bc[0], bc[1]) };
   }
-  const wasm = await import("../../../chunks/gpu-texture-wasm-N4LAHMFW.js");
+  const wasm = await import("../../../chunks/gpu-texture-wasm-2Q2CDSF4.js");
   const bgra = await (found.dxgiFormat === 98 ? wasm.decode_bc7 : wasm.decode_bc6)(payload, width, height);
   if (bgra === null)
     throw new Error("GL BPTC decode failed");

@@ -59,6 +59,15 @@ const subsystemName = subsystem =>
     subsystem
   ] ?? `unknown-${subsystem}`
 
+/**
+ * The headers and sections of a PE32 or PE32+ image in memory — image base, entry point, sections
+ * by virtual and file address — for a game that maps an executable (Diablo III reads its type
+ * registry out of the client). The same reading the codec lists, not a second parser.
+ */
+export function parsePeImage(bytes, maxSections = 96) {
+  return parsePe(bytes, { maxNodes: maxSections + 2 })
+}
+
 function parsePe(bytes, budget) {
   if (!matches(bytes)) throw new TypeError('PE signature is missing')
   const signatureOffset = peOffset(bytes)

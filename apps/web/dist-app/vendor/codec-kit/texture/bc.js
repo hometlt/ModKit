@@ -1,10 +1,10 @@
 import {
   bcBlockBytes,
   decodeBcSurface
-} from "../../../chunks/chunk-Y4UL3XCN.js";
+} from "../../../chunks/chunk-H37RD4QF.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 
-// packages/codec-kit/dist/texture/bc-encode.js
+// ../MODDING/modkit-core/packages/codec-kit/dist/texture/bc-encode.js
 var at = (pixels, index) => pixels[index];
 function rgb565(red, green, blue) {
   return (red & 248) << 8 | (green & 252) << 3 | blue >>> 3;

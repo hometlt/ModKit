@@ -3,7 +3,7 @@ import {
   invertAffine,
   normalizeQuat,
   quaternionFromRotationMatrix
-} from "../../../chunks/chunk-3EHD75HB.js";
+} from "../../../chunks/chunk-WYUQ3HXR.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 export {
   decomposeMatrix4,

@@ -1,6 +1,6 @@
 import "../../../chunks/chunk-CQ52GEHY.js";
 
-// packages/codec-kit/dist/raster/palette.js
+// ../MODDING/modkit-core/packages/codec-kit/dist/raster/palette.js
 var latin1 = new TextDecoder("latin1");
 function tag(bytes, offset) {
   return latin1.decode(bytes.subarray(offset, offset + 4));

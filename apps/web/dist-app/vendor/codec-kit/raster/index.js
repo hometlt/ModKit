@@ -19,15 +19,15 @@ import {
   parseTga,
   plausibleTgaHeader,
   readJpegFrameInfo
-} from "../../../chunks/chunk-56NX7CKB.js";
+} from "../../../chunks/chunk-EPDJTBM6.js";
 import {
   applyColorKeyTransparency,
   applyRoundedAlpha,
   combineNormalSpecular,
   resizeRgba
-} from "../../../chunks/chunk-NJ5SYYRG.js";
-import "../../../chunks/chunk-JVAXQGJ2.js";
-import "../../../chunks/chunk-RA3DJQH7.js";
+} from "../../../chunks/chunk-COUIZZOL.js";
+import "../../../chunks/chunk-GDKG5J25.js";
+import "../../../chunks/chunk-U5HQC5XA.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 export {
   applyColorKeyTransparency,

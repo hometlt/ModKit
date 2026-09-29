@@ -6,7 +6,7 @@ import {
   createAdler32,
   createCrc32Msb,
   xxHash32
-} from "../../../chunks/chunk-RA3DJQH7.js";
+} from "../../../chunks/chunk-U5HQC5XA.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 export {
   adler32,

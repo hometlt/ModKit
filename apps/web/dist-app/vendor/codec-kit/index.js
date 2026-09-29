@@ -2,30 +2,31 @@ import "../../chunks/chunk-65MI54Q5.js";
 import {
   createTableDataSource
 } from "../../chunks/chunk-XYU4XXWE.js";
-import "../../chunks/chunk-OVW5EXOM.js";
+import "../../chunks/chunk-BFR65BLC.js";
 import {
   assembleSubjectDescriptor,
   createAssetSession,
   createUtf8TextDataSource
-} from "../../chunks/chunk-PDO7AMOW.js";
-import "../../chunks/chunk-JHPOUH6S.js";
+} from "../../chunks/chunk-QJZPE5FO.js";
+import "../../chunks/chunk-5GGWVEQJ.js";
 import {
+  RESOLVED_DATA_WORKSPACE_CONTRACT,
   containerEntryRevision,
   contributionSettingsFor
-} from "../../chunks/chunk-S6QKYSGJ.js";
-import "../../chunks/chunk-YYQ3QKXM.js";
-import "../../chunks/chunk-KL23KRQT.js";
+} from "../../chunks/chunk-MAAPKCDG.js";
+import "../../chunks/chunk-R2P56FTH.js";
+import "../../chunks/chunk-P5QJHSUW.js";
 import {
   revisionId,
   toPortableProjectionReceipt
-} from "../../chunks/chunk-R7U42EZV.js";
-import "../../chunks/chunk-GGIVOOBZ.js";
+} from "../../chunks/chunk-VI4QBV4T.js";
+import "../../chunks/chunk-MT2JUZZJ.js";
 import {
   ModkitError,
   canonicalJsonStringify,
   createReferenceIndex,
   diagnostic
-} from "../../chunks/chunk-LX6GSJ3D.js";
+} from "../../chunks/chunk-V3DESLW4.js";
 import "../../chunks/chunk-CQ52GEHY.js";
 
 // packages/codec-kit/src/paging.ts
@@ -81,13 +82,13 @@ function resizeRgba(image, width, height) {
 }
 
 // packages/codec-kit/src/json-snapshot.ts
-function utf8ByteLength(text2) {
+function utf8ByteLength(text3) {
   let bytes = 0;
-  for (let index = 0; index < text2.length; index++) {
-    const code = text2.charCodeAt(index);
+  for (let index = 0; index < text3.length; index++) {
+    const code = text3.charCodeAt(index);
     if (code < 128) bytes++;
     else if (code < 2048) bytes += 2;
-    else if (code >= 55296 && code <= 56319 && text2.charCodeAt(index + 1) >= 56320 && text2.charCodeAt(index + 1) <= 57343) {
+    else if (code >= 55296 && code <= 56319 && text3.charCodeAt(index + 1) >= 56320 && text3.charCodeAt(index + 1) <= 57343) {
       bytes += 4;
       index++;
     } else bytes += 3;
@@ -278,12 +279,12 @@ function deferAssetSession(revision, initialize, budget, openingSignal) {
       return descriptor;
     },
     async dataSource(contract, major) {
-      const lease = await (await get()).dataSource(contract, major);
+      const lease2 = await (await get()).dataSource(contract, major);
       try {
         requireLive();
-        return lease;
+        return lease2;
       } catch (error) {
-        await lease.release();
+        await lease2.release();
         throw error;
       }
     },
@@ -589,7 +590,7 @@ async function decodeContainerEntry(entry, maximum, readRange, signal) {
       break;
     }
     case "zstd": {
-      const { decodeZstd } = await import("../../chunks/zstd-VDM4IETD.js");
+      const { decodeZstd } = await import("../../chunks/zstd-RIMCNZKY.js");
       bytes = decodeZstd(
         await readRange(
           await offsetOf(storage, signal),
@@ -2082,27 +2083,27 @@ function encodeXmlAttribute(value, quote = '"') {
   return quote === '"' ? escaped.replaceAll('"', "&quot;") : escaped.replaceAll("'", "&apos;");
 }
 var NAME_CHAR = /[A-Za-z0-9_:.-]/;
-function readTag(text2, lt) {
+function readTag(text3, lt) {
   let i = lt + 1;
   let closing = false;
-  if (text2[i] === "/") {
+  if (text3[i] === "/") {
     closing = true;
     i++;
   }
   const tagStart = i;
-  while (i < text2.length && NAME_CHAR.test(text2[i])) i++;
+  while (i < text3.length && NAME_CHAR.test(text3[i])) i++;
   if (i === tagStart) return void 0;
-  const tag = text2.slice(tagStart, i);
+  const tag = text3.slice(tagStart, i);
   const tagEnd = i;
   const attrs = [];
   let selfClosing = false;
-  while (i < text2.length) {
-    const ch = text2[i];
+  while (i < text3.length) {
+    const ch = text3[i];
     if (ch === ">") {
       i++;
       break;
     }
-    if (ch === "/" && text2[i + 1] === ">") {
+    if (ch === "/" && text3[i + 1] === ">") {
       selfClosing = true;
       i += 2;
       break;
@@ -2110,27 +2111,27 @@ function readTag(text2, lt) {
     if (ch === "<") break;
     if (NAME_CHAR.test(ch)) {
       const nameStart = i;
-      while (i < text2.length && NAME_CHAR.test(text2[i])) i++;
-      const name = text2.slice(nameStart, i);
+      while (i < text3.length && NAME_CHAR.test(text3[i])) i++;
+      const name = text3.slice(nameStart, i);
       const nameEnd = i;
-      while (i < text2.length && /\s/.test(text2[i])) i++;
-      if (text2[i] === "=") {
+      while (i < text3.length && /\s/.test(text3[i])) i++;
+      if (text3[i] === "=") {
         i++;
-        while (i < text2.length && /\s/.test(text2[i])) i++;
-        const quote = text2[i];
+        while (i < text3.length && /\s/.test(text3[i])) i++;
+        const quote = text3[i];
         if (quote === '"' || quote === "'") {
           const valueStart = i + 1;
-          const close = text2.indexOf(quote, valueStart);
-          const valueEnd = close === -1 ? text2.length : close;
+          const close = text3.indexOf(quote, valueStart);
+          const valueEnd = close === -1 ? text3.length : close;
           attrs.push({
             name,
             nameStart,
             nameEnd,
-            value: decodeXmlEntities(text2.slice(valueStart, valueEnd)),
+            value: decodeXmlEntities(text3.slice(valueStart, valueEnd)),
             valueStart,
             valueEnd
           });
-          i = close === -1 ? text2.length : close + 1;
+          i = close === -1 ? text3.length : close + 1;
         }
       }
       continue;
@@ -2143,7 +2144,7 @@ function readTag(text2, lt) {
     closing
   };
 }
-function scanXml(text2) {
+function scanXml(text3) {
   const roots = [];
   const stack = [];
   let i = 0;
@@ -2152,30 +2153,30 @@ function scanXml(text2) {
     if (parent) parent.el.children.push(el);
     else roots.push(el);
   };
-  while (i < text2.length) {
-    const lt = text2.indexOf("<", i);
+  while (i < text3.length) {
+    const lt = text3.indexOf("<", i);
     if (lt === -1) break;
-    if (text2.startsWith("<!--", lt)) {
-      const e = text2.indexOf("-->", lt + 4);
-      i = e === -1 ? text2.length : e + 3;
+    if (text3.startsWith("<!--", lt)) {
+      const e = text3.indexOf("-->", lt + 4);
+      i = e === -1 ? text3.length : e + 3;
       continue;
     }
-    if (text2.startsWith("<![CDATA[", lt)) {
-      const e = text2.indexOf("]]>", lt + 9);
-      i = e === -1 ? text2.length : e + 3;
+    if (text3.startsWith("<![CDATA[", lt)) {
+      const e = text3.indexOf("]]>", lt + 9);
+      i = e === -1 ? text3.length : e + 3;
       continue;
     }
-    if (text2.startsWith("<?", lt)) {
-      const e = text2.indexOf("?>", lt + 2);
-      i = e === -1 ? text2.length : e + 2;
+    if (text3.startsWith("<?", lt)) {
+      const e = text3.indexOf("?>", lt + 2);
+      i = e === -1 ? text3.length : e + 2;
       continue;
     }
-    if (text2.startsWith("<!", lt)) {
-      const e = text2.indexOf(">", lt + 2);
-      i = e === -1 ? text2.length : e + 1;
+    if (text3.startsWith("<!", lt)) {
+      const e = text3.indexOf(">", lt + 2);
+      i = e === -1 ? text3.length : e + 1;
       continue;
     }
-    const parsed = readTag(text2, lt);
+    const parsed = readTag(text3, lt);
     if (!parsed) {
       i = lt + 1;
       continue;
@@ -2183,7 +2184,7 @@ function scanXml(text2) {
     if (parsed.closing) {
       for (let s = stack.length - 1; s >= 0; s--) {
         if (stack[s].tag === parsed.open.tag) {
-          for (let k = s + 1; k < stack.length; k++) stack[k].el.end = text2.length;
+          for (let k = s + 1; k < stack.length; k++) stack[k].el.end = text3.length;
           stack[s].el.end = parsed.next;
           stack.length = s;
           break;
@@ -2207,14 +2208,14 @@ function scanXml(text2) {
     if (!open.selfClosing) stack.push({ el, tag: open.tag });
     i = parsed.next;
   }
-  for (const s of stack) s.el.end = text2.length;
+  for (const s of stack) s.el.end = text3.length;
   return roots;
 }
 function getAttr(el, name) {
   return el.attrs.find((a) => a.name === name);
 }
-function elementPathAt(text2, offset) {
-  return pathTo(scanXml(text2), offset, []);
+function elementPathAt(text3, offset) {
+  return pathTo(scanXml(text3), offset, []);
 }
 function pathTo(els, offset, acc) {
   for (const el of els) {
@@ -2443,6 +2444,124 @@ function subjectFieldGroup(source, group, fields) {
   };
 }
 
+// packages/codec-kit/src/data-workspace.ts
+var lease = (value) => ({ value, release: async () => void 0 });
+var text2 = (value) => value === void 0 ? "" : typeof value === "string" ? value : JSON.stringify(value);
+function createSnapshotDataWorkspace(options) {
+  const maxSnapshots = options.maxSnapshots ?? 4;
+  const snapshots = /* @__PURE__ */ new Map();
+  const snapshotOf = (request) => {
+    request.signal?.throwIfAborted();
+    const snapshot = snapshots.get(request.snapshotId);
+    if (snapshot === void 0)
+      throw new RangeError(`snapshot ${request.snapshotId} is stale, unknown or evicted`);
+    return snapshot;
+  };
+  return {
+    contract: RESOLVED_DATA_WORKSPACE_CONTRACT,
+    providerId: options.providerId,
+    gameIds: options.gameIds,
+    plan: options.plan,
+    async analyze(request) {
+      const snapshot = await options.analyze(request);
+      snapshots.delete(snapshot.snapshotId);
+      snapshots.set(snapshot.snapshotId, snapshot);
+      while (snapshots.size > maxSnapshots) snapshots.delete(snapshots.keys().next().value);
+      return snapshot;
+    },
+    async openSchemaTree(request) {
+      const snapshot = snapshotOf(request);
+      return lease(
+        createTreeDataSource({
+          kind: "schema",
+          label: options.label,
+          children: (snapshot.schemas ?? []).map((schema) => ({
+            kind: "type",
+            label: schema.typeId,
+            preview: `${String(schema.fields.length)} fields`,
+            hasChildren: schema.fields.length > 0,
+            children: () => schema.fields.map((field) => ({
+              kind: "field",
+              label: field.fieldId,
+              preview: field.linkNamespace === void 0 ? field.cardinality : `\u2192 ${field.linkNamespace}`
+            }))
+          }))
+        })
+      );
+    },
+    async openDefinitionTable(request) {
+      const snapshot = snapshotOf(request);
+      const fields = [
+        ...new Set(snapshot.definitions.flatMap((entity) => Object.keys(entity.fields)))
+      ].sort();
+      return lease(
+        createTableDataSource({
+          header: ["namespace", "id", ...fields],
+          rows: snapshot.definitions.map((entity) => [
+            entity.namespace,
+            entity.entityId,
+            ...fields.map((field) => text2(entity.fields[field]))
+          ]),
+          cellFacts: (coord, value) => {
+            const entity = snapshot.definitions[coord.row];
+            const field = fields[coord.column - 2];
+            const source = entity === void 0 || field === void 0 ? void 0 : entity.fieldSources?.[field];
+            return source === void 0 || value === "" ? void 0 : { typedValue: `${source.rootId}:${source.path}` };
+          }
+        })
+      );
+    },
+    async openLocalizationTable(request) {
+      const snapshot = snapshotOf(request);
+      return lease(
+        createTableDataSource({
+          header: ["key", "value", "locale", "root", "path"],
+          rows: snapshot.localizedStrings.map((item) => [
+            item.key,
+            item.value,
+            item.resolvedLocale,
+            item.source.rootId,
+            item.source.path
+          ])
+        })
+      );
+    },
+    async openRelations(request) {
+      const snapshot = snapshotOf(request);
+      const missing = new Map(
+        snapshot.relations.filter((relation) => relation.dead).map((relation) => [`${relation.to.namespace}/${relation.to.entityId}`, relation.to])
+      );
+      return lease(
+        createRelationGraphSource({
+          snapshotId: snapshot.snapshotId,
+          nodes: [
+            ...snapshot.definitions.map((entity) => ({
+              id: `${entity.namespace}/${entity.entityId}`,
+              label: entity.entityId,
+              type: entity.namespace
+            })),
+            // a link to something no definition declares, as a node of its own
+            ...[...missing].map(([id, to]) => ({
+              id,
+              label: to.entityId,
+              type: `missing-${to.namespace}`
+            }))
+          ],
+          edges: snapshot.relations.map((relation) => ({
+            from: `${relation.from.namespace}/${relation.from.entityId}`,
+            to: `${relation.to.namespace}/${relation.to.entityId}`,
+            role: relation.role,
+            ...relation.dead ? { dead: true } : {}
+          })),
+          completeness: options.relations?.completeness ?? "partial",
+          ...options.relations?.reason === void 0 ? {} : { reason: options.relations.reason }
+        })
+      );
+    },
+    ...options.extend?.(snapshotOf)
+  };
+}
+
 // packages/codec-kit/src/index.ts
 function codecRefusal(code, message, context) {
   return new ModkitError({
@@ -2458,9 +2577,9 @@ async function readBoundCompanions(context, requirement) {
   for (const binding of input.bindingsFor(requirement)) {
     const identity = { bindingId: binding.bindingId, uri: binding.source.uri };
     try {
-      const lease = await input.openBinding(binding.bindingId, context.signal);
+      const lease2 = await input.openBinding(binding.bindingId, context.signal);
       try {
-        const source = lease.value;
+        const source = lease2.value;
         if (source.kind !== "bytes") throw new TypeError("the companion is not a byte source");
         const size = source.size;
         if (size === void 0) throw new TypeError("the companion has no known size");
@@ -2468,7 +2587,7 @@ async function readBoundCompanions(context, requirement) {
           throw new RangeError("the companion exceeds the input budget");
         companions.push({ ...identity, bytes: await source.read(0n, Number(size), context.signal) });
       } finally {
-        await lease.release();
+        await lease2.release();
       }
     } catch (error) {
       if (context.signal?.aborted) throw error;
@@ -2897,7 +3016,7 @@ function createVideoMediaSource(bytes, mediaType, info, frames) {
     }
   });
 }
-function createVectorSceneSource(info, text2) {
+function createVectorSceneSource(info, text3) {
   const ownedInfo = Object.freeze({
     ...info,
     ...info.viewBox === void 0 ? {} : { viewBox: Object.freeze([...info.viewBox]) }
@@ -2905,7 +3024,7 @@ function createVectorSceneSource(info, text2) {
   const document = Object.freeze({
     mediaType: "image/svg+xml",
     profile: "uvg.secure-static.v1",
-    text: text2
+    text: text3
   });
   return Object.freeze({
     async info(signal) {
@@ -3107,6 +3226,7 @@ function createInspectionCodec(definition, contributionContext) {
   }
   const namespaceDefinition = definition.namespace;
   const rangeDefinition = definition.access === "ranges" ? definition : void 0;
+  let endWindow;
   const customOperations = Object.freeze([...definition.operations ?? []]);
   const sharedOperations = namespaceDefinition === void 0 && rangeDefinition === void 0 ? INSPECTION_OPERATIONS : INSPECTION_OPERATIONS.filter((operation) => operation.handlerId !== "export-raw");
   const customIds = /* @__PURE__ */ new Set();
@@ -3192,6 +3312,11 @@ function createInspectionCodec(definition, contributionContext) {
           Math.min(tail.length, request.plan.maxBytes - bytes.byteLength, Number(size))
         )
       );
+      if (tail !== void 0)
+        endWindow = Math.max(
+          0,
+          Math.min(tail.length, request.plan.maxBytes - probeLength(request.plan))
+        );
       const suffix = tail === void 0 || size === void 0 ? void 0 : tailLength === 0 ? new Uint8Array() : await request.source.read(size - BigInt(tailLength), tailLength, signal);
       const detected = await definition.detect(bytes, request.source.ref.uri, suffix);
       return Object.freeze({
@@ -3348,7 +3473,9 @@ function createInspectionCodec(definition, contributionContext) {
           Math.min(rangeDefinition?.detectBytes ?? RANGE_DETECT_PREFIX_BYTES, Number(readable)),
           signal
         );
-        const detected = await definition.detect(prefix, primary.source.uri);
+        const suffixLength = endWindow === void 0 ? 0 : Math.min(endWindow, Number(sourceSize), Number(readable));
+        const suffix = endWindow === void 0 ? void 0 : bytes !== void 0 ? bytes.subarray(bytes.byteLength - suffixLength) : suffixLength === 0 ? new Uint8Array() : await byteSource.read(sourceSize - BigInt(suffixLength), suffixLength, signal);
+        const detected = await definition.detect(prefix, primary.source.uri, suffix);
         const inspectionContext = {
           ...contributionContext === void 0 ? {} : {
             contracts: contributionContext.contracts,
@@ -3376,14 +3503,14 @@ function createInspectionCodec(definition, contributionContext) {
           budget,
           // A companion the input carries (`.rfd` beside `.rfh`), read by range under the same budget.
           async companionSource(bindingId, companionSignal) {
-            const lease = await input.openBinding(bindingId, companionSignal);
+            const lease2 = await input.openBinding(bindingId, companionSignal);
             try {
               return {
-                source: rangeByteSource(lease.value, budget),
-                release: () => lease.release()
+                source: rangeByteSource(lease2.value, budget),
+                release: () => lease2.release()
               };
             } catch (error) {
-              await lease.release();
+              await lease2.release();
               throw error;
             }
           }
@@ -3606,6 +3733,7 @@ export {
   createRasterImageSource,
   createReferenceIndex,
   createRelationGraphSource,
+  createSnapshotDataWorkspace,
   createSubjectFactsSource,
   createTableDataSource,
   createTransportHandlers,

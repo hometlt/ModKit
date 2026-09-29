@@ -1,9 +1,9 @@
 import {
   COMPRESSION_OUTPUT_LIMIT
-} from "../../../chunks/chunk-JVAXQGJ2.js";
+} from "../../../chunks/chunk-GDKG5J25.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 
-// packages/codec-kit/dist/compression/lcw.js
+// ../MODDING/modkit-core/packages/codec-kit/dist/compression/lcw.js
 var LCW_MALFORMED = "codec-kit/lcw-malformed";
 function malformed(kind, message) {
   const error = new RangeError(`${kind} stream ${message}`);

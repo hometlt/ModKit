@@ -6,18 +6,18 @@ import {
   framePortFromMessagePort,
   logicalResourcesFromWire,
   protocolLimits
-} from "./chunks/chunk-FIXB2PMV.js";
-import "./chunks/chunk-S6QKYSGJ.js";
-import "./chunks/chunk-YYQ3QKXM.js";
-import "./chunks/chunk-KL23KRQT.js";
-import "./chunks/chunk-R7U42EZV.js";
-import "./chunks/chunk-GGIVOOBZ.js";
+} from "./chunks/chunk-QYMOBICX.js";
+import "./chunks/chunk-MAAPKCDG.js";
+import "./chunks/chunk-R2P56FTH.js";
+import "./chunks/chunk-P5QJHSUW.js";
+import "./chunks/chunk-VI4QBV4T.js";
+import "./chunks/chunk-MT2JUZZJ.js";
 import {
   ModkitError
-} from "./chunks/chunk-LX6GSJ3D.js";
+} from "./chunks/chunk-V3DESLW4.js";
 import "./chunks/chunk-CQ52GEHY.js";
 
-// packages/host/dist/execution/module-reassembly.js
+// ../MODDING/modkit-core/packages/host/dist/execution/module-reassembly.js
 var unavailableResolver = {
   resolve: () => Promise.reject(new ModkitError({
     code: "x3.host/execution-backend-unavailable",
@@ -45,6 +45,7 @@ function contributionContext(wire) {
     ...wire.installationProbes === void 0 ? {} : { installationProbes: wire.installationProbes },
     ...wire.videoFrames === void 0 ? {} : { videoFrames: wire.videoFrames },
     ...wire.installationFiles === void 0 ? {} : { installationFiles: wire.installationFiles },
+    ...wire.catalog === void 0 ? {} : { catalog: wire.catalog },
     ...wire.credentials === void 0 ? {} : { credentials: wire.credentials },
     ...wire.containerContext === void 0 ? {} : { containerContext: wire.containerContext },
     ...wire.providerIdentity === void 0 ? {} : { providerIdentity: Object.freeze({ ...wire.providerIdentity }) },
@@ -91,7 +92,7 @@ function wrapLoadedModule(module) {
   };
 }
 
-// packages/host/dist/browser/worker-bootstrap-core.js
+// ../MODDING/modkit-core/packages/host/dist/browser/worker-bootstrap-core.js
 function runBrowserWorkerBootstrap(init) {
   let loads = 0;
   return createEndpoint({
@@ -126,7 +127,7 @@ function runBrowserWorkerBootstrap(init) {
   });
 }
 
-// packages/host/dist/browser/worker-entry.js
+// ../MODDING/modkit-core/packages/host/dist/browser/worker-entry.js
 function isInit(value) {
   return typeof value === "object" && value !== null && value.type === "x3.host/worker-init" && typeof value.session === "string" && typeof value.moduleUrl === "string" && typeof value.port === "object";
 }
