@@ -178,6 +178,11 @@ const COMPLETION_KINDS = new Set([
   'snippet',
   'text',
   'type',
+  'color',
+  'file',
+  'folder',
+  'enum-member',
+  'event',
 ])
 const CODE_ACTION_KINDS = new Set([
   'quickfix',
@@ -952,7 +957,16 @@ const validCompletionItem = (
   (item['replacementRange'] === undefined ||
     validRange(item['replacementRange'] as LanguageRange, lengths)) &&
   (item['sortText'] === undefined || typeof item['sortText'] === 'string') &&
-  (item['filterText'] === undefined || typeof item['filterText'] === 'string')
+  (item['filterText'] === undefined || typeof item['filterText'] === 'string') &&
+  (item['preselect'] === undefined || typeof item['preselect'] === 'boolean') &&
+  (item['retrigger'] === undefined || typeof item['retrigger'] === 'boolean') &&
+  (item['deprecated'] === undefined || typeof item['deprecated'] === 'boolean') &&
+  (item['commitCharacters'] === undefined ||
+    (Array.isArray(item['commitCharacters']) &&
+      item['commitCharacters'].length <= 16 &&
+      item['commitCharacters'].every(
+        character => typeof character === 'string' && [...character].length === 1,
+      )))
 
 function validateProviderCompletionList(
   value: unknown,

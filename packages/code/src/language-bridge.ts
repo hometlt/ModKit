@@ -174,6 +174,9 @@ const COMPLETION_KIND: Readonly<Record<string, monaco.languages.CompletionItemKi
     'enum-member': monaco.languages.CompletionItemKind.EnumMember,
     namespace: monaco.languages.CompletionItemKind.Module,
     file: monaco.languages.CompletionItemKind.File,
+    folder: monaco.languages.CompletionItemKind.Folder,
+    color: monaco.languages.CompletionItemKind.Color,
+    event: monaco.languages.CompletionItemKind.Event,
   })
 
 const SYMBOL_KIND: Readonly<Record<string, monaco.languages.SymbolKind>> = Object.freeze({
@@ -291,6 +294,16 @@ export function bridgeLanguageProvider(
               ...(plain.documentation === undefined ? {} : { documentation: plain.documentation }),
               ...(plain.sortText === undefined ? {} : { sortText: plain.sortText }),
               ...(plain.filterText === undefined ? {} : { filterText: plain.filterText }),
+              ...(plain.preselect === undefined ? {} : { preselect: plain.preselect }),
+              ...(plain.commitCharacters === undefined
+                ? {}
+                : { commitCharacters: [...plain.commitCharacters] }),
+              ...(plain.deprecated === true
+                ? { tags: [monaco.languages.CompletionItemTag.Deprecated] }
+                : {}),
+              ...(plain.retrigger === true
+                ? { command: { id: 'editor.action.triggerSuggest', title: 'Suggest' } }
+                : {}),
               ...(plain.insertTextFormat === 'snippet'
                 ? { insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet }
                 : {}),

@@ -632,6 +632,35 @@ describe('language subject completion lifecycle', () => {
     }
   })
 
+  it('carries preselect, commit characters, retrigger, deprecation and the asset kinds', async () => {
+    const items = [
+      { label: 'OnHit', kind: 'event', preselect: true },
+      { label: 'name=""', kind: 'property', retrigger: true, commitCharacters: ['='] },
+      { label: 'OldField', kind: 'field', deprecated: true },
+      { label: 'Red', kind: 'color', documentation: '#ff0000' },
+      { label: 'Assets/Textures', kind: 'folder' },
+      { label: 'Assets/Textures/btn.dds', kind: 'file' },
+      { label: 'Normal', kind: 'enum-member' },
+    ] as const
+    const original = provider.completion
+    provider.completion = async () => ({ items, isIncomplete: false })
+    const workspace = await openWorkspace({ open: vi.fn(async () => undefined) })
+    try {
+      await expect(workspace.completion(completionRequest())).resolves.toEqual({
+        items,
+        isIncomplete: false,
+      })
+      provider.completion = async () => ({
+        items: [{ label: 'x', kind: 'text', commitCharacters: ['=='] }],
+        isIncomplete: false,
+      })
+      await expect(workspace.completion(completionRequest())).rejects.toThrow()
+    } finally {
+      provider.completion = original
+      await workspace.shutdown()
+    }
+  })
+
   it('routes and validates protocol-neutral on-type formatting edits', async () => {
     const workspace = await openWorkspace({ open: async () => undefined })
     try {

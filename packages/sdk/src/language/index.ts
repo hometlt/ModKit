@@ -116,8 +116,22 @@ export interface LanguageLocation {
   readonly range: LanguageRange
 }
 
+/**
+ * `color`: the editor draws a swatch from the item's `documentation` (or `label`) when it is a CSS
+ * colour (`#rrggbb`); `file` and `folder`: asset paths and includes.
+ */
 export type LanguageCompletionItemKind =
-  LanguageSymbolKind | 'keyword' | 'parameter' | 'snippet' | 'text' | 'type'
+  | LanguageSymbolKind
+  | 'keyword'
+  | 'parameter'
+  | 'snippet'
+  | 'text'
+  | 'type'
+  | 'color'
+  | 'file'
+  | 'folder'
+  | 'enum-member'
+  | 'event'
 
 export interface LanguageCompletionItem {
   readonly label: string
@@ -135,6 +149,14 @@ export interface LanguageCompletionItem {
    * here too, or the editor filters it out.
    */
   readonly filterText?: string
+  /** Selected when the list opens (a required hook before the optional ones). */
+  readonly preselect?: boolean
+  /** Characters that accept the item as typed, then insert themselves (`.`, `(`). */
+  readonly commitCharacters?: readonly string[]
+  /** Ask for completions again once this item is inserted: `name=""` then its values. */
+  readonly retrigger?: boolean
+  /** Still accepted, but on its way out; the editor strikes it through. */
+  readonly deprecated?: boolean
 }
 
 /**

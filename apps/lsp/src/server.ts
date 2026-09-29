@@ -31,6 +31,7 @@ import type {
 import {
   CodeActionKind,
   CompletionItemKind,
+  CompletionItemTag,
   DiagnosticSeverity,
   DidChangeWatchedFilesNotification,
   DocumentSymbol,
@@ -112,6 +113,11 @@ const completionKinds: Readonly<Record<string, CompletionItemKind>> = Object.fre
   snippet: CompletionItemKind.Snippet,
   text: CompletionItemKind.Text,
   type: CompletionItemKind.TypeParameter,
+  color: CompletionItemKind.Color,
+  file: CompletionItemKind.File,
+  folder: CompletionItemKind.Folder,
+  'enum-member': CompletionItemKind.EnumMember,
+  event: CompletionItemKind.Event,
 })
 
 const severity = (value: LanguageDiagnostic['severity']): DiagnosticSeverity =>
@@ -689,6 +695,15 @@ export function createModkitLanguageServer(
                       }),
                   ...(item.sortText === undefined ? {} : { sortText: item.sortText }),
                   ...(item.filterText === undefined ? {} : { filterText: item.filterText }),
+                  ...(item.preselect === undefined ? {} : { preselect: item.preselect }),
+                  ...(item.commitCharacters === undefined
+                    ? {}
+                    : { commitCharacters: [...item.commitCharacters] }),
+                  ...(item.deprecated === true ? { tags: [CompletionItemTag.Deprecated] } : {}),
+                  // the client's own command: ask for completions again after this insertion
+                  ...(item.retrigger === true
+                    ? { command: { title: 'Suggest', command: 'editor.action.triggerSuggest' } }
+                    : {}),
                 }) satisfies CompletionItem,
             ),
           }
