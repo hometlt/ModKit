@@ -403,6 +403,15 @@
     },
     "schemaVersion": {
       "const": 1
+    },
+    "workspaceMarkers": {
+      "items": {
+        "maxLength": 128,
+        "pattern": "^(?!/)(?![A-Za-z]:)[^\\\\\\u0000]+$",
+        "type": "string"
+      },
+      "maxItems": 32,
+      "type": "array"
     }
   },
   "required": [

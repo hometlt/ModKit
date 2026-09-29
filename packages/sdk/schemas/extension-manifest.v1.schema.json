@@ -411,6 +411,15 @@
     "version": {
       "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
       "type": "string"
+    },
+    "workspaceMarkers": {
+      "items": {
+        "maxLength": 128,
+        "pattern": "^(?!/)(?![A-Za-z]:)[^\\\\\\u0000]+$",
+        "type": "string"
+      },
+      "maxItems": 32,
+      "type": "array"
     }
   },
   "required": [
