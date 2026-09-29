@@ -238,6 +238,60 @@ it('gives a masked floor and the drawn ground one normal where they meet on a he
   for (const normal of normalsAt(mask, 0, 0)) assert.deepEqual(normal.map(value => value + 0), [0, 1, 0])
 })
 
+it('gives masked ground one normal where two cliff pieces meet on a shared edge', () => {
+  // Piece a's floor covers columns 0-1 leaning east, piece b's column 2 leaning west; they share the
+  // edge x = 2. Each mesh carries its own normals along it.
+  const lean = x => {
+    const length = Math.hypot(x, 1)
+    return [x / length, 1 / length, 0]
+  }
+  const east = lean(0.1),
+    west = lean(-0.1)
+  const withNormals = (model, normals) => ({
+    ...model,
+    primitives: model.primitives.map(primitive => ({ ...primitive, normals: Float32Array.of(...normals) })),
+  })
+  const a = withNormals(piece(true), [...east, ...east, ...east, 0, 0, 1, 0, 0, 1, 0, 0, 1, ...east, ...east, ...east])
+  const b = withNormals(
+    {
+      ...piece(true),
+      sourceKey: 'cliff-b',
+      primitives: [
+        {
+          ...piece(true).primitives[0],
+          positions: Float32Array.of(...[2, 0, 0, 3, 0, 0, 2, 0, -2], ...[3, 0, 0, 3, 0, -2, 2, 0, -2]),
+          indices: Uint32Array.of(0, 1, 2, 3, 4, 5),
+          textureCoordinates: Float32Array.of(...[0, 0, 0.5, 0, 0, 0.5], ...[0.5, 0, 0.5, 0.5, 0, 0.5]),
+        },
+      ],
+    },
+    [...west, ...west, ...west, ...west, ...west, ...west],
+  )
+  const plan = createWorldWebGlPlan({
+    items: [...splatTerrain, cliffItem, { ...cliffItem, id: 'cliff:1', resourceId: 'cliff-b' }],
+    models: new Map([
+      ['cliff', a],
+      ['cliff-b', b],
+    ]),
+    ...splatInput,
+  })
+  const [mask] = plan.splatTriangles.filter(batch => batch.maskTexture !== undefined)
+  for (const z of [0, -2]) {
+    const found = []
+    for (let vertex = 0; vertex < mask.positions.length / 3; vertex++) {
+      const [x, y, pz] = mask.positions.slice(vertex * 3, vertex * 3 + 3)
+      const normal = Array.from(mask.normals.slice(vertex * 3, vertex * 3 + 3))
+      if (Math.abs(x - 2) < 1e-6 && Math.abs(y) < 1e-6 && Math.abs(pz - z) < 1e-6 && normal[1] >= 0.5)
+        found.push(normal)
+    }
+    // Both pieces stand on the point, each with its own lean before.
+    assert.ok(found.length >= 2)
+    for (const normal of found)
+      normal.forEach((value, axis) => assert.ok(Math.abs(value - found[0][axis]) < 1e-6, `${normal} at z ${z}`))
+    assert.ok(Math.abs(found[0][0]) < east[0])
+  }
+})
+
 it('joins cliff pieces that share a vertex but read different base offsets', () => {
   // Columns 0-1 are a plateau (level 1), 2-4 low ground (level 0); the brush lowered columns 2-4
   // by 10 base steps, one world unit.

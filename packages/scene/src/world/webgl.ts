@@ -3459,6 +3459,11 @@ function createCliffPrimitiveLifter(
   return { gridOf, liftedCliffPrimitives, registerCliffPiece }
 }
 
+/** A world point to 1/128 unit: vertices of neighbouring pieces meeting there share one key. */
+function cliffPointKey(x: number, y: number, z: number): string {
+  return `${Math.round(x * 128)}:${Math.round(y * 128)}:${Math.round(z * 128)}`
+}
+
 /** Frozen ground preparation shared across animated frames; water and actors are rebuilt below. */
 function prepareWorldStaticTerrain(
   input: WorldWebGlInput,
@@ -4127,6 +4132,36 @@ function prepareWorldStaticTerrain(
   // cells alone (those under the piece are cut), so on a shore falling away from a tile it leaned the
   // whole slope while the floor beside it kept the mesh's upright normal. The light broke along the
   // tile's edge and every tile read as a lighter rectangle, on the ground and through the water.
+  // Two cliff pieces meeting on a tile edge carry their own normals along it (each mesh is authored for
+  // its own tile), so the ground seen through them lit differently on either side of the edge: a hairline
+  // step at every masked tile seam. Up-facing masked vertices standing on one point take the mean of
+  // their normals first, as the pieces' lifted positions are pooled (see `registerCliffPiece`).
+  {
+    const pooled = new Map<string, { sum: [number, number, number]; members: [number[], number][] }>()
+    for (const target of splat.values()) {
+      if (target.maskTexture === undefined) continue
+      const { positions, normals } = target
+      for (let index = 0; index * 3 < positions.length; index += 1) {
+        if (normals[index * 3 + 1]! < 0.5) continue
+        const key = cliffPointKey(positions[index * 3]!, positions[index * 3 + 1]!, positions[index * 3 + 2]!)
+        let entry = pooled.get(key)
+        if (entry === undefined) pooled.set(key, (entry = { sum: [0, 0, 0], members: [] }))
+        entry.sum[0] += normals[index * 3]!
+        entry.sum[1] += normals[index * 3 + 1]!
+        entry.sum[2] += normals[index * 3 + 2]!
+        entry.members.push([normals, index])
+      }
+    }
+    for (const { sum, members } of pooled.values()) {
+      if (members.length < 2) continue
+      const length = Math.hypot(sum[0], sum[1], sum[2])
+      for (const [normals, index] of members) {
+        normals[index * 3] = sum[0] / length
+        normals[index * 3 + 1] = sum[1] / length
+        normals[index * 3 + 2] = sum[2] / length
+      }
+    }
+  }
   {
     const meshNormals = new Map<string, [number, number, number]>()
     const edges = footprintEdgeVertices.filter(({ key, height, target, index }) => {
