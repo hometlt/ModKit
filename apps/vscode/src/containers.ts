@@ -249,7 +249,9 @@ async function listImmediateChildren(
   for (let pageNumber = 0; pageNumber < MAXIMUM_PAGES; pageNumber += 1) {
     const page = await namespace.children(
       path,
-      cursor === undefined ? { limit: PAGE_LIMIT } : { cursor, limit: PAGE_LIMIT },
+      cursor === undefined
+        ? { limit: PAGE_LIMIT, includeHidden: true }
+        : { cursor, limit: PAGE_LIMIT, includeHidden: true },
       signal,
     )
     items.push(...page.items.map(nodeOf))
@@ -283,7 +285,7 @@ async function listAll(session: AssetSession, signal?: AbortSignal): Promise<Nam
     for (let page = 0; page < MAXIMUM_PAGES; page += 1) {
       const listed = await namespace.list(
         '',
-        { limit: PAGE_LIMIT, ...(cursor === undefined ? {} : { cursor }) },
+        { limit: PAGE_LIMIT, ...(cursor === undefined ? {} : { cursor }), includeHidden: true },
         signal,
       )
       entries.push(...listed.items)
@@ -617,7 +619,9 @@ export function createContainerRegistry(options: ContainerRegistryOptions): Cont
         do {
           const page = await namespace.list(
             '',
-            cursor === undefined ? { limit: PAGE_LIMIT } : { cursor, limit: PAGE_LIMIT },
+            cursor === undefined
+              ? { limit: PAGE_LIMIT, includeHidden: true }
+              : { cursor, limit: PAGE_LIMIT, includeHidden: true },
             signal,
           )
           entries.push(...page.items)
@@ -766,7 +770,7 @@ export function createContainerRegistry(options: ContainerRegistryOptions): Cont
       if (holder.directPathEntryIds) return normalizeEntryPath(entry)
       const namespace = holder.namespace
       const requested = entry.replaceAll('\\', '/').replace(/^\/+/, '').toLowerCase()
-      const page = await namespace.list(entry, { limit: PAGE_LIMIT }, signal)
+      const page = await namespace.list(entry, { limit: PAGE_LIMIT, includeHidden: true }, signal)
       const exact = page.items.find(
         item =>
           item.kind === 'file' &&
@@ -1033,6 +1037,10 @@ export function createContainerRegistry(options: ContainerRegistryOptions): Cont
           context: { entry, container },
         })
       }
+      /*
+       * The registry lists everything (`includeHidden: true`): its index answers exact lookups of a
+       * hidden member too. What the Explorer shows follows the option.
+       */
       return showHidden() ? children : children.filter(item => item.hidden !== true)
     },
 
@@ -1059,7 +1067,9 @@ export function createContainerRegistry(options: ContainerRegistryOptions): Cont
         signal?.throwIfAborted()
         const page = await holder.namespace.list(
           prefix,
-          cursor === undefined ? { limit: PAGE_LIMIT } : { cursor, limit: PAGE_LIMIT },
+          cursor === undefined
+            ? { limit: PAGE_LIMIT, includeHidden: true }
+            : { cursor, limit: PAGE_LIMIT, includeHidden: true },
           signal,
         )
         const hiddenToo = showHidden()

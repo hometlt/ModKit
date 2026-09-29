@@ -225,10 +225,14 @@ export function createArchiveViewer(options: ArchiveViewerOptions = {}): ViewerM
       scope.lease(lease)
       const source = lease.value as NamespaceEntrySource
       const hasChildren = source.children !== undefined
+      /*
+       * A host serving the page over subject RPC leaves hidden members out unless the listing asks
+       * (`includeHidden`); a host that opens in-process (the web app) does not, so a hidden member
+       * that arrives uninvited is still left out here.
+       */
+      const hiddenToo = (): boolean => options.showHidden?.() === true
       const shown = (page: Page<NamespaceEntry>): Page<NamespaceEntry> =>
-        options.showHidden?.() === true
-          ? page
-          : { ...page, items: page.items.filter(item => item.hidden !== true) }
+        hiddenToo() ? page : { ...page, items: page.items.filter(item => item.hidden !== true) }
       const listChildren = async (
         path: string,
         page: PageRequest,
@@ -236,7 +240,9 @@ export function createArchiveViewer(options: ArchiveViewerOptions = {}): ViewerM
         if (source.children === undefined) {
           throw new TypeError('namespace source has no children method')
         }
-        return shown(await source.children(path, page, scope.signal))
+        return shown(
+          await source.children(path, { ...page, includeHidden: hiddenToo() }, scope.signal),
+        )
       }
 
       // ------------------------------------------------------------ entries loaded so far
@@ -310,7 +316,7 @@ export function createArchiveViewer(options: ArchiveViewerOptions = {}): ViewerM
         rootItems = items
       } else {
         const { items, capped: wasCapped } = await pageAll(async page =>
-          shown(await source.list('', page, scope.signal)),
+          shown(await source.list('', { ...page, includeHidden: hiddenToo() }, scope.signal)),
         )
         remember(items)
         capped = wasCapped

@@ -314,6 +314,24 @@ describe('archive viewer', () => {
     expect(acted).toEqual(['extract:file:a.txt'])
   })
 
+  it('asks the host for hidden members only when the option shows them', async () => {
+    const asked: unknown[] = []
+    const source: NamespaceEntrySource = {
+      async list(_prefix, page) {
+        asked.push(page.includeHidden)
+        return { items: [entry('a', 'a.txt'), { ...entry('h', '__MACOSX/a.txt'), hidden: true }] }
+      },
+      async openEntry(id) {
+        return { value: { id, uri: `mem://${id}` } as never, async release() {} }
+      },
+    }
+    const hidden = await mountArchive(source)
+    expect(rowNamed(hidden.root, '__MACOSX')).toBeUndefined()
+    const shown = await mountArchive(source, { showHidden: () => true })
+    expect(asked).toEqual([false, true])
+    expect(rowNamed(shown.root, '__MACOSX')).toBeDefined()
+  })
+
   it('lists the root via children() and fetches a folder\'s children only once it is expanded', async () => {
     const calls: string[] = []
     const source: NamespaceEntrySource = {

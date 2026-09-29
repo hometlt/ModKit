@@ -25,11 +25,16 @@ export class NamespaceModel {
   readonly #identities = new Map<string, string>()
   constructor(readonly source: NamespaceEntrySource) {}
 
-  async list(prefix: string, cursor?: string, signal?: AbortSignal): Promise<Page<NamespaceEntry>> {
+  async list(
+    prefix: string,
+    cursor?: string,
+    signal?: AbortSignal,
+    includeHidden = false,
+  ): Promise<Page<NamespaceEntry>> {
     const normalized = normalizeNamespacePath(prefix)
     const page = await this.source.list(
       normalized,
-      { limit: 200, ...(cursor === undefined ? {} : { cursor }) },
+      { limit: 200, ...(cursor === undefined ? {} : { cursor }), includeHidden },
       signal,
     )
     for (const entry of page.items) {
@@ -71,9 +76,9 @@ export function createNamespaceViewer(options: NamespaceViewerOptions = {}): Vie
       list.setAttribute('role', 'group')
 
       const renderPrefix = async (prefix: string, parent: HTMLElement) => {
-        const page = await model.list(prefix, undefined, scope.signal)
-        const seen = new Set<string>()
         const hiddenToo = options.showHidden?.() === true
+        const page = await model.list(prefix, undefined, scope.signal, hiddenToo)
+        const seen = new Set<string>()
         for (const entry of page.items) {
           if (entry.hidden === true && !hiddenToo) continue
           if (seen.has(entry.id)) throw new TypeError(`duplicate namespace entry id: ${entry.id}`)
