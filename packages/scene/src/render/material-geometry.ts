@@ -349,11 +349,18 @@ export interface MaterialGeometryPreparationOptions {
 const finiteArrays = new WeakSet<Float32Array>()
 const largestIndices = new WeakMap<Uint32Array, number>()
 
+/** Index of a float32's high 16 bits in its two halves: 1 on little-endian platforms. */
+const HIGH_HALF = new Uint8Array(Uint16Array.of(1).buffer)[0] === 1 ? 1 : 0
+
 // An animated model prepares its geometry every frame: plain loops, not a callback per element.
+// A float32 is not finite exactly when all its exponent bits are set. Reading the high half of each
+// value as a 16-bit integer never boxes a number, where a float read in code the engine has not
+// optimized allocates one per element (~11 MiB a frame on Amphion).
 function allFinite(values: Float32Array): boolean {
   if (finiteArrays.has(values)) return true
-  for (let index = 0; index < values.length; index++)
-    if (!Number.isFinite(values[index]!)) return false
+  const halves = new Uint16Array(values.buffer, values.byteOffset, values.length * 2)
+  for (let index = HIGH_HALF; index < halves.length; index += 2)
+    if ((halves[index]! & 0x7f80) === 0x7f80) return false
   finiteArrays.add(values)
   return true
 }
