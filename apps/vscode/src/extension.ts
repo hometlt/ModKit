@@ -113,6 +113,7 @@ listIndexCaches,
 openCachedContentIndex,
 removeIndexCache,
 resolveContentSources,
+createNodeInstallationFiles,
 runningGameProcesses,
 searchInstallationFolders,
 stopGameProcesses,
@@ -583,6 +584,8 @@ async function activateModkit(
    * it answers an operation that names catalog entities (a replay's units), and an ordinary open's
    * request for a resource of the mod (a map's tileset, a model's texture in the game).
    */
+  /** The installation the user chose for a game; answered once the choices are read below. */
+  let selectedInstallationOf = (_gameId: string): string | undefined => undefined
   const subjectCatalog: SubjectCatalogOptions = {
     contentSources: () => requireContentSources().catch(() => undefined),
     baseMods: target =>
@@ -597,6 +600,10 @@ async function activateModkit(
       setting: credentialSetting,
     },
     subjectCatalog,
+    // a codec reads the chosen installation's own files (Diablo III's type registry), nothing else
+    installationFiles: createNodeInstallationFiles({
+      installationOf: gameId => selectedInstallationOf(gameId),
+    }),
     bundledCatalog: BUNDLED_CATALOG.roots,
     catalogCandidates: catalogCandidates(extensionRoot, repositoryRoot),
     workspaceFolders: workspaceFolders(),
@@ -786,6 +793,8 @@ async function activateModkit(
     context.globalState.get<unknown>(SELECTED_SOURCES_KEY) ??
       context.workspaceState.get<unknown>(SELECTED_SOURCES_KEY),
   )
+  selectedInstallationOf = gameId =>
+    selectedSources.find(source => source.gameId === gameId)?.installPath
   /**
    * Mounts in flight, by the id the Sources row carries — a provider root id or an installation's
    * normalized path. A mount adds its folder first and reads afterwards, so this is what lets the
@@ -10431,7 +10440,9 @@ async function activateModkit(
                   try {
                     const result = await searchInstallationFolders({
                       markers: wanted.markers,
-                      searchFolders: [...wanted.searchFolders, ...configured.driveFolders],
+                      // the setting's names replace the host's common folders, removed ones too
+                      commonFolders: configured.driveFolders,
+                      searchFolders: wanted.searchFolders,
                       folders: configured.folders,
                       signal: controller.signal,
                     })

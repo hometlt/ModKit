@@ -33,6 +33,7 @@ import {
   type AnyDescriptor,
   type ArtifactSource,
   type AssetSession,
+  type InstallationFiles,
   type Lease,
   type ModelResourceRefsSource,
   type OperationSession,
@@ -368,6 +369,8 @@ export interface VsCodeSubjectHostOptions {
   readonly catalogCandidates: readonly string[]
   /** Where an opened subject's catalog questions are answered (its mod context). */
   readonly subjectCatalog?: SubjectCatalogOptions
+  /** A game installation's own files, for codecs that read them (Diablo III's type registry). */
+  readonly installationFiles?: InstallationFiles
   /** Workspace folders; scanned one level deep for workspace-local extensions. */
   readonly workspaceFolders?: readonly string[]
   /** Raw value of the `modkit.extensions` setting, exactly as the editor returned it. */
@@ -553,6 +556,9 @@ export async function createVsCodeSubjectHost(
     disabledContributions: switchedOff.ids,
     contributionSettings: contributionSettings.settingsFor,
     ...(options.subjectCatalog === undefined ? {} : { subjectCatalog: options.subjectCatalog }),
+    ...(options.installationFiles === undefined
+      ? {}
+      : { installationFiles: options.installationFiles }),
     /*
      * Where this host shipped the worker bootstrap.
      *
