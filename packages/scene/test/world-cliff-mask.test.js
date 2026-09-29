@@ -173,9 +173,9 @@ it('draws every face of a masked cliff piece as terrain, masked per pixel, inste
 
 it('reads the mask through the alpha1 layer transform and keeps it with its corner', () => {
   const [mask] = planWith(true).splatTriangles.filter(batch => batch.maskTexture !== undefined)
-  // alpha1: tiling 2, offset (0.5, 0), no rotation; the offset applies before tiling, as in the
-  // material shader: (u, v) -> ((u + 0.5) * 2, 2v).
-  const layerUv = (u, v) => [(u + 0.5) * 2, 2 * v]
+  // alpha1: tiling 2, offset (0.5, 0), no rotation; as the material shader, the offset moves the
+  // image and the tiling scales about the centre: (u, v) -> ((u - 0.5 - 0.5) * 2 + 0.5, (v - 0.5) * 2 + 0.5).
+  const layerUv = (u, v) => [(u - 1) * 2 + 0.5, (v - 0.5) * 2 + 0.5]
   const uvs = [
     [0, 0, 0.5, 0, 0, 0.5],
     [0, 0.5, 0.5, 0.5, 0, 1],

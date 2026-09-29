@@ -71,13 +71,16 @@ function transformUv(
       angle = uniform(program, `${prefix}UvAngle`, axis),
       c = Math.cos(angle),
       s = Math.sin(angle)
-    // GLSL mat2(c,-s,s,c) rotates clockwise around the UV center; the offset applies before tiling.
+    // As the shader: GLSL mat2(c,-s,s,c) rotates clockwise around the UV center, the offset moves the
+    // image, and tiling scales about the center.
     u =
-      ((uv[0] - 0.5) * c + (uv[1] - 0.5) * s + 0.5 + uniform(program, `${prefix}UvOffset`, 0)) *
-      uniform(program, `${prefix}UvTiling`, 0, 1)
+      ((uv[0] - 0.5) * c + (uv[1] - 0.5) * s - uniform(program, `${prefix}UvOffset`, 0)) *
+        uniform(program, `${prefix}UvTiling`, 0, 1) +
+      0.5
     v =
-      (-(uv[0] - 0.5) * s + (uv[1] - 0.5) * c + 0.5 + uniform(program, `${prefix}UvOffset`, 1)) *
-      uniform(program, `${prefix}UvTiling`, 1, 1)
+      (-(uv[0] - 0.5) * s + (uv[1] - 0.5) * c - uniform(program, `${prefix}UvOffset`, 1)) *
+        uniform(program, `${prefix}UvTiling`, 1, 1) +
+      0.5
   }
   return layer.slot === 'height' ? [u, v] : [u + parallax[0], v + parallax[1]]
 }

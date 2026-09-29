@@ -552,8 +552,8 @@ it('builds shader uniforms from UV animation and flipbooks, the cell after tilin
       },
     }),
   )
-  // Frame 3 of 2x2: ((uv + 0.2) * 2 + 1) / 2 = (uv + 0.7) * 1.
-  close(p.uniforms.u_diffuseUvOffset, [0.7, 0.9])
+  // Frame 3 of 2x2: (((uv - 0.5 - 0.2) * 2 + 0.5) + 1) / 2 = (uv - 0.5 + 0.05) * 1 + 0.5.
+  close(p.uniforms.u_diffuseUvOffset, [-0.05, 0.15])
   close(p.uniforms.u_diffuseUvTiling, [1, 1])
   assert.match(p.fragmentSource, /#version 300 es/)
   assert.match(p.fragmentSource, /out vec4 materialColor/)
@@ -575,9 +575,10 @@ it('preserves authored UV scale for stride-based atlas animation', () => {
       },
     }),
   )
-  // Frame 5 (column 1, row 2): (uv + 0.1) * 2 + 0.4 = (uv + 0.3) * 2, likewise 0.2 + 0.25 / 3.
+  // Frame 5 (column 1, row 2): (uv - 0.5 - 0.1) * 2 + 0.5 + 0.4 = (uv - 0.5 + 0.1) * 2 + 0.5,
+  // likewise 0.2 - 0.25 / 3.
   close(p.uniforms.u_diffuseUvTiling, [2, 3])
-  close(p.uniforms.u_diffuseUvOffset, [0.3, 0.2 + 0.25 / 3])
+  close(p.uniforms.u_diffuseUvOffset, [-0.1, 0.2 - 0.25 / 3])
 })
 
 it('uses bound normal channels for lighting and keeps a prepared frame independent of later bindings', () => {

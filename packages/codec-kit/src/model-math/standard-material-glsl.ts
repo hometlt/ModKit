@@ -866,10 +866,12 @@ function transformUvExpression(
 ): string {
   if (!layer.hasUvTransform) return parallax ? `(${base} + g_parallaxOffset)` : base
   const rotated = `rotateUv(${base}, ${layerUniformName(layer.slot, 'UvAngle')}.${angleComponent})`
-  // M3 offsets are in the mesh's UV units, before tiling: an offset of 5.65 under tiling 0.1 moves
-  // the atlas window by 0.565 (SC2 Elsecaro cars), and the Shorewaves foam of Elsecaro_Waves (tiling
-  // 0.5, offset -0.41 to 0.5) reaches the crest of its mask at full alpha only in this order.
-  const transformed = `((${rotated} + ${layerUniformName(layer.slot, 'UvOffset')}) * ${layerUniformName(layer.slot, 'UvTiling')})`
+  // SC2 scales about the UV centre and moves the image by the offset, in the mesh's UV units: an
+  // offset of 5.65 under tiling 0.1 moves the atlas window by 0.565 (Elsecaro cars); the Shorewaves
+  // foam of Elsecaro_Waves (tiling 0.5, offset -0.41 to 0.5) stands whole in its projector box at full
+  // alpha; Shakuras cliffs' offset 0.25 under tiling 2 cancels the half-repeat the centre adds; and a
+  // waterfall's offset growing along v runs its water down v.
+  const transformed = `((${rotated} - vec2(0.5) - ${layerUniformName(layer.slot, 'UvOffset')}) * ${layerUniformName(layer.slot, 'UvTiling')} + vec2(0.5))`
   return parallax ? `(${transformed} + g_parallaxOffset)` : transformed
 }
 
