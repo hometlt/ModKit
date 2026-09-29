@@ -219,6 +219,13 @@ const credentialsSchema = {
   },
 } as const
 
+/** `workspaceMarkers`: globs relative to a workspace folder, `/`-separated, never absolute. */
+const workspaceMarkersSchema = {
+  type: 'array',
+  maxItems: 32,
+  items: { type: 'string', pattern: '^(?!/)(?![A-Za-z]:)[^\\\\\\u0000]+$', maxLength: 128 },
+} as const
+
 export const extensionManifestSchema = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',
   $id: 'https://schemas.modkit.org/x3/extension-manifest.v1.schema.json',
@@ -237,6 +244,7 @@ export const extensionManifestSchema = {
     contentSources: { type: 'string', pattern: EXTENSION_VFS_PATH_PATTERN },
     languageFiles: languageFilesSchema,
     credentials: credentialsSchema,
+    workspaceMarkers: workspaceMarkersSchema,
   },
 } as const
 
@@ -262,6 +270,7 @@ export const modkitBlockSchema = {
     contentSources: { type: 'string', pattern: EXTENSION_VFS_PATH_PATTERN },
     languageFiles: languageFilesSchema,
     credentials: credentialsSchema,
+    workspaceMarkers: workspaceMarkersSchema,
   },
 } as const
 

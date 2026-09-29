@@ -100,6 +100,12 @@ export interface ExtensionManifest {
   readonly languageFiles?: readonly LanguageFileAssociation[]
   /** Sign-ins and keys the extension uses through the host's broker. */
   readonly credentials?: readonly CredentialRequirement[]
+  /**
+   * Globs, relative to a workspace folder (VS Code `workspaceContains`), that mark a folder as
+   * this extension's game or mod (a Minecraft world: `level.dat` at any depth): an application
+   * activates Modkit for a workspace holding one. Data the application collects from the catalog.
+   */
+  readonly workspaceMarkers?: readonly string[]
 }
 
 /** Authored `package.json#modkit` block: no version/license by construction (Q76). */
@@ -113,6 +119,7 @@ export interface ModkitBlock {
   readonly contentSources?: string
   readonly languageFiles?: readonly LanguageFileAssociation[]
   readonly credentials?: readonly CredentialRequirement[]
+  readonly workspaceMarkers?: readonly string[]
 }
 
 export type AuthoredContainerKind = 'package-json' | 'standalone'

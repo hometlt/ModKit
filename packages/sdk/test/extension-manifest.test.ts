@@ -80,6 +80,28 @@ describe('normalizeExtensionManifest (canon §5.13, 27 §0.2, Q75/Q76)', () => {
     expect(JSON.parse(JSON.stringify(npm.manifest?.presentation))).toEqual(presentation)
   })
 
+  it('carries the workspace markers an application activates for, never absolute ones', async () => {
+    const workspaceMarkers = ['**/level.dat', '**/StarCraft II/.build.info']
+    const standalone = await normalizeExtensionManifest({
+      standalone: { ...standaloneManifest, workspaceMarkers },
+    })
+    expect(hasErrors([...standalone.diagnostics])).toBe(false)
+    expect(standalone.manifest?.workspaceMarkers).toEqual(workspaceMarkers)
+    const npm = await normalizeExtensionManifest({
+      packageJson: {
+        ...convertedImagesPackageJson,
+        modkit: { ...convertedImagesPackageJson.modkit, workspaceMarkers },
+      },
+    })
+    expect(npm.manifest?.workspaceMarkers).toEqual(workspaceMarkers)
+    for (const marker of ['/games/level.dat', 'C:/Games/level.dat', 'saves\\level.dat', '']) {
+      const refused = await normalizeExtensionManifest({
+        standalone: { ...standaloneManifest, workspaceMarkers: [marker] },
+      })
+      expect(hasErrors([...refused.diagnostics])).toBe(true)
+    }
+  })
+
   it('canonicalizes pre-rename ModkitX extension identities and dependencies', async () => {
     const result = await normalizeExtensionManifest({
       packageJson: {

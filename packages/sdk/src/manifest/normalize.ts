@@ -318,6 +318,9 @@ async function normalizeExtensionManifestUncached(
               ExtensionManifest['credentials']
             >,
           }),
+      ...(blockRecord['workspaceMarkers'] === undefined
+        ? {}
+        : { workspaceMarkers: blockRecord['workspaceMarkers'] as readonly string[] }),
     }) as ExtensionManifest,
   )
   const all = [
