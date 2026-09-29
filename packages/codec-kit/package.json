@@ -126,6 +126,10 @@
       "types": "./dist/texture/gl-compressed.d.ts",
       "default": "./dist/texture/gl-compressed.js"
     },
+    "./texture/uastc": {
+      "types": "./dist/texture/uastc.d.ts",
+      "default": "./dist/texture/uastc.js"
+    },
     "./raster": {
       "types": "./dist/raster/index.d.ts",
       "default": "./dist/raster/index.js"

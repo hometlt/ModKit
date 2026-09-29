@@ -194,6 +194,7 @@ export const WEB_WORKER_MODULE_MAP: Readonly<Record<string, string>> = Object.fr
   '@modkit/codec-kit/texture': 'vendor/codec-kit/texture/index.js',
   '@modkit/codec-kit/texture/bc': 'vendor/codec-kit/texture/bc.js',
   '@modkit/codec-kit/texture/gl-compressed': 'vendor/codec-kit/texture/gl-compressed.js',
+  '@modkit/codec-kit/texture/uastc': 'vendor/codec-kit/texture/uastc.js',
   '@modkit/codec-kit/json-snapshot': 'vendor/codec-kit/json-snapshot.js',
   '@modkit/codec-kit/text': 'vendor/codec-kit/text/index.js',
   '@modkit/codec-kit/tree/json': 'vendor/codec-kit/tree/json.js',

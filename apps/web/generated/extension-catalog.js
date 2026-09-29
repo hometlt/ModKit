@@ -6924,7 +6924,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:6e394c4e704f7f9c0718f869be3f1ed5c4948be3978acfc120f4e23e10c79bfe',
+        artifactDigest: 'sha256:7ddc5e85d571d39f3c9b643f007dcbf9b2502266ff6c985a337eb40b15f039f3',
         fileDigests: {
           'MIGRATION-NOTES-common-images.json':
             'sha256:44c30ea45aaceceff66d53f72e5e0d0ec8efb1a7f2afbc2f9913849720632e93',
@@ -7020,7 +7020,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'src/ktx/codec.js':
             'sha256:111154eea1f7a17553118d25f426135418c3b523a37a1d260296dcf7cbfe9765',
           'src/ktx2/codec.js':
-            'sha256:2c72dc7edc2dbb11c14c60a83ec07427a27032c69034a0bcddb662b2b79ac87f',
+            'sha256:7cbc220b6cb32a16343266f9db517599a705a450ebed76aa65d5c3b8fb31d7ed',
           'src/linked.js':
             'sha256:bbe85af6cdf6da5544829b2bd7ad09a733ca00edc56e2229659247eba5cf8975',
           'src/ops/raster-transforms.js':
@@ -7064,7 +7064,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'test/ktx1-compressed.test.ts':
             'sha256:1653111d042a80b970f424082842314ae9d24dc8137bb2e3540ea7edc21cf993',
           'test/ktx2-decode.test.ts':
-            'sha256:0e1807a5b7d07485053fe106dc7cfbce7e664376d7eb4d8b59c878c65e1a09f5',
+            'sha256:026f2c2eb1250de0924a4ce21d375be501b520a084c49ce9d5acf30fefc99b59',
           'test/pal-codec.test.ts':
             'sha256:f1b7d8c25dd5ba1a0f3f7a82b5bc1c9ba104512a7286f0c8e30e35ae7e410a36',
           'test/png-palette-decode.test.ts':
@@ -7083,7 +7083,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:8b819b0622cce57f809b369081bdd6eca09d1c1793da7f82192db39229356c1d',
         },
         inventoryRecordId:
-          'artifact:sha256:6e394c4e704f7f9c0718f869be3f1ed5c4948be3978acfc120f4e23e10c79bfe',
+          'artifact:sha256:7ddc5e85d571d39f3c9b643f007dcbf9b2502266ff6c985a337eb40b15f039f3',
       },
       artifactRoot: 'extensions/images/',
       containers: {
