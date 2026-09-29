@@ -25,6 +25,7 @@
 /// <reference path="./monaco-module.d.ts" />
 import type {
   LanguageCodeActionKind,
+  LanguageCommand,
   LanguageCompletionItem,
   LanguageDiagnostic,
   LanguageDocument,
@@ -108,7 +109,22 @@ export interface LanguageBridgeOptions {
    * should see today's set.
    */
   readonly workspaceDocuments?: () => readonly LanguageDocument[]
+  /**
+   * Run a lens's or a code action's command (open an entity's card or graph, open a place). Without
+   * it lenses show their titles only and code actions carry no command.
+   */
+  readonly onCommand?: (command: LanguageCommand) => void
 }
+
+/** A marker's code as the contract spells it: Monaco may carry it as `{ value, target }`. */
+const markerCode = (marker: monaco.editor.IMarkerData): string | undefined =>
+  marker.code === undefined
+    ? undefined
+    : typeof marker.code === 'string'
+      ? marker.code
+      : marker.code.value
+
+let commandCount = 0
 
 const SEVERITY: Readonly<Record<LanguageDiagnostic['severity'], monaco.MarkerSeverity>> =
   Object.freeze({
@@ -132,7 +148,7 @@ const diagnosticFromMarker = (marker: monaco.editor.IMarkerData): LanguageDiagno
           ? 'hint'
           : 'information',
   message: marker.message,
-  ...(marker.code === undefined ? {} : { code: String(marker.code) }),
+  ...((code => (code === undefined ? {} : { code }))(markerCode(marker))),
   ...(marker.source === undefined ? {} : { source: marker.source }),
 })
 
@@ -224,6 +240,16 @@ export function bridgeLanguageProvider(
   const maxResults = options.maxResults ?? 200
   const maxDocuments = options.maxDocuments ?? 1
   const disposables: monaco.IDisposable[] = []
+  // one editor command per bridge: Monaco commands are global, and each bridge has its own sink
+  const onCommand = options.onCommand
+  const commandId =
+    onCommand === undefined ? undefined : `modkit.runLanguageCommand.${String((commandCount += 1))}`
+  if (onCommand !== undefined && commandId !== undefined)
+    disposables.push(
+      monaco.editor.registerCommand(commandId, (_accessor, command: LanguageCommand) =>
+        onCommand(command),
+      ),
+    )
 
   /** Every feature request carries the same bounded workspace snapshot. */
   const request = (model: monaco.editor.ITextModel, token: monaco.CancellationToken) => {
@@ -409,6 +435,28 @@ export function bridgeLanguageProvider(
                   },
                 }),
           }))
+        },
+      }),
+    )
+  }
+  if (provider.codeLenses !== undefined) {
+    const codeLenses = provider.codeLenses.bind(provider)
+    disposables.push(
+      monaco.languages.registerCodeLensProvider(selector, {
+        async provideCodeLenses(model, token) {
+          if (!claims(model)) return { lenses: [], dispose() {} }
+          const list = await codeLenses(request(model, token))
+          return {
+            lenses: list.lenses.map(lens => ({
+              range: toMonacoRange(lens.range),
+              // a lens without a command, or a bridge without a sink, shows its title only
+              command:
+                lens.command === undefined || commandId === undefined
+                  ? { id: '', title: lens.title }
+                  : { id: commandId, title: lens.title, arguments: [lens.command] },
+            })),
+            dispose() {},
+          }
         },
       }),
     )
@@ -688,7 +736,16 @@ export function bridgeLanguageProvider(
                   ...(action.disabledReason === undefined ? {} : { disabled: action.disabledReason }),
                   ...(codes.size === 0
                     ? {}
-                    : { diagnostics: context.markers.filter(marker => codes.has(String(marker.code))) }),
+                    : {
+                        diagnostics: context.markers.filter(marker =>
+                          codes.has(markerCode(marker) ?? ''),
+                        ),
+                      }),
+                  ...(action.command === undefined || commandId === undefined
+                    ? {}
+                    : {
+                        command: { id: commandId, title: action.title, arguments: [action.command] },
+                      }),
                   ...(action.edit === undefined
                     ? {}
                     : {
@@ -833,8 +890,28 @@ export async function publishDiagnostics(
     ...toMonacoRange(item.range),
     message: item.message,
     severity: SEVERITY[item.severity],
-    ...(item.code === undefined ? {} : { code: item.code }),
+    ...(item.codeDescription === undefined
+      ? item.code === undefined
+        ? {}
+        : { code: item.code }
+      : { code: { value: item.code ?? '', target: monaco.Uri.parse(item.codeDescription) } }),
     ...(item.source === undefined ? {} : { source: item.source }),
+    ...(item.tags === undefined
+      ? {}
+      : {
+          tags: item.tags.map(tag =>
+            tag === 'unnecessary' ? monaco.MarkerTag.Unnecessary : monaco.MarkerTag.Deprecated,
+          ),
+        }),
+    ...(item.relatedInformation === undefined
+      ? {}
+      : {
+          relatedInformation: item.relatedInformation.map(related => ({
+            resource: monaco.Uri.parse(related.location.uri),
+            message: related.message,
+            ...toMonacoRange(related.location.range),
+          })),
+        }),
   }))
   monaco.editor.setModelMarkers(model, owner, markers)
   return markers.length

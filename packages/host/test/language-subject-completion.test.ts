@@ -723,6 +723,62 @@ describe('language subject completion lifecycle', () => {
     }
   })
 
+  it('routes code lenses and commands, and diagnostics with tags and related places', async () => {
+    const features = provider as {
+      -readonly [K in 'codeLenses' | 'codeActions' | 'diagnostics']?: unknown
+    }
+    const originalDiagnostics = features.diagnostics
+    const originalCodeActions = features.codeActions
+    const range = { start: { line: 0, character: 0 }, end: { line: 0, character: 3 } }
+    const card = { kind: 'open-subject', subjectId: 'Unit/Marine', view: 'card' }
+    features.codeLenses = async () => ({
+      lenses: [
+        { range, title: 'inherited from Liberty' },
+        { range, title: 'Card', command: card },
+      ],
+      isIncomplete: false,
+    })
+    features.codeActions = async () => ({
+      actions: [{ title: 'Open the Marine', command: card }],
+      isIncomplete: false,
+    })
+    const unused = {
+      range,
+      severity: 'hint',
+      message: 'unused variable',
+      tags: ['unnecessary'],
+      relatedInformation: [
+        { location: { uri: 'file:///workspace/other.lang', range }, message: 'declared here' },
+      ],
+      codeDescription: 'https://example.org/rules/unused',
+    }
+    features.diagnostics = async () => ({ diagnostics: [unused], isIncomplete: false })
+    const workspace = await openWorkspace({ open: vi.fn(async () => undefined) })
+    try {
+      const request = completionRequest()
+      expect((await workspace.codeLenses(request))?.lenses).toHaveLength(2)
+      expect(
+        (await workspace.codeActions({ ...request, range, diagnostics: [] }))?.actions[0]?.command,
+      ).toEqual(card)
+      expect((await workspace.diagnostics(request))?.diagnostics).toEqual([unused])
+      features.codeLenses = async () => ({
+        lenses: [{ range, title: 'Run', command: { kind: 'run-script', script: 'rm' } }],
+        isIncomplete: false,
+      })
+      await expect(workspace.codeLenses(request)).rejects.toThrow(/code lenses/u)
+      features.diagnostics = async () => ({
+        diagnostics: [{ ...unused, codeDescription: 'javascript:alert(1)' }],
+        isIncomplete: false,
+      })
+      await expect(workspace.diagnostics(request)).rejects.toThrow()
+    } finally {
+      delete features.codeLenses
+      features.codeActions = originalCodeActions
+      features.diagnostics = originalDiagnostics
+      await workspace.shutdown()
+    }
+  })
+
   it('routes and validates protocol-neutral on-type formatting edits', async () => {
     const workspace = await openWorkspace({ open: async () => undefined })
     try {

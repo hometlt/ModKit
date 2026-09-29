@@ -23,6 +23,7 @@ import {
 } from '@modkit/host/language'
 import type {
   LanguageCodeAction,
+  LanguageCommand,
   LanguageDiagnostic,
   LanguageSymbol,
   LanguageSymbolKind,
@@ -34,6 +35,7 @@ import {
   CompletionItemKind,
   CompletionItemTag,
   DiagnosticSeverity,
+  DiagnosticTag,
   DidChangeWatchedFilesNotification,
   DocumentHighlightKind,
   DocumentSymbol,
@@ -49,6 +51,7 @@ import {
   createConnection,
   type CancellationToken,
   type CodeAction,
+  type Command,
   type ColorInformation,
   type ColorPresentation,
   type CompletionItem,
@@ -137,6 +140,35 @@ const diagnosticOf = (value: LanguageDiagnostic): Diagnostic => ({
   message: value.message,
   ...(value.code === undefined ? {} : { code: value.code }),
   ...(value.source === undefined ? {} : { source: value.source }),
+  ...(value.tags === undefined
+    ? {}
+    : {
+        tags: value.tags.map(tag =>
+          tag === 'unnecessary' ? DiagnosticTag.Unnecessary : DiagnosticTag.Deprecated,
+        ),
+      }),
+  ...(value.relatedInformation === undefined
+    ? {}
+    : {
+        relatedInformation: value.relatedInformation.map(item => ({
+          location: item.location,
+          message: item.message,
+        })),
+      }),
+  ...(value.codeDescription === undefined
+    ? {}
+    : { codeDescription: { href: value.codeDescription } }),
+})
+
+/**
+ * A language command as an LSP command: the client runs `modkit.runLanguageCommand` with the
+ * command itself as its one argument (the Modkit client opens the card, graph or place).
+ */
+export const LSP_LANGUAGE_COMMAND = 'modkit.runLanguageCommand'
+const commandOf = (title: string, command: LanguageCommand): Command => ({
+  title,
+  command: LSP_LANGUAGE_COMMAND,
+  arguments: [command],
 })
 
 const hostDiagnosticOf = (value: HostDiagnostic): Diagnostic => ({
@@ -175,6 +207,7 @@ const codeActionOf = (value: LanguageCodeAction): CodeAction => ({
     : { kind: value.kind === 'rewrite' ? CodeActionKind.RefactorRewrite : value.kind }),
   ...(value.isPreferred === undefined ? {} : { isPreferred: value.isPreferred }),
   ...(value.edit === undefined ? {} : { edit: workspaceEditOf(value.edit) }),
+  ...(value.command === undefined ? {} : { command: commandOf(value.title, value.command) }),
   ...(value.disabledReason === undefined ? {} : { disabled: { reason: value.disabledReason } }),
 })
 
@@ -554,6 +587,7 @@ export function createModkitLanguageServer(
             }),
         colorProvider: true,
         codeActionProvider: true,
+        codeLensProvider: { resolveProvider: false },
         foldingRangeProvider: true,
         documentLinkProvider: {},
         documentHighlightProvider: true,
@@ -856,6 +890,22 @@ export function createModkitLanguageServer(
       await requireFeature(params.textDocument.uri, 'document-colors', signal)
       const value = await options.workspace.documentColors(request(params.textDocument.uri, signal))
       return (value?.colors as ColorInformation[] | undefined) ?? []
+    }),
+  )
+  connection.onCodeLens((params, token) =>
+    withSignal(token, async signal => {
+      await requireFeature(params.textDocument.uri, 'code-lenses', signal)
+      const value = await options.workspace.codeLenses(request(params.textDocument.uri, signal))
+      return (
+        value?.lenses.map(lens => ({
+          range: lens.range,
+          // a lens without a command still shows its title: an empty command id is not clickable
+          command:
+            lens.command === undefined
+              ? { title: lens.title, command: '' }
+              : commandOf(lens.title, lens.command),
+        })) ?? []
+      )
     }),
   )
   connection.onFoldingRanges((params, token) =>

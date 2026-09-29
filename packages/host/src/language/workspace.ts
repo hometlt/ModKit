@@ -22,6 +22,7 @@ import {
   type LanguageAnalysisRequest,
   type LanguageCodeActionList,
   type LanguageColor,
+  type LanguageCodeLensList,
   type LanguageColorList,
   type LanguageDocumentHighlightList,
   type LanguageDocumentLinkList,
@@ -30,6 +31,7 @@ import {
   type LanguageColorPresentationList,
   type LanguageCompletionList,
   type LanguageProviderCompletionList,
+  type LanguageCommand,
   type LanguageDiagnostic,
   type LanguageDiagnosticList,
   type LanguageDocument,
@@ -609,6 +611,7 @@ export type LanguageWorkspaceCapability =
   | 'document-colors'
   | 'color-presentations'
   | 'code-actions'
+  | 'code-lenses'
   | 'folding-ranges'
   | 'document-links'
   | 'document-highlights'
@@ -664,6 +667,7 @@ export interface LanguageWorkspace {
   codeActions(
     request: LanguageWorkspaceCodeActionsRequest,
   ): Promise<LanguageCodeActionList | undefined>
+  codeLenses(request: LanguageWorkspaceFeatureRequest): Promise<LanguageCodeLensList | undefined>
   foldingRanges(
     request: LanguageWorkspaceFeatureRequest,
   ): Promise<LanguageFoldingRangeList | undefined>
@@ -844,6 +848,72 @@ function validPosition(
     position.character >= 0 &&
     length !== undefined &&
     position.character <= length
+  )
+}
+
+/** The shape of a location in any document: its range cannot be checked against text not held. */
+function validLocationShape(value: unknown): boolean {
+  const location = value as { readonly uri?: unknown; readonly range?: LanguageRange } | undefined
+  const position = (item: LanguagePosition | undefined) =>
+    item !== undefined &&
+    Number.isSafeInteger(item.line) &&
+    Number.isSafeInteger(item.character) &&
+    item.line >= 0 &&
+    item.character >= 0
+  return (
+    typeof location === 'object' &&
+    location !== null &&
+    typeof location.uri === 'string' &&
+    location.uri.length > 0 &&
+    location.uri.length <= 4096 &&
+    position(location.range?.start) &&
+    position(location.range?.end)
+  )
+}
+
+function validCommand(value: unknown): value is LanguageCommand {
+  const command = value as Record<string, unknown> | undefined
+  if (typeof command !== 'object' || command === null) return false
+  if (command['kind'] === 'open-subject')
+    return (
+      Object.keys(command).every(key => ['kind', 'subjectId', 'view'].includes(key)) &&
+      typeof command['subjectId'] === 'string' &&
+      command['subjectId'].length > 0 &&
+      command['subjectId'].length <= 512 &&
+      (command['view'] === undefined ||
+        ['card', 'graph', 'resolved'].includes(String(command['view'])))
+    )
+  return (
+    command['kind'] === 'open-location' &&
+    Object.keys(command).every(key => key === 'kind' || key === 'location') &&
+    validLocationShape(command['location'])
+  )
+}
+
+function validDiagnostic(item: LanguageDiagnostic, lengths: readonly number[]): boolean {
+  return (
+    validRange(item.range, lengths) &&
+    typeof item.message === 'string' &&
+    ['error', 'warning', 'information', 'hint'].includes(item.severity) &&
+    (item.code === undefined || typeof item.code === 'string') &&
+    (item.source === undefined || typeof item.source === 'string') &&
+    (item.tags === undefined ||
+      (Array.isArray(item.tags) &&
+        item.tags.length <= 2 &&
+        item.tags.every(tag => tag === 'unnecessary' || tag === 'deprecated'))) &&
+    (item.relatedInformation === undefined ||
+      (Array.isArray(item.relatedInformation) &&
+        item.relatedInformation.length <= 32 &&
+        item.relatedInformation.every(
+          related =>
+            validLocationShape(related?.location) &&
+            typeof related.message === 'string' &&
+            related.message.length <= 1024,
+        ))) &&
+    (item.codeDescription === undefined ||
+      (typeof item.codeDescription === 'string' &&
+        item.codeDescription.length <= 2048 &&
+        /^https?:\/\//u.test(item.codeDescription)))
   )
 }
 
@@ -1320,14 +1390,7 @@ function validateDiagnosticList(
     !Array.isArray(list.diagnostics) ||
     list.diagnostics.length > request.maxResults ||
     typeof list.isIncomplete !== 'boolean' ||
-    !list.diagnostics.every(
-      item =>
-        validRange(item.range, lengths) &&
-        typeof item.message === 'string' &&
-        ['error', 'warning', 'information', 'hint'].includes(item.severity) &&
-        (item.code === undefined || typeof item.code === 'string') &&
-        (item.source === undefined || typeof item.source === 'string'),
-    )
+    !list.diagnostics.every(item => validDiagnostic(item, lengths))
   ) {
     invalidFeature(
       'language provider returned invalid or unbounded diagnostics',
@@ -1371,6 +1434,32 @@ function validateColorList(value: unknown, request: LanguageFeatureRequest): Lan
 
 const optionalString = (value: unknown, maximum: number): boolean =>
   value === undefined || (typeof value === 'string' && value.length <= maximum)
+
+function validateCodeLenses(value: unknown, request: LanguageFeatureRequest): LanguageCodeLensList {
+  const list = value as LanguageCodeLensList
+  const lengths = lineLengths(request.document.text)
+  if (
+    typeof list !== 'object' ||
+    list === null ||
+    !Array.isArray(list.lenses) ||
+    list.lenses.length > request.maxResults ||
+    typeof list.isIncomplete !== 'boolean' ||
+    !list.lenses.every(
+      item =>
+        validRange(item.range, lengths) &&
+        typeof item.title === 'string' &&
+        item.title.length > 0 &&
+        item.title.length <= 256 &&
+        (item.command === undefined || validCommand(item.command)),
+    )
+  ) {
+    invalidFeature(
+      'language provider returned invalid or unbounded code lenses',
+      request.document.uri,
+    )
+  }
+  return list
+}
 
 function validateFoldingRanges(
   value: unknown,
@@ -1528,14 +1617,7 @@ function validateAnalysis(value: unknown, document: LanguageDocument): LanguageA
       Array.isArray(analysis.tokens) &&
       analysis.tokens.every(token => validToken(token, lengths)) &&
       Array.isArray(analysis.diagnostics) &&
-      analysis.diagnostics.every(
-        item =>
-          validRange(item.range, lengths) &&
-          typeof item.message === 'string' &&
-          ['error', 'warning', 'information', 'hint'].includes(item.severity) &&
-          (item.code === undefined || typeof item.code === 'string') &&
-          (item.source === undefined || typeof item.source === 'string'),
-      ) &&
+      analysis.diagnostics.every(item => validDiagnostic(item, lengths)) &&
       Array.isArray(analysis.symbols) &&
       analysis.symbols.every(symbol => validSymbol(symbol, lengths))
   } catch {
@@ -2300,7 +2382,8 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
           ))
       const edit = action['edit'] as LanguageWorkspaceEdit | undefined
       const disabledReason = action['disabledReason']
-      const hasEdit = edit !== undefined
+      const command = action['command']
+      const hasEdit = edit !== undefined || command !== undefined
       const hasDisabledReason = disabledReason !== undefined
       if (
         typeof action['title'] !== 'string' ||
@@ -2311,6 +2394,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
         (action['isPreferred'] !== undefined && typeof action['isPreferred'] !== 'boolean') ||
         !validCodes ||
         hasEdit === hasDisabledReason ||
+        (command !== undefined && !validCommand(command)) ||
         (hasDisabledReason &&
           (typeof disabledReason !== 'string' ||
             disabledReason.length === 0 ||
@@ -2753,6 +2837,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
         ['document-colors', 'documentColors'],
         ['color-presentations', 'colorPresentations'],
         ['code-actions', 'codeActions'],
+        ['code-lenses', 'codeLenses'],
         ['folding-ranges', 'foldingRanges'],
         ['document-links', 'documentLinks'],
         ['document-highlights', 'documentHighlights'],
@@ -3037,6 +3122,17 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
       )
     },
 
+    codeLenses(
+      request: LanguageWorkspaceFeatureRequest,
+    ): Promise<LanguageCodeLensList | undefined> {
+      return invokeFeature(
+        request,
+        false,
+        (provider, feature) => provider.codeLenses?.(feature),
+        validateCodeLenses,
+      )
+    },
+
     foldingRanges(
       request: LanguageWorkspaceFeatureRequest,
     ): Promise<LanguageFoldingRangeList | undefined> {
@@ -3131,14 +3227,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
         !validRange(request.range, lengths) ||
         !Array.isArray(request.diagnostics) ||
         request.diagnostics.length > (request.maxResults ?? LANGUAGE_DEFAULT_MAX_RESULTS) ||
-        !request.diagnostics.every(
-          item =>
-            validRange(item.range, lengths) &&
-            typeof item.message === 'string' &&
-            ['error', 'warning', 'information', 'hint'].includes(item.severity) &&
-            (item.code === undefined || typeof item.code === 'string') &&
-            (item.source === undefined || typeof item.source === 'string'),
-        )
+        !request.diagnostics.every(item => validDiagnostic(item, lengths))
       ) {
         return Promise.reject(
           workspaceError(

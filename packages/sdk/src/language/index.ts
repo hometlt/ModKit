@@ -67,6 +67,42 @@ export interface LanguageDiagnostic {
   readonly message: string
   readonly code?: string
   readonly source?: string
+  /** `unnecessary`: drawn faded (an unused variable); `deprecated`: struck through. */
+  readonly tags?: readonly ('unnecessary' | 'deprecated')[]
+  /** Other places the problem involves: the first declaration of a duplicate id, say. */
+  readonly relatedInformation?: readonly LanguageDiagnosticRelatedInformation[]
+  /** An http(s) page that explains the code. */
+  readonly codeDescription?: string
+}
+
+export interface LanguageDiagnosticRelatedInformation {
+  readonly location: LanguageLocation
+  readonly message: string
+}
+
+/**
+ * What a lens or a code action asks the application to do, from a closed set it runs with its own
+ * UI: open an entity of the document's workspace (its card, relation graph or resolved view, by
+ * the id its facts use, `Unit/Marine`), or open a place.
+ */
+export type LanguageCommand =
+  | {
+      readonly kind: 'open-subject'
+      readonly subjectId: string
+      readonly view?: 'card' | 'graph' | 'resolved'
+    }
+  | { readonly kind: 'open-location'; readonly location: LanguageLocation }
+
+/** A line of actions above a declaration: «inherited from Liberty», «card», «graph». */
+export interface LanguageCodeLens {
+  readonly range: LanguageRange
+  readonly title: string
+  readonly command?: LanguageCommand
+}
+
+export interface LanguageCodeLensList {
+  readonly lenses: readonly LanguageCodeLens[]
+  readonly isIncomplete: boolean
 }
 
 export type LanguageSymbolKind =
@@ -338,6 +374,8 @@ export interface LanguageCodeAction {
   readonly isPreferred?: boolean
   readonly diagnosticCodes?: readonly string[]
   readonly edit?: LanguageWorkspaceEdit
+  /** Run after the edit, or alone: open the entity a fix concerns. */
+  readonly command?: LanguageCommand
   readonly disabledReason?: string
 }
 
@@ -542,6 +580,7 @@ export interface LanguageProvider {
     request: LanguageColorPresentationRequest,
   ): Promise<LanguageColorPresentationList>
   codeActions?(request: LanguageCodeActionsRequest): Promise<LanguageCodeActionList>
+  codeLenses?(request: LanguageFeatureRequest): Promise<LanguageCodeLensList>
   foldingRanges?(request: LanguageFeatureRequest): Promise<LanguageFoldingRangeList>
   documentLinks?(request: LanguageFeatureRequest): Promise<LanguageDocumentLinkList>
   documentHighlights?(request: LanguagePositionRequest): Promise<LanguageDocumentHighlightList>
