@@ -261,7 +261,8 @@ export function parseZipArchive(bytes, maxEntries) {
  */
 async function readZipDirectory(read, size, maxEntries, maxRead) {
   const tailStart = Math.max(0, size - Math.min(65_557, maxRead))
-  const tail = eocdOf(await read(tailStart, size - tailStart), tailStart)
+  const tailBytes = await read(tailStart, size - tailStart)
+  const tail = eocdOf(tailBytes, tailStart)
   const directory =
     tail.zip64RecordOffset === undefined
       ? tail
@@ -274,12 +275,15 @@ async function readZipDirectory(read, size, maxEntries, maxRead) {
   if (directory.centralOffset + directory.centralSize > size) {
     throw new TypeError('ZIP central directory is truncated')
   }
-  return parseCentralDirectory(
-    await read(directory.centralOffset, directory.centralSize),
-    directory.centralOffset,
-    directory.count,
-    maxEntries,
-  )
+  // a small archive's directory already lies in the tail just read (ARmod: 53 KB not read twice)
+  const central =
+    directory.centralOffset >= tailStart
+      ? tailBytes.subarray(
+          directory.centralOffset - tailStart,
+          directory.centralOffset - tailStart + directory.centralSize,
+        )
+      : await read(directory.centralOffset, directory.centralSize)
+  return parseCentralDirectory(central, directory.centralOffset, directory.count, maxEntries)
 }
 
 /**
@@ -1232,6 +1236,8 @@ const definition = Object.freeze({
   format: Object.freeze({ id: 'zip', label: 'ZIP archive', mediaType: 'application/zip' }),
   // any size: the directory is read by ranges; an archive within the budget is also editable
   access: 'ranges',
+  // the four magic bytes are all detect reads
+  detectBytes: 4,
   operations: Object.freeze([
     Object.freeze({
       id: 'container.extract',

@@ -1,4 +1,8 @@
-import { createInspectionCodec, createTreeDataSource, simpleLease } from '@modkit/codec-kit'
+import {
+  CONTAINER_EXTRACT_HANDLER_ID,
+  createInspectionCodec,
+  createTreeDataSource,
+} from '@modkit/codec-kit'
 import {
   bcj2Decode,
   bcjX86Decode,
@@ -443,17 +447,18 @@ function methodsOf(folder) {
   return folder.coders.map(coder => coder.method)
 }
 
-/** Decode one folder's main output. The caller has checked methods and budgets. */
-async function decodeFolder(bytes, folder, budget, signal) {
+/**
+ * Decode one folder's main output, reading its pack streams by range. The caller has checked
+ * methods and budgets.
+ */
+async function decodeFolder(read, folder, budget, signal) {
   const outOf = new Map()
   const coderByOut = new Map(folder.coders.map(coder => [coder.outIndex, coder]))
   const input = async inIndex => {
     const packed = folder.packedStreams.indexOf(inIndex)
     if (packed >= 0) {
       const pack = folder.packs[packed]
-      if (pack.offset + pack.size > bytes.byteLength)
-        throw new TypeError('7z pack stream is truncated')
-      return bytes.subarray(pack.offset, pack.offset + pack.size)
+      return read(pack.offset, pack.size)
     }
     const pair = folder.bindPairs.find(item => item.inIndex === inIndex)
     if (pair === undefined) throw new TypeError('7z coder input is unbound')
@@ -541,25 +546,27 @@ function checkFolderBudget(folder, budget) {
   }
 }
 
-async function parse7z(bytes, budget) {
-  if (!matches(bytes) || bytes.byteLength < 32)
-    throw new TypeError('7z signature header is invalid')
-  const major = bytes[6] ?? 0
-  const minor = bytes[7] ?? 0
+/** The archive's headers, read by range: the 32-byte start header, then the header it points at. */
+async function parse7z(read, size, budget) {
+  if (size < 32) throw new TypeError('7z signature header is invalid')
+  const start = await read(0, 32)
+  if (!matches(start)) throw new TypeError('7z signature header is invalid')
+  const major = start[6] ?? 0
+  const minor = start[7] ?? 0
   if (major !== 0) throw new TypeError(`7z version ${major}.${minor} is unsupported`)
-  if (crc32(bytes.subarray(12, 32)) !== u32(bytes, 8)) {
+  if (crc32(start.subarray(12, 32)) !== u32(start, 8)) {
     throw new TypeError('7z start header CRC-32 is invalid')
   }
-  const nextOffset = u64(bytes, 12, 'next header offset')
-  const nextSize = u64(bytes, 20, 'next header size')
+  const nextOffset = u64(start, 12, 'next header offset')
+  const nextSize = u64(start, 20, 'next header size')
   const nextStart = 32 + nextOffset
   const nextEnd = nextStart + nextSize
-  if (!Number.isSafeInteger(nextEnd) || nextEnd > bytes.byteLength) {
+  if (!Number.isSafeInteger(nextEnd) || nextEnd > size) {
     throw new TypeError('7z next header range is invalid (truncated or multi-volume archive)')
   }
   if (nextSize === 0) return { major, minor, folders: [], entries: [], headerEncoded: false }
-  let header = bytes.subarray(nextStart, nextEnd)
-  if (crc32(header) !== u32(bytes, 28)) throw new TypeError('7z next header CRC-32 is invalid')
+  let header = await read(nextStart, nextSize)
+  if (crc32(header) !== u32(start, 28)) throw new TypeError('7z next header CRC-32 is invalid')
   let headerEncoded = false
   for (let depth = 0; ; depth += 1) {
     const reader = new Reader(header)
@@ -576,7 +583,7 @@ async function parse7z(bytes, budget) {
     const folder = streams.folders[0]
     if (folder === undefined) throw new TypeError('7z encoded header has no folder')
     checkFolderBudget(folder, budget)
-    header = await decodeFolder(bytes, folder, budget)
+    header = await decodeFolder(read, folder, budget)
   }
 }
 
@@ -631,67 +638,71 @@ function assemble(main, files) {
   return { folders, entries: entries.filter(entry => !entry.anti) }
 }
 
-function namespaceSource(entries, source) {
-  const byId = new Map(entries.map(entry => [entry.id, entry]))
-  return Object.freeze({
-    async list(prefix, page, signal) {
-      if (signal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
-      const matching = entries.filter(entry => entry.path.startsWith(prefix))
-      const start = page.cursor === undefined ? 0 : Number(page.cursor)
-      if (
-        !Number.isSafeInteger(start) ||
-        start < 0 ||
-        !Number.isSafeInteger(page.limit) ||
-        page.limit <= 0
-      ) {
-        throw new TypeError('invalid 7z namespace page')
-      }
-      const items = matching.slice(start, start + page.limit).map(entry =>
-        Object.freeze({
-          id: entry.id,
-          path: entry.path,
-          name: entry.path.split('/').at(-1),
-          kind: entry.kind,
-          ...(entry.kind === 'file'
-            ? {
-                size: BigInt(entry.size),
-                compression: entry.method ?? 'empty',
-                ...(entry.crc === undefined
-                  ? {}
-                  : {
-                      checksum: {
-                        algorithm: 'crc-32',
-                        value: entry.crc.toString(16).padStart(8, '0'),
-                      },
-                    }),
-              }
-            : {}),
-          ...(entry.modifiedAt === undefined ? {} : { modifiedAt: entry.modifiedAt }),
-          revision: source.revision,
-        }),
-      )
-      return Object.freeze({
-        items: Object.freeze(items),
-        ...(start + items.length < matching.length
-          ? { nextCursor: String(start + items.length) }
-          : {}),
+/**
+ * The archive's files as the host's entry table: listing, extraction and nested opens. A file in a
+ * Copy folder is read in place by range, whatever its size; any other is decoded with its folder
+ * (bounded by `maxScalarBytes`), one decoded folder kept, as solid archives are extracted in order.
+ */
+function entryTable(archive, read, budget) {
+  let cached
+  const decoded = (index, signal) => {
+    if (cached?.index !== index) {
+      const pending = decodeFolder(read, archive.folders[index], budget, signal)
+      cached = { index, pending }
+      pending.catch(() => {
+        if (cached?.pending === pending) cached = undefined
       })
-    },
-    async openEntry(entryId, signal) {
-      if (signal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
-      const entry = byId.get(entryId)
-      if (entry === undefined || entry.kind !== 'file')
-        throw new TypeError('7z entry is not a file')
-      const encoded = entry.path.split('/').map(encodeURIComponent).join('/')
-      return simpleLease(
-        Object.freeze({
-          id: `${source.ref.id}!/${entry.path}`,
-          uri: `7z-entry:${encodeURIComponent(source.ref.uri)}!/${encoded}`,
-          parentIds: Object.freeze([source.ref.id]),
-        }),
-      )
-    },
-  })
+    }
+    return cached.pending
+  }
+  const storage = entry => {
+    const folder = entry.folder === undefined ? undefined : archive.folders[entry.folder]
+    if (folder === undefined) return { kind: 'stored', offset: 0n, length: 0n }
+    const [only] = folder.coders
+    if (folder.coders.length === 1 && only.method === 'Copy' && folder.packs.length === 1) {
+      return {
+        kind: 'stored',
+        offset: BigInt(folder.packs[0].offset + entry.offset),
+        length: BigInt(entry.size),
+      }
+    }
+    return {
+      kind: 'custom',
+      compression: entry.method,
+      async open(signal) {
+        checkFolderBudget(folder, budget)
+        const bytes = await decoded(entry.folder, signal)
+        // a buffer of its own: the worker boundary refuses a view into the decoded folder
+        const value = bytes.slice(entry.offset, entry.offset + entry.size)
+        if (value.byteLength !== entry.size)
+          throw new TypeError(`7z entry ${entry.path} is truncated`)
+        return (async function* () {
+          yield value
+        })()
+      },
+    }
+  }
+  return {
+    entries: archive.entries
+      .filter(entry => entry.kind === 'file')
+      .map(entry => ({
+        path: entry.path,
+        size: BigInt(entry.size),
+        storage: storage(entry),
+        ...(entry.modifiedAt === undefined ? {} : { modifiedAt: entry.modifiedAt }),
+        // the archive's own CRC-32, which the host checks after decoding
+        ...(entry.crc === undefined
+          ? {}
+          : {
+              checksum: { algorithm: 'crc-32', value: entry.crc.toString(16).padStart(8, '0') },
+            }),
+      })),
+    directories: archive.entries
+      .filter(entry => entry.kind === 'directory')
+      .map(entry => ({ path: entry.path })),
+    caseSensitivity: 'sensitive',
+    complete: true,
+  }
 }
 
 function folderDiagnostics(archive, budget) {
@@ -715,7 +726,7 @@ function folderDiagnostics(archive, budget) {
   return diagnostics
 }
 
-function encryptedHeaderInspection(bytes) {
+function encryptedHeaderInspection(size) {
   return {
     summary: { format: '7z', entries: 0, encryptedHeader: true },
     metadata: [
@@ -727,7 +738,7 @@ function encryptedHeaderInspection(bytes) {
     ],
     traits: [
       { id: 'container.entries', parameters: { count: 0 } },
-      { id: 'content.binary', parameters: { bytes: String(bytes.byteLength) } },
+      { id: 'content.binary', parameters: { bytes: String(size) } },
     ],
     diagnostics: [
       {
@@ -746,14 +757,7 @@ function encryptedHeaderInspection(bytes) {
         children: [],
       }),
     },
-    handlers: {
-      'extract-entry': async () => {
-        throw archiveError(
-          'archives/password-required',
-          '7z archive is encrypted and needs a password',
-        )
-      },
-    },
+    containerEntries: { entries: [], caseSensitivity: 'sensitive', complete: false },
     unsupportedFeatures: ['7z-decryption'],
   }
 }
@@ -765,10 +769,13 @@ const definition = Object.freeze({
     label: '7-Zip archive',
     mediaType: 'application/x-7z-compressed',
   }),
+  // any size: the headers and each member are read by range, a Copy member in place
+  access: 'ranges',
+  detectBytes: SIGNATURE.length,
   operations: Object.freeze([
     Object.freeze({
       id: 'container.extract',
-      handlerId: 'extract-entry',
+      handlerId: CONTAINER_EXTRACT_HANDLER_ID,
       mutatesSource: false,
       requiredPermissions: Object.freeze(['read-source']),
       outputKinds: Object.freeze(['bytes']),
@@ -779,13 +786,23 @@ const definition = Object.freeze({
       ? { confidence: 0.99, kind: 'magic', note: '7z-signature' }
       : { confidence: 0, kind: 'magic', note: 'signature-mismatch' }
   },
-  async inspect(bytes, context) {
+  async inspect(context) {
     const budget = context.budget
+    const size = Number(await context.byteSource.size())
+    const maxRead = Number(budget.maxInputBytes)
+    const read = async (offset, length) => {
+      if (offset + length > size) throw new TypeError('7z pack stream is truncated')
+      if (length > maxRead)
+        throw new RangeError(`7z range of ${length} bytes exceeds the maxInputBytes budget`)
+      const bytes = await context.byteSource.read(BigInt(offset), length, context.signal)
+      if (bytes.byteLength !== length) throw new TypeError('7z archive is truncated')
+      return bytes
+    }
     let archive
     try {
-      archive = await parse7z(bytes, budget)
+      archive = await parse7z(read, size, budget)
     } catch (error) {
-      if (error?.code === 'archives/password-required') return encryptedHeaderInspection(bytes)
+      if (error?.code === 'archives/password-required') return encryptedHeaderInspection(size)
       throw error
     }
     const { entries } = archive
@@ -794,9 +811,8 @@ const definition = Object.freeze({
     const methods = [...new Set(archive.folders.flatMap(methodsOf))]
     const payloadBytes = files.reduce((total, entry) => total + entry.size, 0)
     const solid = files.some(entry => entry.solid)
-    const decoded = new Map()
-    const byId = new Map(entries.map(entry => [entry.id, entry]))
     return {
+      containerEntries: entryTable(archive, read, budget),
       summary: {
         format: '7z',
         version: `${archive.major}.${archive.minor}`,
@@ -828,7 +844,7 @@ const definition = Object.freeze({
         { id: 'container.entries', parameters: { count: entries.length } },
         { id: 'container.directories', parameters: { count: directories } },
         { id: 'container.compression', parameters: { methods } },
-        { id: 'content.binary', parameters: { bytes: String(bytes.byteLength) } },
+        { id: 'content.binary', parameters: { bytes: String(size) } },
       ],
       diagnostics: folderDiagnostics(archive, budget),
       dataSources: {
@@ -845,37 +861,7 @@ const definition = Object.freeze({
                 : 'directory',
           })),
         }),
-        'common.view/namespace-entry-source': namespaceSource(entries, context.source),
       },
-      handlers: {
-        'extract-entry': async (input, options) => {
-          if (input === null || typeof input !== 'object' || Array.isArray(input)) {
-            throw new TypeError('container.extract requires {entryId}')
-          }
-          const entry = byId.get(String(input.entryId ?? ''))
-          if (entry === undefined || entry.kind !== 'file')
-            throw new TypeError('7z file entry id was not found')
-          if (entry.folder === undefined) return { kind: 'bytes', value: new Uint8Array(0) }
-          const folder = archive.folders[entry.folder]
-          checkFolderBudget(folder, budget)
-          // ponytail: one decoded solid folder is cached per session; an LRU if many folders matter.
-          let pending = decoded.get(entry.folder)
-          if (pending === undefined) {
-            decoded.clear()
-            pending = decodeFolder(bytes, folder, budget, options?.signal)
-            decoded.set(entry.folder, pending)
-            pending.catch(() => decoded.delete(entry.folder))
-          }
-          const value = (await pending).slice(entry.offset, entry.offset + entry.size)
-          if (value.byteLength !== entry.size)
-            throw new TypeError(`7z entry ${entry.path} is truncated`)
-          if (entry.crc !== undefined && crc32(value) !== entry.crc) {
-            throw new TypeError(`7z entry ${entry.path} CRC-32 is invalid`)
-          }
-          return { kind: 'bytes', value }
-        },
-      },
-      maxDecodedBytes: BigInt(payloadBytes),
       unsupportedFeatures: [
         '7z-decryption',
         '7z-methods-ppmd-deflate64-arm-ppc-sparc-ia64-arm64-riscv',

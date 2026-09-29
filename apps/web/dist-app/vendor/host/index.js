@@ -12,14 +12,14 @@ import {
   createStandardSurfaceRegistry,
   framePortFromMessagePort,
   protocolLimits
-} from "../../chunks/chunk-SPHGQBFD.js";
+} from "../../chunks/chunk-5VVC23DY.js";
 import {
   assembleSubjectDescriptor,
   createAssetSession,
   createByteRangeSource,
   createLazyTableDataSource,
   createUtf8TextDataSource
-} from "../../chunks/chunk-JFXF7H5K.js";
+} from "../../chunks/chunk-DWLV5L2I.js";
 import {
   metadataFieldProjections
 } from "../../chunks/chunk-JHPOUH6S.js";
@@ -89,7 +89,7 @@ import {
   validateContributionManifest,
   writerOfferSatisfies,
   writerSelectionKey
-} from "../../chunks/chunk-47QWC2WU.js";
+} from "../../chunks/chunk-7BES6HCK.js";
 import {
   NATIVE_MODEL_ENCODER_CONTRACT,
   NATIVE_MODEL_ENCODER_MATCHER_PROFILE
@@ -1410,14 +1410,14 @@ var validateCommand = {
     });
   }
 };
-async function entryIdFor(session, wanted, signal) {
+async function entryFor(session, wanted, signal) {
   const lease2 = await session.dataSource(NAMESPACE_ENTRY_SOURCE, 1);
   try {
     const namespace = lease2.value;
     if (namespace.lookup !== void 0) {
       const entry2 = await namespace.lookup(wanted, signal);
       if (entry2 !== void 0)
-        return entry2.id;
+        return entry2;
     }
     const scope = namespace.lookup === void 0 ? "" : wanted;
     let cursor2;
@@ -1425,7 +1425,7 @@ async function entryIdFor(session, wanted, signal) {
       const page = await namespace.list(scope, cursor2 === void 0 ? { limit: 512 } : { cursor: cursor2, limit: 512 }, signal);
       const found = page.items.find((item) => item.path === wanted || item.id === wanted);
       if (found !== void 0)
-        return found.id;
+        return found;
       cursor2 = page.nextCursor;
     } while (cursor2 !== void 0);
     return void 0;
@@ -1452,19 +1452,23 @@ var extractCommand = {
         return unavailable(EXTRACT_COMMAND, `this subject is not a container this host can read into \u2014 ${publishedOperations(descriptor)}`, `run subject.inspect to see what it does publish; extraction needs both \xAB${CONTAINER_EXTRACT_OPERATION_ID2}\xBB and \xAB${NAMESPACE_ENTRY_SOURCE}\xBB`, diagnostics);
       }
       context.progress?.({ step: "locate", message: `locating ${entry2}` });
-      const entryId = await entryIdFor(session, entry2, context.signal);
-      if (entryId === void 0) {
+      const found = await entryFor(session, entry2, context.signal);
+      if (found === void 0) {
         return failed(EXTRACT_COMMAND, "x3.command/entry-not-found", `this container lists no \xAB${entry2}\xBB`, diagnostics);
       }
+      const name = entry2.slice(entry2.lastIndexOf("/") + 1);
+      const streamed = await streamEntry(session, descriptor, found, name, context);
+      if (streamed !== void 0) {
+        return ok(EXTRACT_COMMAND, { ref: subject.ref, entry: entry2, ...streamed }, diagnostics);
+      }
       context.progress?.({ step: "extract", message: `extracting ${entry2}` });
-      const answer = await invokeSubjectOperation(EXTRACT_COMMAND, context, session, operation.handlerId, { entryId }, diagnostics);
+      const answer = await invokeSubjectOperation(EXTRACT_COMMAND, context, session, operation.handlerId, { entryId: found.id }, diagnostics);
       if (answer.state === "failed")
         return answer.result;
       if (answer.output.kind !== "bytes") {
         return failed(EXTRACT_COMMAND, "x3.command/unexpected-output", `the container answered ${answer.output.kind}, not bytes`, diagnostics);
       }
       const bytes = answer.output.value;
-      const name = entry2.slice(entry2.lastIndexOf("/") + 1);
       const wroteTo = context.writeOutput === void 0 ? void 0 : await context.writeOutput(name, bytes, context.signal);
       return ok(EXTRACT_COMMAND, {
         ref: subject.ref,
@@ -1475,6 +1479,57 @@ var extractCommand = {
     });
   }
 };
+var BYTE_RANGE_SOURCE = "common.view/byte-range-source";
+var STREAM_CHUNK_BYTES = 4n * 1024n * 1024n;
+async function streamEntry(session, descriptor, entry2, name, context) {
+  const sink = context.writeOutputStream;
+  if (sink === void 0)
+    return void 0;
+  const stored = entry2.storedRange !== void 0 && (descriptor.dataSources ?? []).some((item) => item.contract === BYTE_RANGE_SOURCE && item.major === 1);
+  if (!stored && entry2.rangeAccess !== true)
+    return void 0;
+  const signal = context.signal;
+  const leases = [];
+  try {
+    let source;
+    let start = 0n;
+    let length;
+    if (stored && entry2.storedRange !== void 0) {
+      const lease2 = await session.dataSource(BYTE_RANGE_SOURCE, 1);
+      leases.push(lease2);
+      source = lease2.value;
+      start = entry2.storedRange.offset;
+      length = entry2.storedRange.length;
+    } else {
+      const lease2 = await session.dataSource(NAMESPACE_ENTRY_SOURCE, 1);
+      leases.push(lease2);
+      const namespace = lease2.value;
+      if (namespace.openEntrySource === void 0)
+        return void 0;
+      const entryLease = await namespace.openEntrySource(entry2.id, signal);
+      leases.push(entryLease);
+      source = entryLease.value;
+      length = await source.size();
+    }
+    context.progress?.({ step: "extract", message: `streaming ${entry2.path}` });
+    async function* chunks() {
+      for (let at = 0n; at < length; ) {
+        const want = Number(length - at < STREAM_CHUNK_BYTES ? length - at : STREAM_CHUNK_BYTES);
+        const bytes = await source.read(start + at, want, signal);
+        if (bytes.byteLength !== want) {
+          throw new RangeError(`the container gave ${bytes.byteLength} of ${want} bytes at ${at} of ${entry2.path}`);
+        }
+        yield bytes;
+        at += BigInt(want);
+      }
+    }
+    const wroteTo = await sink(name, chunks(), signal);
+    return { byteLength: Number(length), wroteTo };
+  } finally {
+    for (const lease2 of leases.reverse())
+      await lease2.release();
+  }
+}
 var convertCommand = {
   id: CONVERT_COMMAND,
   title: "Convert",
@@ -8580,11 +8635,17 @@ function rasterSpellings(logicalId, rule) {
   if (rule === void 0)
     return spellings;
   const name = logicalId.replaceAll("\\", "/").split("/").at(-1) ?? logicalId;
-  for (const directory of rule.directories) {
-    const spelling = directory === "" ? name : `${directory}/${name}`;
-    if (!spellings.includes(spelling))
-      spellings.push(spelling);
-  }
+  const stem = name.replace(/\.[^.]*$/u, "");
+  const names = [
+    name,
+    ...(rule.extensions ?? []).map((extension) => `${stem}${extension}`).filter((other) => other.toLowerCase() !== name.toLowerCase())
+  ];
+  for (const candidate of names)
+    for (const directory of rule.directories) {
+      const spelling = directory === "" ? candidate : `${directory}/${candidate}`;
+      if (!spellings.includes(spelling))
+        spellings.push(spelling);
+    }
   return spellings;
 }
 function createSubjectRasterResources(options) {
@@ -8615,6 +8676,7 @@ function createSubjectRasterResources(options) {
       options.state.reservedBytes += maxBytes;
       const releases = [];
       let provenance;
+      let atlasRegion;
       try {
         let source;
         let hint = {};
@@ -8623,7 +8685,14 @@ function createSubjectRasterResources(options) {
           if (resources === void 0)
             return refusal("x3.host/raster-origin-unavailable", "The subject has no resource origin.");
           const rule = options.companionRule?.(request.requirement.role);
-          const requirement = rule === void 0 ? request.requirement : { ...request.requirement, scopes: rule.scopes };
+          const named = /#region=([^#]+)$/u.exec(request.requirement.logicalId);
+          if (named !== null)
+            atlasRegion = decodeURIComponent(named[1]);
+          const asked = named === null ? request.requirement : {
+            ...request.requirement,
+            logicalId: request.requirement.logicalId.slice(0, named.index)
+          };
+          const requirement = rule === void 0 ? asked : { ...asked, scopes: rule.scopes };
           const spellings = rasterSpellings(requirement.logicalId, rule);
           let resolution = await resources.resolve(requirement, signal);
           for (const spelling of spellings.slice(1)) {
@@ -8677,6 +8746,29 @@ function createSubjectRasterResources(options) {
         const info = Object.freeze({ ...await raster.value.info(signal) });
         if (!info.decodedAccess || raster.value.readRegion === void 0)
           return refusal("x3.host/raster-decode-unavailable", "The selected image codec does not decode pixel regions.", provenance);
+        if (atlasRegion !== void 0) {
+          const area = info.atlasRegions?.find((item) => item.name === atlasRegion);
+          if (area === void 0)
+            return refusal("x3.host/raster-atlas-region-missing", `The image has no atlas region named ${atlasRegion}.`, provenance);
+          const region = await raster.value.readRegion({
+            x: area.x,
+            y: area.y,
+            width: area.width,
+            height: area.height,
+            pixelFormat: "rgba8",
+            maxBytes
+          }, signal);
+          if (region.width !== area.width || region.height !== area.height || region.pixelFormat !== "rgba8" || !(region.pixels instanceof Uint8Array) || region.pixels.length > maxBytes)
+            return refusal("x3.host/raster-region-invalid", "The image codec returned an invalid bounded RGBA region.", provenance);
+          const { atlasRegions: _atlas, ...rest } = info;
+          return {
+            info: Object.freeze({ ...rest, width: area.width, height: area.height, mipLevels: 1 }),
+            diagnostics: Object.freeze([...opened.diagnostics]),
+            ...provenance === void 0 ? {} : { provenance },
+            state: "decoded",
+            region: Object.freeze({ ...region, pixels: region.pixels.slice() })
+          };
+        }
         let plan;
         try {
           plan = rasterSelectionPlan(info, selection, maxBytes);
@@ -9484,6 +9576,7 @@ function createNamespaceCompanionOrigin(options) {
               entryId: entry2.id,
               path: entry2.path,
               ...entry2.size === void 0 ? {} : { size: entry2.size },
+              ...entry2.rangeAccess === true ? { rangeAccess: true } : {},
               revision: entry2.revision
             };
             built.set(key3, value);
@@ -9534,6 +9627,8 @@ function createNamespaceCompanionOrigin(options) {
           context: { logicalId }
         });
       }
+      if (entry2.rangeAccess === true && options.namespace.openEntrySource !== void 0)
+        return rangeEntryLease(options.namespace, entry2.entryId, options.containerRevision, signal);
       if (options.maxSourceBytes !== void 0 && entry2.size !== void 0 && entry2.size > options.maxSourceBytes)
         throw new ModkitError({
           code: COMPANION_BUDGET_EXCEEDED,
@@ -9652,6 +9747,7 @@ function createCompositeWorkspaceNamespaceCompanionOrigin(options) {
         entryId: entry2.id,
         path: entry2.path,
         ...entry2.size === void 0 ? {} : { size: entry2.size },
+        ...entry2.rangeAccess === true ? { rangeAccess: true } : {},
         revision: entry2.revision,
         namespace: root.namespace,
         containerRevision: root.containerRevision,
@@ -9737,6 +9833,8 @@ function createCompositeWorkspaceNamespaceCompanionOrigin(options) {
           context: { logicalId }
         });
       }
+      if (entry2.rangeAccess === true && entry2.namespace.openEntrySource !== void 0)
+        return rangeEntryLease(entry2.namespace, entry2.entryId, entry2.containerRevision, signal);
       const refLease = await entry2.namespace.openEntry(entry2.entryId, signal);
       let bytes;
       try {
@@ -9970,6 +10068,30 @@ function containerEntryRangeSource(ref2, revision, parent, range) {
       }
     }
   });
+}
+async function rangeEntryLease(namespace, entryId, containerRevision, signal) {
+  const refLease = await namespace.openEntry(entryId, signal);
+  let sourceLease;
+  try {
+    sourceLease = await namespace.openEntrySource(entryId, signal);
+  } catch (error3) {
+    await refLease.release();
+    throw error3;
+  }
+  try {
+    const size = await sourceLease.value.size();
+    return Object.freeze({
+      value: containerEntryRangeSource(refLease.value, containerEntryRevision(containerRevision, entryId, size), sourceLease.value, { offset: 0n, length: size }),
+      release: async () => {
+        await sourceLease.release();
+        await refLease.release();
+      }
+    });
+  } catch (error3) {
+    await sourceLease.release();
+    await refLease.release();
+    throw error3;
+  }
 }
 function containerEntrySource(ref2, revision, bytes) {
   return Object.freeze({
@@ -11995,7 +12117,7 @@ function runnableCandidates(options, offers, signatureWindows, suppressed = [], 
         if (spec.sourceTopology !== "namespace" || spec.probe.kind !== "namespace")
           continue;
         if (route.containerAliasFormatId === void 0) {
-          if (spec.container !== void 0)
+          if (spec.container !== void 0 && (spec.container.markers?.length ?? 0) === 0)
             continue;
         } else if (spec.container?.formatId !== route.containerAliasFormatId || !route.containerAliasContributionIds?.has(manifest.id)) {
           continue;
@@ -12272,6 +12394,7 @@ async function openSubjectDirect(options, route = {}) {
             contracts,
             ...settings === void 0 ? {} : { settings },
             ...options.videoFrames === void 0 ? {} : { videoFrames: options.videoFrames },
+            ...options.installationFiles === void 0 ? {} : { installationFiles: options.installationFiles },
             ...credentials === void 0 ? {} : { credentials },
             ...options.containerContext === void 0 ? {} : { containerContext: options.containerContext },
             logicalResources: createSubjectLogicalResources({
@@ -12457,13 +12580,21 @@ async function openSubjectDirect(options, route = {}) {
       if (requirement === void 0)
         return void 0;
       const directories = [""];
+      const extensions = [];
       for (const pattern of requirement.patterns ?? []) {
         const cut = pattern.replaceAll("\\", "/").lastIndexOf("/");
         const directory = cut <= 0 ? "" : pattern.slice(0, cut);
         if (!directories.includes(directory))
           directories.push(directory);
+        const extension = /(\.[^.*?/]+)$/u.exec(pattern.slice(cut + 1))?.[1]?.toLowerCase();
+        if (extension !== void 0 && !extensions.includes(extension))
+          extensions.push(extension);
       }
-      return Object.freeze({ scopes: requirement.scopes, directories: Object.freeze(directories) });
+      return Object.freeze({
+        scopes: requirement.scopes,
+        directories: Object.freeze(directories),
+        ...extensions.length === 0 ? {} : { extensions: Object.freeze(extensions) }
+      });
     };
     const input = await (options.resolveInput ?? defaultResolveInput)({
       source: options.source,
@@ -12941,6 +13072,7 @@ function compilePatterns(requirementId, patterns, caseSensitivity) {
       context: { requirementId }
     });
   }
+  const bodies = patterns.map((pattern) => pattern.replace(/^\.[\\/]/u, ""));
   const expressions = [];
   for (const pattern of patterns) {
     const invalid2 = (why) => {
@@ -12966,8 +13098,13 @@ function compilePatterns(requirementId, patterns, caseSensitivity) {
     if (![...pattern].some((character) => !WILDCARDS.has(character))) {
       invalid2("it has no literal part and would match every entry");
     }
+    const slashed = pattern.replaceAll("\\", "/");
+    const rooted = slashed.startsWith("./");
+    const body = rooted ? slashed.slice(2) : slashed;
+    if (body.length === 0)
+      invalid2("it is empty");
     let expression = "^";
-    for (const character of pattern.replaceAll("\\", "/")) {
+    for (const character of body) {
       if (character === "*")
         expression += "[^/]*";
       else if (character === "?")
@@ -12977,7 +13114,7 @@ function compilePatterns(requirementId, patterns, caseSensitivity) {
     }
     expressions.push({
       expression: new RegExp(`${expression}$`, caseSensitivity === "insensitive" ? "iu" : "u"),
-      whole: pattern.replaceAll("\\", "/").includes("/")
+      whole: rooted || body.includes("/")
     });
   }
   return {
@@ -12985,8 +13122,8 @@ function compilePatterns(requirementId, patterns, caseSensitivity) {
       const name = logicalId.split("/").at(-1) ?? logicalId;
       return expressions.some((item) => item.expression.test(item.whole ? logicalId : name));
     },
-    prefixes: enumerationPrefixes(patterns, caseSensitivity),
-    namePrefix: enumerationNamePrefix(patterns, caseSensitivity)
+    prefixes: enumerationPrefixes(bodies, caseSensitivity),
+    namePrefix: enumerationNamePrefix(bodies, caseSensitivity)
   };
 }
 function enumerationPrefixes(patterns, caseSensitivity) {
@@ -15147,7 +15284,7 @@ var NESTED_SUBJECT_UNSUPPORTED = "x3.host/nested-subject-unsupported";
 var NESTED_ENTRY_UNREADABLE = "x3.host/nested-entry-unreadable";
 var CONTAINER_EXTRACT2 = "container.extract";
 var NAMESPACE_ENTRY_SOURCE3 = "common.view/namespace-entry-source";
-var BYTE_RANGE_SOURCE = "common.view/byte-range-source";
+var BYTE_RANGE_SOURCE2 = "common.view/byte-range-source";
 function nestedSubjectServices(services) {
   return {
     inventory: services.inventory,
@@ -15156,6 +15293,7 @@ function nestedSubjectServices(services) {
     ...services.serviceDefinitions === void 0 ? {} : { serviceDefinitions: services.serviceDefinitions },
     ...services.contributionSettings === void 0 ? {} : { contributionSettings: services.contributionSettings },
     ...services.videoFrames === void 0 ? {} : { videoFrames: services.videoFrames },
+    ...services.installationFiles === void 0 ? {} : { installationFiles: services.installationFiles },
     ...services.credentials === void 0 ? {} : { credentials: services.credentials }
   };
 }
@@ -15316,7 +15454,7 @@ async function openNestedSubject(options) {
     };
     const refLease = await namespace.openEntry(entry2.id, options.signal);
     const entrySourceLease = entry2.rangeAccess === true && namespace.openEntrySource !== void 0 ? await namespace.openEntrySource(entry2.id, options.signal) : void 0;
-    const rangeLease = entrySourceLease === void 0 && entry2.storedRange !== void 0 && descriptor.dataSources.some((item) => item.contract === BYTE_RANGE_SOURCE && item.major === 1) ? await options.parent.dataSource(BYTE_RANGE_SOURCE, 1) : void 0;
+    const rangeLease = entrySourceLease === void 0 && entry2.storedRange !== void 0 && descriptor.dataSources.some((item) => item.contract === BYTE_RANGE_SOURCE2 && item.major === 1) ? await options.parent.dataSource(BYTE_RANGE_SOURCE2, 1) : void 0;
     const previousRelease = release;
     let refReleased = false;
     const releaseAll = async () => {
@@ -15413,6 +15551,7 @@ async function openNestedSubject(options) {
         ...options.serviceDefinitions === void 0 ? {} : { serviceDefinitions: options.serviceDefinitions },
         ...options.contributionSettings === void 0 ? {} : { contributionSettings: options.contributionSettings },
         ...options.videoFrames === void 0 ? {} : { videoFrames: options.videoFrames },
+        ...options.installationFiles === void 0 ? {} : { installationFiles: options.installationFiles },
         ...options.credentials === void 0 ? {} : { credentials: options.credentials },
         ...containerContext === void 0 ? {} : { containerContext },
         ...options.minimumConfidence === void 0 ? {} : { minimumConfidence: options.minimumConfidence },
@@ -18780,9 +18919,17 @@ async function singleFileAsContainer(session, maxBytes) {
     async lookup(path) {
       return path.toLowerCase() === name.toLowerCase() ? entry2 : void 0;
     },
-    // the preview reads the file through container.extract; nothing opens it as a nested subject
-    async openEntry() {
-      throw new TypeError("a single-file map is read through container.extract");
+    // the map's documents are read through container.extract; the reference names the file itself
+    async openEntry(entryId) {
+      if (entryId !== ENTRY_ID)
+        throw new RangeError(`the map file has no entry ${entryId}`);
+      return {
+        value: Object.freeze({
+          id: `${descriptor.subjectUri}:${ENTRY_ID}`,
+          uri: descriptor.subjectUri
+        }),
+        release: async () => void 0
+      };
     }
   });
   const extract = async (signal) => {
@@ -18853,7 +19000,7 @@ async function singleFileAsContainer(session, maxBytes) {
   });
 }
 
-// packages/host/dist/maps/world-source.js
+// packages/host/dist/maps/world-model.js
 function positiveLimit(value, maximum) {
   if (!Number.isSafeInteger(value) || value <= 0 || value > maximum) {
     throw new TypeError(`world page limit must be between 1 and ${maximum}`);
@@ -18891,6 +19038,249 @@ function worldTexture(id, result) {
     wrapV: "repeat"
   });
 }
+async function readAllPages(read, pageLimit2, cap) {
+  const items = [];
+  let cursor2;
+  do {
+    const page = await read({
+      limit: Math.min(pageLimit2, cap - items.length),
+      ...cursor2 === void 0 ? {} : { cursor: cursor2 }
+    });
+    items.push(...page.items);
+    cursor2 = page.nextCursor;
+  } while (cursor2 !== void 0 && items.length < cap);
+  return { items, complete: cursor2 === void 0 };
+}
+var MODEL_FACET_ITEM_CAP = 65536;
+function primitiveByteLength(primitive) {
+  let total = 0;
+  const visit2 = (value, depth) => {
+    if (ArrayBuffer.isView(value))
+      total += value.byteLength;
+    else if (depth < 3 && typeof value === "object" && value !== null)
+      for (const child of Object.values(value))
+        visit2(child, depth + 1);
+  };
+  visit2(primitive, 0);
+  return total;
+}
+function consistentNodes(nodes, meshIds) {
+  const present = new Set(nodes.map((node) => node.id));
+  let pruned = false;
+  const out = nodes.map((node) => {
+    const childIds = node.childIds.filter((id) => present.has(id));
+    const meshes = node.meshIds?.filter((id) => meshIds.has(id));
+    if (childIds.length === node.childIds.length && meshes?.length === node.meshIds?.length)
+      return node;
+    pruned = true;
+    return Object.freeze({
+      ...node,
+      childIds,
+      ...meshes === void 0 ? {} : { meshIds: meshes }
+    });
+  });
+  return { nodes: out, pruned };
+}
+function yawRootNodes(nodes, yaw) {
+  if (yaw === 0)
+    return [...nodes];
+  const children = new Set(nodes.flatMap((node) => node.childIds));
+  const c = Math.cos(yaw);
+  const s = Math.sin(yaw);
+  const rotate = (m) => {
+    const out = [...m];
+    for (let column = 0; column < 4; column += 1) {
+      const x = m[column * 4];
+      const z = m[column * 4 + 2];
+      out[column * 4] = c * x + s * z;
+      out[column * 4 + 2] = -s * x + c * z;
+    }
+    return Object.freeze(out);
+  };
+  return nodes.map((node) => children.has(node.id) ? node : Object.freeze({ ...node, transform: rotate(node.transform) }));
+}
+function worldSceneModelLimits(request, maxPageSize) {
+  const maxNodes = request.maxNodes ?? request.maxMeshes;
+  const maxResources = request.maxResources ?? maxNodes;
+  const maxTextureBytes = request.maxTextureBytes ?? Math.min(16 * 1024 * 1024, request.maxBytes);
+  const maxTextureTotalBytes = request.maxTextureTotalBytes ?? Math.min(32 * 1024 * 1024, request.maxBytes);
+  positiveLimit(maxNodes, maxPageSize);
+  positiveLimit(request.maxMeshes, maxPageSize);
+  positiveLimit(request.maxPrimitives, maxPageSize);
+  positiveLimit(request.maxPrimitiveBytes, request.maxBytes);
+  positiveLimit(maxResources, maxPageSize);
+  positiveLimit(maxTextureBytes, request.maxBytes);
+  positiveLimit(maxTextureTotalBytes, request.maxBytes);
+  return Object.freeze({ maxNodes, maxResources, maxTextureBytes, maxTextureTotalBytes });
+}
+async function worldSceneModel(asset, request, options, signal) {
+  const { maxNodes, maxResources, maxTextureBytes, maxTextureTotalBytes } = worldSceneModelLimits(request, options.maxPageSize ?? Number.MAX_SAFE_INTEGER);
+  const modelRequirement = options.requirement;
+  const textureCache = options.textureCache ?? /* @__PURE__ */ new Map();
+  const result = asset.result;
+  if (result.state === "unresolved") {
+    return Object.freeze({
+      ...result,
+      diagnostics: Object.freeze([...result.diagnostics])
+    });
+  }
+  if (asset.meshes === void 0) {
+    return Object.freeze({
+      state: "converted",
+      sourceKey: result.sourceKey,
+      uvmBytes: result.bytes.slice(),
+      meshes: Object.freeze([]),
+      primitives: Object.freeze([]),
+      diagnostics: Object.freeze([
+        ...result.diagnostics,
+        diagnostic("information", "x3.host/world-model-render-facets-unavailable", `model ${modelRequirement.logicalId} converted successfully but publishes no common geometry; optional effects, lights or decals require their own admitted world facets`)
+      ]),
+      complete: false
+    });
+  }
+  const facet = (read, pageLimit2) => read === void 0 ? void 0 : readAllPages((page) => read(page, signal), pageLimit2, MODEL_FACET_ITEM_CAP);
+  const meshPage = await facet(asset.meshes.bind(asset), request.maxMeshes);
+  const [nodePage, skeletonPage, animationPage, materialPage, resourcePage, socketPage] = await Promise.all([
+    facet(asset.nodes?.bind(asset), maxNodes),
+    facet(asset.skeletonBindings?.bind(asset), maxNodes),
+    facet(asset.animationClips?.bind(asset), maxNodes),
+    facet(asset.materials?.bind(asset), maxNodes),
+    facet(asset.resourceReferences?.bind(asset), maxResources),
+    facet(asset.sockets?.bind(asset), maxNodes)
+  ]);
+  let materials = materialPage?.items;
+  let resourceItems = resourcePage?.items ?? [];
+  const skinDiagnostics = [];
+  if (options.skin !== void 0 && materials !== void 0) {
+    const skinned = await options.skin(materials);
+    skinDiagnostics.push(...skinned.diagnostics);
+    if (skinned.materials !== void 0) {
+      materials = skinned.materials;
+      resourceItems = [];
+    }
+  }
+  const allPrimitiveIds = meshPage.items.flatMap((mesh) => mesh.primitiveIds);
+  if (allPrimitiveIds.length > 0 && asset.primitive === void 0)
+    throw new TypeError("model publishes primitive ids without a primitive reader");
+  const primitives = [];
+  let primitiveBytes = 0;
+  for (let start = 0; start < allPrimitiveIds.length && primitiveBytes < request.maxBytes; start += request.maxPrimitives) {
+    const batch = await Promise.all(allPrimitiveIds.slice(start, start + request.maxPrimitives).map((primitiveId) => asset.primitive(primitiveId, { maxBytes: request.maxPrimitiveBytes }, signal)));
+    for (const primitive of batch) {
+      const bytes = primitiveByteLength(primitive);
+      if (primitiveBytes + bytes > request.maxBytes)
+        break;
+      primitiveBytes += bytes;
+      primitives.push(primitive);
+    }
+    if (primitives.length < Math.min(start + request.maxPrimitives, allPrimitiveIds.length))
+      break;
+  }
+  const loadedPrimitives = new Set(primitives.map((primitive) => primitive.id));
+  const meshes = meshPage.items.filter((mesh) => mesh.primitiveIds.every((id) => loadedPrimitives.has(id)));
+  const graph = nodePage === void 0 ? void 0 : consistentNodes(nodePage.items, new Set(meshes.map((mesh) => mesh.id)));
+  const textureDiagnostics = [];
+  const textures = [];
+  const publishedResources = [...resourceItems];
+  const resourceIds = new Set(publishedResources.map((reference) => reference.id));
+  for (const material of materials ?? []) {
+    for (const layer of material.layers ?? []) {
+      if (layer.resourceId === void 0 || resourceIds.has(layer.resourceId))
+        continue;
+      resourceIds.add(layer.resourceId);
+      publishedResources.push(Object.freeze({
+        id: layer.resourceId,
+        role: "texture",
+        provenance: "reference-only"
+      }));
+    }
+  }
+  const textureReferences = publishedResources.filter((reference) => reference.role === "texture");
+  const sharedTextureBytes = Math.max(1, Math.floor(maxTextureTotalBytes / Math.max(1, textureReferences.length)));
+  let textureBytes = 0;
+  for (const reference of textureReferences) {
+    const remaining = maxTextureTotalBytes - textureBytes;
+    if (remaining <= 0) {
+      textureDiagnostics.push(diagnostic("warning", "x3.host/world-model-texture-budget-exhausted", `model texture budget omitted ${reference.id}`));
+      continue;
+    }
+    const logicalId = childResourceLogicalId(modelRequirement.logicalId, reference.id);
+    const previewTextureBytes = Math.max(1, Math.min(maxTextureBytes, remaining, sharedTextureBytes));
+    const cacheKey = `${logicalId}\0${String(previewTextureBytes)}`;
+    let pending = textureCache.get(cacheKey);
+    if (pending === void 0) {
+      pending = (async () => {
+        const raster = await asset.readRaster({
+          kind: "logical",
+          requirement: {
+            id: `world-texture:${encodeURIComponent(logicalId)}`,
+            logicalId,
+            role: reference.role,
+            scopes: modelRequirement.scopes,
+            parentResourceId: modelRequirement.id
+          },
+          maxBytes: previewTextureBytes,
+          selection: { mipLevel: "fit" }
+        }, signal);
+        if (raster.state !== "decoded")
+          return Object.freeze({
+            diagnostics: Object.freeze([...raster.diagnostics])
+          });
+        const texture2 = worldTexture(reference.id, raster);
+        const mipLevel = raster.subresource?.mipLevel ?? 0;
+        return Object.freeze({
+          ...texture2 === void 0 ? {} : { texture: texture2 },
+          diagnostics: Object.freeze([
+            ...raster.diagnostics,
+            ...mipLevel === 0 ? [] : [
+              diagnostic("information", "x3.host/world-model-texture-preview-mip-selected", `model texture ${reference.id} uses preview mip ${String(mipLevel)} to stay within its decoded byte budget`)
+            ],
+            ...texture2 === void 0 ? [
+              diagnostic("warning", "x3.host/world-model-texture-orientation-unknown", `model texture ${reference.id} has no proven top/bottom row orientation`)
+            ] : []
+          ])
+        });
+      })();
+      textureCache.set(cacheKey, pending);
+    }
+    const loaded = await pending;
+    textureDiagnostics.push(...loaded.diagnostics);
+    const texture = loaded.texture;
+    if (texture === void 0)
+      continue;
+    if (texture.rgba.byteLength > remaining) {
+      textureDiagnostics.push(diagnostic("warning", "x3.host/world-model-texture-budget-exhausted", `decoded model texture ${reference.id} exceeds the aggregate texture budget`));
+      continue;
+    }
+    textureBytes += texture.rgba.byteLength;
+    textures.push(texture);
+  }
+  return Object.freeze({
+    state: "converted",
+    sourceKey: result.sourceKey,
+    uvmBytes: result.bytes.slice(),
+    ...graph === void 0 ? {} : { nodes: Object.freeze(yawRootNodes(graph.nodes, options.yaw ?? 0)) },
+    ...skeletonPage === void 0 ? {} : { skeleton: Object.freeze([...skeletonPage.items]) },
+    ...animationPage === void 0 ? {} : { animations: Object.freeze([...animationPage.items]) },
+    ...materials === void 0 ? {} : { materials: Object.freeze([...materials]) },
+    ...publishedResources.length === 0 ? {} : { resources: Object.freeze(publishedResources) },
+    ...socketPage === void 0 ? {} : { sockets: Object.freeze([...socketPage.items]) },
+    ...publishedResources.length === 0 ? {} : { textures: Object.freeze(textures) },
+    meshes: Object.freeze(meshes),
+    primitives: Object.freeze(primitives),
+    diagnostics: Object.freeze([
+      ...result.diagnostics,
+      ...skinDiagnostics,
+      ...textureDiagnostics,
+      ...graph?.pruned === true ? [
+        diagnostic("warning", "x3.host/world-model-graph-truncated", `model ${modelRequirement.logicalId} was cut (${MODEL_FACET_ITEM_CAP} items per facet, ${request.maxBytes} primitive bytes); nodes and meshes left out are dropped from their parents`)
+      ] : []
+    ]),
+    complete: meshPage.complete && nodePage?.complete !== false && skeletonPage?.complete !== false && animationPage?.complete !== false && materialPage?.complete !== false && resourcePage?.complete !== false && socketPage?.complete !== false && textureReferences.length === textures.length && primitives.length === allPrimitiveIds.length
+  });
+}
+
+// packages/host/dist/maps/world-source.js
 function resourceId(namespace, entityId) {
   return `resource:${encodeURIComponent(namespace)}/${encodeURIComponent(entityId)}`;
 }
@@ -19057,63 +19447,6 @@ function canonicalObjectRotation(rotation, nativeUnit) {
   const y = Math.sin(half);
   const w = Math.cos(half);
   return Object.freeze([0, y === 0 ? 0 : y, 0, w === 0 ? 0 : w]);
-}
-async function readAllPages(read, pageLimit2, cap) {
-  const items = [];
-  let cursor2;
-  do {
-    const page = await read({
-      limit: Math.min(pageLimit2, cap - items.length),
-      ...cursor2 === void 0 ? {} : { cursor: cursor2 }
-    });
-    items.push(...page.items);
-    cursor2 = page.nextCursor;
-  } while (cursor2 !== void 0 && items.length < cap);
-  return { items, complete: cursor2 === void 0 };
-}
-var MODEL_FACET_ITEM_CAP = 65536;
-function primitiveByteLength(primitive) {
-  let total = 0;
-  const visit2 = (value, depth) => {
-    if (ArrayBuffer.isView(value))
-      total += value.byteLength;
-    else if (depth < 3 && typeof value === "object" && value !== null)
-      for (const child of Object.values(value))
-        visit2(child, depth + 1);
-  };
-  visit2(primitive, 0);
-  return total;
-}
-function consistentNodes(nodes, meshIds) {
-  const present = new Set(nodes.map((node) => node.id));
-  let pruned = false;
-  const out = nodes.map((node) => {
-    const childIds = node.childIds.filter((id) => present.has(id));
-    const meshes = node.meshIds?.filter((id) => meshIds.has(id));
-    if (childIds.length === node.childIds.length && meshes?.length === node.meshIds?.length)
-      return node;
-    pruned = true;
-    return Object.freeze({ ...node, childIds, ...meshes === void 0 ? {} : { meshIds: meshes } });
-  });
-  return { nodes: out, pruned };
-}
-function yawRootNodes(nodes, yaw) {
-  if (yaw === 0)
-    return [...nodes];
-  const children = new Set(nodes.flatMap((node) => node.childIds));
-  const c = Math.cos(yaw);
-  const s = Math.sin(yaw);
-  const rotate = (m) => {
-    const out = [...m];
-    for (let column = 0; column < 4; column += 1) {
-      const x = m[column * 4];
-      const z = m[column * 4 + 2];
-      out[column * 4] = c * x + s * z;
-      out[column * 4 + 2] = -s * x + c * z;
-    }
-    return Object.freeze(out);
-  };
-  return nodes.map((node) => children.has(node.id) ? node : Object.freeze({ ...node, transform: rotate(node.transform) }));
 }
 function canonicalObjectScale(scale, transform) {
   const source = scale ?? { x: 1, y: 1, z: 1 };
@@ -19925,17 +20258,7 @@ function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize, mode
     ...modelResources === void 0 ? {} : {
       async model(requestedResourceId, request, signal) {
         assertLive(signal);
-        const maxNodes = request.maxNodes ?? request.maxMeshes;
-        const maxResources = request.maxResources ?? maxNodes;
-        const maxTextureBytes = request.maxTextureBytes ?? Math.min(16 * 1024 * 1024, request.maxBytes);
-        const maxTextureTotalBytes = request.maxTextureTotalBytes ?? Math.min(32 * 1024 * 1024, request.maxBytes);
-        positiveLimit(maxNodes, maxPageSize);
-        positiveLimit(request.maxMeshes, maxPageSize);
-        positiveLimit(request.maxPrimitives, maxPageSize);
-        positiveLimit(request.maxPrimitiveBytes, request.maxBytes);
-        positiveLimit(maxResources, maxPageSize);
-        positiveLimit(maxTextureBytes, request.maxBytes);
-        positiveLimit(maxTextureTotalBytes, request.maxBytes);
+        const { maxNodes } = worldSceneModelLimits(request, maxPageSize);
         const item = resources.find((candidate) => candidate.facet === "resources" && candidate.id === requestedResourceId);
         if (item?.facet !== "resources" || item.modelResource === void 0) {
           return Object.freeze({
@@ -19966,192 +20289,54 @@ function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize, mode
         const modelRequirement = chosen.requirement;
         if (lease2 === void 0)
           throw new TypeError("world model candidates are empty");
+        const materialModel = item.materialModel;
+        const skinItemsOf = async (model) => {
+          let pendingSkin = materialModelCache.get(model.logicalId);
+          if (pendingSkin === void 0) {
+            pendingSkin = (async () => {
+              const skinned = await modelResources.acquire({
+                maxBytes: request.maxBytes,
+                ...metersPerSourceUnit === void 0 ? {} : { metersPerSourceUnit },
+                requirement: model
+              }, signal);
+              try {
+                if (skinned.value.result.state === "unresolved")
+                  return void 0;
+                const read = skinned.value.materials;
+                return read === void 0 ? void 0 : (await readAllPages((page) => read.call(skinned.value, page, signal), maxNodes, MODEL_FACET_ITEM_CAP)).items;
+              } finally {
+                await skinned.release();
+              }
+            })();
+            materialModelCache.set(model.logicalId, pendingSkin);
+          }
+          return pendingSkin;
+        };
         try {
-          const result = lease2.value.result;
-          if (result.state === "unresolved") {
-            return Object.freeze({
-              ...result,
-              diagnostics: Object.freeze([...result.diagnostics])
-            });
-          }
-          if (lease2.value.meshes === void 0) {
-            return Object.freeze({
-              state: "converted",
-              sourceKey: result.sourceKey,
-              uvmBytes: result.bytes.slice(),
-              meshes: Object.freeze([]),
-              primitives: Object.freeze([]),
-              diagnostics: Object.freeze([
-                ...result.diagnostics,
-                diagnostic("information", "x3.host/world-model-render-facets-unavailable", `model ${modelRequirement.logicalId} converted successfully but publishes no common geometry; optional effects, lights or decals require their own admitted world facets`)
-              ]),
-              complete: false
-            });
-          }
-          const facet = (read, pageLimit2) => read === void 0 ? void 0 : readAllPages((page) => read(page, signal), pageLimit2, MODEL_FACET_ITEM_CAP);
-          const meshPage = await facet(lease2.value.meshes.bind(lease2.value), request.maxMeshes);
-          const [nodePage, skeletonPage, animationPage, materialPage, resourcePage, socketPage] = await Promise.all([
-            facet(lease2.value.nodes?.bind(lease2.value), maxNodes),
-            facet(lease2.value.skeletonBindings?.bind(lease2.value), maxNodes),
-            facet(lease2.value.animationClips?.bind(lease2.value), maxNodes),
-            facet(lease2.value.materials?.bind(lease2.value), maxNodes),
-            facet(lease2.value.resourceReferences?.bind(lease2.value), maxResources),
-            facet(lease2.value.sockets?.bind(lease2.value), maxNodes)
-          ]);
-          let materials = materialPage?.items;
-          let resourceItems = resourcePage?.items ?? [];
-          const skinDiagnostics = [];
-          if (item.materialModel !== void 0 && materials !== void 0) {
-            const materialModel = item.materialModel;
-            let pendingSkin = materialModelCache.get(materialModel.logicalId);
-            if (pendingSkin === void 0) {
-              pendingSkin = (async () => {
-                const skin = await modelResources.acquire({
-                  maxBytes: request.maxBytes,
-                  ...metersPerSourceUnit === void 0 ? {} : { metersPerSourceUnit },
-                  requirement: materialModel
-                }, signal);
-                try {
-                  if (skin.value.result.state === "unresolved")
-                    return void 0;
-                  const read = skin.value.materials;
-                  return read === void 0 ? void 0 : (await readAllPages((page) => read.call(skin.value, page, signal), maxNodes, MODEL_FACET_ITEM_CAP)).items;
-                } finally {
-                  await skin.release();
-                }
-              })();
-              materialModelCache.set(materialModel.logicalId, pendingSkin);
-            }
-            const skinItems = await pendingSkin;
-            if (skinItems === void 0 || skinItems.length === 0)
-              skinDiagnostics.push(diagnostic("warning", "x3.host/world-model-material-model-unavailable", `material model ${materialModel.logicalId} published no materials; ${modelRequirement.logicalId} keeps its own`));
-            else {
-              materials = materials.map((material, index) => {
-                const replacement = skinItems[Math.min(index, skinItems.length - 1)];
-                return Object.freeze({ ...replacement, id: material.id });
-              });
-              resourceItems = [];
-            }
-          }
-          const allPrimitiveIds = meshPage.items.flatMap((mesh) => mesh.primitiveIds);
-          if (allPrimitiveIds.length > 0 && lease2.value.primitive === void 0)
-            throw new TypeError("model publishes primitive ids without a primitive reader");
-          const primitives = [];
-          let primitiveBytes = 0;
-          for (let start = 0; start < allPrimitiveIds.length && primitiveBytes < request.maxBytes; start += request.maxPrimitives) {
-            const batch = await Promise.all(allPrimitiveIds.slice(start, start + request.maxPrimitives).map((primitiveId) => lease2.value.primitive(primitiveId, { maxBytes: request.maxPrimitiveBytes }, signal)));
-            for (const primitive of batch) {
-              const bytes = primitiveByteLength(primitive);
-              if (primitiveBytes + bytes > request.maxBytes)
-                break;
-              primitiveBytes += bytes;
-              primitives.push(primitive);
-            }
-            if (primitives.length < Math.min(start + request.maxPrimitives, allPrimitiveIds.length))
-              break;
-          }
-          const loadedPrimitives = new Set(primitives.map((primitive) => primitive.id));
-          const meshes = meshPage.items.filter((mesh) => mesh.primitiveIds.every((id) => loadedPrimitives.has(id)));
-          const graph = nodePage === void 0 ? void 0 : consistentNodes(nodePage.items, new Set(meshes.map((mesh) => mesh.id)));
-          const textureDiagnostics = [];
-          const textures = [];
-          const publishedResources = [...resourceItems];
-          const resourceIds = new Set(publishedResources.map((reference) => reference.id));
-          for (const material of materials ?? []) {
-            for (const layer of material.layers ?? []) {
-              if (layer.resourceId === void 0 || resourceIds.has(layer.resourceId))
-                continue;
-              resourceIds.add(layer.resourceId);
-              publishedResources.push(Object.freeze({
-                id: layer.resourceId,
-                role: "texture",
-                provenance: "reference-only"
-              }));
-            }
-          }
-          const textureReferences = publishedResources.filter((reference) => reference.role === "texture");
-          const sharedTextureBytes = Math.max(1, Math.floor(maxTextureTotalBytes / Math.max(1, textureReferences.length)));
-          let textureBytes = 0;
-          for (const reference of textureReferences) {
-            const remaining = maxTextureTotalBytes - textureBytes;
-            if (remaining <= 0) {
-              textureDiagnostics.push(diagnostic("warning", "x3.host/world-model-texture-budget-exhausted", `model texture budget omitted ${reference.id}`));
-              continue;
-            }
-            const logicalId = childResourceLogicalId(modelRequirement.logicalId, reference.id);
-            const previewTextureBytes = Math.max(1, Math.min(maxTextureBytes, remaining, sharedTextureBytes));
-            const cacheKey = `${logicalId}\0${String(previewTextureBytes)}`;
-            let pending = modelTextureCache.get(cacheKey);
-            if (pending === void 0) {
-              pending = (async () => {
-                const raster = await lease2.value.readRaster({
-                  kind: "logical",
-                  requirement: {
-                    id: `world-texture:${encodeURIComponent(logicalId)}`,
-                    logicalId,
-                    role: reference.role,
-                    scopes: modelRequirement.scopes,
-                    parentResourceId: modelRequirement.id
-                  },
-                  maxBytes: previewTextureBytes,
-                  selection: { mipLevel: "fit" }
-                }, signal);
-                if (raster.state !== "decoded")
+          return await worldSceneModel(lease2.value, request, {
+            requirement: modelRequirement,
+            yaw: chosen.yaw,
+            maxPageSize,
+            textureCache: modelTextureCache,
+            ...materialModel === void 0 ? {} : {
+              async skin(materials) {
+                const skinItems = await skinItemsOf(materialModel);
+                if (skinItems === void 0 || skinItems.length === 0)
                   return Object.freeze({
-                    diagnostics: Object.freeze([...raster.diagnostics])
+                    diagnostics: Object.freeze([
+                      diagnostic("warning", "x3.host/world-model-material-model-unavailable", `material model ${materialModel.logicalId} published no materials; ${modelRequirement.logicalId} keeps its own`)
+                    ])
                   });
-                const texture2 = worldTexture(reference.id, raster);
-                const mipLevel = raster.subresource?.mipLevel ?? 0;
                 return Object.freeze({
-                  ...texture2 === void 0 ? {} : { texture: texture2 },
-                  diagnostics: Object.freeze([
-                    ...raster.diagnostics,
-                    ...mipLevel === 0 ? [] : [
-                      diagnostic("information", "x3.host/world-model-texture-preview-mip-selected", `model texture ${reference.id} uses preview mip ${String(mipLevel)} to stay within its decoded byte budget`)
-                    ],
-                    ...texture2 === void 0 ? [
-                      diagnostic("warning", "x3.host/world-model-texture-orientation-unknown", `model texture ${reference.id} has no proven top/bottom row orientation`)
-                    ] : []
-                  ])
+                  materials: materials.map((material, index) => {
+                    const replacement = skinItems[Math.min(index, skinItems.length - 1)];
+                    return Object.freeze({ ...replacement, id: material.id });
+                  }),
+                  diagnostics: Object.freeze([])
                 });
-              })();
-              modelTextureCache.set(cacheKey, pending);
+              }
             }
-            const loaded = await pending;
-            textureDiagnostics.push(...loaded.diagnostics);
-            const texture = loaded.texture;
-            if (texture === void 0)
-              continue;
-            if (texture.rgba.byteLength > remaining) {
-              textureDiagnostics.push(diagnostic("warning", "x3.host/world-model-texture-budget-exhausted", `decoded model texture ${reference.id} exceeds the aggregate texture budget`));
-              continue;
-            }
-            textureBytes += texture.rgba.byteLength;
-            textures.push(texture);
-          }
-          return Object.freeze({
-            state: "converted",
-            sourceKey: result.sourceKey,
-            uvmBytes: result.bytes.slice(),
-            ...graph === void 0 ? {} : { nodes: Object.freeze(yawRootNodes(graph.nodes, chosen.yaw)) },
-            ...skeletonPage === void 0 ? {} : { skeleton: Object.freeze([...skeletonPage.items]) },
-            ...animationPage === void 0 ? {} : { animations: Object.freeze([...animationPage.items]) },
-            ...materials === void 0 ? {} : { materials: Object.freeze([...materials]) },
-            ...publishedResources.length === 0 ? {} : { resources: Object.freeze(publishedResources) },
-            ...socketPage === void 0 ? {} : { sockets: Object.freeze([...socketPage.items]) },
-            ...publishedResources.length === 0 ? {} : { textures: Object.freeze(textures) },
-            meshes: Object.freeze(meshes),
-            primitives: Object.freeze(primitives),
-            diagnostics: Object.freeze([
-              ...result.diagnostics,
-              ...skinDiagnostics,
-              ...textureDiagnostics,
-              ...graph?.pruned === true ? [
-                diagnostic("warning", "x3.host/world-model-graph-truncated", `model ${modelRequirement.logicalId} was cut (${MODEL_FACET_ITEM_CAP} items per facet, ${request.maxBytes} primitive bytes); nodes and meshes left out are dropped from their parents`)
-              ] : []
-            ]),
-            complete: meshPage.complete && nodePage?.complete !== false && skeletonPage?.complete !== false && animationPage?.complete !== false && materialPage?.complete !== false && resourcePage?.complete !== false && socketPage?.complete !== false && textureReferences.length === textures.length && primitives.length === allPrimitiveIds.length
-          });
+          }, signal);
         } finally {
           await lease2.release();
         }
@@ -22072,6 +22257,7 @@ function createSubjectServices(options) {
     ...options.contributionSettings === void 0 ? {} : { contributionSettings: options.contributionSettings },
     ...options.subjectCatalog === void 0 ? {} : { subjectCatalog: options.subjectCatalog },
     ...options.videoFrames === void 0 ? {} : { videoFrames: options.videoFrames },
+    ...options.installationFiles === void 0 ? {} : { installationFiles: options.installationFiles },
     ...options.credentials === void 0 ? {} : { credentials: options.credentials }
   };
   const services = {
@@ -22083,6 +22269,7 @@ function createSubjectServices(options) {
     ...options.serviceDefinitions === void 0 ? {} : { serviceDefinitions: options.serviceDefinitions },
     ...options.contributionSettings === void 0 ? {} : { contributionSettings: options.contributionSettings },
     ...options.videoFrames === void 0 ? {} : { videoFrames: options.videoFrames },
+    ...options.installationFiles === void 0 ? {} : { installationFiles: options.installationFiles },
     ...options.credentials === void 0 ? {} : { credentials: options.credentials },
     open: (request) => openSubject({ ...fixed, ...request })
   };
@@ -22300,6 +22487,29 @@ function resolveFramePort(options) {
   }
   return framePortFromMessagePort(options.port, options.listener === void 0 ? {} : { listener: options.listener });
 }
+var NAMESPACE_ENTRY_SOURCE4 = "common.view/namespace-entry-source";
+function withoutHiddenEntries(namespace) {
+  const visible = async (answer, page) => {
+    const listed = await answer;
+    return page.includeHidden === true || !listed.items.some((item) => item.hidden === true) ? listed : { ...listed, items: listed.items.filter((item) => item.hidden !== true) };
+  };
+  const children = namespace.children?.bind(namespace);
+  const search = namespace.search?.bind(namespace);
+  const passed = (key3) => {
+    const method = namespace[key3];
+    return method === void 0 ? {} : { [key3]: method.bind(namespace) };
+  };
+  return {
+    list: (prefix, page, signal) => visible(namespace.list(prefix, page, signal), page),
+    ...children === void 0 ? {} : { children: (path, page, signal) => visible(children(path, page, signal), page) },
+    ...search === void 0 ? {} : { search: (query, page, signal) => visible(search(query, page, signal), page) },
+    ...passed("readPreamble"),
+    ...passed("lookup"),
+    ...passed("nestedContext"),
+    ...passed("openEntrySource"),
+    openEntry: (entryId, signal) => namespace.openEntry(entryId, signal)
+  };
+}
 function subjectOpenSnapshot(options) {
   const { result, diagnostics } = options;
   if (result.state === "unresolved") {
@@ -22404,7 +22614,13 @@ function exposeSubjectRpc(options) {
         revision: session.revision,
         state: () => session.state(),
         descriptor: () => session.descriptor(),
-        dataSource: (contract, major) => session.dataSource(contract, major),
+        dataSource: async (contract, major) => {
+          const lease2 = await session.dataSource(contract, major);
+          return String(contract) === NAMESPACE_ENTRY_SOURCE4 ? {
+            value: withoutHiddenEntries(lease2.value),
+            release: () => lease2.release()
+          } : lease2;
+        },
         events: (signal) => session.events(signal),
         dispose,
         operations: () => {
@@ -28738,5 +28954,8 @@ export {
   validGameLaunchPlan,
   validateServiceOperationProvider,
   validateServiceOperationResult,
-  withNativeTextModules
+  withNativeTextModules,
+  withoutHiddenEntries,
+  worldSceneModel,
+  worldSceneModelLimits
 };

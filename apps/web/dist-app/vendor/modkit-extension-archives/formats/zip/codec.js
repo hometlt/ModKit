@@ -13,7 +13,7 @@ import "../../../../chunks/chunk-WXUQLAQ3.js";
 import {
   snapshotJson
 } from "../../../../chunks/chunk-3YDGNEY2.js";
-import "../../../../chunks/chunk-5TKG6RWH.js";
+import "../../../../chunks/chunk-IABXXKTR.js";
 import {
   decompressBounded
 } from "../../../../chunks/chunk-JVAXQGJ2.js";
@@ -22,12 +22,12 @@ import {
   assembleSubjectDescriptor,
   createAssetSession,
   createUtf8TextDataSource
-} from "../../../../chunks/chunk-JFXF7H5K.js";
+} from "../../../../chunks/chunk-DWLV5L2I.js";
 import "../../../../chunks/chunk-JHPOUH6S.js";
 import {
   containerEntryRevision,
   contributionSettingsFor
-} from "../../../../chunks/chunk-47QWC2WU.js";
+} from "../../../../chunks/chunk-7BES6HCK.js";
 import "../../../../chunks/chunk-YYQ3QKXM.js";
 import "../../../../chunks/chunk-KL23KRQT.js";
 import {
@@ -44,7 +44,7 @@ import "../../../../chunks/chunk-NUFRM6SI.js";
 import "../../../../chunks/chunk-L5WKTLBK.js";
 import {
   crc32
-} from "../../../../chunks/chunk-XXOPIMKN.js";
+} from "../../../../chunks/chunk-RA3DJQH7.js";
 import "../../../../chunks/chunk-CQ52GEHY.js";
 
 // packages/codec-kit/dist/deferred-session.js
@@ -473,6 +473,12 @@ async function decodeContainerEntry(entry, maximum, readRange, signal) {
   }
   if (bytes.byteLength !== size) {
     throw new RangeError(`container entry ${entry.path} decoded to ${bytes.byteLength} bytes, not ${size}`);
+  }
+  if (entry.checksum?.algorithm === "crc-32") {
+    const { crc32: crc322 } = await import("../../../codec-kit/checksum/index.js");
+    const actual = (crc322(bytes) >>> 0).toString(16).padStart(8, "0");
+    if (actual !== entry.checksum.value.toLowerCase().padStart(8, "0"))
+      throw new RangeError(`container entry ${entry.path} fails its CRC-32 (${actual}, the container says ${entry.checksum.value})`);
   }
   return bytes;
 }
@@ -1104,7 +1110,7 @@ function createInspectionCodec(definition2, contributionContext) {
         const byteSource = bytes === void 0 ? rangeByteSource(source, budget) : memoryByteSource(bytes);
         const sourceSize = await byteSource.size();
         const readable = BigInt(budget.maxInputBytes) < sourceSize ? BigInt(budget.maxInputBytes) : sourceSize;
-        const prefix = bytes ?? await byteSource.read(0n, Math.min(RANGE_DETECT_PREFIX_BYTES, Number(readable)), signal);
+        const prefix = bytes ?? await byteSource.read(0n, Math.min(rangeDefinition?.detectBytes ?? RANGE_DETECT_PREFIX_BYTES, Number(readable)), signal);
         const detected = await definition2.detect(prefix, primary.source.uri);
         const inspectionContext = {
           ...contributionContext === void 0 ? {} : {
@@ -1462,7 +1468,8 @@ function parseZipArchive(bytes, maxEntries) {
 }
 async function readZipDirectory(read, size, maxEntries, maxRead) {
   const tailStart = Math.max(0, size - Math.min(65557, maxRead));
-  const tail = eocdOf(await read(tailStart, size - tailStart), tailStart);
+  const tailBytes = await read(tailStart, size - tailStart);
+  const tail = eocdOf(tailBytes, tailStart);
   const directory = tail.zip64RecordOffset === void 0 ? tail : zip64DirectoryOf(await read(tail.zip64RecordOffset, 56));
   if (directory.count > maxEntries) throw new RangeError("ZIP entry count exceeds maxNodes budget");
   if (directory.centralSize > maxRead)
@@ -1472,12 +1479,11 @@ async function readZipDirectory(read, size, maxEntries, maxRead) {
   if (directory.centralOffset + directory.centralSize > size) {
     throw new TypeError("ZIP central directory is truncated");
   }
-  return parseCentralDirectory(
-    await read(directory.centralOffset, directory.centralSize),
-    directory.centralOffset,
-    directory.count,
-    maxEntries
-  );
+  const central = directory.centralOffset >= tailStart ? tailBytes.subarray(
+    directory.centralOffset - tailStart,
+    directory.centralOffset - tailStart + directory.centralSize
+  ) : await read(directory.centralOffset, directory.centralSize);
+  return parseCentralDirectory(central, directory.centralOffset, directory.count, maxEntries);
 }
 function localDataLocator(entry, read, size) {
   let located;
@@ -2288,6 +2294,8 @@ var definition = Object.freeze({
   format: Object.freeze({ id: "zip", label: "ZIP archive", mediaType: "application/zip" }),
   // any size: the directory is read by ranges; an archive within the budget is also editable
   access: "ranges",
+  // the four magic bytes are all detect reads
+  detectBytes: 4,
   operations: Object.freeze([
     Object.freeze({
       id: "container.extract",

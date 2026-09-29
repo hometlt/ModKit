@@ -432,6 +432,26 @@ function writeUvmAnimations(source, nodeIndices, boneByNode, storage, budget, si
 }
 
 // packages/uv/dist/model/materializer.js
+var GLTF_LAYER_SLOTS = Object.freeze({
+  diffuse: "baseColor",
+  basecolor: "baseColor",
+  "base-color": "baseColor",
+  albedo: "baseColor",
+  color: "baseColor",
+  normal: "normal",
+  occlusion: "occlusion",
+  ao: "occlusion",
+  ambientocclusion: "occlusion",
+  "ambient-occlusion": "occlusion",
+  emissive: "emissive",
+  emission: "emissive",
+  teamcolor: "teamColor",
+  "team-color": "teamColor",
+  team: "teamColor"
+});
+function singleChannel(mask) {
+  return mask === 1 ? "r" : mask === 2 ? "g" : mask === 4 ? "b" : mask === 8 ? "a" : void 0;
+}
 var GLTF_FILTER = { nearest: 9728, linear: 9729 };
 function texturesWithSamplers(filters) {
   const samplers = [];
@@ -886,6 +906,41 @@ function materializeUvmCore(projection, request, { digest, materialBudget = DEFA
     losses.push(`${info.textures} texture reference(s) were not carried`);
     note("uv.model/structure@1", "value-differs", "/textures", "the base model contract publishes a texture count but no texture identity; writing empty texture objects to make the count match would be inventing data");
   }
+  const imageIndex = new Map(resourceImages.map((image, index) => [image.uri, index]));
+  for (const definition of imageIndex.size === 0 ? [] : definitions ?? []) {
+    const target = materials[materialIndexById.get(definition.id)];
+    for (const layer of definition.layers ?? []) {
+      const slot = GLTF_LAYER_SLOTS[layer.slot.toLowerCase()];
+      const index = layer.resourceId === void 0 ? void 0 : imageIndex.get(layer.resourceId);
+      if (slot === void 0 || index === void 0)
+        continue;
+      const ref = {
+        index,
+        ...layer.uvSource !== void 0 && Number.isSafeInteger(layer.uvSource) && layer.uvSource > 0 ? { texCoord: layer.uvSource } : {}
+      };
+      if (slot === "baseColor")
+        target.pbrMetallicRoughness.baseColorTexture ??= ref;
+      else if (slot === "normal")
+        target.normalTexture ??= ref;
+      else if (slot === "occlusion")
+        target.occlusionTexture ??= ref;
+      else if (slot === "emissive" && target.emissiveTexture === void 0) {
+        target.emissiveTexture = ref;
+        target.emissiveFactor = [1, 1, 1];
+      } else if (slot === "teamColor" && target.extensions?.UV_game_material_team_color === void 0) {
+        const channel = singleChannel(layer.colorChannels);
+        target.extensions = {
+          ...target.extensions,
+          UV_game_material_team_color: {
+            maskSource: "texture",
+            maskTexture: { ...ref, ...channel === void 0 ? {} : { channel } },
+            targets: ["baseColor"],
+            blend: layer.blend ?? "multiply"
+          }
+        };
+      }
+    }
+  }
   if (closure !== void 0 && resourceImages.length !== Number(info.textures ?? 0)) {
     note("uv.model/structure@1", "value-differs", "/textures", `the resource closure carries ${resourceImages.length} image identity or identities, while the base model contract counts ${Number(info.textures ?? 0)} texture(s)`);
   }
@@ -1137,6 +1192,7 @@ function materializeUvmCore(projection, request, { digest, materialBudget = DEFA
       "UV_provenance",
       ...socketByNodeId.size === 0 ? [] : ["UV_game_socket"],
       ...materials.some((material) => material.extensions?.UV_game_material !== void 0) ? ["UV_game_material"] : [],
+      ...materials.some((material) => material.extensions?.UV_game_material_team_color !== void 0) ? ["UV_game_material_team_color"] : [],
       ...animation === void 0 || animation.catalog.length === 0 ? [] : ["UV_game_animation_clips"],
       ...animation === void 0 || animation.visibility.length === 0 ? [] : ["UV_game_variants", "KHR_animation_pointer"],
       ...unitsExtension === void 0 ? [] : ["UV_units"],

@@ -48,14 +48,16 @@ import {
   sourceUriFor,
   stageIdOf,
   subjectFactsSourceFromWire,
-  webExtensionSubjectCardBundle
-} from "./chunks/chunk-SXET6GN4.js";
+  webExtensionSubjectCardBundle,
+  withoutHiddenEntries
+} from "./chunks/chunk-ESS2A7DI.js";
+import "./chunks/chunk-EN2G6IFG.js";
 import "./chunks/chunk-CRISB2AX.js";
 import "./chunks/chunk-SEUGETBF.js";
-import "./chunks/chunk-VOGOVPZF.js";
+import "./chunks/chunk-VS7Y6TK6.js";
 import {
   resolveModelViewerTextures
-} from "./chunks/chunk-3LR6PKE2.js";
+} from "./chunks/chunk-BWYZLXYC.js";
 import {
   DEFAULT_UI_LOCALIZER,
   contributionContractLabel
@@ -68,7 +70,7 @@ import {
   isRejected,
   mountFieldEditor,
   subjectCandidateProviderLease
-} from "./chunks/chunk-MTC3X2NC.js";
+} from "./chunks/chunk-GHVQN46Y.js";
 import {
   PANELS_FALLBACK_MESSAGES,
   SETTINGS_FALLBACK_MESSAGES,
@@ -94,7 +96,7 @@ import {
   normalizeModkitIdentifier,
   presentationSlotId,
   revisionId
-} from "./chunks/chunk-ICUJ3IVS.js";
+} from "./chunks/chunk-47VUMMB3.js";
 import {
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
 } from "./chunks/chunk-BLWUC7LO.js";
@@ -2968,7 +2970,18 @@ async function boot() {
       return {
         ...previewPresentation === void 0 ? {} : { presentation: previewPresentation },
         descriptor: () => session.descriptor(),
-        dataSource: (contract, major) => session.dataSource(contract, major),
+        /*
+         * What a view lists of a container leaves hidden members out unless it asks
+         * (`includeHidden`) — the one filter, as the host applies to a page it serves over subject
+         * RPC. The app's own readers (extract, nested opens) use the session and see everything.
+         */
+        dataSource: async (contract, major) => {
+          const lease = await session.dataSource(contract, major);
+          return contract === "common.view/namespace-entry-source" ? {
+            value: withoutHiddenEntries(lease.value),
+            release: () => lease.release()
+          } : lease;
+        },
         async dispose() {
           operationSessions.delete(key);
           assetSessions.delete(key);

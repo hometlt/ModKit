@@ -4,7 +4,7 @@ import {
   invokeRefusalMessage,
   isRejected,
   mountFieldEditor
-} from "./chunk-MTC3X2NC.js";
+} from "./chunk-GHVQN46Y.js";
 import {
   MODEL_FALLBACK_MESSAGES,
   MODEL_GIZMO_FALLBACK_MESSAGES,
@@ -3136,6 +3136,8 @@ async function resolveModelViewerTextures(port, references, signal) {
   let remaining = maximumBytes;
   let index = 0;
   const textures = /* @__PURE__ */ new Map();
+  const wanted = new Set(references.filter((item) => item.role === "texture").map((item) => item.id));
+  const share = Math.max(4 * 1024 * 1024, Math.floor(maximumBytes / Math.max(1, wanted.size)));
   for (const reference of references) {
     signal?.throwIfAborted();
     if (reference.role !== "texture" || textures.has(reference.id) || remaining <= 0)
@@ -3154,8 +3156,8 @@ async function resolveModelViewerTextures(port, references, signal) {
           "enclosing-container"
         ]
       },
-      maxBytes: remaining,
-      selection: { face: "all" }
+      maxBytes: Math.min(remaining, share),
+      selection: { face: "all", mipLevel: "fit" }
     }, signal);
     signal?.throwIfAborted();
     if (result.state === "unresolved")
@@ -3167,11 +3169,22 @@ async function resolveModelViewerTextures(port, references, signal) {
       continue;
     const surfaces = result.state === "decoded-surfaces" ? result.surfaces : [
       {
-        subresource: { frame: 0, mipLevel: 0, layer: 0, face: 0, slice: 0 },
+        subresource: result.subresource ?? {
+          frame: 0,
+          mipLevel: 0,
+          layer: 0,
+          face: 0,
+          slice: 0
+        },
         region: result.region
       }
     ];
-    const faceBytes = result.info.width * result.info.height * 4;
+    const chosen = surfaces[0];
+    if (chosen === void 0)
+      continue;
+    const { width, height } = chosen.region;
+    const mipLevel = chosen.subresource.mipLevel;
+    const faceBytes = width * height * 4;
     const byteLength = faceBytes * faces;
     if (surfaces.length !== faces || byteLength > remaining)
       continue;
@@ -3180,7 +3193,7 @@ async function resolveModelViewerTextures(port, references, signal) {
     for (const [face, surface] of surfaces.entries()) {
       const selected = surface.subresource;
       const region = surface.region;
-      if (selected.face !== face || selected.frame !== 0 || selected.mipLevel !== 0 || selected.layer !== 0 || selected.slice !== 0 || region.width !== result.info.width || region.height !== result.info.height || region.pixelFormat !== "rgba8" || region.rowStride < region.width * 4 || region.rowStride * (region.height - 1) + region.width * 4 > region.pixels.length) {
+      if (selected.face !== face || selected.frame !== 0 || selected.mipLevel !== mipLevel || selected.layer !== 0 || selected.slice !== 0 || region.width !== width || region.height !== height || region.pixelFormat !== "rgba8" || region.rowStride < region.width * 4 || region.rowStride * (region.height - 1) + region.width * 4 > region.pixels.length) {
         valid = false;
         break;
       }
@@ -3195,8 +3208,8 @@ async function resolveModelViewerTextures(port, references, signal) {
     remaining -= byteLength;
     textures.set(reference.id, {
       id: textureId,
-      width: result.info.width,
-      height: result.info.height,
+      width,
+      height,
       rgba,
       ...faces === 6 ? { dimension: "cube" } : {},
       ...result.info.channelLayout === void 0 ? {} : { channelLayout: result.info.channelLayout },

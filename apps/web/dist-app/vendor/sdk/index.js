@@ -114,7 +114,7 @@ import {
   validateLocalizationContributionSemantics,
   writerOfferSatisfies,
   writerSelectionKey
-} from "../../chunks/chunk-47QWC2WU.js";
+} from "../../chunks/chunk-7BES6HCK.js";
 import {
   NATIVE_MODEL_ENCODER_CONTRACT,
   NATIVE_MODEL_ENCODER_MATCHER_PROFILE

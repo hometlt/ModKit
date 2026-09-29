@@ -33,11 +33,11 @@ import {
   resolveModelViewerTextures,
   sceneMaterials,
   skeletonJoints
-} from "./chunk-3LR6PKE2.js";
+} from "./chunk-BWYZLXYC.js";
 import "./chunk-SIU5GHDB.js";
-import "./chunk-MTC3X2NC.js";
+import "./chunk-GHVQN46Y.js";
 import "./chunk-6G2KODMW.js";
-import "./chunk-ICUJ3IVS.js";
+import "./chunk-47VUMMB3.js";
 import "./chunk-BLWUC7LO.js";
 export {
   GIZMO_SIZE,

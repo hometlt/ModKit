@@ -1,3 +1,4 @@
+import "../../chunks/chunk-65MI54Q5.js";
 import {
   createTableDataSource
 } from "../../chunks/chunk-XYU4XXWE.js";
@@ -6,12 +7,12 @@ import {
   assembleSubjectDescriptor,
   createAssetSession,
   createUtf8TextDataSource
-} from "../../chunks/chunk-JFXF7H5K.js";
+} from "../../chunks/chunk-DWLV5L2I.js";
 import "../../chunks/chunk-JHPOUH6S.js";
 import {
   containerEntryRevision,
   contributionSettingsFor
-} from "../../chunks/chunk-47QWC2WU.js";
+} from "../../chunks/chunk-7BES6HCK.js";
 import "../../chunks/chunk-YYQ3QKXM.js";
 import "../../chunks/chunk-KL23KRQT.js";
 import {
@@ -657,6 +658,14 @@ async function decodeContainerEntry(entry, maximum, readRange, signal) {
     throw new RangeError(
       `container entry ${entry.path} decoded to ${bytes.byteLength} bytes, not ${size}`
     );
+  }
+  if (entry.checksum?.algorithm === "crc-32") {
+    const { crc32 } = await import("../../chunks/checksum-KNEXZMUY.js");
+    const actual = (crc32(bytes) >>> 0).toString(16).padStart(8, "0");
+    if (actual !== entry.checksum.value.toLowerCase().padStart(8, "0"))
+      throw new RangeError(
+        `container entry ${entry.path} fails its CRC-32 (${actual}, the container says ${entry.checksum.value})`
+      );
   }
   return bytes;
 }
@@ -1743,55 +1752,6 @@ function createModelLodSource({
   const items = [...levels].sort((a, b) => a.order - b.order).map((level) => ({ ...level, nodeIds: Object.freeze([...level.nodeIds]) }));
   return facetSource(Object.freeze({ levels: items.length }), "levels", items);
 }
-
-// packages/codec-kit/src/crypto/mpq.ts
-var encryptionTable = (() => {
-  let seed1 = 1048577;
-  const table = [];
-  for (let i = 0; i < 256; i++) {
-    let index = i;
-    for (let j = 0; j < 5; j++) {
-      seed1 = (seed1 * 125 + 3) % 2796203 >>> 0;
-      const temp1 = (seed1 & 65535) << 16;
-      seed1 = (seed1 * 125 + 3) % 2796203 >>> 0;
-      const temp2 = seed1 & 65535;
-      table[index] = (temp1 | temp2) >>> 0;
-      index += 256;
-    }
-  }
-  return table;
-})();
-var crcTable = (() => {
-  const table = new Uint32Array(256);
-  for (let n = 0; n < 256; n++) {
-    let c = n;
-    for (let k = 0; k < 8; k++) {
-      c = c & 1 ? 3988292384 ^ c >>> 1 : c >>> 1;
-    }
-    table[n] = c >>> 0;
-  }
-  return table;
-})();
-
-// packages/codec-kit/src/checksum/index.ts
-var EDC = (() => {
-  const table = new Uint32Array(256);
-  for (let n = 0; n < 256; n += 1) {
-    let c = n;
-    for (let k = 0; k < 8; k += 1) c = c & 1 ? c >>> 1 ^ 3623976961 : c >>> 1;
-    table[n] = c >>> 0;
-  }
-  return table;
-})();
-var FORWARD = (() => {
-  const table = new Uint32Array(256);
-  for (let n = 0; n < 256; n += 1) {
-    let c = n << 24;
-    for (let k = 0; k < 8; k += 1) c = c & 2147483648 ? c << 1 ^ 79764919 : c << 1;
-    table[n] = c >>> 0;
-  }
-  return table;
-})();
 
 // packages/codec-kit/src/audio/ima.ts
 var IMA_STEP_TABLE = Object.freeze([
@@ -3383,7 +3343,11 @@ function createInspectionCodec(definition, contributionContext) {
         const byteSource = bytes === void 0 ? rangeByteSource(source, budget) : memoryByteSource(bytes);
         const sourceSize = await byteSource.size();
         const readable = BigInt(budget.maxInputBytes) < sourceSize ? BigInt(budget.maxInputBytes) : sourceSize;
-        const prefix = bytes ?? await byteSource.read(0n, Math.min(RANGE_DETECT_PREFIX_BYTES, Number(readable)), signal);
+        const prefix = bytes ?? await byteSource.read(
+          0n,
+          Math.min(rangeDefinition?.detectBytes ?? RANGE_DETECT_PREFIX_BYTES, Number(readable)),
+          signal
+        );
         const detected = await definition.detect(prefix, primary.source.uri);
         const inspectionContext = {
           ...contributionContext === void 0 ? {} : {

@@ -9,9 +9,9 @@ import {
   imageViewer,
   subresourceExtent,
   subresourceLabel
-} from "./chunk-MTC3X2NC.js";
+} from "./chunk-GHVQN46Y.js";
 import "./chunk-6G2KODMW.js";
-import "./chunk-ICUJ3IVS.js";
+import "./chunk-47VUMMB3.js";
 import "./chunk-BLWUC7LO.js";
 export {
   IMAGE_MAXIMUM_BYTES,

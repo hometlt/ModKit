@@ -6,8 +6,8 @@ import {
   framePortFromMessagePort,
   logicalResourcesFromWire,
   protocolLimits
-} from "./chunks/chunk-SPHGQBFD.js";
-import "./chunks/chunk-47QWC2WU.js";
+} from "./chunks/chunk-5VVC23DY.js";
+import "./chunks/chunk-7BES6HCK.js";
 import "./chunks/chunk-YYQ3QKXM.js";
 import "./chunks/chunk-KL23KRQT.js";
 import "./chunks/chunk-MYUZP6E2.js";
@@ -47,6 +47,7 @@ function contributionContext(wire) {
     ...wire.rasterResources === void 0 ? {} : { rasterResources: wire.rasterResources },
     ...wire.installationProbes === void 0 ? {} : { installationProbes: wire.installationProbes },
     ...wire.videoFrames === void 0 ? {} : { videoFrames: wire.videoFrames },
+    ...wire.installationFiles === void 0 ? {} : { installationFiles: wire.installationFiles },
     ...wire.credentials === void 0 ? {} : { credentials: wire.credentials },
     ...wire.containerContext === void 0 ? {} : { containerContext: wire.containerContext },
     ...wire.providerIdentity === void 0 ? {} : { providerIdentity: Object.freeze({ ...wire.providerIdentity }) },

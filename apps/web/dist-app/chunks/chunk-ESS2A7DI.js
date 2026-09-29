@@ -6,7 +6,7 @@ import {
 } from "./chunk-SEUGETBF.js";
 import {
   metadataFieldProjections
-} from "./chunk-VOGOVPZF.js";
+} from "./chunk-VS7Y6TK6.js";
 import {
   DEFAULT_MODEL_ANIMATION_BUDGET,
   DEFAULT_MODEL_SKELETON_BUDGET,
@@ -25,7 +25,7 @@ import {
   snapshotJson,
   snapshotModelAnimations,
   snapshotModelSkeleton
-} from "./chunk-3LR6PKE2.js";
+} from "./chunk-BWYZLXYC.js";
 import {
   DEFAULT_UI_LOCALIZER,
   UI_MESSAGES,
@@ -36,7 +36,7 @@ import {
 import {
   createImageViewer,
   invokeRefusalMessage
-} from "./chunk-MTC3X2NC.js";
+} from "./chunk-GHVQN46Y.js";
 import {
   CALCULATIONS_FALLBACK_MESSAGES,
   CARD_FALLBACK_MESSAGES,
@@ -197,7 +197,7 @@ import {
   validateSubjectDescriptorV2,
   writerOfferSatisfies,
   writerSelectionKey
-} from "./chunk-ICUJ3IVS.js";
+} from "./chunk-47VUMMB3.js";
 import {
   __export,
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
@@ -4681,6 +4681,7 @@ var ABI_RASTER_RESOURCES = { contract: "x3.abi/raster-resources", major: 1 };
 var ABI_MODEL_RESOURCES = { contract: "x3.abi/model-resources", major: 1 };
 var ABI_INSTALLATION_PROBES = { contract: "x3.abi/installation-probes", major: 1 };
 var ABI_VIDEO_FRAMES = { contract: "x3.abi/video-frames", major: 1 };
+var ABI_INSTALLATION_FILES = { contract: "x3.abi/installation-files", major: 1 };
 var ABI_CREDENTIALS = { contract: "x3.abi/credentials", major: 1 };
 var ABI_MODEL_RESOURCE_ASSET = {
   contract: "x3.abi/model-resource-asset",
@@ -4865,6 +4866,13 @@ var videoFramesSurface = {
   ...ABI_VIDEO_FRAMES,
   methods: { decodeFrame: { kind: "value", signal: { arg: 0, key: "signal" } } }
 };
+var installationFilesSurface = {
+  ...ABI_INSTALLATION_FILES,
+  methods: {
+    size: { kind: "value", signal: { arg: 0, key: "signal" } },
+    read: { kind: "value", signal: { arg: 0, key: "signal" } }
+  }
+};
 var credentialsSurface = {
   ...ABI_CREDENTIALS,
   methods: {
@@ -4932,6 +4940,7 @@ var RUNTIME_ABI_SURFACES = Object.freeze([
   rasterResourcesSurface,
   installationProbesSurface,
   videoFramesSurface,
+  installationFilesSurface,
   credentialsSurface,
   modelResourcesSurface,
   modelResourceAssetSurface,
@@ -5050,6 +5059,7 @@ function moduleAdapter(contributionId2, first, realm, watch) {
       ...context.rasterResources === void 0 ? {} : { rasterResources: expose(context.rasterResources, ABI_RASTER_RESOURCES) },
       ...context.installationProbes === void 0 ? {} : { installationProbes: expose(context.installationProbes, ABI_INSTALLATION_PROBES) },
       ...context.videoFrames === void 0 ? {} : { videoFrames: expose(context.videoFrames, ABI_VIDEO_FRAMES) },
+      ...context.installationFiles === void 0 ? {} : { installationFiles: expose(context.installationFiles, ABI_INSTALLATION_FILES) },
       ...context.credentials === void 0 ? {} : { credentials: expose(context.credentials, ABI_CREDENTIALS) }
     };
   };
@@ -5268,7 +5278,7 @@ function sessionAdapter(realm, session, exposedInput, watch, openingSignal) {
 
 // packages/host/dist/session.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-var projection = () => import("./subject-projection-7CJVPH4P.js");
+var projection = () => import("./subject-projection-Q25656SP.js");
 function rejected(reason, message) {
   return {
     state: "rejected",
@@ -6169,11 +6179,17 @@ function rasterSpellings(logicalId, rule) {
   if (rule === void 0)
     return spellings;
   const name = logicalId.replaceAll("\\", "/").split("/").at(-1) ?? logicalId;
-  for (const directory of rule.directories) {
-    const spelling = directory === "" ? name : `${directory}/${name}`;
-    if (!spellings.includes(spelling))
-      spellings.push(spelling);
-  }
+  const stem = name.replace(/\.[^.]*$/u, "");
+  const names = [
+    name,
+    ...(rule.extensions ?? []).map((extension) => `${stem}${extension}`).filter((other) => other.toLowerCase() !== name.toLowerCase())
+  ];
+  for (const candidate of names)
+    for (const directory of rule.directories) {
+      const spelling = directory === "" ? candidate : `${directory}/${candidate}`;
+      if (!spellings.includes(spelling))
+        spellings.push(spelling);
+    }
   return spellings;
 }
 function createSubjectRasterResources(options) {
@@ -6204,6 +6220,7 @@ function createSubjectRasterResources(options) {
       options.state.reservedBytes += maxBytes;
       const releases = [];
       let provenance;
+      let atlasRegion;
       try {
         let source2;
         let hint = {};
@@ -6212,7 +6229,14 @@ function createSubjectRasterResources(options) {
           if (resources === void 0)
             return refusal("x3.host/raster-origin-unavailable", "The subject has no resource origin.");
           const rule = options.companionRule?.(request.requirement.role);
-          const requirement = rule === void 0 ? request.requirement : { ...request.requirement, scopes: rule.scopes };
+          const named = /#region=([^#]+)$/u.exec(request.requirement.logicalId);
+          if (named !== null)
+            atlasRegion = decodeURIComponent(named[1]);
+          const asked = named === null ? request.requirement : {
+            ...request.requirement,
+            logicalId: request.requirement.logicalId.slice(0, named.index)
+          };
+          const requirement = rule === void 0 ? asked : { ...asked, scopes: rule.scopes };
           const spellings = rasterSpellings(requirement.logicalId, rule);
           let resolution = await resources.resolve(requirement, signal);
           for (const spelling of spellings.slice(1)) {
@@ -6266,6 +6290,29 @@ function createSubjectRasterResources(options) {
         const info = Object.freeze({ ...await raster.value.info(signal) });
         if (!info.decodedAccess || raster.value.readRegion === void 0)
           return refusal("x3.host/raster-decode-unavailable", "The selected image codec does not decode pixel regions.", provenance);
+        if (atlasRegion !== void 0) {
+          const area = info.atlasRegions?.find((item) => item.name === atlasRegion);
+          if (area === void 0)
+            return refusal("x3.host/raster-atlas-region-missing", `The image has no atlas region named ${atlasRegion}.`, provenance);
+          const region = await raster.value.readRegion({
+            x: area.x,
+            y: area.y,
+            width: area.width,
+            height: area.height,
+            pixelFormat: "rgba8",
+            maxBytes
+          }, signal);
+          if (region.width !== area.width || region.height !== area.height || region.pixelFormat !== "rgba8" || !(region.pixels instanceof Uint8Array) || region.pixels.length > maxBytes)
+            return refusal("x3.host/raster-region-invalid", "The image codec returned an invalid bounded RGBA region.", provenance);
+          const { atlasRegions: _atlas, ...rest } = info;
+          return {
+            info: Object.freeze({ ...rest, width: area.width, height: area.height, mipLevels: 1 }),
+            diagnostics: Object.freeze([...opened.diagnostics]),
+            ...provenance === void 0 ? {} : { provenance },
+            state: "decoded",
+            region: Object.freeze({ ...region, pixels: region.pixels.slice() })
+          };
+        }
         let plan;
         try {
           plan = rasterSelectionPlan(info, selection, maxBytes);
@@ -7060,6 +7107,7 @@ function createNamespaceCompanionOrigin(options) {
               entryId: entry2.id,
               path: entry2.path,
               ...entry2.size === void 0 ? {} : { size: entry2.size },
+              ...entry2.rangeAccess === true ? { rangeAccess: true } : {},
               revision: entry2.revision
             };
             built.set(key3, value2);
@@ -7110,6 +7158,8 @@ function createNamespaceCompanionOrigin(options) {
           context: { logicalId }
         });
       }
+      if (entry2.rangeAccess === true && options.namespace.openEntrySource !== void 0)
+        return rangeEntryLease(options.namespace, entry2.entryId, options.containerRevision, signal);
       if (options.maxSourceBytes !== void 0 && entry2.size !== void 0 && entry2.size > options.maxSourceBytes)
         throw new ModkitError({
           code: COMPANION_BUDGET_EXCEEDED,
@@ -7228,6 +7278,7 @@ function createCompositeWorkspaceNamespaceCompanionOrigin(options) {
         entryId: entry2.id,
         path: entry2.path,
         ...entry2.size === void 0 ? {} : { size: entry2.size },
+        ...entry2.rangeAccess === true ? { rangeAccess: true } : {},
         revision: entry2.revision,
         namespace: root.namespace,
         containerRevision: root.containerRevision,
@@ -7313,6 +7364,8 @@ function createCompositeWorkspaceNamespaceCompanionOrigin(options) {
           context: { logicalId }
         });
       }
+      if (entry2.rangeAccess === true && entry2.namespace.openEntrySource !== void 0)
+        return rangeEntryLease(entry2.namespace, entry2.entryId, entry2.containerRevision, signal);
       const refLease = await entry2.namespace.openEntry(entry2.entryId, signal);
       let bytes;
       try {
@@ -7546,6 +7599,30 @@ function containerEntryRangeSource(ref2, revision, parent, range) {
       }
     }
   });
+}
+async function rangeEntryLease(namespace, entryId, containerRevision, signal) {
+  const refLease = await namespace.openEntry(entryId, signal);
+  let sourceLease;
+  try {
+    sourceLease = await namespace.openEntrySource(entryId, signal);
+  } catch (error5) {
+    await refLease.release();
+    throw error5;
+  }
+  try {
+    const size = await sourceLease.value.size();
+    return Object.freeze({
+      value: containerEntryRangeSource(refLease.value, containerEntryRevision(containerRevision, entryId, size), sourceLease.value, { offset: 0n, length: size }),
+      release: async () => {
+        await sourceLease.release();
+        await refLease.release();
+      }
+    });
+  } catch (error5) {
+    await sourceLease.release();
+    await refLease.release();
+    throw error5;
+  }
 }
 function containerEntrySource(ref2, revision, bytes) {
   return Object.freeze({
@@ -9576,7 +9653,7 @@ function runnableCandidates(options, offers, signatureWindows, suppressed = [], 
         if (spec.sourceTopology !== "namespace" || spec.probe.kind !== "namespace")
           continue;
         if (route.containerAliasFormatId === void 0) {
-          if (spec.container !== void 0)
+          if (spec.container !== void 0 && (spec.container.markers?.length ?? 0) === 0)
             continue;
         } else if (spec.container?.formatId !== route.containerAliasFormatId || !route.containerAliasContributionIds?.has(manifest.id)) {
           continue;
@@ -9853,6 +9930,7 @@ async function openSubjectDirect(options, route = {}) {
             contracts,
             ...settings === void 0 ? {} : { settings },
             ...options.videoFrames === void 0 ? {} : { videoFrames: options.videoFrames },
+            ...options.installationFiles === void 0 ? {} : { installationFiles: options.installationFiles },
             ...credentials === void 0 ? {} : { credentials },
             ...options.containerContext === void 0 ? {} : { containerContext: options.containerContext },
             logicalResources: createSubjectLogicalResources({
@@ -10038,13 +10116,21 @@ async function openSubjectDirect(options, route = {}) {
       if (requirement === void 0)
         return void 0;
       const directories = [""];
+      const extensions = [];
       for (const pattern of requirement.patterns ?? []) {
         const cut = pattern.replaceAll("\\", "/").lastIndexOf("/");
         const directory = cut <= 0 ? "" : pattern.slice(0, cut);
         if (!directories.includes(directory))
           directories.push(directory);
+        const extension = /(\.[^.*?/]+)$/u.exec(pattern.slice(cut + 1))?.[1]?.toLowerCase();
+        if (extension !== void 0 && !extensions.includes(extension))
+          extensions.push(extension);
       }
-      return Object.freeze({ scopes: requirement.scopes, directories: Object.freeze(directories) });
+      return Object.freeze({
+        scopes: requirement.scopes,
+        directories: Object.freeze(directories),
+        ...extensions.length === 0 ? {} : { extensions: Object.freeze(extensions) }
+      });
     };
     const input = await (options.resolveInput ?? defaultResolveInput)({
       source: options.source,
@@ -10522,6 +10608,7 @@ function compilePatterns(requirementId, patterns, caseSensitivity) {
       context: { requirementId }
     });
   }
+  const bodies = patterns.map((pattern) => pattern.replace(/^\.[\\/]/u, ""));
   const expressions = [];
   for (const pattern of patterns) {
     const invalid2 = (why) => {
@@ -10547,8 +10634,13 @@ function compilePatterns(requirementId, patterns, caseSensitivity) {
     if (![...pattern].some((character) => !WILDCARDS.has(character))) {
       invalid2("it has no literal part and would match every entry");
     }
+    const slashed = pattern.replaceAll("\\", "/");
+    const rooted = slashed.startsWith("./");
+    const body = rooted ? slashed.slice(2) : slashed;
+    if (body.length === 0)
+      invalid2("it is empty");
     let expression = "^";
-    for (const character of pattern.replaceAll("\\", "/")) {
+    for (const character of body) {
       if (character === "*")
         expression += "[^/]*";
       else if (character === "?")
@@ -10558,7 +10650,7 @@ function compilePatterns(requirementId, patterns, caseSensitivity) {
     }
     expressions.push({
       expression: new RegExp(`${expression}$`, caseSensitivity === "insensitive" ? "iu" : "u"),
-      whole: pattern.replaceAll("\\", "/").includes("/")
+      whole: rooted || body.includes("/")
     });
   }
   return {
@@ -10566,8 +10658,8 @@ function compilePatterns(requirementId, patterns, caseSensitivity) {
       const name = logicalId.split("/").at(-1) ?? logicalId;
       return expressions.some((item) => item.expression.test(item.whole ? logicalId : name));
     },
-    prefixes: enumerationPrefixes(patterns, caseSensitivity),
-    namePrefix: enumerationNamePrefix(patterns, caseSensitivity)
+    prefixes: enumerationPrefixes(bodies, caseSensitivity),
+    namePrefix: enumerationNamePrefix(bodies, caseSensitivity)
   };
 }
 function enumerationPrefixes(patterns, caseSensitivity) {
@@ -11110,6 +11202,7 @@ function nestedSubjectServices(services) {
     ...services.serviceDefinitions === void 0 ? {} : { serviceDefinitions: services.serviceDefinitions },
     ...services.contributionSettings === void 0 ? {} : { contributionSettings: services.contributionSettings },
     ...services.videoFrames === void 0 ? {} : { videoFrames: services.videoFrames },
+    ...services.installationFiles === void 0 ? {} : { installationFiles: services.installationFiles },
     ...services.credentials === void 0 ? {} : { credentials: services.credentials }
   };
 }
@@ -11366,6 +11459,7 @@ async function openNestedSubject(options) {
         ...options.serviceDefinitions === void 0 ? {} : { serviceDefinitions: options.serviceDefinitions },
         ...options.contributionSettings === void 0 ? {} : { contributionSettings: options.contributionSettings },
         ...options.videoFrames === void 0 ? {} : { videoFrames: options.videoFrames },
+        ...options.installationFiles === void 0 ? {} : { installationFiles: options.installationFiles },
         ...options.credentials === void 0 ? {} : { credentials: options.credentials },
         ...containerContext === void 0 ? {} : { containerContext },
         ...options.minimumConfidence === void 0 ? {} : { minimumConfidence: options.minimumConfidence },
@@ -11530,7843 +11624,6 @@ function createScopedViewerSubjectNavigation(options) {
       lifecycle.abort(reason);
     }
   });
-}
-
-// packages/host/dist/presentation.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-
-// packages/host/dist/presentation-catalog.generated.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-var COMMON_PRESENTATION_CATALOG = Object.freeze([
-  Object.freeze({
-    slot: Object.freeze({
-      slotId: "code",
-      kind: "stage",
-      contributionId: "modkit.ui-monaco/code-stage",
-      extensionId: "modkit/code",
-      priority: 400,
-      singletonGroup: "stage.code",
-      bindings: Object.freeze([
-        Object.freeze({
-          bindingId: "code-content",
-          contract: "common.view/text-data-source",
-          major: 1
-        })
-      ])
-    }),
-    spec: Object.freeze({
-      kind: "stage",
-      requiresTraits: [{ id: "content.text", states: ["available"] }],
-      consumesDataSources: [{ contract: "common.view/text-data-source", major: 1 }],
-      applicability: { interpretation: "any", sourceBytes: { maximum: "8388608" } },
-      priority: 400,
-      singletonGroup: "stage.code"
-    })
-  }),
-  Object.freeze({
-    slot: Object.freeze({
-      slotId: "video",
-      kind: "stage",
-      contributionId: "modkit.ui/video-stage",
-      extensionId: "modkit/ui",
-      priority: 370,
-      singletonGroup: "center-stage",
-      bindings: Object.freeze([
-        Object.freeze({
-          bindingId: "video-content",
-          contract: "common.view/video-media-source",
-          major: 1
-        })
-      ])
-    }),
-    spec: Object.freeze({
-      kind: "stage",
-      requiresTraits: [{ id: "video.streams", states: ["available"] }],
-      consumesDataSources: [{ contract: "common.view/video-media-source", major: 1 }],
-      priority: 370,
-      singletonGroup: "center-stage"
-    })
-  }),
-  Object.freeze({
-    slot: Object.freeze({
-      slotId: "image",
-      kind: "stage",
-      contributionId: "modkit.ui/image-stage",
-      extensionId: "modkit/ui",
-      priority: 360,
-      singletonGroup: "center-stage",
-      bindings: Object.freeze([
-        Object.freeze({
-          bindingId: "image-content",
-          contract: "common.view/raster-image-source",
-          major: 1
-        })
-      ])
-    }),
-    spec: Object.freeze({
-      kind: "stage",
-      requiresTraits: [{ id: "image.raster", states: ["available"] }],
-      consumesDataSources: [{ contract: "common.view/raster-image-source", major: 1 }],
-      priority: 360,
-      singletonGroup: "center-stage"
-    })
-  }),
-  Object.freeze({
-    slot: Object.freeze({
-      slotId: "audio",
-      kind: "stage",
-      contributionId: "modkit.ui/audio-stage",
-      extensionId: "modkit/ui",
-      priority: 360,
-      singletonGroup: "center-stage",
-      bindings: Object.freeze([
-        Object.freeze({
-          bindingId: "audio-content",
-          contract: "common.view/audio-media-source",
-          major: 1
-        })
-      ])
-    }),
-    spec: Object.freeze({
-      kind: "stage",
-      requiresTraits: [{ id: "audio.streams", states: ["available"] }],
-      consumesDataSources: [{ contract: "common.view/audio-media-source", major: 1 }],
-      priority: 360,
-      singletonGroup: "center-stage"
-    })
-  }),
-  Object.freeze({
-    slot: Object.freeze({
-      slotId: "playback",
-      kind: "stage",
-      contributionId: "modkit.ui/playback-stage",
-      extensionId: "modkit/ui",
-      priority: 355,
-      singletonGroup: "center-stage",
-      bindings: Object.freeze([
-        Object.freeze({
-          bindingId: "playback-content",
-          contract: "common.view/transport-source",
-          major: 1
-        })
-      ])
-    }),
-    optionalBindings: Object.freeze([
-      Object.freeze({
-        bindingId: "playback-optional-1",
-        contract: "common.view/world-scene-source",
-        major: 1
-      })
-    ]),
-    spec: Object.freeze({
-      kind: "stage",
-      consumesDataSources: [{ contract: "common.view/transport-source", major: 1 }],
-      optionalDataSources: [{ contract: "common.view/world-scene-source", major: 1 }],
-      priority: 355,
-      singletonGroup: "center-stage"
-    })
-  }),
-  Object.freeze({
-    slot: Object.freeze({
-      slotId: "world",
-      kind: "stage",
-      contributionId: "modkit.ui/world-stage",
-      extensionId: "modkit/ui",
-      priority: 380,
-      singletonGroup: "center-stage",
-      bindings: Object.freeze([
-        Object.freeze({
-          bindingId: "world-content",
-          contract: "common.view/world-scene-source",
-          major: 1
-        })
-      ])
-    }),
-    optionalBindings: Object.freeze([
-      Object.freeze({
-        bindingId: "world-optional-1",
-        contract: "common.view/transport-source",
-        major: 1
-      })
-    ]),
-    spec: Object.freeze({
-      kind: "stage",
-      consumesDataSources: [{ contract: "common.view/world-scene-source", major: 1 }],
-      optionalDataSources: [{ contract: "common.view/transport-source", major: 1 }],
-      priority: 380,
-      singletonGroup: "center-stage"
-    })
-  }),
-  Object.freeze({
-    slot: Object.freeze({
-      slotId: "model",
-      kind: "stage",
-      contributionId: "modkit.ui/model-stage",
-      extensionId: "modkit/ui",
-      priority: 350,
-      singletonGroup: "center-stage",
-      bindings: Object.freeze([
-        Object.freeze({
-          bindingId: "model-content",
-          contract: "common.view/model-scene-source",
-          major: 1
-        })
-      ])
-    }),
-    optionalBindings: Object.freeze([
-      Object.freeze({
-        bindingId: "model-optional-1",
-        contract: "common.view/model-resource-refs-source",
-        major: 1
-      }),
-      Object.freeze({
-        bindingId: "model-optional-2",
-        contract: "common.view/model-skeleton-source",
-        major: 1
-      }),
-      Object.freeze({
-        bindingId: "model-optional-3",
-        contract: "common.view/model-animation-source",
-        major: 1
-      }),
-      Object.freeze({
-        bindingId: "model-optional-4",
-        contract: "common.view/model-collision-source",
-        major: 1
-      }),
-      Object.freeze({
-        bindingId: "model-optional-5",
-        contract: "common.view/model-material-source",
-        major: 1
-      }),
-      Object.freeze({
-        bindingId: "model-optional-6",
-        contract: "common.view/model-socket-source",
-        major: 1
-      })
-    ]),
-    spec: Object.freeze({
-      kind: "stage",
-      requiresTraits: [{ id: "model.geometry", states: ["available"] }],
-      consumesDataSources: [{ contract: "common.view/model-scene-source", major: 1 }],
-      optionalDataSources: [
-        { contract: "common.view/model-resource-refs-source", major: 1 },
-        { contract: "common.view/model-skeleton-source", major: 1 },
-        { contract: "common.view/model-animation-source", major: 1 },
-        { contract: "common.view/model-collision-source", major: 1 },
-        { contract: "common.view/model-material-source", major: 1 },
-        { contract: "common.view/model-socket-source", major: 1 }
-      ],
-      optionalServices: [{ contract: "common.render/scene-3d", major: 1 }],
-      priority: 350,
-      singletonGroup: "center-stage"
-    })
-  }),
-  Object.freeze({
-    slot: Object.freeze({
-      slotId: "vector",
-      kind: "stage",
-      contributionId: "modkit.ui/vector-stage",
-      extensionId: "modkit/ui",
-      priority: 350,
-      singletonGroup: "center-stage",
-      bindings: Object.freeze([
-        Object.freeze({
-          bindingId: "vector-content",
-          contract: "common.view/vector-scene-source",
-          major: 1
-        })
-      ])
-    }),
-    spec: Object.freeze({
-      kind: "stage",
-      requiresTraits: [{ id: "vector.scene", states: ["available"] }],
-      consumesDataSources: [{ contract: "common.view/vector-scene-source", major: 1 }],
-      priority: 350,
-      singletonGroup: "center-stage"
-    })
-  }),
-  Object.freeze({
-    slot: Object.freeze({
-      slotId: "localization",
-      kind: "stage",
-      contributionId: "modkit.ui/localization-table-stage",
-      extensionId: "modkit/ui",
-      priority: 410,
-      singletonGroup: "stage.localization",
-      bindings: Object.freeze([
-        Object.freeze({
-          bindingId: "localization-content",
-          contract: "common.view/table-data-source",
-          major: 1
-        })
-      ])
-    }),
-    spec: Object.freeze({
-      kind: "stage",
-      requiresTraits: [
-        { id: "game.localization", states: ["available"] },
-        { id: "table.cells", states: ["available"] }
-      ],
-      consumesDataSources: [{ contract: "common.view/table-data-source", major: 1 }],
-      priority: 410,
-      singletonGroup: "stage.localization"
-    })
-  }),
-  Object.freeze({
-    slot: Object.freeze({
-      slotId: "table",
-      kind: "stage",
-      contributionId: "modkit.ui/table-stage",
-      extensionId: "modkit/ui",
-      priority: 320,
-      singletonGroup: "center-stage",
-      bindings: Object.freeze([
-        Object.freeze({
-          bindingId: "table-content",
-          contract: "common.view/table-data-source",
-          major: 1
-        })
-      ])
-    }),
-    spec: Object.freeze({
-      kind: "stage",
-      requiresTraits: [{ id: "table.cells", states: ["available"] }],
-      consumesDataSources: [{ contract: "common.view/table-data-source", major: 1 }],
-      priority: 320,
-      singletonGroup: "center-stage"
-    })
-  }),
-  Object.freeze({
-    slot: Object.freeze({
-      slotId: "card",
-      kind: "stage",
-      contributionId: "modkit.ui/subject-card-stage",
-      extensionId: "modkit/ui",
-      priority: 390,
-      singletonGroup: "center-stage",
-      bindings: Object.freeze([
-        Object.freeze({
-          bindingId: "card-content",
-          contract: "common.view/subject-facts-source",
-          major: 1
-        })
-      ])
-    }),
-    optionalBindings: Object.freeze([
-      Object.freeze({
-        bindingId: "card-optional-1",
-        contract: "common.view/raster-image-source",
-        major: 1
-      }),
-      Object.freeze({
-        bindingId: "card-optional-2",
-        contract: "common.view/model-scene-source",
-        major: 1
-      }),
-      Object.freeze({
-        bindingId: "card-optional-3",
-        contract: "common.view/model-resource-refs-source",
-        major: 1
-      }),
-      Object.freeze({
-        bindingId: "card-optional-4",
-        contract: "common.view/model-skeleton-source",
-        major: 1
-      }),
-      Object.freeze({
-        bindingId: "card-optional-5",
-        contract: "common.view/model-animation-source",
-        major: 1
-      }),
-      Object.freeze({
-        bindingId: "card-optional-6",
-        contract: "common.view/model-collision-source",
-        major: 1
-      }),
-      Object.freeze({
-        bindingId: "card-optional-7",
-        contract: "common.view/model-material-source",
-        major: 1
-      }),
-      Object.freeze({
-        bindingId: "card-optional-8",
-        contract: "common.view/model-socket-source",
-        major: 1
-      }),
-      Object.freeze({
-        bindingId: "card-optional-9",
-        contract: "common.view/video-media-source",
-        major: 1
-      }),
-      Object.freeze({
-        bindingId: "card-optional-10",
-        contract: "common.view/audio-media-source",
-        major: 1
-      }),
-      Object.freeze({
-        bindingId: "card-optional-11",
-        contract: "common.view/transport-source",
-        major: 1
-      }),
-      Object.freeze({
-        bindingId: "card-optional-12",
-        contract: "common.view/subject-selector-source",
-        major: 1
-      })
-    ]),
-    spec: Object.freeze({
-      kind: "stage",
-      consumesDataSources: [{ contract: "common.view/subject-facts-source", major: 1 }],
-      optionalDataSources: [
-        { contract: "common.view/raster-image-source", major: 1 },
-        { contract: "common.view/model-scene-source", major: 1 },
-        { contract: "common.view/model-resource-refs-source", major: 1 },
-        { contract: "common.view/model-skeleton-source", major: 1 },
-        { contract: "common.view/model-animation-source", major: 1 },
-        { contract: "common.view/model-collision-source", major: 1 },
-        { contract: "common.view/model-material-source", major: 1 },
-        { contract: "common.view/model-socket-source", major: 1 },
-        { contract: "common.view/video-media-source", major: 1 },
-        { contract: "common.view/audio-media-source", major: 1 },
-        { contract: "common.view/transport-source", major: 1 },
-        { contract: "common.view/subject-selector-source", major: 1 }
-      ],
-      optionalServices: [{ contract: "common.render/scene-3d", major: 1 }],
-      priority: 390,
-      singletonGroup: "center-stage"
-    })
-  }),
-  Object.freeze({
-    slot: Object.freeze({
-      slotId: "calculations",
-      kind: "stage",
-      contributionId: "modkit.ui/subject-calculations-stage",
-      extensionId: "modkit/ui",
-      priority: 380,
-      singletonGroup: "center-stage",
-      bindings: Object.freeze([
-        Object.freeze({
-          bindingId: "calculations-content",
-          contract: "common.view/subject-calculations-source",
-          major: 1
-        })
-      ])
-    }),
-    spec: Object.freeze({
-      kind: "stage",
-      consumesDataSources: [{ contract: "common.view/subject-calculations-source", major: 1 }],
-      priority: 380,
-      singletonGroup: "center-stage"
-    })
-  }),
-  Object.freeze({
-    slot: Object.freeze({
-      slotId: "relations",
-      kind: "stage",
-      contributionId: "modkit.ui/relation-graph-stage",
-      extensionId: "modkit/ui",
-      priority: 370,
-      singletonGroup: "center-stage",
-      bindings: Object.freeze([
-        Object.freeze({
-          bindingId: "relations-content",
-          contract: "common.view/relation-graph-source",
-          major: 1
-        })
-      ])
-    }),
-    spec: Object.freeze({
-      kind: "stage",
-      consumesDataSources: [{ contract: "common.view/relation-graph-source", major: 1 }],
-      priority: 370,
-      singletonGroup: "center-stage"
-    })
-  }),
-  Object.freeze({
-    slot: Object.freeze({
-      slotId: "template",
-      kind: "stage",
-      contributionId: "modkit.ui/game-template-stage",
-      extensionId: "modkit/ui",
-      priority: 410,
-      singletonGroup: "center-stage",
-      bindings: Object.freeze([])
-    }),
-    spec: Object.freeze({
-      kind: "stage",
-      requiresOperations: ["view.template"],
-      consumesDataSources: [],
-      priority: 410,
-      singletonGroup: "center-stage"
-    })
-  }),
-  Object.freeze({
-    slot: Object.freeze({
-      slotId: "tree",
-      kind: "stage",
-      contributionId: "modkit.ui/tree-stage",
-      extensionId: "modkit/ui",
-      priority: 300,
-      singletonGroup: "center-stage",
-      bindings: Object.freeze([
-        Object.freeze({
-          bindingId: "tree-content",
-          contract: "common.view/tree-data-source",
-          major: 1
-        })
-      ])
-    }),
-    spec: Object.freeze({
-      kind: "stage",
-      requiresTraits: [{ id: "structure.hierarchy", states: ["available"] }],
-      consumesDataSources: [{ contract: "common.view/tree-data-source", major: 1 }],
-      priority: 300,
-      singletonGroup: "center-stage"
-    })
-  }),
-  Object.freeze({
-    slot: Object.freeze({
-      slotId: "text",
-      kind: "stage",
-      contributionId: "modkit.ui/bounded-text-stage",
-      extensionId: "modkit/ui",
-      priority: 220,
-      singletonGroup: "center-stage",
-      bindings: Object.freeze([
-        Object.freeze({
-          bindingId: "text-content",
-          contract: "common.view/text-data-source",
-          major: 1
-        })
-      ])
-    }),
-    spec: Object.freeze({
-      kind: "stage",
-      requiresTraits: [{ id: "content.text", states: ["available"] }],
-      consumesDataSources: [{ contract: "common.view/text-data-source", major: 1 }],
-      applicability: {
-        interpretation: "any",
-        sourceBytes: { maximum: "16777216" },
-        longestLineBytes: { maximum: 1048576, whenUnknown: "ineligible" }
-      },
-      priority: 220,
-      singletonGroup: "center-stage"
-    })
-  }),
-  Object.freeze({
-    slot: Object.freeze({
-      slotId: "virtual-text",
-      kind: "stage",
-      contributionId: "modkit.ui/virtual-text-stage",
-      extensionId: "modkit/ui",
-      priority: 120,
-      singletonGroup: "center-stage",
-      bindings: Object.freeze([
-        Object.freeze({
-          bindingId: "virtual-text-content",
-          contract: "common.view/text-data-source",
-          major: 1
-        })
-      ])
-    }),
-    spec: Object.freeze({
-      kind: "stage",
-      requiresTraits: [{ id: "content.text", states: ["available"] }],
-      consumesDataSources: [{ contract: "common.view/text-data-source", major: 1 }],
-      applicability: { interpretation: "any" },
-      priority: 120,
-      singletonGroup: "center-stage"
-    })
-  }),
-  Object.freeze({
-    slot: Object.freeze({
-      slotId: "hex",
-      kind: "stage",
-      contributionId: "modkit.ui/hex-stage",
-      extensionId: "modkit/ui",
-      priority: 40,
-      singletonGroup: "center-stage",
-      bindings: Object.freeze([
-        Object.freeze({
-          bindingId: "hex-content",
-          contract: "common.view/byte-range-source",
-          major: 1
-        })
-      ])
-    }),
-    spec: Object.freeze({
-      kind: "stage",
-      consumesDataSources: [{ contract: "common.view/byte-range-source", major: 1 }],
-      priority: 40,
-      singletonGroup: "center-stage"
-    })
-  }),
-  Object.freeze({
-    slot: Object.freeze({
-      slotId: "archive",
-      kind: "stage",
-      contributionId: "modkit.ui/archive-stage",
-      extensionId: "modkit/ui",
-      priority: 340,
-      singletonGroup: "center-stage",
-      bindings: Object.freeze([
-        Object.freeze({
-          bindingId: "archive-content",
-          contract: "common.view/namespace-entry-source",
-          major: 1
-        })
-      ])
-    }),
-    spec: Object.freeze({
-      kind: "stage",
-      consumesDataSources: [{ contract: "common.view/namespace-entry-source", major: 1 }],
-      priority: 340,
-      singletonGroup: "center-stage"
-    })
-  })
-]);
-
-// packages/host/dist/presentation.js
-function evaluateViewerApplicability(rule, facts) {
-  const missing = [];
-  if (rule?.interpretation !== void 0 && rule.interpretation !== "any" && rule.interpretation !== facts.interpretation) {
-    missing.push(`interpretation:${rule.interpretation}`);
-  }
-  if (rule?.sourceBytes?.maximum !== void 0) {
-    const maximum = BigInt(rule.sourceBytes.maximum);
-    if (facts.sourceBytes === void 0 || facts.sourceBytes > maximum) {
-      missing.push(`source-bytes<=${maximum}`);
-    }
-  }
-  if (rule?.longestLineBytes !== void 0) {
-    const value2 = facts.longestLineBytes;
-    if (value2 === void 0 || value2 === "unknown" && rule.longestLineBytes.whenUnknown === "ineligible" || value2 !== "unknown" && value2 > rule.longestLineBytes.maximum) {
-      missing.push(`longest-line<=${rule.longestLineBytes.maximum}`);
-    }
-  }
-  return Object.freeze({ eligible: missing.length === 0, missing: Object.freeze(missing) });
-}
-function evaluateViewerContribution(spec, descriptor, facts) {
-  const missing = [...evaluateViewerApplicability(spec.applicability, facts).missing];
-  for (const requirement of spec.requiresTraits ?? []) {
-    const match = descriptor.traits.some((instance) => {
-      if (instance.id !== requirement.id)
-        return false;
-      if (!(requirement.states ?? ["available"]).includes(instance.state))
-        return false;
-      if (isStandardTraitId(instance.id)) {
-        return requirement.definitionRange === void 0 && instance.definitionVersion === void 0;
-      }
-      const range = requirement.definitionRange === void 0 ? void 0 : parseVersionRange(requirement.definitionRange);
-      const version = instance.definitionVersion === void 0 ? void 0 : parseSemver(instance.definitionVersion);
-      return range !== void 0 && version !== void 0 && satisfiesRange(version, range);
-    });
-    if (!match)
-      missing.push(`trait:${requirement.id}`);
-  }
-  for (const operation of spec.requiresOperations ?? []) {
-    if (!descriptor.operations.some((item) => item.id === operation && item.state === "available")) {
-      missing.push(`operation:${operation}`);
-    }
-  }
-  for (const dataSource of spec.consumesDataSources) {
-    if (!descriptor.dataSources.some((item) => item.contract === dataSource.contract && item.major === dataSource.major)) {
-      missing.push(`data-source:${dataSource.contract}@${dataSource.major}`);
-    }
-  }
-  const ordered = Object.freeze([...new Set(missing)].sort(compareUtf8));
-  const optionalBound = Object.freeze([
-    ...new Set((spec.optionalDataSources ?? []).filter((optional) => descriptor.dataSources.some((item) => item.contract === optional.contract && item.major === optional.major)).map((optional) => optional.contract))
-  ].sort(compareUtf8));
-  const optionalServices = Object.freeze([...new Set((spec.optionalServices ?? []).map((service) => service.contract))].sort(compareUtf8));
-  return Object.freeze({
-    eligible: ordered.length === 0,
-    missing: ordered,
-    optionalBound,
-    optionalServices
-  });
-}
-async function resolveCommonPresentationPlan(descriptor, selection, options = {}) {
-  const available = options.availableStageIds === void 0 ? void 0 : new Set(options.availableStageIds);
-  const facts = {
-    interpretation: descriptor.interpretation,
-    ...options.sourceBytes === void 0 ? {} : { sourceBytes: options.sourceBytes },
-    ...options.longestLineBytes === void 0 ? {} : { longestLineBytes: options.longestLineBytes }
-  };
-  const registrations = COMMON_PRESENTATION_CATALOG;
-  const candidates = registrations.filter((entry2) => available === void 0 || available.has(entry2.slot.slotId)).map((entry2) => {
-    const eligibility = evaluateViewerContribution(entry2.spec, descriptor, facts);
-    const optional = (entry2.optionalBindings ?? []).filter((binding) => eligibility.optionalBound.includes(("dataSource" in binding ? binding.dataSource : binding).contract));
-    return {
-      ...entry2.slot,
-      bindings: Object.freeze([...entry2.slot.bindings, ...optional]),
-      ...optional.length === 0 ? {} : { optionalBindingIds: Object.freeze(optional.map((binding) => binding.bindingId)) },
-      eligible: eligibility.eligible,
-      missing: eligibility.missing
-    };
-  });
-  if (!candidates.some((candidate) => candidate.eligible && candidate.missing.length === 0)) {
-    return void 0;
-  }
-  const digest = (plan) => `canonical:${canonicalJsonStringify(plan)}`;
-  return resolvePresentationPlan({
-    descriptor,
-    candidates,
-    digest,
-    ticketMatches: (binding) => binding.ticket.bindingId === binding.bindingId && binding.ticket.sessionId === selection.sessionId,
-    async resolveBinding(binding) {
-      return {
-        ...binding,
-        offerId: `session:${binding.bindingId}`,
-        providerId: selection.providerId,
-        variantId: selection.variantId,
-        ticket: { bindingId: binding.bindingId, sessionId: selection.sessionId }
-      };
-    }
-  });
-}
-function slotKey(slot) {
-  return `${String(999999999 - slot.priority).padStart(9, "0")}\0${slot.extensionId}\0${slot.contributionId}\0${slot.slotId}`;
-}
-function sortedSlots(slots) {
-  return [...slots].sort((left, right) => compareUtf8(slotKey(left), slotKey(right)));
-}
-function bindingKey(binding) {
-  return binding.bindingId;
-}
-function sameBinding(left, right) {
-  if (left.bindingId !== right.bindingId)
-    return false;
-  if ("dataSource" in left || "dataSource" in right) {
-    return "dataSource" in left && "dataSource" in right && left.dataSource.contract === right.dataSource.contract && left.dataSource.major === right.dataSource.major;
-  }
-  return left.contract === right.contract && left.major === right.major;
-}
-function planBindings(plan) {
-  return [
-    ...plan.slots.flatMap((slot) => slot.bindings),
-    ...plan.fallback === void 0 ? [] : plan.fallback.bindings
-  ];
-}
-function createPresentationPlanValidator(options) {
-  return Object.freeze({
-    validate(resolved2) {
-      const issues = /* @__PURE__ */ new Set();
-      const slotIds = /* @__PURE__ */ new Set();
-      const stageIds = /* @__PURE__ */ new Set();
-      const singletonGroups = /* @__PURE__ */ new Set();
-      for (const slot of resolved2.plan.slots) {
-        if (slotIds.has(slot.slotId))
-          issues.add("duplicate-slot-id");
-        slotIds.add(slot.slotId);
-        if (slot.kind === "stage") {
-          stageIds.add(slot.slotId);
-          if (slot.singletonGroup !== void 0) {
-            if (singletonGroups.has(slot.singletonGroup))
-              issues.add("duplicate-singleton-group");
-            singletonGroups.add(slot.singletonGroup);
-          }
-        }
-      }
-      if (resolved2.plan.activeStage === void 0) {
-        if (resolved2.plan.fallback === void 0 || resolved2.plan.fallback.kind !== "fallback" || resolved2.plan.alternateStages.length !== 0) {
-          issues.add("invalid-fallback");
-        }
-      } else {
-        if (!stageIds.has(resolved2.plan.activeStage))
-          issues.add("missing-active-stage");
-        for (const alternate of resolved2.plan.alternateStages) {
-          if (!stageIds.has(alternate))
-            issues.add("missing-alternate-stage");
-        }
-      }
-      if (resolved2.plan.fallback !== void 0 && resolved2.plan.fallback.kind !== "fallback") {
-        issues.add("invalid-fallback");
-      }
-      const expected = /* @__PURE__ */ new Map();
-      for (const binding of planBindings(resolved2.plan)) {
-        const key3 = bindingKey(binding);
-        if (expected.has(key3))
-          issues.add("duplicate-binding-id");
-        else
-          expected.set(key3, binding);
-      }
-      const actual = /* @__PURE__ */ new Map();
-      for (const binding of resolved2.bindings) {
-        const key3 = bindingKey(binding);
-        if (actual.has(key3))
-          issues.add("duplicate-binding-id");
-        else
-          actual.set(key3, binding);
-      }
-      for (const [key3, binding] of expected) {
-        const selected = actual.get(key3);
-        if (selected === void 0)
-          issues.add("unresolved-binding");
-        else if (!sameBinding(binding, selected) || !options.ticketMatches(selected)) {
-          issues.add("ticket-binding-mismatch");
-        }
-      }
-      for (const key3 of actual.keys()) {
-        if (!expected.has(key3))
-          issues.add("unexpected-binding");
-      }
-      if (options.digest(resolved2.plan) !== resolved2.planDigest) {
-        issues.add("invalid-plan-digest");
-      }
-      return issues.size === 0 ? { valid: true } : { valid: false, issues: Object.freeze([...issues].sort(compareUtf8)) };
-    }
-  });
-}
-function hostFedOnly(slot, descriptor) {
-  const hostOffers = descriptor.hostDataSources ?? [];
-  if (hostOffers.length === 0)
-    return false;
-  const offered = (list, source2) => list.some((item) => item.contract === source2.contract && item.major === source2.major);
-  const optional = new Set(slot.optionalBindingIds ?? []);
-  const sources = slot.bindings.filter((binding) => !optional.has(binding.bindingId)).map((binding) => "dataSource" in binding ? binding.dataSource : binding).filter((source2) => offered(descriptor.dataSources, source2));
-  return sources.length > 0 && sources.every((source2) => offered(hostOffers, source2));
-}
-async function resolvePresentationPlan(options) {
-  const byPriority = sortedSlots(options.candidates.filter((item) => item.eligible && (item.missing?.length ?? 0) === 0));
-  const eligible = [
-    ...byPriority.filter((slot) => !hostFedOnly(slot, options.descriptor)),
-    ...byPriority.filter((slot) => hostFedOnly(slot, options.descriptor))
-  ];
-  const unsatisfied = options.candidates.filter((item) => !item.eligible || (item.missing?.length ?? 0) > 0).map((item) => ({ contributionId: item.contributionId, missing: [...item.missing ?? []] })).sort((left, right) => compareUtf8(left.contributionId, right.contributionId) || compareUtf8(left.missing.join("\0"), right.missing.join("\0")));
-  const selectedStages = [];
-  const seenGroups = /* @__PURE__ */ new Set();
-  for (const stage of eligible.filter((item) => item.kind === "stage")) {
-    const group2 = stage.singletonGroup ?? `slot:${stage.slotId}`;
-    if (seenGroups.has(group2))
-      continue;
-    seenGroups.add(group2);
-    selectedStages.push(stage);
-  }
-  const active = selectedStages[0];
-  const fallback = eligible.find((item) => item.kind === "fallback");
-  if (active === void 0 && fallback === void 0) {
-    throw new ModkitError({
-      code: "x3.host/presentation-fallback-missing",
-      message: "no eligible stage and no eligible fallback contribution"
-    });
-  }
-  const supporting = eligible.filter((item) => item.kind !== "stage" && item.kind !== "fallback");
-  const slots = Object.freeze([...selectedStages, ...supporting]);
-  const fallbackSlot = fallback;
-  const common2 = {
-    subjectUri: options.descriptor.subjectUri,
-    revision: options.descriptor.revision,
-    slots,
-    unsatisfied: Object.freeze(unsatisfied.map((item) => Object.freeze({ ...item, missing: Object.freeze(item.missing) })))
-  };
-  const plan = active === void 0 ? definePresentationPlan({
-    ...common2,
-    alternateStages: [],
-    fallback: fallbackSlot
-  }) : definePresentationPlan({
-    ...common2,
-    activeStage: active.slotId,
-    alternateStages: Object.freeze(selectedStages.slice(1).map((item) => item.slotId)),
-    ...fallbackSlot === void 0 ? {} : { fallback: fallbackSlot }
-  });
-  const selectedBindings = [];
-  const seenBindings = /* @__PURE__ */ new Set();
-  for (const slot of [...slots, ...fallbackSlot === void 0 ? [] : [fallbackSlot]]) {
-    for (const binding of slot.bindings) {
-      if (seenBindings.has(binding.bindingId)) {
-        throw new ModkitError({
-          code: "x3.host/duplicate-presentation-binding",
-          message: `presentation binding ${binding.bindingId} is declared more than once`
-        });
-      }
-      seenBindings.add(binding.bindingId);
-      const resolved2 = await options.resolveBinding(binding, slot);
-      if (resolved2 === void 0) {
-        throw new ModkitError({
-          code: "x3.host/unresolved-presentation-binding",
-          message: `presentation binding ${binding.bindingId} could not be resolved`
-        });
-      }
-      selectedBindings.push(Object.freeze({ ...resolved2 }));
-    }
-  }
-  const result = Object.freeze({
-    plan,
-    bindings: Object.freeze(selectedBindings),
-    planDigest: options.digest(plan)
-  });
-  const validation = createPresentationPlanValidator(options).validate(result);
-  if (!validation.valid) {
-    throw new ModkitError({
-      code: "x3.host/invalid-presentation-plan",
-      message: `resolved presentation plan failed validation: ${validation.issues.join(", ")}`,
-      context: { issues: validation.issues }
-    });
-  }
-  return result;
-}
-
-// packages/host/dist/format-writer.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-var diagnostic2 = (severity, code, message) => ({ severity, code, message, path: [] });
-async function resolveFormatWriter(request) {
-  const identity2 = request.opened.descriptor.identity;
-  const formatId = request.formatId ?? (typeof identity2?.formatId === "string" ? identity2.formatId : void 0);
-  if (formatId === void 0) {
-    return {
-      diagnostics: [
-        diagnostic2("information", "x3.host/format-writer-unavailable", "the subject names no format (unresolved or built-in), so no format writer can be asked for")
-      ]
-    };
-  }
-  if (request.services.serviceDefinitions === void 0) {
-    return {
-      diagnostics: [
-        diagnostic2("information", "x3.host/format-writer-unavailable", "this host registered no service-contract definitions, so writers cannot be resolved")
-      ]
-    };
-  }
-  const facet = {
-    formatId,
-    representationId: request.representationId ?? "source",
-    mutationMode: request.mutationMode ?? "mutate",
-    minimumRoundTrip: request.minimumRoundTrip ?? "byte-identical"
-  };
-  const resolver = createHostServiceResolver({
-    inventory: request.services.inventory,
-    target: request.services.target,
-    executionBackends: request.services.executionBackends,
-    definitions: request.services.serviceDefinitions,
-    grant: request.grant,
-    budgets: request.budgets
-  });
-  try {
-    const lease2 = await resolver.port.resolve({
-      contract: "common.edit/writer",
-      major: 1,
-      facet
-    });
-    const writer = lease2.value;
-    return {
-      writer,
-      release: () => lease2.release(),
-      diagnostics: [
-        ...resolver.diagnostics,
-        diagnostic2("information", "x3.host/format-writer-selected", `\xAB${writer.offer.providerId}\xBB writes ${facet.formatId}/${facet.representationId} at ${writer.offer.minimumRoundTrip}`)
-      ]
-    };
-  } catch (error5) {
-    return {
-      diagnostics: [
-        ...resolver.diagnostics,
-        diagnostic2("information", "x3.host/format-writer-unresolved", `no writer offers ${facet.formatId}/${facet.representationId} at ${facet.minimumRoundTrip} (${error5 instanceof Error ? error5.message : String(error5)})`)
-      ]
-    };
-  }
-}
-
-// packages/host/dist/index.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-
-// packages/host/dist/localization.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-
-// packages/host/dist/artifact-files.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-var encoder2 = new TextEncoder();
-function confinedArtifactPath(authored, artifactRoot, label) {
-  if (authored.startsWith("/") || authored.startsWith("\\") || authored.includes("\\")) {
-    throw new TypeError(`${label} path must be a portable relative POSIX path`);
-  }
-  const normalized = normalizeVfsPath(authored);
-  if (normalized === "" || !normalized.toLowerCase().endsWith(".json")) {
-    throw new TypeError(`${label} path must identify a JSON file`);
-  }
-  resolveContainedEntrypoint(artifactRoot, normalized);
-  return normalized;
-}
-async function sha256(bytes) {
-  const copy = Uint8Array.from(bytes);
-  const subtle = globalThis.crypto?.subtle;
-  if (subtle === void 0)
-    throw new TypeError("WebCrypto SHA-256 is unavailable");
-  const digest = new Uint8Array(await subtle.digest("SHA-256", copy.buffer));
-  return `sha256:${[...digest].map((byte2) => byte2.toString(16).padStart(2, "0")).join("")}`;
-}
-async function readAttestedArtifactFile(contribution, authoredPath, options) {
-  const { label, maxBytes } = options;
-  const record9 = inventoryRecordFor(contribution);
-  if (record9 === void 0)
-    throw new TypeError(`${label} contribution has no trusted inventory record`);
-  const path = confinedArtifactPath(authoredPath, record9.artifactRoot, label);
-  const expectedDigest = record9.fileDigests?.[path];
-  if (expectedDigest === void 0) {
-    throw new TypeError(`${label} ${path} is absent from the attested artifact file map`);
-  }
-  const mount = await options.vfs.openMount(record9.artifactRoot.href, {
-    limits: {
-      // Opening an artifact mount may account all of its files (a model pack can legitimately be
-      // much larger than one data file), so retain the platform's artifact ceilings here. The exact
-      // file size and all bytes actually read remain capped to this file's own ceiling.
-      maxEntries: DEFAULT_VFS_LIMITS.maxEntries,
-      maxMaterializedBytes: DEFAULT_VFS_LIMITS.maxMaterializedBytes,
-      maxFileBytes: DEFAULT_VFS_LIMITS.maxFileBytes,
-      maxReadBytes: BigInt(maxBytes),
-      maxReadRangeBytes: maxBytes,
-      maxStreamBytes: DEFAULT_VFS_LIMITS.maxStreamBytes,
-      maxPathBytes: Math.max(256, encoder2.encode(path).byteLength)
-    },
-    ...options.signal === void 0 ? {} : { signal: options.signal }
-  });
-  try {
-    const node = await mount.stat(path, options.signal);
-    if (node?.kind !== "file")
-      throw new TypeError(`${label} ${path} is not a file`);
-    if (node.size !== void 0 && node.size > BigInt(maxBytes)) {
-      throw new TypeError(`${label} ${path} exceeds the ${maxBytes}-byte raw limit`);
-    }
-    const source2 = await mount.open(path, options.signal);
-    try {
-      const size = await source2.size(options.signal);
-      if (!Number.isSafeInteger(size) || size < 0 || size > maxBytes) {
-        throw new TypeError(`${label} ${path} exceeds the ${maxBytes}-byte raw limit`);
-      }
-      const bytes = await source2.readAt(0, size, options.signal);
-      const actualDigest = await (options.digest ?? sha256)(bytes);
-      if (actualDigest !== expectedDigest) {
-        throw new TypeError(`${label} ${path} does not match its attested SHA-256`);
-      }
-      return bytes;
-    } finally {
-      await source2.dispose();
-    }
-  } finally {
-    await mount.dispose();
-  }
-}
-
-// packages/host/dist/localization.js
-var LOCALIZATION_CATALOG_MAXIMUM_JSON_BYTES = 8 * 1024 * 1024;
-var decoder = new TextDecoder("utf-8", { fatal: true });
-function extensionCoordinate(extension) {
-  return `${extension.manifest.publisher}/${extension.manifest.id}`;
-}
-function catalogPath(candidate) {
-  return Object.freeze([
-    candidate.extension.source,
-    candidate.contribution.path,
-    candidate.resource.path
-  ]);
-}
-function catalogDiagnostic(candidate, message, data) {
-  return diagnostic("warning", "x3.host/localization-catalog-refused", message, catalogPath(candidate), data);
-}
-function candidatesFrom(inventory) {
-  const candidates = [];
-  for (const extension of inventory.extensions) {
-    for (const contribution of extension.contributions) {
-      const disabled = contribution.diagnostics.some((item) => item.code === CONTRIBUTION_DISABLED_CODE || item.code === EXTENSION_DISABLED_CODE);
-      if (!contribution.inventoryEligible || disabled)
-        continue;
-      const manifest = contribution.manifest;
-      if (manifest?.contract.id !== LOCALIZATION_CONTRIBUTION_CONTRACT || manifest.contract.major !== 1) {
-        continue;
-      }
-      const spec = manifest.spec;
-      for (const resource of spec.catalogs)
-        candidates.push({ extension, contribution, resource });
-    }
-  }
-  candidates.sort((left, right) => {
-    const leftKey = `${extensionCoordinate(left.extension)}\0${left.contribution.manifest?.id ?? ""}\0${left.resource.path}\0${left.resource.locale}`;
-    const rightKey = `${extensionCoordinate(right.extension)}\0${right.contribution.manifest?.id ?? ""}\0${right.resource.path}\0${right.resource.locale}`;
-    return leftKey < rightKey ? -1 : leftKey > rightKey ? 1 : 0;
-  });
-  return Object.freeze(candidates);
-}
-function maximumJsonBytes(requested) {
-  if (requested === void 0)
-    return LOCALIZATION_CATALOG_MAXIMUM_JSON_BYTES;
-  if (!Number.isSafeInteger(requested) || requested <= 0) {
-    throw new TypeError("localization maxJsonBytes must be a positive safe integer");
-  }
-  return Math.min(requested, LOCALIZATION_CATALOG_MAXIMUM_JSON_BYTES);
-}
-function namespaceOwnedMessagePrefix(namespace) {
-  const tail = namespace.split(/[./]/u).at(-1) ?? namespace;
-  const owner = tail.replace(/-(?:app|ui|localization|messages)$/u, "") || tail;
-  return `${owner}.`;
-}
-function catalogNamespace(value2) {
-  if (typeof value2 !== "object" || value2 === null || Array.isArray(value2))
-    return void 0;
-  const descriptor = Object.getOwnPropertyDescriptor(value2, "namespace");
-  return descriptor !== void 0 && "value" in descriptor && typeof descriptor.value === "string" ? descriptor.value : void 0;
-}
-async function authorizedPrefixes(candidate, document2, authorizer) {
-  const requested = Object.freeze([...candidate.resource.messagePrefixes]);
-  const namespace = catalogNamespace(document2);
-  if (namespace === void 0) {
-    throw new TypeError("localization catalog namespace must be a string data property");
-  }
-  if (authorizer === void 0) {
-    const owned = namespaceOwnedMessagePrefix(namespace);
-    return Object.freeze(requested.filter((prefix) => prefix === owned));
-  }
-  const contributionId2 = candidate.contribution.manifest?.id ?? candidate.contribution.path;
-  const granted = await authorizer(Object.freeze({
-    ownerExtensionId: extensionCoordinate(candidate.extension),
-    contributionId: contributionId2,
-    catalogPath: candidate.resource.path,
-    locale: candidate.resource.locale,
-    catalogNamespace: namespace,
-    requestedMessagePrefixes: requested
-  }));
-  if (!Array.isArray(granted))
-    throw new TypeError("message-prefix authorizer must return an array");
-  const requestedSet = new Set(requested);
-  return Object.freeze([...new Set(granted)].filter((prefix) => typeof prefix === "string" && requestedSet.has(prefix)));
-}
-function readCatalogBytes(candidate, options, maxBytes) {
-  return readAttestedArtifactFile(candidate.contribution, candidate.resource.path, {
-    vfs: options.vfs,
-    maxBytes,
-    label: "localization catalog",
-    ...options.digest === void 0 ? {} : { digest: options.digest },
-    ...options.signal === void 0 ? {} : { signal: options.signal }
-  });
-}
-async function loadLocalizationCatalogs(inventory, options) {
-  const maxBytes = maximumJsonBytes(options.maxJsonBytes);
-  const catalogs2 = [];
-  const diagnostics = [];
-  for (const candidate of candidatesFrom(inventory)) {
-    try {
-      const bytes = await readCatalogBytes(candidate, options, maxBytes);
-      let document2;
-      try {
-        document2 = JSON.parse(decoder.decode(bytes));
-      } catch (error5) {
-        throw new TypeError(`localization catalog is not valid UTF-8 JSON: ${error5 instanceof Error ? error5.message : String(error5)}`);
-      }
-      const prefixes = await authorizedPrefixes(candidate, document2, options.authorizeMessagePrefixes);
-      if (prefixes.length === 0) {
-        throw new TypeError("localization catalog was granted no requested message-key prefix");
-      }
-      const catalog = options.parseCatalog(document2, {
-        authorizedMessagePrefixes: prefixes,
-        ...options.fallbackCatalog === void 0 ? {} : { fallbackCatalog: options.fallbackCatalog }
-      });
-      if (catalog.locale.toLowerCase() !== candidate.resource.locale.toLowerCase()) {
-        throw new TypeError(`catalog locale ${catalog.locale} does not match contribution locale ${candidate.resource.locale}`);
-      }
-      catalogs2.push(catalog);
-    } catch (error5) {
-      diagnostics.push(catalogDiagnostic(candidate, `localization catalog \xAB${candidate.resource.path}\xBB was refused; built-in fallback remains active`, { reason: error5 instanceof Error ? error5.message : String(error5) }));
-    }
-  }
-  return Object.freeze({
-    catalogs: Object.freeze(catalogs2),
-    diagnostics: Object.freeze(diagnostics)
-  });
-}
-
-// packages/host/dist/commands/index.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-
-// packages/host/dist/commands/runtime.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-var COMMAND_CANCELLED = "x3.command/cancelled";
-var COMMAND_SUBJECT_UNRESOLVED = "x3.command/subject-unresolved";
-var COMMAND_INPUT_INVALID = "x3.command/input-invalid";
-var COMMAND_UNKNOWN = "x3.command/unknown";
-var COMMAND_UNAVAILABLE = "x3.command/unavailable";
-var commandDiagnostic = (item) => ({
-  code: item.code,
-  message: item.message,
-  ...item.severity === void 0 ? {} : { severity: item.severity }
-});
-var ok = (command, data, diagnostics = []) => ({ state: "ok", command, data, diagnostics });
-var unavailable = (command, reason, alternative, diagnostics = [], code = COMMAND_UNAVAILABLE) => ({ state: "unavailable", command, code, reason, alternative, diagnostics });
-var failed = (command, code, message, diagnostics = []) => ({ state: "failed", command, code, message, diagnostics });
-function createCommandRuntime(descriptors) {
-  const byId = new Map(descriptors.map((descriptor) => [descriptor.id, descriptor]));
-  if (byId.size !== descriptors.length) {
-    throw new TypeError("two commands share one id; a command id names exactly one behaviour");
-  }
-  const sorted = Object.freeze([...descriptors].sort((a2, b2) => a2.id < b2.id ? -1 : 1));
-  return Object.freeze({
-    descriptors: sorted,
-    get: (id) => byId.get(id),
-    async run(id, input, context) {
-      const descriptor = byId.get(id);
-      if (descriptor === void 0) {
-        return failed(id, COMMAND_UNKNOWN, `no command is registered as \xAB${id}\xBB`);
-      }
-      if (descriptor.needsSubject && (input.subject ?? "") === "") {
-        return failed(id, COMMAND_INPUT_INVALID, `\xAB${id}\xBB needs a subject, and the input names none`);
-      }
-      try {
-        if (context.signal?.aborted === true) {
-          return failed(id, COMMAND_CANCELLED, "the run was cancelled before it started");
-        }
-        return await descriptor.run(context, input);
-      } catch (error5) {
-        if (context.signal?.aborted === true || isAbort(error5)) {
-          return failed(id, COMMAND_CANCELLED, "the run was cancelled");
-        }
-        return failed(id, "x3.command/failed", error5 instanceof Error ? error5.message : String(error5));
-      }
-    }
-  });
-}
-function isAbort(error5) {
-  return error5 instanceof Error && (error5.name === "AbortError" || error5.name === "TimeoutError");
-}
-
-// packages/host/dist/commands/protocol.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-var COMMAND_PROTOCOL_SCHEMA_VERSION = "modkit-command-protocol-1";
-var RESULT_STATES = Object.freeze(["ok", "unavailable", "failed"]);
-var immutableJson = (value2) => {
-  if (Array.isArray(value2))
-    return Object.freeze(value2.map((item) => immutableJson(item)));
-  if (value2 !== null && typeof value2 === "object") {
-    return Object.freeze(Object.fromEntries(Object.entries(value2).map(([key3, item]) => [key3, immutableJson(item)])));
-  }
-  return value2;
-};
-var snapshotInput2 = (input) => Object.freeze(Object.fromEntries(Object.entries(input).flatMap(([key3, value2]) => value2 === void 0 ? [] : [[key3, immutableJson(value2)]])));
-var snapshotResult = (result) => {
-  const diagnostics = Object.freeze(result.diagnostics.map((item) => Object.freeze({ ...item })));
-  if (result.state === "ok") {
-    return Object.freeze({ ...result, data: immutableJson(result.data), diagnostics });
-  }
-  return Object.freeze({ ...result, diagnostics });
-};
-function describeCommandContracts(runtime2, targets) {
-  const byId = new Map(targets.map((target) => [target.commandId, target]));
-  const commands = runtime2.descriptors.map((descriptor) => {
-    const target = byId.get(descriptor.id);
-    if (target === void 0) {
-      throw new TypeError(`command contract has no routing target for \xAB${descriptor.id}\xBB`);
-    }
-    return Object.freeze({
-      id: descriptor.id,
-      title: descriptor.title,
-      summary: descriptor.summary,
-      input: Object.freeze({
-        subject: descriptor.needsSubject ? "required" : "optional",
-        additionalProperties: true
-      }),
-      effects: Object.freeze({ mutatesSource: descriptor.mutatesSource }),
-      routing: Object.freeze({
-        operationIds: Object.freeze([...target.operationIds]),
-        dataSourceContracts: Object.freeze([...target.dataSourceContracts])
-      }),
-      callers: Object.freeze([...target.hostCallers]),
-      result: Object.freeze({
-        states: RESULT_STATES,
-        diagnostics: true,
-        unavailableAlternativeRequired: true
-      })
-    });
-  });
-  if (byId.size !== commands.length) {
-    throw new TypeError("command contract targets and live runtime descriptors differ");
-  }
-  return Object.freeze({
-    schemaVersion: COMMAND_PROTOCOL_SCHEMA_VERSION,
-    commands: Object.freeze(commands)
-  });
-}
-function commandRequest(command, input) {
-  if (command === "")
-    throw new TypeError("a command request needs a non-empty command id");
-  return Object.freeze({
-    schemaVersion: COMMAND_PROTOCOL_SCHEMA_VERSION,
-    command,
-    input: snapshotInput2(input)
-  });
-}
-async function executeCommandRequest(runtime2, request, context) {
-  if (request.schemaVersion !== COMMAND_PROTOCOL_SCHEMA_VERSION) {
-    throw new TypeError(`unsupported command protocol ${String(request.schemaVersion)}`);
-  }
-  const stableRequest = commandRequest(request.command, request.input);
-  const result = await runtime2.run(stableRequest.command, stableRequest.input, context);
-  return Object.freeze({
-    schemaVersion: COMMAND_PROTOCOL_SCHEMA_VERSION,
-    request: stableRequest,
-    result: snapshotResult(result)
-  });
-}
-
-// packages/host/dist/commands/subject-commands.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-
-// packages/host/dist/commands/subject-command-targets.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-
-// packages/host/dist/commands/immutable-command-targets.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-function deepFreeze(value2) {
-  if (value2 !== null && typeof value2 === "object" && !Object.isFrozen(value2)) {
-    for (const nested of Object.values(value2))
-      deepFreeze(nested);
-    Object.freeze(value2);
-  }
-  return value2;
-}
-function defineSubjectCommandTargets(targets) {
-  return deepFreeze(targets);
-}
-
-// packages/host/dist/commands/subject-command-targets.js
-var SUBJECT_COMMAND_TARGETS = defineSubjectCommandTargets({
-  open: {
-    commandId: "subject.open",
-    needsSubject: true,
-    mutatesSource: false,
-    operationIds: [],
-    dataSourceContracts: [],
-    hostCallers: ["automation", "cli", "electron", "pwa", "server", "vscode"]
-  },
-  inspect: {
-    commandId: "subject.inspect",
-    needsSubject: true,
-    mutatesSource: false,
-    operationIds: [],
-    dataSourceContracts: [],
-    hostCallers: ["automation", "cli", "electron", "pwa", "server", "vscode"]
-  },
-  validate: {
-    commandId: "subject.validate",
-    needsSubject: true,
-    mutatesSource: false,
-    operationIds: ["asset.validate"],
-    dataSourceContracts: [],
-    hostCallers: ["automation", "cli", "electron", "pwa", "server", "vscode"]
-  },
-  extract: {
-    commandId: "subject.extract",
-    needsSubject: true,
-    mutatesSource: false,
-    operationIds: ["container.extract"],
-    dataSourceContracts: ["common.view/namespace-entry-source"],
-    hostCallers: ["automation", "cli", "electron", "pwa", "server", "vscode"]
-  },
-  convert: {
-    commandId: "subject.convert",
-    needsSubject: true,
-    mutatesSource: false,
-    operationIds: [
-      "export.convert",
-      "export.raw",
-      "model.export-uvm",
-      "model.export-native",
-      "model.write"
-    ],
-    dataSourceContracts: [],
-    hostCallers: ["automation", "cli", "electron", "pwa", "server", "vscode"]
-  },
-  preview: {
-    commandId: "subject.preview",
-    needsSubject: true,
-    mutatesSource: false,
-    operationIds: ["view.thumbnail", "view.render", "model.render"],
-    dataSourceContracts: [],
-    hostCallers: ["automation", "cli", "electron", "pwa", "server", "vscode"]
-  }
-});
-
-// packages/host/dist/commands/subject-commands.js
-var OPEN_COMMAND = SUBJECT_COMMAND_TARGETS.open.commandId;
-var INSPECT_COMMAND = SUBJECT_COMMAND_TARGETS.inspect.commandId;
-var VALIDATE_COMMAND = SUBJECT_COMMAND_TARGETS.validate.commandId;
-var VALIDATE = SUBJECT_COMMAND_TARGETS.validate.operationIds[0];
-var EXTRACT_COMMAND = SUBJECT_COMMAND_TARGETS.extract.commandId;
-var CONTAINER_EXTRACT_OPERATION_ID2 = SUBJECT_COMMAND_TARGETS.extract.operationIds[0];
-var NAMESPACE_ENTRY_SOURCE3 = SUBJECT_COMMAND_TARGETS.extract.dataSourceContracts[0];
-var CONVERT_COMMAND = SUBJECT_COMMAND_TARGETS.convert.commandId;
-var CONVERT = SUBJECT_COMMAND_TARGETS.convert.operationIds[0];
-var PREVIEW_COMMAND = SUBJECT_COMMAND_TARGETS.preview.commandId;
-var THUMBNAIL = SUBJECT_COMMAND_TARGETS.preview.operationIds[0];
-function availableOperation(descriptor, id) {
-  const found = (descriptor.operations ?? []).find((item) => item.id === id && item.state === "available" && item.mutatesSource !== true);
-  return found === void 0 ? void 0 : { handlerId: found.handlerId };
-}
-function selectedOperation(descriptor, allowed2, requested) {
-  const candidates = requested === void 0 ? allowed2 : typeof requested === "string" ? [requested] : [];
-  for (const id of candidates) {
-    if (!allowed2.includes(id))
-      continue;
-    const operation = availableOperation(descriptor, id);
-    if (operation !== void 0)
-      return { id, ...operation };
-  }
-  return void 0;
-}
-var publishedOperations = (descriptor) => (descriptor.operations ?? []).length === 0 ? "it publishes no operations at all" : `it publishes ${(descriptor.operations ?? []).map((item) => item.id).join(", ")}`;
-async function withCommandSubject(command, context, ref2, body) {
-  context.progress?.({ step: "open", message: `opening ${ref2}` });
-  const subject = await context.openSubject(ref2, context.signal);
-  const diagnostics = subject.snapshot.diagnostics.map((item) => ({
-    code: item.code,
-    message: item.message,
-    ...item.severity === void 0 ? {} : { severity: item.severity }
-  }));
-  try {
-    if (subject.snapshot.state !== "opened" || subject.session === void 0) {
-      return failed(command, COMMAND_SUBJECT_UNRESOLVED, subject.snapshot.state === "opened" ? "the subject opened without a session" : `no contribution claimed this subject: ${subject.snapshot.reason}`, diagnostics);
-    }
-    const descriptor = await subject.session.descriptor();
-    return await body(subject, subject.session, descriptor, diagnostics);
-  } finally {
-    await subject.dispose();
-  }
-}
-async function invokeSubjectOperation(command, context, session, handlerId, input, diagnostics) {
-  const answer = await session.operations().invoke(handlerId, input, context.signal === void 0 ? {} : { signal: context.signal });
-  const carried = [...diagnostics, ...answer.diagnostics.map(commandDiagnostic)];
-  if (answer.state !== "ok") {
-    return {
-      state: "failed",
-      result: failed(command, `x3.command/operation-${answer.reason}`, `the subject refused ${handlerId}: ${answer.reason}`, carried)
-    };
-  }
-  return {
-    state: "ok",
-    output: answer.output,
-    diagnostics: carried
-  };
-}
-var openCommand = {
-  id: OPEN_COMMAND,
-  title: "Open",
-  summary: "Open a subject and report which contribution claimed it, and under which boundary.",
-  needsSubject: true,
-  mutatesSource: false,
-  async run(context, input) {
-    return withCommandSubject(OPEN_COMMAND, context, String(input.subject), async (subject, _session, descriptor, diagnostics) => {
-      const snapshot3 = subject.snapshot;
-      if (snapshot3.state !== "opened")
-        return failed(OPEN_COMMAND, COMMAND_SUBJECT_UNRESOLVED, "unreachable", diagnostics);
-      return ok(OPEN_COMMAND, {
-        ref: subject.ref,
-        state: "opened",
-        selected: {
-          contributionId: snapshot3.selected.contributionId,
-          variantId: snapshot3.selected.variantId,
-          confidence: snapshot3.selected.confidence
-        },
-        formatId: descriptor.identity?.formatId ?? null,
-        formatLabel: descriptor.identity?.formatLabel ?? null,
-        candidates: snapshot3.candidates.length,
-        operations: (descriptor.operations ?? []).map((item) => item.id)
-      }, diagnostics);
-    });
-  }
-};
-var inspectCommand = {
-  id: INSPECT_COMMAND,
-  title: "Inspect",
-  summary: "Report the full descriptor of a subject: identity, traits, operations, data sources.",
-  needsSubject: true,
-  mutatesSource: false,
-  async run(context, input) {
-    return withCommandSubject(INSPECT_COMMAND, context, String(input.subject), async (subject, _session, descriptor, diagnostics) => {
-      context.progress?.({ step: "describe", message: "reading the descriptor" });
-      return ok(INSPECT_COMMAND, {
-        ref: subject.ref,
-        identity: {
-          formatId: descriptor.identity?.formatId ?? null,
-          formatLabel: descriptor.identity?.formatLabel ?? null
-        },
-        traits: (descriptor.traits ?? []).map((item) => ({ id: item.id, state: item.state })),
-        operations: (descriptor.operations ?? []).map((item) => ({
-          id: item.id,
-          state: item.state,
-          ...item.reason === void 0 ? {} : { reason: item.reason }
-        })),
-        dataSources: (descriptor.dataSources ?? []).map((item) => `${item.contract}@${item.major}`),
-        metadataGroups: (descriptor.metadata ?? []).map((group2) => ({
-          id: group2.id,
-          entries: group2.entries.length
-        }))
-      }, diagnostics);
-    });
-  }
-};
-var validateCommand = {
-  id: VALIDATE_COMMAND,
-  title: "Validate",
-  summary: "Run the subject\u2019s own validation, when the codec publishes one.",
-  needsSubject: true,
-  mutatesSource: false,
-  operationId: VALIDATE,
-  async run(context, input) {
-    return withCommandSubject(VALIDATE_COMMAND, context, String(input.subject), async (subject, session, descriptor, diagnostics) => {
-      const operation = availableOperation(descriptor, VALIDATE);
-      if (operation === void 0) {
-        return unavailable(VALIDATE_COMMAND, `this subject publishes no available \xAB${VALIDATE}\xBB \u2014 ${publishedOperations(descriptor)}`, "run subject.inspect: it reports every trait and diagnostic the codec did produce, which is what validation would have been reading", diagnostics);
-      }
-      context.progress?.({ step: "validate", message: "running the codec\u2019s validation" });
-      const answer = await invokeSubjectOperation(VALIDATE_COMMAND, context, session, operation.handlerId, {}, diagnostics);
-      if (answer.state === "failed")
-        return answer.result;
-      return ok(VALIDATE_COMMAND, {
-        ref: subject.ref,
-        outputKind: answer.output.kind,
-        report: answer.output.value ?? null
-      }, diagnostics);
-    });
-  }
-};
-async function entryIdFor(session, wanted, signal) {
-  const lease2 = await session.dataSource(NAMESPACE_ENTRY_SOURCE3, 1);
-  try {
-    const namespace = lease2.value;
-    if (namespace.lookup !== void 0) {
-      const entry2 = await namespace.lookup(wanted, signal);
-      if (entry2 !== void 0)
-        return entry2.id;
-    }
-    const scope = namespace.lookup === void 0 ? "" : wanted;
-    let cursor5;
-    do {
-      const page2 = await namespace.list(scope, cursor5 === void 0 ? { limit: 512 } : { cursor: cursor5, limit: 512 }, signal);
-      const found = page2.items.find((item) => item.path === wanted || item.id === wanted);
-      if (found !== void 0)
-        return found.id;
-      cursor5 = page2.nextCursor;
-    } while (cursor5 !== void 0);
-    return void 0;
-  } finally {
-    await lease2.release();
-  }
-}
-var extractCommand = {
-  id: EXTRACT_COMMAND,
-  title: "Extract",
-  summary: "Read one member out of a container, through the container\u2019s own bounded extraction.",
-  needsSubject: true,
-  mutatesSource: false,
-  operationId: CONTAINER_EXTRACT_OPERATION_ID2,
-  async run(context, input) {
-    const entry2 = typeof input["entry"] === "string" ? input["entry"] : "";
-    if (entry2 === "") {
-      return failed(EXTRACT_COMMAND, "x3.command/input-invalid", "subject.extract needs an \xABentry\xBB");
-    }
-    return withCommandSubject(EXTRACT_COMMAND, context, String(input.subject), async (subject, session, descriptor, diagnostics) => {
-      const operation = availableOperation(descriptor, CONTAINER_EXTRACT_OPERATION_ID2);
-      const listing = (descriptor.dataSources ?? []).some((item) => item.contract === NAMESPACE_ENTRY_SOURCE3);
-      if (operation === void 0 || !listing) {
-        return unavailable(EXTRACT_COMMAND, `this subject is not a container this host can read into \u2014 ${publishedOperations(descriptor)}`, `run subject.inspect to see what it does publish; extraction needs both \xAB${CONTAINER_EXTRACT_OPERATION_ID2}\xBB and \xAB${NAMESPACE_ENTRY_SOURCE3}\xBB`, diagnostics);
-      }
-      context.progress?.({ step: "locate", message: `locating ${entry2}` });
-      const entryId = await entryIdFor(session, entry2, context.signal);
-      if (entryId === void 0) {
-        return failed(EXTRACT_COMMAND, "x3.command/entry-not-found", `this container lists no \xAB${entry2}\xBB`, diagnostics);
-      }
-      context.progress?.({ step: "extract", message: `extracting ${entry2}` });
-      const answer = await invokeSubjectOperation(EXTRACT_COMMAND, context, session, operation.handlerId, { entryId }, diagnostics);
-      if (answer.state === "failed")
-        return answer.result;
-      if (answer.output.kind !== "bytes") {
-        return failed(EXTRACT_COMMAND, "x3.command/unexpected-output", `the container answered ${answer.output.kind}, not bytes`, diagnostics);
-      }
-      const bytes = answer.output.value;
-      const name = entry2.slice(entry2.lastIndexOf("/") + 1);
-      const wroteTo = context.writeOutput === void 0 ? void 0 : await context.writeOutput(name, bytes, context.signal);
-      return ok(EXTRACT_COMMAND, {
-        ref: subject.ref,
-        entry: entry2,
-        byteLength: bytes.byteLength,
-        ...wroteTo === void 0 ? { wroteTo: null } : { wroteTo }
-      }, diagnostics);
-    });
-  }
-};
-var convertCommand = {
-  id: CONVERT_COMMAND,
-  title: "Convert",
-  summary: "Export a subject through the codec\u2019s own conversion, when it publishes one.",
-  needsSubject: true,
-  mutatesSource: false,
-  operationId: CONVERT,
-  async run(context, input) {
-    return withCommandSubject(CONVERT_COMMAND, context, String(input.subject), async (subject, session, descriptor, diagnostics) => {
-      if (input["operation"] !== void 0 && typeof input["operation"] !== "string")
-        return failed(CONVERT_COMMAND, COMMAND_INPUT_INVALID, "operation must be an operation id", diagnostics);
-      const operation = selectedOperation(descriptor, SUBJECT_COMMAND_TARGETS.convert.operationIds, input["operation"]);
-      if (operation === void 0) {
-        return unavailable(CONVERT_COMMAND, `the requested export is unavailable \u2014 ${publishedOperations(descriptor)}`, "run subject.inspect to see which data sources it does publish; a universal projection is the route for formats with no native export", diagnostics);
-      }
-      context.progress?.({ step: "convert", message: "running the codec\u2019s export" });
-      const request = input["operationInput"] === void 0 ? typeof input["target"] === "string" ? operation.id === "model.export-native" ? { schemaVersion: 1, formatId: input["target"] } : { target: input["target"] } : {} : input["operationInput"];
-      const answer = await invokeSubjectOperation(CONVERT_COMMAND, context, session, operation.handlerId, request, diagnostics);
-      if (answer.state === "failed")
-        return answer.result;
-      const bytes = answer.output.kind === "bytes" ? answer.output.value : void 0;
-      const wroteTo = bytes === void 0 || context.writeOutput === void 0 ? void 0 : await context.writeOutput(`${input["target"] ?? "export"}`, bytes, context.signal);
-      return ok(CONVERT_COMMAND, {
-        ref: subject.ref,
-        via: operation.id,
-        outputKind: answer.output.kind,
-        ...bytes === void 0 ? {} : { byteLength: bytes.byteLength },
-        ...wroteTo === void 0 ? { wroteTo: null } : { wroteTo }
-      }, answer.diagnostics);
-    });
-  }
-};
-var previewCommand = {
-  id: PREVIEW_COMMAND,
-  title: "Preview",
-  summary: "Produce the subject\u2019s own preview \u2014 a thumbnail if it has one, a render otherwise.",
-  needsSubject: true,
-  mutatesSource: false,
-  operationId: THUMBNAIL,
-  async run(context, input) {
-    return withCommandSubject(PREVIEW_COMMAND, context, String(input.subject), async (subject, session, descriptor, diagnostics) => {
-      if (input["operation"] !== void 0 && typeof input["operation"] !== "string")
-        return failed(PREVIEW_COMMAND, COMMAND_INPUT_INVALID, "operation must be an operation id", diagnostics);
-      const operation = selectedOperation(descriptor, SUBJECT_COMMAND_TARGETS.preview.operationIds, input["operation"]);
-      if (operation === void 0) {
-        return unavailable(PREVIEW_COMMAND, `the requested preview is unavailable \u2014 ${publishedOperations(descriptor)}`, `mount a viewer over one of its data sources instead: ${(descriptor.dataSources ?? []).map((item) => item.contract).join(", ") || "it publishes none"}`, diagnostics);
-      }
-      context.progress?.({ step: "preview", message: "rendering the preview" });
-      const answer = await invokeSubjectOperation(PREVIEW_COMMAND, context, session, operation.handlerId, input["operationInput"] === void 0 ? {} : input["operationInput"], diagnostics);
-      if (answer.state === "failed")
-        return answer.result;
-      const bytes = answer.output.kind === "bytes" ? answer.output.value : void 0;
-      const wroteTo = bytes === void 0 || context.writeOutput === void 0 ? void 0 : await context.writeOutput("preview.png", bytes, context.signal);
-      return ok(PREVIEW_COMMAND, {
-        ref: subject.ref,
-        via: operation.id,
-        outputKind: answer.output.kind,
-        ...bytes === void 0 ? {} : { byteLength: bytes.byteLength },
-        ...wroteTo === void 0 ? {} : { wroteTo }
-      }, answer.diagnostics);
-    });
-  }
-};
-var SUBJECT_COMMANDS = Object.freeze([
-  openCommand,
-  inspectCommand,
-  validateCommand,
-  extractCommand,
-  convertCommand,
-  previewCommand
-]);
-
-// packages/host/dist/commands/service-operation-commands.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-var SERVICE_OPERATIONS_COMMAND = "service.operations";
-var SERVICE_OPERATION_INVOKE_COMMAND = "service.invoke";
-var json = (value2) => value2;
-var integer = (value2, fallback) => {
-  const selected = value2 ?? fallback;
-  return Number.isSafeInteger(selected) && Number(selected) >= 0 ? Number(selected) : void 0;
-};
-var catalogCommand = Object.freeze({
-  id: SERVICE_OPERATIONS_COMMAND,
-  title: "Extension operations",
-  summary: "List bounded subject-independent extension operations and their activation state.",
-  needsSubject: false,
-  mutatesSource: false,
-  async run(context, input) {
-    if (context.serviceOperations === void 0) {
-      return unavailable(SERVICE_OPERATIONS_COMMAND, "this host does not expose the extension operation catalog", "use a host configured with service-operation authority");
-    }
-    const offset = integer(input["offset"], 0);
-    const limit = integer(input["limit"], 50);
-    const activate = input["activate"] ?? true;
-    if (offset === void 0 || limit === void 0 || limit < 1 || limit > 100 || typeof activate !== "boolean") {
-      return failed(SERVICE_OPERATIONS_COMMAND, COMMAND_INPUT_INVALID, "offset must be non-negative, limit must be 1..100, and activate must be boolean");
-    }
-    const result = await context.serviceOperations.catalog({
-      offset,
-      limit,
-      activate,
-      ...context.signal === void 0 ? {} : { signal: context.signal }
-    });
-    return ok(SERVICE_OPERATIONS_COMMAND, json(result), result.entries.flatMap((entry2) => entry2.diagnostics).map(commandDiagnostic));
-  }
-});
-var invokeCommand = Object.freeze({
-  id: SERVICE_OPERATION_INVOKE_COMMAND,
-  title: "Invoke extension operation",
-  summary: "Invoke one exact subject-independent extension operation through the common host route.",
-  needsSubject: false,
-  mutatesSource: true,
-  async run(context, input) {
-    if (context.serviceOperations === void 0) {
-      return unavailable(SERVICE_OPERATION_INVOKE_COMMAND, "this host does not expose extension operation invocation", `inspect ${SERVICE_OPERATIONS_COMMAND} in an operation-capable host`);
-    }
-    const operationId2 = input["operationId"];
-    const operationInput = input["operationInput"];
-    if (typeof operationId2 !== "string" || operationId2.trim().length === 0 || operationInput === void 0) {
-      return failed(SERVICE_OPERATION_INVOKE_COMMAND, COMMAND_INPUT_INVALID, "operationId and operationInput are required");
-    }
-    const result = await context.serviceOperations.invoke({
-      operationId: operationId2,
-      input: operationInput,
-      ...context.signal === void 0 ? {} : { signal: context.signal }
-    });
-    const diagnostics = result.diagnostics.map(commandDiagnostic);
-    if (result.state === "invoked") {
-      return ok(SERVICE_OPERATION_INVOKE_COMMAND, json(result), diagnostics);
-    }
-    if (result.state === "failed") {
-      return failed(SERVICE_OPERATION_INVOKE_COMMAND, result.diagnostics.at(-1)?.code ?? "x3.command/service-operation-failed", result.diagnostics.at(-1)?.message ?? `${operationId2} failed`, diagnostics);
-    }
-    return unavailable(SERVICE_OPERATION_INVOKE_COMMAND, result.diagnostics.at(-1)?.message ?? `${operationId2} is unavailable`, `inspect ${SERVICE_OPERATIONS_COMMAND} with activation enabled`, diagnostics, result.diagnostics.at(-1)?.code);
-  }
-});
-var SERVICE_OPERATION_COMMANDS = Object.freeze([
-  catalogCommand,
-  invokeCommand
-]);
-var SERVICE_OPERATION_COMMAND_TARGETS = Object.freeze([
-  Object.freeze({
-    commandId: SERVICE_OPERATIONS_COMMAND,
-    operationIds: Object.freeze([]),
-    dataSourceContracts: Object.freeze([]),
-    hostCallers: Object.freeze(["cli", "mcp", "electron", "pwa", "server", "vscode"])
-  }),
-  Object.freeze({
-    commandId: SERVICE_OPERATION_INVOKE_COMMAND,
-    operationIds: Object.freeze(["common.runtime/operation-provider@1"]),
-    dataSourceContracts: Object.freeze([]),
-    hostCallers: Object.freeze(["cli", "mcp", "electron", "pwa", "server", "vscode"])
-  })
-]);
-
-// packages/host/dist/commands/edit-commands.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-var SUBJECT_EDIT_COMMAND = "subject.edit";
-var SUBJECT_EDIT_OPERATION_IDS = Object.freeze([
-  "edit.field",
-  "edit.content",
-  "edit.structure"
-]);
-function summarizeEditPlan(plan) {
-  const encoder10 = new TextEncoder();
-  return {
-    planId: plan.planId,
-    fidelity: plan.fidelity,
-    edits: plan.edits.map((edit) => {
-      const payload = "payload" in edit ? edit.payload : void 0;
-      const replacementBytes = payload === void 0 ? null : payload.kind === "inline" ? payload.bytes.byteLength : payload.kind === "text" ? encoder10.encode(payload.text).byteLength : String(payload.ref.bytes);
-      return {
-        operation: edit.operation,
-        targetId: edit.targetId,
-        label: edit.label ?? null,
-        ..."range" in edit && edit.range !== void 0 ? { offset: String(edit.range.offset), length: String(edit.range.length) } : {},
-        ..."newPath" in edit ? { newPath: edit.newPath } : {},
-        replacementBytes
-      };
-    }),
-    diagnostics: plan.diagnostics.map(commandDiagnostic)
-  };
-}
-var jsonSafe = (value2) => JSON.parse(JSON.stringify(value2, (_key, item) => typeof item === "bigint" ? String(item) : item));
-var editCommand = Object.freeze({
-  id: SUBJECT_EDIT_COMMAND,
-  title: "Edit",
-  summary: "Preview, or with commit=true apply, one standard edit operation (set field, add/remove entry, rename) of a subject.",
-  needsSubject: true,
-  mutatesSource: true,
-  async run(context, input) {
-    const operationId2 = input["operation"];
-    const operationInput = input["operationInput"];
-    const commit = input["commit"] ?? false;
-    if (typeof operationId2 !== "string" || !SUBJECT_EDIT_OPERATION_IDS.includes(operationId2) || operationInput === void 0 || typeof commit !== "boolean") {
-      return failed(SUBJECT_EDIT_COMMAND, COMMAND_INPUT_INVALID, `operation must be one of ${SUBJECT_EDIT_OPERATION_IDS.join(", ")}, operationInput is required and commit must be boolean`);
-    }
-    return withCommandSubject(SUBJECT_EDIT_COMMAND, context, String(input.subject), async (subject, session, descriptor, diagnostics) => {
-      const operation = (descriptor.operations ?? []).find((item) => item.id === operationId2);
-      if (operation?.state !== "available" || operation.mutatesSource !== true) {
-        return unavailable(SUBJECT_EDIT_COMMAND, operation === void 0 ? `the subject publishes no ${operationId2}` : `${operationId2} is not an available mutating operation here${operation.reason === void 0 ? "" : `: ${operation.reason}`}`, "run subject.inspect to see which edit operations this subject publishes", diagnostics);
-      }
-      context.progress?.({ step: "plan", message: `planning ${operationId2}` });
-      const answer = await invokeSubjectOperation(SUBJECT_EDIT_COMMAND, context, session, operation.handlerId, operationInput, diagnostics);
-      if (answer.state === "failed")
-        return answer.result;
-      if (answer.output.kind !== "edit-plan") {
-        return failed(SUBJECT_EDIT_COMMAND, "x3.command/not-an-edit-plan", `${operationId2} answered with ${answer.output.kind}, not an edit plan`, answer.diagnostics);
-      }
-      const output = answer.output;
-      if (!commit) {
-        return ok(SUBJECT_EDIT_COMMAND, {
-          ref: subject.ref,
-          operation: operationId2,
-          committed: false,
-          plan: summarizeEditPlan(output.plan)
-        }, answer.diagnostics);
-      }
-      const editing = subject.editing;
-      if (editing === void 0) {
-        return unavailable(SUBJECT_EDIT_COMMAND, "this host opened the subject without an editing surface (it is outside the writable roots, or the host is read-only)", "run with commit=false to preview, or open the subject in a host configured with writable roots", answer.diagnostics);
-      }
-      const signal = context.signal;
-      const plan = await editing.stagePlan(editing.planFromOperation(answer.output), signal);
-      let committed = false;
-      try {
-        context.progress?.({
-          step: "prepare",
-          message: "validating revisions, permissions and fidelity"
-        });
-        const prepared = await editing.coordinator.prepare(plan, {
-          grant: editing.grantSnapshot,
-          ...signal === void 0 ? {} : { signal }
-        });
-        if (prepared.state === "conflict") {
-          return failed(SUBJECT_EDIT_COMMAND, "x3.command/edit-stale-revision", `the source changed after the plan was made: ${prepared.conflicts.map((item) => item.targetId).join(", ")}`, answer.diagnostics);
-        }
-        if (prepared.state !== "ready") {
-          return failed(SUBJECT_EDIT_COMMAND, `x3.command/edit-${prepared.reason}`, `the host refused the edit plan: ${prepared.reason}`, [...answer.diagnostics, ...prepared.diagnostics.map(commandDiagnostic)]);
-        }
-        context.progress?.({ step: "commit", message: "committing" });
-        const result = await editing.coordinator.commit(prepared.prepared, {
-          grant: editing.grantSnapshot,
-          ...signal === void 0 ? {} : { signal }
-        });
-        if (result.state === "not-applied") {
-          return failed(SUBJECT_EDIT_COMMAND, `x3.command/edit-${result.reason}`, `the edit was not applied: ${result.reason}`, [...answer.diagnostics, ...result.diagnostics.map(commandDiagnostic)]);
-        }
-        committed = true;
-        return ok(SUBJECT_EDIT_COMMAND, {
-          ref: subject.ref,
-          operation: operationId2,
-          committed: result.state === "committed",
-          state: result.state,
-          plan: summarizeEditPlan(plan),
-          receipt: jsonSafe(result.receipt)
-        }, answer.diagnostics);
-      } finally {
-        if (!committed)
-          await editing.releasePlan(plan);
-      }
-    });
-  }
-});
-var SUBJECT_EDIT_COMMANDS = Object.freeze([editCommand]);
-var SUBJECT_EDIT_COMMAND_TARGETS = Object.freeze([
-  Object.freeze({
-    commandId: SUBJECT_EDIT_COMMAND,
-    operationIds: Object.freeze([...SUBJECT_EDIT_OPERATION_IDS]),
-    dataSourceContracts: Object.freeze([]),
-    hostCallers: Object.freeze(["cli", "mcp", "electron", "pwa", "server", "vscode"])
-  })
-]);
-
-// packages/host/dist/commands/endpoint.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-
-// packages/host/dist/commands/subject-opener.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-function commandSubjectsFrom(open) {
-  return async (ref2, signal) => {
-    const answer = await open(ref2, signal);
-    let disposed = false;
-    return {
-      ref: ref2,
-      snapshot: answer.snapshot,
-      ...answer.session === void 0 ? {} : { session: answer.session },
-      async dispose() {
-        if (disposed)
-          return;
-        disposed = true;
-        await answer.session?.dispose();
-      }
-    };
-  };
-}
-
-// packages/host/dist/commands/endpoint.js
-var DEFAULT_COMMAND_MAX_CONCURRENT_RUNS = 32;
-function createSubjectCommandEndpoint(options) {
-  const maximum = options.maxConcurrentRuns ?? DEFAULT_COMMAND_MAX_CONCURRENT_RUNS;
-  if (!Number.isSafeInteger(maximum) || maximum < 1) {
-    throw new TypeError("maxConcurrentRuns must be a positive safe integer");
-  }
-  const runtime2 = createCommandRuntime(SUBJECT_COMMANDS);
-  const opener = commandSubjectsFrom(options.openSubject);
-  const active = /* @__PURE__ */ new Set();
-  const tasks = /* @__PURE__ */ new Set();
-  const byRunId = /* @__PURE__ */ new Map();
-  let closed = false;
-  let disposing;
-  return Object.freeze({
-    catalog: describeCommandContracts(runtime2, Object.values(SUBJECT_COMMAND_TARGETS)),
-    async execute(request, runOptions = {}) {
-      if (closed)
-        throw new Error("the command endpoint is closed");
-      if (active.size >= maximum) {
-        throw new RangeError(`the command endpoint already has its ${maximum} permitted runs`);
-      }
-      const runId = runOptions.runId;
-      if (runId !== void 0) {
-        if (runId === "")
-          throw new TypeError("a command run id must not be empty");
-        if (byRunId.has(runId))
-          throw new TypeError(`command run \xAB${runId}\xBB is already active`);
-      }
-      const controller = new AbortController();
-      const abort = () => controller.abort();
-      if (runOptions.signal?.aborted === true)
-        controller.abort();
-      else
-        runOptions.signal?.addEventListener("abort", abort, { once: true });
-      active.add(controller);
-      if (runId !== void 0)
-        byRunId.set(runId, controller);
-      const task = executeCommandRequest(runtime2, request, {
-        openSubject: opener,
-        signal: controller.signal,
-        ...runOptions.progress === void 0 ? {} : { progress: runOptions.progress },
-        ...runOptions.writeOutput === void 0 ? {} : { writeOutput: runOptions.writeOutput }
-      });
-      tasks.add(task);
-      try {
-        return await task;
-      } finally {
-        tasks.delete(task);
-        active.delete(controller);
-        if (runId !== void 0)
-          byRunId.delete(runId);
-        runOptions.signal?.removeEventListener("abort", abort);
-      }
-    },
-    cancel(runId) {
-      const controller = byRunId.get(runId);
-      controller?.abort();
-      return controller !== void 0;
-    },
-    dispose() {
-      if (disposing !== void 0)
-        return disposing;
-      closed = true;
-      for (const controller of active)
-        controller.abort();
-      disposing = Promise.allSettled([...tasks]).then(() => void 0);
-      return disposing;
-    },
-    get activeRuns() {
-      return active.size;
-    },
-    get closed() {
-      return closed;
-    }
-  });
-}
-
-// packages/host/dist/detection-rules.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-var DETECTION_EVIDENCE_LADDER = Object.freeze([
-  "name-only",
-  "generic-syntax",
-  "carrier-magic",
-  "generic-syntax-and-format-marker",
-  "carrier-magic-and-format-structure",
-  "format-magic",
-  "format-magic-and-second-signal"
-]);
-var DETECTION_UNTIE_RULES = Object.freeze([
-  Object.freeze({
-    id: "strictly-highest-confidence-wins",
-    rule: "Among candidates at or above the host confidence floor, the one with the strictly highest confidence is selected. There is no secondary ranking by extension id, contribution status, implementation tier or load order.",
-    enforcedBy: "packages/host/src/subject-open.ts"
-  }),
-  Object.freeze({
-    id: "an-exact-tie-is-ambiguous",
-    rule: "Two or more candidates sharing the top confidence resolve to `unresolved` with reason `ambiguous`. The host never breaks a tie by sort order: a stable sort would make the winner depend on which extension happened to load first, which is a coin toss wearing a rule.",
-    enforcedBy: "packages/host/src/subject-open.ts"
-  }),
-  Object.freeze({
-    id: "below-the-floor-is-no-match",
-    rule: "A candidate under the host confidence floor is not eligible at all, so a lone weak guess produces `no-match` rather than an open nobody can justify.",
-    enforcedBy: "packages/host/src/subject-open.ts"
-  }),
-  Object.freeze({
-    id: "a-carrier-ranks-below-its-passengers",
-    rule: "A codec that matched only a carrier magic (ZIP, RIFF) or only a general syntax (UTF-8 text, XML, JSON) must score below a codec that matched the same bytes *and* a structure specific to its own format. The generic route is the fallback for bytes nobody claimed, never the winner over a format that read more.",
-    enforcedBy: "the detecting codecs; the ordering is proved in packages/testkit/test/detection-collisions.test.ts"
-  }),
-  Object.freeze({
-    id: "a-second-signal-breaks-a-would-be-tie",
-    rule: "Where two routes read the same evidence, the one that also reads an independent second signal \u2014 typically the declared extension \u2014 ranks above it. This is how a relocated port beats the staging route it replaces without either of them inventing evidence.",
-    enforcedBy: "the detecting codecs; proved in packages/testkit/test/common-documents-rtf.test.ts"
-  }),
-  Object.freeze({
-    id: "an-extension-alone-never-decides",
-    rule: "The file name may add margin to a candidate that already read the bytes; it may never carry one over the confidence floor by itself. A renamed file is decided by its content, and a correctly named file whose content disagrees is refused.",
-    enforcedBy: "the detecting codecs; proved in packages/testkit/test/detection-collisions.test.ts"
-  }),
-  Object.freeze({
-    id: "a-foreign-format-scores-zero-not-low",
-    rule: "Bytes that positively declare a *different* format are a refusal, not a weak match: an ODP renamed to `.odt` scores zero rather than a hedged number, so it can never win by being the only candidate left.",
-    enforcedBy: "extensions/documents/src/odf/package.js and its peers"
-  }),
-  Object.freeze({
-    id: "a-declaration-scopes-a-generic",
-    rule: "A contribution is put in front of the probe only for bytes its own declaration matches by name or signature, and that \u2014 not confidence \u2014 is what keeps a generic away from another format\u2019s body. `text-ini` scores `Key=Value` lines happily but declares only `.ini`, so it never sees a publisher-specific text file; `text-csv` declares `.csv` and `.tsv`, so it never sees an unrelated atlas index. A generic that widens its declaration to every path gives this protection up and must then win every collision on confidence alone.",
-    enforcedBy: "matchesSpec in packages/host/src/subject-open.ts (an empty rule set is not a wildcard); proved in packages/testkit/test/detection-collisions.test.ts"
-  }),
-  Object.freeze({
-    id: "a-signature-shortlists-but-does-not-select",
-    rule: "A declared byte signature only puts a contribution in front of the probe \u2014 a renamed `.dat` PNG reaches the PNG probe. Selection is still decided by the probe result, so a signature can never open a subject on its own.",
-    enforcedBy: "packages/host/src/detection-index.ts"
-  })
-]);
-
-// packages/host/dist/vfs-source.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-
-// packages/host/dist/container-pack.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-
-// packages/host/dist/subject-editing.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-
-// packages/host/dist/editing.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-var GUARANTEE_STRENGTH = Object.freeze({
-  "best-effort": 0,
-  recoverable: 1,
-  transactional: 2,
-  atomic: 3
-});
-var issuedGrantSnapshots = /* @__PURE__ */ new WeakSet();
-function snapshot(value2, ancestors = /* @__PURE__ */ new WeakSet()) {
-  if (typeof value2 === "function" || typeof value2 === "symbol") {
-    throw new TypeError("editing inputs cannot contain executable or symbol values");
-  }
-  if (value2 instanceof Uint8Array)
-    return value2.slice();
-  if (Array.isArray(value2)) {
-    if (ancestors.has(value2))
-      throw new TypeError("editing inputs must be acyclic owned data");
-    ancestors.add(value2);
-    const copy = Object.freeze(value2.map((item) => snapshot(item, ancestors)));
-    ancestors.delete(value2);
-    return copy;
-  }
-  if (typeof value2 === "object" && value2 !== null) {
-    if (ancestors.has(value2))
-      throw new TypeError("editing inputs must be acyclic owned data");
-    const prototype = Object.getPrototypeOf(value2);
-    if (prototype !== Object.prototype && prototype !== null) {
-      throw new TypeError("editing inputs must contain only plain owned data");
-    }
-    ancestors.add(value2);
-    const copy = {};
-    for (const key3 of Reflect.ownKeys(value2)) {
-      copy[key3] = snapshot(value2[key3], ancestors);
-    }
-    ancestors.delete(value2);
-    return Object.freeze(copy);
-  }
-  return value2;
-}
-function snapshotGrant(grant) {
-  if (!issuedGrantSnapshots.has(grant))
-    throw new TypeError("grant snapshot is not host-issued");
-  return Object.freeze({
-    snapshotId: String(grant.snapshotId),
-    permissions: Object.freeze([...grant.permissions]),
-    sourceIds: Object.freeze([...grant.sourceIds]),
-    ...grant.namespaceRoots === void 0 ? {} : { namespaceRoots: Object.freeze([...grant.namespaceRoots]) }
-  });
-}
-function withinGrantedNamespace(uri, grant) {
-  if (grant.namespaceRoots === void 0)
-    return false;
-  try {
-    const url = new URL(uri);
-    const path = url.searchParams.get("vfs-path");
-    if (path === null || path.split("/").some((part) => part === "" || part === "." || part === ".."))
-      return false;
-    url.search = "";
-    url.hash = "";
-    return grant.namespaceRoots.some((root) => {
-      const granted = new URL(root);
-      granted.search = "";
-      granted.hash = "";
-      return granted.href === url.href;
-    });
-  } catch {
-    return false;
-  }
-}
-function grantIsValid(options, grant) {
-  try {
-    return options.isGrantValid(grant) === true;
-  } catch {
-    return false;
-  }
-}
-function createGrantSnapshot(value2) {
-  if (!isNonBlank2(value2.snapshotId) || !Array.isArray(value2.permissions) || !value2.permissions.every((permission) => PERMISSION_CLASSES.includes(permission)) || !Array.isArray(value2.sourceIds) || !value2.sourceIds.every(isNonBlank2) || value2.namespaceRoots !== void 0 && (!Array.isArray(value2.namespaceRoots) || !value2.namespaceRoots.every(isNonBlank2))) {
-    throw new TypeError("grant snapshot is malformed");
-  }
-  const snapshot3 = Object.freeze({
-    snapshotId: value2.snapshotId,
-    permissions: Object.freeze([...new Set(value2.permissions)].sort(compareUtf8)),
-    sourceIds: Object.freeze([...new Set(value2.sourceIds)].sort(compareUtf8)),
-    ...value2.namespaceRoots === void 0 || value2.namespaceRoots.length === 0 ? {} : { namespaceRoots: Object.freeze([...new Set(value2.namespaceRoots)].sort(compareUtf8)) }
-  });
-  issuedGrantSnapshots.add(snapshot3);
-  return snapshot3;
-}
-function revisionValue(revision) {
-  return {
-    bindings: Object.fromEntries(Object.entries(revision.bindings).sort(([left], [right]) => compareUtf8(left, right)).map(([key3, value2]) => [key3, String(value2)])),
-    ...revision.namespaceRevision === void 0 ? {} : { namespaceRevision: String(revision.namespaceRevision) },
-    compositionFingerprint: revision.compositionFingerprint
-  };
-}
-function sameRevision(left, right) {
-  return JSON.stringify(revisionValue(left)) === JSON.stringify(revisionValue(right));
-}
-function revisionFingerprint(targets, digest) {
-  return digest(targets.map((target) => ({
-    targetId: target.targetId,
-    revision: revisionValue(target.expectedRevision)
-  })).sort((left, right) => compareUtf8(left.targetId, right.targetId)));
-}
-function normalizedPath(value2) {
-  if (value2.trim() === "" || value2.includes("\\") || value2.startsWith("/"))
-    return void 0;
-  const parts = value2.split("/");
-  if (parts.some((part) => part === "" || part === "." || part === ".."))
-    return void 0;
-  return parts.join("/");
-}
-function modeOf(edit) {
-  if (edit.operation === "replace")
-    return "in-place";
-  return edit.operation;
-}
-function isRecord2(value2) {
-  return typeof value2 === "object" && value2 !== null && !Array.isArray(value2);
-}
-function hasExactKeys(value2, allowed2) {
-  const keys = Object.keys(value2);
-  return keys.length === new Set(keys).size && keys.every((key3) => allowed2.includes(key3));
-}
-function isNonBlank2(value2) {
-  return typeof value2 === "string" && value2.trim() !== "";
-}
-function isAssetSource(value2) {
-  return isRecord2(value2) && hasExactKeys(value2, ["id", "uri", "parentIds"]) && isNonBlank2(value2["id"]) && isNonBlank2(value2["uri"]) && (value2["parentIds"] === void 0 || Array.isArray(value2["parentIds"]) && value2["parentIds"].every(isNonBlank2));
-}
-function isRevision(value2) {
-  if (!isRecord2(value2) || !hasExactKeys(value2, ["bindings", "namespaceRevision", "compositionFingerprint"]) || !isRecord2(value2["bindings"]) || Object.keys(value2["bindings"]).length === 0 || !Object.values(value2["bindings"]).every(isNonBlank2) || !isNonBlank2(value2["compositionFingerprint"])) {
-    return false;
-  }
-  return value2["namespaceRevision"] === void 0 || isNonBlank2(value2["namespaceRevision"]);
-}
-function isRecoveryRef(value2) {
-  return isRecord2(value2) && hasExactKeys(value2, ["kind", "ref", "digest"]) && (value2["kind"] === "journal" || value2["kind"] === "staging") && isNonBlank2(value2["ref"]) && isNonBlank2(value2["digest"]);
-}
-function isFidelityEvidence(value2) {
-  if (!isRecord2(value2) || !hasExactKeys(value2, [
-    "roundTrip",
-    "preservesUnknownData",
-    "notes",
-    "evidenceId",
-    "corpusId",
-    "corpusDigest",
-    "conformanceProfile",
-    "writer",
-    "optionsFingerprint",
-    "inputClass",
-    "provenAt"
-  ]) || !["byte-identical", "semantic", "lossy", "none"].includes(value2["roundTrip"]) || typeof value2["preservesUnknownData"] !== "boolean" || value2["notes"] !== void 0 && (!Array.isArray(value2["notes"]) || !value2["notes"].every(isNonBlank2)) || ![
-    value2["evidenceId"],
-    value2["corpusId"],
-    value2["corpusDigest"],
-    value2["conformanceProfile"],
-    value2["optionsFingerprint"],
-    value2["inputClass"],
-    value2["provenAt"]
-  ].every(isNonBlank2) || !isRecord2(value2["writer"]) || !hasExactKeys(value2["writer"], [
-    "providerId",
-    "providerVersion",
-    "artifactDigest",
-    "formatId",
-    "representationId"
-  ]) || !Object.values(value2["writer"]).every(isNonBlank2)) {
-    return false;
-  }
-  if (value2["roundTrip"] === "byte-identical")
-    return value2["preservesUnknownData"] === true;
-  if (value2["roundTrip"] === "lossy" || value2["roundTrip"] === "none") {
-    return value2["preservesUnknownData"] === false;
-  }
-  return true;
-}
-function isEditPayload(value2) {
-  if (!isRecord2(value2) || !isNonBlank2(value2["kind"]))
-    return false;
-  if (value2["kind"] === "text") {
-    return hasExactKeys(value2, ["kind", "text"]) && typeof value2["text"] === "string";
-  }
-  if (value2["kind"] === "inline") {
-    return hasExactKeys(value2, ["kind", "bytes"]) && value2["bytes"] instanceof Uint8Array;
-  }
-  if (value2["kind"] !== "staged" || !hasExactKeys(value2, ["kind", "ref"]))
-    return false;
-  const ref2 = value2["ref"];
-  return isRecord2(ref2) && hasExactKeys(ref2, ["storeId", "handleId", "digest", "bytes", "replayable", "expiresAt"]) && isNonBlank2(ref2["storeId"]) && isNonBlank2(ref2["handleId"]) && isNonBlank2(ref2["digest"]) && typeof ref2["bytes"] === "bigint" && ref2["bytes"] >= 0n && ref2["replayable"] === true && (ref2["expiresAt"] === void 0 || isNonBlank2(ref2["expiresAt"]));
-}
-function isEditRange(value2) {
-  if (!isRecord2(value2) || !hasExactKeys(value2, ["kind", "offset", "length"]))
-    return false;
-  if (value2["kind"] === "bytes") {
-    return typeof value2["offset"] === "bigint" && value2["offset"] >= 0n && typeof value2["length"] === "bigint" && value2["length"] >= 0n;
-  }
-  return value2["kind"] === "utf16" && Number.isSafeInteger(value2["offset"]) && Number.isSafeInteger(value2["length"]) && value2["offset"] >= 0 && value2["length"] >= 0;
-}
-function isSourceEdit(value2) {
-  if (!isRecord2(value2) || !isNonBlank2(value2["operation"]))
-    return false;
-  const common2 = isNonBlank2(value2["targetId"]) && isAssetSource(value2["source"]) && (value2["label"] === void 0 || typeof value2["label"] === "string");
-  if (!common2)
-    return false;
-  if (value2["operation"] === "replace") {
-    return hasExactKeys(value2, ["operation", "targetId", "source", "range", "payload", "label"]) && (value2["range"] === void 0 || isEditRange(value2["range"])) && isEditPayload(value2["payload"]);
-  }
-  if (value2["operation"] === "create") {
-    return hasExactKeys(value2, ["operation", "targetId", "source", "newPath", "payload", "label"]) && isNonBlank2(value2["newPath"]) && isEditPayload(value2["payload"]);
-  }
-  if (value2["operation"] === "delete") {
-    return hasExactKeys(value2, ["operation", "targetId", "source", "label"]);
-  }
-  return value2["operation"] === "rename" && hasExactKeys(value2, ["operation", "targetId", "source", "newPath", "label"]) && isNonBlank2(value2["newPath"]);
-}
-function planDigestValue(plan) {
-  const payload = (edit) => {
-    if (!("payload" in edit))
-      return void 0;
-    if (edit.payload.kind === "inline") {
-      return { kind: "inline", bytes: [...edit.payload.bytes] };
-    }
-    if (edit.payload.kind === "staged") {
-      return {
-        kind: "staged",
-        ref: { ...edit.payload.ref, bytes: edit.payload.ref.bytes.toString(10) }
-      };
-    }
-    return edit.payload;
-  };
-  return {
-    planId: plan.planId,
-    targets: plan.targets.map((target) => ({
-      ...target,
-      expectedRevision: revisionValue(target.expectedRevision)
-    })),
-    edits: plan.edits.map((edit) => ({
-      ...edit,
-      ...edit.operation === "replace" && edit.range?.kind === "bytes" ? {
-        range: {
-          kind: "bytes",
-          offset: edit.range.offset.toString(10),
-          length: edit.range.length.toString(10)
-        }
-      } : {},
-      ...payload(edit) === void 0 ? {} : { payload: payload(edit) }
-    })),
-    semantics: plan.semantics,
-    fidelity: plan.fidelity,
-    diagnostics: plan.diagnostics
-  };
-}
-function fidelityMatches(plan, evidence2, expectedWriter, expectedContext) {
-  if (!isFidelityEvidence(evidence2) || evidence2.roundTrip !== plan.fidelity.roundTrip)
-    return false;
-  if (evidence2.preservesUnknownData !== plan.fidelity.preservesUnknownData)
-    return false;
-  if (expectedContext !== void 0 && (evidence2.optionsFingerprint !== expectedContext.optionsFingerprint || evidence2.inputClass !== expectedContext.inputClass)) {
-    return false;
-  }
-  if (expectedWriter === void 0)
-    return true;
-  return evidence2.writer.providerId === expectedWriter.providerId && evidence2.writer.providerVersion === expectedWriter.providerVersion && evidence2.writer.artifactDigest === expectedWriter.artifactDigest && evidence2.writer.formatId === expectedWriter.formatId && evidence2.writer.representationId === expectedWriter.representationId;
-}
-function strongestGuarantee(backends) {
-  const unique = new Set(backends);
-  const single = [...unique][0];
-  if (unique.size === 1 && single !== void 0 && single.profile.guarantees.includes("atomic") && single.applyBatch !== void 0) {
-    return "atomic";
-  }
-  if (backends.every((backend) => backend.profile.supportsPrepare && backend.profile.supportsRollback)) {
-    return "transactional";
-  }
-  if (backends.every((backend) => backend.profile.supportsJournal))
-    return "recoverable";
-  return "best-effort";
-}
-function derive(plan, targets, grant, options) {
-  const entries = [];
-  const backends = /* @__PURE__ */ new Map();
-  for (const edit of plan.edits) {
-    const target = targets.get(edit.targetId);
-    const backend = options.backendFor(edit.source.id);
-    if (target === void 0 || backend === void 0 || target.ownerSource.id !== edit.source.id) {
-      return { rejection: "plan-invalid" };
-    }
-    if (!backend.writable && plan.semantics.mutationMode === "mutate") {
-      return { rejection: "source-read-only" };
-    }
-    if (edit.operation === "rename" && !backend.profile.supportsRename) {
-      return { rejection: "plan-invalid" };
-    }
-    const path = edit.operation === "create" || edit.operation === "rename" ? normalizedPath(edit.newPath) : void 0;
-    if ((edit.operation === "create" || edit.operation === "rename") && path === void 0) {
-      return { rejection: "plan-invalid" };
-    }
-    entries.push(Object.freeze({
-      targetId: edit.targetId,
-      source: snapshot(edit.source),
-      backendId: backend.profile.backendId,
-      mode: modeOf(edit),
-      ...path === void 0 ? {} : { normalizedPath: path }
-    }));
-    backends.set(edit.targetId, backend);
-  }
-  entries.sort((left, right) => compareUtf8(left.targetId, right.targetId) || compareUtf8(left.source.id, right.source.id) || compareUtf8(left.mode, right.mode));
-  const requiredPermissions = plan.semantics.mutationMode === "mutate" ? ["write-source"] : [];
-  const missing = requiredPermissions.filter((permission) => !grant.permissions.includes(permission));
-  const scopeSatisfied = entries.every((entry2) => grant.sourceIds.includes(entry2.source.id) || withinGrantedNamespace(entry2.source.uri, grant));
-  const achievableGuarantee = strongestGuarantee([...backends.values()]);
-  const writeSet = Object.freeze({
-    entries: Object.freeze(entries),
-    digest: options.digest(entries.map((entry2) => ({
-      targetId: entry2.targetId,
-      sourceId: entry2.source.id,
-      backendId: entry2.backendId,
-      mode: entry2.mode,
-      ...entry2.normalizedPath === void 0 ? {} : { normalizedPath: entry2.normalizedPath }
-    })))
-  });
-  return {
-    writeSet,
-    backends,
-    authorization: Object.freeze({
-      requiredPermissions: Object.freeze(requiredPermissions),
-      granted: missing.length === 0 && scopeSatisfied,
-      achievableGuarantee,
-      missing: Object.freeze(missing),
-      scopeSatisfied
-    })
-  };
-}
-async function conflictsFor(targets, backends, backendFor, signal) {
-  const conflicts = [];
-  for (const [targetId, target] of targets) {
-    const backend = backends.get(targetId) ?? backendFor(target.ownerSource.id);
-    if (backend === void 0)
-      throw new TypeError("revision guard has no backend");
-    const actual = snapshot(await backend.currentRevision(target, signal));
-    if (!sameRevision(target.expectedRevision, actual)) {
-      conflicts.push(Object.freeze({
-        targetId,
-        expected: snapshot(target.expectedRevision),
-        actual: snapshot(actual)
-      }));
-    }
-  }
-  return Object.freeze(conflicts.sort((left, right) => compareUtf8(left.targetId, right.targetId)));
-}
-async function payloadsAvailable(plan, options, signal) {
-  const maximum = options.maxInlinePayloadBytes ?? 1024 * 1024;
-  for (const edit of plan.edits) {
-    if (!("payload" in edit))
-      continue;
-    if (edit.payload.kind === "inline" && edit.payload.bytes.byteLength > maximum)
-      return false;
-    if (edit.payload.kind === "text" && new TextEncoder().encode(edit.payload.text).byteLength > maximum)
-      return false;
-    if (edit.payload.kind !== "staged")
-      continue;
-    if (!edit.payload.ref.replayable || edit.payload.ref.bytes < 0n)
-      return false;
-    if (edit.payload.ref.expiresAt !== void 0 && Date.parse(edit.payload.ref.expiresAt) <= Date.parse(options.now?.() ?? (/* @__PURE__ */ new Date()).toISOString())) {
-      return false;
-    }
-    if (options.verifyStagedPayload === void 0)
-      return false;
-    try {
-      if (await options.verifyStagedPayload(edit.payload.ref, signal) !== true)
-        return false;
-    } catch {
-      return false;
-    }
-  }
-  return true;
-}
-function stagedPayloadRefs(plan) {
-  const refs = [];
-  for (const edit of plan.edits) {
-    if ("payload" in edit && edit.payload.kind === "staged")
-      refs.push(edit.payload.ref);
-  }
-  return refs;
-}
-function stagedPayloadKey(ref2) {
-  return `${ref2.storeId}:${ref2.handleId}`;
-}
-function invalidPlan(plan) {
-  if (!isRecord2(plan) || !hasExactKeys(plan, ["planId", "targets", "edits", "semantics", "fidelity", "diagnostics"]) || !isNonBlank2(plan.planId) || !Array.isArray(plan.targets) || plan.targets.length === 0 || !Array.isArray(plan.edits) || plan.edits.length === 0 || !Array.isArray(plan.diagnostics) || !isRecord2(plan.semantics) || !hasExactKeys(plan.semantics, ["mutationMode", "minimumGuarantee"]) || !["export-only", "mutate"].includes(plan.semantics.mutationMode) || !["atomic", "transactional", "recoverable", "best-effort"].includes(plan.semantics.minimumGuarantee) || !isRecord2(plan.fidelity) || !hasExactKeys(plan.fidelity, ["roundTrip", "preservesUnknownData", "notes"]) || !["byte-identical", "semantic", "lossy", "none"].includes(plan.fidelity.roundTrip) || typeof plan.fidelity.preservesUnknownData !== "boolean" || plan.fidelity.notes !== void 0 && (!Array.isArray(plan.fidelity.notes) || !plan.fidelity.notes.every(isNonBlank2)) || plan.fidelity.roundTrip === "byte-identical" && plan.fidelity.preservesUnknownData !== true || (plan.fidelity.roundTrip === "lossy" || plan.fidelity.roundTrip === "none") && plan.fidelity.preservesUnknownData !== false) {
-    return true;
-  }
-  const ids = /* @__PURE__ */ new Set();
-  for (const target of plan.targets) {
-    if (!isRecord2(target) || !hasExactKeys(target, [
-      "targetId",
-      "subjectUri",
-      "ownerSource",
-      "semanticPath",
-      "expectedRevision"
-    ]) || !isNonBlank2(target["targetId"]) || ids.has(target["targetId"]) || !isNonBlank2(target["subjectUri"]) || !isAssetSource(target["ownerSource"]) || !Array.isArray(target["semanticPath"]) || !target["semanticPath"].every(isNonBlank2) || !isRevision(target["expectedRevision"])) {
-      return true;
-    }
-    ids.add(target["targetId"]);
-  }
-  for (const edit of plan.edits) {
-    if (!isSourceEdit(edit) || !ids.has(edit.targetId))
-      return true;
-    if ((edit.operation === "create" || edit.operation === "delete" || edit.operation === "rename") && plan.targets.find((target) => target.targetId === edit.targetId)?.expectedRevision.namespaceRevision === void 0) {
-      return true;
-    }
-  }
-  return false;
-}
-function createCommitCoordinator(options) {
-  options = Object.freeze({
-    ...options,
-    payloads: Object.freeze({ open: options.payloads.open.bind(options.payloads) }),
-    ...options.expectedWriter === void 0 ? {} : { expectedWriter: snapshot(options.expectedWriter) },
-    ...options.expectedEvidenceContext === void 0 ? {} : { expectedEvidenceContext: snapshot(options.expectedEvidenceContext) }
-  });
-  const nextId = (kind) => options.nextId?.(kind) ?? `${kind}-${globalThis.crypto.randomUUID()}`;
-  const preparedInputs = /* @__PURE__ */ new WeakMap();
-  const history = /* @__PURE__ */ new Map();
-  const prepare = async (authoredPlan, prepareOptions) => {
-    if (prepareOptions.signal?.aborted) {
-      return { state: "rejected", reason: "cancelled", diagnostics: [] };
-    }
-    let grant;
-    let plan;
-    try {
-      grant = snapshotGrant(prepareOptions.grant);
-      plan = snapshot(authoredPlan);
-    } catch {
-      return { state: "rejected", reason: "plan-invalid", diagnostics: [] };
-    }
-    if (!grantIsValid(options, grant) || invalidPlan(plan)) {
-      return { state: "rejected", reason: "plan-invalid", diagnostics: [] };
-    }
-    const targetMap = new Map(plan.targets.map((target) => [target.targetId, target]));
-    let derived;
-    try {
-      derived = derive(plan, targetMap, grant, options);
-    } catch {
-      return { state: "rejected", reason: "plan-invalid", diagnostics: [] };
-    }
-    if ("rejection" in derived) {
-      return { state: "rejected", reason: derived.rejection, diagnostics: [] };
-    }
-    if (!derived.authorization.scopeSatisfied) {
-      return { state: "rejected", reason: "write-scope-mismatch", diagnostics: [] };
-    }
-    if (derived.authorization.missing.length > 0) {
-      return { state: "rejected", reason: "permission-missing", diagnostics: [] };
-    }
-    if (GUARANTEE_STRENGTH[derived.authorization.achievableGuarantee] < GUARANTEE_STRENGTH[plan.semantics.minimumGuarantee]) {
-      return { state: "rejected", reason: "guarantee-unachievable", diagnostics: [] };
-    }
-    const canPartiallyApply = plan.edits.length > 1 && derived.authorization.achievableGuarantee !== "atomic";
-    if (canPartiallyApply && options.createRecovery === void 0) {
-      return { state: "rejected", reason: "guarantee-unachievable", diagnostics: [] };
-    }
-    let fidelity;
-    try {
-      fidelity = options.evidenceFor(plan);
-    } catch {
-      fidelity = void 0;
-    }
-    let proven = false;
-    try {
-      proven = fidelityMatches(plan, fidelity, options.expectedWriter, options.expectedEvidenceContext);
-    } catch {
-      proven = false;
-    }
-    if (!proven) {
-      const pinned = options.expectedWriter !== void 0 && fidelity !== void 0 && fidelity.writer.providerId !== options.expectedWriter.providerId;
-      return {
-        state: "rejected",
-        reason: "fidelity-unproven",
-        diagnostics: [
-          {
-            severity: "error",
-            code: pinned ? "x3.host/fidelity-writer-pinned" : "x3.host/fidelity-evidence-missing",
-            message: pinned ? `this host pinned writes to \xAB${options.expectedWriter?.providerId}\xBB, and this plan came from \xAB${fidelity?.writer.providerId}\xBB` : `no fidelity evidence covers ${plan.fidelity.roundTrip}/preservesUnknownData=${String(plan.fidelity.preservesUnknownData)} for this plan`,
-            path: []
-          }
-        ]
-      };
-    }
-    if ((plan.fidelity.roundTrip === "lossy" || plan.fidelity.roundTrip === "none") && (prepareOptions.confirmationToken === void 0 || !(options.confirmationMatches?.(prepareOptions.confirmationToken, plan) ?? false))) {
-      return { state: "rejected", reason: "confirmation-required", diagnostics: [] };
-    }
-    if (!await payloadsAvailable(plan, options, prepareOptions.signal)) {
-      return { state: "rejected", reason: "payload-unavailable", diagnostics: [] };
-    }
-    let conflicts;
-    try {
-      conflicts = await conflictsFor(targetMap, derived.backends, options.backendFor, prepareOptions.signal);
-    } catch {
-      return { state: "rejected", reason: "plan-invalid", diagnostics: [] };
-    }
-    if (conflicts.length > 0)
-      return { state: "conflict", conflicts };
-    let prepared;
-    try {
-      const planDigest = options.digest(planDigestValue(plan));
-      prepared = Object.freeze({
-        preparedId: nextId("prepared"),
-        plan: snapshot(plan),
-        planDigest,
-        writeSet: derived.writeSet,
-        authorization: derived.authorization,
-        preparedRevisionFingerprint: revisionFingerprint(plan.targets, options.digest),
-        fidelity: snapshot(fidelity)
-      });
-    } catch {
-      return { state: "rejected", reason: "plan-invalid", diagnostics: [] };
-    }
-    const internal = Object.freeze({
-      plan,
-      targets: targetMap,
-      backends: derived.backends,
-      prepared,
-      ...prepareOptions.confirmationToken === void 0 ? {} : { confirmationToken: prepareOptions.confirmationToken }
-    });
-    preparedInputs.set(prepared, internal);
-    return { state: "ready", prepared };
-  };
-  const commit = async (publicPrepared, commitOptions) => {
-    const internal = preparedInputs.get(publicPrepared);
-    if (internal === void 0) {
-      return { state: "not-applied", reason: "plan-invalid", diagnostics: [] };
-    }
-    if (commitOptions.signal?.aborted) {
-      return { state: "not-applied", reason: "cancelled", diagnostics: [] };
-    }
-    let grant;
-    try {
-      grant = snapshotGrant(commitOptions.grant);
-    } catch {
-      return { state: "not-applied", reason: "permission-missing", diagnostics: [] };
-    }
-    if (!grantIsValid(options, grant)) {
-      return { state: "not-applied", reason: "permission-missing", diagnostics: [] };
-    }
-    let fresh;
-    try {
-      fresh = derive(internal.plan, internal.targets, grant, options);
-    } catch {
-      return { state: "not-applied", reason: "plan-invalid", diagnostics: [] };
-    }
-    if ("rejection" in fresh) {
-      return { state: "not-applied", reason: fresh.rejection, diagnostics: [] };
-    }
-    if (!fresh.authorization.scopeSatisfied) {
-      return { state: "not-applied", reason: "write-scope-mismatch", diagnostics: [] };
-    }
-    if (fresh.authorization.missing.length > 0) {
-      return { state: "not-applied", reason: "permission-missing", diagnostics: [] };
-    }
-    if (fresh.writeSet.digest !== internal.prepared.writeSet.digest || GUARANTEE_STRENGTH[fresh.authorization.achievableGuarantee] < GUARANTEE_STRENGTH[internal.plan.semantics.minimumGuarantee]) {
-      return { state: "not-applied", reason: "guarantee-unachievable", diagnostics: [] };
-    }
-    if (!await payloadsAvailable(internal.plan, options, commitOptions.signal)) {
-      return { state: "not-applied", reason: "payload-unavailable", diagnostics: [] };
-    }
-    let conflicts;
-    try {
-      conflicts = await conflictsFor(internal.targets, fresh.backends, options.backendFor, commitOptions.signal);
-    } catch {
-      return { state: "not-applied", reason: "plan-invalid", diagnostics: [] };
-    }
-    if (conflicts.length > 0) {
-      return {
-        state: "not-applied",
-        reason: "stale-revision",
-        conflicts,
-        diagnostics: []
-      };
-    }
-    const transactionId = nextId("transaction");
-    const before = internal.plan.targets.map((target) => snapshot(target.expectedRevision));
-    const writes = [];
-    const latestRevisions = new Map(internal.plan.targets.map((target) => [target.targetId, target.expectedRevision]));
-    const finalRevisions = () => internal.plan.targets.map((target) => snapshot(latestRevisions.get(target.targetId) ?? target.expectedRevision));
-    const applied = [];
-    if (fresh.authorization.achievableGuarantee === "atomic") {
-      const backend = [...new Set(fresh.backends.values())][0];
-      if (backend?.applyBatch === void 0) {
-        return { state: "not-applied", reason: "guarantee-unachievable", diagnostics: [] };
-      }
-      preparedInputs.delete(publicPrepared);
-      try {
-        const results = await backend.applyBatch(internal.plan.edits.map((edit) => ({
-          edit,
-          expectedRevision: latestRevisions.get(edit.targetId) ?? internal.targets.get(edit.targetId).expectedRevision
-        })), {
-          transactionId,
-          payloads: options.payloads,
-          ...commitOptions.signal === void 0 ? {} : { signal: commitOptions.signal }
-        });
-        if (results.length !== internal.plan.edits.length || results.some((result, index2) => result.targetId !== internal.plan.edits[index2]?.targetId)) {
-          throw new TypeError("atomic backend returned a malformed write result");
-        }
-        results.forEach((result, index2) => {
-          const edit = internal.plan.edits[index2];
-          const stepBefore = latestRevisions.get(edit.targetId);
-          latestRevisions.set(edit.targetId, snapshot(result.after));
-          applied.push({ edit, backend, before: stepBefore });
-          writes.push(Object.freeze({
-            targetId: edit.targetId,
-            source: snapshot(edit.source),
-            state: "applied",
-            diagnosticIds: Object.freeze([...result.diagnosticIds ?? []])
-          }));
-          commitOptions.onProgress?.(index2 + 1);
-        });
-      } catch (error5) {
-        return {
-          state: "not-applied",
-          reason: commitOptions.signal?.aborted ? "cancelled" : "plan-invalid",
-          diagnostics: [
-            diagnostic("error", "x3.host/edit-write-failed", error5 instanceof Error ? error5.message : String(error5))
-          ]
-        };
-      }
-      const receipt2 = Object.freeze({
-        transactionId,
-        committedAt: options.now?.() ?? (/* @__PURE__ */ new Date()).toISOString(),
-        mutationMode: internal.plan.semantics.mutationMode,
-        commitGuarantee: "atomic",
-        status: "committed",
-        undo: backend.profile.supportsRollback && backend.rollback !== void 0 ? "snapshot" : "none",
-        before: Object.freeze(before),
-        after: Object.freeze(finalRevisions()),
-        writes: Object.freeze(writes),
-        fidelity: internal.prepared.fidelity
-      });
-      history.set(transactionId, {
-        plan: internal.plan,
-        prepared: internal,
-        receipt: receipt2,
-        steps: Object.freeze([...applied])
-      });
-      return {
-        state: "committed",
-        receipt: receipt2
-      };
-    }
-    const needsRecovery = internal.plan.edits.length > 1;
-    let recovery;
-    try {
-      recovery = needsRecovery ? await options.createRecovery?.(internal.prepared.preparedId, internal.prepared.planDigest) : void 0;
-    } catch {
-      return { state: "not-applied", reason: "guarantee-unachievable", diagnostics: [] };
-    }
-    if (needsRecovery && !isRecoveryRef(recovery)) {
-      return { state: "not-applied", reason: "guarantee-unachievable", diagnostics: [] };
-    }
-    if (recovery !== void 0)
-      recovery = snapshot(recovery);
-    preparedInputs.delete(publicPrepared);
-    for (let index2 = 0; index2 < internal.plan.edits.length; index2 += 1) {
-      const edit = internal.plan.edits[index2];
-      const backend = fresh.backends.get(edit.targetId);
-      const target = internal.targets.get(edit.targetId);
-      const expectedRevision = latestRevisions.get(edit.targetId) ?? target.expectedRevision;
-      try {
-        const result = await backend.apply(edit, {
-          transactionId,
-          payloads: options.payloads,
-          expectedRevision,
-          ...commitOptions.signal === void 0 ? {} : { signal: commitOptions.signal }
-        });
-        latestRevisions.set(edit.targetId, snapshot(result.after));
-        applied.push({ edit, backend, before: expectedRevision });
-        writes.push(Object.freeze({
-          targetId: edit.targetId,
-          source: snapshot(edit.source),
-          state: "applied",
-          diagnosticIds: Object.freeze([...result.diagnosticIds ?? []])
-        }));
-        commitOptions.onProgress?.(index2 + 1);
-      } catch (error5) {
-        writes.push(Object.freeze({
-          targetId: edit.targetId,
-          source: snapshot(edit.source),
-          state: "failed",
-          diagnosticIds: Object.freeze(["x3.host/edit-write-failed"])
-        }));
-        const diagnostics = [
-          diagnostic("error", "x3.host/edit-write-failed", error5 instanceof Error ? error5.message : String(error5))
-        ];
-        if (applied.length === 0) {
-          return {
-            state: "not-applied",
-            reason: commitOptions.signal?.aborted ? "cancelled" : "plan-invalid",
-            diagnostics
-          };
-        }
-        if (applied.every((item) => item.backend.profile.supportsRollback && item.backend.rollback !== void 0)) {
-          const rolledBackTargets = /* @__PURE__ */ new Set();
-          try {
-            for (const item of [...applied].reverse()) {
-              latestRevisions.set(item.edit.targetId, await item.backend.rollback(transactionId, item.edit, item.before, commitOptions.signal));
-              rolledBackTargets.add(item.edit.targetId);
-            }
-          } catch (rollbackError) {
-            if (recovery === void 0) {
-              return {
-                state: "not-applied",
-                reason: "guarantee-unachievable",
-                diagnostics: [
-                  ...diagnostics,
-                  diagnostic("error", "x3.host/edit-rollback-failed", rollbackError instanceof Error ? rollbackError.message : String(rollbackError))
-                ]
-              };
-            }
-            return {
-              state: "partially-applied",
-              receipt: Object.freeze({
-                transactionId,
-                committedAt: options.now?.() ?? (/* @__PURE__ */ new Date()).toISOString(),
-                mutationMode: internal.plan.semantics.mutationMode,
-                commitGuarantee: fresh.authorization.achievableGuarantee,
-                status: "partially-applied",
-                undo: "none",
-                before: Object.freeze(before),
-                after: Object.freeze(finalRevisions()),
-                writes: Object.freeze(writes.map((write) => write.state === "applied" && rolledBackTargets.has(write.targetId) ? Object.freeze({ ...write, state: "rolled-back" }) : write)),
-                recovery,
-                fidelity: internal.prepared.fidelity
-              })
-            };
-          }
-          const rolledWrites = writes.map((write) => write.state === "applied" ? Object.freeze({ ...write, state: "rolled-back" }) : write);
-          return {
-            state: "rolled-back",
-            receipt: Object.freeze({
-              transactionId,
-              committedAt: options.now?.() ?? (/* @__PURE__ */ new Date()).toISOString(),
-              mutationMode: internal.plan.semantics.mutationMode,
-              commitGuarantee: fresh.authorization.achievableGuarantee,
-              status: "rolled-back",
-              undo: "none",
-              before: Object.freeze(before),
-              after: Object.freeze(finalRevisions()),
-              writes: Object.freeze(rolledWrites),
-              fidelity: internal.prepared.fidelity
-            })
-          };
-        }
-        if (recovery === void 0) {
-          throw new TypeError("partial commit requires a durable recovery reference");
-        }
-        return {
-          state: "partially-applied",
-          receipt: Object.freeze({
-            transactionId,
-            committedAt: options.now?.() ?? (/* @__PURE__ */ new Date()).toISOString(),
-            mutationMode: internal.plan.semantics.mutationMode,
-            commitGuarantee: fresh.authorization.achievableGuarantee,
-            status: "partially-applied",
-            undo: "none",
-            before: Object.freeze(before),
-            after: Object.freeze(finalRevisions()),
-            writes: Object.freeze(writes),
-            recovery,
-            fidelity: internal.prepared.fidelity
-          })
-        };
-      }
-    }
-    const receipt = Object.freeze({
-      transactionId,
-      committedAt: options.now?.() ?? (/* @__PURE__ */ new Date()).toISOString(),
-      mutationMode: internal.plan.semantics.mutationMode,
-      commitGuarantee: fresh.authorization.achievableGuarantee,
-      status: "committed",
-      undo: applied.every((item) => item.backend.profile.supportsRollback && item.backend.rollback !== void 0) ? "snapshot" : "none",
-      before: Object.freeze(before),
-      after: Object.freeze(finalRevisions()),
-      writes: Object.freeze(writes),
-      ...recovery === void 0 ? {} : { recovery },
-      fidelity: internal.prepared.fidelity
-    });
-    history.set(transactionId, {
-      plan: internal.plan,
-      prepared: internal,
-      receipt,
-      steps: Object.freeze([...applied])
-    });
-    return {
-      state: "committed",
-      receipt
-    };
-  };
-  const undo = async (transactionId, undoOptions) => {
-    const item = history.get(transactionId);
-    if (item === void 0 || item.undoneRevisions !== void 0 || item.replayed === true) {
-      return { state: "not-applied", reason: "plan-invalid", diagnostics: [] };
-    }
-    let grant;
-    try {
-      grant = snapshotGrant(undoOptions.grant);
-    } catch {
-      return { state: "not-applied", reason: "permission-missing", diagnostics: [] };
-    }
-    if (!grantIsValid(options, grant)) {
-      return { state: "not-applied", reason: "permission-missing", diagnostics: [] };
-    }
-    let fresh;
-    try {
-      fresh = derive(item.plan, item.prepared.targets, grant, options);
-    } catch {
-      return { state: "not-applied", reason: "plan-invalid", diagnostics: [] };
-    }
-    if ("rejection" in fresh || fresh.authorization.missing.length > 0) {
-      return { state: "not-applied", reason: "permission-missing", diagnostics: [] };
-    }
-    if (!fresh.authorization.scopeSatisfied) {
-      return { state: "not-applied", reason: "write-scope-mismatch", diagnostics: [] };
-    }
-    const currentTargets = new Map(item.plan.targets.map((target, index2) => [
-      target.targetId,
-      Object.freeze({ ...target, expectedRevision: item.receipt.after[index2] })
-    ]));
-    let conflicts;
-    try {
-      conflicts = await conflictsFor(currentTargets, fresh.backends, options.backendFor, undoOptions.signal);
-    } catch {
-      return { state: "not-applied", reason: "plan-invalid", diagnostics: [] };
-    }
-    if (conflicts.length > 0) {
-      return { state: "not-applied", reason: "stale-revision", conflicts, diagnostics: [] };
-    }
-    const latestRevisions = new Map(item.plan.targets.map((target, index2) => [
-      target.targetId,
-      item.receipt.after[index2]
-    ]));
-    for (const step of [...item.steps].reverse()) {
-      const backend = fresh.backends.get(step.edit.targetId);
-      if (backend?.rollback === void 0) {
-        return { state: "not-applied", reason: "guarantee-unachievable", diagnostics: [] };
-      }
-      latestRevisions.set(step.edit.targetId, await backend.rollback(transactionId, step.edit, step.before, undoOptions.signal));
-    }
-    const after = item.plan.targets.map((target) => snapshot(latestRevisions.get(target.targetId) ?? target.expectedRevision));
-    const receipt = Object.freeze({
-      transactionId: nextId("transaction"),
-      committedAt: options.now?.() ?? (/* @__PURE__ */ new Date()).toISOString(),
-      mutationMode: item.plan.semantics.mutationMode,
-      commitGuarantee: item.receipt.commitGuarantee,
-      status: "committed",
-      undo: "none",
-      before: item.receipt.after,
-      after: Object.freeze(after),
-      writes: Object.freeze(item.receipt.writes.map((write) => Object.freeze({ ...write, state: "rolled-back" }))),
-      fidelity: item.receipt.fidelity
-    });
-    history.set(transactionId, { ...item, undoneRevisions: Object.freeze(after) });
-    return {
-      state: "committed",
-      receipt
-    };
-  };
-  const redo = async (transactionId, redoOptions) => {
-    const item = history.get(transactionId);
-    if (item === void 0 || item.undoneRevisions === void 0 || item.replayed === true) {
-      return { state: "not-applied", reason: "plan-invalid", diagnostics: [] };
-    }
-    const targets = item.plan.targets.map((target, index2) => {
-      const expectedRevision = item.undoneRevisions?.[index2];
-      if (expectedRevision === void 0)
-        throw new TypeError("undo revision is absent");
-      return Object.freeze({ ...target, expectedRevision });
-    });
-    const prepared = await prepare({ ...item.plan, targets }, {
-      grant: redoOptions.grant,
-      confirmationToken: item.prepared.confirmationToken ?? "explicit-redo",
-      ...redoOptions.signal === void 0 ? {} : { signal: redoOptions.signal }
-    });
-    if (prepared.state === "conflict") {
-      return {
-        state: "not-applied",
-        reason: "stale-revision",
-        conflicts: prepared.conflicts,
-        diagnostics: []
-      };
-    }
-    if (prepared.state === "rejected") {
-      return { state: "not-applied", reason: prepared.reason, diagnostics: prepared.diagnostics };
-    }
-    const result = await commit(prepared.prepared, redoOptions);
-    if (result.state === "committed")
-      history.set(transactionId, { ...item, replayed: true });
-    return result;
-  };
-  const discardHistory = async (transactionId) => {
-    const item = history.get(transactionId);
-    if (item === void 0)
-      return false;
-    history.delete(transactionId);
-    if (options.releaseStagedPayload !== void 0) {
-      const retained = new Set([...history.values()].flatMap((entry2) => stagedPayloadRefs(entry2.plan).map(stagedPayloadKey)));
-      const releasable = stagedPayloadRefs(item.plan).filter((ref2) => !retained.has(stagedPayloadKey(ref2)));
-      await Promise.allSettled(releasable.map((ref2) => options.releaseStagedPayload?.(ref2)));
-    }
-    return true;
-  };
-  const notify = async (result, operation) => {
-    if (result.state === "not-applied" || options.onTransactionApplied === void 0)
-      return;
-    try {
-      await options.onTransactionApplied(result.receipt, operation);
-    } catch {
-    }
-  };
-  const publicCommit = async (prepared, commitOptions) => {
-    const result = await commit(prepared, commitOptions);
-    await notify(result, "commit");
-    return result;
-  };
-  const publicUndo = async (transactionId, undoOptions) => {
-    const result = await undo(transactionId, undoOptions);
-    await notify(result, "undo");
-    return result;
-  };
-  const publicRedo = async (transactionId, redoOptions) => {
-    const result = await redo(transactionId, redoOptions);
-    await notify(result, "redo");
-    return result;
-  };
-  return Object.freeze({
-    prepare,
-    commit: publicCommit,
-    undo: publicUndo,
-    redo: publicRedo,
-    discardHistory
-  });
-}
-function createEditSession(options) {
-  let state = "live";
-  const targets = snapshot(options.targets);
-  const revision = snapshot(options.revision);
-  const validate = options.writer.validate.bind(options.writer);
-  const plan = options.writer.plan.bind(options.writer);
-  const ensureLive = () => {
-    if (state !== "live")
-      throw new TypeError(`edit session is ${state}`);
-  };
-  return Object.freeze({
-    revision,
-    targets,
-    state: () => state,
-    async propose(change) {
-      ensureLive();
-      const result = snapshot(await validate(snapshot(change)));
-      if (!isRecord2(result) || !hasExactKeys(result, ["valid", "diagnostics"]) || typeof result["valid"] !== "boolean" || !Array.isArray(result["diagnostics"])) {
-        return {
-          valid: false,
-          diagnostics: [
-            diagnostic("error", "x3.host/edit-validation-result-invalid", "writer returned a malformed validation result")
-          ]
-        };
-      }
-      return result;
-    },
-    async plan(change, signal) {
-      ensureLive();
-      const authored = snapshot(await plan(snapshot(change), signal));
-      return snapshot(options.transformPlan === void 0 ? authored : await options.transformPlan(authored, signal));
-    },
-    markStale() {
-      if (state !== "disposed")
-        state = "stale-revision";
-    },
-    markCommitting(committing) {
-      if (state === "disposed")
-        return;
-      state = committing ? "committing" : "live";
-    },
-    async dispose() {
-      state = "disposed";
-    }
-  });
-}
-
-// packages/host/dist/subject-editing.js
-function unsupported(kind) {
-  return new ModkitError({
-    code: "x3.host/edit-topology-unsupported",
-    message: `editing a \xAB${kind}\xBB subject is not supported yet (physical and namespace subjects only)`,
-    context: { kind }
-  });
-}
-function assetRevisionFromDescriptor(descriptor) {
-  const origin = descriptor.origin;
-  if (origin.kind === "bundle") {
-    return Object.freeze({
-      bindings: Object.freeze(Object.fromEntries(origin.bindings.map((binding2) => [binding2.id, binding2.revision]))),
-      compositionFingerprint: canonicalJsonStringify({
-        topology: "bundle",
-        ...origin.primary === void 0 ? {} : { primary: origin.primary },
-        bindings: origin.bindings.map((binding2) => ({
-          bindingId: binding2.id,
-          source: binding2.source,
-          revision: binding2.revision,
-          ownership: binding2.ownership,
-          role: binding2.role
-        }))
-      })
-    });
-  }
-  if (origin.kind === "namespace") {
-    return Object.freeze({
-      bindings: Object.freeze({ [origin.root.id]: origin.revision }),
-      namespaceRevision: origin.revision,
-      compositionFingerprint: canonicalJsonStringify({
-        topology: "namespace",
-        root: { id: origin.root.id, uri: origin.root.uri },
-        revision: origin.revision
-      })
-    });
-  }
-  if (origin.kind !== "single")
-    throw unsupported(origin.kind);
-  const binding = origin.binding;
-  return Object.freeze({
-    bindings: Object.freeze({ [binding.id]: binding.revision }),
-    compositionFingerprint: canonicalJsonStringify({
-      topology: "single",
-      bindingId: binding.id,
-      source: { id: binding.source.id, uri: binding.source.uri },
-      revision: binding.revision
-    })
-  });
-}
-function subjectEditTargetsFromDescriptor(descriptor) {
-  const origin = descriptor.origin;
-  const revision = assetRevisionFromDescriptor(descriptor);
-  if (origin.kind === "bundle") {
-    const ids = /* @__PURE__ */ new Set(), sourceIds = /* @__PURE__ */ new Set(), uris = /* @__PURE__ */ new Set();
-    if (origin.bindings.length === 0)
-      throw unsupported("empty bundle");
-    return Object.freeze(origin.bindings.map((binding) => {
-      if (ids.has(binding.id) || sourceIds.has(binding.source.id) || uris.has(binding.source.uri))
-        throw unsupported("aliased bundle bindings");
-      ids.add(binding.id);
-      sourceIds.add(binding.source.id);
-      uris.add(binding.source.uri);
-      return Object.freeze({
-        targetId: binding.id,
-        subjectUri: descriptor.subjectUri,
-        ownerSource: Object.freeze({ ...binding.source }),
-        semanticPath: Object.freeze([]),
-        expectedRevision: Object.freeze({
-          bindings: Object.freeze({ [binding.id]: binding.revision }),
-          compositionFingerprint: canonicalJsonStringify({
-            topology: "single",
-            bindingId: binding.id,
-            source: { id: binding.source.id, uri: binding.source.uri },
-            revision: binding.revision
-          })
-        })
-      });
-    }));
-  }
-  if (origin.kind === "namespace") {
-    return Object.freeze([
-      Object.freeze({
-        targetId: origin.root.id,
-        subjectUri: descriptor.subjectUri,
-        ownerSource: Object.freeze({ ...origin.root }),
-        semanticPath: Object.freeze([]),
-        expectedRevision: revision
-      })
-    ]);
-  }
-  if (origin.kind !== "single")
-    throw unsupported(origin.kind);
-  return Object.freeze([
-    Object.freeze({
-      targetId: origin.binding.id,
-      subjectUri: descriptor.subjectUri,
-      ownerSource: Object.freeze({ ...origin.binding.source }),
-      semanticPath: Object.freeze([]),
-      expectedRevision: revision
-    })
-  ]);
-}
-function namespaceEntryTargetOf(descriptor, target) {
-  const origin = descriptor.origin;
-  if (origin.kind !== "namespace")
-    return void 0;
-  let path;
-  try {
-    const url = new URL(target.ownerSource.uri);
-    path = url.searchParams.get("vfs-path");
-  } catch {
-    return void 0;
-  }
-  if (path === null || path.split("/").some((segment) => segment === "" || segment === "." || segment === "..")) {
-    return void 0;
-  }
-  const bindingIds = Object.keys(target.expectedRevision.bindings);
-  const revision = target.expectedRevision.bindings[target.ownerSource.id];
-  if (bindingIds.length !== 1 || revision === void 0)
-    return void 0;
-  const rebuilt = namespaceEntryEditTarget({
-    root: origin.root,
-    namespaceRevision: origin.revision,
-    entry: { path, size: 0 }
-  });
-  return Object.freeze({
-    ...rebuilt,
-    expectedRevision: Object.freeze({
-      bindings: Object.freeze({ [rebuilt.ownerSource.id]: revision }),
-      namespaceRevision: origin.revision,
-      compositionFingerprint: canonicalJsonStringify({
-        topology: "single",
-        bindingId: rebuilt.ownerSource.id,
-        source: { id: rebuilt.ownerSource.id, uri: rebuilt.ownerSource.uri },
-        revision
-      })
-    })
-  });
-}
-function editPlanFromOperationForDescriptor(descriptor, output) {
-  if (output.kind !== "edit-plan") {
-    throw new ModkitError({
-      code: "x3.host/edit-plan-expected",
-      message: `operation returned \xAB${output.kind}\xBB, not an edit plan`
-    });
-  }
-  const expectedTargets = new Map(subjectEditTargetsFromDescriptor(descriptor).map((target) => [target.targetId, target]));
-  const plan = output.plan;
-  const declaredTargetIds = /* @__PURE__ */ new Set();
-  for (const target of plan.targets) {
-    if (!expectedTargets.has(target.targetId)) {
-      const entry2 = namespaceEntryTargetOf(descriptor, target);
-      if (entry2 !== void 0)
-        expectedTargets.set(target.targetId, entry2);
-    }
-    const expectedTarget = expectedTargets.get(target.targetId);
-    if (expectedTarget === void 0 || declaredTargetIds.has(target.targetId) || canonicalJsonStringify(target) !== canonicalJsonStringify(expectedTarget)) {
-      throw new ModkitError({
-        code: "x3.host/edit-plan-subject-mismatch",
-        message: `edit plan target \xAB${target.targetId}\xBB is not this subject at its open revision`,
-        context: { targetId: target.targetId }
-      });
-    }
-    declaredTargetIds.add(target.targetId);
-  }
-  for (const edit of plan.edits) {
-    const expectedTarget = expectedTargets.get(edit.targetId);
-    if (expectedTarget === void 0 || descriptor.origin.kind === "bundle" && descriptor.origin.bindings.find((binding) => binding.id === edit.targetId)?.ownership !== "owned" || !declaredTargetIds.has(edit.targetId) || canonicalJsonStringify(edit.source) !== canonicalJsonStringify(expectedTarget.ownerSource)) {
-      throw new ModkitError({
-        code: "x3.host/edit-plan-subject-mismatch",
-        message: `edit \xAB${edit.operation}\xBB on \xAB${edit.source.id}\xBB is not this subject`,
-        context: { targetId: edit.targetId, sourceId: edit.source.id }
-      });
-    }
-  }
-  if (descriptor.origin.kind === "bundle" && declaredTargetIds.size !== expectedTargets.size)
-    throw new ModkitError({
-      code: "x3.host/edit-plan-subject-mismatch",
-      message: "bundle edit plan must retain every opened binding revision"
-    });
-  return plan;
-}
-var NO_STAGED_PAYLOADS = Object.freeze({
-  async open(ref2) {
-    throw new ModkitError({
-      code: "x3.host/edit-payload-unavailable",
-      message: `no payload store can open staged payload \xAB${ref2.handleId}\xBB`
-    });
-  }
-});
-var DEFAULT_INLINE_PAYLOAD_BYTES = 16 * 1024 * 1024;
-function isStagingStore(store) {
-  const candidate = store;
-  return typeof candidate.stage === "function" && typeof candidate.verify === "function" && typeof candidate.release === "function";
-}
-async function stageOversizedPlan(plan, store, maximum, owned, signal) {
-  if (store === void 0)
-    return plan;
-  const created = [];
-  try {
-    const edits = await Promise.all(plan.edits.map(async (edit) => {
-      if (!("payload" in edit) || edit.payload.kind === "staged")
-        return edit;
-      const bytes = edit.payload.kind === "text" ? new TextEncoder().encode(edit.payload.text) : edit.payload.bytes;
-      if (bytes.byteLength <= maximum)
-        return edit;
-      const ref2 = await store.stage(bytes, {}, signal);
-      created.push(ref2);
-      return Object.freeze({ ...edit, payload: Object.freeze({ kind: "staged", ref: ref2 }) });
-    }));
-    for (const ref2 of created)
-      owned.set(`${ref2.storeId}:${ref2.handleId}`, ref2);
-    return created.length === 0 ? plan : Object.freeze({ ...plan, edits: Object.freeze(edits) });
-  } catch (error5) {
-    await Promise.allSettled(created.map((ref2) => store.release(ref2)));
-    throw error5;
-  }
-}
-var defaultDigest = (value2) => canonicalJsonStringify(JSON.parse(JSON.stringify(value2)));
-function createSubjectEditing(options) {
-  const descriptor = ("carrier" in options.opened ? options.opened.carrier?.descriptor : void 0) ?? options.opened.descriptor;
-  const revision = assetRevisionFromDescriptor(descriptor);
-  const targets = subjectEditTargetsFromDescriptor(descriptor);
-  const grantSnapshot = createGrantSnapshot({
-    snapshotId: options.snapshotId ?? `${options.grant.id}#edit`,
-    permissions: options.grant.classes,
-    sourceIds: targets.filter((target) => descriptor.origin.kind !== "bundle" || descriptor.origin.bindings.find((binding) => binding.id === target.targetId)?.ownership === "owned").map((target) => target.ownerSource.id),
-    // A folder subject's files are named per plan, so its root is granted as a namespace.
-    ...descriptor.origin.kind === "namespace" ? { namespaceRoots: [descriptor.origin.root.uri] } : {}
-  });
-  const issued = /* @__PURE__ */ new Set([grantSnapshot.snapshotId]);
-  const payloads = options.payloads ?? NO_STAGED_PAYLOADS;
-  const staging = isStagingStore(payloads) ? payloads : void 0;
-  const maximumInline = options.maxInlinePayloadBytes ?? DEFAULT_INLINE_PAYLOAD_BYTES;
-  const ownedStaged = /* @__PURE__ */ new Map();
-  const releaseOwnedStaged = async (ref2) => {
-    if (staging === void 0)
-      return;
-    const key3 = `${ref2.storeId}:${ref2.handleId}`;
-    if (!ownedStaged.delete(key3))
-      return;
-    await staging.release(ref2);
-  };
-  const stagePlan = (plan, signal) => stageOversizedPlan(plan, staging, maximumInline, ownedStaged, signal);
-  const coordinator = createCommitCoordinator({
-    payloads,
-    backendFor: options.backendFor,
-    evidenceFor: options.evidenceFor,
-    ...options.expectedWriter === void 0 ? {} : { expectedWriter: options.expectedWriter },
-    ...options.expectedEvidenceContext === void 0 ? {} : { expectedEvidenceContext: options.expectedEvidenceContext },
-    isGrantValid: options.isGrantValid ?? ((grant) => issued.has(grant.snapshotId)),
-    digest: options.digest ?? defaultDigest,
-    ...options.verifyStagedPayload === void 0 ? {} : { verifyStagedPayload: options.verifyStagedPayload },
-    ...staging === void 0 ? {} : { releaseStagedPayload: releaseOwnedStaged },
-    ...options.createRecovery === void 0 ? {} : { createRecovery: options.createRecovery },
-    ...options.confirmationMatches === void 0 ? {} : { confirmationMatches: options.confirmationMatches },
-    ...options.now === void 0 ? {} : { now: options.now },
-    ...options.nextId === void 0 ? {} : { nextId: options.nextId },
-    maxInlinePayloadBytes: maximumInline
-  });
-  const session = options.writer === void 0 ? void 0 : createEditSession({ revision, targets, writer: options.writer, transformPlan: stagePlan });
-  const authorization = Object.freeze({
-    async request() {
-      return { grant: grantSnapshot };
-    }
-  });
-  const editorPorts = session === void 0 ? void 0 : Object.freeze({
-    edit: session,
-    commit: coordinator,
-    payloads,
-    authorization
-  });
-  const editing = {
-    revision,
-    targets,
-    grantSnapshot,
-    coordinator,
-    ...session === void 0 ? {} : { session },
-    ...editorPorts === void 0 ? {} : { editorPorts },
-    planFromOperation(output) {
-      return editPlanFromOperationForDescriptor(descriptor, output);
-    },
-    stagePlan,
-    async releasePlan(plan) {
-      const refs = plan.edits.flatMap((edit) => "payload" in edit && edit.payload.kind === "staged" ? [edit.payload.ref] : []);
-      await Promise.allSettled(refs.map(releaseOwnedStaged));
-    },
-    async dispose() {
-      await session?.dispose();
-      const refs = [...ownedStaged.values()];
-      ownedStaged.clear();
-      if (staging !== void 0)
-        await Promise.allSettled(refs.map((ref2) => staging.release(ref2)));
-    }
-  };
-  return Object.freeze(editing);
-}
-
-// packages/host/dist/mod-context-layer-source.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-var MAX_ENTRY_BYTES = 64 * 1024 * 1024;
-
-// packages/host/dist/mod-context-data-workspace.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-var MAX_ENTRY_BYTES2 = 64 * 1024 * 1024;
-
-// packages/host/dist/subject-services.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-
-// packages/host/dist/service-definitions.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-var FACETLESS_SERVICE_MATCHER_PROFILE = contractId("modkit/facetless-matcher");
-var facetlessMatcher = Object.freeze({
-  profile: FACETLESS_SERVICE_MATCHER_PROFILE,
-  major: 1,
-  match(context) {
-    return context.offerFacet === void 0 && context.requestFacet === void 0 ? { state: "match", selectionKey: "facetless:v1" } : { state: "no-match" };
-  }
-});
-function createServiceFacetMatcherProfileRegistry(additional = []) {
-  const profiles = /* @__PURE__ */ new Map();
-  for (const profile3 of [facetlessMatcher, ...additional]) {
-    if (!Number.isSafeInteger(profile3.major) || profile3.major < 0) {
-      throw new TypeError("service facet matcher major must be a safe non-negative integer");
-    }
-    const profileKey = `${profile3.profile}@${profile3.major}`;
-    if (profiles.has(profileKey)) {
-      throw new TypeError(`duplicate service facet matcher ${profileKey}`);
-    }
-    profiles.set(profileKey, Object.freeze({ ...profile3 }));
-  }
-  const registry = {
-    lookup: (profile3, major) => profiles.get(`${profile3}@${major}`),
-    list: () => Object.freeze([...profiles.values()].sort((left, right) => compareUtf8(left.profile, right.profile) || left.major - right.major))
-  };
-  return Object.freeze(registry);
-}
-function ownedJson(value2) {
-  if (value2 === void 0)
-    return value2;
-  return JSON.parse(canonicalJsonStringify(value2));
-}
-function rejection(reason, code, message) {
-  return { state: "rejected", reason, diagnostics: [diagnostic("error", code, message)] };
-}
-function key2(contract, major) {
-  return `${contract}@${major}`;
-}
-function validDefinition(value2) {
-  return typeof value2 === "object" && value2 !== null && value2.schemaVersion === 1 && value2.kind === "service" && typeof value2.contract === "string" && isQualifiedId(value2.contract) && Number.isSafeInteger(value2.major) && value2.major >= 0 && typeof value2.conformanceProfile === "string" && value2.conformanceProfile.trim().length > 0 && typeof value2.matching === "object" && value2.matching !== null && typeof value2.matching.profile === "string" && isQualifiedId(value2.matching.profile) && Number.isSafeInteger(value2.matching.major) && value2.matching.major >= 0;
-}
-function normalize2(value2, provenance) {
-  const owned = ownedJson(value2);
-  return Object.freeze({
-    ...owned,
-    contract: contractId(owned.contract),
-    matching: Object.freeze({
-      ...owned.matching,
-      profile: contractId(owned.matching.profile)
-    }),
-    provenance: Object.freeze(ownedJson(provenance))
-  });
-}
-function presenceDiagnostics(definition2, context, label) {
-  if (definition2.presence === "forbidden" && context.facet !== void 0) {
-    return [
-      diagnostic("error", "x3.host/facet-forbidden", `${label} facet is forbidden for ${context.contract}@${context.major}`)
-    ];
-  }
-  if (definition2.presence === "required" && context.facet === void 0) {
-    return [
-      diagnostic("error", "x3.host/facet-required", `${label} facet is required for ${context.contract}@${context.major}`)
-    ];
-  }
-  return [];
-}
-function createServiceContractDefinitionRegistry(options) {
-  const matcherProfiles = options.matcherProfiles;
-  const isNamespaceOwner = options.isNamespaceOwner;
-  const validateJsonSchemaRef = options.validateJsonSchemaRef;
-  const validateMatcherConfiguration = options.validateMatcherConfiguration;
-  let registrations = /* @__PURE__ */ new Map();
-  const ownerEpochs = /* @__PURE__ */ new Map();
-  const validateFacet = async (side, context) => {
-    const registration = registrations.get(key2(context.contract, context.major));
-    if (registration === void 0) {
-      return [
-        diagnostic("error", "x3.host/service-contract-unregistered", `service contract ${context.contract}@${context.major} is not registered`)
-      ];
-    }
-    const definition2 = side === "offer" ? registration.offerFacet : registration.requestFacet;
-    const diagnostics = presenceDiagnostics(definition2, context, side);
-    if (context.facet !== void 0 && definition2.presence !== "forbidden" && !hasErrors(diagnostics)) {
-      try {
-        diagnostics.push(...await validateJsonSchemaRef(definition2.schema, ownedJson(context.facet), registration.provenance));
-      } catch (error5) {
-        diagnostics.push(diagnostic("error", "x3.host/facet-schema-validation-failed", "facet schema validation failed closed", [], { error: error5 instanceof Error ? error5.message : String(error5) }));
-      }
-    }
-    return Object.freeze(diagnostics);
-  };
-  return {
-    async replaceOwnerInventory(ownerExtensionId, definitions) {
-      const epoch = (ownerEpochs.get(ownerExtensionId) ?? 0) + 1;
-      ownerEpochs.set(ownerExtensionId, epoch);
-      const pending = [];
-      const seen = /* @__PURE__ */ new Set();
-      for (const entry2 of definitions) {
-        if (!validDefinition(entry2.definition)) {
-          return rejection("invalid-definition", "x3.host/invalid-service-contract-definition", "service contract definition is malformed");
-        }
-        if (await isNamespaceOwner(ownerExtensionId, entry2.definition.contract) !== true) {
-          return rejection("namespace-owner-mismatch", "x3.host/service-contract-owner-mismatch", `${ownerExtensionId} does not own ${entry2.definition.contract}`);
-        }
-        const definitionKey = key2(entry2.definition.contract, entry2.definition.major);
-        if (seen.has(definitionKey)) {
-          return rejection("duplicate", "x3.host/duplicate-service-contract-definition", `duplicate service contract definition ${definitionKey}`);
-        }
-        seen.add(definitionKey);
-        const profile3 = matcherProfiles.lookup(contractId(entry2.definition.matching.profile), entry2.definition.matching.major);
-        if (profile3 === void 0) {
-          return rejection("matcher-unavailable", "x3.host/facet-matcher-unavailable", `matcher ${entry2.definition.matching.profile}@${entry2.definition.matching.major} is unavailable`);
-        }
-        if (profile3.configurationSchema !== void 0 && validateMatcherConfiguration !== void 0) {
-          const diagnostics = await validateMatcherConfiguration(profile3.configurationSchema, entry2.definition.matching.configuration);
-          if (hasErrors(diagnostics)) {
-            return {
-              state: "rejected",
-              reason: "matcher-configuration-invalid",
-              diagnostics
-            };
-          }
-        }
-        pending.push(normalize2(entry2.definition, entry2.provenance));
-      }
-      if (ownerEpochs.get(ownerExtensionId) !== epoch) {
-        return rejection("version-conflict", "x3.host/stale-definition-replacement", "a newer owner inventory operation superseded this replacement");
-      }
-      const next = new Map([...registrations].filter(([, registration]) => registration.provenance.ownerExtensionId !== ownerExtensionId));
-      for (const registration of pending) {
-        const registrationKey = key2(registration.contract, registration.major);
-        if (next.has(registrationKey)) {
-          return rejection("duplicate", "x3.host/service-contract-conflict", `service contract ${registrationKey} is already owned by another extension`);
-        }
-        next.set(registrationKey, registration);
-      }
-      registrations = next;
-      return { state: "committed" };
-    },
-    unregisterOwner(ownerExtensionId) {
-      ownerEpochs.set(ownerExtensionId, (ownerEpochs.get(ownerExtensionId) ?? 0) + 1);
-      registrations = new Map([...registrations].filter(([, registration]) => registration.provenance.ownerExtensionId !== ownerExtensionId));
-    },
-    lookup: (contract, major) => registrations.get(key2(contract, major)),
-    list: () => Object.freeze([...registrations.values()].sort((left, right) => compareUtf8(left.contract, right.contract) || left.major - right.major)),
-    validateOfferFacet: (context) => validateFacet("offer", context),
-    validateRequestFacet: (context) => validateFacet("request", context),
-    async matchFacets(context) {
-      const registration = registrations.get(key2(context.contract, context.major));
-      if (registration === void 0) {
-        return {
-          state: "invalid",
-          diagnostics: [
-            diagnostic("error", "x3.host/service-contract-unregistered", `service contract ${context.contract}@${context.major} is not registered`)
-          ]
-        };
-      }
-      const offerDiagnostics = await validateFacet("offer", {
-        contract: context.contract,
-        major: context.major,
-        ownerExtensionId: context.ownerExtensionId,
-        facet: context.offerFacet
-      });
-      const requestDiagnostics = await validateFacet("request", {
-        contract: context.contract,
-        major: context.major,
-        ownerExtensionId: context.ownerExtensionId,
-        facet: context.requestFacet
-      });
-      const diagnostics = [...offerDiagnostics, ...requestDiagnostics];
-      if (hasErrors(diagnostics))
-        return { state: "invalid", diagnostics };
-      const profile3 = matcherProfiles.lookup(registration.matching.profile, registration.matching.major);
-      if (profile3 === void 0) {
-        return {
-          state: "invalid",
-          diagnostics: [
-            diagnostic("error", "x3.host/facet-matcher-unavailable", "the registered facet matcher profile is unavailable")
-          ]
-        };
-      }
-      try {
-        const result = await profile3.match({
-          ...context,
-          offerFacet: ownedJson(context.offerFacet),
-          requestFacet: ownedJson(context.requestFacet)
-        }, registration.matching.configuration);
-        if (result.state === "match" && (typeof result.selectionKey !== "string" || result.selectionKey.trim().length === 0)) {
-          throw new TypeError("matcher returned a blank selection key");
-        }
-        return result;
-      } catch (error5) {
-        return {
-          state: "invalid",
-          diagnostics: [
-            diagnostic("error", "x3.host/facet-matcher-failed", "the host-trusted facet matcher failed closed", [], { error: error5 instanceof Error ? error5.message : String(error5) })
-          ]
-        };
-      }
-    }
-  };
-}
-async function registerServiceContractDefinitionsFromInventory(inventory, registry) {
-  const byOwner = /* @__PURE__ */ new Map();
-  for (const extension of inventory.extensions) {
-    for (const contribution of extension.contributions) {
-      if (!contribution.inventoryEligible)
-        continue;
-      for (const fact4 of contribution.facts) {
-        if (fact4.contract.id !== CONTRACT_DEFINITION_FACT || fact4.contract.major !== 1)
-          continue;
-        if (typeof fact4.value !== "object" || fact4.value === null || Array.isArray(fact4.value)) {
-          continue;
-        }
-        const definitionValue = fact4.value;
-        if (definitionValue["kind"] !== "service")
-          continue;
-        const owner = fact4.provenance.ownerExtensionId;
-        const entries = byOwner.get(owner) ?? [];
-        entries.push({
-          definition: definitionValue,
-          provenance: fact4.provenance
-        });
-        byOwner.set(owner, entries);
-      }
-    }
-  }
-  const results = [];
-  for (const owner of [...byOwner.keys()].sort(compareUtf8)) {
-    results.push(await registry.replaceOwnerInventory(owner, byOwner.get(owner) ?? []));
-  }
-  return Object.freeze(results);
-}
-
-// packages/host/dist/editing-definitions.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-var STANDARD_EDITING_OWNER = "modkit/editing";
-var REQUIREMENT_KEYS = ["formatId", "representationId", "mutationMode", "minimumRoundTrip"];
-var OFFER_KEYS3 = [...REQUIREMENT_KEYS, "providerId", "fidelityEvidenceId"];
-var MUTATION_MODES = /* @__PURE__ */ new Set(["export-only", "mutate"]);
-var ROUND_TRIPS = /* @__PURE__ */ new Set(["byte-identical", "semantic", "lossy", "none"]);
-function facetOf(value2, keys) {
-  if (typeof value2 !== "object" || value2 === null || Array.isArray(value2))
-    return void 0;
-  const record9 = value2;
-  const own = Object.keys(record9);
-  if (own.length !== keys.length || !keys.every((key3) => own.includes(key3)))
-    return void 0;
-  for (const key3 of keys) {
-    if (typeof record9[key3] !== "string" || record9[key3].length === 0)
-      return void 0;
-  }
-  if (!MUTATION_MODES.has(record9["mutationMode"]))
-    return void 0;
-  if (!ROUND_TRIPS.has(record9["minimumRoundTrip"]))
-    return void 0;
-  return record9;
-}
-function matchWriterFacets(context) {
-  const request = facetOf(context.requestFacet, REQUIREMENT_KEYS);
-  const offer = facetOf(context.offerFacet, OFFER_KEYS3);
-  if (request === void 0 || offer === void 0) {
-    return {
-      state: "invalid",
-      diagnostics: [
-        diagnostic("error", "x3.host/writer-facet-invalid", `${context.contract}@${context.major}: writer request and offer facets must both be complete`)
-      ]
-    };
-  }
-  return writerOfferSatisfies(request, offer) ? {
-    state: "match",
-    selectionKey: writerSelectionKey(request)
-  } : { state: "no-match" };
-}
-var WRITER_FACET_MATCHER = Object.freeze({
-  profile: contractId(WRITER_FACET_MATCHER_PROFILE),
-  major: 1,
-  match: matchWriterFacets
-});
-var WRITER_CONTRACT_DEFINITION = Object.freeze({
-  schemaVersion: 1,
-  kind: "service",
-  contract: WRITER_CONTRACT_ID,
-  major: 1,
-  offerFacet: Object.freeze({
-    presence: "required",
-    schema: Object.freeze({ $ref: "https://schemas.modkit.org/x3/writer-offer.v1.schema.json" })
-  }),
-  requestFacet: Object.freeze({
-    presence: "required",
-    schema: Object.freeze({
-      $ref: "https://schemas.modkit.org/x3/writer-requirement.v1.schema.json"
-    })
-  }),
-  matching: Object.freeze({ profile: WRITER_FACET_MATCHER_PROFILE, major: 1 }),
-  conformanceProfile: "common.edit/writer-v1",
-  surface: WRITER_SURFACE
-});
-var STANDARD_EDITING_DEFINITIONS = Object.freeze([WRITER_CONTRACT_DEFINITION]);
-function registerStandardEditingDefinitions(definitions) {
-  return definitions.replaceOwnerInventory(STANDARD_EDITING_OWNER, STANDARD_EDITING_DEFINITIONS.map((definition2) => ({
-    definition: definition2,
-    // host code, not an inventoried artifact: the provenance names the platform, digests are
-    // the contract's own coordinates so a lookalike registration is distinguishable
-    provenance: {
-      ownerExtensionId: STANDARD_EDITING_OWNER,
-      extensionVersion: "1.0.0",
-      inventoryRecordId: `host:${definition2.contract}@${definition2.major}`,
-      manifestDigest: `host:${definition2.contract}@${definition2.major}`,
-      artifactDigest: "host:standard-editing-definitions",
-      artifactRoot: "host:",
-      manifestPath: "host:standard-editing-definitions"
-    }
-  })));
-}
-
-// packages/host/dist/runtime/index.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-
-// packages/host/dist/runtime/preparer.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-
-// packages/host/dist/runtime/source-snapshot.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-var MAX_TOTAL_BYTES = 512 * 1024 * 1024;
-var encoder3 = new TextEncoder();
-
-// packages/host/dist/runtime/index.js
-var STANDARD_RUNTIME_OWNER = "modkit/runtime";
-var OFFER_KEYS4 = /* @__PURE__ */ new Set(["runtimeIds"]);
-var REQUEST_KEYS3 = /* @__PURE__ */ new Set(["runtimeId"]);
-function recordOf3(value2) {
-  return typeof value2 === "object" && value2 !== null && !Array.isArray(value2) ? value2 : void 0;
-}
-function nonEmptyString2(value2) {
-  return typeof value2 === "string" && value2.trim().length > 0;
-}
-function stringList3(value2) {
-  if (!Array.isArray(value2) || value2.length === 0 || !value2.every(nonEmptyString2))
-    return void 0;
-  const strings2 = value2;
-  return new Set(strings2).size === strings2.length ? strings2 : void 0;
-}
-function parseOffer3(value2) {
-  const record9 = recordOf3(value2);
-  if (record9 === void 0 || Object.keys(record9).some((key3) => !OFFER_KEYS4.has(key3)))
-    return void 0;
-  const runtimeIds = stringList3(record9["runtimeIds"]);
-  return runtimeIds === void 0 ? void 0 : { runtimeIds };
-}
-function parseRequest3(value2) {
-  const record9 = recordOf3(value2);
-  if (record9 === void 0 || Object.keys(record9).some((key3) => !REQUEST_KEYS3.has(key3)))
-    return void 0;
-  const runtimeId = record9["runtimeId"];
-  return nonEmptyString2(runtimeId) ? { runtimeId } : void 0;
-}
-function matchRuntimeFacets(context) {
-  const offer = parseOffer3(context.offerFacet);
-  const request = parseRequest3(context.requestFacet);
-  if (offer === void 0 || request === void 0) {
-    return {
-      state: "invalid",
-      diagnostics: [
-        diagnostic("error", "x3.host/runtime-facet-invalid", `${context.contract}@${context.major}: runtime request and offer routes must be well formed`)
-      ]
-    };
-  }
-  return offer.runtimeIds.includes(request.runtimeId) ? { state: "match", selectionKey: `runtime=${request.runtimeId}` } : { state: "no-match" };
-}
-var RUNTIME_PROVIDER_MATCHER = Object.freeze({
-  profile: contractId(RUNTIME_PROVIDER_MATCHER_PROFILE),
-  major: 1,
-  match: matchRuntimeFacets
-});
-var RUNTIME_PROVIDER_CONTRACT_DEFINITION = Object.freeze({
-  schemaVersion: 1,
-  kind: "service",
-  contract: RUNTIME_PROVIDER_CONTRACT,
-  major: 1,
-  offerFacet: Object.freeze({
-    presence: "required",
-    schema: Object.freeze({
-      $ref: "https://schemas.modkit.org/x3/runtime-provider-offer.v1.schema.json"
-    })
-  }),
-  requestFacet: Object.freeze({
-    presence: "required",
-    schema: Object.freeze({
-      $ref: "https://schemas.modkit.org/x3/runtime-provider-request.v1.schema.json"
-    })
-  }),
-  matching: Object.freeze({ profile: RUNTIME_PROVIDER_MATCHER_PROFILE, major: 1 }),
-  conformanceProfile: "common.runtime/provider-v1",
-  surface: Object.freeze({
-    fields: Object.freeze(["contract", "providerId", "runtimeIds", "inputMode"]),
-    methods: Object.freeze({
-      createSession: Object.freeze({
-        kind: "lease",
-        wrapper: "lease",
-        result: Object.freeze({ contract: RUNTIME_SESSION_CONTRACT, major: 1 }),
-        signal: Object.freeze({ arg: 0, key: "signal" })
-      })
-    })
-  })
-});
-var RUNTIME_SESSION_CONTRACT_DEFINITION = Object.freeze({
-  schemaVersion: 1,
-  kind: "service",
-  contract: RUNTIME_SESSION_CONTRACT,
-  major: 1,
-  offerFacet: Object.freeze({ presence: "forbidden" }),
-  requestFacet: Object.freeze({ presence: "forbidden" }),
-  matching: Object.freeze({ profile: FACETLESS_SERVICE_MATCHER_PROFILE, major: 1 }),
-  conformanceProfile: "common.runtime/session-v1",
-  surface: Object.freeze({
-    fields: Object.freeze(["contract", "sessionId", "providerId", "budget"]),
-    methods: Object.freeze({
-      execute: Object.freeze({
-        kind: "value",
-        signal: Object.freeze({ arg: 0, key: "signal" })
-      }),
-      status: Object.freeze({ kind: "value" })
-    })
-  })
-});
-var RUNTIME_PROVIDER_V2_CONTRACT_DEFINITION = {
-  ...RUNTIME_PROVIDER_CONTRACT_DEFINITION,
-  major: 2,
-  conformanceProfile: "common.runtime/provider-v2",
-  surface: {
-    fields: ["contract", "providerId", "runtimeIds", "inputMode"],
-    methods: {
-      createSession: {
-        kind: "lease",
-        wrapper: "lease",
-        result: { contract: RUNTIME_SESSION_CONTRACT, major: 2 },
-        signal: { arg: 0, key: "signal" }
-      }
-    }
-  }
-};
-var RUNTIME_PROVIDER_V3_CONTRACT_DEFINITION = {
-  ...RUNTIME_PROVIDER_V2_CONTRACT_DEFINITION,
-  major: 3,
-  conformanceProfile: "common.runtime/provider-v3"
-};
-var RUNTIME_SESSION_V2_CONTRACT_DEFINITION = {
-  ...RUNTIME_SESSION_CONTRACT_DEFINITION,
-  major: 2,
-  conformanceProfile: "common.runtime/session-v2",
-  surface: {
-    fields: ["contract", "sessionId", "providerId", "budget", "offers"],
-    methods: {
-      execute: { kind: "value", signal: { arg: 0, key: "signal" } },
-      status: { kind: "value" },
-      identity: { kind: "value" },
-      step: { kind: "value", signal: "last" },
-      events: { kind: "iterable" },
-      snapshot: { kind: "value", signal: "last" },
-      restore: { kind: "value", signal: "last" },
-      stateHash: { kind: "value", signal: "last" }
-    }
-  }
-};
-var STANDARD_RUNTIME_DEFINITIONS = Object.freeze([
-  RUNTIME_PROVIDER_CONTRACT_DEFINITION,
-  RUNTIME_SESSION_CONTRACT_DEFINITION,
-  RUNTIME_PROVIDER_V2_CONTRACT_DEFINITION,
-  RUNTIME_PROVIDER_V3_CONTRACT_DEFINITION,
-  RUNTIME_SESSION_V2_CONTRACT_DEFINITION
-]);
-function registerStandardRuntimeDefinitions(definitions) {
-  return definitions.replaceOwnerInventory(STANDARD_RUNTIME_OWNER, STANDARD_RUNTIME_DEFINITIONS.map((definition2) => ({
-    definition: definition2,
-    provenance: {
-      ownerExtensionId: STANDARD_RUNTIME_OWNER,
-      extensionVersion: "1.0.0",
-      inventoryRecordId: `host:${definition2.contract}@${definition2.major}`,
-      manifestDigest: `host:${definition2.contract}@${definition2.major}`,
-      artifactDigest: "host:standard-runtime-definitions",
-      artifactRoot: "host:",
-      manifestPath: "host:standard-runtime-definitions"
-    }
-  })));
-}
-
-// packages/host/dist/service-operations.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-
-// packages/host/dist/service-operation-schema.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-
-// packages/host/dist/service-operations.js
-var STANDARD_SERVICE_OPERATION_OWNER = "modkit/service-operations";
-var recordOf4 = (value2) => typeof value2 === "object" && value2 !== null && !Array.isArray(value2) ? value2 : void 0;
-var nonEmpty2 = (value2) => typeof value2 === "string" && value2.trim().length > 0;
-function operationIds(value2) {
-  if (!Array.isArray(value2) || value2.length === 0 || !value2.every(nonEmpty2))
-    return void 0;
-  return new Set(value2).size === value2.length ? value2 : void 0;
-}
-function parseOffer4(value2) {
-  const record9 = recordOf4(value2);
-  if (record9 === void 0 || Object.keys(record9).some((key3) => key3 !== "operationIds"))
-    return void 0;
-  const ids = operationIds(record9["operationIds"]);
-  return ids === void 0 ? void 0 : { operationIds: ids };
-}
-function parseRequest4(value2) {
-  const record9 = recordOf4(value2);
-  if (record9 === void 0 || Object.keys(record9).some((key3) => key3 !== "operationId"))
-    return void 0;
-  return nonEmpty2(record9["operationId"]) ? { operationId: record9["operationId"] } : void 0;
-}
-function matchServiceOperation(context) {
-  const offer = parseOffer4(context.offerFacet);
-  const request = parseRequest4(context.requestFacet);
-  if (offer === void 0 || request === void 0) {
-    return {
-      state: "invalid",
-      diagnostics: [
-        diagnostic("error", "x3.host/service-operation-facet-invalid", `${context.contract}@${context.major}: operation request and offer routes must be well formed`)
-      ]
-    };
-  }
-  return offer.operationIds.includes(request.operationId) ? { state: "match", selectionKey: `operation=${request.operationId}` } : { state: "no-match" };
-}
-var SERVICE_OPERATION_MATCHER = Object.freeze({
-  profile: contractId(SERVICE_OPERATION_MATCHER_PROFILE),
-  major: 1,
-  match: matchServiceOperation
-});
-var SERVICE_OPERATION_PROVIDER_CONTRACT_DEFINITION = Object.freeze({
-  schemaVersion: 1,
-  kind: "service",
-  contract: SERVICE_OPERATION_PROVIDER_CONTRACT,
-  major: 1,
-  offerFacet: Object.freeze({
-    presence: "required",
-    schema: Object.freeze({
-      $ref: "https://schemas.modkit.org/x3/service-operation-provider-offer.v1.schema.json"
-    })
-  }),
-  requestFacet: Object.freeze({
-    presence: "required",
-    schema: Object.freeze({
-      $ref: "https://schemas.modkit.org/x3/service-operation-provider-request.v1.schema.json"
-    })
-  }),
-  matching: Object.freeze({ profile: SERVICE_OPERATION_MATCHER_PROFILE, major: 1 }),
-  conformanceProfile: "common.runtime/operation-provider-v1",
-  surface: Object.freeze({
-    fields: Object.freeze(["contract", "providerId", "operations"]),
-    methods: Object.freeze({
-      invoke: Object.freeze({
-        kind: "value",
-        signal: Object.freeze({ arg: 0, key: "signal" })
-      })
-    })
-  })
-});
-function registerStandardServiceOperationDefinitions(definitions) {
-  return definitions.replaceOwnerInventory(STANDARD_SERVICE_OPERATION_OWNER, [
-    {
-      definition: SERVICE_OPERATION_PROVIDER_CONTRACT_DEFINITION,
-      provenance: {
-        ownerExtensionId: STANDARD_SERVICE_OPERATION_OWNER,
-        extensionVersion: "1.0.0",
-        inventoryRecordId: "host:common.runtime/operation-provider@1",
-        manifestDigest: "host:common.runtime/operation-provider@1",
-        artifactDigest: "host:standard-service-operation-definition",
-        artifactRoot: "host:",
-        manifestPath: "host:standard-service-operation-definition"
-      }
-    }
-  ]);
-}
-var DESCRIPTOR_KEYS = Object.freeze([
-  "schemaVersion",
-  "id",
-  "title",
-  "summary",
-  "requiredPermissions",
-  "effects",
-  "inputSchema",
-  "resultSchema",
-  "budget",
-  /** Optional: where a product offers this operation in a view (see `ServiceOperationSurface`). */
-  "surface"
-]);
-var REQUIRED_DESCRIPTOR_KEYS = Object.freeze(DESCRIPTOR_KEYS.filter((key3) => key3 !== "surface"));
-var SURFACE_KEYS = Object.freeze(["target", "sectionId", "title", "icon", "forms"]);
-var REQUIRED_SURFACE_KEYS = Object.freeze(["target", "sectionId", "title"]);
-var BUDGET_KEYS = Object.freeze(["maxInputBytes", "maxOutputBytes", "maxWallTimeMs"]);
-var RESULT_KEYS = Object.freeze({
-  completed: ["state", "operationId", "value", "diagnostics"],
-  refused: ["state", "operationId", "code", "message", "diagnostics"],
-  failed: ["state", "operationId", "code", "message", "diagnostics"]
-});
-var PERMISSIONS = new Set(PERMISSION_CLASSES);
-var encoder4 = new TextEncoder();
-
-// packages/host/dist/renderer/index.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-var STANDARD_RENDERER_OWNER = "modkit/renderer";
-var OFFER_KEYS5 = /* @__PURE__ */ new Set(["rendererIds", "outputKinds"]);
-var REQUEST_KEYS4 = /* @__PURE__ */ new Set(["rendererId", "outputKind"]);
-var OUTPUT_KINDS = /* @__PURE__ */ new Set(["rgba8"]);
-function recordOf5(value2) {
-  return typeof value2 === "object" && value2 !== null && !Array.isArray(value2) ? value2 : void 0;
-}
-function nonEmptyString3(value2) {
-  return typeof value2 === "string" && value2.trim().length > 0;
-}
-function stringList4(value2) {
-  if (!Array.isArray(value2) || value2.length === 0 || !value2.every(nonEmptyString3))
-    return void 0;
-  const strings2 = value2;
-  return new Set(strings2).size === strings2.length ? strings2 : void 0;
-}
-function outputKind(value2) {
-  return typeof value2 === "string" && OUTPUT_KINDS.has(value2) ? value2 : void 0;
-}
-function outputKindList(value2) {
-  if (!Array.isArray(value2) || value2.length === 0)
-    return void 0;
-  const outputKinds = value2.flatMap((item) => {
-    const parsed = outputKind(item);
-    return parsed === void 0 ? [] : [parsed];
-  });
-  return outputKinds.length === value2.length && new Set(outputKinds).size === outputKinds.length ? outputKinds : void 0;
-}
-function parseOffer5(value2) {
-  const record9 = recordOf5(value2);
-  if (record9 === void 0 || Object.keys(record9).some((key3) => !OFFER_KEYS5.has(key3)))
-    return void 0;
-  const rendererIds = stringList4(record9["rendererIds"]);
-  const outputKinds = outputKindList(record9["outputKinds"]);
-  return rendererIds === void 0 || outputKinds === void 0 ? void 0 : { rendererIds, outputKinds };
-}
-function parseRequest5(value2) {
-  const record9 = recordOf5(value2);
-  if (record9 === void 0 || Object.keys(record9).some((key3) => !REQUEST_KEYS4.has(key3)))
-    return void 0;
-  const rendererId = record9["rendererId"];
-  const parsedOutput = outputKind(record9["outputKind"]);
-  if (parsedOutput === void 0 || rendererId !== void 0 && !nonEmptyString3(rendererId)) {
-    return void 0;
-  }
-  return {
-    outputKind: parsedOutput,
-    ...rendererId === void 0 ? {} : { rendererId }
-  };
-}
-function matchRendererFacets(context) {
-  const offer = parseOffer5(context.offerFacet);
-  const request = parseRequest5(context.requestFacet);
-  if (offer === void 0 || request === void 0) {
-    return {
-      state: "invalid",
-      diagnostics: [
-        diagnostic("error", "x3.host/renderer-facet-invalid", `${context.contract}@${context.major}: renderer request and offer routes must be well formed`)
-      ]
-    };
-  }
-  if (!offer.outputKinds.includes(request.outputKind))
-    return { state: "no-match" };
-  if (request.rendererId !== void 0 && !offer.rendererIds.includes(request.rendererId)) {
-    return { state: "no-match" };
-  }
-  return {
-    state: "match",
-    selectionKey: `renderer=${request.rendererId ?? "*"};output=${request.outputKind}`
-  };
-}
-var SCENE_RENDERER_MATCHER = Object.freeze({
-  profile: contractId(SCENE_RENDERER_MATCHER_PROFILE),
-  major: 1,
-  match: matchRendererFacets
-});
-var SCENE_RENDERER_CONTRACT_DEFINITION = Object.freeze({
-  schemaVersion: 1,
-  kind: "service",
-  contract: SCENE_RENDERER_CONTRACT,
-  major: 1,
-  offerFacet: Object.freeze({
-    presence: "required",
-    schema: Object.freeze({
-      $ref: "https://schemas.modkit.org/x3/scene-renderer-offer.v1.schema.json"
-    })
-  }),
-  requestFacet: Object.freeze({
-    presence: "required",
-    schema: Object.freeze({
-      $ref: "https://schemas.modkit.org/x3/scene-renderer-request.v1.schema.json"
-    })
-  }),
-  matching: Object.freeze({ profile: SCENE_RENDERER_MATCHER_PROFILE, major: 1 }),
-  conformanceProfile: "common.render/scene-3d-v1",
-  surface: Object.freeze({
-    fields: Object.freeze(["contract", "rendererId", "outputKinds"]),
-    methods: Object.freeze({
-      render: Object.freeze({
-        kind: "value",
-        signal: Object.freeze({ arg: 0, key: "signal" })
-      })
-    })
-  })
-});
-function registerStandardRendererDefinitions(definitions) {
-  const definition2 = SCENE_RENDERER_CONTRACT_DEFINITION;
-  return definitions.replaceOwnerInventory(STANDARD_RENDERER_OWNER, [
-    {
-      definition: definition2,
-      provenance: {
-        ownerExtensionId: STANDARD_RENDERER_OWNER,
-        extensionVersion: "1.0.0",
-        inventoryRecordId: `host:${definition2.contract}@${definition2.major}`,
-        manifestDigest: `host:${definition2.contract}@${definition2.major}`,
-        artifactDigest: "host:standard-renderer-definitions",
-        artifactRoot: "host:",
-        manifestPath: "host:standard-renderer-definitions"
-      }
-    }
-  ]);
-}
-function isSceneRenderer(value2) {
-  const record9 = recordOf5(value2);
-  return record9?.["contract"] === SCENE_RENDERER_CONTRACT && nonEmptyString3(record9["rendererId"]) && outputKindList(record9["outputKinds"]) !== void 0 && typeof record9["render"] === "function";
-}
-async function resolveSceneRenderer(request) {
-  const definitions = request.services.serviceDefinitions;
-  if (definitions === void 0) {
-    return {
-      state: "unresolved",
-      diagnostics: [
-        diagnostic("information", "x3.host/renderer-unavailable", "this host registered no service-contract definitions, so renderers cannot be resolved")
-      ]
-    };
-  }
-  const resolver = createHostServiceResolver({
-    inventory: request.services.inventory,
-    target: request.services.target,
-    executionBackends: request.services.executionBackends,
-    definitions,
-    grant: request.grant,
-    budgets: request.budgets,
-    ...request.signal === void 0 ? {} : { signal: request.signal }
-  });
-  const facet = {
-    outputKind: request.outputKind,
-    ...request.rendererId === void 0 ? {} : { rendererId: request.rendererId }
-  };
-  try {
-    const lease2 = await resolver.port.resolve({
-      contract: SCENE_RENDERER_CONTRACT,
-      major: 1,
-      facet,
-      ...request.signal === void 0 ? {} : { signal: request.signal }
-    });
-    if (!isSceneRenderer(lease2.value) || !lease2.value.outputKinds.includes(request.outputKind) || request.rendererId !== void 0 && lease2.value.rendererId !== request.rendererId) {
-      await resolver.release();
-      return {
-        state: "unresolved",
-        diagnostics: [
-          ...resolver.diagnostics,
-          diagnostic("error", "x3.host/renderer-invalid", `the selected provider does not implement ${SCENE_RENDERER_CONTRACT}@1 for ${request.outputKind}`)
-        ]
-      };
-    }
-    return Object.freeze({
-      state: "resolved",
-      renderer: lease2.value,
-      diagnostics: Object.freeze([
-        ...resolver.diagnostics,
-        diagnostic("information", "x3.host/renderer-selected", `selected ${lease2.value.rendererId} for ${request.outputKind}`)
-      ]),
-      release: () => resolver.release()
-    });
-  } catch (error5) {
-    await resolver.release();
-    return {
-      state: "unresolved",
-      diagnostics: [
-        ...resolver.diagnostics,
-        diagnostic("information", "x3.host/renderer-unresolved", `no scene renderer resolved for ${request.outputKind} (${error5 instanceof Error ? error5.message : String(error5)})`)
-      ]
-    };
-  }
-}
-function contractSeverity(severity) {
-  return severity === "hint" ? "information" : severity;
-}
-var contractDiagnostics = (diagnostics) => Object.freeze(diagnostics.map((item) => Object.freeze({
-  severity: contractSeverity(item.severity),
-  code: item.code,
-  message: item.message
-})));
-function createSceneRendererPort(options) {
-  return Object.freeze({
-    async acquire(request) {
-      const resolution = await resolveSceneRenderer({
-        services: options.services,
-        grant: options.grant,
-        budgets: options.budgets,
-        outputKind: request.outputKind,
-        ...request.rendererId === void 0 ? {} : { rendererId: request.rendererId },
-        ...request.signal === void 0 ? {} : { signal: request.signal }
-      });
-      const diagnostics = contractDiagnostics(resolution.diagnostics);
-      if (resolution.state !== "resolved")
-        return Object.freeze({ state: "unresolved", diagnostics });
-      return Object.freeze({
-        state: "resolved",
-        diagnostics,
-        lease: Object.freeze({
-          renderer: resolution.renderer,
-          release: () => resolution.release()
-        })
-      });
-    }
-  });
-}
-
-// packages/host/dist/model-encoding.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-var STANDARD_MODEL_ENCODING_OWNER = "modkit/model-encoding";
-var recordOf6 = (value2) => typeof value2 === "object" && value2 !== null && !Array.isArray(value2) ? value2 : void 0;
-var nonEmptyString4 = (value2) => typeof value2 === "string" && value2.trim().length > 0;
-function parseOffer6(value2) {
-  const record9 = recordOf6(value2);
-  if (record9 === void 0 || Object.keys(record9).some((key3) => key3 !== "formatIds"))
-    return void 0;
-  const values = record9["formatIds"];
-  if (!Array.isArray(values) || values.length === 0 || !values.every(nonEmptyString4) || new Set(values).size !== values.length)
-    return void 0;
-  return { formatIds: values };
-}
-function parseRequest6(value2) {
-  const record9 = recordOf6(value2);
-  if (record9 === void 0 || Object.keys(record9).some((key3) => key3 !== "formatId") || !nonEmptyString4(record9["formatId"]))
-    return void 0;
-  return { formatId: record9["formatId"] };
-}
-function matchNativeModelEncoder(context) {
-  const offer = parseOffer6(context.offerFacet);
-  const request = parseRequest6(context.requestFacet);
-  if (offer === void 0 || request === void 0) {
-    return {
-      state: "invalid",
-      diagnostics: [
-        diagnostic("error", "x3.host/native-model-encoder-facet-invalid", `${context.contract}@${context.major}: native model encoder route is malformed`)
-      ]
-    };
-  }
-  return offer.formatIds.includes(request.formatId) ? { state: "match", selectionKey: `format=${request.formatId}` } : { state: "no-match" };
-}
-var NATIVE_MODEL_ENCODER_MATCHER = Object.freeze({
-  profile: contractId(NATIVE_MODEL_ENCODER_MATCHER_PROFILE),
-  major: 1,
-  match: matchNativeModelEncoder
-});
-var NATIVE_MODEL_ENCODER_CONTRACT_DEFINITION = Object.freeze({
-  schemaVersion: 1,
-  kind: "service",
-  contract: NATIVE_MODEL_ENCODER_CONTRACT,
-  major: 1,
-  offerFacet: Object.freeze({
-    presence: "required",
-    schema: Object.freeze({
-      $ref: "https://schemas.modkit.org/x3/native-model-encoder-offer.v1.schema.json"
-    })
-  }),
-  requestFacet: Object.freeze({
-    presence: "required",
-    schema: Object.freeze({
-      $ref: "https://schemas.modkit.org/x3/native-model-encoder-request.v1.schema.json"
-    })
-  }),
-  matching: Object.freeze({ profile: NATIVE_MODEL_ENCODER_MATCHER_PROFILE, major: 1 }),
-  conformanceProfile: "common.model/native-encoder-v1",
-  surface: Object.freeze({
-    fields: Object.freeze(["contract", "formatId", "extension", "mediaType"]),
-    methods: Object.freeze({
-      encode: Object.freeze({
-        kind: "value",
-        signal: Object.freeze({ arg: 0, key: "signal" })
-      })
-    })
-  })
-});
-function registerStandardModelEncodingDefinitions(definitions) {
-  const definition2 = NATIVE_MODEL_ENCODER_CONTRACT_DEFINITION;
-  return definitions.replaceOwnerInventory(STANDARD_MODEL_ENCODING_OWNER, [
-    {
-      definition: definition2,
-      provenance: {
-        ownerExtensionId: STANDARD_MODEL_ENCODING_OWNER,
-        extensionVersion: "1.0.0",
-        inventoryRecordId: `host:${definition2.contract}@${definition2.major}`,
-        manifestDigest: `host:${definition2.contract}@${definition2.major}`,
-        artifactDigest: "host:standard-model-encoding-definitions",
-        artifactRoot: "host:",
-        manifestPath: "host:standard-model-encoding-definitions"
-      }
-    }
-  ]);
-}
-
-// packages/host/dist/compression-definitions.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-var STANDARD_COMPRESSION_OWNER = "modkit/compression";
-var OODLE_DECODER = "common.compression/oodle-decoder";
-var OODLE_DECODER_CONTRACT_DEFINITION = Object.freeze({
-  schemaVersion: 1,
-  kind: "service",
-  contract: OODLE_DECODER,
-  major: 1,
-  offerFacet: Object.freeze({ presence: "forbidden" }),
-  requestFacet: Object.freeze({ presence: "forbidden" }),
-  matching: Object.freeze({ profile: FACETLESS_SERVICE_MATCHER_PROFILE, major: 1 }),
-  conformanceProfile: "common.compression/oodle-decoder-v1",
-  surface: Object.freeze({
-    fields: Object.freeze(["contract"]),
-    methods: Object.freeze({
-      decompressBlocks: Object.freeze({
-        kind: "value",
-        signal: Object.freeze({ arg: 0, key: "signal" })
-      })
-    })
-  })
-});
-function registerStandardCompressionDefinitions(definitions) {
-  const definition2 = OODLE_DECODER_CONTRACT_DEFINITION;
-  return definitions.replaceOwnerInventory(STANDARD_COMPRESSION_OWNER, [
-    {
-      definition: definition2,
-      provenance: {
-        ownerExtensionId: STANDARD_COMPRESSION_OWNER,
-        extensionVersion: "1.0.0",
-        inventoryRecordId: `host:${definition2.contract}@${definition2.major}`,
-        manifestDigest: `host:${definition2.contract}@${definition2.major}`,
-        artifactDigest: "host:standard-compression-definitions",
-        artifactRoot: "host:",
-        manifestPath: "host:standard-compression-definitions"
-      }
-    }
-  ]);
-}
-
-// packages/host/dist/games/index.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-var STANDARD_GAMES_OWNER = "modkit/games";
-var OFFER_KEYS6 = /* @__PURE__ */ new Set(["gameIds", "markers", "searchFolders"]);
-var FOLDER_NAME = /^[^\\/:*?"<>|\u0000-\u001f]{1,255}$/u;
-var REQUEST_KEYS5 = /* @__PURE__ */ new Set(["gameId"]);
-function recordOf7(value2) {
-  return typeof value2 === "object" && value2 !== null && !Array.isArray(value2) ? value2 : void 0;
-}
-function nonEmptyString5(value2) {
-  return typeof value2 === "string" && value2.trim().length > 0;
-}
-function stringList5(value2) {
-  if (!Array.isArray(value2) || value2.length === 0 || !value2.every(nonEmptyString5))
-    return void 0;
-  const strings2 = value2;
-  return new Set(strings2).size === strings2.length ? strings2 : void 0;
-}
-function nameList(value2) {
-  const names = stringList5(value2);
-  return names?.every((name) => FOLDER_NAME.test(name) && name !== "." && name !== "..") ? names : void 0;
-}
-function parseOffer7(value2) {
-  const record9 = recordOf7(value2);
-  if (record9 === void 0 || Object.keys(record9).some((key3) => !OFFER_KEYS6.has(key3)))
-    return void 0;
-  const gameIds = stringList5(record9["gameIds"]);
-  if (gameIds === void 0)
-    return void 0;
-  const markers = [];
-  if (record9["markers"] !== void 0) {
-    if (!Array.isArray(record9["markers"]))
-      return void 0;
-    for (const item of record9["markers"]) {
-      const marker = recordOf7(item);
-      const files = nameList(marker?.["files"]);
-      if (marker === void 0 || Object.keys(marker).some((key3) => key3 !== "gameId" && key3 !== "files") || typeof marker["gameId"] !== "string" || !gameIds.includes(marker["gameId"]) || files === void 0)
-        return void 0;
-      markers.push({ gameId: marker["gameId"], files });
-    }
-  }
-  const searchFolders = record9["searchFolders"] === void 0 ? void 0 : nameList(record9["searchFolders"]);
-  if (record9["searchFolders"] !== void 0 && searchFolders === void 0)
-    return void 0;
-  return {
-    gameIds,
-    ...markers.length === 0 ? {} : { markers },
-    ...searchFolders === void 0 ? {} : { searchFolders }
-  };
-}
-function parseRequest7(value2) {
-  const record9 = recordOf7(value2);
-  if (record9 === void 0 || Object.keys(record9).some((key3) => !REQUEST_KEYS5.has(key3))) {
-    return void 0;
-  }
-  return nonEmptyString5(record9["gameId"]) ? { gameId: record9["gameId"] } : void 0;
-}
-function matchGameInstallationFacets(context) {
-  const offer = parseOffer7(context.offerFacet);
-  const request = parseRequest7(context.requestFacet);
-  if (offer === void 0 || request === void 0) {
-    return {
-      state: "invalid",
-      diagnostics: [
-        diagnostic("error", "x3.host/game-installation-facet-invalid", `${context.contract}@${context.major}: game installation routes must be well formed`)
-      ]
-    };
-  }
-  return offer.gameIds.includes(request.gameId) ? { state: "match", selectionKey: `game=${request.gameId}` } : { state: "no-match" };
-}
-var GAME_INSTALLATION_MATCHER = Object.freeze({
-  profile: contractId(GAME_INSTALLATION_MATCHER_PROFILE),
-  major: 1,
-  match: matchGameInstallationFacets
-});
-var GAME_INSTALLATION_CONTRACT_DEFINITION = Object.freeze({
-  schemaVersion: 1,
-  kind: "service",
-  contract: GAME_INSTALLATION_DISCOVERY_CONTRACT,
-  major: 1,
-  offerFacet: Object.freeze({
-    presence: "required",
-    schema: Object.freeze({
-      $ref: "https://schemas.modkit.org/x3/game-installation-offer.v1.schema.json"
-    })
-  }),
-  requestFacet: Object.freeze({
-    presence: "required",
-    schema: Object.freeze({
-      $ref: "https://schemas.modkit.org/x3/game-installation-request.v1.schema.json"
-    })
-  }),
-  matching: Object.freeze({ profile: GAME_INSTALLATION_MATCHER_PROFILE, major: 1 }),
-  conformanceProfile: "common.game/installation-discovery-v1",
-  surface: Object.freeze({
-    fields: Object.freeze(["contract", "discoveryId", "gameIds", "origins"]),
-    methods: Object.freeze({
-      discover: Object.freeze({
-        kind: "value",
-        signal: Object.freeze({ arg: 0, key: "signal" })
-      })
-    })
-  })
-});
-var GAME_LAUNCH_PLAN_CONTRACT_DEFINITION = Object.freeze({
-  schemaVersion: 1,
-  kind: "service",
-  contract: GAME_LAUNCH_PLAN_CONTRACT,
-  major: 1,
-  offerFacet: Object.freeze({
-    presence: "required",
-    schema: Object.freeze({
-      $ref: "https://schemas.modkit.org/x3/game-launch-offer.v1.schema.json"
-    })
-  }),
-  requestFacet: Object.freeze({
-    presence: "required",
-    schema: Object.freeze({
-      $ref: "https://schemas.modkit.org/x3/game-launch-request.v1.schema.json"
-    })
-  }),
-  matching: Object.freeze({ profile: GAME_INSTALLATION_MATCHER_PROFILE, major: 1 }),
-  conformanceProfile: "common.game/launch-plan-v1",
-  surface: Object.freeze({
-    fields: Object.freeze(["contract", "plannerId", "gameIds"]),
-    methods: Object.freeze({
-      plan: Object.freeze({
-        kind: "value",
-        signal: Object.freeze({ arg: 0, key: "signal" })
-      })
-    })
-  })
-});
-function registerStandardGameDefinitions(definitions) {
-  return definitions.replaceOwnerInventory(STANDARD_GAMES_OWNER, [GAME_INSTALLATION_CONTRACT_DEFINITION, GAME_LAUNCH_PLAN_CONTRACT_DEFINITION].map((definition2) => ({
-    definition: definition2,
-    provenance: {
-      ownerExtensionId: STANDARD_GAMES_OWNER,
-      extensionVersion: "1.0.0",
-      inventoryRecordId: `host:${definition2.contract}@${definition2.major}`,
-      manifestDigest: `host:${definition2.contract}@${definition2.major}`,
-      artifactDigest: "host:standard-game-definitions",
-      artifactRoot: "host:",
-      manifestPath: "host:standard-game-definitions"
-    }
-  })));
-}
-
-// packages/host/dist/mods/index.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-
-// packages/host/dist/mods/resource-sessions.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-
-// packages/host/dist/mods/index.js
-var STANDARD_MODS_OWNER = "modkit/mods";
-var OFFER_KEYS7 = /* @__PURE__ */ new Set(["gameIds"]);
-var REQUEST_KEYS6 = /* @__PURE__ */ new Set(["gameId"]);
-function recordOf8(value2) {
-  return typeof value2 === "object" && value2 !== null && !Array.isArray(value2) ? value2 : void 0;
-}
-function nonEmptyString6(value2) {
-  return typeof value2 === "string" && value2.trim().length > 0;
-}
-function stringList6(value2) {
-  if (!Array.isArray(value2) || value2.length === 0 || !value2.every(nonEmptyString6))
-    return void 0;
-  const strings2 = value2;
-  return new Set(strings2).size === strings2.length ? strings2 : void 0;
-}
-function parseOffer8(value2) {
-  const record9 = recordOf8(value2);
-  if (record9 === void 0 || Object.keys(record9).some((key3) => !OFFER_KEYS7.has(key3))) {
-    return void 0;
-  }
-  const gameIds = stringList6(record9["gameIds"]);
-  return gameIds === void 0 ? void 0 : { gameIds };
-}
-function parseRequest8(value2) {
-  const record9 = recordOf8(value2);
-  if (record9 === void 0 || Object.keys(record9).some((key3) => !REQUEST_KEYS6.has(key3))) {
-    return void 0;
-  }
-  return nonEmptyString6(record9["gameId"]) ? { gameId: record9["gameId"] } : void 0;
-}
-function matchModWorkspaceFacets(context) {
-  const offer = parseOffer8(context.offerFacet);
-  const request = parseRequest8(context.requestFacet);
-  if (offer === void 0 || request === void 0) {
-    return {
-      state: "invalid",
-      diagnostics: [
-        diagnostic("error", "x3.host/mod-workspace-facet-invalid", `${context.contract}@${context.major}: mod workspace routes must be well formed`)
-      ]
-    };
-  }
-  return offer.gameIds.includes(request.gameId) ? { state: "match", selectionKey: `game=${request.gameId}` } : { state: "no-match" };
-}
-var MOD_WORKSPACE_MATCHER = Object.freeze({
-  profile: contractId(MOD_WORKSPACE_MATCHER_PROFILE),
-  major: 1,
-  match: matchModWorkspaceFacets
-});
-var MOD_WORKSPACE_CONTRACT_DEFINITION = Object.freeze({
-  schemaVersion: 1,
-  kind: "service",
-  contract: MOD_WORKSPACE_COMPOSITION_CONTRACT,
-  major: 1,
-  offerFacet: Object.freeze({
-    presence: "required",
-    schema: Object.freeze({
-      $ref: "https://schemas.modkit.org/x3/mod-workspace-offer.v1.schema.json"
-    })
-  }),
-  requestFacet: Object.freeze({
-    presence: "required",
-    schema: Object.freeze({
-      $ref: "https://schemas.modkit.org/x3/mod-workspace-request.v1.schema.json"
-    })
-  }),
-  matching: Object.freeze({ profile: MOD_WORKSPACE_MATCHER_PROFILE, major: 1 }),
-  conformanceProfile: "common.mod/workspace-composition-v1",
-  surface: Object.freeze({
-    fields: Object.freeze(["contract", "compositionId", "gameIds"]),
-    methods: Object.freeze({
-      compose: Object.freeze({
-        kind: "value",
-        signal: Object.freeze({ arg: 0, key: "signal" }),
-        limits: Object.freeze({ maxBytes: 4194304, maxStringLength: 32768 })
-      })
-    })
-  })
-});
-function registerStandardModDefinitions(definitions) {
-  const definition2 = MOD_WORKSPACE_CONTRACT_DEFINITION;
-  return definitions.replaceOwnerInventory(STANDARD_MODS_OWNER, [
-    {
-      definition: definition2,
-      provenance: {
-        ownerExtensionId: STANDARD_MODS_OWNER,
-        extensionVersion: "1.0.0",
-        inventoryRecordId: `host:${definition2.contract}@${definition2.major}`,
-        manifestDigest: `host:${definition2.contract}@${definition2.major}`,
-        artifactDigest: "host:standard-mod-definitions",
-        artifactRoot: "host:",
-        manifestPath: "host:standard-mod-definitions"
-      }
-    }
-  ]);
-}
-
-// packages/host/dist/maps/index.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-
-// packages/host/dist/maps/single-file-namespace.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-var NAMESPACE = "common.view/namespace-entry-source";
-var BYTE_RANGE = "common.view/byte-range-source";
-var EXTRACT_HANDLER = "x3.host/single-file-extract";
-var ENTRY_ID = "subject";
-function fileNameOf(subjectUri) {
-  const path = subjectUri.replace(/[?#].*$/u, "");
-  const last = path.slice(path.lastIndexOf("/") + 1);
-  try {
-    return decodeURIComponent(last) || "subject";
-  } catch {
-    return last || "subject";
-  }
-}
-async function singleFileAsContainer(session, maxBytes) {
-  const descriptor = await session.descriptor();
-  const has = (contract) => descriptor.dataSources.some((item) => item.contract === contract && item.major === 1);
-  if (descriptor.interpretation === "none" || has(NAMESPACE) || !has(BYTE_RANGE))
-    return session;
-  const name = fileNameOf(descriptor.subjectUri);
-  const entry2 = Object.freeze({
-    id: ENTRY_ID,
-    path: name,
-    name,
-    kind: "file",
-    revision: descriptor.revision
-  });
-  const namespace = Object.freeze({
-    async list(prefix) {
-      const items = name.toLowerCase().startsWith(prefix.toLowerCase()) ? [entry2] : [];
-      return Object.freeze({ items: Object.freeze(items) });
-    },
-    async lookup(path) {
-      return path.toLowerCase() === name.toLowerCase() ? entry2 : void 0;
-    },
-    // the preview reads the file through container.extract; nothing opens it as a nested subject
-    async openEntry() {
-      throw new TypeError("a single-file map is read through container.extract");
-    }
-  });
-  const extract = async (signal) => {
-    const lease2 = await session.dataSource(BYTE_RANGE, 1);
-    try {
-      const source2 = lease2.value;
-      const size = await source2.size();
-      if (size > maxBytes || size > BigInt(Number.MAX_SAFE_INTEGER)) {
-        throw new ModkitError({
-          code: "x3.host/map-preview-subject-too-large",
-          message: `the map file (${size} bytes) exceeds the preview input budget`,
-          context: { size: String(size), maxBytes: String(maxBytes) }
-        });
-      }
-      return await source2.read(0n, Number(size), signal);
-    } finally {
-      await lease2.release();
-    }
-  };
-  const extended = Object.freeze({
-    ...descriptor,
-    dataSources: Object.freeze([
-      ...descriptor.dataSources,
-      Object.freeze({ contract: NAMESPACE, major: 1 })
-    ]),
-    operations: Object.freeze([
-      ...descriptor.operations,
-      Object.freeze({
-        id: "container.extract",
-        handlerId: EXTRACT_HANDLER,
-        mutatesSource: false,
-        state: "available"
-      })
-    ])
-  });
-  const operations = () => {
-    const inner = session.operations();
-    return Object.freeze({
-      async invoke(handlerId, input, options) {
-        if (handlerId !== EXTRACT_HANDLER)
-          return inner.invoke(handlerId, input, options);
-        const entryId = input?.entryId;
-        if (entryId !== ENTRY_ID)
-          throw new RangeError(`the map file has no entry ${String(entryId)}`);
-        return {
-          state: "ok",
-          output: { kind: "bytes", value: await extract(options?.signal) },
-          diagnostics: []
-        };
-      },
-      dispose: () => inner.dispose()
-    });
-  };
-  return Object.freeze({
-    get revision() {
-      return session.revision;
-    },
-    state: () => session.state(),
-    descriptor: async () => extended,
-    async dataSource(contract, major) {
-      if (contract === NAMESPACE && major === 1)
-        return { value: namespace, release: async () => void 0 };
-      return session.dataSource(contract, major);
-    },
-    operations,
-    events: (signal) => session.events(signal),
-    dispose: () => session.dispose()
-  });
-}
-
-// packages/host/dist/maps/world-source.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-function positiveLimit(value2, maximum) {
-  if (!Number.isSafeInteger(value2) || value2 <= 0 || value2 > maximum) {
-    throw new TypeError(`world page limit must be between 1 and ${maximum}`);
-  }
-  return value2;
-}
-function childResourceLogicalId(parentLogicalId, childLogicalId) {
-  const childRoot = childLogicalId.split("/")[0];
-  if (childRoot === void 0 || childRoot.length === 0)
-    return childLogicalId;
-  const parent = parentLogicalId.split("/");
-  const sharedRoot = parent.findIndex((segment) => segment.toLowerCase() === childRoot.toLowerCase());
-  if (sharedRoot <= 0)
-    return childLogicalId;
-  return [...parent.slice(0, sharedRoot), childLogicalId].join("/");
-}
-function worldTexture(id, result) {
-  if (result.info.orientation === "unknown")
-    return void 0;
-  const { region } = result;
-  const rowBytes = region.width * 4;
-  const rgba = new Uint8Array(rowBytes * region.height);
-  for (let y = 0; y < region.height; y += 1) {
-    const sourceY = result.info.orientation === "bottom-left" ? region.height - 1 - y : y;
-    rgba.set(region.pixels.subarray(sourceY * region.rowStride, sourceY * region.rowStride + rowBytes), y * rowBytes);
-  }
-  return Object.freeze({
-    id,
-    width: region.width,
-    height: region.height,
-    rgba,
-    ...result.info.channelLayout === void 0 ? {} : { channelLayout: result.info.channelLayout },
-    ...result.info.compression === void 0 ? {} : { compression: result.info.compression },
-    wrapU: "repeat",
-    wrapV: "repeat"
-  });
-}
-function resourceId(namespace, entityId) {
-  return `resource:${encodeURIComponent(namespace)}/${encodeURIComponent(entityId)}`;
-}
-function modelResourceId(requirementId) {
-  return `model-resource:${encodeURIComponent(requirementId)}`;
-}
-function layerId(kind) {
-  return `main/${kind}`;
-}
-function layerContentRevision(items) {
-  const text4 = JSON.stringify(items, (key3, value2) => key3 === "id" || key3 === "layerId" ? void 0 : value2);
-  let hash2 = 2166136261;
-  for (let index2 = 0; index2 < text4.length; index2 += 1) {
-    hash2 ^= text4.charCodeAt(index2);
-    hash2 = Math.imul(hash2, 16777619);
-  }
-  return `fnv1a32:${(hash2 >>> 0).toString(16).padStart(8, "0")}:${items.length}`;
-}
-function terrainMaterialContentRevision(items, rasters) {
-  const text4 = JSON.stringify([items, rasters.map(({ rgba: _rgba, ...metadata }) => metadata)], (key3, value2) => key3 === "id" || key3 === "layerId" ? void 0 : value2);
-  let hash2 = 2166136261;
-  for (let index2 = 0; index2 < text4.length; index2 += 1) {
-    hash2 ^= text4.charCodeAt(index2);
-    hash2 = Math.imul(hash2, 16777619);
-  }
-  for (const raster of rasters) {
-    for (const value2 of raster.rgba ?? []) {
-      hash2 ^= value2;
-      hash2 = Math.imul(hash2, 16777619);
-    }
-  }
-  return `fnv1a32:${(hash2 >>> 0).toString(16).padStart(8, "0")}:${items.length}:${rasters.length}`;
-}
-function canonicalQuery(request) {
-  const bounds3 = request.bounds;
-  if (bounds3 !== void 0 && (!Number.isFinite(bounds3.minimumX) || !Number.isFinite(bounds3.minimumY) || !Number.isFinite(bounds3.maximumX) || !Number.isFinite(bounds3.maximumY) || bounds3.minimumX > bounds3.maximumX || bounds3.minimumY > bounds3.maximumY)) {
-    throw new TypeError("world bounds must be finite ordered minimum/maximum coordinates");
-  }
-  return JSON.stringify([
-    request.facet,
-    request.layerId ?? null,
-    request.lod ?? null,
-    bounds3 === void 0 ? null : [bounds3.minimumX, bounds3.minimumY, bounds3.maximumX, bounds3.maximumY]
-  ]);
-}
-function cursor(snapshotId, query2, offset) {
-  return `${encodeURIComponent(snapshotId)}|${encodeURIComponent(query2)}|${String(offset)}`;
-}
-function cursorOffset(value2, snapshotId, query2) {
-  if (value2 === void 0)
-    return 0;
-  const parts = value2.split("|");
-  if (parts.length !== 3)
-    throw new TypeError("world cursor is malformed");
-  let cursorSnapshot;
-  let cursorQuery;
-  try {
-    cursorSnapshot = decodeURIComponent(parts[0] ?? "");
-    cursorQuery = decodeURIComponent(parts[1] ?? "");
-  } catch {
-    throw new TypeError("world cursor is malformed");
-  }
-  const offset = Number(parts[2]);
-  if (cursorSnapshot !== snapshotId) {
-    throw new TypeError("world cursor belongs to another or stale source snapshot");
-  }
-  if (cursorQuery !== query2 || !Number.isSafeInteger(offset) || offset < 0) {
-    throw new TypeError("world cursor does not match the requested layer, LOD or spatial query");
-  }
-  return offset;
-}
-function numericPair(value2) {
-  if (value2 === void 0)
-    return void 0;
-  const parts = value2.split(",").map((item) => Number(item.trim()));
-  return parts.length >= 2 && Number.isFinite(parts[0]) && Number.isFinite(parts[1]) ? Object.freeze({ x: parts[0], y: parts[1] }) : void 0;
-}
-function regionShape(shape) {
-  const center = numericPair(shape.parameters["center"]);
-  const radiusValue = shape.parameters["radius"];
-  const radius = radiusValue === void 0 ? void 0 : Number(radiusValue);
-  return Object.freeze({
-    kind: shape.type,
-    ...center === void 0 ? {} : { center },
-    ...radius !== void 0 && Number.isFinite(radius) ? { radius } : {},
-    rawParameters: shape.parameters
-  });
-}
-function pageItems(items, request, snapshotId, maximum) {
-  const limit = positiveLimit(request.limit, maximum);
-  const query2 = canonicalQuery(request);
-  const offset = cursorOffset(request.cursor, snapshotId, query2);
-  if (offset > items.length)
-    throw new TypeError("world cursor offset is outside this facet");
-  const selected = Object.freeze(items.slice(offset, offset + limit));
-  const nextOffset = offset + selected.length;
-  return Object.freeze({
-    snapshotId,
-    facet: request.facet,
-    state: "available",
-    items: selected,
-    ...nextOffset < items.length ? { nextCursor: cursor(snapshotId, query2, nextOffset) } : {}
-  });
-}
-function hasExactTerrainGrid(terrain) {
-  if (terrain === void 0 || terrain.samples.length !== terrain.cellCount)
-    return false;
-  const expectedCellCount = terrain.width * terrain.height;
-  if (!Number.isSafeInteger(expectedCellCount) || expectedCellCount <= 0 || expectedCellCount !== terrain.cellCount) {
-    return false;
-  }
-  return terrain.samples.every((sample, index2) => sample.x === index2 % terrain.width && sample.y === Math.floor(index2 / terrain.width));
-}
-function terrainMapNativePosition(sample, transform2) {
-  const vertical = "vertData" in transform2 ? (sample.heightBase * transform2.vertData.quantizeScale - transform2.vertData.quantizeBias) * transform2.heightMap.scale.z + transform2.heightMap.offset.z + ((sample.presentationHeightAdjustment ?? sample.heightAdjustment) * transform2.vertData.quantizeScale - transform2.vertData.quantizeBias) : sample.heightBase * transform2.heightMap.scale.z + transform2.heightMap.offset.z;
-  return Object.freeze({
-    x: transform2.heightMap.offset.x + sample.x * transform2.heightMap.scale.x,
-    y: transform2.heightMap.offset.y + sample.y * transform2.heightMap.scale.y,
-    z: vertical
-  });
-}
-function terrainHeightAt(position, terrain, transform2) {
-  if (transform2 === void 0 || terrain === void 0 || !hasExactTerrainGrid(terrain))
-    return void 0;
-  const gridX = (position.x - transform2.heightMap.offset.x) / transform2.heightMap.scale.x;
-  const gridY = (position.y - transform2.heightMap.offset.y) / transform2.heightMap.scale.y;
-  if (!Number.isFinite(gridX) || !Number.isFinite(gridY) || gridX < 0 || gridY < 0 || gridX > terrain.width - 1 || gridY > terrain.height - 1) {
-    return void 0;
-  }
-  const x0 = Math.floor(gridX);
-  const y0 = Math.floor(gridY);
-  const x1 = Math.min(x0 + 1, terrain.width - 1);
-  const y1 = Math.min(y0 + 1, terrain.height - 1);
-  const tx = gridX - x0;
-  const ty = gridY - y0;
-  const height = (x, y) => terrainMapNativePosition(terrain.samples[y * terrain.width + x], transform2).z;
-  const lower = height(x0, y0) * (1 - tx) + height(x1, y0) * tx;
-  const upper = height(x0, y1) * (1 - tx) + height(x1, y1) * tx;
-  return lower * (1 - ty) + upper * ty;
-}
-function canonicalPosition(position, transform2) {
-  const axis = (output) => {
-    const mapping = transform2.axes[output];
-    const value2 = position[mapping.sourceAxis] * mapping.scale + mapping.offset;
-    return value2 === 0 ? 0 : value2;
-  };
-  return Object.freeze({ x: axis("x"), y: axis("y"), z: axis("z") });
-}
-function canonicalObjectRotation(rotation, nativeUnit) {
-  let radians;
-  if (rotation === void 0)
-    radians = 0;
-  else if (nativeUnit === "radians")
-    radians = rotation;
-  else if (nativeUnit === "degrees")
-    radians = rotation * Math.PI / 180;
-  else if (nativeUnit === "uint16-turn")
-    radians = rotation * Math.PI * 2 / 65536;
-  else
-    return void 0;
-  if (!Number.isFinite(radians))
-    return void 0;
-  const half = radians / 2;
-  const y = Math.sin(half);
-  const w = Math.cos(half);
-  return Object.freeze([0, y === 0 ? 0 : y, 0, w === 0 ? 0 : w]);
-}
-async function readAllPages(read, pageLimit, cap) {
-  const items = [];
-  let cursor5;
-  do {
-    const page2 = await read({
-      limit: Math.min(pageLimit, cap - items.length),
-      ...cursor5 === void 0 ? {} : { cursor: cursor5 }
-    });
-    items.push(...page2.items);
-    cursor5 = page2.nextCursor;
-  } while (cursor5 !== void 0 && items.length < cap);
-  return { items, complete: cursor5 === void 0 };
-}
-var MODEL_FACET_ITEM_CAP = 65536;
-function primitiveByteLength(primitive) {
-  let total = 0;
-  const visit2 = (value2, depth) => {
-    if (ArrayBuffer.isView(value2))
-      total += value2.byteLength;
-    else if (depth < 3 && typeof value2 === "object" && value2 !== null)
-      for (const child of Object.values(value2))
-        visit2(child, depth + 1);
-  };
-  visit2(primitive, 0);
-  return total;
-}
-function consistentNodes(nodes, meshIds) {
-  const present = new Set(nodes.map((node) => node.id));
-  let pruned = false;
-  const out = nodes.map((node) => {
-    const childIds = node.childIds.filter((id) => present.has(id));
-    const meshes = node.meshIds?.filter((id) => meshIds.has(id));
-    if (childIds.length === node.childIds.length && meshes?.length === node.meshIds?.length)
-      return node;
-    pruned = true;
-    return Object.freeze({ ...node, childIds, ...meshes === void 0 ? {} : { meshIds: meshes } });
-  });
-  return { nodes: out, pruned };
-}
-function yawRootNodes(nodes, yaw) {
-  if (yaw === 0)
-    return [...nodes];
-  const children = new Set(nodes.flatMap((node) => node.childIds));
-  const c3 = Math.cos(yaw);
-  const s2 = Math.sin(yaw);
-  const rotate = (m) => {
-    const out = [...m];
-    for (let column = 0; column < 4; column += 1) {
-      const x = m[column * 4];
-      const z = m[column * 4 + 2];
-      out[column * 4] = c3 * x + s2 * z;
-      out[column * 4 + 2] = -s2 * x + c3 * z;
-    }
-    return Object.freeze(out);
-  };
-  return nodes.map((node) => children.has(node.id) ? node : Object.freeze({ ...node, transform: rotate(node.transform) }));
-}
-function canonicalObjectScale(scale, transform2) {
-  const source2 = scale ?? { x: 1, y: 1, z: 1 };
-  return Object.freeze({
-    x: source2[transform2.axes.x.sourceAxis],
-    y: source2[transform2.axes.y.sourceAxis],
-    z: source2[transform2.axes.z.sourceAxis]
-  });
-}
-function canonicalRegionShape(shape, transform2) {
-  const point2 = (value2) => {
-    const canonical = canonicalPosition({ x: value2.x, y: value2.y, z: 0 }, transform2);
-    return Object.freeze({ x: canonical.x, y: canonical.z });
-  };
-  const horizontalScaleX = Math.abs(transform2.axes.x.scale);
-  const horizontalScaleZ = Math.abs(transform2.axes.z.scale);
-  if (shape.center !== void 0 && shape.radius !== void 0) {
-    if (horizontalScaleX !== horizontalScaleZ)
-      return void 0;
-    return Object.freeze({
-      ...shape,
-      center: point2(shape.center),
-      radius: shape.radius * horizontalScaleX
-    });
-  }
-  if (shape.minimum !== void 0 && shape.maximum !== void 0) {
-    const corners = [
-      point2(shape.minimum),
-      point2({ x: shape.minimum.x, y: shape.maximum.y }),
-      point2(shape.maximum),
-      point2({ x: shape.maximum.x, y: shape.minimum.y })
-    ];
-    return Object.freeze({
-      ...shape,
-      minimum: Object.freeze({
-        x: Math.min(...corners.map((corner) => corner.x)),
-        y: Math.min(...corners.map((corner) => corner.y))
-      }),
-      maximum: Object.freeze({
-        x: Math.max(...corners.map((corner) => corner.x)),
-        y: Math.max(...corners.map((corner) => corner.y))
-      })
-    });
-  }
-  if (shape.points !== void 0) {
-    return Object.freeze({ ...shape, points: Object.freeze(shape.points.map(point2)) });
-  }
-  return void 0;
-}
-function admittedTerrainTransform(snapshot3, terrain, exact2) {
-  const transform2 = snapshot3.terrainTransform;
-  if (transform2 === void 0 || terrain === void 0 || !exact2)
-    return void 0;
-  const finite8 = (value2) => Number.isFinite(value2);
-  const positive2 = (value2) => finite8(value2) && value2 > 0;
-  const verticalMappingValid = (value2) => {
-    if ("vertData" in value2) {
-      return finite8(value2.vertData.quantizeBias) && positive2(value2.vertData.quantizeScale) && finite8(value2.vertData.standardHeight) && value2.mapping.vertical === "dequantized-base-times-scale-plus-offset-plus-dequantized-adjustment";
-    }
-    return value2.mapping.vertical === "direct-base-times-scale-plus-offset" && value2.source.format.length > 0 && value2.source.heightEncoding.length > 0 && terrain.samples.every((sample) => sample.heightAdjustment === 0);
-  };
-  if (transform2.schemaVersion !== 1 || !Number.isSafeInteger(transform2.descriptorVersion) || transform2.descriptorVersion <= 0 || transform2.snapshotId !== snapshot3.snapshotId || transform2.heightMap.dim.length !== 2 || transform2.heightMap.dim[0] !== terrain.width || transform2.heightMap.dim[1] !== terrain.height || !Object.values(transform2.heightMap.offset).every(finite8) || !Object.values(transform2.heightMap.scale).every(positive2) || transform2.mapping.horizontal !== "offset-plus-grid-index-times-scale" || !verticalMappingValid(transform2) || transform2.bounds.coordinateSpaceId !== "map-native") {
-    return void 0;
-  }
-  let minimum = { x: Infinity, y: Infinity, z: Infinity };
-  let maximum = { x: -Infinity, y: -Infinity, z: -Infinity };
-  for (const sample of terrain.samples) {
-    const position = terrainMapNativePosition(sample, transform2);
-    if (!Object.values(position).every(finite8))
-      return void 0;
-    minimum = {
-      x: Math.min(minimum.x, position.x),
-      y: Math.min(minimum.y, position.y),
-      z: Math.min(minimum.z, position.z)
-    };
-    maximum = {
-      x: Math.max(maximum.x, position.x),
-      y: Math.max(maximum.y, position.y),
-      z: Math.max(maximum.z, position.z)
-    };
-  }
-  return ["x", "y", "z"].every((axis) => transform2.bounds.minimum[axis] === minimum[axis] && transform2.bounds.maximum[axis] === maximum[axis]) ? transform2 : void 0;
-}
-function admittedWorldCanonicalTransform(snapshot3, terrainTransform) {
-  const transform2 = snapshot3.uvwTransform;
-  if (transform2 === void 0 || terrainTransform === void 0)
-    return void 0;
-  const finite8 = (value2) => Number.isFinite(value2);
-  const positive2 = (value2) => finite8(value2) && value2 > 0;
-  const basis2 = transform2.basis;
-  const axes = Object.values(transform2.axes);
-  const sourceAxes = axes.map((item) => item.sourceAxis);
-  if (transform2.schemaVersion !== 1 || transform2.snapshotId !== snapshot3.snapshotId || transform2.sourceCoordinateSpaceId !== "map-native" || transform2.targetCoordinateSpaceId !== "uvw-canonical" || basis2.handedness !== "right" || basis2.upAxis !== "y" || basis2.forwardAxis !== "+z" || basis2.unit !== "meter" && basis2.unit !== "source-unit" || basis2.unit === "source-unit" && (basis2.sourceUnit === void 0 || basis2.sourceUnit.length === 0 || basis2.metersPerUnit !== void 0) || basis2.unitsPerCell !== void 0 && !positive2(basis2.unitsPerCell) || axes.some((item) => !finite8(item.scale) || item.scale === 0 || !finite8(item.offset)) || new Set(sourceAxes).size !== 3 || !Number.isSafeInteger(transform2.heightfield.columns) || !Number.isSafeInteger(transform2.heightfield.rows) || transform2.heightfield.columns !== terrainTransform.heightMap.dim[0] || transform2.heightfield.rows !== terrainTransform.heightMap.dim[1] || !positive2(transform2.heightfield.cellSize) || basis2.unitsPerCell !== void 0 && basis2.unitsPerCell !== transform2.heightfield.cellSize || transform2.heightfield.origin.length !== 3 || !transform2.heightfield.origin.every(finite8) || transform2.heightfield.sourceRowOrder !== "reverse" || transform2.bounds.coordinateSpaceId !== "uvw-canonical" || !Object.values(transform2.bounds.minimum).every(finite8) || !Object.values(transform2.bounds.maximum).every(finite8) || !["x", "y", "z"].every((axis) => transform2.bounds.minimum[axis] <= transform2.bounds.maximum[axis]) || !Number.isSafeInteger(transform2.proof.tupleCount) || transform2.proof.tupleCount <= 0 || transform2.proof.kind !== "adapter-qualification" || transform2.proof.oracle.length === 0 || transform2.proof.corpus.length === 0 || Object.keys(transform2.proof.sourceDigests).length === 0 || !Object.values(transform2.proof.sourceDigests).every((value2) => /^sha256:[0-9a-f]{64}$/u.test(value2)) || !/^sha256:[0-9a-f]{64}$/u.test(transform2.proof.nativeTupleDigest) || transform2.proof.presentationTupleDigest !== void 0 && !/^sha256:[0-9a-f]{64}$/u.test(transform2.proof.presentationTupleDigest) || !/^sha256:[0-9a-f]{64}$/u.test(transform2.proof.canonicalTupleDigest) || transform2.proof.comparison !== "ieee-754-binary64-exact") {
-    return void 0;
-  }
-  const nativeBounds = terrainTransform.bounds;
-  const corners = [nativeBounds.minimum.x, nativeBounds.maximum.x].flatMap((x) => [nativeBounds.minimum.y, nativeBounds.maximum.y].flatMap((y) => [nativeBounds.minimum.z, nativeBounds.maximum.z].map((z) => ({ x, y, z }))));
-  let minimum = { x: Infinity, y: Infinity, z: Infinity };
-  let maximum = { x: -Infinity, y: -Infinity, z: -Infinity };
-  for (const corner of corners) {
-    const value2 = canonicalPosition(corner, transform2);
-    minimum = {
-      x: Math.min(minimum.x, value2.x),
-      y: Math.min(minimum.y, value2.y),
-      z: Math.min(minimum.z, value2.z)
-    };
-    maximum = {
-      x: Math.max(maximum.x, value2.x),
-      y: Math.max(maximum.y, value2.y),
-      z: Math.max(maximum.z, value2.z)
-    };
-  }
-  return ["x", "y", "z"].every((axis) => transform2.bounds.minimum[axis] === minimum[axis] && transform2.bounds.maximum[axis] === maximum[axis]) ? transform2 : void 0;
-}
-function createCandidateWorldSceneLease(snapshot3, provenance, maxPageSize, modelResources, releaseModelResources, rasterResources) {
-  positiveLimit(maxPageSize, Number.MAX_SAFE_INTEGER);
-  const materialModelCache = /* @__PURE__ */ new Map();
-  const modelTextureCache = /* @__PURE__ */ new Map();
-  const semantic = snapshot3.semantic;
-  const terrainLayerId = layerId("terrain");
-  const terrainMaterialLayerId = layerId("terrain-materials");
-  const waterLayerId = layerId("water");
-  const cliffLayerId = layerId("cliffs");
-  const objectLayerId = layerId("objects");
-  const regionLayerId = layerId("regions");
-  const resourceLayerId = layerId("resources");
-  const navigationLayerId = layerId("navigation");
-  const gatewayLayerId = layerId("gateways");
-  const lightingLayerId = layerId("lighting");
-  const terrainSummary = semantic.terrain;
-  const terrainExact = hasExactTerrainGrid(terrainSummary);
-  const terrainTransform = admittedTerrainTransform(snapshot3, terrainSummary, terrainExact);
-  const uvwTransform = admittedWorldCanonicalTransform(snapshot3, terrainTransform);
-  const terrainLod = terrainExact ? "exact" : "sampled";
-  const terrainMaterialExact = snapshot3.terrainMaterials?.exact === true && (uvwTransform === void 0 || snapshot3.terrainMaterials.width === uvwTransform.heightfield.columns && snapshot3.terrainMaterials.height === uvwTransform.heightfield.rows);
-  const terrainWeightRasterExact = (snapshot3.terrainMaterials?.weightRasters?.length ?? 0) > 0 && snapshot3.terrainMaterials.weightRasters.every((raster) => Number.isSafeInteger(raster.width) && raster.width > 0 && Number.isSafeInteger(raster.height) && raster.height > 0 && raster.materialIds.length > 0 && raster.materialIds.length <= 4 && raster.rgba?.byteLength === raster.width * raster.height * 4);
-  const terrainMaterialLod = terrainMaterialExact ? "exact" : "sampled";
-  const cliffExact = snapshot3.cliffs?.exact === true && (uvwTransform === void 0 || snapshot3.cliffs.width <= uvwTransform.heightfield.columns && snapshot3.cliffs.height <= uvwTransform.heightfield.rows);
-  const cliffLod = cliffExact ? "exact" : "sampled";
-  const objectIdentities = /* @__PURE__ */ new Set();
-  const semanticObjects = semantic.objects.filter((item) => {
-    if (objectIdentities.has(item.objectId))
-      return false;
-    objectIdentities.add(item.objectId);
-    return true;
-  });
-  const regionIdentities = /* @__PURE__ */ new Set();
-  const semanticRegions = semantic.regions.filter((item) => {
-    if (regionIdentities.has(item.regionId))
-      return false;
-    regionIdentities.add(item.regionId);
-    return true;
-  });
-  const catalogModelRequirements = /* @__PURE__ */ new Map();
-  for (const item of semanticObjects) {
-    if (item.catalog === void 0 || item.modelResource === void 0)
-      continue;
-    const key3 = resourceId(item.catalog.ref.namespace, item.catalog.ref.entityId);
-    catalogModelRequirements.set(key3, (catalogModelRequirements.get(key3) ?? /* @__PURE__ */ new Set()).add(item.modelResource.id));
-  }
-  const objectResourceId = (ref2, modelResource) => {
-    const base = resourceId(ref2.namespace, ref2.entityId);
-    return modelResource !== void 0 && (catalogModelRequirements.get(base)?.size ?? 0) > 1 ? `${base}~${encodeURIComponent(modelResource.id)}` : base;
-  };
-  const duplicateObjectCount = semantic.objects.length - semanticObjects.length;
-  const duplicateRegionCount = semantic.regions.length - semanticRegions.length;
-  const incompleteObjectPositionCount = semanticObjects.filter((item) => item.sourcePositionDimensions === 2).length;
-  const terrain = Object.freeze((semantic.terrain?.samples ?? []).map((item) => {
-    const mapNativePosition = terrainTransform === void 0 ? void 0 : terrainMapNativePosition(item, terrainTransform);
-    return Object.freeze({
-      facet: "terrain",
-      id: `${terrainLayerId}:sample:${String(item.x)}:${String(item.y)}`,
-      layerId: terrainLayerId,
-      coordinateSpaceId: "height-grid",
-      lod: terrainLod,
-      ...item,
-      ...mapNativePosition === void 0 ? {} : { mapNativePosition },
-      ...mapNativePosition === void 0 || uvwTransform === void 0 ? {} : { uvwPosition: canonicalPosition(mapNativePosition, uvwTransform) }
-    });
-  }));
-  const terrainByGrid = new Map(terrain.flatMap((item) => item.facet === "terrain" ? [[`${String(item.x)}:${String(item.y)}`, item]] : []));
-  const terrainMaterials = Object.freeze((snapshot3.terrainMaterials?.samples ?? []).map((item) => {
-    const terrainItem = terrainByGrid.get(`${String(item.x)}:${String(item.y)}`);
-    const materialId = snapshot3.terrainMaterials?.materials?.find((material) => material.sourceIndex === item.textureIndex)?.materialId ?? `material-${String(item.textureIndex)}`;
-    return Object.freeze({
-      facet: "terrain-materials",
-      id: `${terrainMaterialLayerId}:sample:${String(item.x)}:${String(item.y)}`,
-      layerId: terrainMaterialLayerId,
-      coordinateSpaceId: "height-grid",
-      lod: terrainMaterialLod,
-      ...item,
-      weights: item.weights ?? Object.freeze([Object.freeze({ materialId, weight: 1 })]),
-      ...terrainItem?.facet === "terrain" && terrainItem.uvwPosition !== void 0 ? { uvwPosition: terrainItem.uvwPosition } : {}
-    });
-  }));
-  const water = Object.freeze((snapshot3.water?.zones ?? []).map((item) => {
-    const canonicalCorners = item.elevation === void 0 || uvwTransform === void 0 ? void 0 : [item.minimum.x, item.maximum.x].flatMap((x) => [item.minimum.y, item.maximum.y].map((y) => canonicalPosition({ x, y, z: item.elevation }, uvwTransform)));
-    return Object.freeze({
-      facet: "water",
-      id: `${waterLayerId}:zone:${String(item.zoneId)}`,
-      layerId: waterLayerId,
-      coordinateSpaceId: "map-native",
-      ...item,
-      ...canonicalCorners === void 0 ? {} : {
-        uvwMinimum: Object.freeze({
-          x: Math.min(...canonicalCorners.map((corner) => corner.x)),
-          z: Math.min(...canonicalCorners.map((corner) => corner.z))
-        }),
-        uvwMaximum: Object.freeze({
-          x: Math.max(...canonicalCorners.map((corner) => corner.x)),
-          z: Math.max(...canonicalCorners.map((corner) => corner.z))
-        }),
-        uvwElevation: canonicalCorners[0].y
-      }
-    });
-  }));
-  const unresolvedWaterElevationCount = water.filter((item) => item.facet === "water" && item.elevation === void 0).length;
-  const cliffs = Object.freeze((snapshot3.cliffs?.samples ?? []).map((item) => {
-    const terrainItem = terrainByGrid.get(`${String(item.x)}:${String(item.y)}`);
-    return Object.freeze({
-      facet: "cliffs",
-      id: `${cliffLayerId}:sample:${String(item.x)}:${String(item.y)}`,
-      layerId: cliffLayerId,
-      coordinateSpaceId: "height-grid",
-      lod: cliffLod,
-      ...item,
-      ...terrainItem?.facet === "terrain" && terrainItem.uvwPosition !== void 0 ? { uvwPosition: terrainItem.uvwPosition } : {}
-    });
-  }));
-  const semanticObjectItems = Object.freeze(semanticObjects.map((item) => {
-    const id = `${objectLayerId}:object:${String(item.objectId)}`;
-    const ref2 = item.catalog?.ref;
-    const uvwRotation = canonicalObjectRotation(item.rotation, item.nativeRotationUnit);
-    const groundHeight = terrainHeightAt(item.position, semantic.terrain, terrainTransform);
-    const mapNativePresentationPosition = groundHeight === void 0 || item.heightReference === void 0 || item.heightReference === "absolute" ? item.position : Object.freeze({
-      ...item.position,
-      z: item.heightReference === "terrain-relative" ? groundHeight + item.position.z : groundHeight
-    });
-    const compoundResourceIds = (item.modelResources ?? []).map((requirement) => modelResourceId(requirement.id));
-    const modelComponents = item.modelComponents?.map((component2) => Object.freeze({
-      ...component2,
-      resourceId: modelResourceId(component2.resourceId)
-    }));
-    return Object.freeze({
-      facet: "objects",
-      id,
-      layerId: objectLayerId,
-      coordinateSpaceId: "map-native",
-      ...item,
-      ...mapNativePresentationPosition === item.position ? {} : { mapNativePresentationPosition },
-      ...uvwTransform === void 0 || item.sourcePositionDimensions === 2 ? {} : {
-        uvwPosition: canonicalPosition(mapNativePresentationPosition, uvwTransform),
-        ...uvwRotation === void 0 ? {} : { uvwRotation },
-        uvwScale: canonicalObjectScale(item.scale, uvwTransform)
-      },
-      ...ref2 === void 0 ? {} : { resourceId: objectResourceId(ref2, item.modelResource) },
-      ...compoundResourceIds.length === 0 ? {} : { resourceIds: Object.freeze(compoundResourceIds) },
-      ...modelComponents === void 0 ? {} : { modelComponents: Object.freeze(modelComponents) }
-    });
-  }));
-  const cliffPieceModels = new Map((snapshot3.cliffs?.pieceModels ?? []).map((model) => [model.id, model]));
-  const cliffModelResourceId = (modelId) => `cliff-model:${encodeURIComponent(modelId)}`;
-  const cliffPieceObjects = Object.freeze((snapshot3.cliffs?.pieces ?? []).flatMap((piece, index2) => cliffPieceModels.get(piece.modelId)?.candidates.length ? [
-    Object.freeze({
-      facet: "objects",
-      id: `${objectLayerId}:cliff:${piece.id}`,
-      layerId: objectLayerId,
-      coordinateSpaceId: "map-native",
-      kind: "doodad",
-      objectId: -(index2 + 1),
-      typeId: piece.modelId,
-      position: piece.position,
-      heightReference: "absolute",
-      derivedFrom: "cliffs",
-      // Terrain is never player-owned: no team colour in its materials.
-      presentationTeamColor: Object.freeze([1, 1, 1]),
-      presentationTeamColorIntensity: 0,
-      ...uvwTransform === void 0 ? {} : {
-        uvwPosition: canonicalPosition(piece.position, uvwTransform),
-        uvwRotation: Object.freeze([0, 0, 0, 1]),
-        uvwScale: canonicalObjectScale(void 0, uvwTransform)
-      },
-      resourceId: cliffModelResourceId(piece.modelId)
-    })
-  ] : []));
-  const objects = Object.freeze([
-    ...semanticObjectItems,
-    ...cliffPieceObjects
-  ]);
-  const regions = Object.freeze(semanticRegions.map((item) => {
-    const shapes = Object.freeze(item.shapes.map(regionShape));
-    const uvwShapes = uvwTransform === void 0 ? void 0 : shapes.map((shape) => canonicalRegionShape(shape, uvwTransform));
-    return Object.freeze({
-      facet: "regions",
-      id: `${regionLayerId}:region:${String(item.regionId)}`,
-      layerId: regionLayerId,
-      coordinateSpaceId: "map-native",
-      regionId: item.regionId,
-      name: item.name,
-      ...item.color === void 0 ? {} : { color: item.color },
-      shapes,
-      ...uvwShapes === void 0 || uvwShapes.some((shape) => shape === void 0) ? {} : { uvwShapes: Object.freeze(uvwShapes) }
-    });
-  }));
-  const incompleteRegionGeometryCount = regions.filter((item) => item.facet === "regions" && item.uvwShapes === void 0).length;
-  const resourceJoins = /* @__PURE__ */ new Map();
-  const cliffPieceObjectIds = /* @__PURE__ */ new Map();
-  for (const item of cliffPieceObjects)
-    cliffPieceObjectIds.set(item.typeId, [...cliffPieceObjectIds.get(item.typeId) ?? [], item.id]);
-  for (const [modelId, objectIds] of cliffPieceObjectIds) {
-    const model = cliffPieceModels.get(modelId);
-    resourceJoins.set(cliffModelResourceId(modelId), {
-      resolved: true,
-      objectIds,
-      modelResource: model.candidates[0].requirement,
-      modelCandidates: model.candidates,
-      ...model.materialModel === void 0 ? {} : { materialModel: model.materialModel }
-    });
-  }
-  for (const item of objects) {
-    if (item.facet !== "objects")
-      continue;
-    if (item.catalog !== void 0) {
-      const key3 = objectResourceId(item.catalog.ref, item.modelResource);
-      const current = resourceJoins.get(key3) ?? {
-        namespace: item.catalog.ref.namespace,
-        entityId: item.catalog.ref.entityId,
-        resolved: item.catalog.entity !== void 0,
-        objectIds: [],
-        ...item.modelResource === void 0 ? {} : { modelResource: item.modelResource }
-      };
-      current.resolved ||= item.catalog.entity !== void 0;
-      if (current.modelResource === void 0 && item.modelResource !== void 0) {
-        current.modelResource = item.modelResource;
-      }
-      current.objectIds.push(item.id);
-      resourceJoins.set(key3, current);
-    }
-    for (const modelResource of item.modelResources ?? []) {
-      const key3 = modelResourceId(modelResource.id);
-      const current = resourceJoins.get(key3) ?? {
-        resolved: true,
-        objectIds: [],
-        modelResource
-      };
-      current.objectIds.push(item.id);
-      resourceJoins.set(key3, current);
-    }
-  }
-  const resources = Object.freeze([...resourceJoins.entries()].sort(([left], [right]) => left.localeCompare(right)).map(([id, item]) => Object.freeze({
-    facet: "resources",
-    id,
-    layerId: resourceLayerId,
-    ...item.namespace === void 0 ? {} : { namespace: item.namespace },
-    ...item.entityId === void 0 ? {} : { entityId: item.entityId },
-    resolved: item.resolved,
-    ...item.modelResource === void 0 ? {} : { modelResource: item.modelResource },
-    ...item.modelCandidates === void 0 ? {} : { modelCandidates: item.modelCandidates },
-    ...item.materialModel === void 0 ? {} : { materialModel: item.materialModel },
-    objectIds: Object.freeze([...item.objectIds])
-  })));
-  const navigation = Object.freeze((snapshot3.navigation?.samples ?? []).map((item) => Object.freeze({
-    facet: "navigation",
-    id: `${navigationLayerId}:sample:${String(item.x)}:${String(item.y)}`,
-    layerId: navigationLayerId,
-    coordinateSpaceId: "navigation-grid",
-    lod: "sampled",
-    ...item
-  })));
-  const gateways = Object.freeze((snapshot3.gateways?.segments ?? []).map((item) => {
-    const uvwStart = uvwTransform === void 0 ? void 0 : canonicalPosition({ x: item.x1, y: item.y1, z: 0 }, uvwTransform);
-    const uvwEnd = uvwTransform === void 0 ? void 0 : canonicalPosition({ x: item.x2, y: item.y2, z: 0 }, uvwTransform);
-    return Object.freeze({
-      facet: "gateways",
-      ...item,
-      id: `${gatewayLayerId}:${item.id}`,
-      layerId: gatewayLayerId,
-      coordinateSpaceId: "map-native",
-      ...uvwStart === void 0 || uvwEnd === void 0 ? {} : { uvwStart, uvwEnd }
-    });
-  }));
-  const lighting = Object.freeze(snapshot3.lighting === void 0 ? [] : [
-    Object.freeze({
-      facet: "lighting",
-      id: `${lightingLayerId}:environment`,
-      layerId: lightingLayerId,
-      coordinateSpaceId: snapshot3.lighting.coordinateSpaceId,
-      ambientColor: snapshot3.lighting.ambientColor,
-      ambientIntensity: snapshot3.lighting.ambientIntensity,
-      directional: snapshot3.lighting.directional,
-      ...snapshot3.lighting.terrain === void 0 ? {} : { terrain: snapshot3.lighting.terrain },
-      ...snapshot3.lighting.toneMapping === void 0 ? {} : { toneMapping: snapshot3.lighting.toneMapping },
-      ...snapshot3.lighting.shadowRange === void 0 ? {} : { shadowRange: snapshot3.lighting.shadowRange }
-    })
-  ]);
-  const contentRevisions = Object.freeze({
-    terrain: layerContentRevision(terrain),
-    "terrain-materials": terrainMaterialContentRevision(terrainMaterials, snapshot3.terrainMaterials?.weightRasters ?? []),
-    water: layerContentRevision(water),
-    cliffs: layerContentRevision(cliffs),
-    objects: layerContentRevision(objects),
-    regions: layerContentRevision(regions),
-    resources: layerContentRevision(resources),
-    navigation: layerContentRevision(navigation),
-    gateways: layerContentRevision(gateways),
-    lighting: layerContentRevision(lighting)
-  });
-  const commonTerrainMaterials = Object.freeze(snapshot3.terrainMaterials?.materials ?? (snapshot3.terrainMaterials?.textureNames ?? []).map((label, sourceIndex) => Object.freeze({ materialId: `material-${String(sourceIndex)}`, label, sourceIndex })));
-  const commonWaterMaterials = Object.freeze(snapshot3.water?.materials ?? []);
-  const commonTerrainWeightRasters = Object.freeze((snapshot3.terrainMaterials?.weightRasters ?? []).map((raster) => Object.freeze({
-    resourceId: raster.resourceId,
-    width: raster.width,
-    height: raster.height,
-    materialIds: raster.materialIds,
-    encoding: raster.encoding,
-    normalization: raster.normalization
-  })));
-  const terrainWeightTextures = new Map((snapshot3.terrainMaterials?.weightRasters ?? []).flatMap((raster) => raster.rgba === void 0 ? [] : [
-    [
-      raster.resourceId,
-      Object.freeze({
-        id: raster.resourceId,
-        width: raster.width,
-        height: raster.height,
-        rgba: raster.rgba.slice(),
-        wrapU: "clamp",
-        wrapV: "clamp",
-        filter: "linear"
-      })
-    ]
-  ]));
-  const facets = Object.freeze([
-    Object.freeze({
-      facet: "terrain",
-      layerId: terrainLayerId,
-      state: terrainSummary === void 0 ? "unavailable" : terrainExact ? "available" : "partial",
-      itemCount: semantic.terrain?.cellCount ?? 0,
-      lods: Object.freeze(terrainSummary === void 0 ? [] : terrainExact ? ["exact"] : ["summary", "sampled"]),
-      contentRevision: contentRevisions.terrain,
-      ...terrainSummary === void 0 ? { reason: "authoritative semantic snapshot contains no terrain height grid" } : terrainExact ? {} : {
-        reason: "candidate exposes bounded deterministic samples, not the full native grid"
-      }
-    }),
-    Object.freeze({
-      facet: "terrain-materials",
-      layerId: terrainMaterialLayerId,
-      state: snapshot3.terrainMaterials === void 0 ? "unavailable" : terrainMaterialExact || terrainWeightRasterExact ? "available" : "partial",
-      itemCount: snapshot3.terrainMaterials?.cellCount ?? 0,
-      lods: Object.freeze(snapshot3.terrainMaterials === void 0 ? [] : terrainMaterialExact ? ["exact"] : terrainWeightRasterExact ? ["raster-exact", "sampled"] : ["summary", "sampled"]),
-      contentRevision: contentRevisions["terrain-materials"],
-      ...snapshot3.terrainMaterials === void 0 ? { reason: "publisher reported terrain materials unavailable" } : terrainMaterialExact || terrainWeightRasterExact ? {} : {
-        reason: "publisher exposes bounded material samples without a grid matching the admitted UVW heightfield"
-      }
-    }),
-    Object.freeze({
-      facet: "water",
-      layerId: waterLayerId,
-      state: snapshot3.water === void 0 ? "unavailable" : unresolvedWaterElevationCount === 0 && snapshot3.water.exact !== false ? "available" : "partial",
-      itemCount: snapshot3.water?.zones.length ?? 0,
-      lods: Object.freeze(snapshot3.water === void 0 ? [] : ["exact"]),
-      contentRevision: contentRevisions.water,
-      ...snapshot3.water === void 0 ? { reason: "publisher reported water unavailable" } : unresolvedWaterElevationCount > 0 ? {
-        reason: `${String(unresolvedWaterElevationCount)} native water zone elevations remain unresolved`
-      } : snapshot3.water.exact === false ? { reason: "native water geometry exceeds the common constant-elevation zone profile" } : {}
-    }),
-    Object.freeze({
-      facet: "cliffs",
-      layerId: cliffLayerId,
-      state: snapshot3.cliffs === void 0 ? "unavailable" : cliffExact ? "available" : "partial",
-      itemCount: snapshot3.cliffs?.cellCount ?? 0,
-      lods: Object.freeze(snapshot3.cliffs === void 0 ? [] : cliffExact ? ["exact"] : ["sampled"]),
-      contentRevision: contentRevisions.cliffs,
-      ...snapshot3.cliffs === void 0 ? { reason: "publisher reported synchronized cliff levels unavailable" } : cliffExact ? {} : {
-        reason: "publisher cliff grid is sampled or does not match the admitted UVW heightfield grid"
-      }
-    }),
-    Object.freeze({
-      facet: "objects",
-      layerId: objectLayerId,
-      state: semanticObjects.length === 0 ? "unavailable" : duplicateObjectCount > 0 || incompleteObjectPositionCount > 0 ? "partial" : "available",
-      itemCount: semanticObjects.length,
-      lods: Object.freeze(["exact"]),
-      contentRevision: contentRevisions.objects,
-      ...semanticObjects.length === 0 ? { reason: "semantic snapshot contains no objects" } : duplicateObjectCount > 0 || incompleteObjectPositionCount > 0 ? {
-        reason: [
-          ...duplicateObjectCount > 0 ? [`${duplicateObjectCount} duplicate object identities were omitted`] : [],
-          ...incompleteObjectPositionCount > 0 ? [
-            `${incompleteObjectPositionCount} objects publish two-dimensional source positions; elevation remains unknown`
-          ] : []
-        ].join("; ")
-      } : {}
-    }),
-    Object.freeze({
-      facet: "regions",
-      layerId: regionLayerId,
-      state: semanticRegions.length === 0 ? "unavailable" : duplicateRegionCount > 0 || incompleteRegionGeometryCount > 0 ? "partial" : "available",
-      itemCount: semanticRegions.length,
-      lods: Object.freeze(["exact"]),
-      contentRevision: contentRevisions.regions,
-      ...semanticRegions.length === 0 ? { reason: "semantic snapshot contains no regions" } : duplicateRegionCount > 0 || incompleteRegionGeometryCount > 0 ? {
-        reason: [
-          ...duplicateRegionCount > 0 ? [`${duplicateRegionCount} duplicate region identities were omitted`] : [],
-          ...incompleteRegionGeometryCount > 0 ? [
-            `${incompleteRegionGeometryCount} regions contain shapes without canonical UVW geometry`
-          ] : []
-        ].join("; ")
-      } : {}
-    }),
-    Object.freeze({
-      facet: "resources",
-      layerId: resourceLayerId,
-      state: resources.length === 0 ? "unavailable" : "available",
-      itemCount: resources.length,
-      lods: Object.freeze(["exact"]),
-      contentRevision: contentRevisions.resources,
-      ...resources.length === 0 ? { reason: "no placed object publishes a catalog resource reference" } : {}
-    }),
-    Object.freeze({
-      facet: "navigation",
-      layerId: navigationLayerId,
-      state: snapshot3.navigation === void 0 ? "unavailable" : "partial",
-      itemCount: snapshot3.navigation?.cellCount ?? 0,
-      lods: Object.freeze(snapshot3.navigation === void 0 ? [] : ["summary", "sampled"]),
-      contentRevision: contentRevisions.navigation,
-      ...snapshot3.navigation === void 0 ? { reason: "publisher reported navigation unavailable" } : { reason: "native flags are sampled and their bit semantics remain publisher-defined" }
-    }),
-    Object.freeze({
-      facet: "gateways",
-      layerId: gatewayLayerId,
-      state: snapshot3.gateways === void 0 ? "unavailable" : snapshot3.gateways.exact && uvwTransform !== void 0 ? "available" : "partial",
-      itemCount: snapshot3.gateways?.segments.length ?? 0,
-      lods: Object.freeze(snapshot3.gateways === void 0 ? [] : ["exact"]),
-      contentRevision: contentRevisions.gateways,
-      ...snapshot3.gateways === void 0 ? { reason: "publisher reported gateways unavailable" } : snapshot3.gateways.exact && uvwTransform !== void 0 ? {} : { reason: "gateway endpoints lack an exact canonical transform" }
-    }),
-    Object.freeze({
-      facet: "lighting",
-      layerId: lightingLayerId,
-      state: snapshot3.lighting === void 0 ? "unavailable" : "available",
-      itemCount: lighting.length,
-      lods: Object.freeze(snapshot3.lighting === void 0 ? [] : ["exact"]),
-      contentRevision: contentRevisions.lighting,
-      ...snapshot3.lighting === void 0 ? { reason: "publisher reported world lighting unavailable" } : {}
-    })
-  ]);
-  const layers = Object.freeze(facets.map((item) => Object.freeze({
-    facet: "layers",
-    id: item.layerId,
-    layerId: item.layerId,
-    kind: item.facet,
-    state: item.state,
-    itemCount: item.itemCount,
-    lods: item.lods,
-    ...item.contentRevision === void 0 ? {} : { contentRevision: item.contentRevision },
-    ...uvwTransform !== void 0 && (item.facet === "terrain" || item.facet === "terrain-materials" || item.facet === "cliffs") && item.state === "available" && (item.lods.includes("exact") || item.facet === "terrain-materials" && item.lods.includes("raster-exact")) ? {
-      grid: Object.freeze({
-        columns: item.facet === "cliffs" ? snapshot3.cliffs.width : uvwTransform.heightfield.columns,
-        rows: item.facet === "cliffs" ? snapshot3.cliffs.height : uvwTransform.heightfield.rows,
-        cellSize: uvwTransform.heightfield.cellSize,
-        origin: item.facet === "cliffs" && uvwTransform.heightfield.sourceRowOrder === "reverse" && snapshot3.cliffs.height < uvwTransform.heightfield.rows ? Object.freeze([
-          uvwTransform.heightfield.origin[0],
-          uvwTransform.heightfield.origin[1],
-          uvwTransform.heightfield.origin[2] + uvwTransform.heightfield.cellSize
-        ]) : uvwTransform.heightfield.origin,
-        coordinateSpaceId: "uvw-canonical"
-      })
-    } : {},
-    ...item.facet === "terrain-materials" && commonTerrainMaterials.length > 0 ? {
-      materials: commonTerrainMaterials,
-      ...commonTerrainWeightRasters.length === 0 ? {} : { weightRasters: commonTerrainWeightRasters }
-    } : {},
-    ...item.facet === "water" && commonWaterMaterials.length > 0 ? { waterMaterials: commonWaterMaterials } : {}
-  })));
-  const byFacet = /* @__PURE__ */ new Map([
-    ["layers", layers],
-    ["terrain", terrain],
-    ["terrain-materials", terrainMaterials],
-    ["water", water],
-    ["cliffs", cliffs],
-    ["objects", objects],
-    ["regions", regions],
-    ["resources", resources],
-    ["navigation", navigation],
-    ["gateways", gateways],
-    ["lighting", lighting]
-  ]);
-  const info = Object.freeze({
-    contract: snapshot3.worldCandidate.contract,
-    major: snapshot3.worldCandidate.major,
-    maturity: snapshot3.worldCandidate.maturity,
-    snapshotId: snapshot3.snapshotId,
-    mapId: snapshot3.mapId,
-    coordinateSpaces: snapshot3.worldCandidate.coordinateSpaces,
-    crossSpaceTransforms: Object.freeze(snapshot3.worldCandidate.crossSpaceTransforms.map((item) => {
-      if (item.from === "height-grid" && item.to === "map-native" && terrainTransform === void 0) {
-        return Object.freeze({
-          ...item,
-          state: "unknown",
-          reason: "host rejected or did not receive an exact native terrain transform"
-        });
-      }
-      if (item.from === "map-native" && item.to === "uvw-canonical" && uvwTransform === void 0) {
-        return Object.freeze({
-          ...item,
-          state: "unknown",
-          reason: "host rejected or did not receive a measured canonical world transform"
-        });
-      }
-      return item;
-    })),
-    bounds: Object.freeze([
-      Object.freeze({
-        facet: "terrain",
-        coordinateSpaceId: terrainTransform === void 0 ? "height-grid" : "map-native",
-        x: terrainTransform !== void 0 ? Object.freeze({
-          state: "known",
-          minimum: terrainTransform.bounds.minimum.x,
-          maximum: terrainTransform.bounds.maximum.x
-        }) : terrainSummary === void 0 ? Object.freeze({ state: "unknown", reason: "terrain bounds unavailable" }) : Object.freeze({
-          state: "known",
-          minimum: 0,
-          maximum: terrainSummary.width - 1
-        }),
-        y: terrainTransform !== void 0 ? Object.freeze({
-          state: "known",
-          minimum: terrainTransform.bounds.minimum.y,
-          maximum: terrainTransform.bounds.maximum.y
-        }) : terrainSummary === void 0 ? Object.freeze({ state: "unknown", reason: "terrain bounds unavailable" }) : Object.freeze({
-          state: "known",
-          minimum: 0,
-          maximum: terrainSummary.height - 1
-        }),
-        z: terrainTransform === void 0 ? Object.freeze({
-          state: "unknown",
-          reason: "publisher-native height quantization has no validated exact map-native conversion"
-        }) : Object.freeze({
-          state: "known",
-          minimum: terrainTransform.bounds.minimum.z,
-          maximum: terrainTransform.bounds.maximum.z
-        })
-      }),
-      Object.freeze({
-        facet: "objects",
-        coordinateSpaceId: "map-native",
-        x: semanticObjects.length === 0 ? Object.freeze({ state: "unknown", reason: "object bounds unavailable" }) : Object.freeze({
-          state: "known",
-          minimum: Math.min(...semanticObjects.map((item) => item.position.x)),
-          maximum: Math.max(...semanticObjects.map((item) => item.position.x))
-        }),
-        y: semanticObjects.length === 0 ? Object.freeze({ state: "unknown", reason: "object bounds unavailable" }) : Object.freeze({
-          state: "known",
-          minimum: Math.min(...semanticObjects.map((item) => item.position.y)),
-          maximum: Math.max(...semanticObjects.map((item) => item.position.y))
-        }),
-        z: semanticObjects.length === 0 ? Object.freeze({ state: "unknown", reason: "object bounds unavailable" }) : incompleteObjectPositionCount > 0 ? Object.freeze({
-          state: "unknown",
-          reason: "one or more objects have no publisher-defined elevation"
-        }) : Object.freeze({
-          state: "known",
-          minimum: Math.min(...semanticObjects.map((item) => item.position.z)),
-          maximum: Math.max(...semanticObjects.map((item) => item.position.z))
-        })
-      }),
-      Object.freeze({
-        facet: "regions",
-        coordinateSpaceId: "map-native",
-        x: Object.freeze({
-          state: "unknown",
-          reason: "region geometry is not normalized"
-        }),
-        y: Object.freeze({
-          state: "unknown",
-          reason: "region geometry is not normalized"
-        }),
-        z: Object.freeze({
-          state: "unknown",
-          reason: "region geometry is not normalized"
-        })
-      }),
-      Object.freeze({
-        facet: "navigation",
-        coordinateSpaceId: "navigation-grid",
-        x: snapshot3.navigation === void 0 ? Object.freeze({ state: "unknown", reason: "navigation bounds unavailable" }) : Object.freeze({
-          state: "known",
-          minimum: 0,
-          maximum: snapshot3.navigation.width - 1
-        }),
-        y: snapshot3.navigation === void 0 ? Object.freeze({ state: "unknown", reason: "navigation bounds unavailable" }) : Object.freeze({
-          state: "known",
-          minimum: 0,
-          maximum: snapshot3.navigation.height - 1
-        }),
-        z: Object.freeze({
-          state: "unknown",
-          reason: "navigation grid has no vertical axis"
-        })
-      }),
-      Object.freeze({
-        facet: "gateways",
-        coordinateSpaceId: uvwTransform === void 0 ? "map-native" : "uvw-canonical",
-        x: gateways.length === 0 ? Object.freeze({ state: "unknown", reason: "gateway bounds unavailable" }) : Object.freeze({
-          state: "known",
-          minimum: Math.min(...gateways.flatMap((item) => item.facet === "gateways" ? [item.uvwStart?.x ?? item.x1, item.uvwEnd?.x ?? item.x2] : [])),
-          maximum: Math.max(...gateways.flatMap((item) => item.facet === "gateways" ? [item.uvwStart?.x ?? item.x1, item.uvwEnd?.x ?? item.x2] : []))
-        }),
-        y: Object.freeze({ state: "unknown", reason: "gateways have no vertical extent" }),
-        z: gateways.length === 0 ? Object.freeze({ state: "unknown", reason: "gateway bounds unavailable" }) : Object.freeze({
-          state: "known",
-          minimum: Math.min(...gateways.flatMap((item) => item.facet === "gateways" ? [item.uvwStart?.z ?? item.y1, item.uvwEnd?.z ?? item.y2] : [])),
-          maximum: Math.max(...gateways.flatMap((item) => item.facet === "gateways" ? [item.uvwStart?.z ?? item.y1, item.uvwEnd?.z ?? item.y2] : []))
-        })
-      })
-    ]),
-    ...terrainTransform === void 0 ? {} : { terrainTransform },
-    ...uvwTransform === void 0 ? {} : { uvwTransform },
-    facets,
-    provenance: Object.freeze(provenance.map((item) => Object.freeze({ ...item }))),
-    unknownFacets: snapshot3.worldCandidate.unknownFacets,
-    ...snapshot3.worldCandidate.edit === void 0 ? {} : { edit: snapshot3.worldCandidate.edit },
-    lossPolicy: "explicit-partial",
-    complete: snapshot3.complete && duplicateObjectCount === 0 && duplicateRegionCount === 0 && incompleteRegionGeometryCount === 0 && incompleteObjectPositionCount === 0
-  });
-  let live = true;
-  const assertLive = (signal) => {
-    signal?.throwIfAborted();
-    if (!live)
-      throw new TypeError("world scene source lease is released or stale");
-  };
-  const source2 = Object.freeze({
-    contract: snapshot3.worldCandidate.contract,
-    major: snapshot3.worldCandidate.major,
-    snapshotId: snapshot3.snapshotId,
-    async info(signal) {
-      assertLive(signal);
-      return Promise.resolve(info);
-    },
-    async page(request, signal) {
-      assertLive(signal);
-      positiveLimit(request.limit, maxPageSize);
-      cursorOffset(request.cursor, snapshot3.snapshotId, canonicalQuery(request));
-      const items = byFacet.get(request.facet);
-      if (items === void 0) {
-        return Promise.resolve(Object.freeze({
-          snapshotId: snapshot3.snapshotId,
-          facet: request.facet,
-          state: "unsupported",
-          items: Object.freeze([]),
-          reason: `publisher candidate does not expose facet ${request.facet}`
-        }));
-      }
-      const facetState = facets.find((item) => item.facet === request.facet);
-      if (request.facet !== "layers") {
-        if (request.layerId !== facetState?.layerId) {
-          throw new TypeError(`world facet ${request.facet} requires its exact layerId`);
-        }
-        const expectedLod = request.facet === "terrain" ? terrainLod : request.facet === "terrain-materials" ? terrainMaterialLod : request.facet === "cliffs" ? cliffLod : request.facet === "navigation" ? "sampled" : void 0;
-        if (expectedLod !== void 0 && request.lod !== expectedLod) {
-          return Promise.resolve(Object.freeze({
-            snapshotId: snapshot3.snapshotId,
-            facet: request.facet,
-            state: "unsupported",
-            items: Object.freeze([]),
-            reason: `facet ${request.facet} only pages ${expectedLod} LOD items`
-          }));
-        }
-      }
-      if (request.bounds !== void 0 && (request.facet === "layers" || request.facet === "regions" || request.facet === "resources" || request.facet === "lighting")) {
-        return Promise.resolve(Object.freeze({
-          snapshotId: snapshot3.snapshotId,
-          facet: request.facet,
-          state: "unsupported",
-          items: Object.freeze([]),
-          reason: `facet ${request.facet} does not support spatial bounds`
-        }));
-      }
-      if (request.facet !== "layers" && facetState?.state === "unavailable") {
-        return Promise.resolve(Object.freeze({
-          snapshotId: snapshot3.snapshotId,
-          facet: request.facet,
-          state: "unavailable",
-          items: Object.freeze([]),
-          reason: facetState.reason ?? "facet unavailable"
-        }));
-      }
-      const bounds3 = request.bounds;
-      const bounded = bounds3 === void 0 ? items : items.filter((item) => {
-        if (item.facet === "objects") {
-          return item.position.x >= bounds3.minimumX && item.position.x <= bounds3.maximumX && item.position.y >= bounds3.minimumY && item.position.y <= bounds3.maximumY;
-        }
-        if (item.facet === "water") {
-          return !(item.maximum.x < bounds3.minimumX || item.minimum.x > bounds3.maximumX || item.maximum.y < bounds3.minimumY || item.minimum.y > bounds3.maximumY);
-        }
-        if (item.facet === "gateways") {
-          const startX = item.uvwStart?.x ?? item.x1;
-          const startY = item.uvwStart?.z ?? item.y1;
-          const endX = item.uvwEnd?.x ?? item.x2;
-          const endY = item.uvwEnd?.z ?? item.y2;
-          return !(Math.max(startX, endX) < bounds3.minimumX || Math.min(startX, endX) > bounds3.maximumX || Math.max(startY, endY) < bounds3.minimumY || Math.min(startY, endY) > bounds3.maximumY);
-        }
-        if (item.facet !== "terrain" && item.facet !== "terrain-materials" && item.facet !== "cliffs" && item.facet !== "navigation")
-          return false;
-        if (item.facet === "terrain" && item.mapNativePosition !== void 0) {
-          return item.mapNativePosition.x >= bounds3.minimumX && item.mapNativePosition.x <= bounds3.maximumX && item.mapNativePosition.y >= bounds3.minimumY && item.mapNativePosition.y <= bounds3.maximumY;
-        }
-        return item.x >= bounds3.minimumX && item.x <= bounds3.maximumX && item.y >= bounds3.minimumY && item.y <= bounds3.maximumY;
-      });
-      return Promise.resolve(pageItems(bounded, request, snapshot3.snapshotId, maxPageSize));
-    },
-    ...modelResources === void 0 ? {} : {
-      async model(requestedResourceId, request, signal) {
-        assertLive(signal);
-        const maxNodes = request.maxNodes ?? request.maxMeshes;
-        const maxResources = request.maxResources ?? maxNodes;
-        const maxTextureBytes = request.maxTextureBytes ?? Math.min(16 * 1024 * 1024, request.maxBytes);
-        const maxTextureTotalBytes = request.maxTextureTotalBytes ?? Math.min(32 * 1024 * 1024, request.maxBytes);
-        positiveLimit(maxNodes, maxPageSize);
-        positiveLimit(request.maxMeshes, maxPageSize);
-        positiveLimit(request.maxPrimitives, maxPageSize);
-        positiveLimit(request.maxPrimitiveBytes, request.maxBytes);
-        positiveLimit(maxResources, maxPageSize);
-        positiveLimit(maxTextureBytes, request.maxBytes);
-        positiveLimit(maxTextureTotalBytes, request.maxBytes);
-        const item = resources.find((candidate) => candidate.facet === "resources" && candidate.id === requestedResourceId);
-        if (item?.facet !== "resources" || item.modelResource === void 0) {
-          return Object.freeze({
-            state: "unresolved",
-            diagnostics: Object.freeze([
-              diagnostic("warning", "x3.host/world-model-resource-unavailable", `world resource ${requestedResourceId} has no resolved logical model requirement`)
-            ])
-          });
-        }
-        const metersPerSourceUnit = request.metersPerSourceUnit ?? snapshot3.semantic.modelMetersPerSourceUnit;
-        const candidates = item.modelCandidates ?? [
-          Object.freeze({ requirement: item.modelResource, yaw: 0 })
-        ];
-        let lease2;
-        let chosen = candidates[0];
-        for (const candidate of candidates) {
-          const attempt = await modelResources.acquire({
-            maxBytes: request.maxBytes,
-            ...metersPerSourceUnit === void 0 ? {} : { metersPerSourceUnit },
-            requirement: candidate.requirement
-          }, signal);
-          chosen = candidate;
-          lease2 = attempt;
-          if (attempt.value.result.state !== "unresolved" || candidate === candidates.at(-1))
-            break;
-          await attempt.release();
-        }
-        const modelRequirement = chosen.requirement;
-        if (lease2 === void 0)
-          throw new TypeError("world model candidates are empty");
-        try {
-          const result = lease2.value.result;
-          if (result.state === "unresolved") {
-            return Object.freeze({
-              ...result,
-              diagnostics: Object.freeze([...result.diagnostics])
-            });
-          }
-          if (lease2.value.meshes === void 0) {
-            return Object.freeze({
-              state: "converted",
-              sourceKey: result.sourceKey,
-              uvmBytes: result.bytes.slice(),
-              meshes: Object.freeze([]),
-              primitives: Object.freeze([]),
-              diagnostics: Object.freeze([
-                ...result.diagnostics,
-                diagnostic("information", "x3.host/world-model-render-facets-unavailable", `model ${modelRequirement.logicalId} converted successfully but publishes no common geometry; optional effects, lights or decals require their own admitted world facets`)
-              ]),
-              complete: false
-            });
-          }
-          const facet = (read, pageLimit) => read === void 0 ? void 0 : readAllPages((page2) => read(page2, signal), pageLimit, MODEL_FACET_ITEM_CAP);
-          const meshPage = await facet(lease2.value.meshes.bind(lease2.value), request.maxMeshes);
-          const [nodePage, skeletonPage, animationPage, materialPage, resourcePage, socketPage] = await Promise.all([
-            facet(lease2.value.nodes?.bind(lease2.value), maxNodes),
-            facet(lease2.value.skeletonBindings?.bind(lease2.value), maxNodes),
-            facet(lease2.value.animationClips?.bind(lease2.value), maxNodes),
-            facet(lease2.value.materials?.bind(lease2.value), maxNodes),
-            facet(lease2.value.resourceReferences?.bind(lease2.value), maxResources),
-            facet(lease2.value.sockets?.bind(lease2.value), maxNodes)
-          ]);
-          let materials = materialPage?.items;
-          let resourceItems = resourcePage?.items ?? [];
-          const skinDiagnostics = [];
-          if (item.materialModel !== void 0 && materials !== void 0) {
-            const materialModel = item.materialModel;
-            let pendingSkin = materialModelCache.get(materialModel.logicalId);
-            if (pendingSkin === void 0) {
-              pendingSkin = (async () => {
-                const skin = await modelResources.acquire({
-                  maxBytes: request.maxBytes,
-                  ...metersPerSourceUnit === void 0 ? {} : { metersPerSourceUnit },
-                  requirement: materialModel
-                }, signal);
-                try {
-                  if (skin.value.result.state === "unresolved")
-                    return void 0;
-                  const read = skin.value.materials;
-                  return read === void 0 ? void 0 : (await readAllPages((page2) => read.call(skin.value, page2, signal), maxNodes, MODEL_FACET_ITEM_CAP)).items;
-                } finally {
-                  await skin.release();
-                }
-              })();
-              materialModelCache.set(materialModel.logicalId, pendingSkin);
-            }
-            const skinItems = await pendingSkin;
-            if (skinItems === void 0 || skinItems.length === 0)
-              skinDiagnostics.push(diagnostic("warning", "x3.host/world-model-material-model-unavailable", `material model ${materialModel.logicalId} published no materials; ${modelRequirement.logicalId} keeps its own`));
-            else {
-              materials = materials.map((material, index2) => {
-                const replacement = skinItems[Math.min(index2, skinItems.length - 1)];
-                return Object.freeze({ ...replacement, id: material.id });
-              });
-              resourceItems = [];
-            }
-          }
-          const allPrimitiveIds = meshPage.items.flatMap((mesh) => mesh.primitiveIds);
-          if (allPrimitiveIds.length > 0 && lease2.value.primitive === void 0)
-            throw new TypeError("model publishes primitive ids without a primitive reader");
-          const primitives = [];
-          let primitiveBytes = 0;
-          for (let start = 0; start < allPrimitiveIds.length && primitiveBytes < request.maxBytes; start += request.maxPrimitives) {
-            const batch2 = await Promise.all(allPrimitiveIds.slice(start, start + request.maxPrimitives).map((primitiveId) => lease2.value.primitive(primitiveId, { maxBytes: request.maxPrimitiveBytes }, signal)));
-            for (const primitive of batch2) {
-              const bytes = primitiveByteLength(primitive);
-              if (primitiveBytes + bytes > request.maxBytes)
-                break;
-              primitiveBytes += bytes;
-              primitives.push(primitive);
-            }
-            if (primitives.length < Math.min(start + request.maxPrimitives, allPrimitiveIds.length))
-              break;
-          }
-          const loadedPrimitives = new Set(primitives.map((primitive) => primitive.id));
-          const meshes = meshPage.items.filter((mesh) => mesh.primitiveIds.every((id) => loadedPrimitives.has(id)));
-          const graph = nodePage === void 0 ? void 0 : consistentNodes(nodePage.items, new Set(meshes.map((mesh) => mesh.id)));
-          const textureDiagnostics = [];
-          const textures = [];
-          const publishedResources = [...resourceItems];
-          const resourceIds = new Set(publishedResources.map((reference) => reference.id));
-          for (const material of materials ?? []) {
-            for (const layer2 of material.layers ?? []) {
-              if (layer2.resourceId === void 0 || resourceIds.has(layer2.resourceId))
-                continue;
-              resourceIds.add(layer2.resourceId);
-              publishedResources.push(Object.freeze({
-                id: layer2.resourceId,
-                role: "texture",
-                provenance: "reference-only"
-              }));
-            }
-          }
-          const textureReferences = publishedResources.filter((reference) => reference.role === "texture");
-          const sharedTextureBytes = Math.max(1, Math.floor(maxTextureTotalBytes / Math.max(1, textureReferences.length)));
-          let textureBytes = 0;
-          for (const reference of textureReferences) {
-            const remaining = maxTextureTotalBytes - textureBytes;
-            if (remaining <= 0) {
-              textureDiagnostics.push(diagnostic("warning", "x3.host/world-model-texture-budget-exhausted", `model texture budget omitted ${reference.id}`));
-              continue;
-            }
-            const logicalId = childResourceLogicalId(modelRequirement.logicalId, reference.id);
-            const previewTextureBytes = Math.max(1, Math.min(maxTextureBytes, remaining, sharedTextureBytes));
-            const cacheKey2 = `${logicalId}\0${String(previewTextureBytes)}`;
-            let pending = modelTextureCache.get(cacheKey2);
-            if (pending === void 0) {
-              pending = (async () => {
-                const raster = await lease2.value.readRaster({
-                  kind: "logical",
-                  requirement: {
-                    id: `world-texture:${encodeURIComponent(logicalId)}`,
-                    logicalId,
-                    role: reference.role,
-                    scopes: modelRequirement.scopes,
-                    parentResourceId: modelRequirement.id
-                  },
-                  maxBytes: previewTextureBytes,
-                  selection: { mipLevel: "fit" }
-                }, signal);
-                if (raster.state !== "decoded")
-                  return Object.freeze({
-                    diagnostics: Object.freeze([...raster.diagnostics])
-                  });
-                const texture2 = worldTexture(reference.id, raster);
-                const mipLevel = raster.subresource?.mipLevel ?? 0;
-                return Object.freeze({
-                  ...texture2 === void 0 ? {} : { texture: texture2 },
-                  diagnostics: Object.freeze([
-                    ...raster.diagnostics,
-                    ...mipLevel === 0 ? [] : [
-                      diagnostic("information", "x3.host/world-model-texture-preview-mip-selected", `model texture ${reference.id} uses preview mip ${String(mipLevel)} to stay within its decoded byte budget`)
-                    ],
-                    ...texture2 === void 0 ? [
-                      diagnostic("warning", "x3.host/world-model-texture-orientation-unknown", `model texture ${reference.id} has no proven top/bottom row orientation`)
-                    ] : []
-                  ])
-                });
-              })();
-              modelTextureCache.set(cacheKey2, pending);
-            }
-            const loaded = await pending;
-            textureDiagnostics.push(...loaded.diagnostics);
-            const texture = loaded.texture;
-            if (texture === void 0)
-              continue;
-            if (texture.rgba.byteLength > remaining) {
-              textureDiagnostics.push(diagnostic("warning", "x3.host/world-model-texture-budget-exhausted", `decoded model texture ${reference.id} exceeds the aggregate texture budget`));
-              continue;
-            }
-            textureBytes += texture.rgba.byteLength;
-            textures.push(texture);
-          }
-          return Object.freeze({
-            state: "converted",
-            sourceKey: result.sourceKey,
-            uvmBytes: result.bytes.slice(),
-            ...graph === void 0 ? {} : { nodes: Object.freeze(yawRootNodes(graph.nodes, chosen.yaw)) },
-            ...skeletonPage === void 0 ? {} : { skeleton: Object.freeze([...skeletonPage.items]) },
-            ...animationPage === void 0 ? {} : { animations: Object.freeze([...animationPage.items]) },
-            ...materials === void 0 ? {} : { materials: Object.freeze([...materials]) },
-            ...publishedResources.length === 0 ? {} : { resources: Object.freeze(publishedResources) },
-            ...socketPage === void 0 ? {} : { sockets: Object.freeze([...socketPage.items]) },
-            ...publishedResources.length === 0 ? {} : { textures: Object.freeze(textures) },
-            meshes: Object.freeze(meshes),
-            primitives: Object.freeze(primitives),
-            diagnostics: Object.freeze([
-              ...result.diagnostics,
-              ...skinDiagnostics,
-              ...textureDiagnostics,
-              ...graph?.pruned === true ? [
-                diagnostic("warning", "x3.host/world-model-graph-truncated", `model ${modelRequirement.logicalId} was cut (${MODEL_FACET_ITEM_CAP} items per facet, ${request.maxBytes} primitive bytes); nodes and meshes left out are dropped from their parents`)
-              ] : []
-            ]),
-            complete: meshPage.complete && nodePage?.complete !== false && skeletonPage?.complete !== false && animationPage?.complete !== false && materialPage?.complete !== false && resourcePage?.complete !== false && socketPage?.complete !== false && textureReferences.length === textures.length && primitives.length === allPrimitiveIds.length
-          });
-        } finally {
-          await lease2.release();
-        }
-      }
-    },
-    ...rasterResources === void 0 && terrainWeightTextures.size === 0 ? {} : {
-      async texture(requestedResourceId, request, signal) {
-        assertLive(signal);
-        positiveLimit(request.maxBytes, Number.MAX_SAFE_INTEGER);
-        const weightTexture = terrainWeightTextures.get(requestedResourceId);
-        if (weightTexture !== void 0) {
-          if (weightTexture.rgba.byteLength > request.maxBytes) {
-            return Object.freeze({
-              state: "unresolved",
-              diagnostics: Object.freeze([
-                diagnostic("warning", "x3.host/world-terrain-weight-raster-budget-exceeded", `terrain weight raster ${requestedResourceId} exceeds maxBytes`)
-              ])
-            });
-          }
-          return Object.freeze({
-            state: "decoded",
-            texture: weightTexture,
-            diagnostics: Object.freeze([])
-          });
-        }
-        if (rasterResources === void 0) {
-          return Object.freeze({
-            state: "unresolved",
-            diagnostics: Object.freeze([
-              diagnostic("warning", "x3.host/world-terrain-raster-port-unavailable", `terrain resource ${requestedResourceId} requires a raster resource port`)
-            ])
-          });
-        }
-        const requirement = [
-          ...commonTerrainMaterials.flatMap((candidate) => [
-            ...candidate.baseColorResourceId === requestedResourceId && candidate.baseColorResource !== void 0 ? [candidate.baseColorResource] : [],
-            ...candidate.normalResourceId === requestedResourceId && candidate.normalResource !== void 0 ? [candidate.normalResource] : [],
-            ...candidate.specularResourceId === requestedResourceId && candidate.specularResource !== void 0 ? [candidate.specularResource] : []
-          ]),
-          ...commonWaterMaterials.flatMap((candidate) => [
-            ...candidate.baseColorResourceId === requestedResourceId && candidate.baseColorResource !== void 0 ? [candidate.baseColorResource] : [],
-            ...candidate.secondaryColorResourceId === requestedResourceId && candidate.secondaryColorResource !== void 0 ? [candidate.secondaryColorResource] : [],
-            ...candidate.causticsResourceId === requestedResourceId && candidate.causticsResource !== void 0 ? [candidate.causticsResource] : [],
-            ...candidate.normalResourceId === requestedResourceId && candidate.normalResource !== void 0 ? [candidate.normalResource] : [],
-            ...(candidate.causticsFrameResourceIds ?? []).flatMap((resourceId2, index2) => {
-              const frame2 = candidate.causticsFrameResources?.[index2];
-              return resourceId2 === requestedResourceId && frame2 !== void 0 ? [frame2] : [];
-            })
-          ])
-        ][0];
-        if (requirement === void 0) {
-          return Object.freeze({
-            state: "unresolved",
-            diagnostics: Object.freeze([
-              diagnostic("warning", "x3.host/world-texture-resource-unavailable", `world resource ${requestedResourceId} has no scoped logical requirement`)
-            ])
-          });
-        }
-        const raster = await rasterResources.read({
-          kind: "logical",
-          requirement,
-          maxBytes: request.maxBytes
-        }, signal);
-        if (raster.state !== "decoded") {
-          return Object.freeze({
-            state: "unresolved",
-            diagnostics: Object.freeze([...raster.diagnostics])
-          });
-        }
-        const texture = worldTexture(requestedResourceId, raster);
-        if (texture === void 0) {
-          return Object.freeze({
-            state: "unresolved",
-            diagnostics: Object.freeze([
-              ...raster.diagnostics,
-              diagnostic("warning", "x3.host/world-terrain-texture-orientation-unknown", `terrain texture ${requestedResourceId} has no proven row orientation`)
-            ])
-          });
-        }
-        return Object.freeze({
-          state: "decoded",
-          texture,
-          diagnostics: Object.freeze([...raster.diagnostics])
-        });
-      }
-    }
-  });
-  return Object.freeze({
-    value: source2,
-    async release() {
-      live = false;
-      await releaseModelResources?.();
-    }
-  });
-}
-
-// packages/host/dist/maps/index.js
-var STANDARD_MAPS_OWNER = "modkit/maps";
-var OFFER_KEYS8 = /* @__PURE__ */ new Set(["gameIds"]);
-var REQUEST_KEYS7 = /* @__PURE__ */ new Set(["gameId"]);
-var PREVIEW_OFFER_KEYS = /* @__PURE__ */ new Set(["subjectFormatIds"]);
-var PREVIEW_REQUEST_KEYS = /* @__PURE__ */ new Set(["subjectFormatId"]);
-function recordOf9(value2) {
-  return typeof value2 === "object" && value2 !== null && !Array.isArray(value2) ? value2 : void 0;
-}
-function nonEmptyString7(value2) {
-  return typeof value2 === "string" && value2.trim().length > 0;
-}
-function stringList7(value2) {
-  if (!Array.isArray(value2) || value2.length === 0 || !value2.every(nonEmptyString7))
-    return void 0;
-  const strings2 = value2;
-  return new Set(strings2).size === strings2.length ? strings2 : void 0;
-}
-function parseOffer9(value2) {
-  const record9 = recordOf9(value2);
-  if (record9 === void 0 || Object.keys(record9).some((key3) => !OFFER_KEYS8.has(key3))) {
-    return void 0;
-  }
-  const gameIds = stringList7(record9["gameIds"]);
-  return gameIds === void 0 ? void 0 : { gameIds };
-}
-function parseRequest9(value2) {
-  const record9 = recordOf9(value2);
-  if (record9 === void 0 || Object.keys(record9).some((key3) => !REQUEST_KEYS7.has(key3))) {
-    return void 0;
-  }
-  return nonEmptyString7(record9["gameId"]) ? { gameId: record9["gameId"] } : void 0;
-}
-function matchMapSemanticFacets(context) {
-  const offer = parseOffer9(context.offerFacet);
-  const request = parseRequest9(context.requestFacet);
-  if (offer === void 0 || request === void 0) {
-    return {
-      state: "invalid",
-      diagnostics: [
-        diagnostic("error", "x3.host/map-semantic-facet-invalid", `${context.contract}@${context.major}: semantic map routes must be well formed`)
-      ]
-    };
-  }
-  return offer.gameIds.includes(request.gameId) ? { state: "match", selectionKey: `game=${request.gameId}` } : { state: "no-match" };
-}
-var MAP_SEMANTIC_MATCHER = Object.freeze({
-  profile: contractId(MAP_SEMANTIC_MATCHER_PROFILE),
-  major: 1,
-  match: matchMapSemanticFacets
-});
-function parsePreviewOffer(value2) {
-  const record9 = recordOf9(value2);
-  if (record9 === void 0 || Object.keys(record9).some((key3) => !PREVIEW_OFFER_KEYS.has(key3))) {
-    return void 0;
-  }
-  const subjectFormatIds = stringList7(record9["subjectFormatIds"]);
-  return subjectFormatIds === void 0 ? void 0 : { subjectFormatIds };
-}
-function parsePreviewRequest(value2) {
-  const record9 = recordOf9(value2);
-  if (record9 === void 0 || Object.keys(record9).some((key3) => !PREVIEW_REQUEST_KEYS.has(key3))) {
-    return void 0;
-  }
-  return nonEmptyString7(record9["subjectFormatId"]) ? { subjectFormatId: record9["subjectFormatId"] } : void 0;
-}
-function matchMapPreviewPreparationFacets(context) {
-  const offer = parsePreviewOffer(context.offerFacet);
-  const request = parsePreviewRequest(context.requestFacet);
-  if (offer === void 0 || request === void 0) {
-    return {
-      state: "invalid",
-      diagnostics: [
-        diagnostic("error", "x3.host/map-preview-preparation-facet-invalid", `${context.contract}@${context.major}: map preview preparation routes must be well formed`)
-      ]
-    };
-  }
-  return offer.subjectFormatIds.includes(request.subjectFormatId) ? { state: "match", selectionKey: `subject-format=${request.subjectFormatId}` } : { state: "no-match" };
-}
-var MAP_PREVIEW_PREPARATION_MATCHER = Object.freeze({
-  profile: contractId(MAP_PREVIEW_PREPARATION_MATCHER_PROFILE),
-  major: 1,
-  match: matchMapPreviewPreparationFacets
-});
-var MAP_SEMANTIC_CONTRACT_DEFINITION = Object.freeze({
-  schemaVersion: 1,
-  kind: "service",
-  contract: MAP_SEMANTIC_ANALYSIS_CONTRACT,
-  major: 1,
-  offerFacet: Object.freeze({
-    presence: "required",
-    schema: Object.freeze({
-      $ref: "https://schemas.modkit.org/x3/map-semantic-offer.v1.schema.json"
-    })
-  }),
-  requestFacet: Object.freeze({
-    presence: "required",
-    schema: Object.freeze({
-      $ref: "https://schemas.modkit.org/x3/map-semantic-request.v1.schema.json"
-    })
-  }),
-  matching: Object.freeze({ profile: MAP_SEMANTIC_MATCHER_PROFILE, major: 1 }),
-  conformanceProfile: "common.map/semantic-analysis-v1",
-  surface: Object.freeze({
-    fields: Object.freeze(["contract", "analyzerId", "gameIds"]),
-    methods: Object.freeze({
-      open: Object.freeze({
-        kind: "value",
-        signal: Object.freeze({ arg: 0, key: "signal" }),
-        limits: Object.freeze({ maxBytes: 33554432, maxStringLength: 4194304 })
-      })
-    })
-  })
-});
-var RESOLVED_MAP_WORKSPACE_CONTRACT_DEFINITION = Object.freeze({
-  schemaVersion: 1,
-  kind: "service",
-  contract: RESOLVED_MAP_WORKSPACE_CONTRACT,
-  major: 1,
-  offerFacet: Object.freeze({
-    presence: "required",
-    schema: Object.freeze({
-      $ref: "https://schemas.modkit.org/x3/map-semantic-offer.v1.schema.json"
-    })
-  }),
-  requestFacet: Object.freeze({
-    presence: "required",
-    schema: Object.freeze({
-      $ref: "https://schemas.modkit.org/x3/map-semantic-request.v1.schema.json"
-    })
-  }),
-  matching: Object.freeze({ profile: MAP_SEMANTIC_MATCHER_PROFILE, major: 1 }),
-  conformanceProfile: "common.map/resolved-workspace-v1",
-  surface: Object.freeze({
-    fields: Object.freeze(["contract", "analyzerId", "gameIds"]),
-    methods: Object.freeze({
-      plan: Object.freeze({
-        kind: "value",
-        signal: Object.freeze({ arg: 0, key: "signal" }),
-        limits: Object.freeze({ maxBytes: 4194304, maxStringLength: 1048576 })
-      }),
-      analyze: Object.freeze({
-        kind: "value",
-        signal: Object.freeze({ arg: 0, key: "signal" }),
-        limits: Object.freeze({ maxBytes: 33554432, maxStringLength: 4194304 })
-      })
-    })
-  })
-});
-var MAP_PREVIEW_PREPARATION_CONTRACT_DEFINITION = Object.freeze({
-  schemaVersion: 1,
-  kind: "service",
-  contract: MAP_PREVIEW_PREPARATION_CONTRACT,
-  major: 1,
-  offerFacet: Object.freeze({
-    presence: "required",
-    schema: Object.freeze({
-      $ref: "https://schemas.modkit.org/x3/map-preview-preparation-offer.v1.schema.json"
-    })
-  }),
-  requestFacet: Object.freeze({
-    presence: "required",
-    schema: Object.freeze({
-      $ref: "https://schemas.modkit.org/x3/map-preview-preparation-request.v1.schema.json"
-    })
-  }),
-  matching: Object.freeze({
-    profile: MAP_PREVIEW_PREPARATION_MATCHER_PROFILE,
-    major: 1
-  }),
-  conformanceProfile: "common.map/preview-preparation-v1",
-  surface: Object.freeze({
-    fields: Object.freeze(["contract", "preparationId", "subjectFormatIds"]),
-    methods: Object.freeze({
-      prepare: Object.freeze({
-        kind: "value",
-        signal: Object.freeze({ arg: 0, key: "signal" }),
-        limits: Object.freeze({ maxBytes: 4194304, maxStringLength: 1048576 })
-      })
-    })
-  })
-});
-function registerStandardMapDefinitions(definitions) {
-  const registered = [
-    MAP_SEMANTIC_CONTRACT_DEFINITION,
-    RESOLVED_MAP_WORKSPACE_CONTRACT_DEFINITION,
-    MAP_PREVIEW_PREPARATION_CONTRACT_DEFINITION
-  ];
-  return definitions.replaceOwnerInventory(STANDARD_MAPS_OWNER, registered.map((definition2) => ({
-    definition: definition2,
-    provenance: {
-      ownerExtensionId: STANDARD_MAPS_OWNER,
-      extensionVersion: "1.0.0",
-      inventoryRecordId: `host:${definition2.contract}@${definition2.major}`,
-      manifestDigest: `host:${definition2.contract}@${definition2.major}`,
-      artifactDigest: "host:standard-map-definitions",
-      artifactRoot: "host:",
-      manifestPath: "host:standard-map-definitions"
-    }
-  })));
-}
-function isResolvedMapWorkspace(value2) {
-  const record9 = recordOf9(value2);
-  return record9?.["contract"] === RESOLVED_MAP_WORKSPACE_CONTRACT && nonEmptyString7(record9["analyzerId"]) && stringList7(record9["gameIds"]) !== void 0 && typeof record9["plan"] === "function" && typeof record9["analyze"] === "function";
-}
-async function resolveResolvedMapWorkspace(request) {
-  const definitions = request.services.serviceDefinitions;
-  if (definitions === void 0) {
-    return {
-      state: "unresolved",
-      diagnostics: [
-        diagnostic("information", "x3.host/resolved-map-workspace-unavailable", "this host registered no service-contract definitions for workspace maps")
-      ]
-    };
-  }
-  const resolver = createHostServiceResolver({
-    inventory: request.services.inventory,
-    target: request.services.target,
-    executionBackends: request.services.executionBackends,
-    definitions,
-    grant: request.grant,
-    budgets: request.budgets,
-    ...request.signal === void 0 ? {} : { signal: request.signal }
-  });
-  try {
-    const lease2 = await resolver.port.resolve({
-      contract: RESOLVED_MAP_WORKSPACE_CONTRACT,
-      major: 1,
-      facet: { gameId: request.gameId },
-      ...request.signal === void 0 ? {} : { signal: request.signal }
-    });
-    if (!isResolvedMapWorkspace(lease2.value) || !lease2.value.gameIds.includes(request.gameId)) {
-      await resolver.release();
-      return {
-        state: "unresolved",
-        diagnostics: [
-          ...resolver.diagnostics,
-          diagnostic("error", "x3.host/resolved-map-workspace-invalid", `selected provider does not implement ${RESOLVED_MAP_WORKSPACE_CONTRACT}@1`)
-        ]
-      };
-    }
-    return Object.freeze({
-      state: "resolved",
-      workspace: lease2.value,
-      diagnostics: Object.freeze([
-        ...resolver.diagnostics,
-        diagnostic("information", "x3.host/resolved-map-workspace-selected", `selected ${lease2.value.analyzerId} for ${request.gameId}`)
-      ]),
-      release: () => resolver.release()
-    });
-  } catch (error5) {
-    await resolver.release();
-    return {
-      state: "unresolved",
-      diagnostics: [
-        ...resolver.diagnostics,
-        diagnostic("information", "x3.host/resolved-map-workspace-unresolved", `no workspace map provider resolved for ${request.gameId} (${error5 instanceof Error ? error5.message : String(error5)})`)
-      ]
-    };
-  }
-}
-function isMapPreviewPreparation(value2) {
-  const record9 = recordOf9(value2);
-  return record9?.["contract"] === MAP_PREVIEW_PREPARATION_CONTRACT && nonEmptyString7(record9["preparationId"]) && stringList7(record9["subjectFormatIds"]) !== void 0 && typeof record9["prepare"] === "function";
-}
-async function resolveMapPreviewPreparation(request) {
-  const definitions = request.services.serviceDefinitions;
-  if (definitions === void 0) {
-    return {
-      state: "unresolved",
-      diagnostics: [
-        diagnostic("information", "x3.host/map-preview-preparation-unavailable", "this host registered no service-contract definitions for map preview preparation")
-      ]
-    };
-  }
-  const resolver = createHostServiceResolver({
-    inventory: request.services.inventory,
-    target: request.services.target,
-    executionBackends: request.services.executionBackends,
-    definitions,
-    grant: request.grant,
-    budgets: request.budgets,
-    ...request.signal === void 0 ? {} : { signal: request.signal }
-  });
-  try {
-    const lease2 = await resolver.port.resolve({
-      contract: MAP_PREVIEW_PREPARATION_CONTRACT,
-      major: 1,
-      facet: { subjectFormatId: request.subjectFormatId },
-      ...request.signal === void 0 ? {} : { signal: request.signal }
-    });
-    if (!isMapPreviewPreparation(lease2.value) || !lease2.value.subjectFormatIds.includes(request.subjectFormatId)) {
-      await resolver.release();
-      return {
-        state: "unresolved",
-        diagnostics: [
-          ...resolver.diagnostics,
-          diagnostic("error", "x3.host/map-preview-preparation-invalid", `selected provider does not implement ${MAP_PREVIEW_PREPARATION_CONTRACT}@1`)
-        ]
-      };
-    }
-    return Object.freeze({
-      state: "resolved",
-      preparation: lease2.value,
-      diagnostics: Object.freeze([
-        ...resolver.diagnostics,
-        diagnostic("information", "x3.host/map-preview-preparation-selected", `selected ${lease2.value.preparationId} for the subject format`)
-      ]),
-      release: () => resolver.release()
-    });
-  } catch (error5) {
-    await resolver.release();
-    return {
-      state: "unresolved",
-      diagnostics: [
-        ...resolver.diagnostics,
-        diagnostic("information", "x3.host/map-preview-preparation-unresolved", `no map preview preparation provider resolved (${error5 instanceof Error ? error5.message : String(error5)})`)
-      ]
-    };
-  }
-}
-var MAP_CATALOG_ROUNDS = 6;
-async function analyzeWithCatalogEntities(options) {
-  return answerCatalogQueries({
-    run: (answered, round) => options.analyze(answered === void 0 ? void 0 : Object.freeze({
-      schemaVersion: 1,
-      workspaceId: options.workspace.workspaceId,
-      gameId: options.workspace.gameId,
-      analyzerId: "x3.host/map-catalog-slice",
-      typeIds: Object.freeze([]),
-      namespaces: Object.freeze([]),
-      entityCount: answered.length,
-      patchCount: 0,
-      definitions: answered,
-      entities: answered,
-      diagnostics: Object.freeze([]),
-      complete: false
-    }), round),
-    queriesOf: (snapshot3) => snapshot3.semantic.catalogQueries,
-    catalogEntities: options.catalogEntities,
-    rounds: MAP_CATALOG_ROUNDS,
-    ...options.signal === void 0 ? {} : { signal: options.signal }
-  });
-}
-function positiveBound2(value2, label) {
-  if (!Number.isSafeInteger(value2) || value2 <= 0) {
-    throw new TypeError(`${label} must be a positive safe integer`);
-  }
-  return value2;
-}
-function withinOperationBudgets(limits, budgets) {
-  if (BigInt(limits.maxTotalBytes) > budgets.maxInputBytes) {
-    throw new TypeError("maxTotalBytes exceeds ResourceBudget.maxInputBytes");
-  }
-  if (limits.maxDocumentBytes > budgets.maxScalarBytes || limits.maxDocumentBytes > limits.maxTotalBytes) {
-    throw new TypeError("maxDocumentBytes exceeds scalar or total byte budget");
-  }
-  for (const [label, value2] of [
-    ["maxRequirements", limits.maxRequirements],
-    ["maxObjects", limits.maxObjects],
-    ["maxRegions", limits.maxRegions],
-    ["maxTerrainCells", limits.maxTerrainCells],
-    ["maxTerrainSamples", limits.maxTerrainSamples],
-    ["maxPageSize", limits.maxPageSize]
-  ]) {
-    if (value2 > budgets.maxNodes)
-      throw new TypeError(`${label} exceeds ResourceBudget.maxNodes`);
-  }
-  if (limits.maxDepth > budgets.maxDepth) {
-    throw new TypeError("maxDepth exceeds ResourceBudget.maxDepth");
-  }
-  if (limits.maxDiagnostics > budgets.maxDiagnostics) {
-    throw new TypeError("maxDiagnostics exceeds ResourceBudget.maxDiagnostics");
-  }
-}
-function boundedDiagnostics(items, maximum) {
-  if (items.length <= maximum)
-    return Object.freeze([...items]);
-  const marker = diagnostic("warning", "x3.host/resolved-map-diagnostics-truncated", `workspace map diagnostics were truncated to maxDiagnostics ${maximum}`);
-  return Object.freeze(maximum === 1 ? [marker] : [...items.slice(0, maximum - 1), marker]);
-}
-function validateWorkspacePlan2(plan, workspace, maxRequirements) {
-  if (plan.schemaVersion !== 1 || plan.workspaceId !== workspace.workspaceId || plan.gameId !== workspace.gameId || !nonEmptyString7(plan.analyzerId) || !Array.isArray(plan.requirements) || plan.requirements.length > maxRequirements) {
-    throw new TypeError("workspace map provider returned an invalid or foreign plan");
-  }
-  const active = workspace.loadOrder.find((item) => item.rootId === workspace.activeRootId);
-  if (active === void 0 || plan.mapId !== active.sourcePath) {
-    throw new TypeError("workspace map plan does not name the active root exactly");
-  }
-  const root = active.sourcePath.replaceAll("\\", "/");
-  const prefix = `${root}/`;
-  const ids = /* @__PURE__ */ new Set();
-  const paths = /* @__PURE__ */ new Set();
-  for (const requirement of plan.requirements) {
-    const path = requirement.path.replaceAll("\\", "/");
-    const segments = path.split("/");
-    const mapRootScoped = requirement.scope === void 0 || requirement.scope === "map-root";
-    if (!nonEmptyString7(requirement.requirementId) || !nonEmptyString7(requirement.kind) || typeof requirement.required !== "boolean" || requirement.scope !== void 0 && requirement.scope !== "map-root" && requirement.scope !== "workspace" || path !== requirement.path || path.startsWith("/") || /^[A-Za-z]:/u.test(path) || segments.some((segment) => segment === "" || segment === "." || segment === "..") || mapRootScoped && (!path.startsWith(prefix) || path.slice(prefix.length).includes("/")) || ids.has(requirement.requirementId) || paths.has(path.toLowerCase())) {
-      throw new TypeError("workspace map plan contains a duplicate, non-confined or invalid read");
-    }
-    ids.add(requirement.requirementId);
-    paths.add(path.toLowerCase());
-  }
-}
-async function readResourceBytes(resources, requirement, maxDocumentBytes, remainingTotalBytes, signal) {
-  if (remainingTotalBytes <= 0) {
-    return {
-      state: "unresolved",
-      diagnostic: diagnostic("warning", "x3.host/resolved-map-total-budget-exceeded", `${requirement.path} cannot be read because maxTotalBytes is exhausted`),
-      consumedBytes: 0
-    };
-  }
-  const resolved2 = await resources.resolve({
-    id: requirement.requirementId,
-    logicalId: requirement.path,
-    role: "buffer",
-    scopes: ["current-mount", "enclosing-container", "workspace-dependency-layer"]
-  }, signal);
-  if (resolved2.state === "unresolved") {
-    return { state: "unresolved", diagnostic: resolved2.diagnostic, consumedBytes: 0 };
-  }
-  try {
-    const source2 = resolved2.lease.value;
-    if (source2.kind !== "bytes") {
-      return {
-        state: "unresolved",
-        diagnostic: diagnostic("warning", "x3.host/resolved-map-resource-not-bytes", `${requirement.path} resolved to a namespace instead of bytes`),
-        consumedBytes: 0
-      };
-    }
-    if (source2.size !== void 0 && (source2.size > BigInt(maxDocumentBytes) || source2.size > BigInt(remainingTotalBytes))) {
-      const totalExceeded = source2.size > BigInt(remainingTotalBytes);
-      return {
-        state: "unresolved",
-        diagnostic: diagnostic("warning", totalExceeded ? "x3.host/resolved-map-total-budget-exceeded" : "x3.host/resolved-map-document-budget-exceeded", totalExceeded ? `${requirement.path} exceeds remaining maxTotalBytes ${remainingTotalBytes}` : `${requirement.path} exceeds maxDocumentBytes ${maxDocumentBytes}`),
-        consumedBytes: 0
-      };
-    }
-    const chunks = [];
-    let byteLength = 0;
-    try {
-      for await (const chunk of source2.stream(void 0, signal)) {
-        byteLength += chunk.byteLength;
-        if (byteLength > maxDocumentBytes || byteLength > remainingTotalBytes) {
-          return {
-            state: "unresolved",
-            diagnostic: diagnostic("warning", byteLength > remainingTotalBytes ? "x3.host/resolved-map-total-budget-exceeded" : "x3.host/resolved-map-document-budget-exceeded", byteLength > remainingTotalBytes ? `${requirement.path} exceeds remaining maxTotalBytes ${remainingTotalBytes}` : `${requirement.path} exceeds maxDocumentBytes ${maxDocumentBytes}`),
-            consumedBytes: byteLength
-          };
-        }
-        chunks.push(chunk);
-      }
-    } catch (error5) {
-      signal?.throwIfAborted();
-      return {
-        state: "unresolved",
-        diagnostic: diagnostic("warning", "x3.host/resolved-map-document-read-failed", `${requirement.path}: ${error5 instanceof Error ? error5.message : String(error5)}`),
-        consumedBytes: byteLength
-      };
-    }
-    const bytes = new Uint8Array(byteLength);
-    let offset = 0;
-    for (const chunk of chunks) {
-      bytes.set(chunk, offset);
-      offset += chunk.byteLength;
-    }
-    return {
-      state: "resolved",
-      document: Object.freeze({ path: requirement.path, bytes }),
-      revision: resolved2.revision,
-      contentFingerprint: await fingerprintBytes(bytes),
-      consumedBytes: byteLength
-    };
-  } finally {
-    await resolved2.lease.release();
-  }
-}
-async function fingerprintBytes(bytes) {
-  const copy = Uint8Array.from(bytes);
-  const digest = new Uint8Array(await globalThis.crypto.subtle.digest("SHA-256", copy.buffer));
-  return `sha256:${[...digest].map((byte2) => byte2.toString(16).padStart(2, "0")).join("")}`;
-}
-async function analyzeResolvedMapWorkspace(request) {
-  const limits = {
-    maxRequirements: positiveBound2(request.limits.maxRequirements, "maxRequirements"),
-    maxDocumentBytes: positiveBound2(request.limits.maxDocumentBytes, "maxDocumentBytes"),
-    maxTotalBytes: positiveBound2(request.limits.maxTotalBytes, "maxTotalBytes"),
-    maxObjects: positiveBound2(request.limits.maxObjects, "maxObjects"),
-    maxRegions: positiveBound2(request.limits.maxRegions, "maxRegions"),
-    maxTerrainCells: positiveBound2(request.limits.maxTerrainCells, "maxTerrainCells"),
-    maxTerrainSamples: positiveBound2(request.limits.maxTerrainSamples, "maxTerrainSamples"),
-    maxDepth: positiveBound2(request.limits.maxDepth, "maxDepth"),
-    maxPageSize: positiveBound2(request.limits.maxPageSize, "maxPageSize"),
-    maxDiagnostics: positiveBound2(request.limits.maxDiagnostics, "maxDiagnostics")
-  };
-  withinOperationBudgets(limits, request.budgets);
-  if (request.resources.state() !== "live") {
-    return {
-      state: "unresolved",
-      diagnostics: [
-        diagnostic("warning", "x3.host/resolved-map-resource-session-disposed", "workspace map analysis requires a live revision-pinned ResourceSessionPort")
-      ]
-    };
-  }
-  const resolution = await resolveResolvedMapWorkspace({
-    services: request.services,
-    gameId: request.workspace.gameId,
-    grant: request.grant,
-    budgets: request.budgets,
-    ...request.signal === void 0 ? {} : { signal: request.signal }
-  });
-  if (resolution.state === "unresolved")
-    return resolution;
-  const diagnostics = [...resolution.diagnostics];
-  try {
-    const plan = await resolution.workspace.plan({
-      workspace: request.workspace,
-      maxRequirements: limits.maxRequirements,
-      ...request.signal === void 0 ? {} : { signal: request.signal }
-    });
-    validateWorkspacePlan2(plan, request.workspace, limits.maxRequirements);
-    diagnostics.push(...plan.diagnostics.map((item) => diagnostic(item.severity, item.code, item.message, void 0, {
-      analyzerId: plan.analyzerId
-    })));
-    if (!plan.complete) {
-      await resolution.release();
-      return {
-        state: "unresolved",
-        diagnostics: boundedDiagnostics(diagnostics, limits.maxDiagnostics)
-      };
-    }
-    const provenanceOffset = request.resources.provenance().length;
-    const documents = [];
-    const revisions = [];
-    const unresolvedRequirementIds = [];
-    let totalBytes = 0;
-    for (const requirement of plan.requirements) {
-      request.signal?.throwIfAborted();
-      const loaded = await readResourceBytes(request.resources, requirement, limits.maxDocumentBytes, limits.maxTotalBytes - totalBytes, request.signal);
-      totalBytes += loaded.consumedBytes;
-      if (loaded.state === "unresolved") {
-        diagnostics.push(loaded.diagnostic);
-        unresolvedRequirementIds.push(requirement.requirementId);
-        continue;
-      }
-      if (totalBytes > limits.maxTotalBytes) {
-        throw new TypeError(`workspace map documents exceed maxTotalBytes ${limits.maxTotalBytes}`);
-      }
-      documents.push(loaded.document);
-      revisions.push(`${requirement.requirementId}:${requirement.path}@${String(loaded.revision)}#${loaded.contentFingerprint}`);
-    }
-    if (request.resources.state() !== "live") {
-      throw new Error("resource session was disposed while workspace map documents were loading");
-    }
-    const snapshotId = [
-      `session=${String(request.resources.revision)}`,
-      `workspace=${encodeURIComponent(request.workspace.workspaceId)}`,
-      `map=${encodeURIComponent(plan.mapId)}`,
-      ...revisions
-    ].join("|");
-    const analyze = (catalog, round) => resolution.workspace.analyze({
-      workspaceId: request.workspace.workspaceId,
-      gameId: request.workspace.gameId,
-      mapId: plan.mapId,
-      documents,
-      ...catalog === void 0 ? {} : { catalog },
-      ...request.subjectOperationIds === void 0 ? {} : { subjectOperationIds: request.subjectOperationIds },
-      maxDocuments: limits.maxRequirements,
-      maxDocumentBytes: limits.maxDocumentBytes,
-      maxTotalBytes: limits.maxTotalBytes,
-      maxObjects: limits.maxObjects,
-      maxRegions: limits.maxRegions,
-      maxTerrainCells: limits.maxTerrainCells,
-      maxTerrainSamples: limits.maxTerrainSamples,
-      maxDepth: limits.maxDepth,
-      maxDiagnostics: limits.maxDiagnostics,
-      snapshotId: round === 0 ? snapshotId : `${snapshotId}|catalog-round=${round}`,
-      unresolvedRequirementIds,
-      requiredRequirementIds: plan.requirements.filter((item) => item.required).map((item) => item.requirementId),
-      ...request.signal === void 0 ? {} : { signal: request.signal }
-    });
-    const snapshot3 = request.catalog === void 0 && request.catalogEntities !== void 0 ? await analyzeWithCatalogEntities({
-      workspace: request.workspace,
-      analyze,
-      catalogEntities: request.catalogEntities,
-      ...request.signal === void 0 ? {} : { signal: request.signal }
-    }) : await analyze(request.catalog, 0);
-    if (request.resources.state() !== "live") {
-      throw new Error("resource session was disposed while workspace map was analyzed");
-    }
-    const modelState = {
-      live: true,
-      reservedBytes: 0,
-      resources: request.resources
-    };
-    const modelReleases = [];
-    const modelResources = createSubjectModelResources({
-      state: modelState,
-      budget: request.budgets,
-      isAuthorized: () => modelState.live && request.grant.classes.includes("read-source"),
-      ancestors: [`map:${request.workspace.workspaceId}@${request.resources.revision}`],
-      own: (release) => modelReleases.push(release),
-      ...request.onModelResourceProfile === void 0 ? {} : { onProfile: request.onModelResourceProfile },
-      open: (source2, path, signal) => openSubject({
-        inventory: request.services.inventory,
-        source: source2,
-        path,
-        target: request.services.target,
-        intent: "full",
-        grant: { ...request.grant, classes: ["read-source"] },
-        budget: request.budgets,
-        executionBackends: request.services.executionBackends,
-        ...request.services.serviceDefinitions === void 0 ? {} : { serviceDefinitions: request.services.serviceDefinitions },
-        ...request.services.contributionSettings === void 0 ? {} : { contributionSettings: request.services.contributionSettings },
-        resourceSession: request.resources,
-        ...request.inputResolver === void 0 ? {} : { resolveInput: request.inputResolver },
-        ...signal === void 0 ? {} : { signal }
-      })
-    });
-    const releaseModelResources = async () => {
-      if (!modelState.live)
-        return;
-      modelState.live = false;
-      const outcomes = await Promise.allSettled(modelReleases.map((release) => release()));
-      const failure4 = outcomes.find((outcome) => outcome.status === "rejected");
-      if (failure4?.status === "rejected")
-        throw failure4.reason;
-    };
-    const rasterResources = createSubjectRasterResources({
-      state: modelState,
-      budget: request.budgets,
-      isAuthorized: () => modelState.live && request.grant.classes.includes("read-source"),
-      open: (source2, hint, signal) => openSubject({
-        inventory: request.services.inventory,
-        source: source2,
-        path: hint.path ?? "",
-        target: request.services.target,
-        intent: "full",
-        grant: { ...request.grant, classes: ["read-source"] },
-        budget: request.budgets,
-        executionBackends: request.services.executionBackends,
-        ...request.services.serviceDefinitions === void 0 ? {} : { serviceDefinitions: request.services.serviceDefinitions },
-        ...request.services.contributionSettings === void 0 ? {} : { contributionSettings: request.services.contributionSettings },
-        resourceSession: request.resources,
-        ...request.inputResolver === void 0 ? {} : { resolveInput: request.inputResolver },
-        ...signal === void 0 ? {} : { signal }
-      })
-    });
-    const world = createCandidateWorldSceneLease(snapshot3, request.resources.provenance().slice(provenanceOffset), limits.maxPageSize, modelResources, releaseModelResources, rasterResources);
-    let released = false;
-    return Object.freeze({
-      state: "resolved",
-      snapshot: snapshot3,
-      plan,
-      world,
-      diagnostics: boundedDiagnostics(diagnostics, limits.maxDiagnostics),
-      async release() {
-        if (released)
-          return;
-        released = true;
-        const results = await Promise.allSettled([world.release(), resolution.release()]);
-        const failure4 = results.find((result) => result.status === "rejected");
-        if (failure4?.status === "rejected")
-          throw failure4.reason;
-      }
-    });
-  } catch (error5) {
-    await resolution.release();
-    if (request.signal?.aborted)
-      throw error5;
-    return {
-      state: "unresolved",
-      diagnostics: boundedDiagnostics([
-        ...diagnostics,
-        diagnostic("warning", "x3.host/resolved-map-workspace-failed", error5 instanceof Error ? error5.message : String(error5))
-      ], limits.maxDiagnostics)
-    };
-  }
-}
-function previewDiagnostic(item, index2) {
-  return Object.freeze({
-    id: `map-preview-${String(index2)}`,
-    category: "unknown",
-    code: item.code,
-    severity: item.severity,
-    message: item.message,
-    ...item.path === void 0 ? {} : { path: item.path },
-    ...item.range === void 0 ? {} : { range: item.range }
-  });
-}
-function borrowCommonWorldScene(candidate) {
-  let live = true;
-  const assertLive = (signal) => {
-    signal?.throwIfAborted();
-    if (!live)
-      throw new TypeError("world scene data-source lease has been released");
-  };
-  const source2 = Object.freeze({
-    contract: WORLD_SCENE_SOURCE_CONTRACT,
-    major: 1,
-    snapshotId: candidate.snapshotId,
-    async info(signal) {
-      assertLive(signal);
-      const info = await candidate.info(signal);
-      assertLive(signal);
-      return Object.freeze({ ...info, contract: WORLD_SCENE_SOURCE_CONTRACT });
-    },
-    async page(request, signal) {
-      assertLive(signal);
-      const page2 = await candidate.page(request, signal);
-      assertLive(signal);
-      return page2;
-    },
-    ...candidate.model === void 0 ? {} : {
-      async model(resourceId2, request, signal) {
-        assertLive(signal);
-        const result = await candidate.model(resourceId2, request, signal);
-        assertLive(signal);
-        return result;
-      }
-    },
-    ...candidate.texture === void 0 ? {} : {
-      async texture(resourceId2, request, signal) {
-        assertLive(signal);
-        const result = await candidate.texture(resourceId2, request, signal);
-        assertLive(signal);
-        return result;
-      }
-    }
-  });
-  return Object.freeze({
-    value: source2,
-    release() {
-      live = false;
-      return Promise.resolve();
-    }
-  });
-}
-function borrowDataSource(source2) {
-  let live = true;
-  const target = /* @__PURE__ */ Object.create(null);
-  const value2 = new Proxy(target, {
-    get(_target2, property) {
-      const member = Reflect.get(source2, property, source2);
-      if (typeof member !== "function")
-        return member;
-      return (...args) => {
-        if (!live)
-          throw new TypeError("map preview data-source lease has been released");
-        return Reflect.apply(member, source2, args);
-      };
-    }
-  });
-  return Object.freeze({
-    value: value2,
-    release() {
-      live = false;
-      return Promise.resolve();
-    }
-  });
-}
-async function openMapPreviewAssetSession(request) {
-  let analyzed;
-  try {
-    analyzed = await analyzeResolvedMapWorkspace(request);
-  } catch (error5) {
-    await Promise.allSettled([request.resources.dispose(), request.catalogSources?.release()]);
-    throw error5;
-  }
-  if (analyzed.state === "unresolved") {
-    await Promise.allSettled([request.resources.dispose(), request.catalogSources?.release()]);
-    return analyzed;
-  }
-  try {
-    const catalogSources = request.catalogSources;
-    const descriptor = await assembleSubjectDescriptor({
-      schemaVersion: 2,
-      subjectUri: request.subjectUri,
-      origin: {
-        kind: "namespace",
-        root: { id: request.workspace.activeRootId, uri: request.subjectUri },
-        revision: request.resources.revision
-      },
-      interpretation: "none",
-      candidates: [],
-      traits: [],
-      operations: [],
-      constraints: {
-        readOnly: true,
-        seekable: false,
-        randomAccess: true,
-        trusted: false
-      },
-      dataSources: [
-        { contract: WORLD_SCENE_SOURCE_CONTRACT, major: 1 },
-        ...catalogSources === void 0 ? [] : [{ contract: contractId("common.view/relation-graph-source"), major: 1 }],
-        ...catalogSources?.selector === void 0 ? [] : [{ contract: contractId("common.view/subject-selector-source"), major: 1 }]
-      ],
-      diagnostics: analyzed.diagnostics.map(previewDiagnostic),
-      revision: request.resources.revision
-    });
-    const managed = createAssetSession({
-      revision: request.resources.revision,
-      descriptor,
-      operationDeclarations: [],
-      permissionGrant: request.grant,
-      handlers: /* @__PURE__ */ new Map(),
-      async openDataSource(contract, major) {
-        if (major === 1) {
-          if (contract === WORLD_SCENE_SOURCE_CONTRACT) {
-            return borrowCommonWorldScene(analyzed.world.value);
-          }
-          if (contract === "common.view/relation-graph-source" && catalogSources !== void 0) {
-            return borrowDataSource(catalogSources.relations);
-          }
-          if (contract === "common.view/subject-selector-source" && catalogSources?.selector !== void 0) {
-            return borrowDataSource(catalogSources.selector);
-          }
-        }
-        throw new ModkitError({
-          code: "x3.host/map-preview-data-source-unavailable",
-          message: `map preview does not publish ${contract}@${String(major)}`
-        });
-      },
-      // createAssetSession releases in reverse order: analysis first, then its ResourceSession.
-      release: [
-        () => request.resources.dispose(),
-        ...catalogSources === void 0 ? [] : [() => catalogSources.release()],
-        () => analyzed.release()
-      ]
-    });
-    return Object.freeze({
-      state: "opened",
-      session: managed.session,
-      descriptor,
-      snapshot: analyzed.snapshot,
-      plan: analyzed.plan,
-      diagnostics: analyzed.diagnostics
-    });
-  } catch (error5) {
-    await Promise.allSettled([
-      analyzed.release(),
-      request.catalogSources?.release(),
-      request.resources.dispose()
-    ]);
-    throw error5;
-  }
-}
-var PREVIEW_DIAGNOSTIC_SEVERITIES = /* @__PURE__ */ new Set(["error", "warning", "information", "hint"]);
-var MAX_PREVIEW_NAMESPACE_SEARCHES = 8;
-var MAX_PREVIEW_NAMESPACE_SEARCH_BASENAMES = 16;
-var MAX_PREVIEW_NAMESPACE_SEARCH_BASENAME_CHARS = 512;
-var MAX_PREVIEW_NAMESPACE_SEARCH_ID_CHARS = 512;
-var MAX_PREVIEW_NAMESPACE_FACT_ENTRIES = 2e4;
-var MAX_PREVIEW_NAMESPACE_FACT_PAGES = 256;
-var MAX_PREVIEW_NAMESPACE_PATH_CHARS = 4096;
-var MAX_PREVIEW_NAMESPACE_CURSOR_CHARS = 4096;
-var MAX_PREVIEW_DOCUMENT_READS = 8;
-var MAX_PREVIEW_DOCUMENT_READ_BYTES = 1048576;
-var MAX_PREVIEW_DOCUMENT_TOTAL_BYTES = 4194304;
-var MAX_PREVIEW_DOCUMENT_ROUNDS = 8;
-function positiveCoordinatorLimit(value2, label) {
-  if (!Number.isSafeInteger(value2) || value2 <= 0) {
-    throw new TypeError(`${label} must be a positive safe integer`);
-  }
-  return value2;
-}
-function boundedCoordinatorLimit(value2, label, maximum) {
-  const admitted = positiveCoordinatorLimit(value2, label);
-  if (admitted > maximum)
-    throw new TypeError(`${label} must be no greater than ${maximum}`);
-  return admitted;
-}
-function validPreparationDiagnostic(value2) {
-  const record9 = recordOf9(value2);
-  return record9 !== void 0 && Object.keys(record9).every((key3) => ["code", "severity", "message", "path", "data"].includes(key3)) && nonEmptyString7(record9["code"]) && PREVIEW_DIAGNOSTIC_SEVERITIES.has(String(record9["severity"])) && nonEmptyString7(record9["message"]) && (!Object.hasOwn(record9, "path") || Array.isArray(record9["path"]) && record9["path"].every((item) => typeof item === "string" || Number.isSafeInteger(item))) && (!Object.hasOwn(record9, "data") || jsonSafeValue(record9["data"]));
-}
-function validNamespaceSearchQuery(value2) {
-  const query2 = recordOf9(value2);
-  if (query2 === void 0 || !Object.keys(query2).every((key3) => key3 === "kind" || key3 === "basenames" || key3 === "caseSensitive") || query2["kind"] !== "basename-any" || !Array.isArray(query2["basenames"]) || query2["basenames"].length === 0 || query2["basenames"].length > MAX_PREVIEW_NAMESPACE_SEARCH_BASENAMES || typeof query2["caseSensitive"] !== "boolean") {
-    return false;
-  }
-  const basenames = query2["basenames"];
-  const validBasenames = basenames.every((item) => nonEmptyString7(item) && item.length <= MAX_PREVIEW_NAMESPACE_SEARCH_BASENAME_CHARS && !item.includes("/") && !item.includes("\\") && !item.includes("\0") && item !== "." && item !== "..");
-  if (!validBasenames)
-    return false;
-  const identityBasenames = query2["caseSensitive"] ? basenames : basenames.map((item) => item.toLowerCase());
-  return new Set(identityBasenames).size === basenames.length;
-}
-function validateNamespaceSearchRequests(value2) {
-  if (!Array.isArray(value2) || value2.length === 0 || value2.length > MAX_PREVIEW_NAMESPACE_SEARCHES || !value2.every((item) => {
-    const search = recordOf9(item);
-    return search !== void 0 && Object.keys(search).every((key3) => key3 === "searchId" || key3 === "query") && nonEmptyString7(search["searchId"]) && search["searchId"].length <= MAX_PREVIEW_NAMESPACE_SEARCH_ID_CHARS && !search["searchId"].includes("\0") && validNamespaceSearchQuery(search["query"]);
-  }) || new Set(value2.map((item) => String(recordOf9(item)?.["searchId"] ?? ""))).size !== value2.length) {
-    throw new TypeError("map preview preparation returned invalid namespace searches");
-  }
-  return value2;
-}
-function validateDocumentReadRequests(value2) {
-  if (!Array.isArray(value2) || value2.length === 0 || value2.length > MAX_PREVIEW_DOCUMENT_READS) {
-    throw new TypeError("map preview preparation returned invalid document reads");
-  }
-  let totalBytes = 0;
-  const identities = /* @__PURE__ */ new Set();
-  for (const [index2, item] of value2.entries()) {
-    const document2 = recordOf9(item);
-    if (document2 === void 0 || !Object.keys(document2).every((key3) => key3 === "documentId" || key3 === "path" || key3 === "maxBytes") || !nonEmptyString7(document2["documentId"]) || document2["documentId"].length > 256 || document2["documentId"].includes("\0") || !nonEmptyString7(document2["path"]) || document2["path"].length > MAX_PREVIEW_NAMESPACE_PATH_CHARS || document2["path"].includes("\0") || document2["path"].startsWith("/") || /^[a-z]:/iu.test(document2["path"]) || document2["path"].replace(/\\/gu, "/").split("/").some((part) => part === "..") || !Number.isSafeInteger(document2["maxBytes"]) || Number(document2["maxBytes"]) <= 0 || Number(document2["maxBytes"]) > MAX_PREVIEW_DOCUMENT_READ_BYTES) {
-      throw new TypeError(`map preview document read ${index2} is malformed`);
-    }
-    if (identities.has(document2["documentId"])) {
-      throw new TypeError("map preview document reads contain duplicate document ids");
-    }
-    identities.add(document2["documentId"]);
-    totalBytes += Number(document2["maxBytes"]);
-  }
-  if (totalBytes > MAX_PREVIEW_DOCUMENT_TOTAL_BYTES) {
-    throw new TypeError("map preview document reads exceed the total byte budget");
-  }
-  return value2;
-}
-function jsonSafeValue(value2, depth = 0) {
-  if (depth > 64)
-    return false;
-  if (value2 === null || typeof value2 === "string" || typeof value2 === "boolean")
-    return true;
-  if (typeof value2 === "number")
-    return Number.isFinite(value2);
-  if (Array.isArray(value2))
-    return value2.every((item) => jsonSafeValue(item, depth + 1));
-  const record9 = recordOf9(value2);
-  return record9 !== void 0 && Object.values(record9).every((item) => jsonSafeValue(item, depth + 1));
-}
-function validHostResourceRoot(value2) {
-  const record9 = recordOf9(value2);
-  return record9 !== void 0 && Object.keys(record9).every((key3) => key3 === "rootId" || key3 === "locator") && nonEmptyString7(record9["rootId"]) && Object.hasOwn(record9, "locator") && jsonSafeValue(record9["locator"]);
-}
-function validSubjectNamespaceRoot(value2) {
-  const record9 = recordOf9(value2);
-  return record9 !== void 0 && Object.keys(record9).every((key3) => key3 === "rootId" || key3 === "namespacePrefix") && nonEmptyString7(record9["rootId"]) && typeof record9["namespacePrefix"] === "string";
-}
-function validateResourcePlan(value2, maxRoots) {
-  const plan = recordOf9(value2);
-  if (plan?.["schemaVersion"] !== 1) {
-    throw new TypeError("map preview preparation returned no versioned resource plan");
-  }
-  if (plan["strategy"] === "subject-namespace") {
-    const roots = plan["roots"];
-    if (!Object.keys(plan).every((key3) => key3 === "schemaVersion" || key3 === "strategy" || key3 === "roots") || !Array.isArray(roots) || roots.length === 0 || roots.length > maxRoots || !roots.every(validSubjectNamespaceRoot) || new Set(roots.map((item) => String(recordOf9(item)?.["rootId"] ?? ""))).size !== roots.length) {
-      throw new TypeError("map preview preparation returned invalid subject namespace roots");
-    }
-    return value2;
-  }
-  if (plan["strategy"] === "host-resolved") {
-    const roots = plan["roots"];
-    const subjectRoots = plan["subjectNamespaceRoots"];
-    if (!Object.keys(plan).every((key3) => ["schemaVersion", "strategy", "resolverId", "subjectNamespaceRoots", "roots"].includes(key3)) || !nonEmptyString7(plan["resolverId"]) || !Array.isArray(subjectRoots) || !subjectRoots.every(validSubjectNamespaceRoot) || !Array.isArray(roots) || roots.length === 0 || roots.length + subjectRoots.length > maxRoots || !roots.every(validHostResourceRoot) || new Set([...subjectRoots, ...roots].map((item) => String(recordOf9(item)?.["rootId"] ?? ""))).size !== roots.length + subjectRoots.length) {
-      throw new TypeError("map preview preparation returned invalid host resource roots");
-    }
-    return value2;
-  }
-  throw new TypeError("map preview preparation returned an unknown resource strategy");
-}
-function validatePreparationResult(value2, maxCandidates, maxRoots) {
-  const record9 = recordOf9(value2);
-  if (record9 === void 0 || !Array.isArray(record9["diagnostics"]) || !record9["diagnostics"].every(validPreparationDiagnostic)) {
-    throw new TypeError("map preview preparation returned malformed diagnostics");
-  }
-  if (record9["state"] === "not-applicable" || record9["state"] === "unresolved") {
-    if (!Object.keys(record9).every((key3) => key3 === "state" || key3 === "diagnostics")) {
-      throw new TypeError("map preview preparation result contains unknown fields");
-    }
-    return value2;
-  }
-  if (record9["state"] === "selection-required") {
-    const candidates = record9["candidates"];
-    if (!Object.keys(record9).every((key3) => key3 === "state" || key3 === "candidates" || key3 === "diagnostics") || !Array.isArray(candidates) || candidates.length === 0 || candidates.length > maxCandidates || !candidates.every((candidate) => {
-      const item = recordOf9(candidate);
-      return item !== void 0 && Object.keys(item).every((key3) => key3 === "candidateId" || key3 === "displayName" || key3 === "sourcePath") && nonEmptyString7(item["candidateId"]) && nonEmptyString7(item["displayName"]) && (!Object.hasOwn(item, "sourcePath") || nonEmptyString7(item["sourcePath"]));
-    }) || new Set(candidates.map((candidate) => String(recordOf9(candidate)?.["candidateId"] ?? ""))).size !== candidates.length) {
-      throw new TypeError("map preview preparation returned invalid selection candidates");
-    }
-    return value2;
-  }
-  if (record9["state"] === "namespace-search-required") {
-    if (!Object.keys(record9).every((key3) => key3 === "state" || key3 === "searches" || key3 === "diagnostics")) {
-      throw new TypeError("map preview preparation search result contains unknown fields");
-    }
-    validateNamespaceSearchRequests(record9["searches"]);
-    return value2;
-  }
-  if (record9["state"] === "document-read-required") {
-    if (!Object.keys(record9).every((key3) => key3 === "state" || key3 === "documents" || key3 === "diagnostics")) {
-      throw new TypeError("map preview preparation document-read result contains unknown fields");
-    }
-    validateDocumentReadRequests(record9["documents"]);
-    return value2;
-  }
-  if (record9["state"] === "prepared") {
-    const plan = recordOf9(record9["plan"]);
-    if (!Object.keys(record9).every((key3) => key3 === "state" || key3 === "plan" || key3 === "diagnostics") || plan?.["schemaVersion"] !== 1 || recordOf9(plan["workspace"]) === void 0 || !jsonSafeValue(plan["workspace"]) || !Object.keys(plan).every((key3) => key3 === "schemaVersion" || key3 === "workspace" || key3 === "resources")) {
-      throw new TypeError("map preview preparation returned an invalid prepared plan");
-    }
-    validateResourcePlan(plan["resources"], maxRoots);
-    return value2;
-  }
-  throw new TypeError("map preview preparation returned an unknown state");
-}
-function preparationDiagnostics(items) {
-  return items.map((item) => ({
-    code: errorCode(item.code),
-    severity: item.severity,
-    message: item.message,
-    ...item.path === void 0 ? {} : { path: item.path },
-    ...item.data === void 0 ? {} : { data: item.data }
-  }));
-}
-function mapPreviewPreparationSubject(descriptor, namespace, namespaceSearches = Object.freeze([]), documentReads = Object.freeze([])) {
-  const formatId = "identity" in descriptor ? descriptor.identity.formatId : void 0;
-  if (!nonEmptyString7(formatId)) {
-    throw new TypeError("the ordinary codec descriptor has no format id");
-  }
-  return Object.freeze({
-    schemaVersion: 1,
-    subjectUri: descriptor.subjectUri,
-    revision: descriptor.revision,
-    formatId,
-    traits: Object.freeze(descriptor.traits.map((item) => item.id)),
-    dataSources: Object.freeze(descriptor.dataSources.map((item) => Object.freeze({ contract: item.contract, major: item.major }))),
-    operations: Object.freeze(descriptor.operations.map((item) => Object.freeze({ id: item.id, state: item.state }))),
-    namespace,
-    namespaceSearches: Object.freeze(namespaceSearches.map((item) => Object.freeze(item))),
-    documentReads: Object.freeze(documentReads.map((item) => Object.freeze(item)))
-  });
-}
-async function boundedPreparationNamespace(original, descriptor, maxEntries, maxPages, signal) {
-  if (!descriptor.dataSources.some((item) => item.contract === "common.view/namespace-entry-source" && item.major === 1)) {
-    return Object.freeze({ state: "unavailable", entries: Object.freeze([]) });
-  }
-  const lease2 = await original.dataSource("common.view/namespace-entry-source", 1);
-  const release = releaseOnce(() => lease2.release());
-  try {
-    const entries = [];
-    const seenCursors = /* @__PURE__ */ new Set();
-    let cursor5;
-    let pages = 0;
-    let truncated = false;
-    do {
-      signal?.throwIfAborted();
-      if (pages >= maxPages) {
-        truncated = true;
-        break;
-      }
-      if (cursor5 !== void 0) {
-        if (seenCursors.has(cursor5)) {
-          throw new TypeError("subject namespace repeated a paging cursor");
-        }
-        seenCursors.add(cursor5);
-      }
-      const remaining = maxEntries - entries.length;
-      if (remaining <= 0) {
-        truncated = true;
-        break;
-      }
-      const page2 = await lease2.value.list("", cursor5 === void 0 ? { limit: Math.min(remaining, 256) } : { cursor: cursor5, limit: Math.min(remaining, 256) }, signal);
-      pages += 1;
-      for (const item of page2.items.slice(0, remaining)) {
-        entries.push({
-          path: item.path,
-          kind: item.kind,
-          ...item.size === void 0 ? {} : { size: item.size.toString(10) }
-        });
-      }
-      if (page2.items.length > remaining) {
-        truncated = true;
-        break;
-      }
-      cursor5 = page2.nextCursor;
-    } while (cursor5 !== void 0);
-    entries.sort((left, right) => left.path === right.path ? left.kind.localeCompare(right.kind) : left.path.localeCompare(right.path));
-    return Object.freeze({
-      state: truncated ? "truncated" : "complete",
-      entries: Object.freeze(entries.map((item) => Object.freeze(item)))
-    });
-  } finally {
-    await release();
-  }
-}
-async function boundedPreparationNamespaceSearches(original, descriptor, searches, maxEntries, maxPages, signal) {
-  if (!descriptor.dataSources.some((item) => item.contract === "common.view/namespace-entry-source" && item.major === 1)) {
-    return Object.freeze(searches.map((search) => Object.freeze({
-      searchId: search.searchId,
-      state: "unsupported",
-      entries: Object.freeze([])
-    })));
-  }
-  const lease2 = await original.dataSource("common.view/namespace-entry-source", 1);
-  const release = releaseOnce(() => lease2.release());
-  try {
-    const source2 = lease2.value;
-    const searchNamespace = source2.search?.bind(source2);
-    if (searchNamespace === void 0) {
-      return Object.freeze(searches.map((search) => Object.freeze({
-        searchId: search.searchId,
-        state: "unsupported",
-        entries: Object.freeze([])
-      })));
-    }
-    let remainingEntries = maxEntries;
-    let remainingPages = maxPages;
-    const results = [];
-    for (const search of searches) {
-      signal?.throwIfAborted();
-      const entries = [];
-      const seenCursors = /* @__PURE__ */ new Set();
-      let cursor5;
-      let truncated = remainingEntries === 0 || remainingPages === 0;
-      while (!truncated) {
-        if (cursor5 !== void 0) {
-          if (seenCursors.has(cursor5)) {
-            throw new TypeError("subject namespace search repeated a paging cursor");
-          }
-          seenCursors.add(cursor5);
-        }
-        const pageLimit = Math.min(remainingEntries, 256);
-        const page2 = await searchNamespace(search.query, cursor5 === void 0 ? { limit: pageLimit } : { cursor: cursor5, limit: pageLimit }, signal);
-        remainingPages -= 1;
-        if (!Array.isArray(page2.items) || page2.items.length > pageLimit || page2.nextCursor !== void 0 && (typeof page2.nextCursor !== "string" || page2.nextCursor.length === 0 || page2.nextCursor.length > MAX_PREVIEW_NAMESPACE_CURSOR_CHARS)) {
-          throw new TypeError("subject namespace search returned a malformed page");
-        }
-        const admitted = page2.items;
-        for (const item of admitted) {
-          if (typeof item.path !== "string" || item.path.length > MAX_PREVIEW_NAMESPACE_PATH_CHARS || item.kind !== "file" && item.kind !== "directory" || item.size !== void 0 && typeof item.size !== "bigint") {
-            throw new TypeError("subject namespace search returned a malformed entry");
-          }
-          entries.push({
-            path: item.path,
-            kind: item.kind,
-            ...item.size === void 0 ? {} : { size: item.size.toString(10) }
-          });
-        }
-        remainingEntries -= admitted.length;
-        cursor5 = page2.nextCursor;
-        if (cursor5 === void 0)
-          break;
-        if (remainingEntries === 0 || remainingPages === 0)
-          truncated = true;
-      }
-      entries.sort((left, right) => left.path === right.path ? left.kind.localeCompare(right.kind) : left.path.localeCompare(right.path));
-      results.push(Object.freeze({
-        searchId: search.searchId,
-        state: truncated ? "truncated" : "complete",
-        entries: Object.freeze(entries.map((item) => Object.freeze(item)))
-      }));
-    }
-    return Object.freeze(results);
-  } finally {
-    await release();
-  }
-}
-async function boundedPreparationDocumentReads(original, descriptor, requests, signal) {
-  const extraction = descriptor.operations.find((item) => item.id === CONTAINER_EXTRACT_OPERATION_ID && item.state === "available");
-  if (extraction === void 0 || !descriptor.dataSources.some((item) => item.contract === "common.view/namespace-entry-source" && item.major === 1)) {
-    return Object.freeze(requests.map((request) => Object.freeze({
-      documentId: request.documentId,
-      path: request.path,
-      state: "unsupported"
-    })));
-  }
-  const lease2 = await original.dataSource("common.view/namespace-entry-source", 1);
-  const release = releaseOnce(() => lease2.release());
-  try {
-    const source2 = lease2.value;
-    const decoder4 = new TextDecoder("utf-8", { fatal: false });
-    const results = [];
-    for (const request of requests) {
-      signal?.throwIfAborted();
-      let page2;
-      try {
-        page2 = await source2.list(request.path, { limit: 16 }, signal);
-      } catch (error5) {
-        if (signal?.aborted)
-          throw error5;
-        results.push(Object.freeze({
-          documentId: request.documentId,
-          path: request.path,
-          state: "unreadable"
-        }));
-        continue;
-      }
-      const normalizedPath2 = request.path.replace(/\\/gu, "/");
-      const entry2 = page2.items.find((item) => item.kind === "file" && item.path.replace(/\\/gu, "/") === normalizedPath2);
-      if (entry2 === void 0) {
-        results.push(Object.freeze({
-          documentId: request.documentId,
-          path: request.path,
-          state: "missing"
-        }));
-        continue;
-      }
-      if (entry2.size !== void 0 && entry2.size > BigInt(request.maxBytes)) {
-        results.push(Object.freeze({
-          documentId: request.documentId,
-          path: request.path,
-          state: "too-large"
-        }));
-        continue;
-      }
-      try {
-        const invoked = await original.operations().invoke(extraction.handlerId, { entryId: entry2.id }, signal === void 0 ? {} : { signal });
-        if (invoked.state !== "ok" || invoked.output.kind !== "bytes" || invoked.output.value.byteLength > request.maxBytes) {
-          results.push(Object.freeze({
-            documentId: request.documentId,
-            path: request.path,
-            state: invoked.state === "ok" && invoked.output.kind === "bytes" && invoked.output.value.byteLength > request.maxBytes ? "too-large" : "unreadable"
-          }));
-          continue;
-        }
-        results.push(Object.freeze({
-          documentId: request.documentId,
-          path: request.path,
-          state: "read",
-          text: decoder4.decode(invoked.output.value)
-        }));
-      } catch (error5) {
-        if (signal?.aborted)
-          throw error5;
-        results.push(Object.freeze({
-          documentId: request.documentId,
-          path: request.path,
-          state: "unreadable"
-        }));
-      }
-    }
-    return Object.freeze(results);
-  } finally {
-    await release();
-  }
-}
-function workspaceDiagnostics(workspace) {
-  return workspace.diagnostics.map((item) => diagnostic(item.severity, "x3.host/map-preview-workspace-diagnostic", `${item.code}: ${item.message}`, void 0, {
-    ...item.rootId === void 0 ? {} : { rootId: item.rootId },
-    ...item.dependencyRef === void 0 ? {} : { dependencyRef: item.dependencyRef },
-    ...item.cycle === void 0 ? {} : { cycle: item.cycle }
-  }));
-}
-function sessionHoldingMapPreviewPrerequisites(preview2, releasePreparedResources, original) {
-  let disposed = false;
-  return Object.freeze({
-    revision: preview2.revision,
-    state: () => preview2.state(),
-    descriptor: () => preview2.descriptor(),
-    dataSource: preview2.dataSource.bind(preview2),
-    operations: () => preview2.operations(),
-    events: (signal) => preview2.events(signal),
-    async dispose() {
-      if (disposed)
-        return;
-      disposed = true;
-      let firstError;
-      for (const release of [
-        () => preview2.dispose(),
-        releasePreparedResources,
-        () => original.dispose()
-      ]) {
-        try {
-          await release();
-        } catch (error5) {
-          firstError ??= error5;
-        }
-      }
-      if (firstError !== void 0)
-        throw firstError;
-    }
-  });
-}
-function coordinatorFailure(code, message) {
-  return {
-    state: "unresolved",
-    diagnostics: [diagnostic("error", errorCode(code), message)]
-  };
-}
-function releaseOnce(release) {
-  let released = false;
-  return async () => {
-    if (released)
-      return;
-    released = true;
-    await release();
-  };
-}
-async function enrichMapPreviewCatalog(request, workspace, resources) {
-  if (request.catalog !== void 0 || request.catalogEnrichment === void 0) {
-    return Object.freeze({
-      ...request.catalog === void 0 ? {} : { catalog: request.catalog },
-      diagnostics: Object.freeze([])
-    });
-  }
-  let analyzed;
-  try {
-    analyzed = await analyzeResolvedDataWorkspace({
-      services: request.services,
-      grant: request.grant,
-      budgets: request.budgets,
-      workspace,
-      resources,
-      locales: request.catalogEnrichment.locales,
-      queries: Object.freeze([]),
-      limits: request.catalogEnrichment.limits,
-      ...request.signal === void 0 ? {} : { signal: request.signal }
-    });
-  } catch (error5) {
-    if (request.signal?.aborted)
-      throw error5;
-    return Object.freeze({
-      diagnostics: boundedDiagnostics([
-        diagnostic("warning", "x3.host/map-preview-catalog-enrichment-failed", `map preview catalog enrichment failed (${error5 instanceof Error ? error5.message : String(error5)})`)
-      ], request.limits.maxDiagnostics)
-    });
-  }
-  if (analyzed.state === "unresolved") {
-    return Object.freeze({
-      diagnostics: boundedDiagnostics(analyzed.diagnostics, request.limits.maxDiagnostics)
-    });
-  }
-  const selector = createResolvedDataSubjectSelectorLease(analyzed, {
-    maxPageSize: request.catalogEnrichment.limits.maxPageSize,
-    maxEntities: request.catalogEnrichment.limits.maxEntities,
-    maxRelations: request.catalogEnrichment.limits.maxEntities,
-    // The selector request crosses a game-provider boundary. Keep the shared Product-GA ceiling
-    // within the strictest bundled semantic provider instead of making every opened card fail.
-    maxCalculations: Math.min(request.catalogEnrichment.limits.maxEntities, 256)
-  });
-  let released = false;
-  return Object.freeze({
-    catalog: analyzed.snapshot,
-    sources: Object.freeze({
-      ...selector === void 0 ? {} : { selector: selector.value },
-      relations: analyzed.facets.relations.value,
-      async release() {
-        if (released)
-          return;
-        released = true;
-        const results = await Promise.allSettled([
-          ...selector === void 0 ? [] : [selector.release()],
-          analyzed.release()
-        ]);
-        const failed2 = results.find((result) => result.status === "rejected");
-        if (failed2?.status === "rejected")
-          throw failed2.reason;
-      }
-    }),
-    diagnostics: boundedDiagnostics(analyzed.diagnostics, request.limits.maxDiagnostics)
-  });
-}
-async function resolveSubjectNamespacePreviewResources(request) {
-  if (!request.descriptor.dataSources.some((item) => item.contract === "common.view/namespace-entry-source" && item.major === 1)) {
-    return {
-      state: "unresolved",
-      diagnostics: [
-        diagnostic("error", "x3.host/map-preview-namespace-unavailable", "the subject-namespace resource plan requires an ordinary namespace entry source")
-      ]
-    };
-  }
-  const extractOperation = request.descriptor.operations.find((item) => item.id === CONTAINER_EXTRACT_OPERATION_ID && item.state === "available");
-  if (extractOperation === void 0) {
-    return {
-      state: "unresolved",
-      diagnostics: [
-        diagnostic("error", "x3.host/map-preview-extract-unavailable", `the subject-namespace resource plan requires ${CONTAINER_EXTRACT_OPERATION_ID}`)
-      ]
-    };
-  }
-  const namespaceLease = await request.original.dataSource("common.view/namespace-entry-source", 1);
-  const release = releaseOnce(() => namespaceLease.release());
-  try {
-    const operations = request.original.operations();
-    const extract = async (entryId, signal) => {
-      signal?.throwIfAborted();
-      const result = await operations.invoke(extractOperation.handlerId, { entryId }, signal === void 0 ? {} : { signal });
-      if (result.state !== "ok" || result.output.kind !== "bytes") {
-        throw new ModkitError({
-          code: "x3.host/map-preview-entry-unreadable",
-          message: `the source container refused to extract entry ${entryId}`,
-          context: {
-            entryId,
-            state: result.state,
-            ...result.state === "rejected" ? { reason: result.reason } : {},
-            ...result.state === "ok" ? { outputKind: result.output.kind } : {}
-          }
-        });
-      }
-      return result.output.value;
-    };
-    const namespacePrefixes = new Map(request.plan.roots.map((root) => [root.rootId, root.namespacePrefix]));
-    const logicalRoots = (request.workspace.logicalRoots ?? [...request.workspace.loadOrder].reverse()).map((root) => Object.freeze({
-      rootId: root.rootId,
-      pathPrefix: namespacePrefixes.get(root.rootId) ?? "",
-      logicalPrefix: root.sourcePath
-    }));
-    return Object.freeze({
-      state: "resolved",
-      origin: createWorkspaceNamespaceCompanionOrigin({
-        namespace: namespaceLease.value,
-        primaryLogicalId: request.activeSourcePath,
-        logicalRoots,
-        containerRevision: request.descriptor.revision,
-        extract
-      }),
-      revision: request.descriptor.revision,
-      diagnostics: Object.freeze([
-        diagnostic("information", "x3.host/map-preview-subject-resources-selected", "map preview resources are confined to the opened subject namespace")
-      ]),
-      release
-    });
-  } catch (error5) {
-    await release();
-    throw error5;
-  }
-}
-async function coordinateMapPreviewAssetSession(request) {
-  const maxCandidates = positiveCoordinatorLimit(request.maxCandidates, "maxCandidates");
-  const maxSubjectEntries = boundedCoordinatorLimit(request.maxSubjectEntries, "maxSubjectEntries", MAX_PREVIEW_NAMESPACE_FACT_ENTRIES);
-  const maxSubjectPages = boundedCoordinatorLimit(request.maxSubjectPages, "maxSubjectPages", MAX_PREVIEW_NAMESPACE_FACT_PAGES);
-  const maxRoots = positiveCoordinatorLimit(request.maxRoots, "maxRoots");
-  const maxDepth = positiveCoordinatorLimit(request.maxDepth, "maxDepth");
-  request.signal?.throwIfAborted();
-  request = {
-    ...request,
-    original: await singleFileAsContainer(request.original, request.budgets.maxInputBytes)
-  };
-  const descriptor = await request.original.descriptor();
-  let subject;
-  try {
-    subject = mapPreviewPreparationSubject(descriptor, Object.freeze({ state: "unavailable", entries: Object.freeze([]) }));
-  } catch (error5) {
-    return {
-      state: "not-applicable",
-      diagnostics: [
-        diagnostic("information", "x3.host/map-preview-subject-not-applicable", error5 instanceof Error ? error5.message : String(error5))
-      ]
-    };
-  }
-  let preparation = request.preparation;
-  let preparationRelease;
-  const resolutionDiagnostics = [];
-  if (preparation === void 0) {
-    const resolution = await resolveMapPreviewPreparation({
-      services: request.services,
-      grant: request.grant,
-      budgets: request.budgets,
-      subjectFormatId: subject.formatId,
-      ...request.signal === void 0 ? {} : { signal: request.signal }
-    });
-    resolutionDiagnostics.push(...resolution.diagnostics);
-    if (resolution.state === "unresolved") {
-      return { state: "not-applicable", diagnostics: resolutionDiagnostics };
-    }
-    preparation = resolution.preparation;
-    preparationRelease = resolution.release;
-  } else if (preparation.contract !== MAP_PREVIEW_PREPARATION_CONTRACT || !preparation.subjectFormatIds.includes(subject.formatId)) {
-    return coordinatorFailure("x3.host/map-preview-preparation-invalid", "the supplied map preview preparation port does not accept the subject format");
-  }
-  let prepared;
-  let searchRoundDiagnostics = Object.freeze([]);
-  const documentRoundDiagnostics = [];
-  try {
-    const namespace = await boundedPreparationNamespace(request.original, descriptor, maxSubjectEntries, maxSubjectPages, request.signal);
-    let namespaceSearches = Object.freeze([]);
-    subject = mapPreviewPreparationSubject(descriptor, namespace);
-    prepared = validatePreparationResult(await preparation.prepare({
-      subject,
-      maxCandidates,
-      maxRoots,
-      maxDepth,
-      ...request.selectionId === void 0 ? {} : { selectionId: request.selectionId },
-      ...request.signal === void 0 ? {} : { signal: request.signal }
-    }), maxCandidates, maxRoots);
-    if (prepared.state === "namespace-search-required") {
-      searchRoundDiagnostics = prepared.diagnostics;
-      namespaceSearches = await boundedPreparationNamespaceSearches(request.original, descriptor, prepared.searches, maxSubjectEntries, maxSubjectPages, request.signal);
-      subject = mapPreviewPreparationSubject(descriptor, namespace, namespaceSearches);
-      prepared = validatePreparationResult(await preparation.prepare({
-        subject,
-        maxCandidates,
-        maxRoots,
-        maxDepth,
-        ...request.selectionId === void 0 ? {} : { selectionId: request.selectionId },
-        ...request.signal === void 0 ? {} : { signal: request.signal }
-      }), maxCandidates, maxRoots);
-      if (prepared.state === "namespace-search-required") {
-        throw new TypeError("map preview preparation requested more than one namespace search round");
-      }
-    }
-    const accumulatedDocumentReads = /* @__PURE__ */ new Map();
-    let documentRounds = 0;
-    while (prepared.state === "document-read-required") {
-      if (documentRounds >= MAX_PREVIEW_DOCUMENT_ROUNDS) {
-        throw new TypeError(`map preview preparation exceeded ${MAX_PREVIEW_DOCUMENT_ROUNDS} document-read rounds`);
-      }
-      documentRounds += 1;
-      documentRoundDiagnostics.push(...prepared.diagnostics);
-      const documents = validateDocumentReadRequests(prepared.documents);
-      const documentReads = await boundedPreparationDocumentReads(request.original, descriptor, documents, request.signal);
-      for (const document2 of documentReads) {
-        accumulatedDocumentReads.set(document2.documentId, document2);
-      }
-      subject = mapPreviewPreparationSubject(descriptor, namespace, namespaceSearches, Object.freeze([...accumulatedDocumentReads.values()]));
-      prepared = validatePreparationResult(await preparation.prepare({
-        subject,
-        maxCandidates,
-        maxRoots,
-        maxDepth,
-        ...request.selectionId === void 0 ? {} : { selectionId: request.selectionId },
-        ...request.signal === void 0 ? {} : { signal: request.signal }
-      }), maxCandidates, maxRoots);
-      if (prepared.state === "namespace-search-required") {
-        throw new TypeError("map preview preparation requested a namespace search after documents");
-      }
-    }
-  } catch (error5) {
-    return {
-      state: "unresolved",
-      diagnostics: Object.freeze([
-        ...resolutionDiagnostics,
-        ...preparationDiagnostics(searchRoundDiagnostics),
-        ...preparationDiagnostics(documentRoundDiagnostics),
-        diagnostic("error", "x3.host/map-preview-preparation-invalid", `map preview preparation failed (${error5 instanceof Error ? error5.message : String(error5)})`)
-      ])
-    };
-  } finally {
-    try {
-      await preparationRelease?.();
-    } catch {
-    }
-  }
-  let providerDiagnostics;
-  try {
-    providerDiagnostics = preparationDiagnostics([
-      ...searchRoundDiagnostics,
-      ...documentRoundDiagnostics,
-      ...prepared.diagnostics
-    ]);
-  } catch (error5) {
-    return coordinatorFailure("x3.host/map-preview-preparation-invalid", `map preview preparation returned an invalid diagnostic (${error5 instanceof Error ? error5.message : String(error5)})`);
-  }
-  const preparationFindings = Object.freeze([...resolutionDiagnostics, ...providerDiagnostics]);
-  if (prepared.state === "not-applicable") {
-    return { state: "not-applicable", diagnostics: preparationFindings };
-  }
-  if (prepared.state === "selection-required") {
-    return {
-      state: "selection-required",
-      candidates: Object.freeze(prepared.candidates.map((item) => Object.freeze({ ...item }))),
-      diagnostics: preparationFindings
-    };
-  }
-  if (prepared.state === "unresolved") {
-    return { state: "unresolved", diagnostics: preparationFindings };
-  }
-  const graph = prepared.plan.workspace;
-  if (graph.roots.length > maxRoots || graph.maxRoots > maxRoots || graph.maxDepth > maxDepth) {
-    return coordinatorFailure("x3.host/map-preview-preparation-budget-exceeded", "map preview preparation exceeded the host workspace limits");
-  }
-  let workspace;
-  try {
-    workspace = resolveModWorkspaceGraph(graph);
-  } catch (error5) {
-    return coordinatorFailure("x3.host/map-preview-workspace-invalid", `map preview preparation returned an invalid workspace graph (${error5 instanceof Error ? error5.message : String(error5)})`);
-  }
-  const active = workspace.loadOrder.find((item) => item.rootId === workspace.activeRootId);
-  if (active === void 0) {
-    return coordinatorFailure("x3.host/map-preview-workspace-invalid", "map preview workspace does not contain its active root");
-  }
-  const plannedRootIds = new Set(prepared.plan.resources.strategy === "subject-namespace" ? prepared.plan.resources.roots.map((root) => root.rootId) : [
-    ...prepared.plan.resources.subjectNamespaceRoots.map((root) => root.rootId),
-    ...prepared.plan.resources.roots.map((root) => root.rootId)
-  ]);
-  const workspaceRootIds = new Set(workspace.loadOrder.map((root) => root.rootId));
-  if (plannedRootIds.size !== workspaceRootIds.size || [...plannedRootIds].some((rootId) => !workspaceRootIds.has(rootId))) {
-    const unreached = [...plannedRootIds].filter((rootId) => !workspaceRootIds.has(rootId));
-    const unplanned = [...workspaceRootIds].filter((rootId) => !plannedRootIds.has(rootId));
-    const named = (rootIds) => rootIds.map((rootId) => {
-      const root = prepared.plan.workspace.roots.find((item) => item.rootId === rootId);
-      return root === void 0 ? rootId : `${rootId} (${root.sourcePath})`;
-    });
-    return {
-      state: "unresolved",
-      diagnostics: Object.freeze([
-        ...preparationFindings,
-        ...workspaceDiagnostics(workspace),
-        diagnostic("error", "x3.host/map-preview-resource-root-mismatch", `the resource plan must map every resolved workspace root exactly once${unreached.length === 0 ? "" : `; not reached from the map: ${named(unreached).join(", ")}`}${unplanned.length === 0 ? "" : `; without resources: ${named(unplanned).join(", ")}`}`, void 0, { unreached, unplanned })
-      ])
-    };
-  }
-  let resourceResolution;
-  try {
-    if (prepared.plan.resources.strategy === "subject-namespace") {
-      resourceResolution = await resolveSubjectNamespacePreviewResources({
-        plan: prepared.plan.resources,
-        descriptor,
-        original: request.original,
-        workspace,
-        activeSourcePath: active.sourcePath
-      });
-    } else if (request.resourcePlanResolver === void 0) {
-      resourceResolution = {
-        state: "unresolved",
-        diagnostics: [
-          diagnostic("warning", "x3.host/map-preview-resource-resolver-required", `resource plan ${prepared.plan.resources.resolverId} names installation/dependency roots but this host wired no resolver`)
-        ]
-      };
-    } else {
-      resourceResolution = await request.resourcePlanResolver.resolve({
-        plan: prepared.plan.resources,
-        subject,
-        workspace,
-        original: request.original,
-        services: request.services,
-        grant: request.grant,
-        budgets: request.budgets,
-        ...request.signal === void 0 ? {} : { signal: request.signal }
-      });
-    }
-  } catch (error5) {
-    return {
-      state: "unresolved",
-      diagnostics: Object.freeze([
-        ...preparationFindings,
-        ...workspaceDiagnostics(workspace),
-        diagnostic("error", "x3.host/map-preview-resource-resolution-failed", `map preview resources could not be resolved (${error5 instanceof Error ? error5.message : String(error5)})`)
-      ])
-    };
-  }
-  if (resourceResolution.state === "unresolved") {
-    return {
-      state: "unresolved",
-      diagnostics: Object.freeze([
-        ...preparationFindings,
-        ...workspaceDiagnostics(workspace),
-        ...resourceResolution.diagnostics
-      ])
-    };
-  }
-  const releasePreparedResources = releaseOnce(resourceResolution.release);
-  let resources;
-  try {
-    const dependencies = request.contentSources === void 0 ? void 0 : await resolveContentAssetOrigins({
-      contentSources: request.contentSources,
-      subjects: [{ descriptor }],
-      ...request.signal === void 0 ? {} : { signal: request.signal }
-    });
-    const origin = dependencies === void 0 || dependencies.origins.length === 0 ? resourceResolution.origin : createLayeredCompanionOrigin([resourceResolution.origin, ...dependencies.origins]);
-    resources = createResourceSession({
-      origin,
-      revision: resourceResolution.revision
-    });
-    const inputResolver = createCompanionInputResolver(origin);
-    const catalogEntities = request.catalog === void 0 ? resourceResolution.catalogEntities : void 0;
-    const enrichment = catalogEntities === void 0 ? await enrichMapPreviewCatalog(request, workspace, resources) : Object.freeze({ diagnostics: Object.freeze([]) });
-    const opened = await openMapPreviewAssetSession({
-      services: request.services,
-      grant: request.grant,
-      budgets: request.budgets,
-      workspace,
-      resources,
-      inputResolver,
-      subjectUri: descriptor.subjectUri,
-      subjectOperationIds: Object.freeze(descriptor.operations.map((operation) => operation.id)),
-      ...request.onModelResourceProfile === void 0 ? {} : { onModelResourceProfile: request.onModelResourceProfile },
-      ...enrichment.catalog === void 0 ? {} : { catalog: enrichment.catalog },
-      ...catalogEntities === void 0 ? {} : { catalogEntities },
-      ...enrichment.sources === void 0 ? {} : { catalogSources: enrichment.sources },
-      limits: request.limits,
-      ...request.signal === void 0 ? {} : { signal: request.signal }
-    });
-    if (opened.state === "unresolved") {
-      await releasePreparedResources();
-      return {
-        state: "unresolved",
-        diagnostics: Object.freeze([
-          ...preparationFindings,
-          ...workspaceDiagnostics(workspace),
-          ...resourceResolution.diagnostics,
-          ...enrichment.diagnostics,
-          ...opened.diagnostics
-        ])
-      };
-    }
-    return Object.freeze({
-      ...opened,
-      ...enrichment.catalog === void 0 ? {} : { catalog: enrichment.catalog },
-      session: sessionHoldingMapPreviewPrerequisites(opened.session, releasePreparedResources, request.original),
-      diagnostics: Object.freeze([
-        ...preparationFindings,
-        ...workspaceDiagnostics(workspace),
-        ...resourceResolution.diagnostics,
-        ...enrichment.diagnostics,
-        ...opened.diagnostics
-      ])
-    });
-  } catch (error5) {
-    if (resources !== void 0 && resources.state() !== "disposed") {
-      await resources.dispose();
-    }
-    await releasePreparedResources();
-    return {
-      state: "unresolved",
-      diagnostics: Object.freeze([
-        ...preparationFindings,
-        ...workspaceDiagnostics(workspace),
-        ...resourceResolution.diagnostics,
-        diagnostic("error", "x3.host/map-preview-open-failed", `map preview could not be opened (${error5 instanceof Error ? error5.message : String(error5)})`)
-      ])
-    };
-  }
-}
-
-// packages/host/dist/subject-services.js
-function supportedExtensionHints(inventory) {
-  return Object.freeze([
-    ...new Set(inventory.extensions.flatMap((extension) => extension.contributions.flatMap((contribution) => {
-      const manifest = contribution.manifest;
-      if (manifest?.contract.id !== "modkit/codec-contribution")
-        return [];
-      const spec = manifest.spec;
-      return Array.isArray(spec.match?.extensions) ? spec.match.extensions.flatMap((value2) => typeof value2 === "string" && value2.length > 0 ? [value2.toLowerCase()] : []) : [];
-    })))
-  ].sort());
-}
-function createSubjectServices(options) {
-  const fixed = {
-    inventory: options.inventory,
-    target: options.target,
-    executionBackends: options.executionBackends,
-    ...options.serviceDefinitions === void 0 ? {} : { serviceDefinitions: options.serviceDefinitions },
-    ...options.policy === void 0 ? {} : { policy: options.policy },
-    ...options.minimumConfidence === void 0 ? {} : { minimumConfidence: options.minimumConfidence },
-    ...options.maxCandidates === void 0 ? {} : { maxCandidates: options.maxCandidates },
-    ...options.contributionSettings === void 0 ? {} : { contributionSettings: options.contributionSettings },
-    ...options.subjectCatalog === void 0 ? {} : { subjectCatalog: options.subjectCatalog },
-    ...options.videoFrames === void 0 ? {} : { videoFrames: options.videoFrames },
-    ...options.credentials === void 0 ? {} : { credentials: options.credentials }
-  };
-  const services = {
-    inventory: options.inventory,
-    target: options.target,
-    executionBackends: options.executionBackends,
-    executionProfiles: options.executionBackends.profiles,
-    supportedExtensions: supportedExtensionHints(options.inventory),
-    ...options.serviceDefinitions === void 0 ? {} : { serviceDefinitions: options.serviceDefinitions },
-    ...options.contributionSettings === void 0 ? {} : { contributionSettings: options.contributionSettings },
-    ...options.videoFrames === void 0 ? {} : { videoFrames: options.videoFrames },
-    ...options.credentials === void 0 ? {} : { credentials: options.credentials },
-    open: (request) => openSubject({ ...fixed, ...request })
-  };
-  return Object.freeze(services);
-}
-function createBundledServiceDefinitionRegistry(options = {}) {
-  return createServiceContractDefinitionRegistry({
-    matcherProfiles: createServiceFacetMatcherProfileRegistry([
-      WRITER_FACET_MATCHER,
-      LANGUAGE_DOCUMENT_MATCHER,
-      TRANSLATION_MATCHER,
-      RUNTIME_PROVIDER_MATCHER,
-      SERVICE_OPERATION_MATCHER,
-      SCENE_RENDERER_MATCHER,
-      NATIVE_MODEL_ENCODER_MATCHER,
-      GAME_INSTALLATION_MATCHER,
-      MOD_WORKSPACE_MATCHER,
-      DATA_CATALOG_MATCHER,
-      RESOLVED_DATA_WORKSPACE_MATCHER,
-      MAP_SEMANTIC_MATCHER,
-      MAP_PREVIEW_PREPARATION_MATCHER,
-      ...options.matcherProfiles ?? []
-    ]),
-    isNamespaceOwner: () => true,
-    validateJsonSchemaRef: () => []
-  });
-}
-async function registerServiceDefinitionsOrThrow(inventory, definitions) {
-  const editing = await registerStandardEditingDefinitions(definitions);
-  const language = await registerStandardLanguageDefinitions(definitions);
-  const runtime2 = await registerStandardRuntimeDefinitions(definitions);
-  const serviceOperations = await registerStandardServiceOperationDefinitions(definitions);
-  const renderer = await registerStandardRendererDefinitions(definitions);
-  const modelEncoding = await registerStandardModelEncodingDefinitions(definitions);
-  const compression = await registerStandardCompressionDefinitions(definitions);
-  const games = await registerStandardGameDefinitions(definitions);
-  const mods = await registerStandardModDefinitions(definitions);
-  const data = await registerStandardDataDefinitions(definitions);
-  const maps = await registerStandardMapDefinitions(definitions);
-  const registrations = [
-    editing,
-    language,
-    runtime2,
-    serviceOperations,
-    renderer,
-    modelEncoding,
-    compression,
-    games,
-    mods,
-    data,
-    maps,
-    ...await registerServiceContractDefinitionsFromInventory(inventory, definitions)
-  ];
-  const rejected3 = registrations.filter((result) => result.state === "rejected");
-  if (rejected3.length > 0) {
-    const diagnostics = rejected3.flatMap((result) => result.diagnostics);
-    throw new ModkitError({
-      code: "x3.host/service-definition-rejected",
-      message: `${rejected3.length} service contract definition owner(s) failed closed`,
-      context: { diagnostics }
-    });
-  }
-  return registrations;
-}
-function serviceDefinitionSurfaces(definitions) {
-  return definitions.list().flatMap((registration) => registration.surface === void 0 ? [] : [
-    {
-      contract: registration.contract,
-      major: registration.major,
-      surface: registration.surface
-    }
-  ]);
 }
 
 // packages/host/dist/subject-rpc.js
@@ -22447,6 +14704,28 @@ var subjectEditingSurface = {
   }
 };
 var SUBJECT_RPC_LIMITS = protocolLimits({ defaultCallDeadlineMs: 6e4 });
+function withoutHiddenEntries(namespace) {
+  const visible = async (answer, page2) => {
+    const listed = await answer;
+    return page2.includeHidden === true || !listed.items.some((item) => item.hidden === true) ? listed : { ...listed, items: listed.items.filter((item) => item.hidden !== true) };
+  };
+  const children = namespace.children?.bind(namespace);
+  const search = namespace.search?.bind(namespace);
+  const passed = (key3) => {
+    const method = namespace[key3];
+    return method === void 0 ? {} : { [key3]: method.bind(namespace) };
+  };
+  return {
+    list: (prefix, page2, signal) => visible(namespace.list(prefix, page2, signal), page2),
+    ...children === void 0 ? {} : { children: (path, page2, signal) => visible(children(path, page2, signal), page2) },
+    ...search === void 0 ? {} : { search: (query2, page2, signal) => visible(search(query2, page2, signal), page2) },
+    ...passed("readPreamble"),
+    ...passed("lookup"),
+    ...passed("nestedContext"),
+    ...passed("openEntrySource"),
+    openEntry: (entryId, signal) => namespace.openEntry(entryId, signal)
+  };
+}
 function subjectOpenSnapshot(options) {
   const { result, diagnostics } = options;
   if (result.state === "unresolved") {
@@ -22482,6 +14761,7949 @@ function subjectOpenSnapshot(options) {
     candidates: result.candidates,
     diagnostics
   };
+}
+
+// packages/host/dist/presentation.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
+// packages/host/dist/presentation-catalog.generated.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var COMMON_PRESENTATION_CATALOG = Object.freeze([
+  Object.freeze({
+    slot: Object.freeze({
+      slotId: "code",
+      kind: "stage",
+      contributionId: "modkit.ui-monaco/code-stage",
+      extensionId: "modkit/code",
+      priority: 400,
+      singletonGroup: "stage.code",
+      bindings: Object.freeze([
+        Object.freeze({
+          bindingId: "code-content",
+          contract: "common.view/text-data-source",
+          major: 1
+        })
+      ])
+    }),
+    spec: Object.freeze({
+      kind: "stage",
+      requiresTraits: [{ id: "content.text", states: ["available"] }],
+      consumesDataSources: [{ contract: "common.view/text-data-source", major: 1 }],
+      applicability: { interpretation: "any", sourceBytes: { maximum: "8388608" } },
+      priority: 400,
+      singletonGroup: "stage.code"
+    })
+  }),
+  Object.freeze({
+    slot: Object.freeze({
+      slotId: "video",
+      kind: "stage",
+      contributionId: "modkit.ui/video-stage",
+      extensionId: "modkit/ui",
+      priority: 370,
+      singletonGroup: "center-stage",
+      bindings: Object.freeze([
+        Object.freeze({
+          bindingId: "video-content",
+          contract: "common.view/video-media-source",
+          major: 1
+        })
+      ])
+    }),
+    spec: Object.freeze({
+      kind: "stage",
+      requiresTraits: [{ id: "video.streams", states: ["available"] }],
+      consumesDataSources: [{ contract: "common.view/video-media-source", major: 1 }],
+      priority: 370,
+      singletonGroup: "center-stage"
+    })
+  }),
+  Object.freeze({
+    slot: Object.freeze({
+      slotId: "image",
+      kind: "stage",
+      contributionId: "modkit.ui/image-stage",
+      extensionId: "modkit/ui",
+      priority: 360,
+      singletonGroup: "center-stage",
+      bindings: Object.freeze([
+        Object.freeze({
+          bindingId: "image-content",
+          contract: "common.view/raster-image-source",
+          major: 1
+        })
+      ])
+    }),
+    spec: Object.freeze({
+      kind: "stage",
+      requiresTraits: [{ id: "image.raster", states: ["available"] }],
+      consumesDataSources: [{ contract: "common.view/raster-image-source", major: 1 }],
+      priority: 360,
+      singletonGroup: "center-stage"
+    })
+  }),
+  Object.freeze({
+    slot: Object.freeze({
+      slotId: "audio",
+      kind: "stage",
+      contributionId: "modkit.ui/audio-stage",
+      extensionId: "modkit/ui",
+      priority: 360,
+      singletonGroup: "center-stage",
+      bindings: Object.freeze([
+        Object.freeze({
+          bindingId: "audio-content",
+          contract: "common.view/audio-media-source",
+          major: 1
+        })
+      ])
+    }),
+    spec: Object.freeze({
+      kind: "stage",
+      requiresTraits: [{ id: "audio.streams", states: ["available"] }],
+      consumesDataSources: [{ contract: "common.view/audio-media-source", major: 1 }],
+      priority: 360,
+      singletonGroup: "center-stage"
+    })
+  }),
+  Object.freeze({
+    slot: Object.freeze({
+      slotId: "playback",
+      kind: "stage",
+      contributionId: "modkit.ui/playback-stage",
+      extensionId: "modkit/ui",
+      priority: 355,
+      singletonGroup: "center-stage",
+      bindings: Object.freeze([
+        Object.freeze({
+          bindingId: "playback-content",
+          contract: "common.view/transport-source",
+          major: 1
+        })
+      ])
+    }),
+    optionalBindings: Object.freeze([
+      Object.freeze({
+        bindingId: "playback-optional-1",
+        contract: "common.view/world-scene-source",
+        major: 1
+      })
+    ]),
+    spec: Object.freeze({
+      kind: "stage",
+      consumesDataSources: [{ contract: "common.view/transport-source", major: 1 }],
+      optionalDataSources: [{ contract: "common.view/world-scene-source", major: 1 }],
+      priority: 355,
+      singletonGroup: "center-stage"
+    })
+  }),
+  Object.freeze({
+    slot: Object.freeze({
+      slotId: "world",
+      kind: "stage",
+      contributionId: "modkit.ui/world-stage",
+      extensionId: "modkit/ui",
+      priority: 380,
+      singletonGroup: "center-stage",
+      bindings: Object.freeze([
+        Object.freeze({
+          bindingId: "world-content",
+          contract: "common.view/world-scene-source",
+          major: 1
+        })
+      ])
+    }),
+    optionalBindings: Object.freeze([
+      Object.freeze({
+        bindingId: "world-optional-1",
+        contract: "common.view/transport-source",
+        major: 1
+      })
+    ]),
+    spec: Object.freeze({
+      kind: "stage",
+      consumesDataSources: [{ contract: "common.view/world-scene-source", major: 1 }],
+      optionalDataSources: [{ contract: "common.view/transport-source", major: 1 }],
+      priority: 380,
+      singletonGroup: "center-stage"
+    })
+  }),
+  Object.freeze({
+    slot: Object.freeze({
+      slotId: "model",
+      kind: "stage",
+      contributionId: "modkit.ui/model-stage",
+      extensionId: "modkit/ui",
+      priority: 350,
+      singletonGroup: "center-stage",
+      bindings: Object.freeze([
+        Object.freeze({
+          bindingId: "model-content",
+          contract: "common.view/model-scene-source",
+          major: 1
+        })
+      ])
+    }),
+    optionalBindings: Object.freeze([
+      Object.freeze({
+        bindingId: "model-optional-1",
+        contract: "common.view/model-resource-refs-source",
+        major: 1
+      }),
+      Object.freeze({
+        bindingId: "model-optional-2",
+        contract: "common.view/model-skeleton-source",
+        major: 1
+      }),
+      Object.freeze({
+        bindingId: "model-optional-3",
+        contract: "common.view/model-animation-source",
+        major: 1
+      }),
+      Object.freeze({
+        bindingId: "model-optional-4",
+        contract: "common.view/model-collision-source",
+        major: 1
+      }),
+      Object.freeze({
+        bindingId: "model-optional-5",
+        contract: "common.view/model-material-source",
+        major: 1
+      }),
+      Object.freeze({
+        bindingId: "model-optional-6",
+        contract: "common.view/model-socket-source",
+        major: 1
+      })
+    ]),
+    spec: Object.freeze({
+      kind: "stage",
+      requiresTraits: [{ id: "model.geometry", states: ["available"] }],
+      consumesDataSources: [{ contract: "common.view/model-scene-source", major: 1 }],
+      optionalDataSources: [
+        { contract: "common.view/model-resource-refs-source", major: 1 },
+        { contract: "common.view/model-skeleton-source", major: 1 },
+        { contract: "common.view/model-animation-source", major: 1 },
+        { contract: "common.view/model-collision-source", major: 1 },
+        { contract: "common.view/model-material-source", major: 1 },
+        { contract: "common.view/model-socket-source", major: 1 }
+      ],
+      optionalServices: [{ contract: "common.render/scene-3d", major: 1 }],
+      priority: 350,
+      singletonGroup: "center-stage"
+    })
+  }),
+  Object.freeze({
+    slot: Object.freeze({
+      slotId: "vector",
+      kind: "stage",
+      contributionId: "modkit.ui/vector-stage",
+      extensionId: "modkit/ui",
+      priority: 350,
+      singletonGroup: "center-stage",
+      bindings: Object.freeze([
+        Object.freeze({
+          bindingId: "vector-content",
+          contract: "common.view/vector-scene-source",
+          major: 1
+        })
+      ])
+    }),
+    spec: Object.freeze({
+      kind: "stage",
+      requiresTraits: [{ id: "vector.scene", states: ["available"] }],
+      consumesDataSources: [{ contract: "common.view/vector-scene-source", major: 1 }],
+      priority: 350,
+      singletonGroup: "center-stage"
+    })
+  }),
+  Object.freeze({
+    slot: Object.freeze({
+      slotId: "localization",
+      kind: "stage",
+      contributionId: "modkit.ui/localization-table-stage",
+      extensionId: "modkit/ui",
+      priority: 410,
+      singletonGroup: "stage.localization",
+      bindings: Object.freeze([
+        Object.freeze({
+          bindingId: "localization-content",
+          contract: "common.view/table-data-source",
+          major: 1
+        })
+      ])
+    }),
+    spec: Object.freeze({
+      kind: "stage",
+      requiresTraits: [
+        { id: "game.localization", states: ["available"] },
+        { id: "table.cells", states: ["available"] }
+      ],
+      consumesDataSources: [{ contract: "common.view/table-data-source", major: 1 }],
+      priority: 410,
+      singletonGroup: "stage.localization"
+    })
+  }),
+  Object.freeze({
+    slot: Object.freeze({
+      slotId: "table",
+      kind: "stage",
+      contributionId: "modkit.ui/table-stage",
+      extensionId: "modkit/ui",
+      priority: 320,
+      singletonGroup: "center-stage",
+      bindings: Object.freeze([
+        Object.freeze({
+          bindingId: "table-content",
+          contract: "common.view/table-data-source",
+          major: 1
+        })
+      ])
+    }),
+    spec: Object.freeze({
+      kind: "stage",
+      requiresTraits: [{ id: "table.cells", states: ["available"] }],
+      consumesDataSources: [{ contract: "common.view/table-data-source", major: 1 }],
+      priority: 320,
+      singletonGroup: "center-stage"
+    })
+  }),
+  Object.freeze({
+    slot: Object.freeze({
+      slotId: "card",
+      kind: "stage",
+      contributionId: "modkit.ui/subject-card-stage",
+      extensionId: "modkit/ui",
+      priority: 390,
+      singletonGroup: "center-stage",
+      bindings: Object.freeze([
+        Object.freeze({
+          bindingId: "card-content",
+          contract: "common.view/subject-facts-source",
+          major: 1
+        })
+      ])
+    }),
+    optionalBindings: Object.freeze([
+      Object.freeze({
+        bindingId: "card-optional-1",
+        contract: "common.view/raster-image-source",
+        major: 1
+      }),
+      Object.freeze({
+        bindingId: "card-optional-2",
+        contract: "common.view/model-scene-source",
+        major: 1
+      }),
+      Object.freeze({
+        bindingId: "card-optional-3",
+        contract: "common.view/model-resource-refs-source",
+        major: 1
+      }),
+      Object.freeze({
+        bindingId: "card-optional-4",
+        contract: "common.view/model-skeleton-source",
+        major: 1
+      }),
+      Object.freeze({
+        bindingId: "card-optional-5",
+        contract: "common.view/model-animation-source",
+        major: 1
+      }),
+      Object.freeze({
+        bindingId: "card-optional-6",
+        contract: "common.view/model-collision-source",
+        major: 1
+      }),
+      Object.freeze({
+        bindingId: "card-optional-7",
+        contract: "common.view/model-material-source",
+        major: 1
+      }),
+      Object.freeze({
+        bindingId: "card-optional-8",
+        contract: "common.view/model-socket-source",
+        major: 1
+      }),
+      Object.freeze({
+        bindingId: "card-optional-9",
+        contract: "common.view/video-media-source",
+        major: 1
+      }),
+      Object.freeze({
+        bindingId: "card-optional-10",
+        contract: "common.view/audio-media-source",
+        major: 1
+      }),
+      Object.freeze({
+        bindingId: "card-optional-11",
+        contract: "common.view/transport-source",
+        major: 1
+      }),
+      Object.freeze({
+        bindingId: "card-optional-12",
+        contract: "common.view/subject-selector-source",
+        major: 1
+      })
+    ]),
+    spec: Object.freeze({
+      kind: "stage",
+      consumesDataSources: [{ contract: "common.view/subject-facts-source", major: 1 }],
+      optionalDataSources: [
+        { contract: "common.view/raster-image-source", major: 1 },
+        { contract: "common.view/model-scene-source", major: 1 },
+        { contract: "common.view/model-resource-refs-source", major: 1 },
+        { contract: "common.view/model-skeleton-source", major: 1 },
+        { contract: "common.view/model-animation-source", major: 1 },
+        { contract: "common.view/model-collision-source", major: 1 },
+        { contract: "common.view/model-material-source", major: 1 },
+        { contract: "common.view/model-socket-source", major: 1 },
+        { contract: "common.view/video-media-source", major: 1 },
+        { contract: "common.view/audio-media-source", major: 1 },
+        { contract: "common.view/transport-source", major: 1 },
+        { contract: "common.view/subject-selector-source", major: 1 }
+      ],
+      optionalServices: [{ contract: "common.render/scene-3d", major: 1 }],
+      priority: 390,
+      singletonGroup: "center-stage"
+    })
+  }),
+  Object.freeze({
+    slot: Object.freeze({
+      slotId: "calculations",
+      kind: "stage",
+      contributionId: "modkit.ui/subject-calculations-stage",
+      extensionId: "modkit/ui",
+      priority: 380,
+      singletonGroup: "center-stage",
+      bindings: Object.freeze([
+        Object.freeze({
+          bindingId: "calculations-content",
+          contract: "common.view/subject-calculations-source",
+          major: 1
+        })
+      ])
+    }),
+    spec: Object.freeze({
+      kind: "stage",
+      consumesDataSources: [{ contract: "common.view/subject-calculations-source", major: 1 }],
+      priority: 380,
+      singletonGroup: "center-stage"
+    })
+  }),
+  Object.freeze({
+    slot: Object.freeze({
+      slotId: "relations",
+      kind: "stage",
+      contributionId: "modkit.ui/relation-graph-stage",
+      extensionId: "modkit/ui",
+      priority: 370,
+      singletonGroup: "center-stage",
+      bindings: Object.freeze([
+        Object.freeze({
+          bindingId: "relations-content",
+          contract: "common.view/relation-graph-source",
+          major: 1
+        })
+      ])
+    }),
+    spec: Object.freeze({
+      kind: "stage",
+      consumesDataSources: [{ contract: "common.view/relation-graph-source", major: 1 }],
+      priority: 370,
+      singletonGroup: "center-stage"
+    })
+  }),
+  Object.freeze({
+    slot: Object.freeze({
+      slotId: "template",
+      kind: "stage",
+      contributionId: "modkit.ui/game-template-stage",
+      extensionId: "modkit/ui",
+      priority: 410,
+      singletonGroup: "center-stage",
+      bindings: Object.freeze([])
+    }),
+    spec: Object.freeze({
+      kind: "stage",
+      requiresOperations: ["view.template"],
+      consumesDataSources: [],
+      priority: 410,
+      singletonGroup: "center-stage"
+    })
+  }),
+  Object.freeze({
+    slot: Object.freeze({
+      slotId: "tree",
+      kind: "stage",
+      contributionId: "modkit.ui/tree-stage",
+      extensionId: "modkit/ui",
+      priority: 300,
+      singletonGroup: "center-stage",
+      bindings: Object.freeze([
+        Object.freeze({
+          bindingId: "tree-content",
+          contract: "common.view/tree-data-source",
+          major: 1
+        })
+      ])
+    }),
+    spec: Object.freeze({
+      kind: "stage",
+      requiresTraits: [{ id: "structure.hierarchy", states: ["available"] }],
+      consumesDataSources: [{ contract: "common.view/tree-data-source", major: 1 }],
+      priority: 300,
+      singletonGroup: "center-stage"
+    })
+  }),
+  Object.freeze({
+    slot: Object.freeze({
+      slotId: "text",
+      kind: "stage",
+      contributionId: "modkit.ui/bounded-text-stage",
+      extensionId: "modkit/ui",
+      priority: 220,
+      singletonGroup: "center-stage",
+      bindings: Object.freeze([
+        Object.freeze({
+          bindingId: "text-content",
+          contract: "common.view/text-data-source",
+          major: 1
+        })
+      ])
+    }),
+    spec: Object.freeze({
+      kind: "stage",
+      requiresTraits: [{ id: "content.text", states: ["available"] }],
+      consumesDataSources: [{ contract: "common.view/text-data-source", major: 1 }],
+      applicability: {
+        interpretation: "any",
+        sourceBytes: { maximum: "16777216" },
+        longestLineBytes: { maximum: 1048576, whenUnknown: "ineligible" }
+      },
+      priority: 220,
+      singletonGroup: "center-stage"
+    })
+  }),
+  Object.freeze({
+    slot: Object.freeze({
+      slotId: "virtual-text",
+      kind: "stage",
+      contributionId: "modkit.ui/virtual-text-stage",
+      extensionId: "modkit/ui",
+      priority: 120,
+      singletonGroup: "center-stage",
+      bindings: Object.freeze([
+        Object.freeze({
+          bindingId: "virtual-text-content",
+          contract: "common.view/text-data-source",
+          major: 1
+        })
+      ])
+    }),
+    spec: Object.freeze({
+      kind: "stage",
+      requiresTraits: [{ id: "content.text", states: ["available"] }],
+      consumesDataSources: [{ contract: "common.view/text-data-source", major: 1 }],
+      applicability: { interpretation: "any" },
+      priority: 120,
+      singletonGroup: "center-stage"
+    })
+  }),
+  Object.freeze({
+    slot: Object.freeze({
+      slotId: "hex",
+      kind: "stage",
+      contributionId: "modkit.ui/hex-stage",
+      extensionId: "modkit/ui",
+      priority: 40,
+      singletonGroup: "center-stage",
+      bindings: Object.freeze([
+        Object.freeze({
+          bindingId: "hex-content",
+          contract: "common.view/byte-range-source",
+          major: 1
+        })
+      ])
+    }),
+    spec: Object.freeze({
+      kind: "stage",
+      consumesDataSources: [{ contract: "common.view/byte-range-source", major: 1 }],
+      priority: 40,
+      singletonGroup: "center-stage"
+    })
+  }),
+  Object.freeze({
+    slot: Object.freeze({
+      slotId: "archive",
+      kind: "stage",
+      contributionId: "modkit.ui/archive-stage",
+      extensionId: "modkit/ui",
+      priority: 340,
+      singletonGroup: "center-stage",
+      bindings: Object.freeze([
+        Object.freeze({
+          bindingId: "archive-content",
+          contract: "common.view/namespace-entry-source",
+          major: 1
+        })
+      ])
+    }),
+    spec: Object.freeze({
+      kind: "stage",
+      consumesDataSources: [{ contract: "common.view/namespace-entry-source", major: 1 }],
+      priority: 340,
+      singletonGroup: "center-stage"
+    })
+  })
+]);
+
+// packages/host/dist/presentation.js
+function evaluateViewerApplicability(rule, facts) {
+  const missing = [];
+  if (rule?.interpretation !== void 0 && rule.interpretation !== "any" && rule.interpretation !== facts.interpretation) {
+    missing.push(`interpretation:${rule.interpretation}`);
+  }
+  if (rule?.sourceBytes?.maximum !== void 0) {
+    const maximum = BigInt(rule.sourceBytes.maximum);
+    if (facts.sourceBytes === void 0 || facts.sourceBytes > maximum) {
+      missing.push(`source-bytes<=${maximum}`);
+    }
+  }
+  if (rule?.longestLineBytes !== void 0) {
+    const value2 = facts.longestLineBytes;
+    if (value2 === void 0 || value2 === "unknown" && rule.longestLineBytes.whenUnknown === "ineligible" || value2 !== "unknown" && value2 > rule.longestLineBytes.maximum) {
+      missing.push(`longest-line<=${rule.longestLineBytes.maximum}`);
+    }
+  }
+  return Object.freeze({ eligible: missing.length === 0, missing: Object.freeze(missing) });
+}
+function evaluateViewerContribution(spec, descriptor, facts) {
+  const missing = [...evaluateViewerApplicability(spec.applicability, facts).missing];
+  for (const requirement of spec.requiresTraits ?? []) {
+    const match = descriptor.traits.some((instance) => {
+      if (instance.id !== requirement.id)
+        return false;
+      if (!(requirement.states ?? ["available"]).includes(instance.state))
+        return false;
+      if (isStandardTraitId(instance.id)) {
+        return requirement.definitionRange === void 0 && instance.definitionVersion === void 0;
+      }
+      const range = requirement.definitionRange === void 0 ? void 0 : parseVersionRange(requirement.definitionRange);
+      const version = instance.definitionVersion === void 0 ? void 0 : parseSemver(instance.definitionVersion);
+      return range !== void 0 && version !== void 0 && satisfiesRange(version, range);
+    });
+    if (!match)
+      missing.push(`trait:${requirement.id}`);
+  }
+  for (const operation of spec.requiresOperations ?? []) {
+    if (!descriptor.operations.some((item) => item.id === operation && item.state === "available")) {
+      missing.push(`operation:${operation}`);
+    }
+  }
+  for (const dataSource of spec.consumesDataSources) {
+    if (!descriptor.dataSources.some((item) => item.contract === dataSource.contract && item.major === dataSource.major)) {
+      missing.push(`data-source:${dataSource.contract}@${dataSource.major}`);
+    }
+  }
+  const ordered = Object.freeze([...new Set(missing)].sort(compareUtf8));
+  const optionalBound = Object.freeze([
+    ...new Set((spec.optionalDataSources ?? []).filter((optional) => descriptor.dataSources.some((item) => item.contract === optional.contract && item.major === optional.major)).map((optional) => optional.contract))
+  ].sort(compareUtf8));
+  const optionalServices = Object.freeze([...new Set((spec.optionalServices ?? []).map((service) => service.contract))].sort(compareUtf8));
+  return Object.freeze({
+    eligible: ordered.length === 0,
+    missing: ordered,
+    optionalBound,
+    optionalServices
+  });
+}
+async function resolveCommonPresentationPlan(descriptor, selection, options = {}) {
+  const available = options.availableStageIds === void 0 ? void 0 : new Set(options.availableStageIds);
+  const facts = {
+    interpretation: descriptor.interpretation,
+    ...options.sourceBytes === void 0 ? {} : { sourceBytes: options.sourceBytes },
+    ...options.longestLineBytes === void 0 ? {} : { longestLineBytes: options.longestLineBytes }
+  };
+  const registrations = COMMON_PRESENTATION_CATALOG;
+  const candidates = registrations.filter((entry2) => available === void 0 || available.has(entry2.slot.slotId)).map((entry2) => {
+    const eligibility = evaluateViewerContribution(entry2.spec, descriptor, facts);
+    const optional = (entry2.optionalBindings ?? []).filter((binding) => eligibility.optionalBound.includes(("dataSource" in binding ? binding.dataSource : binding).contract));
+    return {
+      ...entry2.slot,
+      bindings: Object.freeze([...entry2.slot.bindings, ...optional]),
+      ...optional.length === 0 ? {} : { optionalBindingIds: Object.freeze(optional.map((binding) => binding.bindingId)) },
+      eligible: eligibility.eligible,
+      missing: eligibility.missing
+    };
+  });
+  if (!candidates.some((candidate) => candidate.eligible && candidate.missing.length === 0)) {
+    return void 0;
+  }
+  const digest = (plan) => `canonical:${canonicalJsonStringify(plan)}`;
+  return resolvePresentationPlan({
+    descriptor,
+    candidates,
+    digest,
+    ticketMatches: (binding) => binding.ticket.bindingId === binding.bindingId && binding.ticket.sessionId === selection.sessionId,
+    async resolveBinding(binding) {
+      return {
+        ...binding,
+        offerId: `session:${binding.bindingId}`,
+        providerId: selection.providerId,
+        variantId: selection.variantId,
+        ticket: { bindingId: binding.bindingId, sessionId: selection.sessionId }
+      };
+    }
+  });
+}
+function slotKey(slot) {
+  return `${String(999999999 - slot.priority).padStart(9, "0")}\0${slot.extensionId}\0${slot.contributionId}\0${slot.slotId}`;
+}
+function sortedSlots(slots) {
+  return [...slots].sort((left, right) => compareUtf8(slotKey(left), slotKey(right)));
+}
+function bindingKey(binding) {
+  return binding.bindingId;
+}
+function sameBinding(left, right) {
+  if (left.bindingId !== right.bindingId)
+    return false;
+  if ("dataSource" in left || "dataSource" in right) {
+    return "dataSource" in left && "dataSource" in right && left.dataSource.contract === right.dataSource.contract && left.dataSource.major === right.dataSource.major;
+  }
+  return left.contract === right.contract && left.major === right.major;
+}
+function planBindings(plan) {
+  return [
+    ...plan.slots.flatMap((slot) => slot.bindings),
+    ...plan.fallback === void 0 ? [] : plan.fallback.bindings
+  ];
+}
+function createPresentationPlanValidator(options) {
+  return Object.freeze({
+    validate(resolved2) {
+      const issues = /* @__PURE__ */ new Set();
+      const slotIds = /* @__PURE__ */ new Set();
+      const stageIds = /* @__PURE__ */ new Set();
+      const singletonGroups = /* @__PURE__ */ new Set();
+      for (const slot of resolved2.plan.slots) {
+        if (slotIds.has(slot.slotId))
+          issues.add("duplicate-slot-id");
+        slotIds.add(slot.slotId);
+        if (slot.kind === "stage") {
+          stageIds.add(slot.slotId);
+          if (slot.singletonGroup !== void 0) {
+            if (singletonGroups.has(slot.singletonGroup))
+              issues.add("duplicate-singleton-group");
+            singletonGroups.add(slot.singletonGroup);
+          }
+        }
+      }
+      if (resolved2.plan.activeStage === void 0) {
+        if (resolved2.plan.fallback === void 0 || resolved2.plan.fallback.kind !== "fallback" || resolved2.plan.alternateStages.length !== 0) {
+          issues.add("invalid-fallback");
+        }
+      } else {
+        if (!stageIds.has(resolved2.plan.activeStage))
+          issues.add("missing-active-stage");
+        for (const alternate of resolved2.plan.alternateStages) {
+          if (!stageIds.has(alternate))
+            issues.add("missing-alternate-stage");
+        }
+      }
+      if (resolved2.plan.fallback !== void 0 && resolved2.plan.fallback.kind !== "fallback") {
+        issues.add("invalid-fallback");
+      }
+      const expected = /* @__PURE__ */ new Map();
+      for (const binding of planBindings(resolved2.plan)) {
+        const key3 = bindingKey(binding);
+        if (expected.has(key3))
+          issues.add("duplicate-binding-id");
+        else
+          expected.set(key3, binding);
+      }
+      const actual = /* @__PURE__ */ new Map();
+      for (const binding of resolved2.bindings) {
+        const key3 = bindingKey(binding);
+        if (actual.has(key3))
+          issues.add("duplicate-binding-id");
+        else
+          actual.set(key3, binding);
+      }
+      for (const [key3, binding] of expected) {
+        const selected = actual.get(key3);
+        if (selected === void 0)
+          issues.add("unresolved-binding");
+        else if (!sameBinding(binding, selected) || !options.ticketMatches(selected)) {
+          issues.add("ticket-binding-mismatch");
+        }
+      }
+      for (const key3 of actual.keys()) {
+        if (!expected.has(key3))
+          issues.add("unexpected-binding");
+      }
+      if (options.digest(resolved2.plan) !== resolved2.planDigest) {
+        issues.add("invalid-plan-digest");
+      }
+      return issues.size === 0 ? { valid: true } : { valid: false, issues: Object.freeze([...issues].sort(compareUtf8)) };
+    }
+  });
+}
+function hostFedOnly(slot, descriptor) {
+  const hostOffers = descriptor.hostDataSources ?? [];
+  if (hostOffers.length === 0)
+    return false;
+  const offered = (list, source2) => list.some((item) => item.contract === source2.contract && item.major === source2.major);
+  const optional = new Set(slot.optionalBindingIds ?? []);
+  const sources = slot.bindings.filter((binding) => !optional.has(binding.bindingId)).map((binding) => "dataSource" in binding ? binding.dataSource : binding).filter((source2) => offered(descriptor.dataSources, source2));
+  return sources.length > 0 && sources.every((source2) => offered(hostOffers, source2));
+}
+async function resolvePresentationPlan(options) {
+  const byPriority = sortedSlots(options.candidates.filter((item) => item.eligible && (item.missing?.length ?? 0) === 0));
+  const eligible = [
+    ...byPriority.filter((slot) => !hostFedOnly(slot, options.descriptor)),
+    ...byPriority.filter((slot) => hostFedOnly(slot, options.descriptor))
+  ];
+  const unsatisfied = options.candidates.filter((item) => !item.eligible || (item.missing?.length ?? 0) > 0).map((item) => ({ contributionId: item.contributionId, missing: [...item.missing ?? []] })).sort((left, right) => compareUtf8(left.contributionId, right.contributionId) || compareUtf8(left.missing.join("\0"), right.missing.join("\0")));
+  const selectedStages = [];
+  const seenGroups = /* @__PURE__ */ new Set();
+  for (const stage of eligible.filter((item) => item.kind === "stage")) {
+    const group2 = stage.singletonGroup ?? `slot:${stage.slotId}`;
+    if (seenGroups.has(group2))
+      continue;
+    seenGroups.add(group2);
+    selectedStages.push(stage);
+  }
+  const active = selectedStages[0];
+  const fallback = eligible.find((item) => item.kind === "fallback");
+  if (active === void 0 && fallback === void 0) {
+    throw new ModkitError({
+      code: "x3.host/presentation-fallback-missing",
+      message: "no eligible stage and no eligible fallback contribution"
+    });
+  }
+  const supporting = eligible.filter((item) => item.kind !== "stage" && item.kind !== "fallback");
+  const slots = Object.freeze([...selectedStages, ...supporting]);
+  const fallbackSlot = fallback;
+  const common2 = {
+    subjectUri: options.descriptor.subjectUri,
+    revision: options.descriptor.revision,
+    slots,
+    unsatisfied: Object.freeze(unsatisfied.map((item) => Object.freeze({ ...item, missing: Object.freeze(item.missing) })))
+  };
+  const plan = active === void 0 ? definePresentationPlan({
+    ...common2,
+    alternateStages: [],
+    fallback: fallbackSlot
+  }) : definePresentationPlan({
+    ...common2,
+    activeStage: active.slotId,
+    alternateStages: Object.freeze(selectedStages.slice(1).map((item) => item.slotId)),
+    ...fallbackSlot === void 0 ? {} : { fallback: fallbackSlot }
+  });
+  const selectedBindings = [];
+  const seenBindings = /* @__PURE__ */ new Set();
+  for (const slot of [...slots, ...fallbackSlot === void 0 ? [] : [fallbackSlot]]) {
+    for (const binding of slot.bindings) {
+      if (seenBindings.has(binding.bindingId)) {
+        throw new ModkitError({
+          code: "x3.host/duplicate-presentation-binding",
+          message: `presentation binding ${binding.bindingId} is declared more than once`
+        });
+      }
+      seenBindings.add(binding.bindingId);
+      const resolved2 = await options.resolveBinding(binding, slot);
+      if (resolved2 === void 0) {
+        throw new ModkitError({
+          code: "x3.host/unresolved-presentation-binding",
+          message: `presentation binding ${binding.bindingId} could not be resolved`
+        });
+      }
+      selectedBindings.push(Object.freeze({ ...resolved2 }));
+    }
+  }
+  const result = Object.freeze({
+    plan,
+    bindings: Object.freeze(selectedBindings),
+    planDigest: options.digest(plan)
+  });
+  const validation = createPresentationPlanValidator(options).validate(result);
+  if (!validation.valid) {
+    throw new ModkitError({
+      code: "x3.host/invalid-presentation-plan",
+      message: `resolved presentation plan failed validation: ${validation.issues.join(", ")}`,
+      context: { issues: validation.issues }
+    });
+  }
+  return result;
+}
+
+// packages/host/dist/format-writer.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var diagnostic2 = (severity, code, message) => ({ severity, code, message, path: [] });
+async function resolveFormatWriter(request) {
+  const identity2 = request.opened.descriptor.identity;
+  const formatId = request.formatId ?? (typeof identity2?.formatId === "string" ? identity2.formatId : void 0);
+  if (formatId === void 0) {
+    return {
+      diagnostics: [
+        diagnostic2("information", "x3.host/format-writer-unavailable", "the subject names no format (unresolved or built-in), so no format writer can be asked for")
+      ]
+    };
+  }
+  if (request.services.serviceDefinitions === void 0) {
+    return {
+      diagnostics: [
+        diagnostic2("information", "x3.host/format-writer-unavailable", "this host registered no service-contract definitions, so writers cannot be resolved")
+      ]
+    };
+  }
+  const facet = {
+    formatId,
+    representationId: request.representationId ?? "source",
+    mutationMode: request.mutationMode ?? "mutate",
+    minimumRoundTrip: request.minimumRoundTrip ?? "byte-identical"
+  };
+  const resolver = createHostServiceResolver({
+    inventory: request.services.inventory,
+    target: request.services.target,
+    executionBackends: request.services.executionBackends,
+    definitions: request.services.serviceDefinitions,
+    grant: request.grant,
+    budgets: request.budgets
+  });
+  try {
+    const lease2 = await resolver.port.resolve({
+      contract: "common.edit/writer",
+      major: 1,
+      facet
+    });
+    const writer = lease2.value;
+    return {
+      writer,
+      release: () => lease2.release(),
+      diagnostics: [
+        ...resolver.diagnostics,
+        diagnostic2("information", "x3.host/format-writer-selected", `\xAB${writer.offer.providerId}\xBB writes ${facet.formatId}/${facet.representationId} at ${writer.offer.minimumRoundTrip}`)
+      ]
+    };
+  } catch (error5) {
+    return {
+      diagnostics: [
+        ...resolver.diagnostics,
+        diagnostic2("information", "x3.host/format-writer-unresolved", `no writer offers ${facet.formatId}/${facet.representationId} at ${facet.minimumRoundTrip} (${error5 instanceof Error ? error5.message : String(error5)})`)
+      ]
+    };
+  }
+}
+
+// packages/host/dist/index.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
+// packages/host/dist/localization.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
+// packages/host/dist/artifact-files.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var encoder2 = new TextEncoder();
+function confinedArtifactPath(authored, artifactRoot, label) {
+  if (authored.startsWith("/") || authored.startsWith("\\") || authored.includes("\\")) {
+    throw new TypeError(`${label} path must be a portable relative POSIX path`);
+  }
+  const normalized = normalizeVfsPath(authored);
+  if (normalized === "" || !normalized.toLowerCase().endsWith(".json")) {
+    throw new TypeError(`${label} path must identify a JSON file`);
+  }
+  resolveContainedEntrypoint(artifactRoot, normalized);
+  return normalized;
+}
+async function sha256(bytes) {
+  const copy = Uint8Array.from(bytes);
+  const subtle = globalThis.crypto?.subtle;
+  if (subtle === void 0)
+    throw new TypeError("WebCrypto SHA-256 is unavailable");
+  const digest = new Uint8Array(await subtle.digest("SHA-256", copy.buffer));
+  return `sha256:${[...digest].map((byte2) => byte2.toString(16).padStart(2, "0")).join("")}`;
+}
+async function readAttestedArtifactFile(contribution, authoredPath, options) {
+  const { label, maxBytes } = options;
+  const record9 = inventoryRecordFor(contribution);
+  if (record9 === void 0)
+    throw new TypeError(`${label} contribution has no trusted inventory record`);
+  const path = confinedArtifactPath(authoredPath, record9.artifactRoot, label);
+  const expectedDigest = record9.fileDigests?.[path];
+  if (expectedDigest === void 0) {
+    throw new TypeError(`${label} ${path} is absent from the attested artifact file map`);
+  }
+  const mount = await options.vfs.openMount(record9.artifactRoot.href, {
+    limits: {
+      // Opening an artifact mount may account all of its files (a model pack can legitimately be
+      // much larger than one data file), so retain the platform's artifact ceilings here. The exact
+      // file size and all bytes actually read remain capped to this file's own ceiling.
+      maxEntries: DEFAULT_VFS_LIMITS.maxEntries,
+      maxMaterializedBytes: DEFAULT_VFS_LIMITS.maxMaterializedBytes,
+      maxFileBytes: DEFAULT_VFS_LIMITS.maxFileBytes,
+      maxReadBytes: BigInt(maxBytes),
+      maxReadRangeBytes: maxBytes,
+      maxStreamBytes: DEFAULT_VFS_LIMITS.maxStreamBytes,
+      maxPathBytes: Math.max(256, encoder2.encode(path).byteLength)
+    },
+    ...options.signal === void 0 ? {} : { signal: options.signal }
+  });
+  try {
+    const node = await mount.stat(path, options.signal);
+    if (node?.kind !== "file")
+      throw new TypeError(`${label} ${path} is not a file`);
+    if (node.size !== void 0 && node.size > BigInt(maxBytes)) {
+      throw new TypeError(`${label} ${path} exceeds the ${maxBytes}-byte raw limit`);
+    }
+    const source2 = await mount.open(path, options.signal);
+    try {
+      const size = await source2.size(options.signal);
+      if (!Number.isSafeInteger(size) || size < 0 || size > maxBytes) {
+        throw new TypeError(`${label} ${path} exceeds the ${maxBytes}-byte raw limit`);
+      }
+      const bytes = await source2.readAt(0, size, options.signal);
+      const actualDigest = await (options.digest ?? sha256)(bytes);
+      if (actualDigest !== expectedDigest) {
+        throw new TypeError(`${label} ${path} does not match its attested SHA-256`);
+      }
+      return bytes;
+    } finally {
+      await source2.dispose();
+    }
+  } finally {
+    await mount.dispose();
+  }
+}
+
+// packages/host/dist/localization.js
+var LOCALIZATION_CATALOG_MAXIMUM_JSON_BYTES = 8 * 1024 * 1024;
+var decoder = new TextDecoder("utf-8", { fatal: true });
+function extensionCoordinate(extension) {
+  return `${extension.manifest.publisher}/${extension.manifest.id}`;
+}
+function catalogPath(candidate) {
+  return Object.freeze([
+    candidate.extension.source,
+    candidate.contribution.path,
+    candidate.resource.path
+  ]);
+}
+function catalogDiagnostic(candidate, message, data) {
+  return diagnostic("warning", "x3.host/localization-catalog-refused", message, catalogPath(candidate), data);
+}
+function candidatesFrom(inventory) {
+  const candidates = [];
+  for (const extension of inventory.extensions) {
+    for (const contribution of extension.contributions) {
+      const disabled = contribution.diagnostics.some((item) => item.code === CONTRIBUTION_DISABLED_CODE || item.code === EXTENSION_DISABLED_CODE);
+      if (!contribution.inventoryEligible || disabled)
+        continue;
+      const manifest = contribution.manifest;
+      if (manifest?.contract.id !== LOCALIZATION_CONTRIBUTION_CONTRACT || manifest.contract.major !== 1) {
+        continue;
+      }
+      const spec = manifest.spec;
+      for (const resource of spec.catalogs)
+        candidates.push({ extension, contribution, resource });
+    }
+  }
+  candidates.sort((left, right) => {
+    const leftKey = `${extensionCoordinate(left.extension)}\0${left.contribution.manifest?.id ?? ""}\0${left.resource.path}\0${left.resource.locale}`;
+    const rightKey = `${extensionCoordinate(right.extension)}\0${right.contribution.manifest?.id ?? ""}\0${right.resource.path}\0${right.resource.locale}`;
+    return leftKey < rightKey ? -1 : leftKey > rightKey ? 1 : 0;
+  });
+  return Object.freeze(candidates);
+}
+function maximumJsonBytes(requested) {
+  if (requested === void 0)
+    return LOCALIZATION_CATALOG_MAXIMUM_JSON_BYTES;
+  if (!Number.isSafeInteger(requested) || requested <= 0) {
+    throw new TypeError("localization maxJsonBytes must be a positive safe integer");
+  }
+  return Math.min(requested, LOCALIZATION_CATALOG_MAXIMUM_JSON_BYTES);
+}
+function namespaceOwnedMessagePrefix(namespace) {
+  const tail = namespace.split(/[./]/u).at(-1) ?? namespace;
+  const owner = tail.replace(/-(?:app|ui|localization|messages)$/u, "") || tail;
+  return `${owner}.`;
+}
+function catalogNamespace(value2) {
+  if (typeof value2 !== "object" || value2 === null || Array.isArray(value2))
+    return void 0;
+  const descriptor = Object.getOwnPropertyDescriptor(value2, "namespace");
+  return descriptor !== void 0 && "value" in descriptor && typeof descriptor.value === "string" ? descriptor.value : void 0;
+}
+async function authorizedPrefixes(candidate, document2, authorizer) {
+  const requested = Object.freeze([...candidate.resource.messagePrefixes]);
+  const namespace = catalogNamespace(document2);
+  if (namespace === void 0) {
+    throw new TypeError("localization catalog namespace must be a string data property");
+  }
+  if (authorizer === void 0) {
+    const owned = namespaceOwnedMessagePrefix(namespace);
+    return Object.freeze(requested.filter((prefix) => prefix === owned));
+  }
+  const contributionId2 = candidate.contribution.manifest?.id ?? candidate.contribution.path;
+  const granted = await authorizer(Object.freeze({
+    ownerExtensionId: extensionCoordinate(candidate.extension),
+    contributionId: contributionId2,
+    catalogPath: candidate.resource.path,
+    locale: candidate.resource.locale,
+    catalogNamespace: namespace,
+    requestedMessagePrefixes: requested
+  }));
+  if (!Array.isArray(granted))
+    throw new TypeError("message-prefix authorizer must return an array");
+  const requestedSet = new Set(requested);
+  return Object.freeze([...new Set(granted)].filter((prefix) => typeof prefix === "string" && requestedSet.has(prefix)));
+}
+function readCatalogBytes(candidate, options, maxBytes) {
+  return readAttestedArtifactFile(candidate.contribution, candidate.resource.path, {
+    vfs: options.vfs,
+    maxBytes,
+    label: "localization catalog",
+    ...options.digest === void 0 ? {} : { digest: options.digest },
+    ...options.signal === void 0 ? {} : { signal: options.signal }
+  });
+}
+async function loadLocalizationCatalogs(inventory, options) {
+  const maxBytes = maximumJsonBytes(options.maxJsonBytes);
+  const catalogs2 = [];
+  const diagnostics = [];
+  for (const candidate of candidatesFrom(inventory)) {
+    try {
+      const bytes = await readCatalogBytes(candidate, options, maxBytes);
+      let document2;
+      try {
+        document2 = JSON.parse(decoder.decode(bytes));
+      } catch (error5) {
+        throw new TypeError(`localization catalog is not valid UTF-8 JSON: ${error5 instanceof Error ? error5.message : String(error5)}`);
+      }
+      const prefixes = await authorizedPrefixes(candidate, document2, options.authorizeMessagePrefixes);
+      if (prefixes.length === 0) {
+        throw new TypeError("localization catalog was granted no requested message-key prefix");
+      }
+      const catalog = options.parseCatalog(document2, {
+        authorizedMessagePrefixes: prefixes,
+        ...options.fallbackCatalog === void 0 ? {} : { fallbackCatalog: options.fallbackCatalog }
+      });
+      if (catalog.locale.toLowerCase() !== candidate.resource.locale.toLowerCase()) {
+        throw new TypeError(`catalog locale ${catalog.locale} does not match contribution locale ${candidate.resource.locale}`);
+      }
+      catalogs2.push(catalog);
+    } catch (error5) {
+      diagnostics.push(catalogDiagnostic(candidate, `localization catalog \xAB${candidate.resource.path}\xBB was refused; built-in fallback remains active`, { reason: error5 instanceof Error ? error5.message : String(error5) }));
+    }
+  }
+  return Object.freeze({
+    catalogs: Object.freeze(catalogs2),
+    diagnostics: Object.freeze(diagnostics)
+  });
+}
+
+// packages/host/dist/commands/index.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
+// packages/host/dist/commands/runtime.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var COMMAND_CANCELLED = "x3.command/cancelled";
+var COMMAND_SUBJECT_UNRESOLVED = "x3.command/subject-unresolved";
+var COMMAND_INPUT_INVALID = "x3.command/input-invalid";
+var COMMAND_UNKNOWN = "x3.command/unknown";
+var COMMAND_UNAVAILABLE = "x3.command/unavailable";
+var commandDiagnostic = (item) => ({
+  code: item.code,
+  message: item.message,
+  ...item.severity === void 0 ? {} : { severity: item.severity }
+});
+var ok = (command, data, diagnostics = []) => ({ state: "ok", command, data, diagnostics });
+var unavailable = (command, reason, alternative, diagnostics = [], code = COMMAND_UNAVAILABLE) => ({ state: "unavailable", command, code, reason, alternative, diagnostics });
+var failed = (command, code, message, diagnostics = []) => ({ state: "failed", command, code, message, diagnostics });
+function createCommandRuntime(descriptors) {
+  const byId = new Map(descriptors.map((descriptor) => [descriptor.id, descriptor]));
+  if (byId.size !== descriptors.length) {
+    throw new TypeError("two commands share one id; a command id names exactly one behaviour");
+  }
+  const sorted = Object.freeze([...descriptors].sort((a2, b2) => a2.id < b2.id ? -1 : 1));
+  return Object.freeze({
+    descriptors: sorted,
+    get: (id) => byId.get(id),
+    async run(id, input, context) {
+      const descriptor = byId.get(id);
+      if (descriptor === void 0) {
+        return failed(id, COMMAND_UNKNOWN, `no command is registered as \xAB${id}\xBB`);
+      }
+      if (descriptor.needsSubject && (input.subject ?? "") === "") {
+        return failed(id, COMMAND_INPUT_INVALID, `\xAB${id}\xBB needs a subject, and the input names none`);
+      }
+      try {
+        if (context.signal?.aborted === true) {
+          return failed(id, COMMAND_CANCELLED, "the run was cancelled before it started");
+        }
+        return await descriptor.run(context, input);
+      } catch (error5) {
+        if (context.signal?.aborted === true || isAbort(error5)) {
+          return failed(id, COMMAND_CANCELLED, "the run was cancelled");
+        }
+        return failed(id, "x3.command/failed", error5 instanceof Error ? error5.message : String(error5));
+      }
+    }
+  });
+}
+function isAbort(error5) {
+  return error5 instanceof Error && (error5.name === "AbortError" || error5.name === "TimeoutError");
+}
+
+// packages/host/dist/commands/protocol.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var COMMAND_PROTOCOL_SCHEMA_VERSION = "modkit-command-protocol-1";
+var RESULT_STATES = Object.freeze(["ok", "unavailable", "failed"]);
+var immutableJson = (value2) => {
+  if (Array.isArray(value2))
+    return Object.freeze(value2.map((item) => immutableJson(item)));
+  if (value2 !== null && typeof value2 === "object") {
+    return Object.freeze(Object.fromEntries(Object.entries(value2).map(([key3, item]) => [key3, immutableJson(item)])));
+  }
+  return value2;
+};
+var snapshotInput2 = (input) => Object.freeze(Object.fromEntries(Object.entries(input).flatMap(([key3, value2]) => value2 === void 0 ? [] : [[key3, immutableJson(value2)]])));
+var snapshotResult = (result) => {
+  const diagnostics = Object.freeze(result.diagnostics.map((item) => Object.freeze({ ...item })));
+  if (result.state === "ok") {
+    return Object.freeze({ ...result, data: immutableJson(result.data), diagnostics });
+  }
+  return Object.freeze({ ...result, diagnostics });
+};
+function describeCommandContracts(runtime2, targets) {
+  const byId = new Map(targets.map((target) => [target.commandId, target]));
+  const commands = runtime2.descriptors.map((descriptor) => {
+    const target = byId.get(descriptor.id);
+    if (target === void 0) {
+      throw new TypeError(`command contract has no routing target for \xAB${descriptor.id}\xBB`);
+    }
+    return Object.freeze({
+      id: descriptor.id,
+      title: descriptor.title,
+      summary: descriptor.summary,
+      input: Object.freeze({
+        subject: descriptor.needsSubject ? "required" : "optional",
+        additionalProperties: true
+      }),
+      effects: Object.freeze({ mutatesSource: descriptor.mutatesSource }),
+      routing: Object.freeze({
+        operationIds: Object.freeze([...target.operationIds]),
+        dataSourceContracts: Object.freeze([...target.dataSourceContracts])
+      }),
+      callers: Object.freeze([...target.hostCallers]),
+      result: Object.freeze({
+        states: RESULT_STATES,
+        diagnostics: true,
+        unavailableAlternativeRequired: true
+      })
+    });
+  });
+  if (byId.size !== commands.length) {
+    throw new TypeError("command contract targets and live runtime descriptors differ");
+  }
+  return Object.freeze({
+    schemaVersion: COMMAND_PROTOCOL_SCHEMA_VERSION,
+    commands: Object.freeze(commands)
+  });
+}
+function commandRequest(command, input) {
+  if (command === "")
+    throw new TypeError("a command request needs a non-empty command id");
+  return Object.freeze({
+    schemaVersion: COMMAND_PROTOCOL_SCHEMA_VERSION,
+    command,
+    input: snapshotInput2(input)
+  });
+}
+async function executeCommandRequest(runtime2, request, context) {
+  if (request.schemaVersion !== COMMAND_PROTOCOL_SCHEMA_VERSION) {
+    throw new TypeError(`unsupported command protocol ${String(request.schemaVersion)}`);
+  }
+  const stableRequest = commandRequest(request.command, request.input);
+  const result = await runtime2.run(stableRequest.command, stableRequest.input, context);
+  return Object.freeze({
+    schemaVersion: COMMAND_PROTOCOL_SCHEMA_VERSION,
+    request: stableRequest,
+    result: snapshotResult(result)
+  });
+}
+
+// packages/host/dist/commands/subject-commands.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
+// packages/host/dist/commands/subject-command-targets.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
+// packages/host/dist/commands/immutable-command-targets.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+function deepFreeze(value2) {
+  if (value2 !== null && typeof value2 === "object" && !Object.isFrozen(value2)) {
+    for (const nested of Object.values(value2))
+      deepFreeze(nested);
+    Object.freeze(value2);
+  }
+  return value2;
+}
+function defineSubjectCommandTargets(targets) {
+  return deepFreeze(targets);
+}
+
+// packages/host/dist/commands/subject-command-targets.js
+var SUBJECT_COMMAND_TARGETS = defineSubjectCommandTargets({
+  open: {
+    commandId: "subject.open",
+    needsSubject: true,
+    mutatesSource: false,
+    operationIds: [],
+    dataSourceContracts: [],
+    hostCallers: ["automation", "cli", "electron", "pwa", "server", "vscode"]
+  },
+  inspect: {
+    commandId: "subject.inspect",
+    needsSubject: true,
+    mutatesSource: false,
+    operationIds: [],
+    dataSourceContracts: [],
+    hostCallers: ["automation", "cli", "electron", "pwa", "server", "vscode"]
+  },
+  validate: {
+    commandId: "subject.validate",
+    needsSubject: true,
+    mutatesSource: false,
+    operationIds: ["asset.validate"],
+    dataSourceContracts: [],
+    hostCallers: ["automation", "cli", "electron", "pwa", "server", "vscode"]
+  },
+  extract: {
+    commandId: "subject.extract",
+    needsSubject: true,
+    mutatesSource: false,
+    operationIds: ["container.extract"],
+    dataSourceContracts: ["common.view/namespace-entry-source"],
+    hostCallers: ["automation", "cli", "electron", "pwa", "server", "vscode"]
+  },
+  convert: {
+    commandId: "subject.convert",
+    needsSubject: true,
+    mutatesSource: false,
+    operationIds: [
+      "export.convert",
+      "export.raw",
+      "model.export-uvm",
+      "model.export-native",
+      "model.write"
+    ],
+    dataSourceContracts: [],
+    hostCallers: ["automation", "cli", "electron", "pwa", "server", "vscode"]
+  },
+  preview: {
+    commandId: "subject.preview",
+    needsSubject: true,
+    mutatesSource: false,
+    operationIds: ["view.thumbnail", "view.render", "model.render"],
+    dataSourceContracts: [],
+    hostCallers: ["automation", "cli", "electron", "pwa", "server", "vscode"]
+  }
+});
+
+// packages/host/dist/commands/subject-commands.js
+var OPEN_COMMAND = SUBJECT_COMMAND_TARGETS.open.commandId;
+var INSPECT_COMMAND = SUBJECT_COMMAND_TARGETS.inspect.commandId;
+var VALIDATE_COMMAND = SUBJECT_COMMAND_TARGETS.validate.commandId;
+var VALIDATE = SUBJECT_COMMAND_TARGETS.validate.operationIds[0];
+var EXTRACT_COMMAND = SUBJECT_COMMAND_TARGETS.extract.commandId;
+var CONTAINER_EXTRACT_OPERATION_ID2 = SUBJECT_COMMAND_TARGETS.extract.operationIds[0];
+var NAMESPACE_ENTRY_SOURCE3 = SUBJECT_COMMAND_TARGETS.extract.dataSourceContracts[0];
+var CONVERT_COMMAND = SUBJECT_COMMAND_TARGETS.convert.commandId;
+var CONVERT = SUBJECT_COMMAND_TARGETS.convert.operationIds[0];
+var PREVIEW_COMMAND = SUBJECT_COMMAND_TARGETS.preview.commandId;
+var THUMBNAIL = SUBJECT_COMMAND_TARGETS.preview.operationIds[0];
+function availableOperation(descriptor, id) {
+  const found = (descriptor.operations ?? []).find((item) => item.id === id && item.state === "available" && item.mutatesSource !== true);
+  return found === void 0 ? void 0 : { handlerId: found.handlerId };
+}
+function selectedOperation(descriptor, allowed2, requested) {
+  const candidates = requested === void 0 ? allowed2 : typeof requested === "string" ? [requested] : [];
+  for (const id of candidates) {
+    if (!allowed2.includes(id))
+      continue;
+    const operation = availableOperation(descriptor, id);
+    if (operation !== void 0)
+      return { id, ...operation };
+  }
+  return void 0;
+}
+var publishedOperations = (descriptor) => (descriptor.operations ?? []).length === 0 ? "it publishes no operations at all" : `it publishes ${(descriptor.operations ?? []).map((item) => item.id).join(", ")}`;
+async function withCommandSubject(command, context, ref2, body) {
+  context.progress?.({ step: "open", message: `opening ${ref2}` });
+  const subject = await context.openSubject(ref2, context.signal);
+  const diagnostics = subject.snapshot.diagnostics.map((item) => ({
+    code: item.code,
+    message: item.message,
+    ...item.severity === void 0 ? {} : { severity: item.severity }
+  }));
+  try {
+    if (subject.snapshot.state !== "opened" || subject.session === void 0) {
+      return failed(command, COMMAND_SUBJECT_UNRESOLVED, subject.snapshot.state === "opened" ? "the subject opened without a session" : `no contribution claimed this subject: ${subject.snapshot.reason}`, diagnostics);
+    }
+    const descriptor = await subject.session.descriptor();
+    return await body(subject, subject.session, descriptor, diagnostics);
+  } finally {
+    await subject.dispose();
+  }
+}
+async function invokeSubjectOperation(command, context, session, handlerId, input, diagnostics) {
+  const answer = await session.operations().invoke(handlerId, input, context.signal === void 0 ? {} : { signal: context.signal });
+  const carried = [...diagnostics, ...answer.diagnostics.map(commandDiagnostic)];
+  if (answer.state !== "ok") {
+    return {
+      state: "failed",
+      result: failed(command, `x3.command/operation-${answer.reason}`, `the subject refused ${handlerId}: ${answer.reason}`, carried)
+    };
+  }
+  return {
+    state: "ok",
+    output: answer.output,
+    diagnostics: carried
+  };
+}
+var openCommand = {
+  id: OPEN_COMMAND,
+  title: "Open",
+  summary: "Open a subject and report which contribution claimed it, and under which boundary.",
+  needsSubject: true,
+  mutatesSource: false,
+  async run(context, input) {
+    return withCommandSubject(OPEN_COMMAND, context, String(input.subject), async (subject, _session, descriptor, diagnostics) => {
+      const snapshot3 = subject.snapshot;
+      if (snapshot3.state !== "opened")
+        return failed(OPEN_COMMAND, COMMAND_SUBJECT_UNRESOLVED, "unreachable", diagnostics);
+      return ok(OPEN_COMMAND, {
+        ref: subject.ref,
+        state: "opened",
+        selected: {
+          contributionId: snapshot3.selected.contributionId,
+          variantId: snapshot3.selected.variantId,
+          confidence: snapshot3.selected.confidence
+        },
+        formatId: descriptor.identity?.formatId ?? null,
+        formatLabel: descriptor.identity?.formatLabel ?? null,
+        candidates: snapshot3.candidates.length,
+        operations: (descriptor.operations ?? []).map((item) => item.id)
+      }, diagnostics);
+    });
+  }
+};
+var inspectCommand = {
+  id: INSPECT_COMMAND,
+  title: "Inspect",
+  summary: "Report the full descriptor of a subject: identity, traits, operations, data sources.",
+  needsSubject: true,
+  mutatesSource: false,
+  async run(context, input) {
+    return withCommandSubject(INSPECT_COMMAND, context, String(input.subject), async (subject, _session, descriptor, diagnostics) => {
+      context.progress?.({ step: "describe", message: "reading the descriptor" });
+      return ok(INSPECT_COMMAND, {
+        ref: subject.ref,
+        identity: {
+          formatId: descriptor.identity?.formatId ?? null,
+          formatLabel: descriptor.identity?.formatLabel ?? null
+        },
+        traits: (descriptor.traits ?? []).map((item) => ({ id: item.id, state: item.state })),
+        operations: (descriptor.operations ?? []).map((item) => ({
+          id: item.id,
+          state: item.state,
+          ...item.reason === void 0 ? {} : { reason: item.reason }
+        })),
+        dataSources: (descriptor.dataSources ?? []).map((item) => `${item.contract}@${item.major}`),
+        metadataGroups: (descriptor.metadata ?? []).map((group2) => ({
+          id: group2.id,
+          entries: group2.entries.length
+        }))
+      }, diagnostics);
+    });
+  }
+};
+var validateCommand = {
+  id: VALIDATE_COMMAND,
+  title: "Validate",
+  summary: "Run the subject\u2019s own validation, when the codec publishes one.",
+  needsSubject: true,
+  mutatesSource: false,
+  operationId: VALIDATE,
+  async run(context, input) {
+    return withCommandSubject(VALIDATE_COMMAND, context, String(input.subject), async (subject, session, descriptor, diagnostics) => {
+      const operation = availableOperation(descriptor, VALIDATE);
+      if (operation === void 0) {
+        return unavailable(VALIDATE_COMMAND, `this subject publishes no available \xAB${VALIDATE}\xBB \u2014 ${publishedOperations(descriptor)}`, "run subject.inspect: it reports every trait and diagnostic the codec did produce, which is what validation would have been reading", diagnostics);
+      }
+      context.progress?.({ step: "validate", message: "running the codec\u2019s validation" });
+      const answer = await invokeSubjectOperation(VALIDATE_COMMAND, context, session, operation.handlerId, {}, diagnostics);
+      if (answer.state === "failed")
+        return answer.result;
+      return ok(VALIDATE_COMMAND, {
+        ref: subject.ref,
+        outputKind: answer.output.kind,
+        report: answer.output.value ?? null
+      }, diagnostics);
+    });
+  }
+};
+async function entryFor(session, wanted, signal) {
+  const lease2 = await session.dataSource(NAMESPACE_ENTRY_SOURCE3, 1);
+  try {
+    const namespace = lease2.value;
+    if (namespace.lookup !== void 0) {
+      const entry2 = await namespace.lookup(wanted, signal);
+      if (entry2 !== void 0)
+        return entry2;
+    }
+    const scope = namespace.lookup === void 0 ? "" : wanted;
+    let cursor5;
+    do {
+      const page2 = await namespace.list(scope, cursor5 === void 0 ? { limit: 512 } : { cursor: cursor5, limit: 512 }, signal);
+      const found = page2.items.find((item) => item.path === wanted || item.id === wanted);
+      if (found !== void 0)
+        return found;
+      cursor5 = page2.nextCursor;
+    } while (cursor5 !== void 0);
+    return void 0;
+  } finally {
+    await lease2.release();
+  }
+}
+var extractCommand = {
+  id: EXTRACT_COMMAND,
+  title: "Extract",
+  summary: "Read one member out of a container, through the container\u2019s own bounded extraction.",
+  needsSubject: true,
+  mutatesSource: false,
+  operationId: CONTAINER_EXTRACT_OPERATION_ID2,
+  async run(context, input) {
+    const entry2 = typeof input["entry"] === "string" ? input["entry"] : "";
+    if (entry2 === "") {
+      return failed(EXTRACT_COMMAND, "x3.command/input-invalid", "subject.extract needs an \xABentry\xBB");
+    }
+    return withCommandSubject(EXTRACT_COMMAND, context, String(input.subject), async (subject, session, descriptor, diagnostics) => {
+      const operation = availableOperation(descriptor, CONTAINER_EXTRACT_OPERATION_ID2);
+      const listing = (descriptor.dataSources ?? []).some((item) => item.contract === NAMESPACE_ENTRY_SOURCE3);
+      if (operation === void 0 || !listing) {
+        return unavailable(EXTRACT_COMMAND, `this subject is not a container this host can read into \u2014 ${publishedOperations(descriptor)}`, `run subject.inspect to see what it does publish; extraction needs both \xAB${CONTAINER_EXTRACT_OPERATION_ID2}\xBB and \xAB${NAMESPACE_ENTRY_SOURCE3}\xBB`, diagnostics);
+      }
+      context.progress?.({ step: "locate", message: `locating ${entry2}` });
+      const found = await entryFor(session, entry2, context.signal);
+      if (found === void 0) {
+        return failed(EXTRACT_COMMAND, "x3.command/entry-not-found", `this container lists no \xAB${entry2}\xBB`, diagnostics);
+      }
+      const name = entry2.slice(entry2.lastIndexOf("/") + 1);
+      const streamed = await streamEntry(session, descriptor, found, name, context);
+      if (streamed !== void 0) {
+        return ok(EXTRACT_COMMAND, { ref: subject.ref, entry: entry2, ...streamed }, diagnostics);
+      }
+      context.progress?.({ step: "extract", message: `extracting ${entry2}` });
+      const answer = await invokeSubjectOperation(EXTRACT_COMMAND, context, session, operation.handlerId, { entryId: found.id }, diagnostics);
+      if (answer.state === "failed")
+        return answer.result;
+      if (answer.output.kind !== "bytes") {
+        return failed(EXTRACT_COMMAND, "x3.command/unexpected-output", `the container answered ${answer.output.kind}, not bytes`, diagnostics);
+      }
+      const bytes = answer.output.value;
+      const wroteTo = context.writeOutput === void 0 ? void 0 : await context.writeOutput(name, bytes, context.signal);
+      return ok(EXTRACT_COMMAND, {
+        ref: subject.ref,
+        entry: entry2,
+        byteLength: bytes.byteLength,
+        ...wroteTo === void 0 ? { wroteTo: null } : { wroteTo }
+      }, diagnostics);
+    });
+  }
+};
+var BYTE_RANGE_SOURCE2 = "common.view/byte-range-source";
+var STREAM_CHUNK_BYTES = 4n * 1024n * 1024n;
+async function streamEntry(session, descriptor, entry2, name, context) {
+  const sink = context.writeOutputStream;
+  if (sink === void 0)
+    return void 0;
+  const stored = entry2.storedRange !== void 0 && (descriptor.dataSources ?? []).some((item) => item.contract === BYTE_RANGE_SOURCE2 && item.major === 1);
+  if (!stored && entry2.rangeAccess !== true)
+    return void 0;
+  const signal = context.signal;
+  const leases = [];
+  try {
+    let source2;
+    let start = 0n;
+    let length;
+    if (stored && entry2.storedRange !== void 0) {
+      const lease2 = await session.dataSource(BYTE_RANGE_SOURCE2, 1);
+      leases.push(lease2);
+      source2 = lease2.value;
+      start = entry2.storedRange.offset;
+      length = entry2.storedRange.length;
+    } else {
+      const lease2 = await session.dataSource(NAMESPACE_ENTRY_SOURCE3, 1);
+      leases.push(lease2);
+      const namespace = lease2.value;
+      if (namespace.openEntrySource === void 0)
+        return void 0;
+      const entryLease = await namespace.openEntrySource(entry2.id, signal);
+      leases.push(entryLease);
+      source2 = entryLease.value;
+      length = await source2.size();
+    }
+    context.progress?.({ step: "extract", message: `streaming ${entry2.path}` });
+    async function* chunks() {
+      for (let at = 0n; at < length; ) {
+        const want = Number(length - at < STREAM_CHUNK_BYTES ? length - at : STREAM_CHUNK_BYTES);
+        const bytes = await source2.read(start + at, want, signal);
+        if (bytes.byteLength !== want) {
+          throw new RangeError(`the container gave ${bytes.byteLength} of ${want} bytes at ${at} of ${entry2.path}`);
+        }
+        yield bytes;
+        at += BigInt(want);
+      }
+    }
+    const wroteTo = await sink(name, chunks(), signal);
+    return { byteLength: Number(length), wroteTo };
+  } finally {
+    for (const lease2 of leases.reverse())
+      await lease2.release();
+  }
+}
+var convertCommand = {
+  id: CONVERT_COMMAND,
+  title: "Convert",
+  summary: "Export a subject through the codec\u2019s own conversion, when it publishes one.",
+  needsSubject: true,
+  mutatesSource: false,
+  operationId: CONVERT,
+  async run(context, input) {
+    return withCommandSubject(CONVERT_COMMAND, context, String(input.subject), async (subject, session, descriptor, diagnostics) => {
+      if (input["operation"] !== void 0 && typeof input["operation"] !== "string")
+        return failed(CONVERT_COMMAND, COMMAND_INPUT_INVALID, "operation must be an operation id", diagnostics);
+      const operation = selectedOperation(descriptor, SUBJECT_COMMAND_TARGETS.convert.operationIds, input["operation"]);
+      if (operation === void 0) {
+        return unavailable(CONVERT_COMMAND, `the requested export is unavailable \u2014 ${publishedOperations(descriptor)}`, "run subject.inspect to see which data sources it does publish; a universal projection is the route for formats with no native export", diagnostics);
+      }
+      context.progress?.({ step: "convert", message: "running the codec\u2019s export" });
+      const request = input["operationInput"] === void 0 ? typeof input["target"] === "string" ? operation.id === "model.export-native" ? { schemaVersion: 1, formatId: input["target"] } : { target: input["target"] } : {} : input["operationInput"];
+      const answer = await invokeSubjectOperation(CONVERT_COMMAND, context, session, operation.handlerId, request, diagnostics);
+      if (answer.state === "failed")
+        return answer.result;
+      const bytes = answer.output.kind === "bytes" ? answer.output.value : void 0;
+      const wroteTo = bytes === void 0 || context.writeOutput === void 0 ? void 0 : await context.writeOutput(`${input["target"] ?? "export"}`, bytes, context.signal);
+      return ok(CONVERT_COMMAND, {
+        ref: subject.ref,
+        via: operation.id,
+        outputKind: answer.output.kind,
+        ...bytes === void 0 ? {} : { byteLength: bytes.byteLength },
+        ...wroteTo === void 0 ? { wroteTo: null } : { wroteTo }
+      }, answer.diagnostics);
+    });
+  }
+};
+var previewCommand = {
+  id: PREVIEW_COMMAND,
+  title: "Preview",
+  summary: "Produce the subject\u2019s own preview \u2014 a thumbnail if it has one, a render otherwise.",
+  needsSubject: true,
+  mutatesSource: false,
+  operationId: THUMBNAIL,
+  async run(context, input) {
+    return withCommandSubject(PREVIEW_COMMAND, context, String(input.subject), async (subject, session, descriptor, diagnostics) => {
+      if (input["operation"] !== void 0 && typeof input["operation"] !== "string")
+        return failed(PREVIEW_COMMAND, COMMAND_INPUT_INVALID, "operation must be an operation id", diagnostics);
+      const operation = selectedOperation(descriptor, SUBJECT_COMMAND_TARGETS.preview.operationIds, input["operation"]);
+      if (operation === void 0) {
+        return unavailable(PREVIEW_COMMAND, `the requested preview is unavailable \u2014 ${publishedOperations(descriptor)}`, `mount a viewer over one of its data sources instead: ${(descriptor.dataSources ?? []).map((item) => item.contract).join(", ") || "it publishes none"}`, diagnostics);
+      }
+      context.progress?.({ step: "preview", message: "rendering the preview" });
+      const answer = await invokeSubjectOperation(PREVIEW_COMMAND, context, session, operation.handlerId, input["operationInput"] === void 0 ? {} : input["operationInput"], diagnostics);
+      if (answer.state === "failed")
+        return answer.result;
+      const bytes = answer.output.kind === "bytes" ? answer.output.value : void 0;
+      const wroteTo = bytes === void 0 || context.writeOutput === void 0 ? void 0 : await context.writeOutput("preview.png", bytes, context.signal);
+      return ok(PREVIEW_COMMAND, {
+        ref: subject.ref,
+        via: operation.id,
+        outputKind: answer.output.kind,
+        ...bytes === void 0 ? {} : { byteLength: bytes.byteLength },
+        ...wroteTo === void 0 ? {} : { wroteTo }
+      }, answer.diagnostics);
+    });
+  }
+};
+var SUBJECT_COMMANDS = Object.freeze([
+  openCommand,
+  inspectCommand,
+  validateCommand,
+  extractCommand,
+  convertCommand,
+  previewCommand
+]);
+
+// packages/host/dist/commands/service-operation-commands.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var SERVICE_OPERATIONS_COMMAND = "service.operations";
+var SERVICE_OPERATION_INVOKE_COMMAND = "service.invoke";
+var json = (value2) => value2;
+var integer = (value2, fallback) => {
+  const selected = value2 ?? fallback;
+  return Number.isSafeInteger(selected) && Number(selected) >= 0 ? Number(selected) : void 0;
+};
+var catalogCommand = Object.freeze({
+  id: SERVICE_OPERATIONS_COMMAND,
+  title: "Extension operations",
+  summary: "List bounded subject-independent extension operations and their activation state.",
+  needsSubject: false,
+  mutatesSource: false,
+  async run(context, input) {
+    if (context.serviceOperations === void 0) {
+      return unavailable(SERVICE_OPERATIONS_COMMAND, "this host does not expose the extension operation catalog", "use a host configured with service-operation authority");
+    }
+    const offset = integer(input["offset"], 0);
+    const limit = integer(input["limit"], 50);
+    const activate = input["activate"] ?? true;
+    if (offset === void 0 || limit === void 0 || limit < 1 || limit > 100 || typeof activate !== "boolean") {
+      return failed(SERVICE_OPERATIONS_COMMAND, COMMAND_INPUT_INVALID, "offset must be non-negative, limit must be 1..100, and activate must be boolean");
+    }
+    const result = await context.serviceOperations.catalog({
+      offset,
+      limit,
+      activate,
+      ...context.signal === void 0 ? {} : { signal: context.signal }
+    });
+    return ok(SERVICE_OPERATIONS_COMMAND, json(result), result.entries.flatMap((entry2) => entry2.diagnostics).map(commandDiagnostic));
+  }
+});
+var invokeCommand = Object.freeze({
+  id: SERVICE_OPERATION_INVOKE_COMMAND,
+  title: "Invoke extension operation",
+  summary: "Invoke one exact subject-independent extension operation through the common host route.",
+  needsSubject: false,
+  mutatesSource: true,
+  async run(context, input) {
+    if (context.serviceOperations === void 0) {
+      return unavailable(SERVICE_OPERATION_INVOKE_COMMAND, "this host does not expose extension operation invocation", `inspect ${SERVICE_OPERATIONS_COMMAND} in an operation-capable host`);
+    }
+    const operationId2 = input["operationId"];
+    const operationInput = input["operationInput"];
+    if (typeof operationId2 !== "string" || operationId2.trim().length === 0 || operationInput === void 0) {
+      return failed(SERVICE_OPERATION_INVOKE_COMMAND, COMMAND_INPUT_INVALID, "operationId and operationInput are required");
+    }
+    const result = await context.serviceOperations.invoke({
+      operationId: operationId2,
+      input: operationInput,
+      ...context.signal === void 0 ? {} : { signal: context.signal }
+    });
+    const diagnostics = result.diagnostics.map(commandDiagnostic);
+    if (result.state === "invoked") {
+      return ok(SERVICE_OPERATION_INVOKE_COMMAND, json(result), diagnostics);
+    }
+    if (result.state === "failed") {
+      return failed(SERVICE_OPERATION_INVOKE_COMMAND, result.diagnostics.at(-1)?.code ?? "x3.command/service-operation-failed", result.diagnostics.at(-1)?.message ?? `${operationId2} failed`, diagnostics);
+    }
+    return unavailable(SERVICE_OPERATION_INVOKE_COMMAND, result.diagnostics.at(-1)?.message ?? `${operationId2} is unavailable`, `inspect ${SERVICE_OPERATIONS_COMMAND} with activation enabled`, diagnostics, result.diagnostics.at(-1)?.code);
+  }
+});
+var SERVICE_OPERATION_COMMANDS = Object.freeze([
+  catalogCommand,
+  invokeCommand
+]);
+var SERVICE_OPERATION_COMMAND_TARGETS = Object.freeze([
+  Object.freeze({
+    commandId: SERVICE_OPERATIONS_COMMAND,
+    operationIds: Object.freeze([]),
+    dataSourceContracts: Object.freeze([]),
+    hostCallers: Object.freeze(["cli", "mcp", "electron", "pwa", "server", "vscode"])
+  }),
+  Object.freeze({
+    commandId: SERVICE_OPERATION_INVOKE_COMMAND,
+    operationIds: Object.freeze(["common.runtime/operation-provider@1"]),
+    dataSourceContracts: Object.freeze([]),
+    hostCallers: Object.freeze(["cli", "mcp", "electron", "pwa", "server", "vscode"])
+  })
+]);
+
+// packages/host/dist/commands/edit-commands.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var SUBJECT_EDIT_COMMAND = "subject.edit";
+var SUBJECT_EDIT_OPERATION_IDS = Object.freeze([
+  "edit.field",
+  "edit.content",
+  "edit.structure"
+]);
+function summarizeEditPlan(plan) {
+  const encoder10 = new TextEncoder();
+  return {
+    planId: plan.planId,
+    fidelity: plan.fidelity,
+    edits: plan.edits.map((edit) => {
+      const payload = "payload" in edit ? edit.payload : void 0;
+      const replacementBytes = payload === void 0 ? null : payload.kind === "inline" ? payload.bytes.byteLength : payload.kind === "text" ? encoder10.encode(payload.text).byteLength : String(payload.ref.bytes);
+      return {
+        operation: edit.operation,
+        targetId: edit.targetId,
+        label: edit.label ?? null,
+        ..."range" in edit && edit.range !== void 0 ? { offset: String(edit.range.offset), length: String(edit.range.length) } : {},
+        ..."newPath" in edit ? { newPath: edit.newPath } : {},
+        replacementBytes
+      };
+    }),
+    diagnostics: plan.diagnostics.map(commandDiagnostic)
+  };
+}
+var jsonSafe = (value2) => JSON.parse(JSON.stringify(value2, (_key, item) => typeof item === "bigint" ? String(item) : item));
+var editCommand = Object.freeze({
+  id: SUBJECT_EDIT_COMMAND,
+  title: "Edit",
+  summary: "Preview, or with commit=true apply, one standard edit operation (set field, add/remove entry, rename) of a subject.",
+  needsSubject: true,
+  mutatesSource: true,
+  async run(context, input) {
+    const operationId2 = input["operation"];
+    const operationInput = input["operationInput"];
+    const commit = input["commit"] ?? false;
+    if (typeof operationId2 !== "string" || !SUBJECT_EDIT_OPERATION_IDS.includes(operationId2) || operationInput === void 0 || typeof commit !== "boolean") {
+      return failed(SUBJECT_EDIT_COMMAND, COMMAND_INPUT_INVALID, `operation must be one of ${SUBJECT_EDIT_OPERATION_IDS.join(", ")}, operationInput is required and commit must be boolean`);
+    }
+    return withCommandSubject(SUBJECT_EDIT_COMMAND, context, String(input.subject), async (subject, session, descriptor, diagnostics) => {
+      const operation = (descriptor.operations ?? []).find((item) => item.id === operationId2);
+      if (operation?.state !== "available" || operation.mutatesSource !== true) {
+        return unavailable(SUBJECT_EDIT_COMMAND, operation === void 0 ? `the subject publishes no ${operationId2}` : `${operationId2} is not an available mutating operation here${operation.reason === void 0 ? "" : `: ${operation.reason}`}`, "run subject.inspect to see which edit operations this subject publishes", diagnostics);
+      }
+      context.progress?.({ step: "plan", message: `planning ${operationId2}` });
+      const answer = await invokeSubjectOperation(SUBJECT_EDIT_COMMAND, context, session, operation.handlerId, operationInput, diagnostics);
+      if (answer.state === "failed")
+        return answer.result;
+      if (answer.output.kind !== "edit-plan") {
+        return failed(SUBJECT_EDIT_COMMAND, "x3.command/not-an-edit-plan", `${operationId2} answered with ${answer.output.kind}, not an edit plan`, answer.diagnostics);
+      }
+      const output = answer.output;
+      if (!commit) {
+        return ok(SUBJECT_EDIT_COMMAND, {
+          ref: subject.ref,
+          operation: operationId2,
+          committed: false,
+          plan: summarizeEditPlan(output.plan)
+        }, answer.diagnostics);
+      }
+      const editing = subject.editing;
+      if (editing === void 0) {
+        return unavailable(SUBJECT_EDIT_COMMAND, "this host opened the subject without an editing surface (it is outside the writable roots, or the host is read-only)", "run with commit=false to preview, or open the subject in a host configured with writable roots", answer.diagnostics);
+      }
+      const signal = context.signal;
+      const plan = await editing.stagePlan(editing.planFromOperation(answer.output), signal);
+      let committed = false;
+      try {
+        context.progress?.({
+          step: "prepare",
+          message: "validating revisions, permissions and fidelity"
+        });
+        const prepared = await editing.coordinator.prepare(plan, {
+          grant: editing.grantSnapshot,
+          ...signal === void 0 ? {} : { signal }
+        });
+        if (prepared.state === "conflict") {
+          return failed(SUBJECT_EDIT_COMMAND, "x3.command/edit-stale-revision", `the source changed after the plan was made: ${prepared.conflicts.map((item) => item.targetId).join(", ")}`, answer.diagnostics);
+        }
+        if (prepared.state !== "ready") {
+          return failed(SUBJECT_EDIT_COMMAND, `x3.command/edit-${prepared.reason}`, `the host refused the edit plan: ${prepared.reason}`, [...answer.diagnostics, ...prepared.diagnostics.map(commandDiagnostic)]);
+        }
+        context.progress?.({ step: "commit", message: "committing" });
+        const result = await editing.coordinator.commit(prepared.prepared, {
+          grant: editing.grantSnapshot,
+          ...signal === void 0 ? {} : { signal }
+        });
+        if (result.state === "not-applied") {
+          return failed(SUBJECT_EDIT_COMMAND, `x3.command/edit-${result.reason}`, `the edit was not applied: ${result.reason}`, [...answer.diagnostics, ...result.diagnostics.map(commandDiagnostic)]);
+        }
+        committed = true;
+        return ok(SUBJECT_EDIT_COMMAND, {
+          ref: subject.ref,
+          operation: operationId2,
+          committed: result.state === "committed",
+          state: result.state,
+          plan: summarizeEditPlan(plan),
+          receipt: jsonSafe(result.receipt)
+        }, answer.diagnostics);
+      } finally {
+        if (!committed)
+          await editing.releasePlan(plan);
+      }
+    });
+  }
+});
+var SUBJECT_EDIT_COMMANDS = Object.freeze([editCommand]);
+var SUBJECT_EDIT_COMMAND_TARGETS = Object.freeze([
+  Object.freeze({
+    commandId: SUBJECT_EDIT_COMMAND,
+    operationIds: Object.freeze([...SUBJECT_EDIT_OPERATION_IDS]),
+    dataSourceContracts: Object.freeze([]),
+    hostCallers: Object.freeze(["cli", "mcp", "electron", "pwa", "server", "vscode"])
+  })
+]);
+
+// packages/host/dist/commands/endpoint.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
+// packages/host/dist/commands/subject-opener.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+function commandSubjectsFrom(open) {
+  return async (ref2, signal) => {
+    const answer = await open(ref2, signal);
+    let disposed = false;
+    return {
+      ref: ref2,
+      snapshot: answer.snapshot,
+      ...answer.session === void 0 ? {} : { session: answer.session },
+      async dispose() {
+        if (disposed)
+          return;
+        disposed = true;
+        await answer.session?.dispose();
+      }
+    };
+  };
+}
+
+// packages/host/dist/commands/endpoint.js
+var DEFAULT_COMMAND_MAX_CONCURRENT_RUNS = 32;
+function createSubjectCommandEndpoint(options) {
+  const maximum = options.maxConcurrentRuns ?? DEFAULT_COMMAND_MAX_CONCURRENT_RUNS;
+  if (!Number.isSafeInteger(maximum) || maximum < 1) {
+    throw new TypeError("maxConcurrentRuns must be a positive safe integer");
+  }
+  const runtime2 = createCommandRuntime(SUBJECT_COMMANDS);
+  const opener = commandSubjectsFrom(options.openSubject);
+  const active = /* @__PURE__ */ new Set();
+  const tasks = /* @__PURE__ */ new Set();
+  const byRunId = /* @__PURE__ */ new Map();
+  let closed = false;
+  let disposing;
+  return Object.freeze({
+    catalog: describeCommandContracts(runtime2, Object.values(SUBJECT_COMMAND_TARGETS)),
+    async execute(request, runOptions = {}) {
+      if (closed)
+        throw new Error("the command endpoint is closed");
+      if (active.size >= maximum) {
+        throw new RangeError(`the command endpoint already has its ${maximum} permitted runs`);
+      }
+      const runId = runOptions.runId;
+      if (runId !== void 0) {
+        if (runId === "")
+          throw new TypeError("a command run id must not be empty");
+        if (byRunId.has(runId))
+          throw new TypeError(`command run \xAB${runId}\xBB is already active`);
+      }
+      const controller = new AbortController();
+      const abort = () => controller.abort();
+      if (runOptions.signal?.aborted === true)
+        controller.abort();
+      else
+        runOptions.signal?.addEventListener("abort", abort, { once: true });
+      active.add(controller);
+      if (runId !== void 0)
+        byRunId.set(runId, controller);
+      const task = executeCommandRequest(runtime2, request, {
+        openSubject: opener,
+        signal: controller.signal,
+        ...runOptions.progress === void 0 ? {} : { progress: runOptions.progress },
+        ...runOptions.writeOutput === void 0 ? {} : { writeOutput: runOptions.writeOutput }
+      });
+      tasks.add(task);
+      try {
+        return await task;
+      } finally {
+        tasks.delete(task);
+        active.delete(controller);
+        if (runId !== void 0)
+          byRunId.delete(runId);
+        runOptions.signal?.removeEventListener("abort", abort);
+      }
+    },
+    cancel(runId) {
+      const controller = byRunId.get(runId);
+      controller?.abort();
+      return controller !== void 0;
+    },
+    dispose() {
+      if (disposing !== void 0)
+        return disposing;
+      closed = true;
+      for (const controller of active)
+        controller.abort();
+      disposing = Promise.allSettled([...tasks]).then(() => void 0);
+      return disposing;
+    },
+    get activeRuns() {
+      return active.size;
+    },
+    get closed() {
+      return closed;
+    }
+  });
+}
+
+// packages/host/dist/detection-rules.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var DETECTION_EVIDENCE_LADDER = Object.freeze([
+  "name-only",
+  "generic-syntax",
+  "carrier-magic",
+  "generic-syntax-and-format-marker",
+  "carrier-magic-and-format-structure",
+  "format-magic",
+  "format-magic-and-second-signal"
+]);
+var DETECTION_UNTIE_RULES = Object.freeze([
+  Object.freeze({
+    id: "strictly-highest-confidence-wins",
+    rule: "Among candidates at or above the host confidence floor, the one with the strictly highest confidence is selected. There is no secondary ranking by extension id, contribution status, implementation tier or load order.",
+    enforcedBy: "packages/host/src/subject-open.ts"
+  }),
+  Object.freeze({
+    id: "an-exact-tie-is-ambiguous",
+    rule: "Two or more candidates sharing the top confidence resolve to `unresolved` with reason `ambiguous`. The host never breaks a tie by sort order: a stable sort would make the winner depend on which extension happened to load first, which is a coin toss wearing a rule.",
+    enforcedBy: "packages/host/src/subject-open.ts"
+  }),
+  Object.freeze({
+    id: "below-the-floor-is-no-match",
+    rule: "A candidate under the host confidence floor is not eligible at all, so a lone weak guess produces `no-match` rather than an open nobody can justify.",
+    enforcedBy: "packages/host/src/subject-open.ts"
+  }),
+  Object.freeze({
+    id: "a-carrier-ranks-below-its-passengers",
+    rule: "A codec that matched only a carrier magic (ZIP, RIFF) or only a general syntax (UTF-8 text, XML, JSON) must score below a codec that matched the same bytes *and* a structure specific to its own format. The generic route is the fallback for bytes nobody claimed, never the winner over a format that read more.",
+    enforcedBy: "the detecting codecs; the ordering is proved in packages/testkit/test/detection-collisions.test.ts"
+  }),
+  Object.freeze({
+    id: "a-second-signal-breaks-a-would-be-tie",
+    rule: "Where two routes read the same evidence, the one that also reads an independent second signal \u2014 typically the declared extension \u2014 ranks above it. This is how a relocated port beats the staging route it replaces without either of them inventing evidence.",
+    enforcedBy: "the detecting codecs; proved in packages/testkit/test/common-documents-rtf.test.ts"
+  }),
+  Object.freeze({
+    id: "an-extension-alone-never-decides",
+    rule: "The file name may add margin to a candidate that already read the bytes; it may never carry one over the confidence floor by itself. A renamed file is decided by its content, and a correctly named file whose content disagrees is refused.",
+    enforcedBy: "the detecting codecs; proved in packages/testkit/test/detection-collisions.test.ts"
+  }),
+  Object.freeze({
+    id: "a-foreign-format-scores-zero-not-low",
+    rule: "Bytes that positively declare a *different* format are a refusal, not a weak match: an ODP renamed to `.odt` scores zero rather than a hedged number, so it can never win by being the only candidate left.",
+    enforcedBy: "extensions/documents/src/odf/package.js and its peers"
+  }),
+  Object.freeze({
+    id: "a-declaration-scopes-a-generic",
+    rule: "A contribution is put in front of the probe only for bytes its own declaration matches by name or signature, and that \u2014 not confidence \u2014 is what keeps a generic away from another format\u2019s body. `text-ini` scores `Key=Value` lines happily but declares only `.ini`, so it never sees a publisher-specific text file; `text-csv` declares `.csv` and `.tsv`, so it never sees an unrelated atlas index. A generic that widens its declaration to every path gives this protection up and must then win every collision on confidence alone.",
+    enforcedBy: "matchesSpec in packages/host/src/subject-open.ts (an empty rule set is not a wildcard); proved in packages/testkit/test/detection-collisions.test.ts"
+  }),
+  Object.freeze({
+    id: "a-signature-shortlists-but-does-not-select",
+    rule: "A declared byte signature only puts a contribution in front of the probe \u2014 a renamed `.dat` PNG reaches the PNG probe. Selection is still decided by the probe result, so a signature can never open a subject on its own.",
+    enforcedBy: "packages/host/src/detection-index.ts"
+  })
+]);
+
+// packages/host/dist/vfs-source.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
+// packages/host/dist/container-pack.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
+// packages/host/dist/subject-editing.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
+// packages/host/dist/editing.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var GUARANTEE_STRENGTH = Object.freeze({
+  "best-effort": 0,
+  recoverable: 1,
+  transactional: 2,
+  atomic: 3
+});
+var issuedGrantSnapshots = /* @__PURE__ */ new WeakSet();
+function snapshot(value2, ancestors = /* @__PURE__ */ new WeakSet()) {
+  if (typeof value2 === "function" || typeof value2 === "symbol") {
+    throw new TypeError("editing inputs cannot contain executable or symbol values");
+  }
+  if (value2 instanceof Uint8Array)
+    return value2.slice();
+  if (Array.isArray(value2)) {
+    if (ancestors.has(value2))
+      throw new TypeError("editing inputs must be acyclic owned data");
+    ancestors.add(value2);
+    const copy = Object.freeze(value2.map((item) => snapshot(item, ancestors)));
+    ancestors.delete(value2);
+    return copy;
+  }
+  if (typeof value2 === "object" && value2 !== null) {
+    if (ancestors.has(value2))
+      throw new TypeError("editing inputs must be acyclic owned data");
+    const prototype = Object.getPrototypeOf(value2);
+    if (prototype !== Object.prototype && prototype !== null) {
+      throw new TypeError("editing inputs must contain only plain owned data");
+    }
+    ancestors.add(value2);
+    const copy = {};
+    for (const key3 of Reflect.ownKeys(value2)) {
+      copy[key3] = snapshot(value2[key3], ancestors);
+    }
+    ancestors.delete(value2);
+    return Object.freeze(copy);
+  }
+  return value2;
+}
+function snapshotGrant(grant) {
+  if (!issuedGrantSnapshots.has(grant))
+    throw new TypeError("grant snapshot is not host-issued");
+  return Object.freeze({
+    snapshotId: String(grant.snapshotId),
+    permissions: Object.freeze([...grant.permissions]),
+    sourceIds: Object.freeze([...grant.sourceIds]),
+    ...grant.namespaceRoots === void 0 ? {} : { namespaceRoots: Object.freeze([...grant.namespaceRoots]) }
+  });
+}
+function withinGrantedNamespace(uri, grant) {
+  if (grant.namespaceRoots === void 0)
+    return false;
+  try {
+    const url = new URL(uri);
+    const path = url.searchParams.get("vfs-path");
+    if (path === null || path.split("/").some((part) => part === "" || part === "." || part === ".."))
+      return false;
+    url.search = "";
+    url.hash = "";
+    return grant.namespaceRoots.some((root) => {
+      const granted = new URL(root);
+      granted.search = "";
+      granted.hash = "";
+      return granted.href === url.href;
+    });
+  } catch {
+    return false;
+  }
+}
+function grantIsValid(options, grant) {
+  try {
+    return options.isGrantValid(grant) === true;
+  } catch {
+    return false;
+  }
+}
+function createGrantSnapshot(value2) {
+  if (!isNonBlank2(value2.snapshotId) || !Array.isArray(value2.permissions) || !value2.permissions.every((permission) => PERMISSION_CLASSES.includes(permission)) || !Array.isArray(value2.sourceIds) || !value2.sourceIds.every(isNonBlank2) || value2.namespaceRoots !== void 0 && (!Array.isArray(value2.namespaceRoots) || !value2.namespaceRoots.every(isNonBlank2))) {
+    throw new TypeError("grant snapshot is malformed");
+  }
+  const snapshot3 = Object.freeze({
+    snapshotId: value2.snapshotId,
+    permissions: Object.freeze([...new Set(value2.permissions)].sort(compareUtf8)),
+    sourceIds: Object.freeze([...new Set(value2.sourceIds)].sort(compareUtf8)),
+    ...value2.namespaceRoots === void 0 || value2.namespaceRoots.length === 0 ? {} : { namespaceRoots: Object.freeze([...new Set(value2.namespaceRoots)].sort(compareUtf8)) }
+  });
+  issuedGrantSnapshots.add(snapshot3);
+  return snapshot3;
+}
+function revisionValue(revision) {
+  return {
+    bindings: Object.fromEntries(Object.entries(revision.bindings).sort(([left], [right]) => compareUtf8(left, right)).map(([key3, value2]) => [key3, String(value2)])),
+    ...revision.namespaceRevision === void 0 ? {} : { namespaceRevision: String(revision.namespaceRevision) },
+    compositionFingerprint: revision.compositionFingerprint
+  };
+}
+function sameRevision(left, right) {
+  return JSON.stringify(revisionValue(left)) === JSON.stringify(revisionValue(right));
+}
+function revisionFingerprint(targets, digest) {
+  return digest(targets.map((target) => ({
+    targetId: target.targetId,
+    revision: revisionValue(target.expectedRevision)
+  })).sort((left, right) => compareUtf8(left.targetId, right.targetId)));
+}
+function normalizedPath(value2) {
+  if (value2.trim() === "" || value2.includes("\\") || value2.startsWith("/"))
+    return void 0;
+  const parts = value2.split("/");
+  if (parts.some((part) => part === "" || part === "." || part === ".."))
+    return void 0;
+  return parts.join("/");
+}
+function modeOf(edit) {
+  if (edit.operation === "replace")
+    return "in-place";
+  return edit.operation;
+}
+function isRecord2(value2) {
+  return typeof value2 === "object" && value2 !== null && !Array.isArray(value2);
+}
+function hasExactKeys(value2, allowed2) {
+  const keys = Object.keys(value2);
+  return keys.length === new Set(keys).size && keys.every((key3) => allowed2.includes(key3));
+}
+function isNonBlank2(value2) {
+  return typeof value2 === "string" && value2.trim() !== "";
+}
+function isAssetSource(value2) {
+  return isRecord2(value2) && hasExactKeys(value2, ["id", "uri", "parentIds"]) && isNonBlank2(value2["id"]) && isNonBlank2(value2["uri"]) && (value2["parentIds"] === void 0 || Array.isArray(value2["parentIds"]) && value2["parentIds"].every(isNonBlank2));
+}
+function isRevision(value2) {
+  if (!isRecord2(value2) || !hasExactKeys(value2, ["bindings", "namespaceRevision", "compositionFingerprint"]) || !isRecord2(value2["bindings"]) || Object.keys(value2["bindings"]).length === 0 || !Object.values(value2["bindings"]).every(isNonBlank2) || !isNonBlank2(value2["compositionFingerprint"])) {
+    return false;
+  }
+  return value2["namespaceRevision"] === void 0 || isNonBlank2(value2["namespaceRevision"]);
+}
+function isRecoveryRef(value2) {
+  return isRecord2(value2) && hasExactKeys(value2, ["kind", "ref", "digest"]) && (value2["kind"] === "journal" || value2["kind"] === "staging") && isNonBlank2(value2["ref"]) && isNonBlank2(value2["digest"]);
+}
+function isFidelityEvidence(value2) {
+  if (!isRecord2(value2) || !hasExactKeys(value2, [
+    "roundTrip",
+    "preservesUnknownData",
+    "notes",
+    "evidenceId",
+    "corpusId",
+    "corpusDigest",
+    "conformanceProfile",
+    "writer",
+    "optionsFingerprint",
+    "inputClass",
+    "provenAt"
+  ]) || !["byte-identical", "semantic", "lossy", "none"].includes(value2["roundTrip"]) || typeof value2["preservesUnknownData"] !== "boolean" || value2["notes"] !== void 0 && (!Array.isArray(value2["notes"]) || !value2["notes"].every(isNonBlank2)) || ![
+    value2["evidenceId"],
+    value2["corpusId"],
+    value2["corpusDigest"],
+    value2["conformanceProfile"],
+    value2["optionsFingerprint"],
+    value2["inputClass"],
+    value2["provenAt"]
+  ].every(isNonBlank2) || !isRecord2(value2["writer"]) || !hasExactKeys(value2["writer"], [
+    "providerId",
+    "providerVersion",
+    "artifactDigest",
+    "formatId",
+    "representationId"
+  ]) || !Object.values(value2["writer"]).every(isNonBlank2)) {
+    return false;
+  }
+  if (value2["roundTrip"] === "byte-identical")
+    return value2["preservesUnknownData"] === true;
+  if (value2["roundTrip"] === "lossy" || value2["roundTrip"] === "none") {
+    return value2["preservesUnknownData"] === false;
+  }
+  return true;
+}
+function isEditPayload(value2) {
+  if (!isRecord2(value2) || !isNonBlank2(value2["kind"]))
+    return false;
+  if (value2["kind"] === "text") {
+    return hasExactKeys(value2, ["kind", "text"]) && typeof value2["text"] === "string";
+  }
+  if (value2["kind"] === "inline") {
+    return hasExactKeys(value2, ["kind", "bytes"]) && value2["bytes"] instanceof Uint8Array;
+  }
+  if (value2["kind"] !== "staged" || !hasExactKeys(value2, ["kind", "ref"]))
+    return false;
+  const ref2 = value2["ref"];
+  return isRecord2(ref2) && hasExactKeys(ref2, ["storeId", "handleId", "digest", "bytes", "replayable", "expiresAt"]) && isNonBlank2(ref2["storeId"]) && isNonBlank2(ref2["handleId"]) && isNonBlank2(ref2["digest"]) && typeof ref2["bytes"] === "bigint" && ref2["bytes"] >= 0n && ref2["replayable"] === true && (ref2["expiresAt"] === void 0 || isNonBlank2(ref2["expiresAt"]));
+}
+function isEditRange(value2) {
+  if (!isRecord2(value2) || !hasExactKeys(value2, ["kind", "offset", "length"]))
+    return false;
+  if (value2["kind"] === "bytes") {
+    return typeof value2["offset"] === "bigint" && value2["offset"] >= 0n && typeof value2["length"] === "bigint" && value2["length"] >= 0n;
+  }
+  return value2["kind"] === "utf16" && Number.isSafeInteger(value2["offset"]) && Number.isSafeInteger(value2["length"]) && value2["offset"] >= 0 && value2["length"] >= 0;
+}
+function isSourceEdit(value2) {
+  if (!isRecord2(value2) || !isNonBlank2(value2["operation"]))
+    return false;
+  const common2 = isNonBlank2(value2["targetId"]) && isAssetSource(value2["source"]) && (value2["label"] === void 0 || typeof value2["label"] === "string");
+  if (!common2)
+    return false;
+  if (value2["operation"] === "replace") {
+    return hasExactKeys(value2, ["operation", "targetId", "source", "range", "payload", "label"]) && (value2["range"] === void 0 || isEditRange(value2["range"])) && isEditPayload(value2["payload"]);
+  }
+  if (value2["operation"] === "create") {
+    return hasExactKeys(value2, ["operation", "targetId", "source", "newPath", "payload", "label"]) && isNonBlank2(value2["newPath"]) && isEditPayload(value2["payload"]);
+  }
+  if (value2["operation"] === "delete") {
+    return hasExactKeys(value2, ["operation", "targetId", "source", "label"]);
+  }
+  return value2["operation"] === "rename" && hasExactKeys(value2, ["operation", "targetId", "source", "newPath", "label"]) && isNonBlank2(value2["newPath"]);
+}
+function planDigestValue(plan) {
+  const payload = (edit) => {
+    if (!("payload" in edit))
+      return void 0;
+    if (edit.payload.kind === "inline") {
+      return { kind: "inline", bytes: [...edit.payload.bytes] };
+    }
+    if (edit.payload.kind === "staged") {
+      return {
+        kind: "staged",
+        ref: { ...edit.payload.ref, bytes: edit.payload.ref.bytes.toString(10) }
+      };
+    }
+    return edit.payload;
+  };
+  return {
+    planId: plan.planId,
+    targets: plan.targets.map((target) => ({
+      ...target,
+      expectedRevision: revisionValue(target.expectedRevision)
+    })),
+    edits: plan.edits.map((edit) => ({
+      ...edit,
+      ...edit.operation === "replace" && edit.range?.kind === "bytes" ? {
+        range: {
+          kind: "bytes",
+          offset: edit.range.offset.toString(10),
+          length: edit.range.length.toString(10)
+        }
+      } : {},
+      ...payload(edit) === void 0 ? {} : { payload: payload(edit) }
+    })),
+    semantics: plan.semantics,
+    fidelity: plan.fidelity,
+    diagnostics: plan.diagnostics
+  };
+}
+function fidelityMatches(plan, evidence2, expectedWriter, expectedContext) {
+  if (!isFidelityEvidence(evidence2) || evidence2.roundTrip !== plan.fidelity.roundTrip)
+    return false;
+  if (evidence2.preservesUnknownData !== plan.fidelity.preservesUnknownData)
+    return false;
+  if (expectedContext !== void 0 && (evidence2.optionsFingerprint !== expectedContext.optionsFingerprint || evidence2.inputClass !== expectedContext.inputClass)) {
+    return false;
+  }
+  if (expectedWriter === void 0)
+    return true;
+  return evidence2.writer.providerId === expectedWriter.providerId && evidence2.writer.providerVersion === expectedWriter.providerVersion && evidence2.writer.artifactDigest === expectedWriter.artifactDigest && evidence2.writer.formatId === expectedWriter.formatId && evidence2.writer.representationId === expectedWriter.representationId;
+}
+function strongestGuarantee(backends) {
+  const unique = new Set(backends);
+  const single = [...unique][0];
+  if (unique.size === 1 && single !== void 0 && single.profile.guarantees.includes("atomic") && single.applyBatch !== void 0) {
+    return "atomic";
+  }
+  if (backends.every((backend) => backend.profile.supportsPrepare && backend.profile.supportsRollback)) {
+    return "transactional";
+  }
+  if (backends.every((backend) => backend.profile.supportsJournal))
+    return "recoverable";
+  return "best-effort";
+}
+function derive(plan, targets, grant, options) {
+  const entries = [];
+  const backends = /* @__PURE__ */ new Map();
+  for (const edit of plan.edits) {
+    const target = targets.get(edit.targetId);
+    const backend = options.backendFor(edit.source.id);
+    if (target === void 0 || backend === void 0 || target.ownerSource.id !== edit.source.id) {
+      return { rejection: "plan-invalid" };
+    }
+    if (!backend.writable && plan.semantics.mutationMode === "mutate") {
+      return { rejection: "source-read-only" };
+    }
+    if (edit.operation === "rename" && !backend.profile.supportsRename) {
+      return { rejection: "plan-invalid" };
+    }
+    const path = edit.operation === "create" || edit.operation === "rename" ? normalizedPath(edit.newPath) : void 0;
+    if ((edit.operation === "create" || edit.operation === "rename") && path === void 0) {
+      return { rejection: "plan-invalid" };
+    }
+    entries.push(Object.freeze({
+      targetId: edit.targetId,
+      source: snapshot(edit.source),
+      backendId: backend.profile.backendId,
+      mode: modeOf(edit),
+      ...path === void 0 ? {} : { normalizedPath: path }
+    }));
+    backends.set(edit.targetId, backend);
+  }
+  entries.sort((left, right) => compareUtf8(left.targetId, right.targetId) || compareUtf8(left.source.id, right.source.id) || compareUtf8(left.mode, right.mode));
+  const requiredPermissions = plan.semantics.mutationMode === "mutate" ? ["write-source"] : [];
+  const missing = requiredPermissions.filter((permission) => !grant.permissions.includes(permission));
+  const scopeSatisfied = entries.every((entry2) => grant.sourceIds.includes(entry2.source.id) || withinGrantedNamespace(entry2.source.uri, grant));
+  const achievableGuarantee = strongestGuarantee([...backends.values()]);
+  const writeSet = Object.freeze({
+    entries: Object.freeze(entries),
+    digest: options.digest(entries.map((entry2) => ({
+      targetId: entry2.targetId,
+      sourceId: entry2.source.id,
+      backendId: entry2.backendId,
+      mode: entry2.mode,
+      ...entry2.normalizedPath === void 0 ? {} : { normalizedPath: entry2.normalizedPath }
+    })))
+  });
+  return {
+    writeSet,
+    backends,
+    authorization: Object.freeze({
+      requiredPermissions: Object.freeze(requiredPermissions),
+      granted: missing.length === 0 && scopeSatisfied,
+      achievableGuarantee,
+      missing: Object.freeze(missing),
+      scopeSatisfied
+    })
+  };
+}
+async function conflictsFor(targets, backends, backendFor, signal) {
+  const conflicts = [];
+  for (const [targetId, target] of targets) {
+    const backend = backends.get(targetId) ?? backendFor(target.ownerSource.id);
+    if (backend === void 0)
+      throw new TypeError("revision guard has no backend");
+    const actual = snapshot(await backend.currentRevision(target, signal));
+    if (!sameRevision(target.expectedRevision, actual)) {
+      conflicts.push(Object.freeze({
+        targetId,
+        expected: snapshot(target.expectedRevision),
+        actual: snapshot(actual)
+      }));
+    }
+  }
+  return Object.freeze(conflicts.sort((left, right) => compareUtf8(left.targetId, right.targetId)));
+}
+async function payloadsAvailable(plan, options, signal) {
+  const maximum = options.maxInlinePayloadBytes ?? 1024 * 1024;
+  for (const edit of plan.edits) {
+    if (!("payload" in edit))
+      continue;
+    if (edit.payload.kind === "inline" && edit.payload.bytes.byteLength > maximum)
+      return false;
+    if (edit.payload.kind === "text" && new TextEncoder().encode(edit.payload.text).byteLength > maximum)
+      return false;
+    if (edit.payload.kind !== "staged")
+      continue;
+    if (!edit.payload.ref.replayable || edit.payload.ref.bytes < 0n)
+      return false;
+    if (edit.payload.ref.expiresAt !== void 0 && Date.parse(edit.payload.ref.expiresAt) <= Date.parse(options.now?.() ?? (/* @__PURE__ */ new Date()).toISOString())) {
+      return false;
+    }
+    if (options.verifyStagedPayload === void 0)
+      return false;
+    try {
+      if (await options.verifyStagedPayload(edit.payload.ref, signal) !== true)
+        return false;
+    } catch {
+      return false;
+    }
+  }
+  return true;
+}
+function stagedPayloadRefs(plan) {
+  const refs = [];
+  for (const edit of plan.edits) {
+    if ("payload" in edit && edit.payload.kind === "staged")
+      refs.push(edit.payload.ref);
+  }
+  return refs;
+}
+function stagedPayloadKey(ref2) {
+  return `${ref2.storeId}:${ref2.handleId}`;
+}
+function invalidPlan(plan) {
+  if (!isRecord2(plan) || !hasExactKeys(plan, ["planId", "targets", "edits", "semantics", "fidelity", "diagnostics"]) || !isNonBlank2(plan.planId) || !Array.isArray(plan.targets) || plan.targets.length === 0 || !Array.isArray(plan.edits) || plan.edits.length === 0 || !Array.isArray(plan.diagnostics) || !isRecord2(plan.semantics) || !hasExactKeys(plan.semantics, ["mutationMode", "minimumGuarantee"]) || !["export-only", "mutate"].includes(plan.semantics.mutationMode) || !["atomic", "transactional", "recoverable", "best-effort"].includes(plan.semantics.minimumGuarantee) || !isRecord2(plan.fidelity) || !hasExactKeys(plan.fidelity, ["roundTrip", "preservesUnknownData", "notes"]) || !["byte-identical", "semantic", "lossy", "none"].includes(plan.fidelity.roundTrip) || typeof plan.fidelity.preservesUnknownData !== "boolean" || plan.fidelity.notes !== void 0 && (!Array.isArray(plan.fidelity.notes) || !plan.fidelity.notes.every(isNonBlank2)) || plan.fidelity.roundTrip === "byte-identical" && plan.fidelity.preservesUnknownData !== true || (plan.fidelity.roundTrip === "lossy" || plan.fidelity.roundTrip === "none") && plan.fidelity.preservesUnknownData !== false) {
+    return true;
+  }
+  const ids = /* @__PURE__ */ new Set();
+  for (const target of plan.targets) {
+    if (!isRecord2(target) || !hasExactKeys(target, [
+      "targetId",
+      "subjectUri",
+      "ownerSource",
+      "semanticPath",
+      "expectedRevision"
+    ]) || !isNonBlank2(target["targetId"]) || ids.has(target["targetId"]) || !isNonBlank2(target["subjectUri"]) || !isAssetSource(target["ownerSource"]) || !Array.isArray(target["semanticPath"]) || !target["semanticPath"].every(isNonBlank2) || !isRevision(target["expectedRevision"])) {
+      return true;
+    }
+    ids.add(target["targetId"]);
+  }
+  for (const edit of plan.edits) {
+    if (!isSourceEdit(edit) || !ids.has(edit.targetId))
+      return true;
+    if ((edit.operation === "create" || edit.operation === "delete" || edit.operation === "rename") && plan.targets.find((target) => target.targetId === edit.targetId)?.expectedRevision.namespaceRevision === void 0) {
+      return true;
+    }
+  }
+  return false;
+}
+function createCommitCoordinator(options) {
+  options = Object.freeze({
+    ...options,
+    payloads: Object.freeze({ open: options.payloads.open.bind(options.payloads) }),
+    ...options.expectedWriter === void 0 ? {} : { expectedWriter: snapshot(options.expectedWriter) },
+    ...options.expectedEvidenceContext === void 0 ? {} : { expectedEvidenceContext: snapshot(options.expectedEvidenceContext) }
+  });
+  const nextId = (kind) => options.nextId?.(kind) ?? `${kind}-${globalThis.crypto.randomUUID()}`;
+  const preparedInputs = /* @__PURE__ */ new WeakMap();
+  const history = /* @__PURE__ */ new Map();
+  const prepare = async (authoredPlan, prepareOptions) => {
+    if (prepareOptions.signal?.aborted) {
+      return { state: "rejected", reason: "cancelled", diagnostics: [] };
+    }
+    let grant;
+    let plan;
+    try {
+      grant = snapshotGrant(prepareOptions.grant);
+      plan = snapshot(authoredPlan);
+    } catch {
+      return { state: "rejected", reason: "plan-invalid", diagnostics: [] };
+    }
+    if (!grantIsValid(options, grant) || invalidPlan(plan)) {
+      return { state: "rejected", reason: "plan-invalid", diagnostics: [] };
+    }
+    const targetMap = new Map(plan.targets.map((target) => [target.targetId, target]));
+    let derived;
+    try {
+      derived = derive(plan, targetMap, grant, options);
+    } catch {
+      return { state: "rejected", reason: "plan-invalid", diagnostics: [] };
+    }
+    if ("rejection" in derived) {
+      return { state: "rejected", reason: derived.rejection, diagnostics: [] };
+    }
+    if (!derived.authorization.scopeSatisfied) {
+      return { state: "rejected", reason: "write-scope-mismatch", diagnostics: [] };
+    }
+    if (derived.authorization.missing.length > 0) {
+      return { state: "rejected", reason: "permission-missing", diagnostics: [] };
+    }
+    if (GUARANTEE_STRENGTH[derived.authorization.achievableGuarantee] < GUARANTEE_STRENGTH[plan.semantics.minimumGuarantee]) {
+      return { state: "rejected", reason: "guarantee-unachievable", diagnostics: [] };
+    }
+    const canPartiallyApply = plan.edits.length > 1 && derived.authorization.achievableGuarantee !== "atomic";
+    if (canPartiallyApply && options.createRecovery === void 0) {
+      return { state: "rejected", reason: "guarantee-unachievable", diagnostics: [] };
+    }
+    let fidelity;
+    try {
+      fidelity = options.evidenceFor(plan);
+    } catch {
+      fidelity = void 0;
+    }
+    let proven = false;
+    try {
+      proven = fidelityMatches(plan, fidelity, options.expectedWriter, options.expectedEvidenceContext);
+    } catch {
+      proven = false;
+    }
+    if (!proven) {
+      const pinned = options.expectedWriter !== void 0 && fidelity !== void 0 && fidelity.writer.providerId !== options.expectedWriter.providerId;
+      return {
+        state: "rejected",
+        reason: "fidelity-unproven",
+        diagnostics: [
+          {
+            severity: "error",
+            code: pinned ? "x3.host/fidelity-writer-pinned" : "x3.host/fidelity-evidence-missing",
+            message: pinned ? `this host pinned writes to \xAB${options.expectedWriter?.providerId}\xBB, and this plan came from \xAB${fidelity?.writer.providerId}\xBB` : `no fidelity evidence covers ${plan.fidelity.roundTrip}/preservesUnknownData=${String(plan.fidelity.preservesUnknownData)} for this plan`,
+            path: []
+          }
+        ]
+      };
+    }
+    if ((plan.fidelity.roundTrip === "lossy" || plan.fidelity.roundTrip === "none") && (prepareOptions.confirmationToken === void 0 || !(options.confirmationMatches?.(prepareOptions.confirmationToken, plan) ?? false))) {
+      return { state: "rejected", reason: "confirmation-required", diagnostics: [] };
+    }
+    if (!await payloadsAvailable(plan, options, prepareOptions.signal)) {
+      return { state: "rejected", reason: "payload-unavailable", diagnostics: [] };
+    }
+    let conflicts;
+    try {
+      conflicts = await conflictsFor(targetMap, derived.backends, options.backendFor, prepareOptions.signal);
+    } catch {
+      return { state: "rejected", reason: "plan-invalid", diagnostics: [] };
+    }
+    if (conflicts.length > 0)
+      return { state: "conflict", conflicts };
+    let prepared;
+    try {
+      const planDigest = options.digest(planDigestValue(plan));
+      prepared = Object.freeze({
+        preparedId: nextId("prepared"),
+        plan: snapshot(plan),
+        planDigest,
+        writeSet: derived.writeSet,
+        authorization: derived.authorization,
+        preparedRevisionFingerprint: revisionFingerprint(plan.targets, options.digest),
+        fidelity: snapshot(fidelity)
+      });
+    } catch {
+      return { state: "rejected", reason: "plan-invalid", diagnostics: [] };
+    }
+    const internal = Object.freeze({
+      plan,
+      targets: targetMap,
+      backends: derived.backends,
+      prepared,
+      ...prepareOptions.confirmationToken === void 0 ? {} : { confirmationToken: prepareOptions.confirmationToken }
+    });
+    preparedInputs.set(prepared, internal);
+    return { state: "ready", prepared };
+  };
+  const commit = async (publicPrepared, commitOptions) => {
+    const internal = preparedInputs.get(publicPrepared);
+    if (internal === void 0) {
+      return { state: "not-applied", reason: "plan-invalid", diagnostics: [] };
+    }
+    if (commitOptions.signal?.aborted) {
+      return { state: "not-applied", reason: "cancelled", diagnostics: [] };
+    }
+    let grant;
+    try {
+      grant = snapshotGrant(commitOptions.grant);
+    } catch {
+      return { state: "not-applied", reason: "permission-missing", diagnostics: [] };
+    }
+    if (!grantIsValid(options, grant)) {
+      return { state: "not-applied", reason: "permission-missing", diagnostics: [] };
+    }
+    let fresh;
+    try {
+      fresh = derive(internal.plan, internal.targets, grant, options);
+    } catch {
+      return { state: "not-applied", reason: "plan-invalid", diagnostics: [] };
+    }
+    if ("rejection" in fresh) {
+      return { state: "not-applied", reason: fresh.rejection, diagnostics: [] };
+    }
+    if (!fresh.authorization.scopeSatisfied) {
+      return { state: "not-applied", reason: "write-scope-mismatch", diagnostics: [] };
+    }
+    if (fresh.authorization.missing.length > 0) {
+      return { state: "not-applied", reason: "permission-missing", diagnostics: [] };
+    }
+    if (fresh.writeSet.digest !== internal.prepared.writeSet.digest || GUARANTEE_STRENGTH[fresh.authorization.achievableGuarantee] < GUARANTEE_STRENGTH[internal.plan.semantics.minimumGuarantee]) {
+      return { state: "not-applied", reason: "guarantee-unachievable", diagnostics: [] };
+    }
+    if (!await payloadsAvailable(internal.plan, options, commitOptions.signal)) {
+      return { state: "not-applied", reason: "payload-unavailable", diagnostics: [] };
+    }
+    let conflicts;
+    try {
+      conflicts = await conflictsFor(internal.targets, fresh.backends, options.backendFor, commitOptions.signal);
+    } catch {
+      return { state: "not-applied", reason: "plan-invalid", diagnostics: [] };
+    }
+    if (conflicts.length > 0) {
+      return {
+        state: "not-applied",
+        reason: "stale-revision",
+        conflicts,
+        diagnostics: []
+      };
+    }
+    const transactionId = nextId("transaction");
+    const before = internal.plan.targets.map((target) => snapshot(target.expectedRevision));
+    const writes = [];
+    const latestRevisions = new Map(internal.plan.targets.map((target) => [target.targetId, target.expectedRevision]));
+    const finalRevisions = () => internal.plan.targets.map((target) => snapshot(latestRevisions.get(target.targetId) ?? target.expectedRevision));
+    const applied = [];
+    if (fresh.authorization.achievableGuarantee === "atomic") {
+      const backend = [...new Set(fresh.backends.values())][0];
+      if (backend?.applyBatch === void 0) {
+        return { state: "not-applied", reason: "guarantee-unachievable", diagnostics: [] };
+      }
+      preparedInputs.delete(publicPrepared);
+      try {
+        const results = await backend.applyBatch(internal.plan.edits.map((edit) => ({
+          edit,
+          expectedRevision: latestRevisions.get(edit.targetId) ?? internal.targets.get(edit.targetId).expectedRevision
+        })), {
+          transactionId,
+          payloads: options.payloads,
+          ...commitOptions.signal === void 0 ? {} : { signal: commitOptions.signal }
+        });
+        if (results.length !== internal.plan.edits.length || results.some((result, index2) => result.targetId !== internal.plan.edits[index2]?.targetId)) {
+          throw new TypeError("atomic backend returned a malformed write result");
+        }
+        results.forEach((result, index2) => {
+          const edit = internal.plan.edits[index2];
+          const stepBefore = latestRevisions.get(edit.targetId);
+          latestRevisions.set(edit.targetId, snapshot(result.after));
+          applied.push({ edit, backend, before: stepBefore });
+          writes.push(Object.freeze({
+            targetId: edit.targetId,
+            source: snapshot(edit.source),
+            state: "applied",
+            diagnosticIds: Object.freeze([...result.diagnosticIds ?? []])
+          }));
+          commitOptions.onProgress?.(index2 + 1);
+        });
+      } catch (error5) {
+        return {
+          state: "not-applied",
+          reason: commitOptions.signal?.aborted ? "cancelled" : "plan-invalid",
+          diagnostics: [
+            diagnostic("error", "x3.host/edit-write-failed", error5 instanceof Error ? error5.message : String(error5))
+          ]
+        };
+      }
+      const receipt2 = Object.freeze({
+        transactionId,
+        committedAt: options.now?.() ?? (/* @__PURE__ */ new Date()).toISOString(),
+        mutationMode: internal.plan.semantics.mutationMode,
+        commitGuarantee: "atomic",
+        status: "committed",
+        undo: backend.profile.supportsRollback && backend.rollback !== void 0 ? "snapshot" : "none",
+        before: Object.freeze(before),
+        after: Object.freeze(finalRevisions()),
+        writes: Object.freeze(writes),
+        fidelity: internal.prepared.fidelity
+      });
+      history.set(transactionId, {
+        plan: internal.plan,
+        prepared: internal,
+        receipt: receipt2,
+        steps: Object.freeze([...applied])
+      });
+      return {
+        state: "committed",
+        receipt: receipt2
+      };
+    }
+    const needsRecovery = internal.plan.edits.length > 1;
+    let recovery;
+    try {
+      recovery = needsRecovery ? await options.createRecovery?.(internal.prepared.preparedId, internal.prepared.planDigest) : void 0;
+    } catch {
+      return { state: "not-applied", reason: "guarantee-unachievable", diagnostics: [] };
+    }
+    if (needsRecovery && !isRecoveryRef(recovery)) {
+      return { state: "not-applied", reason: "guarantee-unachievable", diagnostics: [] };
+    }
+    if (recovery !== void 0)
+      recovery = snapshot(recovery);
+    preparedInputs.delete(publicPrepared);
+    for (let index2 = 0; index2 < internal.plan.edits.length; index2 += 1) {
+      const edit = internal.plan.edits[index2];
+      const backend = fresh.backends.get(edit.targetId);
+      const target = internal.targets.get(edit.targetId);
+      const expectedRevision = latestRevisions.get(edit.targetId) ?? target.expectedRevision;
+      try {
+        const result = await backend.apply(edit, {
+          transactionId,
+          payloads: options.payloads,
+          expectedRevision,
+          ...commitOptions.signal === void 0 ? {} : { signal: commitOptions.signal }
+        });
+        latestRevisions.set(edit.targetId, snapshot(result.after));
+        applied.push({ edit, backend, before: expectedRevision });
+        writes.push(Object.freeze({
+          targetId: edit.targetId,
+          source: snapshot(edit.source),
+          state: "applied",
+          diagnosticIds: Object.freeze([...result.diagnosticIds ?? []])
+        }));
+        commitOptions.onProgress?.(index2 + 1);
+      } catch (error5) {
+        writes.push(Object.freeze({
+          targetId: edit.targetId,
+          source: snapshot(edit.source),
+          state: "failed",
+          diagnosticIds: Object.freeze(["x3.host/edit-write-failed"])
+        }));
+        const diagnostics = [
+          diagnostic("error", "x3.host/edit-write-failed", error5 instanceof Error ? error5.message : String(error5))
+        ];
+        if (applied.length === 0) {
+          return {
+            state: "not-applied",
+            reason: commitOptions.signal?.aborted ? "cancelled" : "plan-invalid",
+            diagnostics
+          };
+        }
+        if (applied.every((item) => item.backend.profile.supportsRollback && item.backend.rollback !== void 0)) {
+          const rolledBackTargets = /* @__PURE__ */ new Set();
+          try {
+            for (const item of [...applied].reverse()) {
+              latestRevisions.set(item.edit.targetId, await item.backend.rollback(transactionId, item.edit, item.before, commitOptions.signal));
+              rolledBackTargets.add(item.edit.targetId);
+            }
+          } catch (rollbackError) {
+            if (recovery === void 0) {
+              return {
+                state: "not-applied",
+                reason: "guarantee-unachievable",
+                diagnostics: [
+                  ...diagnostics,
+                  diagnostic("error", "x3.host/edit-rollback-failed", rollbackError instanceof Error ? rollbackError.message : String(rollbackError))
+                ]
+              };
+            }
+            return {
+              state: "partially-applied",
+              receipt: Object.freeze({
+                transactionId,
+                committedAt: options.now?.() ?? (/* @__PURE__ */ new Date()).toISOString(),
+                mutationMode: internal.plan.semantics.mutationMode,
+                commitGuarantee: fresh.authorization.achievableGuarantee,
+                status: "partially-applied",
+                undo: "none",
+                before: Object.freeze(before),
+                after: Object.freeze(finalRevisions()),
+                writes: Object.freeze(writes.map((write) => write.state === "applied" && rolledBackTargets.has(write.targetId) ? Object.freeze({ ...write, state: "rolled-back" }) : write)),
+                recovery,
+                fidelity: internal.prepared.fidelity
+              })
+            };
+          }
+          const rolledWrites = writes.map((write) => write.state === "applied" ? Object.freeze({ ...write, state: "rolled-back" }) : write);
+          return {
+            state: "rolled-back",
+            receipt: Object.freeze({
+              transactionId,
+              committedAt: options.now?.() ?? (/* @__PURE__ */ new Date()).toISOString(),
+              mutationMode: internal.plan.semantics.mutationMode,
+              commitGuarantee: fresh.authorization.achievableGuarantee,
+              status: "rolled-back",
+              undo: "none",
+              before: Object.freeze(before),
+              after: Object.freeze(finalRevisions()),
+              writes: Object.freeze(rolledWrites),
+              fidelity: internal.prepared.fidelity
+            })
+          };
+        }
+        if (recovery === void 0) {
+          throw new TypeError("partial commit requires a durable recovery reference");
+        }
+        return {
+          state: "partially-applied",
+          receipt: Object.freeze({
+            transactionId,
+            committedAt: options.now?.() ?? (/* @__PURE__ */ new Date()).toISOString(),
+            mutationMode: internal.plan.semantics.mutationMode,
+            commitGuarantee: fresh.authorization.achievableGuarantee,
+            status: "partially-applied",
+            undo: "none",
+            before: Object.freeze(before),
+            after: Object.freeze(finalRevisions()),
+            writes: Object.freeze(writes),
+            recovery,
+            fidelity: internal.prepared.fidelity
+          })
+        };
+      }
+    }
+    const receipt = Object.freeze({
+      transactionId,
+      committedAt: options.now?.() ?? (/* @__PURE__ */ new Date()).toISOString(),
+      mutationMode: internal.plan.semantics.mutationMode,
+      commitGuarantee: fresh.authorization.achievableGuarantee,
+      status: "committed",
+      undo: applied.every((item) => item.backend.profile.supportsRollback && item.backend.rollback !== void 0) ? "snapshot" : "none",
+      before: Object.freeze(before),
+      after: Object.freeze(finalRevisions()),
+      writes: Object.freeze(writes),
+      ...recovery === void 0 ? {} : { recovery },
+      fidelity: internal.prepared.fidelity
+    });
+    history.set(transactionId, {
+      plan: internal.plan,
+      prepared: internal,
+      receipt,
+      steps: Object.freeze([...applied])
+    });
+    return {
+      state: "committed",
+      receipt
+    };
+  };
+  const undo = async (transactionId, undoOptions) => {
+    const item = history.get(transactionId);
+    if (item === void 0 || item.undoneRevisions !== void 0 || item.replayed === true) {
+      return { state: "not-applied", reason: "plan-invalid", diagnostics: [] };
+    }
+    let grant;
+    try {
+      grant = snapshotGrant(undoOptions.grant);
+    } catch {
+      return { state: "not-applied", reason: "permission-missing", diagnostics: [] };
+    }
+    if (!grantIsValid(options, grant)) {
+      return { state: "not-applied", reason: "permission-missing", diagnostics: [] };
+    }
+    let fresh;
+    try {
+      fresh = derive(item.plan, item.prepared.targets, grant, options);
+    } catch {
+      return { state: "not-applied", reason: "plan-invalid", diagnostics: [] };
+    }
+    if ("rejection" in fresh || fresh.authorization.missing.length > 0) {
+      return { state: "not-applied", reason: "permission-missing", diagnostics: [] };
+    }
+    if (!fresh.authorization.scopeSatisfied) {
+      return { state: "not-applied", reason: "write-scope-mismatch", diagnostics: [] };
+    }
+    const currentTargets = new Map(item.plan.targets.map((target, index2) => [
+      target.targetId,
+      Object.freeze({ ...target, expectedRevision: item.receipt.after[index2] })
+    ]));
+    let conflicts;
+    try {
+      conflicts = await conflictsFor(currentTargets, fresh.backends, options.backendFor, undoOptions.signal);
+    } catch {
+      return { state: "not-applied", reason: "plan-invalid", diagnostics: [] };
+    }
+    if (conflicts.length > 0) {
+      return { state: "not-applied", reason: "stale-revision", conflicts, diagnostics: [] };
+    }
+    const latestRevisions = new Map(item.plan.targets.map((target, index2) => [
+      target.targetId,
+      item.receipt.after[index2]
+    ]));
+    for (const step of [...item.steps].reverse()) {
+      const backend = fresh.backends.get(step.edit.targetId);
+      if (backend?.rollback === void 0) {
+        return { state: "not-applied", reason: "guarantee-unachievable", diagnostics: [] };
+      }
+      latestRevisions.set(step.edit.targetId, await backend.rollback(transactionId, step.edit, step.before, undoOptions.signal));
+    }
+    const after = item.plan.targets.map((target) => snapshot(latestRevisions.get(target.targetId) ?? target.expectedRevision));
+    const receipt = Object.freeze({
+      transactionId: nextId("transaction"),
+      committedAt: options.now?.() ?? (/* @__PURE__ */ new Date()).toISOString(),
+      mutationMode: item.plan.semantics.mutationMode,
+      commitGuarantee: item.receipt.commitGuarantee,
+      status: "committed",
+      undo: "none",
+      before: item.receipt.after,
+      after: Object.freeze(after),
+      writes: Object.freeze(item.receipt.writes.map((write) => Object.freeze({ ...write, state: "rolled-back" }))),
+      fidelity: item.receipt.fidelity
+    });
+    history.set(transactionId, { ...item, undoneRevisions: Object.freeze(after) });
+    return {
+      state: "committed",
+      receipt
+    };
+  };
+  const redo = async (transactionId, redoOptions) => {
+    const item = history.get(transactionId);
+    if (item === void 0 || item.undoneRevisions === void 0 || item.replayed === true) {
+      return { state: "not-applied", reason: "plan-invalid", diagnostics: [] };
+    }
+    const targets = item.plan.targets.map((target, index2) => {
+      const expectedRevision = item.undoneRevisions?.[index2];
+      if (expectedRevision === void 0)
+        throw new TypeError("undo revision is absent");
+      return Object.freeze({ ...target, expectedRevision });
+    });
+    const prepared = await prepare({ ...item.plan, targets }, {
+      grant: redoOptions.grant,
+      confirmationToken: item.prepared.confirmationToken ?? "explicit-redo",
+      ...redoOptions.signal === void 0 ? {} : { signal: redoOptions.signal }
+    });
+    if (prepared.state === "conflict") {
+      return {
+        state: "not-applied",
+        reason: "stale-revision",
+        conflicts: prepared.conflicts,
+        diagnostics: []
+      };
+    }
+    if (prepared.state === "rejected") {
+      return { state: "not-applied", reason: prepared.reason, diagnostics: prepared.diagnostics };
+    }
+    const result = await commit(prepared.prepared, redoOptions);
+    if (result.state === "committed")
+      history.set(transactionId, { ...item, replayed: true });
+    return result;
+  };
+  const discardHistory = async (transactionId) => {
+    const item = history.get(transactionId);
+    if (item === void 0)
+      return false;
+    history.delete(transactionId);
+    if (options.releaseStagedPayload !== void 0) {
+      const retained = new Set([...history.values()].flatMap((entry2) => stagedPayloadRefs(entry2.plan).map(stagedPayloadKey)));
+      const releasable = stagedPayloadRefs(item.plan).filter((ref2) => !retained.has(stagedPayloadKey(ref2)));
+      await Promise.allSettled(releasable.map((ref2) => options.releaseStagedPayload?.(ref2)));
+    }
+    return true;
+  };
+  const notify = async (result, operation) => {
+    if (result.state === "not-applied" || options.onTransactionApplied === void 0)
+      return;
+    try {
+      await options.onTransactionApplied(result.receipt, operation);
+    } catch {
+    }
+  };
+  const publicCommit = async (prepared, commitOptions) => {
+    const result = await commit(prepared, commitOptions);
+    await notify(result, "commit");
+    return result;
+  };
+  const publicUndo = async (transactionId, undoOptions) => {
+    const result = await undo(transactionId, undoOptions);
+    await notify(result, "undo");
+    return result;
+  };
+  const publicRedo = async (transactionId, redoOptions) => {
+    const result = await redo(transactionId, redoOptions);
+    await notify(result, "redo");
+    return result;
+  };
+  return Object.freeze({
+    prepare,
+    commit: publicCommit,
+    undo: publicUndo,
+    redo: publicRedo,
+    discardHistory
+  });
+}
+function createEditSession(options) {
+  let state = "live";
+  const targets = snapshot(options.targets);
+  const revision = snapshot(options.revision);
+  const validate = options.writer.validate.bind(options.writer);
+  const plan = options.writer.plan.bind(options.writer);
+  const ensureLive = () => {
+    if (state !== "live")
+      throw new TypeError(`edit session is ${state}`);
+  };
+  return Object.freeze({
+    revision,
+    targets,
+    state: () => state,
+    async propose(change) {
+      ensureLive();
+      const result = snapshot(await validate(snapshot(change)));
+      if (!isRecord2(result) || !hasExactKeys(result, ["valid", "diagnostics"]) || typeof result["valid"] !== "boolean" || !Array.isArray(result["diagnostics"])) {
+        return {
+          valid: false,
+          diagnostics: [
+            diagnostic("error", "x3.host/edit-validation-result-invalid", "writer returned a malformed validation result")
+          ]
+        };
+      }
+      return result;
+    },
+    async plan(change, signal) {
+      ensureLive();
+      const authored = snapshot(await plan(snapshot(change), signal));
+      return snapshot(options.transformPlan === void 0 ? authored : await options.transformPlan(authored, signal));
+    },
+    markStale() {
+      if (state !== "disposed")
+        state = "stale-revision";
+    },
+    markCommitting(committing) {
+      if (state === "disposed")
+        return;
+      state = committing ? "committing" : "live";
+    },
+    async dispose() {
+      state = "disposed";
+    }
+  });
+}
+
+// packages/host/dist/subject-editing.js
+function unsupported(kind) {
+  return new ModkitError({
+    code: "x3.host/edit-topology-unsupported",
+    message: `editing a \xAB${kind}\xBB subject is not supported yet (physical and namespace subjects only)`,
+    context: { kind }
+  });
+}
+function assetRevisionFromDescriptor(descriptor) {
+  const origin = descriptor.origin;
+  if (origin.kind === "bundle") {
+    return Object.freeze({
+      bindings: Object.freeze(Object.fromEntries(origin.bindings.map((binding2) => [binding2.id, binding2.revision]))),
+      compositionFingerprint: canonicalJsonStringify({
+        topology: "bundle",
+        ...origin.primary === void 0 ? {} : { primary: origin.primary },
+        bindings: origin.bindings.map((binding2) => ({
+          bindingId: binding2.id,
+          source: binding2.source,
+          revision: binding2.revision,
+          ownership: binding2.ownership,
+          role: binding2.role
+        }))
+      })
+    });
+  }
+  if (origin.kind === "namespace") {
+    return Object.freeze({
+      bindings: Object.freeze({ [origin.root.id]: origin.revision }),
+      namespaceRevision: origin.revision,
+      compositionFingerprint: canonicalJsonStringify({
+        topology: "namespace",
+        root: { id: origin.root.id, uri: origin.root.uri },
+        revision: origin.revision
+      })
+    });
+  }
+  if (origin.kind !== "single")
+    throw unsupported(origin.kind);
+  const binding = origin.binding;
+  return Object.freeze({
+    bindings: Object.freeze({ [binding.id]: binding.revision }),
+    compositionFingerprint: canonicalJsonStringify({
+      topology: "single",
+      bindingId: binding.id,
+      source: { id: binding.source.id, uri: binding.source.uri },
+      revision: binding.revision
+    })
+  });
+}
+function subjectEditTargetsFromDescriptor(descriptor) {
+  const origin = descriptor.origin;
+  const revision = assetRevisionFromDescriptor(descriptor);
+  if (origin.kind === "bundle") {
+    const ids = /* @__PURE__ */ new Set(), sourceIds = /* @__PURE__ */ new Set(), uris = /* @__PURE__ */ new Set();
+    if (origin.bindings.length === 0)
+      throw unsupported("empty bundle");
+    return Object.freeze(origin.bindings.map((binding) => {
+      if (ids.has(binding.id) || sourceIds.has(binding.source.id) || uris.has(binding.source.uri))
+        throw unsupported("aliased bundle bindings");
+      ids.add(binding.id);
+      sourceIds.add(binding.source.id);
+      uris.add(binding.source.uri);
+      return Object.freeze({
+        targetId: binding.id,
+        subjectUri: descriptor.subjectUri,
+        ownerSource: Object.freeze({ ...binding.source }),
+        semanticPath: Object.freeze([]),
+        expectedRevision: Object.freeze({
+          bindings: Object.freeze({ [binding.id]: binding.revision }),
+          compositionFingerprint: canonicalJsonStringify({
+            topology: "single",
+            bindingId: binding.id,
+            source: { id: binding.source.id, uri: binding.source.uri },
+            revision: binding.revision
+          })
+        })
+      });
+    }));
+  }
+  if (origin.kind === "namespace") {
+    return Object.freeze([
+      Object.freeze({
+        targetId: origin.root.id,
+        subjectUri: descriptor.subjectUri,
+        ownerSource: Object.freeze({ ...origin.root }),
+        semanticPath: Object.freeze([]),
+        expectedRevision: revision
+      })
+    ]);
+  }
+  if (origin.kind !== "single")
+    throw unsupported(origin.kind);
+  return Object.freeze([
+    Object.freeze({
+      targetId: origin.binding.id,
+      subjectUri: descriptor.subjectUri,
+      ownerSource: Object.freeze({ ...origin.binding.source }),
+      semanticPath: Object.freeze([]),
+      expectedRevision: revision
+    })
+  ]);
+}
+function namespaceEntryTargetOf(descriptor, target) {
+  const origin = descriptor.origin;
+  if (origin.kind !== "namespace")
+    return void 0;
+  let path;
+  try {
+    const url = new URL(target.ownerSource.uri);
+    path = url.searchParams.get("vfs-path");
+  } catch {
+    return void 0;
+  }
+  if (path === null || path.split("/").some((segment) => segment === "" || segment === "." || segment === "..")) {
+    return void 0;
+  }
+  const bindingIds = Object.keys(target.expectedRevision.bindings);
+  const revision = target.expectedRevision.bindings[target.ownerSource.id];
+  if (bindingIds.length !== 1 || revision === void 0)
+    return void 0;
+  const rebuilt = namespaceEntryEditTarget({
+    root: origin.root,
+    namespaceRevision: origin.revision,
+    entry: { path, size: 0 }
+  });
+  return Object.freeze({
+    ...rebuilt,
+    expectedRevision: Object.freeze({
+      bindings: Object.freeze({ [rebuilt.ownerSource.id]: revision }),
+      namespaceRevision: origin.revision,
+      compositionFingerprint: canonicalJsonStringify({
+        topology: "single",
+        bindingId: rebuilt.ownerSource.id,
+        source: { id: rebuilt.ownerSource.id, uri: rebuilt.ownerSource.uri },
+        revision
+      })
+    })
+  });
+}
+function editPlanFromOperationForDescriptor(descriptor, output) {
+  if (output.kind !== "edit-plan") {
+    throw new ModkitError({
+      code: "x3.host/edit-plan-expected",
+      message: `operation returned \xAB${output.kind}\xBB, not an edit plan`
+    });
+  }
+  const expectedTargets = new Map(subjectEditTargetsFromDescriptor(descriptor).map((target) => [target.targetId, target]));
+  const plan = output.plan;
+  const declaredTargetIds = /* @__PURE__ */ new Set();
+  for (const target of plan.targets) {
+    if (!expectedTargets.has(target.targetId)) {
+      const entry2 = namespaceEntryTargetOf(descriptor, target);
+      if (entry2 !== void 0)
+        expectedTargets.set(target.targetId, entry2);
+    }
+    const expectedTarget = expectedTargets.get(target.targetId);
+    if (expectedTarget === void 0 || declaredTargetIds.has(target.targetId) || canonicalJsonStringify(target) !== canonicalJsonStringify(expectedTarget)) {
+      throw new ModkitError({
+        code: "x3.host/edit-plan-subject-mismatch",
+        message: `edit plan target \xAB${target.targetId}\xBB is not this subject at its open revision`,
+        context: { targetId: target.targetId }
+      });
+    }
+    declaredTargetIds.add(target.targetId);
+  }
+  for (const edit of plan.edits) {
+    const expectedTarget = expectedTargets.get(edit.targetId);
+    if (expectedTarget === void 0 || descriptor.origin.kind === "bundle" && descriptor.origin.bindings.find((binding) => binding.id === edit.targetId)?.ownership !== "owned" || !declaredTargetIds.has(edit.targetId) || canonicalJsonStringify(edit.source) !== canonicalJsonStringify(expectedTarget.ownerSource)) {
+      throw new ModkitError({
+        code: "x3.host/edit-plan-subject-mismatch",
+        message: `edit \xAB${edit.operation}\xBB on \xAB${edit.source.id}\xBB is not this subject`,
+        context: { targetId: edit.targetId, sourceId: edit.source.id }
+      });
+    }
+  }
+  if (descriptor.origin.kind === "bundle" && declaredTargetIds.size !== expectedTargets.size)
+    throw new ModkitError({
+      code: "x3.host/edit-plan-subject-mismatch",
+      message: "bundle edit plan must retain every opened binding revision"
+    });
+  return plan;
+}
+var NO_STAGED_PAYLOADS = Object.freeze({
+  async open(ref2) {
+    throw new ModkitError({
+      code: "x3.host/edit-payload-unavailable",
+      message: `no payload store can open staged payload \xAB${ref2.handleId}\xBB`
+    });
+  }
+});
+var DEFAULT_INLINE_PAYLOAD_BYTES = 16 * 1024 * 1024;
+function isStagingStore(store) {
+  const candidate = store;
+  return typeof candidate.stage === "function" && typeof candidate.verify === "function" && typeof candidate.release === "function";
+}
+async function stageOversizedPlan(plan, store, maximum, owned, signal) {
+  if (store === void 0)
+    return plan;
+  const created = [];
+  try {
+    const edits = await Promise.all(plan.edits.map(async (edit) => {
+      if (!("payload" in edit) || edit.payload.kind === "staged")
+        return edit;
+      const bytes = edit.payload.kind === "text" ? new TextEncoder().encode(edit.payload.text) : edit.payload.bytes;
+      if (bytes.byteLength <= maximum)
+        return edit;
+      const ref2 = await store.stage(bytes, {}, signal);
+      created.push(ref2);
+      return Object.freeze({ ...edit, payload: Object.freeze({ kind: "staged", ref: ref2 }) });
+    }));
+    for (const ref2 of created)
+      owned.set(`${ref2.storeId}:${ref2.handleId}`, ref2);
+    return created.length === 0 ? plan : Object.freeze({ ...plan, edits: Object.freeze(edits) });
+  } catch (error5) {
+    await Promise.allSettled(created.map((ref2) => store.release(ref2)));
+    throw error5;
+  }
+}
+var defaultDigest = (value2) => canonicalJsonStringify(JSON.parse(JSON.stringify(value2)));
+function createSubjectEditing(options) {
+  const descriptor = ("carrier" in options.opened ? options.opened.carrier?.descriptor : void 0) ?? options.opened.descriptor;
+  const revision = assetRevisionFromDescriptor(descriptor);
+  const targets = subjectEditTargetsFromDescriptor(descriptor);
+  const grantSnapshot = createGrantSnapshot({
+    snapshotId: options.snapshotId ?? `${options.grant.id}#edit`,
+    permissions: options.grant.classes,
+    sourceIds: targets.filter((target) => descriptor.origin.kind !== "bundle" || descriptor.origin.bindings.find((binding) => binding.id === target.targetId)?.ownership === "owned").map((target) => target.ownerSource.id),
+    // A folder subject's files are named per plan, so its root is granted as a namespace.
+    ...descriptor.origin.kind === "namespace" ? { namespaceRoots: [descriptor.origin.root.uri] } : {}
+  });
+  const issued = /* @__PURE__ */ new Set([grantSnapshot.snapshotId]);
+  const payloads = options.payloads ?? NO_STAGED_PAYLOADS;
+  const staging = isStagingStore(payloads) ? payloads : void 0;
+  const maximumInline = options.maxInlinePayloadBytes ?? DEFAULT_INLINE_PAYLOAD_BYTES;
+  const ownedStaged = /* @__PURE__ */ new Map();
+  const releaseOwnedStaged = async (ref2) => {
+    if (staging === void 0)
+      return;
+    const key3 = `${ref2.storeId}:${ref2.handleId}`;
+    if (!ownedStaged.delete(key3))
+      return;
+    await staging.release(ref2);
+  };
+  const stagePlan = (plan, signal) => stageOversizedPlan(plan, staging, maximumInline, ownedStaged, signal);
+  const coordinator = createCommitCoordinator({
+    payloads,
+    backendFor: options.backendFor,
+    evidenceFor: options.evidenceFor,
+    ...options.expectedWriter === void 0 ? {} : { expectedWriter: options.expectedWriter },
+    ...options.expectedEvidenceContext === void 0 ? {} : { expectedEvidenceContext: options.expectedEvidenceContext },
+    isGrantValid: options.isGrantValid ?? ((grant) => issued.has(grant.snapshotId)),
+    digest: options.digest ?? defaultDigest,
+    ...options.verifyStagedPayload === void 0 ? {} : { verifyStagedPayload: options.verifyStagedPayload },
+    ...staging === void 0 ? {} : { releaseStagedPayload: releaseOwnedStaged },
+    ...options.createRecovery === void 0 ? {} : { createRecovery: options.createRecovery },
+    ...options.confirmationMatches === void 0 ? {} : { confirmationMatches: options.confirmationMatches },
+    ...options.now === void 0 ? {} : { now: options.now },
+    ...options.nextId === void 0 ? {} : { nextId: options.nextId },
+    maxInlinePayloadBytes: maximumInline
+  });
+  const session = options.writer === void 0 ? void 0 : createEditSession({ revision, targets, writer: options.writer, transformPlan: stagePlan });
+  const authorization = Object.freeze({
+    async request() {
+      return { grant: grantSnapshot };
+    }
+  });
+  const editorPorts = session === void 0 ? void 0 : Object.freeze({
+    edit: session,
+    commit: coordinator,
+    payloads,
+    authorization
+  });
+  const editing = {
+    revision,
+    targets,
+    grantSnapshot,
+    coordinator,
+    ...session === void 0 ? {} : { session },
+    ...editorPorts === void 0 ? {} : { editorPorts },
+    planFromOperation(output) {
+      return editPlanFromOperationForDescriptor(descriptor, output);
+    },
+    stagePlan,
+    async releasePlan(plan) {
+      const refs = plan.edits.flatMap((edit) => "payload" in edit && edit.payload.kind === "staged" ? [edit.payload.ref] : []);
+      await Promise.allSettled(refs.map(releaseOwnedStaged));
+    },
+    async dispose() {
+      await session?.dispose();
+      const refs = [...ownedStaged.values()];
+      ownedStaged.clear();
+      if (staging !== void 0)
+        await Promise.allSettled(refs.map((ref2) => staging.release(ref2)));
+    }
+  };
+  return Object.freeze(editing);
+}
+
+// packages/host/dist/mod-context-layer-source.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var MAX_ENTRY_BYTES = 64 * 1024 * 1024;
+
+// packages/host/dist/mod-context-data-workspace.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var MAX_ENTRY_BYTES2 = 64 * 1024 * 1024;
+
+// packages/host/dist/subject-services.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
+// packages/host/dist/service-definitions.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var FACETLESS_SERVICE_MATCHER_PROFILE = contractId("modkit/facetless-matcher");
+var facetlessMatcher = Object.freeze({
+  profile: FACETLESS_SERVICE_MATCHER_PROFILE,
+  major: 1,
+  match(context) {
+    return context.offerFacet === void 0 && context.requestFacet === void 0 ? { state: "match", selectionKey: "facetless:v1" } : { state: "no-match" };
+  }
+});
+function createServiceFacetMatcherProfileRegistry(additional = []) {
+  const profiles = /* @__PURE__ */ new Map();
+  for (const profile3 of [facetlessMatcher, ...additional]) {
+    if (!Number.isSafeInteger(profile3.major) || profile3.major < 0) {
+      throw new TypeError("service facet matcher major must be a safe non-negative integer");
+    }
+    const profileKey = `${profile3.profile}@${profile3.major}`;
+    if (profiles.has(profileKey)) {
+      throw new TypeError(`duplicate service facet matcher ${profileKey}`);
+    }
+    profiles.set(profileKey, Object.freeze({ ...profile3 }));
+  }
+  const registry = {
+    lookup: (profile3, major) => profiles.get(`${profile3}@${major}`),
+    list: () => Object.freeze([...profiles.values()].sort((left, right) => compareUtf8(left.profile, right.profile) || left.major - right.major))
+  };
+  return Object.freeze(registry);
+}
+function ownedJson(value2) {
+  if (value2 === void 0)
+    return value2;
+  return JSON.parse(canonicalJsonStringify(value2));
+}
+function rejection(reason, code, message) {
+  return { state: "rejected", reason, diagnostics: [diagnostic("error", code, message)] };
+}
+function key2(contract, major) {
+  return `${contract}@${major}`;
+}
+function validDefinition(value2) {
+  return typeof value2 === "object" && value2 !== null && value2.schemaVersion === 1 && value2.kind === "service" && typeof value2.contract === "string" && isQualifiedId(value2.contract) && Number.isSafeInteger(value2.major) && value2.major >= 0 && typeof value2.conformanceProfile === "string" && value2.conformanceProfile.trim().length > 0 && typeof value2.matching === "object" && value2.matching !== null && typeof value2.matching.profile === "string" && isQualifiedId(value2.matching.profile) && Number.isSafeInteger(value2.matching.major) && value2.matching.major >= 0;
+}
+function normalize2(value2, provenance) {
+  const owned = ownedJson(value2);
+  return Object.freeze({
+    ...owned,
+    contract: contractId(owned.contract),
+    matching: Object.freeze({
+      ...owned.matching,
+      profile: contractId(owned.matching.profile)
+    }),
+    provenance: Object.freeze(ownedJson(provenance))
+  });
+}
+function presenceDiagnostics(definition2, context, label) {
+  if (definition2.presence === "forbidden" && context.facet !== void 0) {
+    return [
+      diagnostic("error", "x3.host/facet-forbidden", `${label} facet is forbidden for ${context.contract}@${context.major}`)
+    ];
+  }
+  if (definition2.presence === "required" && context.facet === void 0) {
+    return [
+      diagnostic("error", "x3.host/facet-required", `${label} facet is required for ${context.contract}@${context.major}`)
+    ];
+  }
+  return [];
+}
+function createServiceContractDefinitionRegistry(options) {
+  const matcherProfiles = options.matcherProfiles;
+  const isNamespaceOwner = options.isNamespaceOwner;
+  const validateJsonSchemaRef = options.validateJsonSchemaRef;
+  const validateMatcherConfiguration = options.validateMatcherConfiguration;
+  let registrations = /* @__PURE__ */ new Map();
+  const ownerEpochs = /* @__PURE__ */ new Map();
+  const validateFacet = async (side, context) => {
+    const registration = registrations.get(key2(context.contract, context.major));
+    if (registration === void 0) {
+      return [
+        diagnostic("error", "x3.host/service-contract-unregistered", `service contract ${context.contract}@${context.major} is not registered`)
+      ];
+    }
+    const definition2 = side === "offer" ? registration.offerFacet : registration.requestFacet;
+    const diagnostics = presenceDiagnostics(definition2, context, side);
+    if (context.facet !== void 0 && definition2.presence !== "forbidden" && !hasErrors(diagnostics)) {
+      try {
+        diagnostics.push(...await validateJsonSchemaRef(definition2.schema, ownedJson(context.facet), registration.provenance));
+      } catch (error5) {
+        diagnostics.push(diagnostic("error", "x3.host/facet-schema-validation-failed", "facet schema validation failed closed", [], { error: error5 instanceof Error ? error5.message : String(error5) }));
+      }
+    }
+    return Object.freeze(diagnostics);
+  };
+  return {
+    async replaceOwnerInventory(ownerExtensionId, definitions) {
+      const epoch = (ownerEpochs.get(ownerExtensionId) ?? 0) + 1;
+      ownerEpochs.set(ownerExtensionId, epoch);
+      const pending = [];
+      const seen = /* @__PURE__ */ new Set();
+      for (const entry2 of definitions) {
+        if (!validDefinition(entry2.definition)) {
+          return rejection("invalid-definition", "x3.host/invalid-service-contract-definition", "service contract definition is malformed");
+        }
+        if (await isNamespaceOwner(ownerExtensionId, entry2.definition.contract) !== true) {
+          return rejection("namespace-owner-mismatch", "x3.host/service-contract-owner-mismatch", `${ownerExtensionId} does not own ${entry2.definition.contract}`);
+        }
+        const definitionKey = key2(entry2.definition.contract, entry2.definition.major);
+        if (seen.has(definitionKey)) {
+          return rejection("duplicate", "x3.host/duplicate-service-contract-definition", `duplicate service contract definition ${definitionKey}`);
+        }
+        seen.add(definitionKey);
+        const profile3 = matcherProfiles.lookup(contractId(entry2.definition.matching.profile), entry2.definition.matching.major);
+        if (profile3 === void 0) {
+          return rejection("matcher-unavailable", "x3.host/facet-matcher-unavailable", `matcher ${entry2.definition.matching.profile}@${entry2.definition.matching.major} is unavailable`);
+        }
+        if (profile3.configurationSchema !== void 0 && validateMatcherConfiguration !== void 0) {
+          const diagnostics = await validateMatcherConfiguration(profile3.configurationSchema, entry2.definition.matching.configuration);
+          if (hasErrors(diagnostics)) {
+            return {
+              state: "rejected",
+              reason: "matcher-configuration-invalid",
+              diagnostics
+            };
+          }
+        }
+        pending.push(normalize2(entry2.definition, entry2.provenance));
+      }
+      if (ownerEpochs.get(ownerExtensionId) !== epoch) {
+        return rejection("version-conflict", "x3.host/stale-definition-replacement", "a newer owner inventory operation superseded this replacement");
+      }
+      const next = new Map([...registrations].filter(([, registration]) => registration.provenance.ownerExtensionId !== ownerExtensionId));
+      for (const registration of pending) {
+        const registrationKey = key2(registration.contract, registration.major);
+        if (next.has(registrationKey)) {
+          return rejection("duplicate", "x3.host/service-contract-conflict", `service contract ${registrationKey} is already owned by another extension`);
+        }
+        next.set(registrationKey, registration);
+      }
+      registrations = next;
+      return { state: "committed" };
+    },
+    unregisterOwner(ownerExtensionId) {
+      ownerEpochs.set(ownerExtensionId, (ownerEpochs.get(ownerExtensionId) ?? 0) + 1);
+      registrations = new Map([...registrations].filter(([, registration]) => registration.provenance.ownerExtensionId !== ownerExtensionId));
+    },
+    lookup: (contract, major) => registrations.get(key2(contract, major)),
+    list: () => Object.freeze([...registrations.values()].sort((left, right) => compareUtf8(left.contract, right.contract) || left.major - right.major)),
+    validateOfferFacet: (context) => validateFacet("offer", context),
+    validateRequestFacet: (context) => validateFacet("request", context),
+    async matchFacets(context) {
+      const registration = registrations.get(key2(context.contract, context.major));
+      if (registration === void 0) {
+        return {
+          state: "invalid",
+          diagnostics: [
+            diagnostic("error", "x3.host/service-contract-unregistered", `service contract ${context.contract}@${context.major} is not registered`)
+          ]
+        };
+      }
+      const offerDiagnostics = await validateFacet("offer", {
+        contract: context.contract,
+        major: context.major,
+        ownerExtensionId: context.ownerExtensionId,
+        facet: context.offerFacet
+      });
+      const requestDiagnostics = await validateFacet("request", {
+        contract: context.contract,
+        major: context.major,
+        ownerExtensionId: context.ownerExtensionId,
+        facet: context.requestFacet
+      });
+      const diagnostics = [...offerDiagnostics, ...requestDiagnostics];
+      if (hasErrors(diagnostics))
+        return { state: "invalid", diagnostics };
+      const profile3 = matcherProfiles.lookup(registration.matching.profile, registration.matching.major);
+      if (profile3 === void 0) {
+        return {
+          state: "invalid",
+          diagnostics: [
+            diagnostic("error", "x3.host/facet-matcher-unavailable", "the registered facet matcher profile is unavailable")
+          ]
+        };
+      }
+      try {
+        const result = await profile3.match({
+          ...context,
+          offerFacet: ownedJson(context.offerFacet),
+          requestFacet: ownedJson(context.requestFacet)
+        }, registration.matching.configuration);
+        if (result.state === "match" && (typeof result.selectionKey !== "string" || result.selectionKey.trim().length === 0)) {
+          throw new TypeError("matcher returned a blank selection key");
+        }
+        return result;
+      } catch (error5) {
+        return {
+          state: "invalid",
+          diagnostics: [
+            diagnostic("error", "x3.host/facet-matcher-failed", "the host-trusted facet matcher failed closed", [], { error: error5 instanceof Error ? error5.message : String(error5) })
+          ]
+        };
+      }
+    }
+  };
+}
+async function registerServiceContractDefinitionsFromInventory(inventory, registry) {
+  const byOwner = /* @__PURE__ */ new Map();
+  for (const extension of inventory.extensions) {
+    for (const contribution of extension.contributions) {
+      if (!contribution.inventoryEligible)
+        continue;
+      for (const fact4 of contribution.facts) {
+        if (fact4.contract.id !== CONTRACT_DEFINITION_FACT || fact4.contract.major !== 1)
+          continue;
+        if (typeof fact4.value !== "object" || fact4.value === null || Array.isArray(fact4.value)) {
+          continue;
+        }
+        const definitionValue = fact4.value;
+        if (definitionValue["kind"] !== "service")
+          continue;
+        const owner = fact4.provenance.ownerExtensionId;
+        const entries = byOwner.get(owner) ?? [];
+        entries.push({
+          definition: definitionValue,
+          provenance: fact4.provenance
+        });
+        byOwner.set(owner, entries);
+      }
+    }
+  }
+  const results = [];
+  for (const owner of [...byOwner.keys()].sort(compareUtf8)) {
+    results.push(await registry.replaceOwnerInventory(owner, byOwner.get(owner) ?? []));
+  }
+  return Object.freeze(results);
+}
+
+// packages/host/dist/editing-definitions.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var STANDARD_EDITING_OWNER = "modkit/editing";
+var REQUIREMENT_KEYS = ["formatId", "representationId", "mutationMode", "minimumRoundTrip"];
+var OFFER_KEYS3 = [...REQUIREMENT_KEYS, "providerId", "fidelityEvidenceId"];
+var MUTATION_MODES = /* @__PURE__ */ new Set(["export-only", "mutate"]);
+var ROUND_TRIPS = /* @__PURE__ */ new Set(["byte-identical", "semantic", "lossy", "none"]);
+function facetOf(value2, keys) {
+  if (typeof value2 !== "object" || value2 === null || Array.isArray(value2))
+    return void 0;
+  const record9 = value2;
+  const own = Object.keys(record9);
+  if (own.length !== keys.length || !keys.every((key3) => own.includes(key3)))
+    return void 0;
+  for (const key3 of keys) {
+    if (typeof record9[key3] !== "string" || record9[key3].length === 0)
+      return void 0;
+  }
+  if (!MUTATION_MODES.has(record9["mutationMode"]))
+    return void 0;
+  if (!ROUND_TRIPS.has(record9["minimumRoundTrip"]))
+    return void 0;
+  return record9;
+}
+function matchWriterFacets(context) {
+  const request = facetOf(context.requestFacet, REQUIREMENT_KEYS);
+  const offer = facetOf(context.offerFacet, OFFER_KEYS3);
+  if (request === void 0 || offer === void 0) {
+    return {
+      state: "invalid",
+      diagnostics: [
+        diagnostic("error", "x3.host/writer-facet-invalid", `${context.contract}@${context.major}: writer request and offer facets must both be complete`)
+      ]
+    };
+  }
+  return writerOfferSatisfies(request, offer) ? {
+    state: "match",
+    selectionKey: writerSelectionKey(request)
+  } : { state: "no-match" };
+}
+var WRITER_FACET_MATCHER = Object.freeze({
+  profile: contractId(WRITER_FACET_MATCHER_PROFILE),
+  major: 1,
+  match: matchWriterFacets
+});
+var WRITER_CONTRACT_DEFINITION = Object.freeze({
+  schemaVersion: 1,
+  kind: "service",
+  contract: WRITER_CONTRACT_ID,
+  major: 1,
+  offerFacet: Object.freeze({
+    presence: "required",
+    schema: Object.freeze({ $ref: "https://schemas.modkit.org/x3/writer-offer.v1.schema.json" })
+  }),
+  requestFacet: Object.freeze({
+    presence: "required",
+    schema: Object.freeze({
+      $ref: "https://schemas.modkit.org/x3/writer-requirement.v1.schema.json"
+    })
+  }),
+  matching: Object.freeze({ profile: WRITER_FACET_MATCHER_PROFILE, major: 1 }),
+  conformanceProfile: "common.edit/writer-v1",
+  surface: WRITER_SURFACE
+});
+var STANDARD_EDITING_DEFINITIONS = Object.freeze([WRITER_CONTRACT_DEFINITION]);
+function registerStandardEditingDefinitions(definitions) {
+  return definitions.replaceOwnerInventory(STANDARD_EDITING_OWNER, STANDARD_EDITING_DEFINITIONS.map((definition2) => ({
+    definition: definition2,
+    // host code, not an inventoried artifact: the provenance names the platform, digests are
+    // the contract's own coordinates so a lookalike registration is distinguishable
+    provenance: {
+      ownerExtensionId: STANDARD_EDITING_OWNER,
+      extensionVersion: "1.0.0",
+      inventoryRecordId: `host:${definition2.contract}@${definition2.major}`,
+      manifestDigest: `host:${definition2.contract}@${definition2.major}`,
+      artifactDigest: "host:standard-editing-definitions",
+      artifactRoot: "host:",
+      manifestPath: "host:standard-editing-definitions"
+    }
+  })));
+}
+
+// packages/host/dist/runtime/index.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
+// packages/host/dist/runtime/preparer.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
+// packages/host/dist/runtime/source-snapshot.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var MAX_TOTAL_BYTES = 512 * 1024 * 1024;
+var encoder3 = new TextEncoder();
+
+// packages/host/dist/runtime/index.js
+var STANDARD_RUNTIME_OWNER = "modkit/runtime";
+var OFFER_KEYS4 = /* @__PURE__ */ new Set(["runtimeIds"]);
+var REQUEST_KEYS3 = /* @__PURE__ */ new Set(["runtimeId"]);
+function recordOf3(value2) {
+  return typeof value2 === "object" && value2 !== null && !Array.isArray(value2) ? value2 : void 0;
+}
+function nonEmptyString2(value2) {
+  return typeof value2 === "string" && value2.trim().length > 0;
+}
+function stringList3(value2) {
+  if (!Array.isArray(value2) || value2.length === 0 || !value2.every(nonEmptyString2))
+    return void 0;
+  const strings2 = value2;
+  return new Set(strings2).size === strings2.length ? strings2 : void 0;
+}
+function parseOffer3(value2) {
+  const record9 = recordOf3(value2);
+  if (record9 === void 0 || Object.keys(record9).some((key3) => !OFFER_KEYS4.has(key3)))
+    return void 0;
+  const runtimeIds = stringList3(record9["runtimeIds"]);
+  return runtimeIds === void 0 ? void 0 : { runtimeIds };
+}
+function parseRequest3(value2) {
+  const record9 = recordOf3(value2);
+  if (record9 === void 0 || Object.keys(record9).some((key3) => !REQUEST_KEYS3.has(key3)))
+    return void 0;
+  const runtimeId = record9["runtimeId"];
+  return nonEmptyString2(runtimeId) ? { runtimeId } : void 0;
+}
+function matchRuntimeFacets(context) {
+  const offer = parseOffer3(context.offerFacet);
+  const request = parseRequest3(context.requestFacet);
+  if (offer === void 0 || request === void 0) {
+    return {
+      state: "invalid",
+      diagnostics: [
+        diagnostic("error", "x3.host/runtime-facet-invalid", `${context.contract}@${context.major}: runtime request and offer routes must be well formed`)
+      ]
+    };
+  }
+  return offer.runtimeIds.includes(request.runtimeId) ? { state: "match", selectionKey: `runtime=${request.runtimeId}` } : { state: "no-match" };
+}
+var RUNTIME_PROVIDER_MATCHER = Object.freeze({
+  profile: contractId(RUNTIME_PROVIDER_MATCHER_PROFILE),
+  major: 1,
+  match: matchRuntimeFacets
+});
+var RUNTIME_PROVIDER_CONTRACT_DEFINITION = Object.freeze({
+  schemaVersion: 1,
+  kind: "service",
+  contract: RUNTIME_PROVIDER_CONTRACT,
+  major: 1,
+  offerFacet: Object.freeze({
+    presence: "required",
+    schema: Object.freeze({
+      $ref: "https://schemas.modkit.org/x3/runtime-provider-offer.v1.schema.json"
+    })
+  }),
+  requestFacet: Object.freeze({
+    presence: "required",
+    schema: Object.freeze({
+      $ref: "https://schemas.modkit.org/x3/runtime-provider-request.v1.schema.json"
+    })
+  }),
+  matching: Object.freeze({ profile: RUNTIME_PROVIDER_MATCHER_PROFILE, major: 1 }),
+  conformanceProfile: "common.runtime/provider-v1",
+  surface: Object.freeze({
+    fields: Object.freeze(["contract", "providerId", "runtimeIds", "inputMode"]),
+    methods: Object.freeze({
+      createSession: Object.freeze({
+        kind: "lease",
+        wrapper: "lease",
+        result: Object.freeze({ contract: RUNTIME_SESSION_CONTRACT, major: 1 }),
+        signal: Object.freeze({ arg: 0, key: "signal" })
+      })
+    })
+  })
+});
+var RUNTIME_SESSION_CONTRACT_DEFINITION = Object.freeze({
+  schemaVersion: 1,
+  kind: "service",
+  contract: RUNTIME_SESSION_CONTRACT,
+  major: 1,
+  offerFacet: Object.freeze({ presence: "forbidden" }),
+  requestFacet: Object.freeze({ presence: "forbidden" }),
+  matching: Object.freeze({ profile: FACETLESS_SERVICE_MATCHER_PROFILE, major: 1 }),
+  conformanceProfile: "common.runtime/session-v1",
+  surface: Object.freeze({
+    fields: Object.freeze(["contract", "sessionId", "providerId", "budget"]),
+    methods: Object.freeze({
+      execute: Object.freeze({
+        kind: "value",
+        signal: Object.freeze({ arg: 0, key: "signal" })
+      }),
+      status: Object.freeze({ kind: "value" })
+    })
+  })
+});
+var RUNTIME_PROVIDER_V2_CONTRACT_DEFINITION = {
+  ...RUNTIME_PROVIDER_CONTRACT_DEFINITION,
+  major: 2,
+  conformanceProfile: "common.runtime/provider-v2",
+  surface: {
+    fields: ["contract", "providerId", "runtimeIds", "inputMode"],
+    methods: {
+      createSession: {
+        kind: "lease",
+        wrapper: "lease",
+        result: { contract: RUNTIME_SESSION_CONTRACT, major: 2 },
+        signal: { arg: 0, key: "signal" }
+      }
+    }
+  }
+};
+var RUNTIME_PROVIDER_V3_CONTRACT_DEFINITION = {
+  ...RUNTIME_PROVIDER_V2_CONTRACT_DEFINITION,
+  major: 3,
+  conformanceProfile: "common.runtime/provider-v3"
+};
+var RUNTIME_SESSION_V2_CONTRACT_DEFINITION = {
+  ...RUNTIME_SESSION_CONTRACT_DEFINITION,
+  major: 2,
+  conformanceProfile: "common.runtime/session-v2",
+  surface: {
+    fields: ["contract", "sessionId", "providerId", "budget", "offers"],
+    methods: {
+      execute: { kind: "value", signal: { arg: 0, key: "signal" } },
+      status: { kind: "value" },
+      identity: { kind: "value" },
+      step: { kind: "value", signal: "last" },
+      events: { kind: "iterable" },
+      snapshot: { kind: "value", signal: "last" },
+      restore: { kind: "value", signal: "last" },
+      stateHash: { kind: "value", signal: "last" }
+    }
+  }
+};
+var STANDARD_RUNTIME_DEFINITIONS = Object.freeze([
+  RUNTIME_PROVIDER_CONTRACT_DEFINITION,
+  RUNTIME_SESSION_CONTRACT_DEFINITION,
+  RUNTIME_PROVIDER_V2_CONTRACT_DEFINITION,
+  RUNTIME_PROVIDER_V3_CONTRACT_DEFINITION,
+  RUNTIME_SESSION_V2_CONTRACT_DEFINITION
+]);
+function registerStandardRuntimeDefinitions(definitions) {
+  return definitions.replaceOwnerInventory(STANDARD_RUNTIME_OWNER, STANDARD_RUNTIME_DEFINITIONS.map((definition2) => ({
+    definition: definition2,
+    provenance: {
+      ownerExtensionId: STANDARD_RUNTIME_OWNER,
+      extensionVersion: "1.0.0",
+      inventoryRecordId: `host:${definition2.contract}@${definition2.major}`,
+      manifestDigest: `host:${definition2.contract}@${definition2.major}`,
+      artifactDigest: "host:standard-runtime-definitions",
+      artifactRoot: "host:",
+      manifestPath: "host:standard-runtime-definitions"
+    }
+  })));
+}
+
+// packages/host/dist/service-operations.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
+// packages/host/dist/service-operation-schema.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
+// packages/host/dist/service-operations.js
+var STANDARD_SERVICE_OPERATION_OWNER = "modkit/service-operations";
+var recordOf4 = (value2) => typeof value2 === "object" && value2 !== null && !Array.isArray(value2) ? value2 : void 0;
+var nonEmpty2 = (value2) => typeof value2 === "string" && value2.trim().length > 0;
+function operationIds(value2) {
+  if (!Array.isArray(value2) || value2.length === 0 || !value2.every(nonEmpty2))
+    return void 0;
+  return new Set(value2).size === value2.length ? value2 : void 0;
+}
+function parseOffer4(value2) {
+  const record9 = recordOf4(value2);
+  if (record9 === void 0 || Object.keys(record9).some((key3) => key3 !== "operationIds"))
+    return void 0;
+  const ids = operationIds(record9["operationIds"]);
+  return ids === void 0 ? void 0 : { operationIds: ids };
+}
+function parseRequest4(value2) {
+  const record9 = recordOf4(value2);
+  if (record9 === void 0 || Object.keys(record9).some((key3) => key3 !== "operationId"))
+    return void 0;
+  return nonEmpty2(record9["operationId"]) ? { operationId: record9["operationId"] } : void 0;
+}
+function matchServiceOperation(context) {
+  const offer = parseOffer4(context.offerFacet);
+  const request = parseRequest4(context.requestFacet);
+  if (offer === void 0 || request === void 0) {
+    return {
+      state: "invalid",
+      diagnostics: [
+        diagnostic("error", "x3.host/service-operation-facet-invalid", `${context.contract}@${context.major}: operation request and offer routes must be well formed`)
+      ]
+    };
+  }
+  return offer.operationIds.includes(request.operationId) ? { state: "match", selectionKey: `operation=${request.operationId}` } : { state: "no-match" };
+}
+var SERVICE_OPERATION_MATCHER = Object.freeze({
+  profile: contractId(SERVICE_OPERATION_MATCHER_PROFILE),
+  major: 1,
+  match: matchServiceOperation
+});
+var SERVICE_OPERATION_PROVIDER_CONTRACT_DEFINITION = Object.freeze({
+  schemaVersion: 1,
+  kind: "service",
+  contract: SERVICE_OPERATION_PROVIDER_CONTRACT,
+  major: 1,
+  offerFacet: Object.freeze({
+    presence: "required",
+    schema: Object.freeze({
+      $ref: "https://schemas.modkit.org/x3/service-operation-provider-offer.v1.schema.json"
+    })
+  }),
+  requestFacet: Object.freeze({
+    presence: "required",
+    schema: Object.freeze({
+      $ref: "https://schemas.modkit.org/x3/service-operation-provider-request.v1.schema.json"
+    })
+  }),
+  matching: Object.freeze({ profile: SERVICE_OPERATION_MATCHER_PROFILE, major: 1 }),
+  conformanceProfile: "common.runtime/operation-provider-v1",
+  surface: Object.freeze({
+    fields: Object.freeze(["contract", "providerId", "operations"]),
+    methods: Object.freeze({
+      invoke: Object.freeze({
+        kind: "value",
+        signal: Object.freeze({ arg: 0, key: "signal" })
+      })
+    })
+  })
+});
+function registerStandardServiceOperationDefinitions(definitions) {
+  return definitions.replaceOwnerInventory(STANDARD_SERVICE_OPERATION_OWNER, [
+    {
+      definition: SERVICE_OPERATION_PROVIDER_CONTRACT_DEFINITION,
+      provenance: {
+        ownerExtensionId: STANDARD_SERVICE_OPERATION_OWNER,
+        extensionVersion: "1.0.0",
+        inventoryRecordId: "host:common.runtime/operation-provider@1",
+        manifestDigest: "host:common.runtime/operation-provider@1",
+        artifactDigest: "host:standard-service-operation-definition",
+        artifactRoot: "host:",
+        manifestPath: "host:standard-service-operation-definition"
+      }
+    }
+  ]);
+}
+var DESCRIPTOR_KEYS = Object.freeze([
+  "schemaVersion",
+  "id",
+  "title",
+  "summary",
+  "requiredPermissions",
+  "effects",
+  "inputSchema",
+  "resultSchema",
+  "budget",
+  /** Optional: where a product offers this operation in a view (see `ServiceOperationSurface`). */
+  "surface"
+]);
+var REQUIRED_DESCRIPTOR_KEYS = Object.freeze(DESCRIPTOR_KEYS.filter((key3) => key3 !== "surface"));
+var SURFACE_KEYS = Object.freeze(["target", "sectionId", "title", "icon", "forms"]);
+var REQUIRED_SURFACE_KEYS = Object.freeze(["target", "sectionId", "title"]);
+var BUDGET_KEYS = Object.freeze(["maxInputBytes", "maxOutputBytes", "maxWallTimeMs"]);
+var RESULT_KEYS = Object.freeze({
+  completed: ["state", "operationId", "value", "diagnostics"],
+  refused: ["state", "operationId", "code", "message", "diagnostics"],
+  failed: ["state", "operationId", "code", "message", "diagnostics"]
+});
+var PERMISSIONS = new Set(PERMISSION_CLASSES);
+var encoder4 = new TextEncoder();
+
+// packages/host/dist/renderer/index.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var STANDARD_RENDERER_OWNER = "modkit/renderer";
+var OFFER_KEYS5 = /* @__PURE__ */ new Set(["rendererIds", "outputKinds"]);
+var REQUEST_KEYS4 = /* @__PURE__ */ new Set(["rendererId", "outputKind"]);
+var OUTPUT_KINDS = /* @__PURE__ */ new Set(["rgba8"]);
+function recordOf5(value2) {
+  return typeof value2 === "object" && value2 !== null && !Array.isArray(value2) ? value2 : void 0;
+}
+function nonEmptyString3(value2) {
+  return typeof value2 === "string" && value2.trim().length > 0;
+}
+function stringList4(value2) {
+  if (!Array.isArray(value2) || value2.length === 0 || !value2.every(nonEmptyString3))
+    return void 0;
+  const strings2 = value2;
+  return new Set(strings2).size === strings2.length ? strings2 : void 0;
+}
+function outputKind(value2) {
+  return typeof value2 === "string" && OUTPUT_KINDS.has(value2) ? value2 : void 0;
+}
+function outputKindList(value2) {
+  if (!Array.isArray(value2) || value2.length === 0)
+    return void 0;
+  const outputKinds = value2.flatMap((item) => {
+    const parsed = outputKind(item);
+    return parsed === void 0 ? [] : [parsed];
+  });
+  return outputKinds.length === value2.length && new Set(outputKinds).size === outputKinds.length ? outputKinds : void 0;
+}
+function parseOffer5(value2) {
+  const record9 = recordOf5(value2);
+  if (record9 === void 0 || Object.keys(record9).some((key3) => !OFFER_KEYS5.has(key3)))
+    return void 0;
+  const rendererIds = stringList4(record9["rendererIds"]);
+  const outputKinds = outputKindList(record9["outputKinds"]);
+  return rendererIds === void 0 || outputKinds === void 0 ? void 0 : { rendererIds, outputKinds };
+}
+function parseRequest5(value2) {
+  const record9 = recordOf5(value2);
+  if (record9 === void 0 || Object.keys(record9).some((key3) => !REQUEST_KEYS4.has(key3)))
+    return void 0;
+  const rendererId = record9["rendererId"];
+  const parsedOutput = outputKind(record9["outputKind"]);
+  if (parsedOutput === void 0 || rendererId !== void 0 && !nonEmptyString3(rendererId)) {
+    return void 0;
+  }
+  return {
+    outputKind: parsedOutput,
+    ...rendererId === void 0 ? {} : { rendererId }
+  };
+}
+function matchRendererFacets(context) {
+  const offer = parseOffer5(context.offerFacet);
+  const request = parseRequest5(context.requestFacet);
+  if (offer === void 0 || request === void 0) {
+    return {
+      state: "invalid",
+      diagnostics: [
+        diagnostic("error", "x3.host/renderer-facet-invalid", `${context.contract}@${context.major}: renderer request and offer routes must be well formed`)
+      ]
+    };
+  }
+  if (!offer.outputKinds.includes(request.outputKind))
+    return { state: "no-match" };
+  if (request.rendererId !== void 0 && !offer.rendererIds.includes(request.rendererId)) {
+    return { state: "no-match" };
+  }
+  return {
+    state: "match",
+    selectionKey: `renderer=${request.rendererId ?? "*"};output=${request.outputKind}`
+  };
+}
+var SCENE_RENDERER_MATCHER = Object.freeze({
+  profile: contractId(SCENE_RENDERER_MATCHER_PROFILE),
+  major: 1,
+  match: matchRendererFacets
+});
+var SCENE_RENDERER_CONTRACT_DEFINITION = Object.freeze({
+  schemaVersion: 1,
+  kind: "service",
+  contract: SCENE_RENDERER_CONTRACT,
+  major: 1,
+  offerFacet: Object.freeze({
+    presence: "required",
+    schema: Object.freeze({
+      $ref: "https://schemas.modkit.org/x3/scene-renderer-offer.v1.schema.json"
+    })
+  }),
+  requestFacet: Object.freeze({
+    presence: "required",
+    schema: Object.freeze({
+      $ref: "https://schemas.modkit.org/x3/scene-renderer-request.v1.schema.json"
+    })
+  }),
+  matching: Object.freeze({ profile: SCENE_RENDERER_MATCHER_PROFILE, major: 1 }),
+  conformanceProfile: "common.render/scene-3d-v1",
+  surface: Object.freeze({
+    fields: Object.freeze(["contract", "rendererId", "outputKinds"]),
+    methods: Object.freeze({
+      render: Object.freeze({
+        kind: "value",
+        signal: Object.freeze({ arg: 0, key: "signal" })
+      })
+    })
+  })
+});
+function registerStandardRendererDefinitions(definitions) {
+  const definition2 = SCENE_RENDERER_CONTRACT_DEFINITION;
+  return definitions.replaceOwnerInventory(STANDARD_RENDERER_OWNER, [
+    {
+      definition: definition2,
+      provenance: {
+        ownerExtensionId: STANDARD_RENDERER_OWNER,
+        extensionVersion: "1.0.0",
+        inventoryRecordId: `host:${definition2.contract}@${definition2.major}`,
+        manifestDigest: `host:${definition2.contract}@${definition2.major}`,
+        artifactDigest: "host:standard-renderer-definitions",
+        artifactRoot: "host:",
+        manifestPath: "host:standard-renderer-definitions"
+      }
+    }
+  ]);
+}
+function isSceneRenderer(value2) {
+  const record9 = recordOf5(value2);
+  return record9?.["contract"] === SCENE_RENDERER_CONTRACT && nonEmptyString3(record9["rendererId"]) && outputKindList(record9["outputKinds"]) !== void 0 && typeof record9["render"] === "function";
+}
+async function resolveSceneRenderer(request) {
+  const definitions = request.services.serviceDefinitions;
+  if (definitions === void 0) {
+    return {
+      state: "unresolved",
+      diagnostics: [
+        diagnostic("information", "x3.host/renderer-unavailable", "this host registered no service-contract definitions, so renderers cannot be resolved")
+      ]
+    };
+  }
+  const resolver = createHostServiceResolver({
+    inventory: request.services.inventory,
+    target: request.services.target,
+    executionBackends: request.services.executionBackends,
+    definitions,
+    grant: request.grant,
+    budgets: request.budgets,
+    ...request.signal === void 0 ? {} : { signal: request.signal }
+  });
+  const facet = {
+    outputKind: request.outputKind,
+    ...request.rendererId === void 0 ? {} : { rendererId: request.rendererId }
+  };
+  try {
+    const lease2 = await resolver.port.resolve({
+      contract: SCENE_RENDERER_CONTRACT,
+      major: 1,
+      facet,
+      ...request.signal === void 0 ? {} : { signal: request.signal }
+    });
+    if (!isSceneRenderer(lease2.value) || !lease2.value.outputKinds.includes(request.outputKind) || request.rendererId !== void 0 && lease2.value.rendererId !== request.rendererId) {
+      await resolver.release();
+      return {
+        state: "unresolved",
+        diagnostics: [
+          ...resolver.diagnostics,
+          diagnostic("error", "x3.host/renderer-invalid", `the selected provider does not implement ${SCENE_RENDERER_CONTRACT}@1 for ${request.outputKind}`)
+        ]
+      };
+    }
+    return Object.freeze({
+      state: "resolved",
+      renderer: lease2.value,
+      diagnostics: Object.freeze([
+        ...resolver.diagnostics,
+        diagnostic("information", "x3.host/renderer-selected", `selected ${lease2.value.rendererId} for ${request.outputKind}`)
+      ]),
+      release: () => resolver.release()
+    });
+  } catch (error5) {
+    await resolver.release();
+    return {
+      state: "unresolved",
+      diagnostics: [
+        ...resolver.diagnostics,
+        diagnostic("information", "x3.host/renderer-unresolved", `no scene renderer resolved for ${request.outputKind} (${error5 instanceof Error ? error5.message : String(error5)})`)
+      ]
+    };
+  }
+}
+function contractSeverity(severity) {
+  return severity === "hint" ? "information" : severity;
+}
+var contractDiagnostics = (diagnostics) => Object.freeze(diagnostics.map((item) => Object.freeze({
+  severity: contractSeverity(item.severity),
+  code: item.code,
+  message: item.message
+})));
+function createSceneRendererPort(options) {
+  return Object.freeze({
+    async acquire(request) {
+      const resolution = await resolveSceneRenderer({
+        services: options.services,
+        grant: options.grant,
+        budgets: options.budgets,
+        outputKind: request.outputKind,
+        ...request.rendererId === void 0 ? {} : { rendererId: request.rendererId },
+        ...request.signal === void 0 ? {} : { signal: request.signal }
+      });
+      const diagnostics = contractDiagnostics(resolution.diagnostics);
+      if (resolution.state !== "resolved")
+        return Object.freeze({ state: "unresolved", diagnostics });
+      return Object.freeze({
+        state: "resolved",
+        diagnostics,
+        lease: Object.freeze({
+          renderer: resolution.renderer,
+          release: () => resolution.release()
+        })
+      });
+    }
+  });
+}
+
+// packages/host/dist/model-encoding.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var STANDARD_MODEL_ENCODING_OWNER = "modkit/model-encoding";
+var recordOf6 = (value2) => typeof value2 === "object" && value2 !== null && !Array.isArray(value2) ? value2 : void 0;
+var nonEmptyString4 = (value2) => typeof value2 === "string" && value2.trim().length > 0;
+function parseOffer6(value2) {
+  const record9 = recordOf6(value2);
+  if (record9 === void 0 || Object.keys(record9).some((key3) => key3 !== "formatIds"))
+    return void 0;
+  const values = record9["formatIds"];
+  if (!Array.isArray(values) || values.length === 0 || !values.every(nonEmptyString4) || new Set(values).size !== values.length)
+    return void 0;
+  return { formatIds: values };
+}
+function parseRequest6(value2) {
+  const record9 = recordOf6(value2);
+  if (record9 === void 0 || Object.keys(record9).some((key3) => key3 !== "formatId") || !nonEmptyString4(record9["formatId"]))
+    return void 0;
+  return { formatId: record9["formatId"] };
+}
+function matchNativeModelEncoder(context) {
+  const offer = parseOffer6(context.offerFacet);
+  const request = parseRequest6(context.requestFacet);
+  if (offer === void 0 || request === void 0) {
+    return {
+      state: "invalid",
+      diagnostics: [
+        diagnostic("error", "x3.host/native-model-encoder-facet-invalid", `${context.contract}@${context.major}: native model encoder route is malformed`)
+      ]
+    };
+  }
+  return offer.formatIds.includes(request.formatId) ? { state: "match", selectionKey: `format=${request.formatId}` } : { state: "no-match" };
+}
+var NATIVE_MODEL_ENCODER_MATCHER = Object.freeze({
+  profile: contractId(NATIVE_MODEL_ENCODER_MATCHER_PROFILE),
+  major: 1,
+  match: matchNativeModelEncoder
+});
+var NATIVE_MODEL_ENCODER_CONTRACT_DEFINITION = Object.freeze({
+  schemaVersion: 1,
+  kind: "service",
+  contract: NATIVE_MODEL_ENCODER_CONTRACT,
+  major: 1,
+  offerFacet: Object.freeze({
+    presence: "required",
+    schema: Object.freeze({
+      $ref: "https://schemas.modkit.org/x3/native-model-encoder-offer.v1.schema.json"
+    })
+  }),
+  requestFacet: Object.freeze({
+    presence: "required",
+    schema: Object.freeze({
+      $ref: "https://schemas.modkit.org/x3/native-model-encoder-request.v1.schema.json"
+    })
+  }),
+  matching: Object.freeze({ profile: NATIVE_MODEL_ENCODER_MATCHER_PROFILE, major: 1 }),
+  conformanceProfile: "common.model/native-encoder-v1",
+  surface: Object.freeze({
+    fields: Object.freeze(["contract", "formatId", "extension", "mediaType"]),
+    methods: Object.freeze({
+      encode: Object.freeze({
+        kind: "value",
+        signal: Object.freeze({ arg: 0, key: "signal" })
+      })
+    })
+  })
+});
+function registerStandardModelEncodingDefinitions(definitions) {
+  const definition2 = NATIVE_MODEL_ENCODER_CONTRACT_DEFINITION;
+  return definitions.replaceOwnerInventory(STANDARD_MODEL_ENCODING_OWNER, [
+    {
+      definition: definition2,
+      provenance: {
+        ownerExtensionId: STANDARD_MODEL_ENCODING_OWNER,
+        extensionVersion: "1.0.0",
+        inventoryRecordId: `host:${definition2.contract}@${definition2.major}`,
+        manifestDigest: `host:${definition2.contract}@${definition2.major}`,
+        artifactDigest: "host:standard-model-encoding-definitions",
+        artifactRoot: "host:",
+        manifestPath: "host:standard-model-encoding-definitions"
+      }
+    }
+  ]);
+}
+
+// packages/host/dist/compression-definitions.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var STANDARD_COMPRESSION_OWNER = "modkit/compression";
+var OODLE_DECODER = "common.compression/oodle-decoder";
+var OODLE_DECODER_CONTRACT_DEFINITION = Object.freeze({
+  schemaVersion: 1,
+  kind: "service",
+  contract: OODLE_DECODER,
+  major: 1,
+  offerFacet: Object.freeze({ presence: "forbidden" }),
+  requestFacet: Object.freeze({ presence: "forbidden" }),
+  matching: Object.freeze({ profile: FACETLESS_SERVICE_MATCHER_PROFILE, major: 1 }),
+  conformanceProfile: "common.compression/oodle-decoder-v1",
+  surface: Object.freeze({
+    fields: Object.freeze(["contract"]),
+    methods: Object.freeze({
+      decompressBlocks: Object.freeze({
+        kind: "value",
+        signal: Object.freeze({ arg: 0, key: "signal" })
+      })
+    })
+  })
+});
+function registerStandardCompressionDefinitions(definitions) {
+  const definition2 = OODLE_DECODER_CONTRACT_DEFINITION;
+  return definitions.replaceOwnerInventory(STANDARD_COMPRESSION_OWNER, [
+    {
+      definition: definition2,
+      provenance: {
+        ownerExtensionId: STANDARD_COMPRESSION_OWNER,
+        extensionVersion: "1.0.0",
+        inventoryRecordId: `host:${definition2.contract}@${definition2.major}`,
+        manifestDigest: `host:${definition2.contract}@${definition2.major}`,
+        artifactDigest: "host:standard-compression-definitions",
+        artifactRoot: "host:",
+        manifestPath: "host:standard-compression-definitions"
+      }
+    }
+  ]);
+}
+
+// packages/host/dist/games/index.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var STANDARD_GAMES_OWNER = "modkit/games";
+var OFFER_KEYS6 = /* @__PURE__ */ new Set(["gameIds", "markers", "searchFolders"]);
+var FOLDER_NAME = /^[^\\/:*?"<>|\u0000-\u001f]{1,255}$/u;
+var REQUEST_KEYS5 = /* @__PURE__ */ new Set(["gameId"]);
+function recordOf7(value2) {
+  return typeof value2 === "object" && value2 !== null && !Array.isArray(value2) ? value2 : void 0;
+}
+function nonEmptyString5(value2) {
+  return typeof value2 === "string" && value2.trim().length > 0;
+}
+function stringList5(value2) {
+  if (!Array.isArray(value2) || value2.length === 0 || !value2.every(nonEmptyString5))
+    return void 0;
+  const strings2 = value2;
+  return new Set(strings2).size === strings2.length ? strings2 : void 0;
+}
+function nameList(value2) {
+  const names = stringList5(value2);
+  return names?.every((name) => FOLDER_NAME.test(name) && name !== "." && name !== "..") ? names : void 0;
+}
+function parseOffer7(value2) {
+  const record9 = recordOf7(value2);
+  if (record9 === void 0 || Object.keys(record9).some((key3) => !OFFER_KEYS6.has(key3)))
+    return void 0;
+  const gameIds = stringList5(record9["gameIds"]);
+  if (gameIds === void 0)
+    return void 0;
+  const markers = [];
+  if (record9["markers"] !== void 0) {
+    if (!Array.isArray(record9["markers"]))
+      return void 0;
+    for (const item of record9["markers"]) {
+      const marker = recordOf7(item);
+      const files = nameList(marker?.["files"]);
+      if (marker === void 0 || Object.keys(marker).some((key3) => key3 !== "gameId" && key3 !== "files") || typeof marker["gameId"] !== "string" || !gameIds.includes(marker["gameId"]) || files === void 0)
+        return void 0;
+      markers.push({ gameId: marker["gameId"], files });
+    }
+  }
+  const searchFolders = record9["searchFolders"] === void 0 ? void 0 : nameList(record9["searchFolders"]);
+  if (record9["searchFolders"] !== void 0 && searchFolders === void 0)
+    return void 0;
+  return {
+    gameIds,
+    ...markers.length === 0 ? {} : { markers },
+    ...searchFolders === void 0 ? {} : { searchFolders }
+  };
+}
+function parseRequest7(value2) {
+  const record9 = recordOf7(value2);
+  if (record9 === void 0 || Object.keys(record9).some((key3) => !REQUEST_KEYS5.has(key3))) {
+    return void 0;
+  }
+  return nonEmptyString5(record9["gameId"]) ? { gameId: record9["gameId"] } : void 0;
+}
+function matchGameInstallationFacets(context) {
+  const offer = parseOffer7(context.offerFacet);
+  const request = parseRequest7(context.requestFacet);
+  if (offer === void 0 || request === void 0) {
+    return {
+      state: "invalid",
+      diagnostics: [
+        diagnostic("error", "x3.host/game-installation-facet-invalid", `${context.contract}@${context.major}: game installation routes must be well formed`)
+      ]
+    };
+  }
+  return offer.gameIds.includes(request.gameId) ? { state: "match", selectionKey: `game=${request.gameId}` } : { state: "no-match" };
+}
+var GAME_INSTALLATION_MATCHER = Object.freeze({
+  profile: contractId(GAME_INSTALLATION_MATCHER_PROFILE),
+  major: 1,
+  match: matchGameInstallationFacets
+});
+var GAME_INSTALLATION_CONTRACT_DEFINITION = Object.freeze({
+  schemaVersion: 1,
+  kind: "service",
+  contract: GAME_INSTALLATION_DISCOVERY_CONTRACT,
+  major: 1,
+  offerFacet: Object.freeze({
+    presence: "required",
+    schema: Object.freeze({
+      $ref: "https://schemas.modkit.org/x3/game-installation-offer.v1.schema.json"
+    })
+  }),
+  requestFacet: Object.freeze({
+    presence: "required",
+    schema: Object.freeze({
+      $ref: "https://schemas.modkit.org/x3/game-installation-request.v1.schema.json"
+    })
+  }),
+  matching: Object.freeze({ profile: GAME_INSTALLATION_MATCHER_PROFILE, major: 1 }),
+  conformanceProfile: "common.game/installation-discovery-v1",
+  surface: Object.freeze({
+    fields: Object.freeze(["contract", "discoveryId", "gameIds", "origins"]),
+    methods: Object.freeze({
+      discover: Object.freeze({
+        kind: "value",
+        signal: Object.freeze({ arg: 0, key: "signal" })
+      })
+    })
+  })
+});
+var GAME_LAUNCH_PLAN_CONTRACT_DEFINITION = Object.freeze({
+  schemaVersion: 1,
+  kind: "service",
+  contract: GAME_LAUNCH_PLAN_CONTRACT,
+  major: 1,
+  offerFacet: Object.freeze({
+    presence: "required",
+    schema: Object.freeze({
+      $ref: "https://schemas.modkit.org/x3/game-launch-offer.v1.schema.json"
+    })
+  }),
+  requestFacet: Object.freeze({
+    presence: "required",
+    schema: Object.freeze({
+      $ref: "https://schemas.modkit.org/x3/game-launch-request.v1.schema.json"
+    })
+  }),
+  matching: Object.freeze({ profile: GAME_INSTALLATION_MATCHER_PROFILE, major: 1 }),
+  conformanceProfile: "common.game/launch-plan-v1",
+  surface: Object.freeze({
+    fields: Object.freeze(["contract", "plannerId", "gameIds"]),
+    methods: Object.freeze({
+      plan: Object.freeze({
+        kind: "value",
+        signal: Object.freeze({ arg: 0, key: "signal" })
+      })
+    })
+  })
+});
+function registerStandardGameDefinitions(definitions) {
+  return definitions.replaceOwnerInventory(STANDARD_GAMES_OWNER, [GAME_INSTALLATION_CONTRACT_DEFINITION, GAME_LAUNCH_PLAN_CONTRACT_DEFINITION].map((definition2) => ({
+    definition: definition2,
+    provenance: {
+      ownerExtensionId: STANDARD_GAMES_OWNER,
+      extensionVersion: "1.0.0",
+      inventoryRecordId: `host:${definition2.contract}@${definition2.major}`,
+      manifestDigest: `host:${definition2.contract}@${definition2.major}`,
+      artifactDigest: "host:standard-game-definitions",
+      artifactRoot: "host:",
+      manifestPath: "host:standard-game-definitions"
+    }
+  })));
+}
+
+// packages/host/dist/mods/index.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
+// packages/host/dist/mods/resource-sessions.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
+// packages/host/dist/mods/index.js
+var STANDARD_MODS_OWNER = "modkit/mods";
+var OFFER_KEYS7 = /* @__PURE__ */ new Set(["gameIds"]);
+var REQUEST_KEYS6 = /* @__PURE__ */ new Set(["gameId"]);
+function recordOf8(value2) {
+  return typeof value2 === "object" && value2 !== null && !Array.isArray(value2) ? value2 : void 0;
+}
+function nonEmptyString6(value2) {
+  return typeof value2 === "string" && value2.trim().length > 0;
+}
+function stringList6(value2) {
+  if (!Array.isArray(value2) || value2.length === 0 || !value2.every(nonEmptyString6))
+    return void 0;
+  const strings2 = value2;
+  return new Set(strings2).size === strings2.length ? strings2 : void 0;
+}
+function parseOffer8(value2) {
+  const record9 = recordOf8(value2);
+  if (record9 === void 0 || Object.keys(record9).some((key3) => !OFFER_KEYS7.has(key3))) {
+    return void 0;
+  }
+  const gameIds = stringList6(record9["gameIds"]);
+  return gameIds === void 0 ? void 0 : { gameIds };
+}
+function parseRequest8(value2) {
+  const record9 = recordOf8(value2);
+  if (record9 === void 0 || Object.keys(record9).some((key3) => !REQUEST_KEYS6.has(key3))) {
+    return void 0;
+  }
+  return nonEmptyString6(record9["gameId"]) ? { gameId: record9["gameId"] } : void 0;
+}
+function matchModWorkspaceFacets(context) {
+  const offer = parseOffer8(context.offerFacet);
+  const request = parseRequest8(context.requestFacet);
+  if (offer === void 0 || request === void 0) {
+    return {
+      state: "invalid",
+      diagnostics: [
+        diagnostic("error", "x3.host/mod-workspace-facet-invalid", `${context.contract}@${context.major}: mod workspace routes must be well formed`)
+      ]
+    };
+  }
+  return offer.gameIds.includes(request.gameId) ? { state: "match", selectionKey: `game=${request.gameId}` } : { state: "no-match" };
+}
+var MOD_WORKSPACE_MATCHER = Object.freeze({
+  profile: contractId(MOD_WORKSPACE_MATCHER_PROFILE),
+  major: 1,
+  match: matchModWorkspaceFacets
+});
+var MOD_WORKSPACE_CONTRACT_DEFINITION = Object.freeze({
+  schemaVersion: 1,
+  kind: "service",
+  contract: MOD_WORKSPACE_COMPOSITION_CONTRACT,
+  major: 1,
+  offerFacet: Object.freeze({
+    presence: "required",
+    schema: Object.freeze({
+      $ref: "https://schemas.modkit.org/x3/mod-workspace-offer.v1.schema.json"
+    })
+  }),
+  requestFacet: Object.freeze({
+    presence: "required",
+    schema: Object.freeze({
+      $ref: "https://schemas.modkit.org/x3/mod-workspace-request.v1.schema.json"
+    })
+  }),
+  matching: Object.freeze({ profile: MOD_WORKSPACE_MATCHER_PROFILE, major: 1 }),
+  conformanceProfile: "common.mod/workspace-composition-v1",
+  surface: Object.freeze({
+    fields: Object.freeze(["contract", "compositionId", "gameIds"]),
+    methods: Object.freeze({
+      compose: Object.freeze({
+        kind: "value",
+        signal: Object.freeze({ arg: 0, key: "signal" }),
+        limits: Object.freeze({ maxBytes: 4194304, maxStringLength: 32768 })
+      })
+    })
+  })
+});
+function registerStandardModDefinitions(definitions) {
+  const definition2 = MOD_WORKSPACE_CONTRACT_DEFINITION;
+  return definitions.replaceOwnerInventory(STANDARD_MODS_OWNER, [
+    {
+      definition: definition2,
+      provenance: {
+        ownerExtensionId: STANDARD_MODS_OWNER,
+        extensionVersion: "1.0.0",
+        inventoryRecordId: `host:${definition2.contract}@${definition2.major}`,
+        manifestDigest: `host:${definition2.contract}@${definition2.major}`,
+        artifactDigest: "host:standard-mod-definitions",
+        artifactRoot: "host:",
+        manifestPath: "host:standard-mod-definitions"
+      }
+    }
+  ]);
+}
+
+// packages/host/dist/maps/index.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
+// packages/host/dist/maps/single-file-namespace.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var NAMESPACE = "common.view/namespace-entry-source";
+var BYTE_RANGE = "common.view/byte-range-source";
+var EXTRACT_HANDLER = "x3.host/single-file-extract";
+var ENTRY_ID = "subject";
+function fileNameOf(subjectUri) {
+  const path = subjectUri.replace(/[?#].*$/u, "");
+  const last = path.slice(path.lastIndexOf("/") + 1);
+  try {
+    return decodeURIComponent(last) || "subject";
+  } catch {
+    return last || "subject";
+  }
+}
+async function singleFileAsContainer(session, maxBytes) {
+  const descriptor = await session.descriptor();
+  const has = (contract) => descriptor.dataSources.some((item) => item.contract === contract && item.major === 1);
+  if (descriptor.interpretation === "none" || has(NAMESPACE) || !has(BYTE_RANGE))
+    return session;
+  const name = fileNameOf(descriptor.subjectUri);
+  const entry2 = Object.freeze({
+    id: ENTRY_ID,
+    path: name,
+    name,
+    kind: "file",
+    revision: descriptor.revision
+  });
+  const namespace = Object.freeze({
+    async list(prefix) {
+      const items = name.toLowerCase().startsWith(prefix.toLowerCase()) ? [entry2] : [];
+      return Object.freeze({ items: Object.freeze(items) });
+    },
+    async lookup(path) {
+      return path.toLowerCase() === name.toLowerCase() ? entry2 : void 0;
+    },
+    // the map's documents are read through container.extract; the reference names the file itself
+    async openEntry(entryId) {
+      if (entryId !== ENTRY_ID)
+        throw new RangeError(`the map file has no entry ${entryId}`);
+      return {
+        value: Object.freeze({
+          id: `${descriptor.subjectUri}:${ENTRY_ID}`,
+          uri: descriptor.subjectUri
+        }),
+        release: async () => void 0
+      };
+    }
+  });
+  const extract = async (signal) => {
+    const lease2 = await session.dataSource(BYTE_RANGE, 1);
+    try {
+      const source2 = lease2.value;
+      const size = await source2.size();
+      if (size > maxBytes || size > BigInt(Number.MAX_SAFE_INTEGER)) {
+        throw new ModkitError({
+          code: "x3.host/map-preview-subject-too-large",
+          message: `the map file (${size} bytes) exceeds the preview input budget`,
+          context: { size: String(size), maxBytes: String(maxBytes) }
+        });
+      }
+      return await source2.read(0n, Number(size), signal);
+    } finally {
+      await lease2.release();
+    }
+  };
+  const extended = Object.freeze({
+    ...descriptor,
+    dataSources: Object.freeze([
+      ...descriptor.dataSources,
+      Object.freeze({ contract: NAMESPACE, major: 1 })
+    ]),
+    operations: Object.freeze([
+      ...descriptor.operations,
+      Object.freeze({
+        id: "container.extract",
+        handlerId: EXTRACT_HANDLER,
+        mutatesSource: false,
+        state: "available"
+      })
+    ])
+  });
+  const operations = () => {
+    const inner = session.operations();
+    return Object.freeze({
+      async invoke(handlerId, input, options) {
+        if (handlerId !== EXTRACT_HANDLER)
+          return inner.invoke(handlerId, input, options);
+        const entryId = input?.entryId;
+        if (entryId !== ENTRY_ID)
+          throw new RangeError(`the map file has no entry ${String(entryId)}`);
+        return {
+          state: "ok",
+          output: { kind: "bytes", value: await extract(options?.signal) },
+          diagnostics: []
+        };
+      },
+      dispose: () => inner.dispose()
+    });
+  };
+  return Object.freeze({
+    get revision() {
+      return session.revision;
+    },
+    state: () => session.state(),
+    descriptor: async () => extended,
+    async dataSource(contract, major) {
+      if (contract === NAMESPACE && major === 1)
+        return { value: namespace, release: async () => void 0 };
+      return session.dataSource(contract, major);
+    },
+    operations,
+    events: (signal) => session.events(signal),
+    dispose: () => session.dispose()
+  });
+}
+
+// packages/host/dist/maps/world-source.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
+// packages/host/dist/maps/world-model.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+function positiveLimit(value2, maximum) {
+  if (!Number.isSafeInteger(value2) || value2 <= 0 || value2 > maximum) {
+    throw new TypeError(`world page limit must be between 1 and ${maximum}`);
+  }
+  return value2;
+}
+function childResourceLogicalId(parentLogicalId, childLogicalId) {
+  const childRoot = childLogicalId.split("/")[0];
+  if (childRoot === void 0 || childRoot.length === 0)
+    return childLogicalId;
+  const parent = parentLogicalId.split("/");
+  const sharedRoot = parent.findIndex((segment) => segment.toLowerCase() === childRoot.toLowerCase());
+  if (sharedRoot <= 0)
+    return childLogicalId;
+  return [...parent.slice(0, sharedRoot), childLogicalId].join("/");
+}
+function worldTexture(id, result) {
+  if (result.info.orientation === "unknown")
+    return void 0;
+  const { region } = result;
+  const rowBytes = region.width * 4;
+  const rgba = new Uint8Array(rowBytes * region.height);
+  for (let y = 0; y < region.height; y += 1) {
+    const sourceY = result.info.orientation === "bottom-left" ? region.height - 1 - y : y;
+    rgba.set(region.pixels.subarray(sourceY * region.rowStride, sourceY * region.rowStride + rowBytes), y * rowBytes);
+  }
+  return Object.freeze({
+    id,
+    width: region.width,
+    height: region.height,
+    rgba,
+    ...result.info.channelLayout === void 0 ? {} : { channelLayout: result.info.channelLayout },
+    ...result.info.compression === void 0 ? {} : { compression: result.info.compression },
+    wrapU: "repeat",
+    wrapV: "repeat"
+  });
+}
+async function readAllPages(read, pageLimit, cap) {
+  const items = [];
+  let cursor5;
+  do {
+    const page2 = await read({
+      limit: Math.min(pageLimit, cap - items.length),
+      ...cursor5 === void 0 ? {} : { cursor: cursor5 }
+    });
+    items.push(...page2.items);
+    cursor5 = page2.nextCursor;
+  } while (cursor5 !== void 0 && items.length < cap);
+  return { items, complete: cursor5 === void 0 };
+}
+var MODEL_FACET_ITEM_CAP = 65536;
+function primitiveByteLength(primitive) {
+  let total = 0;
+  const visit2 = (value2, depth) => {
+    if (ArrayBuffer.isView(value2))
+      total += value2.byteLength;
+    else if (depth < 3 && typeof value2 === "object" && value2 !== null)
+      for (const child of Object.values(value2))
+        visit2(child, depth + 1);
+  };
+  visit2(primitive, 0);
+  return total;
+}
+function consistentNodes(nodes, meshIds) {
+  const present = new Set(nodes.map((node) => node.id));
+  let pruned = false;
+  const out = nodes.map((node) => {
+    const childIds = node.childIds.filter((id) => present.has(id));
+    const meshes = node.meshIds?.filter((id) => meshIds.has(id));
+    if (childIds.length === node.childIds.length && meshes?.length === node.meshIds?.length)
+      return node;
+    pruned = true;
+    return Object.freeze({
+      ...node,
+      childIds,
+      ...meshes === void 0 ? {} : { meshIds: meshes }
+    });
+  });
+  return { nodes: out, pruned };
+}
+function yawRootNodes(nodes, yaw) {
+  if (yaw === 0)
+    return [...nodes];
+  const children = new Set(nodes.flatMap((node) => node.childIds));
+  const c3 = Math.cos(yaw);
+  const s2 = Math.sin(yaw);
+  const rotate = (m) => {
+    const out = [...m];
+    for (let column = 0; column < 4; column += 1) {
+      const x = m[column * 4];
+      const z = m[column * 4 + 2];
+      out[column * 4] = c3 * x + s2 * z;
+      out[column * 4 + 2] = -s2 * x + c3 * z;
+    }
+    return Object.freeze(out);
+  };
+  return nodes.map((node) => children.has(node.id) ? node : Object.freeze({ ...node, transform: rotate(node.transform) }));
+}
+function worldSceneModelLimits(request, maxPageSize) {
+  const maxNodes = request.maxNodes ?? request.maxMeshes;
+  const maxResources = request.maxResources ?? maxNodes;
+  const maxTextureBytes = request.maxTextureBytes ?? Math.min(16 * 1024 * 1024, request.maxBytes);
+  const maxTextureTotalBytes = request.maxTextureTotalBytes ?? Math.min(32 * 1024 * 1024, request.maxBytes);
+  positiveLimit(maxNodes, maxPageSize);
+  positiveLimit(request.maxMeshes, maxPageSize);
+  positiveLimit(request.maxPrimitives, maxPageSize);
+  positiveLimit(request.maxPrimitiveBytes, request.maxBytes);
+  positiveLimit(maxResources, maxPageSize);
+  positiveLimit(maxTextureBytes, request.maxBytes);
+  positiveLimit(maxTextureTotalBytes, request.maxBytes);
+  return Object.freeze({ maxNodes, maxResources, maxTextureBytes, maxTextureTotalBytes });
+}
+async function worldSceneModel(asset, request, options, signal) {
+  const { maxNodes, maxResources, maxTextureBytes, maxTextureTotalBytes } = worldSceneModelLimits(request, options.maxPageSize ?? Number.MAX_SAFE_INTEGER);
+  const modelRequirement = options.requirement;
+  const textureCache = options.textureCache ?? /* @__PURE__ */ new Map();
+  const result = asset.result;
+  if (result.state === "unresolved") {
+    return Object.freeze({
+      ...result,
+      diagnostics: Object.freeze([...result.diagnostics])
+    });
+  }
+  if (asset.meshes === void 0) {
+    return Object.freeze({
+      state: "converted",
+      sourceKey: result.sourceKey,
+      uvmBytes: result.bytes.slice(),
+      meshes: Object.freeze([]),
+      primitives: Object.freeze([]),
+      diagnostics: Object.freeze([
+        ...result.diagnostics,
+        diagnostic("information", "x3.host/world-model-render-facets-unavailable", `model ${modelRequirement.logicalId} converted successfully but publishes no common geometry; optional effects, lights or decals require their own admitted world facets`)
+      ]),
+      complete: false
+    });
+  }
+  const facet = (read, pageLimit) => read === void 0 ? void 0 : readAllPages((page2) => read(page2, signal), pageLimit, MODEL_FACET_ITEM_CAP);
+  const meshPage = await facet(asset.meshes.bind(asset), request.maxMeshes);
+  const [nodePage, skeletonPage, animationPage, materialPage, resourcePage, socketPage] = await Promise.all([
+    facet(asset.nodes?.bind(asset), maxNodes),
+    facet(asset.skeletonBindings?.bind(asset), maxNodes),
+    facet(asset.animationClips?.bind(asset), maxNodes),
+    facet(asset.materials?.bind(asset), maxNodes),
+    facet(asset.resourceReferences?.bind(asset), maxResources),
+    facet(asset.sockets?.bind(asset), maxNodes)
+  ]);
+  let materials = materialPage?.items;
+  let resourceItems = resourcePage?.items ?? [];
+  const skinDiagnostics = [];
+  if (options.skin !== void 0 && materials !== void 0) {
+    const skinned = await options.skin(materials);
+    skinDiagnostics.push(...skinned.diagnostics);
+    if (skinned.materials !== void 0) {
+      materials = skinned.materials;
+      resourceItems = [];
+    }
+  }
+  const allPrimitiveIds = meshPage.items.flatMap((mesh) => mesh.primitiveIds);
+  if (allPrimitiveIds.length > 0 && asset.primitive === void 0)
+    throw new TypeError("model publishes primitive ids without a primitive reader");
+  const primitives = [];
+  let primitiveBytes = 0;
+  for (let start = 0; start < allPrimitiveIds.length && primitiveBytes < request.maxBytes; start += request.maxPrimitives) {
+    const batch2 = await Promise.all(allPrimitiveIds.slice(start, start + request.maxPrimitives).map((primitiveId) => asset.primitive(primitiveId, { maxBytes: request.maxPrimitiveBytes }, signal)));
+    for (const primitive of batch2) {
+      const bytes = primitiveByteLength(primitive);
+      if (primitiveBytes + bytes > request.maxBytes)
+        break;
+      primitiveBytes += bytes;
+      primitives.push(primitive);
+    }
+    if (primitives.length < Math.min(start + request.maxPrimitives, allPrimitiveIds.length))
+      break;
+  }
+  const loadedPrimitives = new Set(primitives.map((primitive) => primitive.id));
+  const meshes = meshPage.items.filter((mesh) => mesh.primitiveIds.every((id) => loadedPrimitives.has(id)));
+  const graph = nodePage === void 0 ? void 0 : consistentNodes(nodePage.items, new Set(meshes.map((mesh) => mesh.id)));
+  const textureDiagnostics = [];
+  const textures = [];
+  const publishedResources = [...resourceItems];
+  const resourceIds = new Set(publishedResources.map((reference) => reference.id));
+  for (const material of materials ?? []) {
+    for (const layer2 of material.layers ?? []) {
+      if (layer2.resourceId === void 0 || resourceIds.has(layer2.resourceId))
+        continue;
+      resourceIds.add(layer2.resourceId);
+      publishedResources.push(Object.freeze({
+        id: layer2.resourceId,
+        role: "texture",
+        provenance: "reference-only"
+      }));
+    }
+  }
+  const textureReferences = publishedResources.filter((reference) => reference.role === "texture");
+  const sharedTextureBytes = Math.max(1, Math.floor(maxTextureTotalBytes / Math.max(1, textureReferences.length)));
+  let textureBytes = 0;
+  for (const reference of textureReferences) {
+    const remaining = maxTextureTotalBytes - textureBytes;
+    if (remaining <= 0) {
+      textureDiagnostics.push(diagnostic("warning", "x3.host/world-model-texture-budget-exhausted", `model texture budget omitted ${reference.id}`));
+      continue;
+    }
+    const logicalId = childResourceLogicalId(modelRequirement.logicalId, reference.id);
+    const previewTextureBytes = Math.max(1, Math.min(maxTextureBytes, remaining, sharedTextureBytes));
+    const cacheKey2 = `${logicalId}\0${String(previewTextureBytes)}`;
+    let pending = textureCache.get(cacheKey2);
+    if (pending === void 0) {
+      pending = (async () => {
+        const raster = await asset.readRaster({
+          kind: "logical",
+          requirement: {
+            id: `world-texture:${encodeURIComponent(logicalId)}`,
+            logicalId,
+            role: reference.role,
+            scopes: modelRequirement.scopes,
+            parentResourceId: modelRequirement.id
+          },
+          maxBytes: previewTextureBytes,
+          selection: { mipLevel: "fit" }
+        }, signal);
+        if (raster.state !== "decoded")
+          return Object.freeze({
+            diagnostics: Object.freeze([...raster.diagnostics])
+          });
+        const texture2 = worldTexture(reference.id, raster);
+        const mipLevel = raster.subresource?.mipLevel ?? 0;
+        return Object.freeze({
+          ...texture2 === void 0 ? {} : { texture: texture2 },
+          diagnostics: Object.freeze([
+            ...raster.diagnostics,
+            ...mipLevel === 0 ? [] : [
+              diagnostic("information", "x3.host/world-model-texture-preview-mip-selected", `model texture ${reference.id} uses preview mip ${String(mipLevel)} to stay within its decoded byte budget`)
+            ],
+            ...texture2 === void 0 ? [
+              diagnostic("warning", "x3.host/world-model-texture-orientation-unknown", `model texture ${reference.id} has no proven top/bottom row orientation`)
+            ] : []
+          ])
+        });
+      })();
+      textureCache.set(cacheKey2, pending);
+    }
+    const loaded = await pending;
+    textureDiagnostics.push(...loaded.diagnostics);
+    const texture = loaded.texture;
+    if (texture === void 0)
+      continue;
+    if (texture.rgba.byteLength > remaining) {
+      textureDiagnostics.push(diagnostic("warning", "x3.host/world-model-texture-budget-exhausted", `decoded model texture ${reference.id} exceeds the aggregate texture budget`));
+      continue;
+    }
+    textureBytes += texture.rgba.byteLength;
+    textures.push(texture);
+  }
+  return Object.freeze({
+    state: "converted",
+    sourceKey: result.sourceKey,
+    uvmBytes: result.bytes.slice(),
+    ...graph === void 0 ? {} : { nodes: Object.freeze(yawRootNodes(graph.nodes, options.yaw ?? 0)) },
+    ...skeletonPage === void 0 ? {} : { skeleton: Object.freeze([...skeletonPage.items]) },
+    ...animationPage === void 0 ? {} : { animations: Object.freeze([...animationPage.items]) },
+    ...materials === void 0 ? {} : { materials: Object.freeze([...materials]) },
+    ...publishedResources.length === 0 ? {} : { resources: Object.freeze(publishedResources) },
+    ...socketPage === void 0 ? {} : { sockets: Object.freeze([...socketPage.items]) },
+    ...publishedResources.length === 0 ? {} : { textures: Object.freeze(textures) },
+    meshes: Object.freeze(meshes),
+    primitives: Object.freeze(primitives),
+    diagnostics: Object.freeze([
+      ...result.diagnostics,
+      ...skinDiagnostics,
+      ...textureDiagnostics,
+      ...graph?.pruned === true ? [
+        diagnostic("warning", "x3.host/world-model-graph-truncated", `model ${modelRequirement.logicalId} was cut (${MODEL_FACET_ITEM_CAP} items per facet, ${request.maxBytes} primitive bytes); nodes and meshes left out are dropped from their parents`)
+      ] : []
+    ]),
+    complete: meshPage.complete && nodePage?.complete !== false && skeletonPage?.complete !== false && animationPage?.complete !== false && materialPage?.complete !== false && resourcePage?.complete !== false && socketPage?.complete !== false && textureReferences.length === textures.length && primitives.length === allPrimitiveIds.length
+  });
+}
+
+// packages/host/dist/maps/world-source.js
+function resourceId(namespace, entityId) {
+  return `resource:${encodeURIComponent(namespace)}/${encodeURIComponent(entityId)}`;
+}
+function modelResourceId(requirementId) {
+  return `model-resource:${encodeURIComponent(requirementId)}`;
+}
+function layerId(kind) {
+  return `main/${kind}`;
+}
+function layerContentRevision(items) {
+  const text4 = JSON.stringify(items, (key3, value2) => key3 === "id" || key3 === "layerId" ? void 0 : value2);
+  let hash2 = 2166136261;
+  for (let index2 = 0; index2 < text4.length; index2 += 1) {
+    hash2 ^= text4.charCodeAt(index2);
+    hash2 = Math.imul(hash2, 16777619);
+  }
+  return `fnv1a32:${(hash2 >>> 0).toString(16).padStart(8, "0")}:${items.length}`;
+}
+function terrainMaterialContentRevision(items, rasters) {
+  const text4 = JSON.stringify([items, rasters.map(({ rgba: _rgba, ...metadata }) => metadata)], (key3, value2) => key3 === "id" || key3 === "layerId" ? void 0 : value2);
+  let hash2 = 2166136261;
+  for (let index2 = 0; index2 < text4.length; index2 += 1) {
+    hash2 ^= text4.charCodeAt(index2);
+    hash2 = Math.imul(hash2, 16777619);
+  }
+  for (const raster of rasters) {
+    for (const value2 of raster.rgba ?? []) {
+      hash2 ^= value2;
+      hash2 = Math.imul(hash2, 16777619);
+    }
+  }
+  return `fnv1a32:${(hash2 >>> 0).toString(16).padStart(8, "0")}:${items.length}:${rasters.length}`;
+}
+function canonicalQuery(request) {
+  const bounds3 = request.bounds;
+  if (bounds3 !== void 0 && (!Number.isFinite(bounds3.minimumX) || !Number.isFinite(bounds3.minimumY) || !Number.isFinite(bounds3.maximumX) || !Number.isFinite(bounds3.maximumY) || bounds3.minimumX > bounds3.maximumX || bounds3.minimumY > bounds3.maximumY)) {
+    throw new TypeError("world bounds must be finite ordered minimum/maximum coordinates");
+  }
+  return JSON.stringify([
+    request.facet,
+    request.layerId ?? null,
+    request.lod ?? null,
+    bounds3 === void 0 ? null : [bounds3.minimumX, bounds3.minimumY, bounds3.maximumX, bounds3.maximumY]
+  ]);
+}
+function cursor(snapshotId, query2, offset) {
+  return `${encodeURIComponent(snapshotId)}|${encodeURIComponent(query2)}|${String(offset)}`;
+}
+function cursorOffset(value2, snapshotId, query2) {
+  if (value2 === void 0)
+    return 0;
+  const parts = value2.split("|");
+  if (parts.length !== 3)
+    throw new TypeError("world cursor is malformed");
+  let cursorSnapshot;
+  let cursorQuery;
+  try {
+    cursorSnapshot = decodeURIComponent(parts[0] ?? "");
+    cursorQuery = decodeURIComponent(parts[1] ?? "");
+  } catch {
+    throw new TypeError("world cursor is malformed");
+  }
+  const offset = Number(parts[2]);
+  if (cursorSnapshot !== snapshotId) {
+    throw new TypeError("world cursor belongs to another or stale source snapshot");
+  }
+  if (cursorQuery !== query2 || !Number.isSafeInteger(offset) || offset < 0) {
+    throw new TypeError("world cursor does not match the requested layer, LOD or spatial query");
+  }
+  return offset;
+}
+function numericPair(value2) {
+  if (value2 === void 0)
+    return void 0;
+  const parts = value2.split(",").map((item) => Number(item.trim()));
+  return parts.length >= 2 && Number.isFinite(parts[0]) && Number.isFinite(parts[1]) ? Object.freeze({ x: parts[0], y: parts[1] }) : void 0;
+}
+function regionShape(shape) {
+  const center = numericPair(shape.parameters["center"]);
+  const radiusValue = shape.parameters["radius"];
+  const radius = radiusValue === void 0 ? void 0 : Number(radiusValue);
+  return Object.freeze({
+    kind: shape.type,
+    ...center === void 0 ? {} : { center },
+    ...radius !== void 0 && Number.isFinite(radius) ? { radius } : {},
+    rawParameters: shape.parameters
+  });
+}
+function pageItems(items, request, snapshotId, maximum) {
+  const limit = positiveLimit(request.limit, maximum);
+  const query2 = canonicalQuery(request);
+  const offset = cursorOffset(request.cursor, snapshotId, query2);
+  if (offset > items.length)
+    throw new TypeError("world cursor offset is outside this facet");
+  const selected = Object.freeze(items.slice(offset, offset + limit));
+  const nextOffset = offset + selected.length;
+  return Object.freeze({
+    snapshotId,
+    facet: request.facet,
+    state: "available",
+    items: selected,
+    ...nextOffset < items.length ? { nextCursor: cursor(snapshotId, query2, nextOffset) } : {}
+  });
+}
+function hasExactTerrainGrid(terrain) {
+  if (terrain === void 0 || terrain.samples.length !== terrain.cellCount)
+    return false;
+  const expectedCellCount = terrain.width * terrain.height;
+  if (!Number.isSafeInteger(expectedCellCount) || expectedCellCount <= 0 || expectedCellCount !== terrain.cellCount) {
+    return false;
+  }
+  return terrain.samples.every((sample, index2) => sample.x === index2 % terrain.width && sample.y === Math.floor(index2 / terrain.width));
+}
+function terrainMapNativePosition(sample, transform2) {
+  const vertical = "vertData" in transform2 ? (sample.heightBase * transform2.vertData.quantizeScale - transform2.vertData.quantizeBias) * transform2.heightMap.scale.z + transform2.heightMap.offset.z + ((sample.presentationHeightAdjustment ?? sample.heightAdjustment) * transform2.vertData.quantizeScale - transform2.vertData.quantizeBias) : sample.heightBase * transform2.heightMap.scale.z + transform2.heightMap.offset.z;
+  return Object.freeze({
+    x: transform2.heightMap.offset.x + sample.x * transform2.heightMap.scale.x,
+    y: transform2.heightMap.offset.y + sample.y * transform2.heightMap.scale.y,
+    z: vertical
+  });
+}
+function terrainHeightAt(position, terrain, transform2) {
+  if (transform2 === void 0 || terrain === void 0 || !hasExactTerrainGrid(terrain))
+    return void 0;
+  const gridX = (position.x - transform2.heightMap.offset.x) / transform2.heightMap.scale.x;
+  const gridY = (position.y - transform2.heightMap.offset.y) / transform2.heightMap.scale.y;
+  if (!Number.isFinite(gridX) || !Number.isFinite(gridY) || gridX < 0 || gridY < 0 || gridX > terrain.width - 1 || gridY > terrain.height - 1) {
+    return void 0;
+  }
+  const x0 = Math.floor(gridX);
+  const y0 = Math.floor(gridY);
+  const x1 = Math.min(x0 + 1, terrain.width - 1);
+  const y1 = Math.min(y0 + 1, terrain.height - 1);
+  const tx = gridX - x0;
+  const ty = gridY - y0;
+  const height = (x, y) => terrainMapNativePosition(terrain.samples[y * terrain.width + x], transform2).z;
+  const lower = height(x0, y0) * (1 - tx) + height(x1, y0) * tx;
+  const upper = height(x0, y1) * (1 - tx) + height(x1, y1) * tx;
+  return lower * (1 - ty) + upper * ty;
+}
+function canonicalPosition(position, transform2) {
+  const axis = (output) => {
+    const mapping = transform2.axes[output];
+    const value2 = position[mapping.sourceAxis] * mapping.scale + mapping.offset;
+    return value2 === 0 ? 0 : value2;
+  };
+  return Object.freeze({ x: axis("x"), y: axis("y"), z: axis("z") });
+}
+function canonicalObjectRotation(rotation, nativeUnit) {
+  let radians;
+  if (rotation === void 0)
+    radians = 0;
+  else if (nativeUnit === "radians")
+    radians = rotation;
+  else if (nativeUnit === "degrees")
+    radians = rotation * Math.PI / 180;
+  else if (nativeUnit === "uint16-turn")
+    radians = rotation * Math.PI * 2 / 65536;
+  else
+    return void 0;
+  if (!Number.isFinite(radians))
+    return void 0;
+  const half = radians / 2;
+  const y = Math.sin(half);
+  const w = Math.cos(half);
+  return Object.freeze([0, y === 0 ? 0 : y, 0, w === 0 ? 0 : w]);
+}
+function canonicalObjectScale(scale, transform2) {
+  const source2 = scale ?? { x: 1, y: 1, z: 1 };
+  return Object.freeze({
+    x: source2[transform2.axes.x.sourceAxis],
+    y: source2[transform2.axes.y.sourceAxis],
+    z: source2[transform2.axes.z.sourceAxis]
+  });
+}
+function canonicalRegionShape(shape, transform2) {
+  const point2 = (value2) => {
+    const canonical = canonicalPosition({ x: value2.x, y: value2.y, z: 0 }, transform2);
+    return Object.freeze({ x: canonical.x, y: canonical.z });
+  };
+  const horizontalScaleX = Math.abs(transform2.axes.x.scale);
+  const horizontalScaleZ = Math.abs(transform2.axes.z.scale);
+  if (shape.center !== void 0 && shape.radius !== void 0) {
+    if (horizontalScaleX !== horizontalScaleZ)
+      return void 0;
+    return Object.freeze({
+      ...shape,
+      center: point2(shape.center),
+      radius: shape.radius * horizontalScaleX
+    });
+  }
+  if (shape.minimum !== void 0 && shape.maximum !== void 0) {
+    const corners = [
+      point2(shape.minimum),
+      point2({ x: shape.minimum.x, y: shape.maximum.y }),
+      point2(shape.maximum),
+      point2({ x: shape.maximum.x, y: shape.minimum.y })
+    ];
+    return Object.freeze({
+      ...shape,
+      minimum: Object.freeze({
+        x: Math.min(...corners.map((corner) => corner.x)),
+        y: Math.min(...corners.map((corner) => corner.y))
+      }),
+      maximum: Object.freeze({
+        x: Math.max(...corners.map((corner) => corner.x)),
+        y: Math.max(...corners.map((corner) => corner.y))
+      })
+    });
+  }
+  if (shape.points !== void 0) {
+    return Object.freeze({ ...shape, points: Object.freeze(shape.points.map(point2)) });
+  }
+  return void 0;
+}
+function admittedTerrainTransform(snapshot3, terrain, exact2) {
+  const transform2 = snapshot3.terrainTransform;
+  if (transform2 === void 0 || terrain === void 0 || !exact2)
+    return void 0;
+  const finite8 = (value2) => Number.isFinite(value2);
+  const positive2 = (value2) => finite8(value2) && value2 > 0;
+  const verticalMappingValid = (value2) => {
+    if ("vertData" in value2) {
+      return finite8(value2.vertData.quantizeBias) && positive2(value2.vertData.quantizeScale) && finite8(value2.vertData.standardHeight) && value2.mapping.vertical === "dequantized-base-times-scale-plus-offset-plus-dequantized-adjustment";
+    }
+    return value2.mapping.vertical === "direct-base-times-scale-plus-offset" && value2.source.format.length > 0 && value2.source.heightEncoding.length > 0 && terrain.samples.every((sample) => sample.heightAdjustment === 0);
+  };
+  if (transform2.schemaVersion !== 1 || !Number.isSafeInteger(transform2.descriptorVersion) || transform2.descriptorVersion <= 0 || transform2.snapshotId !== snapshot3.snapshotId || transform2.heightMap.dim.length !== 2 || transform2.heightMap.dim[0] !== terrain.width || transform2.heightMap.dim[1] !== terrain.height || !Object.values(transform2.heightMap.offset).every(finite8) || !Object.values(transform2.heightMap.scale).every(positive2) || transform2.mapping.horizontal !== "offset-plus-grid-index-times-scale" || !verticalMappingValid(transform2) || transform2.bounds.coordinateSpaceId !== "map-native") {
+    return void 0;
+  }
+  let minimum = { x: Infinity, y: Infinity, z: Infinity };
+  let maximum = { x: -Infinity, y: -Infinity, z: -Infinity };
+  for (const sample of terrain.samples) {
+    const position = terrainMapNativePosition(sample, transform2);
+    if (!Object.values(position).every(finite8))
+      return void 0;
+    minimum = {
+      x: Math.min(minimum.x, position.x),
+      y: Math.min(minimum.y, position.y),
+      z: Math.min(minimum.z, position.z)
+    };
+    maximum = {
+      x: Math.max(maximum.x, position.x),
+      y: Math.max(maximum.y, position.y),
+      z: Math.max(maximum.z, position.z)
+    };
+  }
+  return ["x", "y", "z"].every((axis) => transform2.bounds.minimum[axis] === minimum[axis] && transform2.bounds.maximum[axis] === maximum[axis]) ? transform2 : void 0;
+}
+function admittedWorldCanonicalTransform(snapshot3, terrainTransform) {
+  const transform2 = snapshot3.uvwTransform;
+  if (transform2 === void 0 || terrainTransform === void 0)
+    return void 0;
+  const finite8 = (value2) => Number.isFinite(value2);
+  const positive2 = (value2) => finite8(value2) && value2 > 0;
+  const basis2 = transform2.basis;
+  const axes = Object.values(transform2.axes);
+  const sourceAxes = axes.map((item) => item.sourceAxis);
+  if (transform2.schemaVersion !== 1 || transform2.snapshotId !== snapshot3.snapshotId || transform2.sourceCoordinateSpaceId !== "map-native" || transform2.targetCoordinateSpaceId !== "uvw-canonical" || basis2.handedness !== "right" || basis2.upAxis !== "y" || basis2.forwardAxis !== "+z" || basis2.unit !== "meter" && basis2.unit !== "source-unit" || basis2.unit === "source-unit" && (basis2.sourceUnit === void 0 || basis2.sourceUnit.length === 0 || basis2.metersPerUnit !== void 0) || basis2.unitsPerCell !== void 0 && !positive2(basis2.unitsPerCell) || axes.some((item) => !finite8(item.scale) || item.scale === 0 || !finite8(item.offset)) || new Set(sourceAxes).size !== 3 || !Number.isSafeInteger(transform2.heightfield.columns) || !Number.isSafeInteger(transform2.heightfield.rows) || transform2.heightfield.columns !== terrainTransform.heightMap.dim[0] || transform2.heightfield.rows !== terrainTransform.heightMap.dim[1] || !positive2(transform2.heightfield.cellSize) || basis2.unitsPerCell !== void 0 && basis2.unitsPerCell !== transform2.heightfield.cellSize || transform2.heightfield.origin.length !== 3 || !transform2.heightfield.origin.every(finite8) || transform2.heightfield.sourceRowOrder !== "reverse" || transform2.bounds.coordinateSpaceId !== "uvw-canonical" || !Object.values(transform2.bounds.minimum).every(finite8) || !Object.values(transform2.bounds.maximum).every(finite8) || !["x", "y", "z"].every((axis) => transform2.bounds.minimum[axis] <= transform2.bounds.maximum[axis]) || !Number.isSafeInteger(transform2.proof.tupleCount) || transform2.proof.tupleCount <= 0 || transform2.proof.kind !== "adapter-qualification" || transform2.proof.oracle.length === 0 || transform2.proof.corpus.length === 0 || Object.keys(transform2.proof.sourceDigests).length === 0 || !Object.values(transform2.proof.sourceDigests).every((value2) => /^sha256:[0-9a-f]{64}$/u.test(value2)) || !/^sha256:[0-9a-f]{64}$/u.test(transform2.proof.nativeTupleDigest) || transform2.proof.presentationTupleDigest !== void 0 && !/^sha256:[0-9a-f]{64}$/u.test(transform2.proof.presentationTupleDigest) || !/^sha256:[0-9a-f]{64}$/u.test(transform2.proof.canonicalTupleDigest) || transform2.proof.comparison !== "ieee-754-binary64-exact") {
+    return void 0;
+  }
+  const nativeBounds = terrainTransform.bounds;
+  const corners = [nativeBounds.minimum.x, nativeBounds.maximum.x].flatMap((x) => [nativeBounds.minimum.y, nativeBounds.maximum.y].flatMap((y) => [nativeBounds.minimum.z, nativeBounds.maximum.z].map((z) => ({ x, y, z }))));
+  let minimum = { x: Infinity, y: Infinity, z: Infinity };
+  let maximum = { x: -Infinity, y: -Infinity, z: -Infinity };
+  for (const corner of corners) {
+    const value2 = canonicalPosition(corner, transform2);
+    minimum = {
+      x: Math.min(minimum.x, value2.x),
+      y: Math.min(minimum.y, value2.y),
+      z: Math.min(minimum.z, value2.z)
+    };
+    maximum = {
+      x: Math.max(maximum.x, value2.x),
+      y: Math.max(maximum.y, value2.y),
+      z: Math.max(maximum.z, value2.z)
+    };
+  }
+  return ["x", "y", "z"].every((axis) => transform2.bounds.minimum[axis] === minimum[axis] && transform2.bounds.maximum[axis] === maximum[axis]) ? transform2 : void 0;
+}
+function createCandidateWorldSceneLease(snapshot3, provenance, maxPageSize, modelResources, releaseModelResources, rasterResources) {
+  positiveLimit(maxPageSize, Number.MAX_SAFE_INTEGER);
+  const materialModelCache = /* @__PURE__ */ new Map();
+  const modelTextureCache = /* @__PURE__ */ new Map();
+  const semantic = snapshot3.semantic;
+  const terrainLayerId = layerId("terrain");
+  const terrainMaterialLayerId = layerId("terrain-materials");
+  const waterLayerId = layerId("water");
+  const cliffLayerId = layerId("cliffs");
+  const objectLayerId = layerId("objects");
+  const regionLayerId = layerId("regions");
+  const resourceLayerId = layerId("resources");
+  const navigationLayerId = layerId("navigation");
+  const gatewayLayerId = layerId("gateways");
+  const lightingLayerId = layerId("lighting");
+  const terrainSummary = semantic.terrain;
+  const terrainExact = hasExactTerrainGrid(terrainSummary);
+  const terrainTransform = admittedTerrainTransform(snapshot3, terrainSummary, terrainExact);
+  const uvwTransform = admittedWorldCanonicalTransform(snapshot3, terrainTransform);
+  const terrainLod = terrainExact ? "exact" : "sampled";
+  const terrainMaterialExact = snapshot3.terrainMaterials?.exact === true && (uvwTransform === void 0 || snapshot3.terrainMaterials.width === uvwTransform.heightfield.columns && snapshot3.terrainMaterials.height === uvwTransform.heightfield.rows);
+  const terrainWeightRasterExact = (snapshot3.terrainMaterials?.weightRasters?.length ?? 0) > 0 && snapshot3.terrainMaterials.weightRasters.every((raster) => Number.isSafeInteger(raster.width) && raster.width > 0 && Number.isSafeInteger(raster.height) && raster.height > 0 && raster.materialIds.length > 0 && raster.materialIds.length <= 4 && raster.rgba?.byteLength === raster.width * raster.height * 4);
+  const terrainMaterialLod = terrainMaterialExact ? "exact" : "sampled";
+  const cliffExact = snapshot3.cliffs?.exact === true && (uvwTransform === void 0 || snapshot3.cliffs.width <= uvwTransform.heightfield.columns && snapshot3.cliffs.height <= uvwTransform.heightfield.rows);
+  const cliffLod = cliffExact ? "exact" : "sampled";
+  const objectIdentities = /* @__PURE__ */ new Set();
+  const semanticObjects = semantic.objects.filter((item) => {
+    if (objectIdentities.has(item.objectId))
+      return false;
+    objectIdentities.add(item.objectId);
+    return true;
+  });
+  const regionIdentities = /* @__PURE__ */ new Set();
+  const semanticRegions = semantic.regions.filter((item) => {
+    if (regionIdentities.has(item.regionId))
+      return false;
+    regionIdentities.add(item.regionId);
+    return true;
+  });
+  const catalogModelRequirements = /* @__PURE__ */ new Map();
+  for (const item of semanticObjects) {
+    if (item.catalog === void 0 || item.modelResource === void 0)
+      continue;
+    const key3 = resourceId(item.catalog.ref.namespace, item.catalog.ref.entityId);
+    catalogModelRequirements.set(key3, (catalogModelRequirements.get(key3) ?? /* @__PURE__ */ new Set()).add(item.modelResource.id));
+  }
+  const objectResourceId = (ref2, modelResource) => {
+    const base = resourceId(ref2.namespace, ref2.entityId);
+    return modelResource !== void 0 && (catalogModelRequirements.get(base)?.size ?? 0) > 1 ? `${base}~${encodeURIComponent(modelResource.id)}` : base;
+  };
+  const duplicateObjectCount = semantic.objects.length - semanticObjects.length;
+  const duplicateRegionCount = semantic.regions.length - semanticRegions.length;
+  const incompleteObjectPositionCount = semanticObjects.filter((item) => item.sourcePositionDimensions === 2).length;
+  const terrain = Object.freeze((semantic.terrain?.samples ?? []).map((item) => {
+    const mapNativePosition = terrainTransform === void 0 ? void 0 : terrainMapNativePosition(item, terrainTransform);
+    return Object.freeze({
+      facet: "terrain",
+      id: `${terrainLayerId}:sample:${String(item.x)}:${String(item.y)}`,
+      layerId: terrainLayerId,
+      coordinateSpaceId: "height-grid",
+      lod: terrainLod,
+      ...item,
+      ...mapNativePosition === void 0 ? {} : { mapNativePosition },
+      ...mapNativePosition === void 0 || uvwTransform === void 0 ? {} : { uvwPosition: canonicalPosition(mapNativePosition, uvwTransform) }
+    });
+  }));
+  const terrainByGrid = new Map(terrain.flatMap((item) => item.facet === "terrain" ? [[`${String(item.x)}:${String(item.y)}`, item]] : []));
+  const terrainMaterials = Object.freeze((snapshot3.terrainMaterials?.samples ?? []).map((item) => {
+    const terrainItem = terrainByGrid.get(`${String(item.x)}:${String(item.y)}`);
+    const materialId = snapshot3.terrainMaterials?.materials?.find((material) => material.sourceIndex === item.textureIndex)?.materialId ?? `material-${String(item.textureIndex)}`;
+    return Object.freeze({
+      facet: "terrain-materials",
+      id: `${terrainMaterialLayerId}:sample:${String(item.x)}:${String(item.y)}`,
+      layerId: terrainMaterialLayerId,
+      coordinateSpaceId: "height-grid",
+      lod: terrainMaterialLod,
+      ...item,
+      weights: item.weights ?? Object.freeze([Object.freeze({ materialId, weight: 1 })]),
+      ...terrainItem?.facet === "terrain" && terrainItem.uvwPosition !== void 0 ? { uvwPosition: terrainItem.uvwPosition } : {}
+    });
+  }));
+  const water = Object.freeze((snapshot3.water?.zones ?? []).map((item) => {
+    const canonicalCorners = item.elevation === void 0 || uvwTransform === void 0 ? void 0 : [item.minimum.x, item.maximum.x].flatMap((x) => [item.minimum.y, item.maximum.y].map((y) => canonicalPosition({ x, y, z: item.elevation }, uvwTransform)));
+    return Object.freeze({
+      facet: "water",
+      id: `${waterLayerId}:zone:${String(item.zoneId)}`,
+      layerId: waterLayerId,
+      coordinateSpaceId: "map-native",
+      ...item,
+      ...canonicalCorners === void 0 ? {} : {
+        uvwMinimum: Object.freeze({
+          x: Math.min(...canonicalCorners.map((corner) => corner.x)),
+          z: Math.min(...canonicalCorners.map((corner) => corner.z))
+        }),
+        uvwMaximum: Object.freeze({
+          x: Math.max(...canonicalCorners.map((corner) => corner.x)),
+          z: Math.max(...canonicalCorners.map((corner) => corner.z))
+        }),
+        uvwElevation: canonicalCorners[0].y
+      }
+    });
+  }));
+  const unresolvedWaterElevationCount = water.filter((item) => item.facet === "water" && item.elevation === void 0).length;
+  const cliffs = Object.freeze((snapshot3.cliffs?.samples ?? []).map((item) => {
+    const terrainItem = terrainByGrid.get(`${String(item.x)}:${String(item.y)}`);
+    return Object.freeze({
+      facet: "cliffs",
+      id: `${cliffLayerId}:sample:${String(item.x)}:${String(item.y)}`,
+      layerId: cliffLayerId,
+      coordinateSpaceId: "height-grid",
+      lod: cliffLod,
+      ...item,
+      ...terrainItem?.facet === "terrain" && terrainItem.uvwPosition !== void 0 ? { uvwPosition: terrainItem.uvwPosition } : {}
+    });
+  }));
+  const semanticObjectItems = Object.freeze(semanticObjects.map((item) => {
+    const id = `${objectLayerId}:object:${String(item.objectId)}`;
+    const ref2 = item.catalog?.ref;
+    const uvwRotation = canonicalObjectRotation(item.rotation, item.nativeRotationUnit);
+    const groundHeight = terrainHeightAt(item.position, semantic.terrain, terrainTransform);
+    const mapNativePresentationPosition = groundHeight === void 0 || item.heightReference === void 0 || item.heightReference === "absolute" ? item.position : Object.freeze({
+      ...item.position,
+      z: item.heightReference === "terrain-relative" ? groundHeight + item.position.z : groundHeight
+    });
+    const compoundResourceIds = (item.modelResources ?? []).map((requirement) => modelResourceId(requirement.id));
+    const modelComponents = item.modelComponents?.map((component2) => Object.freeze({
+      ...component2,
+      resourceId: modelResourceId(component2.resourceId)
+    }));
+    return Object.freeze({
+      facet: "objects",
+      id,
+      layerId: objectLayerId,
+      coordinateSpaceId: "map-native",
+      ...item,
+      ...mapNativePresentationPosition === item.position ? {} : { mapNativePresentationPosition },
+      ...uvwTransform === void 0 || item.sourcePositionDimensions === 2 ? {} : {
+        uvwPosition: canonicalPosition(mapNativePresentationPosition, uvwTransform),
+        ...uvwRotation === void 0 ? {} : { uvwRotation },
+        uvwScale: canonicalObjectScale(item.scale, uvwTransform)
+      },
+      ...ref2 === void 0 ? {} : { resourceId: objectResourceId(ref2, item.modelResource) },
+      ...compoundResourceIds.length === 0 ? {} : { resourceIds: Object.freeze(compoundResourceIds) },
+      ...modelComponents === void 0 ? {} : { modelComponents: Object.freeze(modelComponents) }
+    });
+  }));
+  const cliffPieceModels = new Map((snapshot3.cliffs?.pieceModels ?? []).map((model) => [model.id, model]));
+  const cliffModelResourceId = (modelId) => `cliff-model:${encodeURIComponent(modelId)}`;
+  const cliffPieceObjects = Object.freeze((snapshot3.cliffs?.pieces ?? []).flatMap((piece, index2) => cliffPieceModels.get(piece.modelId)?.candidates.length ? [
+    Object.freeze({
+      facet: "objects",
+      id: `${objectLayerId}:cliff:${piece.id}`,
+      layerId: objectLayerId,
+      coordinateSpaceId: "map-native",
+      kind: "doodad",
+      objectId: -(index2 + 1),
+      typeId: piece.modelId,
+      position: piece.position,
+      heightReference: "absolute",
+      derivedFrom: "cliffs",
+      // Terrain is never player-owned: no team colour in its materials.
+      presentationTeamColor: Object.freeze([1, 1, 1]),
+      presentationTeamColorIntensity: 0,
+      ...uvwTransform === void 0 ? {} : {
+        uvwPosition: canonicalPosition(piece.position, uvwTransform),
+        uvwRotation: Object.freeze([0, 0, 0, 1]),
+        uvwScale: canonicalObjectScale(void 0, uvwTransform)
+      },
+      resourceId: cliffModelResourceId(piece.modelId)
+    })
+  ] : []));
+  const objects = Object.freeze([
+    ...semanticObjectItems,
+    ...cliffPieceObjects
+  ]);
+  const regions = Object.freeze(semanticRegions.map((item) => {
+    const shapes = Object.freeze(item.shapes.map(regionShape));
+    const uvwShapes = uvwTransform === void 0 ? void 0 : shapes.map((shape) => canonicalRegionShape(shape, uvwTransform));
+    return Object.freeze({
+      facet: "regions",
+      id: `${regionLayerId}:region:${String(item.regionId)}`,
+      layerId: regionLayerId,
+      coordinateSpaceId: "map-native",
+      regionId: item.regionId,
+      name: item.name,
+      ...item.color === void 0 ? {} : { color: item.color },
+      shapes,
+      ...uvwShapes === void 0 || uvwShapes.some((shape) => shape === void 0) ? {} : { uvwShapes: Object.freeze(uvwShapes) }
+    });
+  }));
+  const incompleteRegionGeometryCount = regions.filter((item) => item.facet === "regions" && item.uvwShapes === void 0).length;
+  const resourceJoins = /* @__PURE__ */ new Map();
+  const cliffPieceObjectIds = /* @__PURE__ */ new Map();
+  for (const item of cliffPieceObjects)
+    cliffPieceObjectIds.set(item.typeId, [...cliffPieceObjectIds.get(item.typeId) ?? [], item.id]);
+  for (const [modelId, objectIds] of cliffPieceObjectIds) {
+    const model = cliffPieceModels.get(modelId);
+    resourceJoins.set(cliffModelResourceId(modelId), {
+      resolved: true,
+      objectIds,
+      modelResource: model.candidates[0].requirement,
+      modelCandidates: model.candidates,
+      ...model.materialModel === void 0 ? {} : { materialModel: model.materialModel }
+    });
+  }
+  for (const item of objects) {
+    if (item.facet !== "objects")
+      continue;
+    if (item.catalog !== void 0) {
+      const key3 = objectResourceId(item.catalog.ref, item.modelResource);
+      const current = resourceJoins.get(key3) ?? {
+        namespace: item.catalog.ref.namespace,
+        entityId: item.catalog.ref.entityId,
+        resolved: item.catalog.entity !== void 0,
+        objectIds: [],
+        ...item.modelResource === void 0 ? {} : { modelResource: item.modelResource }
+      };
+      current.resolved ||= item.catalog.entity !== void 0;
+      if (current.modelResource === void 0 && item.modelResource !== void 0) {
+        current.modelResource = item.modelResource;
+      }
+      current.objectIds.push(item.id);
+      resourceJoins.set(key3, current);
+    }
+    for (const modelResource of item.modelResources ?? []) {
+      const key3 = modelResourceId(modelResource.id);
+      const current = resourceJoins.get(key3) ?? {
+        resolved: true,
+        objectIds: [],
+        modelResource
+      };
+      current.objectIds.push(item.id);
+      resourceJoins.set(key3, current);
+    }
+  }
+  const resources = Object.freeze([...resourceJoins.entries()].sort(([left], [right]) => left.localeCompare(right)).map(([id, item]) => Object.freeze({
+    facet: "resources",
+    id,
+    layerId: resourceLayerId,
+    ...item.namespace === void 0 ? {} : { namespace: item.namespace },
+    ...item.entityId === void 0 ? {} : { entityId: item.entityId },
+    resolved: item.resolved,
+    ...item.modelResource === void 0 ? {} : { modelResource: item.modelResource },
+    ...item.modelCandidates === void 0 ? {} : { modelCandidates: item.modelCandidates },
+    ...item.materialModel === void 0 ? {} : { materialModel: item.materialModel },
+    objectIds: Object.freeze([...item.objectIds])
+  })));
+  const navigation = Object.freeze((snapshot3.navigation?.samples ?? []).map((item) => Object.freeze({
+    facet: "navigation",
+    id: `${navigationLayerId}:sample:${String(item.x)}:${String(item.y)}`,
+    layerId: navigationLayerId,
+    coordinateSpaceId: "navigation-grid",
+    lod: "sampled",
+    ...item
+  })));
+  const gateways = Object.freeze((snapshot3.gateways?.segments ?? []).map((item) => {
+    const uvwStart = uvwTransform === void 0 ? void 0 : canonicalPosition({ x: item.x1, y: item.y1, z: 0 }, uvwTransform);
+    const uvwEnd = uvwTransform === void 0 ? void 0 : canonicalPosition({ x: item.x2, y: item.y2, z: 0 }, uvwTransform);
+    return Object.freeze({
+      facet: "gateways",
+      ...item,
+      id: `${gatewayLayerId}:${item.id}`,
+      layerId: gatewayLayerId,
+      coordinateSpaceId: "map-native",
+      ...uvwStart === void 0 || uvwEnd === void 0 ? {} : { uvwStart, uvwEnd }
+    });
+  }));
+  const lighting = Object.freeze(snapshot3.lighting === void 0 ? [] : [
+    Object.freeze({
+      facet: "lighting",
+      id: `${lightingLayerId}:environment`,
+      layerId: lightingLayerId,
+      coordinateSpaceId: snapshot3.lighting.coordinateSpaceId,
+      ambientColor: snapshot3.lighting.ambientColor,
+      ambientIntensity: snapshot3.lighting.ambientIntensity,
+      directional: snapshot3.lighting.directional,
+      ...snapshot3.lighting.terrain === void 0 ? {} : { terrain: snapshot3.lighting.terrain },
+      ...snapshot3.lighting.toneMapping === void 0 ? {} : { toneMapping: snapshot3.lighting.toneMapping },
+      ...snapshot3.lighting.shadowRange === void 0 ? {} : { shadowRange: snapshot3.lighting.shadowRange }
+    })
+  ]);
+  const contentRevisions = Object.freeze({
+    terrain: layerContentRevision(terrain),
+    "terrain-materials": terrainMaterialContentRevision(terrainMaterials, snapshot3.terrainMaterials?.weightRasters ?? []),
+    water: layerContentRevision(water),
+    cliffs: layerContentRevision(cliffs),
+    objects: layerContentRevision(objects),
+    regions: layerContentRevision(regions),
+    resources: layerContentRevision(resources),
+    navigation: layerContentRevision(navigation),
+    gateways: layerContentRevision(gateways),
+    lighting: layerContentRevision(lighting)
+  });
+  const commonTerrainMaterials = Object.freeze(snapshot3.terrainMaterials?.materials ?? (snapshot3.terrainMaterials?.textureNames ?? []).map((label, sourceIndex) => Object.freeze({ materialId: `material-${String(sourceIndex)}`, label, sourceIndex })));
+  const commonWaterMaterials = Object.freeze(snapshot3.water?.materials ?? []);
+  const commonTerrainWeightRasters = Object.freeze((snapshot3.terrainMaterials?.weightRasters ?? []).map((raster) => Object.freeze({
+    resourceId: raster.resourceId,
+    width: raster.width,
+    height: raster.height,
+    materialIds: raster.materialIds,
+    encoding: raster.encoding,
+    normalization: raster.normalization
+  })));
+  const terrainWeightTextures = new Map((snapshot3.terrainMaterials?.weightRasters ?? []).flatMap((raster) => raster.rgba === void 0 ? [] : [
+    [
+      raster.resourceId,
+      Object.freeze({
+        id: raster.resourceId,
+        width: raster.width,
+        height: raster.height,
+        rgba: raster.rgba.slice(),
+        wrapU: "clamp",
+        wrapV: "clamp",
+        filter: "linear"
+      })
+    ]
+  ]));
+  const facets = Object.freeze([
+    Object.freeze({
+      facet: "terrain",
+      layerId: terrainLayerId,
+      state: terrainSummary === void 0 ? "unavailable" : terrainExact ? "available" : "partial",
+      itemCount: semantic.terrain?.cellCount ?? 0,
+      lods: Object.freeze(terrainSummary === void 0 ? [] : terrainExact ? ["exact"] : ["summary", "sampled"]),
+      contentRevision: contentRevisions.terrain,
+      ...terrainSummary === void 0 ? { reason: "authoritative semantic snapshot contains no terrain height grid" } : terrainExact ? {} : {
+        reason: "candidate exposes bounded deterministic samples, not the full native grid"
+      }
+    }),
+    Object.freeze({
+      facet: "terrain-materials",
+      layerId: terrainMaterialLayerId,
+      state: snapshot3.terrainMaterials === void 0 ? "unavailable" : terrainMaterialExact || terrainWeightRasterExact ? "available" : "partial",
+      itemCount: snapshot3.terrainMaterials?.cellCount ?? 0,
+      lods: Object.freeze(snapshot3.terrainMaterials === void 0 ? [] : terrainMaterialExact ? ["exact"] : terrainWeightRasterExact ? ["raster-exact", "sampled"] : ["summary", "sampled"]),
+      contentRevision: contentRevisions["terrain-materials"],
+      ...snapshot3.terrainMaterials === void 0 ? { reason: "publisher reported terrain materials unavailable" } : terrainMaterialExact || terrainWeightRasterExact ? {} : {
+        reason: "publisher exposes bounded material samples without a grid matching the admitted UVW heightfield"
+      }
+    }),
+    Object.freeze({
+      facet: "water",
+      layerId: waterLayerId,
+      state: snapshot3.water === void 0 ? "unavailable" : unresolvedWaterElevationCount === 0 && snapshot3.water.exact !== false ? "available" : "partial",
+      itemCount: snapshot3.water?.zones.length ?? 0,
+      lods: Object.freeze(snapshot3.water === void 0 ? [] : ["exact"]),
+      contentRevision: contentRevisions.water,
+      ...snapshot3.water === void 0 ? { reason: "publisher reported water unavailable" } : unresolvedWaterElevationCount > 0 ? {
+        reason: `${String(unresolvedWaterElevationCount)} native water zone elevations remain unresolved`
+      } : snapshot3.water.exact === false ? { reason: "native water geometry exceeds the common constant-elevation zone profile" } : {}
+    }),
+    Object.freeze({
+      facet: "cliffs",
+      layerId: cliffLayerId,
+      state: snapshot3.cliffs === void 0 ? "unavailable" : cliffExact ? "available" : "partial",
+      itemCount: snapshot3.cliffs?.cellCount ?? 0,
+      lods: Object.freeze(snapshot3.cliffs === void 0 ? [] : cliffExact ? ["exact"] : ["sampled"]),
+      contentRevision: contentRevisions.cliffs,
+      ...snapshot3.cliffs === void 0 ? { reason: "publisher reported synchronized cliff levels unavailable" } : cliffExact ? {} : {
+        reason: "publisher cliff grid is sampled or does not match the admitted UVW heightfield grid"
+      }
+    }),
+    Object.freeze({
+      facet: "objects",
+      layerId: objectLayerId,
+      state: semanticObjects.length === 0 ? "unavailable" : duplicateObjectCount > 0 || incompleteObjectPositionCount > 0 ? "partial" : "available",
+      itemCount: semanticObjects.length,
+      lods: Object.freeze(["exact"]),
+      contentRevision: contentRevisions.objects,
+      ...semanticObjects.length === 0 ? { reason: "semantic snapshot contains no objects" } : duplicateObjectCount > 0 || incompleteObjectPositionCount > 0 ? {
+        reason: [
+          ...duplicateObjectCount > 0 ? [`${duplicateObjectCount} duplicate object identities were omitted`] : [],
+          ...incompleteObjectPositionCount > 0 ? [
+            `${incompleteObjectPositionCount} objects publish two-dimensional source positions; elevation remains unknown`
+          ] : []
+        ].join("; ")
+      } : {}
+    }),
+    Object.freeze({
+      facet: "regions",
+      layerId: regionLayerId,
+      state: semanticRegions.length === 0 ? "unavailable" : duplicateRegionCount > 0 || incompleteRegionGeometryCount > 0 ? "partial" : "available",
+      itemCount: semanticRegions.length,
+      lods: Object.freeze(["exact"]),
+      contentRevision: contentRevisions.regions,
+      ...semanticRegions.length === 0 ? { reason: "semantic snapshot contains no regions" } : duplicateRegionCount > 0 || incompleteRegionGeometryCount > 0 ? {
+        reason: [
+          ...duplicateRegionCount > 0 ? [`${duplicateRegionCount} duplicate region identities were omitted`] : [],
+          ...incompleteRegionGeometryCount > 0 ? [
+            `${incompleteRegionGeometryCount} regions contain shapes without canonical UVW geometry`
+          ] : []
+        ].join("; ")
+      } : {}
+    }),
+    Object.freeze({
+      facet: "resources",
+      layerId: resourceLayerId,
+      state: resources.length === 0 ? "unavailable" : "available",
+      itemCount: resources.length,
+      lods: Object.freeze(["exact"]),
+      contentRevision: contentRevisions.resources,
+      ...resources.length === 0 ? { reason: "no placed object publishes a catalog resource reference" } : {}
+    }),
+    Object.freeze({
+      facet: "navigation",
+      layerId: navigationLayerId,
+      state: snapshot3.navigation === void 0 ? "unavailable" : "partial",
+      itemCount: snapshot3.navigation?.cellCount ?? 0,
+      lods: Object.freeze(snapshot3.navigation === void 0 ? [] : ["summary", "sampled"]),
+      contentRevision: contentRevisions.navigation,
+      ...snapshot3.navigation === void 0 ? { reason: "publisher reported navigation unavailable" } : { reason: "native flags are sampled and their bit semantics remain publisher-defined" }
+    }),
+    Object.freeze({
+      facet: "gateways",
+      layerId: gatewayLayerId,
+      state: snapshot3.gateways === void 0 ? "unavailable" : snapshot3.gateways.exact && uvwTransform !== void 0 ? "available" : "partial",
+      itemCount: snapshot3.gateways?.segments.length ?? 0,
+      lods: Object.freeze(snapshot3.gateways === void 0 ? [] : ["exact"]),
+      contentRevision: contentRevisions.gateways,
+      ...snapshot3.gateways === void 0 ? { reason: "publisher reported gateways unavailable" } : snapshot3.gateways.exact && uvwTransform !== void 0 ? {} : { reason: "gateway endpoints lack an exact canonical transform" }
+    }),
+    Object.freeze({
+      facet: "lighting",
+      layerId: lightingLayerId,
+      state: snapshot3.lighting === void 0 ? "unavailable" : "available",
+      itemCount: lighting.length,
+      lods: Object.freeze(snapshot3.lighting === void 0 ? [] : ["exact"]),
+      contentRevision: contentRevisions.lighting,
+      ...snapshot3.lighting === void 0 ? { reason: "publisher reported world lighting unavailable" } : {}
+    })
+  ]);
+  const layers = Object.freeze(facets.map((item) => Object.freeze({
+    facet: "layers",
+    id: item.layerId,
+    layerId: item.layerId,
+    kind: item.facet,
+    state: item.state,
+    itemCount: item.itemCount,
+    lods: item.lods,
+    ...item.contentRevision === void 0 ? {} : { contentRevision: item.contentRevision },
+    ...uvwTransform !== void 0 && (item.facet === "terrain" || item.facet === "terrain-materials" || item.facet === "cliffs") && item.state === "available" && (item.lods.includes("exact") || item.facet === "terrain-materials" && item.lods.includes("raster-exact")) ? {
+      grid: Object.freeze({
+        columns: item.facet === "cliffs" ? snapshot3.cliffs.width : uvwTransform.heightfield.columns,
+        rows: item.facet === "cliffs" ? snapshot3.cliffs.height : uvwTransform.heightfield.rows,
+        cellSize: uvwTransform.heightfield.cellSize,
+        origin: item.facet === "cliffs" && uvwTransform.heightfield.sourceRowOrder === "reverse" && snapshot3.cliffs.height < uvwTransform.heightfield.rows ? Object.freeze([
+          uvwTransform.heightfield.origin[0],
+          uvwTransform.heightfield.origin[1],
+          uvwTransform.heightfield.origin[2] + uvwTransform.heightfield.cellSize
+        ]) : uvwTransform.heightfield.origin,
+        coordinateSpaceId: "uvw-canonical"
+      })
+    } : {},
+    ...item.facet === "terrain-materials" && commonTerrainMaterials.length > 0 ? {
+      materials: commonTerrainMaterials,
+      ...commonTerrainWeightRasters.length === 0 ? {} : { weightRasters: commonTerrainWeightRasters }
+    } : {},
+    ...item.facet === "water" && commonWaterMaterials.length > 0 ? { waterMaterials: commonWaterMaterials } : {}
+  })));
+  const byFacet = /* @__PURE__ */ new Map([
+    ["layers", layers],
+    ["terrain", terrain],
+    ["terrain-materials", terrainMaterials],
+    ["water", water],
+    ["cliffs", cliffs],
+    ["objects", objects],
+    ["regions", regions],
+    ["resources", resources],
+    ["navigation", navigation],
+    ["gateways", gateways],
+    ["lighting", lighting]
+  ]);
+  const info = Object.freeze({
+    contract: snapshot3.worldCandidate.contract,
+    major: snapshot3.worldCandidate.major,
+    maturity: snapshot3.worldCandidate.maturity,
+    snapshotId: snapshot3.snapshotId,
+    mapId: snapshot3.mapId,
+    coordinateSpaces: snapshot3.worldCandidate.coordinateSpaces,
+    crossSpaceTransforms: Object.freeze(snapshot3.worldCandidate.crossSpaceTransforms.map((item) => {
+      if (item.from === "height-grid" && item.to === "map-native" && terrainTransform === void 0) {
+        return Object.freeze({
+          ...item,
+          state: "unknown",
+          reason: "host rejected or did not receive an exact native terrain transform"
+        });
+      }
+      if (item.from === "map-native" && item.to === "uvw-canonical" && uvwTransform === void 0) {
+        return Object.freeze({
+          ...item,
+          state: "unknown",
+          reason: "host rejected or did not receive a measured canonical world transform"
+        });
+      }
+      return item;
+    })),
+    bounds: Object.freeze([
+      Object.freeze({
+        facet: "terrain",
+        coordinateSpaceId: terrainTransform === void 0 ? "height-grid" : "map-native",
+        x: terrainTransform !== void 0 ? Object.freeze({
+          state: "known",
+          minimum: terrainTransform.bounds.minimum.x,
+          maximum: terrainTransform.bounds.maximum.x
+        }) : terrainSummary === void 0 ? Object.freeze({ state: "unknown", reason: "terrain bounds unavailable" }) : Object.freeze({
+          state: "known",
+          minimum: 0,
+          maximum: terrainSummary.width - 1
+        }),
+        y: terrainTransform !== void 0 ? Object.freeze({
+          state: "known",
+          minimum: terrainTransform.bounds.minimum.y,
+          maximum: terrainTransform.bounds.maximum.y
+        }) : terrainSummary === void 0 ? Object.freeze({ state: "unknown", reason: "terrain bounds unavailable" }) : Object.freeze({
+          state: "known",
+          minimum: 0,
+          maximum: terrainSummary.height - 1
+        }),
+        z: terrainTransform === void 0 ? Object.freeze({
+          state: "unknown",
+          reason: "publisher-native height quantization has no validated exact map-native conversion"
+        }) : Object.freeze({
+          state: "known",
+          minimum: terrainTransform.bounds.minimum.z,
+          maximum: terrainTransform.bounds.maximum.z
+        })
+      }),
+      Object.freeze({
+        facet: "objects",
+        coordinateSpaceId: "map-native",
+        x: semanticObjects.length === 0 ? Object.freeze({ state: "unknown", reason: "object bounds unavailable" }) : Object.freeze({
+          state: "known",
+          minimum: Math.min(...semanticObjects.map((item) => item.position.x)),
+          maximum: Math.max(...semanticObjects.map((item) => item.position.x))
+        }),
+        y: semanticObjects.length === 0 ? Object.freeze({ state: "unknown", reason: "object bounds unavailable" }) : Object.freeze({
+          state: "known",
+          minimum: Math.min(...semanticObjects.map((item) => item.position.y)),
+          maximum: Math.max(...semanticObjects.map((item) => item.position.y))
+        }),
+        z: semanticObjects.length === 0 ? Object.freeze({ state: "unknown", reason: "object bounds unavailable" }) : incompleteObjectPositionCount > 0 ? Object.freeze({
+          state: "unknown",
+          reason: "one or more objects have no publisher-defined elevation"
+        }) : Object.freeze({
+          state: "known",
+          minimum: Math.min(...semanticObjects.map((item) => item.position.z)),
+          maximum: Math.max(...semanticObjects.map((item) => item.position.z))
+        })
+      }),
+      Object.freeze({
+        facet: "regions",
+        coordinateSpaceId: "map-native",
+        x: Object.freeze({
+          state: "unknown",
+          reason: "region geometry is not normalized"
+        }),
+        y: Object.freeze({
+          state: "unknown",
+          reason: "region geometry is not normalized"
+        }),
+        z: Object.freeze({
+          state: "unknown",
+          reason: "region geometry is not normalized"
+        })
+      }),
+      Object.freeze({
+        facet: "navigation",
+        coordinateSpaceId: "navigation-grid",
+        x: snapshot3.navigation === void 0 ? Object.freeze({ state: "unknown", reason: "navigation bounds unavailable" }) : Object.freeze({
+          state: "known",
+          minimum: 0,
+          maximum: snapshot3.navigation.width - 1
+        }),
+        y: snapshot3.navigation === void 0 ? Object.freeze({ state: "unknown", reason: "navigation bounds unavailable" }) : Object.freeze({
+          state: "known",
+          minimum: 0,
+          maximum: snapshot3.navigation.height - 1
+        }),
+        z: Object.freeze({
+          state: "unknown",
+          reason: "navigation grid has no vertical axis"
+        })
+      }),
+      Object.freeze({
+        facet: "gateways",
+        coordinateSpaceId: uvwTransform === void 0 ? "map-native" : "uvw-canonical",
+        x: gateways.length === 0 ? Object.freeze({ state: "unknown", reason: "gateway bounds unavailable" }) : Object.freeze({
+          state: "known",
+          minimum: Math.min(...gateways.flatMap((item) => item.facet === "gateways" ? [item.uvwStart?.x ?? item.x1, item.uvwEnd?.x ?? item.x2] : [])),
+          maximum: Math.max(...gateways.flatMap((item) => item.facet === "gateways" ? [item.uvwStart?.x ?? item.x1, item.uvwEnd?.x ?? item.x2] : []))
+        }),
+        y: Object.freeze({ state: "unknown", reason: "gateways have no vertical extent" }),
+        z: gateways.length === 0 ? Object.freeze({ state: "unknown", reason: "gateway bounds unavailable" }) : Object.freeze({
+          state: "known",
+          minimum: Math.min(...gateways.flatMap((item) => item.facet === "gateways" ? [item.uvwStart?.z ?? item.y1, item.uvwEnd?.z ?? item.y2] : [])),
+          maximum: Math.max(...gateways.flatMap((item) => item.facet === "gateways" ? [item.uvwStart?.z ?? item.y1, item.uvwEnd?.z ?? item.y2] : []))
+        })
+      })
+    ]),
+    ...terrainTransform === void 0 ? {} : { terrainTransform },
+    ...uvwTransform === void 0 ? {} : { uvwTransform },
+    facets,
+    provenance: Object.freeze(provenance.map((item) => Object.freeze({ ...item }))),
+    unknownFacets: snapshot3.worldCandidate.unknownFacets,
+    ...snapshot3.worldCandidate.edit === void 0 ? {} : { edit: snapshot3.worldCandidate.edit },
+    lossPolicy: "explicit-partial",
+    complete: snapshot3.complete && duplicateObjectCount === 0 && duplicateRegionCount === 0 && incompleteRegionGeometryCount === 0 && incompleteObjectPositionCount === 0
+  });
+  let live = true;
+  const assertLive = (signal) => {
+    signal?.throwIfAborted();
+    if (!live)
+      throw new TypeError("world scene source lease is released or stale");
+  };
+  const source2 = Object.freeze({
+    contract: snapshot3.worldCandidate.contract,
+    major: snapshot3.worldCandidate.major,
+    snapshotId: snapshot3.snapshotId,
+    async info(signal) {
+      assertLive(signal);
+      return Promise.resolve(info);
+    },
+    async page(request, signal) {
+      assertLive(signal);
+      positiveLimit(request.limit, maxPageSize);
+      cursorOffset(request.cursor, snapshot3.snapshotId, canonicalQuery(request));
+      const items = byFacet.get(request.facet);
+      if (items === void 0) {
+        return Promise.resolve(Object.freeze({
+          snapshotId: snapshot3.snapshotId,
+          facet: request.facet,
+          state: "unsupported",
+          items: Object.freeze([]),
+          reason: `publisher candidate does not expose facet ${request.facet}`
+        }));
+      }
+      const facetState = facets.find((item) => item.facet === request.facet);
+      if (request.facet !== "layers") {
+        if (request.layerId !== facetState?.layerId) {
+          throw new TypeError(`world facet ${request.facet} requires its exact layerId`);
+        }
+        const expectedLod = request.facet === "terrain" ? terrainLod : request.facet === "terrain-materials" ? terrainMaterialLod : request.facet === "cliffs" ? cliffLod : request.facet === "navigation" ? "sampled" : void 0;
+        if (expectedLod !== void 0 && request.lod !== expectedLod) {
+          return Promise.resolve(Object.freeze({
+            snapshotId: snapshot3.snapshotId,
+            facet: request.facet,
+            state: "unsupported",
+            items: Object.freeze([]),
+            reason: `facet ${request.facet} only pages ${expectedLod} LOD items`
+          }));
+        }
+      }
+      if (request.bounds !== void 0 && (request.facet === "layers" || request.facet === "regions" || request.facet === "resources" || request.facet === "lighting")) {
+        return Promise.resolve(Object.freeze({
+          snapshotId: snapshot3.snapshotId,
+          facet: request.facet,
+          state: "unsupported",
+          items: Object.freeze([]),
+          reason: `facet ${request.facet} does not support spatial bounds`
+        }));
+      }
+      if (request.facet !== "layers" && facetState?.state === "unavailable") {
+        return Promise.resolve(Object.freeze({
+          snapshotId: snapshot3.snapshotId,
+          facet: request.facet,
+          state: "unavailable",
+          items: Object.freeze([]),
+          reason: facetState.reason ?? "facet unavailable"
+        }));
+      }
+      const bounds3 = request.bounds;
+      const bounded = bounds3 === void 0 ? items : items.filter((item) => {
+        if (item.facet === "objects") {
+          return item.position.x >= bounds3.minimumX && item.position.x <= bounds3.maximumX && item.position.y >= bounds3.minimumY && item.position.y <= bounds3.maximumY;
+        }
+        if (item.facet === "water") {
+          return !(item.maximum.x < bounds3.minimumX || item.minimum.x > bounds3.maximumX || item.maximum.y < bounds3.minimumY || item.minimum.y > bounds3.maximumY);
+        }
+        if (item.facet === "gateways") {
+          const startX = item.uvwStart?.x ?? item.x1;
+          const startY = item.uvwStart?.z ?? item.y1;
+          const endX = item.uvwEnd?.x ?? item.x2;
+          const endY = item.uvwEnd?.z ?? item.y2;
+          return !(Math.max(startX, endX) < bounds3.minimumX || Math.min(startX, endX) > bounds3.maximumX || Math.max(startY, endY) < bounds3.minimumY || Math.min(startY, endY) > bounds3.maximumY);
+        }
+        if (item.facet !== "terrain" && item.facet !== "terrain-materials" && item.facet !== "cliffs" && item.facet !== "navigation")
+          return false;
+        if (item.facet === "terrain" && item.mapNativePosition !== void 0) {
+          return item.mapNativePosition.x >= bounds3.minimumX && item.mapNativePosition.x <= bounds3.maximumX && item.mapNativePosition.y >= bounds3.minimumY && item.mapNativePosition.y <= bounds3.maximumY;
+        }
+        return item.x >= bounds3.minimumX && item.x <= bounds3.maximumX && item.y >= bounds3.minimumY && item.y <= bounds3.maximumY;
+      });
+      return Promise.resolve(pageItems(bounded, request, snapshot3.snapshotId, maxPageSize));
+    },
+    ...modelResources === void 0 ? {} : {
+      async model(requestedResourceId, request, signal) {
+        assertLive(signal);
+        const { maxNodes } = worldSceneModelLimits(request, maxPageSize);
+        const item = resources.find((candidate) => candidate.facet === "resources" && candidate.id === requestedResourceId);
+        if (item?.facet !== "resources" || item.modelResource === void 0) {
+          return Object.freeze({
+            state: "unresolved",
+            diagnostics: Object.freeze([
+              diagnostic("warning", "x3.host/world-model-resource-unavailable", `world resource ${requestedResourceId} has no resolved logical model requirement`)
+            ])
+          });
+        }
+        const metersPerSourceUnit = request.metersPerSourceUnit ?? snapshot3.semantic.modelMetersPerSourceUnit;
+        const candidates = item.modelCandidates ?? [
+          Object.freeze({ requirement: item.modelResource, yaw: 0 })
+        ];
+        let lease2;
+        let chosen = candidates[0];
+        for (const candidate of candidates) {
+          const attempt = await modelResources.acquire({
+            maxBytes: request.maxBytes,
+            ...metersPerSourceUnit === void 0 ? {} : { metersPerSourceUnit },
+            requirement: candidate.requirement
+          }, signal);
+          chosen = candidate;
+          lease2 = attempt;
+          if (attempt.value.result.state !== "unresolved" || candidate === candidates.at(-1))
+            break;
+          await attempt.release();
+        }
+        const modelRequirement = chosen.requirement;
+        if (lease2 === void 0)
+          throw new TypeError("world model candidates are empty");
+        const materialModel = item.materialModel;
+        const skinItemsOf = async (model) => {
+          let pendingSkin = materialModelCache.get(model.logicalId);
+          if (pendingSkin === void 0) {
+            pendingSkin = (async () => {
+              const skinned = await modelResources.acquire({
+                maxBytes: request.maxBytes,
+                ...metersPerSourceUnit === void 0 ? {} : { metersPerSourceUnit },
+                requirement: model
+              }, signal);
+              try {
+                if (skinned.value.result.state === "unresolved")
+                  return void 0;
+                const read = skinned.value.materials;
+                return read === void 0 ? void 0 : (await readAllPages((page2) => read.call(skinned.value, page2, signal), maxNodes, MODEL_FACET_ITEM_CAP)).items;
+              } finally {
+                await skinned.release();
+              }
+            })();
+            materialModelCache.set(model.logicalId, pendingSkin);
+          }
+          return pendingSkin;
+        };
+        try {
+          return await worldSceneModel(lease2.value, request, {
+            requirement: modelRequirement,
+            yaw: chosen.yaw,
+            maxPageSize,
+            textureCache: modelTextureCache,
+            ...materialModel === void 0 ? {} : {
+              async skin(materials) {
+                const skinItems = await skinItemsOf(materialModel);
+                if (skinItems === void 0 || skinItems.length === 0)
+                  return Object.freeze({
+                    diagnostics: Object.freeze([
+                      diagnostic("warning", "x3.host/world-model-material-model-unavailable", `material model ${materialModel.logicalId} published no materials; ${modelRequirement.logicalId} keeps its own`)
+                    ])
+                  });
+                return Object.freeze({
+                  materials: materials.map((material, index2) => {
+                    const replacement = skinItems[Math.min(index2, skinItems.length - 1)];
+                    return Object.freeze({ ...replacement, id: material.id });
+                  }),
+                  diagnostics: Object.freeze([])
+                });
+              }
+            }
+          }, signal);
+        } finally {
+          await lease2.release();
+        }
+      }
+    },
+    ...rasterResources === void 0 && terrainWeightTextures.size === 0 ? {} : {
+      async texture(requestedResourceId, request, signal) {
+        assertLive(signal);
+        positiveLimit(request.maxBytes, Number.MAX_SAFE_INTEGER);
+        const weightTexture = terrainWeightTextures.get(requestedResourceId);
+        if (weightTexture !== void 0) {
+          if (weightTexture.rgba.byteLength > request.maxBytes) {
+            return Object.freeze({
+              state: "unresolved",
+              diagnostics: Object.freeze([
+                diagnostic("warning", "x3.host/world-terrain-weight-raster-budget-exceeded", `terrain weight raster ${requestedResourceId} exceeds maxBytes`)
+              ])
+            });
+          }
+          return Object.freeze({
+            state: "decoded",
+            texture: weightTexture,
+            diagnostics: Object.freeze([])
+          });
+        }
+        if (rasterResources === void 0) {
+          return Object.freeze({
+            state: "unresolved",
+            diagnostics: Object.freeze([
+              diagnostic("warning", "x3.host/world-terrain-raster-port-unavailable", `terrain resource ${requestedResourceId} requires a raster resource port`)
+            ])
+          });
+        }
+        const requirement = [
+          ...commonTerrainMaterials.flatMap((candidate) => [
+            ...candidate.baseColorResourceId === requestedResourceId && candidate.baseColorResource !== void 0 ? [candidate.baseColorResource] : [],
+            ...candidate.normalResourceId === requestedResourceId && candidate.normalResource !== void 0 ? [candidate.normalResource] : [],
+            ...candidate.specularResourceId === requestedResourceId && candidate.specularResource !== void 0 ? [candidate.specularResource] : []
+          ]),
+          ...commonWaterMaterials.flatMap((candidate) => [
+            ...candidate.baseColorResourceId === requestedResourceId && candidate.baseColorResource !== void 0 ? [candidate.baseColorResource] : [],
+            ...candidate.secondaryColorResourceId === requestedResourceId && candidate.secondaryColorResource !== void 0 ? [candidate.secondaryColorResource] : [],
+            ...candidate.causticsResourceId === requestedResourceId && candidate.causticsResource !== void 0 ? [candidate.causticsResource] : [],
+            ...candidate.normalResourceId === requestedResourceId && candidate.normalResource !== void 0 ? [candidate.normalResource] : [],
+            ...(candidate.causticsFrameResourceIds ?? []).flatMap((resourceId2, index2) => {
+              const frame2 = candidate.causticsFrameResources?.[index2];
+              return resourceId2 === requestedResourceId && frame2 !== void 0 ? [frame2] : [];
+            })
+          ])
+        ][0];
+        if (requirement === void 0) {
+          return Object.freeze({
+            state: "unresolved",
+            diagnostics: Object.freeze([
+              diagnostic("warning", "x3.host/world-texture-resource-unavailable", `world resource ${requestedResourceId} has no scoped logical requirement`)
+            ])
+          });
+        }
+        const raster = await rasterResources.read({
+          kind: "logical",
+          requirement,
+          maxBytes: request.maxBytes
+        }, signal);
+        if (raster.state !== "decoded") {
+          return Object.freeze({
+            state: "unresolved",
+            diagnostics: Object.freeze([...raster.diagnostics])
+          });
+        }
+        const texture = worldTexture(requestedResourceId, raster);
+        if (texture === void 0) {
+          return Object.freeze({
+            state: "unresolved",
+            diagnostics: Object.freeze([
+              ...raster.diagnostics,
+              diagnostic("warning", "x3.host/world-terrain-texture-orientation-unknown", `terrain texture ${requestedResourceId} has no proven row orientation`)
+            ])
+          });
+        }
+        return Object.freeze({
+          state: "decoded",
+          texture,
+          diagnostics: Object.freeze([...raster.diagnostics])
+        });
+      }
+    }
+  });
+  return Object.freeze({
+    value: source2,
+    async release() {
+      live = false;
+      await releaseModelResources?.();
+    }
+  });
+}
+
+// packages/host/dist/maps/index.js
+var STANDARD_MAPS_OWNER = "modkit/maps";
+var OFFER_KEYS8 = /* @__PURE__ */ new Set(["gameIds"]);
+var REQUEST_KEYS7 = /* @__PURE__ */ new Set(["gameId"]);
+var PREVIEW_OFFER_KEYS = /* @__PURE__ */ new Set(["subjectFormatIds"]);
+var PREVIEW_REQUEST_KEYS = /* @__PURE__ */ new Set(["subjectFormatId"]);
+function recordOf9(value2) {
+  return typeof value2 === "object" && value2 !== null && !Array.isArray(value2) ? value2 : void 0;
+}
+function nonEmptyString7(value2) {
+  return typeof value2 === "string" && value2.trim().length > 0;
+}
+function stringList7(value2) {
+  if (!Array.isArray(value2) || value2.length === 0 || !value2.every(nonEmptyString7))
+    return void 0;
+  const strings2 = value2;
+  return new Set(strings2).size === strings2.length ? strings2 : void 0;
+}
+function parseOffer9(value2) {
+  const record9 = recordOf9(value2);
+  if (record9 === void 0 || Object.keys(record9).some((key3) => !OFFER_KEYS8.has(key3))) {
+    return void 0;
+  }
+  const gameIds = stringList7(record9["gameIds"]);
+  return gameIds === void 0 ? void 0 : { gameIds };
+}
+function parseRequest9(value2) {
+  const record9 = recordOf9(value2);
+  if (record9 === void 0 || Object.keys(record9).some((key3) => !REQUEST_KEYS7.has(key3))) {
+    return void 0;
+  }
+  return nonEmptyString7(record9["gameId"]) ? { gameId: record9["gameId"] } : void 0;
+}
+function matchMapSemanticFacets(context) {
+  const offer = parseOffer9(context.offerFacet);
+  const request = parseRequest9(context.requestFacet);
+  if (offer === void 0 || request === void 0) {
+    return {
+      state: "invalid",
+      diagnostics: [
+        diagnostic("error", "x3.host/map-semantic-facet-invalid", `${context.contract}@${context.major}: semantic map routes must be well formed`)
+      ]
+    };
+  }
+  return offer.gameIds.includes(request.gameId) ? { state: "match", selectionKey: `game=${request.gameId}` } : { state: "no-match" };
+}
+var MAP_SEMANTIC_MATCHER = Object.freeze({
+  profile: contractId(MAP_SEMANTIC_MATCHER_PROFILE),
+  major: 1,
+  match: matchMapSemanticFacets
+});
+function parsePreviewOffer(value2) {
+  const record9 = recordOf9(value2);
+  if (record9 === void 0 || Object.keys(record9).some((key3) => !PREVIEW_OFFER_KEYS.has(key3))) {
+    return void 0;
+  }
+  const subjectFormatIds = stringList7(record9["subjectFormatIds"]);
+  return subjectFormatIds === void 0 ? void 0 : { subjectFormatIds };
+}
+function parsePreviewRequest(value2) {
+  const record9 = recordOf9(value2);
+  if (record9 === void 0 || Object.keys(record9).some((key3) => !PREVIEW_REQUEST_KEYS.has(key3))) {
+    return void 0;
+  }
+  return nonEmptyString7(record9["subjectFormatId"]) ? { subjectFormatId: record9["subjectFormatId"] } : void 0;
+}
+function matchMapPreviewPreparationFacets(context) {
+  const offer = parsePreviewOffer(context.offerFacet);
+  const request = parsePreviewRequest(context.requestFacet);
+  if (offer === void 0 || request === void 0) {
+    return {
+      state: "invalid",
+      diagnostics: [
+        diagnostic("error", "x3.host/map-preview-preparation-facet-invalid", `${context.contract}@${context.major}: map preview preparation routes must be well formed`)
+      ]
+    };
+  }
+  return offer.subjectFormatIds.includes(request.subjectFormatId) ? { state: "match", selectionKey: `subject-format=${request.subjectFormatId}` } : { state: "no-match" };
+}
+var MAP_PREVIEW_PREPARATION_MATCHER = Object.freeze({
+  profile: contractId(MAP_PREVIEW_PREPARATION_MATCHER_PROFILE),
+  major: 1,
+  match: matchMapPreviewPreparationFacets
+});
+var MAP_SEMANTIC_CONTRACT_DEFINITION = Object.freeze({
+  schemaVersion: 1,
+  kind: "service",
+  contract: MAP_SEMANTIC_ANALYSIS_CONTRACT,
+  major: 1,
+  offerFacet: Object.freeze({
+    presence: "required",
+    schema: Object.freeze({
+      $ref: "https://schemas.modkit.org/x3/map-semantic-offer.v1.schema.json"
+    })
+  }),
+  requestFacet: Object.freeze({
+    presence: "required",
+    schema: Object.freeze({
+      $ref: "https://schemas.modkit.org/x3/map-semantic-request.v1.schema.json"
+    })
+  }),
+  matching: Object.freeze({ profile: MAP_SEMANTIC_MATCHER_PROFILE, major: 1 }),
+  conformanceProfile: "common.map/semantic-analysis-v1",
+  surface: Object.freeze({
+    fields: Object.freeze(["contract", "analyzerId", "gameIds"]),
+    methods: Object.freeze({
+      open: Object.freeze({
+        kind: "value",
+        signal: Object.freeze({ arg: 0, key: "signal" }),
+        limits: Object.freeze({ maxBytes: 33554432, maxStringLength: 4194304 })
+      })
+    })
+  })
+});
+var RESOLVED_MAP_WORKSPACE_CONTRACT_DEFINITION = Object.freeze({
+  schemaVersion: 1,
+  kind: "service",
+  contract: RESOLVED_MAP_WORKSPACE_CONTRACT,
+  major: 1,
+  offerFacet: Object.freeze({
+    presence: "required",
+    schema: Object.freeze({
+      $ref: "https://schemas.modkit.org/x3/map-semantic-offer.v1.schema.json"
+    })
+  }),
+  requestFacet: Object.freeze({
+    presence: "required",
+    schema: Object.freeze({
+      $ref: "https://schemas.modkit.org/x3/map-semantic-request.v1.schema.json"
+    })
+  }),
+  matching: Object.freeze({ profile: MAP_SEMANTIC_MATCHER_PROFILE, major: 1 }),
+  conformanceProfile: "common.map/resolved-workspace-v1",
+  surface: Object.freeze({
+    fields: Object.freeze(["contract", "analyzerId", "gameIds"]),
+    methods: Object.freeze({
+      plan: Object.freeze({
+        kind: "value",
+        signal: Object.freeze({ arg: 0, key: "signal" }),
+        limits: Object.freeze({ maxBytes: 4194304, maxStringLength: 1048576 })
+      }),
+      analyze: Object.freeze({
+        kind: "value",
+        signal: Object.freeze({ arg: 0, key: "signal" }),
+        limits: Object.freeze({ maxBytes: 33554432, maxStringLength: 4194304 })
+      })
+    })
+  })
+});
+var MAP_PREVIEW_PREPARATION_CONTRACT_DEFINITION = Object.freeze({
+  schemaVersion: 1,
+  kind: "service",
+  contract: MAP_PREVIEW_PREPARATION_CONTRACT,
+  major: 1,
+  offerFacet: Object.freeze({
+    presence: "required",
+    schema: Object.freeze({
+      $ref: "https://schemas.modkit.org/x3/map-preview-preparation-offer.v1.schema.json"
+    })
+  }),
+  requestFacet: Object.freeze({
+    presence: "required",
+    schema: Object.freeze({
+      $ref: "https://schemas.modkit.org/x3/map-preview-preparation-request.v1.schema.json"
+    })
+  }),
+  matching: Object.freeze({
+    profile: MAP_PREVIEW_PREPARATION_MATCHER_PROFILE,
+    major: 1
+  }),
+  conformanceProfile: "common.map/preview-preparation-v1",
+  surface: Object.freeze({
+    fields: Object.freeze(["contract", "preparationId", "subjectFormatIds"]),
+    methods: Object.freeze({
+      prepare: Object.freeze({
+        kind: "value",
+        signal: Object.freeze({ arg: 0, key: "signal" }),
+        limits: Object.freeze({ maxBytes: 4194304, maxStringLength: 1048576 })
+      })
+    })
+  })
+});
+function registerStandardMapDefinitions(definitions) {
+  const registered = [
+    MAP_SEMANTIC_CONTRACT_DEFINITION,
+    RESOLVED_MAP_WORKSPACE_CONTRACT_DEFINITION,
+    MAP_PREVIEW_PREPARATION_CONTRACT_DEFINITION
+  ];
+  return definitions.replaceOwnerInventory(STANDARD_MAPS_OWNER, registered.map((definition2) => ({
+    definition: definition2,
+    provenance: {
+      ownerExtensionId: STANDARD_MAPS_OWNER,
+      extensionVersion: "1.0.0",
+      inventoryRecordId: `host:${definition2.contract}@${definition2.major}`,
+      manifestDigest: `host:${definition2.contract}@${definition2.major}`,
+      artifactDigest: "host:standard-map-definitions",
+      artifactRoot: "host:",
+      manifestPath: "host:standard-map-definitions"
+    }
+  })));
+}
+function isResolvedMapWorkspace(value2) {
+  const record9 = recordOf9(value2);
+  return record9?.["contract"] === RESOLVED_MAP_WORKSPACE_CONTRACT && nonEmptyString7(record9["analyzerId"]) && stringList7(record9["gameIds"]) !== void 0 && typeof record9["plan"] === "function" && typeof record9["analyze"] === "function";
+}
+async function resolveResolvedMapWorkspace(request) {
+  const definitions = request.services.serviceDefinitions;
+  if (definitions === void 0) {
+    return {
+      state: "unresolved",
+      diagnostics: [
+        diagnostic("information", "x3.host/resolved-map-workspace-unavailable", "this host registered no service-contract definitions for workspace maps")
+      ]
+    };
+  }
+  const resolver = createHostServiceResolver({
+    inventory: request.services.inventory,
+    target: request.services.target,
+    executionBackends: request.services.executionBackends,
+    definitions,
+    grant: request.grant,
+    budgets: request.budgets,
+    ...request.signal === void 0 ? {} : { signal: request.signal }
+  });
+  try {
+    const lease2 = await resolver.port.resolve({
+      contract: RESOLVED_MAP_WORKSPACE_CONTRACT,
+      major: 1,
+      facet: { gameId: request.gameId },
+      ...request.signal === void 0 ? {} : { signal: request.signal }
+    });
+    if (!isResolvedMapWorkspace(lease2.value) || !lease2.value.gameIds.includes(request.gameId)) {
+      await resolver.release();
+      return {
+        state: "unresolved",
+        diagnostics: [
+          ...resolver.diagnostics,
+          diagnostic("error", "x3.host/resolved-map-workspace-invalid", `selected provider does not implement ${RESOLVED_MAP_WORKSPACE_CONTRACT}@1`)
+        ]
+      };
+    }
+    return Object.freeze({
+      state: "resolved",
+      workspace: lease2.value,
+      diagnostics: Object.freeze([
+        ...resolver.diagnostics,
+        diagnostic("information", "x3.host/resolved-map-workspace-selected", `selected ${lease2.value.analyzerId} for ${request.gameId}`)
+      ]),
+      release: () => resolver.release()
+    });
+  } catch (error5) {
+    await resolver.release();
+    return {
+      state: "unresolved",
+      diagnostics: [
+        ...resolver.diagnostics,
+        diagnostic("information", "x3.host/resolved-map-workspace-unresolved", `no workspace map provider resolved for ${request.gameId} (${error5 instanceof Error ? error5.message : String(error5)})`)
+      ]
+    };
+  }
+}
+function isMapPreviewPreparation(value2) {
+  const record9 = recordOf9(value2);
+  return record9?.["contract"] === MAP_PREVIEW_PREPARATION_CONTRACT && nonEmptyString7(record9["preparationId"]) && stringList7(record9["subjectFormatIds"]) !== void 0 && typeof record9["prepare"] === "function";
+}
+async function resolveMapPreviewPreparation(request) {
+  const definitions = request.services.serviceDefinitions;
+  if (definitions === void 0) {
+    return {
+      state: "unresolved",
+      diagnostics: [
+        diagnostic("information", "x3.host/map-preview-preparation-unavailable", "this host registered no service-contract definitions for map preview preparation")
+      ]
+    };
+  }
+  const resolver = createHostServiceResolver({
+    inventory: request.services.inventory,
+    target: request.services.target,
+    executionBackends: request.services.executionBackends,
+    definitions,
+    grant: request.grant,
+    budgets: request.budgets,
+    ...request.signal === void 0 ? {} : { signal: request.signal }
+  });
+  try {
+    const lease2 = await resolver.port.resolve({
+      contract: MAP_PREVIEW_PREPARATION_CONTRACT,
+      major: 1,
+      facet: { subjectFormatId: request.subjectFormatId },
+      ...request.signal === void 0 ? {} : { signal: request.signal }
+    });
+    if (!isMapPreviewPreparation(lease2.value) || !lease2.value.subjectFormatIds.includes(request.subjectFormatId)) {
+      await resolver.release();
+      return {
+        state: "unresolved",
+        diagnostics: [
+          ...resolver.diagnostics,
+          diagnostic("error", "x3.host/map-preview-preparation-invalid", `selected provider does not implement ${MAP_PREVIEW_PREPARATION_CONTRACT}@1`)
+        ]
+      };
+    }
+    return Object.freeze({
+      state: "resolved",
+      preparation: lease2.value,
+      diagnostics: Object.freeze([
+        ...resolver.diagnostics,
+        diagnostic("information", "x3.host/map-preview-preparation-selected", `selected ${lease2.value.preparationId} for the subject format`)
+      ]),
+      release: () => resolver.release()
+    });
+  } catch (error5) {
+    await resolver.release();
+    return {
+      state: "unresolved",
+      diagnostics: [
+        ...resolver.diagnostics,
+        diagnostic("information", "x3.host/map-preview-preparation-unresolved", `no map preview preparation provider resolved (${error5 instanceof Error ? error5.message : String(error5)})`)
+      ]
+    };
+  }
+}
+var MAP_CATALOG_ROUNDS = 6;
+async function analyzeWithCatalogEntities(options) {
+  return answerCatalogQueries({
+    run: (answered, round) => options.analyze(answered === void 0 ? void 0 : Object.freeze({
+      schemaVersion: 1,
+      workspaceId: options.workspace.workspaceId,
+      gameId: options.workspace.gameId,
+      analyzerId: "x3.host/map-catalog-slice",
+      typeIds: Object.freeze([]),
+      namespaces: Object.freeze([]),
+      entityCount: answered.length,
+      patchCount: 0,
+      definitions: answered,
+      entities: answered,
+      diagnostics: Object.freeze([]),
+      complete: false
+    }), round),
+    queriesOf: (snapshot3) => snapshot3.semantic.catalogQueries,
+    catalogEntities: options.catalogEntities,
+    rounds: MAP_CATALOG_ROUNDS,
+    ...options.signal === void 0 ? {} : { signal: options.signal }
+  });
+}
+function positiveBound2(value2, label) {
+  if (!Number.isSafeInteger(value2) || value2 <= 0) {
+    throw new TypeError(`${label} must be a positive safe integer`);
+  }
+  return value2;
+}
+function withinOperationBudgets(limits, budgets) {
+  if (BigInt(limits.maxTotalBytes) > budgets.maxInputBytes) {
+    throw new TypeError("maxTotalBytes exceeds ResourceBudget.maxInputBytes");
+  }
+  if (limits.maxDocumentBytes > budgets.maxScalarBytes || limits.maxDocumentBytes > limits.maxTotalBytes) {
+    throw new TypeError("maxDocumentBytes exceeds scalar or total byte budget");
+  }
+  for (const [label, value2] of [
+    ["maxRequirements", limits.maxRequirements],
+    ["maxObjects", limits.maxObjects],
+    ["maxRegions", limits.maxRegions],
+    ["maxTerrainCells", limits.maxTerrainCells],
+    ["maxTerrainSamples", limits.maxTerrainSamples],
+    ["maxPageSize", limits.maxPageSize]
+  ]) {
+    if (value2 > budgets.maxNodes)
+      throw new TypeError(`${label} exceeds ResourceBudget.maxNodes`);
+  }
+  if (limits.maxDepth > budgets.maxDepth) {
+    throw new TypeError("maxDepth exceeds ResourceBudget.maxDepth");
+  }
+  if (limits.maxDiagnostics > budgets.maxDiagnostics) {
+    throw new TypeError("maxDiagnostics exceeds ResourceBudget.maxDiagnostics");
+  }
+}
+function boundedDiagnostics(items, maximum) {
+  if (items.length <= maximum)
+    return Object.freeze([...items]);
+  const marker = diagnostic("warning", "x3.host/resolved-map-diagnostics-truncated", `workspace map diagnostics were truncated to maxDiagnostics ${maximum}`);
+  return Object.freeze(maximum === 1 ? [marker] : [...items.slice(0, maximum - 1), marker]);
+}
+function validateWorkspacePlan2(plan, workspace, maxRequirements) {
+  if (plan.schemaVersion !== 1 || plan.workspaceId !== workspace.workspaceId || plan.gameId !== workspace.gameId || !nonEmptyString7(plan.analyzerId) || !Array.isArray(plan.requirements) || plan.requirements.length > maxRequirements) {
+    throw new TypeError("workspace map provider returned an invalid or foreign plan");
+  }
+  const active = workspace.loadOrder.find((item) => item.rootId === workspace.activeRootId);
+  if (active === void 0 || plan.mapId !== active.sourcePath) {
+    throw new TypeError("workspace map plan does not name the active root exactly");
+  }
+  const root = active.sourcePath.replaceAll("\\", "/");
+  const prefix = `${root}/`;
+  const ids = /* @__PURE__ */ new Set();
+  const paths = /* @__PURE__ */ new Set();
+  for (const requirement of plan.requirements) {
+    const path = requirement.path.replaceAll("\\", "/");
+    const segments = path.split("/");
+    const mapRootScoped = requirement.scope === void 0 || requirement.scope === "map-root";
+    if (!nonEmptyString7(requirement.requirementId) || !nonEmptyString7(requirement.kind) || typeof requirement.required !== "boolean" || requirement.scope !== void 0 && requirement.scope !== "map-root" && requirement.scope !== "workspace" || path !== requirement.path || path.startsWith("/") || /^[A-Za-z]:/u.test(path) || segments.some((segment) => segment === "" || segment === "." || segment === "..") || mapRootScoped && (!path.startsWith(prefix) || path.slice(prefix.length).includes("/")) || ids.has(requirement.requirementId) || paths.has(path.toLowerCase())) {
+      throw new TypeError("workspace map plan contains a duplicate, non-confined or invalid read");
+    }
+    ids.add(requirement.requirementId);
+    paths.add(path.toLowerCase());
+  }
+}
+async function readResourceBytes(resources, requirement, maxDocumentBytes, remainingTotalBytes, signal) {
+  if (remainingTotalBytes <= 0) {
+    return {
+      state: "unresolved",
+      diagnostic: diagnostic("warning", "x3.host/resolved-map-total-budget-exceeded", `${requirement.path} cannot be read because maxTotalBytes is exhausted`),
+      consumedBytes: 0
+    };
+  }
+  const resolved2 = await resources.resolve({
+    id: requirement.requirementId,
+    logicalId: requirement.path,
+    role: "buffer",
+    scopes: ["current-mount", "enclosing-container", "workspace-dependency-layer"]
+  }, signal);
+  if (resolved2.state === "unresolved") {
+    return { state: "unresolved", diagnostic: resolved2.diagnostic, consumedBytes: 0 };
+  }
+  try {
+    const source2 = resolved2.lease.value;
+    if (source2.kind !== "bytes") {
+      return {
+        state: "unresolved",
+        diagnostic: diagnostic("warning", "x3.host/resolved-map-resource-not-bytes", `${requirement.path} resolved to a namespace instead of bytes`),
+        consumedBytes: 0
+      };
+    }
+    if (source2.size !== void 0 && (source2.size > BigInt(maxDocumentBytes) || source2.size > BigInt(remainingTotalBytes))) {
+      const totalExceeded = source2.size > BigInt(remainingTotalBytes);
+      return {
+        state: "unresolved",
+        diagnostic: diagnostic("warning", totalExceeded ? "x3.host/resolved-map-total-budget-exceeded" : "x3.host/resolved-map-document-budget-exceeded", totalExceeded ? `${requirement.path} exceeds remaining maxTotalBytes ${remainingTotalBytes}` : `${requirement.path} exceeds maxDocumentBytes ${maxDocumentBytes}`),
+        consumedBytes: 0
+      };
+    }
+    const chunks = [];
+    let byteLength = 0;
+    try {
+      for await (const chunk of source2.stream(void 0, signal)) {
+        byteLength += chunk.byteLength;
+        if (byteLength > maxDocumentBytes || byteLength > remainingTotalBytes) {
+          return {
+            state: "unresolved",
+            diagnostic: diagnostic("warning", byteLength > remainingTotalBytes ? "x3.host/resolved-map-total-budget-exceeded" : "x3.host/resolved-map-document-budget-exceeded", byteLength > remainingTotalBytes ? `${requirement.path} exceeds remaining maxTotalBytes ${remainingTotalBytes}` : `${requirement.path} exceeds maxDocumentBytes ${maxDocumentBytes}`),
+            consumedBytes: byteLength
+          };
+        }
+        chunks.push(chunk);
+      }
+    } catch (error5) {
+      signal?.throwIfAborted();
+      return {
+        state: "unresolved",
+        diagnostic: diagnostic("warning", "x3.host/resolved-map-document-read-failed", `${requirement.path}: ${error5 instanceof Error ? error5.message : String(error5)}`),
+        consumedBytes: byteLength
+      };
+    }
+    const bytes = new Uint8Array(byteLength);
+    let offset = 0;
+    for (const chunk of chunks) {
+      bytes.set(chunk, offset);
+      offset += chunk.byteLength;
+    }
+    return {
+      state: "resolved",
+      document: Object.freeze({ path: requirement.path, bytes }),
+      revision: resolved2.revision,
+      contentFingerprint: await fingerprintBytes(bytes),
+      consumedBytes: byteLength
+    };
+  } finally {
+    await resolved2.lease.release();
+  }
+}
+async function fingerprintBytes(bytes) {
+  const copy = Uint8Array.from(bytes);
+  const digest = new Uint8Array(await globalThis.crypto.subtle.digest("SHA-256", copy.buffer));
+  return `sha256:${[...digest].map((byte2) => byte2.toString(16).padStart(2, "0")).join("")}`;
+}
+async function analyzeResolvedMapWorkspace(request) {
+  const limits = {
+    maxRequirements: positiveBound2(request.limits.maxRequirements, "maxRequirements"),
+    maxDocumentBytes: positiveBound2(request.limits.maxDocumentBytes, "maxDocumentBytes"),
+    maxTotalBytes: positiveBound2(request.limits.maxTotalBytes, "maxTotalBytes"),
+    maxObjects: positiveBound2(request.limits.maxObjects, "maxObjects"),
+    maxRegions: positiveBound2(request.limits.maxRegions, "maxRegions"),
+    maxTerrainCells: positiveBound2(request.limits.maxTerrainCells, "maxTerrainCells"),
+    maxTerrainSamples: positiveBound2(request.limits.maxTerrainSamples, "maxTerrainSamples"),
+    maxDepth: positiveBound2(request.limits.maxDepth, "maxDepth"),
+    maxPageSize: positiveBound2(request.limits.maxPageSize, "maxPageSize"),
+    maxDiagnostics: positiveBound2(request.limits.maxDiagnostics, "maxDiagnostics")
+  };
+  withinOperationBudgets(limits, request.budgets);
+  if (request.resources.state() !== "live") {
+    return {
+      state: "unresolved",
+      diagnostics: [
+        diagnostic("warning", "x3.host/resolved-map-resource-session-disposed", "workspace map analysis requires a live revision-pinned ResourceSessionPort")
+      ]
+    };
+  }
+  const resolution = await resolveResolvedMapWorkspace({
+    services: request.services,
+    gameId: request.workspace.gameId,
+    grant: request.grant,
+    budgets: request.budgets,
+    ...request.signal === void 0 ? {} : { signal: request.signal }
+  });
+  if (resolution.state === "unresolved")
+    return resolution;
+  const diagnostics = [...resolution.diagnostics];
+  try {
+    const plan = await resolution.workspace.plan({
+      workspace: request.workspace,
+      maxRequirements: limits.maxRequirements,
+      ...request.signal === void 0 ? {} : { signal: request.signal }
+    });
+    validateWorkspacePlan2(plan, request.workspace, limits.maxRequirements);
+    diagnostics.push(...plan.diagnostics.map((item) => diagnostic(item.severity, item.code, item.message, void 0, {
+      analyzerId: plan.analyzerId
+    })));
+    if (!plan.complete) {
+      await resolution.release();
+      return {
+        state: "unresolved",
+        diagnostics: boundedDiagnostics(diagnostics, limits.maxDiagnostics)
+      };
+    }
+    const provenanceOffset = request.resources.provenance().length;
+    const documents = [];
+    const revisions = [];
+    const unresolvedRequirementIds = [];
+    let totalBytes = 0;
+    for (const requirement of plan.requirements) {
+      request.signal?.throwIfAborted();
+      const loaded = await readResourceBytes(request.resources, requirement, limits.maxDocumentBytes, limits.maxTotalBytes - totalBytes, request.signal);
+      totalBytes += loaded.consumedBytes;
+      if (loaded.state === "unresolved") {
+        diagnostics.push(loaded.diagnostic);
+        unresolvedRequirementIds.push(requirement.requirementId);
+        continue;
+      }
+      if (totalBytes > limits.maxTotalBytes) {
+        throw new TypeError(`workspace map documents exceed maxTotalBytes ${limits.maxTotalBytes}`);
+      }
+      documents.push(loaded.document);
+      revisions.push(`${requirement.requirementId}:${requirement.path}@${String(loaded.revision)}#${loaded.contentFingerprint}`);
+    }
+    if (request.resources.state() !== "live") {
+      throw new Error("resource session was disposed while workspace map documents were loading");
+    }
+    const snapshotId = [
+      `session=${String(request.resources.revision)}`,
+      `workspace=${encodeURIComponent(request.workspace.workspaceId)}`,
+      `map=${encodeURIComponent(plan.mapId)}`,
+      ...revisions
+    ].join("|");
+    const analyze = (catalog, round) => resolution.workspace.analyze({
+      workspaceId: request.workspace.workspaceId,
+      gameId: request.workspace.gameId,
+      mapId: plan.mapId,
+      documents,
+      ...catalog === void 0 ? {} : { catalog },
+      ...request.subjectOperationIds === void 0 ? {} : { subjectOperationIds: request.subjectOperationIds },
+      maxDocuments: limits.maxRequirements,
+      maxDocumentBytes: limits.maxDocumentBytes,
+      maxTotalBytes: limits.maxTotalBytes,
+      maxObjects: limits.maxObjects,
+      maxRegions: limits.maxRegions,
+      maxTerrainCells: limits.maxTerrainCells,
+      maxTerrainSamples: limits.maxTerrainSamples,
+      maxDepth: limits.maxDepth,
+      maxDiagnostics: limits.maxDiagnostics,
+      snapshotId: round === 0 ? snapshotId : `${snapshotId}|catalog-round=${round}`,
+      unresolvedRequirementIds,
+      requiredRequirementIds: plan.requirements.filter((item) => item.required).map((item) => item.requirementId),
+      ...request.signal === void 0 ? {} : { signal: request.signal }
+    });
+    const snapshot3 = request.catalog === void 0 && request.catalogEntities !== void 0 ? await analyzeWithCatalogEntities({
+      workspace: request.workspace,
+      analyze,
+      catalogEntities: request.catalogEntities,
+      ...request.signal === void 0 ? {} : { signal: request.signal }
+    }) : await analyze(request.catalog, 0);
+    if (request.resources.state() !== "live") {
+      throw new Error("resource session was disposed while workspace map was analyzed");
+    }
+    const modelState = {
+      live: true,
+      reservedBytes: 0,
+      resources: request.resources
+    };
+    const modelReleases = [];
+    const modelResources = createSubjectModelResources({
+      state: modelState,
+      budget: request.budgets,
+      isAuthorized: () => modelState.live && request.grant.classes.includes("read-source"),
+      ancestors: [`map:${request.workspace.workspaceId}@${request.resources.revision}`],
+      own: (release) => modelReleases.push(release),
+      ...request.onModelResourceProfile === void 0 ? {} : { onProfile: request.onModelResourceProfile },
+      open: (source2, path, signal) => openSubject({
+        inventory: request.services.inventory,
+        source: source2,
+        path,
+        target: request.services.target,
+        intent: "full",
+        grant: { ...request.grant, classes: ["read-source"] },
+        budget: request.budgets,
+        executionBackends: request.services.executionBackends,
+        ...request.services.serviceDefinitions === void 0 ? {} : { serviceDefinitions: request.services.serviceDefinitions },
+        ...request.services.contributionSettings === void 0 ? {} : { contributionSettings: request.services.contributionSettings },
+        resourceSession: request.resources,
+        ...request.inputResolver === void 0 ? {} : { resolveInput: request.inputResolver },
+        ...signal === void 0 ? {} : { signal }
+      })
+    });
+    const releaseModelResources = async () => {
+      if (!modelState.live)
+        return;
+      modelState.live = false;
+      const outcomes = await Promise.allSettled(modelReleases.map((release) => release()));
+      const failure4 = outcomes.find((outcome) => outcome.status === "rejected");
+      if (failure4?.status === "rejected")
+        throw failure4.reason;
+    };
+    const rasterResources = createSubjectRasterResources({
+      state: modelState,
+      budget: request.budgets,
+      isAuthorized: () => modelState.live && request.grant.classes.includes("read-source"),
+      open: (source2, hint, signal) => openSubject({
+        inventory: request.services.inventory,
+        source: source2,
+        path: hint.path ?? "",
+        target: request.services.target,
+        intent: "full",
+        grant: { ...request.grant, classes: ["read-source"] },
+        budget: request.budgets,
+        executionBackends: request.services.executionBackends,
+        ...request.services.serviceDefinitions === void 0 ? {} : { serviceDefinitions: request.services.serviceDefinitions },
+        ...request.services.contributionSettings === void 0 ? {} : { contributionSettings: request.services.contributionSettings },
+        resourceSession: request.resources,
+        ...request.inputResolver === void 0 ? {} : { resolveInput: request.inputResolver },
+        ...signal === void 0 ? {} : { signal }
+      })
+    });
+    const world = createCandidateWorldSceneLease(snapshot3, request.resources.provenance().slice(provenanceOffset), limits.maxPageSize, modelResources, releaseModelResources, rasterResources);
+    let released = false;
+    return Object.freeze({
+      state: "resolved",
+      snapshot: snapshot3,
+      plan,
+      world,
+      diagnostics: boundedDiagnostics(diagnostics, limits.maxDiagnostics),
+      async release() {
+        if (released)
+          return;
+        released = true;
+        const results = await Promise.allSettled([world.release(), resolution.release()]);
+        const failure4 = results.find((result) => result.status === "rejected");
+        if (failure4?.status === "rejected")
+          throw failure4.reason;
+      }
+    });
+  } catch (error5) {
+    await resolution.release();
+    if (request.signal?.aborted)
+      throw error5;
+    return {
+      state: "unresolved",
+      diagnostics: boundedDiagnostics([
+        ...diagnostics,
+        diagnostic("warning", "x3.host/resolved-map-workspace-failed", error5 instanceof Error ? error5.message : String(error5))
+      ], limits.maxDiagnostics)
+    };
+  }
+}
+function previewDiagnostic(item, index2) {
+  return Object.freeze({
+    id: `map-preview-${String(index2)}`,
+    category: "unknown",
+    code: item.code,
+    severity: item.severity,
+    message: item.message,
+    ...item.path === void 0 ? {} : { path: item.path },
+    ...item.range === void 0 ? {} : { range: item.range }
+  });
+}
+function borrowCommonWorldScene(candidate) {
+  let live = true;
+  const assertLive = (signal) => {
+    signal?.throwIfAborted();
+    if (!live)
+      throw new TypeError("world scene data-source lease has been released");
+  };
+  const source2 = Object.freeze({
+    contract: WORLD_SCENE_SOURCE_CONTRACT,
+    major: 1,
+    snapshotId: candidate.snapshotId,
+    async info(signal) {
+      assertLive(signal);
+      const info = await candidate.info(signal);
+      assertLive(signal);
+      return Object.freeze({ ...info, contract: WORLD_SCENE_SOURCE_CONTRACT });
+    },
+    async page(request, signal) {
+      assertLive(signal);
+      const page2 = await candidate.page(request, signal);
+      assertLive(signal);
+      return page2;
+    },
+    ...candidate.model === void 0 ? {} : {
+      async model(resourceId2, request, signal) {
+        assertLive(signal);
+        const result = await candidate.model(resourceId2, request, signal);
+        assertLive(signal);
+        return result;
+      }
+    },
+    ...candidate.texture === void 0 ? {} : {
+      async texture(resourceId2, request, signal) {
+        assertLive(signal);
+        const result = await candidate.texture(resourceId2, request, signal);
+        assertLive(signal);
+        return result;
+      }
+    }
+  });
+  return Object.freeze({
+    value: source2,
+    release() {
+      live = false;
+      return Promise.resolve();
+    }
+  });
+}
+function borrowDataSource(source2) {
+  let live = true;
+  const target = /* @__PURE__ */ Object.create(null);
+  const value2 = new Proxy(target, {
+    get(_target2, property) {
+      const member = Reflect.get(source2, property, source2);
+      if (typeof member !== "function")
+        return member;
+      return (...args) => {
+        if (!live)
+          throw new TypeError("map preview data-source lease has been released");
+        return Reflect.apply(member, source2, args);
+      };
+    }
+  });
+  return Object.freeze({
+    value: value2,
+    release() {
+      live = false;
+      return Promise.resolve();
+    }
+  });
+}
+async function openMapPreviewAssetSession(request) {
+  let analyzed;
+  try {
+    analyzed = await analyzeResolvedMapWorkspace(request);
+  } catch (error5) {
+    await Promise.allSettled([request.resources.dispose(), request.catalogSources?.release()]);
+    throw error5;
+  }
+  if (analyzed.state === "unresolved") {
+    await Promise.allSettled([request.resources.dispose(), request.catalogSources?.release()]);
+    return analyzed;
+  }
+  try {
+    const catalogSources = request.catalogSources;
+    const descriptor = await assembleSubjectDescriptor({
+      schemaVersion: 2,
+      subjectUri: request.subjectUri,
+      origin: {
+        kind: "namespace",
+        root: { id: request.workspace.activeRootId, uri: request.subjectUri },
+        revision: request.resources.revision
+      },
+      interpretation: "none",
+      candidates: [],
+      traits: [],
+      operations: [],
+      constraints: {
+        readOnly: true,
+        seekable: false,
+        randomAccess: true,
+        trusted: false
+      },
+      dataSources: [
+        { contract: WORLD_SCENE_SOURCE_CONTRACT, major: 1 },
+        ...catalogSources === void 0 ? [] : [{ contract: contractId("common.view/relation-graph-source"), major: 1 }],
+        ...catalogSources?.selector === void 0 ? [] : [{ contract: contractId("common.view/subject-selector-source"), major: 1 }]
+      ],
+      diagnostics: analyzed.diagnostics.map(previewDiagnostic),
+      revision: request.resources.revision
+    });
+    const managed = createAssetSession({
+      revision: request.resources.revision,
+      descriptor,
+      operationDeclarations: [],
+      permissionGrant: request.grant,
+      handlers: /* @__PURE__ */ new Map(),
+      async openDataSource(contract, major) {
+        if (major === 1) {
+          if (contract === WORLD_SCENE_SOURCE_CONTRACT) {
+            return borrowCommonWorldScene(analyzed.world.value);
+          }
+          if (contract === "common.view/relation-graph-source" && catalogSources !== void 0) {
+            return borrowDataSource(catalogSources.relations);
+          }
+          if (contract === "common.view/subject-selector-source" && catalogSources?.selector !== void 0) {
+            return borrowDataSource(catalogSources.selector);
+          }
+        }
+        throw new ModkitError({
+          code: "x3.host/map-preview-data-source-unavailable",
+          message: `map preview does not publish ${contract}@${String(major)}`
+        });
+      },
+      // createAssetSession releases in reverse order: analysis first, then its ResourceSession.
+      release: [
+        () => request.resources.dispose(),
+        ...catalogSources === void 0 ? [] : [() => catalogSources.release()],
+        () => analyzed.release()
+      ]
+    });
+    return Object.freeze({
+      state: "opened",
+      session: managed.session,
+      descriptor,
+      snapshot: analyzed.snapshot,
+      plan: analyzed.plan,
+      diagnostics: analyzed.diagnostics
+    });
+  } catch (error5) {
+    await Promise.allSettled([
+      analyzed.release(),
+      request.catalogSources?.release(),
+      request.resources.dispose()
+    ]);
+    throw error5;
+  }
+}
+var PREVIEW_DIAGNOSTIC_SEVERITIES = /* @__PURE__ */ new Set(["error", "warning", "information", "hint"]);
+var MAX_PREVIEW_NAMESPACE_SEARCHES = 8;
+var MAX_PREVIEW_NAMESPACE_SEARCH_BASENAMES = 16;
+var MAX_PREVIEW_NAMESPACE_SEARCH_BASENAME_CHARS = 512;
+var MAX_PREVIEW_NAMESPACE_SEARCH_ID_CHARS = 512;
+var MAX_PREVIEW_NAMESPACE_FACT_ENTRIES = 2e4;
+var MAX_PREVIEW_NAMESPACE_FACT_PAGES = 256;
+var MAX_PREVIEW_NAMESPACE_PATH_CHARS = 4096;
+var MAX_PREVIEW_NAMESPACE_CURSOR_CHARS = 4096;
+var MAX_PREVIEW_DOCUMENT_READS = 8;
+var MAX_PREVIEW_DOCUMENT_READ_BYTES = 1048576;
+var MAX_PREVIEW_DOCUMENT_TOTAL_BYTES = 4194304;
+var MAX_PREVIEW_DOCUMENT_ROUNDS = 8;
+function positiveCoordinatorLimit(value2, label) {
+  if (!Number.isSafeInteger(value2) || value2 <= 0) {
+    throw new TypeError(`${label} must be a positive safe integer`);
+  }
+  return value2;
+}
+function boundedCoordinatorLimit(value2, label, maximum) {
+  const admitted = positiveCoordinatorLimit(value2, label);
+  if (admitted > maximum)
+    throw new TypeError(`${label} must be no greater than ${maximum}`);
+  return admitted;
+}
+function validPreparationDiagnostic(value2) {
+  const record9 = recordOf9(value2);
+  return record9 !== void 0 && Object.keys(record9).every((key3) => ["code", "severity", "message", "path", "data"].includes(key3)) && nonEmptyString7(record9["code"]) && PREVIEW_DIAGNOSTIC_SEVERITIES.has(String(record9["severity"])) && nonEmptyString7(record9["message"]) && (!Object.hasOwn(record9, "path") || Array.isArray(record9["path"]) && record9["path"].every((item) => typeof item === "string" || Number.isSafeInteger(item))) && (!Object.hasOwn(record9, "data") || jsonSafeValue(record9["data"]));
+}
+function validNamespaceSearchQuery(value2) {
+  const query2 = recordOf9(value2);
+  if (query2 === void 0 || !Object.keys(query2).every((key3) => key3 === "kind" || key3 === "basenames" || key3 === "caseSensitive") || query2["kind"] !== "basename-any" || !Array.isArray(query2["basenames"]) || query2["basenames"].length === 0 || query2["basenames"].length > MAX_PREVIEW_NAMESPACE_SEARCH_BASENAMES || typeof query2["caseSensitive"] !== "boolean") {
+    return false;
+  }
+  const basenames = query2["basenames"];
+  const validBasenames = basenames.every((item) => nonEmptyString7(item) && item.length <= MAX_PREVIEW_NAMESPACE_SEARCH_BASENAME_CHARS && !item.includes("/") && !item.includes("\\") && !item.includes("\0") && item !== "." && item !== "..");
+  if (!validBasenames)
+    return false;
+  const identityBasenames = query2["caseSensitive"] ? basenames : basenames.map((item) => item.toLowerCase());
+  return new Set(identityBasenames).size === basenames.length;
+}
+function validateNamespaceSearchRequests(value2) {
+  if (!Array.isArray(value2) || value2.length === 0 || value2.length > MAX_PREVIEW_NAMESPACE_SEARCHES || !value2.every((item) => {
+    const search = recordOf9(item);
+    return search !== void 0 && Object.keys(search).every((key3) => key3 === "searchId" || key3 === "query") && nonEmptyString7(search["searchId"]) && search["searchId"].length <= MAX_PREVIEW_NAMESPACE_SEARCH_ID_CHARS && !search["searchId"].includes("\0") && validNamespaceSearchQuery(search["query"]);
+  }) || new Set(value2.map((item) => String(recordOf9(item)?.["searchId"] ?? ""))).size !== value2.length) {
+    throw new TypeError("map preview preparation returned invalid namespace searches");
+  }
+  return value2;
+}
+function validateDocumentReadRequests(value2) {
+  if (!Array.isArray(value2) || value2.length === 0 || value2.length > MAX_PREVIEW_DOCUMENT_READS) {
+    throw new TypeError("map preview preparation returned invalid document reads");
+  }
+  let totalBytes = 0;
+  const identities = /* @__PURE__ */ new Set();
+  for (const [index2, item] of value2.entries()) {
+    const document2 = recordOf9(item);
+    if (document2 === void 0 || !Object.keys(document2).every((key3) => key3 === "documentId" || key3 === "path" || key3 === "maxBytes") || !nonEmptyString7(document2["documentId"]) || document2["documentId"].length > 256 || document2["documentId"].includes("\0") || !nonEmptyString7(document2["path"]) || document2["path"].length > MAX_PREVIEW_NAMESPACE_PATH_CHARS || document2["path"].includes("\0") || document2["path"].startsWith("/") || /^[a-z]:/iu.test(document2["path"]) || document2["path"].replace(/\\/gu, "/").split("/").some((part) => part === "..") || !Number.isSafeInteger(document2["maxBytes"]) || Number(document2["maxBytes"]) <= 0 || Number(document2["maxBytes"]) > MAX_PREVIEW_DOCUMENT_READ_BYTES) {
+      throw new TypeError(`map preview document read ${index2} is malformed`);
+    }
+    if (identities.has(document2["documentId"])) {
+      throw new TypeError("map preview document reads contain duplicate document ids");
+    }
+    identities.add(document2["documentId"]);
+    totalBytes += Number(document2["maxBytes"]);
+  }
+  if (totalBytes > MAX_PREVIEW_DOCUMENT_TOTAL_BYTES) {
+    throw new TypeError("map preview document reads exceed the total byte budget");
+  }
+  return value2;
+}
+function jsonSafeValue(value2, depth = 0) {
+  if (depth > 64)
+    return false;
+  if (value2 === null || typeof value2 === "string" || typeof value2 === "boolean")
+    return true;
+  if (typeof value2 === "number")
+    return Number.isFinite(value2);
+  if (Array.isArray(value2))
+    return value2.every((item) => jsonSafeValue(item, depth + 1));
+  const record9 = recordOf9(value2);
+  return record9 !== void 0 && Object.values(record9).every((item) => jsonSafeValue(item, depth + 1));
+}
+function validHostResourceRoot(value2) {
+  const record9 = recordOf9(value2);
+  return record9 !== void 0 && Object.keys(record9).every((key3) => key3 === "rootId" || key3 === "locator") && nonEmptyString7(record9["rootId"]) && Object.hasOwn(record9, "locator") && jsonSafeValue(record9["locator"]);
+}
+function validSubjectNamespaceRoot(value2) {
+  const record9 = recordOf9(value2);
+  return record9 !== void 0 && Object.keys(record9).every((key3) => key3 === "rootId" || key3 === "namespacePrefix") && nonEmptyString7(record9["rootId"]) && typeof record9["namespacePrefix"] === "string";
+}
+function validateResourcePlan(value2, maxRoots) {
+  const plan = recordOf9(value2);
+  if (plan?.["schemaVersion"] !== 1) {
+    throw new TypeError("map preview preparation returned no versioned resource plan");
+  }
+  if (plan["strategy"] === "subject-namespace") {
+    const roots = plan["roots"];
+    if (!Object.keys(plan).every((key3) => key3 === "schemaVersion" || key3 === "strategy" || key3 === "roots") || !Array.isArray(roots) || roots.length === 0 || roots.length > maxRoots || !roots.every(validSubjectNamespaceRoot) || new Set(roots.map((item) => String(recordOf9(item)?.["rootId"] ?? ""))).size !== roots.length) {
+      throw new TypeError("map preview preparation returned invalid subject namespace roots");
+    }
+    return value2;
+  }
+  if (plan["strategy"] === "host-resolved") {
+    const roots = plan["roots"];
+    const subjectRoots = plan["subjectNamespaceRoots"];
+    if (!Object.keys(plan).every((key3) => ["schemaVersion", "strategy", "resolverId", "subjectNamespaceRoots", "roots"].includes(key3)) || !nonEmptyString7(plan["resolverId"]) || !Array.isArray(subjectRoots) || !subjectRoots.every(validSubjectNamespaceRoot) || !Array.isArray(roots) || roots.length === 0 || roots.length + subjectRoots.length > maxRoots || !roots.every(validHostResourceRoot) || new Set([...subjectRoots, ...roots].map((item) => String(recordOf9(item)?.["rootId"] ?? ""))).size !== roots.length + subjectRoots.length) {
+      throw new TypeError("map preview preparation returned invalid host resource roots");
+    }
+    return value2;
+  }
+  throw new TypeError("map preview preparation returned an unknown resource strategy");
+}
+function validatePreparationResult(value2, maxCandidates, maxRoots) {
+  const record9 = recordOf9(value2);
+  if (record9 === void 0 || !Array.isArray(record9["diagnostics"]) || !record9["diagnostics"].every(validPreparationDiagnostic)) {
+    throw new TypeError("map preview preparation returned malformed diagnostics");
+  }
+  if (record9["state"] === "not-applicable" || record9["state"] === "unresolved") {
+    if (!Object.keys(record9).every((key3) => key3 === "state" || key3 === "diagnostics")) {
+      throw new TypeError("map preview preparation result contains unknown fields");
+    }
+    return value2;
+  }
+  if (record9["state"] === "selection-required") {
+    const candidates = record9["candidates"];
+    if (!Object.keys(record9).every((key3) => key3 === "state" || key3 === "candidates" || key3 === "diagnostics") || !Array.isArray(candidates) || candidates.length === 0 || candidates.length > maxCandidates || !candidates.every((candidate) => {
+      const item = recordOf9(candidate);
+      return item !== void 0 && Object.keys(item).every((key3) => key3 === "candidateId" || key3 === "displayName" || key3 === "sourcePath") && nonEmptyString7(item["candidateId"]) && nonEmptyString7(item["displayName"]) && (!Object.hasOwn(item, "sourcePath") || nonEmptyString7(item["sourcePath"]));
+    }) || new Set(candidates.map((candidate) => String(recordOf9(candidate)?.["candidateId"] ?? ""))).size !== candidates.length) {
+      throw new TypeError("map preview preparation returned invalid selection candidates");
+    }
+    return value2;
+  }
+  if (record9["state"] === "namespace-search-required") {
+    if (!Object.keys(record9).every((key3) => key3 === "state" || key3 === "searches" || key3 === "diagnostics")) {
+      throw new TypeError("map preview preparation search result contains unknown fields");
+    }
+    validateNamespaceSearchRequests(record9["searches"]);
+    return value2;
+  }
+  if (record9["state"] === "document-read-required") {
+    if (!Object.keys(record9).every((key3) => key3 === "state" || key3 === "documents" || key3 === "diagnostics")) {
+      throw new TypeError("map preview preparation document-read result contains unknown fields");
+    }
+    validateDocumentReadRequests(record9["documents"]);
+    return value2;
+  }
+  if (record9["state"] === "prepared") {
+    const plan = recordOf9(record9["plan"]);
+    if (!Object.keys(record9).every((key3) => key3 === "state" || key3 === "plan" || key3 === "diagnostics") || plan?.["schemaVersion"] !== 1 || recordOf9(plan["workspace"]) === void 0 || !jsonSafeValue(plan["workspace"]) || !Object.keys(plan).every((key3) => key3 === "schemaVersion" || key3 === "workspace" || key3 === "resources")) {
+      throw new TypeError("map preview preparation returned an invalid prepared plan");
+    }
+    validateResourcePlan(plan["resources"], maxRoots);
+    return value2;
+  }
+  throw new TypeError("map preview preparation returned an unknown state");
+}
+function preparationDiagnostics(items) {
+  return items.map((item) => ({
+    code: errorCode(item.code),
+    severity: item.severity,
+    message: item.message,
+    ...item.path === void 0 ? {} : { path: item.path },
+    ...item.data === void 0 ? {} : { data: item.data }
+  }));
+}
+function mapPreviewPreparationSubject(descriptor, namespace, namespaceSearches = Object.freeze([]), documentReads = Object.freeze([])) {
+  const formatId = "identity" in descriptor ? descriptor.identity.formatId : void 0;
+  if (!nonEmptyString7(formatId)) {
+    throw new TypeError("the ordinary codec descriptor has no format id");
+  }
+  return Object.freeze({
+    schemaVersion: 1,
+    subjectUri: descriptor.subjectUri,
+    revision: descriptor.revision,
+    formatId,
+    traits: Object.freeze(descriptor.traits.map((item) => item.id)),
+    dataSources: Object.freeze(descriptor.dataSources.map((item) => Object.freeze({ contract: item.contract, major: item.major }))),
+    operations: Object.freeze(descriptor.operations.map((item) => Object.freeze({ id: item.id, state: item.state }))),
+    namespace,
+    namespaceSearches: Object.freeze(namespaceSearches.map((item) => Object.freeze(item))),
+    documentReads: Object.freeze(documentReads.map((item) => Object.freeze(item)))
+  });
+}
+async function boundedPreparationNamespace(original, descriptor, maxEntries, maxPages, signal) {
+  if (!descriptor.dataSources.some((item) => item.contract === "common.view/namespace-entry-source" && item.major === 1)) {
+    return Object.freeze({ state: "unavailable", entries: Object.freeze([]) });
+  }
+  const lease2 = await original.dataSource("common.view/namespace-entry-source", 1);
+  const release = releaseOnce(() => lease2.release());
+  try {
+    const entries = [];
+    const seenCursors = /* @__PURE__ */ new Set();
+    let cursor5;
+    let pages = 0;
+    let truncated = false;
+    do {
+      signal?.throwIfAborted();
+      if (pages >= maxPages) {
+        truncated = true;
+        break;
+      }
+      if (cursor5 !== void 0) {
+        if (seenCursors.has(cursor5)) {
+          throw new TypeError("subject namespace repeated a paging cursor");
+        }
+        seenCursors.add(cursor5);
+      }
+      const remaining = maxEntries - entries.length;
+      if (remaining <= 0) {
+        truncated = true;
+        break;
+      }
+      const page2 = await lease2.value.list("", cursor5 === void 0 ? { limit: Math.min(remaining, 256) } : { cursor: cursor5, limit: Math.min(remaining, 256) }, signal);
+      pages += 1;
+      for (const item of page2.items.slice(0, remaining)) {
+        entries.push({
+          path: item.path,
+          kind: item.kind,
+          ...item.size === void 0 ? {} : { size: item.size.toString(10) }
+        });
+      }
+      if (page2.items.length > remaining) {
+        truncated = true;
+        break;
+      }
+      cursor5 = page2.nextCursor;
+    } while (cursor5 !== void 0);
+    entries.sort((left, right) => left.path === right.path ? left.kind.localeCompare(right.kind) : left.path.localeCompare(right.path));
+    return Object.freeze({
+      state: truncated ? "truncated" : "complete",
+      entries: Object.freeze(entries.map((item) => Object.freeze(item)))
+    });
+  } finally {
+    await release();
+  }
+}
+async function boundedPreparationNamespaceSearches(original, descriptor, searches, maxEntries, maxPages, signal) {
+  if (!descriptor.dataSources.some((item) => item.contract === "common.view/namespace-entry-source" && item.major === 1)) {
+    return Object.freeze(searches.map((search) => Object.freeze({
+      searchId: search.searchId,
+      state: "unsupported",
+      entries: Object.freeze([])
+    })));
+  }
+  const lease2 = await original.dataSource("common.view/namespace-entry-source", 1);
+  const release = releaseOnce(() => lease2.release());
+  try {
+    const source2 = lease2.value;
+    const searchNamespace = source2.search?.bind(source2);
+    if (searchNamespace === void 0) {
+      return Object.freeze(searches.map((search) => Object.freeze({
+        searchId: search.searchId,
+        state: "unsupported",
+        entries: Object.freeze([])
+      })));
+    }
+    let remainingEntries = maxEntries;
+    let remainingPages = maxPages;
+    const results = [];
+    for (const search of searches) {
+      signal?.throwIfAborted();
+      const entries = [];
+      const seenCursors = /* @__PURE__ */ new Set();
+      let cursor5;
+      let truncated = remainingEntries === 0 || remainingPages === 0;
+      while (!truncated) {
+        if (cursor5 !== void 0) {
+          if (seenCursors.has(cursor5)) {
+            throw new TypeError("subject namespace search repeated a paging cursor");
+          }
+          seenCursors.add(cursor5);
+        }
+        const pageLimit = Math.min(remainingEntries, 256);
+        const page2 = await searchNamespace(search.query, cursor5 === void 0 ? { limit: pageLimit } : { cursor: cursor5, limit: pageLimit }, signal);
+        remainingPages -= 1;
+        if (!Array.isArray(page2.items) || page2.items.length > pageLimit || page2.nextCursor !== void 0 && (typeof page2.nextCursor !== "string" || page2.nextCursor.length === 0 || page2.nextCursor.length > MAX_PREVIEW_NAMESPACE_CURSOR_CHARS)) {
+          throw new TypeError("subject namespace search returned a malformed page");
+        }
+        const admitted = page2.items;
+        for (const item of admitted) {
+          if (typeof item.path !== "string" || item.path.length > MAX_PREVIEW_NAMESPACE_PATH_CHARS || item.kind !== "file" && item.kind !== "directory" || item.size !== void 0 && typeof item.size !== "bigint") {
+            throw new TypeError("subject namespace search returned a malformed entry");
+          }
+          entries.push({
+            path: item.path,
+            kind: item.kind,
+            ...item.size === void 0 ? {} : { size: item.size.toString(10) }
+          });
+        }
+        remainingEntries -= admitted.length;
+        cursor5 = page2.nextCursor;
+        if (cursor5 === void 0)
+          break;
+        if (remainingEntries === 0 || remainingPages === 0)
+          truncated = true;
+      }
+      entries.sort((left, right) => left.path === right.path ? left.kind.localeCompare(right.kind) : left.path.localeCompare(right.path));
+      results.push(Object.freeze({
+        searchId: search.searchId,
+        state: truncated ? "truncated" : "complete",
+        entries: Object.freeze(entries.map((item) => Object.freeze(item)))
+      }));
+    }
+    return Object.freeze(results);
+  } finally {
+    await release();
+  }
+}
+async function boundedPreparationDocumentReads(original, descriptor, requests, signal) {
+  const extraction = descriptor.operations.find((item) => item.id === CONTAINER_EXTRACT_OPERATION_ID && item.state === "available");
+  if (extraction === void 0 || !descriptor.dataSources.some((item) => item.contract === "common.view/namespace-entry-source" && item.major === 1)) {
+    return Object.freeze(requests.map((request) => Object.freeze({
+      documentId: request.documentId,
+      path: request.path,
+      state: "unsupported"
+    })));
+  }
+  const lease2 = await original.dataSource("common.view/namespace-entry-source", 1);
+  const release = releaseOnce(() => lease2.release());
+  try {
+    const source2 = lease2.value;
+    const decoder4 = new TextDecoder("utf-8", { fatal: false });
+    const results = [];
+    for (const request of requests) {
+      signal?.throwIfAborted();
+      let page2;
+      try {
+        page2 = await source2.list(request.path, { limit: 16 }, signal);
+      } catch (error5) {
+        if (signal?.aborted)
+          throw error5;
+        results.push(Object.freeze({
+          documentId: request.documentId,
+          path: request.path,
+          state: "unreadable"
+        }));
+        continue;
+      }
+      const normalizedPath2 = request.path.replace(/\\/gu, "/");
+      const entry2 = page2.items.find((item) => item.kind === "file" && item.path.replace(/\\/gu, "/") === normalizedPath2);
+      if (entry2 === void 0) {
+        results.push(Object.freeze({
+          documentId: request.documentId,
+          path: request.path,
+          state: "missing"
+        }));
+        continue;
+      }
+      if (entry2.size !== void 0 && entry2.size > BigInt(request.maxBytes)) {
+        results.push(Object.freeze({
+          documentId: request.documentId,
+          path: request.path,
+          state: "too-large"
+        }));
+        continue;
+      }
+      try {
+        const invoked = await original.operations().invoke(extraction.handlerId, { entryId: entry2.id }, signal === void 0 ? {} : { signal });
+        if (invoked.state !== "ok" || invoked.output.kind !== "bytes" || invoked.output.value.byteLength > request.maxBytes) {
+          results.push(Object.freeze({
+            documentId: request.documentId,
+            path: request.path,
+            state: invoked.state === "ok" && invoked.output.kind === "bytes" && invoked.output.value.byteLength > request.maxBytes ? "too-large" : "unreadable"
+          }));
+          continue;
+        }
+        results.push(Object.freeze({
+          documentId: request.documentId,
+          path: request.path,
+          state: "read",
+          text: decoder4.decode(invoked.output.value)
+        }));
+      } catch (error5) {
+        if (signal?.aborted)
+          throw error5;
+        results.push(Object.freeze({
+          documentId: request.documentId,
+          path: request.path,
+          state: "unreadable"
+        }));
+      }
+    }
+    return Object.freeze(results);
+  } finally {
+    await release();
+  }
+}
+function workspaceDiagnostics(workspace) {
+  return workspace.diagnostics.map((item) => diagnostic(item.severity, "x3.host/map-preview-workspace-diagnostic", `${item.code}: ${item.message}`, void 0, {
+    ...item.rootId === void 0 ? {} : { rootId: item.rootId },
+    ...item.dependencyRef === void 0 ? {} : { dependencyRef: item.dependencyRef },
+    ...item.cycle === void 0 ? {} : { cycle: item.cycle }
+  }));
+}
+function sessionHoldingMapPreviewPrerequisites(preview2, releasePreparedResources, original) {
+  let disposed = false;
+  return Object.freeze({
+    revision: preview2.revision,
+    state: () => preview2.state(),
+    descriptor: () => preview2.descriptor(),
+    dataSource: preview2.dataSource.bind(preview2),
+    operations: () => preview2.operations(),
+    events: (signal) => preview2.events(signal),
+    async dispose() {
+      if (disposed)
+        return;
+      disposed = true;
+      let firstError;
+      for (const release of [
+        () => preview2.dispose(),
+        releasePreparedResources,
+        () => original.dispose()
+      ]) {
+        try {
+          await release();
+        } catch (error5) {
+          firstError ??= error5;
+        }
+      }
+      if (firstError !== void 0)
+        throw firstError;
+    }
+  });
+}
+function coordinatorFailure(code, message) {
+  return {
+    state: "unresolved",
+    diagnostics: [diagnostic("error", errorCode(code), message)]
+  };
+}
+function releaseOnce(release) {
+  let released = false;
+  return async () => {
+    if (released)
+      return;
+    released = true;
+    await release();
+  };
+}
+async function enrichMapPreviewCatalog(request, workspace, resources) {
+  if (request.catalog !== void 0 || request.catalogEnrichment === void 0) {
+    return Object.freeze({
+      ...request.catalog === void 0 ? {} : { catalog: request.catalog },
+      diagnostics: Object.freeze([])
+    });
+  }
+  let analyzed;
+  try {
+    analyzed = await analyzeResolvedDataWorkspace({
+      services: request.services,
+      grant: request.grant,
+      budgets: request.budgets,
+      workspace,
+      resources,
+      locales: request.catalogEnrichment.locales,
+      queries: Object.freeze([]),
+      limits: request.catalogEnrichment.limits,
+      ...request.signal === void 0 ? {} : { signal: request.signal }
+    });
+  } catch (error5) {
+    if (request.signal?.aborted)
+      throw error5;
+    return Object.freeze({
+      diagnostics: boundedDiagnostics([
+        diagnostic("warning", "x3.host/map-preview-catalog-enrichment-failed", `map preview catalog enrichment failed (${error5 instanceof Error ? error5.message : String(error5)})`)
+      ], request.limits.maxDiagnostics)
+    });
+  }
+  if (analyzed.state === "unresolved") {
+    return Object.freeze({
+      diagnostics: boundedDiagnostics(analyzed.diagnostics, request.limits.maxDiagnostics)
+    });
+  }
+  const selector = createResolvedDataSubjectSelectorLease(analyzed, {
+    maxPageSize: request.catalogEnrichment.limits.maxPageSize,
+    maxEntities: request.catalogEnrichment.limits.maxEntities,
+    maxRelations: request.catalogEnrichment.limits.maxEntities,
+    // The selector request crosses a game-provider boundary. Keep the shared Product-GA ceiling
+    // within the strictest bundled semantic provider instead of making every opened card fail.
+    maxCalculations: Math.min(request.catalogEnrichment.limits.maxEntities, 256)
+  });
+  let released = false;
+  return Object.freeze({
+    catalog: analyzed.snapshot,
+    sources: Object.freeze({
+      ...selector === void 0 ? {} : { selector: selector.value },
+      relations: analyzed.facets.relations.value,
+      async release() {
+        if (released)
+          return;
+        released = true;
+        const results = await Promise.allSettled([
+          ...selector === void 0 ? [] : [selector.release()],
+          analyzed.release()
+        ]);
+        const failed2 = results.find((result) => result.status === "rejected");
+        if (failed2?.status === "rejected")
+          throw failed2.reason;
+      }
+    }),
+    diagnostics: boundedDiagnostics(analyzed.diagnostics, request.limits.maxDiagnostics)
+  });
+}
+async function resolveSubjectNamespacePreviewResources(request) {
+  if (!request.descriptor.dataSources.some((item) => item.contract === "common.view/namespace-entry-source" && item.major === 1)) {
+    return {
+      state: "unresolved",
+      diagnostics: [
+        diagnostic("error", "x3.host/map-preview-namespace-unavailable", "the subject-namespace resource plan requires an ordinary namespace entry source")
+      ]
+    };
+  }
+  const extractOperation = request.descriptor.operations.find((item) => item.id === CONTAINER_EXTRACT_OPERATION_ID && item.state === "available");
+  if (extractOperation === void 0) {
+    return {
+      state: "unresolved",
+      diagnostics: [
+        diagnostic("error", "x3.host/map-preview-extract-unavailable", `the subject-namespace resource plan requires ${CONTAINER_EXTRACT_OPERATION_ID}`)
+      ]
+    };
+  }
+  const namespaceLease = await request.original.dataSource("common.view/namespace-entry-source", 1);
+  const release = releaseOnce(() => namespaceLease.release());
+  try {
+    const operations = request.original.operations();
+    const extract = async (entryId, signal) => {
+      signal?.throwIfAborted();
+      const result = await operations.invoke(extractOperation.handlerId, { entryId }, signal === void 0 ? {} : { signal });
+      if (result.state !== "ok" || result.output.kind !== "bytes") {
+        throw new ModkitError({
+          code: "x3.host/map-preview-entry-unreadable",
+          message: `the source container refused to extract entry ${entryId}`,
+          context: {
+            entryId,
+            state: result.state,
+            ...result.state === "rejected" ? { reason: result.reason } : {},
+            ...result.state === "ok" ? { outputKind: result.output.kind } : {}
+          }
+        });
+      }
+      return result.output.value;
+    };
+    const namespacePrefixes = new Map(request.plan.roots.map((root) => [root.rootId, root.namespacePrefix]));
+    const logicalRoots = (request.workspace.logicalRoots ?? [...request.workspace.loadOrder].reverse()).map((root) => Object.freeze({
+      rootId: root.rootId,
+      pathPrefix: namespacePrefixes.get(root.rootId) ?? "",
+      logicalPrefix: root.sourcePath
+    }));
+    return Object.freeze({
+      state: "resolved",
+      origin: createWorkspaceNamespaceCompanionOrigin({
+        namespace: namespaceLease.value,
+        primaryLogicalId: request.activeSourcePath,
+        logicalRoots,
+        containerRevision: request.descriptor.revision,
+        extract
+      }),
+      revision: request.descriptor.revision,
+      diagnostics: Object.freeze([
+        diagnostic("information", "x3.host/map-preview-subject-resources-selected", "map preview resources are confined to the opened subject namespace")
+      ]),
+      release
+    });
+  } catch (error5) {
+    await release();
+    throw error5;
+  }
+}
+async function coordinateMapPreviewAssetSession(request) {
+  const maxCandidates = positiveCoordinatorLimit(request.maxCandidates, "maxCandidates");
+  const maxSubjectEntries = boundedCoordinatorLimit(request.maxSubjectEntries, "maxSubjectEntries", MAX_PREVIEW_NAMESPACE_FACT_ENTRIES);
+  const maxSubjectPages = boundedCoordinatorLimit(request.maxSubjectPages, "maxSubjectPages", MAX_PREVIEW_NAMESPACE_FACT_PAGES);
+  const maxRoots = positiveCoordinatorLimit(request.maxRoots, "maxRoots");
+  const maxDepth = positiveCoordinatorLimit(request.maxDepth, "maxDepth");
+  request.signal?.throwIfAborted();
+  request = {
+    ...request,
+    original: await singleFileAsContainer(request.original, request.budgets.maxInputBytes)
+  };
+  const descriptor = await request.original.descriptor();
+  let subject;
+  try {
+    subject = mapPreviewPreparationSubject(descriptor, Object.freeze({ state: "unavailable", entries: Object.freeze([]) }));
+  } catch (error5) {
+    return {
+      state: "not-applicable",
+      diagnostics: [
+        diagnostic("information", "x3.host/map-preview-subject-not-applicable", error5 instanceof Error ? error5.message : String(error5))
+      ]
+    };
+  }
+  let preparation = request.preparation;
+  let preparationRelease;
+  const resolutionDiagnostics = [];
+  if (preparation === void 0) {
+    const resolution = await resolveMapPreviewPreparation({
+      services: request.services,
+      grant: request.grant,
+      budgets: request.budgets,
+      subjectFormatId: subject.formatId,
+      ...request.signal === void 0 ? {} : { signal: request.signal }
+    });
+    resolutionDiagnostics.push(...resolution.diagnostics);
+    if (resolution.state === "unresolved") {
+      return { state: "not-applicable", diagnostics: resolutionDiagnostics };
+    }
+    preparation = resolution.preparation;
+    preparationRelease = resolution.release;
+  } else if (preparation.contract !== MAP_PREVIEW_PREPARATION_CONTRACT || !preparation.subjectFormatIds.includes(subject.formatId)) {
+    return coordinatorFailure("x3.host/map-preview-preparation-invalid", "the supplied map preview preparation port does not accept the subject format");
+  }
+  let prepared;
+  let searchRoundDiagnostics = Object.freeze([]);
+  const documentRoundDiagnostics = [];
+  try {
+    const namespace = await boundedPreparationNamespace(request.original, descriptor, maxSubjectEntries, maxSubjectPages, request.signal);
+    let namespaceSearches = Object.freeze([]);
+    subject = mapPreviewPreparationSubject(descriptor, namespace);
+    prepared = validatePreparationResult(await preparation.prepare({
+      subject,
+      maxCandidates,
+      maxRoots,
+      maxDepth,
+      ...request.selectionId === void 0 ? {} : { selectionId: request.selectionId },
+      ...request.signal === void 0 ? {} : { signal: request.signal }
+    }), maxCandidates, maxRoots);
+    if (prepared.state === "namespace-search-required") {
+      searchRoundDiagnostics = prepared.diagnostics;
+      namespaceSearches = await boundedPreparationNamespaceSearches(request.original, descriptor, prepared.searches, maxSubjectEntries, maxSubjectPages, request.signal);
+      subject = mapPreviewPreparationSubject(descriptor, namespace, namespaceSearches);
+      prepared = validatePreparationResult(await preparation.prepare({
+        subject,
+        maxCandidates,
+        maxRoots,
+        maxDepth,
+        ...request.selectionId === void 0 ? {} : { selectionId: request.selectionId },
+        ...request.signal === void 0 ? {} : { signal: request.signal }
+      }), maxCandidates, maxRoots);
+      if (prepared.state === "namespace-search-required") {
+        throw new TypeError("map preview preparation requested more than one namespace search round");
+      }
+    }
+    const accumulatedDocumentReads = /* @__PURE__ */ new Map();
+    let documentRounds = 0;
+    while (prepared.state === "document-read-required") {
+      if (documentRounds >= MAX_PREVIEW_DOCUMENT_ROUNDS) {
+        throw new TypeError(`map preview preparation exceeded ${MAX_PREVIEW_DOCUMENT_ROUNDS} document-read rounds`);
+      }
+      documentRounds += 1;
+      documentRoundDiagnostics.push(...prepared.diagnostics);
+      const documents = validateDocumentReadRequests(prepared.documents);
+      const documentReads = await boundedPreparationDocumentReads(request.original, descriptor, documents, request.signal);
+      for (const document2 of documentReads) {
+        accumulatedDocumentReads.set(document2.documentId, document2);
+      }
+      subject = mapPreviewPreparationSubject(descriptor, namespace, namespaceSearches, Object.freeze([...accumulatedDocumentReads.values()]));
+      prepared = validatePreparationResult(await preparation.prepare({
+        subject,
+        maxCandidates,
+        maxRoots,
+        maxDepth,
+        ...request.selectionId === void 0 ? {} : { selectionId: request.selectionId },
+        ...request.signal === void 0 ? {} : { signal: request.signal }
+      }), maxCandidates, maxRoots);
+      if (prepared.state === "namespace-search-required") {
+        throw new TypeError("map preview preparation requested a namespace search after documents");
+      }
+    }
+  } catch (error5) {
+    return {
+      state: "unresolved",
+      diagnostics: Object.freeze([
+        ...resolutionDiagnostics,
+        ...preparationDiagnostics(searchRoundDiagnostics),
+        ...preparationDiagnostics(documentRoundDiagnostics),
+        diagnostic("error", "x3.host/map-preview-preparation-invalid", `map preview preparation failed (${error5 instanceof Error ? error5.message : String(error5)})`)
+      ])
+    };
+  } finally {
+    try {
+      await preparationRelease?.();
+    } catch {
+    }
+  }
+  let providerDiagnostics;
+  try {
+    providerDiagnostics = preparationDiagnostics([
+      ...searchRoundDiagnostics,
+      ...documentRoundDiagnostics,
+      ...prepared.diagnostics
+    ]);
+  } catch (error5) {
+    return coordinatorFailure("x3.host/map-preview-preparation-invalid", `map preview preparation returned an invalid diagnostic (${error5 instanceof Error ? error5.message : String(error5)})`);
+  }
+  const preparationFindings = Object.freeze([...resolutionDiagnostics, ...providerDiagnostics]);
+  if (prepared.state === "not-applicable") {
+    return { state: "not-applicable", diagnostics: preparationFindings };
+  }
+  if (prepared.state === "selection-required") {
+    return {
+      state: "selection-required",
+      candidates: Object.freeze(prepared.candidates.map((item) => Object.freeze({ ...item }))),
+      diagnostics: preparationFindings
+    };
+  }
+  if (prepared.state === "unresolved") {
+    return { state: "unresolved", diagnostics: preparationFindings };
+  }
+  const graph = prepared.plan.workspace;
+  if (graph.roots.length > maxRoots || graph.maxRoots > maxRoots || graph.maxDepth > maxDepth) {
+    return coordinatorFailure("x3.host/map-preview-preparation-budget-exceeded", "map preview preparation exceeded the host workspace limits");
+  }
+  let workspace;
+  try {
+    workspace = resolveModWorkspaceGraph(graph);
+  } catch (error5) {
+    return coordinatorFailure("x3.host/map-preview-workspace-invalid", `map preview preparation returned an invalid workspace graph (${error5 instanceof Error ? error5.message : String(error5)})`);
+  }
+  const active = workspace.loadOrder.find((item) => item.rootId === workspace.activeRootId);
+  if (active === void 0) {
+    return coordinatorFailure("x3.host/map-preview-workspace-invalid", "map preview workspace does not contain its active root");
+  }
+  const plannedRootIds = new Set(prepared.plan.resources.strategy === "subject-namespace" ? prepared.plan.resources.roots.map((root) => root.rootId) : [
+    ...prepared.plan.resources.subjectNamespaceRoots.map((root) => root.rootId),
+    ...prepared.plan.resources.roots.map((root) => root.rootId)
+  ]);
+  const workspaceRootIds = new Set(workspace.loadOrder.map((root) => root.rootId));
+  if (plannedRootIds.size !== workspaceRootIds.size || [...plannedRootIds].some((rootId) => !workspaceRootIds.has(rootId))) {
+    const unreached = [...plannedRootIds].filter((rootId) => !workspaceRootIds.has(rootId));
+    const unplanned = [...workspaceRootIds].filter((rootId) => !plannedRootIds.has(rootId));
+    const named = (rootIds) => rootIds.map((rootId) => {
+      const root = prepared.plan.workspace.roots.find((item) => item.rootId === rootId);
+      return root === void 0 ? rootId : `${rootId} (${root.sourcePath})`;
+    });
+    return {
+      state: "unresolved",
+      diagnostics: Object.freeze([
+        ...preparationFindings,
+        ...workspaceDiagnostics(workspace),
+        diagnostic("error", "x3.host/map-preview-resource-root-mismatch", `the resource plan must map every resolved workspace root exactly once${unreached.length === 0 ? "" : `; not reached from the map: ${named(unreached).join(", ")}`}${unplanned.length === 0 ? "" : `; without resources: ${named(unplanned).join(", ")}`}`, void 0, { unreached, unplanned })
+      ])
+    };
+  }
+  let resourceResolution;
+  try {
+    if (prepared.plan.resources.strategy === "subject-namespace") {
+      resourceResolution = await resolveSubjectNamespacePreviewResources({
+        plan: prepared.plan.resources,
+        descriptor,
+        original: request.original,
+        workspace,
+        activeSourcePath: active.sourcePath
+      });
+    } else if (request.resourcePlanResolver === void 0) {
+      resourceResolution = {
+        state: "unresolved",
+        diagnostics: [
+          diagnostic("warning", "x3.host/map-preview-resource-resolver-required", `resource plan ${prepared.plan.resources.resolverId} names installation/dependency roots but this host wired no resolver`)
+        ]
+      };
+    } else {
+      resourceResolution = await request.resourcePlanResolver.resolve({
+        plan: prepared.plan.resources,
+        subject,
+        workspace,
+        original: request.original,
+        services: request.services,
+        grant: request.grant,
+        budgets: request.budgets,
+        ...request.signal === void 0 ? {} : { signal: request.signal }
+      });
+    }
+  } catch (error5) {
+    return {
+      state: "unresolved",
+      diagnostics: Object.freeze([
+        ...preparationFindings,
+        ...workspaceDiagnostics(workspace),
+        diagnostic("error", "x3.host/map-preview-resource-resolution-failed", `map preview resources could not be resolved (${error5 instanceof Error ? error5.message : String(error5)})`)
+      ])
+    };
+  }
+  if (resourceResolution.state === "unresolved") {
+    return {
+      state: "unresolved",
+      diagnostics: Object.freeze([
+        ...preparationFindings,
+        ...workspaceDiagnostics(workspace),
+        ...resourceResolution.diagnostics
+      ])
+    };
+  }
+  const releasePreparedResources = releaseOnce(resourceResolution.release);
+  let resources;
+  try {
+    const dependencies = request.contentSources === void 0 ? void 0 : await resolveContentAssetOrigins({
+      contentSources: request.contentSources,
+      subjects: [{ descriptor }],
+      ...request.signal === void 0 ? {} : { signal: request.signal }
+    });
+    const origin = dependencies === void 0 || dependencies.origins.length === 0 ? resourceResolution.origin : createLayeredCompanionOrigin([resourceResolution.origin, ...dependencies.origins]);
+    resources = createResourceSession({
+      origin,
+      revision: resourceResolution.revision
+    });
+    const inputResolver = createCompanionInputResolver(origin);
+    const catalogEntities = request.catalog === void 0 ? resourceResolution.catalogEntities : void 0;
+    const enrichment = catalogEntities === void 0 ? await enrichMapPreviewCatalog(request, workspace, resources) : Object.freeze({ diagnostics: Object.freeze([]) });
+    const opened = await openMapPreviewAssetSession({
+      services: request.services,
+      grant: request.grant,
+      budgets: request.budgets,
+      workspace,
+      resources,
+      inputResolver,
+      subjectUri: descriptor.subjectUri,
+      subjectOperationIds: Object.freeze(descriptor.operations.map((operation) => operation.id)),
+      ...request.onModelResourceProfile === void 0 ? {} : { onModelResourceProfile: request.onModelResourceProfile },
+      ...enrichment.catalog === void 0 ? {} : { catalog: enrichment.catalog },
+      ...catalogEntities === void 0 ? {} : { catalogEntities },
+      ...enrichment.sources === void 0 ? {} : { catalogSources: enrichment.sources },
+      limits: request.limits,
+      ...request.signal === void 0 ? {} : { signal: request.signal }
+    });
+    if (opened.state === "unresolved") {
+      await releasePreparedResources();
+      return {
+        state: "unresolved",
+        diagnostics: Object.freeze([
+          ...preparationFindings,
+          ...workspaceDiagnostics(workspace),
+          ...resourceResolution.diagnostics,
+          ...enrichment.diagnostics,
+          ...opened.diagnostics
+        ])
+      };
+    }
+    return Object.freeze({
+      ...opened,
+      ...enrichment.catalog === void 0 ? {} : { catalog: enrichment.catalog },
+      session: sessionHoldingMapPreviewPrerequisites(opened.session, releasePreparedResources, request.original),
+      diagnostics: Object.freeze([
+        ...preparationFindings,
+        ...workspaceDiagnostics(workspace),
+        ...resourceResolution.diagnostics,
+        ...enrichment.diagnostics,
+        ...opened.diagnostics
+      ])
+    });
+  } catch (error5) {
+    if (resources !== void 0 && resources.state() !== "disposed") {
+      await resources.dispose();
+    }
+    await releasePreparedResources();
+    return {
+      state: "unresolved",
+      diagnostics: Object.freeze([
+        ...preparationFindings,
+        ...workspaceDiagnostics(workspace),
+        ...resourceResolution.diagnostics,
+        diagnostic("error", "x3.host/map-preview-open-failed", `map preview could not be opened (${error5 instanceof Error ? error5.message : String(error5)})`)
+      ])
+    };
+  }
+}
+
+// packages/host/dist/subject-services.js
+function supportedExtensionHints(inventory) {
+  return Object.freeze([
+    ...new Set(inventory.extensions.flatMap((extension) => extension.contributions.flatMap((contribution) => {
+      const manifest = contribution.manifest;
+      if (manifest?.contract.id !== "modkit/codec-contribution")
+        return [];
+      const spec = manifest.spec;
+      return Array.isArray(spec.match?.extensions) ? spec.match.extensions.flatMap((value2) => typeof value2 === "string" && value2.length > 0 ? [value2.toLowerCase()] : []) : [];
+    })))
+  ].sort());
+}
+function createSubjectServices(options) {
+  const fixed = {
+    inventory: options.inventory,
+    target: options.target,
+    executionBackends: options.executionBackends,
+    ...options.serviceDefinitions === void 0 ? {} : { serviceDefinitions: options.serviceDefinitions },
+    ...options.policy === void 0 ? {} : { policy: options.policy },
+    ...options.minimumConfidence === void 0 ? {} : { minimumConfidence: options.minimumConfidence },
+    ...options.maxCandidates === void 0 ? {} : { maxCandidates: options.maxCandidates },
+    ...options.contributionSettings === void 0 ? {} : { contributionSettings: options.contributionSettings },
+    ...options.subjectCatalog === void 0 ? {} : { subjectCatalog: options.subjectCatalog },
+    ...options.videoFrames === void 0 ? {} : { videoFrames: options.videoFrames },
+    ...options.installationFiles === void 0 ? {} : { installationFiles: options.installationFiles },
+    ...options.credentials === void 0 ? {} : { credentials: options.credentials }
+  };
+  const services = {
+    inventory: options.inventory,
+    target: options.target,
+    executionBackends: options.executionBackends,
+    executionProfiles: options.executionBackends.profiles,
+    supportedExtensions: supportedExtensionHints(options.inventory),
+    ...options.serviceDefinitions === void 0 ? {} : { serviceDefinitions: options.serviceDefinitions },
+    ...options.contributionSettings === void 0 ? {} : { contributionSettings: options.contributionSettings },
+    ...options.videoFrames === void 0 ? {} : { videoFrames: options.videoFrames },
+    ...options.installationFiles === void 0 ? {} : { installationFiles: options.installationFiles },
+    ...options.credentials === void 0 ? {} : { credentials: options.credentials },
+    open: (request) => openSubject({ ...fixed, ...request })
+  };
+  return Object.freeze(services);
+}
+function createBundledServiceDefinitionRegistry(options = {}) {
+  return createServiceContractDefinitionRegistry({
+    matcherProfiles: createServiceFacetMatcherProfileRegistry([
+      WRITER_FACET_MATCHER,
+      LANGUAGE_DOCUMENT_MATCHER,
+      TRANSLATION_MATCHER,
+      RUNTIME_PROVIDER_MATCHER,
+      SERVICE_OPERATION_MATCHER,
+      SCENE_RENDERER_MATCHER,
+      NATIVE_MODEL_ENCODER_MATCHER,
+      GAME_INSTALLATION_MATCHER,
+      MOD_WORKSPACE_MATCHER,
+      DATA_CATALOG_MATCHER,
+      RESOLVED_DATA_WORKSPACE_MATCHER,
+      MAP_SEMANTIC_MATCHER,
+      MAP_PREVIEW_PREPARATION_MATCHER,
+      ...options.matcherProfiles ?? []
+    ]),
+    isNamespaceOwner: () => true,
+    validateJsonSchemaRef: () => []
+  });
+}
+async function registerServiceDefinitionsOrThrow(inventory, definitions) {
+  const editing = await registerStandardEditingDefinitions(definitions);
+  const language = await registerStandardLanguageDefinitions(definitions);
+  const runtime2 = await registerStandardRuntimeDefinitions(definitions);
+  const serviceOperations = await registerStandardServiceOperationDefinitions(definitions);
+  const renderer = await registerStandardRendererDefinitions(definitions);
+  const modelEncoding = await registerStandardModelEncodingDefinitions(definitions);
+  const compression = await registerStandardCompressionDefinitions(definitions);
+  const games = await registerStandardGameDefinitions(definitions);
+  const mods = await registerStandardModDefinitions(definitions);
+  const data = await registerStandardDataDefinitions(definitions);
+  const maps = await registerStandardMapDefinitions(definitions);
+  const registrations = [
+    editing,
+    language,
+    runtime2,
+    serviceOperations,
+    renderer,
+    modelEncoding,
+    compression,
+    games,
+    mods,
+    data,
+    maps,
+    ...await registerServiceContractDefinitionsFromInventory(inventory, definitions)
+  ];
+  const rejected3 = registrations.filter((result) => result.state === "rejected");
+  if (rejected3.length > 0) {
+    const diagnostics = rejected3.flatMap((result) => result.diagnostics);
+    throw new ModkitError({
+      code: "x3.host/service-definition-rejected",
+      message: `${rejected3.length} service contract definition owner(s) failed closed`,
+      context: { diagnostics }
+    });
+  }
+  return registrations;
+}
+function serviceDefinitionSurfaces(definitions) {
+  return definitions.list().flatMap((registration) => registration.surface === void 0 ? [] : [
+    {
+      contract: registration.contract,
+      major: registration.major,
+      surface: registration.surface
+    }
+  ]);
 }
 
 // packages/host/dist/editing-evidence.js
@@ -28205,7 +28427,7 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
   extensions: [
     {
       artifact: {
-        artifactDigest: "sha256:885e11c3d41f72f456ea9be6ba79cddf08105738661acddfd49db2a96b393f67",
+        artifactDigest: "sha256:eeeede03d99029d16b327b73532b07fe7da695e2e9e6666dd575dca80fd3f7e8",
         fileDigests: {
           "MIGRATION-NOTES-common-archives.json": "sha256:4e1d77808583a26fb61d65d660ef09c3f4c222915c2e3581d793b202cbde4b44",
           "README.md": "sha256:915e1860d19a23f3ae677cd1edea4d5bc27c81f2c901b365c56da2558220dd11",
@@ -28224,7 +28446,7 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
           "contributions/codec-zip.json": "sha256:988718adc4f5ebdb14af9d72a78227100ad1119b848c66602d8deacc2a059db8",
           "contributions/codec-zstd.json": "sha256:79c03b955edaea1e248258cbe2429c8c7923e9301b824eed67d6e6672e6c3591",
           "package.json": "sha256:a8f6f9594c3c900e4b38797b0a66dcec14172c7ab0b13b38b40ab90d20a0f9e8",
-          "src/7z/codec.js": "sha256:bf31052ad1be7de6b9ef0f880f6a2c2f4ddaab72c0c6b46d065c98c71f8daae2",
+          "src/7z/codec.js": "sha256:145693c6685a5a9c56f99f158fd15dacece826da516e4f70aa1c847eb51a431b",
           "src/brotli/codec.js": "sha256:e93f4d0c46b1e65cbcfb6e45a261a9e9bb1f121d1bd29ed4af693597578855e4",
           "src/bzip2/codec.js": "sha256:f411d0060e8556126a157be7f6afb72dd2147b809e24e48154a544100bc103d6",
           "src/cab/codec.js": "sha256:977c58382988dfde9cbbcca33f2161cd503cc9039e6b56bea70d5e80755f9a92",
@@ -28239,7 +28461,7 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
           "src/tar/codec.js": "sha256:1ee376c3a57b28fd539f4dcaf800844d327c4eb1e6852a18617d85199661b3ac",
           "src/xz/codec.js": "sha256:7f7bf200f42316f1225842dfafa0a05bbca0354c0c2e48d23e7afa026259edea",
           "src/zip/codec.d.ts": "sha256:5d7485efb4ded7b7d8691e2d07e22cf5a442bf3d436c88a3c3ff01b8298091a0",
-          "src/zip/codec.js": "sha256:3368f376e8a922503ec2c9ac7f13a99a7350d7add58aafb7af661976aa538426",
+          "src/zip/codec.js": "sha256:45a3dcdc95d4b482bf18911591b1af07aba95e62140e841417e36a3d024d35a0",
           "src/zstd/codec.js": "sha256:b52c70fa49264a57782e3927e3d0f86ac5ec08a2df44cb000f5f558612b75240",
           "test/fixtures/7z/bcj.7z": "sha256:3b4a91035aa6af04c382d596879fce7c18971cbcc935305ba1d3786798929fb6",
           "test/fixtures/7z/bcj2.7z": "sha256:fa632765de880a3f4a75b6a92508bee3708d98c5fb32c77b9eb403fc8e7204cc",
@@ -28252,12 +28474,12 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
           "test/fixtures/7z/lzma.7z": "sha256:e51596de80018c92547c4fc3f06ac654854cf7951ff28591fbb416b42e3b2bcd",
           "test/fixtures/7z/lzma2.7z": "sha256:a6d12748dc7d2d4f720646be958cf92c3fc296b12b907b841e7579e52bdc559c",
           "test/fixtures/7z/plain-header.7z": "sha256:57143f60a3776ae9c9599db8b4c58ad56802ba21555af17eacfa8a3b7b1c7fce",
-          "test/seven-zip-rar.test.ts": "sha256:ba910f659d74ec19eec62ac888ce88f34cc9cabce16624368c2fc972c70cbe65",
+          "test/seven-zip-rar.test.ts": "sha256:3050efe267cffe6ee574fa914002a72dab57d07aa5aec2560f03ca5b5711f493",
           "test/zip-hidden.test.ts": "sha256:353c75ccfca68bf7d4444c9004b85ab62e61cb3765a3bf378746034878bb9680",
           "test/zip-ranges.test.ts": "sha256:c47422f57529f20cb0f1eac0d6b370efd28a0d6939f5c0e2207efe0d872af6a6",
           "test/zstd.test.ts": "sha256:74a5cab68793e3872c97feb5c564e0c4c0eae69d1f49df96d60239407ceccda8"
         },
-        inventoryRecordId: "artifact:sha256:885e11c3d41f72f456ea9be6ba79cddf08105738661acddfd49db2a96b393f67"
+        inventoryRecordId: "artifact:sha256:eeeede03d99029d16b327b73532b07fe7da695e2e9e6666dd575dca80fd3f7e8"
       },
       artifactRoot: "extensions/archives/",
       containers: {
@@ -48517,11 +48739,13 @@ function materialGeometry(primitive, camera, light, worldToMaterial, environment
 }
 var finiteArrays = /* @__PURE__ */ new WeakSet();
 var largestIndices = /* @__PURE__ */ new WeakMap();
+var HIGH_HALF = new Uint8Array(Uint16Array.of(1).buffer)[0] === 1 ? 1 : 0;
 function allFinite(values) {
   if (finiteArrays.has(values))
     return true;
-  for (let index2 = 0; index2 < values.length; index2++)
-    if (!Number.isFinite(values[index2]))
+  const halves = new Uint16Array(values.buffer, values.byteOffset, values.length * 2);
+  for (let index2 = HIGH_HALF; index2 < halves.length; index2 += 2)
+    if ((halves[index2] & 32640) === 32640)
       return false;
   finiteArrays.add(values);
   return true;
@@ -49602,10 +49826,17 @@ function shader(gl, type, source2) {
   }
   return result;
 }
+var shaderPairKeys = /* @__PURE__ */ new WeakMap();
+function shaderPairCacheKey(pair) {
+  let key3 = shaderPairKeys.get(pair);
+  if (key3 === void 0)
+    shaderPairKeys.set(pair, key3 = `${pair.vertexSource}\0${pair.fragmentSource}`);
+  return key3;
+}
 function linkWebGlMaterialProgramsInParallel(gl, sources, programCache, pendingPrograms) {
   let linked = 0;
   for (const source2 of sources) {
-    const cacheKey2 = `${source2.vertexSource}\0${source2.fragmentSource}`;
+    const cacheKey2 = shaderPairCacheKey(source2);
     if (programCache.has(cacheKey2))
       continue;
     const program = gl.createProgram();
@@ -49674,7 +49905,7 @@ function createWebGlMaterialProgram(gl, source2, textures, options = {}) {
       throw new TypeError("material texture filter must be nearest or linear");
     return { binding, texture, filter };
   });
-  const cacheKey2 = `${source2.vertexSource}\0${source2.fragmentSource}`;
+  const cacheKey2 = options.programCacheKey ?? `${source2.vertexSource}\0${source2.fragmentSource}`;
   const cached = options.programCache?.get(cacheKey2);
   const program = cached ?? gl.createProgram();
   if (program === null)
@@ -50014,10 +50245,12 @@ function materialWebGlDraws(gl, textures, options = {}) {
           throw new TypeError(`GPU material texture missing: ${resource}`);
         bound.set(resource, handle);
       }
-      const { vertexSource, fragmentSource, filters } = leaseShaderSources(source2, material);
+      const shaders = leaseShaderSources(source2, material);
+      const { vertexSource, fragmentSource, filters } = shaders;
       lease2 = createWebGlMaterialProgram(gl, { ...source2, vertexSource, fragmentSource }, bound, {
         filters,
         programCache: linked,
+        programCacheKey: shaderPairCacheKey(shaders),
         pendingPrograms,
         samplerCache: samplers,
         ...options.mipmaps === true ? { mipmaps: true } : {}
@@ -50290,18 +50523,15 @@ function materialWebGlDraws(gl, textures, options = {}) {
     },
     /** Link every program these draws still need in one parallel batch, before any of them draws. */
     warm(draws) {
-      const sources = /* @__PURE__ */ new Map();
+      const sources = /* @__PURE__ */ new Set();
       for (const draw of draws) {
         if (draw.program === void 0 || draw.material === void 0)
           continue;
         if (programs.has(draw.program))
           continue;
-        const shaders = leaseShaderSources(draw.program, draw.material);
-        sources.set(`${shaders.vertexSource}
-//
-${shaders.fragmentSource}`, shaders);
+        sources.add(leaseShaderSources(draw.program, draw.material));
       }
-      return linkWebGlMaterialProgramsInParallel(gl, sources.values(), linked, pendingPrograms);
+      return linkWebGlMaterialProgramsInParallel(gl, sources, linked, pendingPrograms);
     },
     release() {
       for (const geometries of vertexArrays.values())
@@ -53831,6 +54061,26 @@ function writeUvmAnimations(source2, nodeIndices, boneByNode, storage, budget2, 
 }
 
 // packages/uv/dist/model/materializer.js
+var GLTF_LAYER_SLOTS = Object.freeze({
+  diffuse: "baseColor",
+  basecolor: "baseColor",
+  "base-color": "baseColor",
+  albedo: "baseColor",
+  color: "baseColor",
+  normal: "normal",
+  occlusion: "occlusion",
+  ao: "occlusion",
+  ambientocclusion: "occlusion",
+  "ambient-occlusion": "occlusion",
+  emissive: "emissive",
+  emission: "emissive",
+  teamcolor: "teamColor",
+  "team-color": "teamColor",
+  team: "teamColor"
+});
+function singleChannel(mask) {
+  return mask === 1 ? "r" : mask === 2 ? "g" : mask === 4 ? "b" : mask === 8 ? "a" : void 0;
+}
 var GLTF_FILTER = { nearest: 9728, linear: 9729 };
 function texturesWithSamplers(filters) {
   const samplers = [];
@@ -54285,6 +54535,41 @@ function materializeUvmCore(projection3, request, { digest, materialBudget = DEF
     losses.push(`${info.textures} texture reference(s) were not carried`);
     note("uv.model/structure@1", "value-differs", "/textures", "the base model contract publishes a texture count but no texture identity; writing empty texture objects to make the count match would be inventing data");
   }
+  const imageIndex = new Map(resourceImages.map((image, index2) => [image.uri, index2]));
+  for (const definition2 of imageIndex.size === 0 ? [] : definitions ?? []) {
+    const target = materials[materialIndexById.get(definition2.id)];
+    for (const layer2 of definition2.layers ?? []) {
+      const slot = GLTF_LAYER_SLOTS[layer2.slot.toLowerCase()];
+      const index2 = layer2.resourceId === void 0 ? void 0 : imageIndex.get(layer2.resourceId);
+      if (slot === void 0 || index2 === void 0)
+        continue;
+      const ref2 = {
+        index: index2,
+        ...layer2.uvSource !== void 0 && Number.isSafeInteger(layer2.uvSource) && layer2.uvSource > 0 ? { texCoord: layer2.uvSource } : {}
+      };
+      if (slot === "baseColor")
+        target.pbrMetallicRoughness.baseColorTexture ??= ref2;
+      else if (slot === "normal")
+        target.normalTexture ??= ref2;
+      else if (slot === "occlusion")
+        target.occlusionTexture ??= ref2;
+      else if (slot === "emissive" && target.emissiveTexture === void 0) {
+        target.emissiveTexture = ref2;
+        target.emissiveFactor = [1, 1, 1];
+      } else if (slot === "teamColor" && target.extensions?.UV_game_material_team_color === void 0) {
+        const channel = singleChannel(layer2.colorChannels);
+        target.extensions = {
+          ...target.extensions,
+          UV_game_material_team_color: {
+            maskSource: "texture",
+            maskTexture: { ...ref2, ...channel === void 0 ? {} : { channel } },
+            targets: ["baseColor"],
+            blend: layer2.blend ?? "multiply"
+          }
+        };
+      }
+    }
+  }
   if (closure !== void 0 && resourceImages.length !== Number(info.textures ?? 0)) {
     note("uv.model/structure@1", "value-differs", "/textures", `the resource closure carries ${resourceImages.length} image identity or identities, while the base model contract counts ${Number(info.textures ?? 0)} texture(s)`);
   }
@@ -54536,6 +54821,7 @@ function materializeUvmCore(projection3, request, { digest, materialBudget = DEF
       "UV_provenance",
       ...socketByNodeId.size === 0 ? [] : ["UV_game_socket"],
       ...materials.some((material) => material.extensions?.UV_game_material !== void 0) ? ["UV_game_material"] : [],
+      ...materials.some((material) => material.extensions?.UV_game_material_team_color !== void 0) ? ["UV_game_material_team_color"] : [],
       ...animation === void 0 || animation.catalog.length === 0 ? [] : ["UV_game_animation_clips"],
       ...animation === void 0 || animation.visibility.length === 0 ? [] : ["UV_game_variants", "KHR_animation_pointer"],
       ...unitsExtension === void 0 ? [] : ["UV_units"],
@@ -55523,6 +55809,12 @@ async function decodeContainerEntry(entry2, maximum, readRange, signal) {
   if (bytes.byteLength !== size) {
     throw new RangeError(`container entry ${entry2.path} decoded to ${bytes.byteLength} bytes, not ${size}`);
   }
+  if (entry2.checksum?.algorithm === "crc-32") {
+    const { crc32 } = await import("./checksum-NCJ6DERG.js");
+    const actual = (crc32(bytes) >>> 0).toString(16).padStart(8, "0");
+    if (actual !== entry2.checksum.value.toLowerCase().padStart(8, "0"))
+      throw new RangeError(`container entry ${entry2.path} fails its CRC-32 (${actual}, the container says ${entry2.checksum.value})`);
+  }
   return bytes;
 }
 
@@ -55660,64 +55952,6 @@ init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
 // packages/codec-kit/dist/audio/index.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-
-// packages/codec-kit/dist/checksum/index.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-
-// packages/codec-kit/dist/crypto/mpq.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-var encryptionTable = (() => {
-  let seed1 = 1048577;
-  const table = [];
-  for (let i2 = 0; i2 < 256; i2++) {
-    let index2 = i2;
-    for (let j = 0; j < 5; j++) {
-      seed1 = (seed1 * 125 + 3) % 2796203 >>> 0;
-      const temp1 = (seed1 & 65535) << 16;
-      seed1 = (seed1 * 125 + 3) % 2796203 >>> 0;
-      const temp2 = seed1 & 65535;
-      table[index2] = (temp1 | temp2) >>> 0;
-      index2 += 256;
-    }
-  }
-  return table;
-})();
-var crcTable = (() => {
-  const table = new Uint32Array(256);
-  for (let n2 = 0; n2 < 256; n2++) {
-    let c3 = n2;
-    for (let k2 = 0; k2 < 8; k2++) {
-      c3 = c3 & 1 ? 3988292384 ^ c3 >>> 1 : c3 >>> 1;
-    }
-    table[n2] = c3 >>> 0;
-  }
-  return table;
-})();
-
-// packages/codec-kit/dist/compression/adler32.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-
-// packages/codec-kit/dist/checksum/index.js
-var EDC = (() => {
-  const table = new Uint32Array(256);
-  for (let n2 = 0; n2 < 256; n2 += 1) {
-    let c3 = n2;
-    for (let k2 = 0; k2 < 8; k2 += 1)
-      c3 = c3 & 1 ? c3 >>> 1 ^ 3623976961 : c3 >>> 1;
-    table[n2] = c3 >>> 0;
-  }
-  return table;
-})();
-var FORWARD = (() => {
-  const table = new Uint32Array(256);
-  for (let n2 = 0; n2 < 256; n2 += 1) {
-    let c3 = n2 << 24;
-    for (let k2 = 0; k2 < 8; k2 += 1)
-      c3 = c3 & 2147483648 ? c3 << 1 ^ 79764919 : c3 << 1;
-    table[n2] = c3 >>> 0;
-  }
-  return table;
-})();
 
 // packages/codec-kit/dist/audio/ea-xa.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
@@ -56443,7 +56677,7 @@ function createInspectionCodec(definition2, contributionContext2) {
         const byteSource = bytes === void 0 ? rangeByteSource(source2, budget2) : memoryByteSource(bytes);
         const sourceSize = await byteSource.size();
         const readable = BigInt(budget2.maxInputBytes) < sourceSize ? BigInt(budget2.maxInputBytes) : sourceSize;
-        const prefix = bytes ?? await byteSource.read(0n, Math.min(RANGE_DETECT_PREFIX_BYTES, Number(readable)), signal);
+        const prefix = bytes ?? await byteSource.read(0n, Math.min(rangeDefinition?.detectBytes ?? RANGE_DETECT_PREFIX_BYTES, Number(readable)), signal);
         const detected = await definition2.detect(prefix, primary.source.uri);
         const inspectionContext = {
           ...contributionContext2 === void 0 ? {} : {
@@ -56991,7 +57225,7 @@ function createUvwWorldSceneSource(input, options) {
     throw new TypeError("UVW snapshotId must not be empty");
   const maxPageSize = options.maxPageSize ?? 65536;
   positiveLimit2(maxPageSize, Number.MAX_SAFE_INTEGER);
-  const document2 = canonicalizeUvwProfile(input);
+  const document2 = canonicalizeUvwProfile(input, options.limits);
   const layers = document2.spaces.flatMap((space2) => space2.layers.map((layer2) => {
     const id = `${encodeURIComponent(space2.id)}/${encodeURIComponent(layer2.id)}`;
     return Object.freeze({
@@ -58873,6 +59107,7 @@ var definition = Object.freeze({
       snapshotId: context.input.revisions.revision,
       mapId: context.primary.source.id,
       maxPageSize: Math.max(1, Math.min(65536, context.budget.maxNodes)),
+      limits: { maxDepth: context.budget.maxDepth, maxNodes: context.budget.maxNodes, maxSamples },
       ...context.rasterResources === void 0 ? {} : { rasterResources: context.rasterResources }
     });
     const grids = heightGrids(document2);
@@ -61220,6 +61455,7 @@ function contributionContext(wire) {
     ...wire.rasterResources === void 0 ? {} : { rasterResources: wire.rasterResources },
     ...wire.installationProbes === void 0 ? {} : { installationProbes: wire.installationProbes },
     ...wire.videoFrames === void 0 ? {} : { videoFrames: wire.videoFrames },
+    ...wire.installationFiles === void 0 ? {} : { installationFiles: wire.installationFiles },
     ...wire.credentials === void 0 ? {} : { credentials: wire.credentials },
     ...wire.containerContext === void 0 ? {} : { containerContext: wire.containerContext },
     ...wire.providerIdentity === void 0 ? {} : { providerIdentity: Object.freeze({ ...wire.providerIdentity }) },
@@ -64450,7 +64686,7 @@ var hexViewer = createHexViewer();
 
 // packages/ui/dist/hex-editor/index.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-var BYTE_RANGE_SOURCE2 = Object.freeze({
+var BYTE_RANGE_SOURCE3 = Object.freeze({
   bindingId: bindingId("editor-hex"),
   contract: "common.view/byte-range-source",
   major: 1
@@ -64494,7 +64730,7 @@ function createHexEditor(options = {}) {
       const scope = new ViewerMountScope(args.signal);
       const root = createSurface(args.container, localizer.text("editor.hex"));
       root.dataset["modkitEditor"] = "hex";
-      const lease2 = await args.sources.get(BYTE_RANGE_SOURCE2);
+      const lease2 = await args.sources.get(BYTE_RANGE_SOURCE3);
       if (lease2 === void 0)
         throw new TypeError("hex editor binding is unavailable");
       scope.lease(lease2);
@@ -64923,9 +65159,9 @@ var NamespaceModel = class {
   constructor(source2) {
     this.source = source2;
   }
-  async list(prefix, cursor5, signal) {
+  async list(prefix, cursor5, signal, includeHidden = false) {
     const normalized = normalizeNamespacePath(prefix);
-    const page2 = await this.source.list(normalized, { limit: 200, ...cursor5 === void 0 ? {} : { cursor: cursor5 } }, signal);
+    const page2 = await this.source.list(normalized, { limit: 200, ...cursor5 === void 0 ? {} : { cursor: cursor5 }, includeHidden }, signal);
     for (const entry2 of page2.items) {
       const path = normalizeNamespacePath(entry2.path);
       const identity2 = `${path}\0${entry2.revision}`;
@@ -64955,12 +65191,9 @@ function createNamespaceViewer(options = {}) {
       const list = element(root, "ul", { part: "namespace.list" });
       list.setAttribute("role", "group");
       const renderPrefix = async (prefix, parent) => {
-        const page2 = await model.list(prefix, void 0, scope.signal);
+        const page2 = await model.list(prefix, void 0, scope.signal, options.showHidden?.() === true);
         const seen = /* @__PURE__ */ new Set();
-        const hiddenToo = options.showHidden?.() === true;
         for (const entry2 of page2.items) {
-          if (entry2.hidden === true && !hiddenToo)
-            continue;
           if (seen.has(entry2.id))
             throw new TypeError(`duplicate namespace entry id: ${entry2.id}`);
           seen.add(entry2.id);
@@ -67432,9 +67665,9 @@ var PREVIEW_STAGES = [
 async function defaultPreviewStage(kind, localizer) {
   switch (kind) {
     case "model":
-      return (await import("./model-GP6SVUAC.js")).createModelViewer({ localizer });
+      return (await import("./model-NSVANOVT.js")).createModelViewer({ localizer });
     case "image":
-      return (await import("./image-JYQLECK6.js")).createImageViewer({ localizer });
+      return (await import("./image-BTGCWOVJ.js")).createImageViewer({ localizer });
     case "video":
       return (await import("./video-BVNA7YD2.js")).createVideoViewer({ localizer });
     case "audio":
@@ -87610,12 +87843,72 @@ function sameOptionalMatrix(left, right) {
       return false;
   return true;
 }
+var referencedOwnBounds = /* @__PURE__ */ new WeakMap();
+function referencedBoundsOf(positions, referenced) {
+  let byList = referencedOwnBounds.get(positions);
+  if (byList === void 0)
+    referencedOwnBounds.set(positions, byList = /* @__PURE__ */ new Map());
+  let bounds3 = byList.get(referenced);
+  if (bounds3 === void 0) {
+    const count = typeof referenced === "number" ? referenced : referenced.length;
+    let minX = Infinity, minY = Infinity, minZ = Infinity, maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+    for (let at = 0; at < count; at++) {
+      const offset = (typeof referenced === "number" ? at : referenced[at]) * 3;
+      const x = positions[offset] ?? 0, y = positions[offset + 1] ?? 0, z = positions[offset + 2] ?? 0;
+      minX = Math.min(minX, x);
+      maxX = Math.max(maxX, x);
+      minY = Math.min(minY, y);
+      maxY = Math.max(maxY, y);
+      minZ = Math.min(minZ, z);
+      maxZ = Math.max(maxZ, z);
+    }
+    bounds3 = Float64Array.of(minX, minY, minZ, maxX, maxY, maxZ);
+    byList.set(referenced, bounds3);
+  }
+  return bounds3;
+}
+function transformedEnvelope(own, transform2) {
+  if (transform2 === void 0)
+    return own;
+  let minX = Infinity, minY = Infinity, minZ = Infinity, maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity, reachX = 0, reachY = 0, reachZ = 0;
+  for (let corner = 0; corner < 8; corner++) {
+    const x = own[corner & 1 ? 3 : 0], y = own[corner & 2 ? 4 : 1], z = own[corner & 4 ? 5 : 2];
+    const tx = transform2[0] * x + transform2[4] * y + transform2[8] * z + transform2[12];
+    const ty = transform2[1] * x + transform2[5] * y + transform2[9] * z + transform2[13];
+    const tz = transform2[2] * x + transform2[6] * y + transform2[10] * z + transform2[14];
+    minX = Math.min(minX, tx);
+    maxX = Math.max(maxX, tx);
+    minY = Math.min(minY, ty);
+    maxY = Math.max(maxY, ty);
+    minZ = Math.min(minZ, tz);
+    maxZ = Math.max(maxZ, tz);
+    reachX = Math.max(reachX, Math.abs(transform2[0] * x) + Math.abs(transform2[4] * y) + Math.abs(transform2[8] * z) + Math.abs(transform2[12]));
+    reachY = Math.max(reachY, Math.abs(transform2[1] * x) + Math.abs(transform2[5] * y) + Math.abs(transform2[9] * z) + Math.abs(transform2[13]));
+    reachZ = Math.max(reachZ, Math.abs(transform2[2] * x) + Math.abs(transform2[6] * y) + Math.abs(transform2[10] * z) + Math.abs(transform2[14]));
+  }
+  return Float64Array.of(minX - reachX * 1e-12, minY - reachY * 1e-12, minZ - reachZ * 1e-12, maxX + reachX * 1e-12, maxY + reachY * 1e-12, maxZ + reachZ * 1e-12);
+}
 function sharedPickPrimitive(source2, primitive, owner, slot) {
+  const referenced = referencedVertexIndices(source2);
+  const envelope = transformedEnvelope(referencedBoundsOf(primitive.positions, referenced), primitive.transform);
   const slots = owner === void 0 ? void 0 : lastPickBounds.get(owner);
   const last = slot === void 0 ? void 0 : slots?.get(slot);
   if (last !== void 0 && last.source === source2 && sameOptionalMatrix(last.transform, primitive.transform))
-    return Object.freeze({ primitive, minimum: last.minimum, maximum: last.maximum });
-  const referenced = referencedVertexIndices(source2);
+    return Object.freeze({ primitive, minimum: last.minimum, maximum: last.maximum, envelope });
+  let bounds3;
+  const exact2 = () => bounds3 ??= sharedPickBounds(source2, primitive, referenced, owner, slot);
+  return Object.freeze({
+    primitive,
+    get minimum() {
+      return exact2().minimum;
+    },
+    get maximum() {
+      return exact2().maximum;
+    },
+    envelope
+  });
+}
+function sharedPickBounds(source2, primitive, referenced, owner, slot) {
   const count = typeof referenced === "number" ? referenced : referenced.length;
   const positions = primitive.positions;
   const transform2 = primitive.transform;
@@ -87646,12 +87939,12 @@ function sharedPickPrimitive(source2, primitive, owner, slot) {
     maximum: Object.freeze([maxX, maxY, maxZ])
   });
   if (owner !== void 0 && slot !== void 0) {
-    let known2 = slots;
+    let known2 = lastPickBounds.get(owner);
     if (known2 === void 0)
       lastPickBounds.set(owner, known2 = /* @__PURE__ */ new Map());
     known2.set(slot, bounds3);
   }
-  return Object.freeze({ primitive, minimum: bounds3.minimum, maximum: bounds3.maximum });
+  return bounds3;
 }
 function frozenBatch(source2) {
   return Object.freeze({
@@ -88086,6 +88379,20 @@ function pickMeshBoundsOf(triangles, primitives) {
     maxY = Math.max(maxY, primitive.maximum[1]);
     minZ = Math.min(minZ, primitive.minimum[2]);
     maxZ = Math.max(maxZ, primitive.maximum[2]);
+  }
+  return Object.freeze([minX, minY, minZ, maxX, maxY, maxZ]);
+}
+function pickMeshEnvelopeOf(triangles, primitives) {
+  if (triangles.length === 0 && primitives.length === 0)
+    return null;
+  let [minX, minY, minZ, maxX, maxY, maxZ] = boundsOfPositions(triangles);
+  for (const { envelope } of primitives) {
+    minX = Math.min(minX, envelope[0]);
+    maxX = Math.max(maxX, envelope[3]);
+    minY = Math.min(minY, envelope[1]);
+    maxY = Math.max(maxY, envelope[4]);
+    minZ = Math.min(minZ, envelope[2]);
+    maxZ = Math.max(maxZ, envelope[5]);
   }
   return Object.freeze([minX, minY, minZ, maxX, maxY, maxZ]);
 }
@@ -89630,13 +89937,17 @@ function createWorldWebGlPlan(input, previousPlan) {
     lastProjectorWrites.set(item, projectorWrites);
     if (!pickTriangles.every(Number.isFinite))
       throw new TypeError("world WebGL plan contains a non-finite model coordinate");
+    let pickBounds;
     const pickMesh = {
       objectId: item.objectId,
       center: translation,
       triangles: pickTriangles,
       primitives: pickPrimitives,
       placeholder: !resolved2,
-      bounds: pickMeshBoundsOf(pickTriangles, pickPrimitives),
+      get bounds() {
+        return pickBounds ??= pickMeshBoundsOf(pickTriangles, pickPrimitives);
+      },
+      envelope: pickMeshEnvelopeOf(pickTriangles, pickPrimitives),
       pick: Object.freeze({
         objectId: item.objectId,
         center: translation,
@@ -89736,10 +90047,14 @@ function createWorldWebGlPlan(input, previousPlan) {
       maximum[axis] = Math.max(maximum[axis], bounds3[axis + 3]);
     }
   }
-  for (const { bounds: bounds3 } of objectPickMeshes) {
-    if (bounds3 === null)
+  for (const mesh of objectPickMeshes) {
+    const envelope = mesh.envelope;
+    if (envelope === null)
       continue;
     hasPositions = true;
+    if (envelope[0] >= minimum[0] && envelope[1] >= minimum[1] && envelope[2] >= minimum[2] && envelope[3] <= maximum[0] && envelope[4] <= maximum[1] && envelope[5] <= maximum[2] && Number.isFinite(envelope[3] - envelope[0] + envelope[4] - envelope[1] + envelope[5] - envelope[2]))
+      continue;
+    const bounds3 = mesh.bounds;
     minimum[0] = Math.min(minimum[0], bounds3[0]);
     minimum[1] = Math.min(minimum[1], bounds3[1]);
     minimum[2] = Math.min(minimum[2], bounds3[2]);
@@ -90399,6 +90714,35 @@ function worldTextureKey(texture) {
   }
   return key3;
 }
+var worldScalarUniforms = /* @__PURE__ */ new WeakMap();
+function heldWorldUniforms(program) {
+  let held = worldScalarUniforms.get(program);
+  if (held === void 0)
+    worldScalarUniforms.set(program, held = /* @__PURE__ */ new Map());
+  return held;
+}
+function worldUniform1f(gl, program, name, value2) {
+  const location = uniformLocation(gl, program, name);
+  if (location === null)
+    return;
+  const held = heldWorldUniforms(program);
+  const stored = Math.fround(value2);
+  if (Object.is(held.get(location), stored))
+    return;
+  gl.uniform1f(location, value2);
+  held.set(location, stored);
+}
+function worldUniform1i(gl, program, name, value2) {
+  const location = uniformLocation(gl, program, name);
+  if (location === null)
+    return;
+  const held = heldWorldUniforms(program);
+  const stored = value2 | 0;
+  if (held.get(location) === stored)
+    return;
+  gl.uniform1i(location, value2);
+  held.set(location, stored);
+}
 function bindTexture2d(resources, texture, unit6) {
   if (texture.width <= 0 || texture.height <= 0 || texture.rgba.byteLength !== texture.width * texture.height * 4)
     throw new TypeError(`world texture ${texture.id} is not tightly packed RGBA8`);
@@ -90772,7 +91116,7 @@ function drawShadowPositions(resources, program, positions) {
     resources.geometryCacheHits += 1;
     resources.usedGeometry.add(cached);
     gl.bindVertexArray(cached.vao);
-    gl.uniform1f(uniformLocation(gl, program, "alphaCutoff"), 0);
+    worldUniform1f(gl, program, "alphaCutoff", 0);
     gl.drawArrays(gl.TRIANGLES, 0, cached.count);
     gl.bindVertexArray(null);
     return;
@@ -90795,7 +91139,7 @@ function drawShadowPositions(resources, program, positions) {
     gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);
     gl.enableVertexAttribArray(location);
     gl.vertexAttribPointer(location, 3, gl.FLOAT, false, 0, 0);
-    gl.uniform1f(uniformLocation(gl, program, "alphaCutoff"), 0);
+    worldUniform1f(gl, program, "alphaCutoff", 0);
     gl.drawArrays(gl.TRIANGLES, 0, positions.length / 3);
     gl.bindVertexArray(null);
     const entry2 = Object.freeze({
@@ -90821,8 +91165,8 @@ function drawShadowPositions(resources, program, positions) {
 function drawShadowTextured(resources, program, source2) {
   bindTexture2d(resources, source2.texture, 0);
   const gl = resources.gl;
-  gl.uniform1i(uniformLocation(gl, program, "baseColorMap"), 0);
-  gl.uniform1f(uniformLocation(gl, program, "alphaCutoff"), source2.alphaCutoff ?? 0);
+  worldUniform1i(gl, program, "baseColorMap", 0);
+  worldUniform1f(gl, program, "alphaCutoff", source2.alphaCutoff ?? 0);
   drawBatch(resources, program, source2, gl.TRIANGLES);
 }
 function prepareWorldMaterialResources(resources, plan) {
@@ -90922,7 +91266,7 @@ function renderWorldShadowMap(gl, plan, input, resources) {
     gl.useProgram(program);
     gl.uniformMatrix4fv(uniformLocation(gl, program, "lightViewProjection"), false, viewProjection);
     bindSentinelTexture2d(resources, 0);
-    gl.uniform1i(uniformLocation(gl, program, "baseColorMap"), 0);
+    worldUniform1i(gl, program, "baseColorMap", 0);
     drawShadowPositions(resources, program, plan.opaqueTriangles.positions);
     drawShadowPositions(resources, program, plan.terrainShadowCasters);
     for (const item of plan.shadowControlledOpaqueTriangles) {
@@ -91072,23 +91416,23 @@ function drawBatch(resources, program, source2, mode, cacheKey2 = source2, range
 function drawTexturedBatch(resources, program, source2, range) {
   const gl = resources.gl;
   bindTexture2d(resources, source2.texture, 4);
-  gl.uniform1i(uniformLocation(gl, program, "baseColorMap"), 4);
+  worldUniform1i(gl, program, "baseColorMap", 4);
   if (source2.normalTexture === void 0) {
-    gl.uniform1f(uniformLocation(gl, program, "normalTextured"), 0);
+    worldUniform1f(gl, program, "normalTextured", 0);
   } else {
     bindTexture2d(resources, source2.normalTexture, 5);
-    gl.uniform1i(uniformLocation(gl, program, "normalMap"), 5);
-    gl.uniform1f(uniformLocation(gl, program, "normalTextured"), 1);
+    worldUniform1i(gl, program, "normalMap", 5);
+    worldUniform1f(gl, program, "normalTextured", 1);
   }
   if (source2.secondaryTexture === void 0 || source2.secondaryTextureCoordinates === void 0) {
-    gl.uniform1f(uniformLocation(gl, program, "secondaryTextured"), 0);
+    worldUniform1f(gl, program, "secondaryTextured", 0);
   } else {
     bindTexture2d(resources, source2.secondaryTexture, 6);
-    gl.uniform1i(uniformLocation(gl, program, "secondaryColorMap"), 6);
-    gl.uniform1f(uniformLocation(gl, program, "secondaryTextured"), 1);
+    worldUniform1i(gl, program, "secondaryColorMap", 6);
+    worldUniform1f(gl, program, "secondaryTextured", 1);
   }
-  gl.uniform1f(uniformLocation(gl, program, "textured"), 1);
-  gl.uniform1f(uniformLocation(gl, program, "alphaCutoff"), source2.alphaCutoff ?? 0);
+  worldUniform1f(gl, program, "textured", 1);
+  worldUniform1f(gl, program, "alphaCutoff", source2.alphaCutoff ?? 0);
   drawBatch(resources, program, source2, gl.TRIANGLES, source2, range);
 }
 function drawSplatBatch(resources, program, source2) {
@@ -91178,24 +91522,24 @@ function drawSplatBatch(resources, program, source2) {
     const hasSpecular = source2.specularTextures?.some((texture) => texture !== void 0) ?? false;
     if (hasSpecular)
       uploadArray(source2.specularTextures, source2.textures, 8, "terrain specular");
-    gl.uniform1i(uniformLocation(gl, program, "terrainSpecularMaps"), 8);
-    gl.uniform1f(uniformLocation(gl, program, "terrainSpecularTextured"), hasSpecular ? 1 : 0);
-    gl.uniform1i(uniformLocation(gl, program, "terrainMaps"), 0);
-    gl.uniform1i(uniformLocation(gl, program, "terrainNormalMaps"), 1);
+    worldUniform1i(gl, program, "terrainSpecularMaps", 8);
+    worldUniform1f(gl, program, "terrainSpecularTextured", hasSpecular ? 1 : 0);
+    worldUniform1i(gl, program, "terrainMaps", 0);
+    worldUniform1i(gl, program, "terrainNormalMaps", 1);
     if ((source2.weightTextures?.length ?? 0) < 2) {
       const firstMissingUnit = 2 + (source2.weightTextures?.length ?? 0);
       for (let unit6 = firstMissingUnit; unit6 <= 3; unit6 += 1) {
         bindSentinelTexture2d(resources, unit6);
       }
     }
-    gl.uniform1i(uniformLocation(gl, program, "baseColorMap"), 4);
-    gl.uniform1i(uniformLocation(gl, program, "normalMap"), 5);
-    gl.uniform1i(uniformLocation(gl, program, "secondaryColorMap"), 6);
-    gl.uniform1i(uniformLocation(gl, program, "terrainWeightMaps[0]"), 2);
-    gl.uniform1i(uniformLocation(gl, program, "terrainWeightMaps[1]"), 3);
+    worldUniform1i(gl, program, "baseColorMap", 4);
+    worldUniform1i(gl, program, "normalMap", 5);
+    worldUniform1i(gl, program, "secondaryColorMap", 6);
+    worldUniform1i(gl, program, "terrainWeightMaps[0]", 2);
+    worldUniform1i(gl, program, "terrainWeightMaps[1]", 3);
     (source2.weightTextures ?? []).forEach((texture, index2) => {
       bindTexture2d(resources, texture, 2 + index2);
-      gl.uniform1i(uniformLocation(gl, program, `terrainWeightMaps[${String(index2)}]`), 2 + index2);
+      worldUniform1i(gl, program, `terrainWeightMaps[${String(index2)}]`, 2 + index2);
     });
     const uniformLayers = (name, values) => gl.uniform4fv(uniformLocation(gl, program, name), Float32Array.from(values));
     const padded = (values) => [...values, ...Array(8 - values.length).fill(0)];
@@ -91211,22 +91555,22 @@ function drawSplatBatch(resources, program, source2) {
     uniformLayers("terrainClampU1", clampU.slice(4, 8));
     uniformLayers("terrainClampV0", clampV.slice(0, 4));
     uniformLayers("terrainClampV1", clampV.slice(4, 8));
-    gl.uniform1f(uniformLocation(gl, program, "textured"), 0);
-    gl.uniform1f(uniformLocation(gl, program, "alphaCutoff"), 0);
-    gl.uniform1f(uniformLocation(gl, program, "normalTextured"), 0);
-    gl.uniform1f(uniformLocation(gl, program, "secondaryTextured"), 0);
-    gl.uniform1f(uniformLocation(gl, program, "splatTextured"), 1);
-    gl.uniform1f(uniformLocation(gl, program, "rasterSplatTextured"), source2.weightTextures === void 0 ? 0 : 1);
-    gl.uniform1f(uniformLocation(gl, program, "terrainWeightMapCount"), source2.weightTextures?.length ?? 0);
+    worldUniform1f(gl, program, "textured", 0);
+    worldUniform1f(gl, program, "alphaCutoff", 0);
+    worldUniform1f(gl, program, "normalTextured", 0);
+    worldUniform1f(gl, program, "secondaryTextured", 0);
+    worldUniform1f(gl, program, "splatTextured", 1);
+    worldUniform1f(gl, program, "rasterSplatTextured", source2.weightTextures === void 0 ? 0 : 1);
+    worldUniform1f(gl, program, "terrainWeightMapCount", source2.weightTextures?.length ?? 0);
     const masked = source2.maskTexture !== void 0 && source2.maskTextureCoordinates !== void 0;
     if (masked) {
       bindTexture2d(resources, source2.maskTexture, 6);
-      gl.uniform1i(uniformLocation(gl, program, "secondaryColorMap"), 6);
+      worldUniform1i(gl, program, "secondaryColorMap", 6);
       const selector = [0, 0, 0, 0];
       selector[source2.maskChannel ?? 3] = 1;
       gl.uniform4fv(uniformLocation(gl, program, "cliffMaskSelector"), selector);
     }
-    gl.uniform1f(uniformLocation(gl, program, "cliffMaskMode"), masked ? 1 : 0);
+    worldUniform1f(gl, program, "cliffMaskMode", masked ? 1 : 0);
     drawBatch(resources, program, {
       positions: source2.positions,
       normals: source2.normals,
@@ -91238,7 +91582,7 @@ function drawSplatBatch(resources, program, source2) {
       ...masked ? { secondaryTextureCoordinates: source2.maskTextureCoordinates } : {}
     }, gl.TRIANGLES, source2);
     if (masked)
-      gl.uniform1f(uniformLocation(gl, program, "cliffMaskMode"), 0);
+      worldUniform1f(gl, program, "cliffMaskMode", 0);
   }
 }
 function isWebGl2(value2) {
@@ -91992,78 +92336,78 @@ function drawWorldWebGlWithResources(canvas, input, resources) {
     gl.depthFunc(gl.LEQUAL);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.useProgram(program);
-    gl.uniform1i(uniformLocation(gl, program, "terrainMaps"), 0);
-    gl.uniform1i(uniformLocation(gl, program, "terrainNormalMaps"), 1);
-    gl.uniform1i(uniformLocation(gl, program, "terrainWeightMaps[0]"), 2);
-    gl.uniform1i(uniformLocation(gl, program, "terrainWeightMaps[1]"), 3);
-    gl.uniform1i(uniformLocation(gl, program, "baseColorMap"), 4);
-    gl.uniform1i(uniformLocation(gl, program, "normalMap"), 5);
-    gl.uniform1i(uniformLocation(gl, program, "secondaryColorMap"), 6);
-    gl.uniform1i(uniformLocation(gl, program, "shadowMap"), 7);
+    worldUniform1i(gl, program, "terrainMaps", 0);
+    worldUniform1i(gl, program, "terrainNormalMaps", 1);
+    worldUniform1i(gl, program, "terrainWeightMaps[0]", 2);
+    worldUniform1i(gl, program, "terrainWeightMaps[1]", 3);
+    worldUniform1i(gl, program, "baseColorMap", 4);
+    worldUniform1i(gl, program, "normalMap", 5);
+    worldUniform1i(gl, program, "secondaryColorMap", 6);
+    worldUniform1i(gl, program, "shadowMap", 7);
     bindSentinelTexture2d(resources, WATER_SCENE_DEPTH_UNIT);
-    gl.uniform1i(uniformLocation(gl, program, "sceneDepthMap"), WATER_SCENE_DEPTH_UNIT);
+    worldUniform1i(gl, program, "sceneDepthMap", WATER_SCENE_DEPTH_UNIT);
     bindSentinelTexture2d(resources, WATER_CAUSTICS_UNIT);
-    gl.uniform1i(uniformLocation(gl, program, "causticsMap"), WATER_CAUSTICS_UNIT);
-    gl.uniform1f(uniformLocation(gl, program, "causticsMode"), 0);
+    worldUniform1i(gl, program, "causticsMap", WATER_CAUSTICS_UNIT);
+    worldUniform1f(gl, program, "causticsMode", 0);
     bindSentinelTexture2d(resources, WATER_NORMAL_UNIT);
-    gl.uniform1i(uniformLocation(gl, program, "waterNormalMap"), WATER_NORMAL_UNIT);
-    gl.uniform1f(uniformLocation(gl, program, "waterWavesMode"), 0);
-    gl.uniform1f(uniformLocation(gl, program, "waterDepthMode"), 0);
-    gl.uniform1f(uniformLocation(gl, program, "cliffMaskMode"), 0);
+    worldUniform1i(gl, program, "waterNormalMap", WATER_NORMAL_UNIT);
+    worldUniform1f(gl, program, "waterWavesMode", 0);
+    worldUniform1f(gl, program, "waterDepthMode", 0);
+    worldUniform1f(gl, program, "cliffMaskMode", 0);
     const sceneCamera = createWorldWebGlCameraFrame(plan, canvas.width, canvas.height, input.camera);
     gl.uniform3fv(uniformLocation(gl, program, "eyePosition"), sceneCamera.eyePosition);
     const terrainLight = plan.light.terrain;
     gl.uniform3f(uniformLocation(gl, program, "terrainLighting"), terrainLight?.specularExponent ?? 16, terrainLight?.diffuseMultiplier ?? 1, terrainLight?.specularMultiplier ?? 0);
-    gl.uniform1f(uniformLocation(gl, program, "keyUsesVertexAo"), plan.light.useAmbientOcclusion === false ? 0 : 1);
+    worldUniform1f(gl, program, "keyUsesVertexAo", plan.light.useAmbientOcclusion === false ? 0 : 1);
     gl.uniform3fv(uniformLocation(gl, program, "lightSpecularRadiance"), (plan.light.specularColor ?? plan.light.color).map((value2) => value2 * (plan.light.specularIntensity ?? plan.light.intensity)));
-    gl.uniform1i(uniformLocation(gl, program, "terrainSpecularMaps"), 8);
+    worldUniform1i(gl, program, "terrainSpecularMaps", 8);
     const viewProjection = sceneCamera.viewProjection;
     gl.uniformMatrix4fv(uniformLocation(gl, program, "viewProjection"), false, viewProjection);
     gl.uniform3fv(uniformLocation(gl, program, "ambientColor"), Float32Array.from(plan.light.ambient));
-    gl.uniform1f(uniformLocation(gl, program, "ambientIntensity"), plan.light.ambientIntensity);
+    worldUniform1f(gl, program, "ambientIntensity", plan.light.ambientIntensity);
     gl.uniform3fv(uniformLocation(gl, program, "lightDirection"), Float32Array.from(plan.light.direction));
     gl.uniform3fv(uniformLocation(gl, program, "lightColor"), Float32Array.from(plan.light.color));
-    gl.uniform1f(uniformLocation(gl, program, "lightIntensity"), plan.light.intensity);
+    worldUniform1f(gl, program, "lightIntensity", plan.light.intensity);
     const fills = plan.light.fills.slice(0, MAXIMUM_FILL_LIGHTS);
     for (let index2 = 0; index2 < MAXIMUM_FILL_LIGHTS; index2 += 1) {
       const fill = fills[index2];
-      gl.uniform1f(uniformLocation(gl, program, `fillUsesVertexAo${String(index2)}`), fill?.useAmbientOcclusion === false ? 0 : 1);
+      worldUniform1f(gl, program, `fillUsesVertexAo${String(index2)}`, fill?.useAmbientOcclusion === false ? 0 : 1);
       gl.uniform3fv(uniformLocation(gl, program, `fillLightDirection${String(index2)}`), Float32Array.from(fill?.direction ?? [0, 0, 0]));
       gl.uniform3fv(uniformLocation(gl, program, `fillLightRadiance${String(index2)}`), Float32Array.from(fill === void 0 ? [0, 0, 0] : fill.color.map((channel) => channel * fill.intensity)));
     }
     if (shadow === void 0) {
-      gl.uniform1f(uniformLocation(gl, program, "shadowEnabled"), 0);
+      worldUniform1f(gl, program, "shadowEnabled", 0);
     } else {
       gl.uniformMatrix4fv(uniformLocation(gl, program, "shadowViewProjection"), false, shadow.viewProjection);
       gl.uniform2f(uniformLocation(gl, program, "shadowTexelSize"), 1 / shadow.size, 1 / shadow.size);
       gl.activeTexture(gl.TEXTURE7);
       gl.bindTexture(gl.TEXTURE_2D, shadow.texture);
-      gl.uniform1f(uniformLocation(gl, program, "shadowEnabled"), 1);
+      worldUniform1f(gl, program, "shadowEnabled", 1);
     }
     const shadowRange = worldShadowRangeEye(plan, canvas.width, canvas.height, input.camera);
     gl.uniform3fv(uniformLocation(gl, program, "shadowRangeEye"), Float32Array.from(shadowRange?.eye ?? [0, 0, 0]));
-    gl.uniform1f(uniformLocation(gl, program, "shadowRangeDistance"), shadowRange?.distance ?? 0);
-    gl.uniform1f(uniformLocation(gl, program, "pointSize"), 7);
-    gl.uniform1f(uniformLocation(gl, program, "alphaCutoff"), 0);
+    worldUniform1f(gl, program, "shadowRangeDistance", shadowRange?.distance ?? 0);
+    worldUniform1f(gl, program, "pointSize", 7);
+    worldUniform1f(gl, program, "alphaCutoff", 0);
     gl.disable(gl.CULL_FACE);
     gl.disable(gl.BLEND);
     gl.depthMask(true);
-    gl.uniform1f(uniformLocation(gl, program, "textured"), 0);
-    gl.uniform1f(uniformLocation(gl, program, "normalTextured"), 0);
-    gl.uniform1f(uniformLocation(gl, program, "secondaryTextured"), 0);
-    gl.uniform1f(uniformLocation(gl, program, "splatTextured"), 0);
-    gl.uniform1f(uniformLocation(gl, program, "alphaCutoff"), 0);
-    gl.uniform1f(uniformLocation(gl, program, "shadowReceiver"), 1);
+    worldUniform1f(gl, program, "textured", 0);
+    worldUniform1f(gl, program, "normalTextured", 0);
+    worldUniform1f(gl, program, "secondaryTextured", 0);
+    worldUniform1f(gl, program, "splatTextured", 0);
+    worldUniform1f(gl, program, "alphaCutoff", 0);
+    worldUniform1f(gl, program, "shadowReceiver", 1);
     drawBatch(resources, program, plan.opaqueTriangles, gl.TRIANGLES);
     for (const item of plan.shadowControlledOpaqueTriangles) {
-      gl.uniform1f(uniformLocation(gl, program, "shadowReceiver"), item.receiveShadows ? 1 : 0);
+      worldUniform1f(gl, program, "shadowReceiver", item.receiveShadows ? 1 : 0);
       drawBatch(resources, program, item, gl.TRIANGLES);
     }
     for (const item of plan.texturedTriangles) {
-      gl.uniform1f(uniformLocation(gl, program, "shadowReceiver"), item.receiveShadows === false ? 0 : 1);
+      worldUniform1f(gl, program, "shadowReceiver", item.receiveShadows === false ? 0 : 1);
       drawTexturedBatch(resources, program, item);
     }
-    gl.uniform1f(uniformLocation(gl, program, "shadowReceiver"), 1);
+    worldUniform1f(gl, program, "shadowReceiver", 1);
     for (const item of plan.splatTriangles)
       drawSplatBatch(resources, program, item);
     const sceneLight2 = worldMaterialLight(plan);
@@ -92086,11 +92430,11 @@ function drawWorldWebGlWithResources(canvas, input, resources) {
       gl.disable(gl.POLYGON_OFFSET_FILL);
     }
     assertNoWebGlError(resources, "opaque pass");
-    gl.uniform1f(uniformLocation(gl, program, "textured"), 0);
-    gl.uniform1f(uniformLocation(gl, program, "normalTextured"), 0);
-    gl.uniform1f(uniformLocation(gl, program, "secondaryTextured"), 0);
-    gl.uniform1f(uniformLocation(gl, program, "splatTextured"), 0);
-    gl.uniform1f(uniformLocation(gl, program, "shadowReceiver"), 0);
+    worldUniform1f(gl, program, "textured", 0);
+    worldUniform1f(gl, program, "normalTextured", 0);
+    worldUniform1f(gl, program, "secondaryTextured", 0);
+    worldUniform1f(gl, program, "splatTextured", 0);
+    worldUniform1f(gl, program, "shadowReceiver", 0);
     drawBatch(resources, program, plan.lines, gl.LINES);
     drawBatch(resources, program, plan.points, gl.POINTS);
     assertNoWebGlError(resources, "overlay pass");
@@ -92111,48 +92455,49 @@ function drawWorldWebGlWithResources(canvas, input, resources) {
       const { camera } = cameraFor(plan, canvas.width, canvas.height, input.camera);
       const forward = camera.getWorldDirection(new Vector3());
       gl.uniform2f(uniformLocation(gl, program, "waterDepthScale"), camera.far - camera.near, Math.abs(forward.y));
-      gl.uniform1f(uniformLocation(gl, program, "waterShoreFade"), WATER_SHORE_FADE);
-      gl.uniform1f(uniformLocation(gl, program, "waterDepthMode"), 1);
-      gl.uniform1f(uniformLocation(gl, program, "textured"), 0);
-      gl.uniform1f(uniformLocation(gl, program, "normalTextured"), 0);
-      gl.uniform1f(uniformLocation(gl, program, "secondaryTextured"), 0);
-      gl.uniform1f(uniformLocation(gl, program, "splatTextured"), 0);
-      gl.uniform1f(uniformLocation(gl, program, "alphaCutoff"), 0);
+      worldUniform1f(gl, program, "waterShoreFade", WATER_SHORE_FADE);
+      worldUniform1f(gl, program, "waterDepthMode", 1);
+      worldUniform1f(gl, program, "textured", 0);
+      worldUniform1f(gl, program, "normalTextured", 0);
+      worldUniform1f(gl, program, "secondaryTextured", 0);
+      worldUniform1f(gl, program, "splatTextured", 0);
+      worldUniform1f(gl, program, "alphaCutoff", 0);
       gl.disable(gl.POLYGON_OFFSET_FILL);
       gl.uniform3f(uniformLocation(gl, program, "waterViewForward"), forward.x, forward.y, forward.z);
       for (const plane of plan.waterPlanes) {
-        gl.uniform1f(uniformLocation(gl, program, "waterFalloff"), plane.colorFalloff);
-        gl.uniform1f(uniformLocation(gl, program, "shadowReceiver"), plane.receiveShadows ? 1 : 0);
+        worldUniform1f(gl, program, "waterFalloff", plane.colorFalloff);
+        worldUniform1f(gl, program, "shadowReceiver", plane.receiveShadows ? 1 : 0);
         const caustics = plane.caustics;
         if (caustics === void 0)
-          gl.uniform1f(uniformLocation(gl, program, "causticsMode"), 0);
+          worldUniform1f(gl, program, "causticsMode", 0);
         else {
           const frame2 = caustics.framesPerSecond > 0 ? Math.floor((input.timeSeconds ?? 0) * caustics.framesPerSecond) % caustics.frames.length : 0;
           bindTexture2d(resources, caustics.frames[frame2], WATER_CAUSTICS_UNIT);
-          gl.uniform1f(uniformLocation(gl, program, "causticsMode"), 1);
+          worldUniform1f(gl, program, "causticsMode", 1);
           gl.uniform2f(uniformLocation(gl, program, "causticsScale"), caustics.scale[0], caustics.scale[1]);
-          gl.uniform1f(uniformLocation(gl, program, "causticsFalloff"), caustics.falloff);
+          worldUniform1f(gl, program, "causticsFalloff", caustics.falloff);
         }
         const waves = plane.waves;
         if (waves === void 0)
-          gl.uniform1f(uniformLocation(gl, program, "waterWavesMode"), 0);
+          worldUniform1f(gl, program, "waterWavesMode", 0);
         else {
           bindTexture2d(resources, waves.texture, WATER_NORMAL_UNIT);
-          gl.uniform1f(uniformLocation(gl, program, "waterWavesMode"), 1);
+          worldUniform1f(gl, program, "waterWavesMode", 1);
           gl.uniform2f(uniformLocation(gl, program, "waterWaveTiling"), waves.tiling[0], waves.tiling[1]);
           gl.uniform4f(uniformLocation(gl, program, "waterWaveScroll"), ...waves.scroll);
           gl.uniform2f(uniformLocation(gl, program, "waterSpecular"), waves.specularity, waves.specularScale);
-          gl.uniform1f(uniformLocation(gl, program, "waterTime"), input.timeSeconds ?? 0);
+          worldUniform1f(gl, program, "waterTime", input.timeSeconds ?? 0);
         }
         drawBatch(resources, program, plane.batch, gl.TRIANGLES);
       }
-      gl.uniform1f(uniformLocation(gl, program, "causticsMode"), 0);
-      gl.uniform1f(uniformLocation(gl, program, "waterWavesMode"), 0);
-      gl.uniform1f(uniformLocation(gl, program, "waterDepthMode"), 0);
+      worldUniform1f(gl, program, "causticsMode", 0);
+      worldUniform1f(gl, program, "waterWavesMode", 0);
+      worldUniform1f(gl, program, "waterDepthMode", 0);
       assertNoWebGlError(resources, "water pass");
     }
     const transparentMaterialDraws = [...transparentSceneDraws, ...effectDraws];
     const transparentEntries = createWorldWebGlCompositeTransparentDrawPlan(plan, input.camera, transparentMaterialDraws, waterByDepth);
+    let batchAdditive;
     for (let index2 = 0; index2 < transparentEntries.length; index2++) {
       const entry2 = transparentEntries[index2];
       if (entry2.kind === "material") {
@@ -92166,27 +92511,33 @@ function drawWorldWebGlWithResources(canvas, input, resources) {
           index2 = next;
         }
         resources.materialDraws.drawSequence(run, sceneCamera, sceneLight2, worldCurrentPrograms.get(plan)?.passes);
+        batchAdditive = void 0;
         continue;
       }
       const item = entry2.draw;
-      gl.useProgram(program);
-      gl.disable(gl.POLYGON_OFFSET_FILL);
-      if (shadow !== void 0) {
-        gl.activeTexture(gl.TEXTURE7);
-        gl.bindTexture(gl.TEXTURE_2D, shadow.texture);
+      const additive = item.blendMode === "additive";
+      if (batchAdditive === void 0) {
+        gl.useProgram(program);
+        gl.disable(gl.POLYGON_OFFSET_FILL);
+        if (shadow !== void 0) {
+          gl.activeTexture(gl.TEXTURE7);
+          gl.bindTexture(gl.TEXTURE_2D, shadow.texture);
+        }
+        gl.enable(gl.BLEND);
+        gl.depthMask(false);
       }
-      gl.enable(gl.BLEND);
-      gl.depthMask(false);
-      gl.blendFunc(gl.SRC_ALPHA, item.blendMode === "additive" ? gl.ONE : gl.ONE_MINUS_SRC_ALPHA);
-      gl.uniform1f(uniformLocation(gl, program, "shadowReceiver"), item.receiveShadows ? 1 : 0);
+      if (batchAdditive !== additive)
+        gl.blendFunc(gl.SRC_ALPHA, additive ? gl.ONE : gl.ONE_MINUS_SRC_ALPHA);
+      batchAdditive = additive;
+      worldUniform1f(gl, program, "shadowReceiver", item.receiveShadows ? 1 : 0);
       if (item.kind === "textured") {
         drawTexturedBatch(resources, program, item.batch, item.range);
       } else {
-        gl.uniform1f(uniformLocation(gl, program, "textured"), 0);
-        gl.uniform1f(uniformLocation(gl, program, "normalTextured"), 0);
-        gl.uniform1f(uniformLocation(gl, program, "secondaryTextured"), 0);
-        gl.uniform1f(uniformLocation(gl, program, "splatTextured"), 0);
-        gl.uniform1f(uniformLocation(gl, program, "alphaCutoff"), 0);
+        worldUniform1f(gl, program, "textured", 0);
+        worldUniform1f(gl, program, "normalTextured", 0);
+        worldUniform1f(gl, program, "secondaryTextured", 0);
+        worldUniform1f(gl, program, "splatTextured", 0);
+        worldUniform1f(gl, program, "alphaCutoff", 0);
         drawBatch(resources, program, item.batch, gl.TRIANGLES, item.batch, item.range);
       }
     }
@@ -92201,7 +92552,7 @@ function drawWorldWebGlWithResources(canvas, input, resources) {
       gl.useProgram(depthProgram);
       gl.uniformMatrix4fv(uniformLocation(gl, depthProgram, "lightViewProjection"), false, sceneCamera.viewProjection);
       bindSentinelTexture2d(resources, 0);
-      gl.uniform1i(uniformLocation(gl, depthProgram, "baseColorMap"), 0);
+      worldUniform1i(gl, depthProgram, "baseColorMap", 0);
       try {
         for (const positions of waterSurfaces)
           drawShadowPositions(resources, depthProgram, positions);
@@ -94352,6 +94703,7 @@ export {
   openNestedSubject,
   coordinateMapPreviewAssetSession,
   createScopedViewerSubjectNavigation,
+  withoutHiddenEntries,
   resolveCommonPresentationPlan,
   resolveFormatWriter,
   applyTheme,

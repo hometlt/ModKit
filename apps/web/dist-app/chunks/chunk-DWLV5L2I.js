@@ -15,7 +15,7 @@ import {
 } from "./chunk-LX6GSJ3D.js";
 
 // packages/host/dist/session.js
-var projection = () => import("./subject-projection-MYHY64AV.js");
+var projection = () => import("./subject-projection-OW57SQJY.js");
 function rejected(reason, message) {
   return {
     state: "rejected",

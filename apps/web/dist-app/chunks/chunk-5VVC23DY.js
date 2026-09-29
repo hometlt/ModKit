@@ -2,7 +2,7 @@ import {
   AUXILIARY_DATA_SOURCE_SURFACES,
   STANDARD_DATA_SOURCE_SURFACES,
   STANDARD_EDITING_SURFACES
-} from "./chunk-47QWC2WU.js";
+} from "./chunk-7BES6HCK.js";
 import {
   ModkitError,
   OperationCancelledError,
@@ -2932,6 +2932,7 @@ var ABI_RASTER_RESOURCES = { contract: "x3.abi/raster-resources", major: 1 };
 var ABI_MODEL_RESOURCES = { contract: "x3.abi/model-resources", major: 1 };
 var ABI_INSTALLATION_PROBES = { contract: "x3.abi/installation-probes", major: 1 };
 var ABI_VIDEO_FRAMES = { contract: "x3.abi/video-frames", major: 1 };
+var ABI_INSTALLATION_FILES = { contract: "x3.abi/installation-files", major: 1 };
 var ABI_CREDENTIALS = { contract: "x3.abi/credentials", major: 1 };
 var ABI_MODEL_RESOURCE_ASSET = {
   contract: "x3.abi/model-resource-asset",
@@ -3116,6 +3117,13 @@ var videoFramesSurface = {
   ...ABI_VIDEO_FRAMES,
   methods: { decodeFrame: { kind: "value", signal: { arg: 0, key: "signal" } } }
 };
+var installationFilesSurface = {
+  ...ABI_INSTALLATION_FILES,
+  methods: {
+    size: { kind: "value", signal: { arg: 0, key: "signal" } },
+    read: { kind: "value", signal: { arg: 0, key: "signal" } }
+  }
+};
 var credentialsSurface = {
   ...ABI_CREDENTIALS,
   methods: {
@@ -3183,6 +3191,7 @@ var RUNTIME_ABI_SURFACES = Object.freeze([
   rasterResourcesSurface,
   installationProbesSurface,
   videoFramesSurface,
+  installationFilesSurface,
   credentialsSurface,
   modelResourcesSurface,
   modelResourceAssetSurface,

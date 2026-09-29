@@ -4,18 +4,11 @@ import {
   createCompositeSubjectFactsSource,
   createDescriptorFallbackSubjectFactsSource,
   createFieldRelationGraphSource,
-  descriptorSubjectRef
-} from "./chunk-TSJGNAWL.js";
-import {
+  descriptorSubjectRef,
   metadataFieldProjections
-} from "./chunk-JHPOUH6S.js";
-import "./chunk-47QWC2WU.js";
-import "./chunk-YYQ3QKXM.js";
-import "./chunk-KL23KRQT.js";
-import "./chunk-MYUZP6E2.js";
-import "./chunk-GGIVOOBZ.js";
-import "./chunk-LX6GSJ3D.js";
-import "./chunk-CQ52GEHY.js";
+} from "./chunk-VS7Y6TK6.js";
+import "./chunk-47VUMMB3.js";
+import "./chunk-BLWUC7LO.js";
 export {
   DEFAULT_SUBJECT_RELATION_PROJECTION_BUDGET,
   createCompositeRelationGraphSource,

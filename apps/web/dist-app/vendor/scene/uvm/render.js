@@ -58,7 +58,7 @@ import {
 } from "../../../chunks/chunk-QHSSFB5M.js";
 import {
   encodePng
-} from "../../../chunks/chunk-PCZUZBVS.js";
+} from "../../../chunks/chunk-56NX7CKB.js";
 import "../../../chunks/chunk-NJ5SYYRG.js";
 import "../../../chunks/chunk-3EHD75HB.js";
 import {
@@ -89,7 +89,7 @@ import {
 import "../../../chunks/chunk-3Q224KYR.js";
 import "../../../chunks/chunk-NUFRM6SI.js";
 import "../../../chunks/chunk-LRCQXYKO.js";
-import "../../../chunks/chunk-XXOPIMKN.js";
+import "../../../chunks/chunk-RA3DJQH7.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 
 // packages/scene/dist/uvm/pose-samples.js
@@ -19943,6 +19943,7 @@ ${marker}`);
 
 // packages/scene/dist/render/material-geometry.js
 var IDENTITY3 = new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+var HIGH_HALF = new Uint8Array(Uint16Array.of(1).buffer)[0] === 1 ? 1 : 0;
 var PLACEMENT_DECLARATIONS = `uniform mat4 u_view, u_worldToMaterial;
 in vec4 a_instanceMatrix0, a_instanceMatrix1, a_instanceMatrix2, a_instanceMatrix3;
 mat3 sceneCofactor(mat3 m){return mat3(cross(m[1],m[2]),cross(m[2],m[0]),cross(m[0],m[1]));}
