@@ -18,7 +18,10 @@ function harness() {
   const connection = new Proxy(
     {
       console: { error: message => calls.push(['error', message]), warn: noop },
-      languages: { diagnostics: { on: handler => handlers.set('diagnostic', handler) } },
+      languages: {
+        diagnostics: { on: handler => handlers.set('diagnostic', handler) },
+        inlayHint: { on: handler => handlers.set('inlayHint', handler) },
+      },
       sendDiagnostics: noop,
       listen: noop,
       dispose: noop,
