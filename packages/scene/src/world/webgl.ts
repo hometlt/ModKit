@@ -2154,6 +2154,77 @@ function worldModelSceneSampler(
 
 const staticModelSamples = new WeakMap<WorldModelSample['result'], Map<string, WorldModelSample>>()
 
+/**
+ * Each model at rest: sampled without a clip at time zero. An object whose geometry follows the
+ * clock frames the plan by its models at rest, so the camera and the shadow map hold still while it
+ * moves.
+ */
+const restWorldModelSamples = new WeakMap<WorldModelSample['result'], WorldModelSample>()
+
+function restWorldModelSample(result: WorldModelSample['result']): WorldModelSample {
+  let sample = restWorldModelSamples.get(result)
+  if (sample === undefined) {
+    const sampled =
+      (result.nodes?.length ?? 0) === 0
+        ? { primitives: result.primitives, nodeTransforms: new Map<string, Float32Array>() }
+        : worldModelSceneSampler(result, undefined).sample(0)
+    sample = Object.freeze({
+      result,
+      primitives: sampled.primitives,
+      nodeTransforms: sampled.nodeTransforms,
+    })
+    restWorldModelSamples.set(result, sample)
+  }
+  return sample
+}
+
+/**
+ * Where each of an object's components sits in the object: a root turned by its own rotation, a
+ * child on its parent's socket as the parent's model is sampled. A component whose parent model or
+ * socket is missing gets no transform.
+ */
+function worldComponentTransforms(
+  components: readonly MapModelComponentPlacement[],
+  sampleOf: (resourceId: string) => WorldModelSample | undefined,
+): Map<string, Float32Array> {
+  const componentTransforms = new Map<string, Float32Array>()
+  const pending = [...components]
+  for (let pass = 0; pass < components.length && pending.length > 0; pass += 1) {
+    let progressed = false
+    for (let index = pending.length - 1; index >= 0; index -= 1) {
+      const component = pending[index]!
+      const localTransform = componentLocalTransform(component)
+      if (component.parentId === undefined) {
+        componentTransforms.set(
+          component.id,
+          component.rotation === undefined ? IDENTITY_COMPONENT_TRANSFORM : localTransform,
+        )
+      } else {
+        const parentTransform = componentTransforms.get(component.parentId)
+        const parent = components.find(candidate => candidate.id === component.parentId)
+        const parentSample = parent === undefined ? undefined : sampleOf(parent.resourceId)
+        const socket = parentSample?.result.sockets?.find(
+          candidate => candidate.id === component.parentSocketId,
+        )
+        const socketTransform =
+          socket === undefined ? undefined : parentSample?.nodeTransforms.get(socket.nodeId)
+        if (parentTransform === undefined || socketTransform === undefined) continue
+        componentTransforms.set(
+          component.id,
+          multiplyComponentTransforms(
+            multiplyComponentTransforms(parentTransform, socketTransform),
+            localTransform,
+          ),
+        )
+      }
+      pending.splice(index, 1)
+      progressed = true
+    }
+    if (!progressed) break
+  }
+  return componentTransforms
+}
+
 type WorldModelPrograms = Readonly<{
   presented: readonly ModelMaterialRef[]
   scene: ReturnType<typeof worldModelSceneMaterials>
@@ -2512,8 +2583,9 @@ interface WorldObjectPickMesh {
   readonly primitives: WorldWebGlPickPrimitive[]
   readonly placeholder: boolean
   /**
-   * Bounds of its triangles and primitives (min xyz, max xyz); null when it has neither. Computed
-   * when first read: the plan reads them only where `envelope` reaches past its bounds so far.
+   * The box the plan frames the object by (min xyz, max xyz): its triangles and primitives, or its
+   * models at rest when its geometry follows the clock; null when it has neither. Computed when first
+   * read: the plan reads them only where `envelope` reaches past its bounds so far.
    */
   readonly bounds: readonly number[] | null
   /** A box holding `bounds` from its primitives' envelopes; null when it has neither. */
@@ -4525,6 +4597,8 @@ export function createWorldWebGlPlan(
     return journal(target, entry.write)
   }
   const objectPickMeshes: WorldObjectPickMesh[] = []
+  // Writes of the objects framed at rest: they move with the clock, so the plan bounds skip them.
+  const clockWrites = new Set<WorldBatchWrite>()
   const planSamples = new Map<
     string,
     Readonly<{
@@ -4723,7 +4797,6 @@ export function createWorldWebGlPlan(
     const pickTriangles: number[] = []
     const pickPrimitives: WorldWebGlPickPrimitive[] = []
     const { components } = worldObjectResourcesOf(item)
-    const componentTransforms = new Map<string, Float32Array>()
     const samples = new Map<
       string,
       Readonly<{
@@ -4739,40 +4812,18 @@ export function createWorldWebGlPlan(
       if (current !== undefined) samples.set(resourceId, current)
       return current
     }
-    const pending = [...components]
-    for (let pass = 0; pass < components.length && pending.length > 0; pass += 1) {
-      let progressed = false
-      for (let index = pending.length - 1; index >= 0; index -= 1) {
-        const component = pending[index]!
-        const localTransform = componentLocalTransform(component)
-        if (component.parentId === undefined) {
-          componentTransforms.set(
-            component.id,
-            component.rotation === undefined ? IDENTITY_COMPONENT_TRANSFORM : localTransform,
-          )
-        } else {
-          const parentTransform = componentTransforms.get(component.parentId)
-          const parent = components.find(candidate => candidate.id === component.parentId)
-          const parentSample = parent === undefined ? undefined : sampleFor(parent.resourceId)
-          const socket = parentSample?.result.sockets?.find(
-            candidate => candidate.id === component.parentSocketId,
-          )
-          const socketTransform =
-            socket === undefined ? undefined : parentSample?.nodeTransforms.get(socket.nodeId)
-          if (parentTransform === undefined || socketTransform === undefined) continue
-          componentTransforms.set(
-            component.id,
-            multiplyComponentTransforms(
-              multiplyComponentTransforms(parentTransform, socketTransform),
-              localTransform,
-            ),
-          )
-        }
-        pending.splice(index, 1)
-        progressed = true
-      }
-      if (!progressed) break
-    }
+    const componentTransforms = worldComponentTransforms(components, sampleFor)
+    // An object whose models move their geometry frames the plan by its models at rest.
+    const restTransforms = components.some(component => {
+      const result = input.models?.get(component.resourceId)
+      return result?.state === 'converted' && worldModelHasAnimatedGeometry(result, item)
+    })
+      ? worldComponentTransforms(components, resourceId => {
+          const result = input.models?.get(resourceId)
+          return result?.state === 'converted' ? restWorldModelSample(result) : undefined
+        })
+      : undefined
+    const restPrimitives: WorldWebGlPickPrimitive[] = []
     let rendered = false
     let resolved = false
     for (const component of components) {
@@ -4814,6 +4865,36 @@ export function createWorldWebGlPlan(
         worldObjectTransform(item, translation),
         componentTransform,
       )
+      const restTransform = restTransforms?.get(component.id)
+      if (restTransform !== undefined) {
+        const restInstanceTransform = multiplyComponentTransforms(
+          worldObjectTransform(item, translation),
+          restTransform,
+        )
+        let restIndex = -1
+        for (const primitive of restWorldModelSample(result).primitives) {
+          restIndex += 1
+          // The primitives the object draws: no material without color passes, no empty ones.
+          const prepared = programs.get(primitive.materialId ?? '')
+          if (prepared !== undefined && prepared.passes.length === 0) continue
+          if (primitiveTriangleCount(primitive) === 0) continue
+          const primitiveTransform = 'transform' in primitive ? primitive.transform : undefined
+          restPrimitives.push(
+            sharedPickPrimitive(
+              primitive,
+              {
+                ...primitive,
+                transform: multiplyComponentTransforms(
+                  restInstanceTransform,
+                  primitiveTransform ?? IDENTITY_COMPONENT_TRANSFORM,
+                ),
+              },
+              item,
+              `rest\u0000${component.id}\u0000${String(restIndex)}`,
+            ),
+          )
+        }
+      }
       let primitiveIndex = -1
       for (const primitive of primitives) {
         primitiveIndex += 1
@@ -5203,6 +5284,10 @@ export function createWorldWebGlPlan(
     lastProjectorWrites.set(item, projectorWrites)
     if (!pickTriangles.every(Number.isFinite))
       throw new TypeError('world WebGL plan contains a non-finite model coordinate')
+    const framingTriangles = restTransforms === undefined ? pickTriangles : []
+    const framingPrimitives = restTransforms === undefined ? pickPrimitives : restPrimitives
+    if (restTransforms !== undefined)
+      for (const entry of objectBatchWrites) clockWrites.add(entry.write)
     let pickBounds: readonly number[] | null | undefined
     const pickMesh: WorldObjectPickMesh = {
       objectId: item.objectId,
@@ -5211,9 +5296,9 @@ export function createWorldWebGlPlan(
       primitives: pickPrimitives,
       placeholder: !resolved,
       get bounds() {
-        return (pickBounds ??= pickMeshBoundsOf(pickTriangles, pickPrimitives))
+        return (pickBounds ??= pickMeshBoundsOf(framingTriangles, framingPrimitives))
       },
-      envelope: pickMeshEnvelopeOf(pickTriangles, pickPrimitives),
+      envelope: pickMeshEnvelopeOf(framingTriangles, framingPrimitives),
       pick: Object.freeze({
         objectId: item.objectId,
         center: translation,
@@ -5324,6 +5409,7 @@ export function createWorldWebGlPlan(
     points.positions,
     ...[opaque, transparent, ...shadowControlledOpaque.values(), ...texturedTargets()]
       .flatMap(writesOf)
+      .filter(write => !clockWrites.has(write))
       .map(write => write.positions),
   ]
   const minimum: [number, number, number] = [...preparation.minimum]
