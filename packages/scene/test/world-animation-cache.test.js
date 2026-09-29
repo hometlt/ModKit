@@ -523,6 +523,53 @@ it('retains terrain while sequence-only material programs, live effects and proj
   assert.equal(values(next), values(createWorldWebGlPlan(nextInput)))
 })
 
+it('decides once for copies kept at one moment, apart from a copy with a time of its own', () => {
+  const copy = (objectId, x) => ({
+    ...actor,
+    id: `actor:${objectId}`,
+    objectId,
+    uvwPosition: { x, y: 0, z: 0 },
+  })
+  const base = world()
+  const input = {
+    ...base,
+    items: [
+      ...base.items.filter(item => item.facet !== 'objects'),
+      copy(1, 0),
+      copy(2, 1),
+      copy(3, 2),
+    ],
+    models: new Map([['actor', effectModel({ projector: false })]]),
+  }
+  const first = createWorldWebGlPlan(input)
+  assert.equal(first.modelMaterialScenes.length, 3)
+  const nextInput = { ...input, timeSeconds: 0.5, animationTimes: new Map([[3, 0.25]]) }
+  const next = createWorldWebGlPlan(nextInput, first)
+  // The copies at the plan's clock are kept. The third one's programs would stand for others than
+  // theirs: it is built anew, with programs of its own.
+  assert.equal(next.modelMaterialScenes[0], first.modelMaterialScenes[0])
+  assert.equal(next.modelMaterialScenes[1], first.modelMaterialScenes[1])
+  assert.notEqual(next.modelMaterialScenes[2], first.modelMaterialScenes[2])
+  const alpha = plan =>
+    plan.modelMaterialScenes.map(
+      scene =>
+        [...worldWebGlScenePrograms(plan, scene).values()][0].passes[0].uniforms.u_alpha1Multiply,
+    )
+  assert.deepEqual(alpha(next), [0.5, 0.5, 0.25])
+  const values = plan =>
+    JSON.stringify(
+      {
+        ...plan,
+        modelMaterialScenes: plan.modelMaterialScenes.map(scene => ({
+          ...scene,
+          programs: worldWebGlScenePrograms(plan, scene),
+        })),
+      },
+      (_, value) => (value instanceof Map ? [...value] : value),
+    )
+  assert.equal(values(next), values(createWorldWebGlPlan(nextInput)))
+})
+
 it('replays the projected decal triangles of an object kept from the previous plan', () => {
   const input = {
     ...world(),

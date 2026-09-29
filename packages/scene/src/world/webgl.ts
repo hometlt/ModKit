@@ -864,6 +864,28 @@ function worldObjectTime(
   return time + ((stringHash(item.id) % RANDOM_START_PHASES) / RANDOM_START_PHASES) * durationSeconds
 }
 
+/**
+ * What worldObjectTime reads of an object, apart from the input's clocks: objects with the same
+ * formula are at the same time whenever neither has a time of its own (animationTimes).
+ */
+function worldObjectClockFormula(
+  item: WorldSceneObjectItem,
+  hasSelectedAnimation: boolean,
+  durationSeconds?: number,
+): string {
+  const animation = item.presentationAnimation
+  const phase =
+    animation?.randomStart && animation.loop && durationSeconds
+      ? stringHash(item.id) % RANDOM_START_PHASES
+      : ''
+  return [
+    animation !== undefined || hasSelectedAnimation,
+    animation?.speed ?? 1,
+    durationSeconds ?? '',
+    phase,
+  ].join('|')
+}
+
 function stringHash(text: string): number {
   let hash = 2_166_136_261
   for (let index = 0; index < text.length; index += 1) {
@@ -2724,15 +2746,23 @@ function worldObjectProgramTemplateKey(
   ].join('\u0000')
 }
 
-/** The clocks at which an object samples its clock-following materials, one per model. */
-function worldObjectMaterialClock(item: WorldSceneObjectItem, input: WorldWebGlInput): string {
-  let clock = ''
+/**
+ * The clocks at which an object samples its clock-following materials, one per model: the time
+ * itself for one such model (most objects), which spares writing a number as text per object.
+ */
+function worldObjectMaterialClock(
+  item: WorldSceneObjectItem,
+  input: WorldWebGlInput,
+): number | string {
+  let clock: number | string = ''
+  let models = 0
   for (const resourceId of worldObjectResourcesOf(item).keyed) {
     const result = input.models?.get(resourceId)
     if (result?.state !== 'converted' || !worldMaterialsFollowTime(result)) continue
     const selected = worldModelAnimation(result, item)
     const time = worldObjectTime(input, item, selected !== undefined, selected?.durationSeconds)
-    clock += `${time}\u0000`
+    models += 1
+    clock = models === 1 ? time : `${clock}\u0000${time}`
   }
   return clock
 }
@@ -2827,6 +2857,11 @@ function sameProgramLayout(
 interface WorldCurrentPrograms {
   readonly passes: Map<StandardMaterialProgram, StandardMaterialProgram>
   readonly materials: Map<SceneMaterialPrograms, SceneMaterialPrograms>
+  /**
+   * Whether the kept objects of a cohort (WorldStaticObject.cohort) keep their scenes in this plan:
+   * its members sample the same programs at the same moment, so the first one decides for all.
+   */
+  readonly cohorts: Map<string, boolean>
 }
 
 const worldCurrentPrograms = new WeakMap<WorldWebGlPlan, WorldCurrentPrograms>()
@@ -2861,12 +2896,41 @@ function keptWorldObjectScenes(
   current: WorldCurrentPrograms,
 ): readonly WorldWebGlModelMaterialScene[] | undefined {
   if (kept.resamplers === undefined) return kept.scenes
+  // An object played at a time of its own is not its cohort's moment.
+  const cohort =
+    kept.cohort !== undefined && input.animationTimes?.has(item.objectId) !== true
+      ? kept.cohort
+      : undefined
+  if (cohort !== undefined) {
+    const keeps = current.cohorts.get(cohort)
+    if (keeps !== undefined) return keeps ? kept.scenes : undefined
+  }
+  const scenes = keptWorldObjectResampledScenes(
+    item,
+    kept,
+    kept.resamplers,
+    input,
+    planPrograms,
+    current,
+  )
+  if (cohort !== undefined) current.cohorts.set(cohort, scenes !== undefined)
+  return scenes
+}
+
+function keptWorldObjectResampledScenes(
+  item: WorldSceneObjectItem,
+  kept: WorldStaticObject,
+  resamplers: readonly (WorldSceneResampler | undefined)[],
+  input: WorldWebGlInput,
+  planPrograms: WorldPlanPrograms,
+  current: WorldCurrentPrograms,
+): readonly WorldWebGlModelMaterialScene[] | undefined {
   // At its own clock a kept scene stands for its own programs.
   const moved = worldObjectMaterialClock(item, input) !== kept.materialClock
   // Objects kept with the same programs mostly stand for the same ones: only new pairs are added.
   let added: [SceneMaterialPrograms, SceneMaterialPrograms][] | undefined
   for (const [index, scene] of kept.scenes.entries()) {
-    const resample = kept.resamplers[index]
+    const resample = resamplers[index]
     if (resample === undefined) continue
     const programs = moved ? resample(input, planPrograms) : scene.programs
     if (programs !== scene.programs && !sameProgramLayout(scene.programs, programs))
@@ -2946,6 +3010,25 @@ function worldModelProgramTemplate(
   return template
 }
 
+/** A kept object's cohort (WorldStaticObject.cohort), from its resampled scenes' terms. */
+function worldObjectCohort(
+  item: WorldSceneObjectItem,
+  input: WorldWebGlInput,
+  scenes: readonly WorldWebGlModelMaterialScene[],
+  resamplers: ReadonlyMap<WorldWebGlModelMaterialScene, WorldSceneResampler>,
+  terms: ReadonlyMap<WorldWebGlModelMaterialScene, string>,
+): { cohort?: string } {
+  if (input.animationTimes?.has(item.objectId) === true) return {}
+  const parts: (number | string)[] = [worldObjectMaterialClock(item, input)]
+  for (const scene of scenes) {
+    if (!resamplers.has(scene)) continue
+    const term = terms.get(scene)
+    if (term === undefined) return {}
+    parts.push(term)
+  }
+  return { cohort: parts.join('\u0002') }
+}
+
 /** What an object added to a plan, and the inputs it was built from. */
 interface WorldStaticObject {
   readonly key: readonly unknown[]
@@ -2954,8 +3037,15 @@ interface WorldStaticObject {
    * For an object whose clock reaches only its materials: the moment its scenes' programs were
    * sampled at (worldObjectMaterialClock) and, per scene, how to sample them at another moment.
    */
-  readonly materialClock?: string
+  readonly materialClock?: number | string
   readonly resamplers?: readonly (WorldSceneResampler | undefined)[]
+  /**
+   * The kept objects that stand or fall together in a plan (see WorldCurrentPrograms.cohorts): the
+   * same programs in each resampled scene, sampled for the same presentation and clock formula
+   * (worldObjectClockFormula) from the same build moment. Undefined for an object with another kind
+   * of resampler or with a time of its own at its build.
+   */
+  readonly cohort?: string
   readonly effects: readonly WorldWebGlModelEffectInstance[]
   /** The model each of `effects` comes from: a kept instance takes that model's clock. */
   readonly effectResources: readonly string[]
@@ -5404,7 +5494,11 @@ export function createWorldWebGlPlan(
   let modelTriangles = 0
   let diagnosticPlaceholders = 0
   const planPrograms: WorldPlanPrograms = new Map()
-  const currentPrograms: WorldCurrentPrograms = { passes: new Map(), materials: new Map() }
+  const currentPrograms: WorldCurrentPrograms = {
+    passes: new Map(),
+    materials: new Map(),
+    cohorts: new Map(),
+  }
   // Projector decals batch by splat layer and texture: a layer draws as one part of the ground.
   const projectorBatchKey = (texture: MutableTexturedBatch['texture'], layer: number | undefined) =>
     `projector:${layer ?? ''}:${texture.id}`
@@ -5443,6 +5537,8 @@ export function createWorldWebGlPlan(
     }
     const scenesBefore = modelMaterialScenes.length
     const sceneResamplers = new Map<WorldWebGlModelMaterialScene, WorldSceneResampler>()
+    // Per resampled scene, what its programs at another moment depend on (see WorldStaticObject.cohort).
+    const sceneCohortTerms = new Map<WorldWebGlModelMaterialScene, string>()
     const effectsBefore = modelEffects.length
     const effectResources: string[] = []
     const objectBatchWrites: WorldObjectBatchWrite[] = []
@@ -5930,7 +6026,19 @@ export function createWorldWebGlPlan(
         })
         modelMaterialScenes.push(materialScene)
         // The presentation (clip, team colour) is in the kept object's key: only the time moves.
-        if (materialsFollowTime)
+        if (materialsFollowTime) {
+          sceneCohortTerms.set(
+            materialScene,
+            [
+              worldGroupId(programs),
+              templateKey,
+              worldObjectClockFormula(
+                item,
+                selectedAnimation !== undefined,
+                selectedAnimation?.durationSeconds,
+              ),
+            ].join('\u0001'),
+          )
           sceneResamplers.set(
             materialScene,
             (next, nextPrograms) =>
@@ -5948,6 +6056,7 @@ export function createWorldWebGlPlan(
                 nextPrograms,
               ).programs,
           )
+        }
       }
     }
     // A cliff piece whose code ships no mesh (ramp interiors) is the terrain's own slope: nothing to
@@ -6003,6 +6112,13 @@ export function createWorldWebGlPlan(
                 materialClock: worldObjectMaterialClock(item, input),
                 resamplers: Object.freeze(
                   modelMaterialScenes.slice(scenesBefore).map(scene => sceneResamplers.get(scene)),
+                ),
+                ...worldObjectCohort(
+                  item,
+                  input,
+                  modelMaterialScenes.slice(scenesBefore),
+                  sceneResamplers,
+                  sceneCohortTerms,
                 ),
               }),
           effects: Object.freeze(modelEffects.slice(effectsBefore)),
