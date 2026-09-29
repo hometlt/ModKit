@@ -194,6 +194,10 @@
       "types": "./dist/compression/lzo.d.ts",
       "default": "./dist/compression/lzo.js"
     },
+    "./storage/leveldb": {
+      "types": "./dist/storage/leveldb.d.ts",
+      "default": "./dist/storage/leveldb.js"
+    },
     "./compression/refpack": {
       "types": "./dist/compression/refpack.d.ts",
       "default": "./dist/compression/refpack.js"

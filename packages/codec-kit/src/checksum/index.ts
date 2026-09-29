@@ -18,6 +18,25 @@ export function crc32Range(bytes: Uint8Array, start: number, end: number): numbe
   return crc32(bytes.subarray(start, end))
 }
 
+/** CRC-32C (Castagnoli, reflected 0x82F63B78): LevelDB blocks and log records, iSCSI, ext4. */
+const CASTAGNOLI = (() => {
+  const table = new Uint32Array(256)
+  for (let n = 0; n < 256; n += 1) {
+    let c = n
+    for (let k = 0; k < 8; k += 1) c = c & 1 ? (c >>> 1) ^ 0x82f63b78 : c >>> 1
+    table[n] = c >>> 0
+  }
+  return table
+})()
+
+/** CRC-32C of `bytes[start, end)`; `crc32c('123456789')` is 0xE3069283. */
+export function crc32c(bytes: Uint8Array, start = 0, end = bytes.byteLength): number {
+  let crc = 0xffffffff
+  for (let index = start; index < end; index += 1)
+    crc = (crc >>> 8) ^ (CASTAGNOLI[(crc ^ (bytes[index] ?? 0)) & 0xff] as number)
+  return (crc ^ 0xffffffff) >>> 0
+}
+
 /** CD-ROM EDC (ECMA-130 annex): polynomial 0x8001801B fed LSB first, register 0, no final XOR. */
 const EDC = (() => {
   const table = new Uint32Array(256)
