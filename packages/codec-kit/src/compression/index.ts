@@ -18,11 +18,15 @@ export { adler32, createAdler32, type Adler32Accumulator } from './adler32.js'
 export {
   bcj2Decode,
   bcjX86Decode,
+  bcjX86DecodeStream,
   lzma2Decode,
+  lzma2DecodeStream,
   lzma2DictionarySize,
   lzmaDecode,
+  lzmaDecodeStream,
   lzmaPropertiesFromByte,
   parseLzmaProperties,
   type LzmaDecodeOptions,
   type LzmaProperties,
+  type LzmaStreamOptions,
 } from './lzma.js'
