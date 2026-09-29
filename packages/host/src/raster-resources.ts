@@ -121,6 +121,8 @@ export function createSubjectRasterResources(
       options.state.reservedBytes += maxBytes
       const releases: (() => void | Promise<void>)[] = []
       let provenance: ResourceProvenanceRecord | undefined
+      /** A named area of an atlas image (`textures/tex.gaf#region=Metal01`): its pixels only. */
+      let atlasRegion: string | undefined
       try {
         let source: ArtifactByteSource
         let hint: { path?: string; mediaType?: string } = {}
@@ -142,10 +144,16 @@ export function createSubjectRasterResources(
            * sweep of the model's own directory never sees.
            */
           const rule = options.companionRule?.(request.requirement.role)
-          const requirement =
-            rule === undefined
+          const named = /#region=([^#]+)$/u.exec(request.requirement.logicalId)
+          if (named !== null) atlasRegion = decodeURIComponent(named[1]!)
+          const asked =
+            named === null
               ? request.requirement
-              : { ...request.requirement, scopes: rule.scopes }
+              : {
+                  ...request.requirement,
+                  logicalId: request.requirement.logicalId.slice(0, named.index),
+                }
+          const requirement = rule === undefined ? asked : { ...asked, scopes: rule.scopes }
           const spellings = rasterSpellings(requirement.logicalId, rule)
           let resolution = await resources.resolve(requirement, signal)
           for (const spelling of spellings.slice(1)) {
@@ -233,6 +241,47 @@ export function createSubjectRasterResources(
             'The selected image codec does not decode pixel regions.',
             provenance,
           )
+        if (atlasRegion !== undefined) {
+          // the codec names its atlas areas in mip 0 pixels; one area is one image of its own
+          const area = info.atlasRegions?.find(item => item.name === atlasRegion)
+          if (area === undefined)
+            return refusal(
+              'x3.host/raster-atlas-region-missing',
+              `The image has no atlas region named ${atlasRegion}.`,
+              provenance,
+            )
+          const region = await raster.value.readRegion(
+            {
+              x: area.x,
+              y: area.y,
+              width: area.width,
+              height: area.height,
+              pixelFormat: 'rgba8',
+              maxBytes,
+            },
+            signal,
+          )
+          if (
+            region.width !== area.width ||
+            region.height !== area.height ||
+            region.pixelFormat !== 'rgba8' ||
+            !(region.pixels instanceof Uint8Array) ||
+            region.pixels.length > maxBytes
+          )
+            return refusal(
+              'x3.host/raster-region-invalid',
+              'The image codec returned an invalid bounded RGBA region.',
+              provenance,
+            )
+          const { atlasRegions: _atlas, ...rest } = info
+          return {
+            info: Object.freeze({ ...rest, width: area.width, height: area.height, mipLevels: 1 }),
+            diagnostics: Object.freeze([...opened.diagnostics]),
+            ...(provenance === undefined ? {} : { provenance }),
+            state: 'decoded',
+            region: Object.freeze({ ...region, pixels: region.pixels.slice() }),
+          }
+        }
         let plan: ReturnType<typeof rasterSelectionPlan>
         try {
           plan = rasterSelectionPlan(info, selection, maxBytes)
