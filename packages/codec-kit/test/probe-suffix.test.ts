@@ -52,7 +52,10 @@ describe('byte probe with a footer window', () => {
       { byteOffset: '9992', byteLength: '8' },
     ])
     // the tail gets only what the prefix left of maxBytes (the host counts every probe byte)
-    const tight = await codec.probe({ source: source(10_000), plan: { ...plan, maxBytes: 20 } } as never)
+    const tight = await codec.probe({
+      source: source(10_000),
+      plan: { ...plan, maxBytes: 20 },
+    } as never)
     expect(tight.requiredRanges).toEqual([
       { byteOffset: '0', byteLength: '16' },
       { byteOffset: '9996', byteLength: '4' },
@@ -60,5 +63,45 @@ describe('byte probe with a footer window', () => {
     // a source shorter than the window is probed with what it has
     const small = await codec.probe({ source: source(6), plan } as never)
     expect([small.confidence, seen?.byteLength]).toEqual([0.95, 6])
-  })
+
+    // open hands detect the same footer window, so the descriptor keeps the detection that chose
+    // the codec (the pak footer was absent from the prefix-only re-detection)
+    seen = undefined
+    const opened = source(10_000)
+    const session = await codec.open(
+      {
+        originKind: 'single',
+        primaryBindingId: 'content',
+        revisions: { topology: 'single', revision: opened.revision },
+        bindings: [
+          {
+            bindingId: 'content',
+            role: 'content',
+            source: opened.ref,
+            sourceKind: 'candidate',
+            ownership: 'owned',
+            revision: opened.revision,
+          },
+        ],
+        async openBinding() {
+          return { value: opened, release: async () => undefined }
+        },
+      } as never,
+      'full',
+      {
+        maxInputBytes: 1024n,
+        maxScalarBytes: 1024,
+        maxDepth: 8,
+        maxNodes: 100,
+        maxDiagnostics: 10,
+      },
+    )
+    try {
+      expect(seen?.byteLength).toBe(8)
+      expect((await session.descriptor()).identity.confidence).toBe(0.95)
+    } finally {
+      await session.dispose()
+    }
+    // the first open in a file loads the host session code
+  }, 60_000)
 })

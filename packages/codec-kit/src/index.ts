@@ -1358,6 +1358,9 @@ export function createInspectionCodec(
   }
   const namespaceDefinition = definition.namespace
   const rangeDefinition = definition.access === 'ranges' ? definition : undefined
+  // The probe plan's `from: 'end'` window, as the host's probe of this codec clamped it: open
+  // hands `detect` the same footer, so the descriptor's identity is the detection that chose it.
+  let endWindow: number | undefined
   const customOperations = Object.freeze([...(definition.operations ?? [])])
   // `export.raw` hands out the whole source: a namespace has none, a range codec never holds it.
   const sharedOperations =
@@ -1453,6 +1456,11 @@ export function createInspectionCodec(
               0,
               Math.min(tail.length, request.plan.maxBytes - bytes.byteLength, Number(size)),
             )
+      if (tail !== undefined)
+        endWindow = Math.max(
+          0,
+          Math.min(tail.length, request.plan.maxBytes - probeLength(request.plan)),
+        )
       const suffix =
         tail === undefined || size === undefined
           ? undefined
@@ -1658,17 +1666,28 @@ export function createInspectionCodec(
             Math.min(rangeDefinition?.detectBytes ?? RANGE_DETECT_PREFIX_BYTES, Number(readable)),
             signal,
           ))
+        const suffixLength =
+          endWindow === undefined ? 0 : Math.min(endWindow, Number(sourceSize), Number(readable))
+        const suffix =
+          endWindow === undefined
+            ? undefined
+            : bytes !== undefined
+              ? bytes.subarray(bytes.byteLength - suffixLength)
+              : suffixLength === 0
+                ? new Uint8Array()
+                : await byteSource.read(sourceSize - BigInt(suffixLength), suffixLength, signal)
         const detected = await (
           definition.detect as (
             prefix: Uint8Array,
             uri: string,
+            suffix?: Uint8Array,
           ) => Promise<{
             readonly confidence: number
             readonly kind?:
               'magic' | 'structure' | 'companion' | 'context' | 'extension' | 'user-override'
             readonly note?: string
           }>
-        )(prefix, primary.source.uri)
+        )(prefix, primary.source.uri, suffix)
         const inspectionContext: InspectionContext = {
           ...(contributionContext === undefined
             ? {}
