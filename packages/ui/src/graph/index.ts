@@ -1268,8 +1268,8 @@ export function createRelationGraphViewer(options: RelationGraphViewerOptions = 
         let walk: RelationGraphWalk | undefined =
           first === undefined ? undefined : { root: first.id, depth: firstDepth, direction: 'both' }
         let rootLabel = first?.label ?? ''
-        // The whole graph first, as before; the walk is the reader's choice (MK2's «related» mode).
-        let whole = true
+        // As MK2 opened it: the subject's relations to the chosen depth; the whole graph on request.
+        let whole = walk === undefined
 
         // ------------------------------------------------ the walk's own controls
         const bar = document.createElement('div')

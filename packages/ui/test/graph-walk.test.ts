@@ -1,6 +1,6 @@
 /**
- * The relation graph viewer walking from a root (plan 5.19) in a real browser: the whole graph
- * first, then the neighbourhood of the subject's node by depth and direction, then a new root.
+ * The relation graph viewer walking from a root (plan 5.19) in a real browser: the neighbourhood
+ * of the subject's node first, by depth and direction, then a new root and the whole graph.
  */
 import { createServer, type Server } from 'node:http'
 import { existsSync } from 'node:fs'
@@ -120,18 +120,17 @@ afterAll(async () => {
   server?.closeAllConnections()
   await browser?.close()
   await new Promise(resolve => server?.close(resolve))
-}, 30_000)
+  // a loaded machine closes a browser slowly
+}, 60_000)
 
 const listed = () => page.locator('.modkit-graph__node-list option').allTextContents()
 const walk = '[data-mk-part="graph.walk"]'
 
 describe('the relation graph walk', () => {
-  it('opens on the whole graph, then walks from the subject by depth and direction', async () => {
-    expect(await listed()).toEqual(['Node A', 'Node B', 'Node C', 'Node D', 'Node E'])
-    expect(await page.isDisabled(`${walk} label:has-text("Depth") select`)).toBe(true)
-    await page.uncheck(`${walk} input[type="checkbox"]`)
+  it('opens on the walk from the subject, by depth and direction', async () => {
     // two edges from A either way: B, then C; the root first, the rest by degree
-    await expect.poll(listed).toEqual(['Node A', 'Node B', 'Node C'])
+    expect(await listed()).toEqual(['Node A', 'Node B', 'Node C'])
+    expect(await page.isChecked(`${walk} input[type="checkbox"]`)).toBe(false)
     expect(await page.textContent(`${walk} output`)).toBe('Root: Node A')
     await page.selectOption(`${walk} label:has-text("Depth") select`, '1')
     await expect.poll(listed).toEqual(['Node A', 'Node B'])
@@ -142,7 +141,7 @@ describe('the relation graph walk', () => {
     await expect.poll(listed).toEqual(['Node A', 'Node B'])
   })
 
-  it('makes the selected node the root and walks again from it', async () => {
+  it('makes the selected node the root, then shows the whole graph on request', async () => {
     const makeRoot = 'button:has-text("Make root")'
     // the root itself is not offered
     await page.selectOption('.modkit-graph__node-list', { index: 0 })

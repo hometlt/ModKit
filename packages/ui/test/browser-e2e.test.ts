@@ -1588,6 +1588,8 @@ describe('13C real-browser viewer host', () => {
       })
     })
 
+    // the view opens on the walk from the subject; the cap is the whole graph's
+    await page.check('[data-mk-part="graph.walk"] input[type="checkbox"]')
     await page.waitForFunction(() =>
       document.querySelector('.modkit-graph__status')?.textContent?.includes('view capped'),
     )
