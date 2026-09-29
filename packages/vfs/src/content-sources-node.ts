@@ -1,4 +1,5 @@
 /** Explicit trusted desktop configuration; never load executable paths received from a webview. */
+import { execFile } from 'node:child_process'
 import { open, readdir, readFile, mkdir } from 'node:fs/promises'
 import { isAbsolute, join, relative, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -105,6 +106,41 @@ export async function loadContentSourceModule(
   return source
 }
 
+/**
+ * What Windows marks hidden under `root`: `/`-separated paths relative to it, of files and folders
+ * (everything under a hidden folder is hidden too — the caller's rule, as in {@link hiddenPathMatcher}).
+ * This is the one rule of what is hidden on disk; a name starting with a dot is not hidden. One
+ * `dir` call for the whole tree; empty on other systems, and when `dir` cannot tell.
+ */
+export async function windowsHiddenPaths(
+  root: string,
+  signal?: AbortSignal,
+): Promise<ReadonlySet<string>> {
+  if (process.platform !== 'win32') return new Set()
+  // `/u`: the listing comes as UTF-16, so names outside the console code page survive
+  const listing = await new Promise<string>(resolveListing => {
+    execFile(
+      'cmd.exe',
+      ['/d', '/u', '/c', 'dir', '/a:h', '/s', '/b', root],
+      {
+        encoding: 'buffer',
+        windowsHide: true,
+        maxBuffer: 64 * 1024 * 1024,
+        ...(signal === undefined ? {} : { signal }),
+      },
+      (_error, stdout) => resolveListing(Buffer.from(stdout ?? []).toString('utf16le')),
+    )
+  })
+  signal?.throwIfAborted()
+  const hidden = new Set<string>()
+  for (const line of listing.split(/\r?\n/u)) {
+    const path = relative(root, line.trim())
+    if (line.trim() !== '' && path !== '' && !path.startsWith('..') && !isAbsolute(path))
+      hidden.add(path.split(sep).join('/'))
+  }
+  return hidden
+}
+
 export interface FolderLayerOptions {
   /** Files one folder may hold; a larger one is refused rather than listed in part (100 000). */
   readonly maxFiles?: number
@@ -116,6 +152,7 @@ export interface FolderLayerOptions {
  * A folder on disk as one archive of an installation tree (`createLayeredArchiveContentSources`):
  * an unpacked mod, the user's maps and replays folder. Lists its files once, recursively, `/`
  * separated and sorted; reads only a listed file, refusing one over `maxBytes` before reading it.
+ * A file Windows marks hidden, or one under a hidden folder, is listed marked `hidden`.
  */
 export async function folderLayer(
   root: string,
@@ -138,9 +175,15 @@ export async function folderLayer(
   await visit(root)
   paths.sort()
   const listed = new Set(paths)
+  const hidden = await windowsHiddenPaths(root)
+  const isHidden = (path: string): boolean =>
+    hidden.size > 0 &&
+    path.split('/').some((_, index, segments) => hidden.has(segments.slice(0, index + 1).join('/')))
   return Object.freeze({
     id: root,
-    entries: Object.freeze(paths.map(path => Object.freeze({ path }))),
+    entries: Object.freeze(
+      paths.map(path => Object.freeze(isHidden(path) ? { path, hidden: true as const } : { path })),
+    ),
     async read(file: string, maxBytes: number, signal?: AbortSignal): Promise<Uint8Array> {
       signal?.throwIfAborted()
       if (!listed.has(file)) throw new RangeError(`${root} has no «${file}»`)

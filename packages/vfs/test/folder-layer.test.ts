@@ -1,9 +1,11 @@
+import { execFile } from 'node:child_process'
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { promisify } from 'node:util'
 import { afterAll, describe, expect, it } from 'vitest'
 import { createLayeredArchiveContentSources } from '../src/content-sources.js'
-import { folderLayer } from '../src/content-sources-node.js'
+import { folderLayer, windowsHiddenPaths } from '../src/content-sources-node.js'
 
 const root = await mkdtemp(join(tmpdir(), 'modkit-folder-layer-'))
 afterAll(() => rm(root, { recursive: true, force: true }))
@@ -47,4 +49,32 @@ describe('a folder as a layer of an installation tree', () => {
     expect(await read('data/ini/object.ini')).toBe('game data/ini/object.ini')
     await sources.dispose()
   })
+})
+
+describe('what Windows marks hidden on disk', () => {
+  it.runIf(process.platform === 'win32')(
+    'is listed marked hidden, a hidden folder with all under it; a dot name is not hidden',
+    async () => {
+      const mods = join(root, 'User mods')
+      await mkdir(join(mods, 'AppData', 'deep'), { recursive: true })
+      await mkdir(join(mods, '.minecraft'), { recursive: true })
+      await writeFile(join(mods, 'AppData', 'deep', 'save.dat'), 's')
+      await writeFile(join(mods, '.minecraft', 'options.txt'), 'o')
+      await writeFile(join(mods, 'desktop.ini'), 'd')
+      await writeFile(join(mods, 'mod.txt'), 'm')
+      const attrib = promisify(execFile)
+      await attrib('attrib', ['+h', join(mods, 'AppData')])
+      await attrib('attrib', ['+h', join(mods, 'desktop.ini')])
+      expect([...(await windowsHiddenPaths(mods))].sort()).toEqual(['AppData', 'desktop.ini'])
+      const layer = await folderLayer(mods)
+      expect(layer.entries).toEqual([
+        { path: '.minecraft/options.txt' },
+        { path: 'AppData/deep/save.dat', hidden: true },
+        { path: 'desktop.ini', hidden: true },
+        { path: 'mod.txt' },
+      ])
+      // a hidden file is still read by its exact path
+      expect(new TextDecoder().decode(await layer.read('desktop.ini', 4))).toBe('d')
+    },
+  )
 })
