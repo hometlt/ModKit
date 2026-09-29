@@ -957,6 +957,23 @@ export interface MapWorldCanonicalTransform {
   }>
 }
 
+/**
+ * The bytes a qualification digests: each tuple as three little-endian binary64 values, in order.
+ * `nativeTupleDigest` and `canonicalTupleDigest` of a {@link MapWorldCanonicalTransform} proof are
+ * the SHA-256 of the native `(column, row, height)` and the canonical `(x, y, z)` encodings — one
+ * encoding for every adapter, so two worlds that agree to the bit digest the same.
+ */
+export function mapQualificationTupleBytes(
+  tuples: readonly (readonly [number, number, number])[],
+): Uint8Array {
+  const view = new DataView(new ArrayBuffer(tuples.length * 24))
+  tuples.forEach((tuple, index) => {
+    for (let axis = 0; axis < 3; axis += 1)
+      view.setFloat64(index * 24 + axis * 8, tuple[axis] ?? Number.NaN, true)
+  })
+  return new Uint8Array(view.buffer)
+}
+
 export interface MapNavigationSample {
   readonly x: number
   readonly y: number
