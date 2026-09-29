@@ -165,11 +165,13 @@ export function uvmImageTexels(
   const { info, region } = result
   if (!['top-left', 'bottom-left'].includes(info.orientation))
     throw new TypeError('image orientation is unknown')
+  // `unknown` (a DDS says nothing of what its alpha holds) reads as straight: the material's own
+  // alphaMode decides blending, and the model viewer draws such textures the same way
   if (
     options.channels !== 'data' &&
-    !['none', 'straight', 'premultiplied'].includes(info.alphaMode)
+    !['none', 'straight', 'premultiplied', 'unknown'].includes(info.alphaMode)
   )
-    throw new TypeError('image alpha mode is unknown')
+    throw new TypeError('image alpha mode is invalid')
   if (
     !(region.pixels instanceof Uint8Array) ||
     region.pixelFormat !== 'rgba8' ||

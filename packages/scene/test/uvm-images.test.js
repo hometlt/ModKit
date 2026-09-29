@@ -118,13 +118,19 @@ it('preserves material data channels independently of transparency while owning 
   assert.throws(() => uvmImageTexels(input, { channels: 'data' }), /region/)
 })
 
+it('reads colour whose alpha convention is unknown as straight alpha', () => {
+  const input = decoded()
+  input.info.alphaMode = 'unknown'
+  assert.deepEqual(uvmImageTexels(input), Uint8Array.of(64, 32, 16, 128, 7, 8, 9, 0))
+})
+
 it('rejects incomplete regions and unknown raster conventions', () => {
   for (const mutate of [
     x => {
       x.info.orientation = 'unknown'
     },
     x => {
-      x.info.alphaMode = 'unknown'
+      x.info.alphaMode = 'guessed'
     },
     x => {
       x.region.rowStride = 3
