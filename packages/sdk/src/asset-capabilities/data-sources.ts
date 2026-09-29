@@ -780,13 +780,30 @@ export interface ContainerPackEditInputV1 {
 export type ContainerPackInputV1 =
   ContainerPackReplaceInputV1 | ContainerPackCreateInputV1 | ContainerPackEditInputV1
 
+/** A page of a container listing. */
+export interface NamespacePageRequest extends PageRequest {
+  /**
+   * Entries marked `hidden` too. A host serving an application leaves them out of listings,
+   * child listings and searches unless asked; exact lookups and opens reach them either way.
+   */
+  readonly includeHidden?: boolean
+}
+
 export interface NamespaceEntrySource {
-  list(prefix: string, page: PageRequest, signal?: AbortSignal): Promise<Page<NamespaceEntry>>
+  list(
+    prefix: string,
+    page: NamespacePageRequest,
+    signal?: AbortSignal,
+  ): Promise<Page<NamespaceEntry>>
   /**
    * Optional immediate-child listing for very large hierarchical namespaces. Unlike the flat
    * listing, this returns only files and directories directly below the requested path.
    */
-  children?(path: string, page: PageRequest, signal?: AbortSignal): Promise<Page<NamespaceEntry>>
+  children?(
+    path: string,
+    page: NamespacePageRequest,
+    signal?: AbortSignal,
+  ): Promise<Page<NamespaceEntry>>
   /**
    * Optional bounded bytes stored before the namespace container itself. The carrier owns the
    * physical range; a semantic codec owns its interpretation.
@@ -795,7 +812,7 @@ export interface NamespaceEntrySource {
   /** Optional indexed lookup; absence means the namespace only supports prefix listing. */
   search?(
     query: NamespaceEntrySearchQuery,
-    page: PageRequest,
+    page: NamespacePageRequest,
     signal?: AbortSignal,
   ): Promise<Page<NamespaceEntry>>
   /**

@@ -21,7 +21,11 @@ import type {
   AssetSession,
   ChangeSet,
   CommitReceipt,
+  NamespaceEntry,
+  NamespaceEntrySource,
+  NamespacePageRequest,
   OperationSession,
+  Page,
   PresentationPlan,
   RasterResourcePort,
   RasterResourceRequest,
@@ -177,6 +181,45 @@ export interface SubjectUnresolvedSnapshot {
   readonly reason: string
   readonly candidates: readonly unknown[]
   readonly diagnostics: readonly SnapshotDiagnostic[]
+}
+
+const NAMESPACE_ENTRY_SOURCE = 'common.view/namespace-entry-source'
+
+/**
+ * What an application lists of a container: entries marked `hidden` only when it asks
+ * (`includeHidden`) — the one filter, so no viewer keeps its own. Exact lookups and opens still
+ * reach a hidden entry (a model names its texture in `versions.*`).
+ */
+function withoutHiddenEntries(namespace: NamespaceEntrySource): NamespaceEntrySource {
+  const visible = async (
+    answer: Promise<Page<NamespaceEntry>>,
+    page: NamespacePageRequest,
+  ): Promise<Page<NamespaceEntry>> => {
+    const listed = await answer
+    return page.includeHidden === true || !listed.items.some(item => item.hidden === true)
+      ? listed
+      : { ...listed, items: listed.items.filter(item => item.hidden !== true) }
+  }
+  const children = namespace.children?.bind(namespace)
+  const search = namespace.search?.bind(namespace)
+  const passed = (key: 'readPreamble' | 'lookup' | 'nestedContext' | 'openEntrySource') => {
+    const method = namespace[key] as ((...args: never[]) => unknown) | undefined
+    return method === undefined ? {} : { [key]: method.bind(namespace) }
+  }
+  return {
+    list: (prefix, page, signal) => visible(namespace.list(prefix, page, signal), page),
+    ...(children === undefined
+      ? {}
+      : { children: (path, page, signal) => visible(children(path, page, signal), page) }),
+    ...(search === undefined
+      ? {}
+      : { search: (query, page, signal) => visible(search(query, page, signal), page) }),
+    ...passed('readPreamble'),
+    ...passed('lookup'),
+    ...passed('nestedContext'),
+    ...passed('openEntrySource'),
+    openEntry: (entryId, signal) => namespace.openEntry(entryId, signal),
+  } as NamespaceEntrySource
 }
 
 export type SubjectOpenSnapshot = SubjectOpenedSnapshot | SubjectUnresolvedSnapshot
@@ -476,7 +519,15 @@ export function exposeSubjectRpc(options: ExposeSubjectRpcOptions): SubjectRpcEx
         revision: session.revision,
         state: () => session.state(),
         descriptor: () => session.descriptor(),
-        dataSource: (contract, major) => session.dataSource(contract, major),
+        dataSource: async (contract, major) => {
+          const lease = await session.dataSource(contract, major)
+          return String(contract) === NAMESPACE_ENTRY_SOURCE
+            ? ({
+                value: withoutHiddenEntries(lease.value as NamespaceEntrySource),
+                release: () => lease.release(),
+              } as typeof lease)
+            : lease
+        },
         events: signal => session.events(signal),
         dispose,
         operations: () => {

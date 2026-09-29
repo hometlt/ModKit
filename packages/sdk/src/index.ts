@@ -398,6 +398,7 @@ export {
   type NamespaceEntry,
   type NamespaceEntrySearchQuery,
   type NamespaceEntrySource,
+  type NamespacePageRequest,
   type AudioMediaInfo,
   type AudioMediaSource,
   type AudioPcmBlock,
