@@ -354,8 +354,9 @@ const mapPreviewLimits = Object.freeze({
   maxRoots: 64,
   maxDepth: 16,
   limits: Object.freeze({
-    maxDocuments: 16,
-    maxRequirements: 16,
+    // Warzone 2100 reads 22 map documents (level.json and each tileset's ground and decal files).
+    maxDocuments: 32,
+    maxRequirements: 32,
     maxDocumentBytes: 33_554_432,
     maxTotalBytes: 67_108_864,
     maxObjects: 100_000,

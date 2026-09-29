@@ -37,7 +37,8 @@ const COORDINATOR_LIMITS = Object.freeze({
   maxDepth: 16,
   catalogEnrichment: MAP_PREVIEW_CATALOG_ENRICHMENT_POLICY,
   limits: Object.freeze({
-    maxRequirements: 16,
+    // Warzone 2100 reads 22 map documents (level.json and each tileset's ground and decal files).
+    maxRequirements: 32,
     maxDocumentBytes: 33_554_432,
     maxTotalBytes: 67_108_864,
     maxObjects: 100_000,
