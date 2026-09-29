@@ -763,6 +763,7 @@ export function createNodeMapPreviewResourcePlanResolver(
               namespace: originalMount.namespace,
               containerRevision: descriptor.revision,
               extract: originalMount.extract,
+              ...(root.assetRoots === undefined ? {} : { assetRoots: root.assetRoots }),
             }),
           )
         }

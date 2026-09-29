@@ -247,6 +247,7 @@ export function createContentSourceMapPreviewResourcePlanResolver(
               namespace: subject.namespace,
               containerRevision: descriptor.revision,
               extract: subject.extract,
+              ...(root.assetRoots === undefined ? {} : { assetRoots: root.assetRoots }),
             }))
           }
         }

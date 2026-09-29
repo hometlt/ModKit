@@ -360,6 +360,13 @@ export interface MapPreviewSubjectNamespaceRoot {
   readonly rootId: string
   /** Empty explicitly means the namespace root (for example a standalone map archive). */
   readonly namespacePrefix: string
+  /**
+   * Where under the prefix the subject keeps its assets, in lookup order, as its codec declares
+   * them (`container.assetRoots`; '' is the prefix itself, '*.X' a wildcard). A game-logical id that
+   * starts with one of them is also looked up under each other: an SC2 map carries what it imports
+   * at its root where a mod keeps Base.SC2Assets, and both answer `base.sc2assets/Assets/...`.
+   */
+  readonly assetRoots?: readonly string[]
 }
 
 /**

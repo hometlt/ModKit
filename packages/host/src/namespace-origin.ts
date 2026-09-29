@@ -106,6 +106,8 @@ export interface CompositeWorkspaceNamespaceRoot extends WorkspaceNamespaceLogic
   readonly namespace: NamespaceEntrySource
   readonly containerRevision: RevisionId
   readonly extract: (entryId: string, signal?: AbortSignal) => Promise<Uint8Array>
+  /** The root's asset directories in lookup order (`MapPreviewSubjectNamespaceRoot.assetRoots`). */
+  readonly assetRoots?: readonly string[]
 }
 
 export interface CompositeWorkspaceNamespaceCompanionOriginOptions {
@@ -422,6 +424,15 @@ export function createCompositeWorkspaceNamespaceCompanionOrigin(
       namespace: root.namespace,
       containerRevision: root.containerRevision,
       extract: root.extract,
+      ...(root.assetRoots === undefined
+        ? {}
+        : {
+            assetRoots: Object.freeze(
+              root.assetRoots.map(pattern =>
+                pattern === '' ? '' : normalizeCompanionLogicalId(pattern).replace(/\/$/u, ''),
+              ),
+            ),
+          }),
     })
   })
   if (roots.length === 0) throw new TypeError('workspace namespace origin requires a logical root')
@@ -495,6 +506,32 @@ export function createCompositeWorkspaceNamespaceCompanionOrigin(
     return fold(logicalId).startsWith(fold(prefix)) ? logicalId.slice(prefix.length) : undefined
   }
 
+  /**
+   * The spellings of an unqualified request under a root's asset directories, the request itself
+   * first. `base.sc2assets/Assets/X.dds` against a map whose assets are Base.SC2Assets, *.SC2Assets
+   * or its root is also `Assets/X.dds`: the map carries its imports at the root. A wildcard only
+   * recognises the request's first segment; it names no directory to try.
+   */
+  const assetSpellings = (root: (typeof roots)[number], relative: string): readonly string[] => {
+    const slash = relative.indexOf('/')
+    if (root.assetRoots === undefined || slash <= 0) return [relative]
+    const first = fold(relative.slice(0, slash))
+    const rest = relative.slice(slash + 1)
+    const named = root.assetRoots.some(pattern =>
+      pattern.startsWith('*')
+        ? first.endsWith(fold(pattern.slice(1)))
+        : pattern !== '' && first === fold(pattern),
+    )
+    if (!named) return [relative]
+    const spellings = [relative]
+    for (const pattern of root.assetRoots) {
+      if (pattern.startsWith('*')) continue
+      const spelling = pattern === '' ? rest : `${pattern}/${rest}`
+      if (!spellings.some(known => fold(known) === fold(spelling))) spellings.push(spelling)
+    }
+    return spellings
+  }
+
   const remember = (root: (typeof roots)[number], entry: NamespaceEntry): string | undefined => {
     if (entry.kind !== 'file') return undefined
     const prefix = root.pathPrefix === '' ? '' : `${root.pathPrefix}/`
@@ -540,14 +577,17 @@ export function createCompositeWorkspaceNamespaceCompanionOrigin(
     for (const root of roots) {
       const relative = relativeRequest(root, logicalId)
       if (relative === undefined) continue
-      for await (const entry of pages(root, joinPrefix(root.pathPrefix, relative), signal)) {
-        const remembered = remember(root, entry)
-        if (remembered === undefined) continue
-        const exposed = qualified ? remembered : relativeEntryPath(root, entry)
-        if (exposed !== undefined && fold(exposed) === key) {
-          const bound = byLogicalId.get(fold(remembered))
-          if (bound !== undefined) byLogicalId.set(key, bound)
-          return bound
+      for (const spelling of qualified ? [relative] : assetSpellings(root, relative)) {
+        const wanted = qualified ? key : fold(spelling)
+        for await (const entry of pages(root, joinPrefix(root.pathPrefix, spelling), signal)) {
+          const remembered = remember(root, entry)
+          if (remembered === undefined) continue
+          const exposed = qualified ? remembered : relativeEntryPath(root, entry)
+          if (exposed !== undefined && fold(exposed) === wanted) {
+            const bound = byLogicalId.get(fold(remembered))
+            if (bound !== undefined) byLogicalId.set(key, bound)
+            return bound
+          }
         }
       }
     }
@@ -569,22 +609,31 @@ export function createCompositeWorkspaceNamespaceCompanionOrigin(
       for (const root of roots) {
         const relative = relativeRequest(root, enumeration.prefix)
         if (relative === undefined) continue
-        for await (const entry of pages(root, joinPrefix(root.pathPrefix, relative), signal)) {
-          throwIfAborted(signal)
-          const remembered = remember(root, entry)
-          if (remembered === undefined) continue
-          const logicalId = qualified ? remembered : relativeEntryPath(root, entry)
-          if (logicalId === undefined || yielded.has(fold(logicalId))) continue
-          const bound = byLogicalId.get(fold(remembered))
-          if (bound !== undefined) byLogicalId.set(fold(logicalId), bound)
-          yielded.add(fold(logicalId))
-          // The root is named because the load order is the answer a reader wants: a texture that
-          // resolved out of the installed game is a different fact from one the map carries.
-          yield Object.freeze({
-            logicalId,
-            rootId: root.rootId,
-            ...(entry.size === undefined ? {} : { size: entry.size }),
-          })
+        for (const spelling of qualified ? [relative] : assetSpellings(root, relative)) {
+          for await (const entry of pages(root, joinPrefix(root.pathPrefix, spelling), signal)) {
+            throwIfAborted(signal)
+            const remembered = remember(root, entry)
+            if (remembered === undefined) continue
+            const exposed = qualified ? remembered : relativeEntryPath(root, entry)
+            // Found under another asset directory: named as it was asked for.
+            const logicalId =
+              exposed === undefined || qualified || spelling === relative
+                ? exposed
+                : fold(exposed).startsWith(fold(spelling))
+                  ? `${relative}${exposed.slice(spelling.length)}`
+                  : undefined
+            if (logicalId === undefined || yielded.has(fold(logicalId))) continue
+            const bound = byLogicalId.get(fold(remembered))
+            if (bound !== undefined) byLogicalId.set(fold(logicalId), bound)
+            yielded.add(fold(logicalId))
+            // The root is named because the load order is the answer a reader wants: a texture that
+            // resolved out of the installed game is a different fact from one the map carries.
+            yield Object.freeze({
+              logicalId,
+              rootId: root.rootId,
+              ...(entry.size === undefined ? {} : { size: entry.size }),
+            })
+          }
         }
       }
     },

@@ -1753,9 +1753,17 @@ function validSubjectNamespaceRoot(value: unknown): value is MapPreviewSubjectNa
   const record = recordOf(value)
   return (
     record !== undefined &&
-    Object.keys(record).every(key => key === 'rootId' || key === 'namespacePrefix') &&
+    Object.keys(record).every(
+      key => key === 'rootId' || key === 'namespacePrefix' || key === 'assetRoots',
+    ) &&
     nonEmptyString(record['rootId']) &&
-    typeof record['namespacePrefix'] === 'string'
+    typeof record['namespacePrefix'] === 'string' &&
+    (record['assetRoots'] === undefined ||
+      (Array.isArray(record['assetRoots']) &&
+        record['assetRoots'].length <= 16 &&
+        record['assetRoots'].every(
+          (root: unknown) => typeof root === 'string' && root.length <= 128,
+        )))
   )
 }
 
