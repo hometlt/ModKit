@@ -71,6 +71,7 @@ export {
   type CommandDiagnostic,
   type CommandInput,
   type CommandOutputSink,
+  type CommandOutputStreamSink,
   type CommandProtocolRunOptions,
   type CommandProgress,
   type CommandResult,

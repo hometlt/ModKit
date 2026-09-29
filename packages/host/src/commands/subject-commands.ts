@@ -15,7 +15,14 @@
  * described as such rather than special-cased.
  */
 
-import type { AssetSession, JsonValue, NamespaceEntrySource } from '@modkit/sdk'
+import type {
+  AssetSession,
+  ByteRangeSource,
+  JsonValue,
+  Lease,
+  NamespaceEntry,
+  NamespaceEntrySource,
+} from '@modkit/sdk'
 import { SUBJECT_COMMAND_TARGETS } from './subject-command-targets.js'
 import {
   commandDiagnostic,
@@ -311,11 +318,11 @@ const validateCommand: CommandDescriptor = {
 // extract
 
 /** Translate an entry path to the container's own opaque id, paging the namespace once. */
-async function entryIdFor(
+async function entryFor(
   session: AssetSession,
   wanted: string,
   signal?: AbortSignal,
-): Promise<string | undefined> {
+): Promise<NamespaceEntry | undefined> {
   const lease = await session.dataSource(NAMESPACE_ENTRY_SOURCE, 1)
   try {
     const namespace = lease.value as NamespaceEntrySource
@@ -323,7 +330,7 @@ async function entryIdFor(
     // archive whose listing is incomplete (an MPQ without its file list).
     if (namespace.lookup !== undefined) {
       const entry = await namespace.lookup(wanted, signal)
-      if (entry !== undefined) return entry.id
+      if (entry !== undefined) return entry
     }
     // After a lookup miss only the listing under that very name can still answer (an id spelled
     // like its path); walking the whole listing cost ~26 s on Diablo III for nothing.
@@ -336,7 +343,7 @@ async function entryIdFor(
         signal,
       )
       const found = page.items.find(item => item.path === wanted || item.id === wanted)
-      if (found !== undefined) return found.id
+      if (found !== undefined) return found
       cursor = page.nextCursor
     } while (cursor !== undefined)
     return undefined
@@ -376,8 +383,8 @@ const extractCommand: CommandDescriptor = {
           )
         }
         context.progress?.({ step: 'locate', message: `locating ${entry}` })
-        const entryId = await entryIdFor(session, entry, context.signal)
-        if (entryId === undefined) {
+        const found = await entryFor(session, entry, context.signal)
+        if (found === undefined) {
           return failed(
             EXTRACT_COMMAND,
             'x3.command/entry-not-found',
@@ -385,13 +392,18 @@ const extractCommand: CommandDescriptor = {
             diagnostics,
           )
         }
+        const name = entry.slice(entry.lastIndexOf('/') + 1)
+        const streamed = await streamEntry(session, descriptor, found, name, context)
+        if (streamed !== undefined) {
+          return ok(EXTRACT_COMMAND, { ref: subject.ref, entry, ...streamed }, diagnostics)
+        }
         context.progress?.({ step: 'extract', message: `extracting ${entry}` })
         const answer = await invokeSubjectOperation(
           EXTRACT_COMMAND,
           context,
           session,
           operation.handlerId,
-          { entryId },
+          { entryId: found.id },
           diagnostics,
         )
         if (answer.state === 'failed') return answer.result
@@ -404,7 +416,6 @@ const extractCommand: CommandDescriptor = {
           )
         }
         const bytes = answer.output.value as Uint8Array
-        const name = entry.slice(entry.lastIndexOf('/') + 1)
         /*
          * Writing is a host facility, so the command reports the bytes it produced and writes only
          * when the host handed it somewhere to write. A headless run that cannot write still gets the
@@ -427,6 +438,72 @@ const extractCommand: CommandDescriptor = {
       },
     )
   },
+}
+
+const BYTE_RANGE_SOURCE = 'common.view/byte-range-source'
+const STREAM_CHUNK_BYTES = 4n * 1024n * 1024n
+
+/**
+ * A member the container can read by range — stored in place, or decoded block by block — goes to a
+ * streaming sink in bounded chunks, so its size is not limited by memory or the open budget. Any
+ * other member, or a host without such a sink, is extracted whole: `undefined`.
+ */
+async function streamEntry(
+  session: AssetSession,
+  descriptor: DescriptorLike,
+  entry: NamespaceEntry,
+  name: string,
+  context: CommandContext,
+): Promise<{ readonly byteLength: number; readonly wroteTo: string } | undefined> {
+  const sink = context.writeOutputStream
+  if (sink === undefined) return undefined
+  const stored =
+    entry.storedRange !== undefined &&
+    (descriptor.dataSources ?? []).some(
+      item => item.contract === BYTE_RANGE_SOURCE && item.major === 1,
+    )
+  if (!stored && entry.rangeAccess !== true) return undefined
+  const signal = context.signal
+  const leases: Lease<unknown>[] = []
+  try {
+    let source: ByteRangeSource
+    let start = 0n
+    let length: bigint
+    if (stored && entry.storedRange !== undefined) {
+      const lease = await session.dataSource(BYTE_RANGE_SOURCE, 1)
+      leases.push(lease)
+      source = lease.value as ByteRangeSource
+      start = entry.storedRange.offset
+      length = entry.storedRange.length
+    } else {
+      const lease = await session.dataSource(NAMESPACE_ENTRY_SOURCE, 1)
+      leases.push(lease)
+      const namespace = lease.value as NamespaceEntrySource
+      if (namespace.openEntrySource === undefined) return undefined
+      const entryLease = await namespace.openEntrySource(entry.id, signal)
+      leases.push(entryLease)
+      source = entryLease.value
+      length = await source.size()
+    }
+    context.progress?.({ step: 'extract', message: `streaming ${entry.path}` })
+    async function* chunks(): AsyncGenerator<Uint8Array> {
+      for (let at = 0n; at < length;) {
+        const want = Number(length - at < STREAM_CHUNK_BYTES ? length - at : STREAM_CHUNK_BYTES)
+        const bytes = await source.read(start + at, want, signal)
+        if (bytes.byteLength !== want) {
+          throw new RangeError(
+            `the container gave ${bytes.byteLength} of ${want} bytes at ${at} of ${entry.path}`,
+          )
+        }
+        yield bytes
+        at += BigInt(want)
+      }
+    }
+    const wroteTo = await sink(name, chunks(), signal)
+    return { byteLength: Number(length), wroteTo }
+  } finally {
+    for (const lease of leases.reverse()) await lease.release()
+  }
 }
 
 // ---------------------------------------------------------------------------------------------

@@ -96,10 +96,21 @@ export type CommandOutputSink = (
   signal?: AbortSignal,
 ) => Promise<string>
 
+/**
+ * Where produced bytes go piece by piece, for output too large to hold at once (a multi-gigabyte
+ * archive member). A host that has it gets such output streamed; one without it gets whole bytes.
+ */
+export type CommandOutputStreamSink = (
+  name: string,
+  chunks: AsyncIterable<Uint8Array>,
+  signal?: AbortSignal,
+) => Promise<string>
+
 export interface CommandContext {
   readonly openSubject: CommandSubjectOpener
   /** Where produced bytes go. Absent means this host cannot write; commands say so structurally. */
   readonly writeOutput?: CommandOutputSink
+  readonly writeOutputStream?: CommandOutputStreamSink
   /** Generic subject-independent extension operations, supplied by hosts that authorize them. */
   readonly serviceOperations?: {
     catalog(request: {

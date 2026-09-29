@@ -325,6 +325,15 @@ export async function runCommand(
                 await writeFile(resolve(out), bytes)
                 return resolve(out)
               },
+              // A member bigger than memory arrives in chunks and goes to disk as it comes.
+              writeOutputStream: async (
+                _name: string,
+                chunks: AsyncIterable<Uint8Array>,
+                signal?: AbortSignal,
+              ) => {
+                await writeFile(resolve(out), chunks, signal === undefined ? {} : { signal })
+                return resolve(out)
+              },
             }),
         // Progress goes to stderr so `--format json` on stdout stays a single parseable document.
         ...(arguments_.format === 'text'
