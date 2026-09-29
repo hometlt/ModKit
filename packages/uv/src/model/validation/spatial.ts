@@ -8,6 +8,7 @@ export function validateSocketMetadata(
 ): void {
   signal?.throwIfAborted()
   let count = 0
+  const ids = new Set<string>()
   const axes = ['+x', '-x', '+y', '-y', '+z', '-z'] as const
   for (const [nodeIndex, candidate] of array(document, 'nodes').entries()) {
     signal?.throwIfAborted()
@@ -16,6 +17,11 @@ export function validateSocketMetadata(
     if (candidateSocket === undefined) continue
     count += 1
     const socket = object(candidateSocket, `node ${nodeIndex} UV_game_socket`)
+    const id = socket['id']
+    if (id !== undefined && (typeof id !== 'string' || !/^[a-z][a-z0-9-]*$/u.test(id)
+      || ids.has(id)))
+      throw new TypeError(`node ${nodeIndex} socket ID is invalid or duplicated`)
+    if (typeof id === 'string') ids.add(id)
     if (!nonBlank(socket['role'])) throw new TypeError(`node ${nodeIndex} socket needs a role`)
     if (socket['index'] !== undefined && (!integer(socket['index']) || socket['index'] < 0)) {
       throw new RangeError(`node ${nodeIndex} socket index is invalid`)
@@ -36,6 +42,9 @@ export function validateSocketMetadata(
         : object(candidateIdentity, 'socket Modkit identity')
     if (identity !== undefined && (!nonBlank(identity['id']) || !nonBlank(identity['nodeId']))) {
       throw new TypeError(`node ${nodeIndex} socket Modkit identity is invalid`)
+    }
+    if (id !== undefined && identity !== undefined && identity['id'] !== id) {
+      throw new TypeError(`node ${nodeIndex} socket IDs disagree`)
     }
   }
   if (count > 0 && !used.includes('UV_game_socket')) {

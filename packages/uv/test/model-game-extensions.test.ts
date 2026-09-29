@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { materializeUvmCore } from '../src/model/materializer.js'
+import { validateSocketMetadata } from '../src/model/validation/spatial.js'
 
 const request = {
   scope: { scopeId: 'model-interchange-v1', version: '1.0.0' },
@@ -72,5 +73,35 @@ describe('game records on the UVM root', () => {
       { UV_game_spring: { when: new Date(0) } },
     ])
       expect(() => materializeUvmCore(projection(records), request)).toThrow(TypeError)
+  })
+})
+
+describe('stable socket IDs', () => {
+  it('writes the shared UVM ID and keeps the older publisher identity', () => {
+    const input = { ...projection(), sockets: [{ id: 'weapon-socket', nodeId: 'body', role: 'attach' }] }
+    const written = materializeUvmCore(input as never, request) as unknown as {
+      document: { nodes: { extensions?: { UV_game_socket?: {
+        id?: string; extras?: { modkit?: { id?: string } }
+      } } }[] }
+    }
+    const socket = written.document.nodes[0]?.extensions?.UV_game_socket
+    expect(socket?.id).toBe('weapon-socket')
+    expect(socket?.extras?.modkit?.id).toBe(socket?.id)
+    const legacy = materializeUvmCore({ ...projection(), sockets: [
+      { id: 'Weapon/Socket', nodeId: 'body', role: 'attach' },
+    ] } as never, request) as unknown as typeof written
+    expect(legacy.document.nodes[0]?.extensions?.UV_game_socket?.id).toBeUndefined()
+    expect(legacy.document.nodes[0]?.extensions?.UV_game_socket?.extras?.modkit?.id)
+      .toBe('Weapon/Socket')
+  })
+
+  it('refuses duplicate or conflicting IDs across UVM nodes', () => {
+    const socket = (id: string, legacyId = id) => ({ extensions: { UV_game_socket: {
+      id, role: 'attach', extras: { modkit: { id: legacyId, nodeId: 'node' } },
+    } } })
+    expect(() => validateSocketMetadata({ nodes: [socket('weapon-socket'),
+      socket('weapon-socket')] } as never, ['UV_game_socket'])).toThrow(/duplicated/)
+    expect(() => validateSocketMetadata({ nodes: [socket('weapon-socket', 'other')] } as never,
+      ['UV_game_socket'])).toThrow(/disagree/)
   })
 })

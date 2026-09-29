@@ -1064,6 +1064,7 @@ export function materializeUvmCore(
     .map(node => nodeIndexById.get(node.id)!)
 
   const socketByNodeId = new Map()
+  const socketIds = new Set<string>()
   const roleOrdinals = new Map<string, number>()
   for (const socket of projection.sockets ?? []) {
     if (
@@ -1081,18 +1082,19 @@ export function materializeUvmCore(
     if (socketByNodeId.has(socket.nodeId)) {
       fail(`node «${socket.nodeId}» carries more than one socket`)
     }
+    if (socketIds.has(socket.id)) fail(`socket «${socket.id}» is duplicated`)
+    socketIds.add(socket.id)
     const index = roleOrdinals.get(socket.role) ?? 0
     roleOrdinals.set(socket.role, index + 1)
     socketByNodeId.set(socket.nodeId, {
+      ...(/^[a-z][a-z0-9-]*$/u.test(socket.id) ? { id: socket.id } : {}),
       role: socket.role,
       index,
       ...(typeof socket.sourceName === 'string' ? { sourceName: socket.sourceName } : {}),
       ...(socket.orientation === undefined
         ? {}
         : { forward: socket.orientation.forward, up: socket.orientation.up }),
-      // UV_game_socket's open `extras` is the standards-defined place for publisher identity.
-      // The node supplies transform semantics; these two strings make the independent facet's
-      // stable id and target join round-trip without a source-format branch in the reader.
+      // Preserve the previous publisher metadata while the shared socket ID is authoritative.
       extras: { modkit: { id: socket.id, nodeId: socket.nodeId } },
     })
   }
