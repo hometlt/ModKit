@@ -556,10 +556,23 @@ export function materializeUvmCore(
           fail(`primitive ${primitive.id} tangent handedness must be -1 or 1`)
         }
         if (semantic === 'NORMAL' || semantic === 'TANGENT') {
+          // A zero-length direction is no direction: the primitive goes without the attribute (a
+          // viewer computes flat normals), said in the receipt, rather than refusing the model.
+          for (let offset = 0; offset < data.length; offset += width) {
+            if (Math.hypot(data[offset]!, data[offset + 1]!, data[offset + 2]!) !== 0) continue
+            const message = `${semantic} omitted: a vertex has a zero-length direction`
+            losses.push(`primitive ${primitive.id}: ${message}`)
+            note(
+              'uv.model/geometry@1',
+              'absent-in-artifact',
+              `/primitives/${primitive.id}/${semantic}`,
+              message,
+            )
+            return
+          }
           let normalized = 0
           for (let offset = 0; offset < data.length; offset += width) {
             const length = Math.hypot(data[offset]!, data[offset + 1]!, data[offset + 2]!)
-            if (length === 0) fail(`primitive ${primitive.id} ${semantic} has no direction`)
             if (Math.abs(length - 1) <= 0.0001) continue
             for (let axis = 0; axis < 3; axis++) data[offset + axis] = data[offset + axis]! / length
             normalized++
@@ -584,7 +597,17 @@ export function materializeUvmCore(
         })
       }
       if (primitive.normals != null) attribute('NORMAL', primitive.normals, 3)
-      if (primitive.tangents != null) attribute('TANGENT', primitive.tangents, 4)
+      if (primitive.tangents != null && attributes['NORMAL'] === undefined) {
+        // glTF allows tangents only beside normals
+        const message = 'TANGENT omitted: the primitive has no normals'
+        losses.push(`primitive ${primitive.id}: ${message}`)
+        note(
+          'uv.model/geometry@1',
+          'absent-in-artifact',
+          `/primitives/${primitive.id}/TANGENT`,
+          message,
+        )
+      } else if (primitive.tangents != null) attribute('TANGENT', primitive.tangents, 4)
       if (primitive.colors != null) attribute('COLOR_0', primitive.colors, 4)
       const uvSets = new Map<number, Float32Array>()
       for (const channel of primitive.textureCoordinateSets ?? []) {

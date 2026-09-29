@@ -103,4 +103,37 @@ describe('material layers in the glTF slots', () => {
       ]!['blend'],
     ).toBe('lerp')
   })
+
+  it('writes a primitive with a zero-length normal without normals or tangents, and says so', () => {
+    const source = projection as unknown as { primitives: Record<string, unknown>[] }
+    const flat = {
+      ...source,
+      primitives: [
+        {
+          ...source.primitives[0],
+          normals: Float32Array.from([0, 0, 1, 0, 0, 0, 0, 0, 1]),
+          tangents: Float32Array.from([1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1]),
+        },
+      ],
+    } as never
+    const materialized = materializeUvmCore(flat, request) as unknown as {
+      readonly document: {
+        readonly meshes: readonly {
+          primitives: readonly { attributes: Record<string, number> }[]
+        }[]
+      }
+      readonly receipt: { readonly diff: readonly { path?: string; change: string }[] }
+    }
+    const attributes = materialized.document.meshes[0]!.primitives[0]!.attributes
+    expect(attributes['POSITION']).toBeDefined()
+    expect(attributes['NORMAL']).toBeUndefined()
+    expect(attributes['TANGENT']).toBeUndefined()
+    expect(
+      materialized.receipt.diff
+        .filter(entry => entry.change === 'absent-in-artifact')
+        .map(entry => entry.path),
+    ).toEqual(
+      expect.arrayContaining(['/primitives/triangle/NORMAL', '/primitives/triangle/TANGENT']),
+    )
+  })
 })
