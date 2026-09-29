@@ -150,8 +150,7 @@ const framesThroughCache = (effect, times) => {
 }
 
 test('a later clock continues the cached simulation and draws what a new simulation draws there', () => {
-  // 0.77 s lies on a step the others do not continue to (its seek steps an ulp shorter): it takes
-  // a simulation of its own, and 0.8 s continues the one at 0.75 s.
+  // A clock shows its last whole 1/60 s step (0.77 s its 46th), so every later clock can continue.
   const times = [0.5, 0.6, 0.75, 0.77, 0.8, 1.25, 0.6, 0.7, 2]
   const frames = framesThroughCache(lively, times)
   for (const [index, { frame, fresh }] of frames.entries()) {
@@ -159,35 +158,40 @@ test('a later clock continues the cached simulation and draws what a new simulat
     assert.deepEqual(frame, fresh, `frame at ${times[index]} s`)
   }
   const simulations = frames.map(({ simulation }) => simulation)
-  // 0.5 -> 0.6 -> 0.75 continue; 0.77 is new; 0.8 and 1.25 continue 0.75; going back to 0.6 is new
-  // and 0.7 continues it; 2 continues the nearest earlier clock, 1.25.
+  // 0.5 on to 1.25 continue one simulation; going back to 0.6 is new and 0.7 continues it; 2
+  // continues the nearest earlier clock, 1.25.
   assert.deepEqual(
     simulations.map(simulation => simulations.indexOf(simulation)),
-    [0, 0, 0, 3, 0, 0, 6, 6, 0],
+    [0, 0, 0, 0, 0, 0, 6, 6, 0],
   )
-  // A seek to 1.85 s steps like the others, but its last step ends at 1.85, where the seek to 2 s
-  // passes an ulp later: 1.8 continues to 1.85, and 2 cannot continue 1.85.
   const joined = framesThroughCache(lively, [1.8, 1.85, 2])
   for (const { frame, fresh } of joined) assert.deepEqual(frame, fresh)
   assert.equal(joined[1].simulation, joined[0].simulation)
-  assert.notEqual(joined[2].simulation, joined[1].simulation)
+  assert.equal(joined[2].simulation, joined[1].simulation)
 })
 
-test('after a seek spends its particle budget, a continued simulation spawns no more', () => {
-  // 300 particles a second spend the 256 spawns of a seek before 0.9 s.
-  const heavy = withParticles({ emissionRate: 300, lifeSpan: 2, maxParticles: 1024 })
-  const spent = framesThroughCache(heavy, [1, 1.25, 1.5])
-  for (const { frame, fresh } of spent) {
-    assert.ok(frame.primitives.length > 0)
+test('every step spends a spawn budget of its own, so an emitter keeps emitting at any clock', () => {
+  // 300 particles a second: one spawn budget (256) for a whole seek ran out before 0.9 s and left
+  // the emitter silent; steps of their own budget keep them coming, continued as new.
+  const clocks = [1, 1.25, 1.5]
+  const heavy = framesThroughCache(
+    withParticles({ emissionRate: 300, lifeSpan: 2, maxParticles: 1024 }),
+    clocks,
+  )
+  for (const [index, { frame, fresh }] of heavy.entries()) {
     assert.deepEqual(frame, fresh)
-    assert.ok(frame.diagnostics.some(item => item.code === 'common.uvm/effect-capacity-clamped'))
+    assert.ok(!frame.diagnostics.some(item => item.code === 'common.uvm/effect-capacity-clamped'))
+    const sprites = frame.primitives.filter(primitive =>
+      primitive.id.startsWith('uvm-effect-particle-'),
+    ).length
+    assert.ok(sprites > 256, `${sprites} sprites at ${clocks[index]} s`)
   }
-  assert.equal(spent[1].simulation, spent[0].simulation)
-  assert.equal(spent[2].simulation, spent[0].simulation)
-  // Ribbon emitters keep spawning on their own budget while the particles stay silent.
+  assert.equal(heavy[1].simulation, heavy[0].simulation)
+  assert.equal(heavy[2].simulation, heavy[0].simulation)
+  // Ribbon emitters spawn beside them as before.
   const ribbons = framesThroughCache(
     withParticles({ emissionRate: 300, lifeSpan: 2, maxParticles: 1024 }, true),
-    [1, 1.25, 1.5],
+    clocks,
   )
   for (const { frame, fresh } of ribbons) {
     assert.ok(frame.primitives.some(primitive => primitive.id.startsWith('uvm-effect-ribbon')))
@@ -195,16 +199,6 @@ test('after a seek spends its particle budget, a continued simulation spawns no 
   }
   assert.equal(ribbons[1].simulation, ribbons[0].simulation)
   assert.equal(ribbons[2].simulation, ribbons[0].simulation)
-  // A continuation that would spend the budget stops and simulates the clock anew; later clocks
-  // continue that simulation. 100 particles a second spend 256 spawns at 2.56 s.
-  const steady = framesThroughCache(
-    withParticles({ emissionRate: 100, lifeSpan: 3, maxParticles: 1024 }),
-    [2, 2.25, 2.75, 3],
-  )
-  for (const { frame, fresh } of steady) assert.deepEqual(frame, fresh)
-  assert.equal(steady[1].simulation, steady[0].simulation)
-  assert.notEqual(steady[2].simulation, steady[0].simulation)
-  assert.equal(steady[3].simulation, steady[2].simulation)
 })
 
 test('every sprite of an emitter draws with one material, the same object in every frame', () => {

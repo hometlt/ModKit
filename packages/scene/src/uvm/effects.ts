@@ -293,8 +293,8 @@ type UvmEffectSimulation = Readonly<{
 
 /**
  * An effect simulation that later clocks of its owner take on instead of simulating from time zero
- * again. `continueTo` steps it to a later clock only when that ends in the state a new simulation's
- * seek builds there, and otherwise answers false; `time` is NaN once it stopped between clocks.
+ * again. `continueTo` steps it on to a later step of the 1/60 s grid, where it stands as a new
+ * simulation would, and otherwise answers false; `time` is NaN once it stopped between clocks.
  */
 interface UvmEffectLane {
   time: number
@@ -370,8 +370,8 @@ export function createUvmEffectFrame(
   }
   if (view.length !== 16 || !view.every(Number.isFinite))
     throw new TypeError('effect viewMatrix must be finite')
-  // A cached owner's frames stop on the effect step grid (see gridEffectTime).
-  const frame = cache === undefined ? options : { ...options, time: gridEffectTime(options.time) }
+  // Frames stop on the effect step grid (see gridEffectTime).
+  const frame = { ...options, time: gridEffectTime(options.time) }
   const simulated =
     cache === undefined
       ? simulateUvmEffectFrame(preparation, frame).simulated
@@ -390,8 +390,8 @@ export function createUvmEffectFrame(
  * lane continued to it, else a new lane in place of the least recently used one (lanes no later
  * clock can continue go first). A lane the caller's frame (`pass`) already took to one clock is not
  * stepped on to another: the phases of one frame, taken in any order, each step their own lane.
- * Every lane builds what a new simulation's seek builds, so which lane a clock takes changes only
- * the work.
+ * Every lane stands where a new simulation stands at its step, so which lane a clock takes changes
+ * only the work.
  */
 function cachedUvmEffectSimulation(
   cache: UvmEffectFrameCache,
@@ -435,36 +435,27 @@ function cachedUvmEffectSimulation(
   return entry.lane.simulated
 }
 
-/** Seek steps per second (the simulator's default fixed step). */
+/** Simulation steps per second (the simulator's default fixed step). */
 const EFFECT_STEPS_PER_SECOND = 60
 const EFFECT_STEP_SECONDS = 1 / EFFECT_STEPS_PER_SECOND
-/** Steps an effect seek takes at most; a longer seek integrates with a coarser step. */
+/**
+ * Steps an effect simulates at most: a clock further from time zero starts this many steps before
+ * it, from an empty effect.
+ */
 const EFFECT_MAX_SEEK_STEPS = 3600
 
-/**
- * The steps ModelEffectSimulation.seek divides a time into: `count` equal steps of `step` seconds,
- * the last ending at the time itself, or a coarser division (`clamped`) past the step limit.
- */
-function effectSeekSteps(time: number) {
-  const count = time > 0 ? Math.max(1, Math.ceil(time / EFFECT_STEP_SECONDS)) : 0
-  return { count, step: count === 0 ? 0 : time / count, clamped: count > EFFECT_MAX_SEEK_STEPS }
+/** Whole 1/60 s steps at or below a time: the steps a simulation takes to it. */
+function effectSteps(time: number): number {
+  return Math.max(0, Math.floor(time * EFFECT_STEPS_PER_SECOND + 1e-7))
 }
 
 /**
- * The time a cached owner shows an effect at: the last whole 1/60 s step at or below the clock, at
- * most 1/60 s behind it. A seek divides its time into equal steps, so with a free time every frame
- * stepped through new times and sampled the rig again at each (most of an animated frame's effect
- * work); on this grid the steps fall on the same times every frame, and the owner's pose cache
- * answers them. A frame at a grid time is the frame an uncached owner draws at that time. For some
- * grid times the seek's ceil(time / step) rounds up past the step count and would divide the time
- * into one more, shorter, step; those are taken an ulp or two lower, which keeps the count (and
- * changes nothing a float32 vertex can show).
+ * The time an effect shows at: the last whole 1/60 s step at or below the clock, at most 1/60 s
+ * behind it. A simulation steps the grid, so its steps fall on the same times every frame and the
+ * owner's pose cache answers them.
  */
 function gridEffectTime(time: number): number {
-  const steps = Math.floor(time * EFFECT_STEPS_PER_SECOND + 1e-7)
-  if (steps <= 0) return 0
-  const grid = steps / EFFECT_STEPS_PER_SECOND
-  return Math.ceil(grid / EFFECT_STEP_SECONDS) > steps ? grid * (1 - Number.EPSILON) : grid
+  return effectSteps(time) / EFFECT_STEPS_PER_SECOND
 }
 
 /** Emitters, fields, projectors and collision shapes of an effect: the same for every frame. */
@@ -933,12 +924,9 @@ function simulateUvmEffectFrame(
     }
   }
   validateSplineFrames()
-  const spawnBudget = Math.min(capacity, 256)
-  // The lane's own list of particle emitters: once spent it holds silent ones (see continueTo).
-  const laneParticles = [...particles]
   const simulation = new ModelEffectSimulation(
     {
-      particles: laneParticles,
+      particles,
       ribbons,
       forces: fields.forces,
       warps: fields.warps,
@@ -956,7 +944,9 @@ function simulateUvmEffectFrame(
       ...(options.collisionProvider === undefined
         ? {}
         : { collisionProvider: options.collisionProvider }),
-      maxSpawnPerStep: spawnBudget,
+      // Every step spends a spawn budget of its own, as a player's frames do (MK2 updated its
+      // effects once a frame): an emitter keeps emitting at any clock, not only in a first stretch.
+      maxSpawnPerStep: Math.min(capacity, 256),
       fixedStepSeconds: EFFECT_STEP_SECONDS,
       maxSeekSteps: EFFECT_MAX_SEEK_STEPS,
     },
@@ -968,24 +958,38 @@ function simulateUvmEffectFrame(
     validateSplineFrames()
     fields.sample(time, sequenceId)
   }
-  const stats = simulation.seek(
-    options.time,
-    (time, frame) => {
-      sampleAt(time)
-      frame.anchorProvider = simulationProvider
-    },
+  // A step of the grid, as `update` takes it.
+  const stepFrame = {
     sequenceId,
-  )
-  const clamped = stats.seekClamped
-  // Counted from time zero, as the seek counts them, over the steps a lane adds as well.
-  let spawned = stats.spawnedParticles,
-    dropped = stats.droppedParticles + stats.droppedRibbons + stats.droppedProjectorSplats
+    sequenceTimeSeconds: 0,
+    animationTime: 0,
+    allowSpawn: true,
+    anchorProvider: simulationProvider,
+  }
+  let dropped = 0
+  // Whole 1/60 s steps from time zero, each an `update` with its own spawn budget.
+  const target = effectSteps(options.time)
+  const clamped = target > EFFECT_MAX_SEEK_STEPS
+  let steps = clamped ? target - EFFECT_MAX_SEEK_STEPS : 0
+  const stepTo = (last: number) => {
+    for (let step = steps + 1; step <= last; step += 1) {
+      const time = step / EFFECT_STEPS_PER_SECOND
+      sampleAt(time)
+      stepFrame.sequenceTimeSeconds = time
+      stepFrame.animationTime = time
+      const stats = simulation.update(EFFECT_STEP_SECONDS, stepFrame)
+      dropped += stats.droppedParticles + stats.droppedRibbons + stats.droppedProjectorSplats
+      steps = step
+    }
+  }
+  simulation.reset(sequenceId)
+  stepTo(target)
   const at = (time: number): UvmEffectSimulation => {
     const warnings: { message: string; code: string }[] = []
     const warn = (message: string, code: string) => warnings.push({ message, code })
     if (clamped)
       warn(
-        `Effect seek exceeded ${EFFECT_MAX_SEEK_STEPS} fixed steps; integration uses a coarser bounded step.`,
+        `Effect clock is past ${EFFECT_MAX_SEEK_STEPS} fixed steps; the effect is simulated from ${EFFECT_MAX_SEEK_STEPS} steps before it.`,
         'common.uvm/effect-seek-clamped',
       )
     if (dropped > 0)
@@ -999,92 +1003,24 @@ function simulateUvmEffectFrame(
       toLocal = invertMaterialFrame(toWorld)
     return { simulation, provide, toWorld, toLocal, warnings }
   }
-  // A seek spends one particle spawn budget over all its steps (ribbons have one per step). A lane
-  // steps through `update`, whose budget is per step, so it takes a step only where the seek's
-  // remaining budget could not bind: before the budget is spent, a step must leave some of it;
-  // once it is spent, the seek spawns no more particles, which the lane's silent particle emitters
-  // reproduce while its ribbons spawn as before.
-  let silenced = false
-  let steps = effectSeekSteps(options.time)
-  // A seek's step at a time, as `update` takes it.
-  const stepFrame = {
-    sequenceId,
-    sequenceTimeSeconds: 0,
-    animationTime: 0,
-    allowSpawn: true,
-    anchorProvider: simulationProvider,
-  }
   const lane: UvmEffectLane = {
     time: options.time,
     simulated: at(options.time),
     continueTo(next) {
-      const target = next.time,
-        ahead = effectSeekSteps(target),
-        spent = spawned >= spawnBudget
-      // The seek to the target takes this lane's steps first: same step size, and its step at this
-      // lane's step count ends at this lane's time.
-      if (
-        clamped ||
-        ahead.clamped ||
-        steps.count === 0 ||
-        ahead.count <= steps.count ||
-        ahead.step !== steps.step ||
-        lane.time !== steps.count * ahead.step
-      )
-        return false
+      // A clamped lane started past time zero: a later clock starts its own.
+      const last = effectSteps(next.time)
+      if (clamped || last <= steps || last > EFFECT_MAX_SEEK_STEPS) return false
       signal = next.signal
-      checkWork(target)
-      if (spent && !silenced) {
-        for (const [index, emitter] of particles.entries())
-          laneParticles[index] = silentParticleEmitter(emitter)
-        silenced = true
-      }
+      checkWork(next.time)
       lane.time = Number.NaN
-      for (let index = steps.count; index < ahead.count; index += 1) {
-        const time = index === ahead.count - 1 ? target : (index + 1) * ahead.step
-        sampleAt(time)
-        stepFrame.sequenceTimeSeconds = time
-        stepFrame.animationTime = time
-        const step = simulation.update(ahead.step, stepFrame)
-        dropped += step.droppedParticles + step.droppedRibbons + step.droppedProjectorSplats
-        spawned += step.spawnedParticles
-        if (!spent && spawned >= spawnBudget) return false
-      }
-      const simulated = at(target)
-      steps = ahead
-      lane.time = target
-      lane.simulated = simulated
+      stepTo(last)
+      lane.simulated = at(next.time)
+      lane.time = next.time
       return true
     },
-    continuable: () =>
-      !clamped &&
-      steps.count > 0 &&
-      steps.step === EFFECT_STEP_SECONDS &&
-      lane.time === steps.count * EFFECT_STEP_SECONDS,
+    continuable: () => !clamped && steps < EFFECT_MAX_SEEK_STEPS,
   }
   return lane
-}
-
-/**
- * A particle emitter that spawns nothing and is otherwise the same. The simulator reads a particle
- * emitter's visibility only to decide whether it spawns, and passes over an invisible one before
- * counting its emission or drawing a random number, as it passes over every emitter once a seek has
- * spent its spawn budget.
- */
-function silentParticleEmitter(emitter: RenderParticleEmitter): RenderParticleEmitter {
-  const { animation, sequenceAnimation, ...rest } = emitter
-  const silent: RenderParticleEmitter = { ...rest, visibility: 0 }
-  if (animation !== undefined) {
-    const { visibility, ...tracks } = animation
-    void visibility
-    silent.animation = tracks
-  }
-  if (sequenceAnimation !== undefined) {
-    const { visibility, ...tracks } = sequenceAnimation
-    void visibility
-    silent.sequenceAnimation = tracks
-  }
-  return silent
 }
 
 /** An effect frame from its preparation and simulation, for one view. */
