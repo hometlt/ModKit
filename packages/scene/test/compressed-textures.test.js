@@ -7,6 +7,7 @@ import {
   sceneTextureByteLength,
   sceneTexturePixels,
   uploadCompressedTexture,
+  uploadCompressedTextureArray,
 } from '../src/render/compressed-textures.js'
 
 /** One DXT1 block: red and blue endpoints in the transparent two-colour mode, indices 0..3. */
@@ -56,6 +57,9 @@ function recordingGl(s3tc) {
     LINEAR_MIPMAP_LINEAR: 0x2703,
     getExtension: name => (name === 'WEBGL_compressed_texture_s3tc' && s3tc ? {} : null),
     compressedTexImage2D: (...args) => calls.push(['compressedTexImage2D', ...args]),
+    TEXTURE_2D_ARRAY: 0x8c1a,
+    texStorage3D: (...args) => calls.push(['texStorage3D', ...args]),
+    compressedTexSubImage3D: (...args) => calls.push(['compressedTexSubImage3D', ...args]),
     texParameteri: (...args) => calls.push(['texParameteri', ...args]),
     texParameterf: (...args) => calls.push(['texParameterf', ...args]),
   }
@@ -124,4 +128,39 @@ it('leaves the texture to its texels where the context or the size cannot take t
     uploadCompressedTexture(bc5, texture([level(4, block)], 'bc5-rg-unorm'), 'linear'),
     false,
   )
+})
+
+it('builds a layer array from every layer at the smallest size, level by level', () => {
+  const gl = recordingGl(true)
+  const blocks = size => new Uint8Array(Math.ceil(size / 4) ** 2 * 8)
+  const large = texture([level(8, blocks(8)), level(4, blocks(4)), level(2, blocks(2))])
+  const small = texture([level(4, blocks(4)), level(2, blocks(2)), level(1, blocks(1))])
+  const array = uploadCompressedTextureArray(gl, [large, small], 'linear')
+  assert.deepEqual(array, { width: 4, height: 4, bytes: 4 * 8 })
+  assert.deepEqual(
+    gl.calls.find(call => call[0] === 'texStorage3D'),
+    ['texStorage3D', gl.TEXTURE_2D_ARRAY, 2, 0x83f1, 4, 4, 2],
+  )
+  assert.deepEqual(
+    gl.calls
+      .filter(call => call[0] === 'compressedTexSubImage3D')
+      .map(call => [call[2], call[5], call[6], call[7]]),
+    [
+      [0, 0, 4, 4],
+      [1, 0, 2, 2],
+      [0, 1, 4, 4],
+      [1, 1, 2, 2],
+    ],
+  )
+  const none = recordingGl(true)
+  assert.equal(uploadCompressedTextureArray(none, [large, undefined], 'linear'), undefined)
+  assert.equal(
+    uploadCompressedTextureArray(
+      none,
+      [large, texture([level(4, blocks(4))], 'bc3-rgba-unorm')],
+      'linear',
+    ),
+    undefined,
+  )
+  assert.deepEqual(none.calls, [])
 })

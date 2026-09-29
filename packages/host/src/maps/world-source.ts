@@ -1876,10 +1876,13 @@ export function createCandidateWorldSceneLease(
                 kind: 'logical',
                 requirement,
                 maxBytes: request.maxBytes,
+                ...(request.compressedFormats === undefined
+                  ? {}
+                  : { compressedFormats: request.compressedFormats }),
               },
               signal,
             )
-            if (raster.state !== 'decoded') {
+            if (raster.state !== 'decoded' && raster.state !== 'compressed') {
               return Object.freeze({
                 state: 'unresolved' as const,
                 diagnostics: Object.freeze([...raster.diagnostics]),

@@ -54,6 +54,7 @@ import {
   sceneTextureByteLength,
   sceneTexturePixels,
   uploadCompressedTexture,
+  uploadCompressedTextureArray,
 } from '../render/compressed-textures.js'
 import { uniformLocation } from '../materials/webgl.js'
 import { invertMaterialFrame } from '../materials/frame.js'
@@ -8670,6 +8671,22 @@ function drawSplatBatch(
       gl.activeTexture(gl.TEXTURE0 + unit)
       gl.bindTexture(gl.TEXTURE_2D_ARRAY, handle)
       gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1)
+      const nearest = textures.every(
+        texture => texture === undefined || texture.filter === 'nearest',
+      )
+      // Layers of stored blocks with one level chain go as they are; any other set is resized
+      // texels, as before.
+      const blocks = uploadCompressedTextureArray(gl, textures, nearest ? 'nearest' : 'linear')
+      if (blocks !== undefined) {
+        gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_WRAP_S, gl.REPEAT)
+        gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_WRAP_T, gl.REPEAT)
+        entry = Object.freeze({ key, handle, target: gl.TEXTURE_2D_ARRAY, bytes: blocks.bytes })
+        resources.textureArrays.set(key, entry)
+        resources.usedTextures.add(entry)
+        resources.textureUploads += 1
+        committed = true
+        return
+      }
       gl.texImage3D(
         gl.TEXTURE_2D_ARRAY,
         0,
@@ -8700,9 +8717,6 @@ function drawSplatBatch(
       // Repeat is required for continuous terrain-space UVs; clamped layers clamp in the shader.
       gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_WRAP_S, gl.REPEAT)
       gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_WRAP_T, gl.REPEAT)
-      const nearest = textures.every(
-        texture => texture === undefined || texture.filter === 'nearest',
-      )
       applyTextureFilter(gl, gl.TEXTURE_2D_ARRAY, nearest ? 'nearest' : 'linear')
       entry = Object.freeze({
         key,

@@ -670,7 +670,11 @@ export async function inspectCandidateWorld(
         perTextureBytes,
         weightRaster === undefined ? 0 : weightRaster.width * weightRaster.height * 4,
       )
-      const result = await source.texture!(resourceId, { maxBytes: requestedBytes }, options.signal)
+      const result = await source.texture!(
+        resourceId,
+        { maxBytes: requestedBytes, compressedFormats: SCENE_COMPRESSED_TEXTURE_FORMATS },
+        options.signal,
+      )
       options.signal?.throwIfAborted()
       terrainTextureDiagnostics.push(...result.diagnostics)
       if (result.state === 'decoded') terrainTextures.set(resourceId, result.texture)

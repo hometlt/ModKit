@@ -1597,6 +1597,8 @@ export interface WorldSceneModelRequest extends Omit<ModelResourceRequest, 'requ
 
 export interface WorldSceneTextureRequest {
   readonly maxBytes: number
+  /** As `WorldSceneModelRequest.compressedTextureFormats`, for a terrain or water texture. */
+  readonly compressedFormats?: readonly CompressedTextureFormat[]
 }
 
 export type WorldSceneTextureResult =
