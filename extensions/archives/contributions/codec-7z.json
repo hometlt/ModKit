@@ -21,7 +21,7 @@
     }
   ],
   "limitations": [
-    "Portable reading covers plain and encoded headers, solid and non-solid folders, empty files and directories, and the Copy, LZMA, LZMA2, BCJ (x86), BCJ2, Delta, Deflate and BZip2 coders; one decoded folder is cached per session and every folder output is bounded by maxScalarBytes.",
+    "Portable reading covers plain and encoded headers, solid and non-solid folders, empty files and directories, and the Copy, LZMA, LZMA2, BCJ (x86), BCJ2, Delta, Deflate and BZip2 coders; Copy, LZMA, LZMA2, BCJ and Delta folders decode as streams in the memory of their dictionary (a dictionary over maxScalarBytes is refused), so a solid folder of any size extracts, and its entries open by range; BCJ2, Deflate and BZip2 coders decode whole within maxScalarBytes. One folder decoder is kept where the last read stopped, so a solid folder read in order decodes once.",
     "Encrypted archives list their entries (unless headers are encrypted) and refuse extraction with archives/password-required; PPMd, Deflate64, ARM/ARMT/ARM64/PPC/SPARC/IA64/RISC-V filters, multi-volume archives and writing are not implemented."
   ],
   "spec": {

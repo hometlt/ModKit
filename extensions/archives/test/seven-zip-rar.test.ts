@@ -11,6 +11,9 @@
  *   bcj.7z           -m0=BCJ -m1=LZMA code.bin
  *   bcj2.7z          -m0=BCJ2 -m1=LZMA -m2=LZMA -m3=LZMA -mb0s0:1 -mb0s1:2 -mb0s2:3 code.bin
  *   encrypted.7z     -pSecret hello.txt              encrypted-header.7z  adds -mhe=on
+ *   stream-lzma2.7z  -mmt=1 -m0=LZMA2:d=64k -ms=on big small.txt   (the tree of `streamedFiles`)
+ *   stream-bcj-lzma.7z  -mmt=1 -m0=BCJ -m1=LZMA:d=64k -ms=on big small.txt
+ *   stream-delta.7z  -mmt=1 -m0=Delta:4 -m1=LZMA2:d=64k big/c.bin
  * RAR4 archives are assembled here because no RAR writer ships with the owner machine.
  */
 import { readFile } from 'node:fs/promises'
@@ -74,6 +77,29 @@ const expectedFiles: Record<string, Uint8Array> = {
   ),
   'empty.bin': new Uint8Array(0),
   'code.bin': codeBin(),
+}
+
+/** 8 MB of a 16 KiB random block, a byte changed every 997: long matches over a small dictionary. */
+function streamedFiles(): Record<string, Uint8Array> {
+  const block = new Uint8Array(16384)
+  let seed = 11
+  for (let index = 0; index < block.length; index += 1) {
+    seed = (seed * 1103515245 + 12345) & 0x7fffffff
+    block[index] = (seed >> 16) & 0xff
+  }
+  const file = (size: number, salt: number) => {
+    const bytes = new Uint8Array(size)
+    for (let index = 0; index < size; index += 1)
+      bytes[index] = (block[index % block.length] ?? 0) ^ (index % 997 === salt ? 0x5a : 0)
+    return bytes
+  }
+  return {
+    'big/a.bin': file(3_000_000, 1),
+    'big/b.bin': file(1, 2),
+    'big/c.bin': file(2_500_000, 3),
+    'small.txt': text('small\n'),
+    'big/e.bin': file(2_500_000, 4),
+  }
 }
 
 const executionBackends = createExecutionBackendRegistry([
@@ -286,7 +312,7 @@ describe('7z archives', () => {
   it('enforces the entry and scalar budgets', async () => {
     const bytes = await fixture('lzma.7z')
     expect((await open(bytes, 'nodes.7z', { ...budget, maxNodes: 2 })).state).not.toBe('opened')
-    // The encoded header fits; the 5 KB solid folder does not, so it is listed but not decoded.
+    // The encoded header fits; the dictionary of the 5 KB solid folder does not: listed, not decoded.
     const small = await opened(bytes, 'scalar.7z', { ...budget, maxScalarBytes: 1000 })
     try {
       expect((await small.descriptor()).diagnostics.map(item => item.code)).toEqual([
@@ -296,6 +322,73 @@ describe('7z archives', () => {
       await expect(extract(small, file?.id ?? '')).rejects.toThrow(/maxScalarBytes/u)
     } finally {
       await small.dispose()
+    }
+  })
+
+  it('streams solid folders far larger than maxScalarBytes in the memory of their dictionary', async () => {
+    // 8 MB solid folders, a 64 KiB dictionary, a 256 KiB scalar budget, pack reads of 16 KiB
+    const streaming = { ...budget, maxInputBytes: 16_384n, maxScalarBytes: 262_144 }
+    const files = streamedFiles()
+    const piece = 700_000
+    for (const name of ['stream-lzma2.7z', 'stream-bcj-lzma.7z', 'stream-delta.7z']) {
+      const session = await opened(await fixture(name), name, streaming)
+      const lease = await session.dataSource('common.view/namespace-entry-source', 1)
+      try {
+        expect((await session.descriptor()).diagnostics).toEqual([])
+        const namespace = lease.value as NamespaceEntrySource
+        const listed = (await namespace.list('', { limit: 100 })).items.filter(
+          item => item.kind === 'file',
+        )
+        expect(listed.length).toBe(name === 'stream-delta.7z' ? 1 : 5)
+        const readAll = async (item: NamespaceEntry, backwards: boolean) => {
+          const expected = files[item.path] as Uint8Array
+          expect(item.rangeAccess).toBe(true)
+          const source = await namespace.openEntrySource!(item.id)
+          try {
+            const starts = Array.from(
+              { length: Math.ceil(expected.byteLength / piece) },
+              (_, index) => index * piece,
+            )
+            for (const start of backwards ? starts.reverse() : starts) {
+              const length = Math.min(piece, expected.byteLength - start)
+              const bytes = await source.value.read(BigInt(start), length)
+              expect(
+                Buffer.from(bytes).equals(Buffer.from(expected.subarray(start, start + length))),
+              ).toBe(true)
+            }
+          } finally {
+            await source.release()
+          }
+        }
+        // in folder order one decoder walks the folder; backwards each read starts it again
+        for (const item of listed) await readAll(item, false)
+        await readAll(listed.at(-1) as NamespaceEntry, true)
+        // small entries still extract whole, within the extraction budget
+        for (const item of listed.filter(entry => (entry.size ?? 0n) < 16_384n))
+          expect(
+            Buffer.from(await extract(session, item.id)).equals(
+              Buffer.from(files[item.path] as Uint8Array),
+            ),
+          ).toBe(true)
+      } finally {
+        await lease.release()
+        await session.dispose()
+      }
+    }
+    const tight = await opened(await fixture('stream-lzma2.7z'), 'tight.7z', {
+      ...streaming,
+      maxScalarBytes: 32_768,
+    })
+    try {
+      expect((await tight.descriptor()).diagnostics.map(item => item.message)).toEqual([
+        '7z LZMA dictionary exceeds maxScalarBytes budget',
+      ])
+      const file = (await entries(tight)).find(item => item.path === 'small.txt')
+      await expect(extract(tight, file?.id ?? '')).rejects.toThrow(
+        /dictionary exceeds maxScalarBytes/u,
+      )
+    } finally {
+      await tight.dispose()
     }
   })
 })

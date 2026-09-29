@@ -6,13 +6,13 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
   extensions: [
     {
       artifact: {
-        artifactDigest: 'sha256:a656aad341b2636f73f75857cbc81f7efb44a178eac109d056f5f1cde80caebd',
+        artifactDigest: 'sha256:30b477896e3a39f5f81e9a19af9f33662623fab356f1158aa1b9c6359db6baaa',
         fileDigests: {
           'MIGRATION-NOTES-common-archives.json':
             'sha256:4e1d77808583a26fb61d65d660ef09c3f4c222915c2e3581d793b202cbde4b44',
           'README.md': 'sha256:915e1860d19a23f3ae677cd1edea4d5bc27c81f2c901b365c56da2558220dd11',
           'contributions/codec-7z.json':
-            'sha256:dea5b5ddc609ac399b86eac1b5f8279a617ef2c95f66e8078ec0c0b6b82af8ba',
+            'sha256:a345a253ff1158f888ff52ef5a5fc60648dd31ba3560002a9cb56cbfc93e5765',
           'contributions/codec-brotli.json':
             'sha256:5306aacf196b35aa996d0d4aac42031a72041c1dc605e1adb0f76b1c54f7ef27',
           'contributions/codec-bzip2.json':
@@ -41,7 +41,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:79c03b955edaea1e248258cbe2429c8c7923e9301b824eed67d6e6672e6c3591',
           'package.json': 'sha256:eb3ca58dbc0d654be9e255644a5dd53a5063b2919f51803439e584d84017d271',
           'src/7z/codec.js':
-            'sha256:145693c6685a5a9c56f99f158fd15dacece826da516e4f70aa1c847eb51a431b',
+            'sha256:211a11f6bfa11e2618131ba24db86dd2595620f609ef24dd1eed2b498855d99a',
           'src/brotli/codec.js':
             'sha256:e93f4d0c46b1e65cbcfb6e45a261a9e9bb1f121d1bd29ed4af693597578855e4',
           'src/bzip2/codec.js':
@@ -97,10 +97,16 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:a6d12748dc7d2d4f720646be958cf92c3fc296b12b907b841e7579e52bdc559c',
           'test/fixtures/7z/plain-header.7z':
             'sha256:57143f60a3776ae9c9599db8b4c58ad56802ba21555af17eacfa8a3b7b1c7fce',
+          'test/fixtures/7z/stream-bcj-lzma.7z':
+            'sha256:ad405d7532626d67a6d95241a062b5e36d49cd9f51e887386abd260151e76a4b',
+          'test/fixtures/7z/stream-delta.7z':
+            'sha256:7f27908c21ace70eb704fe085f79feb051cbf108c124846d3f26b4602c4a809b',
+          'test/fixtures/7z/stream-lzma2.7z':
+            'sha256:250c25a2b0607235537ec808edf25d227542b4179d70c3781d9670731442e626',
           'test/pe-image.test.ts':
             'sha256:996abef01dace2b5c6d31e195c835cf5ce7c684836b5b99216ef1e0939be7ce6',
           'test/seven-zip-rar.test.ts':
-            'sha256:3050efe267cffe6ee574fa914002a72dab57d07aa5aec2560f03ca5b5711f493',
+            'sha256:3fa6de690f8015f1cb926b6c8d9c0d6051cf73f2057f2d0706cc4062acbb6d65',
           'test/zip-hidden.test.ts':
             'sha256:353c75ccfca68bf7d4444c9004b85ab62e61cb3765a3bf378746034878bb9680',
           'test/zip-ranges.test.ts':
@@ -109,7 +115,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:74a5cab68793e3872c97feb5c564e0c4c0eae69d1f49df96d60239407ceccda8',
         },
         inventoryRecordId:
-          'artifact:sha256:a656aad341b2636f73f75857cbc81f7efb44a178eac109d056f5f1cde80caebd',
+          'artifact:sha256:30b477896e3a39f5f81e9a19af9f33662623fab356f1158aa1b9c6359db6baaa',
       },
       artifactRoot: 'extensions/archives/',
       containers: {
@@ -168,7 +174,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
       documentDigests: [
         [
           'contributions/codec-7z.json',
-          'sha256:dea5b5ddc609ac399b86eac1b5f8279a617ef2c95f66e8078ec0c0b6b82af8ba',
+          'sha256:a345a253ff1158f888ff52ef5a5fc60648dd31ba3560002a9cb56cbfc93e5765',
         ],
         [
           'contributions/codec-brotli.json',
@@ -234,7 +240,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             displayName: '7-Zip archive',
             id: 'modkit/7z',
             limitations: [
-              'Portable reading covers plain and encoded headers, solid and non-solid folders, empty files and directories, and the Copy, LZMA, LZMA2, BCJ (x86), BCJ2, Delta, Deflate and BZip2 coders; one decoded folder is cached per session and every folder output is bounded by maxScalarBytes.',
+              'Portable reading covers plain and encoded headers, solid and non-solid folders, empty files and directories, and the Copy, LZMA, LZMA2, BCJ (x86), BCJ2, Delta, Deflate and BZip2 coders; Copy, LZMA, LZMA2, BCJ and Delta folders decode as streams in the memory of their dictionary (a dictionary over maxScalarBytes is refused), so a solid folder of any size extracts, and its entries open by range; BCJ2, Deflate and BZip2 coders decode whole within maxScalarBytes. One folder decoder is kept where the last read stopped, so a solid folder read in order decodes once.',
               'Encrypted archives list their entries (unless headers are encrypted) and refuse extraction with archives/password-required; PPMd, Deflate64, ARM/ARMT/ARM64/PPC/SPARC/IA64/RISC-V filters, multi-volume archives and writing are not implemented.',
             ],
             runtimeVariants: [
@@ -2302,6 +2308,9 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         'test/fixtures/7z/lzma.7z',
         'test/fixtures/7z/lzma2.7z',
         'test/fixtures/7z/plain-header.7z',
+        'test/fixtures/7z/stream-bcj-lzma.7z',
+        'test/fixtures/7z/stream-delta.7z',
+        'test/fixtures/7z/stream-lzma2.7z',
         'test/pe-image.test.ts',
         'test/seven-zip-rar.test.ts',
         'test/zip-hidden.test.ts',
