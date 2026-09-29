@@ -413,6 +413,107 @@ export function bridgeLanguageProvider(
       }),
     )
   }
+  if (provider.foldingRanges !== undefined) {
+    const foldingRanges = provider.foldingRanges.bind(provider)
+    disposables.push(
+      monaco.languages.registerFoldingRangeProvider(selector, {
+        async provideFoldingRanges(model, _context, token) {
+          if (!claims(model)) return []
+          const list = await foldingRanges(request(model, token))
+          return list.ranges.map(range => ({
+            start: range.startLine + 1,
+            end: range.endLine + 1,
+            ...(range.kind === undefined
+              ? {}
+              : {
+                  kind:
+                    range.kind === 'comment'
+                      ? monaco.languages.FoldingRangeKind.Comment
+                      : range.kind === 'imports'
+                        ? monaco.languages.FoldingRangeKind.Imports
+                        : monaco.languages.FoldingRangeKind.Region,
+                }),
+          }))
+        },
+      }),
+    )
+  }
+  if (provider.documentLinks !== undefined) {
+    const documentLinks = provider.documentLinks.bind(provider)
+    disposables.push(
+      monaco.languages.registerLinkProvider(selector, {
+        async provideLinks(model, token) {
+          if (!claims(model)) return { links: [] }
+          const list = await documentLinks(request(model, token))
+          return {
+            links: list.links.map(link => ({
+              range: toMonacoRange(link.range),
+              url: link.target,
+              ...(link.tooltip === undefined ? {} : { tooltip: link.tooltip }),
+            })),
+          }
+        },
+      }),
+    )
+  }
+  if (provider.documentHighlights !== undefined) {
+    const documentHighlights = provider.documentHighlights.bind(provider)
+    disposables.push(
+      monaco.languages.registerDocumentHighlightProvider(selector, {
+        async provideDocumentHighlights(model, position, token) {
+          if (!claims(model)) return []
+          const list = await documentHighlights({
+            ...request(model, token),
+            position: { line: position.lineNumber - 1, character: position.column - 1 },
+          })
+          return list.highlights.map(highlight => ({
+            range: toMonacoRange(highlight.range),
+            kind:
+              highlight.kind === 'read'
+                ? monaco.languages.DocumentHighlightKind.Read
+                : highlight.kind === 'write'
+                  ? monaco.languages.DocumentHighlightKind.Write
+                  : monaco.languages.DocumentHighlightKind.Text,
+          }))
+        },
+      }),
+    )
+  }
+  if (provider.inlayHints !== undefined) {
+    const inlayHints = provider.inlayHints.bind(provider)
+    disposables.push(
+      monaco.languages.registerInlayHintsProvider(selector, {
+        async provideInlayHints(model, range, token) {
+          if (!claims(model)) return { hints: [], dispose() {} }
+          const list = await inlayHints({
+            ...request(model, token),
+            range: {
+              start: { line: range.startLineNumber - 1, character: range.startColumn - 1 },
+              end: { line: range.endLineNumber - 1, character: range.endColumn - 1 },
+            },
+          })
+          return {
+            hints: list.hints.map(hint => ({
+              position: { lineNumber: hint.position.line + 1, column: hint.position.character + 1 },
+              label: hint.label,
+              ...(hint.kind === undefined
+                ? {}
+                : {
+                    kind:
+                      hint.kind === 'type'
+                        ? monaco.languages.InlayHintKind.Type
+                        : monaco.languages.InlayHintKind.Parameter,
+                  }),
+              ...(hint.tooltip === undefined ? {} : { tooltip: hint.tooltip }),
+              ...(hint.paddingLeft === undefined ? {} : { paddingLeft: hint.paddingLeft }),
+              ...(hint.paddingRight === undefined ? {} : { paddingRight: hint.paddingRight }),
+            })),
+            dispose() {},
+          }
+        },
+      }),
+    )
+  }
   if (provider.definition !== undefined) {
     const definition = provider.definition.bind(provider)
     disposables.push(

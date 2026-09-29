@@ -661,6 +661,68 @@ describe('language subject completion lifecycle', () => {
     }
   })
 
+  it('routes folding ranges, links, highlights and inlay hints, and checks each', async () => {
+    const features = provider as {
+      -readonly [K in 'foldingRanges' | 'documentLinks' | 'documentHighlights' | 'inlayHints']?: unknown
+    }
+    const range = { start: { line: 0, character: 0 }, end: { line: 0, character: 3 } }
+    features.foldingRanges = async () => ({
+      ranges: [{ startLine: 0, endLine: 2, kind: 'region' }],
+      isIncomplete: false,
+    })
+    features.documentLinks = async () => ({
+      links: [{ range, target: 'file:///workspace/include.lang', tooltip: 'Open include' }],
+      isIncomplete: false,
+    })
+    features.documentHighlights = async (request: { position: unknown }) => ({
+      highlights: [{ range, kind: request.position === undefined ? 'text' : 'write' }],
+      isIncomplete: false,
+    })
+    features.inlayHints = async (request: { range: unknown }) => ({
+      hints: request.range === undefined ? [] : [{ position: { line: 1, character: 1 }, label: ': Unit', kind: 'type' }],
+      isIncomplete: false,
+    })
+    const workspace = await openWorkspace(
+      { open: vi.fn(async () => undefined) },
+      false,
+      undefined,
+      undefined,
+      undefined,
+      'abc\ndef\nghi',
+    )
+    try {
+      expect((await workspace.capabilities(DOCUMENT_URI))?.features).toEqual(
+        expect.arrayContaining(['folding-ranges', 'document-links', 'document-highlights', 'inlay-hints']),
+      )
+      const request = completionRequest()
+      expect((await workspace.foldingRanges(request))?.ranges).toEqual([
+        { startLine: 0, endLine: 2, kind: 'region' },
+      ])
+      expect((await workspace.documentLinks(request))?.links[0]?.target).toBe(
+        'file:///workspace/include.lang',
+      )
+      expect((await workspace.documentHighlights(request))?.highlights[0]?.kind).toBe('write')
+      expect(
+        (await workspace.inlayHints({ ...request, range: { start: range.start, end: { line: 2, character: 3 } } }))
+          ?.hints[0]?.label,
+      ).toBe(': Unit')
+      await expect(
+        workspace.inlayHints({ ...request, range: { start: range.start, end: { line: 9, character: 0 } } }),
+      ).rejects.toThrow()
+      features.foldingRanges = async () => ({
+        ranges: [{ startLine: 1, endLine: 5 }],
+        isIncomplete: false,
+      })
+      await expect(workspace.foldingRanges(request)).rejects.toThrow(/folding ranges/u)
+    } finally {
+      delete features.foldingRanges
+      delete features.documentLinks
+      delete features.documentHighlights
+      delete features.inlayHints
+      await workspace.shutdown()
+    }
+  })
+
   it('routes and validates protocol-neutral on-type formatting edits', async () => {
     const workspace = await openWorkspace({ open: async () => undefined })
     try {

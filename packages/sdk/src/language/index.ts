@@ -207,6 +207,57 @@ export interface LanguageColorList {
   readonly isIncomplete: boolean
 }
 
+/** Lines `startLine`..`endLine` (zero-based, inclusive) the editor can fold. */
+export interface LanguageFoldingRange {
+  readonly startLine: number
+  readonly endLine: number
+  readonly kind?: 'comment' | 'imports' | 'region'
+}
+
+export interface LanguageFoldingRangeList {
+  readonly ranges: readonly LanguageFoldingRange[]
+  readonly isIncomplete: boolean
+}
+
+/** A span that opens something else: an included file, an asset, a subject. */
+export interface LanguageDocumentLink {
+  readonly range: LanguageRange
+  /** A URI the host can open: a workspace document, an asset, a serialized subject ref. */
+  readonly target: string
+  readonly tooltip?: string
+}
+
+export interface LanguageDocumentLinkList {
+  readonly links: readonly LanguageDocumentLink[]
+  readonly isIncomplete: boolean
+}
+
+/** Another place in the document naming what is under the cursor. */
+export interface LanguageDocumentHighlight {
+  readonly range: LanguageRange
+  readonly kind?: 'text' | 'read' | 'write'
+}
+
+export interface LanguageDocumentHighlightList {
+  readonly highlights: readonly LanguageDocumentHighlight[]
+  readonly isIncomplete: boolean
+}
+
+/** A short note drawn inside the text: a parameter's name, a resolved type or value. */
+export interface LanguageInlayHint {
+  readonly position: LanguagePosition
+  readonly label: string
+  readonly kind?: 'type' | 'parameter'
+  readonly tooltip?: string
+  readonly paddingLeft?: boolean
+  readonly paddingRight?: boolean
+}
+
+export interface LanguageInlayHintList {
+  readonly hints: readonly LanguageInlayHint[]
+  readonly isIncomplete: boolean
+}
+
 export interface LanguageColorPresentation {
   readonly label: string
   /** Optional exact replacement for `range`; omission lets the editor insert `label`. */
@@ -413,6 +464,10 @@ export interface LanguagePositionRequest extends LanguageFeatureRequest {
   readonly position: LanguagePosition
 }
 
+export interface LanguageInlayHintsRequest extends LanguageFeatureRequest {
+  readonly range: LanguageRange
+}
+
 export interface LanguageReferencesRequest extends LanguagePositionRequest {
   readonly includeDeclaration?: boolean
 }
@@ -487,6 +542,11 @@ export interface LanguageProvider {
     request: LanguageColorPresentationRequest,
   ): Promise<LanguageColorPresentationList>
   codeActions?(request: LanguageCodeActionsRequest): Promise<LanguageCodeActionList>
+  foldingRanges?(request: LanguageFeatureRequest): Promise<LanguageFoldingRangeList>
+  documentLinks?(request: LanguageFeatureRequest): Promise<LanguageDocumentLinkList>
+  documentHighlights?(request: LanguagePositionRequest): Promise<LanguageDocumentHighlightList>
+  /** Hints within `range`, the part of the document the editor shows. */
+  inlayHints?(request: LanguageInlayHintsRequest): Promise<LanguageInlayHintList>
   documentSymbols?(request: LanguageFeatureRequest): Promise<LanguageDocumentSymbolList>
   workspaceSymbols?(request: LanguageWorkspaceSymbolsRequest): Promise<LanguageWorkspaceSymbolList>
   diagnostics?(request: LanguageFeatureRequest): Promise<LanguageDiagnosticList>

@@ -23,6 +23,10 @@ import {
   type LanguageCodeActionList,
   type LanguageColor,
   type LanguageColorList,
+  type LanguageDocumentHighlightList,
+  type LanguageDocumentLinkList,
+  type LanguageFoldingRangeList,
+  type LanguageInlayHintList,
   type LanguageColorPresentationList,
   type LanguageCompletionList,
   type LanguageProviderCompletionList,
@@ -544,6 +548,10 @@ export interface LanguageWorkspacePositionRequest extends LanguageWorkspaceFeatu
   readonly position: LanguagePosition
 }
 
+export interface LanguageWorkspaceInlayHintsRequest extends LanguageWorkspaceFeatureRequest {
+  readonly range: LanguageRange
+}
+
 export interface LanguageWorkspaceCompletionRequest extends LanguageWorkspacePositionRequest {
   /**
    * `cached` keeps editor completion responsive while a new resolved Data context is prepared for
@@ -601,6 +609,10 @@ export type LanguageWorkspaceCapability =
   | 'document-colors'
   | 'color-presentations'
   | 'code-actions'
+  | 'folding-ranges'
+  | 'document-links'
+  | 'document-highlights'
+  | 'inlay-hints'
   | 'document-symbols'
   | 'workspace-symbols'
   | 'diagnostics'
@@ -652,6 +664,18 @@ export interface LanguageWorkspace {
   codeActions(
     request: LanguageWorkspaceCodeActionsRequest,
   ): Promise<LanguageCodeActionList | undefined>
+  foldingRanges(
+    request: LanguageWorkspaceFeatureRequest,
+  ): Promise<LanguageFoldingRangeList | undefined>
+  documentLinks(
+    request: LanguageWorkspaceFeatureRequest,
+  ): Promise<LanguageDocumentLinkList | undefined>
+  documentHighlights(
+    request: LanguageWorkspacePositionRequest,
+  ): Promise<LanguageDocumentHighlightList | undefined>
+  inlayHints(
+    request: LanguageWorkspaceInlayHintsRequest,
+  ): Promise<LanguageInlayHintList | undefined>
   documentSymbols(
     request: LanguageWorkspaceFeatureRequest,
   ): Promise<LanguageDocumentSymbolList | undefined>
@@ -1339,6 +1363,126 @@ function validateColorList(value: unknown, request: LanguageFeatureRequest): Lan
   ) {
     invalidFeature(
       'language provider returned invalid or unbounded document colours',
+      request.document.uri,
+    )
+  }
+  return list
+}
+
+const optionalString = (value: unknown, maximum: number): boolean =>
+  value === undefined || (typeof value === 'string' && value.length <= maximum)
+
+function validateFoldingRanges(
+  value: unknown,
+  request: LanguageFeatureRequest,
+): LanguageFoldingRangeList {
+  const list = value as LanguageFoldingRangeList
+  const lines = lineLengths(request.document.text).length
+  if (
+    typeof list !== 'object' ||
+    list === null ||
+    !Array.isArray(list.ranges) ||
+    list.ranges.length > request.maxResults ||
+    typeof list.isIncomplete !== 'boolean' ||
+    !list.ranges.every(
+      item =>
+        Number.isSafeInteger(item.startLine) &&
+        Number.isSafeInteger(item.endLine) &&
+        item.startLine >= 0 &&
+        item.startLine <= item.endLine &&
+        item.endLine < lines &&
+        (item.kind === undefined || ['comment', 'imports', 'region'].includes(item.kind)),
+    )
+  ) {
+    invalidFeature(
+      'language provider returned invalid or unbounded folding ranges',
+      request.document.uri,
+    )
+  }
+  return list
+}
+
+function validateDocumentLinks(
+  value: unknown,
+  request: LanguageFeatureRequest,
+): LanguageDocumentLinkList {
+  const list = value as LanguageDocumentLinkList
+  const lengths = lineLengths(request.document.text)
+  if (
+    typeof list !== 'object' ||
+    list === null ||
+    !Array.isArray(list.links) ||
+    list.links.length > request.maxResults ||
+    typeof list.isIncomplete !== 'boolean' ||
+    !list.links.every(
+      item =>
+        validRange(item.range, lengths) &&
+        typeof item.target === 'string' &&
+        item.target.length > 0 &&
+        item.target.length <= 4096 &&
+        optionalString(item.tooltip, 1024),
+    )
+  ) {
+    invalidFeature(
+      'language provider returned invalid or unbounded document links',
+      request.document.uri,
+    )
+  }
+  return list
+}
+
+function validateDocumentHighlights(
+  value: unknown,
+  request: LanguageFeatureRequest,
+): LanguageDocumentHighlightList {
+  const list = value as LanguageDocumentHighlightList
+  const lengths = lineLengths(request.document.text)
+  if (
+    typeof list !== 'object' ||
+    list === null ||
+    !Array.isArray(list.highlights) ||
+    list.highlights.length > request.maxResults ||
+    typeof list.isIncomplete !== 'boolean' ||
+    !list.highlights.every(
+      item =>
+        validRange(item.range, lengths) &&
+        (item.kind === undefined || ['text', 'read', 'write'].includes(item.kind)),
+    )
+  ) {
+    invalidFeature(
+      'language provider returned invalid or unbounded highlights',
+      request.document.uri,
+    )
+  }
+  return list
+}
+
+function validateInlayHints(
+  value: unknown,
+  request: LanguageFeatureRequest,
+): LanguageInlayHintList {
+  const list = value as LanguageInlayHintList
+  const lengths = lineLengths(request.document.text)
+  if (
+    typeof list !== 'object' ||
+    list === null ||
+    !Array.isArray(list.hints) ||
+    list.hints.length > request.maxResults ||
+    typeof list.isIncomplete !== 'boolean' ||
+    !list.hints.every(
+      item =>
+        validPosition(item.position, lengths) &&
+        typeof item.label === 'string' &&
+        item.label.length > 0 &&
+        item.label.length <= 256 &&
+        (item.kind === undefined || item.kind === 'type' || item.kind === 'parameter') &&
+        optionalString(item.tooltip, 1024) &&
+        (item.paddingLeft === undefined || typeof item.paddingLeft === 'boolean') &&
+        (item.paddingRight === undefined || typeof item.paddingRight === 'boolean'),
+    )
+  ) {
+    invalidFeature(
+      'language provider returned invalid or unbounded inlay hints',
       request.document.uri,
     )
   }
@@ -2609,6 +2753,10 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
         ['document-colors', 'documentColors'],
         ['color-presentations', 'colorPresentations'],
         ['code-actions', 'codeActions'],
+        ['folding-ranges', 'foldingRanges'],
+        ['document-links', 'documentLinks'],
+        ['document-highlights', 'documentHighlights'],
+        ['inlay-hints', 'inlayHints'],
         ['workspace-symbols', 'workspaceSymbols'],
       ]
       return Object.freeze({
@@ -2886,6 +3034,61 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
         false,
         (provider, feature) => provider.documentColors?.(feature),
         validateColorList,
+      )
+    },
+
+    foldingRanges(
+      request: LanguageWorkspaceFeatureRequest,
+    ): Promise<LanguageFoldingRangeList | undefined> {
+      return invokeFeature(
+        request,
+        false,
+        (provider, feature) => provider.foldingRanges?.(feature),
+        validateFoldingRanges,
+      )
+    },
+
+    documentLinks(
+      request: LanguageWorkspaceFeatureRequest,
+    ): Promise<LanguageDocumentLinkList | undefined> {
+      return invokeFeature(
+        request,
+        false,
+        (provider, feature) => provider.documentLinks?.(feature),
+        validateDocumentLinks,
+      )
+    },
+
+    documentHighlights(
+      request: LanguageWorkspacePositionRequest,
+    ): Promise<LanguageDocumentHighlightList | undefined> {
+      return invokeFeature(
+        request,
+        true,
+        (provider, feature) =>
+          provider.documentHighlights?.({ ...feature, position: request.position }),
+        validateDocumentHighlights,
+        { position: request.position },
+      )
+    },
+
+    inlayHints(
+      request: LanguageWorkspaceInlayHintsRequest,
+    ): Promise<LanguageInlayHintList | undefined> {
+      const entry = requireFeatureEntry(request, false)
+      if (!validRange(request.range, lineLengths(entry.document.text))) {
+        return Promise.reject(
+          workspaceError(LANGUAGE_FEATURE_INVALID, 'inlay hints need a range inside the document', {
+            uri: request.uri,
+          }),
+        )
+      }
+      return invokeFeature(
+        request,
+        false,
+        (provider, feature) => provider.inlayHints?.({ ...feature, range: request.range }),
+        validateInlayHints,
+        { range: request.range },
       )
     },
 

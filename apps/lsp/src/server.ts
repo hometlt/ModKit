@@ -10,6 +10,7 @@ import type {
   LanguageWorkspaceRenameRequest,
   LanguageWorkspaceReferencesRequest,
   LanguageWorkspaceFormattingRequest,
+  LanguageWorkspaceInlayHintsRequest,
   LanguageWorkspaceOnTypeFormattingRequest,
   LanguageWorkspaceColorPresentationRequest,
   LanguageWorkspaceCodeActionsRequest,
@@ -34,7 +35,9 @@ import {
   CompletionItemTag,
   DiagnosticSeverity,
   DidChangeWatchedFilesNotification,
+  DocumentHighlightKind,
   DocumentSymbol,
+  InlayHintKind,
   InsertTextFormat,
   LSPErrorCodes,
   ProposedFeatures,
@@ -551,6 +554,10 @@ export function createModkitLanguageServer(
             }),
         colorProvider: true,
         codeActionProvider: true,
+        foldingRangeProvider: true,
+        documentLinkProvider: {},
+        documentHighlightProvider: true,
+        inlayHintProvider: true,
         documentSymbolProvider: true,
         workspaceSymbolProvider: true,
         semanticTokensProvider: {
@@ -849,6 +856,76 @@ export function createModkitLanguageServer(
       await requireFeature(params.textDocument.uri, 'document-colors', signal)
       const value = await options.workspace.documentColors(request(params.textDocument.uri, signal))
       return (value?.colors as ColorInformation[] | undefined) ?? []
+    }),
+  )
+  connection.onFoldingRanges((params, token) =>
+    withSignal(token, async signal => {
+      await requireFeature(params.textDocument.uri, 'folding-ranges', signal)
+      const value = await options.workspace.foldingRanges(request(params.textDocument.uri, signal))
+      return (
+        value?.ranges.map(range => ({
+          startLine: range.startLine,
+          endLine: range.endLine,
+          ...(range.kind === undefined ? {} : { kind: range.kind }),
+        })) ?? []
+      )
+    }),
+  )
+  connection.onDocumentLinks((params, token) =>
+    withSignal(token, async signal => {
+      await requireFeature(params.textDocument.uri, 'document-links', signal)
+      const value = await options.workspace.documentLinks(request(params.textDocument.uri, signal))
+      return (
+        value?.links.map(link => ({
+          range: link.range,
+          target: link.target,
+          ...(link.tooltip === undefined ? {} : { tooltip: link.tooltip }),
+        })) ?? []
+      )
+    }),
+  )
+  connection.onDocumentHighlight((params, token) =>
+    withSignal(token, async signal => {
+      await requireFeature(params.textDocument.uri, 'document-highlights', signal)
+      const value = await options.workspace.documentHighlights(
+        positionRequest(params.textDocument.uri, params.position, signal),
+      )
+      return (
+        value?.highlights.map(highlight => ({
+          range: highlight.range,
+          ...(highlight.kind === undefined
+            ? {}
+            : {
+                kind:
+                  highlight.kind === 'read'
+                    ? DocumentHighlightKind.Read
+                    : highlight.kind === 'write'
+                      ? DocumentHighlightKind.Write
+                      : DocumentHighlightKind.Text,
+              }),
+        })) ?? []
+      )
+    }),
+  )
+  connection.languages.inlayHint.on((params, token) =>
+    withSignal(token, async signal => {
+      await requireFeature(params.textDocument.uri, 'inlay-hints', signal)
+      const value = await options.workspace.inlayHints({
+        ...request(params.textDocument.uri, signal),
+        range: params.range,
+      } satisfies LanguageWorkspaceInlayHintsRequest)
+      return (
+        value?.hints.map(hint => ({
+          position: hint.position,
+          label: hint.label,
+          ...(hint.kind === undefined
+            ? {}
+            : { kind: hint.kind === 'type' ? InlayHintKind.Type : InlayHintKind.Parameter }),
+          ...(hint.tooltip === undefined ? {} : { tooltip: hint.tooltip }),
+          ...(hint.paddingLeft === undefined ? {} : { paddingLeft: hint.paddingLeft }),
+          ...(hint.paddingRight === undefined ? {} : { paddingRight: hint.paddingRight }),
+        })) ?? []
+      )
     }),
   )
   connection.onColorPresentation((params, token) =>

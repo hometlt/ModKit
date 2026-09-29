@@ -299,6 +299,26 @@ export const LANGUAGE_DOCUMENT_CONTRACT_DEFINITION: ServiceContractDefinitionSpe
           optional: true,
           signal: Object.freeze({ arg: 0, key: 'signal' }),
         }),
+        foldingRanges: Object.freeze({
+          kind: 'value',
+          optional: true,
+          signal: Object.freeze({ arg: 0, key: 'signal' }),
+        }),
+        documentLinks: Object.freeze({
+          kind: 'value',
+          optional: true,
+          signal: Object.freeze({ arg: 0, key: 'signal' }),
+        }),
+        documentHighlights: Object.freeze({
+          kind: 'value',
+          optional: true,
+          signal: Object.freeze({ arg: 0, key: 'signal' }),
+        }),
+        inlayHints: Object.freeze({
+          kind: 'value',
+          optional: true,
+          signal: Object.freeze({ arg: 0, key: 'signal' }),
+        }),
         colorPresentations: Object.freeze({
           kind: 'value',
           optional: true,
@@ -703,6 +723,7 @@ export {
   type LanguageWorkspaceDocumentRequest,
   type LanguageWorkspaceFeatureRequest,
   type LanguageWorkspaceFormattingRequest,
+  type LanguageWorkspaceInlayHintsRequest,
   type LanguageWorkspaceOnTypeFormattingRequest,
   type LanguageWorkspaceOptions,
   type LanguageWorkspacePositionRequest,
