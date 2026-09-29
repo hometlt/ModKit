@@ -5,14 +5,16 @@
  * or catalogs. Rendering goes to a canvas because a 50 000-node graph must never become 50 000
  * DOM elements; the visible set is capped and the cap is reported rather than hidden.
  */
-import type {
-  Page,
-  RelationGraphCompleteness,
-  RelationGraphEdge as SourceGraphEdge,
-  RelationGraphNode as SourceGraphNode,
-  RelationGraphSource,
-  RelationGraphTypeBucket as SourceGraphTypeBucket,
-  ViewerModule,
+import {
+  relationGraphNeighbourhood,
+  type Page,
+  type RelationGraphCompleteness,
+  type RelationGraphEdge as SourceGraphEdge,
+  type RelationGraphNeighbourhoodRequest,
+  type RelationGraphNode as SourceGraphNode,
+  type RelationGraphSource,
+  type RelationGraphTypeBucket as SourceGraphTypeBucket,
+  type ViewerModule,
 } from '@modkit/sdk'
 import { setPart, setState } from '../parts.js'
 import {
@@ -82,6 +84,8 @@ export interface RelationGraphOptions {
   /** Extra renderers offered in the controls; the built-in 2D canvas is always present. */
   readonly renderers?: readonly GraphRendererFactory[]
   onOpen?(node: GraphNode): void
+  /** Offered for the selected node: the viewer walks the graph again from it (plan 5.19). */
+  onRoot?(node: GraphNode): void
 }
 
 export interface RelationGraphLoadOptions {
@@ -212,6 +216,80 @@ export async function loadRelationGraphOptions(
             localizer,
           ),
         }),
+    cap: nodeLimit,
+  }
+}
+
+/** Items the walk reads from each listing of the source at most. */
+const WALK_SCAN_LIMIT = 100_000
+/** Depths a graph view offers; the walk itself goes to 8. */
+export const GRAPH_WALK_DEPTHS = [1, 2, 3, 4] as const
+
+export interface RelationGraphWalk {
+  readonly root: string
+  readonly depth: number
+  readonly direction: RelationGraphNeighbourhoodRequest['direction']
+}
+
+/**
+ * The graph around one root, walked by the sdk (`relationGraphNeighbourhood`) over every type: a
+ * type the reader hides still carries the walk through its nodes. The root comes first, the others
+ * by degree, so the view's node cap keeps the busiest.
+ */
+export async function loadRelationNeighbourhoodOptions(
+  source: RelationGraphSource,
+  walk: RelationGraphWalk,
+  options: RelationGraphLoadOptions,
+): Promise<RelationGraphOptions> {
+  const localizer = withEnglishUiFallback(options.localizer, GRAPH_FALLBACK_MESSAGES)
+  const nodeLimit = positiveLimit(options.nodeLimit ?? 500, 'nodeLimit')
+  const edgeLimit = positiveLimit(options.edgeLimit ?? 5_000, 'edgeLimit')
+  const summary = await source.summary(options.signal)
+  const found = await relationGraphNeighbourhood(
+    source,
+    {
+      roots: [walk.root],
+      depth: walk.depth,
+      direction: walk.direction,
+      maxNodes: nodeLimit,
+      maxEdges: edgeLimit,
+      scanLimit: WALK_SCAN_LIMIT,
+    },
+    options.signal,
+  )
+  const degree = new Map<string, number>()
+  for (const edge of found.edges) {
+    degree.set(edge.from, (degree.get(edge.from) ?? 0) + 1)
+    degree.set(edge.to, (degree.get(edge.to) ?? 0) + 1)
+  }
+  const rank = (node: GraphNode): number =>
+    node.id === walk.root ? Number.POSITIVE_INFINITY : (degree.get(node.id) ?? 0)
+  const nodes = [...found.nodes].sort((left, right) => rank(right) - rank(left))
+  const counts = new Map<string, number>()
+  for (const node of nodes) counts.set(node.type, (counts.get(node.type) ?? 0) + 1)
+  const stopped = found.capped || !found.scanned.nodes.exhausted || !found.scanned.edges.exhausted
+  return {
+    label: options.label,
+    localizer,
+    nodes,
+    edges: found.edges,
+    types: summary.types.flatMap(type => {
+      const count = counts.get(type.id) ?? 0
+      return count === 0 ? [] : [{ ...type, count }]
+    }),
+    totalNodes: nodes.length,
+    totalEdges: found.edges.length,
+    sourceCompleteness: summary.completeness,
+    ...(summary.reason === undefined ? {} : { sourceReason: summary.reason }),
+    consumerCompleteness: stopped ? 'capped' : 'complete',
+    ...(stopped
+      ? {
+          consumerReason: localizer.text('graph.walkStopped', {
+            nodes: nodes.length.toLocaleString(localizer.locale),
+            edges: found.edges.length.toLocaleString(localizer.locale),
+          }),
+        }
+      : {}),
     cap: nodeLimit,
   }
 }
@@ -441,6 +519,24 @@ export function createRelationGraph(
     draw()
   })
   controls.append(reset)
+
+  const makeRoot = options.onRoot === undefined ? undefined : document.createElement('button')
+  if (makeRoot !== undefined) {
+    makeRoot.type = 'button'
+    makeRoot.textContent = localizer.text('graph.makeRoot')
+    makeRoot.disabled = true
+    makeRoot.addEventListener('click', () => {
+      const node = placed[selected]?.node
+      if (node !== undefined) options.onRoot?.(node)
+    })
+    controls.append(makeRoot)
+  }
+  /** Offered for a selected node that is not already the root. */
+  const syncMakeRoot = (): void => {
+    if (makeRoot !== undefined) {
+      makeRoot.disabled = selected < 0 || placed[selected]?.node.id === rootId
+    }
+  }
 
   const stage = document.createElement('div')
   stage.className = 'modkit-graph__stage'
@@ -676,6 +772,7 @@ export function createRelationGraph(
   })
 
   function draw(): void {
+    syncMakeRoot()
     if (context === null) {
       status.textContent = statusText(0)
       return
@@ -862,6 +959,7 @@ export function createRelationGraph(
   const focus = (position: number): void => {
     selected = position
     if (nodeList.selectedIndex !== position) nodeList.selectedIndex = position
+    syncMakeRoot()
     const destination = world[position]
     if (view) view.cancelAnimationFrame(animation)
     if (mode !== RENDERER_3D || destination === undefined || !view || reducedMotion()) {
@@ -1142,15 +1240,19 @@ export function createRelationGraph(
 /** Standard stage adapter over the selected relation-graph data-source binding. */
 export interface RelationGraphViewerOptions {
   readonly localizer?: UiLocalizer
+  /** Edges followed from the root when the view opens, 1–4 (VS Code `modkit.maxGraphHops`). */
+  readonly depth?: number
 }
 
 export function createRelationGraphViewer(options: RelationGraphViewerOptions = {}): ViewerModule {
   const localizer = withEnglishUiFallback(options.localizer, GRAPH_FALLBACK_MESSAGES)
+  const firstDepth = Math.min(4, Math.max(1, Math.trunc(options.depth ?? 2)))
   return defineViewerModule({
     abiVersion: 1,
     async mount(args) {
       const scope = new ViewerMountScope(args.signal)
       const root = createSurface(args.container, localizer.text('graph.viewer'))
+      const document = root.ownerDocument
       try {
         const lease = await unknownSourceLease(
           args.sources,
@@ -1159,27 +1261,130 @@ export function createRelationGraphViewer(options: RelationGraphViewerOptions = 
         )
         if (lease === undefined) throw new TypeError('relation graph binding is unavailable')
         scope.lease(lease)
-        const options = await loadRelationGraphOptions(lease.value as RelationGraphSource, {
-          label: localizer.text('graph.relation'),
-          localizer,
-          signal: scope.signal,
-        })
+        const source = lease.value as RelationGraphSource
+        const label = localizer.text('graph.relation')
+        // The source lists its subject first: that node is where the walk starts.
+        const first = (await source.nodes({ limit: 1 }, scope.signal)).items[0]
+        let walk: RelationGraphWalk | undefined =
+          first === undefined ? undefined : { root: first.id, depth: firstDepth, direction: 'both' }
+        let rootLabel = first?.label ?? ''
+        // The whole graph first, as before; the walk is the reader's choice (MK2's «related» mode).
+        let whole = true
+
+        // ------------------------------------------------ the walk's own controls
+        const bar = document.createElement('div')
+        bar.setAttribute('role', 'toolbar')
+        bar.setAttribute('aria-label', localizer.text('graph.walk'))
+        setPart(bar, 'graph.walk')
+        const rootLine = document.createElement('output')
+        const wholeBox = document.createElement('input')
+        wholeBox.type = 'checkbox'
+        wholeBox.checked = whole
+        const wholeLabel = document.createElement('label')
+        wholeLabel.append(wholeBox, document.createTextNode(localizer.text('graph.wholeGraph')))
+        const choice = (
+          text: string,
+          values: readonly (readonly [string, string])[],
+          value: string,
+        ): HTMLSelectElement => {
+          const wrapper = document.createElement('label')
+          wrapper.append(document.createTextNode(text))
+          const select = document.createElement('select')
+          for (const [id, caption] of values) {
+            const option = document.createElement('option')
+            option.value = id
+            option.textContent = caption
+            select.append(option)
+          }
+          select.value = value
+          wrapper.append(select)
+          bar.append(wrapper)
+          return select
+        }
+        bar.append(wholeLabel)
+        const depthSelect = choice(
+          localizer.text('graph.depth'),
+          GRAPH_WALK_DEPTHS.map(depth => [String(depth), String(depth)] as const),
+          String(firstDepth),
+        )
+        const directionSelect = choice(
+          localizer.text('graph.direction'),
+          [
+            ['both', localizer.text('graph.directionBoth')],
+            ['outgoing', localizer.text('graph.directionOutgoing')],
+            ['incoming', localizer.text('graph.directionIncoming')],
+          ],
+          'both',
+        )
+        bar.append(rootLine)
+        bar.hidden = walk === undefined
+        root.append(bar)
+        const syncBar = (): void => {
+          depthSelect.disabled = whole
+          directionSelect.disabled = whole
+          rootLine.textContent = whole ? '' : localizer.text('graph.root', { label: rootLabel })
+        }
+
         const navigation = args.subjectNavigation
-        const graph = createRelationGraph(root.ownerDocument, {
-          ...options,
-          ...(navigation === undefined
-            ? {}
-            : {
-                onOpen(node: GraphNode) {
-                  if (node.subject === undefined) return
-                  void navigation
-                    .open({ scope: navigation.scope, target: node.subject }, scope.signal)
-                    .catch(() => undefined)
-                },
-              }),
+        let graph: RelationGraph | undefined
+        let pass = 0
+        const show = async (): Promise<void> => {
+          const current = ++pass
+          syncBar()
+          const loaded =
+            whole || walk === undefined
+              ? await loadRelationGraphOptions(source, { label, localizer, signal: scope.signal })
+              : await loadRelationNeighbourhoodOptions(source, walk, {
+                  label,
+                  localizer,
+                  signal: scope.signal,
+                })
+          if (current !== pass || scope.signal.aborted) return
+          graph?.destroy()
+          graph = createRelationGraph(document, {
+            ...loaded,
+            ...(walk === undefined
+              ? {}
+              : {
+                  onRoot(node: GraphNode) {
+                    if (walk === undefined) return
+                    walk = { ...walk, root: node.id }
+                    rootLabel = node.label
+                    whole = false
+                    wholeBox.checked = false
+                    void show().catch(() => undefined)
+                  },
+                }),
+            ...(navigation === undefined
+              ? {}
+              : {
+                  onOpen(node: GraphNode) {
+                    if (node.subject === undefined) return
+                    void navigation
+                      .open({ scope: navigation.scope, target: node.subject }, scope.signal)
+                      .catch(() => undefined)
+                  },
+                }),
+          })
+          root.append(graph.root)
+        }
+        const rewalk = (): void => {
+          if (walk === undefined) return
+          walk = {
+            ...walk,
+            depth: Number(depthSelect.value),
+            direction: directionSelect.value as RelationGraphWalk['direction'],
+          }
+          void show().catch(() => undefined)
+        }
+        depthSelect.addEventListener('change', rewalk)
+        directionSelect.addEventListener('change', rewalk)
+        wholeBox.addEventListener('change', () => {
+          whole = wholeBox.checked
+          void show().catch(() => undefined)
         })
-        root.append(graph.root)
-        scope.cleanup(() => graph.destroy())
+        await show()
+        scope.cleanup(() => graph?.destroy())
         root.dataset['revision'] = args.descriptor.revision
         return createViewerMount(root, scope, args, ({ descriptor }) => {
           root.dataset['revision'] = descriptor.revision

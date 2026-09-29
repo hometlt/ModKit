@@ -520,6 +520,8 @@ export const PARTS = Object.freeze([
   'graph.footer',
   'graph.footer-group',
   'graph.footer-item',
+  /** The walk's own controls above the graph: whole graph, depth, direction, root (plan 5.19). */
+  'graph.walk',
 
   // auditable subject calculations
   'calculations',

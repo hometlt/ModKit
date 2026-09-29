@@ -454,6 +454,14 @@
     border-bottom: 1px solid var(--mk-color-separator);
   }
 
+  [data-mk-part='graph.walk'] {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--mk-space-2);
+    align-items: center;
+    margin-block-end: var(--mk-space-1);
+  }
+
   [data-mk-part='table.find'] {
     display: flex;
     flex-direction: column;
