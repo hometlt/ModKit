@@ -3412,6 +3412,22 @@ function worldProjectorSlot(item: WorldSceneObjectItem, componentId: string): Wo
   return slot
 }
 
+/**
+ * A placement's decals, or none when its projectors outgrow their clipping budget: as with an
+ * unsupported projector material, the object loses its decals, not the map its world (one decal on
+ * Fear and Faith LE ran past the receiver work budget and left the whole world undrawn).
+ */
+function worldObjectProjection(
+  project: () => ReturnType<UvmEffectSource['project']>,
+): ReturnType<UvmEffectSource['project']> {
+  try {
+    return project()
+  } catch (error) {
+    if (!(error instanceof RangeError)) throw error
+    return { primitives: [], materials: [] }
+  }
+}
+
 /** prepareSceneMaterialPrograms through the slot's sampler while the materials are the same. */
 function worldProjectorPrograms(
   slot: WorldProjectorSlot,
@@ -6008,18 +6024,20 @@ export function createWorldWebGlPlan(
         const slot = worldProjectorSlot(item, component.id)
         const projected = reuse
           ? kept.projected
-          : effectSource.project(
-              time,
-              scene.materials,
-              [
-                {
-                  id: 'world-terrain-receiver',
-                  topology: 'triangles',
-                  positions: projectorGround,
-                  transform: receiverTransform,
-                },
-              ],
-              slot.frames,
+          : worldObjectProjection(() =>
+              effectSource.project(
+                time,
+                scene.materials,
+                [
+                  {
+                    id: 'world-terrain-receiver',
+                    topology: 'triangles',
+                    positions: projectorGround,
+                    transform: receiverTransform,
+                  },
+                ],
+                slot.frames,
+              ),
             )
         let projectedPrograms: ReadonlyMap<string, SceneMaterialPrograms> = new Map()
         if (reuse && kept.programs !== undefined) projectedPrograms = kept.programs
