@@ -202,6 +202,8 @@ interface MutableTexturedBatch extends MutableBatch {
   /** A terrain decal tile's specular map (MapTerrainMaterialDefinition.specularResource). */
   readonly specularTexture?: SceneRendererTexture
   readonly specularGloss?: boolean
+  /** Water shaded per pixel by its detail waves (MapWaterDetailWaves). */
+  readonly waterDetail?: WorldWebGlWaterDetail
   readonly alphaCutoff?: number
   readonly castShadows?: boolean
   readonly receiveShadows?: boolean
@@ -247,6 +249,7 @@ export interface WorldWebGlTexturedBatch extends WorldWebGlBatch {
   readonly normalSwizzle?: number
   readonly specularTexture?: SceneRendererTexture
   readonly specularGloss?: boolean
+  readonly waterDetail?: WorldWebGlWaterDetail
   readonly secondaryTexture?: MutableTexturedBatch['secondaryTexture']
   /** Zero/absent is solid coverage; a positive value discards lower-alpha texels in all passes. */
   readonly alphaCutoff?: number
@@ -340,6 +343,51 @@ export interface WorldWebGlWaterWaves {
   readonly scroll: readonly [number, number, number, number]
   readonly specularity: number
   readonly specularScale: number
+}
+
+/** A water material's detail waves (MapWaterDetailWaves) with their images resolved. */
+export interface WorldWebGlWaterDetail {
+  readonly color: readonly [number, number, number]
+  readonly normals: readonly [SceneRendererTexture, SceneRendererTexture]
+  readonly foam?: readonly [SceneRendererTexture, SceneRendererTexture]
+  readonly sampleScroll: readonly number[]
+  readonly upScale: number
+  readonly depthRange: number
+}
+
+const waterDetailCache = new WeakMap<object, WorldWebGlWaterDetail>()
+
+/** The detail waves of a water material whose normal images arrived; one object while nothing changes. */
+function waterDetailOf(
+  material: MapWaterMaterialDefinition | undefined,
+  textures: WorldWebGlInput['terrainTextures'],
+): WorldWebGlWaterDetail | undefined {
+  const detail = material?.detailWaves
+  if (material === undefined || detail === undefined || material.compositing === 'multiply') return undefined
+  const normals = detail.normalResourceIds.map(resourceId => textures?.get(resourceId))
+  if (normals[0] === undefined || normals[1] === undefined) return undefined
+  const foam = (detail.foamResourceIds ?? []).map(resourceId => textures?.get(resourceId))
+  const cached = waterDetailCache.get(material)
+  if (
+    cached !== undefined &&
+    cached.normals[0] === normals[0] &&
+    cached.normals[1] === normals[1] &&
+    cached.foam?.[0] === foam[0] &&
+    cached.foam?.[1] === foam[1]
+  )
+    return cached
+  const resolved = Object.freeze({
+    color: Object.freeze([material.color[0], material.color[1], material.color[2]] as const),
+    normals: Object.freeze([normals[0], normals[1]] as const),
+    ...(foam[0] === undefined || foam[1] === undefined
+      ? {}
+      : { foam: Object.freeze([foam[0], foam[1]] as const) }),
+    sampleScroll: Object.freeze([...detail.sampleScroll]),
+    upScale: detail.upScale,
+    depthRange: detail.depthRange,
+  })
+  waterDetailCache.set(material, resolved)
+  return resolved
 }
 
 const waterWavesCache = new WeakMap<object, WorldWebGlWaterWaves>()
@@ -1086,6 +1134,7 @@ interface WorldWaterZone {
   readonly plane: WorldBatchWrite | undefined
   readonly triangles: WorldBatchWrite
   readonly emitted: boolean
+  readonly detail: WorldWebGlWaterDetail | undefined
 }
 
 /**
@@ -1104,6 +1153,7 @@ function worldWaterZone(
   maximum: Readonly<{ x: number; z: number }>,
   elevation: number,
   timeSeconds: number,
+  detail?: WorldWebGlWaterDetail,
 ): WorldWaterZone {
   let byMaterial = worldWaterZones.get(preparation)
   if (byMaterial === undefined) worldWaterZones.set(preparation, (byMaterial = new WeakMap()))
@@ -1118,7 +1168,8 @@ function worldWaterZone(
     cached !== undefined &&
     cached.texture === texture &&
     cached.secondaryTexture === secondaryTexture &&
-    cached.time === time
+    cached.time === time &&
+    cached.detail === detail
   )
     return cached
   let plane: WorldBatchWrite | undefined
@@ -1137,8 +1188,11 @@ function worldWaterZone(
   }
   let triangles: MutableBatch
   let push: (ground: readonly [WaterGroundVertex, WaterGroundVertex, WaterGroundVertex]) => void
+  const pointAt = terrainPointAt(preparation)
   const occlusionAt =
-    material?.occludedLikeTerrain === true ? terrainOcclusionAt(preparation) : () => 1
+    material?.occludedLikeTerrain === true
+      ? (x: number, z: number) => pointAt(x, z)?.occlusion ?? 1
+      : () => 1
   if (material !== undefined && texture !== undefined) {
     const surface = material
     const target: MutableTexturedBatch = {
@@ -1148,8 +1202,18 @@ function worldWaterZone(
       texture,
     }
     triangles = target
+    const detailVertices =
+      detail === undefined ? undefined : { depthRange: detail.depthRange, pointAt }
     push = ground =>
-      pushTexturedWaterTriangle(target, ground, elevation, surface, timeSeconds, occlusionAt)
+      pushTexturedWaterTriangle(
+        target,
+        ground,
+        elevation,
+        surface,
+        timeSeconds,
+        occlusionAt,
+        detailVertices,
+      )
   } else {
     const target = batch()
     triangles = target
@@ -1175,7 +1239,7 @@ function worldWaterZone(
     push([a, d, c])
     emitted = true
   }
-  const zone = Object.freeze({ texture, secondaryTexture, time, plane, triangles, emitted })
+  const zone = Object.freeze({ texture, secondaryTexture, time, plane, triangles, emitted, detail })
   zones.set(key, zone)
   return zone
 }
@@ -1237,26 +1301,43 @@ function pushWaterTriangle(
 }
 
 /**
- * The ambient occlusion of the terrain point at an exact world (x, z), 1 where none stands: a
- * surface that is occludedLikeTerrain takes it at the corners it shares with the height grid.
+ * The terrain point at an exact world (x, z): its drawn height and ambient occlusion. A water surface
+ * takes them at the corners it shares with the height grid (occludedLikeTerrain, detail waves).
  */
-const worldTerrainOcclusion = new WeakMap<object, ReadonlyMap<string, number>>()
+const worldTerrainPoints = new WeakMap<
+  object,
+  ReadonlyMap<string, Readonly<{ height: number; occlusion: number }>>
+>()
 
-function terrainOcclusionAt(
+function terrainPointAt(
   preparation: Readonly<{ terrain: readonly WorldSceneTerrainItem[] }>,
-): (x: number, z: number) => number {
-  let byPosition = worldTerrainOcclusion.get(preparation)
+): (x: number, z: number) => Readonly<{ height: number; occlusion: number }> | undefined {
+  let byPosition = worldTerrainPoints.get(preparation)
   if (byPosition === undefined) {
-    const built = new Map<string, number>()
+    const built = new Map<string, Readonly<{ height: number; occlusion: number }>>()
     for (const cell of preparation.terrain) {
-      if (cell.ambientOcclusion === undefined) continue
-      const [x, , z] = terrainPosition(cell)
-      built.set(`${x}:${z}`, cell.ambientOcclusion)
+      const [x, y, z] = terrainPosition(cell)
+      built.set(`${x}:${z}`, { height: y, occlusion: cell.ambientOcclusion ?? 1 })
     }
-    worldTerrainOcclusion.set(preparation, (byPosition = built))
+    worldTerrainPoints.set(preparation, (byPosition = built))
   }
   const known = byPosition
-  return (x, z) => known.get(`${x}:${z}`) ?? 1
+  return (x, z) => known.get(`${x}:${z}`)
+}
+
+/**
+ * A detail-wave water vertex's colour: the ground's occlusion in RGB, and in alpha the depth term
+ * of terrain_water_high.vert, 1 - (clamp(depth / range, -1, 1) / 2 + 1/2), from the water depth
+ * over the drawn ground at the vertex.
+ */
+function detailWaterColor(
+  elevation: number,
+  ground: number,
+  occlusion: number,
+  depthRange: number,
+): readonly [number, number, number, number] {
+  const depth = Math.min(1, Math.max(-1, (elevation - ground) / depthRange))
+  return [occlusion, occlusion, occlusion, 1 - (depth * 0.5 + 0.5)]
 }
 
 function pushTexturedWaterTriangle(
@@ -1266,6 +1347,10 @@ function pushTexturedWaterTriangle(
   material: MapWaterMaterialDefinition,
   time: number,
   occlusionAt: (x: number, z: number) => number,
+  detail?: Readonly<{
+    depthRange: number
+    pointAt: ReturnType<typeof terrainPointAt>
+  }>,
 ) {
   const vertices = ground.map(vertex => [vertex[0], elevation, vertex[2]] as const)
   // A water surface is horizontal by construction, and clipping leaves its winding arbitrary, so the
@@ -1279,12 +1364,19 @@ function pushTexturedWaterTriangle(
       target,
       vertices[index]!,
       normal,
-      occludedWaterColor(
-        material.compositing === 'multiply'
-          ? [material.color[0], material.color[1], material.color[2], 1]
-          : waterVertexColor(material, elevation, source[1]),
-        occlusionAt(source[0], source[2]),
-      ),
+      detail !== undefined
+        ? detailWaterColor(
+            elevation,
+            detail.pointAt(source[0], source[2])?.height ?? source[1],
+            occlusionAt(source[0], source[2]),
+            detail.depthRange,
+          )
+        : occludedWaterColor(
+            material.compositing === 'multiply'
+              ? [material.color[0], material.color[1], material.color[2], 1]
+              : waterVertexColor(material, elevation, source[1]),
+            occlusionAt(source[0], source[2]),
+          ),
     )
     target.textureCoordinates.push(
       source[0] * scale[0] + scroll[0] * time,
@@ -1954,6 +2046,7 @@ function frozenTexturedBatch(source: MutableTexturedBatch): WorldWebGlTexturedBa
     ...(source.normalSwizzle === undefined ? {} : { normalSwizzle: source.normalSwizzle }),
     ...(source.specularTexture === undefined ? {} : { specularTexture: source.specularTexture }),
     ...(source.specularGloss === undefined ? {} : { specularGloss: source.specularGloss }),
+    ...(source.waterDetail === undefined ? {} : { waterDetail: source.waterDetail }),
     ...(source.secondaryTexture === undefined ? {} : { secondaryTexture: source.secondaryTexture }),
     ...(source.alphaCutoff === undefined ? {} : { alphaCutoff: source.alphaCutoff }),
     ...(source.castShadows === undefined ? {} : { castShadows: source.castShadows }),
@@ -2983,6 +3076,7 @@ function writtenTexturedBatch(
     ...(template.secondaryTexture === undefined
       ? {}
       : { secondaryTexture: template.secondaryTexture }),
+    ...(template.waterDetail === undefined ? {} : { waterDetail: template.waterDetail }),
     ...(template.alphaCutoff === undefined ? {} : { alphaCutoff: template.alphaCutoff }),
     ...(template.castShadows === undefined ? {} : { castShadows: template.castShadows }),
     ...(template.receiveShadows === undefined ? {} : { receiveShadows: template.receiveShadows }),
@@ -3111,7 +3205,8 @@ function sameBatchTemplate(left: object, right: object): boolean {
       (right as { colorFalloff?: number }).colorFalloff &&
     (left as { caustics?: WorldWebGlWaterCaustics }).caustics ===
       (right as { caustics?: WorldWebGlWaterCaustics }).caustics &&
-    (left as { waves?: WorldWebGlWaterWaves }).waves === (right as { waves?: WorldWebGlWaterWaves }).waves
+    (left as { waves?: WorldWebGlWaterWaves }).waves === (right as { waves?: WorldWebGlWaterWaves }).waves &&
+    a.waterDetail === b.waterDetail
   )
 }
 
@@ -5122,6 +5217,7 @@ export function createWorldWebGlPlan(
         : material?.secondaryColorResourceId === undefined
           ? texture
           : input.terrainTextures?.get(material.secondaryColorResourceId)
+    const detail = texture === undefined ? undefined : waterDetailOf(material, input.terrainTextures)
     const texturedTarget =
       material === undefined || texture === undefined
         ? undefined
@@ -5139,7 +5235,7 @@ export function createWorldWebGlPlan(
               return current
             })()
         : (() => {
-            const key = `water\u0000${material.materialId}\u0000${texture.id}\u0000${secondaryTexture?.id ?? ''}`
+            const key = `water\u0000${material.materialId}\u0000${texture.id}\u0000${secondaryTexture?.id ?? ''}\u0000${detail === undefined ? '' : detail.normals.map(item => item.id).join(',')}`
             const previous = transparentTextured.get(key)
             if (previous !== undefined) return previous
             const current = {
@@ -5148,6 +5244,7 @@ export function createWorldWebGlPlan(
               ...(secondaryTexture === undefined ? {} : { secondaryTextureCoordinates: [] }),
               texture,
               ...(secondaryTexture === undefined ? {} : { secondaryTexture }),
+              ...(detail === undefined ? {} : { waterDetail: detail }),
               blendMode: 'blend' as const,
               receiveShadows: material.receiveShadows ?? false,
             }
@@ -5163,6 +5260,7 @@ export function createWorldWebGlPlan(
       maximum,
       elevation,
       timeSeconds,
+      detail,
     )
     if (zone.plane !== undefined) {
       const key = material?.materialId ?? ''
@@ -6198,6 +6296,17 @@ uniform float terrainDecalSpecularTextured;
 uniform sampler2D terrainDecalSpecularMap;
 // How normalMap spells the normal: 0 RGB, 1 X in alpha and Y in green (DXN), 2 RGB with Y against v.
 uniform float normalSwizzle;
+// Detail-wave water (MapWaterDetailWaves): normalMap holds the first normal image, the base and
+// second colour maps the glitter; vertex colour is the ground's occlusion and the depth term.
+uniform float waterDetailMode;
+uniform sampler2D waterDetailNormal1;
+uniform sampler2D waterDetailFoam0;
+uniform sampler2D waterDetailFoam1;
+uniform float waterDetailFoamed;
+uniform vec3 waterDetailColor;
+uniform vec4 waterDetailScroll0;
+uniform vec4 waterDetailScroll1;
+uniform float waterDetailUpScale;
 // One uniform per fill light rather than arrays: read through ANGLE/D3D11, a uniform array indexed
 // anywhere but by a literal in main() contributed nothing, silently.
 uniform vec3 fillLightDirection0;
@@ -6335,12 +6444,57 @@ float directionalShadow(vec3 resolvedNormal) {
   }
   return mix(visible / 9.0, 1.0, smoothstep(0.9, 1.0, reach));
 }
+/**
+ * Warzone 2100 terrain_water_high.frag on the two scrolling UV sets. Its normal images are read as
+ * (x, y up, z) = (r, b, g) in the engine's world, which is this world's axes; the first pair is
+ * blended by reoriented normal mapping (selfshadow.com, "Blending in Detail").
+ */
+vec4 detailWater() {
+  vec2 uv1 = textureCoordinate;
+  vec2 uv2 = secondaryTextureCoordinate;
+  vec3 s1 = texture(normalMap, uv1 + waterDetailScroll0.xy * waterTime).rgb;
+  vec3 s2 = texture(waterDetailNormal1, uv2 + waterDetailScroll0.zw * waterTime).rgb;
+  vec3 s3 = texture(normalMap, uv1 + waterDetailScroll1.xy * waterTime).rgb;
+  vec3 s4 = texture(waterDetailNormal1, uv2 + waterDetailScroll1.zw * waterTime).rgb;
+  vec3 n1 = vec3(s1.r * 2.0 - 1.0, s1.b * 2.0, s1.g * 2.0 - 1.0);
+  vec3 n2 = vec3(1.0 - 2.0 * s2.r, 2.0 * s2.b - 1.0, 1.0 - 2.0 * s2.g);
+  vec3 n3 = vec3(s3.r, s3.b, s3.g) * 2.0 - 1.0;
+  vec3 n4 = vec3(s4.r, s4.b, s4.g) * 2.0 - 1.0;
+  vec3 blended = normalize(n1 * dot(n1, n2) - n2 * n1.y);
+  vec3 n = mix(blended, mix(n3, n4, 0.5), 0.5);
+  n = normalize(vec3(n.x, n.y * waterDetailUpScale, n.z));
+  float depthTerm = vertexColor.a;
+  float shore = mix(depthTerm * 0.1, depthTerm, 0.5);
+  float glitter = texture(baseColorMap, uv1).r * texture(secondaryColorMap, uv2).r;
+  float foam = waterDetailFoamed > 0.5
+    ? texture(waterDetailFoam0, uv1).r * texture(waterDetailFoam1, uv2).r
+    : 0.0;
+  foam = clamp((foam + pow(length(n.xz), 2.5) * 1000.0) * shore * shore, 0.0, 0.2);
+  vec3 key = normalize(-lightDirection);
+  vec3 eye = normalize(eyePosition - worldPosition);
+  vec3 halfway = normalize(key + eye);
+  float diffuse = max(dot(n, key), 0.0);
+  diffuse = min(diffuse, directionalShadow(n) * diffuse);
+  float blinn = clamp(pow(max(dot(n, halfway), 0.0), 128.0), 0.0, 1.0);
+  float mirror = pow(max(dot(reflect(-key, n), halfway), 0.0), 14.0);
+  float fresnel = pow(1.0 - dot(eye, halfway), 10.0) * 1000.0;
+  float fresnelAlpha = clamp(pow(max(1.0 - eye.y, 0.0), 0.8), 0.15, 0.5);
+  vec3 color = ambientColor * ambientIntensity * foam
+    + lightColor * lightIntensity * diffuse * waterDetailColor + glitter * glitter * 0.5
+    + lightSpecularRadiance * (blinn + mirror) * 0.5 * diffuse;
+  color = mix(color, (color + vec3(1.0, 0.8, 0.63)) * 0.5, fresnel);
+  return vec4(color * vertexColor.rgb, (0.15 + 0.35 + fresnelAlpha) * (1.0 - depthTerm));
+}
 /** Radiance already carries intensity; a zero direction means "no such light". */
 vec3 fillLight(vec3 resolvedNormal, vec3 direction, vec3 radiance) {
   if (dot(direction, direction) <= 0.0) return vec3(0.0);
   return radiance * max(0.0, dot(resolvedNormal, normalize(-direction)));
 }
 void main() {
+  if (waterDetailMode > 0.5) {
+    outColor = detailWater();
+    return;
+  }
   vec3 resolvedNormal = normalize(worldNormal);
   if (waterWavesMode > 0.5) {
     // SC2 Water.fx WaterNormal: two normals of one image at the map position times the tiling (v
@@ -7957,9 +8111,35 @@ function drawTexturedBatch(
     worldUniform1i(gl, program, 'secondaryColorMap', 6)
     worldUniform1f(gl, program, 'secondaryTextured', 1)
   }
+  const detail = source.waterDetail
+  if (detail === undefined) {
+    worldUniform1f(gl, program, 'waterDetailMode', 0)
+  } else {
+    // The first normal image on the ordinary normal unit (unused by this branch), the rest on
+    // their own.
+    bindTexture2d(resources, detail.normals[0], 5)
+    bindTexture2d(resources, detail.normals[1], WATER_DETAIL_NORMAL_UNIT)
+    if (detail.foam !== undefined) {
+      bindTexture2d(resources, detail.foam[0], WATER_DETAIL_FOAM_UNIT)
+      bindTexture2d(resources, detail.foam[1], WATER_DETAIL_SECOND_FOAM_UNIT)
+    }
+    worldUniform1f(gl, program, 'waterDetailFoamed', detail.foam === undefined ? 0 : 1)
+    gl.uniform3f(uniformLocation(gl, program, 'waterDetailColor'), ...detail.color)
+    gl.uniform4fv(
+      uniformLocation(gl, program, 'waterDetailScroll0'),
+      Float32Array.from(detail.sampleScroll.slice(0, 4)),
+    )
+    gl.uniform4fv(
+      uniformLocation(gl, program, 'waterDetailScroll1'),
+      Float32Array.from(detail.sampleScroll.slice(4, 8)),
+    )
+    worldUniform1f(gl, program, 'waterDetailUpScale', detail.upScale)
+    worldUniform1f(gl, program, 'waterDetailMode', 1)
+  }
   worldUniform1f(gl, program, 'textured', 1)
   worldUniform1f(gl, program, 'alphaCutoff', source.alphaCutoff ?? 0)
   drawBatch(resources, program, source, gl.TRIANGLES, source, range)
+  if (detail !== undefined) worldUniform1f(gl, program, 'waterDetailMode', 0)
 }
 
 function drawSplatBatch(
@@ -9714,6 +9894,17 @@ function drawWorldWebGlWithResources(
     worldUniform1i(gl, program, 'waterNormalMap', WATER_NORMAL_UNIT)
     bindSentinelTexture2d(resources, TERRAIN_DECAL_SPECULAR_UNIT)
     worldUniform1i(gl, program, 'terrainDecalSpecularMap', TERRAIN_DECAL_SPECULAR_UNIT)
+    for (const [name, unit] of [
+      ['waterDetailNormal1', WATER_DETAIL_NORMAL_UNIT],
+      ['waterDetailFoam0', WATER_DETAIL_FOAM_UNIT],
+      ['waterDetailFoam1', WATER_DETAIL_SECOND_FOAM_UNIT],
+    ] as const) {
+      bindSentinelTexture2d(resources, unit)
+      worldUniform1i(gl, program, name, unit)
+    }
+    worldUniform1f(gl, program, 'waterDetailMode', 0)
+    // The clock of animated water: waves on planes and detail waves on the surface triangles.
+    worldUniform1f(gl, program, 'waterTime', input.timeSeconds ?? 0)
     worldUniform1f(gl, program, 'terrainDecal', 0)
     worldUniform1f(gl, program, 'terrainSpecularGloss', 0)
     worldUniform1f(gl, program, 'normalSwizzle', 0)
@@ -10288,6 +10479,10 @@ const WATER_CAUSTICS_UNIT = 10
 const WATER_NORMAL_UNIT = 11
 /** A terrain decal tile's specular map; a 2D sentinel for every other draw. */
 const TERRAIN_DECAL_SPECULAR_UNIT = 12
+/** Detail-wave water: its second normal image and its two foam masks; 2D sentinels otherwise. */
+const WATER_DETAIL_NORMAL_UNIT = 13
+const WATER_DETAIL_FOAM_UNIT = 14
+const WATER_DETAIL_SECOND_FOAM_UNIT = 15
 /** Water colour and opacity at depth zero when a material states none. */
 const WATER_DEFAULT_COLOR = [0.12, 0.52, 0.82, 0.48] as const
 

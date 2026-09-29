@@ -1847,6 +1847,16 @@ export function createCandidateWorldSceneLease(
                   const frame = candidate.causticsFrameResources?.[index]
                   return resourceId === requestedResourceId && frame !== undefined ? [frame] : []
                 }),
+                ...[
+                  ...(candidate.detailWaves?.normalResourceIds ?? []).map((resourceId, index) =>
+                    [resourceId, candidate.detailWaves?.normalResources[index]] as const,
+                  ),
+                  ...(candidate.detailWaves?.foamResourceIds ?? []).map((resourceId, index) =>
+                    [resourceId, candidate.detailWaves?.foamResources?.[index]] as const,
+                  ),
+                ].flatMap(([resourceId, resource]) =>
+                  resourceId === requestedResourceId && resource !== undefined ? [resource] : [],
+                ),
               ]),
             ][0]
             if (requirement === undefined) {

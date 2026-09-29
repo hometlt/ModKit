@@ -841,6 +841,40 @@ export interface MapWaterMaterialDefinition {
    * (terrain_water_high.frag). Absent means it does not.
    */
   readonly occludedLikeTerrain?: boolean
+  /**
+   * The surface shaded per pixel as Warzone 2100's high-quality water (terrain_water_high.frag)
+   * instead of a flat colour: see MapWaterDetailWaves. `color` is the water colour its diffuse
+   * light shows; the base and second images are sampled on the two UV sets for glitter.
+   */
+  readonly detailWaves?: MapWaterDetailWaves
+}
+
+/**
+ * Detail waves of a lit, see-through water surface (Warzone 2100 terrain_water_high.frag). Two
+ * normal images (RGB, blue out of the surface) are read on the two scrolling UV sets of the
+ * material's `uvScale`/`scroll`, each twice more with its own extra movement; the first pair is
+ * blended by reoriented normal mapping, averaged with the second pair and flattened by `upScale`.
+ * The pixel is the water colour lit by the key light's diffuse, glitter from the base and second
+ * images' red, foam near the shore, a Blinn (128) and mirror (14) highlight, and a warm fresnel
+ * tint where the eye looks against the light; its opacity is 0.5 plus a view-angle term (0.15–0.5)
+ * times a depth term that thins it where the water is shallower than `depthRange`.
+ */
+export interface MapWaterDetailWaves {
+  /** Normal images on the first and second UV set. */
+  readonly normalResourceIds: readonly [string, string]
+  readonly normalResources: readonly [LogicalResourceRequirement, LogicalResourceRequirement]
+  /** Foam masks (red) on the first and second UV set; absent: foam from the waves alone. */
+  readonly foamResourceIds?: readonly [string, string]
+  readonly foamResources?: readonly [LogicalResourceRequirement, LogicalResourceRequirement]
+  /**
+   * Extra UV movement per second of the four normal samples, (u, v) each: the first image, the
+   * second, the first again, the second again.
+   */
+  readonly sampleScroll: readonly [number, number, number, number, number, number, number, number]
+  /** The blended normal's up component is scaled by this before normalizing: larger is calmer. */
+  readonly upScale: number
+  /** Water depth (world units) at which the surface reaches full opacity and loses its foam. */
+  readonly depthRange: number
 }
 
 export interface MapWaterSummary {

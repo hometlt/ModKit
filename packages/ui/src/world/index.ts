@@ -572,6 +572,8 @@ export async function inspectCandidateWorld(
             material.causticsResourceId,
             material.normalResourceId,
             ...(material.causticsFrameResourceIds ?? []),
+            ...(material.detailWaves?.normalResourceIds ?? []),
+            ...(material.detailWaves?.foamResourceIds ?? []),
           ].filter((resourceId): resourceId is string => resourceId !== undefined),
         ),
         ...(layer.weightRasters ?? []).map(raster => raster.resourceId),

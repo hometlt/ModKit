@@ -190,6 +190,83 @@ describe('world terrain overlays', () => {
     assert.deepEqual(occluded.get('1:1'), [0.15, 0.3, 0.45, 0.8])
   })
 
+  it('shades detail-wave water per pixel, the depth term and ground AO in its vertex colour', () => {
+    const heights = [0, -96, -48, 48]
+    const ao = [1, 0.5, 0.25, 0.75]
+    const items = [
+      ...cell().map((item, index) => ({
+        ...item,
+        ambientOcclusion: ao[index],
+        uvwPosition: { ...item.uvwPosition, y: heights[index] },
+      })),
+      {
+        facet: 'water',
+        id: 'water:0',
+        layerId: 'water',
+        coordinateSpaceId: 'map-native',
+        zoneId: 0,
+        templateId: 'TER_WATER',
+        minimum: { x: 0, y: 0 },
+        maximum: { x: 1, y: 1 },
+        uvwMinimum: { x: 0, z: 0 },
+        uvwMaximum: { x: 1, z: 1 },
+        uvwElevation: 0,
+        materialId: 'water',
+      },
+    ]
+    const waterMaterial = {
+      materialId: 'water',
+      classification: 'water',
+      shorelineMode: 'zone',
+      compositing: 'over',
+      color: [0.18, 0.33, 0.42, 1],
+      baseColorResourceId: 'glitter-1',
+      secondaryColorResourceId: 'glitter-2',
+      uvScale: [1, -1, 0.5, -0.5],
+      scroll: [0, 1, 0, -1],
+      occludedLikeTerrain: true,
+      detailWaves: {
+        normalResourceIds: ['normal-1', 'normal-2'],
+        normalResources: [],
+        foamResourceIds: ['foam-1', 'foam-2'],
+        foamResources: [],
+        sampleScroll: [0, 0.04, 0.02, 0, 0.05, 0, 0, 0.03],
+        upScale: 5,
+        depthRange: 96,
+      },
+    }
+    const textures = new Map(
+      ['glitter-1', 'glitter-2', 'normal-1', 'normal-2', 'foam-1', 'foam-2'].map(id => [id, texture(id)]),
+    )
+    const plan = createWorldWebGlPlan({ items, waterMaterials: [waterMaterial], terrainTextures: textures })
+    const water = plan.transparentTexturedTriangles.find(item => item.waterDetail !== undefined)
+    assert.ok(water, 'the detail water batch is drawn')
+    assert.equal(water.texture.id, 'glitter-1')
+    assert.equal(water.secondaryTexture.id, 'glitter-2')
+    assert.deepEqual(water.waterDetail.normals.map(item => item.id), ['normal-1', 'normal-2'])
+    assert.deepEqual(water.waterDetail.foam.map(item => item.id), ['foam-1', 'foam-2'])
+    assert.deepEqual(water.waterDetail.color, [0.18, 0.33, 0.42])
+    assert.equal(water.waterDetail.upScale, 5)
+    // terrain_water_high.vert: 1 - (clamp(depth / 96, -1, 1) / 2 + 1/2); the ground's AO in RGB.
+    const byCorner = new Map()
+    for (let vertex = 0; vertex < water.positions.length / 3; vertex += 1)
+      byCorner.set(
+        `${water.positions[vertex * 3]}:${water.positions[vertex * 3 + 2]}`,
+        Array.from(water.colors.slice(vertex * 4, vertex * 4 + 4)),
+      )
+    assert.deepEqual(byCorner.get('0:0'), [1, 1, 1, 0.5])
+    assert.deepEqual(byCorner.get('1:0'), [0.5, 0.5, 0.5, 0])
+    assert.deepEqual(byCorner.get('0:1'), [0.25, 0.25, 0.25, 0.25])
+    assert.deepEqual(byCorner.get('1:1'), [0.75, 0.75, 0.75, 0.75])
+    // Without its normal images the surface falls back to the plain textured water.
+    const flat = createWorldWebGlPlan({
+      items,
+      waterMaterials: [waterMaterial],
+      terrainTextures: new Map([...textures].filter(([id]) => !id.startsWith('normal'))),
+    })
+    assert.equal(flat.transparentTexturedTriangles.some(item => item.waterDetail !== undefined), false)
+  })
+
   it('lights a decal tile as ground: its normal and gloss maps, the ground AO in colour alpha', () => {
     const items = [
       ...cell().map((item, index) => ({ ...item, ambientOcclusion: [1, 0.5, 0.25, 0.75][index] })),
