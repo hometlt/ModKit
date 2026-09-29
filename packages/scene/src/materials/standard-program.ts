@@ -496,6 +496,7 @@ function shade(
     alphaTestThreshold: material.alphaTestThreshold,
     usesVertexColor: material.usesVertexColor,
     usesVertexAlpha: material.usesVertexAlpha,
+    ...(material.blendMode === 2 ? { modAlpha: true } : {}),
     ...(normalFormats === undefined && material.normalMapFormat === undefined
       ? {}
       : { normalMapFormat: normalFormats === undefined ? material.normalMapFormat : 'rgb8' }),

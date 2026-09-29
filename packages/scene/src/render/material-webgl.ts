@@ -1127,6 +1127,13 @@ function buildLeaseShaderSources(
     (stages.tinted
       ? '\nuniform vec4 u_instanceTint;\nflat in vec4 v_vertexTint;\nvoid main(){materialMain();materialColor*=u_instanceTint*v_vertexTint;'
       : '\nuniform vec4 u_instanceTint;\nvoid main(){materialMain();materialColor*=u_instanceTint;') +
+    // An additive pass blends ONE, ONE: a tint's alpha (a particle's lifecycle alpha) fades its
+    // colour here, as the material's own fade already did (modAlpha).
+    (source.defines.modAlpha === true
+      ? stages.tinted
+        ? 'materialColor.rgb*=u_instanceTint.a*v_vertexTint.a;'
+        : 'materialColor.rgb*=u_instanceTint.a;'
+      : '') +
     // A solid pass covers its pixel whole: an alpha-tested leaf that survives the test is opaque.
     // Multiplying its colour by the texel alpha drew SC2 foliage (alpha 0.3-0.7) dark with black rims.
     (materialIsSolid(source)

@@ -83,6 +83,13 @@ export interface StandardMaterialDefines {
   clampOutput: boolean
   usesVertexColor: boolean
   usesVertexAlpha: boolean
+  /**
+   * An additive (MAT_ blend 2) material: its target blend is ONE, ONE, so the colour is scaled by
+   * the pixel's fade here, as PSMaterial.fx does for BlendAdd (`b_iModAlpha`: rgb *= fade, the
+   * alpha before the alpha-mask layers). Without it a particle's lifecycle alpha did nothing and
+   * every floodlight streak drew at full strength.
+   */
+  modAlpha?: boolean
   /** alpha_test_threshold > 0 — fragment emits the discard. */
   alphaTest: boolean
   /** Highest explicit uv set any layer reads (0..3) — drives vertex attributes/varyings. */
@@ -220,6 +227,7 @@ export function buildMaterialDefines(
     clampOutput: material.clampOutput,
     usesVertexColor: material.usesVertexColor,
     usesVertexAlpha: material.usesVertexAlpha,
+    ...(material.blendMode === 2 ? { modAlpha: true } : {}),
     alphaTest: material.alphaTestThreshold > 0,
     uvSetCount: (maxUvSet + 1) as 1 | 2 | 3 | 4,
     ...(options.gpuSkinning === true ? { gpuSkinning: true } : {}),
@@ -248,7 +256,7 @@ export function canonicalDefineKey(defines: StandardMaterialDefines): string {
     `layers[${layerKeys}]` +
     `;n=${defines.normalMapFormat}.${defines.normalMapSpace};spec=${defines.specMode}` +
     `;${defines.unshaded ? 'U' : ''}${defines.doubleLambert ? 'D' : ''}${defines.clampOutput ? 'C' : ''}` +
-    `${defines.usesVertexColor ? 'vc' : ''}${defines.usesVertexAlpha ? 'va' : ''}${defines.alphaTest ? 'at' : ''}` +
+    `${defines.usesVertexColor ? 'vc' : ''}${defines.usesVertexAlpha ? 'va' : ''}${defines.modAlpha ? 'ma' : ''}${defines.alphaTest ? 'at' : ''}` +
     `;uv=${defines.uvSetCount};${defines.gpuSkinning ? 'skin' : ''}${defines.hardwareInstancing ? 'inst' : ''}${defines.bakedPoseInstancing ? 'baked' : ''}` +
     `${defines.sceneLighting ? ';scene' : ''}`
   )
@@ -463,6 +471,8 @@ export interface CpuPixelInput {
   vertexColor?: Vec4
   usesVertexColor?: boolean
   usesVertexAlpha?: boolean
+  /** The `modAlpha` define: an additive material's colour scaled by its fade. */
+  modAlpha?: boolean
   /** Composite CMS_ pass opacity; defaults to fully opaque. */
   materialAlpha?: number
   specularity: number
@@ -781,6 +791,7 @@ export function composeStandardPixelCpu(input: CpuPixelInput): CpuPixelResult {
   // channels=0 is RGB-only and forces alpha to one; SC2 resource crystals
   // then supply opacity once through alpha1 from the same DDS alpha channel.
   let alpha = layers.diffuse ? computeLayerColorCpu(layers.diffuse, teamColor)[3] : 1
+  let fade = alpha * (input.materialAlpha ?? 1)
   if (layers.alpha1) alpha *= computeLayerColorCpu(layers.alpha1, teamColor)[3]
   if (layers.alpha2) alpha *= computeLayerColorCpu(layers.alpha2, teamColor)[3]
   final[3] = alpha * (input.materialAlpha ?? 1)
@@ -808,8 +819,12 @@ export function composeStandardPixelCpu(input: CpuPixelInput): CpuPixelResult {
         final[3],
       ]
     }
-    if (usesAlpha) final[3] *= input.vertexColor[3]
+    if (usesAlpha) {
+      final[3] *= input.vertexColor[3]
+      fade *= input.vertexColor[3]
+    }
   }
+  if (input.modAlpha === true) final = [final[0] * fade, final[1] * fade, final[2] * fade, final[3]]
   if (input.clampOutput) {
     final = [clamp01(final[0]), clamp01(final[1]), clamp01(final[2]), clamp01(final[3])]
   }
@@ -1375,6 +1390,8 @@ export function buildStandardFragmentSource(
   }
 
   body.push(diffuse ? '  float alpha = computeLayer_diffuse().a;' : '  float alpha = 1.0;')
+  // BlendAdd's fade is the alpha before the alpha masks (PSMaterial.fx).
+  if (defines.modAlpha) body.push('  float fade = alpha * u_materialAlpha;')
   if (layerBySlot.has('alpha1')) body.push('  alpha *= computeLayer_alpha1().a;')
   if (layerBySlot.has('alpha2')) body.push('  alpha *= computeLayer_alpha2().a;')
   body.push('  final.a = alpha * u_materialAlpha;')
@@ -1384,6 +1401,10 @@ export function buildStandardFragmentSource(
   }
   if (defines.usesVertexColor) body.push('  final.rgb *= v_vertexColor.rgb;')
   if (defines.usesVertexAlpha) body.push('  final.a *= v_vertexColor.a;')
+  if (defines.modAlpha)
+    body.push(
+      `  final.rgb *= fade${defines.usesVertexAlpha ? ' * v_vertexColor.a' : ''};`,
+    )
   if (defines.clampOutput) body.push('  final = clamp(final, 0.0, 1.0);')
   if (defines.alphaTest) body.push('  if (final.a < u_alphaTestThreshold) discard;')
   body.push('  gl_FragColor = final;')
