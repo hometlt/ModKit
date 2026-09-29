@@ -20,6 +20,7 @@ import {
   type TranslationProviderRequestFacet,
 } from '@modkit/sdk/language'
 import type {
+  ContributionSettings,
   DefinitionInventoryResult,
   PermissionGrant,
   ResourceBudget,
@@ -494,6 +495,11 @@ export interface LanguageHostServices {
   readonly target: RuntimeTarget
   readonly executionBackends: ExecutionBackendRegistry
   readonly serviceDefinitions?: ServiceContractDefinitionRegistry
+  /**
+   * The host's settings for a language provider (hint verbosity, checks to run), by its id; the
+   * provider reads them as `ContributionContext.settings`, as a codec does.
+   */
+  readonly contributionSettings?: (contributionId: string) => ContributionSettings | undefined
 }
 
 export interface ResolveLanguageProviderRequest extends LanguageProviderRequestFacet {
@@ -591,6 +597,9 @@ export async function resolveLanguageProvider(
     definitions,
     grant: request.grant,
     budgets: request.budgets,
+    ...(request.services.contributionSettings === undefined
+      ? {}
+      : { contributionSettings: request.services.contributionSettings }),
     ...(request.signal === undefined ? {} : { signal: request.signal }),
   })
   let released = false

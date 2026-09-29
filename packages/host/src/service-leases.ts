@@ -13,6 +13,7 @@
 import { ModkitError, type Diagnostic } from '@modkit/core'
 import type {
   ContributionContext,
+  ContributionSettings,
   ContractResolverPort,
   ExecutionProfile,
   HostPolicy,
@@ -196,6 +197,8 @@ export interface HostServiceResolverOptions {
   readonly logicalResourcesFor?: (grant: PermissionGrant) => LogicalResourcePort
   /** Root provider only: where platforms installed games (installation discovery on a desktop host). */
   readonly installationProbes?: InstallationProbes
+  /** The host's settings for a provider, asked for by its id when it is activated. */
+  readonly contributionSettings?: (contributionId: string) => ContributionSettings | undefined
 }
 
 export interface HostServiceResolver {
@@ -269,8 +272,9 @@ export function createHostServiceResolver(
           ...(options.policy === undefined ? {} : { policy: options.policy }),
           ...(signal === undefined ? {} : { signal }),
           diagnostics,
-          contextFor: effectiveGrant =>
-            Object.freeze({
+          contextFor: effectiveGrant => {
+            const settings = options.contributionSettings?.(result.selected.offer.providerId)
+            return Object.freeze({
               contracts: makePort(effectiveGrant, [...chain, key]),
               budgets: options.budgets,
               ...(chain.length !== 0 || options.logicalResourcesFor === undefined
@@ -284,8 +288,10 @@ export function createHostServiceResolver(
                   diagnostics.push(item)
                 },
               },
+              ...(settings === undefined ? {} : { settings }),
               ...(options.signal === undefined ? {} : { signal: options.signal }),
-            }),
+            })
+          },
         })
         activations.push(activation)
         activationFacts.push(

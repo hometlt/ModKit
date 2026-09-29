@@ -474,7 +474,10 @@ const fixture = defineLinkedExtension({
     './src/provider.js': {
       abiVersion: 1,
       provides: ['common.language/document-analysis'],
-      createProvider: () => ({ value: provider, release: async () => undefined }),
+      createProvider: (_selection: unknown, context?: { readonly settings?: unknown }) => {
+        providerSettings = context?.settings
+        return { value: provider, release: async () => undefined }
+      },
     },
     './src/data-provider.js': {
       abiVersion: 1,
@@ -490,6 +493,7 @@ const fixture = defineLinkedExtension({
 })
 
 let services: LanguageHostServices
+let providerSettings: unknown
 
 beforeAll(async () => {
   const linked = linkedExtensionInputs([fixture])
@@ -503,6 +507,22 @@ beforeAll(async () => {
   const definitions = createBundledServiceDefinitionRegistry()
   await registerServiceDefinitionsOrThrow(composition.inventory, definitions)
   services = { ...composition, serviceDefinitions: definitions }
+})
+
+it('hands a language provider the host settings for it, as a codec gets them', async () => {
+  const settings = { values: { hintDetail: 'full' } }
+  const workspace = createLanguageWorkspace({
+    services: { ...services, contributionSettings: () => settings },
+    grant: { id: 'provider-settings-test', classes: [] },
+    budgets,
+  })
+  await workspace.initialize()
+  try {
+    expect((await workspace.open(languageRequest(1))).state).toBe('resolved')
+    expect(providerSettings).toEqual(settings)
+  } finally {
+    await workspace.shutdown()
+  }
 })
 
 it('projects provider-owned trigger characters with the language route', () => {
