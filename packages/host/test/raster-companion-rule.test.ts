@@ -104,6 +104,27 @@ describe('raster reads follow the opening codec’s companion rule', () => {
     }
   })
 
+  it('tries the extension the game loads after the one the document spells', async () => {
+    const { asked, raster } = read({
+      rule: () => ({
+        scopes: ['sibling-directory'],
+        directories: ['', 'DATA/ART/TEXTURESHDR/SRGB'],
+        extensions: ['.dds'],
+      }),
+    })
+    await raster.read({
+      kind: 'logical',
+      requirement: { ...requirement, logicalId: 'Unit_Alpha.tga' },
+      maxBytes: 4096,
+    })
+    expect(asked.map(item => item.logicalId)).toEqual([
+      'Unit_Alpha.tga',
+      'DATA/ART/TEXTURESHDR/SRGB/Unit_Alpha.tga',
+      'Unit_Alpha.dds',
+      'DATA/ART/TEXTURESHDR/SRGB/Unit_Alpha.dds',
+    ])
+  })
+
   it('stops at the first spelling that resolves', async () => {
     const { port, asked } = recordingSession()
     const resolving = {

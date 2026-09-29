@@ -1885,12 +1885,20 @@ async function openSubjectDirect(
       )
       if (requirement === undefined) return undefined
       const directories = ['']
+      const extensions: string[] = []
       for (const pattern of requirement.patterns ?? []) {
         const cut = pattern.replaceAll('\\', '/').lastIndexOf('/')
         const directory = cut <= 0 ? '' : pattern.slice(0, cut)
         if (!directories.includes(directory)) directories.push(directory)
+        // `*.dds`: the extension the game loads, whatever the document spells
+        const extension = /^\*(\.[^.*?/]+)$/u.exec(pattern.slice(cut + 1))?.[1]?.toLowerCase()
+        if (extension !== undefined && !extensions.includes(extension)) extensions.push(extension)
       }
-      return Object.freeze({ scopes: requirement.scopes, directories: Object.freeze(directories) })
+      return Object.freeze({
+        scopes: requirement.scopes,
+        directories: Object.freeze(directories),
+        ...(extensions.length === 0 ? {} : { extensions: Object.freeze(extensions) }),
+      })
     }
     const input = await (options.resolveInput ?? defaultResolveInput)({
       source: options.source,

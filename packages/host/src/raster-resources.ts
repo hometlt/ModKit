@@ -37,6 +37,11 @@ export interface RasterCompanionRule {
   readonly scopes: readonly InputSearchScope[]
   /** Directories the name is tried under, in order; `''` is the name on its own. */
   readonly directories: readonly string[]
+  /**
+   * Extensions the game loads in place of the one a document spells (`.dds` for a `.tga` a Grey Goo
+   * model names), from the codec's patterns (`…/*.dds`); tried after the document's own.
+   */
+  readonly extensions?: readonly string[]
 }
 
 /**
@@ -50,10 +55,18 @@ function rasterSpellings(logicalId: string, rule: RasterCompanionRule | undefine
   const spellings = [logicalId]
   if (rule === undefined) return spellings
   const name = logicalId.replaceAll('\\', '/').split('/').at(-1) ?? logicalId
-  for (const directory of rule.directories) {
-    const spelling = directory === '' ? name : `${directory}/${name}`
-    if (!spellings.includes(spelling)) spellings.push(spelling)
-  }
+  const stem = name.replace(/\.[^.]*$/u, '')
+  const names = [
+    name,
+    ...(rule.extensions ?? [])
+      .map(extension => `${stem}${extension}`)
+      .filter(other => other.toLowerCase() !== name.toLowerCase()),
+  ]
+  for (const candidate of names)
+    for (const directory of rule.directories) {
+      const spelling = directory === '' ? candidate : `${directory}/${candidate}`
+      if (!spellings.includes(spelling)) spellings.push(spelling)
+    }
   return spellings
 }
 
