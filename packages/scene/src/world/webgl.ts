@@ -7895,21 +7895,40 @@ function prepareWorldMaterialResources(
     resources.materialTextureHandles.clear()
     resources.materialPlan = plan
   }
+  // The scenes of one model share their texture list: each list is read once.
+  const lists = new Set<readonly SceneRendererTexture[]>()
   const seen = new Set<SceneRendererTexture>()
-  for (const scene of [...plan.modelMaterialScenes, ...plan.modelEffects])
-    for (const texture of scene.textures) {
+  const bind = (textures: readonly SceneRendererTexture[]) => {
+    if (lists.has(textures)) return
+    lists.add(textures)
+    for (const texture of textures) {
       if (seen.has(texture)) continue
       seen.add(texture)
       resources.materialTextureHandles.set(texture, bindTexture2d(resources, texture, 0))
     }
+  }
+  for (const scene of plan.modelMaterialScenes) bind(scene.textures)
+  for (const effect of plan.modelEffects) bind(effect.textures)
   // The poses of the frame's skins, uploaded at once before the shadow pass draws any of them.
   const palettes = new Set<Float32Array>()
   for (const scene of plan.modelMaterialScenes)
+    for (const palette of worldScenePalettes(scene)) palettes.add(palette)
+  resources.materialDraws.prepareSkins(palettes)
+}
+
+/** The skin palettes a scene's primitives draw with, in their order; kept scenes keep theirs. */
+const worldScenePaletteLists = new WeakMap<WorldWebGlModelMaterialScene, readonly Float32Array[]>()
+function worldScenePalettes(scene: WorldWebGlModelMaterialScene): readonly Float32Array[] {
+  let palettes = worldScenePaletteLists.get(scene)
+  if (palettes === undefined) {
+    const found: Float32Array[] = []
     for (const primitive of scene.primitives) {
       const skin = materialSkinOf(primitive)
-      if (skin !== undefined) palettes.add(skin.palette)
+      if (skin !== undefined) found.push(skin.palette)
     }
-  resources.materialDraws.prepareSkins(palettes)
+    worldScenePaletteLists.set(scene, (palettes = found))
+  }
+  return palettes
 }
 
 /** One caster of the shadow map, with the identities its depth reads (see worldShadowEntryKey). */
@@ -8199,11 +8218,11 @@ function renderWorldShadowMap(
       resources.shadowTargetReuses += 1
       gl.bindFramebuffer(gl.FRAMEBUFFER, target.framebuffer)
     }
+    // Checked complete when allocated; its attachment never changes. The check is a synchronous
+    // round trip to the GPU process: every frame it waited for all the work queued before it.
     gl.bindFramebuffer(gl.FRAMEBUFFER, target.framebuffer)
     gl.drawBuffers([gl.NONE])
     gl.readBuffer(gl.NONE)
-    if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE)
-      throw new TypeError('world shadow-map framebuffer is incomplete')
 
     gl.viewport(0, 0, size, size)
     gl.clearDepth(1)
