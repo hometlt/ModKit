@@ -648,6 +648,12 @@ export interface MapTerrainSample {
    * the authored data for editing and export.
    */
   readonly presentationHeightAdjustment?: number
+  /**
+   * The cell from this sample to `(x + 1, y + 1)` is a hole in the drawn ground: the map cut it so
+   * what lies below shows through (SC2 `t3CellFlags` value 3 — the space around a platform). It is
+   * neither drawn nor casts. Presentation only: heights stay authored for editing and export.
+   */
+  readonly presentationCellHidden?: true
   readonly mask: number
 }
 

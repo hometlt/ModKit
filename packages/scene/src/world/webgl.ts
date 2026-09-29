@@ -4715,6 +4715,9 @@ function prepareWorldStaticTerrain(
       cutShadowCasters.push(...a!, ...b!, ...c!, ...a!, ...c!, ...d!)
       continue
     }
+    // A hole the map punched in its ground (the space around Lockdown's platform) shows what is
+    // below: nothing is drawn and nothing casts.
+    if (item.presentationCellHidden === true) continue
     const cornerKeys = [
       `${item.x}:${item.y}`,
       `${item.x + 1}:${item.y}`,
@@ -5643,16 +5646,25 @@ export function createWorldWebGlPlan(
     materials: new Map(),
     cohorts: new Map(),
   }
-  // Projector decals batch by splat layer and texture: a layer draws as one part of the ground.
-  const projectorBatchKey = (texture: MutableTexturedBatch['texture'], layer: number | undefined) =>
-    `projector:${layer ?? ''}:${texture.id}`
-  const projectorBatch = (texture: MutableTexturedBatch['texture'], layer: number | undefined) => {
-    const key = projectorBatchKey(texture, layer)
+  // Projector decals batch by splat layer, blend and texture: a layer draws as one part of the ground.
+  // An additive decal (Purifier_City_Decals: orange lines on black) adds its colour; blended over the
+  // ground, its opaque black texels painted a black slab across Old Sun Temple's ramp.
+  const projectorBatchKey = (
+    texture: MutableTexturedBatch['texture'],
+    layer: number | undefined,
+    blendMode: 'blend' | 'additive',
+  ) => `projector:${layer ?? ''}:${blendMode === 'additive' ? 'add:' : ''}${texture.id}`
+  const projectorBatch = (
+    texture: MutableTexturedBatch['texture'],
+    layer: number | undefined,
+    blendMode: 'blend' | 'additive',
+  ) => {
+    const key = projectorBatchKey(texture, layer, blendMode)
     const target = transparentTextured.get(key) ?? {
       ...batch(),
       textureCoordinates: [],
       texture,
-      blendMode: 'blend' as const,
+      blendMode,
       castShadows: false,
       receiveShadows: false,
       ...(layer === undefined ? {} : { splatLayer: layer }),
@@ -6111,7 +6123,9 @@ export function createWorldWebGlPlan(
           const texture = scene.textures.find(candidate => candidate.id === textureId)
           if (!texture || !primitive.textureCoordinates) continue
           const layer = projectedSplatLayer(primitive)
-          const target = projectorBatch(texture, layer)
+          const blend = material?.simpleEffect?.blend
+          const blendMode = blend === 'additive' || blend === 'add-alpha' ? 'additive' : 'blend'
+          const target = projectorBatch(texture, layer, blendMode)
           const write: MutableTexturedBatch = { ...batch(), textureCoordinates: [], texture }
           for (const triangle of primitiveTriangles(primitive)) {
             const vertices = triangle.map(index => {
@@ -6131,7 +6145,7 @@ export function createWorldWebGlPlan(
               [1, 1, 1, material?.baseColor?.[3] ?? 1],
             )
           }
-          const key = projectorBatchKey(texture, layer)
+          const key = projectorBatchKey(texture, layer, blendMode)
           const previous = previousProjectorWrites?.[projectorWrites.length]
           const kept =
             previous !== undefined && previous.key === key && sameWriteContent(previous.write, write)

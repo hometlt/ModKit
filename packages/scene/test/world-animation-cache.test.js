@@ -289,6 +289,7 @@ function effectModel({
   particles = false,
   projector = !particles,
   animatedAlpha = true,
+  decalBlendMode = 1,
 } = {}) {
   const layer = (slot, animated = false) => ({
     slot,
@@ -463,6 +464,7 @@ function effectModel({
                     layers: [{ label: 'diffuse', path: 'decal.png' }],
                     standard: {
                       ...standard,
+                      blendMode: decalBlendMode,
                       layers: { diffuse: { ...layer('diffuse'), texturePath: 'decal.png' } },
                     },
                   },
@@ -862,6 +864,24 @@ it('draws projector decals as the ground by their splat layer, not in depth orde
   // The depth-sorted transparent runs leave it to the splat pass.
   const runs = createWorldWebGlTransparentDrawPlan(plan, DEFAULT_WORLD_WEBGL_CAMERA)
   assert.ok(runs.every(run => run.batch !== decals[0]))
+})
+
+it('adds an additive projector decal instead of blending it over the ground', () => {
+  // Purifier_City_Decals: orange lines on opaque black, M3 blend mode 2. Blended, the black
+  // painted a slab across Old Sun Temple's ramp.
+  const decals = blendMode => {
+    const model = effectModel({ decal: true, animatedAlpha: false, decalBlendMode: blendMode })
+    const plan = createWorldWebGlPlan({ ...world(), models: new Map([['actor', model]]) })
+    return plan.transparentTexturedTriangles.filter(batch => batch.texture.id === 'decal.png')
+  }
+  assert.deepEqual(
+    decals(2).map(batch => [batch.blendMode, batch.splatLayer]),
+    [['additive', 0]],
+  )
+  assert.deepEqual(
+    decals(1).map(batch => batch.blendMode),
+    ['blend'],
+  )
 })
 
 it('keeps a still object with particles and still decals: its effect takes the new clock', () => {
