@@ -171,7 +171,10 @@ describe('web preview policy', () => {
     const first = page.items.find(item => item.kind === 'file')
     if (first === undefined) throw new Error('the archive listed no file entry')
     const reference = await namespace.value.openEntry(first.id)
-    expect(reference.value.uri).toMatch(/^zip-entry:/u)
+    // the host's entry table names an entry `<scheme>:<container>!/<path>` (core e41c13cf)
+    expect(reference.value.uri).toBe(
+      `zip:${encodeURIComponent('memory://web/sample.zip')}!/${first.path}`,
+    )
     await reference.release()
     await namespace.release()
 
