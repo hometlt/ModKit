@@ -42,6 +42,7 @@ import {
   openNestedSubject,
   resolveFormatWriter,
   resolveCommonPresentationPlan,
+  withoutHiddenEntries,
   type OpenSubjectResult,
 } from '@modkit/host'
 import type {
@@ -909,7 +910,10 @@ async function boot(): Promise<void> {
        */
       const session = result.session as unknown as {
         descriptor(): Promise<Record<string, unknown>>
-        dataSource(contract: string, major: number): Promise<{ value: unknown }>
+        dataSource(
+          contract: string,
+          major: number,
+        ): Promise<{ value: unknown; release(): Promise<void> }>
         operations(): OperationSession
         dispose(): Promise<void>
       }
@@ -1043,7 +1047,20 @@ async function boot(): Promise<void> {
       return {
         ...(previewPresentation === undefined ? {} : { presentation: previewPresentation }),
         descriptor: () => session.descriptor(),
-        dataSource: (contract: string, major: number) => session.dataSource(contract, major),
+        /*
+         * What a view lists of a container leaves hidden members out unless it asks
+         * (`includeHidden`) — the one filter, as the host applies to a page it serves over subject
+         * RPC. The app's own readers (extract, nested opens) use the session and see everything.
+         */
+        dataSource: async (contract: string, major: number) => {
+          const lease = await session.dataSource(contract, major)
+          return contract === 'common.view/namespace-entry-source'
+            ? {
+                value: withoutHiddenEntries(lease.value as NamespaceEntrySource),
+                release: () => lease.release(),
+              }
+            : lease
+        },
         async dispose() {
           operationSessions.delete(key)
           assetSessions.delete(key)

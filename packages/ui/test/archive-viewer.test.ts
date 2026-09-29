@@ -316,10 +316,12 @@ describe('archive viewer', () => {
 
   it('asks the host for hidden members only when the option shows them', async () => {
     const asked: unknown[] = []
+    // as the host's listing does: a hidden member only when asked
     const source: NamespaceEntrySource = {
       async list(_prefix, page) {
         asked.push(page.includeHidden)
-        return { items: [entry('a', 'a.txt'), { ...entry('h', '__MACOSX/a.txt'), hidden: true }] }
+        const hidden = { ...entry('h', '__MACOSX/a.txt'), hidden: true as const }
+        return { items: [entry('a', 'a.txt'), ...(page.includeHidden === true ? [hidden] : [])] }
       },
       async openEntry(id) {
         return { value: { id, uri: `mem://${id}` } as never, async release() {} }

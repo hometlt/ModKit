@@ -76,11 +76,15 @@ export function createNamespaceViewer(options: NamespaceViewerOptions = {}): Vie
       list.setAttribute('role', 'group')
 
       const renderPrefix = async (prefix: string, parent: HTMLElement) => {
-        const hiddenToo = options.showHidden?.() === true
-        const page = await model.list(prefix, undefined, scope.signal, hiddenToo)
+        // the host leaves hidden entries out unless the listing asks for them
+        const page = await model.list(
+          prefix,
+          undefined,
+          scope.signal,
+          options.showHidden?.() === true,
+        )
         const seen = new Set<string>()
         for (const entry of page.items) {
-          if (entry.hidden === true && !hiddenToo) continue
           if (seen.has(entry.id)) throw new TypeError(`duplicate namespace entry id: ${entry.id}`)
           seen.add(entry.id)
           const item = element(parent, 'li', { part: 'namespace.item' })
