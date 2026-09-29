@@ -7,6 +7,7 @@ import type { StandardMaterialProgram } from '../materials/index.js'
 import type { SceneMaterialPrograms } from './materials.js'
 import { alphaDrawOrder, materialAlpha } from './alpha.js'
 import { prepareMaterialGeometry } from './material-geometry.js'
+import { primitiveVertexTints } from './tint.js'
 
 export interface MaterialDraw {
   readonly primitive: SceneRendererPrimitive
@@ -60,8 +61,10 @@ function rebindPrepared(
   if (prepared === cachedSource) return source
   const { indices, ...instance } = source
   void indices
-  return {
+  const vertexTints = primitiveVertexTints(prepared)
+  const rebound: SceneRendererPrimitive & { readonly vertexTints?: Float32Array } = {
     ...instance,
+    ...(vertexTints === undefined ? {} : { vertexTints }),
     topology: prepared.topology,
     positions: prepared.positions,
     ...(prepared.normals === undefined ? {} : { normals: prepared.normals }),
@@ -74,6 +77,7 @@ function rebindPrepared(
       ? {}
       : { textureCoordinateSets: prepared.textureCoordinateSets }),
   }
+  return rebound
 }
 
 function preparedMaterialGeometry(

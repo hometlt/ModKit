@@ -179,6 +179,8 @@ export function createUvmEffectSource(
         viewMatrix,
         extensionSnapshot: effectSnapshot(),
         cache: frames,
+        // A map places many effects: an emitter's sprites draw as one primitive.
+        batchParticles: true,
       }),
   })
 }

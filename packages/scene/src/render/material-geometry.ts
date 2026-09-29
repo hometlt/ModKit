@@ -8,6 +8,7 @@ import { multiplyMat4 } from '@modkit/codec-kit/model-math/sequence-pose'
 import { snapshotEyePosition } from '../materials/environment.js'
 import { invertMaterialFrame } from '../materials/frame.js'
 import { materialSkinOf } from './material-skin.js'
+import { primitiveVertexTints } from './tint.js'
 import type {
   StandardMaterialDefines,
   Vec2,
@@ -426,6 +427,14 @@ export function prepareMaterialGeometry(
       !allFinite(skin.weights))
   )
     throw new TypeError('invalid material skin')
+  const vertexTints = primitiveVertexTints(primitive)
+  if (
+    vertexTints !== undefined &&
+    (!(vertexTints instanceof Float32Array) ||
+      vertexTints.length !== count * 4 ||
+      !allFinite(vertexTints))
+  )
+    throw new TypeError('invalid material vertex tints')
   const uvSets = new Set<number>()
   for (const set of primitive.textureCoordinateSets ?? []) {
     if (!Number.isInteger(set.set) || set.set < 0 || set.set > 4 || uvSets.has(set.set))
@@ -555,12 +564,13 @@ export function prepareMaterialGeometry(
       message: `Tangent generation for TEXCOORD_${texCoord} used geometric fallback for ${degenerateTriangles} triangle(s) with a degenerate UV determinant.`,
       primitiveId: primitive.id,
     })
-  return {
+  const expandedPrimitive: SceneRendererPrimitive & { readonly vertexTints?: Float32Array } = {
     id: primitive.id,
     topology: 'triangles',
     positions,
     normals,
     tangents,
+    ...(vertexTints === undefined ? {} : { vertexTints: expand(vertexTints, 4) }),
     ...(primitive.materialId === undefined ? {} : { materialId: primitive.materialId }),
     ...(primitive.transform === undefined ? {} : { transform: primitive.transform }),
     ...(primitive.depthBias === undefined ? {} : { depthBias: primitive.depthBias }),
@@ -577,6 +587,7 @@ export function prepareMaterialGeometry(
           })),
         }),
   }
+  return expandedPrimitive
 }
 
 /**
@@ -622,13 +633,15 @@ const SKIN_LOCALS = `
  * tangent-space lighting, and explicit camera frames. Native shader builders remain immutable.
  * `placementAttributes` takes the model matrix from attributes (see PLACEMENT_DECLARATIONS);
  * without it the stage reads the per-draw matrices from uniforms. `skinned` poses the vertices by
- * the draw's skin first (see SKIN_DECLARATIONS). */
+ * the draw's skin first (see SKIN_DECLARATIONS); `tinted` hands each vertex's tint to the fragment
+ * stage, flat (see primitiveVertexTints). */
 export function sceneMaterialVertexSource(
   defines: StandardMaterialDefines,
   environmentEnabled = false,
   worldShading = false,
   placementAttributes = false,
   skinned = false,
+  tinted = false,
 ): string {
   const worldGeometry = environmentEnabled || worldShading
   // The vertex as the stage reads it: its attributes, or its skinned pose.
@@ -663,7 +676,7 @@ uniform vec3 u_lightDirection;
 ${defines.sceneLighting ? 'uniform vec3 u_sceneFillViewDirection0, u_sceneFillViewDirection1;\nout vec3 v_sceneFillDir0, v_sceneFillDir1;' : ''}
 ${worldGeometry && !placementAttributes ? 'uniform mat3 u_sceneWorldNormalMatrix;\nuniform float u_sceneWorldOrientation;\n' : ''}uniform float ${placementAttributes ? '' : 'u_orientation, '}u_orthographic;
 in vec3 a_position, a_normal; in vec4 a_tangent;
-${skinned ? SKIN_DECLARATIONS : ''}${Array.from({ length: defines.uvSetCount }, (_, i) => `in vec2 a_uv${i}; out vec2 v_uv${i};`).join('\n')}
+${skinned ? SKIN_DECLARATIONS : ''}${tinted ? 'in vec4 a_vertexTint; flat out vec4 v_vertexTint;\n' : ''}${Array.from({ length: defines.uvSetCount }, (_, i) => `in vec2 a_uv${i}; out vec2 v_uv${i};`).join('\n')}
 ${defines.usesVertexAlpha || defines.usesVertexColor ? 'in vec4 a_color; out vec4 v_vertexColor;' : ''}
 out vec3 v_normal, v_lightDir, v_halfVec, v_viewDir, v_viewPosition, v_viewNormal;
 out vec3 v_modelPosition, v_modelNormal, v_worldPosition, v_worldNormal;
@@ -697,6 +710,6 @@ ${
   v_worldPosition=(${name.materialWorld}*vec4(${position},1.0)).xyz;v_worldNormal=unit(${name.worldNormal}*${normal},vec3(0.0,0.0,1.0));
   v_clipPosition=u_viewProjection*world;gl_Position=v_clipPosition;
   ${Array.from({ length: defines.uvSetCount }, (_, i) => `v_uv${i}=a_uv${i};`).join('\n')}
-  ${defines.usesVertexAlpha || defines.usesVertexColor ? 'v_vertexColor=a_color;' : ''}
+  ${defines.usesVertexAlpha || defines.usesVertexColor ? 'v_vertexColor=a_color;' : ''}${tinted ? '\n  v_vertexTint=a_vertexTint;' : ''}
 }`
 }

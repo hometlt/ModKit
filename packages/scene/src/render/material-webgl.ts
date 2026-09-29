@@ -20,6 +20,26 @@ import {
 } from './material-geometry.js'
 import { materialIsSolid, type MaterialDraw } from './material-draws.js'
 import { materialSkinOf } from './material-skin.js'
+import { primitiveVertexTints } from './tint.js'
+
+/**
+ * The vertex and fragment stages a draw needs beyond its material's: a skin posed on the GPU
+ * (ModelSceneSkin) and per-vertex tints (primitiveVertexTints). Each combination is its own lease.
+ */
+interface MaterialStages {
+  readonly skinned: boolean
+  readonly tinted: boolean
+}
+
+const PLAIN_STAGES: MaterialStages = Object.freeze({ skinned: false, tinted: false })
+
+const materialStagesOf = (primitive: MaterialDraw['primitive']): MaterialStages => {
+  const skinned = materialSkinOf(primitive) !== undefined
+  const tinted = primitiveVertexTints(primitive) !== undefined
+  return skinned || tinted ? { skinned, tinted } : PLAIN_STAGES
+}
+
+const stagesKey = (stages: MaterialStages) => `${String(stages.skinned)}|${String(stages.tinted)}`
 import { requiresEnvironmentEye, snapshotEyePosition } from '../materials/environment.js'
 import { cubeNearestSamplerSource } from '../materials/cube-maps.js'
 
@@ -103,14 +123,13 @@ export function materialWebGlDraws(
    */
   options: Readonly<{ mipmaps?: boolean; checkEachDraw?: boolean }> = {},
 ) {
-  const programs = new Map<StandardMaterialProgram, WebGlMaterialProgram>()
-  // A skinned draw leases its material over the skinning vertex stage: a lease of its own.
-  const skinnedPrograms = new Map<StandardMaterialProgram, WebGlMaterialProgram>()
+  // A lease per material program and stage variant (see MaterialStages), and the programs of each
+  // variant a frame used.
+  const programs = new Map<string, Map<StandardMaterialProgram, WebGlMaterialProgram>>()
+  const usedPrograms = new Map<string, Set<StandardMaterialProgram>>()
   // Leases hold per-material uniforms and samplers; linked GL programs are shared by shader source.
   const linked = new Map<string, WebGLProgram>()
   const pendingPrograms = new Set<WebGLProgram>()
-  const usedPrograms = new Set<StandardMaterialProgram>()
-  const usedSkinnedPrograms = new Set<StandardMaterialProgram>()
   let programCompilations = 0
   let drawCalls = 0
   // Primitive arrays are immutable for the lifetime of a draw plan; keep their GPU copies across
@@ -369,7 +388,8 @@ export function materialWebGlDraws(
           (set === 0 ? primitive.textureCoordinates : undefined),
       )
     const skin = materialSkinOf(primitive)
-    const data = [...attributes, primitive.indices, instances, skin?.joints, skin?.weights]
+    const tints = primitiveVertexTints(primitive)
+    const data = [...attributes, primitive.indices, instances, skin?.joints, skin?.weights, tints]
     const geometries = vertexArrays.get(program)
     const variants = geometries?.get(primitive.positions)
     let entry = variants?.find(
@@ -425,6 +445,12 @@ export function materialWebGlDraws(
             gl.enableVertexAttribArray(location)
             gl.vertexAttribPointer(location, 4, type, false, 0, 0)
           }
+        const tintLocation = tints === undefined ? -1 : attributeLocation(program, 'a_vertexTint')
+        if (tints !== undefined && tintLocation >= 0) {
+          created.buffers.push(retainedBuffer(gl.ARRAY_BUFFER, tints))
+          gl.enableVertexAttribArray(tintLocation)
+          gl.vertexAttribPointer(tintLocation, 4, gl.FLOAT, false, 0, 0)
+        }
         if (primitive.indices !== undefined)
           entry.buffers.push(retainedBuffer(gl.ELEMENT_ARRAY_BUFFER, primitive.indices))
         created.placement = [0, 1, 2, 3].map(column =>
@@ -465,10 +491,14 @@ export function materialWebGlDraws(
   const leaseFor = (
     source: StandardMaterialProgram,
     material: NonNullable<MaterialDraw['material']>,
-    skinned: boolean,
+    stages: MaterialStages,
   ): WebGlMaterialProgram => {
-    const leases = skinned ? skinnedPrograms : programs
-    ;(skinned ? usedSkinnedPrograms : usedPrograms).add(source)
+    const key = stagesKey(stages)
+    let leases = programs.get(key)
+    if (leases === undefined) programs.set(key, (leases = new Map()))
+    let used = usedPrograms.get(key)
+    if (used === undefined) usedPrograms.set(key, (used = new Set()))
+    used.add(source)
     let lease = leases.get(source)
     if (lease === undefined) {
       const bound = new Map<string, WebGLTexture>()
@@ -477,7 +507,7 @@ export function materialWebGlDraws(
         if (handle === undefined) throw new TypeError(`GPU material texture missing: ${resource}`)
         bound.set(resource, handle)
       }
-      const shaders = leaseShaderSources(source, material, skinned)
+      const shaders = leaseShaderSources(source, material, stages)
       const { vertexSource, fragmentSource, filters } = shaders
       lease = createWebGlMaterialProgram(gl, { ...source, vertexSource, fragmentSource }, bound, {
         filters,
@@ -714,7 +744,7 @@ export function materialWebGlDraws(
     if (mode === undefined || instances?.count === 0) return 0
     const model = instances === undefined ? materialModelMatrix(primitive) : undefined
     const skin = materialSkinOf(primitive)
-    const lease = leaseFor(leased, material, skin !== undefined)
+    const lease = leaseFor(leased, material, materialStagesOf(primitive))
     const program = lease.program
     const geometry = bindGeometry(program, leased, primitive, instances?.matrices, state)
     if (state.program !== program) {
@@ -845,9 +875,9 @@ export function materialWebGlDraws(
       const sources = new Set<Readonly<{ vertexSource: string; fragmentSource: string }>>()
       for (const draw of draws) {
         if (draw.program === undefined || draw.material === undefined) continue
-        const skinned = materialSkinOf(draw.primitive) !== undefined
-        if ((skinned ? skinnedPrograms : programs).has(draw.program)) continue
-        sources.add(leaseShaderSources(draw.program, draw.material, skinned))
+        const stages = materialStagesOf(draw.primitive)
+        if (programs.get(stagesKey(stages))?.has(draw.program) === true) continue
+        sources.add(leaseShaderSources(draw.program, draw.material, stages))
       }
       return linkWebGlMaterialProgramsInParallel(gl, sources, linked, pendingPrograms)
     },
@@ -874,12 +904,9 @@ export function materialWebGlDraws(
         for (const variants of geometries.values())
           for (const entry of variants) gl.deleteVertexArray(entry.vao)
       vertexArrays.clear()
-      for (const lease of programs.values()) lease.release()
+      for (const leases of programs.values()) for (const lease of leases.values()) lease.release()
       programs.clear()
       usedPrograms.clear()
-      for (const lease of skinnedPrograms.values()) lease.release()
-      skinnedPrograms.clear()
-      usedSkinnedPrograms.clear()
       if (skinTexture !== null) gl.deleteTexture(skinTexture)
       skinTexture = null
       skinRows = 0
@@ -900,16 +927,14 @@ export function materialWebGlDraws(
     },
     sweep() {
       // Per-frame materials (effects, playback-time uniforms) must not accumulate leases.
-      for (const [leases, used] of [
-        [programs, usedPrograms],
-        [skinnedPrograms, usedSkinnedPrograms],
-      ] as const) {
+      for (const [key, leases] of programs) {
+        const used = usedPrograms.get(key)
         for (const [source, lease] of leases)
-          if (!used.has(source)) {
+          if (used?.has(source) !== true) {
             lease.release()
             leases.delete(source)
           }
-        used.clear()
+        used?.clear()
       }
       // The next frame packs its own palettes.
       skinBases = new Map()
@@ -917,8 +942,8 @@ export function materialWebGlDraws(
       // A linked program no lease uses any more (its models left the scene) is deleted too, so a
       // renderer that outlives many scenes does not keep every shader it ever linked.
       const leased = new Set<WebGLProgram>()
-      for (const lease of programs.values()) leased.add(lease.program)
-      for (const lease of skinnedPrograms.values()) leased.add(lease.program)
+      for (const leases of programs.values())
+        for (const lease of leases.values()) leased.add(lease.program)
       for (const [key, program] of linked)
         if (!leased.has(program) && !pendingPrograms.has(program)) {
           gl.deleteProgram(program)
@@ -1009,9 +1034,9 @@ const leasedShaderSources = new WeakMap<
 export function leaseShaderSources(
   source: StandardMaterialProgram,
   material: NonNullable<MaterialDraw['material']>,
-  skinned = false,
+  stages: MaterialStages = PLAIN_STAGES,
 ) {
-  let key = `${String(source.twoSided)}|${source.blend}|${String(source.environment !== undefined)}|${String(source.normalBlendPolicy !== undefined)}|${source.normalMapSpace}|${String(skinned)}`
+  let key = `${String(source.twoSided)}|${source.blend}|${String(source.environment !== undefined)}|${String(source.normalBlendPolicy !== undefined)}|${source.normalMapSpace}|${stagesKey(stages)}`
   for (const binding of source.textures)
     key += `|${binding.slot}:${binding.resourceId}:${binding.uniform}:${binding.dimension ?? ''}:${binding.wrapU}:${binding.wrapV}`
   for (const [resource, texture] of material.textures)
@@ -1020,7 +1045,7 @@ export function leaseShaderSources(
   if (variants === undefined) leasedShaderSources.set(source.defines, (variants = new Map()))
   const cached = variants.get(key)
   if (cached !== undefined && cached.fragment === source.fragmentSource) return cached.sources
-  const sources = buildLeaseShaderSources(source, material, skinned)
+  const sources = buildLeaseShaderSources(source, material, stages)
   variants.set(key, Object.freeze({ fragment: source.fragmentSource, sources }))
   return sources
 }
@@ -1028,7 +1053,7 @@ export function leaseShaderSources(
 function buildLeaseShaderSources(
   source: StandardMaterialProgram,
   material: NonNullable<MaterialDraw['material']>,
-  skinned: boolean,
+  stages: MaterialStages,
 ) {
   const filters = new Map<string, 'nearest' | 'linear'>()
   for (const [resource, texture] of material.textures)
@@ -1084,7 +1109,10 @@ function buildLeaseShaderSources(
   )
   const fragmentSource =
     fragment.replace(/void main\s*\(\s*\)/, 'void materialMain()') +
-    '\nuniform vec4 u_instanceTint;\nvoid main(){materialMain();materialColor*=u_instanceTint;' +
+    // Per-vertex tints arrive flat: a sprite's four corners hold its one tint, exactly.
+    (stages.tinted
+      ? '\nuniform vec4 u_instanceTint;\nflat in vec4 v_vertexTint;\nvoid main(){materialMain();materialColor*=u_instanceTint*v_vertexTint;'
+      : '\nuniform vec4 u_instanceTint;\nvoid main(){materialMain();materialColor*=u_instanceTint;') +
     // A solid pass covers its pixel whole: an alpha-tested leaf that survives the test is opaque.
     // Multiplying its colour by the texel alpha drew SC2 foliage (alpha 0.3-0.7) dark with black rims.
     (materialIsSolid(source)
@@ -1097,7 +1125,8 @@ function buildLeaseShaderSources(
     source.environment !== undefined,
     worldShading,
     true,
-    skinned,
+    stages.skinned,
+    stages.tinted,
   )
   return { vertexSource, fragmentSource, filters }
 }

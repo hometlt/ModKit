@@ -3,7 +3,11 @@ import {
   EFFECT_SPLINE_FIELDS,
   assertUvmEffectSplineWork,
 } from './effect-splines.js'
-import { createUvmParticleGeometry, type UvmModelParticleDraw } from './effect-particles.js'
+import {
+  createUvmParticleGeometry,
+  type UvmModelParticleDraw,
+  type UvmParticleGeometryEntry,
+} from './effect-particles.js'
 import { createUvmRibbonGeometry } from './ribbon-geometry.js'
 import { bindUvmEffectLinks } from './effect-links.js'
 import { effectSurfaceMaterial } from './projector-material.js'
@@ -63,6 +67,11 @@ export interface UvmEffectFrameOptions {
    * simulation each and step it from frame to frame (see cachedUvmEffectSimulation).
    */
   readonly pass?: unknown
+  /**
+   * One primitive per particle emitter instead of one per sprite: the emitter's sprites back to
+   * front in the frame's view, each sprite's tint on its vertices (primitiveVertexTints).
+   */
+  readonly batchParticles?: boolean
   readonly signal?: AbortSignal
 }
 
@@ -1135,27 +1144,46 @@ function uvmEffectFrameGeometry(
   meshNodes += particleGeometry.nodes
   // Every sprite of an emitter draws with its emitter's material (see emitterMaterial).
   const frameMaterials = new Map<number, SceneRendererMaterial | null>()
-  for (const geometry of particleGeometry.entries) {
-    signal?.throwIfAborted()
-    const emitter = particles[geometry.emitter]
+  const materialOf = (index: number) => {
+    const emitter = particles[index]
     if (emitter === undefined) throw new TypeError('particle geometry emitter absent')
     const base = materialById.get(`material-${emitter.materialIndex}`)
     if (base === undefined) throw new TypeError('particle geometry material absent')
-    let material = frameMaterials.get(geometry.emitter)
+    let material = frameMaterials.get(index)
     if (material === undefined) {
       material =
         emitterMaterial(
           base,
-          `uvm-effect-particle-emitter-${geometry.emitter}`,
+          `uvm-effect-particle-emitter-${index}`,
           emitter.texturePath,
           emitter.screenSpaceUv,
           options.maxNodes - emitterCount - meshNodes - primitives.length,
           options.maxBytes - bytes,
           signal,
         ) ?? null
-      frameMaterials.set(geometry.emitter, material)
+      frameMaterials.set(index, material)
       if (material !== null) materials.push(material)
     }
+    return material
+  }
+  if (options.batchParticles === true) {
+    const sprites = new Map<number, UvmParticleGeometryEntry[]>()
+    for (const geometry of particleGeometry.entries) {
+      const list = sprites.get(geometry.emitter)
+      if (list === undefined) sprites.set(geometry.emitter, [geometry])
+      else list.push(geometry)
+    }
+    const depth = viewDepthRow(view, toWorld)
+    for (const [index, list] of sprites) {
+      signal?.throwIfAborted()
+      const material = materialOf(index)
+      if (material === null) continue
+      primitives.push(emitterSprites(index, list, material, depth, toWorld))
+    }
+  }
+  for (const geometry of options.batchParticles === true ? [] : particleGeometry.entries) {
+    signal?.throwIfAborted()
+    const material = materialOf(geometry.emitter)
     if (material === null) continue
     const geometryPrimitive = {
       id: `uvm-effect-particle-${geometry.slot}`,
@@ -1249,6 +1277,90 @@ function uvmEffectFrameGeometry(
     signal,
   )
   return { primitives, materials, diagnostics, collisionSplats, modelParticles }
+}
+
+/**
+ * Row 2 of view x toWorld: the view-space depth of a point of the effect's simulation space
+ * (dot with [x, y, z, 1]), which grows toward the camera.
+ */
+function viewDepthRow(view: Float32Array, toWorld: readonly number[]): readonly number[] {
+  return [0, 1, 2, 3].map(
+    column =>
+      number(view[2], 0) * number(toWorld[column * 4], 0) +
+      number(view[6], 0) * number(toWorld[column * 4 + 1], 0) +
+      number(view[10], 0) * number(toWorld[column * 4 + 2], 0) +
+      number(view[14], 0) * number(toWorld[column * 4 + 3], 0),
+  )
+}
+
+/**
+ * One emitter's sprites as one primitive, back to front: by the view depth of each sprite's box
+ * centre, as the world orders sprite draws (ties in slot order). A program material takes each
+ * sprite's colour as its tint, per vertex, as a sprite draw takes it as its `tint`.
+ */
+function emitterSprites(
+  index: number,
+  sprites: readonly UvmParticleGeometryEntry[],
+  material: SceneRendererMaterial,
+  depth: readonly number[],
+  toWorld: readonly number[],
+): SceneRendererPrimitive & { readonly vertexTints?: Float32Array } {
+  const ordered = sprites
+    .map((sprite, ordinal) => {
+      const { positions } = sprite
+      const centre = [0, 1, 2].map(axis => {
+        let low = Infinity,
+          high = -Infinity
+        for (let at = axis; at < positions.length; at += 3) {
+          low = Math.min(low, positions[at]!)
+          high = Math.max(high, positions[at]!)
+        }
+        return (low + high) / 2
+      })
+      const key =
+        depth[0]! * centre[0]! + depth[1]! * centre[1]! + depth[2]! * centre[2]! + depth[3]!
+      return { sprite, ordinal, key }
+    })
+    .sort((left, right) => left.key - right.key || left.ordinal - right.ordinal)
+  let vertexCount = 0,
+    indexCount = 0
+  for (const { sprite } of ordered) {
+    vertexCount += sprite.positions.length / 3
+    indexCount += sprite.indices.length
+  }
+  const positions = new Float32Array(vertexCount * 3),
+    textureCoordinates = new Float32Array(vertexCount * 2),
+    colors = new Float32Array(vertexCount * 4),
+    indices = new Uint32Array(indexCount)
+  let vertex = 0,
+    corner = 0
+  for (const { sprite } of ordered) {
+    positions.set(sprite.positions, vertex * 3)
+    textureCoordinates.set(sprite.textureCoordinates, vertex * 2)
+    colors.set(sprite.colors, vertex * 4)
+    for (const at of sprite.indices) indices[corner++] = at + vertex
+    vertex += sprite.positions.length / 3
+  }
+  const primitive = {
+    id: `uvm-effect-particles-${index}`,
+    materialId: material.id,
+    topology: 'triangles' as const,
+    positions,
+    indices,
+    textureCoordinates,
+    colors,
+    transform: Float32Array.from(toWorld),
+  }
+  if (material.simpleEffect !== undefined) return primitive
+  // As a sprite's tint (primitiveTint): four components in 0..1.
+  for (const value of colors)
+    if (!(value >= 0 && value <= 1))
+      throw new TypeError('primitive tint requires four finite components in 0..1')
+  return {
+    ...primitive,
+    textureCoordinateSets: [1, 2, 3].map(set => ({ set, coordinates: textureCoordinates })),
+    vertexTints: colors,
+  }
 }
 
 /**
