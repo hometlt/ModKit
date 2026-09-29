@@ -8,8 +8,9 @@
  * affine map) and the round tables from the S-box; nothing is typed. The FIPS-197 appendix C and
  * SP 800-38A ECB and CBC vectors pin them.
  *
- * A key is its owner's secret: it comes from the user's settings or a format's published constant
- * in the codec, never from here; nothing here keeps, logs or reports it, and no error names it.
+ * A key is its owner's secret: it comes from the host's credential broker (`context.credentials`,
+ * the Unreal `symmetric-key` declaration) or a format's published constant in the codec, never from
+ * settings or from here; nothing here keeps, logs or reports it, and no error names it.
  */
 
 export const AES_BLOCK_BYTES = 16
