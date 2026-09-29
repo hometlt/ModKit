@@ -1230,3 +1230,20 @@ describe('companion input resolution — budgets, cancellation and leases', () =
     expect(counters.opens).toBe(counters.releases)
   })
 })
+
+describe('a companion pattern rooted at the archive', () => {
+  it('names only the root entry, where a bare name matches it in every folder', async () => {
+    const { origin } = fakeOrigin({
+      primaryLogicalId: 'maps/delta.smf',
+      entries: ['maps/delta.smf', 'mapinfo.lua', 'maphelper/mapinfo.lua'],
+    })
+    const plan = (patterns: readonly string[]) =>
+      bundlePlan([requirement({ id: 'info', role: 'map-info', patterns })])
+    const resolve = companionResolver(origin)
+    expect(
+      await codeOf(() => resolve(context(plan(['mapinfo.lua']), byteSource('delta.smf')))),
+    ).toBe(COMPANION_AMBIGUOUS)
+    const rooted = await resolve(context(plan(['./mapinfo.lua']), byteSource('delta.smf')))
+    expect(rooted.bindingsFor('info').map(item => item.bindingId)).toEqual(['info#mapinfo.lua'])
+  })
+})

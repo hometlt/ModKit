@@ -372,6 +372,7 @@ function compilePatterns(
       context: { requirementId },
     })
   }
+  const bodies = patterns.map(pattern => pattern.replace(/^\.[\\/]/u, ''))
   /** `{ expression, whole }` — see the comment at the bottom of this function. */
   const expressions: { readonly expression: RegExp; readonly whole: boolean }[] = []
   for (const pattern of patterns) {
@@ -393,8 +394,13 @@ function compilePatterns(
     if (![...pattern].some(character => !WILDCARDS.has(character))) {
       invalid('it has no literal part and would match every entry')
     }
+    // `./name`: only the entry at the root of the origin, not one of that name in any folder
+    const slashed = pattern.replaceAll('\\', '/')
+    const rooted = slashed.startsWith('./')
+    const body = rooted ? slashed.slice(2) : slashed
+    if (body.length === 0) invalid('it is empty')
     let expression = '^'
-    for (const character of pattern.replaceAll('\\', '/')) {
+    for (const character of body) {
       if (character === '*') expression += '[^/]*'
       else if (character === '?') expression += '[^/]'
       else expression += character.replace(/[\\^$.*+?()[\]{}|]/gu, '\\$&')
@@ -403,7 +409,7 @@ function compilePatterns(
     // `SAMPLE.HVA` name the same file, and a case-sensitive regex would quietly claim otherwise
     expressions.push({
       expression: new RegExp(`${expression}$`, caseSensitivity === 'insensitive' ? 'iu' : 'u'),
-      whole: pattern.replaceAll('\\', '/').includes('/'),
+      whole: rooted || body.includes('/'),
     })
   }
   /*
@@ -413,15 +419,16 @@ function compilePatterns(
    * invisible. An archive backend hands out `data/editor/molds/bowl.w3d`, and a codec that declared
    * `*.tga` meant "an entry named like that" — it does not know, and must not need to know, which
    * folder the container filed it under. A pattern that *does* carry a `/` is a deliberate
-   * statement about location, and is matched against the whole logical id.
+   * statement about location, and is matched against the whole logical id; so is `./name`, the
+   * entry at the root of the archive rather than any entry of that name.
    */
   return {
     test: (logicalId: string) => {
       const name = logicalId.split('/').at(-1) ?? logicalId
       return expressions.some(item => item.expression.test(item.whole ? logicalId : name))
     },
-    prefixes: enumerationPrefixes(patterns, caseSensitivity),
-    namePrefix: enumerationNamePrefix(patterns, caseSensitivity),
+    prefixes: enumerationPrefixes(bodies, caseSensitivity),
+    namePrefix: enumerationNamePrefix(bodies, caseSensitivity),
   }
 }
 
