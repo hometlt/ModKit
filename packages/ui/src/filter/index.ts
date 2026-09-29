@@ -61,6 +61,20 @@ export function compileMatcher(
   }
 }
 
+/**
+ * The same options as one global expression, for finding and replacing: plain text is escaped, so
+ * a plain replacement never reads `$1`. `null` = no text; `false` = an invalid expression.
+ */
+export function compilePattern(
+  options: FilterOptions,
+  onError: (message: string) => void = () => undefined,
+): RegExp | null | false {
+  const text = options.regex ? options.text : options.text.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&')
+  const matcher = compileMatcher({ ...options, text, regex: true }, onError)
+  if (matcher instanceof RegExp) return new RegExp(matcher.source, `${matcher.flags}g`)
+  return matcher === false ? false : null
+}
+
 /** True if `text` matches the compiled matcher (or there is no active filter). */
 export function textMatches(text: string, matcher: TextMatcher): boolean {
   if (matcher === null) return true

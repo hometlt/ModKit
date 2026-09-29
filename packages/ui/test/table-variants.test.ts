@@ -552,3 +552,162 @@ describe('variant table surface', () => {
     expect(await page.evaluate(() => (globalThis as unknown as Probe).commits.length)).toBe(0)
   })
 })
+
+describe('variant table find and replace', () => {
+  const filter = '[data-mk-part="table.controls"] [data-mk-part="toolbar.search-input"]'
+  const filterToggle = (label: string) =>
+    `[data-mk-part="table.controls"] button[aria-label="${label}"]`
+  const findBar = '[data-mk-part="table.find"]'
+  const findInput = `${findBar} input[aria-label="Find"]`
+  const replaceInput = `${findBar} input[aria-label="Replace with"]`
+  const findToggle = (label: string) => `${findBar} button[aria-label="${label}"]`
+  const count = () => page.textContent(`${findBar} [data-mk-part="toolbar.label"]`)
+  const marks = () => page.locator('[data-mk-part="table.match"]').count()
+  const activeKey = () =>
+    page.textContent('[data-mk-part="table.row"][data-mk-state~="active"] td:nth-child(2)')
+  const stringWrites = () =>
+    page.evaluate(() =>
+      (globalThis as unknown as Probe).calls
+        .filter(call => call.handler === 'edit-strings')
+        .map(call => call.input),
+    )
+  /** The find state follows the subject across mounts; each case leaves it as it found it. */
+  const resetFind = async () => {
+    await page.fill(findInput, '')
+    if (await page.isVisible(replaceInput)) await page.fill(replaceInput, '')
+    for (const label of ['Match case', 'Match whole word', 'Use regular expression']) {
+      if ((await page.getAttribute(findToggle(label), 'aria-pressed')) === 'true') {
+        await page.click(findToggle(label))
+      }
+    }
+    if ((await page.getAttribute(findToggle('Toggle replace'), 'aria-pressed')) === 'true') {
+      await page.click(findToggle('Toggle replace'))
+    }
+    await page.press(findInput, 'Escape')
+  }
+
+  it('filters with case, whole word and a regular expression', async () => {
+    await page.evaluate(() => (globalThis as unknown as Probe).mountTable())
+    await page.fill(filter, 'alpha')
+    expect(await keys()).toEqual(['Abil/Name/A'])
+    await page.click(filterToggle('Match case'))
+    expect(await keys()).toEqual([])
+    await page.click(filterToggle('Match case'))
+    await page.fill(filter, 'Nam')
+    await page.click(filterToggle('Match whole word'))
+    expect(await keys()).toEqual([])
+    await page.fill(filter, 'Name')
+    expect(await keys()).toHaveLength(3)
+    await page.click(filterToggle('Match whole word'))
+    await page.click(filterToggle('Use regular expression'))
+    await page.fill(filter, '^(Beta|Gamma)$')
+    expect(await keys()).toEqual(['Abil/Name/B', 'Unit/Name/C'])
+    await page.fill(filter, '(')
+    expect(await keys()).toEqual([])
+    expect(await page.getAttribute(filter, 'aria-invalid')).toBe('true')
+    expect(await page.textContent('[data-mk-part="table.controls"] + output')).toMatch(/regular/iu)
+    await page.fill(filter, '')
+    await page.click(filterToggle('Use regular expression'))
+    expect(await page.getAttribute(filter, 'aria-invalid')).toBe('false')
+    expect(await keys()).toHaveLength(3)
+  })
+
+  it('finds with Ctrl+F: counts the rows, marks the matches, steps and closes', async () => {
+    await page.evaluate(() => {
+      const leaked: string[] = []
+      window.addEventListener('keydown', event => leaked.push(event.code))
+      Object.assign(globalThis, { leaked })
+    })
+    expect(await page.isHidden(findBar)).toBe(true)
+    await page.focus('[data-mk-part="table.body"] tr:first-child td:nth-child(2)')
+    await page.keyboard.press('Control+f')
+    expect(await page.isVisible(findBar)).toBe(true)
+    expect(await page.isHidden(replaceInput)).toBe(true)
+    // The host's own Find never hears the key.
+    expect(await page.evaluate(() => (globalThis as { leaked?: string[] }).leaked)).not.toContain(
+      'KeyF',
+    )
+    await page.keyboard.type('Name')
+    expect(await count()).toBe('1 of 3')
+    expect(await marks()).toBe(3)
+    expect(await activeKey()).toBe('Abil/Name/A')
+    await page.press(findInput, 'Enter')
+    expect(await count()).toBe('2 of 3')
+    expect(await activeKey()).toBe('Abil/Name/B')
+    await page.press(findInput, 'Shift+Enter')
+    await page.press(findInput, 'Shift+Enter')
+    expect(await count()).toBe('3 of 3')
+    expect(await activeKey()).toBe('Unit/Name/C')
+    await page.click(findToggle('Next match'))
+    expect(await count()).toBe('1 of 3')
+    // Only the key and the locale columns are searched, not the preview.
+    await page.fill(findInput, 'Gamma')
+    expect(await count()).toBe('1 of 1')
+    expect(await marks()).toBe(2)
+    await page.fill(findInput, 'nothing like it')
+    expect(await count()).toBe('No results')
+    // Plain text is taken as it is, not as an expression.
+    await page.fill(findInput, '(')
+    expect(await count()).toBe('No results')
+    expect(await page.getAttribute(findInput, 'aria-invalid')).toBe('false')
+    await resetFind()
+    expect(await page.isHidden(findBar)).toBe(true)
+    expect(await marks()).toBe(0)
+    expect(await page.locator('[data-mk-part="table.row"][data-mk-state~="active"]').count()).toBe(
+      0,
+    )
+  })
+
+  it('replaces the next match through one set-many plan, with $1 from an expression', async () => {
+    await page.evaluate(() => (globalThis as unknown as Probe).mountTable())
+    await page.focus('[data-mk-part="table.body"] tr:first-child td:nth-child(2)')
+    await page.keyboard.press('Control+h')
+    expect(await page.isVisible(replaceInput)).toBe(true)
+    await page.click(findToggle('Use regular expression'))
+    await page.fill(findInput, 'B(eta)')
+    await page.fill(replaceInput, 'b$1!')
+    await page.click(findToggle('Replace'))
+    await page.waitForFunction(() => (globalThis as unknown as Probe).commits.length === 1)
+    expect(await stringWrites()).toEqual([
+      { action: 'set-many', variant: 'enUS', entries: [{ key: 'Abil/Name/B', value: 'beta!' }] },
+    ])
+    expect(await page.textContent('[data-mk-part="table.row"] td:nth-child(3) >> nth=1')).toBe(
+      'beta!',
+    )
+    await resetFind()
+  })
+
+  it('replaces all in one plan across locales, literally, and only in the columns on screen', async () => {
+    await page.evaluate(() => (globalThis as unknown as Probe).mountTable())
+    await page.focus('[data-mk-part="table.body"] tr:first-child td:nth-child(2)')
+    await page.keyboard.press('Control+h')
+    await page.fill(findInput, 'Gamma')
+    await page.fill(replaceInput, '$1')
+    await page.click(findToggle('Replace all'))
+    await page.waitForFunction(() => (globalThis as unknown as Probe).commits.length === 1)
+    expect(await stringWrites()).toEqual([
+      {
+        action: 'set-variants',
+        entries: [
+          { key: 'Unit/Name/C', variant: 'enUS', value: '$1' },
+          { key: 'Unit/Name/C', variant: 'ruRU', value: '$1' },
+        ],
+      },
+    ])
+    // The same find on a fresh table, with ruRU hidden: one locale, so set-many.
+    await page.evaluate(() => (globalThis as unknown as Probe).mountTable())
+    expect(await page.isVisible(findBar)).toBe(true)
+    const ruRU = '[data-mk-part="table.columns"] label:has-text("ruRU") input'
+    await page.click('[data-mk-part="table.columns"] summary')
+    await page.uncheck(ruRU)
+    expect(await marks()).toBe(1)
+    await page.click(findToggle('Replace all'))
+    await page.waitForFunction(() => (globalThis as unknown as Probe).commits.length === 1)
+    expect(await stringWrites()).toEqual([
+      { action: 'set-many', variant: 'enUS', entries: [{ key: 'Unit/Name/C', value: '$1' }] },
+    ])
+    await page.check(ruRU)
+    await page.click('[data-mk-part="table.columns"] summary')
+    await resetFind()
+  })
+})

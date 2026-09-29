@@ -91,6 +91,10 @@ export const PARTS = Object.freeze([
   'table.add',
   'table.compare',
   'table.select',
+  /** The find bar (Ctrl+F) and its replace row (Ctrl+H). */
+  'table.find',
+  /** One occurrence of the find text inside a drawn cell. */
+  'table.match',
 
   // namespace
   'namespace',

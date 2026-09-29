@@ -23,6 +23,8 @@ import type {
 import { isGameTemplateTextRun, type GameTemplateTextRun } from '@modkit/sdk/templates'
 import type { GameTemplateImageResolver } from '../template/index.js'
 import { createToolbar } from '../toolbar/index.js'
+import { compileMatcher, compilePattern, textMatches, type TextMatcher } from '../filter/index.js'
+import { setState } from '../parts.js'
 import { element, invokeOperation, setPart, setViewerText } from '../viewer/index.js'
 import { commitOperationWrite } from '../field-write/index.js'
 import { invokeRefusalMessage } from '../field-editor/index.js'
@@ -53,6 +55,12 @@ const COMPARE_LABELS = {
   empty: 'table.compareEmpty',
   orphaned: 'table.compareOrphaned',
 } as const
+/** The toggles a filter and the find bar each carry. */
+const MATCH_TOGGLES = [
+  ['case', 'Aa', 'filter.matchCase', 'caseSensitive'],
+  ['word', 'ab', 'filter.wholeWord', 'wholeWord'],
+  ['regex', '.*', 'filter.regex', 'regex'],
+] as const
 
 type Shape = Awaited<ReturnType<TableDataSource['shape']>>
 
@@ -124,9 +132,64 @@ function drawRuns(cell: HTMLTableCellElement, runs: readonly GameTemplateTextRun
   }
 }
 
+/** `pattern` is global, so its position is reset before every use. */
+function found(value: string, pattern: RegExp): boolean {
+  pattern.lastIndex = 0
+  return pattern.test(value)
+}
+
+/** Wrap what `pattern` finds in each text node of `cell`; a match across two nodes stays unmarked. */
+function markMatches(cell: HTMLElement, pattern: RegExp): boolean {
+  const document = cell.ownerDocument
+  const walker = document.createTreeWalker(cell, NodeFilter.SHOW_TEXT)
+  const nodes: Text[] = []
+  for (let node = walker.nextNode(); node !== null; node = walker.nextNode())
+    nodes.push(node as Text)
+  let marked = false
+  for (const node of nodes) {
+    const parts: Node[] = []
+    let last = 0
+    pattern.lastIndex = 0
+    for (const match of node.data.matchAll(pattern)) {
+      if (match[0] === '') continue
+      const from = match.index ?? 0
+      parts.push(document.createTextNode(node.data.slice(last, from)))
+      const mark = document.createElement('mark')
+      setPart(mark, 'table.match')
+      mark.textContent = match[0]
+      parts.push(mark)
+      last = from + match[0].length
+    }
+    if (parts.length === 0) continue
+    parts.push(document.createTextNode(node.data.slice(last)))
+    node.replaceWith(...parts)
+    marked = true
+  }
+  return marked
+}
+
+/** The find bar (Ctrl+F) and its replace row (Ctrl+H). */
+interface FindState {
+  open: boolean
+  replacing: boolean
+  text: string
+  caseSensitive: boolean
+  wholeWord: boolean
+  regex: boolean
+  replace: string
+  /** Which of the matching rows the bar stands on. */
+  at: number
+}
+
 /** Filter state kept across a reopen of the same subject. */
 interface FilterState {
   search: string
+  /** The quick filter's toggles; its text is `search`. */
+  caseSensitive: boolean
+  wholeWord: boolean
+  regex: boolean
+  /** Kept open across the reopen a replace causes, so the next Replace goes on from there. */
+  find: FindState
   group: string
   statuses: string[]
   /** Headers of the columns the reader hid; a dozen locales do not fit side by side. */
@@ -167,6 +230,19 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
   ]
   const state: FilterState = remembered.get(args.descriptor.subjectUri) ?? {
     search: '',
+    caseSensitive: false,
+    wholeWord: false,
+    regex: false,
+    find: {
+      open: false,
+      replacing: false,
+      text: '',
+      caseSensitive: false,
+      wholeWord: false,
+      regex: false,
+      replace: '',
+      at: 0,
+    },
     group: '',
     statuses: [],
     hidden: [],
@@ -182,6 +258,22 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
   panel.hidden = true
   args.before.before(bar, status, panel)
   const statuses = ['missing', 'untranslated', 'duplicate', 'changed'] as const
+  const matchToggles = (
+    target: { caseSensitive: boolean; wholeWord: boolean; regex: boolean },
+    prefix: string,
+    changed: () => void,
+  ) =>
+    MATCH_TOGGLES.map(([id, glyph, label, key]) => ({
+      kind: 'toggle' as const,
+      id: `${prefix}-${id}`,
+      glyph,
+      label: text(label),
+      active: target[key],
+      onToggle: (active: boolean) => {
+        target[key] = active
+        changed()
+      },
+    }))
   const toolbar = createToolbar(bar, {
     label: text('table.filters'),
     items: [
@@ -196,6 +288,7 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
           refresh()
         },
       },
+      ...matchToggles(state, 'filter', () => refresh()),
       ...statuses.map(id => ({
         kind: 'chip' as const,
         id,
@@ -325,7 +418,9 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
       state.hidden = box.checked
         ? state.hidden.filter(item => item !== label)
         : [...state.hidden, label]
-      showColumns()
+      // the find bar counts only the columns on screen
+      if (state.find.open) seek()
+      else showColumns()
     })
   })
   columns.hidden = header.length < 3
@@ -339,6 +434,8 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
   let shown = 0
   let keyFilter: ReadonlySet<string> | undefined
   let drawnRows: readonly HTMLTableRowElement[] = []
+  let filterMatcher: TextMatcher = null
+  let filterError = ''
 
   const matches = (row: Row): boolean => {
     const key = row.cells[keyColumn] ?? ''
@@ -347,9 +444,220 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
     const flags = statusOf(row)
     if (state.statuses.length > 0 && !state.statuses.some(item => flags.includes(item)))
       return false
-    const needle = state.search.toLocaleLowerCase()
-    return needle === '' || row.cells.some(cell => cell.toLocaleLowerCase().includes(needle))
+    return filterMatcher === null || row.cells.some(cell => textMatches(cell, filterMatcher))
   }
+
+  /*
+   * The find bar walks the rows the filters leave, over the key and the locale columns on screen;
+   * a replace writes only locale values, and only those that are not empty: a pattern that matches
+   * nothing must not add a key to a locale that lacks it.
+   */
+  const replaceable = actions.addRow !== undefined && variants.length > 0
+  const find = element(args.root, 'div', { part: 'table.find' })
+  status.after(find)
+  let findPattern: RegExp | null | false = null
+  let findError = ''
+  /** Positions in `visible` of the rows with a match. */
+  let findRows: number[] = []
+  const findToolbar = createToolbar(find, {
+    label: text('table.find'),
+    items: [
+      {
+        kind: 'search',
+        id: 'find',
+        label: text('table.find'),
+        placeholder: text('table.find'),
+        value: state.find.text,
+        onInput: value => {
+          state.find.text = value
+          state.find.at = 0
+          seek()
+        },
+        onSubmit: (_value, backwards) => step(backwards ? -1 : 1),
+      },
+      ...matchToggles(state.find, 'find', () => {
+        state.find.at = 0
+        seek()
+      }),
+      { kind: 'label', id: 'count', text: '' },
+      {
+        kind: 'action',
+        id: 'previous',
+        glyph: '↑',
+        label: text('table.findPrevious'),
+        onActivate: () => step(-1),
+      },
+      {
+        kind: 'action',
+        id: 'next',
+        glyph: '↓',
+        label: text('table.findNext'),
+        onActivate: () => step(1),
+      },
+      ...(replaceable
+        ? [
+            {
+              kind: 'toggle' as const,
+              id: 'replace',
+              glyph: '⇄',
+              label: text('table.replaceToggle'),
+              active: state.find.replacing,
+              onToggle: (active: boolean) => {
+                state.find.replacing = active
+                showFind()
+              },
+            },
+          ]
+        : []),
+      {
+        kind: 'action',
+        id: 'close',
+        glyph: '×',
+        label: text('table.findClose'),
+        onActivate: () => closeFind(),
+      },
+    ],
+  })
+  const replaceToolbar = createToolbar(find, {
+    label: text('table.replaceWith'),
+    items: [
+      {
+        kind: 'search',
+        id: 'replace',
+        label: text('table.replaceWith'),
+        placeholder: text('table.replaceWith'),
+        value: state.find.replace,
+        onInput: value => {
+          state.find.replace = value
+        },
+        onSubmit: () => void replaceNext(),
+      },
+      {
+        kind: 'action',
+        id: 'replace-one',
+        label: text('table.replaceOne'),
+        onActivate: () => void replaceNext(),
+      },
+      {
+        kind: 'action',
+        id: 'replace-all',
+        label: text('table.replaceAll'),
+        onActivate: () => void replaceAll(),
+      },
+    ],
+  })
+  const findColumns = (): readonly number[] =>
+    [keyColumn, ...variants.map(column => column.index)].filter(column => !isHidden(column))
+  const showFind = (): void => {
+    find.hidden = !state.find.open
+    replaceToolbar.root.hidden = !(replaceable && state.find.replacing)
+    findToolbar.setActive('replace', state.find.replacing)
+  }
+  const recount = (): void => {
+    findError = ''
+    findPattern = state.find.open
+      ? compilePattern(state.find, message => {
+          findError = message
+        })
+      : null
+    const pattern = findPattern
+    const columns = findColumns()
+    findRows =
+      pattern instanceof RegExp
+        ? visible.flatMap((row, position) =>
+            columns.some(column => found(row.cells[column] ?? '', pattern)) ? [position] : [],
+          )
+        : []
+    state.find.at = findRows.length === 0 ? 0 : Math.min(state.find.at, findRows.length - 1)
+  }
+  /** The row the bar stands on and the count; the marks come with each draw. */
+  const markCurrent = (): void => {
+    const current = findRows[state.find.at]
+    drawnRows.forEach((tr, position) => setState(tr, position === current ? ['active'] : []))
+    findToolbar.setText(
+      'count',
+      findError !== ''
+        ? findError
+        : !(findPattern instanceof RegExp)
+          ? ''
+          : findRows.length === 0
+            ? text('table.findNone')
+            : text('table.findCount', { current: state.find.at + 1, total: findRows.length }),
+    )
+    findToolbar.root.querySelector('input')?.setAttribute('aria-invalid', String(findError !== ''))
+  }
+  const decorate = (): void => {
+    const pattern = findPattern
+    if (pattern instanceof RegExp) {
+      const columns = findColumns()
+      for (const tr of drawnRows) {
+        for (const column of columns) {
+          const cell = tr.cells[column + 1]
+          // A marked cell keeps its marks: the syntax runs drawn on hover would replace them.
+          if (cell !== undefined && markMatches(cell, pattern)) cell.dataset['highlighted'] = 'true'
+        }
+      }
+    }
+    markCurrent()
+  }
+  /** Draw far enough to show the row the bar stands on, then bring it into view. */
+  const reveal = (redraw: boolean): void => {
+    const position = findRows[state.find.at]
+    if (position !== undefined && position >= shown) {
+      shown = (Math.floor(position / VARIANT_PAGE_ROWS) + 1) * VARIANT_PAGE_ROWS
+      redraw = true
+    }
+    if (redraw) draw()
+    else markCurrent()
+    if (position !== undefined) drawnRows[position]?.scrollIntoView({ block: 'nearest' })
+  }
+  const seek = (): void => {
+    recount()
+    reveal(true)
+  }
+  const step = (delta: number): void => {
+    if (findRows.length === 0) return
+    state.find.at = (state.find.at + delta + findRows.length) % findRows.length
+    reveal(false)
+  }
+  const openFind = (replacing: boolean): void => {
+    state.find.open = true
+    if (replacing && replaceable) state.find.replacing = true
+    showFind()
+    seek()
+    const input = findToolbar.root.querySelector('input')
+    input?.focus()
+    input?.select()
+  }
+  const closeFind = (): void => {
+    state.find.open = false
+    showFind()
+    recount()
+    draw()
+  }
+  // Ctrl+F finds and Ctrl+H replaces, as in an editor; the keys go no further than this table.
+  args.root.addEventListener(
+    'keydown',
+    event => {
+      const finding = (event.ctrlKey || event.metaKey) && event.code === 'KeyF'
+      const replacing = event.ctrlKey && event.code === 'KeyH'
+      if ((!finding && !replacing) || event.altKey || event.shiftKey) return
+      event.preventDefault()
+      event.stopPropagation()
+      openFind(replacing)
+    },
+    { signal: args.signal },
+  )
+  find.addEventListener(
+    'keydown',
+    event => {
+      if (event.key !== 'Escape') return
+      event.preventDefault()
+      event.stopPropagation()
+      closeFind()
+    },
+    { signal: args.signal },
+  )
 
   const draw = (): void => {
     const page = visible.slice(0, shown)
@@ -371,8 +679,13 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
     })
     drawnRows = drawn
     showColumns()
+    decorate()
     more.hidden = shown >= visible.length
-    say(text('table.shown', { shown: Math.min(shown, visible.length), total: rows.length }))
+    say(
+      filterError !== ''
+        ? filterError
+        : text('table.shown', { shown: Math.min(shown, visible.length), total: rows.length }),
+    )
     void renderPage(drawn, page).catch(error => {
       if (!args.signal.aborted) {
         say(text('table.renderRefused', { reason: error instanceof Error ? error.message : String(error) }))
@@ -425,6 +738,7 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
         if (!Array.isArray(runs) || item.cell.dataset['editing'] === 'true') return
         const valid = runs.filter(isGameTemplateTextRun)
         drawRuns(item.cell, valid)
+        if (findPattern instanceof RegExp) markMatches(item.cell, findPattern)
         for (const run of valid) if (run.asset !== undefined) assets.add(run.asset)
       })
       if (assets.size === 0 || args.images === undefined) continue
@@ -447,11 +761,16 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
   }
 
   const refresh = (): void => {
+    filterMatcher = compileMatcher({ ...state, text: state.search }, message => {
+      filterError = message
+    })
+    toolbar.root.querySelector('input')?.setAttribute('aria-invalid', String(filterError !== ''))
     visible = rows.filter(matches)
     shown = VARIANT_PAGE_ROWS
     for (const id of statuses) {
       toolbar.setCount(id, rows.filter(row => statusOf(row).includes(id)).length)
     }
+    recount()
     draw()
   }
   more.addEventListener('click', () => {
@@ -466,30 +785,112 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
     ...(args.authorization === undefined ? {} : { authorization: args.authorization }),
   }
   let writing = false
-  const write = async (operation: string, input: JsonValue): Promise<boolean> => {
+  /** `hint` follows a refusal: what the reader can do instead. */
+  const write = async (operation: string, input: JsonValue, hint?: string): Promise<boolean> => {
     if (writing || args.signal.aborted) return false
     const stale = args.writeRefusal?.()
     if (stale !== undefined) {
       say(text('table.refused', { reason: stale }))
       return false
     }
+    const refused = (reason: string): false => {
+      say(text('table.refused', { reason: hint === undefined ? reason : `${reason} ${hint}` }))
+      return false
+    }
     writing = true
     try {
       say(text('table.working'))
       const refusal = await commitOperationWrite(route, operation, input, args.signal)
-      if (refusal !== undefined) {
-        say(text('table.refused', { reason: refusal }))
-        return false
-      }
+      if (refusal !== undefined) return refused(refusal)
       say(text('table.saved'))
       await args.committed()
       return true
     } catch (error) {
-      say(text('table.refused', { reason: error instanceof Error ? error.message : String(error) }))
-      return false
+      return refused(error instanceof Error ? error.message : String(error))
     } finally {
       writing = false
     }
+  }
+
+  type VariantColumn = (typeof variants)[number]
+  interface Change {
+    readonly row: Row
+    readonly column: VariantColumn
+    readonly value: string
+  }
+  /** A plain replacement is taken as it is; an expression's may name its groups (`$1`). */
+  const replaced = (value: string): string => {
+    const pattern = findPattern
+    if (!(pattern instanceof RegExp) || value === '') return value
+    const replacement = state.find.replace
+    return state.find.regex
+      ? value.replace(pattern, replacement)
+      : value.replace(pattern, () => replacement)
+  }
+  const changesIn = (row: Row): Change[] =>
+    variants.flatMap(column => {
+      if (isHidden(column.index)) return []
+      const value = row.cells[column.index] ?? ''
+      const next = replaced(value)
+      return next === value ? [] : [{ row, column, value: next }]
+    })
+  /** The first cell a replace changes, from the row the bar stands on round to the one before. */
+  const replaceNext = async (): Promise<void> => {
+    for (let offset = 0; offset < findRows.length; offset += 1) {
+      const at = (state.find.at + offset) % findRows.length
+      const row = visible[findRows[at] ?? -1]
+      const change = row === undefined ? undefined : changesIn(row)[0]
+      if (change === undefined) continue
+      state.find.at = at
+      await replace([change])
+      return
+    }
+    say(text('table.replaceNothing'))
+  }
+  const replaceAll = async (): Promise<void> => {
+    const changes = findRows.flatMap(position => {
+      const row = visible[position]
+      return row === undefined ? [] : changesIn(row)
+    })
+    if (changes.length === 0) say(text('table.replaceNothing'))
+    else await replace(changes)
+  }
+  /**
+   * One plan for the lot, as MK2 applied one edit: `set-many` writes one locale; several go as
+   * `set-variants`, which a writer that cannot write them in one plan refuses rather than guesses.
+   */
+  const replace = async (changes: readonly Change[]): Promise<void> => {
+    const operation = actions.addRow
+    if (operation === undefined) return
+    const keyOf = (change: Change): string => change.row.cells[keyColumn] ?? ''
+    const locales = new Set(changes.map(change => change.column.variant ?? ''))
+    const [only] = locales
+    const done =
+      locales.size === 1
+        ? await write(operation, {
+            action: 'set-many',
+            variant: only ?? '',
+            entries: changes.map(change => ({ key: keyOf(change), value: change.value })),
+          })
+        : await write(
+            operation,
+            {
+              action: 'set-variants',
+              entries: changes.map(change => ({
+                key: keyOf(change),
+                variant: change.column.variant ?? '',
+                value: change.value,
+              })),
+            },
+            text('table.replaceLocalesHint'),
+          )
+    if (!done) return
+    for (const change of changes) {
+      ;(change.row.cells as string[])[change.column.index] = change.value
+      changed.add(change.row.index)
+    }
+    refresh()
+    say(text('table.replaced', { count: changes.length }))
   }
 
   const showAdd = (): void => {
@@ -716,6 +1117,7 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
     }
   }
 
+  showFind()
   refresh()
   return {
     written(row, column, value) {

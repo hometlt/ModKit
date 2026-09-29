@@ -63,7 +63,8 @@ export interface ToolbarSearch {
   readonly placeholder?: string
   readonly value?: string
   readonly onInput?: (value: string) => void
-  readonly onSubmit?: (value: string) => void
+  /** Enter; `backwards` is Shift+Enter, as a find field steps back. */
+  readonly onSubmit?: (value: string, backwards: boolean) => void
 }
 
 export interface ToolbarSeparator {
@@ -166,7 +167,7 @@ export function createToolbar(
       const onKey = (event: KeyboardEvent) => {
         if (event.key === 'Enter') {
           event.preventDefault()
-          item.onSubmit?.(input.value)
+          item.onSubmit?.(input.value, event.shiftKey)
         }
       }
       input.addEventListener('input', onInput)

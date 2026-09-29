@@ -454,6 +454,23 @@
     border-bottom: 1px solid var(--mk-color-separator);
   }
 
+  [data-mk-part='table.find'] {
+    display: flex;
+    flex-direction: column;
+    gap: var(--mk-space-1);
+  }
+
+  [data-mk-part='table.match'] {
+    color: inherit;
+    background: var(--mk-color-match-highlight);
+  }
+
+  /* the row the find bar stands on */
+  [data-mk-part='table.row'][data-mk-state~='active'] {
+    outline: 1px solid var(--mk-color-focus);
+    outline-offset: -1px;
+  }
+
   /* ---------------------------------------------------------------- transport */
   [data-mk-part='transport.controls'] {
     display: flex;
