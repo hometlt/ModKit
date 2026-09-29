@@ -320,6 +320,12 @@
         "title": "%command.verifyDocument%",
         "icon": "$(check)",
         "enablement": "modkit.canVerifyDocument"
+      },
+      {
+        "command": "modkit.verifyMod",
+        "title": "%command.verifyMod%",
+        "icon": "$(checklist)",
+        "enablement": "modkit.canVerifyDocument"
       }
     ],
     "configuration": {
@@ -796,6 +802,11 @@
           "command": "modkit.verifyDocument",
           "when": "editorLangId in modkit.languages && modkit.canVerifyDocument",
           "group": "modkit@1"
+        },
+        {
+          "command": "modkit.verifyMod",
+          "when": "editorLangId in modkit.languages && modkit.canVerifyDocument",
+          "group": "modkit@1"
         }
       ],
       "editor/title": [
@@ -1252,6 +1263,7 @@
     "onCommand:modkit.syncEditorAssociations",
     "onCommand:modkit.unloadSource",
     "onCommand:modkit.verifyDocument",
+    "onCommand:modkit.verifyMod",
     "onCustomEditor:modkit.archiveViewer",
     "onCustomEditor:modkit.genericAssetPreview",
     "onCustomEditor:modkit.hexViewer",

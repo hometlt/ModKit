@@ -15,6 +15,7 @@ import {
 } from '@modkit/core'
 import type {
   LanguageCodeActionList,
+  LanguageCompletionItem,
   LanguageCodeLensList,
   LanguageDocumentHighlightList,
   LanguageDocumentLinkList,
@@ -44,6 +45,7 @@ import type {
   LanguageWorkspaceSymbolList,
 } from '@modkit/sdk/language'
 import type {
+  LanguageProjectDiagnostics,
   LanguageProviderRoute,
   LanguageWorkspace,
   LanguageWorkspaceAnalysisResult,
@@ -174,6 +176,13 @@ export interface LanguageSessionController {
     position: LanguagePosition,
     signal?: AbortSignal,
   ): Promise<LanguageCompletionList | undefined>
+  /** The item the editor focused, filled in: documentation read on demand, its asset drawn. */
+  resolveCompletion(
+    document: EditorLanguageDocument,
+    position: LanguagePosition,
+    item: LanguageCompletionItem,
+    signal?: AbortSignal,
+  ): Promise<LanguageCompletionItem | undefined>
   hover(
     document: EditorLanguageDocument,
     position: LanguagePosition,
@@ -265,6 +274,11 @@ export interface LanguageSessionController {
     document: EditorLanguageDocument,
     signal?: AbortSignal,
   ): Promise<LanguageDiagnosticList | undefined>
+  /** The project files nobody has open, analyzed by the document's provider; on request only. */
+  projectDiagnostics(
+    document: EditorLanguageDocument,
+    signal?: AbortSignal,
+  ): Promise<LanguageProjectDiagnostics | undefined>
   /** Explicit verification uses the live buffer and publishes only its current revision. */
   verify(
     document: EditorLanguageDocument,
@@ -872,6 +886,28 @@ export function createLanguageSessionController(
         semanticContextPolicy: 'cached',
         ...(signal === undefined ? {} : { signal }),
       })
+    },
+
+    async resolveCompletion(
+      document: EditorLanguageDocument,
+      position: LanguagePosition,
+      item: LanguageCompletionItem,
+      signal?: AbortSignal,
+    ): Promise<LanguageCompletionItem | undefined> {
+      if (!(await prepareInteractive(document, signal))) return undefined
+      return options.workspace.resolveCompletion({
+        ...featureRequest(document, signal),
+        position,
+        item,
+      })
+    },
+
+    async projectDiagnostics(
+      document: EditorLanguageDocument,
+      signal?: AbortSignal,
+    ): Promise<LanguageProjectDiagnostics | undefined> {
+      if ((await ensure(document, signal)) === undefined) return undefined
+      return options.workspace.projectDiagnostics(featureRequest(document, signal))
     },
 
     async hover(

@@ -8,6 +8,12 @@
       "enablement": "modkit.canVerifyDocument"
     },
     {
+      "command": "modkit.verifyMod",
+      "title": "%command.verifyMod%",
+      "icon": "$(checklist)",
+      "enablement": "modkit.canVerifyDocument"
+    },
+    {
       "command": "modkit.contentSources",
       "title": "%command.contentSources%",
       "icon": "$(remote-explorer)"
@@ -1034,6 +1040,11 @@
     "editor/context": [
       {
         "command": "modkit.verifyDocument",
+        "when": "editorLangId in modkit.languages && modkit.canVerifyDocument",
+        "group": "modkit@1"
+      },
+      {
+        "command": "modkit.verifyMod",
         "when": "editorLangId in modkit.languages && modkit.canVerifyDocument",
         "group": "modkit@1"
       },

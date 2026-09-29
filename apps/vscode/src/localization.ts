@@ -15,6 +15,10 @@ const EN_MESSAGES = Object.freeze({
   'vscode.verify.incomplete': 'Modkit: Verification is incomplete. Reported issues: {count}.',
   'vscode.verify.complete': 'Modkit: Verification complete. Reported issues: {count}.',
   'vscode.verify.failed': 'Modkit: Verification failed: {message}',
+  'vscode.verifyMod.title': 'Modkit: Verify Mod',
+  'vscode.verifyMod.complete': 'Modkit: {documents} files of the mod checked, issues: {count}.',
+  'vscode.verifyMod.incomplete':
+    'Modkit: {documents} files of the mod checked, issues: {count}; some files of the mod were left out.',
   'vscode.host.topology': 'Topology',
   'vscode.host.extensionHost': 'Extension host',
   'vscode.host.codecs': 'Codecs',
@@ -533,6 +537,10 @@ const RU_MESSAGES: Readonly<Record<keyof typeof EN_MESSAGES, string>> = Object.f
   'vscode.verify.incomplete': 'Modkit: Проверка неполная. Найдено замечаний: {count}.',
   'vscode.verify.complete': 'Modkit: Проверка завершена. Найдено замечаний: {count}.',
   'vscode.verify.failed': 'Modkit: Проверка не удалась: {message}',
+  'vscode.verifyMod.title': 'Modkit: Проверить мод',
+  'vscode.verifyMod.complete': 'Modkit: проверено файлов мода: {documents}, замечаний: {count}.',
+  'vscode.verifyMod.incomplete':
+    'Modkit: проверено файлов мода: {documents}, замечаний: {count}; часть файлов мода не вошла.',
   'vscode.host.topology': 'Топология',
   'vscode.host.extensionHost': 'Хост расширений',
   'vscode.host.codecs': 'Кодеки',

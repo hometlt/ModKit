@@ -95,9 +95,12 @@ languageWorkspaceContextToken,
 languageProviderRoutes,
 languageProviderTriggerCharacters,
 resolveLanguageProvider,
+type LanguageAssetImage,
+type LanguageAssetImageRequest,
 type LanguageWorkspaceDocumentSource,
 type LanguageWorkspaceDocumentSourceResult,
 } from '@modkit/host/language'
+import { encodeRgbaPng } from '@modkit/scene/output/png'
 import {
 discoverGameInstallations,
 gameInstallationSearchOf,
@@ -128,6 +131,7 @@ import type {
 AnyDescriptor,
 AssetSession,
 JsonValue,
+LanguageCompletionItem,
 OperationSession,
 SubjectCandidateProviderSource,
 SubjectCandidateScope,
@@ -212,6 +216,7 @@ LANGUAGE_TOKEN_MODIFIERS,
 LANGUAGE_TOKEN_TYPES,
 plainLanguagePosition,
 type EditorDocumentSymbol,
+type EditorLanguageDiagnostic,
 type EditorLanguageDocument,
 } from './language-session.js'
 import { completionKindName, LANGUAGE_COMMAND, languageCommandTarget } from './language-native.js'
@@ -6951,8 +6956,54 @@ async function activateModkit(
   }
 
   const observedLanguageContexts = new Set<string>()
+  /*
+   * A picture of an asset a hover or a focused completion names (plan 0.5, core 6840676d): the
+   * path is found in the document's mod context — the last layer holding it — and drawn by the
+   * gallery's route (`galleryThumbnailOf`, assigned once the explorer is built). The host appends
+   * it as a data image; one that fails is left out.
+   */
+  let drawThumbnail: (
+    ref: string,
+    maxEdge: number,
+  ) => Promise<{ width: number; height: number; rgba: Uint8Array } | undefined> = async () =>
+    undefined
+  const assetImage = async (
+    request: LanguageAssetImageRequest,
+  ): Promise<LanguageAssetImage | undefined> => {
+    const uri = vscode.Uri.parse(request.documentUri, true)
+    const target = modContextTargetOf(subjectPathOf(uri))
+    const source = await requireContentSources().catch(() => undefined)
+    if (target === undefined || source?.openModContext === undefined) return undefined
+    const baseMods =
+      typeof target === 'string' ? baseModsFor(target, baseModsSetting(uri)) : undefined
+    const modContext = await source.openModContext({
+      schemaVersion: 1,
+      target,
+      ...(baseMods === undefined ? {} : { baseMods }),
+    })
+    try {
+      const located = await modContext.locate(request.path)
+      const layer = modContext.layers.find(item => item.id === located?.layerId)
+      if (located === undefined || layer === undefined) return undefined
+      const ref =
+        layer.sourceId === HOST_LAYER_SOURCE_ID
+          ? join(layer.sourcePath, located.path)
+          : vscode.Uri.from({
+              scheme: 'modkit-source',
+              authority: 'battlenet',
+              path: `/${layer.sourceId}/${layer.sourcePath}/${located.path}`,
+            }).toString()
+      const picture = await drawThumbnail(ref, request.maxEdge)
+      if (picture === undefined) return undefined
+      return { mediaType: 'image/png', bytes: await encodeRgbaPng(picture, request.signal) }
+    } finally {
+      await modContext.dispose()
+    }
+  }
+
   const languageWorkspace = createLanguageWorkspace({
     services: host.services,
+    assetImage,
     grant: { id: 'modkit.app.vscode/language', classes: [] },
     budgets: LANGUAGE_ACTIVATION_BUDGET,
     subjectCandidates: languageSubjectCandidates,
@@ -7073,12 +7124,37 @@ async function activateModkit(
     return native
   }
 
+  /** A hover's links — the entity's card, its graph, a place — as command links it trusts. */
+  const hoverLinks = (
+    commands: readonly { readonly title: string; readonly command: unknown }[] | undefined,
+  ): string =>
+    commands === undefined || commands.length === 0
+      ? ''
+      : `\n\n${commands
+          .map(
+            item =>
+              `[${item.title.replace(/[[\]]/gu, '')}](command:${LANGUAGE_COMMAND}?${encodeURIComponent(
+                JSON.stringify([item.command]),
+              )})`,
+          )
+          .join(' · ')}`
+
   /** A provider's command as a VS Code one: the language command, with the command as argument. */
   const providerCommand = (title: string, command: unknown): vscode.Command => ({
     title,
     command: LANGUAGE_COMMAND,
     arguments: [command],
   })
+
+  /** Where each listed completion came from, so its provider can fill it in when focused. */
+  const completionOrigins = new WeakMap<
+    vscode.CompletionItem,
+    {
+      readonly document: vscode.TextDocument
+      readonly position: vscode.Position
+      readonly item: LanguageCompletionItem
+    }
+  >()
 
   const FOLDING_KINDS = {
     comment: vscode.FoldingRangeKind.Comment,
@@ -7176,6 +7252,38 @@ async function activateModkit(
     text: document.getText(),
   })
 
+  /** A provider diagnostic as VS Code draws it: its code link, tags, related places. */
+  const nativeDiagnostic = (item: EditorLanguageDiagnostic): vscode.Diagnostic => {
+    const native = new vscode.Diagnostic(
+      rangeOf(item.range),
+      item.message,
+      SEVERITY[item.severity] ?? vscode.DiagnosticSeverity.Information,
+    )
+    if (item.code !== undefined) {
+      // an http(s) page for the code makes it a link in the Problems view
+      native.code =
+        item.codeDescription === undefined
+          ? item.code
+          : { value: item.code, target: vscode.Uri.parse(item.codeDescription) }
+    }
+    native.source = item.source ?? 'Modkit Language'
+    if (item.tags !== undefined) {
+      native.tags = item.tags.map(tag =>
+        tag === 'deprecated' ? vscode.DiagnosticTag.Deprecated : vscode.DiagnosticTag.Unnecessary,
+      )
+    }
+    if (item.relatedInformation !== undefined) {
+      native.relatedInformation = item.relatedInformation.map(
+        related =>
+          new vscode.DiagnosticRelatedInformation(
+            nativeLocation(related.location),
+            related.message,
+          ),
+      )
+    }
+    return native
+  }
+
   const languageController = createLanguageSessionController({
     workspace: languageWorkspace,
     routes: languageRoutes,
@@ -7187,41 +7295,7 @@ async function activateModkit(
       for (const item of diagnostics) {
         log(`[language] ${uri}: ${item.severity} ${item.code}: ${item.message}`)
       }
-      languageDiagnostics.set(
-        target,
-        diagnostics.map(item => {
-          const native = new vscode.Diagnostic(
-            rangeOf(item.range),
-            item.message,
-            SEVERITY[item.severity] ?? vscode.DiagnosticSeverity.Information,
-          )
-          if (item.code !== undefined) {
-            // an http(s) page for the code makes it a link in the Problems view
-            native.code =
-              item.codeDescription === undefined
-                ? item.code
-                : { value: item.code, target: vscode.Uri.parse(item.codeDescription) }
-          }
-          native.source = item.source ?? 'Modkit Language'
-          if (item.tags !== undefined) {
-            native.tags = item.tags.map(tag =>
-              tag === 'deprecated'
-                ? vscode.DiagnosticTag.Deprecated
-                : vscode.DiagnosticTag.Unnecessary,
-            )
-          }
-          if (item.relatedInformation !== undefined) {
-            native.relatedInformation = item.relatedInformation.map(
-              related =>
-                new vscode.DiagnosticRelatedInformation(
-                  nativeLocation(related.location),
-                  related.message,
-                ),
-            )
-          }
-          return native
-        }),
-      )
+      languageDiagnostics.set(target, diagnostics.map(nativeDiagnostic))
     },
     reportHostDiagnostics: (uri, diagnostics) => {
       for (const item of diagnostics) {
@@ -7234,7 +7308,9 @@ async function activateModkit(
       ),
   })
   await languageController.initialize()
-  context.subscriptions.push(registerDocumentVerification(languageController, localizer))
+  context.subscriptions.push(
+    registerDocumentVerification(languageController, localizer, nativeDiagnostic),
+  )
 
   const selectorEntries = new Map<string, vscode.DocumentFilter>()
   for (const route of languageRoutes) {
@@ -7608,6 +7684,7 @@ async function activateModkit(
                   if (item.retrigger === true) {
                     native.command = { command: 'editor.action.triggerSuggest', title: '' }
                   }
+                  completionOrigins.set(native, { document, position, item })
                   return native
                 }),
                 completion.isIncomplete,
@@ -7622,6 +7699,26 @@ async function activateModkit(
               cancellation.dispose()
             }
           },
+          // documentation read on demand and the asset drawn, for the item the editor focused
+          resolveCompletionItem: (native, token) =>
+            askProvider('completion resolve', token, async signal => {
+              const origin = completionOrigins.get(native)
+              if (origin === undefined) return native
+              const resolved = await languageController.resolveCompletion(
+                languageDocument(origin.document),
+                { line: origin.position.line, character: origin.position.character },
+                origin.item,
+                signal,
+              )
+              if (resolved?.detail !== undefined) native.detail = resolved.detail
+              if (resolved?.documentation !== undefined) {
+                native.documentation =
+                  resolved.kind === 'color'
+                    ? resolved.documentation
+                    : providerMarkdown(resolved.documentation)
+              }
+              return native
+            }).then(resolved => resolved ?? native),
         },
         ...completionTriggerCharacters,
       ),
@@ -7637,7 +7734,7 @@ async function activateModkit(
             return hover === undefined
               ? undefined
               : new vscode.Hover(
-                  providerMarkdown(hover.markdown),
+                  providerMarkdown(`${hover.markdown}${hoverLinks(hover.commands)}`),
                   hover.range === undefined ? undefined : rangeOf(hover.range),
                 )
           } catch (error) {
@@ -8081,6 +8178,7 @@ async function activateModkit(
     // A file with no decoded pixels stays in the gallery by name.
     return drawn.catch(() => undefined)
   }
+  drawThumbnail = galleryThumbnailOf
 
   // ---------------------------------------------------------------- webviews
   const attach = (

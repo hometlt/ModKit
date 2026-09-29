@@ -1,5 +1,6 @@
 {
   "command.verifyDocument": "Modkit: Verify Document",
+  "command.verifyMod": "Modkit: Verify Mod",
   "command.contentSources": "Modkit: Content Sources (local / providers)…",
   "command.openContentSource": "Mount Content Source",
   "command.refreshSources": "Refresh Sources",
