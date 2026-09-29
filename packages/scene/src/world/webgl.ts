@@ -3450,12 +3450,11 @@ function createCliffPrimitiveLifter(
    * ground as black lumps.
    *
    * The host passes that offset per vertex (`baseOffset`, from the terrain's standard height). A
-   * map may repaint most of its ground: Highland lies two below its standard height everywhere, and
-   * Tokyo_Rooftops' lava pits twelve below its roofs, which cover less ground than the pits. Without
-   * `baseOffset` the standard base is taken as the most common `heightBase` (untouched ground; on
-   * Amphion 19 400 of 31 329 vertices sit exactly there), with world units per base step from two
-   * vertices of one cliff level with different bases; on those two maps that lifted every cliff
-   * (Highland two above its ground, Tokyo's roof walls twelve above the roofs).
+   * map may repaint most of its ground: Highland lies two below its standard height everywhere.
+   * Without `baseOffset` the standard base is taken as the most common `heightBase` (untouched
+   * ground; on Amphion 19 400 of 31 329 vertices sit exactly there), with world units per base step
+   * from two vertices of one cliff level with different bases; on Highland that lifted every cliff
+   * two above its ground.
    */
   const baseHeight = (() => {
     const counts = new Map<number, number>()
