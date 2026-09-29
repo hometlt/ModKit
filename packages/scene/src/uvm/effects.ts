@@ -1133,6 +1133,7 @@ function uvmEffectFrameGeometry(
     cameraRight: right,
     cameraUp: up,
     cameraPosition: cameraLocal,
+    terrainNormal: direction([0, 1, 0]),
     time: options.time,
     ...(options.sequenceIndex === undefined ? {} : { sequenceIndex: options.sequenceIndex }),
     anchorProvider: provide,

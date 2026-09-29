@@ -62,6 +62,11 @@ export interface UvmParticleGeometryOptions {
   readonly cameraRight: Vec3
   readonly cameraUp: Vec3
   readonly cameraPosition: Vec3
+  /**
+   * The ground's normal in the effect's space: a terrain-oriented particle lies in that plane. Absent,
+   * the emitter's own Z axis stands in for it.
+   */
+  readonly terrainNormal?: Vec3
   readonly time: number
   readonly sequenceIndex?: number
   readonly anchorProvider: EffectAnchorProvider
@@ -472,6 +477,7 @@ export function createUvmParticleGeometry(
           options.cameraRight,
           options.cameraUp,
           options.cameraPosition,
+          options.terrainNormal,
         ),
         particlePreviewRotation(
           emitter,
@@ -784,6 +790,7 @@ function particleHeadAxes(
   cameraRight: readonly [number, number, number],
   cameraUp: readonly [number, number, number],
   cameraPosition: readonly [number, number, number],
+  terrainNormal?: readonly [number, number, number],
 ): {
   right: readonly [number, number, number]
   up: readonly [number, number, number]
@@ -797,13 +804,23 @@ function particleHeadAxes(
           up,
         }
       }
+      case 'terrain-oriented': {
+        // Flat on the ground, turned as the emitter's X axis is about the ground's normal.
+        if (terrainNormal === undefined)
+          return { right: normalizeVec3(anchor.localX), up: normalizeVec3(anchor.localY) }
+        const normal = normalizeVec3(terrainNormal)
+        let right = subVec3(anchor.localX, scaleVec3(normal, dotVec3(anchor.localX, normal)))
+        if (lengthVec3(right) <= 1e-8)
+          right = subVec3(anchor.localY, scaleVec3(normal, dotVec3(anchor.localY, normal)))
+        right = normalizeVec3(right)
+        return { right, up: normalizeVec3(crossVec3(normal, right)) }
+      }
       case 'face-world-direction':
-      case 'terrain-oriented':
       case 'emitter-oriented':
       case 'physics-oriented':
         return { right: normalizeVec3(anchor.localX), up: normalizeVec3(anchor.localY) }
       case 'terrain-direction-oriented': {
-        const normal = normalizeVec3(anchor.localZ)
+        const normal = normalizeVec3(terrainNormal ?? anchor.localZ)
         const projected = subVec3(velocity, scaleVec3(normal, dotVec3(velocity, normal)))
         const up = lengthVec3(projected) > 1e-8 ? normalizeVec3(projected) : anchor.localY
         return { right: normalizeVec3(crossVec3(up, normal)), up }
