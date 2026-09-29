@@ -540,9 +540,12 @@ export function createUvmParticleGeometry(
       )
       up = scaleVec3(subVec3(end, start), 0.5)
     }
+    // The image's top row (v = uv[1], textures load top row first) goes on the +up side: up on screen
+    // for a billboard, ahead for a quad along its travel. It went behind, so a shoreline wave's crest
+    // trailed its foam and the waves ran away from the shore.
     const uv = particleUvRect(anchor, phase, tail),
       positions = new Float32Array(12),
-      textureCoordinates = Float32Array.of(uv[0], uv[1], uv[0], uv[3], uv[2], uv[3], uv[2], uv[1]),
+      textureCoordinates = Float32Array.of(uv[0], uv[3], uv[0], uv[1], uv[2], uv[1], uv[2], uv[3]),
       colors = Float32Array.from([...color, ...color, ...color, ...color])
     const signs = [
       [-1, -1],

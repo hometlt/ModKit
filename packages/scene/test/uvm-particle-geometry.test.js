@@ -31,7 +31,7 @@ function fixture(emitter = base, slot = 0) {
 function full(
   entry,
   positions,
-  uv = [0, 0, 0, 1, 1, 1, 1, 0],
+  uv = [0, 1, 0, 0, 1, 0, 1, 1],
   color = [1, 1, 1, 1],
   tolerance = 0,
 ) {
@@ -91,7 +91,7 @@ it('reuses stable size/color/alpha/rotation factors and variation in full quad a
   full(
     result.entries[0],
     [6.75, -3.375, 0, -6.75, -3.375, 0, -6.75, 3.375, 0, 6.75, 3.375, 0],
-    [0.5, 0, 0.5, 0.5, 0.75, 0.5, 0.75, 0],
+    [0.5, 0.5, 0.5, 0, 0.75, 0, 0.75, 0.5],
     [0.75, 0.75, 0.75, 0.25],
   )
 })
@@ -159,7 +159,7 @@ it('uses birth origin for pinned tails and the preceding segment for trail tails
     full(
       createUvmParticleGeometry(state, [emitter], options).entries[0],
       points,
-      [0.25, 0.5, 0.25, 1, 0.5, 1, 0.5, 0.5],
+      [0.25, 1, 0.25, 0.5, 0.5, 0.5, 0.5, 1],
     )
   }
 })
@@ -331,12 +331,12 @@ it('uses decay atlas intervals and wraps cells independently for heads and tails
   full(
     createUvmParticleGeometry(state, [emitter], options).entries[0],
     [-1, -1, 0, -1, 1, 0, 1, 1, 0, 1, -1, 0],
-    [0.5, 0.5, 0.5, 1, 0.75, 1, 0.75, 0.5],
+    [0.5, 1, 0.5, 0.5, 0.75, 0.5, 0.75, 1],
   )
   state.types[0] = 1
   full(
     createUvmParticleGeometry(state, [emitter], options).entries[0],
     [-0.7, 0, -2, -0.7, 0, 0, 0.7, 0, 0, 0.7, 0, -2],
-    [0.5, 0, 0.5, 0.5, 0.75, 0.5, 0.75, 0],
+    [0.5, 0.5, 0.5, 0, 0.75, 0, 0.75, 0.5],
   )
 })
