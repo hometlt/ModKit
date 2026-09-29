@@ -6,6 +6,7 @@ import {
 import {
   createUvmParticleGeometry,
   type UvmModelParticleDraw,
+  type UvmParticleEmitterSnapshots,
   type UvmParticleGeometryEntry,
 } from './effect-particles.js'
 import { createUvmRibbonGeometry } from './ribbon-geometry.js'
@@ -811,6 +812,8 @@ function prepareUvmEffectFrame(document: JsonObject, options: UvmEffectFrameOpti
     fields,
     projectorTemplates,
     collisionInput,
+    // The emitters never change after this: their sprites copy each once (a cached preparation).
+    particleSnapshots: new WeakMap() as UvmParticleEmitterSnapshots,
   }
 }
 
@@ -1073,6 +1076,7 @@ function uvmEffectFrameGeometry(
     time: options.time,
     ...(options.sequenceIndex === undefined ? {} : { sequenceIndex: options.sequenceIndex }),
     anchorProvider: provide,
+    emitterSnapshots: prepared.particleSnapshots,
     maxBytes: options.maxBytes - bytes - particleMaterialBytes,
     maxNodes: options.maxNodes - emitterCount - meshNodes,
     ...(signal === undefined ? {} : { signal }),

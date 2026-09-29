@@ -1,6 +1,7 @@
 // Adapted from pinned MK2 webgl-core live particle preview; see artifact PROVENANCE.json.
 // Geometry remains in simulation coordinates. The scene caller applies toWorld once.
-import { snapshotJson } from '@modkit/codec-kit/json-snapshot'
+import { snapshotJson, type JsonSnapshotOptions } from '@modkit/codec-kit/json-snapshot'
+import type { JsonValue } from '@modkit/sdk'
 import {
   effectVariationValue,
   sampleEffectSequenceScalar,
@@ -72,10 +73,24 @@ export interface UvmParticleGeometryOptions {
   readonly anchorProvider: EffectAnchorProvider
   /** Common fallback is one source unit. A caller can pass the pinned bounds-derived size. */
   readonly defaultSize?: number
+  /**
+   * Copies of the emitters kept across calls, for emitters that never change (see
+   * UvmParticleEmitterSnapshots). Absent, every call copies the emitters it draws.
+   */
+  readonly emitterSnapshots?: UvmParticleEmitterSnapshots
   readonly maxBytes: number
   readonly maxNodes: number
   readonly signal?: AbortSignal
 }
+/**
+ * Owned copies of emitters' preview fields and tracks, kept by an owner whose emitters never change
+ * (a prepared effect, see UvmEffectFrameCache): each emitter is copied once instead of on every
+ * call, with the nodes and bytes its copy charges a call's snapshot budget.
+ */
+export type UvmParticleEmitterSnapshots = WeakMap<
+  RenderParticleEmitter,
+  Readonly<{ emitter: RenderParticleEmitter; nodes: number; bytes: number }>
+>
 export interface UvmParticleGeometryEntry {
   readonly emitter: number
   readonly slot: number
@@ -167,6 +182,61 @@ function projection(emitter: RenderParticleEmitter): Record<string, unknown> {
     output['sequenceAnimation'] = animation
   }
   return output
+}
+/**
+ * The used emitters' preview fields as one owned JSON list under the call's snapshot budget. With
+ * kept copies (UvmParticleEmitterSnapshots) an emitter is copied once and later calls charge the
+ * list what copying it would: the list's node, brackets and commas and each kept copy's size.
+ */
+function ownedEmitters(
+  used: readonly RenderParticleEmitter[],
+  budget: JsonSnapshotOptions,
+  kept: UvmParticleEmitterSnapshots | undefined,
+  signal: AbortSignal | undefined,
+): readonly RenderParticleEmitter[] {
+  if (kept === undefined)
+    return snapshotJson(
+      used.map(projection),
+      budget,
+      signal,
+    ) as unknown as readonly RenderParticleEmitter[]
+  let nodes = 1,
+    bytes = 2 + Math.max(0, used.length - 1)
+  const owned: RenderParticleEmitter[] = []
+  for (const emitter of used) {
+    let copy = kept.get(emitter)
+    if (copy === undefined) {
+      // An element of the list: a level down, its node and brackets charged already.
+      const value = snapshotJson(
+        projection(emitter),
+        {
+          maxDepth: budget.maxDepth - 1,
+          maxNodes: budget.maxNodes - 1,
+          maxBytes: budget.maxBytes - 2,
+        },
+        signal,
+      )
+      copy = Object.freeze({
+        emitter: value as unknown as RenderParticleEmitter,
+        nodes: jsonNodes(value),
+        // A snapshot charges the UTF-8 size of its JSON text.
+        bytes: new TextEncoder().encode(JSON.stringify(value)).length,
+      })
+      kept.set(emitter, copy)
+    }
+    nodes += copy.nodes
+    bytes += copy.bytes
+    if (nodes > budget.maxNodes) throw new RangeError('JSON snapshot exceeds maxNodes')
+    if (bytes > budget.maxBytes) throw new RangeError('JSON snapshot exceeds maxBytes')
+    owned.push(copy.emitter)
+  }
+  return Object.freeze(owned)
+}
+function jsonNodes(value: JsonValue): number {
+  if (value === null || typeof value !== 'object') return 1
+  let nodes = 1
+  for (const item of Array.isArray(value) ? value : Object.values(value)) nodes += jsonNodes(item)
+  return nodes
 }
 function identityAnchor(anchor: MutableEffectEmitterAnchor): void {
   anchor.position.fill(0)
@@ -389,15 +459,16 @@ export function createUvmParticleGeometry(
   const scratchBytes = 256 + used.size * 512
   if (bytes + scratchBytes > options.maxBytes)
     throw new RangeError('particle preview scratch exceeds maxBytes')
-  const owned = snapshotJson(
-    [...used.keys()].map(index => projection(required(emitters[index]))),
+  const owned = ownedEmitters(
+    [...used.keys()].map(index => required(emitters[index])),
     {
       maxDepth: 96,
       maxNodes: options.maxNodes - slots.length,
       maxBytes: options.maxBytes - bytes - scratchBytes,
     },
+    options.emitterSnapshots,
     options.signal,
-  ) as unknown as readonly RenderParticleEmitter[]
+  )
   const scratch: MutableEffectEmitterAnchor = {
     position: new Float32Array(3),
     xAxis: new Float32Array(3),
