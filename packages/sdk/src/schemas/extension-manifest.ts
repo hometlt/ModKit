@@ -197,6 +197,23 @@ const credentialsSchema = {
           },
         },
       },
+      replacesApplicationSettings: {
+        type: 'array',
+        maxItems: 16,
+        items: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['setting'],
+          properties: {
+            setting: {
+              type: 'string',
+              pattern: '^[A-Za-z][A-Za-z0-9]*(?:\\.[A-Za-z0-9_-]+)+$',
+              maxLength: 128,
+            },
+            scoped: { const: true },
+          },
+        },
+      },
       scopeFormat: { enum: ['hex'] },
     },
   },

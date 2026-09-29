@@ -52,6 +52,11 @@ export interface CredentialRequirement {
    * or `{ scope: value }` entries into the broker (`adopt`), then deletes the setting.
    */
   readonly replacesSettings?: readonly CredentialReplacedSetting[]
+  /**
+   * Top-level application settings this credential replaces, from before contribution settings
+   * (MK2's `modkit.stormgate.aesKey`): moved into the broker and deleted the same way.
+   */
+  readonly replacesApplicationSettings?: readonly CredentialReplacedApplicationSetting[]
   /** `hex`: a scope is compared as lowercase hex digits (dashes, braces, `0x` dropped); all zeros = no scope. */
   readonly scopeFormat?: 'hex'
 }
@@ -60,6 +65,14 @@ export interface CredentialRequirement {
 export interface CredentialReplacedSetting {
   readonly contribution: string
   readonly key: string
+  /** The setting is an object `{ scope: value }` rather than one value. */
+  readonly scoped?: true
+}
+
+/** A top-level application setting that held this secret before the broker. */
+export interface CredentialReplacedApplicationSetting {
+  /** The setting id (`modkit.stormgate.aesKey`). */
+  readonly setting: string
   /** The setting is an object `{ scope: value }` rather than one value. */
   readonly scoped?: true
 }
