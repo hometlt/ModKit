@@ -55,6 +55,13 @@ export interface ModelProjection {
     }[]
     readonly unavailable?: readonly { readonly logicalId: string }[]
   }
+  /**
+   * A game's own records on the document root (SPEC_UVM §16.2): `UV_game_<id>` names mapped to
+   * JSON objects, written as given and declared in `extensionsUsed` — a Spring model's
+   * `UV_game_spring` header (radius, height, midPos) that the S3O writer reads back. The records
+   * the materializer writes itself (sockets, materials, clips, variants) are not among them.
+   */
+  readonly gameExtensions?: Readonly<Record<string, UvmJsonObject>>
 }
 /**
  * The one table from a publisher's material layer slot to the glTF slot a consumer that knows only
@@ -358,6 +365,36 @@ class BufferBuilder {
  * `digest`: optional `(bytes) => string` returning an algorithm-qualified digest. Supplied by the
  * caller so this module stays free of crypto and of platform built-ins.
  */
+/** Records the materializer writes itself: a projection's game records cannot replace them. */
+const MATERIALIZER_GAME_EXTENSIONS = new Set([
+  'UV_game_socket',
+  'UV_game_material',
+  'UV_game_material_team_color',
+  'UV_game_animation_clips',
+  'UV_game_variants',
+])
+
+function isJsonValue(value: unknown, depth: number): boolean {
+  if (depth > 64) return false
+  if (value === null || typeof value === 'string' || typeof value === 'boolean') return true
+  if (typeof value === 'number') return Number.isFinite(value)
+  if (Array.isArray(value)) return value.every(item => isJsonValue(item, depth + 1))
+  if (typeof value !== 'object' || Object.getPrototypeOf(value) !== Object.prototype) return false
+  return Object.values(value).every(item => isJsonValue(item, depth + 1))
+}
+
+/** The projection's game records, checked and in name order. */
+function gameExtensionsOf(projection: ModelProjection): [string, UvmJsonObject][] {
+  const entries = Object.entries(projection.gameExtensions ?? {})
+  for (const [name, value] of entries) {
+    if (!/^UV_game_[a-z0-9]+(?:_[a-z0-9]+)*$/u.test(name) || MATERIALIZER_GAME_EXTENSIONS.has(name))
+      throw new TypeError(`game extension ${name} is not a UV_game_<id> record a projection writes`)
+    if (typeof value !== 'object' || Array.isArray(value) || !isJsonValue(value, 0))
+      throw new TypeError(`game extension ${name} is not a JSON object`)
+  }
+  return entries.sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+}
+
 export function materializeUvmCore(
   projection: ModelProjection,
   request: MaterializationRequest,
@@ -1336,6 +1373,7 @@ export function materializeUvmCore(
       'clip and target identities are positional; native frame indices, provenance, bounds and movement speed are not glTF TRS fields',
     )
   const binary = buffers.build()
+  const gameExtensions = gameExtensionsOf(projection)
   const document = {
     asset: {
       version: '2.0',
@@ -1361,8 +1399,10 @@ export function materializeUvmCore(
       ...(unitsExtension === undefined ? [] : ['UV_units']),
       ...(projection.lods !== undefined && projection.lods.length > 0 ? ['MSFT_lod'] : []),
       ...(lodSelection === undefined ? [] : ['MODKITX_lod_selection']),
+      ...gameExtensions.map(([name]) => name),
     ],
     extensions: {
+      ...Object.fromEntries(gameExtensions),
       ...(unitsExtension === undefined ? {} : { UV_units: unitsExtension }),
       ...(lodSelection === undefined ? {} : { MODKITX_lod_selection: lodSelection }),
       ...(animation === undefined || animation.visibility.length === 0
