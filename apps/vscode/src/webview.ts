@@ -128,6 +128,8 @@ interface Bootstrap {
   readonly showHiddenEntries?: boolean
   /** The game-string locale cards open in (`modkit.locale`). */
   readonly gameLocale?: string
+  /** Relations a graph walk follows from its root (`modkit.maxGraphHops`). */
+  readonly graphDepth?: number
 }
 
 /** The live "show hidden files and folders" option: the bootstrap value, then `show-hidden` events. */
@@ -753,6 +755,7 @@ async function mount(
         },
         showHiddenEntries: () => showHiddenEntries,
         ...(snapshot.gameLocale === undefined ? {} : { gameLocale: snapshot.gameLocale }),
+        ...(snapshot.graphDepth === undefined ? {} : { graphDepth: snapshot.graphDepth }),
         lastOutcome(descriptor) {
           const record = recordForDescriptor(descriptor)
           return record === undefined ? undefined : editOutcomes.get(record.entry.id)

@@ -78,6 +78,8 @@ export interface PageBootstrap {
   readonly showHiddenEntries?: boolean
   /** The game-string locale cards open in (`modkit.locale`), when the page was built. */
   readonly gameLocale?: string
+  /** Relations a graph walk follows from its root (`modkit.maxGraphHops`). */
+  readonly graphDepth?: number
   /** Function-free extension/contribution subject cards for the generic subject-card renderer. */
   readonly extensionCard?: import('./extension-cards.js').ExtensionCardBundle
   /**

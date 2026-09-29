@@ -94,6 +94,7 @@
   "command.sources.publishNew.title": "Publish a new mod or map",
   "command.launchActiveMod": "Modkit: Test Active Mod in Game…",
   "configuration.launch.warnIfRunning.description": "Ask before closing a running game to launch again.",
+  "configuration.maxGraphHops.description": "How many relations the relations graph follows from its root when it walks from a node (1–4).",
   "configuration.showHiddenEntries.description": "Show files and folders an archive or a game storage marks as hidden (`__MACOSX`, names starting with a dot, `Thumbs.db` and what each format hides). Opening one by its path always works.",
   "configuration.launch.testMap.description": "Absolute path of the map a mod is tested on. Empty: choose one when testing.",
   "configuration.launch.documentsDirectory.description": "Your Documents folder, when the game logs somewhere other than `~/Documents` (a relocated or OneDrive folder).",

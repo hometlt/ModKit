@@ -326,7 +326,10 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
       id: 'relations',
       label: context.localizer.text('stage.relations'),
       contract: 'common.view/relation-graph-source',
-      module: createRelationGraphViewer({ localizer: context.localizer }),
+      module: createRelationGraphViewer({
+        localizer: context.localizer,
+        ...(context.graphDepth === undefined ? {} : { depth: context.graphDepth }),
+      }),
     },
     {
       id: 'text',

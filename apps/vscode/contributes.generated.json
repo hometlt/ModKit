@@ -504,6 +504,13 @@
         "markdownDescription": "%configuration.managedEditorAssociations.description%",
         "type": "array"
       },
+      "modkit.maxGraphHops": {
+        "default": 2,
+        "markdownDescription": "%configuration.maxGraphHops.description%",
+        "maximum": 4,
+        "minimum": 1,
+        "type": "integer"
+      },
       "modkit.nonDefaultContributions": {
         "default": [],
         "items": {

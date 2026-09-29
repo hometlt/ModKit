@@ -438,6 +438,13 @@
         "default": false,
         "markdownDescription": "%configuration.showHiddenEntries.description%"
       },
+      "modkit.maxGraphHops": {
+        "type": "integer",
+        "default": 2,
+        "minimum": 1,
+        "maximum": 4,
+        "markdownDescription": "%configuration.maxGraphHops.description%"
+      },
       "modkit.launch.testMap": {
         "type": "string",
         "default": "",

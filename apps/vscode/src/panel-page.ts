@@ -88,6 +88,7 @@ export function panelHtml(options: PanelPageOptions): string {
       ...(options.explorer === undefined ? {} : { explorer: options.explorer }),
       showHiddenEntries:
         vscode.workspace.getConfiguration('modkit').get<boolean>('showHiddenEntries') === true,
+      graphDepth: vscode.workspace.getConfiguration('modkit').get<number>('maxGraphHops') ?? 2,
       gameLocale: gameLocales(
         vscode.workspace.getConfiguration('modkit').get('locale'),
         vscode.env.language,
