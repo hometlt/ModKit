@@ -98,6 +98,27 @@
             ],
             "type": "object"
           },
+          "replacesApplicationSettings": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "scoped": {
+                  "const": true
+                },
+                "setting": {
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z][A-Za-z0-9]*(?:\\.[A-Za-z0-9_-]+)+$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "setting"
+              ],
+              "type": "object"
+            },
+            "maxItems": 16,
+            "type": "array"
+          },
           "replacesSettings": {
             "items": {
               "additionalProperties": false,
