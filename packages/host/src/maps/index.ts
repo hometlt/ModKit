@@ -103,6 +103,12 @@ import { singleFileAsContainer } from './single-file-namespace.js'
 import { createCandidateWorldSceneLease } from './world-source.js'
 
 export { createCandidateWorldSceneLease } from './world-source.js'
+export {
+  worldSceneModel,
+  worldSceneModelLimits,
+  type WorldModelTexture,
+  type WorldSceneModelOptions,
+} from './world-model.js'
 
 /** Owner id under which the standard semantic-map definition is registered. */
 export const STANDARD_MAPS_OWNER = 'modkit/maps'
