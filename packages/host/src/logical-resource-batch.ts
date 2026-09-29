@@ -83,6 +83,7 @@ function capture(
       requirement.id +
         requirement.logicalId +
         (requirement.parentResourceId ?? '') +
+        (requirement.alternatives ?? []).join('') +
         (expectedRevision ?? '') +
         requirement.scopes.join(''),
     ).length

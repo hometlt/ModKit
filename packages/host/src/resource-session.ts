@@ -321,7 +321,7 @@ export function createResourceSession(options: ResourceSessionOptions): Resource
     return { found: undefined, overBudget: false }
   }
 
-  return {
+  const port: ResourceSessionPort = {
     sessionId,
     revision: options.revision,
     primaryLogicalId: options.origin.primaryLogicalId,
@@ -578,6 +578,18 @@ export function createResourceSession(options: ResourceSessionOptions): Resource
       const results = await Promise.allSettled(outstanding.map(lease => lease.release()))
       const failure = results.find(result => result.status === 'rejected')
       if (failure !== undefined && failure.status === 'rejected') throw failure.reason
+    },
+  }
+  return {
+    ...port,
+    // The logical id, then each alternative while the last one was not found: the game's fallback.
+    async resolve(requirement, signal) {
+      let result = await port.resolve(requirement, signal)
+      for (const logicalId of requirement.alternatives ?? []) {
+        if (result.state === 'resolved' || result.reason !== 'not-found') break
+        result = await port.resolve({ ...requirement, logicalId }, signal)
+      }
+      return result
     },
   }
 }

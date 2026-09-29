@@ -1052,3 +1052,35 @@ describe('resource session — concurrency and teardown', () => {
     expect(unresolvedReason(after)).toBe('session-disposed')
   })
 })
+
+/*
+ * A game's own fallback spelling: Warzone 2100 loads a `.png` texture key as its `.ktx2` when no
+ * `.png` is there, and a mod's `.png` still wins over the shipped `.ktx2`.
+ */
+describe('resource session — alternatives', () => {
+  it('tries the alternatives in order only while the last one was not found', async () => {
+    const origin = fakeOrigin(['texpages/page-89.ktx2', 'texpages/page-90.png', 'texpages/page-90.ktx2'])
+    const session = createResourceSession({ origin, revision: SESSION_REVISION })
+    try {
+      const shipped = await session.resolve(
+        requirement('ground', 'texpages/page-89.png', { alternatives: ['texpages/page-89.ktx2'] }),
+      )
+      expect(shipped.state).toBe('resolved')
+      if (shipped.state !== 'resolved') return
+      expect(shipped.provenance).toMatchObject({ requirementId: 'ground', logicalId: 'texpages/page-89.ktx2' })
+      await shipped.lease.release()
+      const modded = await session.resolve(
+        requirement('mod', 'texpages/page-90.png', { alternatives: ['texpages/page-90.ktx2'] }),
+      )
+      expect(modded.state === 'resolved' && modded.provenance.logicalId).toBe('texpages/page-90.png')
+      if (modded.state === 'resolved') await modded.lease.release()
+      const missing = await session.resolve(
+        requirement('none', 'texpages/page-91.png', { alternatives: ['texpages/page-91.ktx2'] }),
+      )
+      expect(unresolvedReason(missing)).toBe('not-found')
+      expect(missing.provenance.logicalId).toBe('texpages/page-91.ktx2')
+    } finally {
+      await session.dispose()
+    }
+  })
+})

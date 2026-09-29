@@ -53,6 +53,8 @@ export interface SubjectLogicalResourceOptions {
 }
 
 const ROLES: readonly ResourceRole[] = ['texture', 'sidecar', 'buffer']
+/** Alternatives one requirement may name (the game's own fallbacks are a handful). */
+const MAXIMUM_ALTERNATIVES = 8
 const SCOPES: readonly InputSearchScope[] = [
   'sibling-directory',
   'current-mount',
@@ -144,12 +146,19 @@ function captureRequirement(
 ): LogicalResourceRequirement {
   if (request === null || typeof request !== 'object')
     throw new TypeError('A logical requirement is required.')
-  const { id, logicalId, role, scopes, parentResourceId } = request
+  const { id, logicalId, role, scopes, parentResourceId, alternatives } = request
   const scopeCount = Array.isArray(scopes) ? scopes.length : -1
   if (
     Object.keys(request).some(
-      key => !['id', 'logicalId', 'role', 'scopes', 'parentResourceId'].includes(key),
+      key =>
+        !['id', 'logicalId', 'role', 'scopes', 'parentResourceId', 'alternatives'].includes(key),
     ) ||
+    (alternatives !== undefined &&
+      (!Array.isArray(alternatives) ||
+        alternatives.length > MAXIMUM_ALTERNATIVES ||
+        !alternatives.every(
+          value => typeof value === 'string' && value.length > 0 && value.length <= maxLength,
+        ))) ||
     ![id, logicalId].every(
       value => typeof value === 'string' && value.length > 0 && value.length <= maxLength,
     ) ||
@@ -177,6 +186,7 @@ function captureRequirement(
     role,
     scopes: Object.freeze(capturedScopes),
     ...(parentResourceId === undefined ? {} : { parentResourceId }),
+    ...(alternatives === undefined ? {} : { alternatives: Object.freeze([...alternatives]) }),
   })
 }
 
@@ -203,7 +213,10 @@ export function snapshotLogicalResourceRequirements(
   const encoder = new TextEncoder()
   for (const input of captured) {
     normalizeCompanionLogicalId(input.logicalId)
-    textBytes += encoder.encode(input.id + input.logicalId + (input.parentResourceId ?? '')).length
+    for (const alternative of input.alternatives ?? []) normalizeCompanionLogicalId(alternative)
+    textBytes += encoder.encode(
+      input.id + input.logicalId + (input.parentResourceId ?? '') + (input.alternatives ?? []).join(''),
+    ).length
     if (textBytes > budget.maxScalarBytes)
       throw new TypeError('Logical input descriptors exceed the host scalar budget.')
   }

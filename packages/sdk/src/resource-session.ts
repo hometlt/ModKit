@@ -58,6 +58,11 @@ export interface LogicalResourceRequirement {
    * one instead of following it.
    */
   readonly parentResourceId?: string
+  /**
+   * Logical ids the game loads in place of `logicalId` when that is absent, tried in order —
+   * Warzone 2100 loads a `.png` texture key as its `.ktx2` when no `.png` is there.
+   */
+  readonly alternatives?: readonly string[]
 }
 
 /**
