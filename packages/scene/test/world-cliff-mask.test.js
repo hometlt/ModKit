@@ -202,6 +202,42 @@ it('reads the mask through the alpha1 layer transform and keeps it with its corn
     }
 })
 
+it('gives a masked floor and the drawn ground one normal where they meet on a height-field vertex', () => {
+  // The ground east of the piece falls away one unit: the edge vertices' own normals lean east.
+  const sloped = splatTerrain.map(item =>
+    item.x === 3 ? { ...item, uvwPosition: { ...item.uvwPosition, y: -1 } } : item,
+  )
+  const plan = createWorldWebGlPlan({
+    items: [...sloped, cliffItem],
+    models: new Map([['cliff', piece(true)]]),
+    ...splatInput,
+  })
+  const [mask] = plan.splatTriangles.filter(batch => batch.maskTexture !== undefined)
+  const [ground] = plan.splatTriangles.filter(batch => batch.maskTexture === undefined)
+  /** Normals of the batch's up-facing vertices at (x, 0, z). */
+  const normalsAt = (batch, x, z) => {
+    const found = []
+    for (let vertex = 0; vertex < batch.positions.length / 3; vertex++) {
+      const [px, py, pz] = batch.positions.slice(vertex * 3, vertex * 3 + 3)
+      const normal = Array.from(batch.normals.slice(vertex * 3, vertex * 3 + 3))
+      if (Math.abs(px - x) < 1e-6 && Math.abs(py) < 1e-6 && Math.abs(pz - z) < 1e-6 && normal[1] >= 0.5)
+        found.push(normal)
+    }
+    return found
+  }
+  // The mean of the slope's (1, 1, 0)/√2 and the floor's (0, 1, 0).
+  const shared = [Math.SQRT1_2, 1 + Math.SQRT1_2, 0].map(value => value / Math.hypot(Math.SQRT1_2, 1 + Math.SQRT1_2))
+  for (const z of [0, -2]) {
+    const drawn = [...normalsAt(ground, 2, z), ...normalsAt(mask, 2, z)]
+    assert.ok(normalsAt(ground, 2, z).length > 0 && normalsAt(mask, 2, z).length > 0)
+    for (const normal of drawn)
+      normal.forEach((value, axis) => assert.ok(Math.abs(value - shared[axis]) < 1e-5, `${normal} at z ${z}`))
+  }
+  // Off the ground's edge the floor keeps the mesh's own normal.
+  assert.ok(normalsAt(mask, 0, 0).length > 0)
+  for (const normal of normalsAt(mask, 0, 0)) assert.deepEqual(normal.map(value => value + 0), [0, 1, 0])
+})
+
 it('joins cliff pieces that share a vertex but read different base offsets', () => {
   // Columns 0-1 are a plateau (level 1), 2-4 low ground (level 0); the brush lowered columns 2-4
   // by 10 base steps, one world unit.

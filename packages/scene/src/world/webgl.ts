@@ -3611,6 +3611,13 @@ function prepareWorldStaticTerrain(
   }
   const cliffFills: CliffFill[] = []
   const cliffReceiverTriangles: number[] = []
+  /** Masked-ground corners standing on a height-field vertex; see where their normals are joined. */
+  const footprintEdgeVertices: {
+    readonly key: string
+    readonly height: number
+    readonly target: MutableSplatBatch
+    readonly index: number
+  }[] = []
   if (exactRasterSplat !== undefined)
     for (const item of input.items) {
       if (
@@ -3663,6 +3670,7 @@ function prepareWorldStaticTerrain(
               readonly [number, number],
               readonly [number, number],
             ]
+            const firstVertex = maskTarget.positions.length / 3
             pushSplatTriangle(
               maskTarget,
               upward,
@@ -3686,6 +3694,17 @@ function prepareWorldStaticTerrain(
             maskTarget.weightTextureCoordinates!.push(
               ...grid.map(point => rasterUv(point[0], point[1])).flat(),
             )
+            grid.forEach(([gx, gy], corner) => {
+              const x = Math.round(gx)
+              const y = Math.round(gy)
+              if (Math.abs(gx - x) > 1e-3 || Math.abs(gy - y) > 1e-3) return
+              footprintEdgeVertices.push({
+                key: `${x}:${y}`,
+                height: upward[corner]![1],
+                target: maskTarget,
+                index: firstVertex + corner,
+              })
+            })
             for (const corner of order) {
               const index = triangle[corner]!
               maskTarget.maskTextureCoordinates!.push(
@@ -4032,6 +4051,42 @@ function prepareWorldStaticTerrain(
     for (const triangle of split) {
       const normal = faceNormal(corners[triangle[0]]!, corners[triangle[1]]!, corners[triangle[2]]!)
       for (const corner of triangle) addVertexNormal(cornerKeys[corner]!, normal)
+    }
+  }
+  // Where a masked piece's floor or top meets the drawn ground at a height-field vertex, both take one
+  // normal: the mean of the ground's and the mesh's. The vertex's own normal is summed from the drawn
+  // cells alone (those under the piece are cut), so on a shore falling away from a tile it leaned the
+  // whole slope while the floor beside it kept the mesh's upright normal. The light broke along the
+  // tile's edge and every tile read as a lighter rectangle, on the ground and through the water.
+  {
+    const meshNormals = new Map<string, [number, number, number]>()
+    const edges = footprintEdgeVertices.filter(({ key, height, target, index }) => {
+      const vertex = terrainByCell.get(key)
+      if (vertex === undefined || !vertexNormals.has(key)) return false
+      // A wall's foot or a rim standing on the vertex keeps its own normal.
+      if (target.normals[index * 3 + 1]! < 0.5) return false
+      if (Math.abs(snappedTerrainPosition(vertex)[1] - height) > 0.05) return false
+      const sum = meshNormals.get(key) ?? [0, 0, 0]
+      sum[0] += target.normals[index * 3]!
+      sum[1] += target.normals[index * 3 + 1]!
+      sum[2] += target.normals[index * 3 + 2]!
+      meshNormals.set(key, sum)
+      return true
+    })
+    const unit = (value: readonly [number, number, number]): [number, number, number] => {
+      const length = Math.hypot(value[0], value[1], value[2])
+      return [value[0] / length, value[1] / length, value[2] / length]
+    }
+    for (const [key, mesh] of meshNormals) {
+      const ground = unit(vertexNormals.get(key)!)
+      const floor = unit(mesh)
+      vertexNormals.set(key, unit([ground[0] + floor[0], ground[1] + floor[1], ground[2] + floor[2]]))
+    }
+    for (const { key, target, index } of edges) {
+      const shared = vertexNormals.get(key)!
+      target.normals[index * 3] = shared[0]
+      target.normals[index * 3 + 1] = shared[1]
+      target.normals[index * 3 + 2] = shared[2]
     }
   }
   const vertexNormal = (x: number, y: number): readonly [number, number, number] => {
