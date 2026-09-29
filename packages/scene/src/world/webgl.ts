@@ -2957,6 +2957,8 @@ interface WorldStaticObject {
   readonly materialClock?: string
   readonly resamplers?: readonly (WorldSceneResampler | undefined)[]
   readonly effects: readonly WorldWebGlModelEffectInstance[]
+  /** The model each of `effects` comes from: a kept instance takes that model's clock. */
+  readonly effectResources: readonly string[]
   /** Triangles the object wrote to the plan's shared batches (projector decals, fallback), in order. */
   readonly batchWrites: readonly WorldObjectBatchWrite[]
   readonly pickMesh: WorldObjectPickMesh
@@ -3373,7 +3375,8 @@ function worldStaticObjectKey(
     const result = input.models?.get(resourceId)
     results.push(result)
     key.push(resourceId, result)
-    // Materials alone follow the clock through the kept object's resamplers.
+    // Materials and live effects alone follow the clock through the kept object (its resamplers,
+    // keptWorldObjectEffect).
     if (result?.state !== 'converted' || !worldObjectFollowsTime(result, item)) continue
     const selected = worldModelAnimation(result, item)
     key.push(worldObjectTime(input, item, selected !== undefined, selected?.durationSeconds))
@@ -3401,12 +3404,12 @@ const worldStaticObjectKeys = new WeakMap<
 >()
 
 /**
- * Whether more than the materials of a model's contribution to an object follows the object's
- * clock: sampled geometry (keyed TRS or visibility), live effects (simulated at that time) or
- * decals whose projection does. A clip that moves none of these (an empty Stand, a material-only
- * sequence, a still blob shadow) leaves the object's geometry the same at every clock, so it is
- * kept while the map animates; material tracks only have its programs sampled again
- * (keptWorldObjectScenes).
+ * Whether more than the materials and live effects of a model's contribution to an object follows
+ * the object's clock: sampled geometry (keyed TRS or visibility) or decals whose projection does. A
+ * clip that moves neither (an empty Stand, a material-only sequence, a still blob shadow, a still
+ * model with particles) leaves the object's geometry the same at every clock, so it is kept while
+ * the map animates; material tracks only have its programs sampled again (keptWorldObjectScenes),
+ * and live effects, simulated when drawn, only take the new clock (keptWorldObjectEffect).
  */
 function worldObjectFollowsTime(
   result: WorldModelSample['result'],
@@ -3417,7 +3420,25 @@ function worldObjectFollowsTime(
     result.uvmBytes === undefined
       ? undefined
       : uvmEffectSource(result.uvmBytes, worldModelAnimation(result, item)?.sequenceIndex)
-  return source !== undefined && (source.liveEffects || source.projectionsFollowTime)
+  return source !== undefined && source.projectionsFollowTime
+}
+
+/**
+ * A kept object's live effect instance at the object's clock in this plan: what the build would
+ * place (the same source, transform, materials and textures) with the time and material context of
+ * the model it comes from.
+ */
+function keptWorldObjectEffect(
+  item: WorldSceneObjectItem,
+  effect: WorldWebGlModelEffectInstance,
+  resourceId: string,
+  input: WorldWebGlInput,
+): WorldWebGlModelEffectInstance {
+  const result = input.models?.get(resourceId)
+  if (result?.state !== 'converted') return effect
+  const { time, materialContext } = worldObjectMaterialMoment(input, item, result)
+  if (time === effect.time) return effect
+  return Object.freeze({ ...effect, time, context: materialContext })
 }
 
 const sameWorldStaticObjectKey = (left: readonly unknown[], right: readonly unknown[]) =>
@@ -5410,7 +5431,10 @@ export function createWorldWebGlPlan(
         : undefined
     if (retainedObject !== undefined && keptScenes !== undefined) {
       for (const scene of keptScenes) modelMaterialScenes.push(scene)
-      for (const effect of retainedObject.effects) modelEffects.push(effect)
+      for (const [index, effect] of retainedObject.effects.entries())
+        modelEffects.push(
+          keptWorldObjectEffect(item, effect, retainedObject.effectResources[index]!, input),
+        )
       for (const entry of retainedObject.batchWrites) journalObjectWrite(entry)
       objectPickMeshes.push(retainedObject.pickMesh)
       modelTriangles += retainedObject.modelTriangles
@@ -5420,6 +5444,7 @@ export function createWorldWebGlPlan(
     const scenesBefore = modelMaterialScenes.length
     const sceneResamplers = new Map<WorldWebGlModelMaterialScene, WorldSceneResampler>()
     const effectsBefore = modelEffects.length
+    const effectResources: string[] = []
     const objectBatchWrites: WorldObjectBatchWrite[] = []
     const previousProjectorWrites = lastProjectorWrites.get(item)
     const projectorWrites: { readonly key: string; readonly write: WorldBatchWrite }[] = []
@@ -5882,7 +5907,8 @@ export function createWorldWebGlPlan(
         }
       }
       // Decals are projected above; only particles and ribbons are drawn per frame from here.
-      if (effectSource?.liveEffects === true)
+      if (effectSource?.liveEffects === true) {
+        effectResources.push(component.resourceId)
         modelEffects.push(
           Object.freeze({
             source: effectSource,
@@ -5893,6 +5919,7 @@ export function createWorldWebGlPlan(
             context: materialContext,
           }),
         )
+      }
       if (materialPrimitives.length > 0) {
         const materialScene = Object.freeze({
           primitives: Object.freeze(materialPrimitives),
@@ -5979,6 +6006,7 @@ export function createWorldWebGlPlan(
                 ),
               }),
           effects: Object.freeze(modelEffects.slice(effectsBefore)),
+          effectResources: Object.freeze(effectResources),
           batchWrites: Object.freeze(objectBatchWrites),
           pickMesh,
           modelTriangles: modelTriangles - trianglesBefore,

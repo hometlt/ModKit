@@ -774,9 +774,19 @@ it('draws projector decals as the ground by their splat layer, not in depth orde
   assert.ok(runs.every(run => run.batch !== decals[0]))
 })
 
-it('projects the still decals of an object rebuilt for its particles once', () => {
+it('keeps a still object with particles and still decals: its effect takes the new clock', () => {
+  // Kept scenes stand for the programs sampled at the new clock (worldWebGlScenePrograms).
   const values = plan =>
-    JSON.stringify(plan, (_, value) => (value instanceof Map ? [...value] : value))
+    JSON.stringify(
+      {
+        ...plan,
+        modelMaterialScenes: plan.modelMaterialScenes.map(scene => ({
+          ...scene,
+          programs: worldWebGlScenePrograms(plan, scene),
+        })),
+      },
+      (_, value) => (value instanceof Map ? [...value] : value),
+    )
   const model = effectModel({ particles: true, projector: true })
   const input = { ...world(), models: new Map([['actor', model]]), timeSeconds: 0.25 }
   const first = createWorldWebGlPlan(input)
@@ -785,9 +795,13 @@ it('projects the still decals of an object rebuilt for its particles once', () =
   assert.equal(first.modelMaterialScenes.length, 2)
   const nextInput = { ...input, timeSeconds: 0.5 }
   const next = createWorldWebGlPlan(nextInput, first)
-  // Rebuilt for its particles, but its decals come from the projection it made before.
-  assert.notEqual(next.picking.objects.at(-1), first.picking.objects.at(-1))
-  assert.equal(next.modelMaterialScenes[0].materials, first.modelMaterialScenes[0].materials)
+  // Nothing but its particles and materials follows the clock: the object is kept.
+  assert.equal(next.picking.objects.at(-1), first.picking.objects.at(-1))
+  assert.equal(next.modelMaterialScenes[0], first.modelMaterialScenes[0])
+  assert.equal(next.modelEffects[0].source, first.modelEffects[0].source)
+  assert.equal(next.modelEffects[0].transform, first.modelEffects[0].transform)
+  assert.equal(next.modelEffects[0].time, 0.5)
+  assert.equal(next.modelEffects[0].context.time, 0.5)
   assert.equal(values(next), values(createWorldWebGlPlan(nextInput)))
 })
 
