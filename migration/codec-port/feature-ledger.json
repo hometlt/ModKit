@@ -8248,6 +8248,10 @@
         {
           "path": "modkit-extensions-warzone/test/receipts/k1/warzone-pie.model-read.json",
           "sha256": "e66f62a436a9e458a145d264f555001db5381eeb62c89dc459fca259f7e60527"
+        },
+        {
+          "path": "modkit-extensions-warzone/test/receipts/k1/warzone-pie.model-read.r2.json",
+          "sha256": "8cc43e5fb483cdf59ff71f421be5d54a35d039a0d311f13b5b0420e4b297ff62"
         }
       ],
       "id": "legacy/codec-manifest/modkit/warzone-pie/operation/model.read",
