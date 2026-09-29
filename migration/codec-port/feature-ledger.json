@@ -1893,6 +1893,10 @@
         {
           "path": "modkit-extensions-other/test/receipts/k1/grey-goo-alo.model-read.json",
           "sha256": "d6a8c912b0e73c4184815c5bfc5388d87b61f0fd1585fde00f17ad2f11485b88"
+        },
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/grey-goo-alo.model-read.r2.json",
+          "sha256": "1c2355a0f55d32729ef0883660360c9160db6a46c9a3f9c3ab60ec2e52a7fe97"
         }
       ],
       "id": "legacy/codec-manifest/modkit/grey-goo-alo/operation/model.read",
