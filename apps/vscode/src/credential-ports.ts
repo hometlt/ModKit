@@ -49,6 +49,29 @@ export interface ReplacedSettingsResult {
 }
 
 /**
+ * One policy for every secret moved out of settings: a non-empty string goes to `adopt`; `true` when
+ * the broker took it or already held one (the old copy may go), `false` when refused — logged by
+ * credential id, never with the value.
+ */
+function secretAdopter(broker: Pick<CredentialBroker, 'adopt'>, log: (line: string) => void) {
+  const counts = { adopted: 0, kept: 0, refused: 0 }
+  const adopt = async (id: string, value: unknown, scope?: string): Promise<boolean> => {
+    if (typeof value !== 'string' || value.trim() === '') return false
+    try {
+      const answer = await broker.adopt(id, value, scope)
+      if (answer === 'adopted') counts.adopted += 1
+      else counts.kept += 1
+      return true
+    } catch (error) {
+      counts.refused += 1
+      log(`[accounts] ${id}: ${error instanceof Error ? error.message : ''}`)
+      return false
+    }
+  }
+  return { counts, adopt }
+}
+
+/**
  * Secrets an extension used to take from `modkit.contributionSettings`, moved into the broker by
  * the declarations that replace them (`replacesSettings`): each value of one settings level — the
  * contribution's values and each `bySource` override — goes to `adopt`, and only a value `adopt`
@@ -61,26 +84,11 @@ export async function adoptReplacedSettings(options: {
   readonly broker: Pick<CredentialBroker, 'adopt'>
   readonly log: (line: string) => void
 }): Promise<ReplacedSettingsResult> {
-  let adopted = 0
-  let kept = 0
-  let refused = 0
+  const { counts, adopt } = secretAdopter(options.broker, options.log)
   if (!isRecord(options.level)) {
-    return { next: options.level, changed: false, adopted, kept, refused }
+    return { next: options.level, changed: false, ...counts }
   }
   const next: Record<string, unknown> = structuredClone(options.level)
-  const adopt = async (id: string, value: unknown, scope?: string): Promise<boolean> => {
-    if (typeof value !== 'string' || value.trim() === '') return false
-    try {
-      const answer = await options.broker.adopt(id, value, scope)
-      if (answer === 'adopted') adopted += 1
-      else kept += 1
-      return true
-    } catch (error) {
-      refused += 1
-      options.log(`[accounts] ${id}: ${error instanceof Error ? error.message : ''}`)
-      return false
-    }
-  }
   /** Moves what one values object holds for one replaced setting; true when anything went. */
   const moveFrom = async (
     values: Record<string, unknown>,
@@ -125,7 +133,49 @@ export async function adoptReplacedSettings(options: {
       if (Object.keys(entry).length === 0) delete next[replaced.contribution]
     }
   }
-  return { next: changed ? next : options.level, changed, adopted, kept, refused }
+  return { next: changed ? next : options.level, changed, ...counts }
+}
+
+export interface ReplacedApplicationSettingsResult {
+  /** Settings every value of which moved: the caller removes them from this level. */
+  readonly cleared: readonly string[]
+  readonly adopted: number
+  readonly kept: number
+  readonly refused: number
+}
+
+/**
+ * Secrets kept in top-level application settings before the broker (MK2's `modkit.stormgate.aesKey`),
+ * moved by the declarations that replace them (`replacesApplicationSettings`). `values` holds one
+ * settings level's value of each such setting. A setting comes back in `cleared` only when every
+ * value it holds moved; one with a refused value stays whole, since VS Code refuses a partial write
+ * of a setting it no longer registers, while removing one it accepts.
+ */
+export async function adoptReplacedApplicationSettings(options: {
+  readonly values: Readonly<Record<string, unknown>>
+  readonly declared: readonly DeclaredCredential[]
+  readonly broker: Pick<CredentialBroker, 'adopt'>
+  readonly log: (line: string) => void
+}): Promise<ReplacedApplicationSettingsResult> {
+  const { counts, adopt } = secretAdopter(options.broker, options.log)
+  const cleared: string[] = []
+  for (const { requirement } of options.declared) {
+    for (const replaced of requirement.replacesApplicationSettings ?? []) {
+      const value = options.values[replaced.setting]
+      if (value === undefined || cleared.includes(replaced.setting)) continue
+      if (replaced.scoped !== true) {
+        if (await adopt(requirement.id, value)) cleared.push(replaced.setting)
+        continue
+      }
+      if (!isRecord(value)) continue
+      let moved = Object.keys(value).length > 0
+      for (const [scope, held] of Object.entries(value)) {
+        if (!(await adopt(requirement.id, held, scope))) moved = false
+      }
+      if (moved) cleared.push(replaced.setting)
+    }
+  }
+  return { cleared, ...counts }
 }
 
 /** The part of VS Code's `SecretStorage` the store uses. */

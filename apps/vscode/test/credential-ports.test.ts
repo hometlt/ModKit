@@ -8,6 +8,7 @@ import type { CredentialPrompter } from '@modkit/sdk'
 
 import {
   adoptKeptTickets,
+  adoptReplacedApplicationSettings,
   adoptReplacedSettings,
   createSecretCredentialStore,
   presettablePrompter,
@@ -224,6 +225,64 @@ describe('the editor ports of the credential broker', () => {
     })
     expect(result).toMatchObject({ changed: false, adopted: 0 })
     expect(result.next).toBe(level)
+  })
+
+  it('moves a top-level setting by the declaration that replaces it, whole or not at all', async () => {
+    const storage = secrets()
+    const keyInventory = {
+      extensions: [
+        {
+          manifest: {
+            publisher: 'fixture',
+            id: 'engine',
+            credentials: [
+              {
+                id: 'fixture/engine-key',
+                kind: 'symmetric-key',
+                label: 'Engine key',
+                scoped: true,
+                scopeFormat: 'hex',
+                replacesApplicationSettings: [
+                  { setting: 'fixture.engine.key' },
+                  { setting: 'fixture.engine.keys', scoped: true },
+                ],
+              },
+            ],
+          },
+        },
+      ],
+    } as never
+    const broker = createCredentialBroker({
+      inventory: keyInventory,
+      store: createSecretCredentialStore(storage),
+    })
+    const main = '00112233445566778899aabbccddeeff'
+    const other = 'ffeeddccbbaa99887766554433221100'
+    const log: string[] = []
+    const result = await adoptReplacedApplicationSettings({
+      values: {
+        'fixture.engine.key': main,
+        // one refused scope keeps the whole setting where it is
+        'fixture.engine.keys': { a0a1a2a3b0b1c0c1d0d1e0e1e2e3e4e5: other, b1: 'nope' },
+        'fixture.unrelated': 'left alone',
+      },
+      declared: broker.declared(),
+      broker,
+      log: line => log.push(line),
+    })
+    expect(result).toEqual({ cleared: ['fixture.engine.key'], adopted: 2, kept: 0, refused: 1 })
+    const port = broker.portFor('fixture/engine')
+    expect(Buffer.from((await port.secret('fixture/engine-key')) ?? []).toString('hex')).toBe(main)
+    expect(log).toHaveLength(1)
+    expect(log.join('')).not.toContain('nope')
+    // a copy the broker already holds is cleared on the next run too
+    const again = await adoptReplacedApplicationSettings({
+      values: { 'fixture.engine.key': main },
+      declared: broker.declared(),
+      broker,
+      log: line => log.push(line),
+    })
+    expect(again).toEqual({ cleared: ['fixture.engine.key'], adopted: 0, kept: 1, refused: 0 })
   })
 
   it('deletes the key on sign-out', async () => {

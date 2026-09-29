@@ -337,7 +337,11 @@ import { nonce, panelHtml } from './panel-page.js'
 import { ExtensionsView } from './extensions-view.js'
 import { HostView } from './host-view.js'
 import { SourcesView } from './sources-view.js'
-import { adoptKeptTickets, adoptReplacedSettings } from './credential-ports.js'
+import {
+  adoptKeptTickets,
+  adoptReplacedApplicationSettings,
+  adoptReplacedSettings,
+} from './credential-ports.js'
 import { contentSourceRoots } from './content-source-roots.js'
 import {
   AccountsView,
@@ -11942,7 +11946,11 @@ async function activateModkit(
   ): Promise<void> => {
     const declared = broker
       .declared()
-      .filter(entry => (entry.requirement.replacesSettings?.length ?? 0) > 0)
+      .filter(
+        entry =>
+          (entry.requirement.replacesSettings?.length ?? 0) > 0 ||
+          (entry.requirement.replacesApplicationSettings?.length ?? 0) > 0,
+      )
     if (declared.length === 0) return
     const root = vscode.workspace.getConfiguration('modkit')
     const levels: {
@@ -11982,6 +11990,57 @@ async function activateModkit(
       if (result.changed)
         await level.config.update('contributionSettings', result.next, level.target)
     }
+    // MK2's own top-level settings (`modkit.stormgate.aesKey`), at every level that holds one
+    const applicationSettings = [
+      ...new Set(
+        declared.flatMap(entry =>
+          (entry.requirement.replacesApplicationSettings ?? []).map(item => item.setting),
+        ),
+      ),
+    ]
+    const everything = vscode.workspace.getConfiguration()
+    const applicationLevels: {
+      readonly config: vscode.WorkspaceConfiguration
+      readonly target: vscode.ConfigurationTarget
+      readonly value: (setting: string) => unknown
+    }[] = [
+      {
+        config: everything,
+        target: vscode.ConfigurationTarget.Global,
+        value: setting => everything.inspect(setting)?.globalValue,
+      },
+      {
+        config: everything,
+        target: vscode.ConfigurationTarget.Workspace,
+        value: setting => everything.inspect(setting)?.workspaceValue,
+      },
+      ...(vscode.workspace.workspaceFile === undefined
+        ? []
+        : (vscode.workspace.workspaceFolders ?? []).map(folder => {
+            const config = vscode.workspace.getConfiguration(undefined, folder.uri)
+            return {
+              config,
+              target: vscode.ConfigurationTarget.WorkspaceFolder,
+              value: (setting: string) => config.inspect(setting)?.workspaceFolderValue,
+            }
+          })),
+    ]
+    for (const level of applicationSettings.length === 0 ? [] : applicationLevels) {
+      const values = Object.fromEntries(
+        applicationSettings.flatMap(setting => {
+          const value = level.value(setting)
+          return value === undefined ? [] : [[setting, value] as const]
+        }),
+      )
+      if (Object.keys(values).length === 0) continue
+      const result = await adoptReplacedApplicationSettings({ values, declared, broker, log })
+      totals.adopted += result.adopted
+      totals.kept += result.kept
+      totals.refused += result.refused
+      for (const setting of result.cleared) {
+        await level.config.update(setting, undefined, level.target)
+      }
+    }
     if (totals.adopted + totals.kept + totals.refused === 0) return
     void vscode.window.showInformationMessage(
       localizer.text('vscode.accounts.settingsMoved', totals),
@@ -12005,6 +12064,42 @@ async function activateModkit(
       log(`[accounts] moving keys out of settings: ${error instanceof Error ? error.message : ''}`),
     )
   }
+  /*
+   * A file of a loaded mod changed — saved here or written by another program (the SC2 editor,
+   * git): the mods whose chain holds it reopen with their dependents (host reloadHolding), and the
+   * others keep their contexts. Events for one path within a moment are one change.
+   */
+  const reloadTimers = new Map<string, ReturnType<typeof setTimeout>>()
+  const modFileChanged = (uri: vscode.Uri): void => {
+    if (uri.scheme !== 'file') return
+    const path = uri.fsPath
+    clearTimeout(reloadTimers.get(path))
+    reloadTimers.set(
+      path,
+      setTimeout(() => {
+        reloadTimers.delete(path)
+        void resourceSessions()
+          .then(async sessions => {
+            if (sessions.list().length === 0) return
+            const source = await requireContentSources()
+            const placement = await source.locateModPackage?.(path)
+            if (placement?.kind !== 'package') return
+            forgetResourcePaths()
+            await source.refresh('host')
+            if (await sessions.reloadHolding('host', path)) resourcesView.refresh()
+          })
+          .catch(error =>
+            log(`[resources] reload: ${error instanceof Error ? error.message : String(error)}`),
+          )
+      }, 300),
+    )
+  }
+  const modFiles = vscode.workspace.createFileSystemWatcher('**/*')
+  context.subscriptions.push({
+    dispose: () => {
+      for (const timer of reloadTimers.values()) clearTimeout(timer)
+    },
+  })
   context.subscriptions.push(
     sourcesView,
     resourcesView,
@@ -12022,21 +12117,12 @@ async function activateModkit(
       resourcesView.refresh()
     }),
     vscode.window.onDidChangeActiveTextEditor(refreshForActiveResource),
-    vscode.workspace.onDidSaveTextDocument(document => {
-      if (document.uri.scheme !== 'file') return
-      void resourceSessions().then(async sessions => {
-        if (sessions.list().length === 0) return
-        const source = await requireContentSources()
-        // ponytail: any saved file of a mod package reloads every loaded mod; narrow it to the mods
-        // whose chain holds the file once the host lists each loaded mod's layer sources.
-        const placement = await source.locateModPackage?.(document.uri.fsPath)
-        if (placement?.kind !== 'package') return
-        forgetResourcePaths()
-        await source.refresh('host')
-        await sessions.reloadAll()
-        resourcesView.refresh()
-      }).catch(error => log(`[resources] reload: ${error instanceof Error ? error.message : String(error)}`))
-    }),
+    modFiles,
+    modFiles.onDidChange(modFileChanged),
+    modFiles.onDidCreate(modFileChanged),
+    modFiles.onDidDelete(modFileChanged),
+    // a file outside the workspace folders is not watched; its save still counts
+    vscode.workspace.onDidSaveTextDocument(document => modFileChanged(document.uri)),
   )
 
   // ---------------------------------------------------------------- status bar
