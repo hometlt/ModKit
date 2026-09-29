@@ -24,6 +24,7 @@ import {
 import type {
   LanguageCodeAction,
   LanguageCommand,
+  LanguageCompletionItem,
   LanguageDiagnostic,
   LanguageSymbol,
   LanguageSymbolKind,
@@ -164,6 +165,13 @@ const diagnosticOf = (value: LanguageDiagnostic): Diagnostic => ({
  * A language command as an LSP command: the client runs `modkit.runLanguageCommand` with the
  * command itself as its one argument (the Modkit client opens the card, graph or place).
  */
+/** A completion item carries its own request, so completionItem/resolve can ask again. */
+interface CompletionResolveData {
+  readonly uri: string
+  readonly position: Position
+  readonly item: LanguageCompletionItem
+}
+
 export const LSP_LANGUAGE_COMMAND = 'modkit.runLanguageCommand'
 const commandOf = (title: string, command: LanguageCommand): Command => ({
   title,
@@ -570,7 +578,10 @@ export function createModkitLanguageServer(
           change: TextDocumentSyncKind.Incremental,
           save: { includeText: true },
         },
-        completionProvider: { triggerCharacters: [...completionTriggerCharacters] },
+        completionProvider: {
+          triggerCharacters: [...completionTriggerCharacters],
+          resolveProvider: true,
+        },
         hoverProvider: true,
         signatureHelpProvider: { triggerCharacters: [...signatureHelpTriggerCharacters] },
         definitionProvider: true,
@@ -775,9 +786,34 @@ export function createModkitLanguageServer(
                   ...(item.retrigger === true
                     ? { command: { title: 'Suggest', command: 'editor.action.triggerSuggest' } }
                     : {}),
+                  // what completionItem/resolve needs to ask the provider about this very item
+                  data: {
+                    uri: params.textDocument.uri,
+                    position: params.position,
+                    item,
+                  } satisfies CompletionResolveData,
                 }) satisfies CompletionItem,
             ),
           }
+    }),
+  )
+  connection.onCompletionResolve((native, token) =>
+    withSignal(token, async signal => {
+      const data = native.data as CompletionResolveData | undefined
+      if (data === undefined || typeof data.uri !== 'string') return native
+      await requireFeature(data.uri, 'completion', signal)
+      const value = await options.workspace.resolveCompletion({
+        ...positionRequest(data.uri, data.position, signal),
+        item: data.item,
+      })
+      if (value === undefined) return native
+      return {
+        ...native,
+        ...(value.detail === undefined ? {} : { detail: value.detail }),
+        ...(value.documentation === undefined
+          ? {}
+          : { documentation: { kind: 'markdown', value: value.documentation } }),
+      } satisfies CompletionItem
     }),
   )
   connection.onHover((params, token) =>
@@ -789,7 +825,21 @@ export function createModkitLanguageServer(
       return value === undefined
         ? null
         : {
-            contents: { kind: 'markdown', value: value.markdown },
+            contents: {
+              kind: 'markdown',
+              // the hover's links run as the client's language command, when it trusts them
+              value:
+                value.commands === undefined || value.commands.length === 0
+                  ? value.markdown
+                  : `${value.markdown}\n\n${value.commands
+                      .map(
+                        item =>
+                          `[${item.title}](command:${LSP_LANGUAGE_COMMAND}?${encodeURIComponent(
+                            JSON.stringify([item.command]),
+                          )})`,
+                      )
+                      .join(' · ')}`,
+            },
             ...(value.range === undefined ? {} : { range: value.range }),
           }
     }),

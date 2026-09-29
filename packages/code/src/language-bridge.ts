@@ -34,6 +34,7 @@ import type {
   LanguageRange,
   LanguageSymbol,
 } from '@modkit/sdk'
+import { languageAssetPictures, type LanguageWorkspaceOptions } from '@modkit/host/language'
 import * as monaco from 'monaco-editor/editor/editor.main.js'
 import { encodeSemanticTokens, SEMANTIC_TOKEN_TYPES } from './semantic-tokens.js'
 
@@ -114,6 +115,11 @@ export interface LanguageBridgeOptions {
    * it lenses show their titles only and code actions carry no command.
    */
   readonly onCommand?: (command: LanguageCommand) => void
+  /**
+   * Draw an asset a hover or a completion names, as the host's language workspace does: the page
+   * finds it in the document's workspace and gives back a small picture.
+   */
+  readonly assetImage?: LanguageWorkspaceOptions['assetImage']
 }
 
 /** A marker's code as the contract spells it: Monaco may carry it as `{ value, target }`. */
@@ -275,6 +281,15 @@ export function bridgeLanguageProvider(
 
   if (provider.completion !== undefined) {
     const completion = provider.completion.bind(provider)
+    const resolveCompletion = provider.resolveCompletion?.bind(provider)
+    const origins = new WeakMap<
+      monaco.languages.CompletionItem,
+      {
+        readonly model: monaco.editor.ITextModel
+        readonly position: { readonly line: number; readonly character: number }
+        readonly item: LanguageCompletionItem
+      }
+    >()
     disposables.push(
       monaco.languages.registerCompletionItemProvider(selector, {
         async provideCompletionItems(model, position, _context, token) {
@@ -291,6 +306,7 @@ export function bridgeLanguageProvider(
             position: { line: position.lineNumber - 1, character: position.column - 1 },
           })
           const suggestions: monaco.languages.CompletionItem[] = []
+          const at = { line: position.lineNumber - 1, character: position.column - 1 }
           for (const item of list.items) {
             if (isSubjectRequest(item)) {
               if (options.subjects === undefined) continue
@@ -308,7 +324,7 @@ export function bridgeLanguageProvider(
               continue
             }
             const plain: LanguageCompletionItem = item
-            suggestions.push({
+            const suggestion: monaco.languages.CompletionItem = {
               label: plain.label,
               kind: COMPLETION_KIND[plain.kind] ?? monaco.languages.CompletionItemKind.Text,
               insertText: plain.insertText ?? plain.label,
@@ -333,9 +349,37 @@ export function bridgeLanguageProvider(
               ...(plain.insertTextFormat === 'snippet'
                 ? { insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet }
                 : {}),
-            })
+            }
+            origins.set(suggestion, { model, position: at, item: plain })
+            suggestions.push(suggestion)
           }
           return { suggestions, incomplete: list.isIncomplete }
+        },
+        // the list stays cheap: documentation and an asset picture arrive for the focused item
+        async resolveCompletionItem(suggestion, token) {
+          const origin = origins.get(suggestion)
+          if (origin === undefined) return suggestion
+          const resolved =
+            resolveCompletion === undefined
+              ? origin.item
+              : await resolveCompletion({
+                  ...request(origin.model, token),
+                  position: origin.position,
+                  item: origin.item,
+                })
+          const pictures =
+            resolved.asset === undefined || options.assetImage === undefined
+              ? ''
+              : await languageAssetPictures(options.assetImage, {
+                  documentUri: origin.model.uri.toString(),
+                  assets: [resolved.asset],
+                })
+          const documentation = `${resolved.documentation ?? ''}${pictures}`
+          return {
+            ...suggestion,
+            ...(resolved.detail === undefined ? {} : { detail: resolved.detail }),
+            ...(documentation === '' ? {} : { documentation: { value: documentation } }),
+          }
         },
       }),
     )
@@ -386,8 +430,27 @@ export function bridgeLanguageProvider(
             position: { line: position.lineNumber - 1, character: position.column - 1 },
           })
           if (result === undefined) return undefined
+          const pictures =
+            result.assets === undefined || options.assetImage === undefined
+              ? ''
+              : await languageAssetPictures(options.assetImage, {
+                  documentUri: model.uri.toString(),
+                  assets: result.assets,
+                })
+          // links run through this bridge's command sink; trusted only when there is one
+          const links =
+            result.commands === undefined || commandId === undefined
+              ? ''
+              : `\n\n${result.commands
+                  .map(
+                    item =>
+                      `[${item.title}](command:${commandId}?${encodeURIComponent(JSON.stringify([item.command]))})`,
+                  )
+                  .join(' · ')}`
           return {
-            contents: [{ value: result.markdown }],
+            contents: [
+              { value: `${result.markdown}${pictures}${links}`, isTrusted: links !== '' },
+            ],
             ...(result.range === undefined ? {} : { range: toMonacoRange(result.range) }),
           }
         },

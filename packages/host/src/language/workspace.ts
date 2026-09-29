@@ -6,6 +6,7 @@
  * `change` only replaces analysis work for that document and never re-resolves the provider.
  */
 
+import { base64Of } from '../execution/frame-json.js'
 import {
   ModkitError,
   OperationCancelledError,
@@ -22,7 +23,9 @@ import {
   type LanguageAnalysisRequest,
   type LanguageCodeActionList,
   type LanguageColor,
+  type LanguageAssetRef,
   type LanguageCodeLensList,
+  type LanguageCompletionItem,
   type LanguageColorList,
   type LanguageDocumentHighlightList,
   type LanguageDocumentLinkList,
@@ -452,7 +455,31 @@ export function languageProviderTriggerCharacters(
   return Object.freeze([...new Set(routes.flatMap(route => route[field] ?? []))].sort(compareUtf8))
 }
 
+/** A picture of an asset a hover or a completion names, asked of the application. */
+export interface LanguageAssetImageRequest {
+  /** The document whose workspace (its mod and dependencies) the path is looked up in. */
+  readonly documentUri: string
+  /** The path as the game spells it (`Assets\\Textures\\btn-unit-terran-marine.dds`). */
+  readonly path: string
+  /** Longest edge of the picture, in pixels. */
+  readonly maxEdge: number
+  readonly signal?: AbortSignal
+}
+
+export interface LanguageAssetImage {
+  readonly mediaType: 'image/png' | 'image/svg+xml'
+  readonly bytes: Uint8Array
+}
+
 export interface LanguageWorkspaceOptions {
+  /**
+   * Draw an asset a provider names: the application finds it in the document's workspace and
+   * gives back a small picture, which the host puts into the hover or the resolved completion.
+   * Absent, a hover keeps its asset references for the client and draws nothing.
+   */
+  readonly assetImage?: (
+    request: LanguageAssetImageRequest,
+  ) => Promise<LanguageAssetImage | undefined>
   readonly services: LanguageHostServices
   readonly grant: PermissionGrant
   readonly budgets: ResourceBudget
@@ -658,6 +685,10 @@ export interface LanguageWorkspace {
     request: LanguageWorkspaceCompletionRequest,
   ): Promise<LanguageCompletionList | undefined>
   hover(request: LanguageWorkspacePositionRequest): Promise<LanguageHover | undefined>
+  /** Fill in a completion item the editor focused; its asset, if any, becomes a picture. */
+  resolveCompletion(
+    request: LanguageWorkspacePositionRequest & { readonly item: LanguageCompletionItem },
+  ): Promise<LanguageCompletionItem | undefined>
   signatureHelp(
     request: LanguageWorkspacePositionRequest,
   ): Promise<LanguageSignatureHelp | undefined>
@@ -1140,6 +1171,61 @@ function validateCompletionList(
   return list
 }
 
+function validAssetRef(value: unknown): boolean {
+  const asset = value as { readonly path?: unknown; readonly label?: unknown } | undefined
+  return (
+    typeof asset === 'object' &&
+    asset !== null &&
+    typeof asset.path === 'string' &&
+    asset.path.length > 0 &&
+    asset.path.length <= 512 &&
+    (asset.label === undefined || (typeof asset.label === 'string' && asset.label.length <= 256))
+  )
+}
+
+const ASSET_IMAGE_EDGE = 128
+const ASSET_IMAGE_MAX_BYTES = 96 * 1024
+
+/**
+ * Markdown pictures of assets a hover or a completion names, drawn by the application; a failed
+ * one is left out. The host puts them into its hovers; an editor bridge calling a provider
+ * directly (Monaco) does the same with this function.
+ */
+export async function languageAssetPictures(
+  draw: NonNullable<LanguageWorkspaceOptions['assetImage']>,
+  request: {
+    readonly documentUri: string
+    readonly assets: readonly LanguageAssetRef[]
+    readonly signal?: AbortSignal
+  },
+): Promise<string> {
+  const { documentUri, assets, signal } = request
+  let markdown = ''
+  for (const asset of assets.slice(0, 4)) {
+    throwIfAborted(signal)
+    const image = await draw({
+      documentUri,
+      path: asset.path,
+      maxEdge: ASSET_IMAGE_EDGE,
+      ...(signal === undefined ? {} : { signal }),
+    }).catch(error => {
+      if (isCancellation(error)) throw error
+      return undefined
+    })
+    if (
+      image === undefined ||
+      !(image.bytes instanceof Uint8Array) ||
+      image.bytes.byteLength > ASSET_IMAGE_MAX_BYTES ||
+      (image.mediaType !== 'image/png' && image.mediaType !== 'image/svg+xml')
+    )
+      continue
+    // a label may not close the image syntax; a game path reads with forward slashes
+    const label = (asset.label ?? asset.path).replace(/[[\]]/gu, '').replaceAll('\\', '/')
+    markdown += `\n\n![${label}](data:${image.mediaType};base64,${base64Of(image.bytes)})`
+  }
+  return markdown
+}
+
 function validateHover(value: unknown, request: LanguageFeatureRequest): LanguageHover | undefined {
   if (value === undefined) return undefined
   const hover = value as LanguageHover
@@ -1148,7 +1234,21 @@ function validateHover(value: unknown, request: LanguageFeatureRequest): Languag
     hover === null ||
     typeof hover.markdown !== 'string' ||
     (hover.range !== undefined && !validRange(hover.range, lineLengths(request.document.text))) ||
-    (hover.provenance !== undefined && typeof hover.provenance !== 'string')
+    (hover.provenance !== undefined && typeof hover.provenance !== 'string') ||
+    (hover.assets !== undefined &&
+      (!Array.isArray(hover.assets) ||
+        hover.assets.length > 8 ||
+        !hover.assets.every(validAssetRef))) ||
+    (hover.commands !== undefined &&
+      (!Array.isArray(hover.commands) ||
+        hover.commands.length > 8 ||
+        !hover.commands.every(
+          item =>
+            typeof item?.title === 'string' &&
+            item.title.length > 0 &&
+            item.title.length <= 256 &&
+            validCommand(item.command),
+        )))
   ) {
     invalidFeature('language provider returned invalid hover information', request.document.uri)
   }
@@ -1964,6 +2064,19 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
     }
     return entry
   }
+
+  const assetPictures = (
+    documentUri: string,
+    assets: readonly LanguageAssetRef[],
+    signal?: AbortSignal,
+  ): Promise<string> =>
+    options.assetImage === undefined
+      ? Promise.resolve('')
+      : languageAssetPictures(options.assetImage, {
+          documentUri,
+          assets,
+          ...(signal === undefined ? {} : { signal }),
+        })
 
   const invokeFeature = async <Value>(
     workspaceRequest: LanguageWorkspaceFeatureRequest,
@@ -2929,14 +3042,53 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
       )
     },
 
-    hover(request: LanguageWorkspacePositionRequest): Promise<LanguageHover | undefined> {
-      return invokeFeature(
+    async hover(request: LanguageWorkspacePositionRequest): Promise<LanguageHover | undefined> {
+      const hover = await invokeFeature(
         request,
         true,
         (provider, feature) => provider.hover?.({ ...feature, position: request.position }),
         validateHover,
         { position: request.position },
       )
+      if (hover?.assets === undefined || hover.assets.length === 0) return hover
+      const pictures = await assetPictures(request.uri, hover.assets, request.signal)
+      return pictures === '' ? hover : { ...hover, markdown: `${hover.markdown}${pictures}` }
+    },
+
+    async resolveCompletion(
+      request: LanguageWorkspacePositionRequest & { readonly item: LanguageCompletionItem },
+    ): Promise<LanguageCompletionItem | undefined> {
+      const resolved = await invokeFeature(
+        request,
+        true,
+        (provider, feature) =>
+          provider.resolveCompletion?.({
+            ...feature,
+            position: request.position,
+            item: request.item,
+          }) ?? Promise.resolve(request.item),
+        (value, feature) => {
+          const item = recordOf(value)
+          if (
+            item === undefined ||
+            !validCompletionItem(item, lineLengths(feature.document.text)) ||
+            item['label'] !== request.item.label ||
+            item['kind'] !== request.item.kind ||
+            (item['asset'] !== undefined && !validAssetRef(item['asset']))
+          )
+            invalidFeature(
+              'language provider resolved a completion item into another one',
+              feature.document.uri,
+            )
+          return value as LanguageCompletionItem
+        },
+        { position: request.position, item: request.item },
+      )
+      if (resolved?.asset === undefined) return resolved
+      const pictures = await assetPictures(request.uri, [resolved.asset], request.signal)
+      return pictures === ''
+        ? resolved
+        : { ...resolved, documentation: `${resolved.documentation ?? ''}${pictures}` }
     },
 
     signatureHelp(

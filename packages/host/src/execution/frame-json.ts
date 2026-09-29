@@ -33,7 +33,8 @@ import {
 
 const TAG = '$x3'
 
-function base64Of(bytes: Uint8Array): string {
+/** Bytes as base64, in Node and in a browser alike. */
+export function base64Of(bytes: Uint8Array): string {
   if (typeof Buffer === 'function') return Buffer.from(bytes).toString('base64')
   let binary = ''
   for (let index = 0; index < bytes.byteLength; index += 1) {

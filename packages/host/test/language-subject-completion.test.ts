@@ -867,6 +867,60 @@ describe('language subject completion lifecycle', () => {
     }
   })
 
+  it('draws the assets a hover or a focused completion names, and keeps its links', async () => {
+    const features = provider as {
+      -readonly [K in 'hover' | 'resolveCompletion']?: unknown
+    }
+    const originalHover = features.hover
+    const card = { kind: 'open-subject', subjectId: 'Unit/Marine', view: 'card' }
+    const texture = 'Assets\\Textures\\btn-unit-terran-marine.dds'
+    features.hover = async () => ({
+      markdown: '**Marine**',
+      assets: [{ path: texture, label: 'Marine [button]' }, { path: 'missing.dds' }],
+      commands: [{ title: 'Card', command: card }],
+    })
+    features.resolveCompletion = async (request: { item: Record<string, unknown> }) => ({
+      ...request.item,
+      documentation: 'A foot soldier.',
+      asset: { path: texture },
+    })
+    const drawn: string[] = []
+    const workspace = createLanguageWorkspace({
+      services,
+      grant: { id: 'asset-picture-test', classes: [] },
+      budgets,
+      assetImage: async request => {
+        drawn.push(`${request.path}@${String(request.maxEdge)}`)
+        return request.path === texture
+          ? { mediaType: 'image/png', bytes: new Uint8Array([0x89, 0x50, 0x4e, 0x47]) }
+          : undefined
+      },
+    })
+    await workspace.initialize()
+    try {
+      await workspace.open(languageRequest(1))
+      const hover = await workspace.hover(completionRequest())
+      expect(hover?.markdown).toBe(
+        '**Marine**\n\n![Marine button](data:image/png;base64,iVBORw==)',
+      )
+      expect(hover?.commands).toEqual([{ title: 'Card', command: card }])
+      expect(drawn).toEqual([`${texture}@128`, 'missing.dds@128'])
+      const item = { label: 'Marine', kind: 'class' as const }
+      const resolved = await workspace.resolveCompletion({ ...completionRequest(), item })
+      expect(resolved?.documentation).toBe(
+        'A foot soldier.\n\n![Assets/Textures/btn-unit-terran-marine.dds](data:image/png;base64,iVBORw==)',
+      )
+      features.resolveCompletion = async () => ({ label: 'Other', kind: 'class' })
+      await expect(workspace.resolveCompletion({ ...completionRequest(), item })).rejects.toThrow(
+        /another one/u,
+      )
+    } finally {
+      features.hover = originalHover
+      delete features.resolveCompletion
+      await workspace.shutdown()
+    }
+  })
+
   it('routes and validates protocol-neutral on-type formatting edits', async () => {
     const workspace = await openWorkspace({ open: async () => undefined })
     try {

@@ -193,6 +193,8 @@ export interface LanguageCompletionItem {
   readonly retrigger?: boolean
   /** Still accepted, but on its way out; the editor strikes it through. */
   readonly deprecated?: boolean
+  /** An asset the item names; the host draws it when the item is resolved, not in the list. */
+  readonly asset?: LanguageAssetRef
 }
 
 /**
@@ -223,6 +225,25 @@ export interface LanguageHover {
   readonly markdown: string
   readonly range?: LanguageRange
   readonly provenance?: string
+  /** Pictures to show with it (a texture path under the cursor); the host draws them. */
+  readonly assets?: readonly LanguageAssetRef[]
+  /** Links the reader can follow: the entity's card, its relation graph. */
+  readonly commands?: readonly LanguageHoverCommand[]
+}
+
+/**
+ * An asset a hover or a completion names, by the path its game spells it with
+ * (`Assets\Textures\btn-unit-terran-marine.dds`). The provider never decodes it: the host finds it
+ * in the document's workspace and draws a small picture.
+ */
+export interface LanguageAssetRef {
+  readonly path: string
+  readonly label?: string
+}
+
+export interface LanguageHoverCommand {
+  readonly title: string
+  readonly command: LanguageCommand
 }
 
 /** RGBA channels in the normalized 0..1 range used by editor colour APIs. */
@@ -502,6 +523,11 @@ export interface LanguagePositionRequest extends LanguageFeatureRequest {
   readonly position: LanguagePosition
 }
 
+/** One item of a completion list, to fill in when the editor focuses it (documentation, detail). */
+export interface LanguageCompletionResolveRequest extends LanguagePositionRequest {
+  readonly item: LanguageCompletionItem
+}
+
 export interface LanguageInlayHintsRequest extends LanguageFeatureRequest {
   readonly range: LanguageRange
 }
@@ -567,6 +593,11 @@ export interface LanguageProvider {
   readonly workspaceLanguageIds?: readonly string[]
   analyze(request: LanguageAnalysisRequest): Promise<LanguageAnalysis>
   completion?(request: LanguagePositionRequest): Promise<LanguageProviderCompletionList>
+  /**
+   * Fill in one item the editor focused, so the list itself stays cheap: documentation read on
+   * demand, a heavy detail. The label, kind and edit stay as they were.
+   */
+  resolveCompletion?(request: LanguageCompletionResolveRequest): Promise<LanguageCompletionItem>
   hover?(request: LanguagePositionRequest): Promise<LanguageHover | undefined>
   signatureHelp?(request: LanguagePositionRequest): Promise<LanguageSignatureHelp | undefined>
   definition?(request: LanguagePositionRequest): Promise<LanguageLocationList>
