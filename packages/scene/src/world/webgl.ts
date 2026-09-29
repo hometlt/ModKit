@@ -31,7 +31,7 @@ import {
 } from '../render/material-webgl.js'
 import type { StandardMaterialProgram } from '../materials/index.js'
 import { primitiveTint, primitiveVertexTints } from '../render/tint.js'
-import { mergeMaterialDraws } from '../render/vertex-placements.js'
+import { mergeMaterialDraws, primitiveVertexPlacements } from '../render/vertex-placements.js'
 import {
   materialPosedPositions,
   materialPosedPrimitive,
@@ -9248,6 +9248,140 @@ function groupWorldMaterialDraws(plan: WorldWebGlPlan, shadow: boolean): WorldWe
   })
 }
 
+/**
+ * The solid draws the camera shows (see worldViewRectangle): a group keeps the placements whose
+ * bounds reach into the view and is left out when none does, a single draw is left out when its
+ * bounds lie wholly outside. What lies wholly outside covers no pixel, so the picture is the same. A
+ * skin posed on the GPU, placements per vertex or a projective placement keep their draw whole: their
+ * bounds are not the positions'.
+ */
+function worldVisibleMaterialSequence(
+  plan: WorldWebGlPlan,
+  batches: WorldWebGlMaterialBatches,
+  view: ReturnType<typeof cameraState>,
+  visible: ReturnType<typeof worldViewRectangle>,
+): readonly MaterialSequenceDraw[] {
+  if (visible === undefined) return batches.sequence
+  const cached = visibleMaterialSequences.get(batches)
+  if (
+    cached !== undefined &&
+    cached.visible.u === visible.u &&
+    cached.visible.v === visible.v &&
+    cached.visible.halfWidth === visible.halfWidth &&
+    cached.visible.halfHeight === visible.halfHeight
+  )
+    return cached.sequence
+  const { right, up } = worldViewPlaneBasis(view)
+  const extent = Math.hypot(
+    plan.bounds.maximum[0] - plan.bounds.minimum[0],
+    plan.bounds.maximum[1] - plan.bounds.minimum[1],
+    plan.bounds.maximum[2] - plan.bounds.minimum[2],
+  )
+  // The margin of the transparent packing (packWorldWebGlTransparentDraws).
+  const epsilon = Math.max(1e-4, extent * 1e-5)
+  const u0 = visible.u - visible.halfWidth - epsilon,
+    u1 = visible.u + visible.halfWidth + epsilon,
+    v0 = visible.v - visible.halfHeight - epsilon,
+    v1 = visible.v + visible.halfHeight + epsilon
+  // Local bounds placed by an affine matrix, projected on the view plane: the centre's projection
+  // plus, along each axis, the half extents weighted by the matrix column's projection.
+  const shows = (
+    bounds: ReturnType<typeof boundsOf>,
+    matrix: ArrayLike<number>,
+    at: number,
+  ): boolean => {
+    if (
+      matrix[at + 3] !== 0 ||
+      matrix[at + 7] !== 0 ||
+      matrix[at + 11] !== 0 ||
+      matrix[at + 15] !== 1
+    )
+      return true
+    let u = 0,
+      v = 0,
+      reachU = 0,
+      reachV = 0
+    for (let axis = 0; axis < 3; axis++) {
+      const centre = (bounds.min[axis]! + bounds.max[axis]!) / 2,
+        half = (bounds.max[axis]! - bounds.min[axis]!) / 2
+      const x = matrix[at + axis * 4]!,
+        y = matrix[at + axis * 4 + 1]!,
+        z = matrix[at + axis * 4 + 2]!
+      const alongU = x * right[0] + y * right[1] + z * right[2],
+        alongV = x * up[0] + y * up[1] + z * up[2]
+      u += alongU * centre
+      v += alongV * centre
+      reachU += Math.abs(alongU) * half
+      reachV += Math.abs(alongV) * half
+    }
+    const x = matrix[at + 12]!,
+      y = matrix[at + 13]!,
+      z = matrix[at + 14]!
+    u += x * right[0] + y * right[1] + z * right[2]
+    v += x * up[0] + y * up[1] + z * up[2]
+    // NaN fails every comparison and keeps the draw.
+    return !(u + reachU < u0 || u - reachU > u1 || v + reachV < v0 || v - reachV > v1)
+  }
+  const sequence: MaterialSequenceDraw[] = []
+  for (const entry of batches.sequence) {
+    const { primitive } = entry.draw
+    const bounds = cachedPrimitiveBounds(primitive.positions)
+    if (
+      materialSkinOf(primitive) !== undefined ||
+      primitiveVertexPlacements(primitive) !== undefined ||
+      !(bounds.min[0] <= bounds.max[0])
+    ) {
+      sequence.push(entry)
+      continue
+    }
+    if (entry.instances === undefined) {
+      if (shows(bounds, primitive.transform ?? IDENTITY_VIEW_PROJECTION, 0)) sequence.push(entry)
+      continue
+    }
+    const { matrices, count } = entry.instances
+    const kept: number[] = []
+    for (let index = 0; index < count; index++)
+      if (shows(bounds, matrices, index * 16)) kept.push(index)
+    if (kept.length === count) sequence.push(entry)
+    else if (kept.length > 0)
+      sequence.push(Object.freeze({ ...entry, instances: visibleInstances(matrices, kept) }))
+  }
+  visibleMaterialSequences.set(batches, Object.freeze({ visible, sequence }))
+  return sequence
+}
+
+const visibleMaterialSequences = new WeakMap<
+  WorldWebGlMaterialBatches,
+  Readonly<{
+    visible: NonNullable<ReturnType<typeof worldViewRectangle>>
+    sequence: readonly MaterialSequenceDraw[]
+  }>
+>()
+
+/**
+ * The placements of a group at the given indices. The same indices of the same placements give the
+ * same array, so a still camera draws the group from the buffer it uploaded before.
+ */
+function visibleInstances(matrices: Float32Array, kept: readonly number[]): MaterialInstances {
+  const previous = visibleInstanceSubsets.get(matrices)
+  if (
+    previous !== undefined &&
+    previous.kept.length === kept.length &&
+    previous.kept.every((index, at) => index === kept[at])
+  )
+    return previous.instances
+  const subset = new Float32Array(kept.length * 16)
+  kept.forEach((index, at) => subset.set(matrices.subarray(index * 16, index * 16 + 16), at * 16))
+  const instances = Object.freeze({ matrices: subset, count: kept.length })
+  visibleInstanceSubsets.set(matrices, Object.freeze({ kept, instances }))
+  return instances
+}
+
+const visibleInstanceSubsets = new WeakMap<
+  Float32Array,
+  Readonly<{ kept: readonly number[]; instances: MaterialInstances }>
+>()
+
 /** A plan's material draws as the renderer submits them; retained with the plan. */
 export function worldMaterialBatchesOf(
   plan: WorldWebGlPlan,
@@ -9472,9 +9606,16 @@ function drawWorldWebGlWithResources(
       ...transparentSceneDraws.map(entry => entry.draw),
       ...effectDraws.map(entry => entry.draw),
     ])
-    if (batches.sequence.length > 0) {
+    // What the camera shows of the solid draws; the shadow map and the transparent pass take theirs.
+    const solidSequence = worldVisibleMaterialSequence(
+      plan,
+      batches,
+      cameraState(input.camera),
+      worldViewRectangle(plan, cameraState(input.camera), canvas.width / canvas.height),
+    )
+    if (solidSequence.length > 0) {
       resources.materialDraws.drawSequence(
-        batches.sequence,
+        solidSequence,
         sceneCamera,
         sceneLight,
         worldCurrentPrograms.get(plan)?.passes,
