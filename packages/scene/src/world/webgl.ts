@@ -921,9 +921,23 @@ function selectWorldModelAnimation(
   ]
     .join(' ')
     .toLowerCase()
+  // An SC2 sequence name is a set of animation properties: a request for "Work" plays "Stand Work"
+  // (InvisibleWalkablePlatform8x8 hides itself in it), the clip holding every requested property
+  // with the fewest others; the first such clip when several tie.
+  const wanted = requested.split(/\s+/u).filter(Boolean)
+  let best: NonNullable<typeof result.animations>[number] | undefined
+  let extra = Number.POSITIVE_INFINITY
+  for (const clip of result.animations ?? []) {
+    const properties = new Set((clip.name ?? '').toLowerCase().split(/\s+/u).filter(Boolean))
+    if (!wanted.every(property => properties.has(property))) continue
+    const others = properties.size - new Set(wanted).size
+    if (others < extra) {
+      best = clip
+      extra = others
+    }
+  }
   return (
-    result.animations?.find(clip => clip.name?.toLowerCase() === requested) ??
-    result.animations?.find(clip => clip.name?.toLowerCase().startsWith(`${requested} `)) ??
+    best ??
     (item.presentationAnimation === undefined
       ? result.animations?.find(clip => clip.kind === 'animation' && clip.channels.length > 0)
       : undefined)
