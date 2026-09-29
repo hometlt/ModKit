@@ -1889,14 +1889,24 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/grey-goo-alo.model-read.json",
+          "sha256": "d6a8c912b0e73c4184815c5bfc5388d87b61f0fd1585fde00f17ad2f11485b88"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/grey-goo-alo/operation/model.read",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/grey-goo-alo.model-render.json",
+          "sha256": "823e1aa8ac5cf4051032d888f46ea2056f2c564bb9c0fb5534b5d6c5d89e7d2f"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/grey-goo-alo/operation/model.render",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -3087,14 +3097,24 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/petroglyph-meg-archive.extract.json",
+          "sha256": "57fee9a5a93857eaa84cc744009de5f41bdef1796f261b5aa05dc311405c0233"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/petroglyph-meg/operation/archive.extract",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/petroglyph-meg-archive.inspect.json",
+          "sha256": "72d06e3bfbebb10d114d9b0dcf644d4d0bc9650c9a70dbb6e32b950d7805dd79"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/petroglyph-meg/operation/archive.inspect",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],

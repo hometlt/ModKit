@@ -976,18 +976,22 @@
       "targetOperation": null
     },
     {
-      "contribution": null,
+      "contribution": "modkit-extensions-other/extensions/petroglyph-glyphx/contributions/codec-grey-goo-alo.json",
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/grey-goo-alo/operation/model.read",
-      "status": "pending",
+      "status": "adapted",
+      "targetDataSource": {
+        "contract": "common.view/model-scene-source",
+        "major": 1
+      },
       "targetOperation": null
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-core/extensions/models/contributions/codec-uvm.json",
+      "handlerId": "render-uvm-scene",
       "id": "legacy/codec-manifest/modkit/grey-goo-alo/operation/model.render",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "model.render"
     },
     {
       "contribution": null,
@@ -1606,18 +1610,18 @@
       "targetOperation": null
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-other/extensions/petroglyph-glyphx/contributions/codec-petroglyph-meg.json",
+      "handlerId": "extract-entry",
       "id": "legacy/codec-manifest/modkit/petroglyph-meg/operation/archive.extract",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "container.extract"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-other/extensions/petroglyph-glyphx/contributions/codec-petroglyph-meg.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/petroglyph-meg/operation/archive.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
       "contribution": null,
