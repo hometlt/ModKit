@@ -620,6 +620,17 @@ export type LanguageWorkspaceCapability =
   | 'workspace-symbols'
   | 'diagnostics'
 
+/** What `projectDiagnostics` found in the project documents nobody has open. */
+export interface LanguageProjectDiagnostics {
+  readonly documents: readonly {
+    readonly uri: string
+    readonly version: number
+    readonly diagnostics: readonly LanguageDiagnostic[]
+  }[]
+  /** Project documents were left out: the snapshot was bounded, or its source said so. */
+  readonly isIncomplete: boolean
+}
+
 export interface LanguageWorkspaceCapabilitySet {
   readonly uri: string
   readonly documentVersion: number
@@ -687,6 +698,14 @@ export interface LanguageWorkspace {
     request: LanguageWorkspaceSymbolsRequest,
   ): Promise<LanguageWorkspaceSymbolList | undefined>
   diagnostics(request: LanguageWorkspaceFeatureRequest): Promise<LanguageDiagnosticList | undefined>
+  /**
+   * «Check the mod»: the diagnostics of every writable project document in the open document's
+   * workspace snapshot that is not open itself, analyzed by the same provider. Run on request, not
+   * in the background: it analyzes each of those documents.
+   */
+  projectDiagnostics(
+    request: LanguageWorkspaceFeatureRequest,
+  ): Promise<LanguageProjectDiagnostics | undefined>
   /** Cancel in-flight features after dependency, schema, locale or transaction state changes. */
   invalidate(reason?: string): void
   close(uri: string): Promise<void>
@@ -3302,6 +3321,69 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
         (provider, feature) => provider.workspaceSymbols?.({ ...feature, query: request.query }),
         validateWorkspaceSymbols,
         { query: request.query },
+      )
+    },
+
+    projectDiagnostics(
+      request: LanguageWorkspaceFeatureRequest,
+    ): Promise<LanguageProjectDiagnostics | undefined> {
+      return invokeFeature(
+        request,
+        false,
+        async (provider, feature) => {
+          const writable = new Set(
+            (feature.workspaceContext?.documentOrigins ?? [])
+              .filter(origin => !origin.readOnly)
+              .map(origin => origin.uri),
+          )
+          const found: LanguageProjectDiagnostics['documents'][number][] = []
+          for (const document of feature.workspaceDocuments) {
+            if (
+              documents.has(document.uri) ||
+              !writable.has(document.uri) ||
+              !provider.languageIds.includes(document.languageId)
+            )
+              continue
+            throwIfAborted(feature.signal)
+            const analysis = await provider.analyze({
+              document,
+              include: { diagnostics: true },
+              ...(feature.signal === undefined ? {} : { signal: feature.signal }),
+            })
+            found.push({
+              uri: document.uri,
+              version: document.version,
+              diagnostics: analysis.diagnostics,
+            })
+          }
+          return { documents: found, isIncomplete: feature.workspaceIncomplete }
+        },
+        (value, feature) => {
+          const result = value as LanguageProjectDiagnostics
+          const texts = new Map(feature.workspaceDocuments.map(item => [item.uri, item.text]))
+          const valid =
+            typeof result === 'object' &&
+            result !== null &&
+            typeof result.isIncomplete === 'boolean' &&
+            Array.isArray(result.documents) &&
+            result.documents.every(item => {
+              const text = texts.get(item.uri)
+              return (
+                text !== undefined &&
+                Array.isArray(item.diagnostics) &&
+                item.diagnostics.length <= feature.maxResults &&
+                item.diagnostics.every((diagnostic: LanguageDiagnostic) =>
+                  validDiagnostic(diagnostic, lineLengths(text)),
+                )
+              )
+            })
+          if (!valid)
+            invalidFeature(
+              'language provider returned invalid or unbounded project diagnostics',
+              feature.document.uri,
+            )
+          return result
+        },
       )
     },
 

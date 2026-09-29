@@ -719,6 +719,7 @@ export {
   LANGUAGE_PROVIDER_FAILED,
   LANGUAGE_WORKSPACE_NOT_INITIALIZED,
   LANGUAGE_WORKSPACE_SHUT_DOWN,
+  type LanguageProjectDiagnostics,
   type LanguageProviderRoute,
   type LanguageWorkspace,
   type LanguageWorkspaceAnalysisResult,

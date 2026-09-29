@@ -799,6 +799,74 @@ describe('language subject completion lifecycle', () => {
     }
   })
 
+  it('checks the project documents nobody has open, and only those', async () => {
+    const project = (name: string) => `file:///workspace/${name}.lang`
+    const documents = [
+      { uri: project('units'), languageId: 'fixture-language', version: 3, text: 'bad unit' },
+      { uri: project('weapons'), languageId: 'fixture-language', version: 1, text: 'fine' },
+      { uri: 'file:///core/base.lang', languageId: 'fixture-language', version: 1, text: 'bad base' },
+    ]
+    const origin = (uri: string, readOnly: boolean, precedence: number) => ({
+      uri,
+      layerId: readOnly ? 'core' : 'project',
+      logicalId: uri.slice(uri.lastIndexOf('/') + 1),
+      precedence,
+      sourceRevision: `${uri}:1`,
+      readOnly,
+    })
+    const source: LanguageWorkspaceDocumentSource = {
+      snapshot: async () => ({
+        documents,
+        isComplete: true,
+        workspaceContext: {
+          id: 'project-context',
+          revision: 'project-context:1',
+          semanticComplete: true,
+          documentOrigins: [
+            origin(project('units'), false, 2),
+            origin(project('weapons'), false, 3),
+            origin('file:///core/base.lang', true, 0),
+            origin(DOCUMENT_URI, false, 4),
+          ],
+        },
+      }),
+    }
+    const analyzed: string[] = []
+    const originalAnalyze = provider.analyze
+    ;(provider as { analyze: LanguageProvider['analyze'] }).analyze = async request => {
+      analyzed.push(request.document.uri)
+      return {
+        ...analysisFor(request.document),
+        diagnostics: request.document.text.startsWith('bad')
+          ? [
+              {
+                range: { start: { line: 0, character: 0 }, end: { line: 0, character: 3 } },
+                severity: 'error',
+                message: 'bad entry',
+              },
+            ]
+          : [],
+      }
+    }
+    const workspace = await openWorkspace({ open: async () => undefined }, false, source, document =>
+      origin(document.uri, false, 4),
+    )
+    try {
+      analyzed.length = 0
+      const report = await workspace.projectDiagnostics(completionRequest())
+      // the open document and the read-only core layer are not re-checked
+      expect(analyzed.sort()).toEqual([project('units'), project('weapons')])
+      expect(report?.documents.map(item => [item.uri, item.version, item.diagnostics.length])).toEqual([
+        [project('units'), 3, 1],
+        [project('weapons'), 1, 0],
+      ])
+      expect(report?.isIncomplete).toBe(false)
+    } finally {
+      ;(provider as { analyze: LanguageProvider['analyze'] }).analyze = originalAnalyze
+      await workspace.shutdown()
+    }
+  })
+
   it('routes and validates protocol-neutral on-type formatting edits', async () => {
     const workspace = await openWorkspace({ open: async () => undefined })
     try {

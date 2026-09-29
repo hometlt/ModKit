@@ -683,6 +683,36 @@ export function createModkitLanguageServer(
         return { items }
       }),
   )
+  /**
+   * «Check the mod»: diagnostics of the project documents nobody has open, in the open document's
+   * workspace. A client asks on the user's action; nothing runs it in the background.
+   */
+  connection.onRequest(
+    'modkit/projectDiagnostics',
+    (
+      params: { readonly textDocument?: { readonly uri?: string } },
+      token: CancellationToken,
+    ): Promise<{
+      readonly documents: readonly { uri: string; version: number; diagnostics: Diagnostic[] }[]
+      readonly isIncomplete: boolean
+    }> =>
+      withSignal(token, async signal => {
+        const uri = params.textDocument?.uri
+        if (typeof uri !== 'string' || uri.length === 0) {
+          throw new TypeError('modkit/projectDiagnostics needs a textDocument URI')
+        }
+        await awaitReady()
+        const value = await options.workspace.projectDiagnostics(request(uri, signal))
+        return {
+          documents: (value?.documents ?? []).map(item => ({
+            uri: item.uri,
+            version: item.version,
+            diagnostics: item.diagnostics.map(diagnosticOf),
+          })),
+          isIncomplete: value?.isIncomplete ?? true,
+        }
+      }),
+  )
   connection.onRequest(
     'modkit/languageCapabilities',
     (
