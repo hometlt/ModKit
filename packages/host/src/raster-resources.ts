@@ -39,7 +39,7 @@ export interface RasterCompanionRule {
   readonly directories: readonly string[]
   /**
    * Extensions the game loads in place of the one a document spells (`.dds` for a `.tga` a Grey Goo
-   * model names), from the codec's patterns (`…/*.dds`); tried after the document's own.
+   * model names), from the codec's patterns (`…/*.dds`, `…/X.dds`); tried after the document's own.
    */
   readonly extensions?: readonly string[]
 }
