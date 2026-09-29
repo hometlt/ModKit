@@ -18,6 +18,7 @@ import type {
   MapTerrainMaterialDefinition,
   MapTerrainNativeTransform,
   MapTerrainSample,
+  MapPlacedObject,
   MapTerrainWeightRaster,
   MapWorldCanonicalTransform,
   ModelResourcePort,
@@ -263,6 +264,7 @@ function canonicalPosition(
 function canonicalObjectRotation(
   rotation: number | undefined,
   nativeUnit: string | undefined,
+  sense: MapPlacedObject['nativeRotationSense'],
 ): readonly [number, number, number, number] | undefined {
   let radians: number
   if (rotation === undefined) radians = 0
@@ -271,6 +273,7 @@ function canonicalObjectRotation(
   else if (nativeUnit === 'uint16-turn') radians = (rotation * Math.PI * 2) / 65_536
   else return undefined
   if (!Number.isFinite(radians)) return undefined
+  if (sense === 'clockwise') radians = -radians
   const half = radians / 2
   const y = Math.sin(half)
   const w = Math.cos(half)
@@ -707,7 +710,11 @@ export function createCandidateWorldSceneLease(
     semanticObjects.map(item => {
       const id = `${objectLayerId}:object:${String(item.objectId)}`
       const ref = item.catalog?.ref
-      const uvwRotation = canonicalObjectRotation(item.rotation, item.nativeRotationUnit)
+      const uvwRotation = canonicalObjectRotation(
+        item.presentationRotation ?? item.rotation,
+        item.nativeRotationUnit,
+        item.nativeRotationSense,
+      )
       const groundHeight = terrainHeightAt(item.position, semantic.terrain, terrainTransform)
       const mapNativePresentationPosition =
         groundHeight === undefined || item.heightReference === undefined || item.heightReference === 'absolute'

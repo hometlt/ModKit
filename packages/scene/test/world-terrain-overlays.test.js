@@ -197,4 +197,22 @@ describe('world terrain overlays', () => {
     assert.equal(over.multipliedWaterTriangles.length, 0)
     assert.equal(over.transparentTexturedTriangles.filter(item => item.texture.id === 'water-1').length, 1)
   })
+
+  it('marks no placeholder for an object that draws nothing of its own', () => {
+    const object = composition => ({
+      facet: 'objects',
+      id: `objects:${composition === undefined ? 'unresolved' : 'module'}`,
+      layerId: 'objects',
+      coordinateSpaceId: 'map-native',
+      kind: 'structure',
+      objectId: composition === undefined ? 1 : 2,
+      position: { x: 0.5, y: 0.5, z: 0 },
+      uvwPosition: { x: 0.5, y: 0, z: 0.5 },
+      resourceId: 'resource:module',
+      ...(composition === undefined ? {} : { modelComponents: composition }),
+    })
+    const plan = items => createWorldWebGlPlan({ items: [...cell(), ...items], models: new Map() })
+    assert.equal(plan([object(undefined)]).stats.diagnosticPlaceholders, 1)
+    assert.equal(plan([object([])]).stats.diagnosticPlaceholders, 0)
+  })
 })

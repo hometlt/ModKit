@@ -5642,7 +5642,13 @@ export function createWorldWebGlPlan(
     }
     // A cliff piece whose code ships no mesh (ramp interiors) is the terrain's own slope: nothing to
     // mark.
-    if (!rendered && !resolved && item.derivedFrom !== 'cliffs') {
+    // An explicitly empty composition draws nothing of its own (a module inside its base's model).
+    if (
+      !rendered &&
+      !resolved &&
+      item.derivedFrom !== 'cliffs' &&
+      !(item.modelComponents !== undefined && item.modelComponents.length === 0)
+    ) {
       const selected = item.objectId === input.selectedObjectId
       pushVertex(points, translation, [0, 1, 0], selected ? [1, 0.9, 0.1, 1] : colorHash(item.kind))
       diagnosticPlaceholders += 1

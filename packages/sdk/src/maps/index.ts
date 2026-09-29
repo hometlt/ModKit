@@ -553,7 +553,20 @@ export interface MapPlacedObject {
   /** How the authored vertical component is interpreted when exact terrain is available. */
   readonly heightReference?: 'absolute' | 'terrain-relative' | 'terrain-surface'
   readonly rotation?: number
+  /** 'radians', 'degrees' or 'uint16-turn' (65 536 per turn). */
   readonly nativeRotationUnit?: string
+  /**
+   * Which way a positive `rotation` turns seen from above in UVW: 'counter-clockwise' (the default,
+   * a right-handed turn about +Y) or 'clockwise' — Warzone 2100 turns a model by −direction in a
+   * world whose z is −mapY.
+   */
+  readonly nativeRotationSense?: 'counter-clockwise' | 'clockwise'
+  /**
+   * The rotation the game draws when it differs from the authored one, same unit and sense
+   * (Warzone 2100 snaps structures to quarter turns and turns walls to their neighbours).
+   * Presentation only: `rotation` stays the authored data.
+   */
+  readonly presentationRotation?: number
   readonly scale?: MapPosition
   readonly typeId?: string
   readonly player?: number
@@ -589,7 +602,10 @@ export interface MapPlacedObject {
   /** Ordered component models for compound objects. Each requirement remains independently scoped;
    * consumers must not collapse a droid/attachment composition to one guessed path. */
   readonly modelResources?: readonly LogicalResourceRequirement[]
-  /** Explicit composition for repeated/attached component instances. Array order is not semantic. */
+  /**
+   * Explicit composition for repeated/attached component instances. Array order is not semantic.
+   * An empty array: the object draws nothing of its own (a Warzone 2100 module built into its base).
+   */
   readonly modelComponents?: readonly MapModelComponentPlacement[]
 }
 
