@@ -369,3 +369,58 @@ it('joins cliff pieces that share a vertex but read different base offsets', () 
     [0.5, 0.5],
   )
 })
+
+it('lifts cliff pieces by the host base offset, not from the most common base', () => {
+  // Highland: the whole map lies two below its standard height, so the most common base is the
+  // lowered one. The host names each vertex's offset from the standard height; the piece, authored
+  // at standard height, comes down to the ground with it.
+  const terrain = baseOffset =>
+    Array.from({ length: 6 }, (_, index) => ({
+      facet: 'terrain',
+      id: `terrain:${index}`,
+      layerId: 'terrain',
+      coordinateSpaceId: 'height-grid',
+      lod: 'exact',
+      x: index % 3,
+      y: Math.floor(index / 3),
+      heightBase: 90,
+      heightAdjustment: 0,
+      mask: 0,
+      uvwPosition: { x: index % 3, y: -2, z: -Math.floor(index / 3) },
+      ...(baseOffset === undefined ? {} : { baseOffset }),
+    }))
+  const piece = {
+    facet: 'objects',
+    id: 'cliff:a',
+    layerId: 'objects',
+    coordinateSpaceId: 'uvw',
+    kind: 'doodad',
+    objectId: 1,
+    derivedFrom: 'cliffs',
+    resourceId: 'a',
+    position: { x: 0, y: 0, z: 0 },
+    uvwPosition: { x: 0, y: 0, z: 0 },
+    uvwRotation: [0, 0, 0, 1],
+  }
+  const models = new Map([
+    ['a', {
+      state: 'converted',
+      sourceKey: 'a',
+      complete: true,
+      diagnostics: [],
+      meshes: [],
+      nodes: [],
+      primitives: [{ id: 'a', topology: 'triangles', positions: Float32Array.of(0, 0, 0, 1, 0, 0, 1, 0, -1) }],
+    }],
+  ])
+  const heightsDrawn = baseOffset => {
+    const positions = createWorldWebGlPlan({ items: [...terrain(baseOffset), piece], models }).opaqueTriangles.positions
+    const heights = new Set()
+    for (let index = 1; index < positions.length; index += 3) heights.add(Math.round(positions[index] * 1000) / 1000)
+    return [...heights]
+  }
+  // The ground (drawn untextured here) and the piece both stand at -2.
+  assert.deepEqual(heightsDrawn(-2), [-2])
+  // Without the offsets every vertex sits on the common base, and the piece stays at 0.
+  assert.deepEqual(heightsDrawn(undefined).sort((a, b) => a - b), [-2, 0])
+})

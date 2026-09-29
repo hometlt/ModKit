@@ -1310,6 +1310,13 @@ export interface WorldSceneTerrainItem extends MapTerrainSample {
    */
   readonly presentationUvwPosition?: MapPosition
   /**
+   * World units this vertex's painted base height (`heightBase`, the raise/lower brush) lies from the
+   * terrain's standard height: (dequantized base − vertData standardHeight) × vertical scale. Cliff
+   * meshes are authored at the standard height and the engine moves each of their vertices by this.
+   * Present only over a quantized transform; without it a renderer takes the most common base.
+   */
+  readonly baseOffset?: number
+  /**
    * `exact` means the publisher retained every native height-grid tuple. It does not claim that
    * the tuple has been converted into map-native or canonical UVW coordinates.
    */

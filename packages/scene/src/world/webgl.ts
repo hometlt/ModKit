@@ -3290,11 +3290,13 @@ function createCliffPrimitiveLifter(
    * vertices, most of the coast by 1.5 to 3; drawn at standard height, those rocks stood above the
    * ground as black lumps.
    *
-   * The standard base is the most common `heightBase` (untouched ground; on Amphion 19 400 of
-   * 31 329 vertices sit exactly there), and world units per base step come from two vertices of one
-   * cliff level with different bases.
-   * ponytail: the mode stands in for `standardHeight`, which this plan does not receive; pass it
-   * with the terrain transform if a map repaints most of its ground.
+   * The host passes that offset per vertex (`baseOffset`, from the terrain's standard height). A
+   * map may repaint most of its ground: Highland lies two below its standard height everywhere, and
+   * Tokyo_Rooftops' lava pits twelve below its roofs, which cover less ground than the pits. Without
+   * `baseOffset` the standard base is taken as the most common `heightBase` (untouched ground; on
+   * Amphion 19 400 of 31 329 vertices sit exactly there), with world units per base step from two
+   * vertices of one cliff level with different bases; on those two maps that lifted every cliff
+   * (Highland two above its ground, Tokyo's roof walls twelve above the roofs).
    */
   const baseHeight = (() => {
     const counts = new Map<number, number>()
@@ -3324,7 +3326,8 @@ function createCliffPrimitiveLifter(
     return { reference, step }
   })()
   const vertexBaseOffset = (vertex: WorldSceneTerrainItem) =>
-    (vertex.heightBase - baseHeight.reference) * baseHeight.step
+    vertex.baseOffset ?? (vertex.heightBase - baseHeight.reference) * baseHeight.step
+  const authoredBaseOffsets = terrain.some(vertex => vertex.baseOffset !== undefined)
   /**
    * A cliff piece's primitives, stretched onto the painted base height of the ground they join. A
    * wall spans two levels, and the ground at its foot and at its top can each be lowered or raised
@@ -3347,7 +3350,7 @@ function createCliffPrimitiveLifter(
     primitives: readonly P[],
     instanceTransform: Float32Array,
   ) => {
-    if (baseHeight.step === 0) return undefined
+    if (!authoredBaseOffsets && baseHeight.step === 0) return undefined
     const prepared = primitives.map(primitive => {
       const own =
         'transform' in primitive && primitive.transform instanceof Float32Array
