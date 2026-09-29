@@ -1,6 +1,6 @@
 /** Explicit trusted desktop configuration; never load executable paths received from a webview. */
 import { execFile } from 'node:child_process'
-import { open, readdir, readFile, mkdir } from 'node:fs/promises'
+import { open, readdir, readFile, mkdir, type FileHandle } from 'node:fs/promises'
 import { isAbsolute, join, relative, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { CONTENT_SOURCE_METHODS, type ContentSources } from './content-sources.js'
@@ -139,6 +139,54 @@ export async function windowsHiddenPaths(
       hidden.add(path.split(sep).join('/'))
   }
   return hidden
+}
+
+/** A file on disk read by ranges (a `ByteRangeSource` of `@modkit/sdk`), with a `close` for its handle. */
+export interface FileRangeSource {
+  size(): Promise<bigint>
+  read(offset: bigint, length: number, signal?: AbortSignal): Promise<Uint8Array>
+  close(): Promise<void>
+}
+
+/**
+ * A game archive on disk (a MIX, a `.wz`, an MPQ) as a range source: one handle, opened on the
+ * first read and kept until `close`. A read is filled completely; one that runs past the end of the
+ * file comes back short, which is how a reader learns the end — a reader that needs every byte
+ * checks the length.
+ */
+export function fileRangeSource(path: string): FileRangeSource {
+  let handle: Promise<FileHandle> | undefined
+  let size: Promise<bigint> | undefined
+  const opened = () => (handle ??= open(path, 'r'))
+  return {
+    size: () => (size ??= opened().then(async file => BigInt((await file.stat()).size))),
+    async read(offset, length, signal) {
+      signal?.throwIfAborted()
+      if (offset < 0n || !Number.isSafeInteger(length) || length < 0)
+        throw new RangeError(`${path}: a read needs a non-negative offset and length`)
+      const file = await opened()
+      const bytes = new Uint8Array(length)
+      let filled = 0
+      while (filled < length) {
+        signal?.throwIfAborted()
+        const { bytesRead } = await file.read(
+          bytes,
+          filled,
+          length - filled,
+          Number(offset) + filled,
+        )
+        if (bytesRead === 0) break
+        filled += bytesRead
+      }
+      return filled === length ? bytes : bytes.slice(0, filled)
+    },
+    async close() {
+      const current = handle
+      handle = undefined
+      size = undefined
+      await (await current)?.close()
+    },
+  }
 }
 
 export interface FolderLayerOptions {

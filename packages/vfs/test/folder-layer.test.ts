@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { promisify } from 'node:util'
 import { afterAll, describe, expect, it } from 'vitest'
 import { createLayeredArchiveContentSources } from '../src/content-sources.js'
-import { folderLayer, windowsHiddenPaths } from '../src/content-sources-node.js'
+import { fileRangeSource, folderLayer, windowsHiddenPaths } from '../src/content-sources-node.js'
 
 const root = await mkdtemp(join(tmpdir(), 'modkit-folder-layer-'))
 afterAll(() => rm(root, { recursive: true, force: true }))
@@ -77,4 +77,23 @@ describe('what Windows marks hidden on disk', () => {
       expect(new TextDecoder().decode(await layer.read('desktop.ini', 4))).toBe('d')
     },
   )
+})
+
+describe('a game archive on disk read by ranges', () => {
+  it('fills each read, comes back short at the end and releases its handle', async () => {
+    const path = join(root, 'archive.mix')
+    await writeFile(
+      path,
+      Uint8Array.from({ length: 300 }, (_, index) => index % 251),
+    )
+    const source = fileRangeSource(path)
+    expect(await source.size()).toBe(300n)
+    expect([...(await source.read(250n, 3))]).toEqual([250, 0, 1])
+    expect((await source.read(290n, 20)).byteLength).toBe(10)
+    await expect(source.read(-1n, 1)).rejects.toThrow(/non-negative/u)
+    await source.close()
+    // reopened on demand after close
+    expect((await source.read(0n, 2)).byteLength).toBe(2)
+    await source.close()
+  })
 })
