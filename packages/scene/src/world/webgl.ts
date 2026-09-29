@@ -418,6 +418,8 @@ export interface WorldWebGlPlan {
   readonly splatOverlayTriangles: readonly WorldWebGlSplatBatch[]
   /** Terrain decal tiles blended over the ground with their alpha (MapTerrainMaterialSample.decal). */
   readonly terrainDecalTriangles: readonly WorldWebGlTexturedBatch[]
+  /** Water whose unlit colour multiplies the ground under it (`compositing: 'multiply'`). */
+  readonly multipliedWaterTriangles: readonly WorldWebGlTexturedBatch[]
   readonly transparentTriangles: WorldWebGlBatch
   readonly lines: WorldWebGlBatch
   readonly points: WorldWebGlBatch
@@ -820,6 +822,12 @@ function colorHash(value: string | number): readonly [number, number, number, nu
 }
 
 function terrainPosition(item: WorldSceneTerrainItem): readonly [number, number, number] {
+  if (item.presentationUvwPosition !== undefined)
+    return [
+      item.presentationUvwPosition.x,
+      item.presentationUvwPosition.y,
+      item.presentationUvwPosition.z,
+    ]
   if (item.uvwPosition !== undefined)
     return [item.uvwPosition.x, item.uvwPosition.y, item.uvwPosition.z]
   if (item.mapNativePosition !== undefined)
@@ -1203,7 +1211,14 @@ function pushTexturedWaterTriangle(
   const scroll = material.scroll ?? [0, 0]
   for (let index = 0; index < 3; index += 1) {
     const source = ground[index]!
-    pushVertex(target, vertices[index]!, normal, waterVertexColor(material, elevation, source[1]))
+    pushVertex(
+      target,
+      vertices[index]!,
+      normal,
+      material.compositing === 'multiply'
+        ? [material.color[0], material.color[1], material.color[2], 1]
+        : waterVertexColor(material, elevation, source[1]),
+    )
     target.textureCoordinates.push(
       source[0] * scale[0] + scroll[0] * time,
       source[2] * scale[1] + scroll[1] * time,
@@ -4869,6 +4884,8 @@ export function createWorldWebGlPlan(
   const points = batch()
   const textured = new Map<string, MutableTexturedBatch>()
   const transparentTextured = new Map<string, WorldTransparentTexturedBatch>()
+  /** Water that multiplies the ground under it, drawn after the terrain (see `multipliedWaterTriangles`). */
+  const multipliedWater = new Map<string, MutableTexturedBatch>()
   const batchWrites = new Map<object, WorldBatchWrite[]>()
   const journal = (target: object, write: WorldBatchWrite) => {
     const writes = batchWrites.get(target)
@@ -4996,6 +5013,19 @@ export function createWorldWebGlPlan(
     const texturedTarget =
       material === undefined || texture === undefined
         ? undefined
+        : material.compositing === 'multiply'
+          ? (() => {
+              const key = `water\u0000${material.materialId}\u0000${texture.id}\u0000${secondaryTexture?.id ?? ''}`
+              const current = multipliedWater.get(key) ?? {
+                ...batch(),
+                textureCoordinates: [],
+                ...(secondaryTexture === undefined ? {} : { secondaryTextureCoordinates: [] }),
+                texture,
+                ...(secondaryTexture === undefined ? {} : { secondaryTexture }),
+              }
+              multipliedWater.set(key, current)
+              return current
+            })()
         : (() => {
             const key = `water\u0000${material.materialId}\u0000${texture.id}\u0000${secondaryTexture?.id ?? ''}`
             const previous = transparentTextured.get(key)
@@ -5047,7 +5077,9 @@ export function createWorldWebGlPlan(
   // Capture before models append their transparent geometry: particles must not become AO surfaces.
   const previousBatches =
     previousPlan === undefined ? undefined : worldPlanBatches.get(previousPlan)
-  const waterWrites = [transparent, ...transparentTextured.values()].flatMap(writesOf)
+  const waterWrites = [transparent, ...transparentTextured.values(), ...multipliedWater.values()].flatMap(
+    writesOf,
+  )
   const waterSurfaceDepth =
     previousBatches !== undefined && sameWrites(previousBatches.water, waterWrites)
       ? previousBatches.waterSurfaceDepth
@@ -5833,6 +5865,9 @@ export function createWorldWebGlPlan(
       }),
     ),
   )
+  const multipliedWaterTriangles = [...multipliedWater].map(([key, item]) =>
+    frozenWrites(`multipliedWater\u0000${key}`, item, writes => writtenTexturedBatch(item, writes)),
+  )
   const transparentTriangles = frozenWrites('transparent', transparent, writtenBatch)
   const shadowCasterTriangles =
     preparation.shadowCasterTriangles +
@@ -5861,6 +5896,7 @@ export function createWorldWebGlPlan(
     splatTriangles: preparation.splatTriangles,
     splatOverlayTriangles: preparation.splatOverlayTriangles,
     terrainDecalTriangles: preparation.decalTriangles,
+    multipliedWaterTriangles: Object.freeze(multipliedWaterTriangles),
     transparentTriangles,
     lines: appendWorldBatch(preparation.lines, lines),
     points: appendWorldBatch(preparation.points, points),
@@ -6033,6 +6069,8 @@ uniform float rasterSplatTextured;
 uniform float terrainWeightMapCount;
 // A later weight-raster group over the first: alpha is the share of the weights its layers hold.
 uniform float terrainWeightOverlay;
+// The surface colour as it is, no light: water that multiplies the ground under it.
+uniform float unlitSurface;
 uniform sampler2D baseColorMap;
 uniform float alphaCutoff;
 uniform sampler2D normalMap;
@@ -6305,6 +6343,10 @@ void main() {
   // Caustics add to the bottom seen through the water, and SC2 lights that refraction by the
   // surface's diffuse light; blended under this surface they are the share of what shows through.
   vec3 causticsShare = causticsLight * lighting * (1.0 - surface.a) / max(surface.a, 0.001);
+  if (unlitSurface > 0.5) {
+    outColor = surface;
+    return;
+  }
   outColor = vec4(surface.rgb * lighting + specular + causticsShare, surface.a);
 }`
 
@@ -6966,6 +7008,7 @@ function retainedWorldPlanBytes(plan: WorldWebGlPlan | undefined): number {
     ...plan.texturedTriangles,
     ...plan.transparentTexturedTriangles,
     ...plan.terrainDecalTriangles,
+    ...plan.multipliedWaterTriangles,
   ]) {
     retainBatch(item)
     retain(item.textureCoordinates)
@@ -9274,6 +9317,7 @@ function drawWorldWebGlWithResources(
     worldUniform1f(gl, program, 'waterDepthMode', 0)
     worldUniform1f(gl, program, 'cliffMaskMode', 0)
     worldUniform1f(gl, program, 'terrainWeightOverlay', 0)
+    worldUniform1f(gl, program, 'unlitSurface', 0)
     const sceneCamera = createWorldWebGlCameraFrame(plan, canvas.width, canvas.height, input.camera)
     gl.uniform3fv(uniformLocation(gl, program, 'eyePosition'), sceneCamera.eyePosition)
     const terrainLight = plan.light.terrain
@@ -9382,6 +9426,23 @@ function drawWorldWebGlWithResources(
       worldUniform1f(gl, program, 'splatTextured', 0)
       worldUniform1f(gl, program, 'rasterSplatTextured', 0)
       for (const item of plan.terrainDecalTriangles) drawTexturedBatch(resources, program, item)
+      gl.disable(gl.BLEND)
+      gl.depthMask(true)
+    }
+    if (plan.multipliedWaterTriangles.length > 0) {
+      // Water that multiplies the ground (Warzone 2100 REND_MULTIPLICATIVE): after the terrain and
+      // before the models, as the game draws it; unlit, no depth write.
+      gl.enable(gl.BLEND)
+      gl.blendEquation(gl.FUNC_ADD)
+      gl.blendFunc(gl.DST_COLOR, gl.ZERO)
+      gl.depthMask(false)
+      worldUniform1f(gl, program, 'splatTextured', 0)
+      worldUniform1f(gl, program, 'rasterSplatTextured', 0)
+      worldUniform1f(gl, program, 'shadowReceiver', 0)
+      worldUniform1f(gl, program, 'unlitSurface', 1)
+      for (const item of plan.multipliedWaterTriangles) drawTexturedBatch(resources, program, item)
+      worldUniform1f(gl, program, 'unlitSurface', 0)
+      worldUniform1f(gl, program, 'shadowReceiver', 1)
       gl.disable(gl.BLEND)
       gl.depthMask(true)
     }

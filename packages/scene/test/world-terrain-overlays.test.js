@@ -142,4 +142,59 @@ describe('world terrain overlays', () => {
     })
     assert.equal(unresolved.terrainDecalTriangles.length, 0)
   })
+
+  it('keeps multiplying water apart from the blended passes, its colour whole and unshaded by depth', () => {
+    const material = {
+      materialId: 'warzone-water',
+      classification: 'water',
+      shorelineMode: 'zone',
+      compositing: 'multiply',
+      color: [1, 0.5, 1, 0.2],
+      baseColorResourceId: 'water-1',
+      secondaryColorResourceId: 'water-2',
+    }
+    const water = {
+      facet: 'water',
+      id: 'water:0',
+      layerId: 'water',
+      coordinateSpaceId: 'map-native',
+      zoneId: 0,
+      templateId: 'TER_WATER',
+      minimum: { x: 0, y: 0 },
+      maximum: { x: 1, y: 1 },
+      uvwMinimum: { x: 0, z: 0 },
+      uvwMaximum: { x: 1, z: 1 },
+      uvwElevation: 0.5,
+      materialId: 'warzone-water',
+    }
+    const plan = createWorldWebGlPlan({
+      items: [...cell(), water],
+      waterMaterials: [material],
+      terrainTextures: new Map([
+        ['water-1', texture('water-1')],
+        ['water-2', texture('water-2')],
+      ]),
+    })
+    assert.equal(plan.multipliedWaterTriangles.length, 1)
+    assert.equal(plan.multipliedWaterTriangles[0].texture.id, 'water-1')
+    assert.equal(plan.multipliedWaterTriangles[0].secondaryTexture?.id, 'water-2')
+    const colors = Array.from(plan.multipliedWaterTriangles[0].colors)
+    assert.ok(colors.length > 0)
+    for (let offset = 0; offset < colors.length; offset += 4)
+      assert.deepEqual(colors.slice(offset, offset + 4), [1, 0.5, 1, 1])
+    assert.equal(
+      plan.transparentTexturedTriangles.filter(item => item.texture.id === 'water-1').length,
+      0,
+    )
+    const over = createWorldWebGlPlan({
+      items: [...cell(), water],
+      waterMaterials: [{ ...material, compositing: undefined }],
+      terrainTextures: new Map([
+        ['water-1', texture('water-1')],
+        ['water-2', texture('water-2')],
+      ]),
+    })
+    assert.equal(over.multipliedWaterTriangles.length, 0)
+    assert.equal(over.transparentTexturedTriangles.filter(item => item.texture.id === 'water-1').length, 1)
+  })
 })

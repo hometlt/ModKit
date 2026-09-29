@@ -757,6 +757,13 @@ export interface MapWaterMaterialDefinition {
   /** Whether ground intersections clip the surface or the authored zone is authoritative. */
   readonly shorelineMode?: 'terrain-clipped' | 'zone'
   readonly color: readonly [number, number, number, number]
+  /**
+   * How the surface meets the ground under it. `over` (the default) lays its colour over it by
+   * alpha, deepening with depth. `multiply` multiplies the ground under it by the unlit surface
+   * colour — `color` times the base image times the second image's red — as Warzone 2100 draws
+   * water at its default quality (REND_MULTIPLICATIVE, shaders/water.frag), right after the terrain.
+   */
+  readonly compositing?: 'over' | 'multiply'
   readonly baseColorResourceId?: string
   readonly baseColorResource?: LogicalResourceRequirement
   /** Optional second surface sample. When absent, the base image is sampled twice. */
@@ -1263,6 +1270,12 @@ export interface WorldSceneTerrainItem extends MapTerrainSample {
   readonly mapNativePosition?: MapPosition
   /** Present only when the host validated a measured map-native to canonical UVW transform. */
   readonly uvwPosition?: MapPosition
+  /**
+   * Where the world draws this point when the publisher's presentation height differs from the
+   * authored one (`presentationHeightAdjustment` over a transform without quantized vertices — the
+   * riverbed Warzone 2100 sinks under water). `uvwPosition` and UVW export keep the authored height.
+   */
+  readonly presentationUvwPosition?: MapPosition
   /**
    * `exact` means the publisher retained every native height-grid tuple. It does not claim that
    * the tuple has been converted into map-native or canonical UVW coordinates.

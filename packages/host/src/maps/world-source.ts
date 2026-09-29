@@ -592,6 +592,25 @@ export function createCandidateWorldSceneLease(
         terrainTransform === undefined
           ? undefined
           : terrainMapNativePosition(item, terrainTransform)
+      // Without quantized vertices the authored height is the position; a presentation adjustment
+      // is only drawn (the vertData path folds it into the position, as SC2 always has).
+      const presentationAdjustment =
+        terrainTransform !== undefined &&
+        !('vertData' in terrainTransform) &&
+        item.presentationHeightAdjustment !== undefined &&
+        Number.isFinite(item.presentationHeightAdjustment) &&
+        item.presentationHeightAdjustment !== 0
+          ? item.presentationHeightAdjustment * terrainTransform.heightMap.scale.z
+          : undefined
+      const presentationUvwPosition =
+        presentationAdjustment === undefined ||
+        mapNativePosition === undefined ||
+        uvwTransform === undefined
+          ? undefined
+          : canonicalPosition(
+              { ...mapNativePosition, z: mapNativePosition.z + presentationAdjustment },
+              uvwTransform,
+            )
       return Object.freeze({
         facet: 'terrain' as const,
         id: `${terrainLayerId}:sample:${String(item.x)}:${String(item.y)}`,
@@ -603,6 +622,7 @@ export function createCandidateWorldSceneLease(
         ...(mapNativePosition === undefined || uvwTransform === undefined
           ? {}
           : { uvwPosition: canonicalPosition(mapNativePosition, uvwTransform) }),
+        ...(presentationUvwPosition === undefined ? {} : { presentationUvwPosition }),
       })
     }),
   )
