@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "contract": {
+    "id": "org.modkitx/codec-contribution",
+    "major": 1
+  },
+  "id": "org.example/catalog-card",
+  "displayName": "Catalog card fixture",
+  "runtimeVariants": [
+    {
+      "variantId": "trusted-node",
+      "entrypoint": "./codec.mjs",
+      "target": {
+        "environments": [
+          "node"
+        ]
+      },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": [
+        "read-source"
+      ]
+    }
+  ],
+  "spec": {
+    "formatRefs": [
+      {
+        "formatId": "catalog-card",
+        "label": "Catalog card"
+      }
+    ],
+    "roles": [
+      "semantic"
+    ],
+    "sourceTopology": "single",
+    "artifactStages": [
+      "authored"
+    ],
+    "openIntents": [
+      "probe",
+      "full"
+    ],
+    "match": {
+      "extensions": [
+        "card"
+      ]
+    },
+    "probe": {
+      "kind": "bytes",
+      "ranges": [
+        {
+          "from": "start",
+          "length": 8
+        }
+      ],
+      "maxBytes": 8
+    },
+    "representations": [
+      {
+        "id": "catalog-card",
+        "contract": "org.example/catalog-card",
+        "major": 1,
+        "stage": "authored",
+        "lossy": false
+      }
+    ],
+    "publishesDataSources": [
+      {
+        "contract": "common.view/byte-range-source",
+        "major": 1
+      }
+    ],
+    "operations": [],
+    "implementationTier": {
+      "claimed": 1
+    },
+    "budgets": {
+      "maxInputBytes": "1024",
+      "maxDepth": 8,
+      "maxNodes": 8,
+      "maxScalarBytes": 1024,
+      "maxDiagnostics": 8
+    }
+  }
+}

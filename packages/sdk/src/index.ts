@@ -262,6 +262,7 @@ export type {
   SelectedServiceOffer,
   ServiceProviderModule,
   SessionState,
+  SubjectCatalogPort,
   TraitQuery,
   InputSearchScope,
   SubjectSearchScope,

@@ -39,6 +39,7 @@ import type {
   InstallationProbes,
   VideoFrameDecoder,
   InstallationFiles,
+  SubjectCatalogPort,
   CredentialPort,
   ServiceProviderModule,
   SingleAssetInput,
@@ -100,6 +101,8 @@ export const ABI_INSTALLATION_PROBES = { contract: 'x3.abi/installation-probes',
 export const ABI_VIDEO_FRAMES = { contract: 'x3.abi/video-frames', major: 1 } as const
 /** `ContributionContext.installationFiles`: a game installation's files, read-only by path. */
 export const ABI_INSTALLATION_FILES = { contract: 'x3.abi/installation-files', major: 1 } as const
+/** `ContributionContext.catalog`: resolved catalog entities of the subject's mod context. */
+export const ABI_SUBJECT_CATALOG = { contract: 'x3.abi/subject-catalog', major: 1 } as const
 /** `ContributionContext.credentials`: the broker's port for one extension's declared credentials. */
 export const ABI_CREDENTIALS = { contract: 'x3.abi/credentials', major: 1 } as const
 export const ABI_MODEL_RESOURCE_ASSET = {
@@ -333,6 +336,11 @@ const installationFilesSurface = {
   },
 } as const satisfies AbiSurfaceOf<InstallationFiles>
 
+const subjectCatalogSurface = {
+  ...ABI_SUBJECT_CATALOG,
+  methods: { entities: { kind: 'value', arity: 2, ...sig } },
+} as const satisfies AbiSurfaceOf<SubjectCatalogPort>
+
 const credentialsSurface = {
   ...ABI_CREDENTIALS,
   methods: {
@@ -406,6 +414,7 @@ export const RUNTIME_ABI_SURFACES: readonly CapabilitySurface[] = Object.freeze(
   installationProbesSurface,
   videoFramesSurface,
   installationFilesSurface,
+  subjectCatalogSurface,
   credentialsSurface,
   modelResourcesSurface,
   modelResourceAssetSurface,

@@ -8,6 +8,7 @@ import type { InstallationProbes } from './installation-probes.js'
 import type { VideoFrameDecoder } from './video-frames.js'
 import type { InstallationFiles } from './installation-files.js'
 import type { CredentialPort } from './credentials.js'
+import type { DataEntityRef, DataResolvedEntity } from './data/index.js'
 import type {
   AnyDescriptor,
   AssetDiagnostic,
@@ -114,7 +115,20 @@ export interface ContributionContext {
   readonly containerContext?: JsonValue
   /** The sign-ins and keys this extension declared, through the host's broker. */
   readonly credentials?: CredentialPort
+  /**
+   * The opened subject's place in its mod context: resolved catalog entities by reference, with the
+   * values the whole dependency chain gives them (parents, overrides, layers). A host that places
+   * subjects in mod contexts hands it over; a card asks for the entities it shows, never a catalog.
+   */
+  readonly catalog?: SubjectCatalogPort
   readonly signal?: AbortSignal
+}
+
+export interface SubjectCatalogPort {
+  entities(
+    refs: readonly DataEntityRef[],
+    signal?: AbortSignal,
+  ): Promise<readonly DataResolvedEntity[]>
 }
 
 export type InputSearchScope = CompanionSearchScope

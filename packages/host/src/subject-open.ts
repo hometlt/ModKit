@@ -1377,9 +1377,33 @@ async function unresolvedFallback(
  * One public host route from an attested inventory plus a pinned artifact source to a session.
  * Unknown or ambiguous content returns a validated unresolved descriptor and explicit fallback.
  */
+/**
+ * One subject catalog for the whole open: codecs ask it through `ContributionContext.catalog` while
+ * inspecting, operations through the session afterwards, and its mod context opens on the first
+ * question only. An open that ends without a session closes it.
+ */
 async function openSubjectDirect(
   options: OpenSubjectOptions,
   route: SubjectOpenRoute = {},
+): Promise<OpenSubjectResult> {
+  const catalog =
+    options.subjectCatalog === undefined
+      ? undefined
+      : subjectCatalogEntities(options.subjectCatalog, async () => options.source.ref.uri)
+  try {
+    const result = await openSubjectDirectWith(options, route, catalog)
+    if (result.state !== 'opened') await catalog?.release()
+    return result
+  } catch (error) {
+    await catalog?.release()
+    throw error
+  }
+}
+
+async function openSubjectDirectWith(
+  options: OpenSubjectOptions,
+  route: SubjectOpenRoute,
+  catalog: ReturnType<typeof subjectCatalogEntities> | undefined,
 ): Promise<OpenSubjectResult> {
   throwIfAborted(options.signal)
   const minimumConfidence = options.minimumConfidence ?? DEFAULT_MINIMUM_CONFIDENCE
@@ -1616,6 +1640,9 @@ async function openSubjectDirect(
             ...(options.installationFiles === undefined
               ? {}
               : { installationFiles: options.installationFiles }),
+            ...(catalog === undefined
+              ? {}
+              : { catalog: Object.freeze({ entities: catalog.entities }) }),
             ...(credentials === undefined ? {} : { credentials }),
             ...(options.containerContext === undefined
               ? {}
@@ -2050,13 +2077,6 @@ async function openSubjectDirect(
                 ...(signal === undefined ? {} : { signal }),
               }),
           })
-    const catalog =
-      options.subjectCatalog === undefined
-        ? undefined
-        : subjectCatalogEntities(
-            options.subjectCatalog,
-            async () => (await session.descriptor()).subjectUri,
-          )
     if (catalog !== undefined) best.resources.add(() => catalog.release())
     const managedSession = sessionWithResources(
       session,
