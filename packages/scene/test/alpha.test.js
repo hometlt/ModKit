@@ -133,3 +133,38 @@ it('orders placements that share one vertex array by their own transforms, under
   for (let round = 0; round < 2; round++)
     assert.throws(() => alphaDrawOrder([broken], blend, identity), /nonfinite blend position/)
 })
+
+it('poses a skin on the CPU only when there are blended primitives to order', () => {
+  let posed = 0
+  const skinned = (id, z) => {
+    const positions = quad(id).positions.map((value, index) => (index % 3 === 2 ? z : value))
+    return {
+      ...quad(id),
+      skin: {
+        deformed: () => {
+          posed += 1
+          return { positions }
+        },
+      },
+    }
+  }
+  const blendOf = ids => materialId => ({
+    mode: ids.includes(materialId) ? 'blend' : 'opaque',
+    cutoff: 0.5,
+  })
+  const lone = skinned('lone', 0.5)
+  const solid = quad('solid')
+  assert.deepEqual(
+    alphaDrawOrder([lone, solid], blendOf(['lone']), identity).map(x => x.id),
+    ['solid', 'lone'],
+  )
+  assert.equal(posed, 0)
+  // Two blended skins order where their poses stand.
+  const near = skinned('near', -0.5)
+  const far = skinned('far', 0.5)
+  assert.deepEqual(
+    alphaDrawOrder([near, far], blendOf(['near', 'far']), identity).map(x => x.id),
+    ['far', 'near'],
+  )
+  assert.equal(posed, 2)
+})

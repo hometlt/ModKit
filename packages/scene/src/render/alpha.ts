@@ -61,14 +61,15 @@ export function alphaDrawOrder(
   viewProjection: Float32Array,
 ): readonly SceneRendererPrimitive[] {
   const opaque: SceneRendererPrimitive[] = []
+  const blending: SceneRendererPrimitive[] = []
+  for (const primitive of primitives)
+    if (alphaFor(primitive.materialId).mode !== 'blend') opaque.push(primitive)
+    else blending.push(primitive)
   const blended: { primitive: SceneRendererPrimitive; depth: number; order: number }[] = []
-  for (const [order, primitive] of primitives.entries()) {
-    if (alphaFor(primitive.materialId).mode !== 'blend') {
-      opaque.push(primitive)
-      continue
-    }
-    // A skin posed on the GPU is ordered where its pose stands.
-    const positions = materialPosedPositions(primitive)
+  for (const [order, primitive] of blending.entries()) {
+    // A skin posed on the GPU is ordered where its pose stands. A lone blended primitive has no
+    // order to find: its checks read the vertices it has, and a skin is not posed on the CPU for it.
+    const positions = blending.length > 1 ? materialPosedPositions(primitive) : primitive.positions
     if (!(positions instanceof Float32Array) || positions.length % 3 !== 0)
       throw new TypeError('blend primitive positions must be an xyz Float32Array')
     let center = boundsCenter(positions)

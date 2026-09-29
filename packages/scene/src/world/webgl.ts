@@ -2560,6 +2560,24 @@ function restWorldModelSample(result: WorldModelSample['result']): WorldModelSam
 }
 
 /**
+ * An animated object's primitives at rest, placed, per component: what frames the plan while its
+ * models move (restPrimitives). They follow only the rest sample, where the component stands and
+ * which materials draw nothing, so an object rebuilt for its clock takes the same ones again.
+ */
+const worldRestPickPrimitives = new WeakMap<
+  WorldSceneObjectItem,
+  Map<
+    string,
+    Readonly<{
+      sample: WorldModelSample
+      placement: Float32Array
+      hidden: string
+      primitives: readonly WorldWebGlPickPrimitive[]
+    }>
+  >
+>()
+
+/**
  * A sampled primitive as it stands, for the plan's work on the CPU: a skin posed on the GPU
  * (ModelSceneSkin) is posed on the CPU once for it, any other primitive is itself.
  */
@@ -5720,27 +5738,56 @@ export function createWorldWebGlPlan(
           worldObjectTransform(item, translation),
           restTransform,
         )
-        let restIndex = -1
-        for (const primitive of restWorldModelSample(result).primitives) {
-          restIndex += 1
-          // The primitives the object draws: no material without color passes, no empty ones.
-          const prepared = programs.get(primitive.materialId ?? '')
-          if (prepared !== undefined && prepared.passes.length === 0) continue
-          if (primitiveTriangleCount(primitive) === 0) continue
-          const primitiveTransform = 'transform' in primitive ? primitive.transform : undefined
-          restPrimitives.push(
-            sharedPickPrimitive(
-              primitive,
-              {
-                ...primitive,
-                transform: multiplyComponentTransforms(
-                  restInstanceTransform,
-                  primitiveTransform ?? IDENTITY_COMPONENT_TRANSFORM,
-                ),
-              },
-              item,
-              `rest\u0000${component.id}\u0000${String(restIndex)}`,
-            ),
+        const rest = restWorldModelSample(result)
+        // The materials without color passes, whose primitives the object does not draw.
+        let hidden = ''
+        for (const [id, prepared] of programs)
+          if (prepared.passes.length === 0) hidden += `${id}\u0000`
+        let placedAtRest = worldRestPickPrimitives.get(item)
+        const known = placedAtRest?.get(component.id)
+        if (
+          known !== undefined &&
+          known.sample === rest &&
+          known.hidden === hidden &&
+          sameOptionalMatrix(known.placement, restInstanceTransform)
+        )
+          restPrimitives.push(...known.primitives)
+        else {
+          const placed: WorldWebGlPickPrimitive[] = []
+          let restIndex = -1
+          for (const primitive of rest.primitives) {
+            restIndex += 1
+            // The primitives the object draws: no material without color passes, no empty ones.
+            const prepared = programs.get(primitive.materialId ?? '')
+            if (prepared !== undefined && prepared.passes.length === 0) continue
+            if (primitiveTriangleCount(primitive) === 0) continue
+            const primitiveTransform = 'transform' in primitive ? primitive.transform : undefined
+            placed.push(
+              sharedPickPrimitive(
+                primitive,
+                {
+                  ...primitive,
+                  transform: multiplyComponentTransforms(
+                    restInstanceTransform,
+                    primitiveTransform ?? IDENTITY_COMPONENT_TRANSFORM,
+                  ),
+                },
+                item,
+                `rest\u0000${component.id}\u0000${String(restIndex)}`,
+              ),
+            )
+          }
+          restPrimitives.push(...placed)
+          if (placedAtRest === undefined)
+            worldRestPickPrimitives.set(item, (placedAtRest = new Map()))
+          placedAtRest.set(
+            component.id,
+            Object.freeze({
+              sample: rest,
+              placement: restInstanceTransform,
+              hidden,
+              primitives: Object.freeze(placed),
+            }),
           )
         }
       }
@@ -7523,16 +7570,40 @@ function sameWorldPlanInput(left: WorldWebGlInput, right: WorldWebGlInput): bool
  */
 let worldInputsCompared: Readonly<{ previous: WorldWebGlInput; input: WorldWebGlInput }> | undefined
 
+/** The cliff pieces among a list of items, in order: kept with the list. */
+const worldCliffItemLists = new WeakMap<
+  readonly WorldSceneItem[],
+  readonly WorldSceneObjectItem[]
+>()
+function worldCliffItems(items: readonly WorldSceneItem[]): readonly WorldSceneObjectItem[] {
+  let cliffs = worldCliffItemLists.get(items)
+  if (cliffs === undefined)
+    worldCliffItemLists.set(
+      items,
+      (cliffs = items.filter(
+        (item): item is WorldSceneObjectItem =>
+          item.facet === 'objects' &&
+          item.resourceId !== undefined &&
+          item.derivedFrom === 'cliffs',
+      )),
+    )
+  return cliffs
+}
+
 function sameWorldStaticInput(left: WorldWebGlInput, right: WorldWebGlInput): boolean {
+  const compared = worldInputsCompared?.previous === left && worldInputsCompared.input === right
   if (
-    (worldInputsCompared?.previous !== left || worldInputsCompared.input !== right) &&
+    !compared &&
     (!sameArrayIdentity(left.items, right.items) ||
       !sameArrayIdentity(left.terrainMaterials, right.terrainMaterials) ||
       !sameArrayIdentity(left.terrainWeightRasters, right.terrainWeightRasters) ||
       !sameWorldMap(left.terrainTextures, right.terrainTextures))
   )
     return false
-  for (const item of right.items) {
+  // With the same model results (inputs found the same but for the clocks) only the cliff pieces
+  // can differ: their clocks.
+  const items = compared ? worldCliffItems(right.items) : right.items
+  for (const item of items) {
     if (item.facet !== 'objects' || item.resourceId === undefined) continue
     if (item.derivedFrom !== 'cliffs') {
       // A model that shows the ground on its surface draws with the terrain: its arrival renews it.
