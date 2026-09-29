@@ -145,6 +145,7 @@ describe('common world WebGL plan', () => {
     assert.deepEqual(plan.stats, {
       terrainTriangles: 2,
       terrainTexturedTriangles: 0,
+      terrainDecalTriangles: 0,
       terrainSplatFallbackCells: 0,
       waterPolygons: 1,
       cliffEdges: 1,

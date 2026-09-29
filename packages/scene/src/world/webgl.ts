@@ -97,6 +97,8 @@ export interface WorldWebGlStats {
   readonly terrainTriangles: number
   readonly terrainTexturedTriangles: number
   readonly terrainSplatFallbackCells: number
+  /** Triangles of decal tiles drawn over the ground. */
+  readonly terrainDecalTriangles: number
   readonly waterPolygons: number
   readonly cliffEdges: number
   readonly cliffTriangles: number
@@ -409,6 +411,13 @@ export interface WorldWebGlPlan {
   readonly transparentTexturedTriangles: readonly WorldWebGlTransparentTexturedBatch[]
   /** Exact per-cell normalized blends for up to eight decoded terrain material layers. */
   readonly splatTriangles: readonly WorldWebGlSplatBatch[]
+  /**
+   * Weight-raster groups past the first eight layers, blended over `splatTriangles` with the share
+   * of the weights their layers hold: together they draw the blend of every layer.
+   */
+  readonly splatOverlayTriangles: readonly WorldWebGlSplatBatch[]
+  /** Terrain decal tiles blended over the ground with their alpha (MapTerrainMaterialSample.decal). */
+  readonly terrainDecalTriangles: readonly WorldWebGlTexturedBatch[]
   readonly transparentTriangles: WorldWebGlBatch
   readonly lines: WorldWebGlBatch
   readonly points: WorldWebGlBatch
@@ -1240,6 +1249,9 @@ function pushSplatTriangle(
     target.textureWeights1.push(weights[4] ?? 0, weights[5] ?? 0, weights[6] ?? 0, weights[7] ?? 0)
   }
 }
+
+/** Weight rasters the exact raster splat draws: two per draw (eight layers), up to sixteen layers. */
+const MAX_TERRAIN_WEIGHT_RASTERS = 4
 
 /** Neutral stand-in for a splat layer whose base-color texture did not resolve. */
 const MISSING_TERRAIN_LAYER_TEXTURE: SceneRendererTexture = Object.freeze({
@@ -3527,6 +3539,10 @@ function prepareWorldStaticTerrain(
     points = batch()
   const textured = new Map<string, MutableTexturedBatch>()
   const splat = new Map<string, MutableSplatBatch>()
+  /** Weight-raster groups after the first, blended over it (see `splatOverlayTriangles`). */
+  const splatOverlays = new Map<string, MutableSplatBatch>()
+  /** Decal tiles over the blended ground, one batch per texture. */
+  const decals = new Map<string, MutableTexturedBatch>()
   const terrainPickTriangles: number[] = []
   const terrain = input.items.filter(
     (item): item is WorldSceneTerrainItem => item.facet === 'terrain',
@@ -3555,93 +3571,120 @@ function prepareWorldStaticTerrain(
   let terrainTriangles = 0
   let terrainTexturedTriangles = 0
   let terrainSplatFallbackCells = 0
+  let terrainDecalTriangles = 0
   const terrainMinimumX = Math.min(...terrain.map(item => item.x))
   const terrainMaximumX = Math.max(...terrain.map(item => item.x))
   const terrainMinimumY = Math.min(...terrain.map(item => item.y))
   const terrainMaximumY = Math.max(...terrain.map(item => item.y))
-  const rasterDefinitions = (input.terrainWeightRasters ?? []).flatMap(raster =>
-    raster.materialIds.map(materialId =>
-      input.terrainMaterials?.find(material => material.materialId === materialId),
-    ),
-  )
-  const rasterMaterialTextures = rasterDefinitions.map(definition =>
-    definition?.baseColorResourceId === undefined
-      ? undefined
-      : input.terrainTextures?.get(definition.baseColorResourceId),
-  )
-  const rasterNormalTextures = rasterDefinitions.map(definition =>
-    definition?.normalResourceId === undefined
-      ? undefined
-      : input.terrainTextures?.get(definition.normalResourceId),
-  )
-  const rasterWeightTextures = (input.terrainWeightRasters ?? []).map(raster =>
-    input.terrainTextures?.get(raster.resourceId),
-  )
-  const exactRasterSplat =
-    (input.terrainWeightRasters?.length ?? 0) > 0 &&
-    input.terrainWeightRasters!.length <= 2 &&
-    rasterDefinitions.length <= 8 &&
-    rasterDefinitions.every(definition => definition !== undefined) &&
-    rasterWeightTextures.every(
-      (texture, index) =>
-        texture !== undefined &&
-        texture.width === input.terrainWeightRasters![index]!.width &&
-        texture.height === input.terrainWeightRasters![index]!.height,
-    ) &&
+  /**
+   * The exact raster splat, two weight rasters (eight layers) per draw. The first group is the
+   * ground; each later one blends over it with the share of the weights its layers hold, so with
+   * weights normalized over every raster the result is the blend of all layers.
+   */
+  const rasterSplatGroup = (rasters: readonly MapTerrainWeightRaster[]) => {
+    const definitions = rasters.flatMap(raster =>
+      raster.materialIds.map(materialId =>
+        input.terrainMaterials?.find(material => material.materialId === materialId),
+      ),
+    )
+    const weightTextures = rasters.map(raster => input.terrainTextures?.get(raster.resourceId))
+    if (
+      definitions.length > 8 ||
+      !definitions.every(definition => definition !== undefined) ||
+      !weightTextures.every(
+        (texture, index) =>
+          texture !== undefined &&
+          texture.width === rasters[index]!.width &&
+          texture.height === rasters[index]!.height,
+      )
+    )
+      return undefined
+    const resolved = definitions as readonly MapTerrainMaterialDefinition[]
+    return Object.freeze({
+      definitions: resolved,
+      // One unresolved layer must not drop per-pixel blending for the whole map.
+      textures: resolved.map(definition =>
+        definition.baseColorResourceId === undefined
+          ? MISSING_TERRAIN_LAYER_TEXTURE
+          : (input.terrainTextures?.get(definition.baseColorResourceId) ??
+            MISSING_TERRAIN_LAYER_TEXTURE),
+      ),
+      normalTextures: resolved.map(definition =>
+        definition.normalResourceId === undefined
+          ? undefined
+          : input.terrainTextures?.get(definition.normalResourceId),
+      ),
+      specularTextures: resolved.map(definition =>
+        definition.specularResourceId === undefined
+          ? undefined
+          : input.terrainTextures?.get(definition.specularResourceId),
+      ),
+      normalSwizzles: resolved.map(definition =>
+        definition.normalEncoding === 'xy-in-alpha-green' ? 1 : 0,
+      ),
+      weightTextures: weightTextures as readonly SceneRendererTexture[],
+    })
+  }
+  type RasterSplatGroup = NonNullable<ReturnType<typeof rasterSplatGroup>>
+  const weightRasters = input.terrainWeightRasters ?? []
+  const rasterGroups =
+    weightRasters.length > 0 &&
+    weightRasters.length <= MAX_TERRAIN_WEIGHT_RASTERS &&
     terrainMaximumX > terrainMinimumX &&
     terrainMaximumY > terrainMinimumY
-      ? Object.freeze({
-          definitions: rasterDefinitions as readonly MapTerrainMaterialDefinition[],
-          // One unresolved layer must not drop per-pixel blending for the whole map.
-          textures: rasterMaterialTextures.map(texture => texture ?? MISSING_TERRAIN_LAYER_TEXTURE),
-          normalTextures: rasterNormalTextures,
-          specularTextures: rasterDefinitions.map(definition =>
-            definition?.specularResourceId === undefined
-              ? undefined
-              : input.terrainTextures?.get(definition.specularResourceId),
-          ),
-          normalSwizzles: (rasterDefinitions as readonly MapTerrainMaterialDefinition[]).map(
-            definition => (definition.normalEncoding === 'xy-in-alpha-green' ? 1 : 0),
-          ),
-          weightTextures: rasterWeightTextures as readonly SceneRendererTexture[],
-        })
-      : undefined
+      ? Array.from({ length: Math.ceil(weightRasters.length / 2) }, (_, index) =>
+          rasterSplatGroup(weightRasters.slice(index * 2, index * 2 + 2)),
+        )
+      : []
+  const exactRasterSplat = rasterGroups.every(group => group !== undefined)
+    ? rasterGroups[0]
+    : undefined
+  const rasterSplatOverlays =
+    exactRasterSplat === undefined ? [] : (rasterGroups.slice(1) as readonly RasterSplatGroup[])
+  const rasterSplatGroupKey = (prefix: string, group: RasterSplatGroup) =>
+    [
+      prefix,
+      group.textures.map(candidate => candidate.id).join(String.fromCharCode(0)),
+      group.normalTextures.map(candidate => candidate?.id ?? '').join(String.fromCharCode(0)),
+      group.weightTextures.map(candidate => candidate.id).join(String.fromCharCode(0)),
+    ].join(String.fromCharCode(0))
   /** The one batch that draws the exact raster splat: the height field and the cliff tiles share it. */
   const rasterSplatKey =
     exactRasterSplat === undefined
       ? undefined
-      : [
-          'terrain-raster-splat',
-          exactRasterSplat.textures.map(candidate => candidate.id).join(String.fromCharCode(0)),
-          exactRasterSplat.normalTextures
-            .map(candidate => candidate?.id ?? '')
-            .join(String.fromCharCode(0)),
-          exactRasterSplat.weightTextures
-            .map(candidate => candidate.id)
-            .join(String.fromCharCode(0)),
-        ].join(String.fromCharCode(0))
+      : rasterSplatGroupKey('terrain-raster-splat', exactRasterSplat)
+  const newRasterSplatBatch = (
+    group: RasterSplatGroup,
+    mask?: Readonly<{ texture: SceneRendererTexture; channel: number }>,
+  ): MutableSplatBatch => ({
+    ...(mask === undefined
+      ? {}
+      : { maskTexture: mask.texture, maskTextureCoordinates: [], maskChannel: mask.channel }),
+    ...batch(),
+    textureCoordinates: group.textures.map(() => []),
+    textureWeights0: [],
+    textureWeights1: [],
+    textures: group.textures,
+    normalTextures: group.normalTextures,
+    specularTextures: group.specularTextures,
+    normalSwizzles: group.normalSwizzles,
+    weightTextures: group.weightTextures,
+    weightTextureCoordinates: [],
+  })
   const rasterSplatBatch = (
     key = rasterSplatKey!,
     mask?: Readonly<{ texture: SceneRendererTexture; channel: number }>,
   ): MutableSplatBatch => {
     const existing = splat.get(key)
     if (existing !== undefined) return existing
-    const target: MutableSplatBatch = {
-      ...(mask === undefined
-        ? {}
-        : { maskTexture: mask.texture, maskTextureCoordinates: [], maskChannel: mask.channel }),
-      ...batch(),
-      textureCoordinates: exactRasterSplat!.textures.map(() => []),
-      textureWeights0: [],
-      textureWeights1: [],
-      textures: exactRasterSplat!.textures,
-      normalTextures: exactRasterSplat!.normalTextures,
-      specularTextures: exactRasterSplat!.specularTextures,
-      normalSwizzles: exactRasterSplat!.normalSwizzles,
-      weightTextures: exactRasterSplat!.weightTextures,
-      weightTextureCoordinates: [],
-    }
+    const target = newRasterSplatBatch(exactRasterSplat!, mask)
     splat.set(key, target)
+    return target
+  }
+  const rasterOverlayBatch = (group: RasterSplatGroup): MutableSplatBatch => {
+    const key = rasterSplatGroupKey('terrain-raster-splat-overlay', group)
+    const target = splatOverlays.get(key) ?? newRasterSplatBatch(group)
+    splatOverlays.set(key, target)
     return target
   }
   const rasterUv = (x: number, y: number): readonly [number, number] => [
@@ -4288,26 +4331,40 @@ function prepareWorldStaticTerrain(
         number,
         number,
       ]
+      const materialSample = materialByCell.get(`${item.x}:${item.y}`)
+      /** The cell's decal tile over the ground drawn below, same triangles, its alpha blending. */
+      const drawDecal = () => {
+        const decal = materialSample?.decal
+        if (decal === undefined) return
+        const definition = input.terrainMaterials?.find(
+          candidate => candidate.materialId === decal.materialId,
+        )
+        const texture =
+          definition?.baseColorResourceId === undefined
+            ? undefined
+            : input.terrainTextures?.get(definition.baseColorResourceId)
+        if (texture === undefined) return
+        const target = decals.get(texture.id) ?? { ...batch(), textureCoordinates: [], texture }
+        decals.set(texture.id, target)
+        const uvs = patch.locals.map(local =>
+          terrainSurfaceUv(item, local, decal.uvTransform, definition!.uvTransform),
+        ) as [
+          readonly [number, number],
+          readonly [number, number],
+          readonly [number, number],
+          readonly [number, number],
+        ]
+        for (const index of [0, 1] as const)
+          pushTexturedTriangle(
+            target,
+            tri(quad, index),
+            tri(uvs, index),
+            [1, 1, 1, 1],
+            tri(cornerNormals, index),
+          )
+        terrainDecalTriangles += 2
+      }
       if (exactRasterSplat !== undefined) {
-        const key = `terrain-raster-splat\u0000${exactRasterSplat.textures
-          .map(candidate => candidate.id)
-          .join('\u0000')}\u0000${exactRasterSplat.normalTextures
-          .map(candidate => candidate?.id ?? '')
-          .join('\u0000')}\u0000${exactRasterSplat.weightTextures
-          .map(candidate => candidate.id)
-          .join('\u0000')}`
-        const target = rasterSplatBatch(key)
-        const coordinates = exactRasterSplat.definitions.map(definition => {
-          const [uvA, uvB, uvC, uvD] = patch.locals.map(local =>
-            terrainSurfaceUv(item, local, undefined, definition.uvTransform),
-          ) as [
-            readonly [number, number],
-            readonly [number, number],
-            readonly [number, number],
-            readonly [number, number],
-          ]
-          return { first: tri([uvA, uvB, uvC, uvD], 0), second: tri([uvA, uvB, uvC, uvD], 1) }
-        })
         const [uvA, uvB, uvC, uvD] = patch.locals.map(local =>
           rasterUv(item.x + local[0], item.y + local[1]),
         ) as [
@@ -4316,30 +4373,48 @@ function prepareWorldStaticTerrain(
           readonly [number, number],
           readonly [number, number],
         ]
-        pushSplatTriangle(
-          target,
-          tri(quad, 0),
-          coordinates.map(candidate => candidate.first),
-          [],
-          tri(cornerNormals, 0),
-          tri(cornerAo, 0),
-        )
-        target.weightTextureCoordinates!.push(...tri([uvA, uvB, uvC, uvD], 0).flat())
-        pushSplatTriangle(
-          target,
-          tri(quad, 1),
-          coordinates.map(candidate => candidate.second),
-          [],
-          tri(cornerNormals, 1),
-          tri(cornerAo, 1),
-        )
-        target.weightTextureCoordinates!.push(...tri([uvA, uvB, uvC, uvD], 1).flat())
+        const pushRasterCell = (target: MutableSplatBatch, group: RasterSplatGroup) => {
+          const coordinates = group.definitions.map(definition => {
+            const [layerA, layerB, layerC, layerD] = patch.locals.map(local =>
+              terrainSurfaceUv(item, local, undefined, definition.uvTransform),
+            ) as [
+              readonly [number, number],
+              readonly [number, number],
+              readonly [number, number],
+              readonly [number, number],
+            ]
+            return {
+              first: tri([layerA, layerB, layerC, layerD], 0),
+              second: tri([layerA, layerB, layerC, layerD], 1),
+            }
+          })
+          pushSplatTriangle(
+            target,
+            tri(quad, 0),
+            coordinates.map(candidate => candidate.first),
+            [],
+            tri(cornerNormals, 0),
+            tri(cornerAo, 0),
+          )
+          target.weightTextureCoordinates!.push(...tri([uvA, uvB, uvC, uvD], 0).flat())
+          pushSplatTriangle(
+            target,
+            tri(quad, 1),
+            coordinates.map(candidate => candidate.second),
+            [],
+            tri(cornerNormals, 1),
+            tri(cornerAo, 1),
+          )
+          target.weightTextureCoordinates!.push(...tri([uvA, uvB, uvC, uvD], 1).flat())
+        }
+        pushRasterCell(rasterSplatBatch(), exactRasterSplat)
+        for (const overlay of rasterSplatOverlays) pushRasterCell(rasterOverlayBatch(overlay), overlay)
+        drawDecal()
         terrainPickTriangles.push(...tri(quad, 0).flat(), ...tri(quad, 1).flat())
         terrainTexturedTriangles += 2
         terrainTriangles += 2
         continue
       }
-      const materialSample = materialByCell.get(`${item.x}:${item.y}`)
       const declaredWeights =
         materialSample?.weights?.filter(weight => weight.weight > 0) ??
         input.terrainMaterials
@@ -4490,6 +4565,7 @@ function prepareWorldStaticTerrain(
         )
         terrainTexturedTriangles += 2
       }
+      drawDecal()
       terrainPickTriangles.push(...tri(quad, 0).flat(), ...tri(quad, 1).flat())
       terrainTriangles += 2
     }
@@ -4617,12 +4693,22 @@ function prepareWorldStaticTerrain(
     gatewaySegments += 1
   }
 
-  if (!finitePlan([opaque, lines, points, ...textured.values(), ...splat.values()]))
+  if (
+    !finitePlan([
+      opaque,
+      lines,
+      points,
+      ...textured.values(),
+      ...splat.values(),
+      ...splatOverlays.values(),
+      ...decals.values(),
+    ])
+  )
     throw new TypeError('world WebGL plan contains a non-finite coordinate')
-  for (const item of textured.values())
+  for (const item of [...textured.values(), ...decals.values()])
     if (!item.textureCoordinates.every(Number.isFinite))
       throw new TypeError('world WebGL plan contains a non-finite texture coordinate')
-  for (const item of splat.values()) {
+  for (const item of [...splat.values(), ...splatOverlays.values()]) {
     if (
       item.textureCoordinates.some(coordinates => !coordinates.every(Number.isFinite)) ||
       !item.textureWeights0.every(Number.isFinite) ||
@@ -4654,6 +4740,8 @@ function prepareWorldStaticTerrain(
     opaqueTriangles: frozenBatch(opaque),
     texturedTriangles: Object.freeze([...textured.values()].map(frozenTexturedBatch)),
     splatTriangles: Object.freeze([...splat.values()].map(frozenSplatBatch)),
+    splatOverlayTriangles: Object.freeze([...splatOverlays.values()].map(frozenSplatBatch)),
+    decalTriangles: Object.freeze([...decals.values()].map(frozenTexturedBatch)),
     lines: frozenBatch(lines),
     points: frozenBatch(points),
     terrainTriangles: Float32Array.from(terrainPickTriangles),
@@ -4675,6 +4763,7 @@ function prepareWorldStaticTerrain(
       terrainTriangles,
       terrainTexturedTriangles,
       terrainSplatFallbackCells,
+      terrainDecalTriangles,
       cliffEdges,
       cliffTriangles,
       gatewaySegments,
@@ -5770,6 +5859,8 @@ export function createWorldWebGlPlan(
     texturedTriangles: Object.freeze([...preparation.texturedTriangles, ...dynamicTextured]),
     transparentTexturedTriangles: Object.freeze(transparentTexturedTriangles),
     splatTriangles: preparation.splatTriangles,
+    splatOverlayTriangles: preparation.splatOverlayTriangles,
+    terrainDecalTriangles: preparation.decalTriangles,
     transparentTriangles,
     lines: appendWorldBatch(preparation.lines, lines),
     points: appendWorldBatch(preparation.points, points),
@@ -5807,6 +5898,7 @@ export function createWorldWebGlPlan(
       terrainTriangles: preparation.stats.terrainTriangles,
       terrainTexturedTriangles: preparation.stats.terrainTexturedTriangles,
       terrainSplatFallbackCells: preparation.stats.terrainSplatFallbackCells,
+      terrainDecalTriangles: preparation.stats.terrainDecalTriangles,
       waterPolygons,
       cliffEdges: preparation.stats.cliffEdges,
       cliffTriangles: preparation.stats.cliffTriangles,
@@ -5939,6 +6031,8 @@ uniform float secondaryTextured;
 uniform float splatTextured;
 uniform float rasterSplatTextured;
 uniform float terrainWeightMapCount;
+// A later weight-raster group over the first: alpha is the share of the weights its layers hold.
+uniform float terrainWeightOverlay;
 uniform sampler2D baseColorMap;
 uniform float alphaCutoff;
 uniform sampler2D normalMap;
@@ -6097,6 +6191,7 @@ void main() {
   }
   vec4 resolvedSplatWeights0 = splatWeights0;
   vec4 resolvedSplatWeights1 = splatWeights1;
+  float rasterCoverage = 1.0;
   if (splatTextured > 0.5) {
     if (rasterSplatTextured > 0.5) {
       resolvedSplatWeights0 = texture(terrainWeightMaps[0], splatWeightTextureCoordinate);
@@ -6104,6 +6199,7 @@ void main() {
         ? texture(terrainWeightMaps[1], splatWeightTextureCoordinate)
         : vec4(0.0);
       float totalWeight = dot(resolvedSplatWeights0, vec4(1.0)) + dot(resolvedSplatWeights1, vec4(1.0));
+      rasterCoverage = totalWeight;
       if (totalWeight > 0.000001) {
         resolvedSplatWeights0 /= totalWeight;
         resolvedSplatWeights1 /= totalWeight;
@@ -6154,7 +6250,7 @@ void main() {
     // SC2 TerrainBlend_CopyTerrainSpec reads diffuse alpha as specular, not coverage.
     terrainSpecular = mixedSurface.a;
     surface.rgb *= mixedSurface.rgb;
-    surface.a = 1.0;
+    surface.a = terrainWeightOverlay > 0.5 ? clamp(rasterCoverage, 0.0, 1.0) : 1.0;
   }
   if (cliffMaskMode > 0.5 && dot(texture(secondaryColorMap, secondaryTextureCoordinate), cliffMaskSelector) >= 0.5)
     discard;
@@ -6866,12 +6962,16 @@ function retainedWorldPlanBytes(plan: WorldWebGlPlan | undefined): number {
     for (const texture of scene.textures) retain(texture.rgba)
   }
   for (const item of plan.shadowControlledOpaqueTriangles) retainBatch(item)
-  for (const item of [...plan.texturedTriangles, ...plan.transparentTexturedTriangles]) {
+  for (const item of [
+    ...plan.texturedTriangles,
+    ...plan.transparentTexturedTriangles,
+    ...plan.terrainDecalTriangles,
+  ]) {
     retainBatch(item)
     retain(item.textureCoordinates)
     retain(item.secondaryTextureCoordinates)
   }
-  for (const item of plan.splatTriangles) {
+  for (const item of [...plan.splatTriangles, ...plan.splatOverlayTriangles]) {
     retainBatch(item)
     retain(item.maskTextureCoordinates)
     for (const coordinates of item.textureCoordinates) retain(coordinates)
@@ -9112,6 +9212,7 @@ function drawWorldWebGlWithResources(
     worldUniform1f(gl, program, 'waterWavesMode', 0)
     worldUniform1f(gl, program, 'waterDepthMode', 0)
     worldUniform1f(gl, program, 'cliffMaskMode', 0)
+    worldUniform1f(gl, program, 'terrainWeightOverlay', 0)
     const sceneCamera = createWorldWebGlCameraFrame(plan, canvas.width, canvas.height, input.camera)
     gl.uniform3fv(uniformLocation(gl, program, 'eyePosition'), sceneCamera.eyePosition)
     const terrainLight = plan.light.terrain
@@ -9207,6 +9308,22 @@ function drawWorldWebGlWithResources(
     }
     worldUniform1f(gl, program, 'shadowReceiver', 1)
     for (const item of plan.splatTriangles) drawSplatBatch(resources, program, item)
+    if (plan.splatOverlayTriangles.length > 0 || plan.terrainDecalTriangles.length > 0) {
+      // Later raster groups and decal tiles blend over the ground where it lies, before water as
+      // the game draws them: the same triangles at the same depth, so LEQUAL keeps them.
+      gl.enable(gl.BLEND)
+      gl.blendEquation(gl.FUNC_ADD)
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+      gl.depthMask(false)
+      worldUniform1f(gl, program, 'terrainWeightOverlay', 1)
+      for (const item of plan.splatOverlayTriangles) drawSplatBatch(resources, program, item)
+      worldUniform1f(gl, program, 'terrainWeightOverlay', 0)
+      worldUniform1f(gl, program, 'splatTextured', 0)
+      worldUniform1f(gl, program, 'rasterSplatTextured', 0)
+      for (const item of plan.terrainDecalTriangles) drawTexturedBatch(resources, program, item)
+      gl.disable(gl.BLEND)
+      gl.depthMask(true)
+    }
     const sceneLight = worldMaterialLight(plan)
     const batches = worldMaterialBatchesOf(plan)
     // Blended passes keep the per-frame back-to-front order of their scene.

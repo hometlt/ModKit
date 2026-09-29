@@ -654,6 +654,19 @@ export interface MapTerrainMaterialSample {
     readonly scale: readonly [number, number]
     readonly rotation: number
   }>
+  /**
+   * A tile drawn over this cell's blended ground with its base colour's alpha (Warzone 2100 decal
+   * tiles): the material's texture over the cell, oriented by `uvTransform` as a tile is. Presentation
+   * only; the weights stay the ground.
+   */
+  readonly decal?: Readonly<{
+    readonly materialId: string
+    readonly uvTransform?: Readonly<{
+      readonly offset: readonly [number, number]
+      readonly scale: readonly [number, number]
+      readonly rotation: number
+    }>
+  }>
 }
 
 export interface MapTerrainMaterialDefinition {
@@ -688,7 +701,10 @@ export interface MapTerrainMaterialDefinition {
   }>
 }
 
-/** GPU-ready exact authored blend raster. Channels name materials in RGBA order. */
+/**
+ * GPU-ready exact authored blend raster. Channels name materials in RGBA order; with `sum`
+ * normalization the weights of all of a map's rasters add up to one at each texel.
+ */
 export interface MapTerrainWeightRaster {
   readonly resourceId: string
   readonly width: number
