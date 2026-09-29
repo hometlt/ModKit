@@ -101,4 +101,23 @@ describe('Runtime source read snapshot', () => {
     selected = { layerId: 'patch', path: 'Base.SC2Data/MapScript.galaxy' }
     await expect(snapshot.verify()).rejects.toBeInstanceOf(RuntimeSourceChangedError)
   })
+
+  it('replays opaque listing cursors in their original order', async () => {
+    let next: string | undefined
+    const context = { ...source(new Map()),
+      async files(_layerId: string, page: { cursor?: string }) {
+        if (page.cursor !== next) throw new Error('cursor used out of order')
+        if (next === undefined) {
+          next = 'cursor-one'
+          return { items: ['a.xml'], nextCursor: next }
+        }
+        next = undefined
+        return { items: ['b.xml'] }
+      },
+    } satisfies ModContext
+    const snapshot = captureRuntimeSourceReads(context)
+    await snapshot.context.files('base', { limit: 1 })
+    await snapshot.context.files('base', { limit: 1, cursor: 'cursor-one' })
+    expect((await snapshot.verify()).digest).toMatch(/^sha256:[0-9a-f]{64}$/u)
+  })
 })

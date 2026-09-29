@@ -218,10 +218,13 @@ export function captureRuntimeSourceReads(context: ModContext): RuntimeSourceSna
         const second = `${b.layerId}\0${b.path}`
         return first < second ? -1 : first > second ? 1 : 0
       })
-      const orderedListings = [...listings.entries()].sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)
+      // Opaque cursors may be valid only after their preceding page. Replay in call order;
+      // canonicalize separately for a digest independent of unrelated query scheduling.
+      const replayListings = [...listings.entries()]
+      const orderedListings = [...replayListings].sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)
       const orderedLocations = [...locations.values()].sort((a, b) =>
         a.path < b.path ? -1 : a.path > b.path ? 1 : 0)
-      for (const [, listing] of orderedListings) {
+      for (const [, listing] of replayListings) {
         signal?.throwIfAborted()
         let answer: ReturnType<typeof listAnswer>
         try { answer = listAnswer(await context.files(listing.layerId, listing.request),
