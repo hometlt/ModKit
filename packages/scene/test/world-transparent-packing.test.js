@@ -195,3 +195,43 @@ it('leaves draws apart that are not built for the frame alone', () => {
   ]).filter(entry => entry.kind === 'material')
   assert.deepEqual(packed.map(placedAt), [[0], [10]])
 })
+
+it('leaves out what the camera does not show, and packs again as it pans', () => {
+  // Decals 40 apart across the screen (along z); a close camera shows one of them at a time.
+  const plan = createWorldWebGlPlan({
+    items: [object(1, 'a', 0, 0), object(2, 'b', 0, 40), object(3, 'a', 0, 80)],
+    models,
+  })
+  const close = { ...camera, zoom: 16 }
+  const triangles = packed =>
+    packed
+      .filter(entry => entry.kind === 'world')
+      .map(entry => [entry.draw.batch.texture.id, entry.draw.range.count / 3])
+  assert.deepEqual(triangles(createWorldWebGlCompositeTransparentDrawPlan(plan, close, [])), [
+    ['a.png', 2],
+    ['b.png', 1],
+  ])
+  // Looking at the middle decal: the other two lie wholly outside the view.
+  const middle = createWorldWebGlCompositeTransparentDrawPlan(plan, close, [], false, 1)
+  assert.deepEqual(triangles(middle), [['b.png', 1]])
+  assert.equal(createWorldWebGlCompositeTransparentDrawPlan(plan, close, [], false, 1), middle)
+  const panned = { ...close, target: [0, 0, -40] }
+  assert.deepEqual(
+    triangles(createWorldWebGlCompositeTransparentDrawPlan(plan, panned, [], false, 1)),
+    [['a.png', 1]],
+  )
+  // A material draw out of view is left out too; one in view stays.
+  const sprites = effectProgram('additive')
+  const materials = createWorldWebGlCompositeTransparentDrawPlan(
+    plan,
+    panned,
+    [effectDraw(sprites, 5, 0), effectDraw(sprites, 5, 40)],
+    false,
+    1,
+  ).filter(entry => entry.kind === 'material')
+  assert.deepEqual(materials.map(placedAt), [[5]])
+  assert.deepEqual(
+    materials.map(entry => entry.draw.primitive.transform[14]),
+    [0],
+  )
+})

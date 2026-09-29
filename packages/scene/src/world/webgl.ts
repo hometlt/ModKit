@@ -8221,11 +8221,24 @@ export function createWorldWebGlCompositeTransparentDrawPlan(
     merge?: boolean
   }>[],
   excludeClippedWater = false,
+  /**
+   * Width over height of the viewport: draws that lie wholly outside the camera's view are left
+   * out (see worldViewRectangle). Without it every draw is packed.
+   */
+  aspect?: number,
 ): readonly WorldWebGlCompositeTransparentDraw[] {
   const view = cameraState(requested)
   const worldDraws = createWorldWebGlTransparentDrawPlan(plan, requested, { excludeClippedWater })
-  // The world runs are cached per view direction; the same runs and material draws pack the same.
-  const key: unknown[] = [worldDraws]
+  const visible = aspect === undefined ? undefined : worldViewRectangle(plan, view, aspect)
+  // The world runs are cached per view direction; the same runs, view and material draws pack the
+  // same.
+  const key: unknown[] = [
+    worldDraws,
+    visible?.u,
+    visible?.v,
+    visible?.halfWidth,
+    visible?.halfHeight,
+  ]
   for (const { draw } of materialDraws)
     key.push(
       draw.primitive.positions,
@@ -8275,7 +8288,7 @@ export function createWorldWebGlCompositeTransparentDrawPlan(
       left.priority - right.priority || left.depth - right.depth || left.ordinal - right.ordinal,
   )
   const ordered = entries.map(entry => entry.value)
-  const draws = packWorldWebGlTransparentDraws(plan, view, worldDraws, ordered)
+  const draws = packWorldWebGlTransparentDraws(plan, view, worldDraws, ordered, visible)
   compositeTransparentPacks.set(plan, Object.freeze({ key, draws }))
   return draws
 }
@@ -8320,6 +8333,36 @@ function worldViewPlaneBasis(view: ReturnType<typeof cameraState>) {
     direction[0] * right[1] - direction[1] * right[0],
   ] as const
   return { direction, right, up }
+}
+
+/**
+ * What the orthographic camera shows, in the view-plane basis (worldViewPlaneBasis, whose axes are the
+ * camera's): the point it looks at and the half width and height of its frustum, as cameraFor frames
+ * them (radius over zoom, times the aspect across).
+ */
+function worldViewRectangle(
+  plan: WorldWebGlPlan,
+  view: ReturnType<typeof cameraState>,
+  aspect: number,
+): Readonly<{ u: number; v: number; halfWidth: number; halfHeight: number }> | undefined {
+  if (!(aspect > 0) || !Number.isFinite(aspect)) return undefined
+  const { minimum, maximum } = plan.bounds
+  const center = [0, 1, 2].map(
+    axis => (minimum[axis]! + maximum[axis]!) / 2 + view.target[axis]!,
+  ) as [number, number, number]
+  const radius = Math.max(
+    1,
+    Math.hypot(maximum[0] - minimum[0], maximum[1] - minimum[1], maximum[2] - minimum[2]) * 0.65,
+  )
+  const halfHeight = radius / view.zoom
+  const { right, up } = worldViewPlaneBasis(view)
+  const rectangle = {
+    u: center[0] * right[0] + center[1] * right[1] + center[2] * right[2],
+    v: center[0] * up[0] + center[1] * up[1] + center[2] * up[2],
+    halfWidth: halfHeight * aspect,
+    halfHeight,
+  }
+  return Object.values(rectangle).every(Number.isFinite) ? Object.freeze(rectangle) : undefined
 }
 
 /** Screen box of a transformed primitive: its local bounds' corners projected on the view plane. */
@@ -8488,16 +8531,32 @@ function packWorldWebGlTransparentDraws(
   view: ReturnType<typeof cameraState>,
   worldDraws: readonly WorldWebGlTransparentDraw[],
   ordered: readonly WorldWebGlCompositeTransparentDraw[],
+  visible?: ReturnType<typeof worldViewRectangle>,
 ): readonly WorldWebGlCompositeTransparentDraw[] {
   const basis = worldViewPlaneBasis(view)
   const triangles = worldTransparentTrianglesOf(worldDraws, basis)
   let materials = 0
   for (const entry of ordered) if (entry.kind === 'material') materials += 1
-  const count = triangles.depths.length + materials
-  const boxes = new Float64Array(count * 4)
-  const batches = new Int32Array(count)
-  const blends = new Uint8Array(count)
-  const itemTriangle = new Int32Array(count).fill(-1)
+  const extent = Math.hypot(
+    plan.bounds.maximum[0] - plan.bounds.minimum[0],
+    plan.bounds.maximum[1] - plan.bounds.minimum[1],
+    plan.bounds.maximum[2] - plan.bounds.minimum[2],
+  )
+  // Far above float32 projection error, far below a decal: only near-touching boxes are affected.
+  const epsilon = Math.max(1e-4, extent * 1e-5)
+  // A box wholly outside the view covers no pixel: it neither draws nor orders anything. A box with a
+  // non-finite bound (drawn everywhere) or an empty one fails none of the tests and is kept.
+  const u0 = visible === undefined ? -Infinity : visible.u - visible.halfWidth - epsilon,
+    u1 = visible === undefined ? Infinity : visible.u + visible.halfWidth + epsilon,
+    v0 = visible === undefined ? -Infinity : visible.v - visible.halfHeight - epsilon,
+    v1 = visible === undefined ? Infinity : visible.v + visible.halfHeight + epsilon
+  const outside = (source: Float64Array, at: number) =>
+    source[at + 2]! < u0 || source[at]! > u1 || source[at + 3]! < v0 || source[at + 1]! > v1
+  const capacity = triangles.depths.length + materials
+  const boxes = new Float64Array(capacity * 4)
+  const batches = new Int32Array(capacity)
+  const blends = new Uint8Array(capacity)
+  const itemTriangle = new Int32Array(capacity).fill(-1)
   const itemEntry: WorldWebGlCompositeTransparentDraw[] = []
   // World batches and material merge keys, numbered apart.
   const batchIds = new Map<WorldWebGlBatch | string, number>()
@@ -8505,6 +8564,7 @@ function packWorldWebGlTransparentDraws(
   for (const entry of ordered) {
     if (entry.kind === 'material') {
       primitiveScreenBox(entry.draw.primitive, basis, boxes, item * 4)
+      if (outside(boxes, item * 4)) continue
       const key = worldMaterialMergeKey(entry)
       let batch = key === undefined ? -1 : batchIds.get(key)
       if (batch === undefined) batchIds.set(key!, (batch = batchIds.size))
@@ -8523,6 +8583,7 @@ function packWorldWebGlTransparentDraws(
       // Element copies: a subarray view per triangle cost more than the copy (71 000 a frame).
       const from = triangle * 4,
         to = item * 4
+      if (outside(triangles.boxes, from)) continue
       boxes[to] = triangles.boxes[from]!
       boxes[to + 1] = triangles.boxes[from + 1]!
       boxes[to + 2] = triangles.boxes[from + 2]!
@@ -8534,13 +8595,13 @@ function packWorldWebGlTransparentDraws(
       item += 1
     }
   }
-  const extent = Math.hypot(
-    plan.bounds.maximum[0] - plan.bounds.minimum[0],
-    plan.bounds.maximum[1] - plan.bounds.minimum[1],
-    plan.bounds.maximum[2] - plan.bounds.minimum[2],
+  const count = item
+  const levels = transparentOrderLevels(
+    boxes.subarray(0, count * 4),
+    batches.subarray(0, count),
+    epsilon,
+    blends.subarray(0, count),
   )
-  // Far above float32 projection error, far below a decal: only near-touching boxes are affected.
-  const levels = transparentOrderLevels(boxes, batches, Math.max(1e-4, extent * 1e-5), blends)
   // Stable order by level: counting sort.
   let deepest = 0
   for (const level of levels) if (level > deepest) deepest = level
@@ -9444,6 +9505,7 @@ function drawWorldWebGlWithResources(
       input.camera,
       transparentMaterialDraws,
       waterByDepth,
+      canvas.width / canvas.height,
     )
     // What the last batch entry left set: undefined at first and after a material run, else
     // whether its blending adds. A batch draw changes only its textures (units 4-6), vertex array
