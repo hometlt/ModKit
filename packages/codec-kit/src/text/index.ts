@@ -5,3 +5,4 @@ export { decodeInput, encodeText, failure, lease, newlineOf, preflight, span } f
 export { treeDataSource } from './tree-data-source.js'
 export { parseIni, type IniDocument, type IniEntry, type IniSection } from './ini.js'
 export { formatSylk, parseSylk, sylkTableDataSource, type SylkLimits } from './sylk.js'
+export { csfToMap, isCsf, parseCsf, type CsfEntry, type CsfFile } from './csf.js'
