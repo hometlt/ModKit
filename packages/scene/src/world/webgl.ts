@@ -6115,6 +6115,21 @@ interface WorldWebGlOwnedResources {
         size: number
       }>
     | undefined
+  /**
+   * Depth of the shadow casters that stayed as they were, alone: kept for the light view and the
+   * casters it was drawn with (see renderWorldShadowMap). Its target outlives a change of them.
+   */
+  shadowKept:
+    | Readonly<{
+        framebuffer: WebGLFramebuffer
+        texture: WebGLTexture
+        size: number
+        viewProjection: Float32Array | undefined
+        casters: readonly (readonly unknown[])[]
+      }>
+    | undefined
+  /** The keys of the last shadow map's casters, by element (see worldShadowKeysAdd). */
+  shadowCasterKeys: Map<unknown, unknown> | undefined
   frames: number
   programCompilations: number
   shadowTargetAllocations: number
@@ -6734,6 +6749,8 @@ function createOwnedResources(gl: WebGL2RenderingContext): WorldWebGlOwnedResour
       shadowProgram: createShadowProgram(gl),
       toneMapper: undefined,
       shadowTarget: undefined,
+      shadowKept: undefined,
+      shadowCasterKeys: undefined,
       frames: 0,
       programCompilations: 2,
       shadowTargetAllocations: 0,
@@ -6821,6 +6838,12 @@ function disposeOwnedResources(resources: WorldWebGlOwnedResources): void {
     resources.gl.deleteTexture(resources.shadowTarget.texture)
     resources.shadowTarget = undefined
   }
+  if (resources.shadowKept !== undefined) {
+    resources.gl.deleteFramebuffer(resources.shadowKept.framebuffer)
+    resources.gl.deleteTexture(resources.shadowKept.texture)
+    resources.shadowKept = undefined
+  }
+  resources.shadowCasterKeys = undefined
 }
 
 /** Frames between WebGL error checks once a renderer has drawn its first frames. */
@@ -6929,6 +6952,199 @@ function prepareWorldMaterialResources(
     }
 }
 
+/** One caster of the shadow map, with the identities its depth reads (see worldShadowEntryKey). */
+type WorldShadowCaster =
+  | { readonly key: readonly unknown[]; readonly positions: Float32Array }
+  | { readonly key: readonly unknown[]; readonly textured: WorldWebGlTexturedBatch }
+  | { readonly key: readonly unknown[]; readonly entry: MaterialSequenceDraw }
+
+const worldShadowDiscards = new WeakMap<StandardMaterialProgram, boolean>()
+
+/**
+ * The identities a material caster's depth reads: its geometry and placement, the program whose
+ * face culling it takes, and, when its fragment shader can discard (alpha test), the program whose
+ * uniforms it takes this frame. Its vertex shader places vertices by the frame's view-projection
+ * and the placement alone; without a discard every covered texel keeps its depth.
+ */
+function worldShadowEntryKey(
+  entry: MaterialSequenceDraw,
+  passes: ReadonlyMap<StandardMaterialProgram, StandardMaterialProgram> | undefined,
+): readonly unknown[] {
+  const { draw } = entry
+  const primitive = draw.primitive
+  const program = draw.program!
+  const standing = passes?.get(program) ?? program
+  let discards = worldShadowDiscards.get(standing)
+  if (discards === undefined)
+    worldShadowDiscards.set(
+      standing,
+      (discards = /\bdiscard\b|gl_FragDepth/u.test(standing.fragmentSource)),
+    )
+  return [
+    'material',
+    primitive.positions,
+    primitive.indices,
+    primitive.topology,
+    entry.instances?.matrices ?? primitive.transform,
+    entry.instances?.count,
+    draw.program,
+    standing.twoSided,
+    discards ? standing : undefined,
+    discards ? draw.material : undefined,
+  ]
+}
+
+/** Adds a key to a set of keys kept as nested maps by element (compared with ===). */
+function worldShadowKeysAdd(keys: Map<unknown, unknown>, key: readonly unknown[]): void {
+  let level = keys
+  for (const element of key) {
+    let next = level.get(element) as Map<unknown, unknown> | undefined
+    if (next === undefined) level.set(element, (next = new Map()))
+    level = next
+  }
+}
+
+function worldShadowKeysHave(keys: Map<unknown, unknown>, key: readonly unknown[]): boolean {
+  let level: Map<unknown, unknown> | undefined = keys
+  for (const element of key) {
+    level = level.get(element) as Map<unknown, unknown> | undefined
+    if (level === undefined) return false
+  }
+  return true
+}
+
+function sameWorldShadowCasters(
+  kept: readonly (readonly unknown[])[],
+  casters: readonly WorldShadowCaster[],
+): boolean {
+  if (kept.length !== casters.length) return false
+  for (let index = 0; index < kept.length; index++) {
+    const left = kept[index]!,
+      right = casters[index]!.key
+    if (left.length !== right.length) return false
+    for (let element = 0; element < left.length; element++)
+      if (left[element] !== right[element]) return false
+  }
+  return true
+}
+
+function sameFloats(left: Float32Array | undefined, right: Float32Array): boolean {
+  if (left === undefined || left.length !== right.length) return false
+  for (let index = 0; index < left.length; index++)
+    if (!Object.is(left[index], right[index])) return false
+  return true
+}
+
+/** Copies a shadow map's depth to another of its size (a copy of the depth values, no filtering). */
+function blitWorldShadowDepth(
+  gl: WebGL2RenderingContext,
+  from: WebGLFramebuffer,
+  to: WebGLFramebuffer,
+  size: number,
+): void {
+  gl.bindFramebuffer(gl.READ_FRAMEBUFFER, from)
+  gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, to)
+  gl.depthMask(true)
+  gl.blitFramebuffer(0, 0, size, size, 0, 0, size, size, gl.DEPTH_BUFFER_BIT, gl.NEAREST)
+  gl.bindFramebuffer(gl.FRAMEBUFFER, to)
+}
+
+/** The kept depth target of the given size, allocated (or reallocated for another size) once. */
+function keptWorldShadowTarget(
+  resources: WorldWebGlOwnedResources,
+  size: number,
+): Readonly<{ framebuffer: WebGLFramebuffer; texture: WebGLTexture; size: number }> {
+  const gl = resources.gl
+  const kept = resources.shadowKept
+  if (kept !== undefined && kept.size === size) return kept
+  if (kept !== undefined) {
+    gl.deleteFramebuffer(kept.framebuffer)
+    gl.deleteTexture(kept.texture)
+    resources.shadowKept = undefined
+  }
+  const framebuffer = gl.createFramebuffer()
+  const texture = gl.createTexture()
+  if (framebuffer === null || texture === null) {
+    if (framebuffer !== null) gl.deleteFramebuffer(framebuffer)
+    if (texture !== null) gl.deleteTexture(texture)
+    throw new TypeError('WebGL2 could not allocate the kept shadow-map depth')
+  }
+  gl.bindTexture(gl.TEXTURE_2D, texture)
+  gl.texImage2D(
+    gl.TEXTURE_2D,
+    0,
+    gl.DEPTH_COMPONENT24,
+    size,
+    size,
+    0,
+    gl.DEPTH_COMPONENT,
+    gl.UNSIGNED_INT,
+    null,
+  )
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
+  gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer)
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, texture, 0)
+  gl.drawBuffers([gl.NONE])
+  gl.readBuffer(gl.NONE)
+  if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
+    gl.deleteFramebuffer(framebuffer)
+    gl.deleteTexture(texture)
+    throw new TypeError('the kept shadow-map depth framebuffer is incomplete')
+  }
+  const target = Object.freeze({
+    framebuffer,
+    texture,
+    size,
+    viewProjection: undefined,
+    casters: Object.freeze([]),
+  })
+  resources.shadowKept = target
+  return target
+}
+
+/**
+ * Draws shadow casters into the bound shadow map: the world's batches with the shadow program, in
+ * the state the pass sets for them, then the material casters as one sequence.
+ */
+function drawWorldShadowCasters(
+  resources: WorldWebGlOwnedResources,
+  program: WebGLProgram,
+  plan: WorldWebGlPlan,
+  casters: readonly WorldShadowCaster[],
+  sceneCamera: Parameters<WorldWebGlOwnedResources['materialDraws']['drawSequence']>[1],
+  passes: ReadonlyMap<StandardMaterialProgram, StandardMaterialProgram> | undefined,
+): void {
+  const gl = resources.gl
+  const entries: MaterialSequenceDraw[] = []
+  let world = false
+  for (const caster of casters) {
+    if ('entry' in caster) {
+      entries.push(caster.entry)
+      continue
+    }
+    if (!world) {
+      // The state the pass set for its batches (a material sequence before leaves its own).
+      world = true
+      gl.colorMask(false, false, false, false)
+      gl.depthMask(true)
+      gl.enable(gl.DEPTH_TEST)
+      gl.depthFunc(gl.LEQUAL)
+      gl.disable(gl.CULL_FACE)
+      gl.enable(gl.POLYGON_OFFSET_FILL)
+      gl.polygonOffset(1.1, 4)
+      gl.useProgram(program)
+      bindSentinelTexture2d(resources, 0)
+      worldUniform1i(gl, program, 'baseColorMap', 0)
+    }
+    if ('textured' in caster) drawShadowTextured(resources, program, caster.textured)
+    else drawShadowPositions(resources, program, caster.positions)
+  }
+  if (entries.length === 0) return
+  resources.materialDraws.drawSequence(entries, sceneCamera, worldMaterialLight(plan), passes)
+  gl.colorMask(false, false, false, false)
+}
+
 function renderWorldShadowMap(
   gl: WebGL2RenderingContext,
   plan: WorldWebGlPlan,
@@ -7029,54 +7245,80 @@ function renderWorldShadowMap(
       throw new TypeError('world shadow-map framebuffer is incomplete')
 
     gl.viewport(0, 0, size, size)
-    gl.colorMask(false, false, false, false)
     gl.clearDepth(1)
-    gl.enable(gl.DEPTH_TEST)
-    gl.depthFunc(gl.LEQUAL)
-    gl.enable(gl.POLYGON_OFFSET_FILL)
-    gl.polygonOffset(1.1, 4)
-    gl.clear(gl.DEPTH_BUFFER_BIT)
     gl.useProgram(program)
     gl.uniformMatrix4fv(uniformLocation(gl, program, 'lightViewProjection'), false, viewProjection)
-    bindSentinelTexture2d(resources, 0)
-    worldUniform1i(gl, program, 'baseColorMap', 0)
+    // The casters in the order the pass draws them, each with the identity of what its depth reads.
     // The terrain casts: its height field climbs every cliff, so it throws the cliff's shadow, and
     // SC2 marks its natural cliff meshes no-shadows-cast for that reason. Without it the beach under
     // a coast was lit between the shadows of the rim doodads. How far shadows reach is the camera's
     // business (light.shadowRange), not the casters'.
-    drawShadowPositions(resources, program, plan.opaqueTriangles.positions)
-    drawShadowPositions(resources, program, plan.terrainShadowCasters)
-    for (const item of plan.shadowControlledOpaqueTriangles) {
-      if (item.castShadows) drawShadowPositions(resources, program, item.positions)
-    }
+    const casters: WorldShadowCaster[] = []
+    const positions = (array: Float32Array) => casters.push({ key: ['positions', array], positions: array })
+    positions(plan.opaqueTriangles.positions)
+    positions(plan.terrainShadowCasters)
+    for (const item of plan.shadowControlledOpaqueTriangles) if (item.castShadows) positions(item.positions)
     for (const item of plan.texturedTriangles) {
       if (item.castShadows === false) continue
-      if ((item.alphaCutoff ?? 0) > 0) drawShadowTextured(resources, program, item)
-      else drawShadowPositions(resources, program, item.positions)
+      if ((item.alphaCutoff ?? 0) > 0) casters.push({ key: ['textured', item], textured: item })
+      else positions(item.positions)
     }
     // A cliff surface drawn as terrain casts nothing: the rock program casts for the rock, and a
     // no-shadows-cast material (Shakuras Cliff 0) must not darken the ground through its ground.
-    for (const item of plan.splatTriangles)
-      if (item.maskTexture === undefined) drawShadowPositions(resources, program, item.positions)
-    if (plan.modelMaterialScenes.some(scene => scene.shadowPrimitives.length > 0)) {
-      const sceneCamera = {
-        viewProjection,
-        viewMatrix: Float32Array.from(lightCamera.matrixWorldInverse.elements),
-        eyePosition: [
-          lightCamera.position.x,
-          lightCamera.position.y,
-          lightCamera.position.z,
-        ] as const,
-      }
-      const sceneLight = worldMaterialLight(plan)
-      resources.materialDraws.drawSequence(
-        worldMaterialBatchesOf(plan, true).sequence,
-        sceneCamera,
-        sceneLight,
-        worldCurrentPrograms.get(plan)?.passes,
+    for (const item of plan.splatTriangles) if (item.maskTexture === undefined) positions(item.positions)
+    const passes = worldCurrentPrograms.get(plan)?.passes
+    if (plan.modelMaterialScenes.some(scene => scene.shadowPrimitives.length > 0))
+      for (const entry of worldMaterialBatchesOf(plan, true).sequence)
+        casters.push({ key: worldShadowEntryKey(entry, passes), entry })
+    // A depth map holds each texel's nearest caster, whatever order they draw in: the casters that
+    // stayed as they were since the last shadow map (on Amphion's game view ~3/4 of its vertices,
+    // the doodads and the ground) draw into a kept depth once, and a later map with the same light
+    // view and the same staying casters starts from a copy of it and draws only the others.
+    const previous = resources.shadowCasterKeys
+    const keys = new Map<unknown, unknown>()
+    const stayed: WorldShadowCaster[] = []
+    const others: WorldShadowCaster[] = []
+    for (const caster of casters) {
+      ;(previous !== undefined && worldShadowKeysHave(previous, caster.key) ? stayed : others).push(
+        caster,
       )
-      gl.colorMask(false, false, false, false)
+      worldShadowKeysAdd(keys, caster.key)
     }
+    resources.shadowCasterKeys = keys
+    const sceneCamera = {
+      viewProjection,
+      viewMatrix: Float32Array.from(lightCamera.matrixWorldInverse.elements),
+      eyePosition: [lightCamera.position.x, lightCamera.position.y, lightCamera.position.z] as const,
+    }
+    const draw = (group: readonly WorldShadowCaster[]) =>
+      drawWorldShadowCasters(resources, program, plan, group, sceneCamera, passes)
+    const kept = resources.shadowKept
+    if (
+      kept !== undefined &&
+      kept.size === size &&
+      stayed.length > 0 &&
+      sameFloats(kept.viewProjection, viewProjection) &&
+      sameWorldShadowCasters(kept.casters, stayed)
+    )
+      blitWorldShadowDepth(gl, kept.framebuffer, target.framebuffer, size)
+    else {
+      gl.depthMask(true)
+      gl.clear(gl.DEPTH_BUFFER_BIT)
+      draw(stayed)
+      if (stayed.length > 0) {
+        const keep = keptWorldShadowTarget(resources, size)
+        blitWorldShadowDepth(gl, target.framebuffer, keep.framebuffer, size)
+        gl.bindFramebuffer(gl.FRAMEBUFFER, target.framebuffer)
+        resources.shadowKept = Object.freeze({
+          framebuffer: keep.framebuffer,
+          texture: keep.texture,
+          size,
+          viewProjection: viewProjection.slice(),
+          casters: Object.freeze(stayed.map(caster => caster.key)),
+        })
+      }
+    }
+    draw(others)
     assertNoWebGlError(resources, 'shadow-map pass')
     gl.disable(gl.POLYGON_OFFSET_FILL)
     gl.colorMask(true, true, true, true)
@@ -8961,7 +9203,8 @@ export function createWorldWebGlRenderer(
           : resources.materialDraws.stats()
         const worldPlanBytesRetained = retainedWorldPlanBytes(resources.lastPlan)
         const shadowTargetBytesRetained =
-          resources.shadowTarget === undefined ? 0 : resources.shadowTarget.size ** 2 * 4
+          (resources.shadowTarget === undefined ? 0 : resources.shadowTarget.size ** 2 * 4) +
+          (resources.shadowKept === undefined ? 0 : resources.shadowKept.size ** 2 * 4)
         const sentinelBytesRetained = resources.sentinelTexture === undefined ? 0 : 4
         return Object.freeze({
           frames: resources.frames,
