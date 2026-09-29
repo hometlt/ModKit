@@ -62,3 +62,31 @@ export function selectUvmEffectSquirt(
   }
   return selected
 }
+
+/**
+ * Whether a squirt emitter can throw its burst in the selected clip: it throws on the keys of its
+ * count track (the emit count; the emission rate when it has none), so a clip without that track
+ * never throws it. The simulator reads a clip without the track as a single key and threw the whole
+ * burst as the clip began: the death debris of Washout's destructible rocks hung in the air around
+ * the intact rocks. Call on the simulator-ready emitter (after readUvmEffectAnimation).
+ */
+export function uvmEffectSquirtKeyed(
+  emitter: JsonObject,
+  sequenceIndex: number | undefined,
+): boolean {
+  const record = (value: JsonValue | undefined) =>
+    value !== null && typeof value === 'object' && !Array.isArray(value)
+      ? (value as JsonObject)
+      : undefined
+  const sequence = record(emitter['sequenceAnimation'])
+  const counted = emitter['emitCount'] !== undefined || sequence?.['emitCount'] !== undefined
+  const tracks = sequence?.[counted ? 'emitCount' : 'emissionRate']
+  if (
+    Array.isArray(tracks) &&
+    tracks.some(entry => record(entry)?.['sequenceIndex'] === sequenceIndex)
+  )
+    return true
+  if (counted) return false
+  const legacy = record(record(emitter['animation'])?.['emissionRate'])?.['keys']
+  return Array.isArray(legacy) && legacy.length > 0
+}

@@ -31,7 +31,7 @@ import {
 import type { RenderParticleEmitter, RenderRibbonEmitter } from '@modkit/codec-kit/legacy/models'
 import { array, field, object, safeIndex } from './values.js'
 import { readUvmEffectAnimation } from './effect-tracks.js'
-import { selectUvmEffectSquirt } from './effect-modes.js'
+import { selectUvmEffectSquirt, uvmEffectSquirtKeyed } from './effect-modes.js'
 import { readUvmEffectMeshes } from './effect-mesh.js'
 import {
   IDENTITY_MATERIAL_FRAME,
@@ -714,6 +714,9 @@ function prepareUvmEffectFrame(document: JsonObject, options: UvmEffectFrameOpti
           signal,
         )
         if (squirt !== undefined) output['squirt'] = squirt
+        // No key in this clip: no burst (a death's debris stays out of the intact rocks' Stand).
+        if (output['squirt'] === true && !uvmEffectSquirtKeyed(output, options.sequenceIndex))
+          output['emitCount'] = 0
       }
       // Preserve source table identity independently of dense simulator filtering.
       if (kind === 'particles') particleOrdinals.push(index)
