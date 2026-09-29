@@ -16,7 +16,7 @@
 
 import { randomUUID } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
-import { basename, resolve } from 'node:path'
+import { basename, dirname, resolve } from 'node:path'
 import process from 'node:process'
 import { isQualifiedId } from '@modkit/core'
 import { type OpenIntent, type ProviderOffer, type ProviderRequest } from '@modkit/sdk'
@@ -32,6 +32,7 @@ import {
 } from '@modkit/host'
 import {
   DEFAULT_SUBJECT_OPEN_BUDGET,
+  createFilesystemInputResolver,
   loadExtensionDirectory,
   openPathArtifactSource,
 } from '@modkit/host/node'
@@ -195,9 +196,18 @@ async function openCommand(arguments_: OpenArguments): Promise<number> {
     }
     const file = resolve(arguments_.file)
     const source = await openPathArtifactSource(file)
+    // the same grant as `run`: the named file and its companions beside it (a .utoc and its .ucas)
+    const resolveInput = createFilesystemInputResolver({
+      primaryPath: file,
+      roots: [dirname(file)],
+      inventory: services.inventory,
+      onDiagnostic: item =>
+        void backendDiagnostics.push(`  ${item.severity} ${item.code} ${item.message}`),
+    })
     const result = await services.open({
       source,
       path: file,
+      resolveInput,
       intent: arguments_.intent,
       grant: { id: `cli:${randomUUID()}`, classes: ['read-source'] },
       budget: {
