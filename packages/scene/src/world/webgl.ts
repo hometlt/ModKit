@@ -4745,6 +4745,9 @@ function prepareWorldStaticTerrain(
     ] as const) {
       const neighbor = cliffByCell.get(`${item.x + dx}:${item.y + dy}`)
       if (neighbor === undefined || neighbor.level === item.level) continue
+      // A ramp rises between two levels over several samples, and its ground is the terrain itself:
+      // a skirt on each of its steps drew a grid of dark lines over Highland's ramps.
+      if (item.ramp === true || neighbor.ramp === true) continue
       const a = terrainByCell.get(`${item.x}:${item.y}`)
       const b = terrainByCell.get(`${item.x + dx}:${item.y + dy}`)
       if (a === undefined || b === undefined) continue
