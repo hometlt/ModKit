@@ -31,6 +31,11 @@ import {
 } from '../render/material-webgl.js'
 import type { StandardMaterialProgram } from '../materials/index.js'
 import { primitiveTint } from '../render/tint.js'
+import {
+  materialPosedPositions,
+  materialPosedPrimitive,
+  materialSkinOf,
+} from '../render/material-skin.js'
 import { materialIsSolid, sceneMaterialDraws, type MaterialDraw } from '../render/material-draws.js'
 import {
   createSceneMaterialProgramSampler,
@@ -1683,6 +1688,31 @@ function sharedPickPrimitive(
   owner?: object,
   slot?: string,
 ): WorldWebGlPickPrimitive {
+  if (materialSkinOf(primitive) !== undefined) {
+    // A skin posed on the GPU: its entry poses it on the CPU when first read (a pick, the bounds).
+    let posed: WorldWebGlPickPrimitive | undefined
+    const entry = () =>
+      (posed ??= sharedPickPrimitive(
+        worldPosedPrimitive(source),
+        materialPosedPrimitive(primitive),
+        owner,
+        slot,
+      ))
+    return Object.freeze({
+      get primitive() {
+        return entry().primitive
+      },
+      get minimum() {
+        return entry().minimum
+      },
+      get maximum() {
+        return entry().maximum
+      },
+      get envelope() {
+        return entry().envelope
+      },
+    })
+  }
   const referenced = referencedVertexIndices(source)
   // The same envelope whether the bounds are kept or computed: a kept plan equals a fresh one.
   const envelope = transformedEnvelope(
@@ -2145,6 +2175,9 @@ function worldModelSceneSampler(
       {
         ...(clip === undefined ? {} : { clip }),
         maxBytes: 64 * 1024 * 1024,
+        // Skins keep their bind-pose arrays (and GPU buffers) and take each pose in the vertex
+        // stage; what the plan reads on the CPU is posed there (worldPosedPrimitive).
+        skinning: 'gpu',
       },
     )
     samplers.set(key, sampler)
@@ -2170,12 +2203,48 @@ function restWorldModelSample(result: WorldModelSample['result']): WorldModelSam
         : worldModelSceneSampler(result, undefined).sample(0)
     sample = Object.freeze({
       result,
-      primitives: sampled.primitives,
+      primitives: Object.freeze(sampled.primitives.map(worldPosedPrimitive)),
       nodeTransforms: sampled.nodeTransforms,
     })
     restWorldModelSamples.set(result, sample)
   }
   return sample
+}
+
+/**
+ * A sampled primitive as it stands, for the plan's work on the CPU: a skin posed on the GPU
+ * (ModelSceneSkin) is posed on the CPU once for it, any other primitive is itself.
+ */
+const worldPosedPrimitives = new WeakMap<SceneRendererPrimitive, SceneRendererPrimitive>()
+
+function worldPosedPrimitive<T extends SceneRendererPrimitive>(primitive: T): T {
+  if (materialSkinOf(primitive) === undefined) return primitive
+  let posed = worldPosedPrimitives.get(primitive)
+  if (posed === undefined)
+    worldPosedPrimitives.set(primitive, (posed = materialPosedPrimitive(primitive)))
+  return posed as T
+}
+
+/**
+ * A model sample with its skins posed on the CPU, for the plan's readers of vertices (cliff
+ * pieces, terrain projections): the same sample when it has none, and one posed copy per sample
+ * otherwise, so caches keyed by its primitives keep their keys.
+ */
+const worldPosedSamples = new WeakMap<WorldModelSample, WorldModelSample>()
+
+function worldPosedSample<T extends WorldModelSample | undefined>(sample: T): T {
+  if (sample === undefined || !sample.primitives.some(primitive => materialSkinOf(primitive)))
+    return sample
+  let posed = worldPosedSamples.get(sample)
+  if (posed === undefined)
+    worldPosedSamples.set(
+      sample,
+      (posed = Object.freeze({
+        ...sample,
+        primitives: Object.freeze(sample.primitives.map(worldPosedPrimitive)),
+      })),
+    )
+  return posed as T
 }
 
 /**
@@ -4689,7 +4758,12 @@ export function createWorldWebGlPlan(
         : worldModelSceneSampler(result, clip).sample(time)
     const current = {
       result,
-      primitives: sample.primitives,
+      // A skin whose pose does not follow the clock is posed on the CPU once for every frame to
+      // draw: posed on the GPU, it would be posed again by every draw of every frame.
+      primitives:
+        staticGeometry && sample.primitives.some(primitive => materialSkinOf(primitive))
+          ? Object.freeze(sample.primitives.map(worldPosedPrimitive))
+          : sample.primitives,
       nodeTransforms: sample.nodeTransforms,
     }
     planSamples.set(sharedKey, current)
@@ -4709,7 +4783,9 @@ export function createWorldWebGlPlan(
   const preparation =
     previous !== undefined && sameWorldStaticInput(previous.input, input)
       ? previous.preparation
-      : prepareWorldStaticTerrain(input, sampleSharedModel)
+      : prepareWorldStaticTerrain(input, (resourceId, item) =>
+          worldPosedSample(sampleSharedModel(resourceId, item)),
+        )
   const { terrain, liftedCliffPrimitives } = preparation
   const timeSeconds = input.timeSeconds ?? 0
   if (!Number.isFinite(timeSeconds) || timeSeconds < 0)
@@ -4863,7 +4939,11 @@ export function createWorldWebGlPlan(
     const sampleFor = (resourceId: string) => {
       const previous = samples.get(resourceId)
       if (previous !== undefined) return previous
-      const current = sampleSharedModel(resourceId, item)
+      // A cliff piece is lifted onto the ground on the CPU (liftedCliffPrimitives): posed there.
+      const current =
+        item.derivedFrom === 'cliffs'
+          ? worldPosedSample(sampleSharedModel(resourceId, item))
+          : sampleSharedModel(resourceId, item)
       if (current !== undefined) samples.set(resourceId, current)
       return current
     }
@@ -4951,11 +5031,13 @@ export function createWorldWebGlPlan(
         }
       }
       let primitiveIndex = -1
-      for (const primitive of primitives) {
+      for (const drawn of primitives) {
         primitiveIndex += 1
+        const prepared = programs.get(drawn.materialId ?? '')
+        // Only the shared path draws a skin posed on the GPU; the fallback writes its triangles.
+        const primitive: typeof drawn = prepared === undefined ? worldPosedPrimitive(drawn) : drawn
         const material = modelMaterialById(presented, primitive.materialId)
         const shadowPolicy = modelMaterialShadowPolicy(material)
-        const prepared = programs.get(primitive.materialId ?? '')
         // A prepared material without color passes (distortion, terrain projection) draws nothing;
         // only an unprepared material takes the textured fallback below.
         if (prepared !== undefined && prepared.passes.length === 0) continue
@@ -6683,6 +6765,10 @@ function retainedWorldPlanBytes(plan: WorldWebGlPlan | undefined): number {
   }
   for (const scene of plan.modelMaterialScenes) {
     for (const primitive of scene.primitives) {
+      const skin = materialSkinOf(primitive)
+      retain(skin?.joints)
+      retain(skin?.weights)
+      retain(skin?.palette)
       retain(primitive.positions)
       retain(primitive.normals)
       retain(primitive.tangents)
@@ -6950,6 +7036,14 @@ function prepareWorldMaterialResources(
       seen.add(texture)
       resources.materialTextureHandles.set(texture, bindTexture2d(resources, texture, 0))
     }
+  // The poses of the frame's skins, uploaded at once before the shadow pass draws any of them.
+  const palettes = new Set<Float32Array>()
+  for (const scene of plan.modelMaterialScenes)
+    for (const primitive of scene.primitives) {
+      const skin = materialSkinOf(primitive)
+      if (skin !== undefined) palettes.add(skin.palette)
+    }
+  resources.materialDraws.prepareSkins(palettes)
 }
 
 /** One caster of the shadow map, with the identities its depth reads (see worldShadowEntryKey). */
@@ -6961,7 +7055,7 @@ type WorldShadowCaster =
 const worldShadowDiscards = new WeakMap<StandardMaterialProgram, boolean>()
 
 /**
- * The identities a material caster's depth reads: its geometry and placement, the program whose
+ * The identities a material caster's depth reads: its geometry, pose and placement, the program whose
  * face culling it takes, and, when its fragment shader can discard (alpha test), the program whose
  * uniforms it takes this frame. Its vertex shader places vertices by the frame's view-projection
  * and the placement alone; without a discard every covered texel keeps its depth.
@@ -6983,6 +7077,7 @@ function worldShadowEntryKey(
   return [
     'material',
     primitive.positions,
+    materialSkinOf(primitive)?.palette,
     primitive.indices,
     primitive.topology,
     entry.instances?.matrices ?? primitive.transform,
@@ -7941,7 +8036,12 @@ export function createWorldWebGlCompositeTransparentDrawPlan(
   // The world runs are cached per view direction; the same runs and material draws pack the same.
   const key: unknown[] = [worldDraws]
   for (const { draw } of materialDraws)
-    key.push(draw.primitive.positions, draw.primitive.transform, draw.program)
+    key.push(
+      draw.primitive.positions,
+      draw.primitive.transform,
+      draw.program,
+      materialSkinOf(draw.primitive)?.palette,
+    )
   const cached = compositeTransparentPacks.get(plan)
   if (
     cached !== undefined &&
@@ -7973,7 +8073,7 @@ export function createWorldWebGlCompositeTransparentDrawPlan(
       value: Object.freeze({ kind: 'material', ...entry }),
       priority: entry.draw.program.priority,
       depth: transparentProjectionDepth(
-        entry.draw.primitive.positions,
+        materialPosedPositions(entry.draw.primitive),
         direction,
         entry.draw.primitive.transform,
       ),
@@ -8038,7 +8138,7 @@ function primitiveScreenBox(
   box: Float64Array,
   offset: number,
 ): void {
-  const { min, max } = cachedPrimitiveBounds(primitive.positions)
+  const { min, max } = cachedPrimitiveBounds(materialPosedPositions(primitive))
   if (!(min[0] <= max[0])) {
     // Nothing to draw, nothing to overlap.
     box.set([Infinity, Infinity, -Infinity, -Infinity], offset)
@@ -8651,6 +8751,7 @@ function worldSceneSolidDrawsOf(
         set => `${set.set}:${worldGroupId(set.coordinates)}`,
       ),
       worldGroupId(primitive.indices),
+      worldGroupId(materialSkinOf(primitive)?.palette),
       bias === undefined ? '-' : `${bias.slopeScale}:${bias.units}`,
       primitiveTint(primitive).join(':'),
     ].join('|')

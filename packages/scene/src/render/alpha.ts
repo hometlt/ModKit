@@ -1,4 +1,5 @@
 import { readSimpleEffect, simpleEffectSolid } from './simple-effect.js'
+import { materialPosedPositions } from './material-skin.js'
 import type {
   SceneRendererAlphaMode,
   SceneRendererMaterial,
@@ -66,7 +67,8 @@ export function alphaDrawOrder(
       opaque.push(primitive)
       continue
     }
-    const positions = primitive.positions
+    // A skin posed on the GPU is ordered where its pose stands.
+    const positions = materialPosedPositions(primitive)
     if (!(positions instanceof Float32Array) || positions.length % 3 !== 0)
       throw new TypeError('blend primitive positions must be an xyz Float32Array')
     let center = boundsCenter(positions)

@@ -44,6 +44,74 @@ export interface ModelRenderJoint {
 }
 const IDENTITY = new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1])
 
+/**
+ * A skinned primitive posed on the GPU (option `skinning: 'gpu'`): its vertex arrays stay in the
+ * bind pose and the vertex stage blends the palette's matrices by `joints` and `weights`, as the CPU
+ * kernel does: the weights over their sum, and a vertex without weight left where it is.
+ */
+export interface ModelSceneSkin {
+  /** Four palette slots per vertex. An influence without weight names the identity slot, the last. */
+  readonly joints: Uint8Array | Uint16Array
+  /** Four weights per vertex over their sum; a vertex without weight has 1, 0, 0, 0. */
+  readonly weights: Float32Array
+  /**
+   * This pose's skinning matrices, column-major 4x4 in float32: the hierarchy's bones in binding
+   * order, then the identity. Every sample has its own; primitives of one hierarchy share it.
+   */
+  readonly palette: Float32Array
+  /** This pose on the CPU (positions, normals and tangents), computed when first asked for. */
+  deformed(): ModelPrimitive
+}
+
+/** Palette slots and weights of a skin's vertices (see ModelSceneSkin), for a validated skin. */
+function skinVertices(
+  primitive: ModelPrimitive,
+  slots: ReadonlyMap<number, number>,
+): Pick<ModelSceneSkin, 'joints' | 'weights'> {
+  const authored = present(primitive.boneIndices, 'skin indices')
+  const source = present(primitive.boneWeights, 'skin weights')
+  const identity = slots.size
+  const joints = identity < 256 ? new Uint8Array(authored.length) : new Uint16Array(authored.length)
+  const weights = new Float32Array(authored.length)
+  for (let vertex = 0; vertex < authored.length; vertex += 4) {
+    // The kernel's sum: the influences in order, weights being finite and not negative.
+    let sum = 0
+    for (let influence = 0; influence < 4; influence++) sum += source[vertex + influence]!
+    for (let influence = 0; influence < 4; influence++) {
+      const weight = source[vertex + influence]!
+      joints[vertex + influence] =
+        weight > 0 ? present(slots.get(authored[vertex + influence]!), 'skin slot') : identity
+      weights[vertex + influence] = weight > 0 ? weight / sum : 0
+    }
+    if (sum === 0) weights[vertex] = 1
+  }
+  return { joints, weights }
+}
+
+/** A pose's skinning matrices by slot, then the identity (see ModelSceneSkin.palette). */
+function skinPalette(
+  bones: readonly ModelBonePoseSample[],
+  slots: ReadonlyMap<number, number>,
+): Float32Array {
+  const palette = new Float32Array((slots.size + 1) * 16)
+  const filled = new Uint8Array(slots.size)
+  for (const bone of bones) {
+    const slot = slots.get(bone.boneIndex)
+    if (slot === undefined) continue
+    const matrix = bone.skinningMatrix
+    if (filled[slot] === 1 || matrix?.length !== 16 || !matrix.every(Number.isFinite))
+      throw new TypeError('skin needs a unique explicit inverse-bind pose for each bone')
+    palette.set(matrix, slot * 16)
+    filled[slot] = 1
+  }
+  if (filled.includes(0)) throw new TypeError('skin pose is incomplete')
+  palette.set(IDENTITY, slots.size * 16)
+  for (let index = 0; index < palette.length; index++)
+    if (!Number.isFinite(palette[index]!))
+      throw new RangeError('deformed skin exceeds finite float range')
+  return palette
+}
+
 function present<T>(value: T | undefined, label: string): T {
   if (value === undefined) throw new TypeError(`missing scene ${label}`)
   return value
@@ -62,9 +130,15 @@ export function createModelSceneSampler(
     readonly poseTime?: number
     readonly maxBytes?: number
     readonly signal?: AbortSignal
+    /**
+     * Where skins take their pose: `cpu` (the default) samples deformed vertex arrays, `gpu` keeps
+     * the bind-pose arrays and gives each skinned primitive its pose as a `skin` (ModelSceneSkin).
+     */
+    readonly skinning?: 'cpu' | 'gpu'
   } = {},
 ) {
   const { signal, clip } = options
+  const gpuSkinning = options.skinning === 'gpu'
   const poseTime = options.poseTime ?? 0
   if (!Number.isFinite(poseTime)) throw new TypeError('pose reference time must be finite')
   const maxBytes = options.maxBytes ?? 134_217_728
@@ -376,6 +450,13 @@ export function createModelSceneSampler(
     }
   }
   const deformers = new Map<ModelPrimitive, ReturnType<typeof createModelSkinDeformer>>()
+  // Posed on the GPU: each skin's bind-pose arrays without its skin buffers, and its vertices'
+  // palette slots and weights; each hierarchy's slot of every bone, in binding order.
+  const gpuSkins = new Map<
+    ModelPrimitive,
+    Readonly<{ bindPose: ModelPrimitive; vertices: Pick<ModelSceneSkin, 'joints' | 'weights'> }>
+  >()
+  const hierarchySlots = new Map<string, ReadonlyMap<number, number>>()
   let workingBytes = projection.primitives.reduce(
     (sum, primitive) => sum + modelPrimitiveByteLength(primitive),
     nodeMatrixBytes + billboardBytes,
@@ -404,6 +485,27 @@ export function createModelSceneSampler(
         signal,
       )
       workingBytes += deformer.workingBytes
+      // A skin without authored normals and tangents stays on the CPU: the renderer derives them
+      // from the posed triangles.
+      if (gpuSkinning && primitive.normals !== undefined && primitive.tangents !== undefined) {
+        // Slots and weights: a byte or two and four floats per influence.
+        workingBytes += primitive.positions.length * 8
+        if (workingBytes > maxBytes) throw new RangeError('skin deformation exceeds maxBytes')
+        let slots = hierarchySlots.get(hierarchyId)
+        if (slots === undefined)
+          hierarchySlots.set(
+            hierarchyId,
+            (slots = new Map(bones.map((bone, slot) => [bone.boneIndex, slot]))),
+          )
+        const {
+          bounds: _bounds,
+          boneIndices: _indices,
+          boneWeights: _weights,
+          hierarchyId: _hierarchy,
+          ...bindPose
+        } = primitive
+        gpuSkins.set(primitive, { bindPose, vertices: skinVertices(primitive, slots) })
+      }
       deformers.set(primitive, deformer)
       if (deformer.zeroWeightVertices > 0)
         report(
@@ -465,6 +567,8 @@ export function createModelSceneSampler(
         billboards.flatMap(item => item.mode === 'face-camera' ? [[item.nodeId, item] as const] : []),
       )
       const joints: ModelRenderJoint[] = []
+      // Each hierarchy's palette of this sample, shared by its skins (see ModelSceneSkin).
+      const palettes = new Map<string, Float32Array>()
       for (const [hierarchyId, sampler] of poseSamplers) {
         const originalPose = sampler.sample(timeSeconds, requestSignal).bones
         const pose = applyModelBillboards(
@@ -535,24 +639,42 @@ export function createModelSceneSampler(
         if (hiddenPrimitives.has(primitive.id)) continue
         const deformer = deformers.get(primitive)
         if (deformer !== undefined) {
+          const hierarchyId = present(primitive.hierarchyId, 'skin hierarchy')
+          const pose = present(poses.get(hierarchyId), 'skin pose')
+          const gpu = gpuSkins.get(primitive)
           // Bone world × inverse bind produces geometry in the hierarchy's authored frame.
           // Only its external frame is applied here, never the mesh node transform a second time.
-          const deformed = deformer.deform(
-            present(poses.get(present(primitive.hierarchyId, 'skin hierarchy')), 'skin pose'),
-            requestSignal,
-          )
-          const frame =
-            primitive.hierarchyId === undefined
-              ? undefined
-              : hierarchyFrames.get(primitive.hierarchyId)
+          let deformed: ModelPrimitive | undefined
+          let skin: ModelSceneSkin | undefined
+          if (gpu === undefined) deformed = deformer.deform(pose, requestSignal)
+          else {
+            let palette = palettes.get(hierarchyId)
+            if (palette === undefined)
+              palettes.set(
+                hierarchyId,
+                (palette = skinPalette(
+                  pose,
+                  present(hierarchySlots.get(hierarchyId), 'skin slots'),
+                )),
+              )
+            skin = Object.freeze({
+              ...gpu.vertices,
+              palette,
+              deformed: () => (deformed ??= deformer.deform(pose)),
+            })
+          }
+          const frame = hierarchyFrames.get(hierarchyId)
           const transformed =
             frame !== undefined && !frame.every((value, i) => value === IDENTITY[i])
           const instances = primitiveNodes.get(primitive.id)?.length ?? 1
-          for (let instance = 0; instance < instances; instance++)
-            primitives.push({
-              ...deformed,
+          for (let instance = 0; instance < instances; instance++) {
+            const posed: SceneRendererPrimitive & { readonly skin?: ModelSceneSkin } = {
+              ...(skin === undefined ? present(deformed, 'deformed skin') : gpu!.bindPose),
               ...(transformed ? { transform: new Float32Array(frame) } : {}),
-            })
+              ...(skin === undefined ? {} : { skin }),
+            }
+            primitives.push(posed)
+          }
         } else {
           for (const node of primitiveNodes.get(primitive.id) ?? [undefined]) {
             const transform =

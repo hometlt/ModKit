@@ -7,6 +7,7 @@ import type {
 import { multiplyMat4 } from '@modkit/codec-kit/model-math/sequence-pose'
 import { snapshotEyePosition } from '../materials/environment.js'
 import { invertMaterialFrame } from '../materials/frame.js'
+import { materialSkinOf } from './material-skin.js'
 import type {
   StandardMaterialDefines,
   Vec2,
@@ -415,6 +416,16 @@ export function prepareMaterialGeometry(
       (!(buffer instanceof Float32Array) || buffer.length !== count * width || !allFinite(buffer))
     )
       throw new TypeError('invalid material vertex attributes')
+  const skin = materialSkinOf(primitive)
+  if (
+    skin !== undefined &&
+    (primitive.normals === undefined ||
+      primitive.tangents === undefined ||
+      skin.joints.length !== count * 4 ||
+      skin.weights.length !== count * 4 ||
+      !allFinite(skin.weights))
+  )
+    throw new TypeError('invalid material skin')
   const uvSets = new Set<number>()
   for (const set of primitive.textureCoordinateSets ?? []) {
     if (!Number.isInteger(set.set) || set.set < 0 || set.set > 4 || uvSets.has(set.set))
@@ -590,17 +601,40 @@ function placementLocals(worldGeometry: boolean): string {
   mat3 worldNormalMatrix=sceneCofactor(mat3(materialWorld))*sceneOrientationOf(mat3(materialWorld));${worldGeometry ? '\n  float objectOrientation=sceneOrientationOf(mat3(model));\n  mat3 objectNormalMatrix=sceneCofactor(mat3(model))*objectOrientation;' : ''}`
 }
 
+/**
+ * Skinning on the GPU (see ModelSceneSkin): each vertex blends four matrices of its draw's palette,
+ * read from a float texture of four texels a matrix from the draw's first texel `u_skinBase`. The
+ * weights arrive over their sum, and an influence without weight names the identity, as the CPU
+ * kernel skips it; normals and tangents take the blend's upper 3x3, their length left to the stage.
+ */
+const SKIN_DECLARATIONS = `in vec4 a_skinJoints, a_skinWeights;
+uniform highp sampler2D u_skinPalette;
+uniform int u_skinBase;
+mat4 skinMatrix(float joint){int texel=u_skinBase+int(joint)*4,width=textureSize(u_skinPalette,0).x;ivec2 at=ivec2(texel%width,texel/width);
+  return mat4(texelFetch(u_skinPalette,at,0),texelFetch(u_skinPalette,at+ivec2(1,0),0),texelFetch(u_skinPalette,at+ivec2(2,0),0),texelFetch(u_skinPalette,at+ivec2(3,0),0));}
+`
+const SKIN_LOCALS = `
+  mat4 skin=skinMatrix(a_skinJoints.x)*a_skinWeights.x+skinMatrix(a_skinJoints.y)*a_skinWeights.y+skinMatrix(a_skinJoints.z)*a_skinWeights.z+skinMatrix(a_skinJoints.w)*a_skinWeights.w;
+  vec3 skinPosition=(skin*vec4(a_position,1.0)).xyz,skinNormal=mat3(skin)*a_normal;
+  vec4 skinTangent=vec4(mat3(skin)*a_tangent.xyz,a_tangent.w);`
+
 /** Scene vertex stage for the shared fragment contract: normalized inverse-transpose normals,
  * tangent-space lighting, and explicit camera frames. Native shader builders remain immutable.
  * `placementAttributes` takes the model matrix from attributes (see PLACEMENT_DECLARATIONS);
- * without it the stage reads the per-draw matrices from uniforms. */
+ * without it the stage reads the per-draw matrices from uniforms. `skinned` poses the vertices by
+ * the draw's skin first (see SKIN_DECLARATIONS). */
 export function sceneMaterialVertexSource(
   defines: StandardMaterialDefines,
   environmentEnabled = false,
   worldShading = false,
   placementAttributes = false,
+  skinned = false,
 ): string {
   const worldGeometry = environmentEnabled || worldShading
+  // The vertex as the stage reads it: its attributes, or its skinned pose.
+  const position = skinned ? 'skinPosition' : 'a_position'
+  const normal = skinned ? 'skinNormal' : 'a_normal'
+  const tangent = skinned ? 'skinTangent' : 'a_tangent'
   const name = placementAttributes
     ? {
         model: 'model',
@@ -629,20 +663,20 @@ uniform vec3 u_lightDirection;
 ${defines.sceneLighting ? 'uniform vec3 u_sceneFillViewDirection0, u_sceneFillViewDirection1;\nout vec3 v_sceneFillDir0, v_sceneFillDir1;' : ''}
 ${worldGeometry && !placementAttributes ? 'uniform mat3 u_sceneWorldNormalMatrix;\nuniform float u_sceneWorldOrientation;\n' : ''}uniform float ${placementAttributes ? '' : 'u_orientation, '}u_orthographic;
 in vec3 a_position, a_normal; in vec4 a_tangent;
-${Array.from({ length: defines.uvSetCount }, (_, i) => `in vec2 a_uv${i}; out vec2 v_uv${i};`).join('\n')}
+${skinned ? SKIN_DECLARATIONS : ''}${Array.from({ length: defines.uvSetCount }, (_, i) => `in vec2 a_uv${i}; out vec2 v_uv${i};`).join('\n')}
 ${defines.usesVertexAlpha || defines.usesVertexColor ? 'in vec4 a_color; out vec4 v_vertexColor;' : ''}
 out vec3 v_normal, v_lightDir, v_halfVec, v_viewDir, v_viewPosition, v_viewNormal;
 out vec3 v_modelPosition, v_modelNormal, v_worldPosition, v_worldNormal;
 ${worldGeometry ? 'out vec3 v_sceneWorldPosition, v_sceneWorldNormal, v_sceneWorldTangent, v_sceneWorldBitangent;\n' : ''}out vec4 v_clipPosition;
 vec3 unit(vec3 v,vec3 fallback){float len=length(v);return len>1e-9?v/len:fallback;}
-${placementAttributes ? PLACEMENT_DECLARATIONS : ''}void main(){${placementAttributes ? placementLocals(worldGeometry) : ''}
-  vec4 world=${name.model}*vec4(a_position,1.0);
-  vec3 view=(${name.modelView}*vec4(a_position,1.0)).xyz;
-  vec3 n=unit(${name.viewNormal}*a_normal,vec3(0.0,0.0,1.0));
-  vec3 rawT=mat3(${name.modelView})*a_tangent.xyz;
+${placementAttributes ? PLACEMENT_DECLARATIONS : ''}void main(){${placementAttributes ? placementLocals(worldGeometry) : ''}${skinned ? SKIN_LOCALS : ''}
+  vec4 world=${name.model}*vec4(${position},1.0);
+  vec3 view=(${name.modelView}*vec4(${position},1.0)).xyz;
+  vec3 n=unit(${name.viewNormal}*${normal},vec3(0.0,0.0,1.0));
+  vec3 rawT=mat3(${name.modelView})*${tangent}.xyz;
   vec3 fallback=unit(cross(abs(n.z)<0.9?vec3(0.0,0.0,1.0):vec3(0.0,1.0,0.0),n),vec3(1.0,0.0,0.0));
   vec3 t=unit(rawT-n*dot(n,rawT),fallback);
-  vec3 b=cross(n,t)*(a_tangent.w<0.0?-1.0:1.0)*${name.orientation};
+  vec3 b=cross(n,t)*(${tangent}.w<0.0?-1.0:1.0)*${name.orientation};
   mat3 tbn=transpose(mat3(t,b,n));
   vec3 eye=u_orthographic>0.5?vec3(0.0,0.0,1.0):unit(-view,vec3(0.0,0.0,1.0));
   v_normal=vec3(0.0,0.0,1.0); v_lightDir=tbn*u_lightDirection;
@@ -651,16 +685,16 @@ ${defines.sceneLighting ? '  v_sceneFillDir0=tbn*u_sceneFillViewDirection0; v_sc
   v_viewPosition=u_orthographic>0.5?vec3(0.0,0.0,-1.0):view; v_viewNormal=n;
 ${
   worldGeometry
-    ? `  vec3 sceneN=unit(${name.objectNormal}*a_normal,vec3(0.0,0.0,1.0));
-  vec3 sceneRawT=mat3(${name.model})*a_tangent.xyz;
+    ? `  vec3 sceneN=unit(${name.objectNormal}*${normal},vec3(0.0,0.0,1.0));
+  vec3 sceneRawT=mat3(${name.model})*${tangent}.xyz;
   vec3 sceneFallback=unit(cross(abs(sceneN.z)<0.9?vec3(0.0,0.0,1.0):vec3(0.0,1.0,0.0),sceneN),vec3(1.0,0.0,0.0));
   vec3 sceneT=unit(sceneRawT-sceneN*dot(sceneN,sceneRawT),sceneFallback);
   v_sceneWorldPosition=world.xyz;v_sceneWorldNormal=sceneN;v_sceneWorldTangent=sceneT;
-  v_sceneWorldBitangent=cross(sceneN,sceneT)*(a_tangent.w<0.0?-1.0:1.0)*${name.objectOrientation};
+  v_sceneWorldBitangent=cross(sceneN,sceneT)*(${tangent}.w<0.0?-1.0:1.0)*${name.objectOrientation};
 `
     : ''
-}  v_modelPosition=a_position;v_modelNormal=unit(a_normal,vec3(0.0,0.0,1.0));
-  v_worldPosition=(${name.materialWorld}*vec4(a_position,1.0)).xyz;v_worldNormal=unit(${name.worldNormal}*a_normal,vec3(0.0,0.0,1.0));
+}  v_modelPosition=${position};v_modelNormal=unit(${normal},vec3(0.0,0.0,1.0));
+  v_worldPosition=(${name.materialWorld}*vec4(${position},1.0)).xyz;v_worldNormal=unit(${name.worldNormal}*${normal},vec3(0.0,0.0,1.0));
   v_clipPosition=u_viewProjection*world;gl_Position=v_clipPosition;
   ${Array.from({ length: defines.uvSetCount }, (_, i) => `v_uv${i}=a_uv${i};`).join('\n')}
   ${defines.usesVertexAlpha || defines.usesVertexColor ? 'v_vertexColor=a_color;' : ''}

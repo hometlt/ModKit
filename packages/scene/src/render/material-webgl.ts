@@ -19,6 +19,7 @@ import {
   sceneMaterialVertexSource,
 } from './material-geometry.js'
 import { materialIsSolid, type MaterialDraw } from './material-draws.js'
+import { materialSkinOf } from './material-skin.js'
 import { requiresEnvironmentEye, snapshotEyePosition } from '../materials/environment.js'
 import { cubeNearestSamplerSource } from '../materials/cube-maps.js'
 
@@ -84,6 +85,13 @@ export type MaterialTextureHandles =
   | ReadonlyMap<string, WebGLTexture>
   | ((texture: SceneRendererTexture) => WebGLTexture | undefined)
 
+/**
+ * Skin palettes (see ModelSceneSkin) live in one float texture of this many texels a row, four a
+ * matrix, on this texture unit: past the material textures and the world's own units (0-11).
+ */
+const SKIN_PALETTE_WIDTH = 1024
+const SKIN_PALETTE_UNIT = 15
+
 /** Retained GPU program/geometry leases. Scene owns camera matrices and render state. */
 export function materialWebGlDraws(
   gl: WebGL2RenderingContext,
@@ -96,10 +104,13 @@ export function materialWebGlDraws(
   options: Readonly<{ mipmaps?: boolean; checkEachDraw?: boolean }> = {},
 ) {
   const programs = new Map<StandardMaterialProgram, WebGlMaterialProgram>()
+  // A skinned draw leases its material over the skinning vertex stage: a lease of its own.
+  const skinnedPrograms = new Map<StandardMaterialProgram, WebGlMaterialProgram>()
   // Leases hold per-material uniforms and samplers; linked GL programs are shared by shader source.
   const linked = new Map<string, WebGLProgram>()
   const pendingPrograms = new Set<WebGLProgram>()
   const usedPrograms = new Set<StandardMaterialProgram>()
+  const usedSkinnedPrograms = new Set<StandardMaterialProgram>()
   let programCompilations = 0
   let drawCalls = 0
   // Primitive arrays are immutable for the lifetime of a draw plan; keep their GPU copies across
@@ -167,6 +178,8 @@ export function materialWebGlDraws(
     /** The unit a binding change last concerned: the one a sequence leaves active (see restore). */
     lastUnit?: number
     readonly constants: Map<number, Float32Array>
+    /** The skin palettes' texture is bound on its unit (see SKIN_PALETTE_UNIT). */
+    skinPalettes?: boolean
     colorMask?: boolean
     depthMask?: boolean
     depthTest?: boolean
@@ -228,6 +241,89 @@ export function materialWebGlDraws(
     }
     return lastFrame
   }
+  // The frame's skin palettes, packed one after another in the texture: each palette's first texel,
+  // and the packed values. A frame packs them at once (prepareSkins); a palette first drawn later is
+  // appended. Each program holds the palette unit and the first texel of its last skinned draw.
+  let skinTexture: WebGLTexture | null = null
+  let skinRows = 0
+  let skinData = new Float32Array(0)
+  let skinTexels = 0
+  let skinBases = new Map<Float32Array, number>()
+  const skinUnits = new WeakSet<WebGLProgram>()
+  const programSkinBases = new WeakMap<WebGLProgram, number>()
+  /** Room in the packed values for `texels` texels, keeping those packed so far. */
+  const reserveSkinTexels = (texels: number) => {
+    const rows = Math.ceil(texels / SKIN_PALETTE_WIDTH)
+    if (skinData.length >= rows * SKIN_PALETTE_WIDTH * 4) return
+    const grown = new Float32Array(
+      Math.max(rows, (2 * skinData.length) / (SKIN_PALETTE_WIDTH * 4)) * SKIN_PALETTE_WIDTH * 4,
+    )
+    grown.set(skinData)
+    skinData = grown
+  }
+  /**
+   * Uploads the packed rows from `first` up to the last packed texel, first growing the texture to
+   * hold them (a new storage takes every row packed so far). Leaves the palette unit active with
+   * the texture bound.
+   */
+  const uploadSkinRows = (first: number) => {
+    const rows = Math.ceil(skinTexels / SKIN_PALETTE_WIDTH)
+    gl.activeTexture(gl.TEXTURE0 + SKIN_PALETTE_UNIT)
+    if (skinTexture === null) {
+      skinTexture = gl.createTexture()
+      if (skinTexture === null) throw new TypeError('could not allocate the skin palette texture')
+      gl.bindTexture(gl.TEXTURE_2D, skinTexture)
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+    } else gl.bindTexture(gl.TEXTURE_2D, skinTexture)
+    if (rows > skinRows) {
+      skinRows = Math.max(rows, skinRows * 2, 16)
+      gl.texImage2D(
+        gl.TEXTURE_2D,
+        0,
+        gl.RGBA32F,
+        SKIN_PALETTE_WIDTH,
+        skinRows,
+        0,
+        gl.RGBA,
+        gl.FLOAT,
+        null,
+      )
+      first = 0
+    }
+    if (rows > first)
+      gl.texSubImage2D(
+        gl.TEXTURE_2D,
+        0,
+        0,
+        first,
+        SKIN_PALETTE_WIDTH,
+        rows - first,
+        gl.RGBA,
+        gl.FLOAT,
+        skinData,
+        first * SKIN_PALETTE_WIDTH * 4,
+      )
+  }
+  const checkPalette = (palette: Float32Array) => {
+    if (palette.length === 0 || palette.length % 16 !== 0)
+      throw new TypeError('invalid skin palette')
+  }
+  /** The palette's first texel this frame, appending and uploading it when it is new. */
+  const skinBase = (palette: Float32Array): number | undefined => {
+    const known = skinBases.get(palette)
+    if (known !== undefined) return known
+    checkPalette(palette)
+    const base = skinTexels
+    reserveSkinTexels(base + palette.length / 4)
+    skinData.set(palette, base * 4)
+    skinTexels = base + palette.length / 4
+    skinBases.set(palette, base)
+    uploadSkinRows(Math.floor(base / SKIN_PALETTE_WIDTH))
+    return undefined
+  }
   // A linked program's attribute locations never change: each vertex array asked for all of them
   // again (an animated frame builds hundreds of vertex arrays, ~3 000 getAttribLocation calls).
   const attributeLocations = new WeakMap<WebGLProgram, Map<string, number>>()
@@ -272,7 +368,8 @@ export function materialWebGlDraws(
         primitive.textureCoordinateSets?.find(uv => uv.set === set)?.coordinates ??
           (set === 0 ? primitive.textureCoordinates : undefined),
       )
-    const data = [...attributes, primitive.indices, instances]
+    const skin = materialSkinOf(primitive)
+    const data = [...attributes, primitive.indices, instances, skin?.joints, skin?.weights]
     const geometries = vertexArrays.get(program)
     const variants = geometries?.get(primitive.positions)
     let entry = variants?.find(
@@ -313,6 +410,21 @@ export function materialWebGlDraws(
         attribute('a_color', 3, 4, [1, 1, 1, 1])
         for (let set = 0; set < source.defines.uvSetCount; set++)
           attribute(`a_uv${set}`, 4 + set, 2, [0, 0, 0, 1])
+        if (skin !== undefined)
+          for (const [name, values, type] of [
+            [
+              'a_skinJoints',
+              skin.joints,
+              skin.joints instanceof Uint8Array ? gl.UNSIGNED_BYTE : gl.UNSIGNED_SHORT,
+            ],
+            ['a_skinWeights', skin.weights, gl.FLOAT],
+          ] as const) {
+            const location = attributeLocation(program, name)
+            if (location < 0) continue
+            created.buffers.push(retainedBuffer(gl.ARRAY_BUFFER, values))
+            gl.enableVertexAttribArray(location)
+            gl.vertexAttribPointer(location, 4, type, false, 0, 0)
+          }
         if (primitive.indices !== undefined)
           entry.buffers.push(retainedBuffer(gl.ELEMENT_ARRAY_BUFFER, primitive.indices))
         created.placement = [0, 1, 2, 3].map(column =>
@@ -353,9 +465,11 @@ export function materialWebGlDraws(
   const leaseFor = (
     source: StandardMaterialProgram,
     material: NonNullable<MaterialDraw['material']>,
+    skinned: boolean,
   ): WebGlMaterialProgram => {
-    usedPrograms.add(source)
-    let lease = programs.get(source)
+    const leases = skinned ? skinnedPrograms : programs
+    ;(skinned ? usedSkinnedPrograms : usedPrograms).add(source)
+    let lease = leases.get(source)
     if (lease === undefined) {
       const bound = new Map<string, WebGLTexture>()
       for (const [resource, texture] of material.textures) {
@@ -363,7 +477,7 @@ export function materialWebGlDraws(
         if (handle === undefined) throw new TypeError(`GPU material texture missing: ${resource}`)
         bound.set(resource, handle)
       }
-      const shaders = leaseShaderSources(source, material)
+      const shaders = leaseShaderSources(source, material, skinned)
       const { vertexSource, fragmentSource, filters } = shaders
       lease = createWebGlMaterialProgram(gl, { ...source, vertexSource, fragmentSource }, bound, {
         filters,
@@ -374,7 +488,7 @@ export function materialWebGlDraws(
         ...(options.mipmaps === true ? { mipmaps: true } : {}),
       })
       programCompilations += 1
-      programs.set(source, lease)
+      leases.set(source, lease)
     }
     return lease
   }
@@ -599,12 +713,40 @@ export function materialWebGlDraws(
     const mode = topologyMode(primitive)
     if (mode === undefined || instances?.count === 0) return 0
     const model = instances === undefined ? materialModelMatrix(primitive) : undefined
-    const lease = leaseFor(leased, material)
+    const skin = materialSkinOf(primitive)
+    const lease = leaseFor(leased, material, skin !== undefined)
     const program = lease.program
     const geometry = bindGeometry(program, leased, primitive, instances?.matrices, state)
     if (state.program !== program) {
       gl.useProgram(program)
       state.program = program
+    }
+    if (skin !== undefined) {
+      // An upload leaves the palette unit active with the palettes bound.
+      let base = skinBase(skin.palette)
+      if (base === undefined) {
+        base = skinBases.get(skin.palette)!
+        state.activeUnit = SKIN_PALETTE_UNIT
+        state.lastUnit = SKIN_PALETTE_UNIT
+        state.skinPalettes = true
+      }
+      if (state.skinPalettes !== true) {
+        if (state.activeUnit !== SKIN_PALETTE_UNIT) {
+          gl.activeTexture(gl.TEXTURE0 + SKIN_PALETTE_UNIT)
+          state.activeUnit = SKIN_PALETTE_UNIT
+        }
+        gl.bindTexture(gl.TEXTURE_2D, skinTexture)
+        state.lastUnit = SKIN_PALETTE_UNIT
+        state.skinPalettes = true
+      }
+      if (!skinUnits.has(program)) {
+        gl.uniform1i(uniformLocation(gl, program, 'u_skinPalette'), SKIN_PALETTE_UNIT)
+        skinUnits.add(program)
+      }
+      if (programSkinBases.get(program) !== base) {
+        gl.uniform1i(uniformLocation(gl, program, 'u_skinBase'), base)
+        programSkinBases.set(program, base)
+      }
     }
     if (programLeases.get(program) !== lease || programUniforms.get(program) !== source.uniforms) {
       lease.uploadUniforms(source === leased ? undefined : source.uniforms)
@@ -703,10 +845,29 @@ export function materialWebGlDraws(
       const sources = new Set<Readonly<{ vertexSource: string; fragmentSource: string }>>()
       for (const draw of draws) {
         if (draw.program === undefined || draw.material === undefined) continue
-        if (programs.has(draw.program)) continue
-        sources.add(leaseShaderSources(draw.program, draw.material))
+        const skinned = materialSkinOf(draw.primitive) !== undefined
+        if ((skinned ? skinnedPrograms : programs).has(draw.program)) continue
+        sources.add(leaseShaderSources(draw.program, draw.material, skinned))
       }
       return linkWebGlMaterialProgramsInParallel(gl, sources, linked, pendingPrograms)
+    },
+    /**
+     * The skin palettes a frame's skinned draws use (see ModelSceneSkin), packed into the palette
+     * texture with one upload; a palette a draw brings later is appended with its own. Leaves the
+     * palette unit active.
+     */
+    prepareSkins(palettes: Iterable<Float32Array>): void {
+      skinBases = new Map()
+      skinTexels = 0
+      for (const palette of palettes) {
+        if (skinBases.has(palette)) continue
+        checkPalette(palette)
+        reserveSkinTexels(skinTexels + palette.length / 4)
+        skinData.set(palette, skinTexels * 4)
+        skinBases.set(palette, skinTexels)
+        skinTexels += palette.length / 4
+      }
+      if (skinTexels > 0) uploadSkinRows(0)
     },
     release() {
       for (const geometries of vertexArrays.values())
@@ -716,6 +877,15 @@ export function materialWebGlDraws(
       for (const lease of programs.values()) lease.release()
       programs.clear()
       usedPrograms.clear()
+      for (const lease of skinnedPrograms.values()) lease.release()
+      skinnedPrograms.clear()
+      usedSkinnedPrograms.clear()
+      if (skinTexture !== null) gl.deleteTexture(skinTexture)
+      skinTexture = null
+      skinRows = 0
+      skinData = new Float32Array(0)
+      skinTexels = 0
+      skinBases = new Map()
       for (const program of linked.values()) gl.deleteProgram(program)
       linked.clear()
       pendingPrograms.clear()
@@ -730,16 +900,25 @@ export function materialWebGlDraws(
     },
     sweep() {
       // Per-frame materials (effects, playback-time uniforms) must not accumulate leases.
-      for (const [source, lease] of programs)
-        if (!usedPrograms.has(source)) {
-          lease.release()
-          programs.delete(source)
-        }
-      usedPrograms.clear()
+      for (const [leases, used] of [
+        [programs, usedPrograms],
+        [skinnedPrograms, usedSkinnedPrograms],
+      ] as const) {
+        for (const [source, lease] of leases)
+          if (!used.has(source)) {
+            lease.release()
+            leases.delete(source)
+          }
+        used.clear()
+      }
+      // The next frame packs its own palettes.
+      skinBases = new Map()
+      skinTexels = 0
       // A linked program no lease uses any more (its models left the scene) is deleted too, so a
       // renderer that outlives many scenes does not keep every shader it ever linked.
       const leased = new Set<WebGLProgram>()
       for (const lease of programs.values()) leased.add(lease.program)
+      for (const lease of skinnedPrograms.values()) leased.add(lease.program)
       for (const [key, program] of linked)
         if (!leased.has(program) && !pendingPrograms.has(program)) {
           gl.deleteProgram(program)
@@ -830,8 +1009,9 @@ const leasedShaderSources = new WeakMap<
 export function leaseShaderSources(
   source: StandardMaterialProgram,
   material: NonNullable<MaterialDraw['material']>,
+  skinned = false,
 ) {
-  let key = `${String(source.twoSided)}|${source.blend}|${String(source.environment !== undefined)}|${String(source.normalBlendPolicy !== undefined)}|${source.normalMapSpace}`
+  let key = `${String(source.twoSided)}|${source.blend}|${String(source.environment !== undefined)}|${String(source.normalBlendPolicy !== undefined)}|${source.normalMapSpace}|${String(skinned)}`
   for (const binding of source.textures)
     key += `|${binding.slot}:${binding.resourceId}:${binding.uniform}:${binding.dimension ?? ''}:${binding.wrapU}:${binding.wrapV}`
   for (const [resource, texture] of material.textures)
@@ -840,7 +1020,7 @@ export function leaseShaderSources(
   if (variants === undefined) leasedShaderSources.set(source.defines, (variants = new Map()))
   const cached = variants.get(key)
   if (cached !== undefined && cached.fragment === source.fragmentSource) return cached.sources
-  const sources = buildLeaseShaderSources(source, material)
+  const sources = buildLeaseShaderSources(source, material, skinned)
   variants.set(key, Object.freeze({ fragment: source.fragmentSource, sources }))
   return sources
 }
@@ -848,6 +1028,7 @@ export function leaseShaderSources(
 function buildLeaseShaderSources(
   source: StandardMaterialProgram,
   material: NonNullable<MaterialDraw['material']>,
+  skinned: boolean,
 ) {
   const filters = new Map<string, 'nearest' | 'linear'>()
   for (const [resource, texture] of material.textures)
@@ -916,6 +1097,7 @@ function buildLeaseShaderSources(
     source.environment !== undefined,
     worldShading,
     true,
+    skinned,
   )
   return { vertexSource, fragmentSource, filters }
 }
