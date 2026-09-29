@@ -346,6 +346,12 @@ export interface MapPreviewSelectionCandidate {
 export interface MapPreviewHostResourceRoot {
   readonly rootId: string
   readonly locator: JsonValue
+  /**
+   * The game plays without this root: an add-on it mounts only when installed (Warzone 2100's
+   * `terrain_overrides/high.wz`). A resolver that finds nothing for it leaves the root empty with an
+   * informational diagnostic instead of failing the plan.
+   */
+  readonly optional?: boolean
 }
 
 /** Maps one workspace root to a confined prefix inside the opened subject namespace. */
@@ -704,12 +710,23 @@ export interface MapTerrainMaterialDefinition {
   readonly normalResource?: LogicalResourceRequirement
   /**
    * How the normal texture's channels spell the tangent-space normal. `rgb` (the default) is the
-   * usual XYZ-in-RGB; `xy-in-alpha-green` takes X from alpha and Y from green and reconstructs Z,
-   * as DXN-swizzled maps do — the publisher knows this, the renderer cannot guess it.
+   * usual XYZ-in-RGB, X along the texture's u and Y along its v (image rows downward);
+   * `rgb-inverted-y` is the same with Y against v, as Warzone 2100 reads its ground normal maps
+   * (terrain_combined.vert: bitangent N × (N × x̂)); `xy-in-alpha-green` takes X from alpha and Y
+   * from green and reconstructs Z, as DXN-swizzled maps do — the publisher knows this, the renderer
+   * cannot guess it.
    */
-  readonly normalEncoding?: 'rgb' | 'xy-in-alpha-green'
+  readonly normalEncoding?: 'rgb' | 'rgb-inverted-y' | 'xy-in-alpha-green'
   readonly specularResourceId?: string
   readonly specularResource?: LogicalResourceRequirement
+  /**
+   * What the specular texture holds. `color` (the default) is a specular colour lit as
+   * `colour · pow(N·H, specularExponent)`. `gloss` is a gloss `g` in red, lit as
+   * `g² · clamp(pow(N·H, specularExponent · (1 − g²))) · N·L`, as Warzone 2100's terrain shaders read
+   * their `_sm` maps (light.glsl blinnTerm, terrain_combined_high.frag). The exponent and multiplier
+   * are the lighting's `terrain` settings.
+   */
+  readonly specularEncoding?: 'color' | 'gloss'
   readonly uvTransform?: Readonly<{
     readonly offset: readonly [number, number]
     readonly scale: readonly [number, number]
@@ -818,6 +835,12 @@ export interface MapWaterMaterialDefinition {
    */
   readonly causticsFalloff?: number
   readonly receiveShadows?: boolean
+  /**
+   * The ground's ambient occlusion (MapTerrainSample.ambientOcclusion) darkens the surface over it
+   * too, as Warzone 2100 multiplies its high-quality water by the tile brightness
+   * (terrain_water_high.frag). Absent means it does not.
+   */
+  readonly occludedLikeTerrain?: boolean
 }
 
 export interface MapWaterSummary {

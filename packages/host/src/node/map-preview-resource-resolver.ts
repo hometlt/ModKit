@@ -769,6 +769,8 @@ export function createNodeMapPreviewResourcePlanResolver(
       }
 
       const externalMounts = new Map<string, NamespaceMount>()
+      // Optional roots the installation does not have: the workspace keeps them, empty.
+      const absentOptionalRoots = new Set<string>()
       for (const item of locatedRoots) {
         const workspaceRoot = request.workspace.loadOrder.find(
           root => root.rootId === item.root.rootId,
@@ -819,6 +821,16 @@ export function createNodeMapPreviewResourcePlanResolver(
               `${item.root.rootId} has no exact loose subject; using the confirmed installation namespace prefix ${resourcePrefix}`,
             ),
           )
+        } else if (item.root.optional === true) {
+          absentOptionalRoots.add(item.root.rootId)
+          findings.push(
+            diagnostic(
+              'information',
+              'x3.host/map-preview-optional-root-absent',
+              `${item.root.rootId} is optional and the installation has none of its exact paths`,
+            ),
+          )
+          continue
         } else {
           return fail(
             'x3.host/map-preview-installation-archive-missing',
@@ -1051,7 +1063,7 @@ export function createNodeMapPreviewResourcePlanResolver(
         const mapped = rootsById.get(root.rootId)
         return mapped === undefined ? [] : [mapped]
       })
-      if (originRoots.length !== request.workspace.loadOrder.length) {
+      if (originRoots.length !== request.workspace.loadOrder.length - absentOptionalRoots.size) {
         return fail(
           'x3.host/map-preview-resource-root-mismatch',
           'the installed archive resolver did not map every workspace root',

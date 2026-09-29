@@ -197,6 +197,11 @@ interface MutableTexturedBatch extends MutableBatch {
   readonly secondaryTexture?: NonNullable<
     Extract<WorldSceneModelResult, { state: 'converted' }>['textures']
   >[number]
+  /** How normalTexture spells the normal (normalSwizzleOf); absent is plain RGB. */
+  readonly normalSwizzle?: number
+  /** A terrain decal tile's specular map (MapTerrainMaterialDefinition.specularResource). */
+  readonly specularTexture?: SceneRendererTexture
+  readonly specularGloss?: boolean
   readonly alphaCutoff?: number
   readonly castShadows?: boolean
   readonly receiveShadows?: boolean
@@ -209,13 +214,15 @@ interface MutableSplatBatch extends MutableBatch {
   /** Which texel channel holds the mask: 0-2 colour, 3 alpha. */
   readonly maskChannel?: number
   readonly specularTextures?: readonly (SceneRendererTexture | undefined)[]
+  /** The specular maps hold a gloss in red (MapTerrainMaterialDefinition.specularEncoding). */
+  readonly specularGloss?: boolean
   readonly textureCoordinates: readonly number[][]
   readonly textureWeights0: number[]
   readonly textureWeights1: number[]
   readonly textures: readonly SceneRendererTexture[]
   /** Layer-aligned tangent-space normals; an absent entry is the flat [0,0,1] normal. */
   readonly normalTextures: readonly (SceneRendererTexture | undefined)[]
-  /** Layer-aligned: 1 where the normal map keeps X in alpha and Y in green (DXN-swizzled). */
+  /** Layer-aligned normalSwizzleOf: 1 X in alpha and Y in green (DXN), 2 Y against v. */
   readonly normalSwizzles: readonly number[]
   readonly weightTextures?: readonly SceneRendererTexture[]
   readonly weightTextureCoordinates?: number[]
@@ -237,6 +244,9 @@ export interface WorldWebGlTexturedBatch extends WorldWebGlBatch {
   readonly secondaryTextureCoordinates?: Float32Array
   readonly texture: MutableTexturedBatch['texture']
   readonly normalTexture?: MutableTexturedBatch['normalTexture']
+  readonly normalSwizzle?: number
+  readonly specularTexture?: SceneRendererTexture
+  readonly specularGloss?: boolean
   readonly secondaryTexture?: MutableTexturedBatch['secondaryTexture']
   /** Zero/absent is solid coverage; a positive value discards lower-alpha texels in all passes. */
   readonly alphaCutoff?: number
@@ -293,6 +303,7 @@ export interface WorldWebGlSplatBatch extends WorldWebGlBatch {
   /** Which texel channel holds the mask: 0-2 colour, 3 alpha. */
   readonly maskChannel?: number
   readonly specularTextures?: readonly (SceneRendererTexture | undefined)[]
+  readonly specularGloss?: boolean
   readonly textureCoordinates: readonly Float32Array[]
   readonly textureWeights0: Float32Array
   readonly textureWeights1: Float32Array
@@ -1126,6 +1137,8 @@ function worldWaterZone(
   }
   let triangles: MutableBatch
   let push: (ground: readonly [WaterGroundVertex, WaterGroundVertex, WaterGroundVertex]) => void
+  const occlusionAt =
+    material?.occludedLikeTerrain === true ? terrainOcclusionAt(preparation) : () => 1
   if (material !== undefined && texture !== undefined) {
     const surface = material
     const target: MutableTexturedBatch = {
@@ -1135,11 +1148,12 @@ function worldWaterZone(
       texture,
     }
     triangles = target
-    push = ground => pushTexturedWaterTriangle(target, ground, elevation, surface, timeSeconds)
+    push = ground =>
+      pushTexturedWaterTriangle(target, ground, elevation, surface, timeSeconds, occlusionAt)
   } else {
     const target = batch()
     triangles = target
-    push = ground => pushWaterTriangle(target, ground, elevation, material)
+    push = ground => pushWaterTriangle(target, ground, elevation, material, occlusionAt)
   }
   let emitted = false
   if (material?.shorelineMode === 'terrain-clipped' && preparation.terrain.length > 0) {
@@ -1189,11 +1203,22 @@ function waterVertexColor(
   ]
 }
 
+/** The colour darkened by the ground's occlusion at a vertex (occludedLikeTerrain). */
+function occludedWaterColor(
+  color: readonly [number, number, number, number],
+  occlusion: number,
+): readonly [number, number, number, number] {
+  return occlusion === 1
+    ? color
+    : [color[0] * occlusion, color[1] * occlusion, color[2] * occlusion, color[3]]
+}
+
 function pushWaterTriangle(
   target: MutableBatch,
   ground: readonly [WaterGroundVertex, WaterGroundVertex, WaterGroundVertex],
   elevation: number,
   material: MapWaterMaterialDefinition | undefined,
+  occlusionAt: (x: number, z: number) => number,
 ) {
   const vertices = ground.map(vertex => [vertex[0], elevation, vertex[2]] as const)
   // A water surface is horizontal by construction, and clipping leaves its winding arbitrary, so the
@@ -1204,8 +1229,34 @@ function pushWaterTriangle(
       target,
       vertices[index]!,
       normal,
-      waterVertexColor(material, elevation, ground[index]![1]),
+      occludedWaterColor(
+        waterVertexColor(material, elevation, ground[index]![1]),
+        occlusionAt(ground[index]![0], ground[index]![2]),
+      ),
     )
+}
+
+/**
+ * The ambient occlusion of the terrain point at an exact world (x, z), 1 where none stands: a
+ * surface that is occludedLikeTerrain takes it at the corners it shares with the height grid.
+ */
+const worldTerrainOcclusion = new WeakMap<object, ReadonlyMap<string, number>>()
+
+function terrainOcclusionAt(
+  preparation: Readonly<{ terrain: readonly WorldSceneTerrainItem[] }>,
+): (x: number, z: number) => number {
+  let byPosition = worldTerrainOcclusion.get(preparation)
+  if (byPosition === undefined) {
+    const built = new Map<string, number>()
+    for (const cell of preparation.terrain) {
+      if (cell.ambientOcclusion === undefined) continue
+      const [x, , z] = terrainPosition(cell)
+      built.set(`${x}:${z}`, cell.ambientOcclusion)
+    }
+    worldTerrainOcclusion.set(preparation, (byPosition = built))
+  }
+  const known = byPosition
+  return (x, z) => known.get(`${x}:${z}`) ?? 1
 }
 
 function pushTexturedWaterTriangle(
@@ -1214,6 +1265,7 @@ function pushTexturedWaterTriangle(
   elevation: number,
   material: MapWaterMaterialDefinition,
   time: number,
+  occlusionAt: (x: number, z: number) => number,
 ) {
   const vertices = ground.map(vertex => [vertex[0], elevation, vertex[2]] as const)
   // A water surface is horizontal by construction, and clipping leaves its winding arbitrary, so the
@@ -1227,9 +1279,12 @@ function pushTexturedWaterTriangle(
       target,
       vertices[index]!,
       normal,
-      material.compositing === 'multiply'
-        ? [material.color[0], material.color[1], material.color[2], 1]
-        : waterVertexColor(material, elevation, source[1]),
+      occludedWaterColor(
+        material.compositing === 'multiply'
+          ? [material.color[0], material.color[1], material.color[2], 1]
+          : waterVertexColor(material, elevation, source[1]),
+        occlusionAt(source[0], source[2]),
+      ),
     )
     target.textureCoordinates.push(
       source[0] * scale[0] + scroll[0] * time,
@@ -1287,6 +1342,11 @@ const MISSING_TERRAIN_LAYER_TEXTURE: SceneRendererTexture = Object.freeze({
   height: 1,
   rgba: Uint8Array.of(128, 128, 128, 255),
 })
+
+/** A terrain material's normalEncoding as the shader's swizzle: 0 RGB, 1 DXN, 2 Y against v. */
+function normalSwizzleOf(encoding: MapTerrainMaterialDefinition['normalEncoding']): number {
+  return encoding === 'xy-in-alpha-green' ? 1 : encoding === 'rgb-inverted-y' ? 2 : 0
+}
 
 function transformedTerrainUv(
   uv: readonly [number, number],
@@ -1891,6 +1951,9 @@ function frozenTexturedBatch(source: MutableTexturedBatch): WorldWebGlTexturedBa
       : { secondaryTextureCoordinates: Float32Array.from(source.secondaryTextureCoordinates) }),
     texture: source.texture,
     ...(source.normalTexture === undefined ? {} : { normalTexture: source.normalTexture }),
+    ...(source.normalSwizzle === undefined ? {} : { normalSwizzle: source.normalSwizzle }),
+    ...(source.specularTexture === undefined ? {} : { specularTexture: source.specularTexture }),
+    ...(source.specularGloss === undefined ? {} : { specularGloss: source.specularGloss }),
     ...(source.secondaryTexture === undefined ? {} : { secondaryTexture: source.secondaryTexture }),
     ...(source.alphaCutoff === undefined ? {} : { alphaCutoff: source.alphaCutoff }),
     ...(source.castShadows === undefined ? {} : { castShadows: source.castShadows }),
@@ -1911,6 +1974,7 @@ function frozenSplatBatch(source: MutableSplatBatch): WorldWebGlSplatBatch {
     ...(source.specularTextures === undefined
       ? {}
       : { specularTextures: Object.freeze([...source.specularTextures]) }),
+    ...(source.specularGloss === undefined ? {} : { specularGloss: source.specularGloss }),
     normalSwizzles: Object.freeze([...source.normalSwizzles]),
     ...(source.weightTextures === undefined
       ? {}
@@ -3650,9 +3714,8 @@ function prepareWorldStaticTerrain(
           ? undefined
           : input.terrainTextures?.get(definition.specularResourceId),
       ),
-      normalSwizzles: resolved.map(definition =>
-        definition.normalEncoding === 'xy-in-alpha-green' ? 1 : 0,
-      ),
+      normalSwizzles: resolved.map(definition => normalSwizzleOf(definition.normalEncoding)),
+      specularGloss: resolved.some(definition => definition.specularEncoding === 'gloss'),
       weightTextures: weightTextures as readonly SceneRendererTexture[],
     })
   }
@@ -3698,6 +3761,7 @@ function prepareWorldStaticTerrain(
     textures: group.textures,
     normalTextures: group.normalTextures,
     specularTextures: group.specularTextures,
+    specularGloss: group.specularGloss,
     normalSwizzles: group.normalSwizzles,
     weightTextures: group.weightTextures,
     weightTextureCoordinates: [],
@@ -4363,7 +4427,10 @@ function prepareWorldStaticTerrain(
         number,
       ]
       const materialSample = materialByCell.get(`${item.x}:${item.y}`)
-      /** The cell's decal tile over the ground drawn below, same triangles, its alpha blending. */
+      /**
+       * The cell's decal tile over the ground drawn below, same triangles, its alpha blending; lit as
+       * the ground is, with its own normal and specular maps and the ground's AO in colour alpha.
+       */
       const drawDecal = () => {
         const decal = materialSample?.decal
         if (decal === undefined) return
@@ -4375,8 +4442,29 @@ function prepareWorldStaticTerrain(
             ? undefined
             : input.terrainTextures?.get(definition.baseColorResourceId)
         if (texture === undefined) return
-        const target = decals.get(texture.id) ?? { ...batch(), textureCoordinates: [], texture }
-        decals.set(texture.id, target)
+        const normalTexture =
+          definition?.normalResourceId === undefined
+            ? undefined
+            : input.terrainTextures?.get(definition.normalResourceId)
+        const specularTexture =
+          definition?.specularResourceId === undefined
+            ? undefined
+            : input.terrainTextures?.get(definition.specularResourceId)
+        const key = [texture.id, normalTexture?.id ?? '', specularTexture?.id ?? ''].join(
+          String.fromCharCode(0),
+        )
+        const target = decals.get(key) ?? {
+          ...batch(),
+          textureCoordinates: [],
+          texture,
+          ...(normalTexture === undefined
+            ? {}
+            : { normalTexture, normalSwizzle: normalSwizzleOf(definition!.normalEncoding) }),
+          ...(specularTexture === undefined
+            ? {}
+            : { specularTexture, specularGloss: definition!.specularEncoding === 'gloss' }),
+        }
+        decals.set(key, target)
         const uvs = patch.locals.map(local =>
           terrainSurfaceUv(item, local, decal.uvTransform, definition!.uvTransform),
         ) as [
@@ -4385,12 +4473,18 @@ function prepareWorldStaticTerrain(
           readonly [number, number],
           readonly [number, number],
         ]
+        const aoColors = cornerAo.map(ao => [1, 1, 1, ao] as const) as [
+          WorldColor,
+          WorldColor,
+          WorldColor,
+          WorldColor,
+        ]
         for (const index of [0, 1] as const)
           pushTexturedTriangle(
             target,
             tri(quad, index),
             tri(uvs, index),
-            [1, 1, 1, 1],
+            tri(aoColors, index),
             tri(cornerNormals, index),
           )
         terrainDecalTriangles += 2
@@ -4517,9 +4611,8 @@ function prepareWorldStaticTerrain(
               ? undefined
               : input.terrainTextures?.get(layer.definition.specularResourceId),
           ),
-          normalSwizzles: resolvedSplat.map(layer =>
-            layer.definition.normalEncoding === 'xy-in-alpha-green' ? 1 : 0,
-          ),
+          normalSwizzles: resolvedSplat.map(layer => normalSwizzleOf(layer.definition.normalEncoding)),
+          specularGloss: resolvedSplat.some(layer => layer.definition.specularEncoding === 'gloss'),
         }
         splat.set(key, target)
         const coordinates = resolvedSplat.map(layer => {
@@ -6093,6 +6186,15 @@ uniform float fillUsesVertexAo0;
 uniform float fillUsesVertexAo1;
 uniform float terrainSpecularTextured;
 uniform sampler2DArray terrainSpecularMaps;
+// The specular maps hold a gloss in red (MapTerrainMaterialDefinition.specularEncoding 'gloss').
+uniform float terrainSpecularGloss;
+// A decal tile over the ground, lit as the ground is: AO in colour alpha, the terrain diffuse and
+// specular, its own normal map and a specular map of its own.
+uniform float terrainDecal;
+uniform float terrainDecalSpecularTextured;
+uniform sampler2D terrainDecalSpecularMap;
+// How normalMap spells the normal: 0 RGB, 1 X in alpha and Y in green (DXN), 2 RGB with Y against v.
+uniform float normalSwizzle;
 // One uniform per fill light rather than arrays: read through ANGLE/D3D11, a uniform array indexed
 // anywhere but by a literal in main() contributed nothing, silently.
 uniform vec3 fillLightDirection0;
@@ -6189,7 +6291,8 @@ vec3 terrainLayerNormal(vec3 baseNormal, int layer, vec2 authoredUv) {
   vec3 bitangent = normalize((-positionDx * uvDy.x + positionDy * uvDx.x) / determinant);
   vec4 normalSample = terrainLayerSample(terrainNormalMaps, layer, authoredUv);
   vec3 mappedNormal;
-  if (layerValue(terrainNormalSwizzle0, terrainNormalSwizzle1, layer) > 0.5) {
+  float swizzle = layerValue(terrainNormalSwizzle0, terrainNormalSwizzle1, layer);
+  if (swizzle > 0.5 && swizzle < 1.5) {
     // DXN-swizzled: X in alpha, Y in green, Z rebuilt — Shaders/TerrainBlend.fx UnSwizzleNormals.
     vec2 mappedXy = 2.0 * vec2(normalSample.w, normalSample.y) - 1.0;
     mappedNormal = vec3(mappedXy, sqrt(max(0.0, 1.0 - dot(mappedXy, mappedXy))));
@@ -6198,6 +6301,7 @@ vec3 terrainLayerNormal(vec3 baseNormal, int layer, vec2 authoredUv) {
     // A map that remaps to about zero (a grey height map, say) would have its noise amplified into
     // a per-triangle normal by the normalize below — a lattice over flat ground.
     if (dot(mappedNormal, mappedNormal) < 0.04) return baseNormal;
+    if (swizzle > 1.5) mappedNormal.y = -mappedNormal.y;
   }
   return normalize(tangent * mappedNormal.x + bitangent * mappedNormal.y + baseNormal * mappedNormal.z);
 }
@@ -6257,7 +6361,14 @@ void main() {
     if (abs(determinant) > 0.000001) {
       vec3 tangent = normalize((positionDx * uvDy.y - positionDy * uvDx.y) / determinant);
       vec3 bitangent = normalize((-positionDx * uvDy.x + positionDy * uvDx.x) / determinant);
-      vec3 mappedNormal = texture(normalMap, textureCoordinate).xyz * 2.0 - 1.0;
+      vec4 normalSample = texture(normalMap, textureCoordinate);
+      vec3 mappedNormal = normalSample.xyz * 2.0 - 1.0;
+      if (normalSwizzle > 0.5 && normalSwizzle < 1.5) {
+        vec2 mappedXy = 2.0 * vec2(normalSample.w, normalSample.y) - 1.0;
+        mappedNormal = vec3(mappedXy, sqrt(max(0.0, 1.0 - dot(mappedXy, mappedXy))));
+      } else if (normalSwizzle > 1.5) {
+        mappedNormal.y = -mappedNormal.y;
+      }
       if (dot(mappedNormal, mappedNormal) >= 0.04) {
         resolvedNormal = normalize(
           tangent * mappedNormal.x + bitangent * mappedNormal.y + resolvedNormal * mappedNormal.z
@@ -6297,8 +6408,9 @@ void main() {
   }
   float diffuse = max(0.0, dot(resolvedNormal, normalize(-lightDirection)));
   float shadow = directionalShadow(resolvedNormal);
-  float ao = splatTextured > 0.5 ? vertexColor.a : 1.0;
-  float diffuseScale = splatTextured > 0.5 ? terrainLighting.y : 1.0;
+  bool terrainSurface = splatTextured > 0.5 || terrainDecal > 0.5;
+  float ao = terrainSurface ? vertexColor.a : 1.0;
+  float diffuseScale = terrainSurface ? terrainLighting.y : 1.0;
   vec3 lighting = ambientColor * ambientIntensity * ao + lightColor * lightIntensity * diffuse * shadow * diffuseScale * mix(1.0, ao, keyUsesVertexAo);
   // Fill and back lights: diffuse only. The depth map belongs to the key light, and SC2's rig casts
   // one shadow too. Unrolled with constant indices: indexing these uniform arrays by a loop variable
@@ -6307,7 +6419,8 @@ void main() {
   lighting += fillLight(resolvedNormal, fillLightDirection1, fillLightRadiance1) * diffuseScale * mix(1.0, ao, fillUsesVertexAo1);
   vec4 surface = vertexColor;
   float terrainSpecular = 0.0;
-  if (splatTextured > 0.5) surface.a = 1.0;
+  // A decal's colour alpha is its AO; its coverage is the texture's own alpha.
+  if (terrainSurface) surface.a = 1.0;
   if (textured > 0.5) surface *= texture(baseColorMap, textureCoordinate);
   if (secondaryTextured > 0.5) {
     float secondarySurface = texture(secondaryColorMap, secondaryTextureCoordinate).r;
@@ -6355,9 +6468,13 @@ void main() {
   }
   if (alphaCutoff > 0.0 && surface.a < alphaCutoff) discard;
   vec3 specular = vec3(0.0);
-  if (splatTextured > 0.5 && terrainLighting.z > 0.0) {
+  if (terrainSurface && terrainLighting.z > 0.0) {
     vec3 specColor = vec3(terrainSpecular);
-    if (terrainSpecularTextured > 0.5) {
+    if (terrainDecal > 0.5) {
+      specColor = terrainDecalSpecularTextured > 0.5
+        ? texture(terrainDecalSpecularMap, textureCoordinate).rgb
+        : vec3(0.0);
+    } else if (terrainSpecularTextured > 0.5) {
       specColor = vec3(0.0);
       for (int layer = 0; layer < 8; layer++) {
         float weight = layerValue(resolvedSplatWeights0, resolvedSplatWeights1, layer);
@@ -6366,10 +6483,19 @@ void main() {
     }
     vec3 view = normalize(eyePosition - worldPosition);
     vec3 key = normalize(-lightDirection);
-    float exponent = max(terrainLighting.x, 1.0);
-    // Specular comes from the key light only: SC2 Lighting.fx adds the other directional lights
-    // with useSpecular false (their diffuse carries the ambient occlusion instead).
-    specular = specColor * terrainLighting.z * lightSpecularRadiance * pow(max(dot(resolvedNormal, normalize(view + key)), 0.0), exponent) * step(0.000001, diffuse) * shadow;
+    float highlight = max(dot(resolvedNormal, normalize(view + key)), 0.0);
+    if (terrainSpecularGloss > 0.5) {
+      // Warzone 2100 terrain_combined_high.frag: a glossier texel widens the lobe (light.glsl
+      // blinnTerm, exponent terrainLighting.x (1 - g^2)), weighted by g^2 and the shadowed diffuse.
+      float glossSquared = specColor.r * specColor.r;
+      float lobe = clamp(pow(max(highlight, 0.000001), terrainLighting.x * (1.0 - glossSquared)), 0.0, 1.0);
+      specular = vec3(glossSquared * lobe * diffuse * shadow) * terrainLighting.z * lightSpecularRadiance;
+    } else {
+      float exponent = max(terrainLighting.x, 1.0);
+      // Specular comes from the key light only: SC2 Lighting.fx adds the other directional lights
+      // with useSpecular false (their diffuse carries the ambient occlusion instead).
+      specular = specColor * terrainLighting.z * lightSpecularRadiance * pow(highlight, exponent) * step(0.000001, diffuse) * shadow;
+    }
   }
   if (waterWavesMode > 0.5 && waterSpecular.y > 0.0) {
     // Water.fx adds the key light's highlight on the wave normal, times SpecularScaler, over the
@@ -7819,6 +7945,7 @@ function drawTexturedBatch(
     bindTexture2d(resources, source.normalTexture, 5)
     worldUniform1i(gl, program, 'normalMap', 5)
     worldUniform1f(gl, program, 'normalTextured', 1)
+    worldUniform1f(gl, program, 'normalSwizzle', source.normalSwizzle ?? 0)
   }
   if (source.secondaryTexture === undefined || source.secondaryTextureCoordinates === undefined) {
     worldUniform1f(gl, program, 'secondaryTextured', 0)
@@ -7971,6 +8098,7 @@ function drawSplatBatch(
     if (hasSpecular) uploadArray(source.specularTextures!, source.textures, 8, 'terrain specular')
     worldUniform1i(gl, program, 'terrainSpecularMaps', 8)
     worldUniform1f(gl, program, 'terrainSpecularTextured', hasSpecular ? 1 : 0)
+    worldUniform1f(gl, program, 'terrainSpecularGloss', source.specularGloss === true ? 1 : 0)
     worldUniform1i(gl, program, 'terrainMaps', 0)
     worldUniform1i(gl, program, 'terrainNormalMaps', 1)
     if ((source.weightTextures?.length ?? 0) < 2) {
@@ -9581,6 +9709,11 @@ function drawWorldWebGlWithResources(
     worldUniform1f(gl, program, 'causticsMode', 0)
     bindSentinelTexture2d(resources, WATER_NORMAL_UNIT)
     worldUniform1i(gl, program, 'waterNormalMap', WATER_NORMAL_UNIT)
+    bindSentinelTexture2d(resources, TERRAIN_DECAL_SPECULAR_UNIT)
+    worldUniform1i(gl, program, 'terrainDecalSpecularMap', TERRAIN_DECAL_SPECULAR_UNIT)
+    worldUniform1f(gl, program, 'terrainDecal', 0)
+    worldUniform1f(gl, program, 'terrainSpecularGloss', 0)
+    worldUniform1f(gl, program, 'normalSwizzle', 0)
     worldUniform1f(gl, program, 'waterWavesMode', 0)
     worldUniform1f(gl, program, 'waterDepthMode', 0)
     worldUniform1f(gl, program, 'cliffMaskMode', 0)
@@ -9693,7 +9826,19 @@ function drawWorldWebGlWithResources(
       worldUniform1f(gl, program, 'terrainWeightOverlay', 0)
       worldUniform1f(gl, program, 'splatTextured', 0)
       worldUniform1f(gl, program, 'rasterSplatTextured', 0)
-      for (const item of plan.terrainDecalTriangles) drawTexturedBatch(resources, program, item)
+      worldUniform1f(gl, program, 'terrainDecal', 1)
+      for (const item of plan.terrainDecalTriangles) {
+        if (item.specularTexture === undefined) {
+          worldUniform1f(gl, program, 'terrainDecalSpecularTextured', 0)
+        } else {
+          bindTexture2d(resources, item.specularTexture, TERRAIN_DECAL_SPECULAR_UNIT)
+          worldUniform1f(gl, program, 'terrainDecalSpecularTextured', 1)
+        }
+        worldUniform1f(gl, program, 'terrainSpecularGloss', item.specularGloss === true ? 1 : 0)
+        drawTexturedBatch(resources, program, item)
+      }
+      worldUniform1f(gl, program, 'terrainDecal', 0)
+      bindSentinelTexture2d(resources, TERRAIN_DECAL_SPECULAR_UNIT)
       gl.disable(gl.BLEND)
       gl.depthMask(true)
     }
@@ -10138,6 +10283,8 @@ const WATER_SCENE_DEPTH_UNIT = 9
 const WATER_CAUSTICS_UNIT = 10
 /** The water's wave normal image; a 2D sentinel for every other draw. */
 const WATER_NORMAL_UNIT = 11
+/** A terrain decal tile's specular map; a 2D sentinel for every other draw. */
+const TERRAIN_DECAL_SPECULAR_UNIT = 12
 /** Water colour and opacity at depth zero when a material states none. */
 const WATER_DEFAULT_COLOR = [0.12, 0.52, 0.82, 0.48] as const
 

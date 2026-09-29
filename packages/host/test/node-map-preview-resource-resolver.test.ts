@@ -172,7 +172,8 @@ async function namespaceSession(subjectUri: string, files: ReadonlyMap<string, U
   return { session: managed.session, namespaceRelease, entryRelease, sessionRelease }
 }
 
-function workspace() {
+/** With `high`, an add-on root between base and mp that mp depends on without requiring it. */
+function workspace(high = false) {
   return resolveModWorkspaceGraph({
     workspaceId: 'fixture-preview',
     gameId: GAME_ID,
@@ -183,6 +184,20 @@ function workspace() {
       { sourceId: 'map-source', kind: 'archive', location: 'fixture:map' },
     ],
     roots: [
+      ...(high
+        ? [
+            {
+              rootId: 'high',
+              sourceId: 'base-source',
+              sourcePath: 'terrain_overrides/high',
+              displayName: 'High',
+              kind: 'package',
+              dependencies: [
+                { targetRootId: 'base', ref: 'base', required: true, provenance: 'implicit' as const },
+              ],
+            },
+          ]
+        : []),
       {
         rootId: 'base',
         sourceId: 'base-source',
@@ -199,6 +214,9 @@ function workspace() {
         kind: 'package',
         dependencies: [
           { targetRootId: 'base', ref: 'base', required: true, provenance: 'implicit' },
+          ...(high
+            ? [{ targetRootId: 'high', ref: 'high', required: false, provenance: 'implicit' as const }]
+            : []),
         ],
       },
       {
@@ -210,8 +228,8 @@ function workspace() {
         dependencies: [{ targetRootId: 'mp', ref: 'mp', required: true, provenance: 'implicit' }],
       },
     ],
-    maxRoots: 3,
-    maxDepth: 2,
+    maxRoots: high ? 4 : 3,
+    maxDepth: 3,
   })
 }
 
@@ -229,7 +247,7 @@ function locator(
 }
 
 function plan(
-  roots: readonly Readonly<{ rootId: string; locator: JsonValue }>[] = [
+  roots: readonly Readonly<{ rootId: string; locator: JsonValue; optional?: boolean }>[] = [
     { rootId: 'mp', locator: locator(['data/mp.wz', 'mp.wz'], 'prefer-matching-opened-subject') },
     { rootId: 'base', locator: locator(['data/base.wz', 'base.wz'], 'installation-only') },
   ],
@@ -403,6 +421,62 @@ describe('Node game-installation map-preview resource resolver', () => {
     expect(result).toMatchObject({ state: 'unresolved', diagnostics: [{ code }] })
     expect(mocks.discover).not.toHaveBeenCalled()
     expect(open).not.toHaveBeenCalled()
+  })
+
+  it('leaves an optional root the installation lacks empty instead of failing the plan', async () => {
+    const root = await installationRoot()
+    const mpPath = join(root, 'data', 'mp.wz')
+    const basePath = join(root, 'data', 'base.wz')
+    await Promise.all([writeFile(mpPath, 'mp'), writeFile(basePath, 'base')])
+    mocks.discover.mockResolvedValue({
+      state: 'discovered',
+      result: discovery(root),
+      diagnostics: [],
+    })
+    const original = await namespaceSession(
+      pathToFileURL(mpPath).href,
+      new Map([['multiplay/maps/demo/game.map', new Uint8Array([1])]]),
+    )
+    const base = await namespaceSession(
+      pathToFileURL(basePath).href,
+      new Map([['stats/templates.json', new Uint8Array([4, 5])]]),
+    )
+    const open = vi.fn(async () => ({ state: 'opened', session: base.session, diagnostics: [] }))
+    const resolver = createNodeMapPreviewResourcePlanResolver({
+      installationRetentionMs: 0,
+      subjects: { open } as unknown as Pick<SubjectServices, 'open'>,
+      configuredPaths: { [GAME_ID]: [root] },
+    })
+    const roots = (optional: boolean) => [
+      { rootId: 'mp', locator: locator(['data/mp.wz'], 'prefer-matching-opened-subject') },
+      {
+        rootId: 'high',
+        locator: locator(['data/terrain_overrides/high.wz'], 'installation-only'),
+        ...(optional ? { optional: true } : {}),
+      },
+      { rootId: 'base', locator: locator(['data/base.wz'], 'installation-only') },
+    ]
+    const request = async (optional: boolean) => ({
+      ...(await requestFixture(plan(roots(optional)), mpPath, original.session)),
+      workspace: workspace(true),
+    })
+    const result = await resolver.resolve(await request(true))
+    if (result.state !== 'resolved') throw new Error(JSON.stringify(result.diagnostics))
+    expect(result.diagnostics.map(item => item.code)).toContain(
+      'x3.host/map-preview-optional-root-absent',
+    )
+    const source = await result.origin.open('base/stats/templates.json')
+    if (source.value.kind !== 'bytes') throw new Error('template fixture did not open as bytes')
+    expect(await source.value.read(0n, 16)).toEqual(new Uint8Array([4, 5]))
+    await source.release()
+    await result.release()
+    // The same root, required, still fails the plan.
+    expect(await resolver.resolve(await request(false))).toMatchObject({
+      state: 'unresolved',
+      diagnostics: expect.arrayContaining([
+        expect.objectContaining({ code: 'x3.host/map-preview-installation-archive-missing' }),
+      ]),
+    })
   })
 
   it('reads an installation folder no codec opens as a plain folder', async () => {

@@ -143,6 +143,118 @@ describe('world terrain overlays', () => {
     assert.equal(unresolved.terrainDecalTriangles.length, 0)
   })
 
+  it('darkens water occluded like terrain by the ground AO at the corners it shares', () => {
+    const items = [
+      ...cell().map((item, index) => ({ ...item, ambientOcclusion: [1, 0.5, 0.25, 0.75][index] })),
+      {
+        facet: 'water',
+        id: 'water:0',
+        layerId: 'water',
+        coordinateSpaceId: 'map-native',
+        zoneId: 0,
+        templateId: 'TER_WATER',
+        minimum: { x: 0, y: 0 },
+        maximum: { x: 1, y: 1 },
+        uvwMinimum: { x: 0, z: 0 },
+        uvwMaximum: { x: 1, z: 1 },
+        uvwElevation: 0.5,
+        materialId: 'water',
+      },
+    ]
+    const material = {
+      materialId: 'water',
+      classification: 'water',
+      shorelineMode: 'zone',
+      compositing: 'over',
+      color: [0.2, 0.4, 0.6, 0.8],
+      colorFalloff: 0,
+    }
+    const colorsAt = plan => {
+      const batch = plan.transparentTriangles
+      const byCorner = new Map()
+      for (let vertex = 0; vertex < batch.positions.length / 3; vertex += 1)
+        byCorner.set(
+          `${batch.positions[vertex * 3]}:${batch.positions[vertex * 3 + 2]}`,
+          Array.from(batch.colors.slice(vertex * 4, vertex * 4 + 4)).map(value => Math.round(value * 1000) / 1000),
+        )
+      return byCorner
+    }
+    const plain = colorsAt(createWorldWebGlPlan({ items, waterMaterials: [material] }))
+    assert.deepEqual(plain.get('1:0'), [0.2, 0.4, 0.6, 0.8])
+    const occluded = colorsAt(
+      createWorldWebGlPlan({ items, waterMaterials: [{ ...material, occludedLikeTerrain: true }] }),
+    )
+    assert.deepEqual(occluded.get('0:0'), [0.2, 0.4, 0.6, 0.8])
+    assert.deepEqual(occluded.get('1:0'), [0.1, 0.2, 0.3, 0.8])
+    assert.deepEqual(occluded.get('0:1'), [0.05, 0.1, 0.15, 0.8])
+    assert.deepEqual(occluded.get('1:1'), [0.15, 0.3, 0.45, 0.8])
+  })
+
+  it('lights a decal tile as ground: its normal and gloss maps, the ground AO in colour alpha', () => {
+    const items = [
+      ...cell().map((item, index) => ({ ...item, ambientOcclusion: [1, 0.5, 0.25, 0.75][index] })),
+      {
+        facet: 'terrain-materials',
+        id: 'overlay-materials:0',
+        layerId: 'terrain-materials',
+        coordinateSpaceId: 'height-grid',
+        lod: 'exact',
+        x: 0,
+        y: 0,
+        textureIndex: 7,
+        weights: [{ materialId: 'ground', weight: 1 }],
+        decal: { materialId: 'decal-7' },
+      },
+    ]
+    const plan = createWorldWebGlPlan({
+      items,
+      terrainMaterials: [
+        {
+          materialId: 'ground',
+          baseColorResourceId: 'ground.ktx2',
+          normalResourceId: 'ground_nm.ktx2',
+          normalEncoding: 'rgb-inverted-y',
+          specularResourceId: 'ground_sm.ktx2',
+          specularEncoding: 'gloss',
+        },
+        {
+          materialId: 'decal-7',
+          baseColorResourceId: 'tile-07.ktx2',
+          normalResourceId: 'tile-07_nm.ktx2',
+          specularResourceId: 'tile-07_sm.ktx2',
+          specularEncoding: 'gloss',
+        },
+      ],
+      terrainWeightRasters: [
+        {
+          resourceId: 'weights',
+          width: 2,
+          height: 2,
+          materialIds: ['ground'],
+          encoding: 'rgba8-unorm',
+          normalization: 'sum',
+        },
+      ],
+      terrainTextures: new Map(
+        ['ground.ktx2', 'ground_nm.ktx2', 'ground_sm.ktx2', 'tile-07.ktx2', 'tile-07_nm.ktx2', 'tile-07_sm.ktx2']
+          .map(id => [id, texture(id)])
+          .concat([['weights', texture('weights', 2, 2, [255, 0, 0, 0])]]),
+      ),
+    })
+    const ground = plan.splatTriangles[0]
+    assert.deepEqual(ground.normalSwizzles, [2])
+    assert.equal(ground.specularGloss, true)
+    const decal = plan.terrainDecalTriangles[0]
+    assert.equal(decal.normalTexture.id, 'tile-07_nm.ktx2')
+    assert.equal(decal.normalSwizzle, 0)
+    assert.equal(decal.specularTexture.id, 'tile-07_sm.ktx2')
+    assert.equal(decal.specularGloss, true)
+    // Colour alpha is the ground's AO at each vertex, as the splat batch below carries it.
+    const alphas = batch => Array.from({ length: 6 }, (_, vertex) => batch.colors[vertex * 4 + 3])
+    assert.deepEqual(alphas(decal), alphas(ground))
+    assert.ok(alphas(decal).some(alpha => alpha < 1))
+  })
+
   it('keeps multiplying water apart from the blended passes, its colour whole and unshaded by depth', () => {
     const material = {
       materialId: 'warzone-water',

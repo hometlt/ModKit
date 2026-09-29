@@ -1741,10 +1741,11 @@ function validHostResourceRoot(value: unknown): value is MapPreviewHostResourceR
   const record = recordOf(value)
   return (
     record !== undefined &&
-    Object.keys(record).every(key => key === 'rootId' || key === 'locator') &&
+    Object.keys(record).every(key => key === 'rootId' || key === 'locator' || key === 'optional') &&
     nonEmptyString(record['rootId']) &&
     Object.hasOwn(record, 'locator') &&
-    jsonSafeValue(record['locator'])
+    jsonSafeValue(record['locator']) &&
+    (record['optional'] === undefined || typeof record['optional'] === 'boolean')
   )
 }
 

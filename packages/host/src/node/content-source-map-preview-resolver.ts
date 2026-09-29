@@ -273,8 +273,11 @@ export function createContentSourceMapPreviewResourcePlanResolver(
         const logicalPrefix = sourcePathOf(root.rootId) ?? root.rootId
         const mount = mountsByPath.get(fold(logicalPrefix))
         if (mount === undefined) {
-          findings.push(diagnostic('warning', 'x3.host/map-preview-content-dependency-unmounted',
-            `${logicalPrefix} was not found in any configured content source`))
+          findings.push(root.optional === true
+            ? diagnostic('information', 'x3.host/map-preview-optional-root-absent',
+              `${logicalPrefix} is optional and no configured content source holds it`)
+            : diagnostic('warning', 'x3.host/map-preview-content-dependency-unmounted',
+              `${logicalPrefix} was not found in any configured content source`))
           rootsById.set(root.rootId, Object.freeze({
             rootId: root.rootId, pathPrefix: '', logicalPrefix, namespace: empty,
             containerRevision: revisionIdFromRef({ kind: 'provider-token', value: `unmounted\0${logicalPrefix}` }),
