@@ -164,19 +164,26 @@ it('draws what a frame built with one program as one, in depth order, past draws
 })
 
 it('keeps a draw of another program between the draws of one program it overlaps', () => {
-  const sprites = effectProgram('additive')
-  const other = effectProgram('blend')
-  const packed = createWorldWebGlCompositeTransparentDrawPlan(emptyPlan(), camera, [
-    effectDraw(sprites, 0, 0),
-    effectDraw(other, 5, 0),
-    effectDraw(sprites, 10, 0),
-  ])
-    .filter(entry => entry.kind === 'material')
-    .map(entry => [entry.draw.program.blend, ...placedAt(entry)])
-  assert.deepEqual(packed, [
+  const packed = otherBlend => {
+    const sprites = effectProgram('additive')
+    const other = effectProgram(otherBlend)
+    return createWorldWebGlCompositeTransparentDrawPlan(emptyPlan(), camera, [
+      effectDraw(sprites, 0, 0),
+      effectDraw(other, 5, 0),
+      effectDraw(sprites, 10, 0),
+    ])
+      .filter(entry => entry.kind === 'material')
+      .map(entry => [entry.draw.program.blend, ...placedAt(entry)])
+  }
+  assert.deepEqual(packed('blend'), [
     ['additive', 0],
     ['blend', 5],
     ['additive', 10],
+  ])
+  // Additions sum alike in any order: the sprites join past another adding draw.
+  assert.deepEqual(packed('add-alpha'), [
+    ['additive', 0, 10],
+    ['add-alpha', 5],
   ])
 })
 

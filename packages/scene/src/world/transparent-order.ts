@@ -14,6 +14,8 @@ const EVERYWHERE = 3
  * Each item lands one level above every earlier overlapping item of another batch and no lower than an
  * earlier overlapping item of its own batch. Inside one level no two batches overlap, so a batch's
  * items there draw as one run in the given order and the blended result is the sorted order's.
+ * Blends of one commuting class (`commuting[i] > 0`: additions to the target, say) give one sum in
+ * any order, so such items do not order each other at all, whatever their batch.
  *
  * `boxes` holds [minX, minY, maxX, maxY] per item, in the given order, in any fixed orthonormal basis of
  * the view plane: under an orthographic view, overlap on screen is overlap of these projections. A box
@@ -24,11 +26,14 @@ export function transparentOrderLevels(
   source: Float64Array,
   batches: Int32Array,
   epsilon: number,
+  commuting?: Uint8Array,
 ): Int32Array {
   const count = batches.length
   if (source.length !== count * 4)
     throw new TypeError('transparent order boxes must hold four bounds per item')
   if (!(epsilon >= 0)) throw new TypeError('transparent order epsilon must be nonnegative')
+  if (commuting !== undefined && commuting.length !== count)
+    throw new TypeError('transparent order classes must hold one class per item')
   const levels = new Int32Array(count)
   const boxes = Float64Array.from(source)
   let minimumX = Infinity
@@ -114,13 +119,15 @@ export function transparentOrderLevels(
     const x1 = boxes[offset + 2]! + epsilon
     const y1 = boxes[offset + 3]! + epsilon
     const batch = batches[item]!
+    const blend = commuting?.[item] ?? 0
     let level = 0
     // The level an earlier item requires, or -1 where it cannot raise the level found (placed at or
-    // below it less one, seen already, or apart on screen).
+    // below it less one, seen already, commuting with it or apart on screen).
     const required = (other: number, found: number) => {
       const placedAt = levels[other]!
       if (placedAt + 1 <= found || visited[other] === item) return -1
       visited[other] = item
+      if (blend !== 0 && commuting![other] === blend) return -1
       const at = other * 4
       if (boxes[at]! > x1 || boxes[at + 2]! < x0 || boxes[at + 1]! > y1 || boxes[at + 3]! < y0)
         return -1

@@ -8357,9 +8357,28 @@ function worldMaterialMergeKey(entry: WorldCompositeMaterialDraw): string | unde
 }
 
 /**
+ * Blend classes whose draws commute (see transparentOrderLevels): additions to the target (a world
+ * batch's additive blend, a material's additive and add-alpha) and products with it (modulate). A
+ * draw that writes depth commutes with nothing.
+ */
+const ADDING_BLEND = 1
+const MULTIPLYING_BLEND = 2
+
+function worldMaterialBlendClass(draw: WorldCompositeMaterialDraw['draw']): number {
+  const { program } = draw
+  if (materialIsSolid(program) || draw.depthOnly === true || program.depthPrepass === true) return 0
+  return program.blend === 'additive' || program.blend === 'add-alpha'
+    ? ADDING_BLEND
+    : program.blend === 'modulate' || program.blend === 'modulate2x'
+      ? MULTIPLYING_BLEND
+      : 0
+}
+
+/**
  * Transparent draws in back-to-front order, packed: see `transparentOrderLevels`. Decals of one
  * batch that alternate in depth with other batches but never overlap them on screen draw as one run,
- * and every pair that does overlap keeps its sorted order, so the blended picture is unchanged.
+ * and every pair that does overlap keeps its sorted order (unless both add to the target, which sums
+ * alike in any order), so the blended picture is unchanged.
  * Each world triangle is its own item. So is each material draw; those built for this frame (an
  * effect's sprites) batch by program and draw as one wherever the order allows, each vertex with its
  * draw's model matrix (see worldMaterialMergeKey).
@@ -8377,6 +8396,7 @@ function packWorldWebGlTransparentDraws(
   const count = triangles.depths.length + materials
   const boxes = new Float64Array(count * 4)
   const batches = new Int32Array(count)
+  const blends = new Uint8Array(count)
   const itemTriangle = new Int32Array(count).fill(-1)
   const itemEntry: WorldWebGlCompositeTransparentDraw[] = []
   // World batches and material merge keys, numbered apart.
@@ -8389,6 +8409,7 @@ function packWorldWebGlTransparentDraws(
       let batch = key === undefined ? -1 : batchIds.get(key)
       if (batch === undefined) batchIds.set(key!, (batch = batchIds.size))
       batches[item] = batch
+      blends[item] = worldMaterialBlendClass(entry.draw)
       itemEntry[item] = entry
       item += 1
       continue
@@ -8397,6 +8418,7 @@ function packWorldWebGlTransparentDraws(
     if (run === undefined) throw new TypeError('world transparent run is not in its plan')
     let batch = batchIds.get(entry.draw.batch)
     if (batch === undefined) batchIds.set(entry.draw.batch, (batch = batchIds.size))
+    const blend = entry.draw.blendMode === 'additive' ? ADDING_BLEND : 0
     for (let triangle = triangles.runStarts[run]!; triangle < triangles.runStarts[run + 1]!; triangle += 1) {
       // Element copies: a subarray view per triangle cost more than the copy (71 000 a frame).
       const from = triangle * 4,
@@ -8406,6 +8428,7 @@ function packWorldWebGlTransparentDraws(
       boxes[to + 2] = triangles.boxes[from + 2]!
       boxes[to + 3] = triangles.boxes[from + 3]!
       batches[item] = batch
+      blends[item] = blend
       itemTriangle[item] = triangle
       itemEntry[item] = entry
       item += 1
@@ -8417,7 +8440,7 @@ function packWorldWebGlTransparentDraws(
     plan.bounds.maximum[2] - plan.bounds.minimum[2],
   )
   // Far above float32 projection error, far below a decal: only near-touching boxes are affected.
-  const levels = transparentOrderLevels(boxes, batches, Math.max(1e-4, extent * 1e-5))
+  const levels = transparentOrderLevels(boxes, batches, Math.max(1e-4, extent * 1e-5), blends)
   // Stable order by level: counting sort.
   let deepest = 0
   for (const level of levels) if (level > deepest) deepest = level

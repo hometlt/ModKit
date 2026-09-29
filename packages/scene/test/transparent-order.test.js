@@ -13,7 +13,7 @@ const levelsOf = (items, epsilon = 0) =>
   )
 
 // The O(n²) definition the grid accelerates.
-function bruteForceLevels(boxes, batches, epsilon) {
+function bruteForceLevels(boxes, batches, epsilon, commuting) {
   const levels = []
   for (let item = 0; item < batches.length; item += 1) {
     let level = 0
@@ -21,6 +21,8 @@ function bruteForceLevels(boxes, batches, epsilon) {
     for (let other = 0; other < item; other += 1) {
       const [a0, b0, a1, b1] = boxes.slice(other * 4, other * 4 + 4)
       if (a0 > x1 + epsilon || a1 < x0 - epsilon || b0 > y1 + epsilon || b1 < y0 - epsilon) continue
+      if (commuting !== undefined && commuting[item] > 0 && commuting[other] === commuting[item])
+        continue
       const same = batches[item] >= 0 && batches[other] === batches[item]
       level = Math.max(level, levels[other] + (same ? 0 : 1))
     }
@@ -159,4 +161,54 @@ it('matches the pairwise definition on stacked decals, with boxes that cover all
   ).forEach((level, index) => (expected[kept[index]] = level))
   assert.ok(Math.max(...levels) > 50)
   assert.deepEqual(Array.from(levels), expected)
+})
+
+it('lets blends of one commuting class pass each other where they overlap', () => {
+  const items = [
+    { box: [0, 0, 1, 1], batch: 0, blend: 1 },
+    // Adds over the first, of another batch: sums alike before it, so it shares its level.
+    { box: [0.5, 0, 1.5, 1], batch: 1, blend: 1 },
+    // Blends over both: after them.
+    { box: [0.2, 0, 1.2, 1], batch: 2, blend: 0 },
+    // Adds over the blend: after it, whatever it adds with.
+    { box: [0.4, 0, 1.4, 1], batch: 0, blend: 1 },
+    // Multiplies over everything: never passes an add.
+    { box: [0, 0, 2, 1], batch: 3, blend: 2 },
+  ]
+  const levels = transparentOrderLevels(
+    Float64Array.from(items.flatMap(item => item.box)),
+    Int32Array.from(items.map(item => item.batch)),
+    0,
+    Uint8Array.from(items.map(item => item.blend)),
+  )
+  assert.deepEqual(Array.from(levels), [0, 0, 1, 2, 3])
+  assert.throws(
+    () => transparentOrderLevels(new Float64Array(4), Int32Array.of(0), 0, new Uint8Array(2)),
+    /one class per item/,
+  )
+})
+
+it('matches the pairwise definition on random fields of commuting and ordered blends', () => {
+  let seed = 4242
+  const random = () => {
+    seed = (Math.imul(seed, 1103515245) + 12345) >>> 0
+    return seed / 2 ** 32
+  }
+  const boxes = []
+  const batches = []
+  const commuting = []
+  for (let item = 0; item < 1200; item += 1) {
+    const x = random() * 40
+    const y = random() * 40
+    boxes.push(x, y, x + random() * 6, y + random() * 6)
+    batches.push(random() < 0.05 ? -1 : Math.floor(random() * 6))
+    commuting.push(random() < 0.5 ? 1 : random() < 0.3 ? 2 : 0)
+  }
+  const levels = transparentOrderLevels(
+    Float64Array.from(boxes),
+    Int32Array.from(batches),
+    0.01,
+    Uint8Array.from(commuting),
+  )
+  assert.deepEqual(Array.from(levels), bruteForceLevels(boxes, batches, 0.01, commuting))
 })
