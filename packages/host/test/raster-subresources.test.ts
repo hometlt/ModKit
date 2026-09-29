@@ -128,7 +128,14 @@ it('acquires all six faces in one codec lease, preserving pixels, mip and owned 
   selection.mipLevel = 0
   const result = await reading
   if (result.state !== 'decoded-surfaces') throw new Error(JSON.stringify(result))
-  expect(result.info).toMatchObject({ width: 4, height: 4, faces: 6, mipLevels: 2 })
+  // two stored levels and the 1x1 computed one (15b2d098)
+  expect(result.info).toMatchObject({
+    width: 4,
+    height: 4,
+    faces: 6,
+    mipLevels: 3,
+    storedMipLevels: 2,
+  })
   expect(result.surfaces).toHaveLength(6)
   for (const [face, surface] of result.surfaces.entries()) {
     expect(surface.subresource).toEqual({ frame: 0, layer: 0, face, mipLevel: 1, slice: 0 })
@@ -189,7 +196,8 @@ it('refuses fit selection when no available mip satisfies the shared surface bud
   const result = await f.port.read({
     kind: 'embedded',
     bytes: f.bytes,
-    maxBytes: 95,
+    // six faces of the smallest, computed 1x1 level need 24 bytes
+    maxBytes: 23,
     selection: { face: 'all', mipLevel: 'fit' },
   })
   expect(result).toMatchObject({
@@ -201,7 +209,7 @@ it('refuses fit selection when no available mip satisfies the shared surface bud
   expect(f.state.reservedBytes).toBe(0)
 })
 
-it.each([{ face: 6 }, { mipLevel: 2 }, { frame: 1 }, { layer: 1 }, { slice: 1 }])(
+it.each([{ face: 6 }, { mipLevel: 3 }, { frame: 1 }, { layer: 1 }, { slice: 1 }])(
   'refuses an absent selected subresource %j and releases its codec',
   async selection => {
     const f = fixture()
