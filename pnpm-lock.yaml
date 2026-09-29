@@ -354,6 +354,16 @@ importers:
         specifier: workspace:*
         version: link:../../packages/sdk
 
+  extensions/java:
+    dependencies:
+      '@modkit/codec-kit':
+        specifier: workspace:*
+        version: link:../../packages/codec-kit
+    devDependencies:
+      '@modkit/sdk':
+        specifier: workspace:*
+        version: link:../../packages/sdk
+
   extensions/lua:
     devDependencies:
       '@modkit/sdk':

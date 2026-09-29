@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "contract": { "id": "modkit/codec-contribution", "major": 1 },
+  "id": "modkit/java-class",
+  "displayName": "JVM class file",
+  "status": "supported",
+  "runtimeVariants": [
+    {
+      "variantId": "trusted-node",
+      "entrypoint": "./dist/codec.js",
+      "target": { "environments": ["node"] },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": ["read-source"]
+    },
+    {
+      "variantId": "portable",
+      "entrypoint": "./dist/codec.js",
+      "target": { "environments": ["browser-worker", "node-worker"] },
+      "executionProfile": "worker-brokered",
+      "requestedPermissionClasses": ["read-source"]
+    }
+  ],
+  "limitations": [
+    "Reads the class file header, constant pool, fields (with constant values), methods and their Code attributes, and lists the bytecode as javap -c does; every count, length and pool index is checked.",
+    "It never loads or runs the class: the bounded constant interpreter of the package walks straight-line code only and refuses branches, switches, throws and exception handlers. Decompilation and writing are unsupported."
+  ],
+  "spec": {
+    "formatRefs": [{ "formatId": "java-class", "label": "JVM class file" }],
+    "roles": ["semantic"],
+    "sourceTopology": "single",
+    "artifactStages": ["compiled"],
+    "openIntents": ["probe", "inspect", "full", "export"],
+    "match": {
+      "extensions": ["class"],
+      "mediaTypes": ["application/java-vm"],
+      "signatures": [{ "from": "start", "offset": 0, "bytesHex": "cafebabe" }]
+    },
+    "probe": {
+      "kind": "bytes",
+      "ranges": [{ "from": "start", "length": 16 }],
+      "maxBytes": 16
+    },
+    "representations": [
+      {
+        "id": "class-file",
+        "contract": "modkit.java/class-file",
+        "major": 1,
+        "stage": "compiled",
+        "lossy": false
+      }
+    ],
+    "publishesDataSources": [
+      { "contract": "common.view/tree-data-source", "major": 1 },
+      { "contract": "common.view/text-data-source", "major": 1 },
+      { "contract": "common.view/byte-range-source", "major": 1 }
+    ],
+    "operations": [
+      {
+        "id": "view.inspect",
+        "handlerId": "inspect",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["json"]
+      },
+      {
+        "id": "asset.validate",
+        "handlerId": "validate",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["none"]
+      },
+      {
+        "id": "export.raw",
+        "handlerId": "export-raw",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"]
+      }
+    ],
+    "implementationTier": { "claimed": 1 },
+    "budgets": {
+      "maxInputBytes": "16777216",
+      "maxDepth": 64,
+      "maxNodes": 100000,
+      "maxScalarBytes": 16777216,
+      "maxDiagnostics": 1000
+    }
+  }
+}

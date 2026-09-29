@@ -5,6 +5,7 @@ module.exports = Object.freeze([
   'data',
   'documents',
   'images',
+  'java',
   'models',
   'vector',
   'video',

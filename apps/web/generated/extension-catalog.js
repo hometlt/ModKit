@@ -11465,6 +11465,275 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
+        artifactDigest: 'sha256:edd2abd39dd11fd9fcf1b760711da699d5fbcf18902c5ec39e6d6d4ca7672670',
+        fileDigests: {
+          'README.md': 'sha256:eebf23501ef4156fbcefeb5b0bbacc7c5eabe56b10538c262dae1bec206acadf',
+          'contributions/codec-java-class.json':
+            'sha256:abeaf9e56aa1a4a1fd91d10fe7cb98bdebb953b0796dadccd97bbf870fca3647',
+          'dist/bytecode.d.ts':
+            'sha256:f9c542f6a73b6586fffb2177172bf24ca63abc22d464d45f2680b629ef468dc6',
+          'dist/bytecode.d.ts.map':
+            'sha256:f8c2f7f5bd9a4c2b95806f3d77d15fc2e6d984c010abf8b9e56b22479c0f8a5c',
+          'dist/bytecode.js':
+            'sha256:fa817dace99cdbeeb7d113a2337c2fe651a6b2ab62ac43d661d9fc4732c40276',
+          'dist/bytecode.js.map':
+            'sha256:10ded0884423ef77d57ca15970f18cc01c1fbe412bc3bd4d7c26424ce8787bb3',
+          'dist/class-file.d.ts':
+            'sha256:f38fc78496209974fc23131d845d99b2b756f7206c6613c9c23a55d6fd08a992',
+          'dist/class-file.d.ts.map':
+            'sha256:e7fd80d4d068157c4539c2e61b237f77d6e8e577d757a4890183fac25a0db2cf',
+          'dist/class-file.js':
+            'sha256:7369237e460d0a5a169fe5b956cf9c2b4b672b0250852421681402ad5b36a358',
+          'dist/class-file.js.map':
+            'sha256:04dff6647a2231e24a87305206bb51557c6df4a5380584ff06123b344d5cda86',
+          'dist/codec.d.ts':
+            'sha256:70f2272f5e6e96098c8408262420759a835f96084ccedf73b84bef08e4f7b479',
+          'dist/codec.d.ts.map':
+            'sha256:4954a6cc0f92d5a21ef6c5a500bfd6ef9fffd4ac68c6893894ef3ac1fc31d0a2',
+          'dist/codec.js':
+            'sha256:801cba05785c9590519a04bd7925d8bc84b5072e32c8c2347edf7579b23e3638',
+          'dist/codec.js.map':
+            'sha256:4f398418ad863af72c36c2936302fd19b02fb613c3323367bf24c995d90a20ff',
+          'dist/index.d.ts':
+            'sha256:94e90af3016ed46eea09074e3e7ceb8ac5b48e3ba2f1932e545cc76cab1d0005',
+          'dist/index.d.ts.map':
+            'sha256:4e48b0ab1fc7e712837c5ec80354dc9113b1a53cbb329c958c8eba6eb3b1ccb0',
+          'dist/index.js':
+            'sha256:0028b845707c649e1b5b9e91d79c1e2fea4429e4b41db0b261b42061ef06561f',
+          'dist/index.js.map':
+            'sha256:4618118effa3f9dd6de4e26d5e3b13e083f0f445c3923245dea21a4d076cac58',
+          'dist/interpreter.d.ts':
+            'sha256:7b41d4dd22fc96fa6cea3ebb48db0924eb9d66f9bb4c0edd46d2120795b901a2',
+          'dist/interpreter.d.ts.map':
+            'sha256:d225966e02afec9524805873367584e3c349dc8ff09b4b2258c702abb6ad2bb9',
+          'dist/interpreter.js':
+            'sha256:60e6e135c841fc366a7a38bcf6de639c0d11250c5ce34fce27994f687daf860a',
+          'dist/interpreter.js.map':
+            'sha256:022accf59cca48f9d8386d9bcd416e7a9c72e908e5c8ab8f7d6e95bb090bb05f',
+          'package.json': 'sha256:bbc40fcdf10b49710604f8019903157f4d221e58aaef96b298b5dc6f8118a952',
+          'src/bytecode.ts':
+            'sha256:c9beb7f1f6c92ad84b0fe6b842eef99be908f798db6b8bbca008d828893a31cd',
+          'src/class-file.ts':
+            'sha256:4ef19e8e4457495b3b0d01815d771399e35b4aa758425cf8a2bda40bf515f8a4',
+          'src/codec.ts': 'sha256:0b11ebffa5132857c86d14d2426de9f4f754109ab1759b769663cec0fbfff97e',
+          'src/index.ts': 'sha256:2542de1574c447ff09f0f2bd0edc5ab9d6073956f475aa2e7fbb6930994a996a',
+          'src/interpreter.ts':
+            'sha256:5624e1354f5d9cd0e5218a90ceb053694a58dfa547ef1de653ceabfe1ffff28c',
+          'test/class-file.test.ts':
+            'sha256:38d8e06493d3eb451a0c609194ffcfe97bef35315da320a9ea7b28d98f249226',
+          'test/fixtures/Sample.class':
+            'sha256:4c1c21e83044c0245f390f6a0ee77b348ab554e3145d7aa647511fd1b08dad0a',
+          'test/fixtures/Sample.java':
+            'sha256:0e5fa9e887ea0ed942da83a64a22b050a7538958ef26b852deab3474e9bbbe52',
+          'tsconfig.json':
+            'sha256:daba80f2abbe46449d7ffad22c2029633475f729b9380cc79daeb850c2223492',
+        },
+        inventoryRecordId:
+          'artifact:sha256:edd2abd39dd11fd9fcf1b760711da699d5fbcf18902c5ec39e6d6d4ca7672670',
+      },
+      artifactRoot: 'extensions/java/',
+      containers: {
+        packageJson: {
+          dependencies: {
+            '@modkit/codec-kit': 'workspace:*',
+          },
+          description:
+            'JVM class files for MK3: constant pool, members, a bytecode listing and a bounded constant interpreter.',
+          devDependencies: {
+            '@modkit/sdk': 'workspace:*',
+          },
+          exports: {
+            '.': {
+              default: './dist/index.js',
+              types: './dist/index.d.ts',
+            },
+            './codec': {
+              default: './dist/codec.js',
+              types: './dist/codec.d.ts',
+            },
+            './package.json': './package.json',
+          },
+          files: ['contributions', 'dist', 'README.md'],
+          license: 'MIT',
+          modkit: {
+            contributionManifests: ['./contributions/*.json'],
+            id: 'java',
+            presentation: {
+              description:
+                'JVM class files: constant pool, fields, methods, bytecode listing and constant interpretation.',
+              displayName: 'Modkit Java',
+              vendor: {
+                displayName: 'Modkit',
+                id: 'modkit',
+              },
+            },
+            publisher: 'modkit',
+            schemaVersion: 1,
+          },
+          name: 'modkit-extension-java',
+          peerDependencies: {
+            '@modkit/sdk': 'workspace:*',
+          },
+          scripts: {
+            build: 'tsc -b tsconfig.json',
+          },
+          type: 'module',
+          version: '1.0.0',
+        },
+      },
+      documentDigests: [
+        [
+          'contributions/codec-java-class.json',
+          'sha256:abeaf9e56aa1a4a1fd91d10fe7cb98bdebb953b0796dadccd97bbf870fca3647',
+        ],
+      ],
+      documents: [
+        [
+          'contributions/codec-java-class.json',
+          {
+            contract: {
+              id: 'modkit/codec-contribution',
+              major: 1,
+            },
+            displayName: 'JVM class file',
+            id: 'modkit/java-class',
+            limitations: [
+              'Reads the class file header, constant pool, fields (with constant values), methods and their Code attributes, and lists the bytecode as javap -c does; every count, length and pool index is checked.',
+              'It never loads or runs the class: the bounded constant interpreter of the package walks straight-line code only and refuses branches, switches, throws and exception handlers. Decompilation and writing are unsupported.',
+            ],
+            runtimeVariants: [
+              {
+                entrypoint: './dist/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './dist/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['compiled'],
+              budgets: {
+                maxDepth: 64,
+                maxDiagnostics: 1000,
+                maxInputBytes: '16777216',
+                maxNodes: 100000,
+                maxScalarBytes: 16777216,
+              },
+              formatRefs: [
+                {
+                  formatId: 'java-class',
+                  label: 'JVM class file',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                extensions: ['class'],
+                mediaTypes: ['application/java-vm'],
+                signatures: [
+                  {
+                    bytesHex: 'cafebabe',
+                    from: 'start',
+                    offset: 0,
+                  },
+                ],
+              },
+              openIntents: ['probe', 'inspect', 'full', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 16,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 16,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/text-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'modkit.java/class-file',
+                  id: 'class-file',
+                  lossy: false,
+                  major: 1,
+                  stage: 'compiled',
+                },
+              ],
+              roles: ['semantic'],
+              sourceTopology: 'single',
+            },
+            status: 'supported',
+          },
+        ],
+      ],
+      files: [
+        'README.md',
+        'contributions/codec-java-class.json',
+        'package.json',
+        'src/bytecode.ts',
+        'src/class-file.ts',
+        'src/codec.ts',
+        'src/index.ts',
+        'src/interpreter.ts',
+        'test/class-file.test.ts',
+        'test/fixtures/Sample.class',
+        'test/fixtures/Sample.java',
+        'tsconfig.json',
+      ],
+      name: 'java',
+      source: 'extensions/java',
+    },
+    {
+      artifact: {
         artifactDigest: 'sha256:11154e06ea1ac131aefc5d5b43cbb3ac81b28238e2a8df9aae039995ce12e0ce',
         fileDigests: {
           'MIGRATION-NOTES-common-models.json':
