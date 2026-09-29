@@ -385,6 +385,8 @@ export const IMAGE_FALLBACK_MESSAGES = {
   'viewer.imageExported': 'exported {count} file(s)',
   'viewer.imageFormat': 'Format',
   'viewer.imageHasAlpha': 'Has alpha',
+  'viewer.imageMipFit':
+    'Shown from mip {level}: the full image ({width}×{height}) is over the viewer budget.',
   'viewer.imageMipLevels': 'Mip levels',
   'viewer.imageNextSubresource': 'Next {axis}',
   'viewer.imageOperationRefused': 'The operation was refused: {reason}',

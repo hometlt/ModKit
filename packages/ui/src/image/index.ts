@@ -47,6 +47,7 @@ import {
   type ImageEditSurface,
 } from '../image-editing/index.js'
 import { collectEncodedMedia } from '../media/encoded.js'
+import { formatEntryBytes } from '../namespace/index.js'
 import {
   exportOffer,
   mountFieldEditor,
@@ -134,6 +135,19 @@ export function subresourceExtent(
     width: Math.max(1, info.width >>> mipLevel),
     height: Math.max(1, info.height >>> mipLevel),
   }
+}
+
+/**
+ * The first mip level whose decoded pixels fit the viewer's budget: 0 unless the image is over it,
+ * as an 8K texture is. A codec storing fewer levels declares computed ones (`storedMipLevels`) for
+ * exactly this. None fits: 0, whose read then says why.
+ */
+export function firstShownMip(info: RasterImageInfo): number {
+  for (let level = 0; level < axisCount(info, 'mipLevel'); level += 1) {
+    const { width, height } = subresourceExtent(info, level)
+    if (width * height * 4 <= IMAGE_MAXIMUM_BYTES) return level
+  }
+  return 0
 }
 
 /**
@@ -469,6 +483,8 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
       const background: ImageBackground = 'checker'
       let channel: ImageChannel = 'rgb'
       let note = ''
+      /** The encoded file's size, once its descriptor answers. */
+      let fileBytes: bigint | undefined
       let descriptor = args.descriptor
       const decoded = new Map<string, ImageStageModel>()
       /*
@@ -582,7 +598,6 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
         const current = shown()
         if (current === undefined) return
         const scale = currentScale()
-        const bytes = model?.bytes ?? 0
         const items = [
           {
             id: 'size',
@@ -600,7 +615,9 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
             align: 'start' as const,
             choices: formatChoices(),
           },
-          { id: 'bytes', text: `${(bytes / 1024).toFixed(1)} KiB`, align: 'start' as const },
+          ...(fileBytes === undefined
+            ? []
+            : [{ id: 'bytes', text: formatEntryBytes(fileBytes), align: 'start' as const }]),
           {
             id: 'channel',
             icon: 'symbol-color',
@@ -1345,10 +1362,33 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
       }
       try {
         info = await source.info(scope.signal)
+        const level =
+          info.decodedAccess && source.readRegion !== undefined ? firstShownMip(info) : 0
+        if (level > 0) {
+          subresource = Object.freeze({ ...subresource, mipLevel: level })
+          compareWith = subresource
+          note = localizer.text('viewer.imageMipFit', {
+            level,
+            width: info.width,
+            height: info.height,
+          })
+        }
         model = await modelFor(subresource)
         renderSections()
         setState(stage, [])
         paint()
+        // The status bar shows the file's size, not the decoded pixels'.
+        void source
+          .encoded(scope.signal)
+          .then(media => media.descriptor())
+          .then(
+            value => {
+              if (scope.signal.aborted) return
+              fileBytes = value.bytes
+              publishStatus()
+            },
+            () => undefined,
+          )
       } catch (error) {
         setState(stage, ['error'])
         canvas.remove()

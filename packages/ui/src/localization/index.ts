@@ -161,6 +161,8 @@ const EN_MESSAGES = Object.freeze({
   'viewer.imageDecodeError':
     'The platform decoder cannot render these bytes: {reason}. A format-specific decoder provider is required.',
   'viewer.imageSummary': '{width}×{height} · {size} KiB · {scale}%{channel}',
+  'viewer.imageMipFit':
+    'Shown from mip {level}: the full image ({width}×{height}) is over the viewer budget.',
   'viewer.imageChannel': ' · channel {channel}',
   'viewer.imageSubresources': 'Subresource, comparison and export',
   'viewer.imageSubresource': 'subresource {subresource}',
@@ -1077,6 +1079,8 @@ const RU_MESSAGES: Readonly<Record<CoreUiMessageKey, string>> = Object.freeze({
   'viewer.imageDecodeError':
     'Системный декодер не может открыть эти данные: {reason}. Нужен декодер этого формата.',
   'viewer.imageSummary': '{width}×{height} · {size} КиБ · {scale}%{channel}',
+  'viewer.imageMipFit':
+    'Показан уровень mip {level}: полный размер ({width}×{height}) больше бюджета просмотрщика.',
   'viewer.imageChannel': ' · канал {channel}',
   'viewer.imageSubresources': 'Субресурс, сравнение и экспорт',
   'viewer.imageSubresource': 'субресурс {subresource}',

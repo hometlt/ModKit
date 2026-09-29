@@ -1,7 +1,7 @@
 import type { AnyDescriptor } from '@modkit/sdk'
 import { describe, expect, it } from 'vitest'
 import { exportOffer } from '../src/field-editor/index.js'
-import { convertedFileName } from '../src/image/index.js'
+import { convertedFileName, firstShownMip } from '../src/image/index.js'
 
 const presets = {
   schemaVersion: 1,
@@ -51,5 +51,21 @@ describe('image conversion presets', () => {
     expect(convertedFileName('tex', 'dxt1', '.dds')).toBe('tex.dxt1.dds')
     expect(convertedFileName('tex', 'button', '.dds')).toBe('tex.button.dds')
     expect(convertedFileName('tex', 'png', 'png')).toBe('tex.png')
+  })
+})
+
+describe('image start level', () => {
+  const info = (size: number, mipLevels: number) =>
+    ({ width: size, height: size, mipLevels }) as Parameters<typeof firstShownMip>[0]
+
+  it('starts an image over the 64 MiB budget at the first mip that fits', () => {
+    expect(firstShownMip(info(1024, 11))).toBe(0)
+    expect(firstShownMip(info(4096, 13))).toBe(0)
+    expect(firstShownMip(info(8192, 14))).toBe(1)
+    expect(firstShownMip(info(16384, 15))).toBe(2)
+  })
+
+  it('stays at mip 0 when no declared level fits, so the read says why', () => {
+    expect(firstShownMip(info(8192, 1))).toBe(0)
   })
 })
