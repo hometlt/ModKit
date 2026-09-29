@@ -40,6 +40,23 @@ function shader(gl: WebGL2RenderingContext, type: number, source: string): WebGL
  * finishes, so issuing every link first lets ANGLE compile them in parallel; each program's status
  * is checked when `createWebGlMaterialProgram` first leases it.
  */
+const shaderPairKeys = new WeakMap<object, string>()
+
+/**
+ * The program cache key of a shader pair (its vertex and fragment source joined), kept with the
+ * pair object. Programs that follow the clock are new objects every frame but lease the same shader
+ * pair, and joining its ~20 KB of source for every lease and warm-up allocated and hashed a new key
+ * string each time (on Amphion ~6 MiB a frame).
+ */
+export function shaderPairCacheKey(
+  pair: Readonly<{ vertexSource: string; fragmentSource: string }>,
+): string {
+  let key = shaderPairKeys.get(pair)
+  if (key === undefined)
+    shaderPairKeys.set(pair, (key = `${pair.vertexSource}\u0000${pair.fragmentSource}`))
+  return key
+}
+
 export function linkWebGlMaterialProgramsInParallel(
   gl: WebGL2RenderingContext,
   sources: Iterable<Readonly<{ vertexSource: string; fragmentSource: string }>>,
@@ -48,7 +65,7 @@ export function linkWebGlMaterialProgramsInParallel(
 ): number {
   let linked = 0
   for (const source of sources) {
-    const cacheKey = `${source.vertexSource}\u0000${source.fragmentSource}`
+    const cacheKey = shaderPairCacheKey(source)
     if (programCache.has(cacheKey)) continue
     const program = gl.createProgram()
     if (program === null) throw new TypeError('could not allocate a material program')
@@ -122,6 +139,8 @@ export function createWebGlMaterialProgram(
      * a new playback time differ only in uniforms; relinking them per frame dominated animated scenes.
      */
     readonly programCache?: Map<string, WebGLProgram>
+    /** The source's key in `programCache`, when the caller keeps it (see shaderPairCacheKey). */
+    readonly programCacheKey?: string
     /** Cached programs linked by `linkWebGlMaterialProgramsInParallel` whose status is still unchecked. */
     readonly pendingPrograms?: Set<WebGLProgram>
     /**
@@ -152,7 +171,7 @@ export function createWebGlMaterialProgram(
       throw new TypeError('material texture filter must be nearest or linear')
     return { binding, texture, filter }
   })
-  const cacheKey = `${source.vertexSource}\u0000${source.fragmentSource}`
+  const cacheKey = options.programCacheKey ?? `${source.vertexSource}\u0000${source.fragmentSource}`
   const cached = options.programCache?.get(cacheKey)
   const program = cached ?? gl.createProgram()
   if (program === null) throw new TypeError('could not allocate a material program')

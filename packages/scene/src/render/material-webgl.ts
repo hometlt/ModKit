@@ -7,6 +7,7 @@ import type {
 import {
   createWebGlMaterialProgram,
   linkWebGlMaterialProgramsInParallel,
+  shaderPairCacheKey,
   uniformLocation,
   type WebGlMaterialProgram,
 } from '../materials/webgl.js'
@@ -362,10 +363,12 @@ export function materialWebGlDraws(
         if (handle === undefined) throw new TypeError(`GPU material texture missing: ${resource}`)
         bound.set(resource, handle)
       }
-      const { vertexSource, fragmentSource, filters } = leaseShaderSources(source, material)
+      const shaders = leaseShaderSources(source, material)
+      const { vertexSource, fragmentSource, filters } = shaders
       lease = createWebGlMaterialProgram(gl, { ...source, vertexSource, fragmentSource }, bound, {
         filters,
         programCache: linked,
+        programCacheKey: shaderPairCacheKey(shaders),
         pendingPrograms,
         samplerCache: samplers,
         ...(options.mipmaps === true ? { mipmaps: true } : {}),
@@ -695,14 +698,15 @@ export function materialWebGlDraws(
     },
     /** Link every program these draws still need in one parallel batch, before any of them draws. */
     warm(draws: Iterable<MaterialDraw>): number {
-      const sources = new Map<string, Readonly<{ vertexSource: string; fragmentSource: string }>>()
+      // Each variant's shader pair is one object (leaseShaderSources keeps it); equal sources of two
+      // pairs link once, the second finds the first in the program cache.
+      const sources = new Set<Readonly<{ vertexSource: string; fragmentSource: string }>>()
       for (const draw of draws) {
         if (draw.program === undefined || draw.material === undefined) continue
         if (programs.has(draw.program)) continue
-        const shaders = leaseShaderSources(draw.program, draw.material)
-        sources.set(`${shaders.vertexSource}\n//\n${shaders.fragmentSource}`, shaders)
+        sources.add(leaseShaderSources(draw.program, draw.material))
       }
-      return linkWebGlMaterialProgramsInParallel(gl, sources.values(), linked, pendingPrograms)
+      return linkWebGlMaterialProgramsInParallel(gl, sources, linked, pendingPrograms)
     },
     release() {
       for (const geometries of vertexArrays.values())
