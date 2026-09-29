@@ -18,6 +18,7 @@ export {
 export { decodeFadpcm, fadpcmFrames } from './fadpcm.js'
 export { decodeXaAdpcm, XA_SOUND_GROUP_BYTES, XA_SOUND_GROUP_SAMPLES } from './xa-adpcm.js'
 export { IMA_INDEX_TABLE, IMA_STEP_TABLE } from './ima.js'
+export { mpegAudioFrame, type MpegAudioFrame } from './mpeg.js'
 export {
   vorbisCommentHeader,
   vorbisIdentificationHeader,
