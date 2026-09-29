@@ -650,6 +650,49 @@ it('reuses the simulated effect frames of many differently turned instances in t
   assert.notEqual(pannedDraws[0].scene.materials, firstDraws[0].scene.materials)
 })
 
+it('neither builds nor draws the effects of instances the view cannot show', () => {
+  const placed = (index, x, rotation) => ({
+    ...actor,
+    id: `actor-${index}`,
+    objectId: index + 1,
+    rotation,
+    uvwPosition: { x, y: 0, z: 0 },
+  })
+  const input = {
+    ...world(),
+    items: [
+      ...world().items.filter(item => item !== actor),
+      placed(0, 0, 0),
+      placed(1, 0.5, 1),
+      placed(2, 400, 2),
+    ],
+    models: new Map([['actor', effectModel({ particles: true })]]),
+    timeSeconds: 0.5,
+  }
+  const plan = createWorldWebGlPlan(input)
+  const offsetOf = entry => entry.draw.primitive.transform[12]
+  const whole = worldModelEffectDraws(plan, createWorldWebGlCameraFrame(plan, 64, 64))
+  assert.ok(whole.some(entry => offsetOf(entry) > 300))
+  const perInstance = whole.length / 3
+  // A camera's target is its offset from the middle of the plan's bounds.
+  const closeTo = x =>
+    createWorldWebGlCameraFrame(plan, 64, 64, {
+      ...DEFAULT_WORLD_WEBGL_CAMERA,
+      target: [0, 1, 2].map(
+        axis => (axis === 0 ? x : 0) - (plan.bounds.minimum[axis] + plan.bounds.maximum[axis]) / 2,
+      ),
+      zoom: 16,
+    })
+  // Close to the origin: only the two instances there are drawn, each as in the whole view.
+  const near = worldModelEffectDraws(plan, closeTo(0))
+  assert.equal(near.length, 2 * perInstance)
+  assert.ok(near.every(entry => offsetOf(entry) < 1))
+  // Close to the far one: it alone.
+  const far = worldModelEffectDraws(plan, closeTo(400))
+  assert.equal(far.length, perInstance)
+  assert.ok(far.every(entry => offsetOf(entry) > 300))
+})
+
 it('draws the particles of a trackless material with one program at every start phase, joined', () => {
   // Copies at the eight start phases of their clip, each turned its own way.
   const actors = Array.from({ length: 24 }, (_, index) => ({

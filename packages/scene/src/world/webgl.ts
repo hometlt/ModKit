@@ -581,6 +581,76 @@ interface WorldEffectFrames {
   camera: string
   current: Map<string, WorldEffectFrame>
   previous: Map<string, WorldEffectFrame>
+  /** The reach of the source's geometry by clock in this pass (see worldEffectReach). */
+  reach: Map<number, Float64Array | null>
+}
+
+/**
+ * Where an effect's geometry at one clock can lie in model space, at any orientation of its
+ * instance: the box of one frame's geometry (min xyz, max xyz) widened by twice its diagonal; null
+ * when the frame has none. Sprites and ribbons turn to the view, but their particles, travel and
+ * sizes do not: every sprite stands on a point inside that box, and none reaches further from it than
+ * its travel plus its width, each at most the diagonal. Nothing in an effect's geometry depends on
+ * the camera's distance.
+ */
+function worldEffectReach(frame: ReturnType<UvmEffectSource['frame']>): Float64Array | null {
+  const box = Float64Array.of(Infinity, Infinity, Infinity, -Infinity, -Infinity, -Infinity)
+  for (const primitive of frame.primitives) {
+    const { positions } = primitive
+    const matrix = primitive.transform ?? IDENTITY_COMPONENT_TRANSFORM
+    for (let at = 0; at + 2 < positions.length; at += 3) {
+      const x = positions[at]!,
+        y = positions[at + 1]!,
+        z = positions[at + 2]!
+      for (let axis = 0; axis < 3; axis++) {
+        const value =
+          matrix[axis]! * x + matrix[axis + 4]! * y + matrix[axis + 8]! * z + matrix[axis + 12]!
+        if (value < box[axis]!) box[axis] = value
+        if (value > box[axis + 3]!) box[axis + 3] = value
+      }
+    }
+  }
+  if (!(box[0]! <= box[3]!)) return null
+  const margin = 2 * Math.hypot(box[3]! - box[0]!, box[4]! - box[1]!, box[5]! - box[2]!)
+  for (let axis = 0; axis < 3; axis++) {
+    box[axis] = box[axis]! - margin
+    box[axis + 3] = box[axis + 3]! + margin
+  }
+  return box
+}
+
+/**
+ * Whether a model-space box placed by `transform` lies wholly outside the view of `viewProjection`:
+ * all its corners beyond one clip plane (x, y or depth). Linear in homogeneous coordinates, so it
+ * holds for corners behind the camera too; a NaN never culls.
+ */
+function worldBoxOutsideView(
+  box: Float64Array,
+  transform: Float32Array,
+  viewProjection: Float32Array,
+): boolean {
+  const matrix = multiplyComponentTransforms(viewProjection, transform)
+  let outside = 0b111111
+  for (let corner = 0; corner < 8 && outside !== 0; corner++) {
+    const x = box[corner & 1 ? 3 : 0]!,
+      y = box[corner & 2 ? 4 : 1]!,
+      z = box[corner & 4 ? 5 : 2]!
+    const clip = (row: number) =>
+      matrix[row]! * x + matrix[row + 4]! * y + matrix[row + 8]! * z + matrix[row + 12]!
+    const cx = clip(0),
+      cy = clip(1),
+      cz = clip(2),
+      cw = clip(3)
+    let planes = 0
+    if (cx < -cw) planes |= 1
+    if (cx > cw) planes |= 2
+    if (cy < -cw) planes |= 4
+    if (cy > cw) planes |= 8
+    if (cz < -cw) planes |= 16
+    if (cz > cw) planes |= 32
+    outside &= planes
+  }
+  return outside !== 0
 }
 
 const effectFrames = new WeakMap<UvmEffectSource, WorldEffectFrames>()
@@ -612,6 +682,8 @@ function uvmEffectSource(bytes: Uint8Array, sequenceIndex?: number): UvmEffectSo
 /**
  * Transparent material draws for every live effect at this camera. Sprite and ribbon geometry is
  * built in model space against the model-local view and then placed with the instance transform.
+ * An instance whose geometry cannot reach into the view (worldEffectReach) is neither built nor
+ * drawn: it covers no pixel.
  */
 export function worldModelEffectDraws(
   plan: WorldWebGlPlan,
@@ -636,6 +708,31 @@ export function worldModelEffectDraws(
     const period = effect.source.clipSeconds
     const time = period === undefined || period <= 0 ? effect.time : period + (effect.time % period)
     try {
+      let frames = effectFrames.get(effect.source)
+      if (frames === undefined)
+        effectFrames.set(
+          effect.source,
+          (frames = {
+            pass: effectPass,
+            camera: cameraKey,
+            current: new Map(),
+            previous: new Map(),
+            reach: new Map(),
+          }),
+        )
+      else if (frames.pass !== effectPass) {
+        frames.previous = frames.camera === cameraKey ? frames.current : new Map()
+        frames.current = new Map()
+        frames.reach = new Map()
+        frames.pass = effectPass
+        frames.camera = cameraKey
+      }
+      const reach = frames.reach.get(time)
+      if (
+        reach === null ||
+        (reach !== undefined && worldBoxOutsideView(reach, effect.transform, camera.viewProjection))
+      )
+        continue
       const localView = multiplyComponentTransforms(camera.viewMatrix, effect.transform)
       // Instances of one model at the same clock and orientation build identical local sprites
       // (billboard axes depend only on the view rotation), so simulate once per key.
@@ -646,23 +743,6 @@ export function worldModelEffectDraws(
         effect.context.teamColorIntensity ?? '',
         Array.from(localView.subarray(0, 11), value => value.toFixed(4)).join(','),
       ].join('|')
-      let frames = effectFrames.get(effect.source)
-      if (frames === undefined)
-        effectFrames.set(
-          effect.source,
-          (frames = {
-            pass: effectPass,
-            camera: cameraKey,
-            current: new Map(),
-            previous: new Map(),
-          }),
-        )
-      else if (frames.pass !== effectPass) {
-        frames.previous = frames.camera === cameraKey ? frames.current : new Map()
-        frames.current = new Map()
-        frames.pass = effectPass
-        frames.camera = cameraKey
-      }
       let cached = frames.current.get(key) ?? frames.previous.get(key)
       if (cached !== undefined) frames.current.set(key, cached)
       else {
@@ -678,6 +758,16 @@ export function worldModelEffectDraws(
       }
       const { frame, programs } = cached
       if (frame.primitives.length === 0) continue
+      // The first instance at a clock measures the reach its copies are culled by.
+      if (reach === undefined) {
+        const measured = worldEffectReach(frame)
+        frames.reach.set(time, measured)
+        if (
+          measured !== null &&
+          worldBoxOutsideView(measured, effect.transform, camera.viewProjection)
+        )
+          continue
+      }
       const primitives = frame.primitives.map(primitive => ({
         ...primitive,
         transform: multiplyComponentTransforms(
