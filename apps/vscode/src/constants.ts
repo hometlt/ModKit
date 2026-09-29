@@ -88,6 +88,8 @@ export const ARCHIVE_ACCEPTANCE_ACK_ENV = 'MODKIT_VSCODE_ACCEPTANCE_ARCHIVE_ACK'
 export const MANAGED_PACKAGES_DIRECTORY = 'managed-packages'
 export const MANAGED_RELEASE_DESCRIPTOR = 'release.v1.json'
 export const MANAGED_RELEASE_CATALOG = 'catalog.v1.json'
+/** The extension registry's public key, all the package carries of the managed release. */
+export const REGISTRY_TRUST_FILE = 'registry-trust.v1.json'
 export const SELECTED_SOURCES_KEY = 'modkit.selectedContentSources'
 /** Accounts this machine last had connected: region and non-secret account id, never a ticket. */
 export const BATTLENET_CONNECTIONS_KEY = 'modkit.sources.knownConnections'

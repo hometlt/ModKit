@@ -95,6 +95,7 @@
   "command.sources.publishNew.title": "Опубликовать новый мод или карту",
   "command.launchActiveMod": "Modkit: Протестировать активный мод в игре…",
   "configuration.launch.warnIfRunning.description": "Спрашивать перед закрытием запущенной игры для нового запуска.",
+  "configuration.extensionPackages.description": "Папка пакетов игр, опубликованных рядом с Modkit (`catalog.v1.json` и бандлы). Игры ставятся из неё, только если её каталог подписан ключом реестра Modkit; действует в новом окне.",
   "configuration.maxGraphHops.description": "Сколько связей граф связей проходит от корня, когда строится от узла (1–4).",
   "configuration.showHiddenEntries.description": "Показывать файлы и папки, которые архив или хранилище игры помечает скрытыми (`__MACOSX`, имена с точки, `Thumbs.db` и то, что скрывает каждый формат). По пути такой файл открывается всегда.",
   "configuration.launch.testMap.description": "Абсолютный путь карты для теста мода. Пусто — выбрать при запуске.",

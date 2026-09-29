@@ -416,6 +416,12 @@
         "markdownDescription": "%configuration.disabledExtensions.description%",
         "type": "array"
       },
+      "modkit.extensionPackages": {
+        "default": "",
+        "markdownDescription": "%configuration.extensionPackages.description%",
+        "scope": "machine",
+        "type": "string"
+      },
       "modkit.extensionRegistry": {
         "default": "",
         "markdownDescription": "%configuration.extensionRegistry.description%",

@@ -1,0 +1,7 @@
+{
+  "$comment": "The extension registry's public key: all the VS Code package carries of the managed release. Game bundles are published beside the VSIX (modkit.extensionPackages); the app checks their signed catalog against this key and never against a key found next to them. Copied from the signing block of the registry's release descriptor; renew it only when the registry key is rotated.",
+  "schemaVersion": 1,
+  "keyId": "modkit.ga-wave1b-2026-09-01",
+  "algorithm": "Ed25519",
+  "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAV5EtylGXaruEyvfj7TUL2qdNcNdljKcSU60+tIFJbMo=\n-----END PUBLIC KEY-----\n"
+}

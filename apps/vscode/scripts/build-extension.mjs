@@ -33,12 +33,6 @@ import { execFileSync } from 'node:child_process'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import {
-  copyOfflineReleaseToDist,
-  managedPackagesDirectory,
-  verifyPackagedOfflineRelease,
-} from './offline-release.mjs'
-
 const here = dirname(fileURLToPath(import.meta.url))
 const appRoot = resolve(here, '..')
 const repoRoot = resolve(appRoot, '..', '..')
@@ -52,7 +46,6 @@ if (
   publicationInventory.schemaVersion !== 1 ||
   publicationInventory.artifactKind !== 'deterministic-shell' ||
   !Array.isArray(publicationInventory.shellEntries) ||
-  !Array.isArray(publicationInventory.managedPackageEntries) ||
   !Array.isArray(publicationInventory.packagedCodecRoots)
 ) {
   throw new TypeError('VS Code publication artifact inventory must be deterministic-shell v1')
@@ -60,7 +53,6 @@ if (
 
 function assertPublicationArtifact(output) {
   const shellEntries = [...publicationInventory.shellEntries].sort()
-  const managedPackageEntries = [...publicationInventory.managedPackageEntries].sort()
   const packagedCodecRoots = [...publicationInventory.packagedCodecRoots].sort()
   if (
     shellEntries.some(
@@ -68,14 +60,6 @@ function assertPublicationArtifact(output) {
         typeof entry !== 'string' ||
         entry.length === 0 ||
         (index > 0 && entry === shellEntries[index - 1]),
-    ) ||
-    managedPackageEntries.some(
-      (entry, index) =>
-        typeof entry !== 'string' ||
-        entry.length === 0 ||
-        entry.includes('/') ||
-        entry.includes('\\') ||
-        (index > 0 && entry === managedPackageEntries[index - 1]),
     ) ||
     packagedCodecRoots.some(
       (entry, index) =>
@@ -100,17 +84,8 @@ function assertPublicationArtifact(output) {
     }
     rootDirectories.set(root, segments[1])
   }
-  if (managedPackageEntries.length !== 1 || managedPackageEntries[0] !== managedPackagesDirectory) {
-    throw new TypeError(
-      `VS Code publication artifact must name exactly ${managedPackagesDirectory}`,
-    )
-  }
   const expectedEntries = [
-    ...new Set(
-      [...shellEntries, ...managedPackageEntries, ...rootDirectories.keys()].map(
-        entry => entry.split('/')[0],
-      ),
-    ),
+    ...new Set([...shellEntries, ...rootDirectories.keys()].map(entry => entry.split('/')[0])),
   ].sort()
   const actualEntries = readdirSync(output).sort()
   if (JSON.stringify(actualEntries) !== JSON.stringify(expectedEntries)) {
@@ -135,7 +110,37 @@ function assertPublicationArtifact(output) {
       throw new Error(`VS Code packaged codec root is missing: ${root}`)
     }
   }
-  verifyPackagedOfflineRelease(output)
+}
+
+/*
+ * The registry's public key: all the VSIX carries of the managed release (owner decision 29.09).
+ * Game bundles are published beside the VSIX; the app checks their catalog against this key, never
+ * against a key found next to them.
+ */
+const REGISTRY_TRUST_FILE = 'registry-trust.v1.json'
+function copyRegistryTrust(output) {
+  const trust = JSON.parse(readFileSync(join(appRoot, REGISTRY_TRUST_FILE), 'utf8'))
+  if (
+    trust.schemaVersion !== 1 ||
+    trust.algorithm !== 'Ed25519' ||
+    typeof trust.keyId !== 'string' ||
+    trust.keyId.trim() === '' ||
+    typeof trust.publicKeyPem !== 'string' ||
+    !trust.publicKeyPem.startsWith('-----BEGIN PUBLIC KEY-----')
+  ) {
+    throw new TypeError(`${REGISTRY_TRUST_FILE} must name an Ed25519 public key by its id`)
+  }
+  cpSync(join(appRoot, REGISTRY_TRUST_FILE), join(output, REGISTRY_TRUST_FILE))
+}
+
+/**
+ * What a dependency ships that nothing runs: TypeScript sources and declarations, source maps,
+ * build info and tests (5.8 MiB of v52). Only dependencies are pruned: an extension root's files
+ * are pinned by digest in the bundled catalog.
+ */
+function developmentOnly(name, directory) {
+  if (directory) return name === 'test' || name === 'tests' || name === '__tests__'
+  return /\.(?:ts|mts|cts)$/u.test(name) || name.endsWith('.map') || name.endsWith('.tsbuildinfo')
 }
 
 function packageSegments(name) {
@@ -156,16 +161,18 @@ function packageNameFromSpecifier(specifier) {
   return packageSegments(specifier.split('/')[0]).join('/')
 }
 
-function copyPhysicalTree(source, destination) {
+function copyPhysicalTree(source, destination, skip = () => false) {
   const stat = lstatSync(source)
   if (stat.isSymbolicLink()) {
     throw new Error(`production package input must not be a symlink or junction: ${source}`)
   }
   if (stat.isDirectory()) {
     mkdirSync(destination, { recursive: true })
-    for (const entry of readdirSync(source).sort()) {
-      if (entry === 'node_modules') continue
-      copyPhysicalTree(join(source, entry), join(destination, entry))
+    for (const entry of readdirSync(source, { withFileTypes: true }).sort((left, right) =>
+      left.name < right.name ? -1 : left.name > right.name ? 1 : 0,
+    )) {
+      if (entry.name === 'node_modules' || skip(entry.name, entry.isDirectory())) continue
+      copyPhysicalTree(join(source, entry.name), join(destination, entry.name), skip)
     }
     return
   }
@@ -173,7 +180,7 @@ function copyPhysicalTree(source, destination) {
   cpSync(source, destination)
 }
 
-function copyWorkspacePackage(source, destination, manifest) {
+function copyWorkspacePackage(source, destination, manifest, skip = () => false) {
   copyPhysicalTree(join(source, 'package.json'), join(destination, 'package.json'))
   if (!Array.isArray(manifest.files)) {
     throw new Error(`workspace production package has no files whitelist: ${manifest.name}`)
@@ -198,7 +205,7 @@ function copyWorkspacePackage(source, destination, manifest) {
         `workspace production files whitelist entry is missing: ${manifest.name}/${entry}`,
       )
     }
-    copyPhysicalTree(input, join(destination, entry))
+    copyPhysicalTree(input, join(destination, entry), skip)
   }
 }
 
@@ -360,8 +367,9 @@ function copyBundledCodecRoots(output) {
     }
     copiedPackages.set(dependency, { source, version: manifest.version })
     const destination = join(dependenciesOutput, ...packageSegments(dependency))
-    if (isWorkspacePackage(source)) copyWorkspacePackage(source, destination, manifest)
-    else copyPhysicalTree(source, destination)
+    if (isWorkspacePackage(source))
+      copyWorkspacePackage(source, destination, manifest, developmentOnly)
+    else copyPhysicalTree(source, destination, developmentOnly)
     for (const nested of runtimeDependencies(manifest)) copyDependency(source, nested)
   }
 
@@ -511,7 +519,7 @@ async function buildInto(output, syncManifest) {
   cpSync(join(appRoot, 'app.css'), join(output, 'app.css'))
   cpSync(join(appRoot, 'generated', 'format-smoke.v1.json'), join(output, 'format-smoke.v1.json'))
   copyBundledCodecRoots(output)
-  copyOfflineReleaseToDist({ output })
+  copyRegistryTrust(output)
 
   // ---------------------------------------------------------------- manifest
   // Only the real output owns the manifest: a check build must not write the package it is checking.

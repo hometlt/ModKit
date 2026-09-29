@@ -1,6 +1,6 @@
-/** What an installed VSIX carries for its own acceptance: the format smoke and the managed registry. */
+/** What an installed VSIX carries for its own acceptance: the format smoke corpus. */
 import { createHash } from 'node:crypto'
-import { createReadStream, existsSync, readFileSync } from 'node:fs'
+import { createReadStream, readFileSync } from 'node:fs'
 import { isAbsolute, join, relative, resolve } from 'node:path'
 import * as vscode from 'vscode'
 
@@ -9,15 +9,7 @@ import {
   FORMAT_SMOKE_WORKSPACE_ROOT_ENV,
   FORMAT_SMOKE_SC2_ROOT_ENV,
   FORMAT_SMOKE_WARZONE_ROOT_ENV,
-  MANAGED_PACKAGES_DIRECTORY,
-  MANAGED_RELEASE_DESCRIPTOR,
-  MANAGED_RELEASE_CATALOG,
 } from './constants.js'
-
-export interface PackagedManagedRegistry {
-  readonly catalogPath: string
-  readonly trustedPublicKeys: Readonly<Record<string, string>>
-}
 
 export const FORMAT_SMOKE_CASE_IDS = Object.freeze([
   'image-dds',
@@ -310,31 +302,4 @@ export async function formatSmokeFileDigest(path: string): Promise<string> {
   const hash = createHash('sha256')
   for await (const chunk of createReadStream(path)) hash.update(chunk)
   return hash.digest('hex')
-}
-
-export function readPackagedManagedRegistry(
-  extensionRoot: string,
-): PackagedManagedRegistry | undefined {
-  const releaseRoot = join(extensionRoot, 'dist-app', MANAGED_PACKAGES_DIRECTORY)
-  const descriptorPath = join(releaseRoot, MANAGED_RELEASE_DESCRIPTOR)
-  if (!existsSync(descriptorPath)) return undefined
-  const descriptor = JSON.parse(readFileSync(descriptorPath, 'utf8')) as {
-    readonly catalog?: { readonly file?: unknown }
-    readonly signing?: { readonly keyId?: unknown; readonly publicKeyPem?: unknown }
-  }
-  if (descriptor.catalog?.file !== MANAGED_RELEASE_CATALOG) {
-    throw new Error(`packaged managed catalog file must be ${MANAGED_RELEASE_CATALOG}`)
-  }
-  const keyId = descriptor.signing?.keyId
-  const publicKeyPem = descriptor.signing?.publicKeyPem
-  if (typeof keyId !== 'string' || keyId.trim() === '') {
-    throw new Error('packaged managed release signing keyId must be non-empty')
-  }
-  if (typeof publicKeyPem !== 'string' || publicKeyPem.trim() === '') {
-    throw new Error('packaged managed release public key must be non-empty PEM')
-  }
-  return Object.freeze({
-    catalogPath: join(releaseRoot, MANAGED_RELEASE_CATALOG),
-    trustedPublicKeys: Object.freeze({ [keyId]: publicKeyPem }),
-  })
 }

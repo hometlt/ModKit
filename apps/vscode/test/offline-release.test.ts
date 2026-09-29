@@ -1,18 +1,13 @@
 import { createHash, generateKeyPairSync, sign } from 'node:crypto'
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import { extensionCatalogSigningBytes } from '@modkit/extension-manager'
 
-const {
-  copyOfflineReleaseToDist,
-  offlineReleaseCatalog,
-  offlineReleaseDescriptor,
-  verifyOfflineReleaseDirectory,
-  verifyVirtualOfflineRelease,
-} = await import('../scripts/offline-release.mjs')
+const { offlineReleaseCatalog, offlineReleaseDescriptor, verifyOfflineReleaseDirectory } =
+  await import('../scripts/offline-release.mjs')
 
 const roots = Object.freeze([
   'blizzard/sc2-archives',
@@ -129,9 +124,8 @@ describe('VS Code offline managed release verification', () => {
     return root
   }
 
-  it('accepts, copies and re-verifies the exact signed offline inventory', () => {
+  it('accepts the exact signed offline inventory of a packages folder', () => {
     const source = tempRoot()
-    const output = tempRoot()
     writeFixture(source)
 
     expect(verifyOfflineReleaseDirectory(source)).toMatchObject({
@@ -144,8 +138,6 @@ describe('VS Code offline managed release verification', () => {
         'warzone-2100.repository.json',
       ],
     })
-    expect(copyOfflineReleaseToDist({ source, output })).toMatchObject({ packages: 2, roots: 9 })
-    expect(existsSync(join(output, 'managed-packages', offlineReleaseDescriptor))).toBe(true)
   })
 
   it('rejects extra files outside the descriptor/catalog/artifact closure', () => {
@@ -163,20 +155,5 @@ describe('VS Code offline managed release verification', () => {
     writeFileSync(artifactPath, Buffer.alloc(readFileSync(artifactPath).byteLength, 0x61))
 
     expect(() => verifyOfflineReleaseDirectory(source)).toThrow(/artifact .*sha256/)
-  })
-
-  it('verifies VSIX-contained managed-package entries without trusting the staged tree', () => {
-    const source = tempRoot()
-    writeFixture(source)
-    const files = [
-      offlineReleaseCatalog,
-      offlineReleaseDescriptor,
-      'starcraft-2.repository.json',
-      'warzone-2100.repository.json',
-    ]
-
-    expect(
-      verifyVirtualOfflineRelease(files, name => readFileSync(join(source, ...name.split('/')))),
-    ).toMatchObject({ packages: 2, roots: 9 })
   })
 })

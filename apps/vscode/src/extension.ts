@@ -323,8 +323,8 @@ import {
   requiredFormatSmokeRoot,
   resolvePackagedFormatSmokeCases,
   formatSmokeFileDigest,
-  readPackagedManagedRegistry,
 } from './packaged-acceptance.js'
+import { readPackagedManagedRegistry } from './managed-registry.js'
 import {
   subjectPathOf,
   modContextTargetOf,
@@ -510,7 +510,10 @@ async function activateModkit(
       : initialConfiguration.get('extensions')
   const registrySetting = initialConfiguration.get<unknown>('extensionRegistry')
   const registryEnvironment = process.env.MODKIT_EXTENSION_REGISTRY
-  const packagedRegistry = readPackagedManagedRegistry(extensionRoot)
+  const packagedRegistry = readPackagedManagedRegistry(
+    extensionRoot,
+    initialConfiguration.get<string>('extensionPackages'),
+  )
   const managerSecurity = extensionManagerSecurityOptions(
     {
       MODKIT_EXTENSION_TRUSTED_PUBLIC_KEYS: process.env.MODKIT_EXTENSION_TRUSTED_PUBLIC_KEYS,
@@ -529,7 +532,8 @@ async function activateModkit(
     cached: async () => undefined,
     refresh: async () => {
       throw new Error(
-        'No extension registry is configured. Set modkit.extensionRegistry or ' +
+        'No game packages or extension registry is configured. Set modkit.extensionPackages ' +
+          '(the folder of game bundles published beside Modkit), modkit.extensionRegistry or ' +
           'MODKIT_EXTENSION_REGISTRY before refreshing.',
       )
     },
@@ -539,7 +543,7 @@ async function activateModkit(
     trustedPublicKeys: managerSecurity.trustedPublicKeys,
     vfsOptions: managerSecurity.vfsOptions,
     ...(registry === undefined
-      ? packagedRegistry === undefined
+      ? packagedRegistry?.catalogPath === undefined
         ? { catalogSource: noRegistryCatalog }
         : {
             catalog: packagedRegistry.catalogPath,

@@ -10,10 +10,10 @@
     "extension.cjs",
     "format-smoke.v1.json",
     "modkit-ui.css",
+    "registry-trust.v1.json",
     "webview.js",
     "worker-bootstrap.js"
   ],
-  "managedPackageEntries": ["managed-packages"],
   "packagedCodecRoots": [
     "extensions/archives",
     "extensions/audio",

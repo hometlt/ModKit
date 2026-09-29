@@ -444,6 +444,12 @@
         "default": false,
         "markdownDescription": "%configuration.showHiddenEntries.description%"
       },
+      "modkit.extensionPackages": {
+        "type": "string",
+        "default": "",
+        "scope": "machine",
+        "markdownDescription": "%configuration.extensionPackages.description%"
+      },
       "modkit.maxGraphHops": {
         "type": "integer",
         "default": 2,

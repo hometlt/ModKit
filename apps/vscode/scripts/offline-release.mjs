@@ -1,13 +1,5 @@
 import { createHash, createPublicKey, verify as verifyEd25519Signature } from 'node:crypto'
-import {
-  copyFileSync,
-  existsSync,
-  lstatSync,
-  mkdirSync,
-  readdirSync,
-  readFileSync,
-  rmSync,
-} from 'node:fs'
+import { existsSync, lstatSync, readdirSync, readFileSync } from 'node:fs'
 import { dirname, join, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -26,7 +18,6 @@ export const offlineReleaseSource = join(
   'generated',
   'offline-release',
 )
-export const managedPackagesDirectory = 'managed-packages'
 export const offlineReleaseDescriptor = 'release.v1.json'
 export const offlineReleaseCatalog = 'catalog.v1.json'
 export const expectedOfflineReleasePackages = 2
@@ -363,36 +354,4 @@ export function verifyOfflineReleaseInventory(reader) {
 
 export function verifyOfflineReleaseDirectory(root) {
   return verifyOfflineReleaseInventory(fileReader(root))
-}
-
-export function verifyPackagedOfflineRelease(output) {
-  return verifyOfflineReleaseDirectory(join(output, managedPackagesDirectory))
-}
-
-export function copyOfflineReleaseToDist({ source = offlineReleaseSource, output }) {
-  const verified = verifyOfflineReleaseDirectory(source)
-  const destination = join(output, managedPackagesDirectory)
-  rmSync(destination, { recursive: true, force: true })
-  for (const file of verified.files) {
-    mkdirSync(dirname(join(destination, ...file.split('/'))), { recursive: true })
-    copyFileSync(join(source, ...file.split('/')), join(destination, ...file.split('/')))
-  }
-  const copied = verifyPackagedOfflineRelease(output)
-  if (
-    copied.catalog.sha256 !== verified.catalog.sha256 ||
-    copied.catalog.bytes !== verified.catalog.bytes
-  ) {
-    throw new Error('copied offline release does not match source verification')
-  }
-  return copied
-}
-
-export function verifyVirtualOfflineRelease(files, readBytes) {
-  return verifyOfflineReleaseInventory(
-    Object.freeze({
-      label: 'virtual offline release',
-      files: () => Object.freeze([...files].sort()),
-      readBytes,
-    }),
-  )
 }

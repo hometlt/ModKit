@@ -21,8 +21,6 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { inflateRawSync } from 'node:zlib'
 
-import { managedPackagesDirectory, verifyVirtualOfflineRelease } from './offline-release.mjs'
-
 const here = dirname(fileURLToPath(import.meta.url))
 const appRoot = resolve(here, '..')
 // The generated catalog names the Common roots this build ships; the gate checks exactly those.
@@ -81,10 +79,6 @@ function vsixEntries(bytes) {
   return entries
 }
 
-function zipEntryIsSymlink(entry) {
-  return ((entry.externalAttributes >>> 16) & 0xf000) === 0xa000
-}
-
 function readVsixEntry(bytes, entries, name) {
   const entry = entries.get(name)
   if (entry === undefined) throw new Error(`VSIX candidate is missing ${name}`)
@@ -126,19 +120,16 @@ function verifyCandidate(candidate) {
       throw new Error(`VSIX candidate is missing required bundled dependency @modkit/${dependency}`)
     }
   }
-  const managedPrefix = `extension/dist-app/${managedPackagesDirectory}/`
-  for (const [name, entry] of entries) {
-    if (name.startsWith(managedPrefix) && zipEntryIsSymlink(entry)) {
-      throw new Error(`VSIX candidate managed package entry must not be a link: ${name}`)
-    }
+  // Game bundles are published beside the VSIX; inside it only the registry's public key.
+  if ([...entries.keys()].some(name => name.startsWith('extension/dist-app/managed-packages/'))) {
+    throw new Error('VSIX candidate must not carry game bundles; they are published beside it')
   }
-  const managedFiles = [...entries.keys()]
-    .filter(name => name.startsWith(managedPrefix) && !name.endsWith('/'))
-    .map(name => name.slice(managedPrefix.length))
-    .sort()
-  verifyVirtualOfflineRelease(managedFiles, name =>
-    readVsixEntry(bytes, entries, `${managedPrefix}${name}`),
+  const trust = JSON.parse(
+    readVsixEntry(bytes, entries, 'extension/dist-app/registry-trust.v1.json').toString('utf8'),
   )
+  if (typeof trust.keyId !== 'string' || typeof trust.publicKeyPem !== 'string') {
+    throw new Error("VSIX candidate is missing the extension registry's public key")
+  }
 }
 
 mkdirSync(dirname(artifactPath), { recursive: true })
