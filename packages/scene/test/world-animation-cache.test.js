@@ -4,6 +4,7 @@ import { writeUvmContainer } from '@modkit/uv/model/container'
 import {
   DEFAULT_WORLD_WEBGL_CAMERA,
   createWorldWebGlCameraFrame,
+  createWorldWebGlCompositeTransparentDrawPlan,
   createWorldWebGlPlan,
   createWorldWebGlRenderer,
   createWorldWebGlTransparentDrawPlan,
@@ -600,6 +601,45 @@ it('reuses the simulated effect frames of many differently turned instances in t
   const pannedDraws = worldModelEffectDraws(second, panned)
   assert.equal(pannedDraws.length, firstDraws.length)
   assert.notEqual(pannedDraws[0].scene.materials, firstDraws[0].scene.materials)
+})
+
+it('draws the particles of a trackless material with one program at every start phase, joined', () => {
+  // Copies at the eight start phases of their clip, each turned its own way.
+  const actors = Array.from({ length: 24 }, (_, index) => ({
+    ...actor,
+    id: `phase-actor-${index}`,
+    objectId: index + 1,
+    rotation: index * 0.3,
+    presentationAnimation: { name: 'Stand', randomStart: true, loop: true },
+  }))
+  const effects = animatedAlpha => {
+    const plan = createWorldWebGlPlan({
+      ...world(),
+      items: [...world().items.filter(item => item !== actor), ...actors],
+      models: new Map([['actor', effectModel({ particles: true, animatedAlpha })]]),
+      timeSeconds: 0.5,
+    })
+    const draws = worldModelEffectDraws(plan, createWorldWebGlCameraFrame(plan, 64, 64))
+    return { plan, draws, programs: new Set(draws.map(entry => entry.draw.program)) }
+  }
+  const still = effects(false)
+  assert.ok(still.draws.length >= 24)
+  assert.ok(still.draws.every(entry => entry.merge))
+  assert.equal(still.programs.size, 1)
+  // A material track plays at each phase's clock: a program per phase.
+  assert.ok(effects(true).programs.size > 1)
+  // One program: the transparent pass draws the sprites together wherever the order allows.
+  const materials = createWorldWebGlCompositeTransparentDrawPlan(
+    still.plan,
+    DEFAULT_WORLD_WEBGL_CAMERA,
+    still.draws,
+  ).filter(entry => entry.kind === 'material')
+  assert.ok(materials.length < still.draws.length)
+  let vertices = 0
+  for (const entry of still.draws) vertices += entry.draw.primitive.positions.length / 3
+  let packed = 0
+  for (const entry of materials) packed += entry.draw.primitive.positions.length / 3
+  assert.equal(packed, vertices)
 })
 
 // A render-material model whose Stand clip keys nothing and whose materials carry no tracks.

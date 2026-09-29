@@ -7,6 +7,7 @@ import {
   createWorldWebGlPlan,
   createWorldWebGlTransparentDrawPlan,
 } from '../src/world/webgl.js'
+import { primitiveVertexPlacements } from '../src/render/vertex-placements.js'
 
 // Two blended decal models (textured fallback batches), one triangle each.
 const decal = key => ({
@@ -107,4 +108,83 @@ it('reuses the packed runs while the plan, view direction and material draws sta
     createWorldWebGlCompositeTransparentDrawPlan(plan, { ...camera, azimuth: 0.5 }, []),
     first,
   )
+})
+
+// Material draws built for one frame, as an effect's sprites: a triangle facing the view at (x, 0, z).
+const effectProgram = blend => ({ priority: 0, blend, twoSided: true, normalMapSpace: 'tangent' })
+const effectMaterial = { passes: [], textures: new Map() }
+const effectScene = {
+  primitives: [],
+  shadowPrimitives: [],
+  materials: [],
+  programs: new Map(),
+  textures: [],
+}
+const effectDraw = (program, x, z, merge = true) => ({
+  scene: effectScene,
+  merge,
+  draw: {
+    program,
+    material: effectMaterial,
+    primitive: {
+      id: `sprite-${x}-${z}`,
+      materialId: 'effect',
+      topology: 'triangles',
+      positions: Float32Array.of(0, 0, 0, 0, 1, 0, 0, 0, 1),
+      textureCoordinates: Float32Array.of(0, 0, 1, 0, 0, 1),
+      transform: Float32Array.of(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, x, 0, z, 1),
+    },
+  },
+})
+const emptyPlan = () => createWorldWebGlPlan({ items: [object(1, 'a', 100, 100)], models })
+const placedAt = entry => {
+  const placements = primitiveVertexPlacements(entry.draw.primitive)
+  if (placements === undefined) return [entry.draw.primitive.transform[12]]
+  const xs = []
+  for (let vertex = 0; vertex < placements.length / 16; vertex += 3)
+    xs.push(placements[vertex * 16 + 12])
+  return xs
+}
+
+it('draws what a frame built with one program as one, in depth order, past draws apart on screen', () => {
+  const sprites = effectProgram('blend')
+  const other = effectProgram('blend')
+  const packed = createWorldWebGlCompositeTransparentDrawPlan(emptyPlan(), camera, [
+    effectDraw(sprites, 20, 0),
+    effectDraw(other, 5, 20),
+    effectDraw(sprites, 0, 5),
+    effectDraw(sprites, 10, 10),
+  ]).filter(entry => entry.kind === 'material')
+  assert.equal(packed.length, 2)
+  assert.equal(packed[0].draw.program, sprites)
+  // Back to front along the view: x = 0, 10, 20, each vertex with its draw's placement.
+  assert.deepEqual(placedAt(packed[0]), [0, 10, 20])
+  assert.equal(packed[0].draw.primitive.transform, undefined)
+  assert.deepEqual(placedAt(packed[1]), [5])
+})
+
+it('keeps a draw of another program between the draws of one program it overlaps', () => {
+  const sprites = effectProgram('additive')
+  const other = effectProgram('blend')
+  const packed = createWorldWebGlCompositeTransparentDrawPlan(emptyPlan(), camera, [
+    effectDraw(sprites, 0, 0),
+    effectDraw(other, 5, 0),
+    effectDraw(sprites, 10, 0),
+  ])
+    .filter(entry => entry.kind === 'material')
+    .map(entry => [entry.draw.program.blend, ...placedAt(entry)])
+  assert.deepEqual(packed, [
+    ['additive', 0],
+    ['blend', 5],
+    ['additive', 10],
+  ])
+})
+
+it('leaves draws apart that are not built for the frame alone', () => {
+  const sprites = effectProgram('blend')
+  const packed = createWorldWebGlCompositeTransparentDrawPlan(emptyPlan(), camera, [
+    effectDraw(sprites, 0, 0, false),
+    effectDraw(sprites, 10, 10, false),
+  ]).filter(entry => entry.kind === 'material')
+  assert.deepEqual(packed.map(placedAt), [[0], [10]])
 })

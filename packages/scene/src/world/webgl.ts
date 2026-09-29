@@ -30,7 +30,8 @@ import {
   type MaterialSequenceDraw,
 } from '../render/material-webgl.js'
 import type { StandardMaterialProgram } from '../materials/index.js'
-import { primitiveTint } from '../render/tint.js'
+import { primitiveTint, primitiveVertexTints } from '../render/tint.js'
+import { mergeMaterialDraws } from '../render/vertex-placements.js'
 import {
   materialPosedPositions,
   materialPosedPrimitive,
@@ -536,6 +537,7 @@ export function worldModelEffectDraws(
 ): readonly Readonly<{
   scene: WorldWebGlModelMaterialScene
   draw: MaterialDraw & { readonly program: NonNullable<MaterialDraw['program']> }
+  merge: boolean
 }>[] {
   const cameraKey = `${camera.viewMatrix.join(',')}|${camera.viewProjection.join(',')}`
   const previous = effectDrawPlans.get(plan)
@@ -544,6 +546,7 @@ export function worldModelEffectDraws(
   const draws: Array<{
     scene: WorldWebGlModelMaterialScene
     draw: MaterialDraw & { readonly program: NonNullable<MaterialDraw['program']> }
+    merge: boolean
   }> = []
   for (const effect of plan.modelEffects) {
     // Simulate one full clip before the current phase so plumes are already developed at load.
@@ -619,7 +622,7 @@ export function worldModelEffectDraws(
       ))
         // ponytail: simple single-texture effects (no render-material program) are not drawn here.
         if (draw.program !== undefined && draw.depthOnly !== true)
-          draws.push({ scene, draw: { ...draw, program: draw.program } })
+          draws.push({ scene, draw: { ...draw, program: draw.program }, merge: true })
     } catch {
       // An unsupported effect must not stop the map from rendering.
     }
@@ -629,14 +632,39 @@ export function worldModelEffectDraws(
 }
 
 /**
- * Program samplers of effect materials, per material and texture list. An effect source hands out
- * one material object per emitter for all its frames (see createUvmEffectFrame), so each is
- * snapshotted and compiled once and only sampled at each new clock.
+ * Program samplers of effect materials, per material and texture list, with the programs each
+ * sampled lately per moment (see effectProgramMoment). An effect source hands out one material
+ * object per emitter for all its frames (see createUvmEffectFrame), so each is snapshotted and
+ * compiled once; the instances of a model at one moment draw with the same program objects, which
+ * lets the transparent pass draw their sprites together (see packWorldWebGlTransparentDraws).
  */
+interface EffectProgramSampler {
+  readonly sampler: SceneMaterialProgramSampler
+  readonly moments: Map<string, ReadonlyMap<string, SceneMaterialPrograms>>
+}
 const effectProgramSamplers = new WeakMap<
   SceneRendererMaterial,
-  WeakMap<readonly SceneRendererTexture[], SceneMaterialProgramSampler>
+  WeakMap<readonly SceneRendererTexture[], EffectProgramSampler>
 >()
+/** Moments kept per sampler: a frame meets eight start phases of a clip per team colour. */
+const MAX_EFFECT_PROGRAM_MOMENTS = 64
+
+/**
+ * What of a material context an effect program's values depend on: the clock only through a track
+ * (see effectMaterialFollowsTime), so every start phase of a clip draws with one program.
+ */
+function effectProgramMoment(context: SceneRendererMaterialContext, followsTime: boolean): string {
+  return [
+    followsTime ? context.time : '',
+    followsTime ? context.sequenceTime : '',
+    context.sequenceIndex,
+    context.teamColor?.join(','),
+    context.teamColorIntensity,
+    context.ambient?.join(','),
+    worldGroupId(context.environment),
+    context.sceneLighting,
+  ].join('|')
+}
 
 /** The programs of an effect frame's materials at one moment, as prepareSceneMaterialPrograms. */
 function effectMaterialPrograms(
@@ -646,18 +674,27 @@ function effectMaterialPrograms(
 ): ReadonlyMap<string, SceneMaterialPrograms> {
   const programs = new Map<string, SceneMaterialPrograms>()
   for (const material of materials) {
+    const moment = effectProgramMoment(context, effectMaterialFollowsTime(material))
     let byTextures = effectProgramSamplers.get(material)
     if (byTextures === undefined) effectProgramSamplers.set(material, (byTextures = new WeakMap()))
     let sampler = byTextures.get(textures)
     if (sampler === undefined)
       byTextures.set(
         textures,
-        (sampler = createSceneMaterialProgramSampler(
-          [material],
-          new Map(textures.map(texture => [texture.id, texture])),
-        )),
+        (sampler = {
+          sampler: createSceneMaterialProgramSampler(
+            [material],
+            new Map(textures.map(texture => [texture.id, texture])),
+          ),
+          moments: new Map(),
+        }),
       )
-    for (const [id, program] of sampler.sample(context, [])) programs.set(id, program)
+    let sampled = sampler.moments.get(moment)
+    if (sampled === undefined) {
+      if (sampler.moments.size >= MAX_EFFECT_PROGRAM_MOMENTS) sampler.moments.clear()
+      sampler.moments.set(moment, (sampled = sampler.sampler.sample(context, [])))
+    }
+    for (const [id, program] of sampled) programs.set(id, program)
   }
   return programs
 }
@@ -3113,27 +3150,38 @@ const materialsFollowingTime = new WeakMap<WorldModelSample['result'], boolean>(
  */
 function worldMaterialsFollowTime(result: WorldModelSample['result']): boolean {
   let follows = materialsFollowingTime.get(result)
-  if (follows === undefined) {
-    follows = false
-    const pending: unknown[] = [...(result.materials ?? [])]
-    while (pending.length > 0 && !follows) {
-      const value = pending.pop()
-      if (value === null || typeof value !== 'object' || ArrayBuffer.isView(value)) continue
-      if (Array.isArray(value)) {
-        pending.push(...value)
-        continue
-      }
-      for (const [key, entry] of Object.entries(value)) {
-        if ((key === 'track' || key === 'sequenceTracks') && entry !== undefined && entry !== null) {
-          follows = true
-          break
-        }
-        pending.push(entry)
-      }
-    }
-    materialsFollowingTime.set(result, follows)
-  }
+  if (follows === undefined)
+    materialsFollowingTime.set(result, (follows = carriesMaterialTrack(result.materials ?? [])))
   return follows
+}
+
+const effectMaterialsFollowingTime = new WeakMap<SceneRendererMaterial, boolean>()
+
+/** Whether an effect emitter's material carries an animation track (see worldMaterialsFollowTime). */
+function effectMaterialFollowsTime(material: SceneRendererMaterial): boolean {
+  let follows = effectMaterialsFollowingTime.get(material)
+  if (follows === undefined)
+    effectMaterialsFollowingTime.set(material, (follows = carriesMaterialTrack(material)))
+  return follows
+}
+
+/** Whether materials (or one material) name a `track` or `sequenceTracks` anywhere. */
+function carriesMaterialTrack(materials: unknown): boolean {
+  const pending: unknown[] = [materials]
+  while (pending.length > 0) {
+    const value = pending.pop()
+    if (value === null || typeof value !== 'object' || ArrayBuffer.isView(value)) continue
+    if (Array.isArray(value)) {
+      pending.push(...value)
+      continue
+    }
+    for (const [key, entry] of Object.entries(value)) {
+      if ((key === 'track' || key === 'sequenceTracks') && entry !== undefined && entry !== null)
+        return true
+      pending.push(entry)
+    }
+  }
+  return false
 }
 
 const animatedWorldModelGeometry = new WeakMap<object, WeakMap<WorldSceneObjectItem, boolean>>()
@@ -8005,6 +8053,11 @@ export type WorldWebGlCompositeTransparentDraw =
       kind: 'material'
       scene: WorldWebGlModelMaterialScene
       draw: MaterialDraw & { readonly program: NonNullable<MaterialDraw['program']> }
+      /**
+       * Built for this frame alone (an effect's sprites): drawn with others of its program as one
+       * draw wherever the order allows (see packWorldWebGlTransparentDraws).
+       */
+      merge?: boolean
     }>
 
 const boundsCenters = new WeakMap<Float32Array, readonly [number, number, number]>()
@@ -8065,6 +8118,7 @@ export function createWorldWebGlCompositeTransparentDrawPlan(
   materialDraws: readonly Readonly<{
     scene: WorldWebGlModelMaterialScene
     draw: MaterialDraw & { readonly program: NonNullable<MaterialDraw['program']> }
+    merge?: boolean
   }>[],
   excludeClippedWater = false,
 ): readonly WorldWebGlCompositeTransparentDraw[] {
@@ -8262,11 +8316,53 @@ function worldTransparentTrianglesOf(
   return result
 }
 
+type WorldCompositeMaterialDraw = Extract<WorldWebGlCompositeTransparentDraw, { kind: 'material' }>
+
+/**
+ * Which material draws the packer draws as one (mergeMaterialDraws): draws built for this frame of
+ * one program and material, with one depth bias, tint and vertex layout. Not a depth prepass, which
+ * would write every member's depth before any member's colour, nor object-space normals, which take
+ * the draw's own normal matrix.
+ */
+function worldMaterialMergeKey(entry: WorldCompositeMaterialDraw): string | undefined {
+  const { draw } = entry
+  const { program, primitive } = draw
+  if (
+    entry.merge !== true ||
+    draw.depthOnly === true ||
+    program.depthPrepass === true ||
+    !materialCanInstance(program) ||
+    primitive.topology !== 'triangles' ||
+    materialSkinOf(primitive) !== undefined
+  )
+    return undefined
+  const bias = primitive.depthBias
+  return [
+    worldGroupId(program),
+    worldGroupId(draw.material),
+    bias === undefined ? '-' : `${bias.slopeScale}:${bias.units}`,
+    primitiveTint(primitive).join(':'),
+    [
+      primitive.indices,
+      primitive.normals,
+      primitive.tangents,
+      primitive.colors,
+      primitive.textureCoordinates,
+      primitiveVertexTints(primitive),
+    ]
+      .map(values => (values === undefined ? '-' : '+'))
+      .join(''),
+    (primitive.textureCoordinateSets ?? []).map(set => set.set).join(','),
+  ].join('|')
+}
+
 /**
  * Transparent draws in back-to-front order, packed: see `transparentOrderLevels`. Decals of one
  * batch that alternate in depth with other batches but never overlap them on screen draw as one run,
  * and every pair that does overlap keeps its sorted order, so the blended picture is unchanged.
- * Each world triangle is its own item; material draws never merge.
+ * Each world triangle is its own item. So is each material draw; those built for this frame (an
+ * effect's sprites) batch by program and draw as one wherever the order allows, each vertex with its
+ * draw's model matrix (see worldMaterialMergeKey).
  */
 function packWorldWebGlTransparentDraws(
   plan: WorldWebGlPlan,
@@ -8283,12 +8379,16 @@ function packWorldWebGlTransparentDraws(
   const batches = new Int32Array(count)
   const itemTriangle = new Int32Array(count).fill(-1)
   const itemEntry: WorldWebGlCompositeTransparentDraw[] = []
-  const batchIds = new Map<WorldWebGlBatch, number>()
+  // World batches and material merge keys, numbered apart.
+  const batchIds = new Map<WorldWebGlBatch | string, number>()
   let item = 0
   for (const entry of ordered) {
     if (entry.kind === 'material') {
       primitiveScreenBox(entry.draw.primitive, basis, boxes, item * 4)
-      batches[item] = -1
+      const key = worldMaterialMergeKey(entry)
+      let batch = key === undefined ? -1 : batchIds.get(key)
+      if (batch === undefined) batchIds.set(key!, (batch = batchIds.size))
+      batches[item] = batch
       itemEntry[item] = entry
       item += 1
       continue
@@ -8330,17 +8430,32 @@ function packWorldWebGlTransparentDraws(
     readonly draw: WorldWebGlTransparentDraw
     readonly triangles: number[]
   }
-  const emitted: (WorldWebGlCompositeTransparentDraw | Group)[] = []
+  interface MaterialGroup {
+    readonly entries: WorldCompositeMaterialDraw[]
+  }
+  const emitted: (WorldWebGlCompositeTransparentDraw | Group | MaterialGroup)[] = []
   let currentLevel = -1
   let groups = new Map<number, Group>()
+  let materialGroups = new Map<number, MaterialGroup>()
   for (const index of order) {
     const level = levels[index]!
     if (level !== currentLevel) {
       currentLevel = level
       groups = new Map()
+      materialGroups = new Map()
     }
     const entry = itemEntry[index]!
     const triangle = itemTriangle[index]!
+    if (entry.kind === 'material' && batches[index]! >= 0) {
+      let group = materialGroups.get(batches[index]!)
+      if (group === undefined) {
+        group = { entries: [] }
+        materialGroups.set(batches[index]!, group)
+        emitted.push(group)
+      }
+      group.entries.push(entry)
+      continue
+    }
     if (triangle < 0 || entry.kind !== 'world') {
       emitted.push(entry)
       continue
@@ -8361,8 +8476,15 @@ function packWorldWebGlTransparentDraws(
   const lists = new Map<WorldWebGlBatch, { indices: Uint32Array; filled: number }>()
   for (const [batch, size] of sizes) lists.set(batch, { indices: new Uint32Array(size), filled: 0 })
   return Object.freeze(
-    emitted.map(value => {
-      if (!('triangles' in value)) return value
+    emitted.flatMap(value => {
+      if ('entries' in value) {
+        // Draws whose vertices do not lay out alike stay apart, still in the group's order.
+        const draw = mergeMaterialDraws(value.entries.map(entry => entry.draw))
+        return draw === undefined || value.entries.length === 1
+          ? value.entries
+          : [Object.freeze({ ...value.entries[0]!, draw })]
+      }
+      if (!('triangles' in value)) return [value]
       const list = lists.get(value.draw.batch)!
       const first = list.filled
       let depth = 0
@@ -8379,7 +8501,7 @@ function packWorldWebGlTransparentDraws(
         count: list.filled - first,
         depth: depth / value.triangles.length,
       })
-      return Object.freeze({ kind: 'world', draw: Object.freeze({ ...value.draw, range }) })
+      return [Object.freeze({ kind: 'world', draw: Object.freeze({ ...value.draw, range }) })]
     }),
   )
 }

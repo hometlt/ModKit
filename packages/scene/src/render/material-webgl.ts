@@ -21,6 +21,7 @@ import {
 import { materialIsSolid, type MaterialDraw } from './material-draws.js'
 import { materialSkinOf } from './material-skin.js'
 import { primitiveVertexTints } from './tint.js'
+import { primitiveVertexPlacements } from './vertex-placements.js'
 
 /**
  * The vertex and fragment stages a draw needs beyond its material's: a skin posed on the GPU
@@ -389,7 +390,17 @@ export function materialWebGlDraws(
       )
     const skin = materialSkinOf(primitive)
     const tints = primitiveVertexTints(primitive)
-    const data = [...attributes, primitive.indices, instances, skin?.joints, skin?.weights, tints]
+    // Model matrices per instance, or per vertex (primitiveVertexPlacements): read alike.
+    const placements = instances ?? primitiveVertexPlacements(primitive)
+    const data = [
+      ...attributes,
+      primitive.indices,
+      instances,
+      skin?.joints,
+      skin?.weights,
+      tints,
+      placements,
+    ]
     const geometries = vertexArrays.get(program)
     const variants = geometries?.get(primitive.positions)
     let entry = variants?.find(
@@ -456,13 +467,13 @@ export function materialWebGlDraws(
         created.placement = [0, 1, 2, 3].map(column =>
           attributeLocation(program, `a_instanceMatrix${column}`),
         )
-        if (instances !== undefined) {
-          entry.buffers.push(retainedBuffer(gl.ARRAY_BUFFER, instances))
+        if (placements !== undefined) {
+          entry.buffers.push(retainedBuffer(gl.ARRAY_BUFFER, placements))
           created.placement.forEach((location, column) => {
             if (location < 0) return
             gl.enableVertexAttribArray(location)
             gl.vertexAttribPointer(location, 4, gl.FLOAT, false, 64, column * 16)
-            gl.vertexAttribDivisor(location, 1)
+            gl.vertexAttribDivisor(location, instances === undefined ? 0 : 1)
           })
         }
       } catch (error) {
@@ -726,6 +737,9 @@ export function materialWebGlDraws(
     // A draw kept from an earlier frame leases its program's layout; this frame's values and state
     // are those of the program it stands for now.
     const source = programs?.get(leased) ?? leased
+    const placed = primitiveVertexPlacements(primitive) !== undefined
+    if (placed && (instances !== undefined || !materialCanInstance(source)))
+      throw new TypeError('placed vertices draw once, without object-space normals')
     if (instances !== undefined) {
       if (!materialCanInstance(source))
         throw new TypeError('object-space normal materials cannot be instanced')
@@ -742,7 +756,7 @@ export function materialWebGlDraws(
       throw new TypeError('explicit reflection environment requires eyePosition')
     const mode = topologyMode(primitive)
     if (mode === undefined || instances?.count === 0) return 0
-    const model = instances === undefined ? materialModelMatrix(primitive) : undefined
+    const model = instances === undefined && !placed ? materialModelMatrix(primitive) : undefined
     const skin = materialSkinOf(primitive)
     const lease = leaseFor(leased, material, materialStagesOf(primitive))
     const program = lease.program
