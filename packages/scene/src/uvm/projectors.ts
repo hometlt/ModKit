@@ -128,6 +128,15 @@ const fov = (value: number) =>
 const valueAt = (matrix: readonly number[], index: number) => scalar(matrix[index])
 /** Native format is absent here. The source-to-world boundary and live receiver sample come
  * from ordinary UVM scene sampling; static frame conventions are the pinned preview contract. */
+/**
+ * The splat layer of the projector a projected primitive comes from (UV_game_effects
+ * projectors[].layer, as the model carries it): an owner that draws splats as one ground layer
+ * orders them by it.
+ */
+export function projectedSplatLayer(primitive: SceneRendererPrimitive): number | undefined {
+  return (primitive as { readonly splatLayer?: number }).splatLayer
+}
+
 export function createUvmProjectorFrame(document: JsonObject, options: Options) {
   options.signal?.throwIfAborted()
   for (const value of [options.maxBytes, options.maxNodes])
@@ -403,7 +412,7 @@ export function createUvmProjectorFrame(document: JsonObject, options: Options) 
     )
     if (material === undefined) continue
     materials.push(material)
-    primitives.push({
+    const primitive: (typeof primitives)[number] & { readonly splatLayer: number } = {
       id,
       materialId: id,
       topology: 'triangles',
@@ -415,12 +424,13 @@ export function createUvmProjectorFrame(document: JsonObject, options: Options) 
       ...(material.simpleEffect === undefined
         ? { tint: [1, 1, 1, alpha] as const }
         : {}),
-    })
+      splatLayer: scalar(entry['layer']),
+    }
+    primitives.push(primitive)
     for (const key of [
       'falloff',
       'attenuationDistance',
       'flags',
-      'layer',
       'boxOffsetZBottom',
       'boxOffsetZTop',
     ])

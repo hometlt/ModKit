@@ -762,6 +762,18 @@ it('keeps an object whose decals stay put while the clock runs', () => {
   assert.equal(values(next), values(createWorldWebGlPlan(nextInput)))
 })
 
+it('draws projector decals as the ground by their splat layer, not in depth order', () => {
+  const model = effectModel({ decal: true, animatedAlpha: false })
+  const plan = createWorldWebGlPlan({ ...world(), models: new Map([['actor', model]]) })
+  const decals = plan.transparentTexturedTriangles.filter(batch => batch.texture.id === 'decal.png')
+  assert.equal(decals.length, 1)
+  // The fixture's projector names layer 0 (generic layer 1, above creep).
+  assert.equal(decals[0].splatLayer, 0)
+  // The depth-sorted transparent runs leave it to the splat pass.
+  const runs = createWorldWebGlTransparentDrawPlan(plan, DEFAULT_WORLD_WEBGL_CAMERA)
+  assert.ok(runs.every(run => run.batch !== decals[0]))
+})
+
 it('projects the still decals of an object rebuilt for its particles once', () => {
   const values = plan =>
     JSON.stringify(plan, (_, value) => (value instanceof Map ? [...value] : value))

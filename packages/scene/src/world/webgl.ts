@@ -22,7 +22,11 @@ import type { SceneRendererMaterialContext } from '@modkit/sdk/renderer'
 import { boundsOf } from '@modkit/codec-kit/model/bounds'
 import { createModelSceneSampler } from '../model/index.js'
 import { createUvmEffectSource, type UvmEffectSource } from '../uvm/effect-source.js'
-import { createUvmProjectorFrameCache, type UvmProjectorFrameCache } from '../uvm/projectors.js'
+import {
+  createUvmProjectorFrameCache,
+  projectedSplatLayer,
+  type UvmProjectorFrameCache,
+} from '../uvm/projectors.js'
 import {
   materialCanInstance,
   materialWebGlDraws,
@@ -242,6 +246,11 @@ export interface WorldWebGlTexturedBatch extends WorldWebGlBatch {
 export interface WorldWebGlTransparentTexturedBatch extends WorldWebGlTexturedBatch {
   readonly blendMode: 'blend' | 'additive'
   readonly receiveShadows: boolean
+  /**
+   * The splat layer of the projector decals this batch holds (projectedSplatLayer): such a batch is
+   * part of the ground and draws in the splat pass (worldSplatEntries), not in depth order.
+   */
+  readonly splatLayer?: number
 }
 
 /**
@@ -2751,6 +2760,7 @@ type WorldControlledBatch = MutableBatch & {
 type WorldTransparentTexturedBatch = MutableTexturedBatch & {
   readonly blendMode: 'blend' | 'additive'
   readonly receiveShadows: boolean
+  readonly splatLayer?: number
 }
 
 /**
@@ -5091,8 +5101,11 @@ export function createWorldWebGlPlan(
   let diagnosticPlaceholders = 0
   const planPrograms: WorldPlanPrograms = new Map()
   const currentPrograms: WorldCurrentPrograms = { passes: new Map(), materials: new Map() }
-  const projectorBatch = (texture: MutableTexturedBatch['texture']) => {
-    const key = `projector:${texture.id}`
+  // Projector decals batch by splat layer and texture: a layer draws as one part of the ground.
+  const projectorBatchKey = (texture: MutableTexturedBatch['texture'], layer: number | undefined) =>
+    `projector:${layer ?? ''}:${texture.id}`
+  const projectorBatch = (texture: MutableTexturedBatch['texture'], layer: number | undefined) => {
+    const key = projectorBatchKey(texture, layer)
     const target = transparentTextured.get(key) ?? {
       ...batch(),
       textureCoordinates: [],
@@ -5100,6 +5113,7 @@ export function createWorldWebGlPlan(
       blendMode: 'blend' as const,
       castShadows: false,
       receiveShadows: false,
+      ...(layer === undefined ? {} : { splatLayer: layer }),
     }
     transparentTextured.set(key, target)
     return target
@@ -5517,7 +5531,8 @@ export function createWorldWebGlPlan(
           )?.textureId
           const texture = scene.textures.find(candidate => candidate.id === textureId)
           if (!texture || !primitive.textureCoordinates) continue
-          const target = projectorBatch(texture)
+          const layer = projectedSplatLayer(primitive)
+          const target = projectorBatch(texture, layer)
           const write: MutableTexturedBatch = { ...batch(), textureCoordinates: [], texture }
           for (const triangle of primitiveTriangles(primitive)) {
             const vertices = triangle.map(index => {
@@ -5537,7 +5552,7 @@ export function createWorldWebGlPlan(
               [1, 1, 1, material?.baseColor?.[3] ?? 1],
             )
           }
-          const key = `projector:${texture.id}`
+          const key = projectorBatchKey(texture, layer)
           const previous = previousProjectorWrites?.[projectorWrites.length]
           const kept =
             previous !== undefined && previous.key === key && sameWriteContent(previous.write, write)
@@ -5556,6 +5571,15 @@ export function createWorldWebGlPlan(
             textures: scene.textures,
           })
           modelMaterialScenes.push(projectedScene)
+          worldSplatSceneLayers.set(
+            projectedScene,
+            new Map(
+              projectedMaterialPrimitives.map(primitive => [
+                primitive.id,
+                projectedSplatLayer(primitive),
+              ]),
+            ),
+          )
           if (materialsFollowTime) {
             let sampler: SceneMaterialProgramSampler | undefined
             sceneResamplers.set(projectedScene, next => {
@@ -5862,6 +5886,7 @@ export function createWorldWebGlPlan(
         ...writtenTexturedBatch(item, writes),
         blendMode: item.blendMode,
         receiveShadows: item.receiveShadows,
+        ...(item.splatLayer === undefined ? {} : { splatLayer: item.splatLayer }),
       }),
     ),
   )
@@ -8087,7 +8112,9 @@ function sortedWorldWebGlTransparentDraws(
             batch: plan.transparentTriangles,
           },
         ]),
-    ...plan.transparentTexturedTriangles.map(batch => ({
+    ...plan.transparentTexturedTriangles
+      .filter(batch => batch.splatLayer === undefined)
+      .map(batch => ({
       kind: 'textured' as const,
       blendMode: batch.blendMode,
       receiveShadows: batch.receiveShadows,
@@ -9382,6 +9409,84 @@ const visibleInstanceSubsets = new WeakMap<
   Readonly<{ kept: readonly number[]; instances: MaterialInstances }>
 >()
 
+/**
+ * The splat layers of a projected scene's primitives, by primitive id (projectedSplatLayer): its
+ * blended draws are part of the ground and draw in the splat pass.
+ */
+const worldSplatSceneLayers = new WeakMap<
+  WorldWebGlModelMaterialScene,
+  ReadonlyMap<string, number | undefined>
+>()
+
+/**
+ * Where a splat layer draws, bottom first (the M3 projector layers as the model carries them): the
+ * terrain-baked layers (10, 11), hardtile with the roads (9), under creep (8), then the layers above
+ * creep in their order (generic 1-4, building, area of effect, power, user interface: 0-7). An
+ * unknown layer draws last.
+ */
+const SPLAT_LAYER_ORDER: readonly number[] = [10, 11, 9, 8, 0, 1, 2, 3, 4, 5, 6, 7]
+const splatLayerRank = (layer: number | undefined) => {
+  const rank = layer === undefined ? -1 : SPLAT_LAYER_ORDER.indexOf(layer)
+  return rank < 0 ? SPLAT_LAYER_ORDER.length : rank
+}
+
+/** Every triangle of a batch in its own order, as one transparent range. */
+const wholeBatchRanges = new WeakMap<WorldWebGlBatch, WorldWebGlTransparentRange>()
+function wholeBatchRange(batch: WorldWebGlBatch): WorldWebGlTransparentRange {
+  let range = wholeBatchRanges.get(batch)
+  if (range === undefined) {
+    const count = batch.positions.length / 3
+    const indices = new Uint32Array(count)
+    for (let index = 0; index < count; index++) indices[index] = index
+    wholeBatchRanges.set(batch, (range = Object.freeze({ indices, first: 0, count, depth: 0 })))
+  }
+  return range
+}
+
+/**
+ * The splat pass: projector decals, the ground's top layer, before every other transparent draw
+ * and in their layers' order rather than by depth. A layer draws its decal batches (by texture, in
+ * the order the plan first met them, each in the order of its placements), then its projected
+ * material draws. Decals lie on what they are projected onto, so a transparent draw in the same
+ * pixel is either before that surface, where it belongs over the decal, or behind it and hidden by
+ * its depth.
+ */
+function worldSplatEntries(
+  plan: WorldWebGlPlan,
+  materialDraws: readonly Readonly<{
+    scene: WorldWebGlModelMaterialScene
+    draw: MaterialDraw & { readonly program: NonNullable<MaterialDraw['program']> }
+    layer: number | undefined
+  }>[],
+): readonly WorldWebGlCompositeTransparentDraw[] {
+  const entries: Array<{ value: WorldWebGlCompositeTransparentDraw; rank: number; order: number }> =
+    []
+  for (const batch of plan.transparentTexturedTriangles)
+    if (batch.splatLayer !== undefined && batch.positions.length > 0)
+      entries.push({
+        value: Object.freeze({
+          kind: 'world',
+          draw: Object.freeze({
+            kind: 'textured',
+            blendMode: batch.blendMode,
+            receiveShadows: batch.receiveShadows,
+            batch,
+            range: wholeBatchRange(batch),
+          }),
+        }),
+        rank: splatLayerRank(batch.splatLayer) * 2,
+        order: entries.length,
+      })
+  for (const { scene, draw, layer } of materialDraws)
+    entries.push({
+      value: Object.freeze({ kind: 'material', scene, draw }),
+      rank: splatLayerRank(layer) * 2 + 1,
+      order: entries.length,
+    })
+  entries.sort((left, right) => left.rank - right.rank || left.order - right.order)
+  return entries.map(entry => entry.value)
+}
+
 /** A plan's material draws as the renderer submits them; retained with the plan. */
 export function worldMaterialBatchesOf(
   plan: WorldWebGlPlan,
@@ -9587,7 +9692,14 @@ function drawWorldWebGlWithResources(
       scene: WorldWebGlModelMaterialScene
       draw: MaterialDraw & { readonly program: NonNullable<MaterialDraw['program']> }
     }> = []
-    for (const scene of batches.transparentScenes)
+    // Projected decals with material programs draw in the splat pass (worldSplatEntries).
+    const splatMaterialDraws: Array<{
+      scene: WorldWebGlModelMaterialScene
+      draw: MaterialDraw & { readonly program: NonNullable<MaterialDraw['program']> }
+      layer: number | undefined
+    }> = []
+    for (const scene of batches.transparentScenes) {
+      const splatLayers = worldSplatSceneLayers.get(scene)
       for (const draw of sceneMaterialDraws(
         scene.primitives,
         scene.materials,
@@ -9596,14 +9708,23 @@ function drawWorldWebGlWithResources(
         [],
         1,
       ))
-        if (draw.depthOnly !== true && draw.program !== undefined && !materialIsSolid(draw.program))
-          transparentSceneDraws.push({ scene, draw: { ...draw, program: draw.program } })
+        if (
+          draw.depthOnly !== true &&
+          draw.program !== undefined &&
+          !materialIsSolid(draw.program)
+        ) {
+          const entry = { scene, draw: { ...draw, program: draw.program } }
+          if (splatLayers === undefined) transparentSceneDraws.push(entry)
+          else splatMaterialDraws.push({ ...entry, layer: splatLayers.get(draw.primitive.id) })
+        }
+    }
     const effectDraws = worldModelEffectDraws(plan, sceneCamera)
     // Issue every program this frame needs before the first draw, so they compile in parallel.
     resources.materialDraws.warm([
       ...batches.groups.map(group => group.draw),
       ...batches.singles,
       ...transparentSceneDraws.map(entry => entry.draw),
+      ...splatMaterialDraws.map(entry => entry.draw),
       ...effectDraws.map(entry => entry.draw),
     ])
     // What the camera shows of the solid draws; the shadow map and the transparent pass take theirs.
@@ -9702,13 +9823,16 @@ function drawWorldWebGlWithResources(
       assertNoWebGlError(resources, 'water pass')
     }
     const transparentMaterialDraws = [...transparentSceneDraws, ...effectDraws]
-    const transparentEntries = createWorldWebGlCompositeTransparentDrawPlan(
-      plan,
-      input.camera,
-      transparentMaterialDraws,
-      waterByDepth,
-      canvas.width / canvas.height,
-    )
+    const transparentEntries = [
+      ...worldSplatEntries(plan, splatMaterialDraws),
+      ...createWorldWebGlCompositeTransparentDrawPlan(
+        plan,
+        input.camera,
+        transparentMaterialDraws,
+        waterByDepth,
+        canvas.width / canvas.height,
+      ),
+    ]
     // What the last batch entry left set: undefined at first and after a material run, else
     // whether its blending adds. A batch draw changes only its textures (units 4-6), vertex array
     // and uniforms, so the next batch entry keeps the program, blending, depth writes and the
