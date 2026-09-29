@@ -273,6 +273,11 @@ export interface ModelMaterialLayerRef {
   readonly uvSource?: number
   /** Publisher-native colour-channel mask. */
   readonly colorChannels?: number
+  /**
+   * How the layer combines with what it colours, in UVM terms (SPEC_UVM §11.2): a team-colour mask
+   * that mixes the team colour in by its alpha is `lerp`; `multiply` when absent.
+   */
+  readonly blend?: 'multiply' | 'add' | 'replace' | 'overlay' | 'lerp'
   readonly nativeFlags?: number
   readonly flagNames?: readonly string[]
 }

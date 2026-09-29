@@ -7,6 +7,7 @@ import type {
   ModelPrimitive,
   ModelSocketRef,
   ModelLodLevelRef,
+  ModelMaterialLayerRef,
   ModelMaterialRef,
   ModelBoneBinding,
   ModelAnimationClip,
@@ -157,7 +158,7 @@ export interface UvmMaterial {
       maskSource: 'texture'
       maskTexture: UvmTextureRef
       targets: ['baseColor']
-      blend: 'multiply'
+      blend: NonNullable<ModelMaterialLayerRef['blend']>
     }
   }
   extras?: {
@@ -902,7 +903,7 @@ export function materializeUvmCore(
             maskSource: 'texture',
             maskTexture: { ...ref, ...(channel === undefined ? {} : { channel }) },
             targets: ['baseColor'],
-            blend: 'multiply',
+            blend: layer.blend ?? 'multiply',
           },
         }
       }

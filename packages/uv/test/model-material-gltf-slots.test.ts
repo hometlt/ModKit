@@ -79,4 +79,28 @@ describe('material layers in the glTF slots', () => {
       blend: 'multiply',
     })
   })
+
+  it('mixes the team colour in as the publisher says it does', () => {
+    // Recoil S3O: mix(diffuse.rgb, team, diffuse.a) — a lerp by the mask, not a multiply
+    const source = projection as unknown as { materials: { layers: Record<string, unknown>[] }[] }
+    const lerped = {
+      ...source,
+      materials: [
+        {
+          ...source.materials[0],
+          layers: source.materials[0]!.layers.map(layer =>
+            layer['slot'] === 'teamColor' ? { ...layer, blend: 'lerp' } : layer,
+          ),
+        },
+      ],
+    } as never
+    const { document } = materializeUvmCore(lerped, request) as unknown as {
+      readonly document: { readonly materials: readonly Record<string, unknown>[] }
+    }
+    expect(
+      (document.materials[0]!['extensions'] as Record<string, Record<string, unknown>>)[
+        'UV_game_material_team_color'
+      ]!['blend'],
+    ).toBe('lerp')
+  })
 })
