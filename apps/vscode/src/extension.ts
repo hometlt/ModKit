@@ -214,6 +214,7 @@ plainLanguagePosition,
 type EditorDocumentSymbol,
 type EditorLanguageDocument,
 } from './language-session.js'
+import { completionKindName, LANGUAGE_COMMAND, languageCommandTarget } from './language-native.js'
 import {
 createRuntimeDebugController,
 type RuntimeDebugCommandRequest,
@@ -7054,45 +7055,73 @@ async function activateModkit(
     return native
   }
 
-  const nativeCompletionKind = (kind: string): vscode.CompletionItemKind => {
-    switch (kind) {
-      case 'class':
-      case 'struct':
-        return vscode.CompletionItemKind.Class
-      case 'constant':
-        return vscode.CompletionItemKind.Constant
-      case 'enum':
-        return vscode.CompletionItemKind.Enum
-      case 'field':
-        return vscode.CompletionItemKind.Field
-      case 'function':
-        return vscode.CompletionItemKind.Function
-      case 'interface':
-        return vscode.CompletionItemKind.Interface
-      case 'keyword':
-        return vscode.CompletionItemKind.Keyword
-      case 'module':
-      case 'namespace':
-        return vscode.CompletionItemKind.Module
-      case 'parameter':
-      case 'variable':
-        return vscode.CompletionItemKind.Variable
-      case 'property':
-        return vscode.CompletionItemKind.Property
-      case 'snippet':
-        return vscode.CompletionItemKind.Snippet
-      case 'type':
-        return vscode.CompletionItemKind.TypeParameter
-      default:
-        return vscode.CompletionItemKind.Text
-    }
-  }
-
   const nativeLocation = (location: {
     readonly uri: string
     readonly range: Parameters<typeof rangeOf>[0]
   }): vscode.Location =>
     new vscode.Location(vscode.Uri.parse(location.uri), rangeOf(location.range))
+
+  /** A provider's markdown: its HTML subset drawn, and of commands only the language command runs. */
+  const providerMarkdown = (markdown: string): vscode.MarkdownString => {
+    const native = new vscode.MarkdownString(markdown)
+    native.supportHtml = true
+    native.isTrusted = { enabledCommands: [LANGUAGE_COMMAND] }
+    return native
+  }
+
+  /** A provider's command as a VS Code one: the language command, with the command as argument. */
+  const providerCommand = (title: string, command: unknown): vscode.Command => ({
+    title,
+    command: LANGUAGE_COMMAND,
+    arguments: [command],
+  })
+
+  const FOLDING_KINDS = {
+    comment: vscode.FoldingRangeKind.Comment,
+    imports: vscode.FoldingRangeKind.Imports,
+    region: vscode.FoldingRangeKind.Region,
+  } as const
+  const HIGHLIGHT_KINDS = {
+    text: vscode.DocumentHighlightKind.Text,
+    read: vscode.DocumentHighlightKind.Read,
+    write: vscode.DocumentHighlightKind.Write,
+  } as const
+
+  /** A link's target as the editor opens it: a content-source address through its mounted source. */
+  const linkTarget = (target: string): vscode.Uri | undefined => {
+    const place = target.startsWith('content-source:') ? subjectTarget(target) : undefined
+    if (place !== undefined && typeof place !== 'string') {
+      return vscode.Uri.from({
+        scheme: 'modkit-source',
+        authority: 'battlenet',
+        path: `/${place.sourceId}/${place.path}`,
+      })
+    }
+    try {
+      return vscode.Uri.parse(target, true)
+    } catch {
+      return undefined
+    }
+  }
+
+  /** One provider feature: cancelled with the editor's token; a failure is logged, answered empty. */
+  const askProvider = async <T>(
+    name: string,
+    token: vscode.CancellationToken,
+    run: (signal: AbortSignal) => Promise<T | undefined>,
+  ): Promise<T | undefined> => {
+    const cancellation = signalFor(token)
+    try {
+      return await run(cancellation.signal)
+    } catch (error) {
+      if (!token.isCancellationRequested) {
+        log(`[language] ${name} failed: ${error instanceof Error ? error.message : String(error)}`)
+      }
+      return undefined
+    } finally {
+      cancellation.dispose()
+    }
+  }
 
   const languageDiagnosticSeverity = (
     severity: vscode.DiagnosticSeverity,
@@ -7162,8 +7191,30 @@ async function activateModkit(
             item.message,
             SEVERITY[item.severity] ?? vscode.DiagnosticSeverity.Information,
           )
-          if (item.code !== undefined) native.code = item.code
+          if (item.code !== undefined) {
+            // an http(s) page for the code makes it a link in the Problems view
+            native.code =
+              item.codeDescription === undefined
+                ? item.code
+                : { value: item.code, target: vscode.Uri.parse(item.codeDescription) }
+          }
           native.source = item.source ?? 'Modkit Language'
+          if (item.tags !== undefined) {
+            native.tags = item.tags.map(tag =>
+              tag === 'deprecated'
+                ? vscode.DiagnosticTag.Deprecated
+                : vscode.DiagnosticTag.Unnecessary,
+            )
+          }
+          if (item.relatedInformation !== undefined) {
+            native.relatedInformation = item.relatedInformation.map(
+              related =>
+                new vscode.DiagnosticRelatedInformation(
+                  nativeLocation(related.location),
+                  related.message,
+                ),
+            )
+          }
           return native
         }),
       )
@@ -7416,6 +7467,9 @@ async function activateModkit(
                   }
                   action.edit = edit
                 }
+                // run after the edit, or alone: open the entity the fix concerns
+                if (item.command !== undefined)
+                  action.command = providerCommand(item.title, item.command)
                 return action
               })
             } catch (error) {
@@ -7520,11 +7574,15 @@ async function activateModkit(
                 completion.items.map(item => {
                   const native = new vscode.CompletionItem(
                     item.label,
-                    nativeCompletionKind(item.kind),
+                    vscode.CompletionItemKind[completionKindName(item.kind)],
                   )
                   if (item.detail !== undefined) native.detail = item.detail
                   if (item.documentation !== undefined) {
-                    native.documentation = new vscode.MarkdownString(item.documentation)
+                    // a colour item's plain documentation is the swatch VS Code draws beside it
+                    native.documentation =
+                      item.kind === 'color'
+                        ? item.documentation
+                        : new vscode.MarkdownString(item.documentation)
                   }
                   if (item.insertText !== undefined) {
                     native.insertText =
@@ -7538,6 +7596,14 @@ async function activateModkit(
                   // A shortcut item (`:Button`) replaces from its shortcut character on; VS Code
                   // filters by the range's text, so without the provider's filter text it hides it.
                   if (item.filterText !== undefined) native.filterText = item.filterText
+                  if (item.preselect === true) native.preselect = true
+                  if (item.commitCharacters !== undefined)
+                    native.commitCharacters = [...item.commitCharacters]
+                  if (item.deprecated === true) native.tags = [vscode.CompletionItemTag.Deprecated]
+                  // `name=""` asks for its values next, as MK2's attribute completion did
+                  if (item.retrigger === true) {
+                    native.command = { command: 'editor.action.triggerSuggest', title: '' }
+                  }
                   return native
                 }),
                 completion.isIncomplete,
@@ -7567,7 +7633,7 @@ async function activateModkit(
             return hover === undefined
               ? undefined
               : new vscode.Hover(
-                  new vscode.MarkdownString(hover.markdown),
+                  providerMarkdown(hover.markdown),
                   hover.range === undefined ? undefined : rangeOf(hover.range),
                 )
           } catch (error) {
@@ -7767,6 +7833,118 @@ async function activateModkit(
         },
         legend,
       ),
+      vscode.languages.registerCodeLensProvider(languageSelector, {
+        provideCodeLenses: (document, token) =>
+          askProvider('code lenses', token, async signal =>
+            (await languageController.codeLenses(languageDocument(document), signal))?.lenses.map(
+              lens =>
+                new vscode.CodeLens(
+                  rangeOf(lens.range),
+                  // a lens without a command is a title the reader cannot click
+                  lens.command === undefined
+                    ? { title: lens.title, command: '' }
+                    : providerCommand(lens.title, lens.command),
+                ),
+            ),
+          ),
+      }),
+      vscode.languages.registerFoldingRangeProvider(languageSelector, {
+        provideFoldingRanges: (document, _context, token) =>
+          askProvider('folding ranges', token, async signal =>
+            (
+              await languageController.foldingRanges(languageDocument(document), signal)
+            )?.ranges.map(
+              range =>
+                new vscode.FoldingRange(
+                  range.startLine,
+                  range.endLine,
+                  range.kind === undefined ? undefined : FOLDING_KINDS[range.kind],
+                ),
+            ),
+          ),
+      }),
+      vscode.languages.registerDocumentLinkProvider(languageSelector, {
+        provideDocumentLinks: (document, token) =>
+          askProvider('document links', token, async signal =>
+            (
+              await languageController.documentLinks(languageDocument(document), signal)
+            )?.links.flatMap(link => {
+              const target = linkTarget(link.target)
+              if (target === undefined) return []
+              const native = new vscode.DocumentLink(rangeOf(link.range), target)
+              if (link.tooltip !== undefined) native.tooltip = link.tooltip
+              return [native]
+            }),
+          ),
+      }),
+      vscode.languages.registerDocumentHighlightProvider(languageSelector, {
+        provideDocumentHighlights: (document, position, token) =>
+          askProvider('document highlights', token, async signal =>
+            (
+              await languageController.documentHighlights(
+                languageDocument(document),
+                { line: position.line, character: position.character },
+                signal,
+              )
+            )?.highlights.map(
+              highlight =>
+                new vscode.DocumentHighlight(
+                  rangeOf(highlight.range),
+                  highlight.kind === undefined ? undefined : HIGHLIGHT_KINDS[highlight.kind],
+                ),
+            ),
+          ),
+      }),
+      vscode.languages.registerInlayHintsProvider(languageSelector, {
+        provideInlayHints: (document, range, token) =>
+          askProvider('inlay hints', token, async signal =>
+            (
+              await languageController.inlayHints(
+                languageDocument(document),
+                {
+                  start: { line: range.start.line, character: range.start.character },
+                  end: { line: range.end.line, character: range.end.character },
+                },
+                signal,
+              )
+            )?.hints.map(hint => {
+              const native = new vscode.InlayHint(
+                new vscode.Position(hint.position.line, hint.position.character),
+                hint.label,
+                hint.kind === 'type'
+                  ? vscode.InlayHintKind.Type
+                  : hint.kind === 'parameter'
+                    ? vscode.InlayHintKind.Parameter
+                    : undefined,
+              )
+              if (hint.tooltip !== undefined) native.tooltip = hint.tooltip
+              if (hint.paddingLeft === true) native.paddingLeft = true
+              if (hint.paddingRight === true) native.paddingRight = true
+              return native
+            }),
+          ),
+      }),
+      /** What a provider's lens, code action or hover link asks for: the sdk's closed command set. */
+      vscode.commands.registerCommand(LANGUAGE_COMMAND, async (argument: unknown) => {
+        const target = languageCommandTarget(argument)
+        if (target === undefined) return false
+        if (target.kind === 'location') {
+          await vscode.window.showTextDocument(vscode.Uri.parse(target.uri), {
+            selection: rangeOf(target.range),
+          })
+          return true
+        }
+        // an entity of the active document's workspace, on the view the provider named
+        const host = await loadedModResources()
+        if (host === undefined) {
+          void vscode.window.showWarningMessage(
+            localizer.text('vscode.entity.noWorkspace', { subject: target.subjectId }),
+          )
+          return false
+        }
+        host.navigate(target.subjectId, undefined, target.stage)
+        return true
+      }),
       vscode.workspace.onDidOpenTextDocument(document => {
         languageController.open(languageDocument(document))
         void resolveLanguageScope(document.uri).catch(error =>

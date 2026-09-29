@@ -1,0 +1,115 @@
+/**
+ * The parts of the language adapter that decide something, kept free of `vscode` so they can be
+ * tested: which native completion kind a provider's kind is drawn as, and where a provider's
+ * command leads. `extension.ts` turns the answers into VS Code objects.
+ */
+import type {
+  LanguageCompletionItemKind,
+  LanguagePosition,
+  LanguageRange,
+} from '@modkit/sdk/language'
+
+/**
+ * The command a lens, a code action or a hover link runs with a provider's `LanguageCommand` as its
+ * argument — the same id the LSP server hands its clients (`apps/lsp` `LSP_LANGUAGE_COMMAND`).
+ */
+export const LANGUAGE_COMMAND = 'modkit.runLanguageCommand'
+
+/** Names of `vscode.CompletionItemKind` members. */
+export type CompletionKindName =
+  | 'Class'
+  | 'Color'
+  | 'Constant'
+  | 'Enum'
+  | 'EnumMember'
+  | 'Event'
+  | 'Field'
+  | 'File'
+  | 'Folder'
+  | 'Function'
+  | 'Interface'
+  | 'Keyword'
+  | 'Module'
+  | 'Property'
+  | 'Snippet'
+  | 'Text'
+  | 'TypeParameter'
+  | 'Variable'
+
+const COMPLETION_KINDS: Readonly<Record<LanguageCompletionItemKind, CompletionKindName>> = {
+  class: 'Class',
+  struct: 'Class',
+  color: 'Color',
+  constant: 'Constant',
+  enum: 'Enum',
+  'enum-member': 'EnumMember',
+  event: 'Event',
+  field: 'Field',
+  file: 'File',
+  folder: 'Folder',
+  function: 'Function',
+  interface: 'Interface',
+  keyword: 'Keyword',
+  module: 'Module',
+  namespace: 'Module',
+  parameter: 'Variable',
+  variable: 'Variable',
+  property: 'Property',
+  snippet: 'Snippet',
+  text: 'Text',
+  type: 'TypeParameter',
+}
+
+/** The native kind a provider's completion kind is drawn as; an unknown one is plain text. */
+export function completionKindName(kind: string): CompletionKindName {
+  return Object.hasOwn(COMPLETION_KINDS, kind)
+    ? COMPLETION_KINDS[kind as LanguageCompletionItemKind]
+    : 'Text'
+}
+
+/** The stage an `open-subject` view opens on. */
+const SUBJECT_STAGES = { card: 'card', graph: 'relations', resolved: 'tree' } as const
+
+export type LanguageCommandTarget =
+  | {
+      readonly kind: 'subject'
+      readonly subjectId: string
+      readonly stage: (typeof SUBJECT_STAGES)[keyof typeof SUBJECT_STAGES]
+    }
+  | { readonly kind: 'location'; readonly uri: string; readonly range: LanguageRange }
+
+const isPosition = (value: unknown): value is LanguagePosition =>
+  typeof value === 'object' &&
+  value !== null &&
+  Number.isSafeInteger((value as LanguagePosition).line) &&
+  Number.isSafeInteger((value as LanguagePosition).character) &&
+  (value as LanguagePosition).line >= 0 &&
+  (value as LanguagePosition).character >= 0
+
+/**
+ * Where a provider's command leads, or undefined for anything outside the closed set. The argument
+ * reaches the command through a lens, an action or a hover link, so it is checked, not trusted.
+ */
+export function languageCommandTarget(value: unknown): LanguageCommandTarget | undefined {
+  if (typeof value !== 'object' || value === null) return undefined
+  const command = value as Record<string, unknown>
+  if (command['kind'] === 'open-subject') {
+    const subjectId = command['subjectId']
+    const view = command['view'] ?? 'card'
+    if (typeof subjectId !== 'string' || subjectId === '') return undefined
+    if (typeof view !== 'string' || !Object.hasOwn(SUBJECT_STAGES, view)) return undefined
+    return {
+      kind: 'subject',
+      subjectId,
+      stage: SUBJECT_STAGES[view as keyof typeof SUBJECT_STAGES],
+    }
+  }
+  if (command['kind'] === 'open-location') {
+    const location = command['location'] as { uri?: unknown; range?: unknown } | undefined
+    const range = location?.range as { start?: unknown; end?: unknown } | undefined
+    if (typeof location?.uri !== 'string' || location.uri === '') return undefined
+    if (!isPosition(range?.start) || !isPosition(range?.end)) return undefined
+    return { kind: 'location', uri: location.uri, range: { start: range.start, end: range.end } }
+  }
+  return undefined
+}

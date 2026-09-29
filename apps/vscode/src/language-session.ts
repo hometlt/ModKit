@@ -15,6 +15,11 @@ import {
 } from '@modkit/core'
 import type {
   LanguageCodeActionList,
+  LanguageCodeLensList,
+  LanguageDocumentHighlightList,
+  LanguageDocumentLinkList,
+  LanguageFoldingRangeList,
+  LanguageInlayHintList,
   LanguageColor,
   LanguageColorList,
   LanguageColorPresentationList,
@@ -229,6 +234,29 @@ export interface LanguageSessionController {
     range: LanguageRange,
     signal?: AbortSignal,
   ): Promise<LanguageColorPresentationList | undefined>
+  codeLenses(
+    document: EditorLanguageDocument,
+    signal?: AbortSignal,
+  ): Promise<LanguageCodeLensList | undefined>
+  foldingRanges(
+    document: EditorLanguageDocument,
+    signal?: AbortSignal,
+  ): Promise<LanguageFoldingRangeList | undefined>
+  documentLinks(
+    document: EditorLanguageDocument,
+    signal?: AbortSignal,
+  ): Promise<LanguageDocumentLinkList | undefined>
+  documentHighlights(
+    document: EditorLanguageDocument,
+    position: LanguagePosition,
+    signal?: AbortSignal,
+  ): Promise<LanguageDocumentHighlightList | undefined>
+  /** Hints inside `range`, the part of the document the editor shows. */
+  inlayHints(
+    document: EditorLanguageDocument,
+    range: LanguageRange,
+    signal?: AbortSignal,
+  ): Promise<LanguageInlayHintList | undefined>
   workspaceSymbols(
     query: string,
     signal?: AbortSignal,
@@ -701,6 +729,15 @@ export function createLanguageSessionController(
     return tracked.analysis
   }
 
+  /** One document's feature request, bounded as every editor feature is. */
+  const featureRequest = (document: EditorLanguageDocument, signal?: AbortSignal) => ({
+    uri: document.uri,
+    documentVersion: document.version,
+    maxResults: EDITOR_MAX_RESULTS,
+    maxDocuments: EDITOR_MAX_DOCUMENTS,
+    ...(signal === undefined ? {} : { signal }),
+  })
+
   const prepareInteractive = async (
     document: EditorLanguageDocument,
     signal?: AbortSignal,
@@ -1034,6 +1071,51 @@ export function createLanguageSessionController(
         maxDocuments: EDITOR_MAX_DOCUMENTS,
         ...(signal === undefined ? {} : { signal }),
       })
+    },
+
+    async codeLenses(
+      document: EditorLanguageDocument,
+      signal?: AbortSignal,
+    ): Promise<LanguageCodeLensList | undefined> {
+      if ((await ensure(document, signal)) === undefined) return undefined
+      return options.workspace.codeLenses(featureRequest(document, signal))
+    },
+
+    async foldingRanges(
+      document: EditorLanguageDocument,
+      signal?: AbortSignal,
+    ): Promise<LanguageFoldingRangeList | undefined> {
+      if ((await ensure(document, signal)) === undefined) return undefined
+      return options.workspace.foldingRanges(featureRequest(document, signal))
+    },
+
+    async documentLinks(
+      document: EditorLanguageDocument,
+      signal?: AbortSignal,
+    ): Promise<LanguageDocumentLinkList | undefined> {
+      if ((await ensure(document, signal)) === undefined) return undefined
+      return options.workspace.documentLinks(featureRequest(document, signal))
+    },
+
+    async documentHighlights(
+      document: EditorLanguageDocument,
+      position: LanguagePosition,
+      signal?: AbortSignal,
+    ): Promise<LanguageDocumentHighlightList | undefined> {
+      if ((await ensure(document, signal)) === undefined) return undefined
+      return options.workspace.documentHighlights({
+        ...featureRequest(document, signal),
+        position,
+      })
+    },
+
+    async inlayHints(
+      document: EditorLanguageDocument,
+      range: LanguageRange,
+      signal?: AbortSignal,
+    ): Promise<LanguageInlayHintList | undefined> {
+      if ((await ensure(document, signal)) === undefined) return undefined
+      return options.workspace.inlayHints({ ...featureRequest(document, signal), range })
     },
 
     async workspaceSymbols(

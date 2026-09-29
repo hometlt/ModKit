@@ -160,6 +160,7 @@ const EN_MESSAGES = Object.freeze({
   'vscode.entity.card': 'Entity card',
   'vscode.entity.graph': 'Relations graph',
   'vscode.entity.placeholder': 'Entity id or name in the loaded mods',
+  'vscode.entity.noWorkspace': 'Modkit: open a file of a mod to open its entity {subject}.',
   'vscode.modCard.none': '{name} is not inside a mod package.',
 
   'vscode.shell.extensionRootsFailed':
@@ -677,6 +678,7 @@ const RU_MESSAGES: Readonly<Record<keyof typeof EN_MESSAGES, string>> = Object.f
   'vscode.entity.card': 'Карточка сущности',
   'vscode.entity.graph': 'Граф связей',
   'vscode.entity.placeholder': 'Id или имя сущности в загруженных модах',
+  'vscode.entity.noWorkspace': 'Modkit: откройте файл мода, чтобы открыть его сущность {subject}.',
   'vscode.modCard.none': '{name} не лежит в пакете мода.',
 
   'vscode.shell.extensionRootsFailed':
