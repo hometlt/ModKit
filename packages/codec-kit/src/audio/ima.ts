@@ -15,3 +15,39 @@ export const IMA_STEP_TABLE: readonly number[] = Object.freeze([
 export const IMA_INDEX_TABLE: readonly number[] = Object.freeze([
   -1, -1, -1, -1, 2, 4, 6, 8, -1, -1, -1, -1, 2, 4, 6, 8,
 ])
+
+/**
+ * One block of Microsoft IMA ADPCM (WAV format tag 0x11), as interleaved 16-bit frames. Each
+ * channel opens the block with a 16-bit predictor and an 8-bit step index — that predictor is the
+ * first frame — then 4-byte words of 8 codes, low nibble first, alternate by channel. A short last
+ * block keeps its header and whole word groups. Xbox IMA (FMOD FSB5 codec 7) is the same block of
+ * 0x24 bytes a channel, of which the player keeps the first 64 frames.
+ */
+export function decodeImaAdpcmBlock(block: Uint8Array, channels: number): Int16Array {
+  const header = 4 * channels
+  if (channels <= 0 || block.byteLength < header) return new Int16Array(0)
+  const groups = Math.floor((block.byteLength - header) / header)
+  const out = new Int16Array((1 + groups * 8) * channels)
+  for (let channel = 0; channel < channels; channel += 1) {
+    const at = 4 * channel
+    let predictor = (((block[at] ?? 0) | ((block[at + 1] ?? 0) << 8)) << 16) >> 16
+    let index = Math.min(88, block[at + 2] ?? 0)
+    out[channel] = predictor
+    for (let group = 0; group < groups; group += 1) {
+      const word = header + (group * channels + channel) * 4
+      for (let nibble = 0; nibble < 8; nibble += 1) {
+        const code = ((block[word + (nibble >> 1)] ?? 0) >> ((nibble & 1) * 4)) & 0x0f
+        const step = IMA_STEP_TABLE[index] ?? 0
+        let difference = step >> 3
+        if ((code & 1) !== 0) difference += step >> 2
+        if ((code & 2) !== 0) difference += step >> 1
+        if ((code & 4) !== 0) difference += step
+        predictor += (code & 8) !== 0 ? -difference : difference
+        predictor = predictor < -32_768 ? -32_768 : predictor > 32_767 ? 32_767 : predictor
+        index = Math.min(88, Math.max(0, index + (IMA_INDEX_TABLE[code] ?? 0)))
+        out[(1 + group * 8 + nibble) * channels + channel] = predictor
+      }
+    }
+  }
+  return out
+}
