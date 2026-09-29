@@ -8,6 +8,7 @@ import {
 import { decodeBcSurface } from '@modkit/codec-kit/texture/bc'
 import { decodeBc6h, decodeBc7 } from './bptc.js'
 import { ENCODABLE_FORMATS } from './encode.js'
+import { compressedTextureOf } from './compressed.js'
 import {
   DDS_EDIT_CONTENT_SCHEMA,
   DDS_EXPORT_SCHEMA,
@@ -381,6 +382,54 @@ function subresourceKey(coordinates) {
   return `${coordinates.mipLevel}/${coordinates.layer}/${coordinates.face}/${coordinates.slice}`
 }
 
+/**
+ * `readCompressed` of the raster source: the stored blocks of one layer and face from `mipLevel`
+ * down, described as a texture of their own (its level 0 is the requested level), so a renderer
+ * uploads them as they are (compressed.js builds the descriptor). The levels are copied: handing
+ * out views would make a worker boundary clone the whole file once per level. A volume texture
+ * and an uncompressed payload have no such view.
+ */
+function compressedReader(bytes, info) {
+  if (blockBytesFor(info.format) === 0 || info.depth !== 1) return undefined
+  let whole
+  return async (request, signal) => {
+    signal?.throwIfAborted()
+    const { mipLevel = 0, layer = 0, face = 0, maxBytes } = request
+    if (!Number.isSafeInteger(maxBytes) || maxBytes < 0) {
+      throw new RangeError('DDS compressed read needs a non-negative safe-integer maxBytes')
+    }
+    if (!Number.isSafeInteger(mipLevel) || mipLevel < 0 || mipLevel >= info.mipLevels) {
+      throw new RangeError(`DDS mip level ${mipLevel} is outside 0..${info.mipLevels - 1}`)
+    }
+    whole ??= compressedTextureOf(bytes, info)
+    const levels = whole.subresources.filter(
+      item => item.layer === layer && item.face === face && item.mipLevel >= mipLevel,
+    )
+    if (levels.length === 0) {
+      throw new RangeError(`DDS layer ${layer}, face ${face} is not stored`)
+    }
+    let total = 0
+    for (const level of levels) total += level.data.byteLength
+    if (total > maxBytes) {
+      throw new RangeError(`DDS compressed levels need ${total} bytes, over the ${maxBytes} asked`)
+    }
+    return {
+      ...whole,
+      dimensions: { width: levels[0].width, height: levels[0].height, depth: 1 },
+      mipLevelCount: levels.length,
+      layerCount: 1,
+      faceCount: 1,
+      subresources: levels.map(level => ({
+        ...level,
+        mipLevel: level.mipLevel - mipLevel,
+        layer: 0,
+        face: 0,
+        data: level.data.slice(),
+      })),
+    }
+  }
+}
+
 function regionReader(bytes, info) {
   /*
    * One decoded surface per requested subresource. A viewer that walks a mip chain asks for each
@@ -522,6 +571,7 @@ const definition = Object.freeze({
         decodedAccess: true,
       },
       regionReader(bytes, info),
+      compressedReader(bytes, info),
     )
     const subresources = info.mipLevels * info.layers * info.faces
     const mipChain = Array.from({ length: info.mipLevels }, (_, level) => {

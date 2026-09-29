@@ -164,7 +164,8 @@ export async function acquireUvmMaterialTextures(
         code: item.code,
         message: item.message,
       })
-    if (result.state === 'unresolved') continue
+    // Blocks come only for `compressedFormats`, which this reader does not ask for.
+    if (result.state === 'unresolved' || result.state === 'compressed') continue
     if ([result.info.layers, result.info.depth, result.info.frames].some(count => (count ?? 1) > 1))
       diagnostics.push({
         severity: 'warning',

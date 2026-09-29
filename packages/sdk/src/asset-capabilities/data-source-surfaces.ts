@@ -185,6 +185,7 @@ const rasterImageSourceSurface = {
     info: cancellableValue,
     encoded: { kind: 'lease', result: ENCODED_MEDIA, wrapper: 'bare', ...sig },
     readRegion: { kind: 'value', optional: true, ...sig },
+    readCompressed: { kind: 'value', optional: true, ...sig },
   },
 } as const satisfies SurfaceOf<RasterImageSource>
 

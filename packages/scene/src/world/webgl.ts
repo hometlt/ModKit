@@ -50,6 +50,11 @@ import {
   type SceneMaterialPrograms,
 } from '../render/materials.js'
 import { applyTextureFilter } from '../render/texture-filtering.js'
+import {
+  sceneTextureByteLength,
+  sceneTexturePixels,
+  uploadCompressedTexture,
+} from '../render/compressed-textures.js'
 import { uniformLocation } from '../materials/webgl.js'
 import { invertMaterialFrame } from '../materials/frame.js'
 import { createWorldToneMapper } from './tone-mapping.js'
@@ -7320,7 +7325,7 @@ const worldTextureKeys = new WeakMap<SceneRendererTexture, string>()
 function worldTextureKey(texture: SceneRendererTexture): string {
   let key = worldTextureKeys.get(texture)
   if (key === undefined) {
-    const bytes = texture.rgba
+    const bytes = texture.compressed?.subresources[0]?.data ?? texture.rgba
     const step = Math.max(1, Math.floor(bytes.length / WORLD_TEXTURE_KEY_SAMPLES))
     let checksum = 0
     for (let offset = 0; offset < bytes.length; offset += step)
@@ -7332,6 +7337,7 @@ function worldTextureKey(texture: SceneRendererTexture): string {
       texture.wrapU,
       texture.wrapV,
       texture.filter,
+      texture.compressed?.format ?? 'rgba8',
       checksum,
     ].join('|')
     worldTextureKeys.set(texture, key)
@@ -7397,7 +7403,8 @@ function bindTexture2d(
   if (
     texture.width <= 0 ||
     texture.height <= 0 ||
-    texture.rgba.byteLength !== texture.width * texture.height * 4
+    (texture.compressed === undefined &&
+      texture.rgba.byteLength !== texture.width * texture.height * 4)
   )
     throw new TypeError(`world texture ${texture.id} is not tightly packed RGBA8`)
   const gl = resources.gl
@@ -7406,31 +7413,37 @@ function bindTexture2d(
   if (entry === undefined) {
     const handle = gl.createTexture()
     if (handle === null) throw new TypeError('WebGL could not allocate a world texture')
-    entry = Object.freeze({
-      key: texture,
-      handle,
-      target: gl.TEXTURE_2D,
-      bytes: texture.rgba.byteLength,
-    })
     try {
       gl.activeTexture(gl.TEXTURE0 + unit)
       gl.bindTexture(gl.TEXTURE_2D, handle)
       gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1)
-      gl.texImage2D(
-        gl.TEXTURE_2D,
-        0,
-        gl.RGBA,
-        texture.width,
-        texture.height,
-        0,
-        gl.RGBA,
-        gl.UNSIGNED_BYTE,
-        texture.rgba,
-      )
+      const filter = texture.filter === 'nearest' ? 'nearest' : 'linear'
+      // Stored blocks with their stored levels, as the file holds them; texels where the context or
+      // the format cannot take them, with mips generated as before.
+      const blocks = uploadCompressedTexture(gl, texture, filter)
+      if (!blocks) {
+        gl.texImage2D(
+          gl.TEXTURE_2D,
+          0,
+          gl.RGBA,
+          texture.width,
+          texture.height,
+          0,
+          gl.RGBA,
+          gl.UNSIGNED_BYTE,
+          sceneTexturePixels(texture),
+        )
+        applyTextureFilter(gl, gl.TEXTURE_2D, filter)
+      }
       const wrap = (value: string | undefined) => (value === 'clamp' ? gl.CLAMP_TO_EDGE : gl.REPEAT)
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, wrap(texture.wrapU))
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, wrap(texture.wrapV))
-      applyTextureFilter(gl, gl.TEXTURE_2D, texture.filter === 'nearest' ? 'nearest' : 'linear')
+      entry = Object.freeze({
+        key: texture,
+        handle,
+        target: gl.TEXTURE_2D,
+        bytes: blocks ? sceneTextureByteLength(texture) : texture.width * texture.height * 4,
+      })
       resources.textures.set(contentKey, entry)
       resources.textureUploads += 1
     } catch (error) {
@@ -7728,7 +7741,10 @@ function retainedWorldPlanBytes(plan: WorldWebGlPlan | undefined): number {
       for (const coordinates of primitive.textureCoordinateSets ?? [])
         retain(coordinates.coordinates)
     }
-    for (const texture of scene.textures) retain(texture.rgba)
+    for (const texture of scene.textures) {
+      retain(texture.rgba)
+      for (const level of texture.compressed?.subresources ?? []) retain(level.data)
+    }
   }
   for (const item of plan.shadowControlledOpaqueTriangles) retainBatch(item)
   for (const item of [
@@ -8581,7 +8597,8 @@ function drawSplatBatch(
     if (
       texture.width <= 0 ||
       texture.height <= 0 ||
-      texture.rgba.byteLength !== texture.width * texture.height * 4
+      (texture.compressed === undefined &&
+        texture.rgba.byteLength !== texture.width * texture.height * 4)
     )
       throw new TypeError(`world texture ${texture.id} is not tightly packed RGBA8`)
     return texture
@@ -8603,7 +8620,9 @@ function drawSplatBatch(
       return flat
     }
     checked(texture)
-    if (texture.width === width && texture.height === height) return texture.rgba
+    // One array of layers of one size: blocks are decoded here (sceneTexturePixels).
+    const pixels = sceneTexturePixels(texture)
+    if (texture.width === width && texture.height === height) return pixels
     const output = new Uint8Array(width * height * 4)
     for (let y = 0; y < height; y += 1) {
       const sourceY = Math.min(
@@ -8613,7 +8632,7 @@ function drawSplatBatch(
       for (let x = 0; x < width; x += 1) {
         const sourceX = Math.min(texture.width - 1, Math.floor(((x + 0.5) * texture.width) / width))
         const from = (sourceY * texture.width + sourceX) * 4
-        output.set(texture.rgba.subarray(from, from + 4), (y * width + x) * 4)
+        output.set(pixels.subarray(from, from + 4), (y * width + x) * 4)
       }
     }
     return output

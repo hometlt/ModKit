@@ -85,11 +85,109 @@ export interface RasterRegion {
   readonly pixels: Uint8Array
 }
 
+/*
+ * A compressed texture as the GPU stores it: the blocks of S3TC/RGTC/BPTC/ETC/ASTC/PVRTC, with the
+ * block geometry, colour space and alpha mode that say how to upload them. Not a container: a
+ * renderer that takes it knows GPU formats, not DDS or KTX. Moved unchanged from codec-kit's image
+ * texture profile (MK2 `image.compressed.read`), which re-exports it.
+ */
+export type CompressedTextureFormat =
+  | 'astc-rgba-unorm'
+  | 'bc1-rgb-unorm'
+  | 'bc1-rgba-unorm'
+  | 'bc2-rgba-unorm'
+  | 'bc3-rgba-unorm'
+  | 'bc4-r-unorm'
+  | 'bc4-r-snorm'
+  | 'bc5-rg-unorm'
+  | 'bc5-rg-snorm'
+  | 'bc6h-rgb-ufloat'
+  | 'bc6h-rgb-sfloat'
+  | 'bc7-rgba-unorm'
+  | 'etc1-rgb8-unorm'
+  | 'etc2-rgb8-unorm'
+  | 'etc2-rgb8a1-unorm'
+  | 'etc2-rgba8-unorm'
+  | 'eac-r11-unorm'
+  | 'eac-r11-snorm'
+  | 'eac-rg11-unorm'
+  | 'eac-rg11-snorm'
+  | 'pvrtc1-rgb-2bpp-unorm'
+  | 'pvrtc1-rgba-2bpp-unorm'
+  | 'pvrtc1-rgb-4bpp-unorm'
+  | 'pvrtc1-rgba-4bpp-unorm'
+  | (string & Record<never, never>)
+
+export interface CompressedTextureBlockLayout {
+  width: number
+  height: number
+  depth: number
+  bytes: number
+  minimumBlocksWide?: number
+  minimumBlocksHigh?: number
+  minimumBlocksDeep?: number
+}
+
+/** One payload in canonical mip -> layer -> face -> depth-slice order. */
+export interface CompressedTextureSubresource<TData = Uint8Array> {
+  mipLevel: number
+  layer: number
+  face: number
+  depthSlice: number
+  width: number
+  height: number
+  /** Always 1 in v1: volume textures are split into explicitly indexed depth slices. */
+  depth: 1
+  /** Exact compressed payload for this subresource; never a whole unbounded source file. */
+  data: TData
+  /** Optional provenance range in the original container. */
+  sourceByteRange?: { offset: number; length: number }
+}
+
+/** Renderer-neutral data returned by `image.compressed.read`. */
+export interface CompressedTextureDescriptorV1<TData = Uint8Array> {
+  schemaVersion: 1
+  format: CompressedTextureFormat
+  dimensions: { width: number; height: number; depth: number }
+  mipLevelCount: number
+  layerCount: number
+  faceCount: number
+  colorSpace: 'linear' | 'srgb' | 'unknown'
+  alphaMode: 'none' | 'straight' | 'premultiplied' | 'unknown'
+  block: CompressedTextureBlockLayout
+  subresources: readonly CompressedTextureSubresource<TData>[]
+  source: {
+    codecId: string
+    containerFormat: string
+    preservation: 'source-bytes' | 'transcoded'
+  }
+  notes?: readonly string[]
+}
+
+/** Which stored levels of a block-compressed image a raster source hands over. */
+export interface CompressedTextureRequest {
+  /** The most detailed level wanted; every smaller level the file stores follows it. Default 0. */
+  readonly mipLevel?: number
+  readonly layer?: number
+  readonly face?: number
+  /** Bound on the summed block bytes; a source refuses rather than exceed it. */
+  readonly maxBytes: number
+}
+
 export interface RasterImageSource {
   info(signal?: AbortSignal): Promise<RasterImageInfo>
   encoded(signal?: AbortSignal): Promise<EncodedMediaSource>
   /** Optional when decoding belongs to a separately selected decoder provider. */
   readRegion?(request: RasterRegionRequest, signal?: AbortSignal): Promise<RasterRegion>
+  /**
+   * The stored blocks of a block-compressed image (`info.compression` other than `none`), without
+   * decoding: one layer and face, `mipLevel` and each smaller stored level, in mip order. Levels
+   * the source computes rather than stores are not blocks and are not included.
+   */
+  readCompressed?(
+    request: CompressedTextureRequest,
+    signal?: AbortSignal,
+  ): Promise<CompressedTextureDescriptorV1>
 }
 
 export interface VectorSceneInfo {

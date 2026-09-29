@@ -1,5 +1,10 @@
 import type { Diagnostic } from '@modkit/core'
-import type { RasterImageInfo, RasterRegion } from './asset-capabilities/media-data-sources.js'
+import type {
+  CompressedTextureDescriptorV1,
+  CompressedTextureFormat,
+  RasterImageInfo,
+  RasterRegion,
+} from './asset-capabilities/media-data-sources.js'
 import type { LogicalResourceRequirement, ResourceProvenanceRecord } from './resource-session.js'
 
 export interface RasterSubresource {
@@ -25,6 +30,13 @@ export type RasterResourceSelection = Partial<Omit<RasterSubresource, 'face' | '
 export type RasterResourceRequest = {
   readonly maxBytes: number
   readonly selection?: RasterResourceSelection
+  /**
+   * Block formats the caller takes as stored GPU blocks rather than decoded pixels. An image in
+   * one of them is answered `compressed`, and `mipLevel: 'fit'` counts its block bytes, so one
+   * budget holds a more detailed level; any other image, or a codec that cannot hand its blocks
+   * over, is answered decoded as before.
+   */
+  readonly compressedFormats?: readonly CompressedTextureFormat[]
 } & (
   | { readonly kind: 'logical'; readonly requirement: LogicalResourceRequirement }
   | { readonly kind: 'embedded'; readonly bytes: Uint8Array; readonly mediaType?: string }
@@ -47,6 +59,19 @@ export type RasterResourceResult =
         readonly subresource: RasterSubresource
         readonly region: RasterRegion
       }[]
+      readonly diagnostics: readonly Diagnostic[]
+      readonly provenance?: ResourceProvenanceRecord
+    }
+  | {
+      /**
+       * Returned only for a format the request's `compressedFormats` names: the selected level of
+       * one layer and face and every smaller level the image stores, as the GPU takes them
+       * (`texture` level 0 is the selected level). `subresource` names the selected one.
+       */
+      readonly state: 'compressed'
+      readonly info: RasterImageInfo
+      readonly texture: CompressedTextureDescriptorV1
+      readonly subresource: RasterSubresource
       readonly diagnostics: readonly Diagnostic[]
       readonly provenance?: ResourceProvenanceRecord
     }

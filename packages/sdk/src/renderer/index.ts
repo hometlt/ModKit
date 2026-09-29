@@ -8,7 +8,10 @@
 
 import type { ModelPrimitive } from '../asset-capabilities/media-data-sources.js'
 import type { ModelMaterialRef } from '../asset-capabilities/model-facet-sources.js'
-import type { RasterImageInfo } from '../asset-capabilities/media-data-sources.js'
+import type {
+  CompressedTextureDescriptorV1,
+  RasterImageInfo,
+} from '../asset-capabilities/media-data-sources.js'
 import type { ServiceProviderModule } from '../runtime-abi.js'
 
 /** Standard service coordinate for renderer-neutral 3D scene frames. */
@@ -41,9 +44,10 @@ export type SceneRendererTextureWrap = 'repeat' | 'clamp'
 /**
  * Decoded texels a renderer samples, owned by the scene for the duration of one render call.
  *
- * RGBA8 and nothing else, for the same reason `outputKind` is: the decoding of a native texture
- * container belongs to whoever published it, and a renderer that had to know DDS, BLP or PNG would
- * be a second codec host. The producer hands over pixels; this contract carries them.
+ * RGBA8, or the GPU's own compressed blocks (`compressed`), for the same reason `outputKind` is
+ * narrow: the decoding of a native texture container belongs to whoever published it, and a
+ * renderer that had to know DDS, BLP or PNG would be a second codec host. Block formats are the
+ * hardware's, not a container's: the producer takes them out of the file, the renderer uploads them.
  */
 export interface SceneRendererTexture {
   /** Defaults to 2d. Cube images contain six square faces in +X,-X,+Y,-Y,+Z,-Z order. */
@@ -55,8 +59,15 @@ export interface SceneRendererTexture {
   readonly width: number
   readonly height: number
   /** Tightly packed row-major RGBA8 texels, top-left origin. A 2D image has width * height * 4
-   * bytes; a cube has six such faces concatenated without padding. */
+   * bytes; a cube has six such faces concatenated without padding. Empty when `compressed` carries
+   * the texture. */
   readonly rgba: Uint8Array
+  /**
+   * The stored GPU blocks instead of texels: one layer and face of a 2D texture, the level of
+   * `width` x `height` first and each smaller stored level after it, top-left origin as `rgba`.
+   * A renderer uploads them where the GPU takes the format and decodes them where it does not.
+   */
+  readonly compressed?: CompressedTextureDescriptorV1
   readonly wrapU?: SceneRendererTextureWrap
   readonly wrapV?: SceneRendererTextureWrap
   /** Explicit first-surface filtering. Material programs default to linear in both providers. */

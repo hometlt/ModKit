@@ -6,77 +6,19 @@
  * concrete image extension into their dependency closure.
  */
 
-export type CompressedTextureFormat =
-  | 'astc-rgba-unorm'
-  | 'bc1-rgb-unorm'
-  | 'bc1-rgba-unorm'
-  | 'bc2-rgba-unorm'
-  | 'bc3-rgba-unorm'
-  | 'bc4-r-unorm'
-  | 'bc4-r-snorm'
-  | 'bc5-rg-unorm'
-  | 'bc5-rg-snorm'
-  | 'bc6h-rgb-ufloat'
-  | 'bc6h-rgb-sfloat'
-  | 'bc7-rgba-unorm'
-  | 'etc1-rgb8-unorm'
-  | 'etc2-rgb8-unorm'
-  | 'etc2-rgb8a1-unorm'
-  | 'etc2-rgba8-unorm'
-  | 'eac-r11-unorm'
-  | 'eac-r11-snorm'
-  | 'eac-rg11-unorm'
-  | 'eac-rg11-snorm'
-  | 'pvrtc1-rgb-2bpp-unorm'
-  | 'pvrtc1-rgba-2bpp-unorm'
-  | 'pvrtc1-rgb-4bpp-unorm'
-  | 'pvrtc1-rgba-4bpp-unorm'
-  | (string & Record<never, never>)
+import type {
+  CompressedTextureBlockLayout,
+  CompressedTextureDescriptorV1,
+  CompressedTextureFormat,
+  CompressedTextureSubresource,
+} from '@modkit/sdk'
 
-export interface CompressedTextureBlockLayout {
-  width: number
-  height: number
-  depth: number
-  bytes: number
-  minimumBlocksWide?: number
-  minimumBlocksHigh?: number
-  minimumBlocksDeep?: number
-}
-
-/** One payload in canonical mip -> layer -> face -> depth-slice order. */
-export interface CompressedTextureSubresource<TData = Uint8Array> {
-  mipLevel: number
-  layer: number
-  face: number
-  depthSlice: number
-  width: number
-  height: number
-  /** Always 1 in v1: volume textures are split into explicitly indexed depth slices. */
-  depth: 1
-  /** Exact compressed payload for this subresource; never a whole unbounded source file. */
-  data: TData
-  /** Optional provenance range in the original container. */
-  sourceByteRange?: { offset: number; length: number }
-}
-
-/** Renderer-neutral data returned by `image.compressed.read`. */
-export interface CompressedTextureDescriptorV1<TData = Uint8Array> {
-  schemaVersion: 1
-  format: CompressedTextureFormat
-  dimensions: { width: number; height: number; depth: number }
-  mipLevelCount: number
-  layerCount: number
-  faceCount: number
-  colorSpace: 'linear' | 'srgb' | 'unknown'
-  alphaMode: 'none' | 'straight' | 'premultiplied' | 'unknown'
-  block: CompressedTextureBlockLayout
-  subresources: readonly CompressedTextureSubresource<TData>[]
-  source: {
-    codecId: string
-    containerFormat: string
-    preservation: 'source-bytes' | 'transcoded'
-  }
-  notes?: readonly string[]
+// The descriptor is a contract type now (`RasterImageSource.readCompressed`); it lives in the sdk.
+export type {
+  CompressedTextureBlockLayout,
+  CompressedTextureDescriptorV1,
+  CompressedTextureFormat,
+  CompressedTextureSubresource,
 }
 
 export type CompressedTextureDescriptorIssueCode =

@@ -1,3 +1,4 @@
 export * from './webgl.js'
 export * from './top-down.js'
 export { createEmbeddedUvmWorldModelDecoder } from './embedded-uvm.js'
+export { SCENE_COMPRESSED_TEXTURE_FORMATS } from '../render/compressed-textures.js'

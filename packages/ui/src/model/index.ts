@@ -920,7 +920,8 @@ export async function resolveModelViewerTextures(
       signal,
     )
     signal?.throwIfAborted()
-    if (result.state === 'unresolved') continue
+    // Blocks come only for `compressedFormats`, which this reader does not ask for.
+    if (result.state === 'unresolved' || result.state === 'compressed') continue
     const faces = result.info.faces ?? 1
     if (faces !== 1 && faces !== 6) continue
     if (faces === 6 && result.info.width !== result.info.height) continue

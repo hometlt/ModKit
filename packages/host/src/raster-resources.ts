@@ -2,6 +2,7 @@ import { diagnostic, isModkitError } from '@modkit/core'
 import {
   revisionId,
   type ArtifactByteSource,
+  type CompressedTextureDescriptorV1,
   type InputSearchScope,
   type Lease,
   type RasterImageSource,
@@ -16,7 +17,12 @@ import {
 import { createMemorySource } from '@modkit/vfs'
 import { artifactByteSourceFromRandomAccess } from './source-bridge.js'
 import type { OpenSubjectResult } from './subject-open.js'
-import { captureRasterSelection, rasterSelectionPlan } from './raster-selection.js'
+import {
+  captureCompressedFormats,
+  captureRasterSelection,
+  compressedSelectionPlan,
+  rasterSelectionPlan,
+} from './raster-selection.js'
 
 /** Shared by the candidate's narrowed contexts. Bound only when that candidate becomes the subject. */
 export interface SubjectRasterResourceState {
@@ -84,6 +90,79 @@ export interface SubjectRasterResourceOptions {
   ) => Promise<OpenSubjectResult>
 }
 
+/**
+ * A codec's compressed descriptor, checked against the plan and copied into host-owned bytes: one
+ * plane, level 0 the planned level's size, each level the next smaller one, blocks of the stated
+ * layout, no more than the budget. Undefined when the codec answered anything else.
+ */
+function ownedCompressedTexture(
+  texture: CompressedTextureDescriptorV1,
+  info: { readonly width: number; readonly height: number },
+  plan: { readonly mipLevel: number; readonly bytes: number },
+  maxBytes: number,
+): CompressedTextureDescriptorV1 | undefined {
+  const levels = texture?.subresources
+  const block = texture?.block
+  if (
+    !Array.isArray(levels) ||
+    levels.length === 0 ||
+    typeof texture.format !== 'string' ||
+    block === null ||
+    typeof block !== 'object' ||
+    block.width !== 4 ||
+    block.height !== 4 ||
+    block.depth !== 1 ||
+    (block.bytes !== 8 && block.bytes !== 16)
+  )
+    return undefined
+  let total = 0
+  const owned = []
+  for (const [index, level] of levels.entries()) {
+    const width = Math.max(1, Math.floor(info.width / 2 ** (plan.mipLevel + index)))
+    const height = Math.max(1, Math.floor(info.height / 2 ** (plan.mipLevel + index)))
+    const bytes = Math.ceil(width / 4) * Math.ceil(height / 4) * block.bytes
+    if (
+      level === null ||
+      typeof level !== 'object' ||
+      level.mipLevel !== index ||
+      level.layer !== 0 ||
+      level.face !== 0 ||
+      level.width !== width ||
+      level.height !== height ||
+      !(level.data instanceof Uint8Array) ||
+      level.data.byteLength !== bytes
+    )
+      return undefined
+    total += bytes
+    if (total > maxBytes) return undefined
+    owned.push(
+      Object.freeze({
+        mipLevel: index,
+        layer: 0,
+        face: 0,
+        depthSlice: 0,
+        width,
+        height,
+        depth: 1 as const,
+        data: level.data.slice(),
+      }),
+    )
+  }
+  return Object.freeze({
+    schemaVersion: 1,
+    format: texture.format,
+    dimensions: Object.freeze({ width: owned[0]!.width, height: owned[0]!.height, depth: 1 }),
+    mipLevelCount: owned.length,
+    layerCount: 1,
+    faceCount: 1,
+    colorSpace: texture.colorSpace,
+    alphaMode: texture.alphaMode,
+    block: Object.freeze({ width: 4, height: 4, depth: 1, bytes: block.bytes }),
+    subresources: Object.freeze(owned),
+    source: Object.freeze({ ...texture.source }),
+  })
+}
+
 export function createSubjectRasterResources(
   options: SubjectRasterResourceOptions,
 ): RasterResourcePort {
@@ -113,9 +192,11 @@ export function createSubjectRasterResources(
         return refusal('x3.host/raster-request-invalid', 'A raster resource request is required.')
       const maxBytes = request.maxBytes
       let selection: ReturnType<typeof captureRasterSelection>
+      let compressedFormats: ReadonlySet<string>
       const explicitSelection = request.selection !== undefined
       try {
         selection = captureRasterSelection(request.selection)
+        compressedFormats = captureCompressedFormats(request.compressedFormats)
       } catch (error) {
         return refusal(
           'x3.host/raster-request-invalid',
@@ -248,6 +329,50 @@ export function createSubjectRasterResources(
         )
         releases.push(() => raster.release())
         const info = Object.freeze({ ...(await raster.value.info(signal)) })
+        const compressedPlan =
+          compressedFormats.size === 0 ||
+          atlasRegion !== undefined ||
+          raster.value.readCompressed === undefined ||
+          ![...compressedFormats].some(format => format.startsWith(`${info.compression}-`))
+            ? undefined
+            : compressedSelectionPlan(info, selection, maxBytes)
+        if (compressedPlan !== undefined) {
+          const subresource: RasterSubresource = Object.freeze({
+            frame: selection.frame ?? 0,
+            mipLevel: compressedPlan.mipLevel,
+            layer: selection.layer ?? 0,
+            face: typeof selection.face === 'number' ? selection.face : 0,
+            slice: 0,
+          })
+          let texture: CompressedTextureDescriptorV1 | undefined
+          try {
+            texture = await raster.value.readCompressed!(
+              {
+                mipLevel: subresource.mipLevel,
+                layer: subresource.layer,
+                face: subresource.face,
+                maxBytes,
+              },
+              signal,
+            )
+          } catch (error) {
+            if (signal?.aborted) throw error
+            // A codec that cannot hand these blocks over still decodes them below.
+          }
+          const owned =
+            texture === undefined
+              ? undefined
+              : ownedCompressedTexture(texture, info, compressedPlan, maxBytes)
+          if (owned !== undefined && compressedFormats.has(owned.format))
+            return {
+              state: 'compressed',
+              info,
+              texture: owned,
+              subresource,
+              diagnostics: Object.freeze([...opened.diagnostics]),
+              ...(provenance === undefined ? {} : { provenance }),
+            }
+        }
         if (!info.decodedAccess || raster.value.readRegion === undefined)
           return refusal(
             'x3.host/raster-decode-unavailable',

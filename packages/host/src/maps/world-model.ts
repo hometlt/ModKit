@@ -34,9 +34,26 @@ export function childResourceLogicalId(parentLogicalId: string, childLogicalId: 
 
 export function worldTexture(
   id: string,
-  result: Extract<RasterResourceResult, { readonly state: 'decoded' }>,
+  result: Extract<RasterResourceResult, { readonly state: 'decoded' | 'compressed' }>,
 ): SceneRendererTexture | undefined {
   if (result.info.orientation === 'unknown') return undefined
+  if (result.state === 'compressed') {
+    // Blocks are not turned over row by row: only a top-left image arrives as its blocks.
+    if (result.info.orientation !== 'top-left') return undefined
+    return Object.freeze({
+      id,
+      width: result.texture.dimensions.width,
+      height: result.texture.dimensions.height,
+      rgba: new Uint8Array(0),
+      compressed: result.texture,
+      ...(result.info.channelLayout === undefined
+        ? {}
+        : { channelLayout: result.info.channelLayout }),
+      ...(result.info.compression === undefined ? {} : { compression: result.info.compression }),
+      wrapU: 'repeat',
+      wrapV: 'repeat',
+    })
+  }
   const { region } = result
   const rowBytes = region.width * 4
   const rgba = new Uint8Array(rowBytes * region.height)
@@ -59,6 +76,14 @@ export function worldTexture(
     wrapU: 'repeat',
     wrapV: 'repeat',
   })
+}
+
+/** Bytes a world texture holds: its stored blocks, or its RGBA8 texels. */
+export function worldTextureBytes(texture: SceneRendererTexture): number {
+  if (texture.compressed === undefined) return texture.rgba.byteLength
+  let bytes = 0
+  for (const level of texture.compressed.subresources) bytes += level.data.byteLength
+  return bytes
 }
 
 /**
@@ -352,7 +377,8 @@ export async function worldSceneModel(
       1,
       Math.min(maxTextureBytes, remaining, sharedTextureBytes),
     )
-    const cacheKey = `${logicalId}\u0000${String(previewTextureBytes)}`
+    const compressedFormats = request.compressedTextureFormats
+    const cacheKey = `${logicalId}\u0000${String(previewTextureBytes)}\u0000${compressedFormats?.join(',') ?? ''}`
     let pending = textureCache.get(cacheKey)
     if (pending === undefined) {
       pending = (async () => {
@@ -368,10 +394,11 @@ export async function worldSceneModel(
             },
             maxBytes: previewTextureBytes,
             selection: { mipLevel: 'fit' },
+            ...(compressedFormats === undefined ? {} : { compressedFormats }),
           },
           signal,
         )
-        if (raster.state !== 'decoded')
+        if (raster.state !== 'decoded' && raster.state !== 'compressed')
           return Object.freeze({
             diagnostics: Object.freeze([...raster.diagnostics]),
           })
@@ -408,7 +435,8 @@ export async function worldSceneModel(
     textureDiagnostics.push(...loaded.diagnostics)
     const texture = loaded.texture
     if (texture === undefined) continue
-    if (texture.rgba.byteLength > remaining) {
+    const bytes = worldTextureBytes(texture)
+    if (bytes > remaining) {
       textureDiagnostics.push(
         diagnostic(
           'warning',
@@ -418,7 +446,7 @@ export async function worldSceneModel(
       )
       continue
     }
-    textureBytes += texture.rgba.byteLength
+    textureBytes += bytes
     textures.push(texture)
   }
   return Object.freeze({

@@ -10,6 +10,7 @@ import type { JsonSchemaRef, JsonValue } from '../asset-capabilities/types.js'
 import type { NamespaceEntrySearchQuery } from '../asset-capabilities/data-sources.js'
 import type { ModelResourceRequest, ModelResourceResult } from '../model-resources.js'
 import type {
+  CompressedTextureFormat,
   ModelMesh,
   ModelNode,
   ModelPrimitive,
@@ -1586,6 +1587,12 @@ export interface WorldSceneModelRequest extends Omit<ModelResourceRequest, 'requ
   readonly maxResources?: number
   readonly maxTextureBytes?: number
   readonly maxTextureTotalBytes?: number
+  /**
+   * Block formats the viewer's renderer uploads as stored: a model texture in one of them arrives
+   * as its GPU blocks (`SceneRendererTexture.compressed`) and its budget counts block bytes; any
+   * other arrives decoded. Absent: every texture decoded.
+   */
+  readonly compressedTextureFormats?: readonly CompressedTextureFormat[]
 }
 
 export interface WorldSceneTextureRequest {

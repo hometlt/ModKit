@@ -9,6 +9,7 @@ import {
   orbitWorldWebGlCamera,
   panWorldWebGlCamera,
   pickWorldWebGl,
+  SCENE_COMPRESSED_TEXTURE_FORMATS,
   zoomWorldWebGlCamera,
   type WorldWebGlCamera,
   type WorldWebGlInput,
@@ -485,6 +486,9 @@ export async function inspectCandidateWorld(
           maxResources: Math.min(64, maxItemsPerLayer),
           maxTextureBytes: textureBytes,
           maxTextureTotalBytes: textureBytes,
+          // The world renderer uploads S3TC blocks as stored: no decode, a quarter to an eighth of
+          // the bytes, and the budget buys a more detailed level.
+          compressedTextureFormats: SCENE_COMPRESSED_TEXTURE_FORMATS,
         },
         options.signal,
       )

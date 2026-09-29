@@ -912,6 +912,7 @@ export function createRasterImageSource(
   mediaType: string,
   rawInfo: RasterImageInfo,
   rawReadRegion?: NonNullable<RasterImageSource['readRegion']>,
+  readCompressed?: NonNullable<RasterImageSource['readCompressed']>,
 ): RasterImageSource {
   const { info, readRegion } =
     rawReadRegion === undefined
@@ -930,6 +931,7 @@ export function createRasterImageSource(
     },
   }
   if (readRegion !== undefined) source.readRegion = readRegion
+  if (readCompressed !== undefined) source.readCompressed = readCompressed
   return Object.freeze(source)
 }
 

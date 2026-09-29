@@ -8,6 +8,7 @@ import { snapshotJson } from '@modkit/codec-kit/json-snapshot'
 import { textureNormalFormat } from '../materials/normal-maps.js'
 import { UnsupportedCubeCoordinatesError } from '../materials/cube-maps.js'
 import { snapshotEnvironment } from '../materials/environment.js'
+import { sceneTexturePixels } from './compressed-textures.js'
 import type { NormalMapFormat } from '@modkit/codec-kit/legacy/models/material'
 import {
   createStandardMaterialPrograms,
@@ -332,14 +333,16 @@ export function sampleMaterialTexture(
   if (!Number.isFinite(u) || !Number.isFinite(v)) throw new TypeError('material UV must be finite')
   const address = (index: number, size: number, wrap: string) =>
     wrap === 'clamp' ? Math.max(0, Math.min(size - 1, index)) : ((index % size) + size) % size
+  // Stored blocks are decoded once per texture; RGBA8 texels are read as they are.
+  const texels = sceneTexturePixels(texture)
   const texel = (x: number, y: number): readonly [number, number, number, number] => {
     const offset =
       (address(y, texture.height, wrapV) * texture.width + address(x, texture.width, wrapU)) * 4
     return [
-      (texture.rgba[offset] ?? 0) / 255,
-      (texture.rgba[offset + 1] ?? 0) / 255,
-      (texture.rgba[offset + 2] ?? 0) / 255,
-      (texture.rgba[offset + 3] ?? 0) / 255,
+      (texels[offset] ?? 0) / 255,
+      (texels[offset + 1] ?? 0) / 255,
+      (texels[offset + 2] ?? 0) / 255,
+      (texels[offset + 3] ?? 0) / 255,
     ]
   }
   if (texture.filter === 'nearest')
