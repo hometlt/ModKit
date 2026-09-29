@@ -22,6 +22,7 @@ import type {
   SubjectFactsSource,
   SubjectSelectorSource,
 } from '@modkit/sdk'
+import { relationGraphNeighbourhood, type RelationGraphScan } from '@modkit/sdk'
 import {
   MAP_LAYER_READ_OPERATION,
   WORLD_SCENE_SOURCE_CONTRACT,
@@ -68,8 +69,6 @@ import {
 } from './protocol.js'
 
 const MCP_MAX_PROGRESS_EVENTS = 50
-const MCP_GRAPH_SCAN_PAGE_SIZE = 50
-const MCP_MAX_GRAPH_SCAN_PAGES = 1_000
 const MCP_MAX_EDIT_PLANS = 64
 const MCP_EDIT_PLAN_TTL_MS = 15 * 60 * 1_000
 const MCP_MAX_LANGUAGE_SESSIONS = 32
@@ -315,109 +314,6 @@ const locatedSubject = (handle: string, item: SelectableSubject) => {
         : item.subjectId,
     }),
   })
-}
-
-interface GraphScan<Value> {
-  readonly items: readonly Value[]
-  readonly exhausted: boolean
-  readonly diagnostic?: {
-    readonly code: string
-    readonly message: string
-    readonly severity: 'warning'
-  }
-}
-
-const scanGraphSource = async <Value>(
-  read: (page: PageRequest, signal: AbortSignal) => Promise<Page<Value>>,
-  scanLimit: number,
-  signal: AbortSignal,
-): Promise<GraphScan<Value>> => {
-  const items: Value[] = []
-  const seenCursors = new Set<string>()
-  let cursor: string | undefined
-  let pageCount = 0
-  while (items.length < scanLimit && pageCount < MCP_MAX_GRAPH_SCAN_PAGES) {
-    signal.throwIfAborted()
-    const page = await read(
-      {
-        ...(cursor === undefined ? {} : { cursor }),
-        limit: Math.min(MCP_GRAPH_SCAN_PAGE_SIZE, scanLimit - items.length),
-      },
-      signal,
-    )
-    pageCount += 1
-    items.push(...page.items.slice(0, scanLimit - items.length))
-    if (page.nextCursor === undefined) return { items, exhausted: true }
-    if (
-      page.nextCursor.length > MCP_MAX_CURSOR_LENGTH ||
-      seenCursors.has(page.nextCursor) ||
-      page.nextCursor === cursor
-    ) {
-      return {
-        items,
-        exhausted: false,
-        diagnostic: {
-          code: 'x3.mcp/relation-graph-invalid-upstream-cursor',
-          message: 'Traversal stopped because the graph source returned an invalid cursor.',
-          severity: 'warning',
-        },
-      }
-    }
-    seenCursors.add(page.nextCursor)
-    cursor = page.nextCursor
-  }
-  return {
-    items,
-    exhausted: false,
-    diagnostic: {
-      code: 'x3.mcp/relation-graph-scan-capped',
-      message: `Traversal stopped after scanning ${items.length} items.`,
-      severity: 'warning',
-    },
-  }
-}
-
-const traversedEdges = (
-  edges: readonly RelationGraphEdge[],
-  query: Extract<GraphQuery, { readonly view: 'traverse' }>,
-): {
-  readonly nodeIds: ReadonlySet<string>
-  readonly edges: readonly RelationGraphEdge[]
-  readonly capped: boolean
-} => {
-  const nodeIds = new Set(query.roots)
-  let frontier = new Set(query.roots)
-  const selected: RelationGraphEdge[] = []
-  const selectedKeys = new Set<string>()
-  let capped = false
-  for (let level = 0; level < query.depth && frontier.size > 0; level += 1) {
-    const next = new Set<string>()
-    for (const edge of edges) {
-      const followsOutgoing = query.direction !== 'incoming' && frontier.has(edge.from)
-      const followsIncoming = query.direction !== 'outgoing' && frontier.has(edge.to)
-      if (!followsOutgoing && !followsIncoming) continue
-      const key = `${edge.from}\u0000${edge.to}\u0000${edge.role ?? ''}\u0000${edge.dead === true}`
-      if (!selectedKeys.has(key)) {
-        if (selected.length >= query.maxEdges) {
-          capped = true
-          continue
-        }
-        selectedKeys.add(key)
-        selected.push(edge)
-      }
-      for (const candidate of [edge.from, edge.to]) {
-        if (nodeIds.has(candidate)) continue
-        if (nodeIds.size >= query.maxNodes) {
-          capped = true
-          continue
-        }
-        nodeIds.add(candidate)
-        next.add(candidate)
-      }
-    }
-    frontier = next
-  }
-  return { nodeIds, edges: selected, capped }
 }
 
 export class ModkitMcpRuntime {
@@ -1554,33 +1450,49 @@ export class ModkitMcpRuntime {
           })
         }
         if (query.view === 'traverse') {
-          const edgeScan = await scanGraphSource(
-            (page, pageSignal) => lease.value.edges(page, pageSignal),
-            query.scanLimit,
+          const walk = await relationGraphNeighbourhood(
+            lease.value,
+            {
+              roots: query.roots,
+              direction: query.direction,
+              depth: query.depth,
+              maxNodes: query.maxNodes,
+              maxEdges: query.maxEdges,
+              scanLimit: query.scanLimit,
+            },
             scopedSignal,
           )
-          const traversal = traversedEdges(edgeScan.items, query)
-          const nodeScan = await scanGraphSource(
-            (page, pageSignal) => lease.value.nodes(page, pageSignal),
-            query.scanLimit,
-            scopedSignal,
-          )
-          const nodes = nodeScan.items.filter(node => traversal.nodeIds.has(node.id))
-          const foundNodeIds = new Set(nodes.map(node => node.id))
-          const missingNodeIds = [...traversal.nodeIds].filter(id => !foundNodeIds.has(id))
+          const scanDiagnostics = (scan: RelationGraphScan) =>
+            scan.invalidCursor
+              ? [
+                  {
+                    code: 'x3.mcp/relation-graph-invalid-upstream-cursor',
+                    message: 'Traversal stopped because the graph source returned an invalid cursor.',
+                    severity: 'warning' as const,
+                  },
+                ]
+              : scan.exhausted
+                ? []
+                : [
+                    {
+                      code: 'x3.mcp/relation-graph-scan-capped',
+                      message: `Traversal stopped after scanning ${scan.read} items.`,
+                      severity: 'warning' as const,
+                    },
+                  ]
           const diagnostics = [
-            ...(summary.reason === undefined
+            ...(walk.reason === undefined
               ? []
               : [
                   {
                     code: 'x3.mcp/relation-graph-incomplete',
-                    message: summary.reason,
+                    message: walk.reason,
                     severity: 'information' as const,
                   },
                 ]),
-            ...(edgeScan.diagnostic === undefined ? [] : [edgeScan.diagnostic]),
-            ...(nodeScan.diagnostic === undefined ? [] : [nodeScan.diagnostic]),
-            ...(traversal.capped
+            ...scanDiagnostics(walk.scanned.edges),
+            ...scanDiagnostics(walk.scanned.nodes),
+            ...(walk.capped
               ? [
                   {
                     code: 'x3.mcp/relation-graph-traversal-capped',
@@ -1590,24 +1502,19 @@ export class ModkitMcpRuntime {
                 ]
               : []),
           ]
-          const complete =
-            summary.completeness === 'complete' &&
-            edgeScan.exhausted &&
-            nodeScan.exhausted &&
-            !traversal.capped
           return envelope({
-            snapshotId: summary.snapshotId,
-            completeness: complete ? 'complete' : 'capped',
+            snapshotId: walk.snapshotId,
+            completeness: walk.completeness === 'complete' ? 'complete' : 'capped',
             diagnostics,
             data: {
               view: query.view,
               roots: query.roots,
               direction: query.direction,
               depth: query.depth,
-              nodes,
-              edges: traversal.edges,
-              missingNodeIds,
-              scanned: { nodes: nodeScan.items.length, edges: edgeScan.items.length },
+              nodes: walk.nodes,
+              edges: walk.edges,
+              missingNodeIds: walk.missingNodeIds,
+              scanned: { nodes: walk.scanned.nodes.read, edges: walk.scanned.edges.read },
             },
           })
         }
