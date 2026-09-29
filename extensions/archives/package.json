@@ -11,6 +11,10 @@
       "types": "./src/zip/codec.d.ts",
       "default": "./src/zip/codec.js"
     },
+    "./formats/pe/codec": {
+      "types": "./src/pe/codec.d.ts",
+      "default": "./src/pe/codec.js"
+    },
     "./formats/*/codec": "./src/*/codec.js",
     "./package.json": "./package.json"
   },
