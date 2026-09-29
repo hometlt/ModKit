@@ -19,7 +19,6 @@ import type {
   SceneRendererPrimitive,
   SceneRendererTexture,
 } from '@modkit/sdk'
-import type { SceneRendererMaterialContext } from '@modkit/sdk/renderer'
 import { boundsOf } from '@modkit/codec-kit/model/bounds'
 import { createModelSceneSampler } from '../model/index.js'
 import { createUvmEffectSource, type UvmEffectSource } from '../uvm/effect-source.js'
@@ -46,6 +45,7 @@ import { materialIsSolid, sceneMaterialDraws, type MaterialDraw } from '../rende
 import {
   createSceneMaterialProgramSampler,
   sampleSceneMaterialPrograms,
+  type SceneMaterialContext,
   type SceneMaterialProgramSampler,
   type SceneMaterialPrograms,
 } from '../render/materials.js'
@@ -558,7 +558,7 @@ export interface WorldWebGlModelEffectInstance {
   readonly time: number
   readonly materials: readonly SceneRendererMaterial[]
   readonly textures: readonly SceneRendererTexture[]
-  readonly context: SceneRendererMaterialContext
+  readonly context: SceneMaterialContext
 }
 
 const effectSources = new WeakMap<Uint8Array, Map<number | undefined, UvmEffectSource | null>>()
@@ -735,7 +735,7 @@ const MAX_EFFECT_PROGRAM_MOMENTS = 64
  * What of a material context an effect program's values depend on: the clock only through a track
  * (see effectMaterialFollowsTime), so every start phase of a clip draws with one program.
  */
-function effectProgramMoment(context: SceneRendererMaterialContext, followsTime: boolean): string {
+function effectProgramMoment(context: SceneMaterialContext, followsTime: boolean): string {
   return [
     followsTime ? context.time : '',
     followsTime ? context.sequenceTime : '',
@@ -745,6 +745,7 @@ function effectProgramMoment(context: SceneRendererMaterialContext, followsTime:
     context.ambient?.join(','),
     worldGroupId(context.environment),
     context.sceneLighting,
+    context.terrainTiling?.join(','),
   ].join('|')
 }
 
@@ -752,7 +753,7 @@ function effectProgramMoment(context: SceneRendererMaterialContext, followsTime:
 function effectMaterialPrograms(
   materials: readonly SceneRendererMaterial[],
   textures: readonly SceneRendererTexture[],
-  context: SceneRendererMaterialContext,
+  context: SceneMaterialContext,
 ): ReadonlyMap<string, SceneMaterialPrograms> {
   const programs = new Map<string, SceneMaterialPrograms>()
   for (const material of materials) {
@@ -2565,7 +2566,8 @@ function worldObjectMaterialMoment(
   const teamColor =
     item.presentationTeamColor ??
     (item.player === undefined ? undefined : input.teamColors?.get(item.player))
-  const materialContext: SceneRendererMaterialContext = {
+  const terrainTiling = worldTerrainTiling(input)
+  const materialContext: SceneMaterialContext = {
     time,
     sequenceTime,
     ...(selectedAnimation?.sequenceIndex === undefined
@@ -2576,8 +2578,89 @@ function worldObjectMaterialMoment(
     ...(item.presentationTeamColorIntensity === undefined
       ? {}
       : { teamColorIntensity: item.presentationTeamColorIntensity }),
+    ...(terrainTiling === undefined ? {} : { terrainTiling }),
   }
   return { selectedAnimation, time, teamColor, materialContext }
+}
+
+type WorldTerrainTiling = readonly [number, number, number, number]
+const worldTerrainTilings = new WeakMap<
+  readonly MapTerrainMaterialDefinition[],
+  Readonly<{ items: readonly WorldSceneItem[]; tiling: WorldTerrainTiling | undefined }>
+>()
+
+/**
+ * The ground's texture tiling, as world-planar UV sources of model materials read it (see
+ * SceneMaterialContext): an M3 lava or wet-floor plane repeats with the terrain it lies on, not once
+ * per world unit (Tokyo_Rooftops' lava drew twelve times too fine). The terrain materials' one
+ * transform, taken from terrain cells to the world plane the materials map (x, -z) by fitting two
+ * terrain samples. Undefined without terrain materials, when their transforms differ or turn the
+ * texture (Warzone 2100's transposed tiles), which a frequency and offset cannot spell.
+ */
+export function worldTerrainTiling(
+  input: Pick<WorldWebGlInput, 'items' | 'terrainMaterials'>,
+): WorldTerrainTiling | undefined {
+  const materials = input.terrainMaterials
+  if (materials === undefined || materials.length === 0) return undefined
+  const known = worldTerrainTilings.get(materials)
+  if (known?.items === input.items) return known.tiling
+  const tiling = fitWorldTerrainTiling(input.items, materials)
+  worldTerrainTilings.set(materials, { items: input.items, tiling })
+  return tiling
+}
+
+const IDENTITY_TERRAIN_UV = Object.freeze({
+  offset: [0, 0] as const,
+  scale: [1, 1] as const,
+  rotation: 0,
+})
+
+function fitWorldTerrainTiling(
+  items: readonly WorldSceneItem[],
+  materials: readonly MapTerrainMaterialDefinition[],
+): WorldTerrainTiling | undefined {
+  const transform = materials[0]?.uvTransform ?? IDENTITY_TERRAIN_UV
+  for (const material of materials) {
+    const other = material.uvTransform ?? IDENTITY_TERRAIN_UV
+    if (
+      other.rotation !== 0 ||
+      other.scale[0] !== transform.scale[0] ||
+      other.scale[1] !== transform.scale[1] ||
+      other.offset[0] !== transform.offset[0] ||
+      other.offset[1] !== transform.offset[1]
+    )
+      return undefined
+  }
+  // Plane coordinate = a * cell + b along each axis, from one sample and one further along it.
+  let origin: WorldSceneTerrainItem | undefined
+  let alongX: WorldSceneTerrainItem | undefined
+  let alongY: WorldSceneTerrainItem | undefined
+  for (const item of items) {
+    if (item.facet !== 'terrain') continue
+    if (origin === undefined) origin = item
+    else if (alongX === undefined && item.x !== origin.x) alongX = item
+    else if (alongY === undefined && item.y !== origin.y) alongY = item
+    if (alongX !== undefined && alongY !== undefined) break
+  }
+  if (origin === undefined || alongX === undefined || alongY === undefined) return undefined
+  const plane = (item: WorldSceneTerrainItem) => {
+    const position = terrainPosition(item)
+    return [position[0], -position[2]] as const
+  }
+  const start = plane(origin),
+    onX = plane(alongX),
+    onY = plane(alongY)
+  const ax = (onX[0] - start[0]) / (alongX.x - origin.x),
+    ay = (onY[1] - start[1]) / (alongY.y - origin.y)
+  if (!Number.isFinite(ax) || !Number.isFinite(ay) || ax === 0 || ay === 0) return undefined
+  const bx = start[0] - ax * origin.x,
+    by = start[1] - ay * origin.y
+  const [s0, s1] = transform.scale,
+    [o0, o1] = transform.offset
+  // Terrain u = o0 + s0 * cell x, the shader's u = X * t0 + t2; terrain v = o1 + s1 * cell y, the
+  // shader's v = 1 - (Y * t1 + t3).
+  const tiling = [s0 / ax, -s1 / ay, o0 - (s0 * bx) / ax, 1 - o1 + (s1 * by) / ay] as const
+  return tiling.every(Number.isFinite) ? Object.freeze(tiling) : undefined
 }
 
 /**
@@ -2591,7 +2674,7 @@ function worldObjectModelPrograms(
   item: WorldSceneObjectItem,
   templateKey: string,
   time: number,
-  context: () => SceneRendererMaterialContext,
+  context: () => SceneMaterialContext,
   planPrograms: WorldPlanPrograms,
 ): WorldModelPrograms {
   let byClock: Map<number, WorldModelPrograms> | undefined
@@ -2637,6 +2720,7 @@ function worldObjectProgramTemplateKey(
     moment.teamColor?.join(',') ?? '',
     item.presentationTeamColorIntensity ?? '',
     item.derivedFrom === 'cliffs' ? 'cliffs' : '',
+    moment.materialContext.terrainTiling?.join(',') ?? '',
   ].join('\u0000')
 }
 
@@ -3133,7 +3217,7 @@ function worldProjectorPrograms(
   slot: WorldProjectorSlot,
   materials: readonly SceneRendererMaterial[],
   textures: readonly SceneRendererTexture[],
-  context: SceneRendererMaterialContext,
+  context: SceneMaterialContext,
 ): ReadonlyMap<string, SceneMaterialPrograms> {
   let kept = slot.programs
   if (

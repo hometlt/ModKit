@@ -55,6 +55,8 @@ import {
 export interface MaterialLighting {
   readonly teamColor?: Vec3
   readonly ambient?: Vec4
+  /** World-planar UV frequency x, y and offset x, y: the ground's texture tiling; [1, 1, 0, 0]. */
+  readonly terrainTiling?: Vec4
 }
 export interface MaterialFrameOptions extends MaterialLighting {
   /** Decoder-derived conventions by logical resource id. Authored material formats override them. */
@@ -175,6 +177,9 @@ export function createStandardMaterialPrograms(
       const ambient = Object.freeze([
         ...finiteVector(lighting.ambient ?? [0.02, 0.02, 0.02, 0], 4, 'material ambient'),
       ]) as Vec4
+      const terrainTiling = Object.freeze([
+        ...finiteVector(lighting.terrainTiling ?? [1, 1, 0, 0], 4, 'terrain tiling'),
+      ]) as Vec4
       const normalFormats = snapshotNormalFormats(lighting.normalMapFormats)
       const textureDimensions = new Map(lighting.textureDimensions)
       const environment = snapshotEnvironment(lighting.environment)
@@ -193,7 +198,7 @@ export function createStandardMaterialPrograms(
               intensity === 0
                 ? { ...pass, material: withoutDiffuseTeamColor(pass.material) }
                 : pass,
-              { teamColor, ambient },
+              { teamColor, ambient, terrainTiling },
               sources,
               normalFormats,
               sampler.worldToMaterial,
@@ -232,7 +237,7 @@ function compilePass(
     u_emisMult: material.emisMult,
     u_emissiveTint: material.emissiveTint ?? [1, 1, 1],
     u_environmentMultipliers: material.environmentMultipliers ?? [1, 0, 0],
-    u_terrainTiling: [1, 1, 0, 0],
+    u_terrainTiling: lighting.terrainTiling,
     u_materialAlpha: alpha,
     u_alphaTestThreshold: material.alphaTestThreshold,
     u_parallaxHeight: material.parallaxHeight?.value ?? 0,

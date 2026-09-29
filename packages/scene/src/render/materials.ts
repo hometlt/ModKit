@@ -22,11 +22,22 @@ export interface SceneMaterialPrograms {
 
 const MATERIAL_BUDGET = { maxDepth: 128, maxNodes: 1_000_000, maxBytes: 64 * 1024 * 1024 }
 
+/**
+ * A material context as the scene samples it: the renderer contract's, and the texture tiling of
+ * the ground a world draws its models over. `terrainTiling` is frequency x, y and offset x, y of the
+ * world-planar UV sources (`uv = world.xy * tiling.xy + tiling.zw`, then v flipped), which an M3
+ * material maps to the terrain's own tiling (SC2 VSUVMapping.fx p_vTerrainTiling); [1, 1, 0, 0]
+ * when absent.
+ */
+export type SceneMaterialContext = SceneRendererMaterialContext & {
+  readonly terrainTiling?: readonly [number, number, number, number]
+}
+
 /** Shared CPU/GPU interpretation of shader identity, playback and already acquired resources. */
 export function prepareSceneMaterialPrograms(
   materials: readonly SceneRendererMaterial[],
   textures: ReadonlyMap<string, SceneRendererTexture>,
-  context: SceneRendererMaterialContext | undefined,
+  context: SceneMaterialContext | undefined,
   diagnostics: SceneRendererDiagnostic[],
   signal?: AbortSignal,
 ): ReadonlyMap<string, SceneMaterialPrograms> {
@@ -44,7 +55,7 @@ export function prepareSceneMaterialPrograms(
  */
 export function sampleSceneMaterialPrograms(
   sampler: SceneMaterialProgramSampler,
-  context: SceneRendererMaterialContext | undefined,
+  context: SceneMaterialContext | undefined,
   diagnostics: SceneRendererDiagnostic[],
   signal?: AbortSignal,
 ): ReadonlyMap<string, SceneMaterialPrograms> {
@@ -55,7 +66,7 @@ export function sampleSceneMaterialPrograms(
 export interface SceneMaterialProgramSampler {
   /** The programs of one moment: playback time, sequence, team colour and lighting. */
   sample(
-    context: SceneRendererMaterialContext | undefined,
+    context: SceneMaterialContext | undefined,
     diagnostics: SceneRendererDiagnostic[],
     signal?: AbortSignal,
   ): ReadonlyMap<string, SceneMaterialPrograms>
@@ -198,7 +209,7 @@ export function createSceneMaterialProgramSampler(
   }
   return Object.freeze({
     sample(
-      context: SceneRendererMaterialContext | undefined,
+      context: SceneMaterialContext | undefined,
       diagnostics: SceneRendererDiagnostic[],
       sampleSignal?: AbortSignal,
     ): ReadonlyMap<string, SceneMaterialPrograms> {
@@ -212,10 +223,17 @@ export function createSceneMaterialProgramSampler(
           continue
         }
         if (entry.kind === 'instance') {
+          // An instance keeps its own presentation; the scene lighting and the ground are the world's.
           const prepared = entry.sampler.sample(
-            context?.sceneLighting === true && entry.context.sceneLighting === undefined
-              ? { ...entry.context, sceneLighting: true }
-              : entry.context,
+            {
+              ...entry.context,
+              ...(context?.sceneLighting === true && entry.context.sceneLighting === undefined
+                ? { sceneLighting: true }
+                : {}),
+              ...(context?.terrainTiling === undefined
+                ? {}
+                : { terrainTiling: context.terrainTiling }),
+            },
             diagnostics,
             sampleSignal,
           )
@@ -240,6 +258,9 @@ export function createSceneMaterialProgramSampler(
               ...(context?.teamColor === undefined ? {} : { teamColor: context.teamColor }),
               ...(context?.ambient === undefined ? {} : { ambient: context.ambient }),
               ...(context?.sceneLighting === true ? { sceneLighting: true } : {}),
+              ...(context?.terrainTiling === undefined
+                ? {}
+                : { terrainTiling: context.terrainTiling }),
               ...(context?.teamColorIntensity === undefined
                 ? {}
                 : { teamColorIntensity: context.teamColorIntensity }),
@@ -269,8 +290,14 @@ export function createSceneMaterialProgramSampler(
   })
 }
 
-function validateMaterialContext(context: SceneRendererMaterialContext | undefined) {
+function validateMaterialContext(context: SceneMaterialContext | undefined) {
   if (context === undefined) return
+  const tiling = context.terrainTiling
+  if (
+    tiling !== undefined &&
+    (!Array.isArray(tiling) || tiling.length !== 4 || tiling.some(value => !Number.isFinite(value)))
+  )
+    throw new TypeError('invalid material terrain tiling')
   for (const value of [context.time, context.sequenceTime])
     if (value !== undefined && (!Number.isFinite(value) || value < 0))
       throw new TypeError('material time must be finite and nonnegative')
