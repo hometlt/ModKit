@@ -1662,11 +1662,11 @@
       "codec": "petroglyph-meg",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 1,
+      "pending": 0,
       "requirements": 3,
       "source": "extensions/petroglyph/glyphx/codecs/petroglyph-meg/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/petroglyph-meg",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [

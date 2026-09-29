@@ -3092,9 +3092,14 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-extensions-other/test/receipts/k1/petroglyph-meg.audit.json",
+          "sha256": "1dd223e994fa38d43f97f4c3983236fd0feb0323caac18cc411ca895f0a39b48"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/petroglyph-meg/audit",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [
