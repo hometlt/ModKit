@@ -10493,6 +10493,12 @@ function drawWorldWebGlWithResources(
       drawTexturedBatch(resources, program, item)
     }
     worldUniform1f(gl, program, 'shadowReceiver', 1)
+    // The ground writes its depth a little farther than it lies, as Warzone 2100 writes its terrain
+    // (terrain.cpp: polygon offset 0.1, 1): what lies flat on it, such as a structure's base plate,
+    // wins the tie instead of fighting it. Its later raster groups and decal tiles share the offset,
+    // so they still meet it at LEQUAL.
+    gl.enable(gl.POLYGON_OFFSET_FILL)
+    gl.polygonOffset(TERRAIN_DEPTH_OFFSET.factor, TERRAIN_DEPTH_OFFSET.units)
     for (const item of plan.splatTriangles) drawSplatBatch(resources, program, item)
     if (plan.splatOverlayTriangles.length > 0 || plan.terrainDecalTriangles.length > 0) {
       // Later raster groups and decal tiles blend over the ground where it lies, before water as
@@ -10522,6 +10528,7 @@ function drawWorldWebGlWithResources(
       gl.disable(gl.BLEND)
       gl.depthMask(true)
     }
+    gl.disable(gl.POLYGON_OFFSET_FILL)
     if (plan.multipliedWaterTriangles.length > 0) {
       // Water that multiplies the ground (Warzone 2100 REND_MULTIPLICATIVE): after the terrain and
       // before the models, as the game draws it; unlit, no depth write.
@@ -10965,6 +10972,8 @@ const WATER_CAUSTICS_UNIT = 10
 const WATER_NORMAL_UNIT = 11
 /** A terrain decal tile's specular map; a 2D sentinel for every other draw. */
 const TERRAIN_DECAL_SPECULAR_UNIT = 12
+/** How much farther the ground writes its depth than it lies (glPolygonOffset factor, units). */
+const TERRAIN_DEPTH_OFFSET = Object.freeze({ factor: 0.1, units: 1 })
 /** Detail-wave water: its second normal image and its two foam masks; 2D sentinels otherwise. */
 const WATER_DETAIL_NORMAL_UNIT = 13
 const WATER_DETAIL_FOAM_UNIT = 14
