@@ -1478,8 +1478,18 @@ export function materializeUvmCore(
       channel => (channel['target'] as UvmJsonObject | undefined)?.['path'] === 'pointer',
     ),
   )
+  // One line per clip and reason: the receipt names every channel, and a line per channel (Thor:
+  // 1 766 float32-rounding notes) outgrew every reader's diagnostic budget.
+  const clipLosses = new Map<string, { readonly clipId: string; readonly reason: string; count: number }>()
   for (const loss of animation?.losses ?? []) {
-    losses.push(`animation ${loss.clipId}: ${loss.reason}`)
+    const key = `${loss.clipId}\u0000${loss.reason}`
+    const entry = clipLosses.get(key)
+    if (entry === undefined) clipLosses.set(key, { clipId: loss.clipId, reason: loss.reason, count: 1 })
+    else entry.count += 1
+  }
+  for (const { clipId, reason, count } of clipLosses.values())
+    losses.push(`animation ${clipId}: ${reason}${count > 1 ? ` (${count} channels)` : ''}`)
+  for (const loss of animation?.losses ?? []) {
     note(
       'common.view/model-animation-source@1',
       'value-differs',
