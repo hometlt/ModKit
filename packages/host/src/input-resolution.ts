@@ -278,7 +278,9 @@ export interface CompanionResolutionLimits {
 }
 
 export const DEFAULT_COMPANION_LIMITS: CompanionResolutionLimits = Object.freeze({
-  maxEntries: 4096,
+  // One scope of a game archive: a model's bare texture name is looked for in every folder of the
+  // enclosing container, and Emperor's 3DDATA0001.RFH holds 3 749 entries, Diablo III's anim/ 15 258.
+  maxEntries: 65_536,
   maxProbes: 64,
   maxProbeBytes: 256 * 1024,
   // A binding is a reference into a scope already bounded by maxEntries. Kane's Wrath's compiled
@@ -732,6 +734,8 @@ export function createCompanionInputResolver(
           ids.push(normalizeCompanionLogicalId(value, { scope }))
         }
       } else {
+        // the limit is per scope, as documented: several scopes of one archive are not one scope
+        let taken = 0
         for await (const entry of origin.enumerate(
           scope,
           namePrefix === '' ? { prefix } : { prefix, namePrefix },
@@ -739,7 +743,8 @@ export function createCompanionInputResolver(
         )) {
           checkpoint(`enumerate:${scope}`)
           budget.entries += 1
-          if (budget.entries > limits.maxEntries) exceeded('entries', limits.maxEntries)
+          taken += 1
+          if (taken > limits.maxEntries) exceeded('entries', limits.maxEntries)
           ids.push(normalizeCompanionLogicalId(entry.logicalId, { scope }))
         }
       }

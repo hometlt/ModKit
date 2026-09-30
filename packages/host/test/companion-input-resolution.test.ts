@@ -1061,6 +1061,30 @@ describe('companion input resolution — budgets, cancellation and leases', () =
     expect(counters.entries).toBeLessThanOrEqual(10)
   })
 
+  it('counts its entry limit per scope: three scopes of one archive are not one scope', async () => {
+    // A bare texture name is looked for in the model's folder, its mount and its enclosing archive;
+    // each scope is bounded on its own, as the limit's documentation says.
+    const scopes = ['sibling-directory', 'current-mount', 'enclosing-container'] as const
+    const { origin, counters } = fakeOrigin({ entries: ['primary.vxl', 'a.hva', 'b.hva'], scopes })
+    const resolve = companionResolver(origin, { limits: { maxEntries: 4 } })
+    const input = await resolve(
+      context(
+        bundlePlan([
+          requirement({
+            id: 'motion',
+            role: 'animation',
+            cardinality: 'many',
+            required: false,
+            scopes: [...scopes],
+          }),
+        ]),
+        byteSource('primary.vxl'),
+      ),
+    )
+    expect(counters.entries).toBeGreaterThan(4)
+    expect(input.bindingsFor('motion').length).toBeGreaterThan(0)
+  })
+
   it('stops a runaway trait probe at its byte limit', async () => {
     const { origin, counters } = fakeOrigin({
       entries: ['primary.vxl', 'big.hva'],

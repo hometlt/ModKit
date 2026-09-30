@@ -477,7 +477,7 @@ describe('resource session — budgets and cycles', () => {
     expect(DEFAULT_RESOURCE_SESSION_LIMITS).toMatchObject({
       maxResources: 256,
       maxDepth: 8,
-      maxEntries: 4096,
+      maxEntries: 65_536,
     })
     expect(resourceDiagnosticCode('cycle-detected')).toBe(RESOURCE_CYCLE_DETECTED)
   })

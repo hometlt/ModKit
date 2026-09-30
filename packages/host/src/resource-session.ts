@@ -108,7 +108,9 @@ export const DEFAULT_RESOURCE_SESSION_LIMITS: ResourceSessionLimits = Object.fre
   maxResources: 256,
   maxBytes: 256n * 1024n * 1024n,
   maxDepth: 8,
-  maxEntries: 4096,
+  // One scope of a game archive: a bare texture name is looked for in every folder (Emperor's
+  // 3DDATA0001.RFH holds 3 749 entries, Diablo III's anim/ 15 258); see DEFAULT_COMPANION_LIMITS.
+  maxEntries: 65_536,
 })
 
 export interface ResourceSessionOptions {
@@ -296,9 +298,10 @@ export function createResourceSession(options: ResourceSessionOptions): Resource
      * A large namespace case never caught it because that provider spells references as paths.
      */
     const byName = !normalized.includes('/')
-    let entries = 0
     for (const scope of scopes) {
       throwIfAborted(signal)
+      // the limit is per scope, as documented
+      let entries = 0
       for await (const entry of origin.enumerate(
         scope,
         { prefix: byName ? '' : normalized },
