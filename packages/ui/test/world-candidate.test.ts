@@ -1290,3 +1290,130 @@ describe('generic publisher-candidate world harness', () => {
     })
   })
 })
+
+/** A UVM container of one JSON chunk: enough for a model result to state its colour keys. */
+function uvmJson(document: object): Uint8Array {
+  const json = new TextEncoder().encode(JSON.stringify(document))
+  const padded = new Uint8Array(Math.ceil(json.length / 4) * 4).fill(0x20)
+  padded.set(json)
+  const bytes = new Uint8Array(20 + padded.length)
+  const view = new DataView(bytes.buffer)
+  view.setUint32(0, 0x46546c67, true)
+  view.setUint32(4, 2, true)
+  view.setUint32(8, bytes.length, true)
+  view.setUint32(12, padded.length, true)
+  view.setUint32(16, 0x4e4f534a, true)
+  bytes.set(padded, 20)
+  return bytes
+}
+
+describe('world models the game loads with a colour key', () => {
+  it('reach the world with their key colour transparent', async () => {
+    const resourceLayer = {
+      facet: 'layers' as const,
+      id: 'layer:resources',
+      layerId: 'layer:resources',
+      kind: 'resources' as const,
+      state: 'available' as const,
+      itemCount: 1,
+      lods: ['exact'] as const,
+    }
+    const source: CandidateWorldSceneSource = {
+      contract,
+      major: 1,
+      snapshotId,
+      info: async () => ({
+        ...info,
+        facets: [
+          ...info.facets,
+          {
+            facet: 'resources' as const,
+            layerId: resourceLayer.layerId,
+            state: 'available' as const,
+            itemCount: 1,
+            lods: ['exact'] as const,
+          },
+        ],
+      }),
+      async page(request) {
+        if (request.facet === 'layers')
+          return { snapshotId, facet: 'layers', state: 'available', items: [layer, resourceLayer] }
+        if (request.facet === 'resources')
+          return {
+            snapshotId,
+            facet: 'resources',
+            state: 'available',
+            items: [
+              {
+                facet: 'resources',
+                id: 'resource:girder',
+                layerId: resourceLayer.layerId,
+                namespace: 'Unit',
+                entityId: 'Girder',
+                resolved: true,
+                objectIds: ['object:1'],
+                modelResource: {
+                  id: 'girder',
+                  logicalId: 'Buildings/HK_Palace_H0.xbf',
+                  role: 'sidecar',
+                  scopes: ['current-mount'],
+                },
+              },
+            ],
+          }
+        return {
+          snapshotId,
+          facet: 'objects',
+          state: 'available',
+          items: [
+            {
+              facet: 'objects',
+              id: 'object:1',
+              layerId: layer.layerId,
+              coordinateSpaceId: 'map-native',
+              kind: 'unit',
+              objectId: 1,
+              resourceId: 'resource:girder',
+              position: { x: 0, y: 0, z: 0 },
+            },
+          ],
+        }
+      },
+      async model() {
+        return {
+          state: 'converted',
+          sourceKey: 'girder',
+          // Emperor keys magenta in its textures without alpha (UV_texture_color_key)
+          uvmBytes: uvmJson({
+            asset: { version: '2.0' },
+            extensionsUsed: ['UV_texture_color_key'],
+            images: [{ uri: 'hk_maingirder_128.tga' }],
+            textures: [{ source: 0, extensions: { UV_texture_color_key: { color: [255, 0, 255] } } }],
+          }),
+          meshes: [{ id: 'mesh', primitiveIds: ['p'] }],
+          primitives: [
+            {
+              id: 'p',
+              topology: 'triangles',
+              positions: new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0]),
+            },
+          ],
+          textures: [
+            {
+              id: 'hk_maingirder_128.tga',
+              width: 2,
+              height: 1,
+              rgba: Uint8Array.of(255, 0, 255, 255, 10, 20, 30, 255),
+            },
+          ],
+          diagnostics: [],
+          complete: true,
+        }
+      },
+    }
+    const model = await inspectCandidateWorld(source, { maxLayers: 4, maxItemsPerLayer: 8 })
+    const result = model.models?.get('resource:girder')
+    if (result?.state !== 'converted') throw new Error('the model did not load')
+    expect([...(result.textures?.[0]?.rgba ?? [])]).toEqual([0, 0, 0, 0, 10, 20, 30, 255])
+  })
+})

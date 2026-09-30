@@ -1,5 +1,6 @@
 import type { JsonObject, RasterResourceRequest, RasterResourceResult } from '@modkit/sdk'
 import { uvmImageLogicalId } from '@modkit/uv/model/container'
+import { readUvmTextureColorKeys, type UvmTextureColorKey } from '@modkit/uv/model/validation'
 import { array, object, safeIndex, string } from './values.js'
 
 export interface UvmImage {
@@ -21,6 +22,35 @@ export function uvmImageResourceId(document: JsonObject, index: number): string 
   if (typeof image['uri'] === 'string' && !image['uri'].startsWith('data:'))
     return uvmImageLogicalId(image['uri'])
   return `uvm-image-${index}`
+}
+
+/**
+ * The colour key of each image a document keys (UV_texture_color_key, SPEC_UVM §11.6), by the
+ * resource id material layers name it with (uvmImageResourceId). A consumer that holds decoded
+ * texels per image rather than per texture (the map world) keys them with this. An image whose
+ * textures state different keys is left out: one set of texels cannot carry two keys.
+ */
+export function uvmImageColorKeys(
+  document: JsonObject,
+  signal?: AbortSignal,
+): ReadonlyMap<string, UvmTextureColorKey> {
+  const textures = array(document, 'textures')
+  const byImage = new Map<number, UvmTextureColorKey | null>()
+  for (const [texture, key] of readUvmTextureColorKeys(document, signal)) {
+    const source = object(textures[texture], 'texture')['source']
+    if (typeof source !== 'number') continue
+    const known = byImage.get(source)
+    const same =
+      known !== undefined &&
+      known !== null &&
+      known.tolerance === key.tolerance &&
+      known.color.every((channel, index) => channel === key.color[index])
+    byImage.set(source, known === undefined || same ? key : null)
+  }
+  const keys = new Map<string, UvmTextureColorKey>()
+  for (const [image, key] of byImage)
+    if (key !== null) keys.set(uvmImageResourceId(document, image), key)
+  return keys
 }
 
 /** Snapshot referenced image payloads before asynchronous host acquisition. No URI is opened here. */

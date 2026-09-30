@@ -6,6 +6,7 @@ import {
   createWorldWebGlRenderer,
   DEFAULT_WORLD_WEBGL_CAMERA,
   drawWorldWebGl,
+  keyWorldModelTextures,
   orbitWorldWebGlCamera,
   panWorldWebGlCamera,
   pickWorldWebGl,
@@ -539,6 +540,8 @@ export async function inspectCandidateWorld(
     const retry = retryBytes(result, textureBytes)
     if (retry !== undefined) result = await requestModel(item, retry, textureBytes)
     options.signal?.throwIfAborted()
+    // textures the game loads with a colour key are keyed once, as the model enters the world
+    result = keyWorldModelTextures(result, options.signal)
     deliveredModelBytes += deliveredBytes(result)
     models.set(
       item.id,

@@ -3748,14 +3748,15 @@ function selectAnimatedGeometry(
   item: WorldSceneObjectItem,
 ): boolean {
   const clip = worldModelAnimation(result, item)
-  // Match createModelSceneSampler: only keyed TRS and visibility affect sampled primitives.
-  // Empty Stand clips and material-only sequences must not invalidate the terrain every frame.
+  // Match createModelSceneSampler: only keyed TRS, visibility and morph weights (a vertex
+  // animation) affect sampled primitives. Empty Stand clips and material-only sequences must not
+  // invalidate the terrain every frame.
   return (
     (result.nodes?.length ?? 0) > 0 &&
     clip?.kind === 'animation' &&
     clip.channels.some(
       channel =>
-        ['translation', 'rotation', 'scale', 'visibility'].includes(channel.kind) &&
+        ['translation', 'rotation', 'scale', 'visibility', 'weights'].includes(channel.kind) &&
         (channel.samples?.length ?? 0) > 0,
     )
   )

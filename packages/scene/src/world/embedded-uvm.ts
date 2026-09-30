@@ -6,7 +6,13 @@ import { validateUvmDocument } from '@modkit/uv/model/validation'
 import type { UvwEmbeddedModelDecoder } from '@modkit/uv/world'
 
 import { readUvmFacets } from '../uvm/facets.js'
-import { prepareUvmImages, uvmImageResourceId, uvmImageTexels } from '../uvm/images.js'
+import {
+  prepareUvmImages,
+  uvmImageColorKeys,
+  uvmImageResourceId,
+  uvmImageTexels,
+} from '../uvm/images.js'
+import { colorKeyedTexture } from './color-keys.js'
 import { readUvmModel } from '../uvm/model.js'
 
 function positive(value: number | undefined, fallback: number): number {
@@ -78,6 +84,8 @@ export function createEmbeddedUvmWorldModelDecoder(
     const resources = []
     const textures: SceneRendererTexture[] = []
     const images = container.document['images']
+    // images the game loads with a colour key (UV_texture_color_key): keyed once, here
+    const colorKeys = uvmImageColorKeys(container.document, signal)
     let textureBytes = 0
     if (Array.isArray(images)) {
       if (images.length > maxResources) throw new RangeError('embedded UVM exceeds maxResources')
@@ -145,9 +153,14 @@ export function createEmbeddedUvmWorldModelDecoder(
         // Preserve their channel values; material presentation owns their interpretation.
         const rgba = uvmImageTexels(decoded, { channels: 'data' })
         textureBytes += rgba.byteLength
-        textures.push(
-          Object.freeze({ id, width: decoded.info.width, height: decoded.info.height, rgba }),
-        )
+        const texture = Object.freeze({
+          id,
+          width: decoded.info.width,
+          height: decoded.info.height,
+          rgba,
+        })
+        const key = colorKeys.get(id)
+        textures.push(key === undefined ? texture : colorKeyedTexture(texture, key))
       }
     }
     return Object.freeze({
