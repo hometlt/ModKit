@@ -226,7 +226,7 @@ async function reconstructLayer(
       materials: Object.freeze(
         definitions.map(material =>
           Object.freeze({
-            id: material.materialId,
+            id: localId(material.materialId, 'material'),
             ...(material.label === undefined ? {} : { label: material.label }),
             ...(material.classification === undefined
               ? {}
@@ -253,7 +253,7 @@ async function reconstructLayer(
               : `terrain-weight-${String(index).padStart(4, '0')}`,
             width: raster.width,
             height: raster.height,
-            materialIds: raster.materialIds,
+            materialIds: raster.materialIds.map(materialId => localId(materialId, 'material')),
             encoding: raster.encoding,
             normalization: raster.normalization,
           }),
@@ -323,7 +323,7 @@ async function reconstructLayer(
       values[index] = Object.freeze({
         weights: Object.freeze(
           weights.map(weight =>
-            Object.freeze({ materialId: weight.materialId, weight: weight.weight }),
+            Object.freeze({ materialId: localId(weight.materialId, 'material'), weight: weight.weight }),
           ),
         ),
         ...(raw.uvTransform === undefined ? {} : { uvTransform: raw.uvTransform }),
@@ -345,7 +345,7 @@ async function reconstructLayer(
       materials: Object.freeze(
         definitions.map(material =>
           Object.freeze({
-            id: material.materialId,
+            id: localId(material.materialId, 'material'),
             ...(material.label === undefined ? {} : { label: material.label }),
             ...(material.classification === undefined
               ? {}
@@ -376,7 +376,7 @@ async function reconstructLayer(
                     : `terrain-weight-${String(index).padStart(4, '0')}`,
                   width: raster.width,
                   height: raster.height,
-                  materialIds: raster.materialIds,
+                  materialIds: raster.materialIds.map(materialId => localId(materialId, 'material')),
                   encoding: raster.encoding,
                   normalization: raster.normalization,
                 }),
@@ -430,7 +430,7 @@ async function reconstructLayer(
             materials: Object.freeze(
               waterMaterials.map(material =>
                 Object.freeze({
-                  id: material.materialId,
+                  id: localId(material.materialId, 'material'),
                   ...(material.label === undefined ? {} : { label: material.label }),
                   ...(material.classification === undefined
                     ? {}
@@ -492,7 +492,11 @@ async function reconstructLayer(
             minimum: Object.freeze([raw.uvwMinimum.x, raw.uvwMinimum.z] as const),
             maximum: Object.freeze([raw.uvwMaximum.x, raw.uvwMaximum.z] as const),
             elevation: raw.uvwElevation,
-            ...(raw.materialId === undefined ? {} : { materialId: raw.materialId }),
+            ...(raw.materialId === undefined
+              ? {}
+              : { materialId: waterMaterials?.some(material => material.materialId === raw.materialId)
+                  ? localId(raw.materialId, 'material')
+                  : raw.materialId }),
           })
         }),
       ),

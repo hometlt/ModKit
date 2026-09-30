@@ -185,6 +185,89 @@ describe('production world to UVW materializer', () => {
     expect(incomplete.refusalCodes).toEqual(['terrain-budget-exceeded'])
   })
 
+  it('keeps publisher material references joined after UVW id normalization', async () => {
+    const materialsLayerId = 'native:materials'
+    const materialIds = ['ground-a_yellow', 'ground-a_red'] as const
+    const materialInfo: CandidateWorldSceneInfo = {
+      ...info,
+      unknownFacets: [],
+      facets: [
+        ...info.facets,
+        { facet: 'terrain-materials', layerId: materialsLayerId, state: 'available', itemCount: 4, lods: ['exact'] },
+        { facet: 'water', layerId: 'native:water', state: 'available', itemCount: 1, lods: ['exact'] },
+      ],
+    }
+    const terrainSource = source(4, materialInfo)
+    const materialSource: CandidateWorldSceneSource = {
+      ...terrainSource,
+      page: request => {
+        if (request.facet === 'layers')
+          return Promise.resolve({
+            snapshotId,
+            facet: 'layers',
+            state: 'available',
+            items: [{
+              facet: 'layers', id: materialsLayerId, layerId: materialsLayerId,
+              kind: 'terrain-materials', state: 'available', itemCount: 4, lods: ['exact'],
+              grid: { columns: 2, rows: 2, cellSize: 1, origin: [0, 0, -1], coordinateSpaceId: 'height-grid' },
+              materials: materialIds.map((materialId, sourceIndex) => ({ materialId, sourceIndex })),
+            }, {
+              facet: 'layers', id: 'native:water', layerId: 'native:water',
+              kind: 'water', state: 'available', itemCount: 1, lods: ['exact'],
+              waterMaterials: [{ materialId: 'pool_blue', color: [0, 0, 1, 1] }],
+            }],
+          })
+        if (request.facet === 'terrain-materials')
+          return Promise.resolve({
+            snapshotId,
+            facet: 'terrain-materials',
+            state: 'available',
+            items: [0, 1, 2, 3].map(index => ({
+              facet: 'terrain-materials' as const,
+              id: `sample-${index}`,
+              layerId: materialsLayerId,
+              coordinateSpaceId: 'height-grid' as const,
+              lod: 'exact' as const,
+              x: index % 2,
+              y: Math.floor(index / 2),
+              textureIndex: index % 2,
+              weights: [{ materialId: materialIds[index % 2]!, weight: 1 }],
+            })),
+          })
+        if (request.facet === 'water')
+          return Promise.resolve({
+            snapshotId,
+            facet: 'water',
+            state: 'available',
+            items: [{
+              facet: 'water', id: 'zone:blue', layerId: 'native:water',
+              coordinateSpaceId: 'map-native', zoneId: 1, templateId: 'blue',
+              minimum: { x: 0, y: 0 }, maximum: { x: 1, y: 1 },
+              uvwMinimum: { x: 0, z: -1 }, uvwMaximum: { x: 1, z: 0 },
+              uvwElevation: 1, materialId: 'pool_blue',
+            }],
+          })
+        return terrainSource.page(request)
+      },
+    }
+    const result = await materializeWorldToUvw(materialSource, { ...options, maxFacetItems: 8 })
+    expect(result.state).toBe('materialized')
+    if (result.state !== 'materialized') return
+    const layer = parseUvwProfile(result.bytes).spaces[0]?.layers.find(item => item.kind === 'terrain-materials')
+    expect(layer?.kind).toBe('terrain-materials')
+    if (layer?.kind !== 'terrain-materials') return
+    expect(layer.materials.map(material => material.id)).toEqual(['material-ground-a-red', 'material-ground-a-yellow'])
+    expect(layer.samples?.[0]?.map(sample => sample.weights[0]?.materialId)).toEqual([
+      'material-ground-a-yellow', 'material-ground-a-red',
+    ])
+    const water = parseUvwProfile(result.bytes).spaces[0]?.layers.find(item => item.kind === 'water')
+    expect(water?.kind).toBe('water')
+    if (water?.kind === 'water') {
+      expect(water.materials?.[0]?.id).toBe('material-pool-blue')
+      expect(water.zones[0]?.materialId).toBe('material-pool-blue')
+    }
+  })
+
   it('round-trips every admitted facet from a canonical source at different page sizes', async () => {
     const bytes = await readFile(
       fileURLToPath(
