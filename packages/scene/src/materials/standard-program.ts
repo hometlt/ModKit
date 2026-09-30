@@ -85,6 +85,17 @@ function withoutDiffuseTeamColor(material: SceneStandardMaterial): SceneStandard
   return Object.freeze({ ...material, layers: Object.freeze(layers) })
 }
 
+/**
+ * PSMaterial.fx reads an alpha-only specular (spec_mode 1) as the specular texel's alpha only on a
+ * team-colored diffuse; any other material takes the specular layer's RGB. SC2's unbuildable rocks
+ * keep a black specular RGB in an opaque DXT1: read as its alpha of one, their dark plates drew white.
+ */
+function specularOfTeamColor(material: SceneStandardMaterial): SceneStandardMaterial {
+  return material.specMode === 1 && material.layers.diffuse?.teamColorMode !== 1
+    ? Object.freeze({ ...material, specMode: 0 })
+    : material
+}
+
 export interface MaterialPixel extends MaterialLighting {
   /** Texture filtering, UV mapping and tangent-space geometry belong to the renderer adapter. */
   readonly texels?: Readonly<Partial<Record<StandardLayerSlot, Vec4>>>
@@ -195,9 +206,12 @@ export function createStandardMaterialPrograms(
           .sample(time, signal)
           .map(pass =>
             compilePass(
-              intensity === 0
-                ? { ...pass, material: withoutDiffuseTeamColor(pass.material) }
-                : pass,
+              {
+                ...pass,
+                material: specularOfTeamColor(
+                  intensity === 0 ? withoutDiffuseTeamColor(pass.material) : pass.material,
+                ),
+              },
               { teamColor, ambient, terrainTiling },
               sources,
               normalFormats,
