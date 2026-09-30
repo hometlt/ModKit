@@ -101,9 +101,15 @@ function simpleEffectMaterial(
   maxBytes: number,
   signal?: AbortSignal,
 ): (SceneRendererMaterial & { readonly simpleEffect: SimpleEffectState }) | undefined {
-  if (base.shader === undefined)
+  // A material without a program of its own — no shader, the renderer's own layer list
+  // (MATERIAL_LAYERS_SHADER), or a vocabulary no renderer here executes — draws its sprites through
+  // the single-texture pass, from its first diffuse layer when it lists layers. Refusing it threw
+  // away the whole frame for every model whose emitters name a plain texture.
+  if (base.shader === undefined || base.shader.id !== 'modkit.render-material.v1') {
+    const { shader: _shader, ...plain } = base
+    const listed = layerListTexture(base.shader)
     return {
-      ...base,
+      ...plain,
       id,
       shading: 'unlit',
       baseColor: [1, 1, 1, alpha],
@@ -120,12 +126,10 @@ function simpleEffectMaterial(
         alphaCutoff: base.alphaMode === 'mask' ? (base.alphaCutoff ?? 0.5) : 0,
         wrapU: 'repeat',
         wrapV: 'repeat',
+        ...(listed === undefined ? {} : { textureResource: listed }),
       },
     }
-  if (base.shader.id !== 'modkit.render-material.v1')
-    throw new TypeError(
-      'projector requires an explicit simple material projection for this shader vocabulary',
-    )
+  }
   // Own/validate before reading ordered layers; no animation is evaluated here. The pinned
   // live-effect renderer uses primary standard state and static legacy texture paths.
   const sampler = createRenderMaterialSampler(
@@ -202,4 +206,20 @@ export function projectorMaterial(
     }
   }
   return simpleEffectMaterial(base, id, alpha, maxNodes, maxBytes, signal)
+}
+
+/** The diffuse texture a layer-list shader names (`modkit.material-layers.v1`), if any. */
+function layerListTexture(shader: SceneRendererMaterial['shader']): string | undefined {
+  const renderModel = shader?.parameters['renderModel']
+  if (renderModel === null || typeof renderModel !== 'object' || Array.isArray(renderModel)) return undefined
+  const layers = (renderModel as { readonly layers?: unknown }).layers
+  if (!Array.isArray(layers)) return undefined
+  const entries = layers.filter(
+    (layer): layer is { readonly label?: unknown; readonly path: string } =>
+      layer !== null && typeof layer === 'object' && typeof (layer as { path?: unknown }).path === 'string',
+  )
+  const diffuse = entries.find(layer =>
+    ['diffuse', 'albedo', 'basecolor'].includes(String(layer.label).toLowerCase()),
+  )
+  return (diffuse ?? entries[0])?.path
 }

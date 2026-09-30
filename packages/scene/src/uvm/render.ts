@@ -717,9 +717,16 @@ async function prepareUvmRender(
         shading: 'unlit',
       })
   }
+  // A material drawn by some primitive decodes its base-colour texture. Effect sprites draw with
+  // materials derived from a document material (`uvm-effect-…`, projector and splat copies) that
+  // keep its `uvm-texture-<n>`: without it their sprites drew untextured, a white card tinted by the
+  // particle colour.
+  const materialById = new Map(materials.map(material => [material.id, material]))
   const usedTextures = new Set(
     primitives.flatMap(primitive => {
-      const index = materialTextures.get(primitive.materialId ?? '')
+      const index =
+        materialTextures.get(primitive.materialId ?? '') ??
+        documentTextureIndex(materialById.get(primitive.materialId ?? '')?.baseColorTexture)
       return index === undefined ? [] : [index]
     }),
   )
@@ -956,4 +963,10 @@ export async function renderUvmPng(
       ),
     )
   return { kind: 'bytes', value: await encodeRgbaPng(frame, options.signal) }
+}
+
+/** The glTF texture index a scene texture id of this module names (`uvm-texture-<n>`). */
+function documentTextureIndex(id: string | undefined): number | undefined {
+  const match = id === undefined ? null : /^uvm-texture-(0|[1-9]\d*)$/u.exec(id)
+  return match === null ? undefined : Number(match[1])
 }

@@ -130,3 +130,38 @@ test('headless simple effect samples the bound texture and applies alpha once ev
   assert.deepEqual([...frame.rgba.slice((8 * 16 + 8) * 4, (8 * 16 + 8) * 4 + 4)], [0, 64, 0, 255])
   assert(!frame.diagnostics.some(item => item.code.includes('shader-unsupported')))
 })
+test('an emitter over a material with no program of its own draws through the simple pass', async () => {
+  const { effectSurfaceMaterial } = await import('../src/uvm/projector-material.js')
+  // The renderer's own layer list — what a UVM material without UV_game_material becomes — used to
+  // throw and take the whole frame with it.
+  const listed = {
+    id: 'material-0',
+    baseColor: [1, 1, 1, 1],
+    alphaMode: 'blend',
+    shading: 'unlit',
+    shader: {
+      id: 'modkit.material-layers.v1',
+      parameters: { renderModel: { layers: [{ label: 'diffuse', path: 'Textures\Dust.blp' }] } },
+    },
+  }
+  const sprite = effectSurfaceMaterial(listed, 'sprite', 10000, 1048576)
+  assert.equal(sprite.shader, undefined)
+  assert.equal(sprite.simpleEffect.blend, 'blend')
+  assert.equal(sprite.simpleEffect.doubleSided, true)
+  assert.equal(sprite.simpleEffect.textureResource, 'Textures\Dust.blp')
+  // The emitter's own texture still wins over the material's.
+  assert.equal(
+    effectSurfaceMaterial(listed, 'sprite-2', 10000, 1048576, 'Textures\Star.blp').simpleEffect
+      .textureResource,
+    'Textures\Star.blp',
+  )
+  // A vocabulary no renderer executes falls back the same way.
+  const foreign = effectSurfaceMaterial(
+    { ...listed, shader: { id: 'mdx.layer', parameters: {} } },
+    'sprite-3',
+    10000,
+    1048576,
+  )
+  assert.equal(foreign.simpleEffect.blend, 'blend')
+  assert.equal(foreign.simpleEffect.textureResource, undefined)
+})
