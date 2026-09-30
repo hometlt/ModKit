@@ -1,4 +1,4 @@
-import { packUvmGlb } from './container.js'
+import { packUvmGlb, uvmImageUri } from './container.js'
 export { packUvmGlb } from './container.js'
 import type {
   ModelSceneInfo,
@@ -52,6 +52,14 @@ export interface ModelProjection {
        * default (linear).
        */
       readonly filter?: 'nearest' | 'linear'
+      /**
+       * A colour the game's loader turns transparent (SDK ModelTextureColorKey), written as the
+       * texture's `UV_texture_color_key` (SPEC_UVM §11.6); the image bytes stay as they are.
+       */
+      readonly colorKey?: {
+        readonly color: readonly [number, number, number]
+        readonly tolerance?: number
+      }
     }[]
     readonly unavailable?: readonly { readonly logicalId: string }[]
   }
@@ -97,25 +105,53 @@ function singleChannel(mask: number | undefined): 'r' | 'g' | 'b' | 'a' | undefi
 /** glTF filter enums (NEAREST 9728, LINEAR 9729). */
 const GLTF_FILTER = { nearest: 9728, linear: 9729 } as const
 
-/** One texture per image; an image with a stated filter gets a sampler naming it, shared by filter. */
-function texturesWithSamplers(filters: readonly ('nearest' | 'linear' | undefined)[]): {
+/**
+ * One texture per image; an image with a stated filter gets a sampler naming it, shared by filter,
+ * and one with a colour key states it on its texture (`UV_texture_color_key`).
+ */
+function texturesWithSamplers(
+  filters: readonly ('nearest' | 'linear' | undefined)[],
+  colorKeys: readonly (UvmTextureColorKeyValue | undefined)[] = [],
+): {
   readonly textures: UvmJsonObject[]
   readonly samplers?: UvmJsonObject[]
 } {
   const samplers: UvmJsonObject[] = []
   const samplerOf = new Map<'nearest' | 'linear', number>()
   const textures = filters.map((filter, index) => {
-    if (filter === undefined) return { source: index }
+    const colorKey = colorKeys[index]
+    const keyed =
+      colorKey === undefined
+        ? {}
+        : {
+            extensions: {
+              UV_texture_color_key: {
+                color: [...colorKey.color],
+                ...(colorKey.tolerance === undefined || colorKey.tolerance === 0
+                  ? {}
+                  : { tolerance: colorKey.tolerance }),
+              },
+            },
+          }
+    if (filter === undefined) return { source: index, ...keyed }
     let sampler = samplerOf.get(filter)
     if (sampler === undefined) {
       sampler = samplers.length
       samplerOf.set(filter, sampler)
       samplers.push({ magFilter: GLTF_FILTER[filter], minFilter: GLTF_FILTER[filter] })
     }
-    return { source: index, sampler }
+    return { source: index, sampler, ...keyed }
   })
   return samplers.length === 0 ? { textures } : { textures, samplers }
 }
+
+interface UvmTextureColorKeyValue {
+  readonly color: readonly [number, number, number]
+  readonly tolerance?: number
+}
+
+const colorChannel = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= 255
 
 /** `UV_game_material.blendMode` values of SPEC_UVM_EXTENSIONS; any other name stays in extras. */
 const UVM_GAME_BLEND_MODES = [
@@ -898,8 +934,12 @@ export function materializeUvmCore(
   // --- planes this profile cannot carry from the base contract alone --------------------------
   const closure = projection.resourceClosure
   const resourceImages = []
+  /** The logical id of each image, which its encoded `uri` names (uvmImageUri). */
+  const imageLogicalIds: string[] = []
   /** glTF filter per image index, for the images whose closure entry names one. */
   const imageFilters: ('nearest' | 'linear' | undefined)[] = []
+  /** Colour key per image index, for the images whose closure entry states one. */
+  const imageColorKeys: (UvmTextureColorKeyValue | undefined)[] = []
   if (closure !== undefined && closure !== null) {
     if (closure.mode !== 'logical' && closure.mode !== 'content-qualified') {
       fail('resourceClosure.mode must be logical or content-qualified')
@@ -912,11 +952,30 @@ export function materializeUvmCore(
       if (entry.filter !== undefined && entry.filter !== 'nearest' && entry.filter !== 'linear') {
         fail('a resource-closure filter is nearest or linear')
       }
+      const colorKey = entry.colorKey
+      if (
+        colorKey !== undefined &&
+        (!Array.isArray(colorKey.color) ||
+          colorKey.color.length !== 3 ||
+          !colorKey.color.every(colorChannel) ||
+          (colorKey.tolerance !== undefined && !colorChannel(colorKey.tolerance)))
+      ) {
+        fail('a resource-closure colour key is three stored 8-bit channels and a 0..255 tolerance')
+      }
       resourceImages.push({
-        uri: entry.logicalId,
+        uri: uvmImageUri(entry.logicalId),
         ...(typeof entry.mediaHint === 'string' ? { mimeType: entry.mediaHint } : {}),
       })
+      imageLogicalIds.push(entry.logicalId)
       imageFilters.push(entry.filter)
+      imageColorKeys.push(
+        colorKey === undefined
+          ? undefined
+          : {
+              color: [colorKey.color[0], colorKey.color[1], colorKey.color[2]],
+              ...(colorKey.tolerance === undefined ? {} : { tolerance: colorKey.tolerance }),
+            },
+      )
     }
     const uncarried = (closure.entries ?? []).filter(
       entry => entry?.role !== 'image' && entry?.role !== 'texture',
@@ -956,7 +1015,7 @@ export function materializeUvmCore(
     )
   }
   // the glTF slots of every material whose layers name an image of the closure (GLTF_LAYER_SLOTS)
-  const imageIndex = new Map(resourceImages.map((image, index) => [image.uri, index] as const))
+  const imageIndex = new Map(imageLogicalIds.map((logicalId, index) => [logicalId, index] as const))
   for (const definition of imageIndex.size === 0 ? [] : (definitions ?? [])) {
     const target = materials[materialIndexById.get(definition.id)!]!
     for (const layer of definition.layers ?? []) {
@@ -1334,6 +1393,14 @@ export function materializeUvmCore(
     )
   }
 
+  // Primitives the game draws only when a clip shows them: stored visibility 0 (SPEC_UVM §15.2).
+  const hiddenPrimitives = (primitives ?? [])
+    .filter(primitive => primitive.hidden === true)
+    .flatMap(primitive => {
+      const target = primitiveIndices.get(primitive.id)
+      return target === undefined ? [] : [target]
+    })
+    .sort((a, b) => a.mesh - b.mesh || a.primitive - b.primitive)
   const animation =
     projection.animations === undefined
       ? undefined
@@ -1361,7 +1428,17 @@ export function materializeUvmCore(
               return count > 0 ? [[node.id, count] as const] : []
             }),
           ),
+          hiddenPrimitives,
         )
+  const visibility: readonly UvmJsonObject[] =
+    animation?.visibility ??
+    hiddenPrimitives.map(target => ({ mesh: target.mesh, primitive: target.primitive, value: 0 }))
+  // A clip animates a primitive's visibility through KHR_animation_pointer; stored values alone need none.
+  const animatesPointers = (animation?.animations ?? []).some(clip =>
+    (clip['channels'] as readonly UvmJsonObject[]).some(
+      channel => (channel['target'] as UvmJsonObject | undefined)?.['path'] === 'pointer',
+    ),
+  )
   for (const loss of animation?.losses ?? []) {
     losses.push(`animation ${loss.clipId}: ${loss.reason}`)
     note(
@@ -1421,9 +1498,9 @@ export function materializeUvmCore(
       ...(animation === undefined || animation.catalog.length === 0
         ? []
         : ['UV_game_animation_clips']),
-      ...(animation === undefined || animation.visibility.length === 0
-        ? []
-        : ['UV_game_variants', 'KHR_animation_pointer']),
+      ...(visibility.length === 0 ? [] : ['UV_game_variants']),
+      ...(animatesPointers ? ['KHR_animation_pointer'] : []),
+      ...(imageColorKeys.some(key => key !== undefined) ? ['UV_texture_color_key'] : []),
       ...(unitsExtension === undefined ? [] : ['UV_units']),
       ...(projection.lods !== undefined && projection.lods.length > 0 ? ['MSFT_lod'] : []),
       ...(lodSelection === undefined ? [] : ['MODKITX_lod_selection']),
@@ -1433,11 +1510,7 @@ export function materializeUvmCore(
       ...Object.fromEntries(gameExtensions),
       ...(unitsExtension === undefined ? {} : { UV_units: unitsExtension }),
       ...(lodSelection === undefined ? {} : { MODKITX_lod_selection: lodSelection }),
-      ...(animation === undefined || animation.visibility.length === 0
-        ? {}
-        : {
-            UV_game_variants: { visibility: animation.visibility },
-          }),
+      ...(visibility.length === 0 ? {} : { UV_game_variants: { visibility } }),
       ...(animation === undefined || animation.catalog.length === 0
         ? {}
         : {
@@ -1471,7 +1544,7 @@ export function materializeUvmCore(
       ? {}
       : {
           images: resourceImages,
-          ...texturesWithSamplers(imageFilters),
+          ...texturesWithSamplers(imageFilters, imageColorKeys),
         }),
     accessors,
     bufferViews: buffers.views,

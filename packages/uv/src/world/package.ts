@@ -9,7 +9,7 @@ import type {
   WorldSceneObjectItem,
   WorldSceneLayerItem,
 } from '@modkit/sdk/maps'
-import { readUvmContainer, writeUvmContainer } from '../model/container.js'
+import { readUvmContainer, uvmImageLogicalId, writeUvmContainer } from '../model/container.js'
 
 import {
   DEFAULT_UVW_PARSE_LIMITS,
@@ -608,7 +608,7 @@ async function makePortableUvm(
       return image
     if (typeof image['uri'] !== 'string')
       throw new TypeError(`UVM image ${String(imageIndex)} has no portable payload or URI`)
-    const key = normalizedResourceName(image['uri'])
+    const key = normalizedResourceName(uvmImageLogicalId(image['uri']))
     const texture = textureByName.get(key)
     const portable = portableByName.get(key)
     if (texture === undefined || portable === undefined)

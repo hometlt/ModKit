@@ -117,6 +117,53 @@ function present<T>(value: T | undefined, label: string): T {
   return value
 }
 
+/**
+ * A primitive with its morph targets added in proportion to their weights (glTF: position and
+ * normal deltas, before any skin). Only the weights that are not zero cost anything, so a one-hot
+ * vertex animation stays one pass over the vertices.
+ */
+function morphPrimitive(primitive: ModelPrimitive, weights: readonly number[]): ModelPrimitive {
+  const targets = present(primitive.morphTargets, 'morph targets')
+  const positions = Float32Array.from(primitive.positions)
+  const normals = primitive.normals === undefined ? undefined : Float32Array.from(primitive.normals)
+  let normalsMoved = false
+  for (let target = 0; target < targets.length; target++) {
+    const weight = weights[target] ?? 0
+    if (weight === 0) continue
+    const deltas = present(targets[target], 'morph target')
+    for (let index = 0; index < positions.length; index++)
+      positions[index] = (positions[index] ?? 0) + weight * (deltas.positions[index] ?? 0)
+    if (normals !== undefined && deltas.normals !== undefined) {
+      normalsMoved = true
+      for (let index = 0; index < normals.length; index++)
+        normals[index] = (normals[index] ?? 0) + weight * (deltas.normals[index] ?? 0)
+    }
+  }
+  if (normals !== undefined && normalsMoved)
+    for (let index = 0; index + 2 < normals.length; index += 3) {
+      const x = normals[index] ?? 0
+      const y = normals[index + 1] ?? 0
+      const z = normals[index + 2] ?? 0
+      const length = Math.hypot(x, y, z)
+      if (length > 0) {
+        normals[index] = x / length
+        normals[index + 1] = y / length
+        normals[index + 2] = z / length
+      }
+    }
+  if (!positions.every(Number.isFinite))
+    throw new RangeError('morphed positions exceed finite float range')
+  const { bounds: _bounds, ...rest } = primitive
+  return { ...rest, positions, ...(normals === undefined ? {} : { normals }) }
+}
+
+/** What a renderer draws of a primitive: its morph targets and default visibility end here. */
+function drawn(primitive: ModelPrimitive): ModelPrimitive {
+  if (primitive.morphTargets === undefined && primitive.hidden === undefined) return primitive
+  const { morphTargets: _targets, hidden: _hidden, ...rest } = primitive
+  return rest
+}
+
 /** Prepare a neutral render snapshot. Native restMatrix is descriptive and is never guessed. */
 export function createModelSceneSampler(
   projection: ModelSceneProjection,
@@ -337,13 +384,14 @@ export function createModelSceneSampler(
     clip?.channels.filter(channel => ['translation', 'rotation', 'scale'].includes(channel.kind)) ??
     []
   const visibility = clip?.channels.filter(channel => channel.kind === 'visibility') ?? []
+  const morphs = clip?.channels.filter(channel => channel.kind === 'weights') ?? []
   if (
-    (clip?.channels.length ?? 0) > trs.length + visibility.length ||
+    (clip?.channels.length ?? 0) > trs.length + visibility.length + morphs.length ||
     (clip?.unsupportedChannels ?? 0) > 0
   )
     report(
       'animation-channels-unrendered',
-      'Some animation channels are not bone TRS or primitive visibility; their effects are not rendered.',
+      'Some animation channels are not bone TRS, primitive visibility or morph weights; their effects are not rendered.',
     )
   for (const channel of trs)
     if (!bindingsByNode.has(channel.target) && !poseNodeIds.has(channel.target))
@@ -529,6 +577,54 @@ export function createModelSceneSampler(
       )
     }
   }
+  // Morph weights: a clip's weights channel on a node, else the mesh's default weights.
+  const meshOfPrimitive = new Map<string, ModelMesh>()
+  for (const mesh of owned.meshes)
+    for (const primitive of mesh.primitiveIds) meshOfPrimitive.set(primitive, mesh)
+  const morphed = projection.primitives.filter(
+    primitive => primitive.morphTargets !== undefined && primitive.morphTargets.length > 0,
+  )
+  for (const primitive of morphed) {
+    if (deformers.has(primitive)) {
+      report(
+        'morph-skinned-unrendered',
+        `${primitive.id}: morph targets under a skin are drawn without their weights.`,
+        primitive.id,
+      )
+      continue
+    }
+    // each drawn instance owns its morphed positions and normals
+    workingBytes +=
+      (primitive.positions.byteLength + (primitive.normals?.byteLength ?? 0)) *
+      (primitiveNodes.get(primitive.id)?.length ?? 1)
+    if (workingBytes > maxBytes) throw new RangeError('morphed geometry exceeds maxBytes')
+  }
+  const morphTargetCounts = new Map<string, number>()
+  for (const primitive of morphed)
+    for (const node of primitiveNodes.get(primitive.id) ?? [])
+      if (node !== undefined) morphTargetCounts.set(node, primitive.morphTargets?.length ?? 0)
+  let morphSampler: ReturnType<typeof createModelAnimationSampler> | undefined
+  if (morphs.length > 0) {
+    for (const channel of morphs)
+      if (!morphTargetCounts.has(channel.target))
+        report(
+          'animation-target-unrendered',
+          `Morph weights target ${channel.target} is not a scene node drawing morph targets.`,
+        )
+    try {
+      morphSampler = createModelAnimationSampler(
+        { ...present(clip, 'morph clip'), channels: morphs },
+        { ...budget, maxBytes: Math.floor(maxBytes / 4) },
+        signal,
+      )
+    } catch (error) {
+      if (signal?.aborted || error instanceof RangeError) throw error
+      report(
+        'morph-unavailable',
+        `Morph weights are not sampleable: ${error instanceof Error ? error.message : String(error)}`,
+      )
+    }
+  }
   let visibilitySampler: ReturnType<typeof createModelAnimationSampler> | undefined
   if (visibility.length > 0) {
     for (const channel of visibility)
@@ -558,10 +654,21 @@ export function createModelSceneSampler(
       if (requestSignal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
       const poses = new Map<string, readonly ModelBonePoseSample[]>()
       const animatedWorlds = new Map<string, Float32Array>()
-      const hiddenPrimitives = new Set<string>()
+      // stored invisible until a clip shows it; a sampled visibility decides either way
+      const hiddenPrimitives = new Set<string>(
+        projection.primitives
+          .filter(primitive => primitive.hidden === true)
+          .map(primitive => primitive.id),
+      )
       for (const value of visibilitySampler?.sample(timeSeconds, requestSignal) ?? [])
-        if (primitiveIds.has(value.target) && (value.value[0] ?? 0) <= 0)
-          hiddenPrimitives.add(value.target)
+        if (primitiveIds.has(value.target)) {
+          if ((value.value[0] ?? 0) > 0) hiddenPrimitives.delete(value.target)
+          else hiddenPrimitives.add(value.target)
+        }
+      const nodeWeights = new Map<string, readonly number[]>()
+      for (const value of morphSampler?.sample(timeSeconds, requestSignal) ?? [])
+        if (value.value.length === morphTargetCounts.get(value.target))
+          nodeWeights.set(value.target, value.value)
       const localPoses = nodeSampler?.sample(timeSeconds, requestSignal)
       const faceBillboards = new Map(
         billboards.flatMap(item => item.mode === 'face-camera' ? [[item.nodeId, item] as const] : []),
@@ -669,18 +776,25 @@ export function createModelSceneSampler(
           const instances = primitiveNodes.get(primitive.id)?.length ?? 1
           for (let instance = 0; instance < instances; instance++) {
             const posed: SceneRendererPrimitive & { readonly skin?: ModelSceneSkin } = {
-              ...(skin === undefined ? present(deformed, 'deformed skin') : gpu!.bindPose),
+              ...drawn(skin === undefined ? present(deformed, 'deformed skin') : gpu!.bindPose),
               ...(transformed ? { transform: new Float32Array(frame) } : {}),
               ...(skin === undefined ? {} : { skin }),
             }
             primitives.push(posed)
           }
         } else {
+          const targets = primitive.morphTargets?.length ?? 0
+          const defaults = meshOfPrimitive.get(primitive.id)?.morphWeights
           for (const node of primitiveNodes.get(primitive.id) ?? [undefined]) {
             const transform =
               node === undefined ? undefined : (animatedWorlds.get(node) ?? worlds.get(node))
+            const weights = (node === undefined ? undefined : nodeWeights.get(node)) ?? defaults
+            const shaped =
+              targets > 0 && weights !== undefined && weights.some(weight => weight !== 0)
+                ? morphPrimitive(primitive, weights)
+                : primitive
             primitives.push({
-              ...primitive,
+              ...drawn(shaped),
               ...(transform === undefined ? {} : { transform: new Float32Array(transform) }),
             })
           }

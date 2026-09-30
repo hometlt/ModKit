@@ -102,6 +102,7 @@ export {
   type ModelResourceRefsInfo,
   type ModelResourceRefsSource,
   type ModelResourceRole,
+  type ModelTextureColorKey,
   type ModelSkeletonInfo,
   type ModelSkeletonSource,
   type ModelSocketInfo,

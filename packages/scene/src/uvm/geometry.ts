@@ -1,4 +1,11 @@
-import type { JsonObject, ModelMesh, ModelNode, ModelPrimitive } from '@modkit/sdk'
+import type {
+  JsonObject,
+  ModelMesh,
+  ModelMorphTarget,
+  ModelNode,
+  ModelPrimitive,
+} from '@modkit/sdk'
+import { readUvmPrimitiveVisibility } from '@modkit/uv/model/animation-clips'
 import { readUvmAccessor, type UvmAccessor, type UvmScalarBudget } from '@modkit/uv/model/accessor'
 import { composeTrsMatrix } from '@modkit/codec-kit/model-math/sequence-pose'
 import { uvmMeshSkins } from './rig.js'
@@ -67,6 +74,12 @@ export function decodeUvmGeometry(
   const animations = array(document, 'animations')
   signal?.throwIfAborted()
   const meshSkins = uvmMeshSkins(document)
+  // A primitive stored invisible is drawn only when a clip shows it (SPEC_UVM §15.2).
+  const hiddenPrimitiveIds = new Set(
+    readUvmPrimitiveVisibility(document, signal).flatMap(item =>
+      'mesh' in item && item.value <= 0 ? [`mesh-${item.mesh}-primitive-${item.primitive}`] : [],
+    ),
+  )
   const primitives: ModelPrimitive[] = []
   let decodedGeometryBytes = 0
   const remaining = (): UvmScalarBudget => ({
@@ -80,6 +93,13 @@ export function decodeUvmGeometry(
   const modelMeshes = meshes.map((candidate, meshIndex) => {
     signal?.throwIfAborted()
     const mesh = object(candidate, `mesh ${meshIndex}`)
+    const extras = mesh['extras']
+    const names =
+      extras !== null && typeof extras === 'object' && !Array.isArray(extras)
+        ? (extras as JsonObject)['targetNames']
+        : undefined
+    const targetNames = Array.isArray(names) ? names : []
+    let targetCount: number | undefined
     const primitiveIds = array(mesh, 'primitives').map((candidatePrimitive, primitiveIndex) => {
       const primitive = object(candidatePrimitive, `mesh ${meshIndex} primitive ${primitiveIndex}`)
       if ((primitive['mode'] ?? 4) !== 4)
@@ -235,6 +255,57 @@ export function decodeUvmGeometry(
       const textureCoordinates = textureCoordinateSets.find(
         channel => channel.set === 0,
       )?.coordinates
+      // glTF morph targets: per-vertex deltas the mesh's weights, or a clip's weights channel, add
+      const targetList = primitive['targets']
+      if (targetList !== undefined && !Array.isArray(targetList))
+        throw new TypeError('UVM morph targets must be an array')
+      const morphTargets = (Array.isArray(targetList) ? targetList : []).map(
+        (candidateTarget, targetIndex): ModelMorphTarget => {
+          const target = object(
+            candidateTarget,
+            `mesh ${meshIndex} primitive ${primitiveIndex} morph target ${targetIndex}`,
+          )
+          const delta = (semantic: string): Float32Array | undefined => {
+            if (target[semantic] === undefined) return undefined
+            const accessor = readUvmAccessor(
+              document,
+              binary,
+              target[semantic],
+              remaining(),
+              `morph ${semantic}`,
+              signal,
+            )
+            if (
+              accessor.width !== 3 ||
+              accessor.count !== position.count ||
+              accessor.componentType !== 5126 ||
+              accessor.normalized
+            )
+              throw new TypeError(
+                `UVM morph ${semantic} must be float VEC3 deltas matching POSITION`,
+              )
+            const values = floatValues(accessor)
+            if (!values.every(Number.isFinite))
+              throw new TypeError(`UVM morph ${semantic} contains non-finite values`)
+            charge(values.byteLength)
+            return values
+          }
+          const deltas = delta('POSITION')
+          if (deltas === undefined) charge(position.count * 12)
+          const normalDeltas = delta('NORMAL')
+          const tangentDeltas = delta('TANGENT')
+          const name = targetNames[targetIndex]
+          return {
+            ...(typeof name === 'string' ? { name } : {}),
+            positions: deltas ?? new Float32Array(position.count * 3),
+            ...(normalDeltas === undefined ? {} : { normals: normalDeltas }),
+            ...(tangentDeltas === undefined ? {} : { tangents: tangentDeltas }),
+          }
+        },
+      )
+      if (targetCount !== undefined && targetCount !== morphTargets.length)
+        throw new TypeError('UVM mesh primitives must carry the same number of morph targets')
+      targetCount = morphTargets.length
       // The common source owns both the legacy UV0 buffer and the set-indexed buffers.
       charge(textureCoordinates?.byteLength ?? 0)
       const id = `mesh-${meshIndex}-primitive-${primitiveIndex}`
@@ -260,13 +331,26 @@ export function decodeUvmGeometry(
               materialId: `material-${safeIndex(primitive['material'], materials.length, 'primitive material')}`,
             }
           : {}),
+        ...(morphTargets.length === 0 ? {} : { morphTargets }),
+        ...(hiddenPrimitiveIds.has(id) ? { hidden: true as const } : {}),
       })
       return id
     })
+    const weights = mesh['weights']
+    if (
+      weights !== undefined &&
+      (!Array.isArray(weights) ||
+        weights.length !== (targetCount ?? 0) ||
+        !weights.every(weight => typeof weight === 'number' && Number.isFinite(weight)))
+    )
+      throw new TypeError('UVM mesh weights must be one finite number per morph target')
     return {
       id: `mesh-${meshIndex}`,
       ...(typeof mesh['name'] === 'string' ? { name: mesh['name'] } : {}),
       primitiveIds,
+      ...(Array.isArray(weights) && weights.length > 0
+        ? { morphWeights: Object.freeze([...(weights as number[])]) }
+        : {}),
     }
   })
   const modelNodes = nodes.map((candidate, nodeIndex) => {

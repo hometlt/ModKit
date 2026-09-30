@@ -204,3 +204,38 @@ function packSerializedUvmGlb(jsonBytes: Uint8Array, binary: Uint8Array) {
     bin,
   ])
 }
+
+/*
+ * An image's logical id and its glTF `uri`.
+ *
+ * A glTF uri is a URI reference (RFC 3986), and a game's texture name is not always one: Emperor's
+ * `!%shel` carries a bare `%`, map folders begin with `#`. The id is written with every character a
+ * relative path reference may not hold as is percent-encoded — `%`, space, `#`, `?`, `:`, `\`,
+ * non-ASCII — and nothing else, so a name that was already a valid reference is written unchanged.
+ * Readers take the id back with uvmImageLogicalId, never by using the uri as it stands.
+ */
+const URI_PATH_CHARACTER = /^[A-Za-z0-9\-._~!$&'()*+,;=@/]$/u
+
+/** The glTF image `uri` for a logical resource id. */
+export function uvmImageUri(logicalId: string): string {
+  let uri = ''
+  for (const character of logicalId) {
+    if (URI_PATH_CHARACTER.test(character)) uri += character
+    else
+      for (const byte of encoder.encode(character))
+        uri += `%${byte.toString(16).toUpperCase().padStart(2, '0')}`
+  }
+  return uri
+}
+
+/**
+ * The logical id an image `uri` names. A uri written before ids were encoded may hold a bare `%`
+ * that is not an escape; it names itself.
+ */
+export function uvmImageLogicalId(uri: string): string {
+  try {
+    return decodeURIComponent(uri)
+  } catch {
+    return uri
+  }
+}

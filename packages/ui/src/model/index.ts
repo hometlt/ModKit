@@ -26,6 +26,7 @@ import type {
   ViewerModule,
 } from '@modkit/sdk'
 import { createModelSceneSampler } from '@modkit/scene/model'
+import { applyColorKeyTransparency } from '@modkit/codec-kit/raster'
 import { loadModelStage, readModelRecords, MODEL_MAXIMUM_RECORDS } from './source.js'
 import { orientPrimitive, upAxisCorrection } from './scene.js'
 export {
@@ -979,11 +980,23 @@ export async function resolveModelViewerTextures(
     }
     if (!valid) continue
     remaining -= byteLength
+    // a texture the game loads with a colour key: those texels are transparent black (SPEC_UVM §11.6)
+    const key = reference.colorKey
+    const keyed =
+      key === undefined || faces !== 1
+        ? rgba
+        : applyColorKeyTransparency(
+            { width, height, pixels: rgba },
+            {
+              target: { r: key.color[0], g: key.color[1], b: key.color[2] },
+              tolerance: key.tolerance ?? 0,
+            },
+          ).pixels
     textures.set(reference.id, {
       id: textureId,
       width,
       height,
-      rgba,
+      rgba: keyed,
       ...(faces === 6 ? { dimension: 'cube' as const } : {}),
       ...(result.info.channelLayout === undefined
         ? {}

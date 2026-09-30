@@ -219,6 +219,11 @@ export function writeUvmAnimations(
   rigidNodeIds: ReadonlySet<string> = new Set(),
   /** Node id → morph target count of the node's mesh, for `weights` channels. */
   morphTargetCounts: ReadonlyMap<string, number> = new Map(),
+  /**
+   * Primitives drawn only when a clip shows them (`ModelPrimitive.hidden`): their visibility records
+   * come first with stored value 0, and a clip's visibility channel on one animates that record.
+   */
+  hiddenPrimitives: readonly { readonly mesh: number; readonly primitive: number }[] = [],
 ) {
   const clips = snapshotModelAnimations(source, budget, signal)
   const animations: UvmJsonObject[] = []
@@ -227,6 +232,10 @@ export function writeUvmAnimations(
   const losses: AnimationLoss[] = []
   const visibility: UvmJsonObject[] = []
   const visibilityIndices = new Map<string, number>()
+  for (const target of hiddenPrimitives) {
+    visibilityIndices.set(`${target.mesh}/${target.primitive}/visibility`, visibility.length)
+    visibility.push({ mesh: target.mesh, primitive: target.primitive, value: 0 })
+  }
   for (const [clipIndex, clip] of clips.entries()) {
     const sequenceIndex = clip.sequenceIndex ?? clipIndex
     if (sequenceIndices.has(sequenceIndex))

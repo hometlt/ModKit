@@ -48,6 +48,21 @@ export interface ModelResourceRef {
   readonly bindingId?: string
   /** Size of the bound resource. Absent for a `reference-only` entry, which has no bytes. */
   readonly bytes?: number
+  /** A texture the game loads with a colour key: that colour is transparent (see ModelTextureColorKey). */
+  readonly colorKey?: ModelTextureColorKey
+}
+
+/**
+ * A colour a game's texture loader turns transparent — a DirectDraw/Direct3D colour key. Texels
+ * whose stored 8-bit RGB lies within `tolerance` (0 by default: exact) of `color` in every channel
+ * become transparent black before the texture is sampled. It is how the game loads the image, not a
+ * property of the image file: Emperor: Battle for Dune keys magenta, `[255, 0, 255]`. UVM states it
+ * as `UV_texture_color_key` on the texture (SPEC_UVM §11.6).
+ */
+export interface ModelTextureColorKey {
+  /** Stored 8-bit red, green, blue, each 0–255. */
+  readonly color: readonly [number, number, number]
+  readonly tolerance?: number
 }
 
 export interface ModelResourceRefsInfo {

@@ -5,6 +5,9 @@ import { validateEffectsMetadata } from './effects.js'
 import { validateAnimationPointers } from './animation.js'
 import { validateUvmAnimationClips } from '../animation-clips.js'
 import { validateGameMaterialMetadata, validateTeamColorMetadata } from './materials.js'
+import { validateTextureColorKeys } from './textures.js'
+
+export { readUvmTextureColorKeys, type UvmTextureColorKey } from './textures.js'
 
 export interface UvmValidationOptions {
   /** Omit only for JSON-only probes. */
@@ -53,6 +56,7 @@ export function validateUvmDocument(
   validateSocketMetadata(document, used, signal)
   validateTeamColorMetadata(document, used, signal)
   validateGameMaterialMetadata(document, used, signal)
+  validateTextureColorKeys(document, used, signal)
   validateEffectsMetadata(document, used, signal)
   validateAnimationPointers(document, used, signal)
   validateUvmAnimationClips(document, signal)

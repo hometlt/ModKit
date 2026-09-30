@@ -234,15 +234,37 @@ export function decodeUvmRig(
       if (
         visible === undefined &&
         (typeof targetPath !== 'string' ||
-          !['translation', 'rotation', 'scale'].includes(targetPath))
+          !['translation', 'rotation', 'scale', 'weights'].includes(targetPath))
       ) {
         unsupportedChannels++
         continue
       }
       const node =
         visible === undefined ? index(target['node'], nodes.length, 'animation target') : undefined
-      if (node !== undefined && required(nodes[node], 'animation target')['matrix'] !== undefined)
+      const morphWeights = targetPath === 'weights'
+      if (
+        node !== undefined &&
+        !morphWeights &&
+        required(nodes[node], 'animation target')['matrix'] !== undefined
+      )
         throw new TypeError('UVM animated node cannot use matrix')
+      // a weights channel keys one weight per morph target of the node's mesh
+      const morphTargets = (() => {
+        if (!morphWeights || node === undefined) return 0
+        const meshes = list(document, 'meshes')
+        const mesh = required(nodes[node], 'morph node')['mesh']
+        if (mesh === undefined)
+          throw new TypeError('UVM weights channel targets a node without a mesh')
+        const primitive = list(
+          object(meshes[index(mesh, meshes.length, 'morph mesh')], 'morph mesh'),
+          'primitives',
+        )[0]
+        const targets =
+          primitive === undefined ? [] : list(object(primitive, 'morph primitive'), 'targets')
+        if (targets.length === 0)
+          throw new TypeError('UVM weights channel targets a mesh without morph targets')
+        return targets.length
+      })()
       const targetId =
         visible === undefined
           ? `node-${node}`
@@ -261,10 +283,16 @@ export function decodeUvmRig(
       // CUBICSPLINE stores [in-tangent, value, out-tangent] per key
       const cubic = interpolation === 'CUBICSPLINE'
       const output = read(sampler['output'], 'animation value')
-      const width = visible !== undefined ? 1 : targetPath === 'rotation' ? 4 : 3
+      const width = morphWeights
+        ? morphTargets
+        : visible !== undefined
+          ? 1
+          : targetPath === 'rotation'
+            ? 4
+            : 3
       if (
-        output.width !== width ||
-        output.count !== input.count * (cubic ? 3 : 1) ||
+        output.width !== (morphWeights ? 1 : width) ||
+        output.count * output.width !== input.count * (cubic ? 3 : 1) * width ||
         output.componentType !== 5126 ||
         output.normalized
       )
@@ -282,7 +310,7 @@ export function decodeUvmRig(
           return Array.from(output.values.subarray(start, start + width))
         }
         const value = at(cubic ? 1 : 0)
-        if (width === 4 && Math.abs(Math.hypot(...value) - 1) > 0.0001)
+        if (width === 4 && !morphWeights && Math.abs(Math.hypot(...value) - 1) > 0.0001)
           throw new TypeError('UVM animation quaternion is not a unit quaternion')
         return cubic
           ? { frame, timeSeconds, value, inTangent: at(0), outTangent: at(2) }
@@ -322,7 +350,7 @@ export function decodeUvmRig(
             ? 'step'
             : cubic
               ? 'cubic-spline'
-              : width === 4
+              : width === 4 && !morphWeights
                 ? 'spherical-linear'
                 : 'linear',
         ...(metadata['concurrent'] === undefined ? {} : { concurrent: metadata['concurrent'] }),

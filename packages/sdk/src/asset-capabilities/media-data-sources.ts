@@ -409,6 +409,13 @@ export interface ModelPrimitive {
   readonly bounds?: ModelBounds
   /** Blend shapes over these vertices, in the mesh's target order. */
   readonly morphTargets?: readonly ModelMorphTarget[]
+  /**
+   * Not drawn until an animation clip's `visibility` channel shows it: geometry the game keeps but
+   * never draws on its own — an authoring helper box, or an overlay a unit shows only in one state (a
+   * Tleilaxu leech on an infected unit). The geometry stays published; a viewer may still offer it.
+   * UVM stores it as primitive visibility with value 0 (SPEC_UVM §15.2).
+   */
+  readonly hidden?: true
 }
 
 export interface ModelPrimitiveRequest {

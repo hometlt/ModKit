@@ -59,4 +59,46 @@ describe('model viewer textures', () => {
     expect(textures.get('Unit_normal.dds')).toMatchObject({ width: 2, height: 2 })
     expect(textures.size).toBe(2)
   })
+
+  it('makes the texels of a colour-keyed texture transparent black, as the game loaded them', async () => {
+    // Emperor: Battle for Dune keys magenta in its textures without alpha
+    const pixels = Uint8Array.of(255, 0, 255, 255, 10, 20, 30, 255)
+    const textures = await resolveModelViewerTextures(
+      {
+        async read() {
+          return {
+            state: 'decoded',
+            info: {
+              width: 2,
+              height: 1,
+              depth: 1,
+              layers: 1,
+              faces: 1,
+              mipLevels: 1,
+              frames: 1,
+              channels: 4,
+              bitDepth: 8,
+              colorSpace: 'srgb',
+              alphaMode: 'straight',
+              orientation: 'top-left',
+              decodedAccess: true,
+            },
+            region: { x: 0, y: 0, width: 2, height: 1, rowStride: 8, pixelFormat: 'rgba8', pixels },
+            diagnostics: [],
+          }
+        },
+      },
+      [
+        {
+          id: 'hk_maingirder_128.tga',
+          role: 'texture',
+          provenance: 'companion',
+          colorKey: { color: [255, 0, 255] },
+        },
+      ],
+    )
+    expect([...(textures.get('hk_maingirder_128.tga')?.rgba ?? [])]).toEqual([
+      0, 0, 0, 0, 10, 20, 30, 255,
+    ])
+  })
 })

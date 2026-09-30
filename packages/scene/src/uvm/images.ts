@@ -1,4 +1,5 @@
 import type { JsonObject, RasterResourceRequest, RasterResourceResult } from '@modkit/sdk'
+import { uvmImageLogicalId } from '@modkit/uv/model/container'
 import { array, object, safeIndex, string } from './values.js'
 
 export interface UvmImage {
@@ -17,7 +18,8 @@ export function uvmImageResourceId(document: JsonObject, index: number): string 
   const images = array(document, 'images')
   const image = object(images[safeIndex(index, images.length, 'image')], 'image')
   if (typeof image['name'] === 'string' && image['name'].length > 0) return image['name']
-  if (typeof image['uri'] === 'string' && !image['uri'].startsWith('data:')) return image['uri']
+  if (typeof image['uri'] === 'string' && !image['uri'].startsWith('data:'))
+    return uvmImageLogicalId(image['uri'])
   return `uvm-image-${index}`
 }
 
@@ -110,7 +112,7 @@ export function prepareUvmImages(
             kind: 'logical',
             requirement: {
               id: `uvm-image-${imageIndex}`,
-              logicalId: decodeURIComponent(uri),
+              logicalId: uvmImageLogicalId(uri),
               role: 'texture',
               scopes: [
                 'sibling-directory',

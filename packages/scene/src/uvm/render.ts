@@ -29,7 +29,8 @@ import { snapshotJson } from '@modkit/codec-kit/json-snapshot'
 import { createModelAnimationSampler } from '@modkit/codec-kit/model/animation'
 import { readUvmContainer } from '@modkit/uv/model/container'
 import { readUvmPrimitiveVisibility } from '@modkit/uv/model/animation-clips'
-import { validateUvmDocument } from '@modkit/uv/model/validation'
+import { readUvmTextureColorKeys, validateUvmDocument } from '@modkit/uv/model/validation'
+import { applyColorKeyTransparency } from '@modkit/codec-kit/raster'
 import { createModelSceneSampler } from '../model/sampler.js'
 import { encodeRgbaPng } from '../output/png.js'
 import { readUvmModel } from './model.js'
@@ -283,8 +284,30 @@ async function prepareUvmRender(
     samplerByIndex.set(index, settings)
     return settings
   }
+  /*
+   * A texture's colour key (UV_texture_color_key, SPEC_UVM §11.6): its texels of that stored colour
+   * become transparent black before anything samples them, as the game's loader made them.
+   */
+  const colorKeys = readUvmTextureColorKeys(document, signal)
+  const keyed = <
+    T extends { readonly width: number; readonly height: number; readonly rgba: Uint8Array },
+  >(
+    index: number,
+    texels: T,
+  ): T => {
+    const key = colorKeys.get(index)
+    if (key === undefined) return texels
+    const [r, g, b] = key.color
+    return {
+      ...texels,
+      rgba: applyColorKeyTransparency(
+        { width: texels.width, height: texels.height, pixels: texels.rgba },
+        { target: { r, g, b }, tolerance: key.tolerance },
+      ).pixels,
+    }
+  }
   for (const [index, texels] of textures)
-    textures.set(index, { ...texels, ...textureSampler(index) })
+    textures.set(index, { ...keyed(index, texels), ...textureSampler(index) })
   const { scene, rig } = readUvmModel(document, binary, { maxScalarBytes: stageBytes }, signal)
   const scenes = array(document, 'scenes')
   const selected =
@@ -400,9 +423,12 @@ async function prepareUvmRender(
     {
       nodes: scene.nodes.map(node => (activeNodes.has(node.id) ? node : { ...node, meshIds: [] })),
       meshes,
-      primitives: scene.primitives.filter(
-        primitive => activePrimitives.has(primitive.id) && visible.get(primitive.id) !== false,
-      ),
+      // visibility is decided above, from the stored values and this clip: what passes is drawn
+      primitives: scene.primitives
+        .filter(
+          primitive => activePrimitives.has(primitive.id) && visible.get(primitive.id) !== false,
+        )
+        .map(({ hidden: _hidden, ...primitive }) => primitive),
       skeleton: rig.bindings,
       nodePoses: rig.nodePoses,
     },
@@ -756,7 +782,7 @@ async function prepareUvmRender(
       continue
     }
     textures.set(image.texture, {
-      ...decoded,
+      ...keyed(image.texture, decoded),
       id: `uvm-texture-${image.texture}`,
       ...textureSampler(image.texture),
     })
