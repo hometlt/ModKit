@@ -266,6 +266,43 @@ describe('production world to UVW materializer', () => {
       expect(water.materials?.[0]?.id).toBe('material-pool-blue')
       expect(water.zones[0]?.materialId).toBe('material-pool-blue')
     }
+
+    const rasterInfo: CandidateWorldSceneInfo = {
+      ...materialInfo,
+      facets: materialInfo.facets.map(facet => facet.facet === 'terrain-materials'
+        ? { ...facet, lods: ['raster-exact'] }
+        : facet),
+    }
+    const rasterSource: CandidateWorldSceneSource = {
+      ...materialSource,
+      info: () => Promise.resolve(rasterInfo),
+      page: async request => {
+        const page = await materialSource.page(request)
+        if (request.facet !== 'layers') return page
+        return {
+          ...page,
+          items: page.items.map(item => item.facet === 'layers' && item.kind === 'terrain-materials'
+            ? {
+                ...item,
+                lods: ['raster-exact'],
+                weightRasters: [{
+                  resourceId: 'warzone-ground-weights:0',
+                  width: 2, height: 2, materialIds, encoding: 'rgba8-unorm' as const,
+                  normalization: 'sum' as const,
+                }],
+              }
+            : item),
+        }
+      },
+    }
+    const rasterResult = await materializeWorldToUvw(rasterSource, { ...options, maxFacetItems: 8 })
+    expect(rasterResult.state).toBe('materialized')
+    if (rasterResult.state === 'materialized') {
+      const raster = parseUvwProfile(rasterResult.bytes).spaces[0]?.layers.find(item => item.kind === 'terrain-materials')
+      expect(raster?.kind).toBe('terrain-materials')
+      if (raster?.kind === 'terrain-materials')
+        expect(raster.weightRasters?.[0]?.materialIds).toEqual(['material-ground-a-yellow', 'material-ground-a-red'])
+    }
   })
 
   it('round-trips every admitted facet from a canonical source at different page sizes', async () => {
