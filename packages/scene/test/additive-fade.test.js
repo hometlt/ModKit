@@ -43,15 +43,16 @@ const streak = blendMode => ({
   },
 })
 
-it('fades an additive colour by its alpha before the masks, as BlendAdd does', () => {
+it('fades an additive colour by its vertex alpha alone, as BlendAdd does', () => {
   const pixel = { vertexColor: [1, 1, 1, 0.08] }
   const [additive] = createStandardMaterialPrograms(streak(2), { budget }).sample({ time: 0 })
   const [blended] = createStandardMaterialPrograms(streak(1), { budget }).sample({ time: 0 })
   const faded = additive.shade(pixel).rgba
   const plain = blended.shade(pixel).rgba
-  // diffuse alpha 0.5 x vertex alpha 0.08; the alpha1 mask (0.25) does not fade BlendAdd.
+  // Vertex alpha 0.08: PSMaterial.fx starts the alpha at one, so the diffuse alpha (0.5) does not
+  // fade it, and BlendAdd takes the fade before the alpha1 mask (0.25).
   for (const channel of [0, 1, 2])
-    assert.ok(Math.abs(faded[channel] - plain[channel] * 0.04) < 1e-6)
+    assert.ok(Math.abs(faded[channel] - plain[channel] * 0.08) < 1e-6)
   assert.equal(faded[3], plain[3])
   assert.match(additive.fragmentSource, /final\.rgb \*= fade \* v_vertexColor\.a;/)
   assert.doesNotMatch(blended.fragmentSource, /fade/)

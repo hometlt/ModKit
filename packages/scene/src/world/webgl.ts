@@ -78,6 +78,12 @@ export interface WorldWebGlInput {
   readonly teamColors?: ReadonlyMap<number, readonly [number, number, number]>
   /** Global initial-world clock used by actor animations and scrolling water surfaces. */
   readonly timeSeconds?: number
+  /**
+   * Draw a marker for each map point and camera, which have no model: start locations, sound
+   * emitters, no-fly zones (SC2 `ObjectPoint`). The game draws nothing there, so a world view shows
+   * them only when asked, as the editor does; a selected one is always marked.
+   */
+  readonly editorMarkers?: boolean
   /** Render one directional-light depth map and apply it to world lighting. */
   readonly shadows?: boolean
   /** Requested square depth-map size; bounded by WebGL2 limits and 4096. */
@@ -6258,8 +6264,12 @@ export function createWorldWebGlPlan(
       !(item.modelComponents !== undefined && item.modelComponents.length === 0)
     ) {
       const selected = item.objectId === input.selectedObjectId
-      pushVertex(points, translation, [0, 1, 0], selected ? [1, 0.9, 0.1, 1] : colorHash(item.kind))
-      diagnosticPlaceholders += 1
+      // A point or camera has no model by design: marked only on request (editorMarkers). It is not
+      // retained either way, so the next plan follows the request.
+      if (selected || input.editorMarkers === true || (item.kind !== 'point' && item.kind !== 'camera')) {
+        pushVertex(points, translation, [0, 1, 0], selected ? [1, 0.9, 0.1, 1] : colorHash(item.kind))
+        diagnosticPlaceholders += 1
+      }
       retainable = false
     }
     lastProjectorWrites.set(item, projectorWrites)

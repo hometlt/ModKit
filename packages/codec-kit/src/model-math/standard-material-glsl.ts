@@ -85,8 +85,9 @@ export interface StandardMaterialDefines {
   usesVertexAlpha: boolean
   /**
    * An additive (MAT_ blend 2) material: its target blend is ONE, ONE, so the colour is scaled by
-   * the pixel's fade here, as PSMaterial.fx does for BlendAdd (`b_iModAlpha`: rgb *= fade, the
-   * alpha before the alpha-mask layers). Without it a particle's lifecycle alpha did nothing and
+   * the pixel's fade here, as PSMaterial.fx does for BlendAdd (`b_iModAlpha`: rgb *= fade). The fade
+   * starts at one, not at the diffuse texture's alpha, and is taken before the alpha-mask layers:
+   * vertex alpha and material alpha only. Without it a particle's lifecycle alpha did nothing and
    * every floodlight streak drew at full strength.
    */
   modAlpha?: boolean
@@ -791,7 +792,8 @@ export function composeStandardPixelCpu(input: CpuPixelInput): CpuPixelResult {
   // channels=0 is RGB-only and forces alpha to one; SC2 resource crystals
   // then supply opacity once through alpha1 from the same DDS alpha channel.
   let alpha = layers.diffuse ? computeLayerColorCpu(layers.diffuse, teamColor)[3] : 1
-  let fade = alpha * (input.materialAlpha ?? 1)
+  // An additive colour's fade (modAlpha): material alpha, before the masks and the diffuse alpha.
+  let fade = input.materialAlpha ?? 1
   if (layers.alpha1) alpha *= computeLayerColorCpu(layers.alpha1, teamColor)[3]
   if (layers.alpha2) alpha *= computeLayerColorCpu(layers.alpha2, teamColor)[3]
   final[3] = alpha * (input.materialAlpha ?? 1)
@@ -1390,8 +1392,9 @@ export function buildStandardFragmentSource(
   }
 
   body.push(diffuse ? '  float alpha = computeLayer_diffuse().a;' : '  float alpha = 1.0;')
-  // BlendAdd's fade is the alpha before the alpha masks (PSMaterial.fx).
-  if (defines.modAlpha) body.push('  float fade = alpha * u_materialAlpha;')
+  // BlendAdd's fade: material alpha, not the diffuse alpha (PSMaterial.fx starts cFinal.a at one)
+  // and taken before the alpha masks.
+  if (defines.modAlpha) body.push('  float fade = u_materialAlpha;')
   if (layerBySlot.has('alpha1')) body.push('  alpha *= computeLayer_alpha1().a;')
   if (layerBySlot.has('alpha2')) body.push('  alpha *= computeLayer_alpha2().a;')
   body.push('  final.a = alpha * u_materialAlpha;')

@@ -132,9 +132,10 @@ test("an emitter's sprites draw as one primitive, back to front, each with its o
           [...primitive.indices.subarray(at * 6, at * 6 + 6)],
           [...each.indices].map(index => index + at * 4),
         )
-        assert.deepEqual([...primitive.colors.subarray(at * 16, at * 16 + 16)], [...each.colors])
+        if (each.tint === undefined)
+          assert.deepEqual([...primitive.colors.subarray(at * 16, at * 16 + 16)], [...each.colors])
         // A programmed sprite's tint on each of its corners, where a sprite draw takes it as its tint.
-        if (each.tint !== undefined)
+        else
           for (let corner = 0; corner < 4; corner++)
             assert.deepEqual(
               [...primitive.vertexTints.subarray((at * 4 + corner) * 4, (at * 4 + corner) * 4 + 4)],
@@ -144,7 +145,10 @@ test("an emitter's sprites draw as one primitive, back to front, each with its o
       assert.equal(primitive.tint, undefined)
       assert.deepEqual([...primitive.transform], [...sprites[0].transform])
       programmed.add(sprites[0].tint !== undefined)
-      assert.equal(primitive.vertexTints === primitive.colors, sprites[0].tint !== undefined)
+      // A programmed sprite's colour is its tint alone: as vertex colours too, a material using
+      // them took the sprite's alpha twice.
+      assert.equal(primitive.colors === undefined, sprites[0].tint !== undefined)
+      assert.equal(sprites.every(each => each.colors === undefined), sprites[0].tint !== undefined)
       if (sprites[0].tint === undefined) assert.equal(primitive.vertexTints, undefined)
     }
   }

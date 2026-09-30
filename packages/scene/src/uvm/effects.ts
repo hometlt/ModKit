@@ -1142,11 +1142,14 @@ function uvmEffectFrameGeometry(
       transform: Float32Array.from(toWorld),
     }
     if (material.simpleEffect === undefined) {
-      // Full material program: the sprite's lifecycle color and alpha are one per-sprite multiplier.
+      // Full material program: the sprite's lifecycle color and alpha are one per-sprite multiplier,
+      // its tint, applied once. As vertex colours too, a material using them took the particle's
+      // alpha twice (a floodlight streak's 0.08 became 0.006 and the beam vanished).
       // ponytail: sprites carry one UV rectangle; mask layers authored on UV1-3 reuse it.
       const c = geometry.colors
+      const { colors: _vertexColors, ...uncolored } = geometryPrimitive
       primitives.push({
-        ...geometryPrimitive,
+        ...uncolored,
         textureCoordinateSets: [1, 2, 3].map(set => ({
           set,
           coordinates: geometry.textureCoordinates,
@@ -1294,11 +1297,11 @@ function emitterSprites(
     positions,
     indices,
     textureCoordinates,
-    colors,
     transform: Float32Array.from(toWorld),
   }
-  if (material.simpleEffect !== undefined) return primitive
-  // As a sprite's tint (primitiveTint): four components in 0..1.
+  if (material.simpleEffect !== undefined) return { ...primitive, colors }
+  // As a sprite's tint (primitiveTint): four components in 0..1. Only as the tint: as vertex
+  // colours too, a material using them took each sprite's colour and alpha twice.
   for (const value of colors)
     if (!(value >= 0 && value <= 1))
       throw new TypeError('primitive tint requires four finite components in 0..1')
