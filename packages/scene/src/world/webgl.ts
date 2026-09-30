@@ -58,6 +58,7 @@ import {
 } from '../render/compressed-textures.js'
 import { uniformLocation } from '../materials/webgl.js'
 import { invertMaterialFrame } from '../materials/frame.js'
+import { textureNormalFormat } from '../materials/normal-maps.js'
 import { createWorldToneMapper } from './tone-mapping.js'
 import { transparentOrderLevels } from './transparent-order.js'
 
@@ -3383,6 +3384,7 @@ function writtenTexturedBatch(
       : { secondaryTextureCoordinates: writtenAttribute(writes, 'secondaryTextureCoordinates') }),
     texture: template.texture,
     ...(template.normalTexture === undefined ? {} : { normalTexture: template.normalTexture }),
+    ...(template.normalSwizzle === undefined ? {} : { normalSwizzle: template.normalSwizzle }),
     ...(template.secondaryTexture === undefined
       ? {}
       : { secondaryTexture: template.secondaryTexture }),
@@ -5659,13 +5661,17 @@ export function createWorldWebGlPlan(
     texture: MutableTexturedBatch['texture'],
     layer: number | undefined,
     blendMode: 'blend' | 'additive',
-  ) => `projector:${layer ?? ''}:${blendMode === 'additive' ? 'add:' : ''}${texture.id}`
+    normal: WorldProjectorNormal | undefined,
+  ) =>
+    `projector:${layer ?? ''}:${blendMode === 'additive' ? 'add:' : ''}${texture.id}` +
+    (normal === undefined ? '' : `|normal:${normal.swizzle}:${normal.texture.id}`)
   const projectorBatch = (
     texture: MutableTexturedBatch['texture'],
     layer: number | undefined,
     blendMode: 'blend' | 'additive',
+    normal: WorldProjectorNormal | undefined,
   ) => {
-    const key = projectorBatchKey(texture, layer, blendMode)
+    const key = projectorBatchKey(texture, layer, blendMode, normal)
     const target = transparentTextured.get(key) ?? {
       ...batch(),
       textureCoordinates: [],
@@ -5674,6 +5680,9 @@ export function createWorldWebGlPlan(
       castShadows: false,
       receiveShadows: false,
       ...(layer === undefined ? {} : { splatLayer: layer }),
+      ...(normal === undefined
+        ? {}
+        : { normalTexture: normal.texture, normalSwizzle: normal.swizzle }),
     }
     transparentTextured.set(key, target)
     return target
@@ -6131,7 +6140,8 @@ export function createWorldWebGlPlan(
           const layer = worldProjectorSplatLayer(primitive, material)
           const blend = material?.simpleEffect?.blend
           const blendMode = blend === 'additive' || blend === 'add-alpha' ? 'additive' : 'blend'
-          const target = projectorBatch(texture, layer, blendMode)
+          const normal = worldProjectorNormal(material, scene.textures)
+          const target = projectorBatch(texture, layer, blendMode, normal)
           const write: MutableTexturedBatch = { ...batch(), textureCoordinates: [], texture }
           for (const triangle of primitiveTriangles(primitive)) {
             const vertices = triangle.map(index => {
@@ -6151,7 +6161,7 @@ export function createWorldWebGlPlan(
               [1, 1, 1, material?.baseColor?.[3] ?? 1],
             )
           }
-          const key = projectorBatchKey(texture, layer, blendMode)
+          const key = projectorBatchKey(texture, layer, blendMode, normal)
           const previous = previousProjectorWrites?.[projectorWrites.length]
           const kept =
             previous !== undefined && previous.key === key && sameWriteContent(previous.write, write)
@@ -10273,6 +10283,48 @@ function worldProjectorSplatLayer(
   return parameters?.renderModel?.metadata?.sourceMaterialTag === 'STBM'
     ? TERRAIN_BAKED_SPLAT_LAYER
     : projectedSplatLayer(primitive)
+}
+
+interface WorldProjectorNormal {
+  readonly texture: MutableTexturedBatch['texture']
+  /** normalSwizzleOf: 1 X in alpha and Y in green (DXT5nm), 0 plain RGB. */
+  readonly swizzle: number
+}
+
+/**
+ * A projector decal's normal map: the `normal` layer of its render material. SC2 shades a deferred
+ * splat through its whole material (splatdeferred.fx runs PSMaterial with normal mapping, the
+ * binormal along +v), so the relief of Washout's cracks (Void_CrackSplat: CrackSplat03_Normals)
+ * catches the light; drawn flat they were dark lines. The render-material vocabulary's normal maps
+ * are DXT5nm unless the texture's storage says otherwise (materialNormalFormats).
+ */
+function worldProjectorNormal(
+  material: SceneRendererMaterial | undefined,
+  textures: readonly MutableTexturedBatch['texture'][],
+): WorldProjectorNormal | undefined {
+  const model = (
+    material?.shader?.parameters as { readonly renderModel?: { readonly layers?: unknown } } | undefined
+  )?.renderModel
+  if (!Array.isArray(model?.layers)) return undefined
+  const layer = (model.layers as readonly unknown[]).find(
+    (candidate): candidate is { readonly label: string; readonly path: string } =>
+      typeof candidate === 'object' &&
+      candidate !== null &&
+      String((candidate as { label?: unknown }).label).toLowerCase() === 'normal' &&
+      typeof (candidate as { path?: unknown }).path === 'string',
+  )
+  if (layer === undefined) return undefined
+  const textureId = material?.textureBindings?.find(
+    binding => binding.resourceId === layer.path,
+  )?.textureId
+  const texture = textures.find(candidate => candidate.id === textureId)
+  if (texture === undefined) return undefined
+  const format = textureNormalFormat(texture) ?? 'dxt5nm'
+  return format === 'dxt5nm'
+    ? { texture, swizzle: 1 }
+    : format === 'rgb8'
+      ? { texture, swizzle: 0 }
+      : undefined
 }
 
 /**

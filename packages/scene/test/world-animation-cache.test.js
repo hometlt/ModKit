@@ -291,6 +291,7 @@ function effectModel({
   animatedAlpha = true,
   decalBlendMode = 1,
   decalSourceTag,
+  decalNormal = false,
 } = {}) {
   const layer = (slot, animated = false) => ({
     slot,
@@ -456,7 +457,12 @@ function effectModel({
               id: 'decal',
               alphaMode: 'blend',
               blendMode: 'blend',
-              layers: [{ slot: 'diffuse', resourceId: 'decal.png', uvSource: 0 }],
+              layers: [
+                { slot: 'diffuse', resourceId: 'decal.png', uvSource: 0 },
+                ...(decalNormal
+                  ? [{ slot: 'normal', resourceId: 'decal-normal.png', uvSource: 0 }]
+                  : []),
+              ],
               shader: {
                 id: 'modkit.render-material.v1',
                 parameters: {
@@ -465,11 +471,19 @@ function effectModel({
                     ...(decalSourceTag === undefined
                       ? {}
                       : { metadata: { sourceMaterialTag: decalSourceTag } }),
-                    layers: [{ label: 'diffuse', path: 'decal.png' }],
+                    layers: [
+                      { label: 'diffuse', path: 'decal.png' },
+                      ...(decalNormal ? [{ label: 'normal', path: 'decal-normal.png' }] : []),
+                    ],
                     standard: {
                       ...standard,
                       blendMode: decalBlendMode,
-                      layers: { diffuse: { ...layer('diffuse'), texturePath: 'decal.png' } },
+                      layers: {
+                        diffuse: { ...layer('diffuse'), texturePath: 'decal.png' },
+                        ...(decalNormal
+                          ? { normal: { ...layer('normal'), texturePath: 'decal-normal.png' } }
+                          : {}),
+                      },
                     },
                   },
                 },
@@ -478,7 +492,11 @@ function effectModel({
           ]
         : []),
     ],
-    textures: [texture('effect.png'), ...(decal ? [texture('decal.png')] : [])],
+    textures: [
+      texture('effect.png'),
+      ...(decal ? [texture('decal.png')] : []),
+      ...(decalNormal ? [texture('decal-normal.png')] : []),
+    ],
     uvmBytes: writeUvmContainer({
       format: 'glb',
       document,
@@ -882,6 +900,20 @@ it('draws a splat-terrain-bake decal under every projected splat, whatever layer
   }
   assert.deepEqual(layer('STBM'), [-1])
   assert.deepEqual(layer('MAT_'), [0])
+})
+
+it('shades a projector decal through the normal map of its material', () => {
+  // SC2's deferred splats run the whole material: the relief of Washout's cracks catches the light.
+  const decals = decalNormal => {
+    const model = effectModel({ decal: true, animatedAlpha: false, decalNormal })
+    const plan = createWorldWebGlPlan({ ...world(), models: new Map([['actor', model]]) })
+    return plan.transparentTexturedTriangles
+      .filter(batch => batch.texture.id === 'decal.png')
+      .map(batch => [batch.normalTexture?.id, batch.normalSwizzle])
+  }
+  // The render-material vocabulary spells its normal maps as DXT5nm: x in alpha, y in green.
+  assert.deepEqual(decals(true), [['decal-normal.png', 1]])
+  assert.deepEqual(decals(false), [[undefined, undefined]])
 })
 
 it('adds an additive projector decal instead of blending it over the ground', () => {
