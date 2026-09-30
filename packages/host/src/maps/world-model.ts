@@ -15,12 +15,35 @@ import type {
   WorldSceneModelRequest,
   WorldSceneModelResult,
 } from '@modkit/sdk'
+import type { MapModelTextureVariant } from '@modkit/sdk/maps'
 
 export function positiveLimit(value: number, maximum: number): number {
   if (!Number.isSafeInteger(value) || value <= 0 || value > maximum) {
     throw new TypeError(`world page limit must be between 1 and ${maximum}`)
   }
   return value
+}
+
+/**
+ * The file a texture variant loads for `logicalId`, when the texture's file name matches one of the
+ * variant's names (MapModelTextureVariant); undefined otherwise.
+ */
+export function textureVariantLogicalId(
+  logicalId: string,
+  variant: MapModelTextureVariant | undefined,
+): string | undefined {
+  if (variant === undefined || variant.suffix.length === 0) return undefined
+  const slash = logicalId.lastIndexOf('/')
+  const file = logicalId.slice(slash + 1)
+  const dot = file.lastIndexOf('.')
+  const stem = dot <= 0 ? file : file.slice(0, dot)
+  const name = stem.toLowerCase()
+  const matches = variant.names.some(
+    entry =>
+      name.startsWith(entry.prefix.toLowerCase()) && name.includes(entry.contains.toLowerCase()),
+  )
+  if (!matches) return undefined
+  return `${logicalId.slice(0, slash + 1)}${stem}${variant.suffix}${dot <= 0 ? '' : file.slice(dot)}`
 }
 
 export function childResourceLogicalId(parentLogicalId: string, childLogicalId: string): string {
@@ -197,6 +220,8 @@ export interface WorldSceneModelOptions {
   ) => Promise<
     Readonly<{ materials?: readonly ModelMaterialRef[]; diagnostics: readonly Diagnostic[] }>
   >
+  /** Texture variants this placement of the model loads (MapModelTextureVariant). */
+  readonly textureVariant?: MapModelTextureVariant
   /** Decoded textures by logical id and budget, kept across calls (one map per world lease). */
   readonly textureCache?: Map<string, Promise<WorldModelTexture>>
   /** The largest page the caller admits for the request's page limits. */
@@ -372,7 +397,10 @@ export async function worldSceneModel(
       )
       continue
     }
-    const logicalId = childResourceLogicalId(modelRequirement.logicalId, reference.id)
+    const namedLogicalId = childResourceLogicalId(modelRequirement.logicalId, reference.id)
+    // A placement's texture variant, falling back to the texture as named when it is absent.
+    const variantLogicalId = textureVariantLogicalId(namedLogicalId, options.textureVariant)
+    const logicalId = variantLogicalId ?? namedLogicalId
     const previewTextureBytes = Math.max(
       1,
       Math.min(maxTextureBytes, remaining, sharedTextureBytes),
@@ -388,6 +416,7 @@ export async function worldSceneModel(
             requirement: {
               id: `world-texture:${encodeURIComponent(logicalId)}`,
               logicalId,
+              ...(variantLogicalId === undefined ? {} : { alternatives: [namedLogicalId] }),
               role: reference.role,
               scopes: modelRequirement.scopes,
               parentResourceId: modelRequirement.id,

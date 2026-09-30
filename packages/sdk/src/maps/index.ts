@@ -613,6 +613,8 @@ export interface MapPlacedObject {
   readonly catalog?: MapCatalogBinding
   /** Host-resolved model asset discovered from the resolved game catalog, never an ambient path. */
   readonly modelResource?: LogicalResourceRequirement
+  /** Texture variants `modelResource` loads for this placement (see MapModelTextureVariant). */
+  readonly modelTextureVariant?: MapModelTextureVariant
   /** Ordered component models for compound objects. Each requirement remains independently scoped;
    * consumers must not collapse a droid/attachment composition to one guessed path. */
   readonly modelResources?: readonly LogicalResourceRequirement[]
@@ -621,6 +623,18 @@ export interface MapPlacedObject {
    * An empty array: the object draws nothing of its own (a Warzone 2100 module built into its base).
    */
   readonly modelComponents?: readonly MapModelComponentPlacement[]
+}
+
+/**
+ * Textures a model loads in a placement's variant instead of as the model names them. A texture
+ * whose file name, compared without case, starts with a name's `prefix` and contains its `contains`
+ * loads from the file with `suffix` added before the extension when that file resolves, else as
+ * named. SC2: a CModel's TextureDeclares with the CTerrain TextureProp of the placement's TileSet
+ * (the map's by default) — DecalProtoss00_Diffuse.dds loads as DecalProtoss00_Diffuse_monlyth.dds.
+ */
+export interface MapModelTextureVariant {
+  readonly suffix: string
+  readonly names: readonly Readonly<{ prefix: string; contains: string }>[]
 }
 
 export interface MapRegionShape {
@@ -1492,6 +1506,8 @@ export interface WorldSceneResourceItem {
   readonly digest?: `sha256:${string}`
   /** Standard logical resource request for the model shared by the joined object instances. */
   readonly modelResource?: LogicalResourceRequirement
+  /** Texture variants the joined instances' model loads (MapPlacedObject.modelTextureVariant). */
+  readonly modelTextureVariant?: MapModelTextureVariant
   /**
    * Ordered alternatives when the publisher cannot know which asset exists; the host converts the
    * first that resolves and bakes its yaw into the model. `modelResource` is the first candidate.

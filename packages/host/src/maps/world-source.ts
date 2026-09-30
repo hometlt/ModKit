@@ -845,6 +845,7 @@ export function createCandidateWorldSceneLease(
       resolved: boolean
       objectIds: string[]
       modelResource?: NonNullable<WorldSceneObjectItem['modelResource']>
+      modelTextureVariant?: WorldSceneResourceItem['modelTextureVariant']
       modelCandidates?: WorldSceneResourceItem['modelCandidates']
       materialModel?: WorldSceneResourceItem['materialModel']
     }
@@ -872,10 +873,15 @@ export function createCandidateWorldSceneLease(
         resolved: item.catalog.entity !== undefined,
         objectIds: [],
         ...(item.modelResource === undefined ? {} : { modelResource: item.modelResource }),
+        ...(item.modelTextureVariant === undefined
+          ? {}
+          : { modelTextureVariant: item.modelTextureVariant }),
       }
       current.resolved ||= item.catalog.entity !== undefined
       if (current.modelResource === undefined && item.modelResource !== undefined) {
         current.modelResource = item.modelResource
+        if (item.modelTextureVariant !== undefined)
+          current.modelTextureVariant = item.modelTextureVariant
       }
       current.objectIds.push(item.id)
       resourceJoins.set(key, current)
@@ -903,6 +909,9 @@ export function createCandidateWorldSceneLease(
           ...(item.entityId === undefined ? {} : { entityId: item.entityId }),
           resolved: item.resolved,
           ...(item.modelResource === undefined ? {} : { modelResource: item.modelResource }),
+          ...(item.modelTextureVariant === undefined
+            ? {}
+            : { modelTextureVariant: item.modelTextureVariant }),
           ...(item.modelCandidates === undefined ? {} : { modelCandidates: item.modelCandidates }),
           ...(item.materialModel === undefined ? {} : { materialModel: item.materialModel }),
           objectIds: Object.freeze([...item.objectIds]),
@@ -1737,6 +1746,9 @@ export function createCandidateWorldSceneLease(
                   yaw: chosen.yaw,
                   maxPageSize,
                   textureCache: modelTextureCache,
+                  ...(item.modelTextureVariant === undefined
+                    ? {}
+                    : { textureVariant: item.modelTextureVariant }),
                   ...(materialModel === undefined
                     ? {}
                     : {

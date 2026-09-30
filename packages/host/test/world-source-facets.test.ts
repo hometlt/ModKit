@@ -280,6 +280,97 @@ describe('common world source native visual facets', () => {
     }
   })
 
+  it("loads a placement's texture variant first and the texture as named when it is absent", async () => {
+    const requested: { logicalId: string; alternatives?: readonly string[] }[] = []
+    const modelResources = {
+      async acquire() {
+        return {
+          value: {
+            result: { state: 'converted' as const, bytes: new Uint8Array([1]), sourceKey: 'decal', diagnostics: [] },
+            async materials() {
+              return {
+                items: [
+                  {
+                    id: 'material-0',
+                    name: 'Decal',
+                    layers: [
+                      { slot: 'diffuse', resourceId: 'Assets/Textures/Decal00_Diffuse.dds' },
+                      { slot: 'normal', resourceId: 'Assets/Textures/Decal00_Normal.dds' },
+                    ],
+                  },
+                ],
+              }
+            },
+            async readRaster(request: { requirement: { logicalId: string; alternatives?: readonly string[] } }) {
+              const { logicalId, alternatives } = request.requirement
+              requested.push({ logicalId, ...(alternatives === undefined ? {} : { alternatives }) })
+              return { state: 'unresolved' as const, diagnostics: [] }
+            },
+            async nodes() {
+              return { items: [{ id: 'root', childIds: [], meshIds: ['mesh'], transform: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1] }] }
+            },
+            async meshes() {
+              return { items: [{ id: 'mesh', primitiveIds: ['triangle'] }] }
+            },
+            async primitive() {
+              return { id: 'triangle', topology: 'triangles' as const, positions: new Float32Array(9) }
+            },
+          },
+          async release() {},
+        }
+      },
+    }
+    const variant = { suffix: '_monlyth', names: [{ prefix: 'decal00_', contains: '_DIFFUSE' }] }
+    const lease = createSourceWorldSceneLease(
+      {
+        ...snapshot,
+        semantic: {
+          ...snapshot.semantic,
+          objects: [
+            {
+              kind: 'doodad',
+              objectId: 30,
+              typeId: 'Decal',
+              position: { x: 0.5, y: 0.5, z: 0 },
+              catalog: { ref: { namespace: 'Actor', entityId: 'Decal' } },
+              modelResource: {
+                id: 'model:decal:textures_monlyth',
+                logicalId: 'base.assets/Assets/Doodads/Decal/Decal_00.m3',
+                role: 'sidecar',
+                scopes: ['current-mount'],
+              },
+              modelTextureVariant: variant,
+            },
+          ],
+        },
+      },
+      [],
+      64,
+      modelResources as never,
+    )
+    try {
+      const info = await lease.value.info()
+      const resources = await lease.value.page({
+        facet: 'resources',
+        layerId: info.facets.find(item => item.facet === 'resources')!.layerId,
+        limit: 64,
+      })
+      const resource = resources.items.find(item => item.facet === 'resources' && item.entityId === 'Decal')
+      expect(resource).toMatchObject({ modelTextureVariant: variant })
+      await lease.value.model?.(resource!.id, { maxBytes: 1024, maxMeshes: 8, maxPrimitives: 8, maxPrimitiveBytes: 1024 })
+      // Names compare without case; only the texture the variant names asks for the variant.
+      expect(requested).toEqual([
+        {
+          logicalId: 'base.assets/Assets/Textures/Decal00_Diffuse_monlyth.dds',
+          alternatives: ['base.assets/Assets/Textures/Decal00_Diffuse.dds'],
+        },
+        { logicalId: 'base.assets/Assets/Textures/Decal00_Normal.dds' },
+      ])
+    } finally {
+      await lease.release()
+    }
+  })
+
   it('reads every page of a large model and keeps its graph whole when primitives run out', async () => {
     const identity = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
     // a root with 2 500 children, one mesh each: far more than one page of 1 024 nodes
