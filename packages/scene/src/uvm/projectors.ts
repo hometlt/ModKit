@@ -21,6 +21,52 @@ import {
 } from '@modkit/codec-kit/model-math/effects-sim'
 import type { RenderEffectSequenceTracks } from '@modkit/codec-kit/legacy/models'
 
+/** Depth, in projector units above and below its origin, a terrain bake reaches: past any relief. */
+const TERRAIN_BAKE_DEPTH = 256
+
+/** The receiver primitive that is the ground itself: a terrain bake lies on it at any depth. */
+export const TERRAIN_RECEIVER_ID = 'world-terrain-receiver'
+
+type ClippedReceivers = ReturnType<typeof clipProjectorReceivers>
+
+/** One clip's geometry followed by another's, which takes the budget the first left. */
+function joinedClips(
+  first: ClippedReceivers,
+  second: (bytes: number, triangles: number) => ClippedReceivers,
+): ClippedReceivers {
+  const next = second(first.byteLength, first.triangles)
+  if (first.indices.length === 0) return next
+  if (next.indices.length === 0) return first
+  const offset = first.positions.length / 3
+  const indices = new Uint32Array(first.indices.length + next.indices.length)
+  indices.set(first.indices)
+  for (let index = 0; index < next.indices.length; index++)
+    indices[first.indices.length + index] = next.indices[index]! + offset
+  const positions = new Float32Array(first.positions.length + next.positions.length)
+  positions.set(first.positions)
+  positions.set(next.positions, first.positions.length)
+  const textureCoordinates = new Float32Array(
+    first.textureCoordinates.length + next.textureCoordinates.length,
+  )
+  textureCoordinates.set(first.textureCoordinates)
+  textureCoordinates.set(next.textureCoordinates, first.textureCoordinates.length)
+  return {
+    positions,
+    textureCoordinates,
+    indices,
+    triangles: first.triangles + next.triangles,
+    byteLength: first.byteLength + next.byteLength,
+  }
+}
+
+/** The native material tag a render material names (UVM render-model metadata), e.g. STBM. */
+function projectorMaterialTag(material: SceneRendererMaterial | undefined): unknown {
+  const parameters = material?.shader?.parameters as
+    | { readonly renderModel?: { readonly metadata?: { readonly sourceMaterialTag?: unknown } } }
+    | undefined
+  return parameters?.renderModel?.metadata?.sourceMaterialTag
+}
+
 interface Options {
   readonly collisionSplats?: readonly UvmCollisionSplat[]
   readonly receivers: readonly SceneRendererPrimitive[]
@@ -174,13 +220,18 @@ export function createUvmProjectorFrame(document: JsonObject, options: Options) 
     }))
   let bytes = options.receivers.length * 192 + 512,
     work = options.receivers.length
-  const clip = (slot: string, frame: ProjectorFrame, maxBytes: number, maxTriangles: number) => {
+  const clip = (
+    slot: string,
+    frame: ProjectorFrame,
+    maxBytes: number,
+    maxTriangles: number,
+    onto: typeof receivers = receivers,
+  ) => {
     const cache = options.cache
-    const key =
-      cache === undefined ? '' : projectorClipKey(frame, receivers, maxBytes, maxTriangles)
+    const key = cache === undefined ? '' : projectorClipKey(frame, onto, maxBytes, maxTriangles)
     const kept = cache?.clips.get(slot)
     if (kept !== undefined && kept.key === key) return kept.geometry
-    const geometry = clipProjectorReceivers(frame, receivers, {
+    const geometry = clipProjectorReceivers(frame, onto, {
       maxBytes,
       maxTriangles,
       ...(options.signal === undefined ? {} : { signal: options.signal }),
@@ -390,12 +441,39 @@ export function createUvmProjectorFrame(document: JsonObject, options: Options) 
     const authoredAlpha = scalar(entry['alphaInit']) || 1,
       alpha = Math.min(1, Math.max(0, authoredAlpha > 1 ? authoredAlpha / 255 : authoredAlpha))
     bytes += 1024
-    const geometry = clip(
-      `projector-${index}`,
-      frame,
-      options.maxBytes - bytes,
-      options.maxNodes - work,
-    )
+    // A splat-terrain-bake material (STBM) is baked into the ground texture, which knows no height:
+    // it lies on the ground wherever its footprint falls, down a ramp too. Washout's sidewalks author
+    // a box 0.1 deep and showed on a ramp as the thin stripe where the ramp crossed it. Other
+    // receivers (the rims of cliff pieces) keep the authored box: the bake does not reach them.
+    const ground = receivers.filter(receiver => receiver.primitive.id === TERRAIN_RECEIVER_ID)
+    const geometry =
+      boxed && ground.length > 0 && projectorMaterialTag(base) === 'STBM'
+        ? joinedClips(
+            clip(
+              `projector-${index}:ground`,
+              {
+                ...frame,
+                origin: [
+                  origin[0] - forwardAxis[0] * TERRAIN_BAKE_DEPTH * scaleZ,
+                  origin[1] - forwardAxis[1] * TERRAIN_BAKE_DEPTH * scaleZ,
+                  origin[2] - forwardAxis[2] * TERRAIN_BAKE_DEPTH * scaleZ,
+                ],
+                far: 2 * TERRAIN_BAKE_DEPTH * scaleZ,
+              },
+              options.maxBytes - bytes,
+              options.maxNodes - work,
+              ground,
+            ),
+            (joinedBytes, joinedTriangles) =>
+              clip(
+                `projector-${index}`,
+                frame,
+                options.maxBytes - bytes - joinedBytes,
+                options.maxNodes - work - joinedTriangles,
+                receivers.filter(receiver => !ground.includes(receiver)),
+              ),
+          )
+        : clip(`projector-${index}`, frame, options.maxBytes - bytes, options.maxNodes - work)
     work += geometry.triangles
     bytes += geometry.byteLength
     if (geometry.indices.length === 0) continue

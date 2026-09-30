@@ -22,6 +22,7 @@ import type {
 import { boundsOf } from '@modkit/codec-kit/model/bounds'
 import { createModelSceneSampler } from '../model/index.js'
 import { createUvmEffectSource, type UvmEffectSource } from '../uvm/effect-source.js'
+import { TERRAIN_RECEIVER_ID } from '../uvm/projectors.js'
 import {
   createUvmProjectorFrameCache,
   projectedSplatLayer,
@@ -4315,6 +4316,34 @@ function prepareWorldStaticTerrain(
   }
   const cliffFills: CliffFill[] = []
   const cliffReceiverTriangles: number[] = []
+  /** Cliff floor triangles that lie on the height field: projector receivers as the ground itself. */
+  const cliffGroundTriangles: number[] = []
+  /**
+   * Whether a world point lies on the height field as its vertices place it (before pieces cut it):
+   * within a tenth of a unit of the bilinear height of its cell. A ramp's strip follows the field;
+   * the rails and rims of cliff pieces stand above it.
+   */
+  const onHeightField = (point: readonly [number, number, number]) => {
+    const [gx, gy] = gridOf(point)
+    const x = Math.floor(gx),
+      y = Math.floor(gy)
+    const heights = [
+      [0, 0],
+      [1, 0],
+      [0, 1],
+      [1, 1],
+    ].map(([dx, dy]) => {
+      const vertex = terrainByCell.get(`${x + dx!}:${y + dy!}`)
+      return vertex === undefined ? undefined : terrainPosition(vertex)[1]
+    })
+    if (heights.some(height => height === undefined)) return false
+    const [h00, h10, h01, h11] = heights as number[]
+    const fx = gx - x,
+      fy = gy - y
+    const field =
+      (h00! * (1 - fx) + h10! * fx) * (1 - fy) + (h01! * (1 - fx) + h11! * fx) * fy
+    return Math.abs(point[1] - field) <= 0.1
+  }
   /** Masked-ground corners standing on a height-field vertex; see where their normals are joined. */
   const footprintEdgeVertices: {
     readonly key: string
@@ -4423,8 +4452,12 @@ function prepareWorldStaticTerrain(
           if (normal[1] >= 0.5) {
             raw.push({ vertices: upward, normal })
             // Splats land on a cliff piece's floor as on the ground (SC2 cliff materials accept splats):
-            // a platform's rim is cliff geometry, and decals there were hidden beneath it.
-            cliffReceiverTriangles.push(...upward.flat())
+            // a platform's rim is cliff geometry, and decals there were hidden beneath it. Where the
+            // floor lies on the height field (a ramp's strip) it is the ground a terrain bake reaches.
+            ;(upward.every(vertex => onHeightField(vertex))
+              ? cliffGroundTriangles
+              : cliffReceiverTriangles
+            ).push(...upward.flat())
           }
         }
       }
@@ -5317,11 +5350,12 @@ function prepareWorldStaticTerrain(
     lines: frozenBatch(lines),
     points: frozenBatch(points),
     terrainTriangles: Float32Array.from(terrainPickTriangles),
-    /** What projectors land on: the terrain and the floors of cliff pieces. */
-    projectorReceivers:
-      cliffReceiverTriangles.length === 0
-        ? Float32Array.from(terrainPickTriangles)
-        : Float32Array.from([...terrainPickTriangles, ...cliffReceiverTriangles]),
+    /**
+     * What projectors land on: the terrain, and apart from it the floors of cliff pieces (a terrain
+     * bake lies on the terrain at any depth, on the floors only inside its box).
+     */
+    projectorReceivers: Float32Array.from([...terrainPickTriangles, ...cliffGroundTriangles]),
+    projectorCliffReceivers: Float32Array.from(cliffReceiverTriangles),
     terrainShadowCasters: Float32Array.from(cutShadowCasters),
     shadowCasterTriangles:
       (cutShadowCasters.length +
@@ -5647,6 +5681,7 @@ export function createWorldWebGlPlan(
 
   const objects = worldFacetItems(preparation, input.items, 'objects')
   const projectorGround = preparation.projectorReceivers
+  const projectorCliffs = preparation.projectorCliffReceivers
   let modelTriangles = 0
   let diagnosticPlaceholders = 0
   const planPrograms: WorldPlanPrograms = new Map()
@@ -6078,11 +6113,21 @@ export function createWorldWebGlPlan(
                 scene.materials,
                 [
                   {
-                    id: 'world-terrain-receiver',
+                    id: TERRAIN_RECEIVER_ID,
                     topology: 'triangles',
                     positions: projectorGround,
                     transform: receiverTransform,
                   },
+                  ...(projectorCliffs.length === 0
+                    ? []
+                    : [
+                        {
+                          id: 'world-cliff-floor-receiver',
+                          topology: 'triangles' as const,
+                          positions: projectorCliffs,
+                          transform: receiverTransform,
+                        },
+                      ]),
                 ],
                 slot.frames,
               ),
