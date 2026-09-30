@@ -2213,3 +2213,11 @@ export {
   type UvwConversionReceipt,
   type UvwConversionRefusal,
 } from './conversion.js'
+export {
+  planUvwExactObjectMappings,
+  type UvwExactObjectMappingInput,
+  type UvwExactObjectMappingPlan,
+  type UvwExactObjectMappingRule,
+  type UvwObjectDefinitionBinding,
+  type UvwObjectMappingContext,
+} from './object-mapping.js'
