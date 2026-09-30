@@ -397,3 +397,78 @@ test('UVM schema 1 position-facing declaration is owned and rejects malformed pi
     /three finite/,
   )
 })
+
+// BBSC billboards as the engine builds them (CBBSolver::ApplyBillboard, as WhiteoutFlakes reads
+// it): rows of the basis are the joint's local axes in the skeleton's frame.
+const aimBindings = [
+  { ...root, localPose: { translation: [0, 0, 0], rotation: [0, 0, 0, 1], scale: [1, 1, 1] } },
+  child,
+]
+const aimPose = rootWorld => [
+  { boneIndex: 0, nodeId: 'root', worldMatrix: rootWorld },
+  { boneIndex: 1, nodeId: 'child', worldMatrix: [...rootWorld.slice(0, 12), 1, 0, 0, 1] },
+]
+const s = Math.SQRT1_2
+test('a free aim billboard lays local +Y along the view, local +X across the camera up', () => {
+  const posed = applyModelBillboards(
+    aimPose(identity),
+    aimBindings,
+    [{ nodeId: 'child', mode: 'aim', aim: 'view', lock: 'free' }],
+    [0, 0, 0, 1],
+    identity,
+    1 << 20,
+  )
+  // camera looks along -Z with +Y up: X = d × up = +X, Y = d = -Z, Z = X × d = +Y
+  close(posed[1].worldMatrix, [1, 0, 0, 0, 0, 0, -1, 0, 0, 1, 0, 0, 1, 0, 0, 1])
+})
+test('a frame-Z aim billboard stays upright under a tilted camera', () => {
+  const posed = applyModelBillboards(
+    aimPose(identity),
+    aimBindings,
+    [{ nodeId: 'child', mode: 'aim', aim: 'view', lock: 'frame-z' }],
+    [Math.sin(Math.PI / 8), 0, 0, Math.cos(Math.PI / 8)],
+    identity,
+    1 << 20,
+  )
+  close(posed[1].worldMatrix.slice(8, 11), [0, 0, 1])
+  close(posed[1].worldMatrix.slice(4, 7), [0, 1, 0])
+})
+test('a root aim billboard keeps its sampled spin and takes its root correction after it', () => {
+  // sampled spin: 90° about local Z
+  const rootWorld = [0, 1, 0, 0, -1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
+  const posed = applyModelBillboards(
+    aimPose(rootWorld),
+    aimBindings,
+    [{ nodeId: 'root', mode: 'aim', aim: 'view', lock: 'free', rootCorrection: [0, 0, 0, 1] }],
+    [0, 0, 0, 1],
+    identity,
+    1 << 20,
+  )
+  // basis [+X, -Z, +Y] times the spin: columns -Z, -X, +Y
+  close(posed[0].worldMatrix.slice(0, 11), [0, 0, -1, 0, -1, 0, 0, 0, 0, 1, 0])
+})
+test('an eye aim billboard points local +Y from the eye to the joint', () => {
+  const posed = applyModelBillboards(
+    aimPose(identity),
+    aimBindings,
+    [{ nodeId: 'child', mode: 'aim', aim: 'eye', lock: 'frame-z' }],
+    [0, 0, 0, 1],
+    identity,
+    1 << 20,
+    undefined,
+    [1, -5, 0],
+  )
+  // the joint sits at (1, 0, 0): from the eye it is +Y, so the upright card keeps its axes
+  close(posed[1].worldMatrix.slice(4, 7), [0, 1, 0])
+  close(posed[1].worldMatrix.slice(0, 3), [1, 0, 0])
+})
+test('an aim constraint round-trips through UV_node_billboard and its snapshot', () => {
+  const constraint = { nodeId: 'node-0', mode: 'aim', aim: 'eye', lock: 'own-y', correction: [0, 0, s, s] }
+  assert.deepEqual(snapshotModelBillboards([constraint], 4096), [constraint])
+  const document = {
+    extensionsUsed: ['UV_node_billboard'],
+    nodes: [{ extensions: { UV_node_billboard: { schemaVersion: 1, mode: 'aim', aim: 'eye', lock: 'own-y', correction: [0, 0, s, s] } } }],
+  }
+  assert.deepEqual(readUvmBillboards(document, 4096), [constraint])
+  assert.throws(() => snapshotModelBillboards([{ ...constraint, lock: 'sideways' }], 4096))
+})

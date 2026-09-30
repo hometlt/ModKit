@@ -83,6 +83,22 @@ describe('a node that faces the camera', () => {
     expect(plain.document.extensionsUsed).not.toContain('UV_node_billboard')
   })
 
+  it('writes an aim billboard (a StarCraft II BBSC record) and reads it back', () => {
+    const written = materializeUvmCore(
+      projection({ billboard: { mode: 'aim', aim: 'eye', lock: 'frame-z', correction: [0, 0, s, s] } }),
+      request,
+    ) as unknown as Written
+    const card = written.document.nodes.find(node => node.extensions?.['UV_node_billboard'] !== undefined)
+    expect(card?.extensions?.['UV_node_billboard']).toEqual({
+      schemaVersion: 1,
+      mode: 'aim',
+      aim: 'eye',
+      lock: 'frame-z',
+      correction: [0, 0, s, s],
+    })
+    expect(readUvmBillboards(written.document as never, 100_000)[0]).toMatchObject({ mode: 'aim', lock: 'frame-z' })
+  })
+
   it('refuses a basis that is not a rotation', () => {
     expect(() =>
       materializeUvmCore(

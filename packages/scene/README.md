@@ -187,6 +187,10 @@ intensity, attenuation, decay and spot-cone fields. Both use the selected clip's
 Billboard schema 1 retains the inverse-camera bone rule with ordered basis rotations. Schema 2
 defines a rigid position-facing node: local `+Y` faces `camera.eyePosition`, `rotationAxes`
 selects cylindrical `z` or spherical `xz` motion, and `pivot` is a local three-vector.
+Schema 1 also takes `mode: 'aim'`: the node's local `+X` points back along the view (`aim: 'view'`)
+or at `camera.eyePosition` (`aim: 'eye'`), `lock` keeps one axis of the model frame (`frame-x|y|z`)
+or of the node's own frame (`own-x|y`) or none (`free`), and the optional `correction`
+(`rootCorrection` for a node without a jointed parent) quaternion is composed after the aim.
 The sampler applies the same adjusted world transform to the node's mesh and descendants.
 
 `modelResources.acquire` leases an owned child UVM and scoped raster/model access. Scene prepares

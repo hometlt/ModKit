@@ -39,6 +39,22 @@ export function readUvmBillboards(
         rotationAxes: value['rotationAxes'],
         pivot: value['pivot'],
       } as unknown as ModelBillboardConstraint)
+    } else if (value['schemaVersion'] === 1 && value['mode'] === 'aim') {
+      if (
+        Object.keys(value).some(
+          key =>
+            !['schemaVersion', 'mode', 'aim', 'lock', 'correction', 'rootCorrection'].includes(key),
+        )
+      )
+        throw new TypeError('unsupported UVM node billboard')
+      values.push({
+        nodeId: `node-${index}`,
+        mode: 'aim',
+        aim: value['aim'],
+        lock: value['lock'],
+        ...(value['correction'] === undefined ? {} : { correction: value['correction'] }),
+        ...(value['rootCorrection'] === undefined ? {} : { rootCorrection: value['rootCorrection'] }),
+      } as unknown as ModelBillboardConstraint)
     } else throw new TypeError('unsupported UVM node billboard')
   }
   if (values.length > 0 && !array(document, 'extensionsUsed').includes(UVM_NODE_BILLBOARD))

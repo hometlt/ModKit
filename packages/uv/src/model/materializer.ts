@@ -1215,6 +1215,32 @@ export function materializeUvmCore(
         pivot: [...billboard.pivot],
       }
     }
+    if (billboard.mode === 'aim') {
+      if (billboard.aim !== 'view' && billboard.aim !== 'eye')
+        fail(`node «${id}» aim billboard must aim along the view or from the eye`)
+      if (!['free', 'frame-x', 'frame-y', 'frame-z', 'own-x', 'own-y'].includes(billboard.lock))
+        fail(`node «${id}» aim billboard lock is unknown`)
+      const quaternion = (value: readonly number[] | undefined, label: string) => {
+        if (value === undefined) return undefined
+        if (
+          value.length !== 4 ||
+          !value.every(item => Number.isFinite(Math.fround(item))) ||
+          Math.hypot(...value) === 0
+        )
+          fail(`node «${id}» aim billboard ${label} must be a finite nonzero quaternion`)
+        return [...value]
+      }
+      const correction = quaternion(billboard.correction, 'correction')
+      const rootCorrection = quaternion(billboard.rootCorrection, 'root correction')
+      return {
+        schemaVersion: 1,
+        mode: 'aim',
+        aim: billboard.aim,
+        lock: billboard.lock,
+        ...(correction === undefined ? {} : { correction }),
+        ...(rootCorrection === undefined ? {} : { rootCorrection }),
+      }
+    }
     return fail(`node «${id}» billboard mode is unknown`)
   }
   const documentNodes = orderedNodes.map(node => {

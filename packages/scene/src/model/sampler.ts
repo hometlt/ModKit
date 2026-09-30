@@ -222,7 +222,7 @@ export function createModelSceneSampler(
   const declared = projection.nodes.flatMap((node): ModelBillboardConstraint[] => {
     if (node.billboard === undefined || stated.has(node.id)) return []
     const bound = bindings.some(bone => bone.nodeId === node.id)
-    if (node.billboard.mode === 'inverse-camera' ? !bound : bound) {
+    if (node.billboard.mode === 'face-camera' ? bound : !bound) {
       unusable.push(node.id)
       return []
     }
@@ -268,7 +268,7 @@ export function createModelSceneSampler(
       `Nodes ${unusable.join(', ')} declare a camera rule their binding cannot take; authored poses are retained.`,
     )
   if (
-    billboards.some(item => item.mode === 'inverse-camera') &&
+    billboards.some(item => item.mode === 'inverse-camera' || item.mode === 'aim') &&
     billboardCamera === undefined &&
     options.billboardCameraPerSample !== true
   )
@@ -738,6 +738,7 @@ export function createModelSceneSampler(
           present(hierarchyFrames.get(hierarchyId), 'billboard frame'),
           billboardBytes,
           requestSignal,
+          cameraPosition,
         )
         poses.set(hierarchyId, pose)
         const offset = joints.length

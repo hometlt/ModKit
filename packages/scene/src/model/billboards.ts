@@ -8,6 +8,7 @@ import {
   normalizeQuat,
   invertMatrix4OrNull,
   multiplyMatrix4,
+  quaternionFromRotationMatrix,
   rotationTranslationScaleOriginMatrix,
 } from './billboard-math.js'
 
@@ -27,9 +28,20 @@ export interface ModelFaceCameraBillboardConstraint {
   readonly rotationAxes: 'z' | 'xz'
   readonly pivot: BillboardPosition
 }
+/** Aim-built orientation of a bound joint (`ModelNodeBillboard` `aim`, sdk). */
+export interface ModelAimBillboardConstraint {
+  readonly nodeId: string
+  readonly mode: 'aim'
+  readonly aim: 'view' | 'eye'
+  readonly lock: 'free' | 'frame-x' | 'frame-y' | 'frame-z' | 'own-x' | 'own-y'
+  readonly correction?: BillboardRotation
+  readonly rootCorrection?: BillboardRotation
+}
 export type ModelBillboardConstraint =
   | ModelInverseCameraBillboardConstraint
   | ModelFaceCameraBillboardConstraint
+  | ModelAimBillboardConstraint
+const AIM_LOCKS = ['free', 'frame-x', 'frame-y', 'frame-z', 'own-x', 'own-y']
 function needed<T>(value: T | undefined, label: string): T {
   if (value === undefined) throw new TypeError('billboard ' + label + ' absent')
   return value
@@ -98,6 +110,17 @@ export function snapshotModelBillboards(
       )
         throw new TypeError('invalid face-camera billboard constraint')
       position(item.pivot)
+    } else if (item.mode === 'aim') {
+      if (
+        Object.keys(item).some(
+          key => !['nodeId', 'mode', 'aim', 'lock', 'correction', 'rootCorrection'].includes(key),
+        ) ||
+        (item.aim !== 'view' && item.aim !== 'eye') ||
+        !AIM_LOCKS.includes(item.lock)
+      )
+        throw new TypeError('invalid aim billboard constraint')
+      if (item.correction !== undefined) rotation(item.correction)
+      if (item.rootCorrection !== undefined) rotation(item.rootCorrection)
     } else throw new TypeError('invalid billboard mode')
     seen.add(item.nodeId)
   }
@@ -160,10 +183,13 @@ export function applyModelBillboards(
   hierarchyFrame: readonly number[] | Float32Array,
   maxBytes: number,
   signal?: AbortSignal,
+  /** The eye, in the space the frame maps the skeleton into; an `eye` aim needs it. */
+  cameraPosition?: BillboardPosition,
 ): readonly ModelBonePoseSample[] {
   signal?.throwIfAborted()
   const inverseConstraints = constraints.filter(
-    (item): item is ModelInverseCameraBillboardConstraint => item.mode === 'inverse-camera',
+    (item): item is ModelInverseCameraBillboardConstraint | ModelAimBillboardConstraint =>
+      item.mode === 'inverse-camera' || item.mode === 'aim',
   )
   if (cameraRotation === undefined || inverseConstraints.length === 0) return pose
   if (
@@ -189,6 +215,17 @@ export function applyModelBillboards(
     invertQuat(decomposeMatrix4(matrix(hierarchyFrame)).rotation),
     rotation(cameraRotation),
   )
+  const frameInverse = invertMatrix4OrNull(matrix(hierarchyFrame))
+  const eye =
+    cameraPosition === undefined || frameInverse === null
+      ? undefined
+      : transformPoint(frameInverse, position(cameraPosition))
+  const camera: AimCamera = {
+    forward: rotateVector(cameraInFrame, [0, 0, -1]),
+    up: rotateVector(cameraInFrame, [0, 1, 0]),
+    axisX: rotateVector(cameraInFrame, [1, 0, 0]),
+    ...(eye === undefined ? {} : { eye }),
+  }
   const adjusted = new Map<number, Float32Array>(),
     output = new Map<number, ModelBonePoseSample>()
   for (const entry of pose) {
@@ -230,20 +267,28 @@ export function applyModelBillboards(
             adjustedParent === undefined
               ? ([0, 0, 0, 1] as const)
               : invertQuat(decomposeMatrix4(adjustedParent).rotation)
-        let facing = multiplyQuat(parentInverse, cameraInFrame)
-        for (const basis of constraint.basisRotations)
-          facing = multiplyQuat(facing, rotation(basis))
-        facing = multiplyQuat(facing, localTransform.rotation)
-        const billboardLocal = rotationTranslationScaleOriginMatrix(
-          normalizeQuat(facing),
-          localTransform.translation,
-          localTransform.scaling,
-          [0, 0, 0],
-        )
-        world =
-          adjustedParent === undefined
-            ? billboardLocal
-            : multiplyMatrix4(adjustedParent, billboardLocal)
+        let facing: BillboardRotation | undefined
+        if (constraint.mode === 'inverse-camera') {
+          facing = multiplyQuat(parentInverse, cameraInFrame)
+          for (const basis of constraint.basisRotations)
+            facing = multiplyQuat(facing, rotation(basis))
+          facing = multiplyQuat(facing, localTransform.rotation)
+        } else {
+          const aimed = aimRotation(constraint, camera, world, parent === null, localTransform.rotation)
+          if (aimed !== undefined) facing = multiplyQuat(parentInverse, aimed)
+        }
+        if (facing !== undefined) {
+          const billboardLocal = rotationTranslationScaleOriginMatrix(
+            normalizeQuat(facing),
+            localTransform.translation,
+            localTransform.scaling,
+            [0, 0, 0],
+          )
+          world =
+            adjustedParent === undefined
+              ? billboardLocal
+              : multiplyMatrix4(adjustedParent, billboardLocal)
+        }
       }
       if (!world.every(Number.isFinite)) throw new RangeError('billboard world exceeds float32')
       adjusted.set(index, world)
@@ -263,4 +308,124 @@ export function applyModelBillboards(
   }
   signal?.throwIfAborted()
   return pose.map(item => needed(output.get(item.boneIndex), 'result'))
+}
+
+interface AimCamera {
+  readonly forward: Vec3
+  readonly up: Vec3
+  readonly axisX: Vec3
+  readonly eye?: Vec3
+}
+type Vec3 = readonly [number, number, number]
+const sub = (a: Vec3, b: Vec3): Vec3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]]
+const dot = (a: Vec3, b: Vec3): number => a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
+const cross = (a: Vec3, b: Vec3): Vec3 => [
+  a[1] * b[2] - a[2] * b[1],
+  a[2] * b[0] - a[0] * b[2],
+  a[0] * b[1] - a[1] * b[0],
+]
+const unit = (v: Vec3): Vec3 => {
+  const length = Math.hypot(v[0], v[1], v[2])
+  return length > 0 ? [v[0] / length, v[1] / length, v[2] / length] : v
+}
+/** A 2D direction normalised: the engine's QuarterTurn. */
+const unit2 = (a: number, b: number): readonly [number, number] => {
+  const length = Math.hypot(a, b)
+  return length > 0 ? [a / length, b / length] : [a, b]
+}
+function rotateVector(q: BillboardRotation, v: Vec3): Vec3 {
+  const u: Vec3 = [q[0], q[1], q[2]]
+  const c1 = cross(u, v)
+  const t: Vec3 = [c1[0] * 2, c1[1] * 2, c1[2] * 2]
+  const c2 = cross(u, t)
+  return [v[0] + q[3] * t[0] + c2[0], v[1] + q[3] * t[1] + c2[1], v[2] + q[3] * t[2] + c2[2]]
+}
+function transformPoint(m: Float32Array, p: Vec3): Vec3 {
+  const row = (r: number) =>
+    (m[r] ?? 0) * p[0] + (m[4 + r] ?? 0) * p[1] + (m[8 + r] ?? 0) * p[2] + (m[12 + r] ?? 0)
+  return [row(0), row(1), row(2)]
+}
+// The engine's thresholds (CBBSolver::ApplyBillboard, as WhiteoutFlakes reads it).
+const AXIS_EPSILON = 2.384185791015625e-7
+const DEGENERATE_LENGTH_SQUARED = 1e-4
+const ORTHONORMAL_TOLERANCE = 1e-3
+
+/**
+ * The frame rotation an `aim` constraint gives a joint, or undefined where the joint keeps its
+ * animated pose: d too short to aim with, a lock axis along it, a basis that is not unit. `world`
+ * is the joint as its parent chain left it: its position aims an `eye` billboard and its own axes
+ * lock `own-x`/`own-y`. A root joint keeps its sampled rotation (`spin`) after the aim.
+ */
+function aimRotation(
+  constraint: ModelAimBillboardConstraint,
+  camera: AimCamera,
+  world: Float32Array,
+  root: boolean,
+  spin: BillboardRotation,
+): BillboardRotation | undefined {
+  let d: Vec3
+  if (constraint.aim === 'eye') {
+    if (camera.eye === undefined) return undefined
+    d = unit(sub([world[12] ?? 0, world[13] ?? 0, world[14] ?? 0], camera.eye))
+  } else d = camera.forward
+  if (d.every(component => Math.abs(component) < AXIS_EPSILON)) return undefined
+  let rows: readonly [Vec3, Vec3, Vec3] = [
+    [1, 0, 0],
+    [0, 1, 0],
+    [0, 0, 1],
+  ]
+  switch (constraint.lock) {
+    case 'frame-x': {
+      let v: Vec3 = [0, d[1], d[2]]
+      if (d[1] * d[1] + d[2] * d[2] < DEGENERATE_LENGTH_SQUARED) v = camera.axisX
+      v = unit(v)
+      const p = unit2(-v[2], v[1])
+      rows = [[1, 0, 0], v, [0, p[0], p[1]]]
+      break
+    }
+    case 'frame-y': {
+      let v: Vec3 = [d[0], 0, d[2]]
+      if (d[2] * d[2] + d[0] * d[0] < DEGENERATE_LENGTH_SQUARED) v = camera.up
+      v = unit(v)
+      const p = unit2(-v[2], v[0])
+      rows = [v, [0, 1, 0], [p[0], 0, p[1]]]
+      break
+    }
+    case 'frame-z': {
+      let v: Vec3 = [d[0], d[1], 0]
+      if (d[1] * d[1] + d[0] * d[0] < DEGENERATE_LENGTH_SQUARED) v = camera.up
+      v = unit(v)
+      const p = unit2(v[1], -v[0])
+      rows = [[p[0], p[1], 0], v, [0, 0, 1]]
+      break
+    }
+    case 'own-x':
+    case 'own-y': {
+      const column = constraint.lock === 'own-x' ? 0 : 4
+      const a = unit([world[column] ?? 0, world[column + 1] ?? 0, world[column + 2] ?? 0])
+      const c = cross(a, d)
+      if (dot(c, c) < DEGENERATE_LENGTH_SQUARED) return undefined
+      const cn = unit(c)
+      rows = constraint.lock === 'own-x' ? [a, cn, cross(a, cn)] : [cn, cross(a, cn), a]
+      break
+    }
+    case 'free': {
+      const e = cross(d, camera.up)
+      if (dot(e, e) < DEGENERATE_LENGTH_SQUARED) break
+      const en = unit(e)
+      rows = [en, d, unit(cross(en, d))]
+      break
+    }
+  }
+  if (rows.some(row => Math.abs(dot(row, row) - 1) >= ORTHONORMAL_TOLERANCE)) return undefined
+  // Rows are the joint's local axes in the frame: the columns of its rotation.
+  let q: BillboardRotation = normalizeQuat(
+    quaternionFromRotationMatrix([...rows[0], ...rows[1], ...rows[2]]),
+  )
+  if (root) {
+    q = multiplyQuat(q, spin)
+    if (constraint.rootCorrection !== undefined)
+      q = multiplyQuat(q, rotation(constraint.rootCorrection))
+  } else if (constraint.correction !== undefined) q = multiplyQuat(q, rotation(constraint.correction))
+  return q
 }

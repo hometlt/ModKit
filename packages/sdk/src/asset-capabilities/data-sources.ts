@@ -148,6 +148,7 @@ export type {
   ModelMorphTarget,
   ModelNode,
   ModelNodeBillboard,
+  ModelAimBillboardLock,
   ModelNodeTrs,
   ModelPrimitive,
   ModelPrimitiveRequest,

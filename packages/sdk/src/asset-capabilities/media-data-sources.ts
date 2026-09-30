@@ -368,6 +368,12 @@ export interface ModelNode {
  * toward the viewer from every side. It applies to a node the skeleton binds.
  * `face-camera`: a rigid node's local +Y faces the camera position about its local `pivot`,
  * turning about local Z (`z`) or pitching about local X first (`xz`).
+ * `aim`: a bound joint's world orientation is built from an aim direction d — the camera's view
+ * direction (`view`) or the camera's eye to the joint (`eye`), both pointing away from the viewer —
+ * in the skeleton's authored frame, with one axis locked (`ModelAimBillboardLock`). A joint without
+ * a joint parent then keeps its sampled rotation and takes `rootCorrection`; any other takes
+ * `correction` (unit quaternions `[x, y, z, w]`, applied after, in the joint's own axes). A basis
+ * whose rows fail to be unit (a lock axis along d) leaves the joint as animated.
  */
 export type ModelNodeBillboard =
   | {
@@ -379,6 +385,24 @@ export type ModelNodeBillboard =
       readonly rotationAxes: 'z' | 'xz'
       readonly pivot: readonly [number, number, number]
     }
+  | {
+      readonly mode: 'aim'
+      readonly aim: 'view' | 'eye'
+      readonly lock: ModelAimBillboardLock
+      readonly correction?: readonly [number, number, number, number]
+      readonly rootCorrection?: readonly [number, number, number, number]
+    }
+
+/**
+ * How an `aim` billboard builds its basis (rows are the joint's local X, Y, Z in the frame):
+ * - `free`: X = d × up_camera, Y = d, Z = X × d (identity where d is along the camera's up);
+ * - `frame-x`: X = frame X, Y = d flattened into YZ (the camera's X where that vanishes), Z = X × Y;
+ * - `frame-y`: Y = frame Y, X = d flattened into XZ (the camera's up where that vanishes), Z = X × Y;
+ * - `frame-z`: Z = frame Z, Y = d flattened into XY (the camera's up where that vanishes), X = Y × Z;
+ * - `own-x`: X = the joint's current X, Y = normalise(X × d), Z = X × Y;
+ * - `own-y`: Z = the joint's current Y, X = normalise(Z × d), Y = Z × X.
+ */
+export type ModelAimBillboardLock = 'free' | 'frame-x' | 'frame-y' | 'frame-z' | 'own-x' | 'own-y'
 
 export interface ModelNodeTrs {
   readonly translation: readonly [number, number, number]
