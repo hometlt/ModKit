@@ -199,8 +199,25 @@ export function projectUvmStaticModel(
   const materialRequirements = array(document, 'materials').map((raw, index): JsonObject => {
     const material = object(raw, 'material')
     // UV_game_material is the authoritative portable render program. The glTF PBR
-    // fallback and Modkit authoring extras may coexist for generic viewers/editors.
-    keys(material, ['name', 'pbrMetallicRoughness', 'extras', 'extensions'], 'material')
+    // fallback — its texture slots, coverage and culling included — and Modkit authoring extras
+    // may coexist for generic viewers/editors; the program states what the target writes.
+    keys(
+      material,
+      [
+        'name',
+        'pbrMetallicRoughness',
+        'normalTexture',
+        'occlusionTexture',
+        'emissiveTexture',
+        'emissiveFactor',
+        'alphaMode',
+        'alphaCutoff',
+        'doubleSided',
+        'extras',
+        'extensions',
+      ],
+      'material',
+    )
     keys(
       object(material['extensions'], 'material extensions'),
       ['UV_game_material'],

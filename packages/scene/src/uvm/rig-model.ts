@@ -2,6 +2,7 @@
 import type { JsonObject, JsonValue, ModelBoneBinding } from '@modkit/sdk'
 import type { UvmContainer } from '@modkit/uv/model/container'
 import { snapshotJson } from '@modkit/codec-kit/json-snapshot'
+import { readUvmPrimitiveVisibility } from '@modkit/uv/model/animation-clips'
 import { readUvmModel } from './model.js'
 import { projectUvmStaticModel, type StaticModelBudget } from './static-model.js'
 import { array, object } from './values.js'
@@ -12,8 +13,9 @@ import {
 } from '../materials/frame.js'
 import { quaternionFromRotationMatrix } from '@modkit/codec-kit/model-math/transform'
 import { CUBIC_SPLINE_LINE_TYPE } from '@modkit/codec-kit/model-math/sequence-pose'
-import { multiplyQuat } from '../model/billboard-math.js'
+import { invertQuat, multiplyQuat } from '../model/billboard-math.js'
 import { boundUvmRig, boundUvmRootFrame } from './rig-bounds.js'
+import { readUvmBillboards } from './billboards.js'
 
 function only(value: JsonObject, allowed: readonly string[], label: string): void {
   for (const key of Object.keys(value))
@@ -75,6 +77,7 @@ function similarityFrame(matrix: readonly number[]) {
     at(8 + row) * (value[2] ?? 0) +
     at(12 + row)
   return {
+    quaternion: rotation,
     translation: (value: ArrayLike<number>): [number, number, number] => [
       point(value, 0),
       point(value, 1),
@@ -397,11 +400,16 @@ export function projectUvmRigModel(
       name => name !== 'UV_game_animation_clips',
     )
   }
+  // Detached with the rig: its clips (and the animation pointers and primitive visibility they
+  // drive, returned as `meshTracks`), and the joints' camera rules (returned as `billboards`).
   const sceneOnlyExtensions = new Set([
     'UV_game_effects',
     'UV_scene_lights',
     'UV_game_socket',
     'UV_game_collision',
+    'UV_game_variants',
+    'KHR_animation_pointer',
+    'UV_node_billboard',
   ])
   detached['extensions'] = Object.fromEntries(
     Object.entries(object(detached['extensions'] ?? {}, 'detached extensions')).filter(
@@ -530,6 +538,7 @@ export function projectUvmRigModel(
     if (clip.sequenceIndex !== undefined && clip.sequenceIndex !== clipIndex)
       throw new TypeError('rig authoring requires dense ordered sequence indices')
     const nodeTracks = new Map<number, Record<string, JsonValue>>()
+    const meshTracks = new Map<number, Record<string, JsonValue>>()
     for (const channel of clip.channels ?? []) {
       if (
         !['translation', 'rotation', 'scale', 'visibility'].includes(channel.kind) ||
@@ -538,8 +547,16 @@ export function projectUvmRigModel(
           (!Number.isFinite(channel.wrapSeconds) || channel.wrapSeconds <= 0))
       )
         throw new TypeError('clip requires supported bone TRS/visibility channels')
-      const boneIndex = required(nodeToBone.get(channel.target), 'animation bone target')
-      const track = nodeTracks.get(boneIndex) ?? { boneIndex }
+      // A primitive's own visibility (UV_game_variants driven by KHR_animation_pointer) is the
+      // draw's, not a bone's: it is returned per projected mesh, and the target format states how a
+      // draw toggles (M3: the batching of a bone its batch names).
+      const meshIndex = channel.kind === 'visibility' ? primitiveIds.indexOf(channel.target) : -1
+      const boneIndex =
+        meshIndex >= 0 ? undefined : required(nodeToBone.get(channel.target), 'animation bone target')
+      const track =
+        boneIndex === undefined
+          ? (meshTracks.get(meshIndex) ?? { meshIndex })
+          : (nodeTracks.get(boneIndex) ?? { boneIndex })
       if (!['step', 'linear', 'spherical-linear', 'cubic-spline'].includes(channel.interpolation ?? ''))
         throw new TypeError('unsupported clip interpolation')
       const cubic = channel.interpolation === 'cubic-spline'
@@ -559,16 +576,47 @@ export function projectUvmRigModel(
             : {}),
         })),
       }
-      nodeTracks.set(boneIndex, track)
+      if (boneIndex === undefined) meshTracks.set(meshIndex, track)
+      else nodeTracks.set(boneIndex, track)
     }
     return {
       name: clip.name,
       durationSeconds: clip.durationSeconds,
       looping: clip.looping ?? false,
       nodeTracks: [...nodeTracks.values()],
+      ...(meshTracks.size === 0 ? {} : { meshTracks: [...meshTracks.values()] }),
     }
   })
-  const bounds = boundUvmRig(rigBindings, rigPrimitives, rigClips, budget, signal)
+  // A primitive the document keeps hidden until a clip shows it (UV_game_variants value 0).
+  const meshVisibility = readUvmPrimitiveVisibility(document, signal).flatMap(entry =>
+    'mesh' in entry && entry.value <= 0
+      ? [{ meshIndex: primitiveIds.indexOf(`mesh-${entry.mesh}-primitive-${entry.primitive}`), value: 0 }]
+      : [],
+  ).filter(entry => entry.meshIndex >= 0)
+  // Bounds are the joints' reach; a primitive shown or hidden moves nothing.
+  const primitiveTargets = new Set(primitiveIds)
+  const jointClips = rigClips.map(clip =>
+    clip.channels === undefined
+      ? clip
+      : { ...clip, channels: clip.channels.filter(channel => !primitiveTargets.has(channel.target)) },
+  )
+  const bounds = boundUvmRig(rigBindings, rigPrimitives, jointClips, budget, signal)
+  // The joints' camera rules, in the frame the returned rest poses and tracks are in. A joint
+  // turned toward the camera takes camera · basis · its own rotation; a root joint's rotation now
+  // carries the baked model frame F, so its basis ends with F⁻¹: C · (B · F⁻¹) · (F · R) = C · B · R.
+  // A position-facing rule acts in the node's own axes, which the fold does not turn.
+  const billboards = readUvmBillboards(document, budget.maxScalarBytes, signal).map(constraint => {
+    const boneIndex = required(nodeToBone.get(constraint.nodeId), 'billboard joint')
+    return constraint.mode === 'inverse-camera' &&
+      frame !== undefined &&
+      isRoot(required(sorted[boneIndex], 'billboard binding'))
+      ? {
+          ...constraint,
+          boneIndex,
+          basisRotations: [...constraint.basisRotations, invertQuat(frame.quaternion)],
+        }
+      : { ...constraint, boneIndex }
+  })
   const rootBounds = boundUvmRootFrame(
     required(rigBindings[0], 'bounds root'),
     rigClips,
@@ -590,8 +638,10 @@ export function projectUvmRigModel(
         })),
       },
       animations,
+      ...(meshVisibility.length === 0 ? {} : { meshVisibility }),
     },
     restPoses,
+    billboards,
     bounds: { ...bounds, msecRadius: rootBounds.radius },
     nodeBoneIndices: Object.freeze(
       Object.fromEntries(
