@@ -215,7 +215,7 @@ function validateStandard(value: unknown, path: string, signal?: AbortSignal) {
     'usesVertexColor',
     'usesVertexAlpha',
   ])
-  flags(material, path, ['depthPrepass'], true)
+  flags(material, path, ['depthPrepass', 'specularEnergyConservation'], true)
   for (const key of ['sourceFlags', 'sourceAdditionalFlags', 'materialClass'])
     if (material[key] !== undefined) integer(material[key], `${path}.${key}`, 0, 0xffffffff)
   for (const key of ['environmentMultipliers', 'emissiveTint'])

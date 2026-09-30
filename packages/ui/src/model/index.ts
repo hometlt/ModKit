@@ -1700,6 +1700,11 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
                     clearColor: [0, 0, 0, 0],
                     light: MODEL_KEY_LIGHT,
                     materialContext: {
+                      // Scene lighting, as the headless render: the key light's ambient lights every
+                      // face and emission and environment show whatever the facing. Without it a
+                      // standard material shaded inside `lambert > 0` — faces turned from the light
+                      // drew black and lost their glow.
+                      sceneLighting: true,
                       time: drawnTime,
                       sequenceTime: drawnTime,
                       teamColor,

@@ -193,6 +193,12 @@ export interface StandardMaterialModel {
   clampOutput: boolean
   usesVertexColor: boolean
   usesVertexAlpha: boolean
+  /**
+   * StarCraft II's FakeEnergyConservingSpec (psmaterial.fx): the specular dims by a polynomial of
+   * its exponent, so broad highlights stay dim and tight ones keep their energy. M3 materials have
+   * it unless they set SimulateRoughness; absent means no dim.
+   */
+  specularEnergyConservation?: boolean
   /** Filled by the texture pipeline at bind time. */
   normalMapFormat?: NormalMapFormat
   /** Coordinate space of the decoded primary normal layer. Tangent remains the default. */

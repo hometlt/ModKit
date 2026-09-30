@@ -524,6 +524,7 @@ function shade(
     specMult: material.specMult,
     emisMult: material.emisMult,
     specMode: material.specMode,
+    ...(material.specularEnergyConservation === true ? { specularEnergyConservation: true } : {}),
     unshaded: material.unshaded,
     doubleLambert: material.doubleLambert,
     clampOutput: material.clampOutput,

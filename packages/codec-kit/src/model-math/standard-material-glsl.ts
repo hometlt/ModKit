@@ -83,6 +83,8 @@ export interface StandardMaterialDefines {
   clampOutput: boolean
   usesVertexColor: boolean
   usesVertexAlpha: boolean
+  /** FakeEnergyConservingSpec: the specular dims by a polynomial of its exponent (M3 without SimulateRoughness). */
+  specularEnergyConservation?: boolean
   /**
    * An additive (MAT_ blend 2) material: its target blend is ONE, ONE, so the colour is scaled by
    * the pixel's fade here, as PSMaterial.fx does for BlendAdd (`b_iModAlpha`: rgb *= fade). The fade
@@ -228,6 +230,7 @@ export function buildMaterialDefines(
     clampOutput: material.clampOutput,
     usesVertexColor: material.usesVertexColor,
     usesVertexAlpha: material.usesVertexAlpha,
+    ...(material.specularEnergyConservation === true ? { specularEnergyConservation: true } : {}),
     ...(material.blendMode === 2 ? { modAlpha: true } : {}),
     alphaTest: material.alphaTestThreshold > 0,
     uvSetCount: (maxUvSet + 1) as 1 | 2 | 3 | 4,
@@ -257,7 +260,7 @@ export function canonicalDefineKey(defines: StandardMaterialDefines): string {
     `layers[${layerKeys}]` +
     `;n=${defines.normalMapFormat}.${defines.normalMapSpace};spec=${defines.specMode}` +
     `;${defines.unshaded ? 'U' : ''}${defines.doubleLambert ? 'D' : ''}${defines.clampOutput ? 'C' : ''}` +
-    `${defines.usesVertexColor ? 'vc' : ''}${defines.usesVertexAlpha ? 'va' : ''}${defines.modAlpha ? 'ma' : ''}${defines.alphaTest ? 'at' : ''}` +
+    `${defines.usesVertexColor ? 'vc' : ''}${defines.usesVertexAlpha ? 'va' : ''}${defines.modAlpha ? 'ma' : ''}${defines.alphaTest ? 'at' : ''}${defines.specularEnergyConservation ? 'ec' : ''}` +
     `;uv=${defines.uvSetCount};${defines.gpuSkinning ? 'skin' : ''}${defines.hardwareInstancing ? 'inst' : ''}${defines.bakedPoseInstancing ? 'baked' : ''}` +
     `${defines.sceneLighting ? ';scene' : ''}`
   )
@@ -482,6 +485,8 @@ export interface CpuPixelInput {
   emissiveTint?: Vec3
   environmentMultipliers?: Vec3
   specMode: 0 | 1
+  /** FakeEnergyConservingSpec, as the GLSL define of the same name. */
+  specularEnergyConservation?: boolean
   unshaded: boolean
   doubleLambert: boolean
   clampOutput: boolean
@@ -728,6 +733,27 @@ export function composeStandardPixelCpu(input: CpuPixelInput): CpuPixelResult {
   let final: [number, number, number, number] =
     scene === undefined ? [ambient[0], ambient[1], ambient[2], ambient[3]] : [0, 0, 0, 0]
 
+  // Mirrors the GLSL specularBlock: gloss alpha squared, the FakeEnergyConservingSpec dim, the
+  // sign(N·L) gate.
+  const specularCpu = (lambert: number): [number, number, number] => {
+    if (!layers.specular || !(lambert > 0)) return [0, 0, 0]
+    const specColor = computeLayerColorCpu(layers.specular, teamColor)
+    let power = input.specularity
+    if (layers.gloss) {
+      const gloss = computeLayerColorCpu(layers.gloss, teamColor)[3]
+      power *= gloss * gloss
+    }
+    let energy = 1
+    if (input.specularEnergyConservation === true) {
+      const p = Math.min(Math.max(power, 1), 512)
+      energy = clamp01(-0.000004444 * p * p + 0.004333 * p + 0.0020834)
+    }
+    const factor =
+      Math.pow(Math.max(-dot3(halfVec, normal), 0), Math.max(power, 1)) * input.specMult * energy
+    return input.specMode === 1
+      ? [specColor[3] * factor, specColor[3] * factor, specColor[3] * factor]
+      : [specColor[0] * factor, specColor[1] * factor, specColor[2] * factor]
+  }
   if (input.unshaded) {
     // 0x10: skip lambert/spec entirely — color + emissive.
     const rgb = applyEmissive(applyEnvironment(color, 0, [0, 0, 0]))
@@ -736,23 +762,10 @@ export function composeStandardPixelCpu(input: CpuPixelInput): CpuPixelResult {
     // Mirrors the GLSL sceneLighting branch: ambient lights the diffuse color on every face.
     const nl = dot3(normal, lightDir)
     const lambert = input.doubleLambert ? clamp01(-1 + 2 * nl) : Math.max(nl, 0)
-    let spec: [number, number, number] = [0, 0, 0]
-    if (layers.specular && lambert > 0) {
-      const specColor = computeLayerColorCpu(layers.specular, teamColor)
-      const gloss = layers.gloss
-        ? Math.max(computeLayerColorCpu(layers.gloss, teamColor)[0], 0.001)
-        : 1
-      const factor =
-        Math.pow(Math.max(-dot3(halfVec, normal), 0), Math.max(input.specularity * gloss, 1)) *
-        input.specMult
-      spec =
-        input.specMode === 1
-          ? [specColor[3] * factor, specColor[3] * factor, specColor[3] * factor]
-          : [specColor[0] * factor, specColor[1] * factor, specColor[2] * factor]
-    }
+    const spec = specularCpu(lambert)
     const lit = (channel: 0 | 1 | 2) =>
       color[channel] * (scene.ambientColor[channel] + scene.lightColor[channel] * lambert) +
-      spec[channel] * scene.lightColor[channel] * lambert
+      spec[channel] * scene.lightColor[channel]
     const rgb = applyEmissive(applyEnvironment([lit(0), lit(1), lit(2)], lambert, spec))
     final = [final[0] + rgb[0], final[1] + rgb[1], final[2] + rgb[2], final[3]]
   } else {
@@ -761,20 +774,7 @@ export function composeStandardPixelCpu(input: CpuPixelInput): CpuPixelResult {
     if (lambert > 0) {
       // Specular: reference factor with the spec_mode channel choice; the
       // sign-clamp (lightingmodels.fx:41) is implied by the lambert>0 guard.
-      let spec: [number, number, number] = [0, 0, 0]
-      if (layers.specular) {
-        const specColor = computeLayerColorCpu(layers.specular, teamColor)
-        const gloss = layers.gloss
-          ? Math.max(computeLayerColorCpu(layers.gloss, teamColor)[0], 0.001)
-          : 1
-        const factor =
-          Math.pow(Math.max(-dot3(halfVec, normal), 0), Math.max(input.specularity * gloss, 1)) *
-          input.specMult
-        spec =
-          input.specMode === 1
-            ? [specColor[3] * factor, specColor[3] * factor, specColor[3] * factor]
-            : [specColor[0] * factor, specColor[1] * factor, specColor[2] * factor]
-      }
+      const spec = specularCpu(lambert)
       let rgb: [number, number, number] = [
         (color[0] + spec[0]) * lambert,
         (color[1] + spec[1]) * lambert,
@@ -1322,6 +1322,33 @@ export function buildStandardFragmentSource(
     return lines
   }
 
+  // psmaterial.fx MaterialSpecularity: a gloss layer scales the exponent by its alpha squared;
+  // FakeEnergyConservingSpec dims the colour by a polynomial of that exponent. The highlight is
+  // gated where the key light does not reach (lambert, already remapped for double Lambert).
+  const specularBlock = (indent: string): string[] => {
+    if (!layerBySlot.has('specular')) return [`${indent}vec3 spec = vec3(0.0);`]
+    return [
+      `${indent}vec4 specColor = computeLayer_specular();`,
+      `${indent}float specPower = u_specularity;`,
+      ...(layerBySlot.has('gloss')
+        ? [
+            `${indent}float gloss = computeLayer_gloss().a;`,
+            `${indent}specPower *= gloss * gloss;`,
+          ]
+        : []),
+      ...(defines.specularEnergyConservation
+        ? [
+            `${indent}float specClamped = clamp(specPower, 1.0, 512.0);`,
+            `${indent}float specEnergy = clamp(-0.000004444 * specClamped * specClamped + 0.004333 * specClamped + 0.0020834, 0.0, 1.0);`,
+          ]
+        : [`${indent}float specEnergy = 1.0;`]),
+      `${indent}float specFactor = lambert > 0.0 ? pow(max(-dot(v_halfVec, normal), 0.0), max(specPower, 1.0)) * u_specMult * specEnergy : 0.0;`,
+      defines.specMode === 1
+        ? `${indent}vec3 spec = vec3(specColor.a) * specFactor;`
+        : `${indent}vec3 spec = specColor.rgb * specFactor;`,
+    ]
+  }
+
   if (defines.unshaded) {
     body.push('  vec3 shaded = color;')
     body.push(...environmentBlock('  ', 'shaded', '0.0', 'vec3(0.0)'))
@@ -1333,27 +1360,10 @@ export function buildStandardFragmentSource(
         ? '  float lambert = clamp(-1.0 + 2.0 * dot(normal, v_lightDir), 0.0, 1.0);'
         : '  float lambert = max(dot(normal, v_lightDir), 0.0);',
     )
-    const specular = layerBySlot.get('specular')
-    if (specular) {
-      body.push('  vec4 specColor = computeLayer_specular();')
-      body.push(
-        layerBySlot.has('gloss')
-          ? '  float gloss = max(computeLayer_gloss().r, 0.001);'
-          : '  float gloss = 1.0;',
-      )
-      body.push(
-        '  float specFactor = lambert > 0.0 ? pow(max(-dot(v_halfVec, normal), 0.0), max(u_specularity * gloss, 1.0)) * u_specMult : 0.0;',
-      )
-      body.push(
-        defines.specMode === 1
-          ? '  vec3 spec = vec3(specColor.a) * specFactor;'
-          : '  vec3 spec = specColor.rgb * specFactor;',
-      )
-    } else {
-      body.push('  vec3 spec = vec3(0.0);')
-    }
+    body.push(...specularBlock('  '))
+    // Blinn with the sign(N·L) gate (lightingmodels.fx): the highlight is not scaled by N·L.
     body.push(
-      '  vec3 shaded = color * (u_sceneAmbientColor + u_sceneLightColor * lambert) + spec * u_sceneLightColor * lambert;',
+      '  vec3 shaded = color * (u_sceneAmbientColor + u_sceneLightColor * lambert) + spec * u_sceneLightColor;',
     )
     body.push(...environmentBlock('  ', 'shaded', 'lambert', 'spec'))
     body.push(...emissiveBlock('  ', 'shaded'))
@@ -1365,25 +1375,7 @@ export function buildStandardFragmentSource(
       body.push('  float lambert = max(dot(normal, v_lightDir), 0.0);')
     }
     body.push('  if (lambert > 0.0) {')
-    const specular = layerBySlot.get('specular')
-    if (specular) {
-      body.push('    vec4 specColor = computeLayer_specular();')
-      if (layerBySlot.has('gloss')) {
-        body.push('    float gloss = max(computeLayer_gloss().r, 0.001);')
-      } else {
-        body.push('    float gloss = 1.0;')
-      }
-      body.push(
-        '    float specFactor = pow(max(-dot(v_halfVec, normal), 0.0), max(u_specularity * gloss, 1.0)) * u_specMult;',
-      )
-      body.push(
-        defines.specMode === 1
-          ? '    vec3 spec = vec3(specColor.a) * specFactor;'
-          : '    vec3 spec = specColor.rgb * specFactor;',
-      )
-    } else {
-      body.push('    vec3 spec = vec3(0.0);')
-    }
+    body.push(...specularBlock('    '))
     body.push('    vec3 shaded = (color + spec) * lambert;')
     body.push(...environmentBlock('    ', 'shaded', 'lambert', 'spec'))
     body.push(...emissiveBlock('    ', 'shaded'))

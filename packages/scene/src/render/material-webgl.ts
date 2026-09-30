@@ -1087,7 +1087,7 @@ function buildLeaseShaderSources(
   const worldShading = source.normalBlendPolicy !== undefined || source.normalMapSpace === 'object'
   if (source.defines.sceneLighting) {
     fragment = fragment.replace('uniform vec3 u_sceneLightColor;', 'uniform vec3 u_sceneLightColor;\nuniform vec3 u_sceneSpecularColor;')
-      .replace('spec * u_sceneLightColor * lambert', 'spec * u_sceneSpecularColor * lambert')
+      .replace('spec * u_sceneLightColor;', 'spec * u_sceneSpecularColor;')
     const lambert = (direction: string) => source.defines.doubleLambert
       ? `clamp(-1.0 + 2.0 * dot(normal, ${direction}), 0.0, 1.0)`
       : `max(dot(normal, ${direction}), 0.0)`
