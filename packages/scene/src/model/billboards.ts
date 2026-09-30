@@ -180,11 +180,15 @@ export function applyModelBillboards(
     source.set(item.boneIndex, item)
   }
   if (!pose.some(item => byNode.has(item.nodeId))) return pose
+  // The camera's own rotation — camera to world, then into the authored frame — is what turns the
+  // node toward it: rotation = parent⁻¹ · camera · basis · local, mdx-m3-viewer's
+  // `parent.inverseWorldRotation · camera.inverseRotation`, whose camera.inverseRotation is the
+  // camera-to-world turn `billboardCameraRotation` returns. Inverting it once more turned the node
+  // away as the camera went round: it faced the viewer from one side only.
   const cameraInFrame = multiplyQuat(
-      invertQuat(decomposeMatrix4(matrix(hierarchyFrame)).rotation),
-      rotation(cameraRotation),
-    ),
-    cameraInverse = invertQuat(cameraInFrame)
+    invertQuat(decomposeMatrix4(matrix(hierarchyFrame)).rotation),
+    rotation(cameraRotation),
+  )
   const adjusted = new Map<number, Float32Array>(),
     output = new Map<number, ModelBonePoseSample>()
   for (const entry of pose) {
@@ -226,7 +230,7 @@ export function applyModelBillboards(
             adjustedParent === undefined
               ? ([0, 0, 0, 1] as const)
               : invertQuat(decomposeMatrix4(adjustedParent).rotation)
-        let facing = multiplyQuat(parentInverse, cameraInverse)
+        let facing = multiplyQuat(parentInverse, cameraInFrame)
         for (const basis of constraint.basisRotations)
           facing = multiplyQuat(facing, rotation(basis))
         facing = multiplyQuat(facing, localTransform.rotation)

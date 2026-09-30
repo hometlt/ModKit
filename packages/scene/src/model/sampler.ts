@@ -45,6 +45,17 @@ export interface ModelRenderJoint {
 const IDENTITY = new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1])
 
 /**
+ * The camera one sample is drawn from, for the model's camera-facing nodes: its rotation from camera
+ * to the model's frame (`billboardCameraRotation` of the view the model is drawn with) and its
+ * position in that frame. An interactive viewer hands it to every `sample`; either part it leaves
+ * out falls back to the sampler's own.
+ */
+export interface ModelSceneCamera {
+  readonly rotation?: BillboardRotation
+  readonly position?: BillboardPosition
+}
+
+/**
  * A skinned primitive posed on the GPU (option `skinning: 'gpu'`): its vertex arrays stay in the
  * bind pose and the vertex stage blends the palette's matrices by `joints` and `weights`, as the CPU
  * kernel does: the weights over their sum, and a vertex without weight left where it is.
@@ -168,9 +179,15 @@ function drawn(primitive: ModelPrimitive): ModelPrimitive {
 export function createModelSceneSampler(
   projection: ModelSceneProjection,
   options: {
+    /** Constraints the caller states; a node's own `ModelNode.billboard` applies where none is. */
     readonly billboards?: readonly ModelBillboardConstraint[]
     readonly billboardCameraRotation?: BillboardRotation
     readonly billboardCameraPosition?: BillboardPosition
+    /**
+     * The camera comes with every `sample` (a viewer the user orbits), so its absence at creation
+     * is not a missing camera.
+     */
+    readonly billboardCameraPerSample?: boolean
     readonly clip?: ModelAnimationClip
     readonly poseSamples?: readonly ModelPoseBlendSample[]
     /** Reference render time; historical anchors add their signed offset to every explicit sample. */
@@ -197,7 +214,25 @@ export function createModelSceneSampler(
     signal,
   ) as unknown as Pick<ModelSceneProjection, 'nodes' | 'meshes'>
   const bindings = snapshotModelSkeleton(projection.skeleton ?? [], budget, signal)
-  const billboards = snapshotModelBillboards(options.billboards ?? [], maxBytes, signal)
+  // A node's own camera rule stands unless the caller states one for that node. A rule its node
+  // cannot take — inverse-camera without a pose binding, face-camera on a bound bone — keeps the
+  // authored pose and says so instead of refusing the whole scene.
+  const stated = new Set((options.billboards ?? []).map(item => item.nodeId))
+  const unusable: string[] = []
+  const declared = projection.nodes.flatMap((node): ModelBillboardConstraint[] => {
+    if (node.billboard === undefined || stated.has(node.id)) return []
+    const bound = bindings.some(bone => bone.nodeId === node.id)
+    if (node.billboard.mode === 'inverse-camera' ? !bound : bound) {
+      unusable.push(node.id)
+      return []
+    }
+    return [{ nodeId: node.id, ...node.billboard } as ModelBillboardConstraint]
+  })
+  const billboards = snapshotModelBillboards(
+    [...(options.billboards ?? []), ...declared],
+    maxBytes,
+    signal,
+  )
   const billboardBytes =
     billboards.length === 0 ? 0 : bindings.length * 2048 + billboards.length * 512
   if (billboardBytes > maxBytes) throw new RangeError('scene billboards exceed byte budget')
@@ -227,12 +262,25 @@ export function createModelSceneSampler(
       ...(primitiveId === undefined ? {} : { primitiveId }),
     })
   }
-  if (billboards.some(item => item.mode === 'inverse-camera') && billboardCamera === undefined)
+  if (unusable.length > 0)
+    report(
+      'billboard-node-unsupported',
+      `Nodes ${unusable.join(', ')} declare a camera rule their binding cannot take; authored poses are retained.`,
+    )
+  if (
+    billboards.some(item => item.mode === 'inverse-camera') &&
+    billboardCamera === undefined &&
+    options.billboardCameraPerSample !== true
+  )
     report(
       'billboard-camera-required',
       'Node billboard constraints require an explicit camera orientation; authored poses are retained.',
     )
-  if (billboards.some(item => item.mode === 'face-camera') && billboardPosition === undefined)
+  if (
+    billboards.some(item => item.mode === 'face-camera') &&
+    billboardPosition === undefined &&
+    options.billboardCameraPerSample !== true
+  )
     report(
       'billboard-camera-position-required',
       'Position-facing billboard constraints require an explicit camera position; authored poses are retained.',
@@ -649,9 +697,13 @@ export function createModelSceneSampler(
   }
   return Object.freeze({
     diagnostics: Object.freeze(diagnostics),
-    sample(timeSeconds: number, requestSignal?: AbortSignal) {
+    sample(timeSeconds: number, requestSignal?: AbortSignal, camera?: ModelSceneCamera) {
       if (!Number.isFinite(timeSeconds)) throw new TypeError('scene time must be finite')
       if (requestSignal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
+      const cameraRotation =
+        camera?.rotation === undefined ? billboardCamera : sampleRotation(camera.rotation)
+      const cameraPosition =
+        camera?.position === undefined ? billboardPosition : samplePosition(camera.position)
       const poses = new Map<string, readonly ModelBonePoseSample[]>()
       const animatedWorlds = new Map<string, Float32Array>()
       // stored invisible until a clip shows it; a sampled visibility decides either way
@@ -682,7 +734,7 @@ export function createModelSceneSampler(
           originalPose,
           [...present(hierarchyBindings.get(hierarchyId), 'billboard bindings').values()],
           billboards,
-          billboardCamera,
+          cameraRotation,
           present(hierarchyFrames.get(hierarchyId), 'billboard frame'),
           billboardBytes,
           requestSignal,
@@ -734,9 +786,9 @@ export function createModelSceneSampler(
           )
           const face = faceBillboards.get(id)
           const adjusted =
-            face === undefined || billboardPosition === undefined
+            face === undefined || cameraPosition === undefined
               ? matrix
-              : applyModelFaceCameraBillboard(matrix, face, billboardPosition)
+              : applyModelFaceCameraBillboard(matrix, face, cameraPosition)
           if (!adjusted.every(Number.isFinite))
             throw new RangeError('animated scene transform exceeds finite float range')
           animatedWorlds.set(id, adjusted)
@@ -810,4 +862,18 @@ export function createModelSceneSampler(
       }
     },
   })
+}
+
+/** A sample's own camera rotation, owned and checked like the creation-time one. */
+function sampleRotation(value: BillboardRotation): BillboardRotation {
+  if (value.length !== 4 || !value.every(Number.isFinite) || Math.hypot(...value) === 0)
+    throw new TypeError('sample camera rotation must be a finite nonzero quaternion')
+  return [value[0], value[1], value[2], value[3]]
+}
+
+/** A sample's own camera position, owned and checked like the creation-time one. */
+function samplePosition(value: BillboardPosition): BillboardPosition {
+  if (value.length !== 3 || !value.every(Number.isFinite))
+    throw new TypeError('sample camera position must contain three finite numbers')
+  return [value[0], value[1], value[2]]
 }

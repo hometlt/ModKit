@@ -417,6 +417,7 @@ export {
   type ModelMesh,
   type ModelMorphTarget,
   type ModelNode,
+  type ModelNodeBillboard,
   type ModelNodeTrs,
   type ModelPrimitive,
   type ModelPrimitiveRequest,

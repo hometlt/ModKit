@@ -351,7 +351,34 @@ export interface ModelNode {
    * matrix is never decomposed implicitly.
    */
   readonly trs?: ModelNodeTrs
+  /**
+   * The rule the engine turns this node toward the camera by, when it does (`UV_node_billboard`).
+   * A renderer applies it every frame for the camera it draws with; the authored pose is what it
+   * shows without one.
+   */
+  readonly billboard?: ModelNodeBillboard
 }
+
+/**
+ * A camera-facing node, in the vocabulary of `UV_node_billboard` (schema 1).
+ *
+ * `inverse-camera`: the node's rotation becomes its parent's inverse, the camera's rotation (camera
+ * to model frame), the format's ordered `basisRotations` (unit quaternions `[x, y, z, w]`) and then
+ * its own — mdx-m3-viewer's skeletal billboard, which turns Warcraft III's and StarCraft II's cards
+ * toward the viewer from every side. It applies to a node the skeleton binds.
+ * `face-camera`: a rigid node's local +Y faces the camera position about its local `pivot`,
+ * turning about local Z (`z`) or pitching about local X first (`xz`).
+ */
+export type ModelNodeBillboard =
+  | {
+      readonly mode: 'inverse-camera'
+      readonly basisRotations: readonly (readonly [number, number, number, number])[]
+    }
+  | {
+      readonly mode: 'face-camera'
+      readonly rotationAxes: 'z' | 'xz'
+      readonly pivot: readonly [number, number, number]
+    }
 
 export interface ModelNodeTrs {
   readonly translation: readonly [number, number, number]

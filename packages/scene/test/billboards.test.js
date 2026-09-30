@@ -67,7 +67,7 @@ const projection = {
   primitives: [],
   skeleton: [root, child],
 }
-test('common node constraint samples inverse camera rotation and propagates adjusted scaled parents', () => {
+test('common node constraint turns the node by the camera rotation and propagates adjusted scaled parents', () => {
   const before = structuredClone(projection),
     s = Math.sin(Math.PI / 4),
     c = Math.cos(Math.PI / 4)
@@ -76,13 +76,13 @@ test('common node constraint samples inverse camera rotation and propagates adju
     billboardCameraRotation: [0, 0, s, c],
   })
   const sampled = sampler.sample(0)
-  close(sampled.nodeTransforms.get('root'), [0, -2, 0, 0, 3, 0, 0, 0, 0, 0, 1, 0, 2, 0, 0, 1])
-  close(sampled.nodeTransforms.get('child'), [0, -2, 0, 0, 3, 0, 0, 0, 0, 0, 1, 0, 2, -2, 0, 1])
+  close(sampled.nodeTransforms.get('root'), [0, 2, 0, 0, -3, 0, 0, 0, 0, 0, 1, 0, 2, 0, 0, 1])
+  close(sampled.nodeTransforms.get('child'), [0, 2, 0, 0, -3, 0, 0, 0, 0, 0, 1, 0, 2, 2, 0, 1])
   assert.deepEqual(
     sampled.joints.map(joint => joint.position.map(value => Math.round(value))),
     [
       [2, 0, 0],
-      [2, -2, 0],
+      [2, 2, 0],
     ],
   )
   assert.deepEqual(projection, before)
@@ -118,8 +118,8 @@ test('billboard skin matrices use adjusted worlds and preserve the exact authore
     identity,
     100000,
   )
-  close(result[0].skinningMatrix, [0, -2, 0, 0, 3, 0, 0, 0, 0, 0, 1, 0, 2, 0, 0, 1])
-  close(result[1].skinningMatrix, [0, -2, 0, 0, 3, 0, 0, 0, 0, 0, 1, 0, 2, -2, 0, 1])
+  close(result[0].skinningMatrix, [0, 2, 0, 0, -3, 0, 0, 0, 0, 0, 1, 0, 2, 0, 0, 1])
+  close(result[1].skinningMatrix, [0, 2, 0, 0, -3, 0, 0, 0, 0, 0, 1, 0, 2, 2, 0, 1])
   assert.deepEqual(pose, before)
   assert.throws(
     () => applyModelBillboards(pose, [root, child], constraints, [0, 0, s, s], identity, 1),
@@ -209,6 +209,116 @@ test('camera world orientation comes from inverse view and common frame is appli
   }).sample(0)
   close(sampled.nodeTransforms.get('root'), [0, 2, 0, 0, -3, 0, 0, 0, 0, 0, 1, 0, 0, 2, 0, 1])
   close(sampled.nodeTransforms.get('child'), [0, 2, 0, 0, -3, 0, 0, 0, 0, 0, 1, 0, 0, 4, 0, 1])
+})
+
+test('an inverse-camera billboard faces the camera from every side, as mdx-m3-viewer turns it', () => {
+  // A look-at view from an eye onto the origin, z up (mdx-m3-viewer's Warcraft III and StarCraft II
+  // worlds), column-major like every view the renderers pass.
+  const lookAt = eye => {
+    const length = Math.hypot(...eye),
+      forward = eye.map(value => -value / length),
+      up = Math.abs(forward[2]) > 0.99 ? [0, 1, 0] : [0, 0, 1]
+    let side = [
+      forward[1] * up[2] - forward[2] * up[1],
+      forward[2] * up[0] - forward[0] * up[2],
+      forward[0] * up[1] - forward[1] * up[0],
+    ]
+    const sideLength = Math.hypot(...side)
+    side = side.map(value => value / sideLength)
+    const above = [
+      side[1] * forward[2] - side[2] * forward[1],
+      side[2] * forward[0] - side[0] * forward[2],
+      side[0] * forward[1] - side[1] * forward[0],
+    ]
+    const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
+    return [
+      side[0], above[0], -forward[0], 0,
+      side[1], above[1], -forward[1], 0,
+      side[2], above[2], -forward[2], 0,
+      -dot(side, eye), -dot(above, eye), dot(forward, eye), 1,
+    ]
+  }
+  const s = Math.SQRT1_2,
+    bone = {
+      ...root,
+      nodeId: 'node-0',
+      localPose: { translation: [0, 0, 0], rotation: [0, 0, 0, 1], scale: [1, 1, 1] },
+    },
+    pose = [{ boneIndex: 0, nodeId: 'node-0', worldMatrix: identity, skinningMatrix: identity }]
+  // Warcraft III (mdx-m3-viewer mdx/node.ts: rotateY(-π/2), rotateX(-π/2)) and StarCraft II
+  // (m3/node.ts: rotateZ(π/2), rotateY(-π/2)) both turn the node's +X toward the viewer.
+  const bases = {
+    mdx: [
+      [0, -s, 0, s],
+      [-s, 0, 0, s],
+    ],
+    m3: [
+      [0, 0, s, s],
+      [0, -s, 0, s],
+    ],
+  }
+  for (const [format, basisRotations] of Object.entries(bases))
+    for (const eye of [
+      [5, 0, 0],
+      [0, 5, 0],
+      [-5, 0, 0],
+      [0, -5, 0],
+      [3, 3, 3],
+      [-2, 4, -1],
+    ]) {
+      const [world] = applyModelBillboards(
+        pose,
+        [bone],
+        [{ nodeId: 'node-0', mode: 'inverse-camera', basisRotations }],
+        billboardCameraRotation(lookAt(eye)),
+        identity,
+        100000,
+      )
+      const toCamera = eye.map(value => value / Math.hypot(...eye)),
+        x = world.worldMatrix.slice(0, 3)
+      assert(
+        Math.abs(x[0] * toCamera[0] + x[1] * toCamera[1] + x[2] * toCamera[2] - 1) < 1e-6,
+        `${format} from ${eye}: +X ${x} does not face the camera`,
+      )
+      // A Warcraft III card stands upright for a level camera.
+      if (format === 'mdx' && eye[2] === 0) close(world.worldMatrix.slice(8, 11), [0, 0, 1])
+    }
+})
+
+test('a node declares its own camera rule, and a viewer hands the camera to every sample', () => {
+  const s = Math.SQRT1_2,
+    declared = {
+      ...projection,
+      nodes: projection.nodes.map(node =>
+        node.id === 'root' ? { ...node, billboard: { mode: 'inverse-camera', basisRotations: [] } } : node,
+      ),
+    }
+  const sampler = createModelSceneSampler(declared, { billboardCameraPerSample: true })
+  // A camera that comes with every sample is not missing at creation.
+  assert.deepEqual(sampler.diagnostics, [])
+  close(sampler.sample(0).nodeTransforms.get('root'), rootMatrix)
+  close(sampler.sample(0, undefined, { rotation: [0, 0, s, s] }).nodeTransforms.get('root'), [
+    0, 2, 0, 0, -3, 0, 0, 0, 0, 0, 1, 0, 2, 0, 0, 1,
+  ])
+  // The same sampler follows the camera round without being rebuilt.
+  close(sampler.sample(0, undefined, { rotation: [0, 0, -s, s] }).nodeTransforms.get('root'), [
+    0, -2, 0, 0, 3, 0, 0, 0, 0, 0, 1, 0, 2, 0, 0, 1,
+  ])
+  // A rule the caller states for the node wins over the node's own.
+  const stated = createModelSceneSampler(declared, {
+    billboards: [{ nodeId: 'root', mode: 'inverse-camera', basisRotations: [[0, 0, 1, 0]] }],
+    billboardCameraRotation: [0, 0, 0, 1],
+  })
+  close(stated.sample(0).nodeTransforms.get('root'), [-2, 0, 0, 0, 0, -3, 0, 0, 0, 0, 1, 0, 2, 0, 0, 1])
+  // A camera rule on a node no binding poses is reported, not fatal.
+  const rigid = createModelSceneSampler(
+    { ...declared, skeleton: [] },
+    { billboardCameraPerSample: true },
+  )
+  assert.deepEqual(
+    rigid.diagnostics.map(item => item.code),
+    ['common.model/billboard-node-unsupported'],
+  )
 })
 
 test('position-facing billboard rotates rigid nodes around a local pivot and propagates to children', () => {

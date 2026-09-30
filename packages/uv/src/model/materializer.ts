@@ -1184,6 +1184,39 @@ export function materializeUvmCore(
     })
   }
 
+  // A node's camera rule, as `UV_node_billboard` schema 1 (scene `uvm/billboards.ts` reads it back).
+  let billboardNodes = 0
+  const nodeBillboard = (id: string, billboard: NonNullable<ModelNode['billboard']>): UvmJsonObject => {
+    if (billboard.mode === 'inverse-camera') {
+      const rotations: readonly (readonly number[])[] = billboard.basisRotations
+      if (rotations.length > 4) fail(`node «${id}» billboard needs at most four basis rotations`)
+      for (const rotation of rotations)
+        if (
+          rotation.length !== 4 ||
+          !rotation.every((value: number) => Number.isFinite(Math.fround(value))) ||
+          Math.hypot(...rotation) === 0
+        )
+          fail(`node «${id}» billboard basis rotation must be a finite nonzero quaternion`)
+      return {
+        schemaVersion: 1,
+        mode: 'inverse-camera',
+        basisRotations: rotations.map(rotation => [...rotation]),
+      }
+    }
+    if (billboard.mode === 'face-camera') {
+      if (billboard.rotationAxes !== 'z' && billboard.rotationAxes !== 'xz')
+        fail(`node «${id}» billboard rotation axes must be z or xz`)
+      finite([...billboard.pivot], `node ${id} billboard pivot`)
+      if (billboard.pivot.length !== 3) fail(`node «${id}» billboard pivot must carry 3 numbers`)
+      return {
+        schemaVersion: 1,
+        mode: 'face-camera',
+        rotationAxes: billboard.rotationAxes,
+        pivot: [...billboard.pivot],
+      }
+    }
+    return fail(`node «${id}» billboard mode is unknown`)
+  }
   const documentNodes = orderedNodes.map(node => {
     const entry: DocumentNode = {}
     const bone = skeleton?.boneByNode.get(node.id)
@@ -1230,7 +1263,13 @@ export function materializeUvmCore(
       entry.matrix = transform
     }
     const socket = socketByNodeId.get(node.id)
-    if (socket !== undefined) entry.extensions = { UV_game_socket: socket }
+    const billboard = node.billboard === undefined ? undefined : nodeBillboard(node.id, node.billboard)
+    if (billboard !== undefined) billboardNodes += 1
+    if (socket !== undefined || billboard !== undefined)
+      entry.extensions = {
+        ...(socket === undefined ? {} : { UV_game_socket: socket }),
+        ...(billboard === undefined ? {} : { UV_node_billboard: billboard }),
+      }
     return entry
   })
 
@@ -1489,6 +1528,7 @@ export function materializeUvmCore(
       'UV_asset',
       'UV_provenance',
       ...(socketByNodeId.size === 0 ? [] : ['UV_game_socket']),
+      ...(billboardNodes === 0 ? [] : ['UV_node_billboard']),
       ...(materials.some(material => material.extensions?.UV_game_material !== undefined)
         ? ['UV_game_material']
         : []),

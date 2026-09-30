@@ -1,6 +1,7 @@
 /** Portable scene processing; this entrypoint imports no DOM, GPU, host or native codec runtime. */
 export {
   createModelSceneSampler,
+  type ModelSceneCamera,
   type ModelSceneProjection,
   type ModelRenderJoint,
 } from './sampler.js'

@@ -25,7 +25,7 @@ import type {
   SceneRendererTexture,
   ViewerModule,
 } from '@modkit/sdk'
-import { createModelSceneSampler } from '@modkit/scene/model'
+import { billboardCameraRotation, createModelSceneSampler } from '@modkit/scene/model'
 import { applyColorKeyTransparency } from '@modkit/codec-kit/raster'
 import { loadModelStage, readModelRecords, MODEL_MAXIMUM_RECORDS } from './source.js'
 import { orientPrimitive, upAxisCorrection } from './scene.js'
@@ -61,6 +61,7 @@ import {
   multiply4x4,
   projectPoint,
   sceneMaterials,
+  type CameraPlacement,
   type SkeletonJoint,
 } from './scene.js'
 import { type UiLocalizer, type UiMessageKey } from '../localization/index.js'
@@ -1125,6 +1126,27 @@ function mountClipRename(
   }
 }
 
+/**
+ * The orbit camera in the model's own frame, as the scene sampler's camera-facing nodes take it: its
+ * rotation from the view composed with the viewer's up-axis turn, its eye brought back through that
+ * turn (a rotation, so its transpose).
+ */
+function modelFrameCamera(placement: CameraPlacement, correction: Float32Array | undefined) {
+  const view =
+    correction === undefined ? placement.viewMatrix : multiply4x4(placement.viewMatrix, correction)
+  const [x, y, z] = placement.eye
+  const position: [number, number, number] =
+    correction === undefined
+      ? [x, y, z]
+      : [0, 1, 2].map(
+          axis =>
+            (correction[axis * 4] ?? 0) * x +
+            (correction[axis * 4 + 1] ?? 0) * y +
+            (correction[axis * 4 + 2] ?? 0) * z,
+        ) as [number, number, number]
+  return { rotation: billboardCameraRotation(Array.from(view)), position }
+}
+
 export function createModelViewer(options: ModelViewerOptions = {}): ViewerModule {
   const localizer = withEnglishUiFallback(options.localizer, MODEL_FALLBACK_MESSAGES)
   return defineViewerModule({
@@ -1539,7 +1561,11 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
                   ...sampled,
                   primitives: sampled.primitives.map(one => orientPrimitive(one, correction)),
                 }
-          let player = createModelSceneSampler(projection, { signal: scope.signal })
+          // Camera-facing nodes turn every frame toward the orbit camera, which `redraw` hands over.
+          let player = createModelSceneSampler(projection, {
+            signal: scope.signal,
+            billboardCameraPerSample: true,
+          })
           let scene = orient(player.sample(0, scope.signal))
           let selectedPrimitive: string | undefined
           let activeClip: ModelAnimationClip | undefined
@@ -1632,8 +1658,14 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
               redrawPending = true
               return
             }
+            // The orbit camera of this frame, placed before the pose is sampled: a billboarded node
+            // turns toward it. The camera is stated in the model's own frame — the viewer turns a
+            // z-up model upright only after sampling — so the view is composed with that turn.
+            const viewPlacement = modelCamera(framing(), camera.basis(), pose.distanceScale, viewport)
             try {
-              scene = orient(player.sample(timeSeconds, scope.signal))
+              scene = orient(
+                player.sample(timeSeconds, scope.signal, modelFrameCamera(viewPlacement, correction)),
+              )
             } catch (error) {
               setViewerText(playbackStatus, error instanceof Error ? error.message : String(error))
               canvas.setAttribute('data-model-pose-diagnostics', 'common.model/pose-failed')
@@ -2015,6 +2047,7 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
                   const clip = clips.find(item => item.id === selector.value)
                   const nextPlayer = createModelSceneSampler(projection, {
                     signal: scope.signal,
+                    billboardCameraPerSample: true,
                     ...(clip === undefined ? {} : { clip }),
                   })
                   player = nextPlayer
