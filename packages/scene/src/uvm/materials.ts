@@ -39,6 +39,42 @@ function layerList(material: JsonObject): { label: string; path: string }[] {
   return out
 }
 
+/**
+ * The blend equation `UV_game_material.blendMode` states (SPEC_UVM_EXTENSIONS), for the equations
+ * glTF's alphaMode cannot say: `additive`, `modulate`, `modulate2x`. The base-colour route draws
+ * them as a simple effect over the material's own texture, without writing depth. A material with
+ * its own render model draws through that program, which states its blend itself.
+ *
+ * Without this, a light cone or an exhaust flame authored additive — black where it adds nothing —
+ * drew as an opaque black card over the model (Kane's Wrath's vehicles).
+ */
+export function uvmMaterialBlendEffect(
+  material: JsonObject,
+  wrap: () => { readonly wrapU: 'repeat' | 'clamp'; readonly wrapV: 'repeat' | 'clamp' },
+): SceneRendererMaterial['simpleEffect'] {
+  const extension = field(material['extensions'], 'UV_game_material')
+  if (extension === undefined) return undefined
+  const data = object(extension, 'game material')
+  const mode = data['blendMode']
+  const blend =
+    mode === 'additive' || mode === 'modulate' || mode === 'modulate2x' ? mode : undefined
+  if (blend === undefined) return undefined
+  const renderModel = field(object(data['params'] ?? {}, 'game material parameters'), 'renderModel')
+  if (
+    renderModel !== undefined &&
+    (field(renderModel, 'standard') !== undefined || field(renderModel, 'composite') !== undefined)
+  )
+    return undefined
+  return {
+    blend,
+    depthTest: data['depthTest'] !== false,
+    depthWrite: data['depthWrite'] === true,
+    doubleSided: material['doubleSided'] === true || data['cull'] === 'none',
+    alphaCutoff: 0,
+    ...wrap(),
+  }
+}
+
 export function uvmMaterialShader(material: JsonObject): SceneRendererMaterial['shader'] {
   const extension = field(material['extensions'], 'UV_game_material')
   if (extension === undefined) {

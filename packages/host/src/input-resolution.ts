@@ -281,7 +281,10 @@ export const DEFAULT_COMPANION_LIMITS: CompanionResolutionLimits = Object.freeze
   maxEntries: 4096,
   maxProbes: 64,
   maxProbeBytes: 256 * 1024,
-  maxBindings: 64,
+  // A binding is a reference into a scope already bounded by maxEntries. Kane's Wrath's compiled
+  // containers bind their meshes and clips one by one: the MARV names 164 parts, the Eradicator
+  // Hexapod 175 plus 19 clips, and at 64 they did not open.
+  maxBindings: 1024,
 })
 
 export interface CompanionInputResolverOptions {

@@ -37,7 +37,12 @@ import { createUvmCollisionOverlay } from './collision-overlay.js'
 import { createUvmEffectFrame } from './effects.js'
 import { prepareUvmTextureImages, uvmImageTexels } from './images.js'
 import { array, field, finiteArray, object, safeIndex, vector4 } from './values.js'
-import { uvmMaterialShader, uvmMaterialResources, acquireUvmMaterialTextures } from './materials.js'
+import {
+  uvmMaterialBlendEffect,
+  uvmMaterialShader,
+  uvmMaterialResources,
+  acquireUvmMaterialTextures,
+} from './materials.js'
 import { snapshotEnvironment } from '../materials/environment.js'
 
 export interface UvmRenderOptions {
@@ -526,6 +531,13 @@ async function prepareUvmRender(
           'common.uvm/material-features-unrendered',
           `Material ${index} uses shading features beyond the current base-color scene contract.`,
         )
+      const simpleEffect = uvmMaterialBlendEffect(material, () => {
+        const { wrapU, wrapV } =
+          textureIndex === undefined
+            ? ({ wrapU: 'repeat', wrapV: 'repeat' } as const)
+            : textureSampler(textureIndex)
+        return { wrapU: wrapU ?? 'repeat', wrapV: wrapV ?? 'repeat' }
+      })
       return {
         id: `material-${index}`,
         baseColor,
@@ -535,6 +547,7 @@ async function prepareUvmRender(
         ...(textureIndex === undefined ? {} : { baseColorTexture: `uvm-texture-${textureIndex}` }),
         doubleSided: material['doubleSided'] === true,
         ...(shader === undefined ? {} : { shader }),
+        ...(simpleEffect === undefined ? {} : { simpleEffect }),
       }
     },
   )

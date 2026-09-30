@@ -117,6 +117,22 @@ function texturesWithSamplers(filters: readonly ('nearest' | 'linear' | undefine
   return samplers.length === 0 ? { textures } : { textures, samplers }
 }
 
+/** `UV_game_material.blendMode` values of SPEC_UVM_EXTENSIONS; any other name stays in extras. */
+const UVM_GAME_BLEND_MODES = [
+  'opaque',
+  'alpha-blend',
+  'alpha-test',
+  'additive',
+  'modulate',
+  'modulate2x',
+  'alpha-key',
+  'screen',
+  'subtract',
+] as const
+type UvmGameBlendMode = (typeof UVM_GAME_BLEND_MODES)[number]
+const isUvmGameBlendMode = (value: unknown): value is UvmGameBlendMode =>
+  (UVM_GAME_BLEND_MODES as readonly unknown[]).includes(value)
+
 export interface MaterializationOptions {
   readonly digest?: (bytes: Uint8Array) => string
   /** Bounds the aggregate material definitions, including shader keys and composite passes. */
@@ -159,6 +175,7 @@ export interface UvmMaterial {
   extensions?: {
     UV_game_material?: {
       shader: string
+      blendMode?: UvmGameBlendMode
       params: NonNullable<ModelMaterialRef['shader']>['parameters']
     }
     UV_game_material_team_color?: {
@@ -840,7 +857,16 @@ export function materializeUvmCore(
       target.extras = { modkit: { material: { version: 1, fields } } }
     const artifactContracts: string[] = []
     if (shader !== undefined) {
-      target.extensions = { UV_game_material: { shader: shader.id, params: shader.parameters } }
+      // the publisher's blend equation, when it is one the extension names (an additive light cone
+      // is black where it adds nothing: without it, the reader draws a black card)
+      const blendMode = fields['blendMode']
+      target.extensions = {
+        UV_game_material: {
+          shader: shader.id,
+          ...(isUvmGameBlendMode(blendMode) ? { blendMode } : {}),
+          params: shader.parameters,
+        },
+      }
       const renderModel = shader.parameters['renderModel']
       if (renderModel !== null && typeof renderModel === 'object' && !Array.isArray(renderModel)) {
         const snapshot = renderModel as Readonly<Record<string, unknown>>
