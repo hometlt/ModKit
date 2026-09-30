@@ -290,6 +290,7 @@ function effectModel({
   projector = !particles,
   animatedAlpha = true,
   decalBlendMode = 1,
+  decalSourceTag,
 } = {}) {
   const layer = (slot, animated = false) => ({
     slot,
@@ -461,6 +462,9 @@ function effectModel({
                 parameters: {
                   renderModel: {
                     version: 1,
+                    ...(decalSourceTag === undefined
+                      ? {}
+                      : { metadata: { sourceMaterialTag: decalSourceTag } }),
                     layers: [{ label: 'diffuse', path: 'decal.png' }],
                     standard: {
                       ...standard,
@@ -864,6 +868,20 @@ it('draws projector decals as the ground by their splat layer, not in depth orde
   // The depth-sorted transparent runs leave it to the splat pass.
   const runs = createWorldWebGlTransparentDrawPlan(plan, DEFAULT_WORLD_WEBGL_CAMERA)
   assert.ok(runs.every(run => run.batch !== decals[0]))
+})
+
+it('draws a splat-terrain-bake decal under every projected splat, whatever layer it names', () => {
+  // Washout's sidewalks (STBM on layer 0) are baked into the ground in SC2; its manholes (a
+  // material splat on layer 11) lie on them.
+  const layer = sourceTag => {
+    const model = effectModel({ decal: true, animatedAlpha: false, decalSourceTag: sourceTag })
+    const plan = createWorldWebGlPlan({ ...world(), models: new Map([['actor', model]]) })
+    return plan.transparentTexturedTriangles
+      .filter(batch => batch.texture.id === 'decal.png')
+      .map(batch => batch.splatLayer)
+  }
+  assert.deepEqual(layer('STBM'), [-1])
+  assert.deepEqual(layer('MAT_'), [0])
 })
 
 it('adds an additive projector decal instead of blending it over the ground', () => {

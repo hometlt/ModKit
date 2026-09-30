@@ -6128,7 +6128,7 @@ export function createWorldWebGlPlan(
           )?.textureId
           const texture = scene.textures.find(candidate => candidate.id === textureId)
           if (!texture || !primitive.textureCoordinates) continue
-          const layer = projectedSplatLayer(primitive)
+          const layer = worldProjectorSplatLayer(primitive, material)
           const blend = material?.simpleEffect?.blend
           const blendMode = blend === 'additive' || blend === 'add-alpha' ? 'additive' : 'blend'
           const target = projectorBatch(texture, layer, blendMode)
@@ -6175,7 +6175,10 @@ export function createWorldWebGlPlan(
             new Map(
               projectedMaterialPrimitives.map(primitive => [
                 primitive.id,
-                projectedSplatLayer(primitive),
+                worldProjectorSplatLayer(
+                  primitive,
+                  projected.materials.find(candidate => candidate.id === primitive.materialId),
+                ),
               ]),
             ),
           )
@@ -10255,12 +10258,44 @@ const worldSplatSceneLayers = new WeakMap<
 >()
 
 /**
- * Where a splat layer draws, bottom first (the M3 projector layers as the model carries them): the
- * terrain-baked layers (10, 11), hardtile with the roads (9), under creep (8), then the layers above
- * creep in their order (generic 1-4, building, area of effect, power, user interface: 0-7). An
- * unknown layer draws last.
+ * The splat layer of a projector's decal. An M3 splat-terrain-bake material (STBM) is baked into the
+ * terrain texture in SC2, under every projected splat whatever layer it names: Washout's sidewalks
+ * (STBM on layer 0) lie under its manholes (a material splat on layer 11), which drew hidden.
  */
-const SPLAT_LAYER_ORDER: readonly number[] = [10, 11, 9, 8, 0, 1, 2, 3, 4, 5, 6, 7]
+const TERRAIN_BAKED_SPLAT_LAYER = -1
+function worldProjectorSplatLayer(
+  primitive: SceneRendererPrimitive,
+  material: SceneRendererMaterial | undefined,
+): number | undefined {
+  const parameters = material?.shader?.parameters as
+    | { readonly renderModel?: { readonly metadata?: { readonly sourceMaterialTag?: unknown } } }
+    | undefined
+  return parameters?.renderModel?.metadata?.sourceMaterialTag === 'STBM'
+    ? TERRAIN_BAKED_SPLAT_LAYER
+    : projectedSplatLayer(primitive)
+}
+
+/**
+ * Where a splat layer draws, bottom first (the M3 projector layers as the model carries them): the
+ * terrain bakes (TERRAIN_BAKED_SPLAT_LAYER), the terrain-baked layers (10, 11), hardtile with the
+ * roads (9), under creep (8), then the layers above creep in their order (generic 1-4, building,
+ * area of effect, power, user interface: 0-7). An unknown layer draws last.
+ */
+const SPLAT_LAYER_ORDER: readonly number[] = [
+  TERRAIN_BAKED_SPLAT_LAYER,
+  10,
+  11,
+  9,
+  8,
+  0,
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+]
 const splatLayerRank = (layer: number | undefined) => {
   const rank = layer === undefined ? -1 : SPLAT_LAYER_ORDER.indexOf(layer)
   return rank < 0 ? SPLAT_LAYER_ORDER.length : rank

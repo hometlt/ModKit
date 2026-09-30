@@ -96,6 +96,24 @@ function specularOfTeamColor(material: SceneStandardMaterial): SceneStandardMate
     : material
 }
 
+/**
+ * An emissive layer that blends (LERP) through its RGB, whose alpha PSMaterial.fx forces to one,
+ * would put the emissive texel in place of the lit color. The SC2 editor draws such a model lit:
+ * Washout's SpacePlatformGenerator ("braxis doodads", a near-black DXT1 emissive) drew black. The
+ * layer adds instead (owner's decision 30.09); four doodad materials in the game blend so.
+ */
+function emissiveBlendThroughRgb(material: SceneStandardMaterial): SceneStandardMaterial {
+  const blendsRgb = (slot: 'emissive1' | 'emissive2') =>
+    material.layers[slot]?.op === 3 && material.layers[slot]?.channels === 0
+  if (!blendsRgb('emissive1') && !blendsRgb('emissive2')) return material
+  const layers: StandardMaterialModel['layers'] = { ...material.layers }
+  for (const slot of ['emissive1', 'emissive2'] as const) {
+    const layer = material.layers[slot]
+    if (layer !== undefined && blendsRgb(slot)) layers[slot] = Object.freeze({ ...layer, op: 2 })
+  }
+  return Object.freeze({ ...material, layers: Object.freeze(layers) })
+}
+
 export interface MaterialPixel extends MaterialLighting {
   /** Texture filtering, UV mapping and tangent-space geometry belong to the renderer adapter. */
   readonly texels?: Readonly<Partial<Record<StandardLayerSlot, Vec4>>>
@@ -208,8 +226,10 @@ export function createStandardMaterialPrograms(
             compilePass(
               {
                 ...pass,
-                material: specularOfTeamColor(
-                  intensity === 0 ? withoutDiffuseTeamColor(pass.material) : pass.material,
+                material: emissiveBlendThroughRgb(
+                  specularOfTeamColor(
+                    intensity === 0 ? withoutDiffuseTeamColor(pass.material) : pass.material,
+                  ),
                 ),
               },
               { teamColor, ambient, terrainTiling },
