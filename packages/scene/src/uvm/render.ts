@@ -45,6 +45,7 @@ import {
   acquireUvmMaterialTextures,
 } from './materials.js'
 import { snapshotEnvironment } from '../materials/environment.js'
+import { RENDER_MATERIAL_SHADER } from '../materials/render-model.js'
 
 export interface UvmRenderOptions {
   readonly modelResources?: ModelResourcePort
@@ -750,11 +751,43 @@ async function prepareUvmRender(
   diagnostics.push(...samplerDiagnostics)
   // All scene arrays, image payloads and caller texels are owned before the first await.
   let remainingDecodedBytes = Math.floor(rasterBudget / 2)
+  // A game material's own layers come first: its base-colour texture is only the fallback drawn
+  // while those layers are unresolved. Decoding every fallback first spent the shared budget on
+  // textures the material shader never samples — often the same files again — and a model with
+  // large layers (the Nova shield: two 1024² maps) lost materials to their fallback, which draws
+  // without the alpha masks that hide them.
+  const acquiredMaterials = await acquireUvmMaterialTextures(
+    materialResources,
+    rasterResources,
+    remainingDecodedBytes,
+    diagnostics,
+    signal,
+  )
+  for (const texture of acquiredMaterials.textures) remainingDecodedBytes -= texture.rgba.length
+  const drawnByShader = new Set(
+    materials
+      .filter(
+        material =>
+          material.shader?.id === RENDER_MATERIAL_SHADER &&
+          (materialResources.get(material.id) ?? []).length ===
+            acquiredMaterials.bindings(material.id).length,
+      )
+      .map(material => material.id),
+  )
+  const fallbackTextures = new Set(
+    primitives.flatMap(primitive => {
+      if (drawnByShader.has(primitive.materialId ?? '')) return []
+      const index =
+        materialTextures.get(primitive.materialId ?? '') ??
+        documentTextureIndex(materialById.get(primitive.materialId ?? '')?.baseColorTexture)
+      return index === undefined ? [] : [index]
+    }),
+  )
   const decodedImages = new Map<number, Omit<SceneRendererTexture, 'id'>>()
   const failedImages = new Set<number>()
   for (const image of images) {
     signal?.throwIfAborted()
-    if (failedImages.has(image.image)) continue
+    if (!fallbackTextures.has(image.texture) || failedImages.has(image.image)) continue
     let decoded = decodedImages.get(image.image)
     if (decoded === undefined && rasterResources !== undefined) {
       const result = await rasterResources.read(
@@ -794,19 +827,12 @@ async function prepareUvmRender(
       ...textureSampler(image.texture),
     })
   }
-  for (const index of usedTextures)
+  for (const index of fallbackTextures)
     if (!textures.has(index))
       warn(
         'common.uvm/texture-unresolved',
         `Texture ${index} has no decoded texels available from the resource host.`,
       )
-  const acquiredMaterials = await acquireUvmMaterialTextures(
-    materialResources,
-    rasterResources,
-    remainingDecodedBytes,
-    diagnostics,
-    signal,
-  )
   const request: SceneRenderRequest = {
     outputKind: 'rgba8',
     viewport: { width, height },
