@@ -1098,8 +1098,10 @@ export interface MapWorldCanonicalTransform {
 /**
  * The bytes a qualification digests: each tuple as three little-endian binary64 values, in order.
  * `nativeTupleDigest` and `canonicalTupleDigest` of a {@link MapWorldCanonicalTransform} proof are
- * the SHA-256 of the native `(column, row, height)` and the canonical `(x, y, z)` encodings — one
- * encoding for every adapter, so two worlds that agree to the bit digest the same.
+ * the SHA-256 of each terrain sample's map-native position `(x, y, z)` — its grid index times the
+ * native cell size plus the offset, and its height, as ADR-WORLD-001 and ADR-WORLD-002 hash them
+ * (`(column, row, height)` only where a cell is one native unit) — and of its canonical UVW
+ * `(x, y, z)`: one encoding for every adapter, so two worlds that agree to the bit digest the same.
  */
 export function mapQualificationTupleBytes(
   tuples: readonly (readonly [number, number, number])[],
