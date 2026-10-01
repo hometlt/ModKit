@@ -27,6 +27,12 @@ import {
   teamColorChannel,
 } from '@modkit/codec-kit/model-math/color-remap'
 import { createModelSceneSampler, modelMaterialTeamColor } from '../model/index.js'
+import {
+  decomposeMatrix4,
+  invertQuat,
+  multiplyQuat,
+  quaternionFromRotationMatrix,
+} from '../model/billboard-math.js'
 import { createUvmEffectSource, type UvmEffectSource } from '../uvm/effect-source.js'
 import { TERRAIN_RECEIVER_ID } from '../uvm/projectors.js'
 import {
@@ -2705,6 +2711,67 @@ function worldModelSceneSampler(
 
 const staticModelSamples = new WeakMap<WorldModelSample['result'], Map<string, WorldModelSample>>()
 
+/** Models with a camera-facing node (`ModelNode.billboard`): their pose follows the camera's turn. */
+const cameraFacingWorldModels = new WeakMap<WorldModelSample['result'], boolean>()
+
+function worldModelFacesCamera(result: WorldModelSample['result']): boolean {
+  let faces = cameraFacingWorldModels.get(result)
+  if (faces === undefined)
+    cameraFacingWorldModels.set(
+      result,
+      (faces = (result.nodes ?? []).some(node => node.billboard !== undefined)),
+    )
+  return faces
+}
+
+/** Whether any model of the input faces the camera: only then does the camera's turn enter its plan. */
+const cameraFacingWorldInputs = new WeakMap<ReadonlyMap<string, WorldSceneModelResult>, boolean>()
+
+function worldInputFacesCamera(input: WorldWebGlInput): boolean {
+  if (input.models === undefined) return false
+  let faces = cameraFacingWorldInputs.get(input.models)
+  if (faces === undefined)
+    cameraFacingWorldInputs.set(
+      input.models,
+      (faces = [...input.models.values()].some(
+        result => result.state === 'converted' && worldModelFacesCamera(result),
+      )),
+    )
+  return faces
+}
+
+/** What of the orbit camera a camera-facing node follows: its turn, not its target or zoom. */
+function worldCameraTurnKey(requested: WorldWebGlCamera | undefined): string {
+  const view = cameraState(requested)
+  return `${view.azimuth}|${view.elevation}`
+}
+
+/**
+ * The camera an object's camera-facing nodes turn to, in its model's frame (`ModelSceneCamera`): the
+ * orbit camera's turn as cameraFor places it (looking at the target from the azimuth and elevation,
+ * +Y up), and an eye far along its view, which is where an orthographic camera looks from.
+ * ponytail: the object's own rotation only; a component's rotation within the object is left out.
+ */
+function worldModelCamera(input: WorldWebGlInput, item: WorldSceneObjectItem) {
+  const view = cameraState(input.camera)
+  const horizontal = Math.cos(view.elevation)
+  const z = [
+    Math.cos(view.azimuth) * horizontal,
+    Math.sin(view.elevation),
+    Math.sin(view.azimuth) * horizontal,
+  ] as const
+  // x = up × z; the elevation stays short of a right angle, so it never vanishes
+  const length = Math.hypot(z[0], z[2])
+  const x = [z[2] / length, 0, -z[0] / length] as const
+  const y = [z[1] * x[2] - z[2] * x[1], z[2] * x[0] - z[0] * x[2], z[0] * x[1] - z[1] * x[0]]
+  const toModel = invertQuat(decomposeMatrix4(worldObjectTransform(item, [0, 0, 0])).rotation)
+  const eye = rotateQuaternion([z[0] * 1e4, z[1] * 1e4, z[2] * 1e4], toModel)
+  return Object.freeze({
+    rotation: multiplyQuat(toModel, quaternionFromRotationMatrix([...x, ...y, ...z])),
+    position: eye,
+  })
+}
+
 /**
  * Each model at rest: sampled without a clip at time zero. An object whose geometry follows the
  * clock frames the plan by its models at rest, so the camera and the shadow map hold still while it
@@ -3763,6 +3830,11 @@ function worldStaticObjectKey(
     const result = input.models?.get(resourceId)
     results.push(result)
     key.push(resourceId, result)
+    // A camera-facing node turns with the camera (worldModelCamera): kept while the camera's turn is.
+    if (result?.state === 'converted' && worldModelFacesCamera(result)) {
+      key.push(worldCameraTurnKey(input.camera))
+      timed = true
+    }
     // Materials and live effects alone follow the clock through the kept object (its resamplers,
     // keptWorldObjectEffect).
     if (result?.state !== 'converted' || !worldObjectFollowsTime(result, item)) continue
@@ -5737,7 +5809,8 @@ export function createWorldWebGlPlan(
     const result = input.models?.get(resourceId)
     if (result?.state !== 'converted') return undefined
     const selected = worldModelAnimation(result, item)
-    const staticGeometry = !worldModelHasAnimatedGeometry(result, item)
+    const camera = worldModelFacesCamera(result) ? worldModelCamera(input, item) : undefined
+    const staticGeometry = camera === undefined && !worldModelHasAnimatedGeometry(result, item)
     const staticKey = selected?.id ?? ''
     const previousStatic = staticGeometry
       ? staticModelSamples.get(result)?.get(staticKey)
@@ -5748,14 +5821,17 @@ export function createWorldWebGlPlan(
       selected?.durationSeconds && (item.presentationAnimation?.loop ?? selected.looping)
         ? clock % selected.durationSeconds
         : clock
-    const sharedKey = `${resourceId}\u0000${selected?.id ?? ''}\u0000${time}`
+    // instances turned alike see the camera alike
+    const sharedKey =
+      `${resourceId}\u0000${selected?.id ?? ''}\u0000${time}` +
+      (camera === undefined ? '' : `\u0000${camera.rotation.join(',')}`)
     const shared = planSamples.get(sharedKey)
     if (shared !== undefined) return shared
     const clip = selected?.kind === 'animation' ? selected : undefined
     const sample =
       (result.nodes?.length ?? 0) === 0
         ? { primitives: result.primitives, nodeTransforms: new Map<string, Float32Array>() }
-        : worldModelSceneSampler(result, clip).sample(time)
+        : worldModelSceneSampler(result, clip).sample(time, undefined, camera)
     const current = {
       result,
       // A skin whose pose does not follow the clock is posed on the CPU once for every frame to
@@ -8020,7 +8096,10 @@ function sameWorldPlanInput(left: WorldWebGlInput, right: WorldWebGlInput): bool
   return (
     (left.timeSeconds ?? 0) === (right.timeSeconds ?? 0) &&
     sameNumberMap(left.animationTimes, right.animationTimes) &&
-    sameWorldPlanInputExceptAnimationTimes(left, right)
+    sameWorldPlanInputExceptAnimationTimes(left, right) &&
+    // a camera-facing node draws differently as the camera turns
+    (!worldInputFacesCamera(right) ||
+      worldCameraTurnKey(left.camera) === worldCameraTurnKey(right.camera))
   )
 }
 
