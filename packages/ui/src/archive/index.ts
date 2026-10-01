@@ -152,6 +152,23 @@ export function buildArchiveTree(entries: readonly NamespaceEntry[]): Folder {
   return root
 }
 
+/**
+ * The bytes the files take in the archive, or `undefined` when one of them does not say. A file
+ * stored as it is takes its size: `storedSize` is given only where it differs (sdk `NamespaceEntry`).
+ */
+export function storedTotal(files: readonly NamespaceEntry[]): bigint | undefined {
+  let total = 0n
+  for (const entry of files) {
+    const stored =
+      entry.storedSize ??
+      entry.storedRange?.length ??
+      (entry.compression === 'stored' ? entry.size : undefined)
+    if (stored === undefined) return undefined
+    total += stored
+  }
+  return total
+}
+
 const byName = (left: { name: string }, right: { name: string }): number =>
   left.name.localeCompare(right.name, undefined, { numeric: true, sensitivity: 'base' })
 
@@ -322,9 +339,7 @@ export function createArchiveViewer(options: ArchiveViewerOptions = {}): ViewerM
       const renderFacts = (): void => {
         const files = entries.filter(entry => entry.kind === 'file')
         const total = files.reduce((sum, entry) => sum + (entry.size ?? 0n), 0n)
-        const stored = files.every(entry => entry.storedSize !== undefined)
-          ? files.reduce((sum, entry) => sum + (entry.storedSize ?? 0n), 0n)
-          : undefined
+        const stored = storedTotal(files)
         const folderCount = hasChildren
           ? entries.filter(entry => entry.kind === 'directory').length
           : countFolders(top)

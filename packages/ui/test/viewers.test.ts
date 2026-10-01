@@ -114,9 +114,9 @@ async function viewerManifests(): Promise<ContributionManifestV1Wire[]> {
 }
 
 describe('13C universal viewer contracts and models', () => {
-  it('validates twenty-two declarative viewer contributions and resolves them shuffle-stably', async () => {
+  it('validates twenty-four declarative viewer contributions and resolves them shuffle-stably', async () => {
     const manifests = await viewerManifests()
-    expect(manifests).toHaveLength(23)
+    expect(manifests).toHaveLength(24)
     const registry = createHostContributionContractRegistry().validationRegistry()
     for (const manifest of manifests) {
       const result = await validateContributionManifest(manifest, registry)
