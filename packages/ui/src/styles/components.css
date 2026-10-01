@@ -565,7 +565,8 @@
     border-radius: var(--mk-radius-md);
   }
 
-  [data-mk-part='playback.note'] {
+  [data-mk-part='playback.note'],
+  [data-mk-part='audio.notice'] {
     margin: 0;
     font-size: var(--mk-font-size-xs);
     color: var(--mk-color-fg-muted);
@@ -1344,11 +1345,6 @@
     border: 1px solid var(--mk-color-border);
     border-radius: var(--mk-radius-sm);
     background: var(--mk-color-canvas-bg);
-  }
-
-  [data-mk-part='audio.player'] {
-    width: 100%;
-    height: var(--mk-size-control);
   }
 
   [data-mk-part='model.canvas'] {

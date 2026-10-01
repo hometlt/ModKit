@@ -30,7 +30,10 @@ export const ARCHIVE_FALLBACK_MESSAGES = {
 
 export const AUDIO_FALLBACK_MESSAGES = {
   'viewer.audio': 'Audio viewer',
+  'viewer.audioBitrate': 'Bitrate',
   'viewer.audioChannels': 'Channels',
+  'viewer.audioCodec': 'Codec',
+  'viewer.audioContainer': 'Container',
   'viewer.audioControls': 'Audio controls',
   'viewer.audioCycleRate': 'Cycle the playback rate',
   'viewer.audioDecodeError':
@@ -44,7 +47,10 @@ export const AUDIO_FALLBACK_MESSAGES = {
   'viewer.audioSampleRate': 'Sample rate',
   'viewer.audioSize': 'Decoded size',
   'viewer.audioSummary': '{position} / {duration} · {channels} channels · {rate} kHz · {size} KiB',
+  'viewer.audioTracks': 'Audio tracks',
   'viewer.audioTransport': '{state} · ×{speed} · decoded by {decoder}',
+  'viewer.audioTruncated': 'Only the first {duration} of this track are loaded into the player.',
+  'viewer.audioVolume': 'Volume',
   'viewer.duration': 'Duration',
 } as const satisfies UiMessageCatalog
 

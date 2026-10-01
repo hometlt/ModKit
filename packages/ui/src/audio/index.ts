@@ -5,7 +5,14 @@
  * its platform decoder; a separately selected provider may expose PCM without coupling this viewer
  * to MP3, Vorbis, Opus, or any native library.
  */
-import type { AnyDescriptor, AudioMediaSource, MetadataGroup, ViewerModule } from '@modkit/sdk'
+import type {
+  AnyDescriptor,
+  AudioMediaInfo,
+  AudioMediaSource,
+  AudioTrackInfo,
+  MetadataGroup,
+  ViewerModule,
+} from '@modkit/sdk'
 import {
   createMediaShell,
   mountContributedSections,
@@ -96,7 +103,12 @@ export async function collectCodecPcm(
   trackId: string,
   signal?: AbortSignal,
   onFrames: (frames: number) => void = () => undefined,
-): Promise<{ readonly sampleRate: number; readonly channels: readonly Float32Array[] }> {
+): Promise<{
+  readonly sampleRate: number
+  readonly channels: readonly Float32Array[]
+  /** Collection stopped at `AUDIO_MAXIMUM_PCM_FRAMES`: the track may go on past what is held. */
+  readonly truncated: boolean
+}> {
   if (source.readPcm === undefined) throw new TypeError('this source exposes no PCM')
   const windows: { readonly samples: Float32Array; readonly frameCount: number }[] = []
   let sampleRate = 0
@@ -172,95 +184,98 @@ export async function collectCodecPcm(
     }
     offset += window.frameCount
   }
-  return { sampleRate, channels }
+  return { sampleRate, channels, truncated: frames >= AUDIO_MAXIMUM_PCM_FRAMES }
 }
 
-async function loadWaveform(
-  source: AudioMediaSource,
-  signal?: AbortSignal,
-  onPhase: (phase: string) => void = () => undefined,
-): Promise<{
+/** One track, decoded into the viewer's AudioContext. */
+interface LoadedTrack {
   readonly model: WaveformModel
-  readonly encoded?: { readonly mediaType: string; readonly bytes: Uint8Array }
   readonly buffer: AudioBuffer
-  readonly context: AudioContext
   readonly decodedBy: 'codec-pcm' | 'platform-decoder'
-}> {
+  /** What the platform decoded, when it did: the codec PCM path never fetches encoded bytes. */
+  readonly mediaType?: string
+  /** The codec had more frames than the viewer keeps; only the start of the track is loaded. */
+  readonly truncated: boolean
+}
+
+async function loadTrack(
+  source: AudioMediaSource,
+  info: AudioMediaInfo,
+  track: AudioTrackInfo | undefined,
+  context: AudioContext,
+  signal: AbortSignal,
+  onPhase: (phase: string) => void,
+): Promise<LoadedTrack> {
+  let buffer: AudioBuffer
+  let decodedBy: 'codec-pcm' | 'platform-decoder'
+  let mediaType: string | undefined
+  let sizeBytes: number
+  let truncated = false
   /*
-   * Ask what this is BEFORE fetching anything.
-   *
-   * The old order took the `encoded` lease first and then called `info`, which left the installed
-   * audio stage stuck in "loading" forever with the phase readout pointing straight at `info`.
-   * Asking first is also the honest shape: when the codec decodes the samples itself, the encoded
-   * bytes are never needed, and materialising up to 96 MiB to throw away was always waste.
+   * Prefer the codec. `pcmAccess` means the codec claims it can decode these samples itself, and
+   * the platform decoder is the fallback for the formats it cannot — not the other way round.
    */
-  onPhase('info')
-  const info = await source.info(signal)
-  const AudioContextCtor = audioContextConstructor()
-  if (AudioContextCtor === undefined) throw new TypeError('no platform audio decoder is available')
-  const context = new AudioContextCtor()
-  let disposed = false
-  try {
-    /*
-     * Prefer the codec. `pcmAccess` means the codec claims it can decode these samples itself, and
-     * the platform decoder is the fallback for the formats it cannot — not the other way round.
-     */
-    const track = info.tracks.find(item => item.selected) ?? info.tracks[0]
-    let buffer: AudioBuffer
-    let decodedBy: 'codec-pcm' | 'platform-decoder'
-    let encodedMedia: { readonly mediaType: string; readonly bytes: Uint8Array } | undefined
-    let sizeBytes: number
-    if (info.pcmAccess && source.readPcm !== undefined && track !== undefined) {
-      onPhase('codec-pcm')
-      const pcm = await collectCodecPcm(source, track.id, signal, frames =>
-        onPhase(`codec-pcm:${frames}`),
-      )
-      const frames = pcm.channels[0]?.length ?? 0
-      buffer = context.createBuffer(Math.max(1, pcm.channels.length), frames, pcm.sampleRate)
-      for (const [index, channel] of pcm.channels.entries()) {
-        // `copyToChannel` is typed for a plain ArrayBuffer; the codec’s arrays are ArrayBufferLike.
-        buffer.copyToChannel(channel as Float32Array<ArrayBuffer>, index)
-      }
-      // Decoded size: the encoded file is never fetched on this path, so it cannot be reported.
-      sizeBytes = frames * Math.max(1, pcm.channels.length) * 4
-      decodedBy = 'codec-pcm'
-    } else {
-      onPhase('encoded')
-      const lease = await source.encoded(undefined, signal)
-      const media = await collectEncodedMedia(lease, AUDIO_MAXIMUM_BYTES, signal)
-      encodedMedia = { mediaType: media.mediaType, bytes: media.bytes }
-      sizeBytes = media.bytes.byteLength
-      onPhase('platform-decode')
-      buffer = await context.decodeAudioData(media.bytes.slice().buffer as ArrayBuffer)
-      decodedBy = 'platform-decoder'
-    }
-    const channels = Array.from({ length: buffer.numberOfChannels }, (_, index) =>
-      buffer.getChannelData(index),
+  if (info.pcmAccess && source.readPcm !== undefined && track !== undefined) {
+    onPhase('codec-pcm')
+    const pcm = await collectCodecPcm(source, track.id, signal, frames =>
+      onPhase(`codec-pcm:${frames}`),
     )
-    onPhase('ready')
-    disposed = true
-    return {
-      model: {
-        peaks: computePeaks(channels, WAVEFORM_BUCKETS),
-        duration: buffer.duration,
-        channels: buffer.numberOfChannels,
-        sampleRate: buffer.sampleRate,
-        bytes: sizeBytes,
-      },
-      ...(encodedMedia === undefined ? {} : { encoded: encodedMedia }),
-      buffer,
-      context,
-      decodedBy,
+    const frames = pcm.channels[0]?.length ?? 0
+    buffer = context.createBuffer(Math.max(1, pcm.channels.length), frames, pcm.sampleRate)
+    for (const [index, channel] of pcm.channels.entries()) {
+      // `copyToChannel` is typed for a plain ArrayBuffer; the codec’s arrays are ArrayBufferLike.
+      buffer.copyToChannel(channel as Float32Array<ArrayBuffer>, index)
     }
-  } finally {
-    // The context is handed to the caller on success; only a failure closes it here.
-    if (!disposed) await context.close()
+    // Decoded size: the encoded file is never fetched on this path, so it cannot be reported.
+    sizeBytes = frames * Math.max(1, pcm.channels.length) * 4
+    decodedBy = 'codec-pcm'
+    truncated = pcm.truncated
+  } else {
+    onPhase('encoded')
+    const lease = await source.encoded(track?.id, signal)
+    const media = await collectEncodedMedia(lease, AUDIO_MAXIMUM_BYTES, signal)
+    mediaType = media.mediaType
+    sizeBytes = media.bytes.byteLength
+    onPhase('platform-decode')
+    buffer = await context.decodeAudioData(media.bytes.slice().buffer as ArrayBuffer)
+    decodedBy = 'platform-decoder'
+  }
+  const channels = Array.from({ length: buffer.numberOfChannels }, (_, index) =>
+    buffer.getChannelData(index),
+  )
+  onPhase('ready')
+  return {
+    model: {
+      peaks: computePeaks(channels, WAVEFORM_BUCKETS),
+      duration: buffer.duration,
+      channels: buffer.numberOfChannels,
+      sampleRate: buffer.sampleRate,
+      bytes: sizeBytes,
+    },
+    buffer,
+    decodedBy,
+    ...(mediaType === undefined ? {} : { mediaType }),
+    truncated,
   }
 }
 
 const clock = (seconds: number): string => {
   const whole = Math.max(0, Math.floor(seconds))
   return `${String(Math.floor(whole / 60)).padStart(2, '0')}:${String(whole % 60).padStart(2, '0')}`
+}
+
+/** One line per track of a bank or a container: its number, codec, layout, bitrate and language. */
+export function audioTrackLine(track: AudioTrackInfo, index: number): string {
+  return [
+    `#${index + 1}`,
+    track.codec,
+    track.channels === 'unknown' ? undefined : `${track.channels} ch`,
+    track.sampleRate === 'unknown' ? undefined : `${(track.sampleRate / 1000).toFixed(1)} kHz`,
+    track.bitrateKbps === undefined ? undefined : `${track.bitrateKbps} kbps`,
+    track.language,
+  ]
+    .filter(item => item !== undefined)
+    .join(' · ')
 }
 
 export interface AudioViewerOptions {
@@ -277,6 +292,14 @@ function metadataGroups(descriptor: AnyDescriptor): readonly MetadataGroup[] {
   return 'identity' in descriptor
     ? ((descriptor as { readonly metadata?: readonly MetadataGroup[] }).metadata ?? [])
     : []
+}
+
+/** The container as its codec names it, with the media type the stream was read as. */
+function containerOf(descriptor: AnyDescriptor, mediaType: string | undefined): string | undefined {
+  const identity = 'identity' in descriptor ? descriptor.identity : undefined
+  const type = mediaType ?? identity?.mediaType
+  if (identity === undefined) return type
+  return type === undefined ? identity.formatLabel : `${identity.formatLabel} (${type})`
 }
 
 function facts(parent: HTMLElement, rows: readonly (readonly [string, string])[]): void {
@@ -310,10 +333,13 @@ export function createAudioViewer(options: AudioViewerOptions = {}): ViewerModul
       const toolbar = element(stage, 'div', { part: 'audio.toolbar', role: 'toolbar' })
       toolbar.setAttribute('aria-label', localizer.text('viewer.audioControls'))
       const readout = element(stage, 'output', { part: 'audio.readout' })
+      // Said once when a track is longer than the player keeps, instead of cutting it silently.
+      const notice = element(stage, 'p', { part: 'audio.notice' })
+      notice.hidden = true
+      const failure = element(stage, 'p', { part: 'viewer.empty' })
+      failure.hidden = true
       const canvas = element(stage, 'canvas', { part: 'audio.waveform' }) as HTMLCanvasElement
       canvas.setAttribute('role', 'img')
-      const player = element(stage, 'audio', { part: 'audio.player' }) as HTMLAudioElement
-      player.controls = true
 
       const lease = await unknownSourceLease(
         args.sources,
@@ -322,18 +348,22 @@ export function createAudioViewer(options: AudioViewerOptions = {}): ViewerModul
       )
       if (lease === undefined) throw new TypeError('audio binding is unavailable')
       scope.lease(lease)
+      const source = lease.value as AudioMediaSource
 
       let model: WaveformModel | undefined
       let cursor = 0
       /*
-       * Transport state. A viewer that only mounted `<audio controls>` could not play what the
-       * platform cannot decode, and could not report what it was doing — so play/pause/rate are
-       * explicit here and drive whichever engine actually holds the samples.
+       * Transport state, for ONE engine. Every track — decoded by the codec or by the platform —
+       * plays from an AudioBuffer through one AudioContext and one gain, so the buttons, the
+       * volume and the clock describe what is heard. A native `<audio>` beside it was a second,
+       * independent player: both could play at once, at different positions.
        */
       let audio: AudioContext | undefined
+      let gain: GainNode | undefined
       let buffer: AudioBuffer | undefined
       let voice: AudioBufferSourceNode | undefined
       let rate = 1
+      let volume = 1
       let playing = false
       let startedAt = 0
       let decodedBy: 'codec-pcm' | 'platform-decoder' | 'none' = 'none'
@@ -392,6 +422,7 @@ export function createAudioViewer(options: AudioViewerOptions = {}): ViewerModul
         stage.dataset['rate'] = rate.toFixed(2)
         stage.dataset['decoder'] = decodedBy
         stage.dataset['position'] = position().toFixed(3)
+        stage.dataset['duration'] = model.duration.toFixed(3)
       }
 
       const position = (): number => {
@@ -417,40 +448,34 @@ export function createAudioViewer(options: AudioViewerOptions = {}): ViewerModul
         cursor = position()
         playing = false
         stopVoice()
-        player.pause()
       }
 
       const play = (): void => {
         if (playing || model === undefined) return
-        if (audio !== undefined && buffer !== undefined) {
-          /*
-           * Resume before starting, and say so when the platform refuses.
-           *
-           * A browser keeps an AudioContext suspended until a real user gesture. Starting a source
-           * on a suspended context looks like playback - `playing` is true - while the clock never
-           * moves and nothing is heard. Reporting the context state makes that visible instead of
-           * leaving a silent player that claims to be playing.
-           */
-          void audio.resume().catch(() => undefined)
-          const next = audio.createBufferSource()
-          next.buffer = buffer
-          next.playbackRate.value = rate
-          next.connect(audio.destination)
-          next.onended = () => {
-            if (voice !== next) return
-            playing = false
-            cursor = 0
-            voice = undefined
-            paint()
-          }
-          startedAt = audio.currentTime
-          next.start(0, Math.min(cursor, Math.max(0, buffer.duration - 0.001)))
-          voice = next
-        } else {
-          player.playbackRate = rate
-          player.currentTime = cursor
-          void player.play().catch(() => undefined)
+        if (audio === undefined || gain === undefined || buffer === undefined) return
+        /*
+         * Resume before starting, and say so when the platform refuses.
+         *
+         * A browser keeps an AudioContext suspended until a real user gesture. Starting a source
+         * on a suspended context looks like playback - `playing` is true - while the clock never
+         * moves and nothing is heard. Reporting the context state makes that visible instead of
+         * leaving a silent player that claims to be playing.
+         */
+        void audio.resume().catch(() => undefined)
+        const next = audio.createBufferSource()
+        next.buffer = buffer
+        next.playbackRate.value = rate
+        next.connect(gain)
+        next.onended = () => {
+          if (voice !== next) return
+          playing = false
+          cursor = 0
+          voice = undefined
+          paint()
         }
+        startedAt = audio.currentTime
+        next.start(0, Math.min(cursor, Math.max(0, buffer.duration - 0.001)))
+        voice = next
         playing = true
       }
 
@@ -480,10 +505,25 @@ export function createAudioViewer(options: AudioViewerOptions = {}): ViewerModul
         if (playing) {
           pause()
           play()
-        } else if (voice === undefined) {
-          player.playbackRate = rate
         }
       })
+      // The volume the native player had, now on the one engine's gain.
+      const volumeInput = element(toolbar, 'input') as HTMLInputElement
+      volumeInput.type = 'range'
+      volumeInput.min = '0'
+      volumeInput.max = '1'
+      volumeInput.step = '0.05'
+      volumeInput.value = String(volume)
+      volumeInput.title = localizer.text('viewer.audioVolume')
+      volumeInput.setAttribute('aria-label', localizer.text('viewer.audioVolume'))
+      volumeInput.addEventListener(
+        'input',
+        () => {
+          volume = Number(volumeInput.value)
+          if (gain !== undefined) gain.gain.value = volume
+        },
+        { signal: scope.signal },
+      )
 
       canvas.addEventListener('click', event => {
         if (model === undefined) return
@@ -499,80 +539,157 @@ export function createAudioViewer(options: AudioViewerOptions = {}): ViewerModul
       const tick = setInterval(() => {
         if (playing) paint()
       }, 200)
+      let loading: AbortController | undefined
       scope.cleanup(() => {
         clearInterval(tick)
+        loading?.abort()
         stopVoice()
         void audio?.close().catch(() => undefined)
       })
 
-      setState(stage, ['loading'])
-      stage.dataset['phase'] = 'loading'
-      try {
-        const loaded = await loadWaveform(lease.value as AudioMediaSource, scope.signal, phase => {
-          stage.dataset['phase'] = phase
-        })
-        model = loaded.model
-        audio = loaded.context
-        buffer = loaded.buffer
-        decodedBy = loaded.decodedBy
-        /*
-         * The native element stays for the formats the platform can play, so a person still gets
-         * the editor's own controls. It is not the engine when the codec decoded the samples: a
-         * player handed IMA ADPCM would show a control strip that plays nothing.
-         */
-        if (loaded.decodedBy === 'platform-decoder' && loaded.encoded !== undefined) {
-          const objectUrl = URL.createObjectURL(
-            new Blob([loaded.encoded.bytes as BlobPart], { type: loaded.encoded.mediaType }),
-          )
-          player.src = objectUrl
-          scope.cleanup(() => URL.revokeObjectURL(objectUrl))
-        } else {
-          player.remove()
-        }
-        setState(stage, [])
-        // The facts, once: they belong in the sidebar, not in a readout repainted every frame.
-        const loadedModel = loaded.model
-        facts(shell.section('audio', localizer.text('viewer.audio'), { icon: 'unmute' }).body, [
-          [localizer.text('viewer.duration'), clock(loadedModel.duration)],
-          [localizer.text('viewer.audioChannels'), String(loadedModel.channels)],
-          [
-            localizer.text('viewer.audioSampleRate'),
-            `${(loadedModel.sampleRate / 1000).toFixed(1)} kHz`,
-          ],
-          [localizer.text('viewer.audioSize'), `${(loadedModel.bytes / 1024).toFixed(0)} KiB`],
-          [localizer.text('viewer.audioDecoder'), loaded.decodedBy],
-        ])
-        for (const group of metadataGroups(args.descriptor)) {
-          if (/^(identity|traits|detection)$/iu.test(group.id)) continue
-          facts(
-            shell.section(`metadata:${group.id}`, group.label, {
-              icon: 'symbol-misc',
-              collapsed: true,
-            }).body,
-            group.entries.map(entry => [entry.key, String(entry.value)] as const),
-          )
-        }
-        args.status?.set([
-          { id: 'duration', icon: 'watch', text: clock(loadedModel.duration), align: 'start' },
-          {
-            id: 'format',
-            icon: 'unmute',
-            text: `${loadedModel.channels} ch · ${(loadedModel.sampleRate / 1000).toFixed(1)} kHz`,
-            align: 'start',
-          },
-        ])
-        scope.cleanup(() => args.status?.clear())
-        paint()
-      } catch (error) {
+      const fail = (error: unknown): void => {
         setState(stage, ['error'])
-        canvas.remove()
-        player.remove()
-        element(stage, 'p', {
-          part: 'viewer.empty',
-          text: localizer.text('viewer.audioDecodeError', {
+        canvas.hidden = true
+        failure.hidden = false
+        setViewerText(
+          failure,
+          localizer.text('viewer.audioDecodeError', {
             reason: error instanceof Error ? error.message : String(error),
           }),
-        })
+        )
+      }
+
+      // The facts come first in the sidebar; each track loaded refills them.
+      const factsBody = shell.section('audio', localizer.text('viewer.audio'), {
+        icon: 'unmute',
+      }).body
+      for (const group of metadataGroups(args.descriptor)) {
+        if (/^(identity|traits|detection)$/iu.test(group.id)) continue
+        facts(
+          shell.section(`metadata:${group.id}`, group.label, {
+            icon: 'symbol-misc',
+            collapsed: true,
+          }).body,
+          group.entries.map(entry => [entry.key, String(entry.value)] as const),
+        )
+      }
+      scope.cleanup(() => args.status?.clear())
+
+      /** Decode one track into the engine; a later choice cancels a load still running. */
+      const show = async (info: AudioMediaInfo, track: AudioTrackInfo | undefined) => {
+        loading?.abort()
+        const controller = new AbortController()
+        loading = controller
+        pause()
+        cursor = 0
+        model = undefined
+        buffer = undefined
+        setState(stage, ['loading'])
+        stage.dataset['phase'] = 'loading'
+        try {
+          // One context for the viewer's life, made with the first track and kept for the next.
+          if (audio === undefined) {
+            const AudioContextCtor = audioContextConstructor()
+            if (AudioContextCtor === undefined) {
+              throw new TypeError('no platform audio decoder is available')
+            }
+            audio = new AudioContextCtor()
+            gain = audio.createGain()
+            gain.gain.value = volume
+            gain.connect(audio.destination)
+          }
+          const loaded = await loadTrack(source, info, track, audio, controller.signal, phase => {
+            if (loading === controller) stage.dataset['phase'] = phase
+          })
+          if (loading !== controller) return
+          model = loaded.model
+          buffer = loaded.buffer
+          decodedBy = loaded.decodedBy
+          setState(stage, [])
+          canvas.hidden = false
+          failure.hidden = true
+          notice.hidden = !loaded.truncated
+          if (loaded.truncated) {
+            setViewerText(
+              notice,
+              localizer.text('viewer.audioTruncated', { duration: clock(loaded.model.duration) }),
+            )
+          }
+          // The facts, once per track: they belong in the sidebar, not in the repainted readout.
+          const container = containerOf(args.descriptor, loaded.mediaType)
+          factsBody.replaceChildren()
+          facts(factsBody, [
+            [localizer.text('viewer.duration'), clock(loaded.model.duration)],
+            [localizer.text('viewer.audioChannels'), String(loaded.model.channels)],
+            [
+              localizer.text('viewer.audioSampleRate'),
+              `${(loaded.model.sampleRate / 1000).toFixed(1)} kHz`,
+            ],
+            ...(track === undefined
+              ? []
+              : [[localizer.text('viewer.audioCodec'), track.codec] as const]),
+            ...(track?.bitrateKbps === undefined
+              ? []
+              : [[localizer.text('viewer.audioBitrate'), `${track.bitrateKbps} kbps`] as const]),
+            ...(container === undefined
+              ? []
+              : [[localizer.text('viewer.audioContainer'), container] as const]),
+            [localizer.text('viewer.audioSize'), `${(loaded.model.bytes / 1024).toFixed(0)} KiB`],
+            [localizer.text('viewer.audioDecoder'), loaded.decodedBy],
+          ])
+          args.status?.set([
+            { id: 'duration', icon: 'watch', text: clock(loaded.model.duration), align: 'start' },
+            {
+              id: 'format',
+              icon: 'unmute',
+              text: `${loaded.model.channels} ch · ${(loaded.model.sampleRate / 1000).toFixed(1)} kHz`,
+              align: 'start',
+            },
+          ])
+          paint()
+        } catch (error) {
+          if (loading === controller) fail(error)
+        }
+      }
+
+      /*
+       * Ask what this is BEFORE fetching anything.
+       *
+       * Taking the `encoded` lease first and calling `info` after left the installed audio stage
+       * stuck in "loading" forever with the phase readout pointing straight at `info`. Asking first
+       * is also the honest shape: when the codec decodes the samples itself, the encoded bytes are
+       * never needed, and materialising up to 96 MiB to throw away was always waste.
+       */
+      setState(stage, ['loading'])
+      stage.dataset['phase'] = 'info'
+      try {
+        const info = await source.info(scope.signal)
+        const first = info.tracks.find(item => item.selected) ?? info.tracks[0]
+        // A bank or a container with several streams: each one plays on its own (MK2's stream list).
+        if (info.tracks.length > 1) {
+          const select = element(toolbar, 'select') as HTMLSelectElement
+          select.title = localizer.text('viewer.audioTracks')
+          select.setAttribute('aria-label', localizer.text('viewer.audioTracks'))
+          for (const [index, track] of info.tracks.entries()) {
+            const option = element(select, 'option', {
+              text: audioTrackLine(track, index),
+            }) as HTMLOptionElement
+            option.value = track.id
+          }
+          if (first !== undefined) select.value = first.id
+          select.addEventListener(
+            'change',
+            () =>
+              void show(
+                info,
+                info.tracks.find(track => track.id === select.value),
+              ),
+            { signal: scope.signal },
+          )
+        }
+        await show(info, first)
+      } catch (error) {
+        fail(error)
       }
 
       mountContributedSections(shell, options.sections, args, unmount => scope.cleanup(unmount))

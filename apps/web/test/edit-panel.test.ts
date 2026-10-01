@@ -495,24 +495,21 @@ describe('the Edit panel in a real browser', () => {
     await waitForEditPanel()
     expect(await inspectorText()).toContain('1 edit form(s) over 1 mutating operation(s)')
 
-    // The committed sample is not only a header fixture: Chromium accepts its 39 silence frames
-    // and reports the roughly one-second duration the generator claims.
+    // The committed sample is not only a header fixture: Chromium decodes its 39 silence frames
+    // into the audio stage's one engine and reports the roughly one-second duration the generator
+    // claims.
     await showView('audio')
     await page.waitForFunction(
       () => {
-        const player = document.querySelector('[data-mk-part="audio.player"]')
-        return (
-          player instanceof HTMLAudioElement &&
-          player.readyState >= HTMLMediaElement.HAVE_METADATA &&
-          Number.isFinite(player.duration)
-        )
+        const stage = document.querySelector('[data-mk-part="audio"]')
+        return stage instanceof HTMLElement && stage.dataset['duration'] !== undefined
       },
       undefined,
       { timeout: 60_000 },
     )
     const duration = await page
-      .locator('[data-mk-part="audio.player"]')
-      .evaluate(node => (node instanceof HTMLAudioElement ? node.duration : 0))
+      .locator('[data-mk-part="audio"]')
+      .evaluate(node => (node instanceof HTMLElement ? Number(node.dataset['duration']) : 0))
     expect(duration).toBeGreaterThan(0.9)
     expect(duration).toBeLessThan(1.2)
 

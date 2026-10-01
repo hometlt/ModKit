@@ -217,7 +217,7 @@ export const PARTS = Object.freeze([
   'audio.waveform',
   'audio.toolbar',
   'audio.readout',
-  'audio.player',
+  'audio.notice',
 
   // vector stage
   'vector',
