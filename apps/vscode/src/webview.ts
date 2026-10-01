@@ -150,6 +150,7 @@ function describe(error: unknown): string {
 }
 
 const NAMESPACE_CONTRACT = 'common.view/namespace-entry-source'
+const SUBJECT_SELECTOR_CONTRACT = 'common.view/subject-selector-source'
 
 /** Which entries the explorer's gallery shows: files whose extension an enabled image codec reads. */
 function galleryAccepts(
@@ -507,6 +508,8 @@ async function mount(
   const preopenedSubjects = new Map<string, NavigationEvent['result']>()
   /** The view a navigated subject opens on, when the extension asked for one (its graph, say). */
   const pendingStages = new Map<string, string>()
+  /** The subject of the shown subject's selector its card stage opens on next (plan 5.29). */
+  let requestedCard: string | undefined
   let openNavigatedSubject: ((event: NavigationEvent) => Promise<void>) | undefined
   /*
    * A cold codec realm can take longer to start than one RPC call may last (60 s; a Roblox place
@@ -764,6 +767,7 @@ async function mount(
         },
         // The recording's other view: its 2D player and its 3D world follow one transport.
         showStage: stageId => editors.showView(stageId),
+        cardSubject: () => requestedCard,
         // The model a card's subject names: the extension host finds it in that subject's mod chain.
         openModel(model) {
           const subject = focused ?? snapshot.openPath
@@ -1241,6 +1245,25 @@ async function mount(
 
   const navigateSubject = async (target: string, stage?: string): Promise<void> => {
     const parent = subjects.get(snapshot.openPath ?? focused ?? '')
+    /*
+     * An entity of the shown subject's own selector (an SC2 mod's unit, plan 5.29) is one of its
+     * cards, as the wiki opens it, so the card stage opens on it. The host's navigation opens a
+     * member of the package instead, and a folder package took the entity for a file path.
+     */
+    const dataSources = parent?.descriptor['dataSources'] as
+      readonly { readonly contract?: unknown }[] | undefined
+    if (
+      target.startsWith('modkit-subject://') &&
+      (stage === undefined || stage === 'card') &&
+      dataSources?.some(item => item.contract === SUBJECT_SELECTOR_CONTRACT) === true
+    ) {
+      requestedCard = target
+      try {
+        if (await editors.showView('card')) return
+      } finally {
+        requestedCard = undefined
+      }
+    }
     const navigation = parent?.session.subjectNavigation
     if (navigation === undefined) throw new Error('the mounted subject does not support navigation')
     if (stage !== undefined) pendingStages.set(target, stage)

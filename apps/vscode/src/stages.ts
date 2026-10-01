@@ -24,7 +24,7 @@ import type { PreviewStage } from '@modkit/ui/explorer'
 import { createRelationGraphViewer } from '@modkit/ui/graph'
 import { createGameTemplateViewer } from '@modkit/ui/template'
 import { createHexViewer } from '@modkit/ui/hex'
-import { lazyViewerModule } from '@modkit/ui/viewer'
+import { defineViewerModule, lazyViewerModule } from '@modkit/ui/viewer'
 import { createHexEditor } from '@modkit/ui/hex-editor'
 import { createImageViewer } from '@modkit/ui/image'
 import { createMapLayersViewer } from '@modkit/ui/map-layers'
@@ -317,7 +317,16 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
       id: 'card',
       label: context.localizer.text('stage.card'),
       contract: 'common.view/subject-facts-source',
-      module: createSubjectCardViewer(cardOptions),
+      // On the subject, or on the subject of its selector a navigation named (plan 5.29).
+      module: defineViewerModule({
+        abiVersion: 1,
+        mount(args) {
+          const subject = context.cardSubject?.()
+          return createSubjectCardViewer(
+            subject === undefined ? cardOptions : { ...cardOptions, subject },
+          ).mount(args)
+        },
+      }),
       // A writable fact edits in place through the subject's own editing arm, as a table cell does.
       usesEditorPorts: true,
       optionalContracts: [

@@ -94,6 +94,11 @@ export interface EditPanelOptions {
   openSource?(location: CardLocation): void
   /** Open the model a card's subject names in a tab of its own. */
   openModel?(model: string): void
+  /**
+   * A subject of the card's selector that a navigation named (an entity clicked in Resources, plan
+   * 5.29): read when the card stage mounts, which then opens on it rather than on the subject.
+   */
+  cardSubject?(): string | undefined
   /** Switch the open subject to another of its views (the replay's 3D world); false when absent. */
   showStage?(stageId: string): Promise<boolean>
   /** A file-manager action on the shown archive; `true` when it changed. */
