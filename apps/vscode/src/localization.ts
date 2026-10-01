@@ -380,6 +380,8 @@ const EN_MESSAGES = Object.freeze({
   'vscode.batch.summary': 'Converted {converted} of {total} files; skipped {skipped}, failed {failed}.',
   'vscode.batch.showReport': 'Show report',
   'vscode.language.incomplete': 'Modkit: the first {count} results — the list is incomplete',
+  'vscode.map.installationAmbiguous': 'Several installations of the game were found. Choose the one maps open with, then open the map again.',
+  'vscode.map.chooseInstallation': 'Choose Installation',
   'vscode.webview.noCodecClaimed':
     '{name} — no codec claimed it ({reason}); showing the raw bytes.',
   'vscode.webview.mapWorldUnavailable':
@@ -918,6 +920,8 @@ const RU_MESSAGES: Readonly<Record<keyof typeof EN_MESSAGES, string>> = Object.f
   'vscode.batch.summary': 'Сконвертировано {converted} из {total}; пропущено {skipped}, ошибок {failed}.',
   'vscode.batch.showReport': 'Показать отчёт',
   'vscode.language.incomplete': 'Modkit: первые {count} результатов — список неполный',
+  'vscode.map.installationAmbiguous': 'Найдено несколько установок игры. Выберите, с какой открывать карты, и откройте карту снова.',
+  'vscode.map.chooseInstallation': 'Выбрать установку',
   'vscode.webview.noCodecClaimed':
     '{name} — ни один кодек не распознал файл ({reason}); показаны исходные байты.',
   'vscode.webview.mapWorldUnavailable':

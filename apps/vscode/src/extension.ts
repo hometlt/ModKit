@@ -5753,6 +5753,24 @@ async function activateModkit(
     readonly path?: string
   }[] = []
 
+  /*
+   * Several confirmed installations and none chosen: the map preview cannot pick one, and the reader
+   * is asked to, once per window, with the picker the Sources view uses (plan 6.15).
+   */
+  let installationChoiceOffered = false
+  const offerInstallationChoice = (): void => {
+    if (installationChoiceOffered) return
+    installationChoiceOffered = true
+    const choose = localizer.text('vscode.map.chooseInstallation')
+    void vscode.window
+      .showInformationMessage(
+        `Modkit: ${localizer.text('vscode.map.installationAmbiguous')}`,
+        choose,
+      )
+      .then(answer => {
+        if (answer === choose) void vscode.commands.executeCommand('modkit.selectGameInstallation')
+      })
+  }
   const publishDiagnostic = (item: {
     readonly code: string
     readonly message: string
@@ -5760,6 +5778,7 @@ async function activateModkit(
     readonly path?: string
   }): void => {
     publishedSubjectDiagnostics.push(item)
+    if (item.code === 'x3.host/map-preview-installation-ambiguous') offerInstallationChoice()
     if (item.path === undefined) return
     // Either kind of subject, on the same panel: a finding about a member of an archive is shown
     // against the member, addressed by the URI the Explorer already shows it under.
