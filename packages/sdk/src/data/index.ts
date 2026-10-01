@@ -795,7 +795,8 @@ function knownFields(
   fields: ReadonlyMap<string, DataSchemaField>,
 ): Record<string, JsonValue> {
   const known: Record<string, JsonValue> = {}
-  for (const [fieldId, value] of Object.entries(patch)) if (fields.has(fieldId)) known[fieldId] = value
+  for (const [fieldId, value] of Object.entries(patch))
+    if (fields.has(fieldId)) known[fieldId] = value
   return known
 }
 
