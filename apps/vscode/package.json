@@ -318,7 +318,11 @@
       { "command": "modkit.strings.extractChanged", "title": "%command.extractChangedStrings%" },
       { "command": "modkit.strings.translationGaps", "title": "%command.translationGaps%" },
       { "command": "modkit.syncEditorAssociations", "title": "%command.syncEditorAssociations%" },
-      { "command": "modkit.template.reveal", "title": "%command.revealTemplate%" },
+      {
+        "command": "modkit.template.reveal",
+        "title": "%command.revealTemplate%",
+        "icon": "$(open-preview)"
+      },
       {
         "command": "modkit.unloadSource",
         "title": "%command.unloadContentSource%",
@@ -873,6 +877,11 @@
           "command": "modkit.openMap3D",
           "when": "activeCustomEditorId =~ /^modkit\\./ && (resourceExtname =~ /^\\.(sc2map|s2ma)$/i || resourceFilename == MapInfo)",
           "group": "navigation@5"
+        },
+        {
+          "command": "modkit.template.reveal",
+          "when": "editorLangId == sc2-layout",
+          "group": "navigation@3"
         },
         {
           "command": "modkit.verifyDocument",
