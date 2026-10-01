@@ -380,6 +380,12 @@ export const PARTS = Object.freeze([
   'form.description',
   'form.control',
   'form.input',
+  // the subject picker a reference field opens (a unit, a model)
+  'selector',
+  'selector.search',
+  'selector.candidates',
+  'selector.more',
+  'selector.status',
   'form.select',
   'form.actions',
   'form.button',

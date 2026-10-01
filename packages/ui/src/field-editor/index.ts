@@ -16,6 +16,7 @@ import type {
 import { compareUtf8 } from '@modkit/core'
 import { isKnowledgeTarget } from '@modkit/sdk/knowledge'
 import { candidateTargetForField, mountSubjectSelector } from '../selector/index.js'
+import { setPart } from '../parts.js'
 
 export interface FieldEditorControlV1 {
   read(): JsonValue
@@ -312,7 +313,7 @@ export async function mountFieldEditor(
     unavailable.disabled = true
     unavailable.setAttribute('name', field.key)
     unavailable.setAttribute('aria-label', field.label)
-    unavailable.setAttribute('part', 'form.input')
+    setPart(unavailable, 'form.input')
     container.append(unavailable)
     return Object.freeze({
       read: () => fieldValue(field, unavailable.value),
@@ -334,7 +335,7 @@ export async function mountFieldEditor(
         : document.createElement('input')
   input.setAttribute('name', field.key)
   input.setAttribute('aria-label', field.label)
-  input.setAttribute('part', 'form.input')
+  setPart(input, 'form.input')
   if (input instanceof HTMLSelectElement && field.type.kind === 'enum') {
     for (const member of field.type.members) {
       const option = document.createElement('option')

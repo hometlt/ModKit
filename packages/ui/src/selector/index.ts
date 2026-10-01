@@ -14,6 +14,7 @@ import type {
 // the subpath, not the root: a viewer that imports the selector must not carry every sdk schema
 import { createSubjectCandidateProvider, loadSubjectCandidatePage } from '@modkit/sdk/subjects'
 import { unknownSourceLease } from '../viewer/index.js'
+import { setPart } from '../parts.js'
 
 /** Translate a portable reference field into the shared selector query without format branches. */
 export function candidateTargetForField(type: FieldType): SubjectCandidateTarget | undefined {
@@ -188,20 +189,20 @@ export async function mountSubjectSelector(
 ): Promise<SubjectSelectorControl> {
   const document = container.ownerDocument
   const root = document.createElement('div')
-  root.setAttribute('part', 'selector')
+  setPart(root, 'selector')
   const search = document.createElement('input')
   search.type = 'search'
-  search.setAttribute('part', 'selector.search')
+  setPart(search, 'selector.search')
   search.setAttribute('aria-label', options.labels?.search ?? 'Search candidates')
   const select = document.createElement('select')
-  select.setAttribute('part', 'selector.candidates')
+  setPart(select, 'selector.candidates')
   select.setAttribute('aria-label', options.labels?.candidates ?? 'Candidates')
   const more = document.createElement('button')
   more.type = 'button'
-  more.setAttribute('part', 'selector.more')
+  setPart(more, 'selector.more')
   more.textContent = options.labels?.loadMore ?? 'Load more'
   const status = document.createElement('output')
-  status.setAttribute('part', 'selector.status')
+  setPart(status, 'selector.status')
   root.append(search, select, more, status)
   container.append(root)
 
