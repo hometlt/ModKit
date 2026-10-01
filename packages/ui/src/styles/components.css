@@ -1125,6 +1125,20 @@
     font-variant-numeric: tabular-nums;
   }
 
+  /* The shown sprite-sheet frame, enlarged by whole pixels over a checker of canvas tokens. */
+  [data-mk-part='image.frame-preview'] {
+    display: block;
+    max-inline-size: 100%;
+    margin-block: var(--mk-space-2);
+    border: 1px solid var(--mk-color-border);
+    background: repeating-conic-gradient(
+        var(--mk-color-canvas-grid) 0% 25%,
+        var(--mk-color-canvas-bg) 0% 50%
+      )
+      0 0 / 12px 12px;
+    image-rendering: pixelated;
+  }
+
   [data-mk-part='audio.waveform'] {
     display: block;
     width: 100%;

@@ -188,6 +188,7 @@ export const PARTS = Object.freeze([
   'image.toolbar',
   'image.readout',
   'image.subresources',
+  'image.frame-preview',
   'image.convert',
   'image.metadata',
 

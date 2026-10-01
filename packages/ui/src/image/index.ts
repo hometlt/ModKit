@@ -24,6 +24,7 @@ import type {
   RasterImageSource,
   ResolvedAssetDescriptor,
   ViewerModule,
+  RasterAtlasRegion,
 } from '@modkit/sdk'
 import {
   createSurface,
@@ -48,6 +49,7 @@ import {
 } from '../image-editing/index.js'
 import { collectEncodedMedia } from '../media/encoded.js'
 import { formatEntryBytes } from '../namespace/index.js'
+import { frameFileName, gridFrames, shownRegion } from './frames.js'
 import {
   exportOffer,
   mountFieldEditor,
@@ -58,6 +60,9 @@ import {
 import type { UiLocalizer } from '../localization/index.js'
 import { IMAGE_FALLBACK_MESSAGES } from '../localization/fallback-catalogs.generated.js'
 import { withEnglishUiFallback } from '../localization/fallback.js'
+
+/** Longest edge of the enlarged frame in the Frames section, in CSS pixels. */
+const FRAME_PREVIEW_EDGE = 192
 
 /** Refuse to materialise more than this; a texture atlas is fine, a 2 GiB blob is not. */
 export const IMAGE_MAXIMUM_BYTES = 64 * 1024 * 1024
@@ -496,6 +501,32 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
       let editing: ImageEditing | undefined
       /** Where the image was last drawn, in CSS pixels of the render area. */
       let placed = { x: 0, y: 0, width: 1, height: 1, scale: 1 }
+      /*
+       * Sprite-sheet frames (MK2's sprite viewer): the codec's atlas, or a grid the reader lays
+       * over the image. One frame shows enlarged in the Frames section and Play steps through them.
+       */
+      let frameSource: 'atlas' | 'grid' = 'atlas'
+      let gridColumns = 4
+      let gridRows = 4
+      let frameIndex = 0
+      let outlineFrames = false
+      let framesPerSecond = 10
+      let frameTimer: ReturnType<typeof setInterval> | undefined
+      let framePreview: HTMLCanvasElement | undefined
+      let frameLabel: HTMLElement | undefined
+      const usingAtlas = (): boolean =>
+        frameSource === 'atlas' && (info?.atlasRegions?.length ?? 0) > 0
+      const frames = (): readonly RasterAtlasRegion[] =>
+        info === undefined
+          ? []
+          : usingAtlas()
+            ? (info.atlasRegions ?? [])
+            : gridFrames(info.width, info.height, gridColumns, gridRows)
+      const stopFrames = (): void => {
+        if (frameTimer !== undefined) clearInterval(frameTimer)
+        frameTimer = undefined
+      }
+      scope.cleanup(stopFrames)
 
       const context = canvas.getContext('2d')
       if (context === null) throw new TypeError('2d canvas context is unavailable')
@@ -765,6 +796,29 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
             context.restore()
           }
         }
+        // frame outlines over the image itself, in the theme's accent; the shown frame stronger
+        const regions = outlineFrames && info !== undefined ? frames() : []
+        if (regions.length > 0 && info !== undefined) {
+          const unitX = width / info.width
+          const unitY = height / info.height
+          context.save()
+          context.strokeStyle =
+            globalThis.getComputedStyle?.(stage).getPropertyValue('--mk-color-accent').trim() ||
+            '#3794ff'
+          regions.forEach((region, index) => {
+            const strong = index === frameIndex
+            context.globalAlpha = strong ? 1 : 0.55
+            context.lineWidth = strong ? 2 : 1
+            context.strokeRect(
+              x + region.x * unitX + context.lineWidth / 2,
+              y + region.y * unitY + context.lineWidth / 2,
+              Math.max(1, region.width * unitX - context.lineWidth),
+              Math.max(1, region.height * unitY - context.lineWidth),
+            )
+          })
+          context.restore()
+        }
+        drawFramePreview()
         setViewerText(
           readout,
           `${
@@ -780,6 +834,49 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
         renderOverlay()
         publishStatus()
         editing?.refresh()
+      }
+
+      /** The shown frame, cropped from the image on screen and enlarged by whole pixels. */
+      const drawFramePreview = (): void => {
+        const current = shown()
+        const list = frames()
+        const region = list[frameIndex]
+        if (framePreview === undefined || current === undefined || info === undefined) return
+        if (region === undefined) {
+          framePreview.hidden = true
+          if (frameLabel !== undefined) setViewerText(frameLabel, '')
+          return
+        }
+        framePreview.hidden = false
+        const crop = shownRegion(region, info, current.width, current.height)
+        const fitted = Math.min(FRAME_PREVIEW_EDGE / crop.width, FRAME_PREVIEW_EDGE / crop.height)
+        const scale = fitted >= 1 ? Math.floor(fitted) : fitted
+        framePreview.width = Math.max(1, Math.round(crop.width * scale))
+        framePreview.height = Math.max(1, Math.round(crop.height * scale))
+        const preview = framePreview.getContext('2d')
+        if (preview === null) return
+        preview.imageSmoothingEnabled = scale < 1
+        preview.drawImage(
+          current.image,
+          crop.x,
+          crop.y,
+          crop.width,
+          crop.height,
+          0,
+          0,
+          framePreview.width,
+          framePreview.height,
+        )
+        if (frameLabel !== undefined) {
+          const named = region.name !== undefined && region.name !== String(frameIndex)
+          setViewerText(
+            frameLabel,
+            `${localizer.text('viewer.imageFrameLabel', {
+              index: frameIndex + 1,
+              count: list.length,
+            })}${named ? ` · ${region.name}` : ''}`,
+          )
+        }
       }
 
       const resize = new ResizeObserver(() => paint())
@@ -1012,6 +1109,199 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
           }
           paint()
         })()
+      }
+
+      /** Every frame as a PNG of its own, from the image on screen, through the host's writer. */
+      const exportFrames = (): void => {
+        const write = options.exportBytes
+        const current = shown()
+        const list = frames()
+        if (write === undefined || current === undefined || info === undefined) return
+        if (list.length === 0) return
+        const base = info
+        const baseName = exportSafeName(
+          options.exportBaseName === undefined ? 'image' : options.exportBaseName(descriptor),
+        )
+        note = localizer.text('viewer.imageFramesExporting', { count: list.length })
+        paint()
+        void (async () => {
+          try {
+            const { encodePng } = await import('@modkit/codec-kit/raster')
+            const scratch = root.ownerDocument.createElement('canvas')
+            const scratchContext = scratch.getContext('2d', { willReadFrequently: true })
+            if (scratchContext === null) throw new TypeError('2d canvas context is unavailable')
+            const files: ImageExportFile[] = []
+            for (const [index, region] of list.entries()) {
+              const crop = shownRegion(region, base, current.width, current.height)
+              scratch.width = crop.width
+              scratch.height = crop.height
+              scratchContext.clearRect(0, 0, crop.width, crop.height)
+              scratchContext.drawImage(
+                current.image,
+                crop.x,
+                crop.y,
+                crop.width,
+                crop.height,
+                0,
+                0,
+                crop.width,
+                crop.height,
+              )
+              const pixels = scratchContext.getImageData(0, 0, crop.width, crop.height)
+              files.push({
+                name: frameFileName(baseName, index, list.length, region.name),
+                mediaType: 'image/png',
+                bytes: await encodePng(
+                  crop.width,
+                  crop.height,
+                  new Uint8Array(pixels.data.buffer),
+                  scope.signal,
+                ),
+              })
+            }
+            const outcome = await write(files, scope.signal)
+            note =
+              outcome.state === 'written'
+                ? localizer.text('viewer.imageExported', { count: outcome.names.length })
+                : localizer.text('viewer.imageExportRefused', { reason: outcome.reason })
+          } catch (error) {
+            note = localizer.text('viewer.imageExportRefused', {
+              reason: error instanceof Error ? error.message : String(error),
+            })
+          }
+          paint()
+        })()
+      }
+
+      const renderFramesSection = (): void => {
+        if (info === undefined) return
+        const atlas = info.atlasRegions ?? []
+        const section = shell.section('frames', localizer.text('viewer.imageSectionFrames'), {
+          icon: 'symbol-array',
+          collapsed: atlas.length === 0,
+        })
+        const settings = element(section.body, 'div', {
+          part: 'image.subresources',
+          role: 'toolbar',
+        })
+        const restart = (): void => {
+          frameIndex = 0
+          renderSections()
+          paint()
+        }
+        if (atlas.length > 0) {
+          const select = element(settings, 'select') as HTMLSelectElement
+          select.setAttribute('aria-label', localizer.text('viewer.imageFramesSource'))
+          for (const [value, label] of [
+            ['atlas', localizer.text('viewer.imageFramesAtlas', { count: atlas.length })],
+            ['grid', localizer.text('viewer.imageFramesGrid')],
+          ] as const) {
+            const option = element(select, 'option', { text: label }) as HTMLOptionElement
+            option.value = value
+          }
+          select.value = usingAtlas() ? 'atlas' : 'grid'
+          select.addEventListener('change', () => {
+            frameSource = select.value === 'grid' ? 'grid' : 'atlas'
+            restart()
+          })
+        }
+        if (!usingAtlas()) {
+          for (const [label, value, set] of [
+            [
+              localizer.text('viewer.imageFramesColumns'),
+              gridColumns,
+              (next: number) => {
+                gridColumns = next
+              },
+            ],
+            [
+              localizer.text('viewer.imageFramesRows'),
+              gridRows,
+              (next: number) => {
+                gridRows = next
+              },
+            ],
+          ] as const) {
+            const field = element(settings, 'label')
+            field.append(label, ' ')
+            const input = element(field, 'input') as HTMLInputElement
+            input.type = 'number'
+            input.min = '1'
+            input.max = '256'
+            input.value = String(value)
+            input.addEventListener('change', () => {
+              const next = Number(input.value)
+              if (!Number.isInteger(next) || next < 1 || next > 256) return
+              set(next)
+              frameIndex = 0
+              paint()
+            })
+          }
+        }
+        const outline = element(settings, 'label')
+        const box = element(outline, 'input') as HTMLInputElement
+        box.type = 'checkbox'
+        box.checked = outlineFrames
+        outline.append(' ', localizer.text('viewer.imageFramesOutline'))
+        box.addEventListener('change', () => {
+          outlineFrames = box.checked
+          paint()
+        })
+
+        framePreview = element(section.body, 'canvas', {
+          part: 'image.frame-preview',
+        }) as HTMLCanvasElement
+        const controls = element(section.body, 'div', {
+          part: 'image.subresources',
+          role: 'toolbar',
+        })
+        const go = (delta: number): void => {
+          const count = frames().length
+          if (count === 0) return
+          frameIndex = (((frameIndex + delta) % count) + count) % count
+          paint()
+        }
+        button(controls, '\u25C0', localizer.text('viewer.imageFramePrevious'), () => go(-1))
+        frameLabel = element(controls, 'span', { part: 'image.readout' })
+        button(controls, '\u25B6', localizer.text('viewer.imageFrameNext'), () => go(1))
+        const play = button(
+          controls,
+          localizer.text(frameTimer === undefined ? 'viewer.play' : 'viewer.pause'),
+          localizer.text('viewer.imageFramesPlayTitle'),
+          () => {
+            if (frameTimer !== undefined) stopFrames()
+            else frameTimer = setInterval(() => go(1), 1000 / framesPerSecond)
+            play.textContent = localizer.text(
+              frameTimer === undefined ? 'viewer.play' : 'viewer.pause',
+            )
+            play.setAttribute('aria-pressed', String(frameTimer !== undefined))
+          },
+          frameTimer !== undefined,
+        )
+        const speed = element(controls, 'input') as HTMLInputElement
+        speed.type = 'number'
+        speed.min = '1'
+        speed.max = '60'
+        speed.value = String(framesPerSecond)
+        speed.title = localizer.text('viewer.imageFramesFps')
+        speed.setAttribute('aria-label', localizer.text('viewer.imageFramesFps'))
+        speed.addEventListener('change', () => {
+          const next = Number(speed.value)
+          if (!Number.isFinite(next) || next < 1 || next > 60) return
+          framesPerSecond = next
+          if (frameTimer !== undefined) {
+            stopFrames()
+            frameTimer = setInterval(() => go(1), 1000 / framesPerSecond)
+          }
+        })
+        if (options.exportBytes !== undefined) {
+          button(
+            controls,
+            localizer.text('viewer.imageFramesExport'),
+            localizer.text('viewer.imageFramesExportTitle'),
+            exportFrames,
+          )
+        }
       }
 
       // ---------------------------------------------------------------- editing
@@ -1282,6 +1572,7 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
             }
           }
         }
+        renderFramesSection()
         /*
          * Edit is MK2's section: collapsed until asked for, because expanding it is what puts the
          * tools on the pointer. The host says whether the codec can write these pixels back.
