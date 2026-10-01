@@ -1472,14 +1472,29 @@
       "when": "!modkit.ready"
     },
     {
+      "view": "modkit.extensions",
+      "contents": "%view.extensionsEmpty%",
+      "when": "modkit.ready"
+    },
+    {
       "view": "modkit.resources",
       "contents": "%view.loading%",
       "when": "!modkit.ready"
     },
     {
+      "view": "modkit.resources",
+      "contents": "%view.resourcesEmpty%",
+      "when": "modkit.ready"
+    },
+    {
       "view": "modkit.sources",
       "contents": "%view.loading%",
       "when": "!modkit.ready"
+    },
+    {
+      "view": "modkit.sources",
+      "contents": "%view.sourcesEmpty%",
+      "when": "modkit.ready"
     }
   ]
 }
