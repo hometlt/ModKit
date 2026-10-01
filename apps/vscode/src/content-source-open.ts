@@ -2,8 +2,8 @@ import { createHash, randomUUID } from 'node:crypto'
 import { revisionId, type ArtifactByteSource, type ResourceBudget } from '@modkit/sdk'
 import type { Diagnostic } from '@modkit/core'
 import {
-  createCompanionInputResolver,
   createContentAssetOrigin,
+  createContentSourceInputResolver,
   subjectOpenSnapshot,
   resolveCommonPresentationPlan,
   type SubjectServices,
@@ -73,13 +73,23 @@ export function contentSourceOpener(
       ...(sources === undefined || target === undefined
         ? {}
         : {
-            resolveInput: createCompanionInputResolver(
-              createContentAssetOrigin({
-                contentSources: sources,
-                target,
-                onDiagnostic: item => companionDiagnostics.push(item),
-              }),
-            ),
+            /*
+             * The source's own folders first — a model's skin and motion files beside it — then
+             * the resources of its mod, as a file on disk gets them.
+             */
+            resolveInput: createContentSourceInputResolver({
+              contentSources: sources,
+              target,
+              inventory: services.inventory,
+              assetOrigins: [
+                createContentAssetOrigin({
+                  contentSources: sources,
+                  target,
+                  onDiagnostic: item => companionDiagnostics.push(item),
+                }),
+              ],
+              onDiagnostic: item => companionDiagnostics.push(item),
+            }),
           }),
       budget,
       ...(signal === undefined ? {} : { signal }),
