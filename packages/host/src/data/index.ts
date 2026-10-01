@@ -1367,11 +1367,15 @@ function validateWorkspacePlan(
         `workspace data requirement ${requirement.requirementId} names unknown root`,
       )
     }
-    const rootPath = confinedPath(root.root.sourcePath, `${requirement.requirementId}.root`)
+    // an empty root is its whole source (a game installation's layer): any path lies under it
+    const rootPath =
+      root.root.sourcePath === ''
+        ? ''
+        : confinedPath(root.root.sourcePath, `${requirement.requirementId}.root`)
     const path = confinedPath(requirement.path, `${requirement.requirementId}.path`)
     const foldedRoot = rootPath.toLocaleLowerCase()
     const foldedPath = path.toLocaleLowerCase()
-    if (foldedPath !== foldedRoot && !foldedPath.startsWith(`${foldedRoot}/`)) {
+    if (rootPath !== '' && foldedPath !== foldedRoot && !foldedPath.startsWith(`${foldedRoot}/`)) {
       throw new TypeError(
         `workspace data requirement ${requirement.requirementId} escapes its root`,
       )
