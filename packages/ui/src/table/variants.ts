@@ -54,6 +54,8 @@ const FILTER_LABELS = {
   untranslated: 'table.filterUntranslated',
   duplicate: 'table.filterDuplicate',
   empty: 'table.filterEmpty',
+  // a value the codec's checks refuse in some locale (SC2: markup, a hotkey)
+  error: 'table.filterErrors',
   changed: 'table.filterChanged',
 } as const
 const COMPARE_LABELS = {
@@ -278,7 +280,7 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
   const panel = element(args.root, 'section', { part: 'table.panel' })
   panel.hidden = true
   args.before.before(bar, status, panel)
-  const statuses = ['missing', 'untranslated', 'duplicate', 'empty', 'changed'] as const
+  const statuses = ['missing', 'untranslated', 'duplicate', 'empty', 'error', 'changed'] as const
   const matchToggles = (
     target: { caseSensitive: boolean; wholeWord: boolean; regex: boolean },
     prefix: string,

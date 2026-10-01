@@ -85,7 +85,7 @@ beforeAll(async () => {
       const rows = [
         ['Abil/Name/A', 'Alpha', 'Альфа', 'Alpha', ''],
         ['Abil/Name/B', 'Beta', '', 'Beta', 'missing'],
-        ['Unit/Name/C', 'Gamma', 'Gamma', 'Gamma', 'untranslated'],
+        ['Unit/Name/C', 'Gamma', 'Gamma', 'Gamma', 'untranslated error'],
       ]
       const calls: { handler: string; input: unknown }[] = []
       const commits: unknown[] = []
@@ -337,6 +337,10 @@ describe('variant table surface', () => {
     await page.click('button[aria-label="Empty"]')
     expect(await keys()).toEqual(['Abil/Name/B'])
     await page.click('button[aria-label="Empty"]')
+    // a value the codec's checks refuse: its status column says `error`
+    await page.click('button[aria-label="Errors"]')
+    expect(await keys()).toEqual(['Unit/Name/C'])
+    await page.click('button[aria-label="Errors"]')
     await page.selectOption('select[aria-label="Key group"]', 'Unit/')
     expect(await keys()).toEqual(['Unit/Name/C'])
     await page.selectOption('select[aria-label="Key group"]', '')

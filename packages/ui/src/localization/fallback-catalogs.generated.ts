@@ -741,6 +741,7 @@ export const TABLE_VARIANTS_FALLBACK_MESSAGES = {
   'table.filterChanged': 'Changed',
   'table.filterDuplicate': 'Duplicates',
   'table.filterEmpty': 'Empty',
+  'table.filterErrors': 'Errors',
   'table.filterMissing': 'Missing',
   'table.filterUntranslated': 'Untranslated',
   'table.filters': 'Table filters',
