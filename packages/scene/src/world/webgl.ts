@@ -241,6 +241,8 @@ interface MutableSplatBatch extends MutableBatch {
   readonly normalTextures: readonly (SceneRendererTexture | undefined)[]
   /** Layer-aligned normalSwizzleOf: 1 X in alpha and Y in green (DXN), 2 Y against v. */
   readonly normalSwizzles: readonly number[]
+  /** Layer-aligned colour each layer's texture is multiplied by (baseColorFactor); absent is white. */
+  readonly layerColors?: readonly (readonly [number, number, number])[]
   readonly weightTextures?: readonly SceneRendererTexture[]
   readonly weightTextureCoordinates?: number[]
 }
@@ -328,6 +330,7 @@ export interface WorldWebGlSplatBatch extends WorldWebGlBatch {
   readonly textures: readonly SceneRendererTexture[]
   readonly normalTextures: readonly (SceneRendererTexture | undefined)[]
   readonly normalSwizzles: readonly number[]
+  readonly layerColors?: readonly (readonly [number, number, number])[]
   readonly weightTextures?: readonly SceneRendererTexture[]
   readonly weightTextureCoordinates?: Float32Array
 }
@@ -1577,6 +1580,22 @@ const MISSING_TERRAIN_LAYER_TEXTURE: SceneRendererTexture = Object.freeze({
   rgba: Uint8Array.of(128, 128, 128, 255),
 })
 
+/** A layer that is its baseColorFactor alone: glTF's colour without a texture. */
+const WHITE_TERRAIN_LAYER_TEXTURE: SceneRendererTexture = Object.freeze({
+  id: 'modkit.world/white-terrain-layer',
+  width: 1,
+  height: 1,
+  rgba: Uint8Array.of(255, 255, 255, 255),
+})
+
+/** The colour a blended terrain layer's texture is multiplied by: glTF baseColorFactor RGB. */
+function terrainLayerColor(
+  definition: MapTerrainMaterialDefinition | undefined,
+): readonly [number, number, number] {
+  const factor = definition?.baseColorFactor
+  return factor === undefined ? [1, 1, 1] : [factor[0], factor[1], factor[2]]
+}
+
 /** A terrain material's normalEncoding as the shader's swizzle: 0 RGB, 1 DXN, 2 Y against v. */
 function normalSwizzleOf(encoding: MapTerrainMaterialDefinition['normalEncoding']): number {
   return encoding === 'xy-in-alpha-green' ? 1 : encoding === 'rgb-inverted-y' ? 2 : 0
@@ -2222,6 +2241,9 @@ function frozenSplatBatch(source: MutableSplatBatch): WorldWebGlSplatBatch {
       : { specularTextures: Object.freeze([...source.specularTextures]) }),
     ...(source.specularGloss === undefined ? {} : { specularGloss: source.specularGloss }),
     normalSwizzles: Object.freeze([...source.normalSwizzles]),
+    ...(source.layerColors === undefined
+      ? {}
+      : { layerColors: Object.freeze(source.layerColors.map(color => Object.freeze([...color]))) }),
     ...(source.weightTextures === undefined
       ? {}
       : { weightTextures: Object.freeze([...source.weightTextures]) }),
@@ -4153,13 +4175,17 @@ function prepareWorldStaticTerrain(
     const resolved = definitions as readonly MapTerrainMaterialDefinition[]
     return Object.freeze({
       definitions: resolved,
-      // One unresolved layer must not drop per-pixel blending for the whole map.
+      // One unresolved layer must not drop per-pixel blending for the whole map; a layer that
+      // declares only a colour is that colour (glTF baseColorFactor without a texture).
       textures: resolved.map(definition =>
         definition.baseColorResourceId === undefined
-          ? MISSING_TERRAIN_LAYER_TEXTURE
+          ? definition.baseColorFactor === undefined
+            ? MISSING_TERRAIN_LAYER_TEXTURE
+            : WHITE_TERRAIN_LAYER_TEXTURE
           : (input.terrainTextures?.get(definition.baseColorResourceId) ??
             MISSING_TERRAIN_LAYER_TEXTURE),
       ),
+      layerColors: resolved.map(terrainLayerColor),
       normalTextures: resolved.map(definition =>
         definition.normalResourceId === undefined
           ? undefined
@@ -4197,6 +4223,7 @@ function prepareWorldStaticTerrain(
       group.textures.map(candidate => candidate.id).join(String.fromCharCode(0)),
       group.normalTextures.map(candidate => candidate?.id ?? '').join(String.fromCharCode(0)),
       group.weightTextures.map(candidate => candidate.id).join(String.fromCharCode(0)),
+      group.layerColors.map(color => color.join(',')).join(';'),
     ].join(String.fromCharCode(0))
   /** The one batch that draws the exact raster splat: the height field and the cliff tiles share it. */
   const rasterSplatKey =
@@ -4219,6 +4246,7 @@ function prepareWorldStaticTerrain(
     specularTextures: group.specularTextures,
     specularGloss: group.specularGloss,
     normalSwizzles: group.normalSwizzles,
+    layerColors: group.layerColors,
     weightTextures: group.weightTextures,
     weightTextureCoordinates: [],
   })
@@ -5111,11 +5139,14 @@ function prepareWorldStaticTerrain(
             ? undefined
             : input.terrainTextures?.get(layer.definition.normalResourceId),
         )
+        const layerColors = resolvedSplat.map(layer => terrainLayerColor(layer.definition))
         const key = `terrain-splat\u0000${textures
           .map(candidate => candidate.id)
           .join(
             '\u0000',
-          )}\u0000${normalTextures.map(candidate => candidate?.id ?? '').join('\u0000')}`
+          )}\u0000${normalTextures.map(candidate => candidate?.id ?? '').join('\u0000')}\u0000${layerColors
+          .map(color => color.join(','))
+          .join(';')}`
         const target = splat.get(key) ?? {
           ...batch(),
           textureCoordinates: textures.map(() => []),
@@ -5129,6 +5160,7 @@ function prepareWorldStaticTerrain(
               : input.terrainTextures?.get(layer.definition.specularResourceId),
           ),
           normalSwizzles: resolvedSplat.map(layer => normalSwizzleOf(layer.definition.normalEncoding)),
+          layerColors,
           specularGloss: resolvedSplat.some(layer => layer.definition.specularEncoding === 'gloss'),
         }
         splat.set(key, target)
@@ -6862,6 +6894,8 @@ uniform sampler2D secondaryColorMap;
 uniform sampler2DArray terrainMaps;
 uniform sampler2DArray terrainNormalMaps;
 uniform sampler2D terrainWeightMaps[2];
+// Each blended layer's baseColorFactor RGB; indexed by literals only (ANGLE, see the fill lights).
+uniform vec4 terrainLayerColor[8];
 uniform vec4 terrainNormalMask0;
 uniform vec4 terrainNormalMask1;
 uniform vec4 terrainNormalSwizzle0;
@@ -7117,14 +7151,15 @@ void main() {
   }
   if (splatTextured > 0.5) {
     vec4 mixedSurface = vec4(0.0);
-    mixedSurface += terrainLayerSample(terrainMaps, 0, splatTextureCoordinates[0]) * resolvedSplatWeights0.x;
-    mixedSurface += terrainLayerSample(terrainMaps, 1, splatTextureCoordinates[1]) * resolvedSplatWeights0.y;
-    mixedSurface += terrainLayerSample(terrainMaps, 2, splatTextureCoordinates[2]) * resolvedSplatWeights0.z;
-    mixedSurface += terrainLayerSample(terrainMaps, 3, splatTextureCoordinates[3]) * resolvedSplatWeights0.w;
-    mixedSurface += terrainLayerSample(terrainMaps, 4, splatTextureCoordinates[4]) * resolvedSplatWeights1.x;
-    mixedSurface += terrainLayerSample(terrainMaps, 5, splatTextureCoordinates[5]) * resolvedSplatWeights1.y;
-    mixedSurface += terrainLayerSample(terrainMaps, 6, splatTextureCoordinates[6]) * resolvedSplatWeights1.z;
-    mixedSurface += terrainLayerSample(terrainMaps, 7, splatTextureCoordinates[7]) * resolvedSplatWeights1.w;
+    // glTF baseColorFactor multiplies each layer's colour; its alpha (SC2 specular) stays as read.
+    mixedSurface += terrainLayerSample(terrainMaps, 0, splatTextureCoordinates[0]) * vec4(terrainLayerColor[0].rgb, 1.0) * resolvedSplatWeights0.x;
+    mixedSurface += terrainLayerSample(terrainMaps, 1, splatTextureCoordinates[1]) * vec4(terrainLayerColor[1].rgb, 1.0) * resolvedSplatWeights0.y;
+    mixedSurface += terrainLayerSample(terrainMaps, 2, splatTextureCoordinates[2]) * vec4(terrainLayerColor[2].rgb, 1.0) * resolvedSplatWeights0.z;
+    mixedSurface += terrainLayerSample(terrainMaps, 3, splatTextureCoordinates[3]) * vec4(terrainLayerColor[3].rgb, 1.0) * resolvedSplatWeights0.w;
+    mixedSurface += terrainLayerSample(terrainMaps, 4, splatTextureCoordinates[4]) * vec4(terrainLayerColor[4].rgb, 1.0) * resolvedSplatWeights1.x;
+    mixedSurface += terrainLayerSample(terrainMaps, 5, splatTextureCoordinates[5]) * vec4(terrainLayerColor[5].rgb, 1.0) * resolvedSplatWeights1.y;
+    mixedSurface += terrainLayerSample(terrainMaps, 6, splatTextureCoordinates[6]) * vec4(terrainLayerColor[6].rgb, 1.0) * resolvedSplatWeights1.z;
+    mixedSurface += terrainLayerSample(terrainMaps, 7, splatTextureCoordinates[7]) * vec4(terrainLayerColor[7].rgb, 1.0) * resolvedSplatWeights1.w;
     // SC2 TerrainBlend_CopyTerrainSpec reads diffuse alpha as specular, not coverage.
     terrainSpecular = mixedSurface.a;
     surface.rgb *= mixedSurface.rgb;
@@ -8918,6 +8953,10 @@ function drawSplatBatch(
     uniformLayers('terrainClampU1', clampU.slice(4, 8))
     uniformLayers('terrainClampV0', clampV.slice(0, 4))
     uniformLayers('terrainClampV1', clampV.slice(4, 8))
+    // all eight on every draw: a batch without colours must not keep the previous batch's
+    const layerColors = new Float32Array(32).fill(1)
+    source.layerColors?.forEach((color, layer) => layerColors.set(color, layer * 4))
+    gl.uniform4fv(uniformLocation(gl, program, 'terrainLayerColor'), layerColors)
     worldUniform1f(gl, program, 'textured', 0)
     worldUniform1f(gl, program, 'alphaCutoff', 0)
     worldUniform1f(gl, program, 'normalTextured', 0)

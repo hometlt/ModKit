@@ -1394,6 +1394,65 @@ describe('common world WebGL plan', () => {
       Array.from(plan.splatTriangles[0].weightTextureCoordinates),
       [0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1],
     )
+    // without baseColorFactor every layer is drawn as its texture: white multipliers
+    assert.deepEqual(plan.splatTriangles[0].layerColors, [
+      [1, 1, 1],
+      [1, 1, 1],
+    ])
+  })
+
+  it('multiplies each raster-blended layer by its baseColorFactor, the colour alone without a texture', () => {
+    const terrain = [
+      [0, 0],
+      [1, 0],
+      [0, 1],
+      [1, 1],
+    ].map(([x, y], index) => ({
+      facet: 'terrain',
+      id: `tinted-terrain:${index}`,
+      layerId: 'terrain',
+      coordinateSpaceId: 'height-grid',
+      lod: 'exact',
+      x,
+      y,
+      heightBase: 0,
+      heightAdjustment: 0,
+      mask: 0,
+      uvwPosition: { x, y: 0, z: y },
+    }))
+    const texture = (id, rgba) => ({ id, width: 1, height: 1, rgba: Uint8Array.from(rgba) })
+    // Roblox: a grey variant ColorMap tinted by Terrain.MaterialColors, and a colour-only material
+    const plan = createWorldWebGlPlan({
+      items: terrain,
+      terrainMaterials: [
+        { materialId: 'grass', baseColorResourceId: 'grass.png', baseColorFactor: [0.68, 0.52, 0.24, 1] },
+        { materialId: 'mud', baseColorFactor: [0.43, 0.24, 0.16, 1] },
+      ],
+      terrainWeightRasters: [
+        {
+          resourceId: 'weights',
+          width: 1,
+          height: 1,
+          materialIds: ['grass', 'mud'],
+          encoding: 'rgba8-unorm',
+          normalization: 'sum',
+        },
+      ],
+      terrainTextures: new Map([
+        ['grass.png', texture('grass.png', [128, 128, 128, 255])],
+        ['weights', texture('weights', [128, 127, 0, 0])],
+      ]),
+    })
+    assert.equal(plan.splatTriangles.length, 1)
+    const batch = plan.splatTriangles[0]
+    assert.deepEqual(
+      batch.textures.map(item => item.id),
+      ['grass.png', 'modkit.world/white-terrain-layer'],
+    )
+    assert.deepEqual(batch.layerColors, [
+      [0.68, 0.52, 0.24],
+      [0.43, 0.24, 0.16],
+    ])
   })
 
   it('ray-picks exact UVM instance triangles and terrain with the render camera', () => {
