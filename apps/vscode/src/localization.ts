@@ -379,6 +379,7 @@ const EN_MESSAGES = Object.freeze({
   'vscode.batch.notOpened': 'no codec opened it',
   'vscode.batch.summary': 'Converted {converted} of {total} files; skipped {skipped}, failed {failed}.',
   'vscode.batch.showReport': 'Show report',
+  'vscode.language.incomplete': 'Modkit: the first {count} results — the list is incomplete',
   'vscode.webview.noCodecClaimed':
     '{name} — no codec claimed it ({reason}); showing the raw bytes.',
   'vscode.webview.mapWorldUnavailable':
@@ -916,6 +917,7 @@ const RU_MESSAGES: Readonly<Record<keyof typeof EN_MESSAGES, string>> = Object.f
   'vscode.batch.notOpened': 'ни один кодек его не открыл',
   'vscode.batch.summary': 'Сконвертировано {converted} из {total}; пропущено {skipped}, ошибок {failed}.',
   'vscode.batch.showReport': 'Показать отчёт',
+  'vscode.language.incomplete': 'Modkit: первые {count} результатов — список неполный',
   'vscode.webview.noCodecClaimed':
     '{name} — ни один кодек не распознал файл ({reason}); показаны исходные байты.',
   'vscode.webview.mapWorldUnavailable':

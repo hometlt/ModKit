@@ -7175,6 +7175,16 @@ async function activateModkit(
 
   /** The schemes of a file a page may ask this window to show: on disk, of a source, in a container. */
   const SOURCE_SCHEMES = new Set(['file', 'modkit-source', CONTAINER_SCHEME])
+  /**
+   * A list the snapshot's limits cut (references, workspace symbols): VS Code has no flag for it, so
+   * the status bar says the list is not all there rather than letting it pass for complete.
+   */
+  const announceIncomplete = (count: number): void => {
+    vscode.window.setStatusBarMessage(
+      `$(warning) ${localizer.text('vscode.language.incomplete', { count })}`,
+      8_000,
+    )
+  }
   /** A link's target as the editor opens it: a content-source address through its mounted source. */
   const linkTarget = (target: string): vscode.Uri | undefined => {
     const place = target.startsWith('content-source:') ? subjectTarget(target) : undefined
@@ -7833,6 +7843,7 @@ async function activateModkit(
               context.includeDeclaration,
               cancellation.signal,
             )
+            if (result?.isIncomplete === true) announceIncomplete(result.locations.length)
             return result?.locations.map(nativeLocation)
           } catch (error) {
             if (token.isCancellationRequested) return undefined
@@ -7891,6 +7902,7 @@ async function activateModkit(
           const cancellation = signalFor(token)
           try {
             const result = await languageController.workspaceSymbols(query, cancellation.signal)
+            if (result?.isIncomplete === true) announceIncomplete(result.symbols.length)
             return result?.symbols.map(
               symbol =>
                 new vscode.SymbolInformation(
