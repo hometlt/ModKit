@@ -955,12 +955,6 @@
       "configuration": "./media/war3-fdf-language-configuration.json"
     }
   ],
-  "snippets": [
-    {
-      "language": "galaxy",
-      "path": "./media/galaxy-snippets.json"
-    }
-  ],
   "iconThemes": [
     {
       "id": "modkit-file-icons",

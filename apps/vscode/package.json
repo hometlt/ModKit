@@ -1264,7 +1264,6 @@
         }
       ]
     },
-    "snippets": [{ "language": "galaxy", "path": "./media/galaxy-snippets.json" }],
     "views": {
       "modkit": [
         { "id": "modkit.accounts", "name": "%view.accounts%" },

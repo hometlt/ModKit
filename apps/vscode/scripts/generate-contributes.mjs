@@ -93,7 +93,7 @@ if (
 ) {
   throw new TypeError('debuggers must contain unique non-empty types')
 }
-// Galaxy snippets, the file icon theme and editor defaults for the game languages (from MK2).
+// Snippets, the file icon theme and editor defaults for the game languages (from MK2).
 const snippets = [...(input.snippets ?? [])].sort((a, b) => compareUtf8(a.language, b.language))
 const iconThemes = [...(input.iconThemes ?? [])].sort((a, b) => compareUtf8(a.id, b.id))
 if (

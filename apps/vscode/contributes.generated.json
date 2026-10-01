@@ -1497,12 +1497,6 @@
       }
     ]
   },
-  "snippets": [
-    {
-      "language": "galaxy",
-      "path": "./media/galaxy-snippets.json"
-    }
-  ],
   "views": {
     "modkit": [
       {
