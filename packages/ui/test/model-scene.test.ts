@@ -157,6 +157,43 @@ describe('model stage materials', () => {
     expect(surfaces.materials[0]?.baseColorTexture).toBeUndefined()
   })
 
+  it("carries a publisher's material properties to the renderer", () => {
+    const texture = {
+      id: 'texture:grille.dds',
+      width: 1,
+      height: 1,
+      rgba: Uint8Array.of(255, 255, 255, 255),
+    }
+    const surfaces = sceneMaterials(
+      [
+        // Roblox Neon: a colour without a texture, drawn without light
+        { id: 'neon', baseColorFactor: [0, 1, 0.5, 1], unlit: true },
+        // an effect: two-sided, no depth write, drawn after the other translucent draws
+        {
+          id: 'glow',
+          alphaMode: 'blend',
+          doubleSided: true,
+          depthWrite: false,
+          priority: 3,
+          baseColorFactor: [1, 0.5, 0.5, 0.5],
+          layers: [{ slot: 'diffuse', resourceId: 'grille.dds' }],
+        },
+      ],
+      new Map([['grille.dds', texture]]),
+      true,
+    )
+    expect(surfaces.materials[0]).toMatchObject({ baseColor: [0, 1, 0.5, 1], shading: 'unlit' })
+    expect(surfaces.materials[1]).toMatchObject({
+      // the factor multiplies the texture
+      baseColor: [1, 0.5, 0.5, 0.5],
+      baseColorTexture: 'texture:grille.dds',
+      shading: 'lambert',
+      doubleSided: true,
+      depthWrite: false,
+      priority: 3,
+    })
+  })
+
   it('binds a resolved texture to the layer that names it', () => {
     const refs: readonly ModelMaterialRef[] = [
       { id: 'hull', layers: [{ slot: 'Diffuse' }, { slot: 'diffuse', resourceId: 'hull.dds' }] },

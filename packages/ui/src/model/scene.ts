@@ -408,9 +408,15 @@ export function sceneMaterials(
        * it by the untextured grey made textured models darker than untextured ones — worst on the
        * dark textures where detail matters most.
        */
-      baseColor: texture === undefined ? materialColorFor(ref.id) : MODEL_TEXTURED_BASE_COLOR,
+      // A stated factor multiplies the texture, or is the colour itself without one (glTF).
+      baseColor:
+        ref.baseColorFactor ??
+        (texture === undefined ? materialColorFor(ref.id) : MODEL_TEXTURED_BASE_COLOR),
       ...(texture === undefined ? {} : { baseColorTexture: texture.id }),
-      shading: shaded ? ('lambert' as const) : ('unlit' as const),
+      shading: shaded && ref.unlit !== true ? ('lambert' as const) : ('unlit' as const),
+      ...(ref.doubleSided === undefined ? {} : { doubleSided: ref.doubleSided }),
+      ...(ref.depthWrite === undefined ? {} : { depthWrite: ref.depthWrite }),
+      ...(ref.priority === undefined ? {} : { priority: ref.priority }),
       ...(ref.alphaMode === undefined ? {} : { alphaMode: ref.alphaMode }),
       ...(ref.alphaCutoff === undefined ? {} : { alphaCutoff: ref.alphaCutoff }),
       ...(ref.shader === undefined ? {} : { shader: ref.shader }),
