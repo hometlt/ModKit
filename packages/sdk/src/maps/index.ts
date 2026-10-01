@@ -605,6 +605,13 @@ export interface MapPlacedObject {
    * Presentation only: `rotation` stays the authored data.
    */
   readonly presentationRotation?: number
+  /**
+   * How far below the object's ground its foundation reaches, in world units: the vertices at or
+   * below its origin (object-local y ≤ 0) are drawn that much lower, so a defence or tree on a slope
+   * meets the ground on its low side (Warzone 2100 `stretch`, tcmask_instanced.vert). Presentation
+   * only: the position and exported UVW stay as authored.
+   */
+  readonly presentationFoundationStretch?: number
   readonly scale?: MapPosition
   readonly typeId?: string
   readonly player?: number

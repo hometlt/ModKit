@@ -22,6 +22,7 @@ import type {
   SceneRendererTexture,
 } from '@modkit/sdk'
 import { boundsOf } from '@modkit/codec-kit/model/bounds'
+import { invertAffine } from '@modkit/codec-kit/model-math/transform'
 import {
   TEAM_COLOR_BLENDS,
   TEAM_COLOR_GLSL,
@@ -2872,6 +2873,44 @@ const worldRestPickPrimitives = new WeakMap<
  * (ModelSceneSkin) is posed on the CPU once for it, any other primitive is itself.
  */
 const worldPosedPrimitives = new WeakMap<SceneRendererPrimitive, SceneRendererPrimitive>()
+
+/**
+ * A primitive whose vertices at or below its object's origin (object-local y ≤ 0) reach `stretch`
+ * world units lower (MapPlacedObject.presentationFoundationStretch): `component` places the model in
+ * its object, `instance` the object's model in the world. The same primitive without a stretch.
+ */
+function foundationStretched<T extends SceneRendererPrimitive>(
+  primitive: T,
+  component: Float32Array,
+  instance: Float32Array,
+  stretch: number | undefined,
+): T {
+  if (stretch === undefined || !(stretch > 0)) return primitive
+  const own = 'transform' in primitive ? primitive.transform : undefined
+  const local = multiplyComponentTransforms(component, own ?? IDENTITY_COMPONENT_TRANSFORM)
+  let inverse: number[]
+  try {
+    inverse = invertAffine(
+      Array.from(multiplyComponentTransforms(instance, own ?? IDENTITY_COMPONENT_TRANSFORM)),
+    )
+  } catch {
+    return primitive
+  }
+  // world down by `stretch`, in the primitive's own coordinates
+  const down = [inverse[4]! * -stretch, inverse[5]! * -stretch, inverse[6]! * -stretch] as const
+  const source = primitive.positions
+  const positions = Float32Array.from(source)
+  for (let index = 0; index + 2 < source.length; index += 3) {
+    const x = source[index]!
+    const y = source[index + 1]!
+    const z = source[index + 2]!
+    if (local[1]! * x + local[5]! * y + local[9]! * z + local[13]! > 1e-6) continue
+    positions[index] = x + down[0]
+    positions[index + 1] = y + down[1]
+    positions[index + 2] = z + down[2]
+  }
+  return Object.freeze({ ...primitive, positions })
+}
 
 function worldPosedPrimitive<T extends SceneRendererPrimitive>(primitive: T): T {
   if (materialSkinOf(primitive) === undefined) return primitive
@@ -6249,8 +6288,14 @@ export function createWorldWebGlPlan(
         }
       }
       let primitiveIndex = -1
-      for (const drawn of primitives) {
+      for (const sampledPrimitive of primitives) {
         primitiveIndex += 1
+        const drawn = foundationStretched(
+          sampledPrimitive,
+          componentTransform,
+          instanceTransform,
+          item.presentationFoundationStretch,
+        )
         const prepared = programs.get(drawn.materialId ?? '')
         // Only the shared path draws a skin posed on the GPU; the fallback writes its triangles.
         const primitive: typeof drawn = prepared === undefined ? worldPosedPrimitive(drawn) : drawn
