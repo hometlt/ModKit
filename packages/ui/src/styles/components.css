@@ -20,6 +20,8 @@
     display: flex;
     flex: 0 0 auto;
     flex-wrap: wrap;
+    /* in a row of controls it would keep its one-line width and push its last buttons out of view */
+    max-width: 100%;
     gap: var(--mk-space-2);
     align-items: center;
     min-height: var(--mk-toolbar-height);
@@ -343,6 +345,41 @@
     white-space: nowrap;
   }
 
+  /* A locale without a value, or with the base locale's text still, marked at the cell's edge. */
+  [data-mk-part='table.cell'][data-mk-state~='empty'] {
+    box-shadow: inset 3px 0 0 var(--mk-status-error);
+  }
+
+  [data-mk-part='table.cell'][data-mk-state~='stale'] {
+    box-shadow: inset 3px 0 0 var(--mk-status-warn);
+  }
+
+  /* Letters of a script the locale does not write in, marked as a spelling checker marks a word. */
+  [data-mk-part='table.cell'][data-mk-state~='invalid'] {
+    text-decoration: underline wavy var(--mk-status-error);
+  }
+
+  /* «Wrap»: long values break inside their cells. */
+  [data-wrap='true'] [data-mk-part='table.cell'] {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  /* A key stays one name, cut short past a share of the width, as MK2 kept its key column. */
+  [data-wrap='true'] [data-mk-part='table.cell'][data-key] {
+    max-width: 40vw;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  /* A value's trailing white space: kept by the game, invisible unless marked. */
+  [data-mk-part='table.trailing'] {
+    white-space: pre;
+    background: var(--mk-status-warn-bg);
+    outline: 1px dotted var(--mk-status-warn);
+  }
+
   /* A value waiting in the table's draft for Save, marked as a changed byte is in the hex editor. */
   [data-mk-part='table.cell'][data-mk-state~='mutating'] {
     color: var(--mk-status-warn);
@@ -368,6 +405,13 @@
   }
 
   [data-mk-part='table.group'] {
+    height: var(--mk-size-control);
+    font-size: var(--mk-font-size-sm);
+  }
+
+  /* What the translator should know about the text. */
+  [data-mk-part='table.context'] {
+    width: 16em;
     height: var(--mk-size-control);
     font-size: var(--mk-font-size-sm);
   }

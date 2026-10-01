@@ -292,32 +292,86 @@
     gap: var(--mk-space-1);
   }
 
+  /* Its pages (submenus), one button each; the shown one marked. */
+  [data-mk-part='card.grid-pages'] {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--mk-space-1);
+    margin-block-end: var(--mk-space-1);
+  }
+
+  [data-mk-part='card.grid-page'][aria-pressed='true'] {
+    font-weight: 600;
+    text-decoration: underline;
+  }
+
   [data-mk-part='card.grid-cell'] {
     position: relative;
-    display: grid;
-    place-items: center;
     width: 44px;
     height: 44px;
-    color: var(--mk-color-fg);
     border: 1px solid var(--mk-color-border);
     border-radius: var(--mk-radius-sm);
     background: var(--mk-color-sunken);
-    font-size: var(--mk-font-size-lg);
-    cursor: pointer;
   }
 
-  [data-mk-part='card.grid-cell']:hover:not(:disabled) {
+  [data-mk-part='card.grid-cell']:hover:not([data-mk-state~='disabled']) {
     border-color: var(--mk-color-accent);
     background: var(--mk-color-hover);
   }
 
-  [data-mk-part='card.grid-cell']:disabled {
+  [data-mk-part='card.grid-cell'][data-mk-state~='disabled'] {
     background: none;
+  }
+
+  /* The cell's own button fills it; the corner arrows sit above it. */
+  [data-mk-part='card.grid-face'] {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    color: var(--mk-color-fg);
+    border: 0;
+    background: none;
+    font-size: var(--mk-font-size-lg);
+    cursor: pointer;
+  }
+
+  [data-mk-part='card.grid-face']:disabled {
     cursor: default;
+  }
+
+  [data-mk-part='card.grid-image'] {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  [data-mk-part='card.grid-cycle'],
+  [data-mk-part='card.grid-opens'] {
+    position: absolute;
+    z-index: 1;
+    inset-inline-end: 1px;
+    padding: 0 2px;
+    color: var(--mk-color-accent);
+    border: 0;
+    background: none;
+    font-size: 10px;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  [data-mk-part='card.grid-cycle'] {
+    inset-block-start: 1px;
+  }
+
+  [data-mk-part='card.grid-opens'] {
+    inset-block-end: 1px;
   }
 
   [data-mk-part='card.grid-hotkey'] {
     position: absolute;
+    z-index: 1;
     inset-block-start: 1px;
     inset-inline-start: 3px;
     color: var(--mk-color-fg-subtle);
@@ -481,6 +535,12 @@
     background: var(--mk-color-surface);
     font: inherit;
     font-size: var(--mk-font-size-xs);
+  }
+
+  /* What an edge's arrow means, beside the counts. */
+  [data-mk-part='graph.legend'] {
+    color: var(--mk-color-fg-subtle);
+    font-size: var(--mk-font-size-sm);
   }
 
   [data-mk-part='graph.status'] {
