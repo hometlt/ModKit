@@ -46,25 +46,25 @@ import {
   validateUvmDocument,
   vector3,
   vector4
-} from "./chunk-UCN4DEWI.js";
+} from "./chunk-PQV76MGI.js";
 import {
+  applyColorKeyTransparency,
   billboardCameraRotation,
   createModelAnimationSampler,
   createModelSceneSampler,
+  encodePng,
   modelPrimitiveByteLength,
   snapshotJson,
   snapshotModelBillboards
-} from "./chunk-JRG6LWG6.js";
+} from "./chunk-TS6JMP3F.js";
 import {
-  applyColorKeyTransparency,
-  encodePng
-} from "./chunk-ZA2BG7C6.js";
+  SCENE_RENDERER_CONTRACT
+} from "./chunk-OZX7B633.js";
 import "./chunk-Q27WXNQ4.js";
 import "./chunk-QQJVD7VT.js";
 import {
-  SCENE_RENDERER_CONTRACT,
   diagnostic
-} from "./chunk-3LWCT2HN.js";
+} from "./chunk-33VOQNJR.js";
 import {
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
 } from "./chunk-BLWUC7LO.js";

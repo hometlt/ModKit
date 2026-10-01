@@ -108,6 +108,8 @@ import {
   resolveModWorkspaceGraph,
   runtimeTargetForHostRealm,
   standardDataSourceSurfaceFor,
+  terrainUvTransformFromOrigin,
+  transformTerrainUv,
   validateContributionManifest,
   validateContributionPattern,
   validateEditorContributionSemantics,
@@ -117,7 +119,7 @@ import {
   worldModelRequiredBytes,
   writerOfferSatisfies,
   writerSelectionKey
-} from "../../chunks/chunk-HYIVL2HG.js";
+} from "../../chunks/chunk-JXRBAVYA.js";
 import {
   SCENE_RENDERER_CONTRACT,
   SCENE_RENDERER_MATCHER_PROFILE
@@ -413,8 +415,10 @@ export {
   standardDataSourceSurfaceFor,
   subjectDescriptorV2Schema,
   subjectKindDefinitionSpecV1Schema,
+  terrainUvTransformFromOrigin,
   toPortableProjectionReceipt,
   traitDefinitionSpecV1Schema,
+  transformTerrainUv,
   validateContributionManifest,
   validateContributionPattern,
   validateEditorContributionSemantics,

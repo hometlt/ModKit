@@ -1,8 +1,9 @@
 import {
   collectEncodedMedia,
   createMediaShell,
+  mediaFacts,
   mountContributedSections
-} from "./chunk-6ZBIN4U4.js";
+} from "./chunk-GP4R44PF.js";
 import {
   VIDEO_FALLBACK_MESSAGES,
   ViewerMountScope,
@@ -16,7 +17,7 @@ import {
   uiPreference,
   unknownSourceLease,
   withEnglishUiFallback
-} from "./chunk-N6RN7GYG.js";
+} from "./chunk-ZKA6ERAI.js";
 import {
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
 } from "./chunk-BLWUC7LO.js";
@@ -41,14 +42,6 @@ function remember(key, value) {
 }
 function metadataGroups(descriptor) {
   return "identity" in descriptor ? descriptor.metadata ?? [] : [];
-}
-function facts(parent, rows) {
-  const list = element(parent, "dl", { part: "image.metadata" });
-  for (const [label, value] of rows) {
-    const row = element(list, "div", { part: "metadata.row" });
-    element(row, "dt", { text: label, part: "metadata.label" });
-    setViewerText(element(row, "dd", { part: "metadata.value" }), value, 512);
-  }
 }
 function createVideoViewer(options = {}) {
   const localizer = withEnglishUiFallback(options.localizer, VIDEO_FALLBACK_MESSAGES);
@@ -109,7 +102,7 @@ function createVideoViewer(options = {}) {
         const section = shell.section("video", localizer.text("viewer.video"), {
           icon: "device-camera-video"
         }).body;
-        facts(section, rows);
+        mediaFacts(section, rows);
         const playback = element(section, "div", { part: "video.options" });
         for (const [key, label, apply] of [
           [
@@ -166,7 +159,7 @@ function createVideoViewer(options = {}) {
         for (const group of metadataGroups(args.descriptor)) {
           if (/^(identity|traits|detection)$/iu.test(group.id))
             continue;
-          facts(shell.section(`metadata:${group.id}`, group.label, {
+          mediaFacts(shell.section(`metadata:${group.id}`, group.label, {
             icon: "symbol-misc",
             collapsed: true
           }).body, group.entries.map((entry) => [entry.key, String(entry.value)]));

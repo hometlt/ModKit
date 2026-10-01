@@ -5,7 +5,7 @@ import {
   createDescriptorFallbackSubjectFactsSource,
   createFieldRelationGraphSource,
   descriptorSubjectRef
-} from "../../chunks/chunk-24NQA5DY.js";
+} from "../../chunks/chunk-M6IANCT6.js";
 import {
   ABI_ASSET_SESSION,
   base64Of,
@@ -13,14 +13,14 @@ import {
   createStandardSurfaceRegistry,
   framePortFromMessagePort,
   protocolLimits
-} from "../../chunks/chunk-F7FI4O67.js";
+} from "../../chunks/chunk-LNCN76CN.js";
 import {
   assembleSubjectDescriptor,
   createAssetSession,
   createByteRangeSource,
   createLazyTableDataSource,
   createUtf8TextDataSource
-} from "../../chunks/chunk-GBPFKLEX.js";
+} from "../../chunks/chunk-PBUKUNP6.js";
 import {
   metadataFieldProjections
 } from "../../chunks/chunk-5GGWVEQJ.js";
@@ -90,7 +90,7 @@ import {
   validateContributionManifest,
   writerOfferSatisfies,
   writerSelectionKey
-} from "../../chunks/chunk-HYIVL2HG.js";
+} from "../../chunks/chunk-JXRBAVYA.js";
 import {
   SCENE_RENDERER_CONTRACT,
   SCENE_RENDERER_MATCHER_PROFILE

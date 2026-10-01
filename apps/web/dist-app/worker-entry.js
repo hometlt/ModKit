@@ -6,8 +6,8 @@ import {
   framePortFromMessagePort,
   logicalResourcesFromWire,
   protocolLimits
-} from "./chunks/chunk-F7FI4O67.js";
-import "./chunks/chunk-HYIVL2HG.js";
+} from "./chunks/chunk-LNCN76CN.js";
+import "./chunks/chunk-JXRBAVYA.js";
 import "./chunks/chunk-MT2JUZZJ.js";
 import "./chunks/chunk-R2P56FTH.js";
 import "./chunks/chunk-P5QJHSUW.js";

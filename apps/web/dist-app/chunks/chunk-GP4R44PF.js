@@ -1,12 +1,14 @@
 import {
   FILTER_FALLBACK_MESSAGES,
   MEDIA_SHELL_FALLBACK_MESSAGES,
+  element,
   rememberUiPreference,
   setPart,
   setState,
+  setViewerText,
   uiPreference,
   withEnglishUiFallback
-} from "./chunk-N6RN7GYG.js";
+} from "./chunk-ZKA6ERAI.js";
 import {
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
 } from "./chunk-BLWUC7LO.js";
@@ -187,6 +189,15 @@ function createFilterWidget(parent, widgetOptions) {
 }
 
 // ../MODDING/modkit-core/packages/ui/dist/media-shell/index.js
+function mediaFacts(parent, rows) {
+  const list = element(parent, "dl", { part: "image.metadata" });
+  for (const [label, value] of rows) {
+    const row = element(list, "div", { part: "metadata.row" });
+    element(row, "dt", { text: label, part: "metadata.label" });
+    setViewerText(element(row, "dd", { part: "metadata.value" }), value, 512);
+  }
+}
+var MEDIA_ZOOM_CHOICES = [0.25, 0.5, 1, 2, 4, 8];
 function mountContributedSections(shell, sections, args, onMounted) {
   for (const contributed of sections ?? []) {
     const section = shell.section(contributed.id, contributed.title, {
@@ -624,12 +635,21 @@ async function collectEncodedMedia(source, maximumBytes, signal) {
   }
   return { mediaType: descriptor.mediaType, bytes };
 }
+async function canvasPng(canvas) {
+  const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+  if (blob === null)
+    throw new TypeError("the canvas did not encode as PNG");
+  return new Uint8Array(await blob.arrayBuffer());
+}
 
 export {
   compileMatcher,
   compilePattern,
   textMatches,
+  mediaFacts,
+  MEDIA_ZOOM_CHOICES,
   mountContributedSections,
   createMediaShell,
-  collectEncodedMedia
+  collectEncodedMedia,
+  canvasPng
 };

@@ -1,12 +1,184 @@
 import {
   createVideoViewer
-} from "./chunk-5LC2A4JD.js";
+} from "./chunk-NZQUMSVU.js";
 import {
   createAudioViewer
-} from "./chunk-JKDWXZ6Y.js";
+} from "./chunk-ZUJKKWDD.js";
 import {
   createRelationGraphViewer
-} from "./chunk-ARQIWJ3D.js";
+} from "./chunk-JIUDJPOO.js";
+import {
+  MODEL_FACET_CONTRACTS,
+  commitOperationWrite,
+  createModelViewer,
+  fieldWriteRefusal,
+  mountFieldEditTarget,
+  mountInlineField
+} from "./chunk-34MHHPU4.js";
+import {
+  metadataFieldProjections
+} from "./chunk-KO272EQO.js";
+import {
+  A1_SPEC_SCHEMA_ENTRIES,
+  AUXILIARY_DATA_SOURCE_SURFACES,
+  CODEC_CONTRIBUTION_CONTRACT,
+  CONTRACT_DEFINITION_CONTRIBUTION_CONTRACT,
+  CONTRACT_DEFINITION_FACT,
+  DATA_CATALOG_ANALYSIS_CONTRACT,
+  DATA_CATALOG_ENTITIES_INPUT,
+  DATA_CATALOG_MATCHER_PROFILE,
+  DATA_CATALOG_QUERIES_OUTPUT,
+  EDITOR_CONTRIBUTION_CONTRACT,
+  EDITOR_CONTRIBUTION_FACT,
+  FIELD_EDITOR_CONTRIBUTION_CONTRACT,
+  FIELD_EDITOR_CONTRIBUTION_FACT,
+  GAME_INSTALLATION_DISCOVERY_CONTRACT,
+  GAME_INSTALLATION_MATCHER_PROFILE,
+  GAME_LAUNCH_PLAN_CONTRACT,
+  GAME_TEMPLATE_PREVIEW_OPERATION_ID,
+  GAME_TEMPLATE_WORKSPACE_INPUT,
+  KNOWLEDGE_PACK_CONTRIBUTION_CONTRACT,
+  LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT,
+  LANGUAGE_DOCUMENT_MATCHER_PROFILE,
+  LOCALIZATION_CONTRIBUTION_CONTRACT,
+  MAP_LAYERS_INPUT_SCHEMA,
+  MAP_LAYERS_OPERATION,
+  MAP_LAYER_READ_INPUT_SCHEMA,
+  MAP_LAYER_READ_OPERATION,
+  MAP_LAYER_WRITE_INPUT_SCHEMA,
+  MAP_LAYER_WRITE_OPERATION,
+  MAP_PREVIEW_PREPARATION_CONTRACT,
+  MAP_PREVIEW_PREPARATION_MATCHER_PROFILE,
+  MAP_SEMANTIC_ANALYSIS_CONTRACT,
+  MAP_SEMANTIC_MATCHER_PROFILE,
+  MOD_WORKSPACE_COMPOSITION_CONTRACT,
+  MOD_WORKSPACE_MATCHER_PROFILE,
+  NATIVE_MODEL_ENCODER_CONTRACT,
+  NATIVE_MODEL_ENCODER_MATCHER_PROFILE,
+  RESOLVED_DATA_WORKSPACE_CONTRACT,
+  RESOLVED_DATA_WORKSPACE_MATCHER_PROFILE,
+  RESOLVED_MAP_WORKSPACE_CONTRACT,
+  RUNTIME_PROVIDER_CONTRACT,
+  RUNTIME_PROVIDER_MATCHER_PROFILE,
+  RUNTIME_SESSION_CONTRACT,
+  SERVICE_OPERATION_MATCHER_PROFILE,
+  SERVICE_OPERATION_PROVIDER_CONTRACT,
+  SERVICE_PROVIDER_CONTRIBUTION_CONTRACT,
+  STANDARD_DATA_SOURCE_SURFACES,
+  STANDARD_EDITING_SURFACES,
+  SUBJECT_KIND_DEFINITION_CONTRIBUTION_CONTRACT,
+  TRAIT_DEFINITION_CONTRIBUTION_CONTRACT,
+  TRANSLATION_CONTRACT,
+  TRANSLATION_MATCHER_PROFILE,
+  VIEWER_CONTRIBUTION_CONTRACT,
+  WORLD_SCENE_SOURCE_CONTRACT,
+  WRITER_CONTRACT_ID,
+  WRITER_FACET_MATCHER_PROFILE,
+  WRITER_SURFACE,
+  activationRequiredPermissionClasses,
+  bindingId,
+  containerEntryRevision,
+  contributionSettingsFor,
+  createContributionContractRegistry,
+  createHostTopology,
+  definePresentationPlan,
+  expandContributionManifests,
+  gameTemplateTextRuns,
+  grantValidity,
+  hostRealmCacheKey,
+  isGameTemplateDisplayItem,
+  isGameTemplatePreviewResult,
+  isGameTemplateTextRun,
+  isGameTemplateTreeNode,
+  mapLayerWindow,
+  namespaceEntryEditTarget,
+  narrowGrant,
+  normalizeExtensionManifest,
+  normalizeModkitIdentifier,
+  operationScopedPermissionClasses,
+  presentationSlotId,
+  resolveModWorkspaceGraph,
+  runtimeTargetForHostRealm,
+  toPortableProjectionReceipt,
+  transformTerrainUv,
+  validateContributionManifest,
+  writerOfferSatisfies,
+  writerSelectionKey
+} from "./chunk-BCFM5UHF.js";
+import {
+  createImageViewer,
+  createNamespaceViewer,
+  invokeRefusalMessage
+} from "./chunk-77WQ6SRV.js";
+import {
+  MEDIA_ZOOM_CHOICES,
+  canvasPng,
+  compileMatcher,
+  compilePattern,
+  createMediaShell,
+  mediaFacts,
+  textMatches
+} from "./chunk-GP4R44PF.js";
+import {
+  CALCULATIONS_FALLBACK_MESSAGES,
+  CARD_FALLBACK_MESSAGES,
+  CARD_WIKI_FALLBACK_MESSAGES,
+  CODE_FALLBACK_MESSAGES,
+  DEFAULT_UI_LOCALIZER,
+  EDITOR_FALLBACK_MESSAGES,
+  EXPLORER_EDITORS_FALLBACK_MESSAGES,
+  EXPLORER_FALLBACK_MESSAGES,
+  EXPLORER_PREVIEW_FALLBACK_MESSAGES,
+  HEX_EDITOR_FALLBACK_MESSAGES,
+  HEX_FALLBACK_MESSAGES,
+  METADATA_FALLBACK_MESSAGES,
+  PRIMITIVES_FILE_TREE_FALLBACK_MESSAGES,
+  PRIMITIVES_SEARCH_FIELD_FALLBACK_MESSAGES,
+  TABLE_FALLBACK_MESSAGES,
+  TABLE_VARIANTS_FALLBACK_MESSAGES,
+  TEMPLATE_FALLBACK_MESSAGES,
+  TEXT_VIRTUAL_FALLBACK_MESSAGES,
+  TRANSPORT_FALLBACK_MESSAGES,
+  TRANSPORT_PLAYBACK_FALLBACK_MESSAGES,
+  TREE_FALLBACK_MESSAGES,
+  UI_MESSAGES,
+  VECTOR_FALLBACK_MESSAGES,
+  ViewerMountScope,
+  WORKBENCH_FALLBACK_MESSAGES,
+  WORLD_FALLBACK_MESSAGES,
+  bindingFor,
+  createSurface,
+  createUiLocalizer,
+  createViewerMount,
+  defineViewerModule,
+  element,
+  invokeOperation,
+  parseUiCatalogDocument,
+  rememberUiPreference,
+  requireContainer,
+  resolveUiLocale,
+  safeViewerText,
+  setPart,
+  setState,
+  setViewerText,
+  uiPreference,
+  unknownSourceLease,
+  withEnglishUiFallback
+} from "./chunk-ZKA6ERAI.js";
+import {
+  PERMISSION_CLASSES,
+  contributionId,
+  isRevisionId,
+  isStandardTraitId,
+  nestedSubject,
+  parseSubjectRef,
+  revisionId,
+  revisionIdFromRef,
+  rootSubject,
+  serializeSubjectRef,
+  subjectRefEquals,
+  validateSubjectDescriptorV2
+} from "./chunk-IXZGU3XP.js";
 import {
   Box3,
   BufferBuilder,
@@ -71,192 +243,26 @@ import {
   uvmImageUri,
   uvmKeyTimesMetadata,
   uvmVisibilityPointer
-} from "./chunk-UCN4DEWI.js";
-import {
-  MODEL_FACET_CONTRACTS,
-  commitOperationWrite,
-  createModelViewer,
-  fieldWriteRefusal,
-  mountFieldEditTarget,
-  mountInlineField
-} from "./chunk-Z4V5CJWJ.js";
+} from "./chunk-PQV76MGI.js";
 import {
   DEFAULT_MODEL_ANIMATION_BUDGET,
   DEFAULT_MODEL_SKELETON_BUDGET,
+  applyColorKeyTransparency,
   composeTrsMatrix,
   createModelSceneSampler,
   createModelSkeletonNodes,
   snapshotJson,
   snapshotModelAnimations,
   snapshotModelSkeleton
-} from "./chunk-JRG6LWG6.js";
+} from "./chunk-TS6JMP3F.js";
 import {
-  metadataFieldProjections
-} from "./chunk-XWTSK4JH.js";
-import {
-  applyColorKeyTransparency
-} from "./chunk-ZA2BG7C6.js";
-import {
-  createImageViewer,
-  createNamespaceViewer,
-  invokeRefusalMessage
-} from "./chunk-M24NO5RP.js";
-import {
-  compileMatcher,
-  compilePattern,
-  createMediaShell,
-  textMatches
-} from "./chunk-6ZBIN4U4.js";
-import {
-  CALCULATIONS_FALLBACK_MESSAGES,
-  CARD_FALLBACK_MESSAGES,
-  CARD_WIKI_FALLBACK_MESSAGES,
-  CODE_FALLBACK_MESSAGES,
-  DEFAULT_UI_LOCALIZER,
-  EDITOR_FALLBACK_MESSAGES,
-  EXPLORER_EDITORS_FALLBACK_MESSAGES,
-  EXPLORER_FALLBACK_MESSAGES,
-  EXPLORER_PREVIEW_FALLBACK_MESSAGES,
-  HEX_EDITOR_FALLBACK_MESSAGES,
-  HEX_FALLBACK_MESSAGES,
-  METADATA_FALLBACK_MESSAGES,
-  PRIMITIVES_FILE_TREE_FALLBACK_MESSAGES,
-  PRIMITIVES_SEARCH_FIELD_FALLBACK_MESSAGES,
-  TABLE_FALLBACK_MESSAGES,
-  TABLE_VARIANTS_FALLBACK_MESSAGES,
-  TEMPLATE_FALLBACK_MESSAGES,
-  TEXT_VIRTUAL_FALLBACK_MESSAGES,
-  TRANSPORT_FALLBACK_MESSAGES,
-  TRANSPORT_PLAYBACK_FALLBACK_MESSAGES,
-  TREE_FALLBACK_MESSAGES,
-  UI_MESSAGES,
-  VECTOR_FALLBACK_MESSAGES,
-  ViewerMountScope,
-  WORKBENCH_FALLBACK_MESSAGES,
-  WORLD_FALLBACK_MESSAGES,
-  bindingFor,
-  createSurface,
-  createUiLocalizer,
-  createViewerMount,
-  defineViewerModule,
-  element,
-  invokeOperation,
-  parseUiCatalogDocument,
-  rememberUiPreference,
-  requireContainer,
-  resolveUiLocale,
-  safeViewerText,
-  setPart,
-  setState,
-  setViewerText,
-  uiPreference,
-  unknownSourceLease,
-  withEnglishUiFallback
-} from "./chunk-N6RN7GYG.js";
-import {
-  A1_SPEC_SCHEMA_ENTRIES,
-  AUXILIARY_DATA_SOURCE_SURFACES,
-  CODEC_CONTRIBUTION_CONTRACT,
-  CONTRACT_DEFINITION_CONTRIBUTION_CONTRACT,
-  CONTRACT_DEFINITION_FACT,
-  DATA_CATALOG_ANALYSIS_CONTRACT,
-  DATA_CATALOG_ENTITIES_INPUT,
-  DATA_CATALOG_MATCHER_PROFILE,
-  DATA_CATALOG_QUERIES_OUTPUT,
-  EDITOR_CONTRIBUTION_CONTRACT,
-  EDITOR_CONTRIBUTION_FACT,
-  FIELD_EDITOR_CONTRIBUTION_CONTRACT,
-  FIELD_EDITOR_CONTRIBUTION_FACT,
-  GAME_INSTALLATION_DISCOVERY_CONTRACT,
-  GAME_INSTALLATION_MATCHER_PROFILE,
-  GAME_LAUNCH_PLAN_CONTRACT,
-  GAME_TEMPLATE_PREVIEW_OPERATION_ID,
-  GAME_TEMPLATE_WORKSPACE_INPUT,
-  KNOWLEDGE_PACK_CONTRIBUTION_CONTRACT,
-  LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT,
-  LANGUAGE_DOCUMENT_MATCHER_PROFILE,
-  LOCALIZATION_CONTRIBUTION_CONTRACT,
-  MAP_LAYERS_INPUT_SCHEMA,
-  MAP_LAYERS_OPERATION,
-  MAP_LAYER_READ_INPUT_SCHEMA,
-  MAP_LAYER_READ_OPERATION,
-  MAP_LAYER_WRITE_INPUT_SCHEMA,
-  MAP_LAYER_WRITE_OPERATION,
-  MAP_PREVIEW_PREPARATION_CONTRACT,
-  MAP_PREVIEW_PREPARATION_MATCHER_PROFILE,
-  MAP_SEMANTIC_ANALYSIS_CONTRACT,
-  MAP_SEMANTIC_MATCHER_PROFILE,
-  MOD_WORKSPACE_COMPOSITION_CONTRACT,
-  MOD_WORKSPACE_MATCHER_PROFILE,
-  NATIVE_MODEL_ENCODER_CONTRACT,
-  NATIVE_MODEL_ENCODER_MATCHER_PROFILE,
-  PERMISSION_CLASSES,
-  RESOLVED_DATA_WORKSPACE_CONTRACT,
-  RESOLVED_DATA_WORKSPACE_MATCHER_PROFILE,
-  RESOLVED_MAP_WORKSPACE_CONTRACT,
-  RUNTIME_PROVIDER_CONTRACT,
-  RUNTIME_PROVIDER_MATCHER_PROFILE,
-  RUNTIME_SESSION_CONTRACT,
-  SERVICE_OPERATION_MATCHER_PROFILE,
-  SERVICE_OPERATION_PROVIDER_CONTRACT,
-  SERVICE_PROVIDER_CONTRIBUTION_CONTRACT,
-  STANDARD_DATA_SOURCE_SURFACES,
-  STANDARD_EDITING_SURFACES,
-  SUBJECT_KIND_DEFINITION_CONTRIBUTION_CONTRACT,
-  TRAIT_DEFINITION_CONTRIBUTION_CONTRACT,
-  TRANSLATION_CONTRACT,
-  TRANSLATION_MATCHER_PROFILE,
-  VIEWER_CONTRIBUTION_CONTRACT,
-  WORLD_SCENE_SOURCE_CONTRACT,
-  WRITER_CONTRACT_ID,
-  WRITER_FACET_MATCHER_PROFILE,
-  WRITER_SURFACE,
-  activationRequiredPermissionClasses,
-  bindingId,
-  containerEntryRevision,
-  contributionId,
-  contributionSettingsFor,
-  createContributionContractRegistry,
-  createHostTopology,
-  definePresentationPlan,
-  expandContributionManifests,
-  gameTemplateTextRuns,
-  grantValidity,
-  hostRealmCacheKey,
-  isGameTemplateDisplayItem,
-  isGameTemplatePreviewResult,
-  isGameTemplateTextRun,
-  isGameTemplateTreeNode,
-  isRevisionId,
-  isStandardTraitId,
-  mapLayerWindow,
-  namespaceEntryEditTarget,
-  narrowGrant,
-  nestedSubject,
-  normalizeExtensionManifest,
-  normalizeModkitIdentifier,
-  operationScopedPermissionClasses,
-  parseSubjectRef,
-  presentationSlotId,
-  resolveModWorkspaceGraph,
-  revisionId,
-  revisionIdFromRef,
-  rootSubject,
-  runtimeTargetForHostRealm,
-  serializeSubjectRef,
-  subjectRefEquals,
-  toPortableProjectionReceipt,
-  validateContributionManifest,
-  validateSubjectDescriptorV2,
-  writerOfferSatisfies,
-  writerSelectionKey
-} from "./chunk-M6BGIGEK.js";
+  SCENE_RENDERER_CONTRACT,
+  SCENE_RENDERER_MATCHER_PROFILE
+} from "./chunk-OZX7B633.js";
 import {
   CONTAINER_EXTRACT_OPERATION_ID,
   ModkitError,
   OperationCancelledError,
-  SCENE_RENDERER_CONTRACT,
-  SCENE_RENDERER_MATCHER_PROFILE,
   canonicalJsonStringify,
   compareUtf8,
   contractId,
@@ -274,7 +280,7 @@ import {
   satisfiesRange,
   throwIfAborted,
   uint64
-} from "./chunk-3LWCT2HN.js";
+} from "./chunk-33VOQNJR.js";
 import {
   __export,
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
@@ -6176,7 +6182,7 @@ function sessionAdapter(realm, session, exposedInput, watch, openingSignal) {
 
 // ../MODDING/modkit-core/packages/host/dist/session.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-var projection = () => import("./subject-projection-YYTQ4CKF.js");
+var projection = () => import("./subject-projection-ACUT6PHQ.js");
 function rejected(reason, message) {
   return {
     state: "rejected",
@@ -46926,7 +46932,7 @@ var lazyEditor = Object.freeze({
   abiVersion: 1,
   default: Object.freeze({
     async mount(args) {
-      const { monacoEditor } = await import("./editor-LFCBJC6W.js");
+      const { monacoEditor } = await import("./editor-YXRHL67O.js");
       return monacoEditor.mount(args);
     }
   })
@@ -64692,13 +64698,13 @@ var PREVIEW_STAGES = [
 async function defaultPreviewStage(kind, localizer) {
   switch (kind) {
     case "model":
-      return (await import("./model-Q2ZB7TQ3.js")).createModelViewer({ localizer });
+      return (await import("./model-3GGWYJJI.js")).createModelViewer({ localizer });
     case "image":
-      return (await import("./image-W4YTUF52.js")).createImageViewer({ localizer });
+      return (await import("./image-W64FQWFC.js")).createImageViewer({ localizer });
     case "video":
-      return (await import("./video-VYY5INLA.js")).createVideoViewer({ localizer });
+      return (await import("./video-EBZKAWPJ.js")).createVideoViewer({ localizer });
     case "audio":
-      return (await import("./audio-YSBIH7RR.js")).createAudioViewer({ localizer });
+      return (await import("./audio-TYSKJRX6.js")).createAudioViewer({ localizer });
   }
 }
 function embedPreview(sections, args, scope, localizer, previews) {
@@ -64737,7 +64743,7 @@ function embedRelationGraph(sections, args, scope, localizer, graph) {
   return [
     ...sections,
     stageSection({ id: "relations-graph", title: localizer.text("card.relationGraph"), expanded: false }, scope, localizer, "card.relationGraphUnavailable", async (host) => {
-      const module = graph ?? (await import("./graph-Y4EWAINM.js")).createRelationGraphViewer({ localizer });
+      const module = graph ?? (await import("./graph-QOIA3GA7.js")).createRelationGraphViewer({ localizer });
       return scope.signal.aborted ? void 0 : module.mount({ ...args, container: host, signal: scope.signal });
     })
   ];
@@ -67808,6 +67814,23 @@ var treeViewer = createTreeViewer();
 // ../MODDING/modkit-core/packages/ui/dist/vector/index.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var VECTOR_MAXIMUM_TEXT_BYTES = 32 * 1024 * 1024;
+var VECTOR_MAXIMUM_EXPORT_BYTES = 64 * 1024 * 1024;
+var EXPORT_SCALES = [1, 2, 4, 8];
+function vectorExtent(info, image) {
+  const positive2 = (value) => value !== void 0 && Number.isFinite(value) && value > 0;
+  if (positive2(info.width) && positive2(info.height)) {
+    return { width: info.width, height: info.height };
+  }
+  const box = info.viewBox;
+  if (box !== void 0 && positive2(box[2]) && positive2(box[3])) {
+    return { width: box[2], height: box[3] };
+  }
+  if (image !== void 0 && image.naturalWidth > 0 && image.naturalHeight > 0) {
+    return { width: image.naturalWidth, height: image.naturalHeight };
+  }
+  return { width: 300, height: 150 };
+}
+var exportName = (value) => value.replace(/[^A-Za-z0-9._-]+/gu, "-").replace(/^[^A-Za-z0-9]+/u, "").slice(0, 96) || "vector";
 function createVectorViewer(options = {}) {
   const localizer = withEnglishUiFallback(options.localizer, VECTOR_FALLBACK_MESSAGES);
   return defineViewerModule({
@@ -67815,18 +67838,191 @@ function createVectorViewer(options = {}) {
     async mount(args) {
       const scope = new ViewerMountScope(args.signal);
       const root = createSurface(args.container, localizer.text("viewer.vector"));
-      const stage = element(root, "div", { part: "vector" });
+      const shell = createMediaShell(root.ownerDocument, {
+        localizer,
+        ...args.gallery === void 0 ? {} : { gallery: args.gallery }
+      });
+      root.append(shell.root);
+      scope.cleanup(() => shell.destroy());
+      if (args.gallery !== void 0)
+        void shell.refreshGallery(scope.signal).catch(() => void 0);
+      const stage = element(shell.stage, "div", { part: "vector" });
       const readout = element(stage, "output", { part: "vector.readout" });
       const image = element(stage, "img", { part: "vector.image" });
       image.alt = localizer.text("viewer.vectorPreview");
+      image.draggable = false;
       const lease2 = await unknownSourceLease(args.sources, args.slot, "common.view/vector-scene-source");
       if (lease2 === void 0)
         throw new TypeError("vector binding is unavailable");
       scope.lease(lease2);
+      let info;
+      let objectUrl;
+      let zoom = 1;
+      let fit = true;
+      let panX = 0;
+      let panY = 0;
+      let descriptor = args.descriptor;
+      const extent = () => info === void 0 ? void 0 : vectorExtent(info, image);
+      const scale = () => {
+        const size = extent();
+        if (!fit || size === void 0)
+          return zoom;
+        const box = stage.getBoundingClientRect();
+        return Math.max(0.01, Math.min(Math.max(16, box.width) / size.width, Math.max(16, box.height) / size.height));
+      };
+      const publishStatus = () => {
+        const size = extent();
+        if (size === void 0)
+          return;
+        const now = scale();
+        args.status?.set([
+          {
+            id: "size",
+            icon: "symbol-ruler",
+            text: `${Math.round(size.width)} \xD7 ${Math.round(size.height)}`,
+            align: "start"
+          },
+          ...info?.viewBox === void 0 ? [] : [
+            {
+              id: "viewbox",
+              text: `viewBox ${info.viewBox.join(" ")}`,
+              align: "start"
+            }
+          ],
+          {
+            id: "zoom",
+            icon: "zoom-in",
+            text: fit ? `${localizer.text("viewer.fit")} (${Math.round(now * 100)}%)` : `${Math.round(now * 100)}%`,
+            tooltip: localizer.text("viewer.fitTitle"),
+            align: "end",
+            selected: fit ? "fit" : String(zoom),
+            choices: [
+              { id: "fit", label: localizer.text("viewer.fit") },
+              ...MEDIA_ZOOM_CHOICES.map((value) => ({
+                id: String(value),
+                label: `${value * 100}%`
+              }))
+            ]
+          }
+        ], (itemId, choiceId) => {
+          if (itemId !== "zoom")
+            return;
+          if (choiceId === "fit") {
+            fit = true;
+            panX = 0;
+            panY = 0;
+          } else if (Number(choiceId) > 0) {
+            fit = false;
+            zoom = Number(choiceId);
+          }
+          place();
+        });
+      };
+      scope.cleanup(() => args.status?.clear());
+      const place = () => {
+        const size = extent();
+        if (size === void 0)
+          return;
+        const box = stage.getBoundingClientRect();
+        const now = scale();
+        const width = size.width * now;
+        const height = size.height * now;
+        image.style.width = `${width}px`;
+        image.style.height = `${height}px`;
+        image.style.left = `${box.width / 2 + panX - width / 2}px`;
+        image.style.top = `${box.height / 2 + panY - height / 2}px`;
+        publishStatus();
+      };
+      const resize = new ResizeObserver(() => place());
+      resize.observe(stage);
+      scope.cleanup(() => resize.disconnect());
+      stage.addEventListener("wheel", (event) => {
+        if (info === void 0)
+          return;
+        event.preventDefault();
+        const before = scale();
+        const next = Math.min(64, Math.max(0.01, before * (event.deltaY < 0 ? 1.25 : 0.8)));
+        const box = stage.getBoundingClientRect();
+        const x = event.clientX - box.left - box.width / 2 - panX;
+        const y = event.clientY - box.top - box.height / 2 - panY;
+        panX -= x * (next / before - 1);
+        panY -= y * (next / before - 1);
+        fit = false;
+        zoom = next;
+        place();
+      }, { passive: false, signal: scope.signal });
+      let dragging;
+      let originX = 0;
+      let originY = 0;
+      stage.addEventListener("pointerdown", (event) => {
+        dragging = event.pointerId;
+        originX = event.clientX - panX;
+        originY = event.clientY - panY;
+        stage.setPointerCapture(event.pointerId);
+      }, { signal: scope.signal });
+      stage.addEventListener("pointermove", (event) => {
+        if (dragging !== event.pointerId)
+          return;
+        panX = event.clientX - originX;
+        panY = event.clientY - originY;
+        place();
+      }, { signal: scope.signal });
+      const release = (event) => {
+        if (dragging !== event.pointerId)
+          return;
+        dragging = void 0;
+        stage.releasePointerCapture(event.pointerId);
+      };
+      stage.addEventListener("pointerup", release, { signal: scope.signal });
+      stage.addEventListener("pointercancel", release, { signal: scope.signal });
+      stage.addEventListener("dblclick", () => {
+        fit = true;
+        panX = 0;
+        panY = 0;
+        place();
+      }, { signal: scope.signal });
+      const exportPng = async (factor, note) => {
+        const write = options.exportBytes;
+        const size = extent();
+        if (write === void 0 || size === void 0 || objectUrl === void 0)
+          return;
+        const width = Math.max(1, Math.round(size.width * factor));
+        const height = Math.max(1, Math.round(size.height * factor));
+        if (width * height * 4 > VECTOR_MAXIMUM_EXPORT_BYTES) {
+          setViewerText(note, localizer.text("viewer.vectorExportTooLarge", { width, height }), 512);
+          return;
+        }
+        setViewerText(note, localizer.text("viewer.vectorExporting"), 512);
+        try {
+          const drawing = new Image(width, height);
+          drawing.src = objectUrl;
+          await drawing.decode();
+          const canvas = root.ownerDocument.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          const context = canvas.getContext("2d");
+          if (context === null)
+            throw new TypeError("2d canvas context is unavailable");
+          context.drawImage(drawing, 0, 0, width, height);
+          const base = exportName(options.exportBaseName?.(descriptor) ?? "vector");
+          const outcome = await write([
+            {
+              name: factor === 1 ? `${base}.png` : `${base}@${factor}x.png`,
+              mediaType: "image/png",
+              bytes: await canvasPng(canvas)
+            }
+          ], scope.signal);
+          setViewerText(note, outcome.state === "written" ? localizer.text("viewer.vectorExported", { name: outcome.names.join(", ") }) : localizer.text("viewer.vectorExportRefused", { reason: outcome.reason }), 512);
+        } catch (error5) {
+          setViewerText(note, localizer.text("viewer.vectorExportRefused", {
+            reason: error5 instanceof Error ? error5.message : String(error5)
+          }), 512);
+        }
+      };
       setState(stage, ["loading"]);
       try {
         const source2 = lease2.value;
-        const [info, document] = await Promise.all([
+        const [read, document] = await Promise.all([
           source2.info(scope.signal),
           source2.document(scope.signal)
         ]);
@@ -67837,16 +68033,54 @@ function createVectorViewer(options = {}) {
         if (textBytes > VECTOR_MAXIMUM_TEXT_BYTES) {
           throw new RangeError(`vector document exceeds the stage budget: ${textBytes} bytes`);
         }
-        const objectUrl = URL.createObjectURL(new Blob([document.text], { type: `${document.mediaType};charset=utf-8` }));
-        image.src = objectUrl;
-        scope.cleanup(() => URL.revokeObjectURL(objectUrl));
+        info = read;
+        const url = URL.createObjectURL(new Blob([document.text], { type: `${document.mediaType};charset=utf-8` }));
+        objectUrl = url;
+        scope.cleanup(() => URL.revokeObjectURL(url));
+        image.src = url;
+        await image.decode().catch(() => void 0);
         setViewerText(readout, localizer.text("viewer.vectorSummary", {
-          nodes: info.nodes,
-          paths: info.paths,
-          shapes: info.shapes,
-          text: info.textNodes
+          nodes: read.nodes,
+          paths: read.paths,
+          shapes: read.shapes,
+          text: read.textNodes
         }));
+        const size = vectorExtent(read, image);
+        mediaFacts(shell.section("vector", localizer.text("viewer.vector"), { icon: "info" }).body, [
+          [
+            localizer.text("viewer.vectorSize"),
+            `${Math.round(size.width)} \xD7 ${Math.round(size.height)}`
+          ],
+          ...read.viewBox === void 0 ? [] : [["viewBox", read.viewBox.join(" ")]],
+          [localizer.text("viewer.vectorNodes"), String(read.nodes)],
+          [localizer.text("viewer.vectorPaths"), String(read.paths)],
+          [localizer.text("viewer.vectorShapes"), String(read.shapes)],
+          [localizer.text("viewer.vectorText"), String(read.textNodes)],
+          [localizer.text("viewer.vectorGradients"), String(read.gradients)]
+        ]);
+        if (options.exportBytes !== void 0) {
+          const body = shell.section("export", localizer.text("viewer.vectorExport"), {
+            icon: "export"
+          }).body;
+          const factor = element(body, "select");
+          factor.setAttribute("aria-label", localizer.text("viewer.vectorExportScale"));
+          factor.title = factor.getAttribute("aria-label") ?? "";
+          for (const value of EXPORT_SCALES) {
+            const option = element(factor, "option", { text: `${value}\xD7` });
+            option.value = String(value);
+          }
+          const run = element(body, "button", {
+            part: "operations.button",
+            text: localizer.text("viewer.vectorExportPng")
+          });
+          run.type = "button";
+          const note = element(body, "output", { part: "viewer.status" });
+          run.addEventListener("click", () => void exportPng(Number(factor.value), note), {
+            signal: scope.signal
+          });
+        }
         setState(stage, []);
+        place();
       } catch (error5) {
         setState(stage, ["error"]);
         image.remove();
@@ -67857,8 +68091,9 @@ function createVectorViewer(options = {}) {
           })
         });
       }
-      return createViewerMount(root, scope, args, ({ descriptor }) => {
-        root.dataset["revision"] = descriptor.revision;
+      return createViewerMount(root, scope, args, ({ descriptor: next }) => {
+        descriptor = next;
+        root.dataset["revision"] = next.revision;
       });
     }
   });
@@ -69186,13 +69421,7 @@ function normalSwizzleOf(encoding) {
   return encoding === "xy-in-alpha-green" ? 1 : encoding === "rgb-inverted-y" ? 2 : 0;
 }
 function transformedTerrainUv(uv, transform) {
-  if (transform === void 0)
-    return uv;
-  const x = uv[0] * transform.scale[0];
-  const y = uv[1] * transform.scale[1];
-  const cosine = Math.cos(transform.rotation);
-  const sine = Math.sin(transform.rotation);
-  return [transform.offset[0] + x * cosine - y * sine, transform.offset[1] + x * sine + y * cosine];
+  return transform === void 0 ? uv : transformTerrainUv(uv, transform);
 }
 function terrainSurfaceUv(cell, local, sampleTransform, materialTransform) {
   const inCell = transformedTerrainUv(local, sampleTransform);
@@ -69953,7 +70182,7 @@ function fitWorldTerrainTiling(items, materials) {
   if (!Number.isFinite(ax) || !Number.isFinite(ay) || ax === 0 || ay === 0)
     return void 0;
   const bx = start[0] - ax * origin.x, by = start[1] - ay * origin.y;
-  const [s0, s1] = transform.scale, [o0, o1] = transform.offset;
+  const [s0, s1] = transform.scale, [o0, o1] = transformTerrainUv([0, 0], transform);
   const tiling = [s0 / ax, -s1 / ay, o0 - s0 * bx / ax, 1 - o1 + s1 * by / ay];
   return tiling.every(Number.isFinite) ? Object.freeze(tiling) : void 0;
 }

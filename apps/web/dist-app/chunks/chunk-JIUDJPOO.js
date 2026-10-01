@@ -2,6 +2,9 @@ import {
   createOrbitController
 } from "./chunk-O2DY4UGD.js";
 import {
+  relationGraphNeighbourhood
+} from "./chunk-BCFM5UHF.js";
+import {
   GRAPH_FALLBACK_MESSAGES,
   ViewerMountScope,
   createSurface,
@@ -12,10 +15,7 @@ import {
   setState,
   unknownSourceLease,
   withEnglishUiFallback
-} from "./chunk-N6RN7GYG.js";
-import {
-  relationGraphNeighbourhood
-} from "./chunk-M6BGIGEK.js";
+} from "./chunk-ZKA6ERAI.js";
 import {
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
 } from "./chunk-BLWUC7LO.js";

@@ -1,8 +1,9 @@
 import {
   collectEncodedMedia,
   createMediaShell,
+  mediaFacts,
   mountContributedSections
-} from "./chunk-6ZBIN4U4.js";
+} from "./chunk-GP4R44PF.js";
 import {
   AUDIO_FALLBACK_MESSAGES,
   ViewerMountScope,
@@ -14,7 +15,7 @@ import {
   setViewerText,
   unknownSourceLease,
   withEnglishUiFallback
-} from "./chunk-N6RN7GYG.js";
+} from "./chunk-ZKA6ERAI.js";
 import {
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
 } from "./chunk-BLWUC7LO.js";
@@ -176,14 +177,6 @@ function containerOf(descriptor, mediaType) {
   if (identity === void 0)
     return type;
   return type === void 0 ? identity.formatLabel : `${identity.formatLabel} (${type})`;
-}
-function facts(parent, rows) {
-  const list = element(parent, "dl", { part: "image.metadata" });
-  for (const [label, value] of rows) {
-    const row = element(list, "div", { part: "metadata.row" });
-    element(row, "dt", { text: label, part: "metadata.label" });
-    setViewerText(element(row, "dd", { part: "metadata.value" }), value, 512);
-  }
 }
 function createAudioViewer(options = {}) {
   const localizer = withEnglishUiFallback(options.localizer, AUDIO_FALLBACK_MESSAGES);
@@ -404,7 +397,7 @@ function createAudioViewer(options = {}) {
       for (const group of metadataGroups(args.descriptor)) {
         if (/^(identity|traits|detection)$/iu.test(group.id))
           continue;
-        facts(shell.section(`metadata:${group.id}`, group.label, {
+        mediaFacts(shell.section(`metadata:${group.id}`, group.label, {
           icon: "symbol-misc",
           collapsed: true
         }).body, group.entries.map((entry) => [entry.key, String(entry.value)]));
@@ -449,7 +442,7 @@ function createAudioViewer(options = {}) {
           }
           const container = containerOf(args.descriptor, loaded.mediaType);
           factsBody.replaceChildren();
-          facts(factsBody, [
+          mediaFacts(factsBody, [
             [localizer.text("viewer.duration"), clock(loaded.model.duration)],
             [localizer.text("viewer.audioChannels"), String(loaded.model.channels)],
             [

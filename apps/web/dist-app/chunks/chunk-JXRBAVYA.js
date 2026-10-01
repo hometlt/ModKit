@@ -2437,18 +2437,30 @@ var WORLD_SCENE_SOURCE_CONTRACT = "common.view/world-scene-source";
 var MAP_LAYERS_OPERATION = "map.layers";
 var MAP_LAYER_READ_OPERATION = "map.layer-read";
 var MAP_LAYER_WRITE_OPERATION = "map.layer-write";
-var MAP_LAYERS_REPRESENTATION = Object.freeze({
+var MAP_LAYERS_REPRESENTATION = /* @__PURE__ */ Object.freeze({
   id: "map-layers",
   contract: "common.map/layers",
   major: 1
 });
-var sampleOrigin = {
-  x: { type: "integer", minimum: 0, description: "Column of the first sample, counted from the west edge." },
-  y: { type: "integer", minimum: 0, description: "Row of the first sample, counted from the north edge (row 0)." }
+var sampleX = {
+  type: "integer",
+  minimum: 0,
+  description: "Column of the first sample, counted from the west edge."
 };
-var windowSize = {
-  width: { type: "integer", minimum: 1, description: "Columns in the window; x + width stays within the layer." },
-  height: { type: "integer", minimum: 1, description: "Rows in the window; y + height stays within the layer." }
+var sampleY = {
+  type: "integer",
+  minimum: 0,
+  description: "Row of the first sample, counted from the north edge (row 0)."
+};
+var windowWidth = {
+  type: "integer",
+  minimum: 1,
+  description: "Columns in the window; x + width stays within the layer."
+};
+var windowHeight = {
+  type: "integer",
+  minimum: 1,
+  description: "Rows in the window; y + height stays within the layer."
 };
 var layerId = {
   type: "string",
@@ -2456,7 +2468,7 @@ var layerId = {
   description: "A layer id from map.layers of the same subject revision."
 };
 var anyNamed = (...names) => ({ anyOf: names.map((name) => ({ required: [name] })) });
-var MAP_LAYERS_INPUT_SCHEMA = Object.freeze({
+var MAP_LAYERS_INPUT_SCHEMA = /* @__PURE__ */ Object.freeze({
   $ref: "modkit://map/layers.v1",
   document: {
     $id: "modkit://map/layers.v1",
@@ -2464,7 +2476,7 @@ var MAP_LAYERS_INPUT_SCHEMA = Object.freeze({
     anyOf: [{ type: "null" }, { type: "object", properties: {}, additionalProperties: false }]
   }
 });
-var MAP_LAYER_READ_INPUT_SCHEMA = Object.freeze({
+var MAP_LAYER_READ_INPUT_SCHEMA = /* @__PURE__ */ Object.freeze({
   $ref: "modkit://map/layer-read.v1",
   document: {
     $id: "modkit://map/layer-read.v1",
@@ -2472,11 +2484,20 @@ var MAP_LAYER_READ_INPUT_SCHEMA = Object.freeze({
     type: "object",
     required: ["layer"],
     additionalProperties: false,
-    properties: { layer: layerId, ...sampleOrigin, ...windowSize },
-    anyOf: [{ not: anyNamed("x", "y", "width", "height") }, { required: ["x", "y", "width", "height"] }]
+    properties: {
+      layer: layerId,
+      x: sampleX,
+      y: sampleY,
+      width: windowWidth,
+      height: windowHeight
+    },
+    anyOf: [
+      { not: /* @__PURE__ */ anyNamed("x", "y", "width", "height") },
+      { required: ["x", "y", "width", "height"] }
+    ]
   }
 });
-var MAP_LAYER_WRITE_INPUT_SCHEMA = Object.freeze({
+var MAP_LAYER_WRITE_INPUT_SCHEMA = /* @__PURE__ */ Object.freeze({
   $ref: "modkit://map/layer-write.v1",
   document: {
     $id: "modkit://map/layer-write.v1",
@@ -2486,8 +2507,10 @@ var MAP_LAYER_WRITE_INPUT_SCHEMA = Object.freeze({
     additionalProperties: false,
     properties: {
       layer: layerId,
-      ...sampleOrigin,
-      ...windowSize,
+      x: sampleX,
+      y: sampleY,
+      width: windowWidth,
+      height: windowHeight,
       values: {
         type: "array",
         minItems: 1,
@@ -2496,7 +2519,7 @@ var MAP_LAYER_WRITE_INPUT_SCHEMA = Object.freeze({
       },
       expectedSourceRevision: { type: "string", minLength: 1, description: "Revision the window was read from." }
     },
-    anyOf: [{ required: ["x", "y"] }, { not: anyNamed("x", "y") }]
+    anyOf: [{ required: ["x", "y"] }, { not: /* @__PURE__ */ anyNamed("x", "y") }]
   }
 });
 function mapLayerWindow(layer, input) {
@@ -2542,6 +2565,30 @@ function mapLayerWindow(layer, input) {
 }
 var MAP_SEMANTIC_MATCHER_PROFILE = "modkit/map-semantic-matcher";
 var MAP_PREVIEW_PREPARATION_MATCHER_PROFILE = "modkit/map-preview-preparation-matcher";
+function transformTerrainUv(uv, transform) {
+  const x = (uv[0] - 0.5) * transform.scale[0];
+  const y = (uv[1] - 0.5) * transform.scale[1];
+  const cosine = Math.cos(transform.rotation);
+  const sine = Math.sin(transform.rotation);
+  return [
+    0.5 + x * cosine - y * sine + transform.offset[0],
+    0.5 + x * sine + y * cosine + transform.offset[1]
+  ];
+}
+function terrainUvTransformFromOrigin(transform) {
+  const x = 0.5 * transform.scale[0];
+  const y = 0.5 * transform.scale[1];
+  const cosine = Math.cos(transform.rotation);
+  const sine = Math.sin(transform.rotation);
+  return Object.freeze({
+    offset: Object.freeze([
+      transform.offset[0] - 0.5 + x * cosine - y * sine,
+      transform.offset[1] - 0.5 + x * sine + y * cosine
+    ]),
+    scale: Object.freeze([transform.scale[0], transform.scale[1]]),
+    rotation: transform.rotation
+  });
+}
 function mapQualificationTupleBytes(tuples) {
   const view = new DataView(new ArrayBuffer(tuples.length * 24));
   tuples.forEach((tuple, index) => {
@@ -3577,6 +3624,8 @@ export {
   mapLayerWindow,
   MAP_SEMANTIC_MATCHER_PROFILE,
   MAP_PREVIEW_PREPARATION_MATCHER_PROFILE,
+  transformTerrainUv,
+  terrainUvTransformFromOrigin,
   mapQualificationTupleBytes,
   worldModelRequiredBytes,
   contributionSettingsFor,

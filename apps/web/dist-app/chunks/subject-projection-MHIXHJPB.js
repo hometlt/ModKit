@@ -5,11 +5,11 @@ import {
   createDescriptorFallbackSubjectFactsSource,
   createFieldRelationGraphSource,
   descriptorSubjectRef
-} from "./chunk-24NQA5DY.js";
+} from "./chunk-M6IANCT6.js";
 import {
   metadataFieldProjections
 } from "./chunk-5GGWVEQJ.js";
-import "./chunk-HYIVL2HG.js";
+import "./chunk-JXRBAVYA.js";
 import "./chunk-MT2JUZZJ.js";
 import "./chunk-R2P56FTH.js";
 import "./chunk-P5QJHSUW.js";

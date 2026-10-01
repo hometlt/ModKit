@@ -2,10 +2,10 @@ import {
   parseSubjectRef,
   rootSubject,
   serializeSubjectRef
-} from "./chunk-M6BGIGEK.js";
+} from "./chunk-IXZGU3XP.js";
 import {
   compareUtf8
-} from "./chunk-3LWCT2HN.js";
+} from "./chunk-33VOQNJR.js";
 import {
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
 } from "./chunk-BLWUC7LO.js";
@@ -21,12 +21,6 @@ function referencePath(path, segment) {
 function metadataFieldProjections(groups) {
   return Object.freeze(groups.flatMap((group) => group.entries.flatMap((entry) => entry.type === void 0 ? [] : [{ path: referencePath(group.id, entry.key), type: entry.type, value: entry.value }])));
 }
-
-// ../MODDING/modkit-core/packages/sdk/dist/subjects/index.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-
-// ../MODDING/modkit-core/packages/sdk/dist/subjects/unknown-root.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
 // ../MODDING/modkit-core/packages/host/dist/subject-projection.js
 var DEFAULT_SUBJECT_RELATION_PROJECTION_BUDGET = Object.freeze({

@@ -1,8 +1,11 @@
 import {
+  MEDIA_ZOOM_CHOICES,
+  canvasPng,
   collectEncodedMedia,
   createMediaShell,
+  mediaFacts,
   mountContributedSections
-} from "./chunk-6ZBIN4U4.js";
+} from "./chunk-GP4R44PF.js";
 import {
   IMAGE_EDITING_FALLBACK_MESSAGES,
   IMAGE_FALLBACK_MESSAGES,
@@ -19,12 +22,12 @@ import {
   uiPreference,
   unknownSourceLease,
   withEnglishUiFallback
-} from "./chunk-N6RN7GYG.js";
+} from "./chunk-ZKA6ERAI.js";
 import {
   createSubjectCandidateProvider,
   isKnowledgeTarget,
   loadSubjectCandidatePage
-} from "./chunk-M6BGIGEK.js";
+} from "./chunk-IXZGU3XP.js";
 import {
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
 } from "./chunk-BLWUC7LO.js";
@@ -1729,15 +1732,18 @@ function convertedFileName(baseName, presetId, ext) {
   return presetId === bare ? `${baseName}.${bare}` : `${baseName}.${exportSafeName(presetId)}.${bare}`;
 }
 var ZERO_SUBRESOURCE = Object.freeze({
+  frame: 0,
   mipLevel: 0,
   layer: 0,
   face: 0,
   slice: 0
 });
+var DECODED_CACHE_BYTES = 4 * IMAGE_MAXIMUM_BYTES;
 var axisCount = (info, axis) => {
   if (info === void 0)
     return 1;
   const counts = {
+    frame: info.frames,
     mipLevel: info.mipLevels,
     layer: info.layers,
     face: info.faces,
@@ -1767,6 +1773,8 @@ function exportSafeName(value) {
 }
 function subresourceLabel(info, subresource) {
   const parts = [`mip${subresource.mipLevel}`];
+  if (axisCount(info, "frame") > 1)
+    parts.unshift(`frame${subresource.frame}`);
   if (axisCount(info, "layer") > 1)
     parts.push(`layer${subresource.layer}`);
   if (axisCount(info, "face") > 1)
@@ -1777,14 +1785,16 @@ function subresourceLabel(info, subresource) {
 }
 function enumerateSubresources(info, maximum = IMAGE_MAXIMUM_EXPORTED_SUBRESOURCES) {
   const all = [];
-  for (let layer = 0; layer < axisCount(info, "layer"); layer += 1) {
-    for (let face = 0; face < axisCount(info, "face"); face += 1) {
-      for (let mipLevel = 0; mipLevel < axisCount(info, "mipLevel"); mipLevel += 1) {
-        const depth = Math.max(1, axisCount(info, "slice") >>> mipLevel);
-        for (let slice = 0; slice < depth; slice += 1) {
-          if (all.length >= maximum)
-            return Object.freeze(all);
-          all.push(Object.freeze({ mipLevel, layer, face, slice }));
+  for (let frame = 0; frame < axisCount(info, "frame"); frame += 1) {
+    for (let layer = 0; layer < axisCount(info, "layer"); layer += 1) {
+      for (let face = 0; face < axisCount(info, "face"); face += 1) {
+        for (let mipLevel = 0; mipLevel < axisCount(info, "mipLevel"); mipLevel += 1) {
+          const depth = Math.max(1, axisCount(info, "slice") >>> mipLevel);
+          for (let slice = 0; slice < depth; slice += 1) {
+            if (all.length >= maximum)
+              return Object.freeze(all);
+            all.push(Object.freeze({ frame, mipLevel, layer, face, slice }));
+          }
         }
       }
     }
@@ -1800,7 +1810,7 @@ async function loadSubresource(source, info, subresource, signal) {
       y: 0,
       width: extent.width,
       height: extent.height,
-      frame: 0,
+      frame: subresource.frame,
       mipLevel: subresource.mipLevel,
       layer: subresource.layer,
       face: subresource.face,
@@ -1813,7 +1823,7 @@ async function loadSubresource(source, info, subresource, signal) {
     const bitmap2 = await createImageBitmap(new ImageData(pixels, region.width, region.height));
     return { bitmap: bitmap2, bytes: region.pixels.byteLength };
   }
-  if (subresource.mipLevel !== 0 || subresource.layer !== 0 || subresource.face !== 0 || subresource.slice !== 0) {
+  if (subresource.frame !== 0 || subresource.mipLevel !== 0 || subresource.layer !== 0 || subresource.face !== 0 || subresource.slice !== 0) {
     throw new TypeError("this image exposes no decoded subresources; only the base image is shown");
   }
   const encoded = await source.encoded(signal);
@@ -1866,7 +1876,6 @@ function differenceOf(left, right) {
 function metadataGroups(descriptor) {
   return "identity" in descriptor ? descriptor.metadata ?? [] : [];
 }
-var ZOOM_CHOICES = [0.25, 0.5, 1, 2, 4, 8];
 var CHANNELS = ["rgb", "r", "g", "b", "a"];
 var viewStates = /* @__PURE__ */ new Map();
 var VIEW_STATES = 64;
@@ -1953,7 +1962,8 @@ function createImageViewer(options = {}) {
       const context = canvas.getContext("2d");
       if (context === null)
         throw new TypeError("2d canvas context is unavailable");
-      const key = (value) => `${value.mipLevel}/${value.layer}/${value.face}/${value.slice}`;
+      const key = (value) => `${value.frame}/${value.mipLevel}/${value.layer}/${value.face}/${value.slice}`;
+      let decodedBytes = 0;
       const modelFor = async (value) => {
         const cached = decoded.get(key(value));
         if (cached !== void 0)
@@ -1962,7 +1972,48 @@ function createImageViewer(options = {}) {
           throw new TypeError("image info is unavailable");
         const loaded = await loadSubresource(source, info, value, scope.signal);
         decoded.set(key(value), loaded);
+        decodedBytes += loaded.bytes;
+        for (const [old, entry] of decoded) {
+          if (decodedBytes <= DECODED_CACHE_BYTES || old === key(value))
+            break;
+          decoded.delete(old);
+          decodedBytes -= entry.bytes;
+        }
         return loaded;
+      };
+      let animation;
+      let animationFps = 10;
+      let animationLoop = true;
+      let frameField;
+      const stopAnimation = () => {
+        animation?.abort();
+        animation = void 0;
+      };
+      scope.cleanup(stopAnimation);
+      const animate = async (signal) => {
+        const count = axisCount(info, "frame");
+        while (!signal.aborted) {
+          const started = performance.now();
+          if (subresource.frame + 1 >= count && !animationLoop)
+            break;
+          const next = Object.freeze({ ...subresource, frame: (subresource.frame + 1) % count });
+          const shown2 = await modelFor(next);
+          if (signal.aborted)
+            return;
+          subresource = next;
+          model = shown2;
+          working = void 0;
+          workingCanvas = void 0;
+          if (frameField !== void 0)
+            frameField.value = String(next.frame);
+          paint();
+          const wait = Math.max(0, 1e3 / animationFps - (performance.now() - started));
+          await new Promise((resolve) => setTimeout(resolve, wait));
+        }
+        if (animation?.signal === signal)
+          animation = void 0;
+        if (!scope.signal.aborted)
+          renderSections();
       };
       const bitmapData = (bitmap) => {
         const scratch = root.ownerDocument.createElement("canvas");
@@ -2067,7 +2118,7 @@ function createImageViewer(options = {}) {
             selected: fit ? "fit" : String(zoom),
             choices: [
               { id: "fit", label: localizer.text("viewer.fit") },
-              ...ZOOM_CHOICES.map((value) => ({ id: String(value), label: `${value * 100}%` }))
+              ...MEDIA_ZOOM_CHOICES.map((value) => ({ id: String(value), label: `${value * 100}%` }))
             ]
           }
         ].filter((item) => item.text !== "");
@@ -2371,15 +2422,6 @@ function createImageViewer(options = {}) {
         canvas.removeEventListener("pointercancel", onPointerUp);
         root.removeEventListener("keydown", onKeyDown);
       });
-      const facts = (parent, rows) => {
-        const list = element(parent, "dl", { part: "image.metadata" });
-        for (const [label, value] of rows) {
-          const row = element(list, "div", { part: "metadata.row" });
-          element(row, "dt", { text: label, part: "metadata.label" });
-          const cell = element(row, "dd", { part: "metadata.value" });
-          setViewerText(cell, value, 512);
-        }
-      };
       const conversions = () => exportOffer(descriptor).flatMap((form) => {
         if (form.writes === void 0)
           return [];
@@ -2443,9 +2485,8 @@ function createImageViewer(options = {}) {
         paint();
         void (async () => {
           try {
-            const { encodePng } = await import("./raster-P4O5MCME.js");
             const scratch = root.ownerDocument.createElement("canvas");
-            const scratchContext = scratch.getContext("2d", { willReadFrequently: true });
+            const scratchContext = scratch.getContext("2d");
             if (scratchContext === null)
               throw new TypeError("2d canvas context is unavailable");
             const files = [];
@@ -2455,11 +2496,10 @@ function createImageViewer(options = {}) {
               scratch.height = crop.height;
               scratchContext.clearRect(0, 0, crop.width, crop.height);
               scratchContext.drawImage(current.image, crop.x, crop.y, crop.width, crop.height, 0, 0, crop.width, crop.height);
-              const pixels = scratchContext.getImageData(0, 0, crop.width, crop.height);
               files.push({
                 name: frameFileName(baseName, index, list.length, region.name),
                 mediaType: "image/png",
-                bytes: await encodePng(crop.width, crop.height, new Uint8Array(pixels.data.buffer), scope.signal)
+                bytes: await canvasPng(scratch)
               });
             }
             const outcome = await write(files, scope.signal);
@@ -2756,7 +2796,7 @@ function createImageViewer(options = {}) {
         shell.clearSections();
         if (info !== void 0 && model !== void 0) {
           const extent = subresourceExtent(info, subresource.mipLevel);
-          facts(shell.section("image", localizer.text("viewer.imageSectionImage"), { icon: "info" }).body, [
+          mediaFacts(shell.section("image", localizer.text("viewer.imageSectionImage"), { icon: "info" }).body, [
             [localizer.text("viewer.imageDimensions"), `${extent.width} \xD7 ${extent.height}`],
             [localizer.text("viewer.imageAspect"), (extent.width / extent.height).toFixed(3)],
             [
@@ -2764,13 +2804,14 @@ function createImageViewer(options = {}) {
               info.alphaMode === "none" || info.channels < 4 ? "no" : "yes"
             ]
           ]);
-          facts(shell.section("format", localizer.text("viewer.imageSectionFormat"), { icon: "file" }).body, [
+          mediaFacts(shell.section("format", localizer.text("viewer.imageSectionFormat"), { icon: "file" }).body, [
             [localizer.text("viewer.imageFormat"), formatLabel()],
             [localizer.text("viewer.imageMipLevels"), String(axisCount(info, "mipLevel"))],
             [localizer.text("viewer.imageChannels"), `${info.channels} \xD7 ${info.bitDepth}-bit`],
             [localizer.text("viewer.imageColorSpace"), String(info.colorSpace)]
           ]);
           const axes = [
+            ["frame", "frame"],
             ["mipLevel", "mip"],
             ["layer", "layer"],
             ["face", "face"],
@@ -2825,16 +2866,60 @@ function createImageViewer(options = {}) {
                     field.value = String(subresource[axis]);
                 });
                 element(bar, "span", { part: "image.readout", text: `/${count - 1}` });
+                if (axis === "frame")
+                  frameField = field;
               }
               button(bar, `${name}+`, localizer.text("viewer.imageNextSubresource", { axis: name }), () => step(1));
+              if (axis === "frame") {
+                const play = button(bar, animation === void 0 ? "\u25B6" : "\u25A0", localizer.text("viewer.imageFramesPlayTitle"), () => {
+                  if (animation === void 0) {
+                    const controller = new AbortController();
+                    animation = controller;
+                    void animate(controller.signal).catch((error) => {
+                      note = error instanceof Error ? error.message : String(error);
+                      if (animation === controller)
+                        animation = void 0;
+                      if (!scope.signal.aborted)
+                        renderSections();
+                    });
+                  } else
+                    stopAnimation();
+                  play.textContent = animation === void 0 ? "\u25B6" : "\u25A0";
+                  play.setAttribute("aria-pressed", String(animation !== void 0));
+                }, animation !== void 0);
+                const fps = element(bar, "input", { part: "image.readout" });
+                fps.type = "number";
+                fps.min = "1";
+                fps.max = "60";
+                fps.value = String(animationFps);
+                fps.title = localizer.text("viewer.imageFramesFps");
+                fps.setAttribute("aria-label", fps.title);
+                fps.addEventListener("change", () => {
+                  const value = Number(fps.value);
+                  if (Number.isFinite(value))
+                    animationFps = Math.min(60, Math.max(1, value));
+                  fps.value = String(animationFps);
+                });
+                const loop = element(bar, "label", {});
+                const box = element(loop, "input", {});
+                box.type = "checkbox";
+                box.checked = animationLoop;
+                loop.append(" ", localizer.text("viewer.imageFramesLoop"));
+                box.addEventListener("change", () => {
+                  animationLoop = box.checked;
+                });
+              }
             }
             if (enumerateSubresources(current).length > 1) {
               button(bar, localizer.text("viewer.imageCompare"), localizer.text("viewer.imageCompareTitle"), () => {
                 compare = compare === "off" ? "side-by-side" : compare === "side-by-side" ? "diff" : "off";
                 if (compare !== "off" && key(compareWith) === key(subresource)) {
-                  compareWith = Object.freeze({
+                  compareWith = Object.freeze(axisCount(current, "mipLevel") > 1 ? {
                     ...subresource,
                     mipLevel: Math.min(axisCount(current, "mipLevel") - 1, subresource.mipLevel + 1)
+                  } : {
+                    ...subresource,
+                    frame: (subresource.frame + 1) % axisCount(current, "frame")
                   });
                 }
                 reload();
@@ -2850,7 +2935,8 @@ function createImageViewer(options = {}) {
           });
           editing?.destroy();
           const base = subresource.mipLevel === 0 && subresource.layer === 0 && subresource.face === 0 && subresource.slice === 0;
-          const refusal = options.savePixels === void 0 ? options.editableReason : !base ? localizer.text("viewer.imageEditBaseOnly", {
+          const frames2 = axisCount(info, "frame");
+          const refusal = options.savePixels === void 0 ? options.editableReason : frames2 > 1 ? localizer.text("viewer.imageEditFrames", { count: frames2 }) : !base ? localizer.text("viewer.imageEditBaseOnly", {
             subresource: subresourceLabel(info, subresource)
           }) : options.saveRefusal?.(descriptor);
           const writable = options.savePixels !== void 0 && refusal === void 0;
@@ -2898,7 +2984,7 @@ function createImageViewer(options = {}) {
             if (groups.length > 1) {
               element(body, "h3", { part: "image.metadata-group", text: group.label });
             }
-            facts(body, group.entries.map((entry) => [entry.key, String(entry.value)]));
+            mediaFacts(body, group.entries.map((entry) => [entry.key, String(entry.value)]));
           }
         }
       };

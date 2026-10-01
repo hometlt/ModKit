@@ -620,11 +620,6 @@ init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 // ../MODDING/modkit-core/packages/core/dist/reference-index.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
-// ../MODDING/modkit-core/packages/sdk/dist/renderer/index.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-var SCENE_RENDERER_CONTRACT = "common.render/scene-3d";
-var SCENE_RENDERER_MATCHER_PROFILE = "modkit/scene-renderer-matcher";
-
 export {
   isSegment,
   isQualifiedId,
@@ -654,7 +649,5 @@ export {
   canonicalJsonStringify,
   OperationCancelledError,
   throwIfAborted,
-  isCancellation,
-  SCENE_RENDERER_CONTRACT,
-  SCENE_RENDERER_MATCHER_PROFILE
+  isCancellation
 };
