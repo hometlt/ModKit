@@ -538,4 +538,88 @@ describe('portable UVP map bundle', () => {
     expect(model.textures?.[0]?.rgba).toEqual(rgba)
     expect(model.complete).toBe(true)
   })
+
+  it('asks a model with textures inside its maxBytes, and again for what it says it needed', async () => {
+    const sourceModel = sourceWithModel()
+    const requests: { maxBytes: number; maxTextureTotalBytes?: number }[] = []
+    const needed = 20 * 1024 * 1024
+    const packed = await materializeWorldToUvpMap(
+      {
+        ...sourceModel,
+        async model(resourceId, request) {
+          requests.push(request)
+          if (request.maxBytes < needed)
+            return {
+              state: 'unresolved' as const,
+              diagnostics: [
+                {
+                  severity: 'warning' as const,
+                  code: 'x3.host/model-resource-too-large',
+                  message: 'too large',
+                  data: { maxBytes: request.maxBytes, requiredBytes: needed },
+                },
+              ],
+            }
+          return sourceModel.model!(resourceId)
+        },
+      },
+      { ...options, maxMediaBytes: 256 * 1024 * 1024, maxModelBytes: 64 * 1024 * 1024 },
+    )
+    if (packed.state !== 'materialized') throw new Error(JSON.stringify(packed.refusals))
+    expect(packed.packagedModelCount).toBe(1)
+    expect(requests.map(request => request.maxBytes)).toEqual([16 * 1024 * 1024, 36 * 1024 * 1024])
+    for (const request of requests)
+      expect(request.maxTextureTotalBytes).toBeLessThanOrEqual(request.maxBytes)
+  })
+
+  it('keeps a model whose image came without texels, naming the image', async () => {
+    const twoTextures = materializeUvmCore(
+      {
+        info: {
+          scenes: 1,
+          nodes: 1,
+          meshes: 1,
+          primitives: 1,
+          materials: 1,
+          textures: 2,
+          animations: 0,
+          geometryAccess: 'decoded',
+        },
+        ...triangle,
+        resourceClosure: {
+          mode: 'content-qualified',
+          entries: [
+            { role: 'texture', logicalId: 'texture.dds', mediaHint: 'image/vnd-ms.dds' },
+            { role: 'texture', logicalId: '!fire', mediaHint: 'image/vnd-ms.dds' },
+          ],
+        },
+      },
+      {
+        scope: { scopeId: 'model-interchange-v1', version: '1.0.0' },
+        profile: 'UVM/core@1.0',
+        subjectRevision: 'provider-token:two-textures' as never,
+        options: { assetId: 'fixture/two-textures', sourceFormat: 'fixture' },
+      },
+    ).bytes
+    const sourceModel = sourceWithModel()
+    const packed = await materializeWorldToUvpMap(
+      {
+        ...sourceModel,
+        async model(resourceId) {
+          const converted = await sourceModel.model!(resourceId)
+          return { ...converted, uvmBytes: twoTextures.slice() } as typeof converted
+        },
+      },
+      options,
+    )
+    if (packed.state !== 'materialized') throw new Error(JSON.stringify(packed.refusals))
+    expect(packed.packagedModelCount).toBe(1)
+    expect(packed.unpackagedModelTextureIds).toEqual(['!fire'])
+    expect(packed.excludedFacetIds).toContain('world.object-model-resources')
+    const images = readUvmContainer(packed.entries.get('models/object-model-0000.uvm.glb')!)
+      .document['images'] as { uri: string }[]
+    expect(images.map(image => image.uri).sort()).toEqual(
+      ['!fire', 'media/models/object-model-0000-texture-0000.tga'].sort(),
+    )
+  })
 })

@@ -1,13 +1,14 @@
 import { canonicalJsonStringify, ModkitError } from '@modkit/core'
 import { sha256Hex } from '@modkit/codec-kit/crypto/digest'
 import type { RasterResourcePort, SceneRendererTexture } from '@modkit/sdk'
-import type {
-  CandidateWorldSceneSource,
-  MapModelComponentPlacement,
-  MapTerrainMaterialDefinition,
-  MapWaterMaterialDefinition,
-  WorldSceneObjectItem,
-  WorldSceneLayerItem,
+import {
+  worldModelRequiredBytes,
+  type CandidateWorldSceneSource,
+  type MapModelComponentPlacement,
+  type MapTerrainMaterialDefinition,
+  type MapWaterMaterialDefinition,
+  type WorldSceneObjectItem,
+  type WorldSceneLayerItem,
 } from '@modkit/sdk/maps'
 import { readUvmContainer, uvmImageLogicalId, writeUvmContainer } from '../model/container.js'
 
@@ -26,6 +27,7 @@ import {
   type UvwWaterLayer,
 } from './index.js'
 import { materializeWorldToUvw, type WorldUvwMaterializationOptions } from './materializer.js'
+import { localId } from './reconstruct.js'
 import { createUvwWorldSceneSource } from './source.js'
 
 const MANIFEST_PATH = 'uvp.manifest.json'
@@ -99,6 +101,8 @@ export type WorldUvpMaterializationResult =
       readonly packagedMediaBytes: number
       readonly unpackagedModelResourceIds: readonly string[]
       readonly unpackagedWaterResourceIds: readonly string[]
+      /** Images of packaged models that came without decoded texels: kept by their logical id. */
+      readonly unpackagedModelTextureIds: readonly string[]
       readonly excludedFacetIds: readonly string[]
       readonly refusalCodes: readonly []
       readonly refusals: readonly []
@@ -552,13 +556,22 @@ function normalizedResourceName(value: string): string {
   return value.replaceAll('\\', '/').toLowerCase()
 }
 
+/**
+ * A converted model with its decoded textures as package media. An image that came without texels
+ * (an effect name, a texture that did not decode) keeps its logical id and is named in `missing`,
+ * so one texture does not cost the package the model.
+ */
 async function makePortableUvm(
   bytes: Uint8Array,
   textures: readonly SceneRendererTexture[],
   modelOrdinal: number,
   signal?: AbortSignal,
 ): Promise<
-  Readonly<{ readonly bytes: Uint8Array; readonly textures: readonly PortableModelTexture[] }>
+  Readonly<{
+    readonly bytes: Uint8Array
+    readonly textures: readonly PortableModelTexture[]
+    readonly missing: readonly string[]
+  }>
 > {
   const budget = {
     maxInputBytes: Math.max(bytes.byteLength * 4, 1024 * 1024),
@@ -583,8 +596,23 @@ async function makePortableUvm(
         })
       }),
   )
+  /** The logical id of every external image, for those that come without texels. */
+  const externalImages = (Array.isArray(images) ? images : []).flatMap(candidate =>
+    typeof candidate === 'object' &&
+    candidate !== null &&
+    !Array.isArray(candidate) &&
+    typeof (candidate as Record<string, unknown>)['uri'] === 'string' &&
+    !((candidate as Record<string, unknown>)['uri'] as string).startsWith('data:') &&
+    (candidate as Record<string, unknown>)['bufferView'] === undefined
+      ? [uvmImageLogicalId((candidate as Record<string, unknown>)['uri'] as string)]
+      : [],
+  )
   if (portableTextures.length === 0)
-    return Object.freeze({ bytes: bytes.slice(), textures: Object.freeze([]) })
+    return Object.freeze({
+      bytes: bytes.slice(),
+      textures: Object.freeze([]),
+      missing: Object.freeze(externalImages),
+    })
   if (!Array.isArray(images)) throw new TypeError('textured UVM has no image declarations')
   const textureByName = new Map(
     textures.map(texture => [normalizedResourceName(texture.id), texture]),
@@ -597,6 +625,7 @@ async function makePortableUvm(
       ),
   )
   const matched = new Set<string>()
+  const missing: string[] = []
   const rewrittenImages = images.map((candidate, imageIndex) => {
     if (typeof candidate !== 'object' || candidate === null || Array.isArray(candidate))
       throw new TypeError(`UVM image ${String(imageIndex)} is not an object`)
@@ -611,8 +640,10 @@ async function makePortableUvm(
     const key = normalizedResourceName(uvmImageLogicalId(image['uri']))
     const texture = textureByName.get(key)
     const portable = portableByName.get(key)
-    if (texture === undefined || portable === undefined)
-      throw new TypeError(`UVM image ${image['uri']} has no decoded package texture`)
+    if (texture === undefined || portable === undefined) {
+      missing.push(uvmImageLogicalId(image['uri']))
+      return image
+    }
     matched.add(key)
     return { ...image, name: texture.id, uri: portable.mediaPath, mimeType: 'image/x-tga' }
   })
@@ -623,7 +654,11 @@ async function makePortableUvm(
     budget,
     signal,
   )
-  return Object.freeze({ bytes: rewritten, textures: Object.freeze(portableTextures) })
+  return Object.freeze({
+    bytes: rewritten,
+    textures: Object.freeze(portableTextures),
+    missing: Object.freeze(missing),
+  })
 }
 
 function sourceChannel(
@@ -1044,7 +1079,9 @@ export async function materializeWorldToUvpMap(
           targetRaster === undefined ||
           targetRaster.width !== raster.width ||
           targetRaster.height !== raster.height ||
-          targetRaster.materialIds.join('\0') !== raster.materialIds.join('\0')
+          // the UVW names a source material by its local id (`detail:newgrass.tga` → `material-newgrass-tga`)
+          targetRaster.materialIds.join('\0') !==
+            raster.materialIds.map(materialId => localId(materialId, 'material')).join('\0')
         )
           throw new TypeError(
             `terrain weight raster ${String(rasterIndex)} does not match output layer ${target.layer.id}`,
@@ -1167,6 +1204,7 @@ export async function materializeWorldToUvpMap(
     }
     const objectBindings: PortableObjectModelBinding[] = []
     const unpackagedModelResourceIds = new Set<string>()
+    const unpackagedModelTextureIds = new Set<string>()
     const modelBySource = new Map<
       string,
       Omit<
@@ -1213,21 +1251,37 @@ export async function materializeWorldToUvpMap(
             }
             const remaining = maxModelBytes - modelTotal
             if (remaining <= 0) throw new RangeError('object models exceed maxModelBytes')
-            const modelRequestBytes = Math.min(remaining, maxModelResourceBytes)
-            const result = await source.model(
-              sourceResourceId,
-              {
-                maxBytes: modelRequestBytes,
-                maxNodes: Math.min(options.maxPageItems, 1_024),
-                maxMeshes: Math.min(options.maxPageItems, 1_024),
-                maxPrimitives: Math.min(options.maxPageItems, 1_024),
-                maxPrimitiveBytes: modelRequestBytes,
-                maxResources: Math.min(options.maxPageItems, 1_024),
-                maxTextureBytes: options.maxTextureBytes,
-                maxTextureTotalBytes: options.maxMediaBytes - encodedTotal,
-              },
-              options.signal,
+            // The model's textures share its `maxBytes` with its UVM, within what media is left.
+            const textureBytes = Math.max(
+              1,
+              Math.min(maxModelResourceBytes, options.maxMediaBytes - encodedTotal),
             )
+            const ask = (maxBytes: number) =>
+              source.model!(
+                sourceResourceId,
+                {
+                  maxBytes,
+                  maxNodes: Math.min(options.maxPageItems, 1_024),
+                  maxMeshes: Math.min(options.maxPageItems, 1_024),
+                  maxPrimitives: Math.min(options.maxPageItems, 1_024),
+                  maxPrimitiveBytes: maxBytes,
+                  maxResources: Math.min(options.maxPageItems, 1_024),
+                  maxTextureBytes: Math.min(options.maxTextureBytes, maxBytes),
+                  maxTextureTotalBytes: Math.min(textureBytes, maxBytes),
+                },
+                options.signal,
+              )
+            const modelRequestBytes = Math.min(remaining, maxModelResourceBytes)
+            let result = await ask(modelRequestBytes)
+            // A model that names what it needed is asked once more, as the world viewer does.
+            const required =
+              result.state === 'converted' && result.complete && result.uvmBytes !== undefined
+                ? undefined
+                : worldModelRequiredBytes(result)
+            const retryBytes =
+              required === undefined ? undefined : Math.min(remaining, required + textureBytes)
+            if (retryBytes !== undefined && retryBytes > modelRequestBytes)
+              result = await ask(retryBytes)
             if (result.state !== 'converted' || !result.complete || result.uvmBytes === undefined) {
               unpackagedModelResourceIds.add(sourceResourceId)
               continue
@@ -1239,6 +1293,7 @@ export async function materializeWorldToUvpMap(
               modelOrdinal,
               options.signal,
             )
+            for (const id of converted.missing) unpackagedModelTextureIds.add(id)
             for (const texture of converted.textures) encodedTotal += texture.bytes.byteLength
             if (encodedTotal > options.maxMediaBytes)
               throw new RangeError(
@@ -1350,9 +1405,12 @@ export async function materializeWorldToUvpMap(
       packagedMediaBytes: encodedTotal,
       unpackagedModelResourceIds: Object.freeze([...unpackagedModelResourceIds].sort()),
       unpackagedWaterResourceIds: Object.freeze([...unpackagedWaterResourceIds].sort()),
+      unpackagedModelTextureIds: Object.freeze([...unpackagedModelTextureIds].sort()),
       excludedFacetIds: Object.freeze([
         ...materialized.excludedFacetIds,
-        ...(unpackagedModelResourceIds.size === 0 ? [] : ['world.object-model-resources']),
+        ...(unpackagedModelResourceIds.size === 0 && unpackagedModelTextureIds.size === 0
+          ? []
+          : ['world.object-model-resources']),
         ...(unpackagedWaterResourceIds.size === 0 ? [] : ['world.water-material-resources']),
       ]),
       refusalCodes: Object.freeze([]) as readonly [],
