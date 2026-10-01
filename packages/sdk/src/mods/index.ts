@@ -61,6 +61,11 @@ export interface ModWorkspaceGraphRoot {
   readonly rootId: string
   readonly sourceId: string
   readonly sourcePath: string
+  /**
+   * The root's real address when `sourcePath` is only a logical prefix (a package folder on disk
+   * read through a mod context); several roots of one source each keep their own.
+   */
+  readonly location?: string
   readonly displayName: string
   readonly kind: string
   readonly fingerprint?: string

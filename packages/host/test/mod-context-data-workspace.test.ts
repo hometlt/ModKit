@@ -73,6 +73,32 @@ describe('resolved Data inputs from ModContext', () => {
     expect(() => createModContextDataWorkspaceInputs({ ...complete, layers: [complete.layers[0]!, { ...complete.layers[1]!, sourcePath: 'MODS/CORE.SC2MOD' }] })).toThrow(/ambiguous ModContext layer path/u)
   })
 
+  it('keeps the real path of every package folder on disk, also with one source for several', async () => {
+    const base = context()
+    const { workspace, resources } = createModContextDataWorkspaceInputs(
+      {
+        ...base,
+        layers: [
+          base.layers[0]!,
+          { id: 'a', displayName: 'A', sourceId: 'host', sourcePath: 'C:\\Mods\\A.SC2Mod', role: 'dependency', provenance: 'declared' },
+          { id: 'b', displayName: 'B', sourceId: 'host', sourcePath: 'C:\\Mods\\B.SC2Mod', role: 'primary', provenance: 'opened' },
+        ],
+      },
+      { nestedRoot: { parentLayerId: 'b', path: 'Maps/M.SC2Map' } },
+    )
+    try {
+      expect(workspace.loadOrder.map(root => [root.sourcePath, root.location])).toEqual([
+        ['mods/core.sc2mod', undefined],
+        ['context-layers/1', 'C:\\Mods\\A.SC2Mod'],
+        ['context-layers/2', 'C:\\Mods\\B.SC2Mod'],
+        ['context-layers/2/Maps/M.SC2Map', 'C:\\Mods\\B.SC2Mod/Maps/M.SC2Map'],
+      ])
+      expect(Object.hasOwn(workspace.loadOrder[0]!, 'location')).toBe(false)
+    } finally {
+      await resources.dispose()
+    }
+  })
+
   it('projects a nested map directory through its campaign layer without a second reader', async () => {
     const base = context()
     const mapRelative = 'Base.SC2Maps/Maps/Campaign/TArcade.SC2Map/Objects'

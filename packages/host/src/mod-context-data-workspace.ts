@@ -55,10 +55,9 @@ export function createModContextDataWorkspaceInputs(
     ids.add(layer.id)
     // Host paths are absolute; keep the real address in source.location and give the resource
     // plane a confined logical prefix. Content-source paths remain native provenance paths.
+    const hostPath = layer.sourcePath !== '' && /^[a-z]:[\\/]|^[\\/]/iu.test(layer.sourcePath)
     const rawPrefix =
-      layer.sourcePath === '' || /^[a-z]:[\\/]|^[\\/]/iu.test(layer.sourcePath)
-        ? `context-layers/${index}`
-        : layer.sourcePath
+      layer.sourcePath === '' || hostPath ? `context-layers/${index}` : layer.sourcePath
     const prefix = normalizeCompanionLogicalId(rawPrefix)
     if (prefixes.has(prefix.toLowerCase())) {
       throw new TypeError(`ambiguous ModContext layer path ${prefix}`)
@@ -68,7 +67,8 @@ export function createModContextDataWorkspaceInputs(
       layer.fingerprint !== undefined && isRevisionId(layer.fingerprint)
         ? revisionId(layer.fingerprint)
         : revisionId(`provider-token:${encodeURIComponent(`${context.contextId}/${layer.id}`)}`)
-    return { layer, prefix, revision, readLayerId: layer.id, readPrefix: '' }
+    const location = hostPath ? layer.sourcePath : undefined
+    return { layer, prefix, location, revision, readLayerId: layer.id, readPrefix: '' }
   })
   if (options?.nestedRoot !== undefined) {
     const parent = layers.find(item => item.layer.id === options.nestedRoot?.parentLayerId)
@@ -89,6 +89,10 @@ export function createModContextDataWorkspaceInputs(
     layers.push({
       layer,
       prefix,
+      location:
+        parent.location === undefined
+          ? undefined
+          : `${parent.location.replace(/[\\/]+$/u, '')}/${readPrefix}`,
       revision: parent.revision,
       readLayerId: parent.layer.id,
       readPrefix,
@@ -98,11 +102,12 @@ export function createModContextDataWorkspaceInputs(
     throw new TypeError(`ModContext has unresolved dependencies: ${context.unresolved.join(', ')}`)
   }
   const roots: readonly ModWorkspaceGraphRoot[] = Object.freeze(
-    layers.map(({ layer, prefix }) =>
+    layers.map(({ layer, prefix, location }) =>
       Object.freeze({
         rootId: layer.id,
         sourceId: layer.sourceId,
         sourcePath: prefix,
+        ...(location === undefined ? {} : { location }),
         displayName: layer.displayName,
         kind: layer.role,
         ...(layer.fingerprint === undefined ? {} : { fingerprint: layer.fingerprint }),
