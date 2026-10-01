@@ -78,6 +78,31 @@ export function shadePbr(
   }) as [number, number, number]
 }
 
+/**
+ * A filmic curve `x(ax + b) / (x(cx + d) + e)` per channel, taking linear light of any brightness
+ * into 0..1 (BAR's TONEMAP; its defaults are 4.75, 0.75, 3.5, 0.85, 1). TONEMAP_GLSL is its twin.
+ */
+export type TonemapCurve = readonly [number, number, number, number, number]
+
+export function tonemap(value: number, curve: TonemapCurve): number {
+  const [a, b, c, d, e] = curve
+  const x = Math.max(0, value)
+  return clamp01((x * (a * x + b)) / (x * (c * x + d) + e))
+}
+
+export const TONEMAP_GLSL = `vec3 modkitTonemap(vec3 x, vec4 abcd, float e) {
+  x = max(x, vec3(0.0));
+  return clamp(x * (abcd.x * x + abcd.y) / (x * (abcd.z * x + abcd.w) + e), 0.0, 1.0);
+}`
+
+/** The sRGB transfer of codec-kit raster's srgbToLinear and linearToSrgb, for shaders. */
+export const SRGB_GLSL = `vec3 modkitSrgbToLinear(vec3 value) {
+  return mix(value / 12.92, pow((value + 0.055) / 1.055, vec3(2.4)), vec3(greaterThan(value, vec3(0.04045))));
+}
+vec3 modkitLinearToSrgb(vec3 value) {
+  return mix(value * 12.92, 1.055 * pow(value, vec3(1.0 / 2.4)) - 0.055, vec3(greaterThan(value, vec3(0.0031308))));
+}`
+
 /** shadePbr for shaders; light and ambient as there. */
 export const PBR_GLSL = `vec3 modkitPbr(vec3 baseColor, float metallic, float roughness, float occlusion, vec3 emissive,
     vec3 normal, vec3 view, vec3 lightDirection, vec3 lightColor, vec3 ambient) {

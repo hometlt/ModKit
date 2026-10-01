@@ -25,7 +25,7 @@ import { materialWebGlDraws } from './material-webgl.js'
 import { applyTextureFilter } from './texture-filtering.js'
 import { sceneTextureBytes } from '../textures/cube.js'
 import { TEAM_COLOR_GLSL } from '@modkit/codec-kit/model-math/color-remap'
-import { PBR_GLSL } from '@modkit/codec-kit/model-math/pbr'
+import { PBR_GLSL, SRGB_GLSL } from '@modkit/codec-kit/model-math/pbr'
 import { drawTeamColor, teamMaskTexture } from './team-color.js'
 import { drawPbr } from './pbr-material.js'
 
@@ -126,12 +126,7 @@ uniform vec3 eyePosition;
 ${PREVIEW_LIGHT_GLSL}
 ${TEAM_COLOR_GLSL}
 ${PBR_GLSL}
-vec3 modkitSrgbToLinear(vec3 value) {
-  return mix(value / 12.92, pow((value + 0.055) / 1.055, vec3(2.4)), vec3(greaterThan(value, vec3(0.04045))));
-}
-vec3 modkitLinearToSrgb(vec3 value) {
-  return mix(value * 12.92, 1.055 * pow(value, vec3(1.0 / 2.4)) - 0.055, vec3(greaterThan(value, vec3(0.0031308))));
-}
+${SRGB_GLSL}
 out vec4 outColor;
 void main() {
   vec4 base = color;

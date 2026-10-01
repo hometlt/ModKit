@@ -32,6 +32,9 @@ export type StandardLayerSlot =
   | 'ao'
   /** Renderer-neutral red-channel mask for post-light team-colour grain merge. */
   | 'teamColorMask'
+  /** The `pbr-metallic-roughness` lighting model's metalness and roughness, by the layer's channel. */
+  | 'metalness'
+  | 'roughness'
 
 /** A sparse material-property track for one RenderModel animation index. */
 export interface SequenceIndexedAnimationTrack {
@@ -205,6 +208,20 @@ export interface StandardMaterialModel {
   normalMapSpace?: 'tangent' | 'object'
   /** Column-major mapping from decoded RGB axes into the authored object frame. */
   normalMapTransform?: readonly [number, number, number, number, number, number, number, number, number]
+  /**
+   * `m3` (the default): StarCraft II's lighting. `pbr-metallic-roughness`: the glTF BRDF of
+   * codec-kit model-math/pbr over the composed base colour, metallic `metallicFactor` × the
+   * `metalness` layer and roughness `roughnessFactor` × the `roughness` layer (each 0..1, default 1).
+   */
+  lightingModel?: 'm3' | 'pbr-metallic-roughness'
+  metallicFactor?: number
+  roughnessFactor?: number
+  /**
+   * `m3` (the default): colours as stored. `linear-srgb` (pbr only): textures are sRGB, light is
+   * summed linear, then `tonemap` (a curve, else a clamp) and sRGB again.
+   */
+  colorPipeline?: 'm3' | 'linear-srgb'
+  tonemap?: readonly [number, number, number, number, number]
 }
 
 export interface CompositeMaterialModel {
@@ -238,6 +255,8 @@ const LAYER_SLOTS: readonly StandardLayerSlot[] = [
   'lightMap',
   'ao',
   'teamColorMask',
+  'metalness',
+  'roughness',
 ]
 
 export function isStandardLayerSlot(value: string): value is StandardLayerSlot {

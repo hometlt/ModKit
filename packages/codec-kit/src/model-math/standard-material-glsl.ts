@@ -6,6 +6,8 @@ import type {
   StandardLayerSlot,
   StandardMaterialModel,
 } from '../legacy/models/material.js'
+import { linearToSrgb, srgbToLinear } from '../raster/ops.js'
+import { PBR_GLSL, SRGB_GLSL, shadePbr, tonemap, TONEMAP_GLSL, type TonemapCurve } from './pbr.js'
 
 /**
  * P4-S4 — shared SC2 standard-material shader builder + CPU mirror
@@ -50,6 +52,8 @@ export const FRAGMENT_LAYER_SLOTS: readonly StandardLayerSlot[] = [
   'teamColorMask',
   'alpha1',
   'alpha2',
+  'metalness',
+  'roughness',
 ]
 
 export interface StandardLayerDefines {
@@ -112,6 +116,11 @@ export interface StandardMaterialDefines {
    * face. The default viewer model adds a constant ambient and assumes a camera headlight.
    */
   sceneLighting?: boolean
+  /** The glTF metallic-roughness BRDF in place of StarCraft II's lighting (see the material model). */
+  pbr?: boolean
+  /** sRGB textures, linear light, then tonemap (when `tonemap`) or clamp, and sRGB out. */
+  linearColor?: boolean
+  tonemap?: boolean
 }
 
 const TEXTURE_FALLBACK_PRIORITY: readonly StandardLayerSlot[] = [
@@ -135,6 +144,8 @@ const TEXTURE_FALLBACK_PRIORITY: readonly StandardLayerSlot[] = [
   'enviMask',
   'height',
   'teamColorMask',
+  'metalness',
+  'roughness',
 ]
 
 /** UV source → explicit uv set index, or 'sphere' for the spherical-env sources (1.4). */
@@ -242,6 +253,13 @@ export function buildMaterialDefines(
       ? { bakedPoseInstancing: true }
       : {}),
     ...(options.sceneLighting === true ? { sceneLighting: true } : {}),
+    ...(material.lightingModel === 'pbr-metallic-roughness' ? { pbr: true } : {}),
+    // an unshaded material is drawn as stored, without light to sum linearly
+    ...(material.lightingModel === 'pbr-metallic-roughness' &&
+    material.colorPipeline === 'linear-srgb' &&
+    !material.unshaded
+      ? { linearColor: true, ...(material.tonemap === undefined ? {} : { tonemap: true }) }
+      : {}),
   }
 }
 
@@ -262,7 +280,8 @@ export function canonicalDefineKey(defines: StandardMaterialDefines): string {
     `;${defines.unshaded ? 'U' : ''}${defines.doubleLambert ? 'D' : ''}${defines.clampOutput ? 'C' : ''}` +
     `${defines.usesVertexColor ? 'vc' : ''}${defines.usesVertexAlpha ? 'va' : ''}${defines.modAlpha ? 'ma' : ''}${defines.alphaTest ? 'at' : ''}${defines.specularEnergyConservation ? 'ec' : ''}` +
     `;uv=${defines.uvSetCount};${defines.gpuSkinning ? 'skin' : ''}${defines.hardwareInstancing ? 'inst' : ''}${defines.bakedPoseInstancing ? 'baked' : ''}` +
-    `${defines.sceneLighting ? ';scene' : ''}`
+    `${defines.sceneLighting ? ';scene' : ''}` +
+    `${defines.pbr ? ';pbr' : ''}${defines.linearColor ? ';linear' : ''}${defines.tonemap ? ';tonemap' : ''}`
   )
 }
 
@@ -492,6 +511,12 @@ export interface CpuPixelInput {
   clampOutput: boolean
   /** 0 = alpha test off (already /255). */
   alphaTestThreshold: number
+  /** The `pbr-metallic-roughness` lighting model, with its factors (see the material model). */
+  pbr?: { readonly metallicFactor: number; readonly roughnessFactor: number }
+  /** `linear-srgb`, with its tonemap curve when it has one. */
+  linearColor?: { readonly tonemap?: TonemapCurve }
+  /** Tangent-space direction to the eye, for pbr (default straight on). */
+  viewDir?: Vec3
 }
 
 export interface CpuPixelResult {
@@ -501,6 +526,9 @@ export interface CpuPixelResult {
 }
 
 const DEFAULT_AMBIENT: Vec4 = [0.02, 0.02, 0.02, 0]
+/** The pbr model in the viewer (no scene light): a white key light and a neutral environment. */
+const PBR_VIEWER_LIGHT: Vec3 = [0.75, 0.75, 0.75]
+const PBR_VIEWER_AMBIENT: Vec3 = [0.25, 0.25, 0.25]
 
 function clamp01(v: number): number {
   return Math.min(Math.max(v, 0), 1)
@@ -639,13 +667,24 @@ export function composeStandardPixelCpu(input: CpuPixelInput): CpuPixelResult {
     color = [color[0] * ao[0], color[1] * ao[1], color[2] * ao[2]]
   }
 
+  // linear-srgb: a texel's colour enters the light linear; alpha stays as stored
+  const linear = input.linearColor !== undefined
+  const inPipeline = (value: Vec4): [number, number, number, number] =>
+    linear
+      ? [
+          srgbToLinear(clamp01(value[0])),
+          srgbToLinear(clamp01(value[1])),
+          srgbToLinear(clamp01(value[2])),
+          value[3],
+        ]
+      : [value[0], value[1], value[2], value[3]]
   // Emissive branch (standard.frag.ts:47–75, ported exactly).
   const applyEmissive = (base: [number, number, number]): [number, number, number] => {
     let final: [number, number, number] = [base[0], base[1], base[2]]
     let addEmissive = false
     let emissive: [number, number, number] = [0, 0, 0]
     if (layers.emissive1) {
-      const temp = computeLayerColorCpu(layers.emissive1, teamColor)
+      const temp = inPipeline(computeLayerColorCpu(layers.emissive1, teamColor))
       const op = layers.emissive1.op
       if (op === 0 || op === 1 || op === 3) {
         final = combineLayerColorCpu(op, temp, final, teamColor)
@@ -655,7 +694,7 @@ export function composeStandardPixelCpu(input: CpuPixelInput): CpuPixelResult {
       }
     }
     if (layers.emissive2) {
-      const temp = computeLayerColorCpu(layers.emissive2, teamColor)
+      const temp = inPipeline(computeLayerColorCpu(layers.emissive2, teamColor))
       const op = layers.emissive2.op
       if (!addEmissive && (op === 0 || op === 1 || op === 3)) {
         final = combineLayerColorCpu(op, temp, final, teamColor)
@@ -682,7 +721,7 @@ export function composeStandardPixelCpu(input: CpuPixelInput): CpuPixelResult {
     specularLight: Vec3,
   ): [number, number, number] => {
     if (!layers.envi) return base
-    const environment = computeLayerColorCpu(layers.envi, teamColor)
+    const environment = inPipeline(computeLayerColorCpu(layers.envi, teamColor))
     let mask: [number, number, number, number]
     if (layers.enviMask) {
       const sampledMask = computeLayerColorCpu(layers.enviMask, teamColor)
@@ -731,7 +770,9 @@ export function composeStandardPixelCpu(input: CpuPixelInput): CpuPixelResult {
 
   const scene = input.sceneLighting
   let final: [number, number, number, number] =
-    scene === undefined ? [ambient[0], ambient[1], ambient[2], ambient[3]] : [0, 0, 0, 0]
+    scene === undefined && input.pbr === undefined
+      ? [ambient[0], ambient[1], ambient[2], ambient[3]]
+      : [0, 0, 0, 0]
 
   // Mirrors the GLSL specularBlock: gloss alpha squared, the FakeEnergyConservingSpec dim, the
   // sign(N·L) gate.
@@ -754,7 +795,35 @@ export function composeStandardPixelCpu(input: CpuPixelInput): CpuPixelResult {
       ? [specColor[3] * factor, specColor[3] * factor, specColor[3] * factor]
       : [specColor[0] * factor, specColor[1] * factor, specColor[2] * factor]
   }
-  if (input.unshaded) {
+  if (input.pbr !== undefined && !input.unshaded) {
+    // The glTF BRDF under the scene's light, or the viewer's key light and neutral ambient.
+    const channel = (slot: 'metalness' | 'roughness') => {
+      const layer = layers[slot]
+      return layer === undefined ? 1 : computeLayerColorCpu(layer, teamColor)[0]
+    }
+    const base = inPipeline([color[0], color[1], color[2], 1])
+    const n = normalize3(normal),
+      l = normalize3(lightDir)
+    let rgb = shadePbr(
+      {
+        baseColor: [base[0], base[1], base[2]],
+        metallic: input.pbr.metallicFactor * channel('metalness'),
+        roughness: input.pbr.roughnessFactor * channel('roughness'),
+      },
+      n,
+      normalize3(input.viewDir ?? [0, 0, 1]),
+      { direction: l, color: scene === undefined ? PBR_VIEWER_LIGHT : scene.lightColor },
+      scene === undefined ? PBR_VIEWER_AMBIENT : scene.ambientColor,
+    )
+    rgb = applyEmissive(applyEnvironment(rgb, Math.max(dot3(n, l), 0), [0, 0, 0]))
+    if (input.linearColor !== undefined) {
+      const curve = input.linearColor.tonemap
+      rgb = rgb.map(value =>
+        linearToSrgb(curve === undefined ? clamp01(value) : tonemap(value, curve)),
+      ) as [number, number, number]
+    }
+    final = [rgb[0], rgb[1], rgb[2], final[3]]
+  } else if (input.unshaded) {
     // 0x10: skip lambert/spec entirely — color + emissive.
     const rgb = applyEmissive(applyEnvironment(color, 0, [0, 0, 0]))
     final = [final[0] + rgb[0], final[1] + rgb[1], final[2] + rgb[2], final[3]]
@@ -1195,14 +1264,23 @@ export function buildStandardFragmentSource(
   if (layerBySlot.has('normalBlend2')) parts.push('uniform vec4 u_normalBlend2Factors;')
   if (layerBySlot.has('height')) parts.push('uniform float u_parallaxHeight;')
   if (defines.alphaTest) parts.push('uniform float u_alphaTestThreshold;')
+  if (defines.pbr) parts.push('uniform float u_metallicFactor;', 'uniform float u_roughnessFactor;')
+  if (defines.tonemap) parts.push('uniform vec4 u_tonemapCurve;', 'uniform float u_tonemapE;')
   for (const layer of defines.layers) parts.push(layerUniformDeclarations(layer))
   parts.push(SHARED_FRAGMENT_HELPERS)
+  if (defines.pbr) parts.push(PBR_GLSL)
+  if (defines.linearColor) parts.push(SRGB_GLSL)
+  if (defines.tonemap) parts.push(TONEMAP_GLSL)
   if (hasDecodedNormal) parts.push(normalDecodeGlsl(defines.normalMapFormat))
   for (const layer of defines.layers) parts.push(layerFunction(layer))
 
   const body: string[] = []
   body.push('void main() {')
-  body.push(defines.sceneLighting ? '  vec4 final = vec4(0.0);' : '  vec4 final = u_ambient;')
+  body.push(
+    defines.sceneLighting || defines.pbr
+      ? '  vec4 final = vec4(0.0);'
+      : '  vec4 final = u_ambient;',
+  )
   if (layerBySlot.has('height')) {
     body.push('  float parallaxSample = computeLayer_height().r - 0.5;')
     body.push('  vec3 parallaxView = normalize(v_viewDir);')
@@ -1252,6 +1330,11 @@ export function buildStandardFragmentSource(
   if (layerBySlot.has('lightMap')) body.push('  color *= computeLayer_lightMap().rgb * 2.0;')
   if (layerBySlot.has('ao')) body.push('  color *= computeLayer_ao().rgb;')
 
+  // linear-srgb: a texel's colour enters the light linear (see the CPU mirror's inPipeline)
+  const inPipeline = (indent: string, name: string): string[] =>
+    defines.linearColor
+      ? [`${indent}${name}.rgb = modkitSrgbToLinear(clamp(${name}.rgb, 0.0, 1.0));`]
+      : []
   const emissiveBlock = (indent: string, target: string): string[] => {
     const lines: string[] = []
     const emis1 = layerBySlot.get('emissive1')
@@ -1261,6 +1344,7 @@ export function buildStandardFragmentSource(
     lines.push(`${indent}bool addEmissive = false;`)
     if (emis1) {
       lines.push(`${indent}vec4 emis1Color = computeLayer_emissive1();`)
+      lines.push(...inPipeline(indent, 'emis1Color'))
       if (emis1.op === 0 || emis1.op === 1 || emis1.op === 3) {
         lines.push(`${indent}${combineExpression(emis1.op, 'emis1Color', target)}`)
       } else {
@@ -1270,6 +1354,7 @@ export function buildStandardFragmentSource(
     }
     if (emis2) {
       lines.push(`${indent}vec4 emis2Color = computeLayer_emissive2();`)
+      lines.push(...inPipeline(indent, 'emis2Color'))
       // The emis2 mod/mod2x/lerp fold only applies when emis1 didn't latch (reference asymmetry).
       if (emis2.op === 0 || emis2.op === 1 || emis2.op === 3) {
         lines.push(`${indent}if (!addEmissive) {`)
@@ -1299,7 +1384,10 @@ export function buildStandardFragmentSource(
     if (!environment || (environment.op !== 0 && environment.op !== 2 && environment.op !== 3)) {
       return []
     }
-    const lines = [`${indent}vec4 environmentColor = computeLayer_envi();`]
+    const lines = [
+      `${indent}vec4 environmentColor = computeLayer_envi();`,
+      ...inPipeline(indent, 'environmentColor'),
+    ]
     const maskLayer = layerBySlot.get('enviMask')
     if (maskLayer) {
       lines.push(`${indent}vec4 environmentMask = computeLayer_enviMask();`)
@@ -1349,7 +1437,34 @@ export function buildStandardFragmentSource(
     ]
   }
 
-  if (defines.unshaded) {
+  if (defines.pbr && !defines.unshaded) {
+    // The glTF BRDF under the scene's light, or the viewer's key light and neutral ambient.
+    const channel = (slot: 'metalness' | 'roughness') =>
+      layerBySlot.has(slot) ? ` * computeLayer_${slot}().r` : ''
+    const vector = (value: Vec3) => `vec3(${value.map(glslFloat).join(', ')})`
+    const light = defines.sceneLighting ? 'u_sceneLightColor' : vector(PBR_VIEWER_LIGHT)
+    const ambient = defines.sceneLighting ? 'u_sceneAmbientColor' : vector(PBR_VIEWER_AMBIENT)
+    body.push(
+      `  vec3 pbrBase = ${defines.linearColor ? 'modkitSrgbToLinear(clamp(color, 0.0, 1.0))' : 'color'};`,
+      `  float pbrMetallic = u_metallicFactor${channel('metalness')};`,
+      `  float pbrRoughness = u_roughnessFactor${channel('roughness')};`,
+      '  vec3 pbrNormal = normalize(normal);',
+      '  vec3 pbrLight = normalize(v_lightDir);',
+      '  vec3 pbrView = normalize(v_viewDir);',
+      `  vec3 shaded = modkitPbr(pbrBase, pbrMetallic, pbrRoughness, 1.0, vec3(0.0), pbrNormal, pbrView, pbrLight, ${light}, ${ambient});`,
+    )
+    body.push(
+      ...environmentBlock('  ', 'shaded', 'max(dot(pbrNormal, pbrLight), 0.0)', 'vec3(0.0)'),
+    )
+    body.push(...emissiveBlock('  ', 'shaded'))
+    if (defines.linearColor)
+      body.push(
+        defines.tonemap
+          ? '  shaded = modkitLinearToSrgb(modkitTonemap(shaded, u_tonemapCurve, u_tonemapE));'
+          : '  shaded = modkitLinearToSrgb(clamp(shaded, 0.0, 1.0));',
+      )
+    body.push('  final.rgb += shaded;')
+  } else if (defines.unshaded) {
     body.push('  vec3 shaded = color;')
     body.push(...environmentBlock('  ', 'shaded', '0.0', 'vec3(0.0)'))
     body.push(...emissiveBlock('  ', 'shaded'))

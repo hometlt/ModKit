@@ -122,6 +122,8 @@ export interface MaterialPixel extends MaterialLighting {
   readonly shadingNormal?: Vec3
   readonly lightDirection?: Vec3
   readonly halfVector?: Vec3
+  /** To the eye, in the frame of lightDirection; the pbr lighting model reads it. */
+  readonly viewDirection?: Vec3
   readonly viewNormal?: Vec3
   readonly eyeToVertex?: Vec3
   readonly vertexColor?: Vec4
@@ -283,6 +285,15 @@ function compilePass(
       1, 0, 0, 0,
     ],
     u_normalMapTransform: material.normalMapTransform ?? [1, 0, 0, 0, 1, 0, 0, 0, 1],
+    ...(defines.pbr === true
+      ? {
+          u_metallicFactor: material.metallicFactor ?? 1,
+          u_roughnessFactor: material.roughnessFactor ?? 1,
+        }
+      : {}),
+    ...(defines.tonemap === true && material.tonemap !== undefined
+      ? { u_tonemapCurve: material.tonemap.slice(0, 4), u_tonemapE: material.tonemap[4] }
+      : {}),
   }
   const textures: MaterialTextureBinding[] = [],
     diagnostics: string[] = []
@@ -480,6 +491,7 @@ function shade(
     pixel.shadingNormal,
     pixel.lightDirection,
     pixel.halfVector,
+    pixel.viewDirection,
     pixel.viewNormal,
     pixel.eyeToVertex,
   ])
@@ -557,7 +569,22 @@ function shade(
     ...(vertexNormal === undefined ? {} : { vertexNormal }),
     ...(pixel.lightDirection === undefined ? {} : { lightDir: pixel.lightDirection }),
     ...(pixel.halfVector === undefined ? {} : { halfVec: pixel.halfVector }),
+    ...(pixel.viewDirection === undefined ? {} : { viewDir: pixel.viewDirection }),
     ...(pixel.vertexColor === undefined ? {} : { vertexColor: pixel.vertexColor }),
+    ...(material.lightingModel === 'pbr-metallic-roughness'
+      ? {
+          pbr: {
+            metallicFactor: material.metallicFactor ?? 1,
+            roughnessFactor: material.roughnessFactor ?? 1,
+          },
+        }
+      : {}),
+    // as buildMaterialDefines: an unshaded material is drawn as stored
+    ...(material.lightingModel === 'pbr-metallic-roughness' &&
+    material.colorPipeline === 'linear-srgb' &&
+    !material.unshaded
+      ? { linearColor: material.tonemap === undefined ? {} : { tonemap: material.tonemap } }
+      : {}),
   })
 }
 

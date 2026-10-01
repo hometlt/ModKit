@@ -264,7 +264,8 @@ export function shadeMaterial(
         texels[layer.slot] = read(layer, parallax)
   }
   let lightDirection = vertex.lightDirection,
-    halfVector = vertex.halfVector
+    halfVector = vertex.halfVector,
+    viewDirection = vertex.viewDirection
   if (program.normalBlendPolicy !== undefined || program.normalMapSpace === 'object') {
     const frame = vertex.environment,
       lighting = frame?.worldLighting
@@ -284,6 +285,7 @@ export function shadeMaterial(
       eye[2] + lightDirection[2],
     ])
     halfVector = [-half[0], -half[1], -half[2]]
+    viewDirection = eye
   }
   return program.shade({
     texels,
@@ -294,6 +296,7 @@ export function shadeMaterial(
       : { shadingNormal: worldNormal }),
     lightDirection,
     halfVector,
+    viewDirection,
     viewNormal: vertex.viewNormal,
     eyeToVertex: vertex.viewPosition,
     vertexColor: vertex.color,
