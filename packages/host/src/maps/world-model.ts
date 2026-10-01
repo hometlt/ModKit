@@ -463,7 +463,11 @@ export async function worldSceneModel(
     const loaded = await pending
     textureDiagnostics.push(...loaded.diagnostics)
     const texture = loaded.texture
-    if (texture === undefined) continue
+    // a read that failed is not kept: the model asked again (a larger maxBytes) reads afresh
+    if (texture === undefined) {
+      if (textureCache.get(cacheKey) === pending) textureCache.delete(cacheKey)
+      continue
+    }
     const bytes = worldTextureBytes(texture)
     if (bytes > remaining) {
       textureDiagnostics.push(
