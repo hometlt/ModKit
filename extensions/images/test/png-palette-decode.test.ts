@@ -2,20 +2,10 @@ import { deflateSync } from 'node:zlib'
 import { describe, expect, it } from 'vitest'
 import { proves } from '@modkit/testkit'
 import type { RasterImageSource } from '@modkit/sdk'
+import { crc32 } from '@modkit/codec-kit/checksum'
 import { openImageCodec } from './codec-session.js'
 
 const encoder = new TextEncoder()
-
-function crc32(bytes: Uint8Array): number {
-  let crc = 0xffffffff
-  for (const byte of bytes) {
-    crc ^= byte
-    for (let bit = 0; bit < 8; bit += 1) {
-      crc = (crc >>> 1) ^ (crc & 1 ? 0xedb88320 : 0)
-    }
-  }
-  return (crc ^ 0xffffffff) >>> 0
-}
 
 function chunk(type: string, data = new Uint8Array()): Uint8Array {
   const name = encoder.encode(type)

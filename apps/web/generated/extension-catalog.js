@@ -6924,7 +6924,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:58993b763c32ace3e76f62b840210c2c4efe7a0b14d9669e89f0434fd402bb9d',
+        artifactDigest: 'sha256:f841965ca8ee216f7e6cfea0932c145c2ff67f3cbfce5b0b9354ec0de7c14592',
         fileDigests: {
           'MIGRATION-NOTES-common-images.json':
             'sha256:44c30ea45aaceceff66d53f72e5e0d0ec8efb1a7f2afbc2f9913849720632e93',
@@ -7034,7 +7034,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'src/pkm/etc.js':
             'sha256:99c4f4ab06d944e71e0993f671e3af6904c37bb5eb2bc0a65fdf1e6de265db7f',
           'src/png/codec.js':
-            'sha256:73328ae6c5741bbda2bb40ac5e6e3a3e8a583615fc2f3a8d7099e062ec8b31ad',
+            'sha256:fd6c4d1898a864bf11e8af05454f214af65c1503f6149a7cb2b9ad7f035abb1f',
           'src/pvr/codec.js':
             'sha256:3c02b42c1d6963dcb8e38a8bbfcc49ccf9b115118180835d59eb4ada15de7fea',
           'src/tga/codec.js':
@@ -7056,7 +7056,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'test/codec-session.ts':
             'sha256:fa6bcdf1bc58315268af02ca9b02076ec655a28bee8a327cf6664f1f0ea163e6',
           'test/dds-subresources.test.ts':
-            'sha256:750f3d6d06f89dd4c020851ba4919fb8335e8caf48dea682ce63eb0286cb8c9a',
+            'sha256:1d01aaba1656d12e22dc41853b1d5fcf1bcfbcb732a87e5b624fe2f6085e8bd5',
           'test/dds-transform.test.ts':
             'sha256:104de000cee52f895247c882aa74c54ba6c19a7ad763e830c285644a8fe40da9',
           'test/eac-r11-decode.test.ts':
@@ -7068,7 +7068,9 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'test/pal-codec.test.ts':
             'sha256:f1b7d8c25dd5ba1a0f3f7a82b5bc1c9ba104512a7286f0c8e30e35ae7e410a36',
           'test/png-palette-decode.test.ts':
-            'sha256:a91dff0a852807126efb31df8f4f7401a0eab4dcf9a36ba55081bd580ac5ac14',
+            'sha256:4f08bebd6d3d670eb0a307e4063265e41b16b3e81a505ab9cb04a580b63c7adb',
+          'test/png-sample-depths.test.ts':
+            'sha256:8cbecaf70005597b55a75aec26c1fc9d727459dae9d0833f2472e35ea141fc3d',
           'test/raster-edit-content.test.ts':
             'sha256:6673c3bc7aaff3b1581346327013b57715eb0455b4ee78b1db82b134b30058af',
           'test/raster-export.test.ts':
@@ -7083,7 +7085,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:8b819b0622cce57f809b369081bdd6eca09d1c1793da7f82192db39229356c1d',
         },
         inventoryRecordId:
-          'artifact:sha256:58993b763c32ace3e76f62b840210c2c4efe7a0b14d9669e89f0434fd402bb9d',
+          'artifact:sha256:f841965ca8ee216f7e6cfea0932c145c2ff67f3cbfce5b0b9354ec0de7c14592',
       },
       artifactRoot: 'extensions/images/',
       containers: {
@@ -11462,6 +11464,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         'test/ktx2-decode.test.ts',
         'test/pal-codec.test.ts',
         'test/png-palette-decode.test.ts',
+        'test/png-sample-depths.test.ts',
         'test/raster-edit-content.test.ts',
         'test/raster-export.test.ts',
         'vendor/texture2ddecoder/LICENSE',

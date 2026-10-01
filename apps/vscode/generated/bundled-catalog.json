@@ -124,7 +124,7 @@
         "modkit/tiff",
         "modkit/webp"
       ],
-      "digest": "sha256:58993b763c32ace3e76f62b840210c2c4efe7a0b14d9669e89f0434fd402bb9d"
+      "digest": "sha256:f841965ca8ee216f7e6cfea0932c145c2ff67f3cbfce5b0b9354ec0de7c14592"
     },
     {
       "name": "java",

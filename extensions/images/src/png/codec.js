@@ -117,22 +117,26 @@ async function decodeRgba8(bytes, png, signal) {
     ...(signal === undefined ? {} : { signal }),
   })
   const shift = image.bitDepth === 16 ? 8 : 0
+  // the tRNS colour of a grey or RGB image: its pixels are transparent
+  const key = image.transparent
   const rgba = new Uint8Array(image.width * image.height * 4)
   for (let pixel = 0; pixel < image.width * image.height; pixel += 1) {
     const at = pixel * image.channels
     const sample = index => (image.samples[at + index] ?? 0) >> shift
+    const keyed =
+      key !== undefined && key.every((value, index) => image.samples[at + index] === value)
     const output = pixel * 4
     if (image.channels <= 2) {
       const grey = sample(0)
       rgba[output] = grey
       rgba[output + 1] = grey
       rgba[output + 2] = grey
-      rgba[output + 3] = image.channels === 2 ? sample(1) : 255
+      rgba[output + 3] = image.channels === 2 ? sample(1) : keyed ? 0 : 255
     } else {
       rgba[output] = sample(0)
       rgba[output + 1] = sample(1)
       rgba[output + 2] = sample(2)
-      rgba[output + 3] = image.channels === 4 ? sample(3) : 255
+      rgba[output + 3] = image.channels === 4 ? sample(3) : keyed ? 0 : 255
     }
   }
   return rgba
@@ -374,15 +378,13 @@ const definition = Object.freeze({
   },
   async inspect(bytes, context) {
     const png = parsePng(bytes, context.budget.maxNodes)
-    const hasAlpha =
-      png.colorType === 4 ||
-      png.colorType === 6 ||
-      (png.colorType === 3 && png.chunks.some(chunk => chunk.type === 'tRNS'))
+    const keyed = png.chunks.some(chunk => chunk.type === 'tRNS')
+    const hasAlpha = png.colorType === 4 || png.colorType === 6 || keyed
     const hasPalette = png.colorType === 3
+    // every depth the shared decoder reads: grey 1–16 bits, the other direct types 8 or 16
     const decodedDirect =
-      png.bitDepth === 8 &&
       [0, 2, 4, 6].includes(png.colorType) &&
-      !png.chunks.some(chunk => chunk.type === 'tRNS')
+      (png.colorType === 0 ? [1, 2, 4, 8, 16] : [8, 16]).includes(png.bitDepth)
     const decodedPalette = hasPalette && [1, 2, 4, 8].includes(png.bitDepth)
     const decodedAccess =
       context.intent !== 'thumbnail' &&
@@ -405,7 +407,9 @@ const definition = Object.freeze({
         channels: png.channels,
         channelLayout:
           png.colorType === 0
-            ? 'luminance'
+            ? keyed
+              ? 'luminance-alpha'
+              : 'luminance'
             : png.colorType === 4
               ? 'luminance-alpha'
               : hasAlpha
