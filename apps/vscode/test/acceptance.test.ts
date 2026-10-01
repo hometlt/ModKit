@@ -92,7 +92,8 @@ describe('VS Code installed-product acceptance receipt', () => {
     }
   })
 
-  it('reports the generated Common catalog as exact 10 roots / 94 contributions', async () => {
+  // java (Core dfebe839, 29.09) is the eleventh root and its class codec the 95th contribution
+  it('reports the generated Common catalog as exact 11 roots / 95 contributions', async () => {
     const generated = JSON.parse(
       readFileSync(
         join(repositoryRoot, 'apps', 'vscode', 'generated', 'bundled-catalog.json'),
@@ -109,10 +110,10 @@ describe('VS Code installed-product acceptance receipt', () => {
       loadErrors: host.bundledLoadErrors,
     })
 
-    expect(receipt.expectedRoots).toHaveLength(10)
-    expect(receipt.loadedRoots).toHaveLength(10)
-    expect(receipt.expectedContributions).toHaveLength(94)
-    expect(receipt.loadedContributions).toHaveLength(94)
+    expect(receipt.expectedRoots).toHaveLength(11)
+    expect(receipt.loadedRoots).toHaveLength(11)
+    expect(receipt.expectedContributions).toHaveLength(95)
+    expect(receipt.loadedContributions).toHaveLength(95)
     expect(receipt).toMatchObject({
       missingRoots: [],
       unexpectedRoots: [],
