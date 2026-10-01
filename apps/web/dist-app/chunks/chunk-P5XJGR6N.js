@@ -1,13 +1,13 @@
 import {
-  BufferBuilder,
-  addAccessor
-} from "./chunk-QONSPCLP.js";
-import {
   array as array2,
   field,
   object as object2,
   safeIndex
 } from "./chunk-I4Z5J3HX.js";
+import {
+  BufferBuilder,
+  addAccessor
+} from "./chunk-QONSPCLP.js";
 import {
   DEFAULT_UVM_CONTAINER_BUDGET,
   checkUvmContainerBudget,

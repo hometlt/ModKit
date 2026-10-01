@@ -1,12 +1,12 @@
 import {
   createVideoViewer
-} from "./chunk-LVVM5USV.js";
+} from "./chunk-D64GDMDV.js";
 import {
   createAudioViewer
-} from "./chunk-CUB5K7JJ.js";
+} from "./chunk-ZZ7LYVEP.js";
 import {
   createRelationGraphViewer
-} from "./chunk-7U7BYD55.js";
+} from "./chunk-C7XUNIMS.js";
 import {
   DEFAULT_MODEL_ANIMATION_BUDGET,
   DEFAULT_MODEL_SKELETON_BUDGET,
@@ -24,7 +24,7 @@ import {
   snapshotJson,
   snapshotModelAnimations,
   snapshotModelSkeleton
-} from "./chunk-JBTYBXNI.js";
+} from "./chunk-NVE5X4IG.js";
 import {
   metadataFieldProjections
 } from "./chunk-64G7DVXS.js";
@@ -35,13 +35,13 @@ import {
   createImageViewer,
   createNamespaceViewer,
   invokeRefusalMessage
-} from "./chunk-U4TV6KLH.js";
+} from "./chunk-6RNPYSWW.js";
 import {
   compileMatcher,
   compilePattern,
   createMediaShell,
   textMatches
-} from "./chunk-PBSMUV7F.js";
+} from "./chunk-V22C5AWV.js";
 import {
   CALCULATIONS_FALLBACK_MESSAGES,
   CARD_FALLBACK_MESSAGES,
@@ -84,7 +84,7 @@ import {
   setViewerText,
   unknownSourceLease,
   withEnglishUiFallback
-} from "./chunk-7K5T5UE4.js";
+} from "./chunk-A5JQ45D3.js";
 import {
   A1_SPEC_SCHEMA_ENTRIES,
   AUXILIARY_DATA_SOURCE_SURFACES,
@@ -64902,6 +64902,7 @@ var WEB_WORKER_MODULE_MAP = Object.freeze({
   "@modkit/codec-kit/compression/pkware-dcl": "vendor/codec-kit/compression/pkware-dcl.js",
   "@modkit/codec-kit/compression/lcw": "vendor/codec-kit/compression/lcw.js",
   "@modkit/codec-kit/compression/lzo": "vendor/codec-kit/compression/lzo.js",
+  "@modkit/codec-kit/compression/brotli": "vendor/codec-kit/compression/brotli.js",
   "@modkit/codec-kit/storage/leveldb": "vendor/codec-kit/storage/leveldb.js",
   "@modkit/codec-kit/compression/refpack": "vendor/codec-kit/compression/refpack.js",
   "@modkit/codec-kit/compression/zstd": "vendor/codec-kit/compression/zstd.js",
@@ -67108,10 +67109,14 @@ function factField(fact4, subjectKind, localizer, groupId) {
         ...fact4.unit === void 0 ? {} : { unit: fact4.unit },
         editable: fact4.editable,
         value: fact4.value,
-        target: { groupId, key: fact4.id }
+        target: { groupId, key: fact4.id, ...factWritePath(fact4) }
       }
     }
   };
+}
+function factWritePath(fact4) {
+  const path = fact4.provenance.find((item) => item.semanticPath !== void 0)?.semanticPath;
+  return path === void 0 ? {} : { path };
 }
 function repositoryResourceRef(value2) {
   if (value2 === null || typeof value2 !== "object" || Array.isArray(value2))
@@ -68007,13 +68012,13 @@ var PREVIEW_STAGES = [
 async function defaultPreviewStage(kind, localizer) {
   switch (kind) {
     case "model":
-      return (await import("./model-AWZAPUI5.js")).createModelViewer({ localizer });
+      return (await import("./model-VTPBOQYD.js")).createModelViewer({ localizer });
     case "image":
-      return (await import("./image-3AEC5HBB.js")).createImageViewer({ localizer });
+      return (await import("./image-RCZAWK42.js")).createImageViewer({ localizer });
     case "video":
-      return (await import("./video-33EZ2ERG.js")).createVideoViewer({ localizer });
+      return (await import("./video-FQIGI7YK.js")).createVideoViewer({ localizer });
     case "audio":
-      return (await import("./audio-OGVGAFVW.js")).createAudioViewer({ localizer });
+      return (await import("./audio-47SJ3PSF.js")).createAudioViewer({ localizer });
   }
 }
 function embedPreview(sections, args, scope, localizer, previews) {
@@ -68052,7 +68057,7 @@ function embedRelationGraph(sections, args, scope, localizer, graph) {
   return [
     ...sections,
     stageSection({ id: "relations-graph", title: localizer.text("card.relationGraph"), expanded: false }, scope, localizer, "card.relationGraphUnavailable", async (host) => {
-      const module = graph ?? (await import("./graph-QHIGCK5Q.js")).createRelationGraphViewer({ localizer });
+      const module = graph ?? (await import("./graph-RGAAJUXW.js")).createRelationGraphViewer({ localizer });
       return scope.signal.aborted ? void 0 : module.mount({ ...args, container: host, signal: scope.signal });
     })
   ];
@@ -88915,6 +88920,14 @@ function terrainSurfaceUv(cell, local, sampleTransform, materialTransform) {
   const inCell = transformedTerrainUv(local, sampleTransform);
   return transformedTerrainUv([cell.x + inCell[0], cell.y + inCell[1]], materialTransform);
 }
+function atlasTileUv(local, rows, texture, tile) {
+  const columns = Math.max(1, Math.round(rows * texture.width / texture.height));
+  const inside = (value2, start, size, texels) => Math.min(Math.max(value2, start / size + 0.5 / texels), (start + 1) / size - 0.5 / texels);
+  return [
+    inside((tile.column + local[0]) / columns, tile.column, columns, texture.width),
+    inside((tile.row + 1 - local[1]) / rows, tile.row, rows, texture.height)
+  ];
+}
 function pushLine(target, a2, b2, color2) {
   pushVertex(target, a2, [0, 1, 0], color2);
   pushVertex(target, b2, [0, 1, 0], color2);
@@ -90304,6 +90317,7 @@ function prepareWorldStaticTerrain(input, sampleSharedModel) {
   const splat = /* @__PURE__ */ new Map();
   const splatOverlays = /* @__PURE__ */ new Map();
   const decals = /* @__PURE__ */ new Map();
+  const decalDepths = /* @__PURE__ */ new Map();
   const terrainPickTriangles = [];
   const terrain = input.items.filter((item) => item.facet === "terrain");
   const terrainByCell = new Map(terrain.map((item) => [`${item.x}:${item.y}`, item]));
@@ -90794,17 +90808,15 @@ function prepareWorldStaticTerrain(input, sampleSharedModel) {
       const quad = patch.positions;
       const cornerAo = patch.locals.map(([x, y]) => terrainAoAt(item.x + x, item.y + y));
       const materialSample = materialByCell.get(`${item.x}:${item.y}`);
-      const drawDecal = () => {
-        const decal = materialSample?.decal;
-        if (decal === void 0)
-          return;
-        const definition2 = input.terrainMaterials?.find((candidate) => candidate.materialId === decal.materialId);
+      const drawOverlay = (materialId, depth, uvAt) => {
+        const definition2 = input.terrainMaterials?.find((candidate) => candidate.materialId === materialId);
         const texture2 = definition2?.baseColorResourceId === void 0 ? void 0 : input.terrainTextures?.get(definition2.baseColorResourceId);
         if (texture2 === void 0)
           return;
         const normalTexture2 = definition2?.normalResourceId === void 0 ? void 0 : input.terrainTextures?.get(definition2.normalResourceId);
         const specularTexture = definition2?.specularResourceId === void 0 ? void 0 : input.terrainTextures?.get(definition2.specularResourceId);
-        const key3 = [texture2.id, normalTexture2?.id ?? "", specularTexture?.id ?? ""].join(String.fromCharCode(0));
+        const key3 = [depth, texture2.id, normalTexture2?.id ?? "", specularTexture?.id ?? ""].join(String.fromCharCode(0));
+        decalDepths.set(key3, depth);
         const target = decals.get(key3) ?? {
           ...batch(),
           textureCoordinates: [],
@@ -90813,11 +90825,19 @@ function prepareWorldStaticTerrain(input, sampleSharedModel) {
           ...specularTexture === void 0 ? {} : { specularTexture, specularGloss: definition2.specularEncoding === "gloss" }
         };
         decals.set(key3, target);
-        const uvs = patch.locals.map((local) => terrainSurfaceUv(item, local, decal.uvTransform, definition2.uvTransform));
+        const uvs = patch.locals.map((local) => uvAt(local, definition2, texture2));
         const aoColors = cornerAo.map((ao) => [1, 1, 1, ao]);
         for (const index2 of [0, 1])
           pushTexturedTriangle(target, tri(quad, index2), tri(uvs, index2), tri(aoColors, index2), tri(cornerNormals, index2));
         terrainDecalTriangles += 2;
+      };
+      const groundLayer = materialSample?.layers?.[0];
+      const drawUpperLayers = () => materialSample?.layers?.slice(1).forEach((layer2, index2) => drawOverlay(layer2.materialId, index2 + 1, (local, definition2, texture2) => definition2.atlas === void 0 ? terrainSurfaceUv(item, local, void 0, definition2.uvTransform) : atlasTileUv(local, definition2.atlas.rows, texture2, layer2.tile)));
+      const drawDecal = () => {
+        const decal = materialSample?.decal;
+        if (decal === void 0)
+          return;
+        drawOverlay(decal.materialId, Number.MAX_SAFE_INTEGER, (local, definition2) => terrainSurfaceUv(item, local, decal.uvTransform, definition2.uvTransform));
       };
       if (exactRasterSplat !== void 0) {
         const [uvA, uvB, uvC, uvD] = patch.locals.map((local) => rasterUv(item.x + local[0], item.y + local[1]));
@@ -90843,7 +90863,7 @@ function prepareWorldStaticTerrain(input, sampleSharedModel) {
         terrainTriangles += 2;
         continue;
       }
-      const declaredWeights = materialSample?.weights?.filter((weight) => weight.weight > 0) ?? input.terrainMaterials?.filter((material2) => material2.sourceIndex === materialSample?.textureIndex).map((material2) => ({ materialId: material2.materialId, weight: 1 })) ?? [];
+      const declaredWeights = (groundLayer === void 0 ? void 0 : [{ materialId: groundLayer.materialId, weight: 1 }]) ?? materialSample?.weights?.filter((weight) => weight.weight > 0) ?? input.terrainMaterials?.filter((material2) => material2.sourceIndex === materialSample?.textureIndex).map((material2) => ({ materialId: material2.materialId, weight: 1 })) ?? [];
       const dominantMaterialId = declaredWeights.slice().sort((left, right) => right.weight - left.weight)[0]?.materialId ?? input.terrainMaterials?.find((material2) => material2.sourceIndex === materialSample?.textureIndex)?.materialId;
       const material = input.terrainMaterials?.find((candidate) => candidate.materialId === dominantMaterialId);
       const texture = material?.baseColorResourceId === void 0 ? void 0 : input.terrainTextures?.get(material.baseColorResourceId);
@@ -90897,12 +90917,13 @@ function prepareWorldStaticTerrain(input, sampleSharedModel) {
           ...normalTexture === void 0 ? {} : { normalTexture }
         };
         textured.set(key3, target);
-        const uv = (local) => terrainSurfaceUv(item, local, materialSample?.uvTransform, material?.uvTransform);
+        const uv = (local) => groundLayer !== void 0 && material?.atlas !== void 0 ? atlasTileUv(local, material.atlas.rows, texture, groundLayer.tile) : terrainSurfaceUv(item, local, materialSample?.uvTransform, material?.uvTransform);
         const [uvA, uvB, uvC, uvD] = patch.locals.map(uv);
         pushTexturedTriangle(target, tri(quad, 0), tri([uvA, uvB, uvC, uvD], 0), color2, tri(cornerNormals, 0));
         pushTexturedTriangle(target, tri(quad, 1), tri([uvA, uvB, uvC, uvD], 1), color2, tri(cornerNormals, 1));
         terrainTexturedTriangles += 2;
       }
+      drawUpperLayers();
       drawDecal();
       terrainPickTriangles.push(...tri(quad, 0).flat(), ...tri(quad, 1).flat());
       terrainTriangles += 2;
@@ -91047,7 +91068,8 @@ function prepareWorldStaticTerrain(input, sampleSharedModel) {
     texturedTriangles: Object.freeze([...textured.values()].map(frozenTexturedBatch)),
     splatTriangles: Object.freeze([...splat.values()].map(frozenSplatBatch)),
     splatOverlayTriangles: Object.freeze([...splatOverlays.values()].map(frozenSplatBatch)),
-    decalTriangles: Object.freeze([...decals.values()].map(frozenTexturedBatch)),
+    // bottom to top: a stable sort keeps one depth's batches in the order the cells made them
+    decalTriangles: Object.freeze([...decals].sort(([left], [right]) => decalDepths.get(left) - decalDepths.get(right)).map(([, item]) => frozenTexturedBatch(item))),
     lines: frozenBatch(lines),
     points: frozenBatch(points),
     terrainTriangles: Float32Array.from(terrainPickTriangles),

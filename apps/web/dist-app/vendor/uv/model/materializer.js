@@ -15,21 +15,21 @@ import {
   uvmVisibilityPointer
 } from "../../../chunks/chunk-3TRK5GFM.js";
 import {
-  boundsOf
-} from "../../../chunks/chunk-3YDZHAZL.js";
-import {
   DEFAULT_MODEL_MATERIAL_BUDGET,
   snapshotModelMaterials
 } from "../../../chunks/chunk-I675VFQQ.js";
 import {
+  boundsOf
+} from "../../../chunks/chunk-3YDZHAZL.js";
+import {
   DEFAULT_MODEL_SKELETON_BUDGET,
   createModelSkeletonNodes,
   snapshotModelSkeleton
-} from "../../../chunks/chunk-UWXEC6C3.js";
+} from "../../../chunks/chunk-D6GLIKYJ.js";
 import {
   DEFAULT_MODEL_ANIMATION_BUDGET,
   snapshotModelAnimations
-} from "../../../chunks/chunk-GMWDAJID.js";
+} from "../../../chunks/chunk-IJPXHLGV.js";
 import "../../../chunks/chunk-ZSDVUSRM.js";
 import {
   composeTrsMatrix

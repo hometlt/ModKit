@@ -12,6 +12,30 @@ var DEFAULT_MODEL_ANIMATION_BUDGET = Object.freeze({
   maxNodes: 1e6,
   maxBytes: 134217728
 });
+function withoutHeldSamples(samples) {
+  const still = (sample) => (sample.inTangent ?? []).every((value) => value === 0) && (sample.outTangent ?? []).every((value) => value === 0);
+  const same = (a, b) => a.value.length === b.value.length && a.value.every((value, index) => Object.is(value, b.value[index])) && still(a) && still(b);
+  const kept = samples.filter((sample, index) => {
+    const previous = samples[index - 1];
+    const next = samples[index + 1];
+    return previous === void 0 || next === void 0 || !same(previous, sample) || !same(sample, next);
+  });
+  return kept.map((sample, index) => sample.frame === index ? sample : { ...sample, frame: index });
+}
+function animationSnapshotBudget(clips) {
+  let samples = 0;
+  let channels = 0;
+  for (const clip of clips)
+    for (const channel of clip.channels) {
+      channels += 1;
+      samples += channel.samples?.length ?? 0;
+    }
+  return Object.freeze({
+    maxDepth: DEFAULT_MODEL_ANIMATION_BUDGET.maxDepth,
+    maxNodes: Math.max(DEFAULT_MODEL_ANIMATION_BUDGET.maxNodes, 16 * samples + 64 * channels + 64 * clips.length),
+    maxBytes: Math.max(DEFAULT_MODEL_ANIMATION_BUDGET.maxBytes, 256 * samples + 1024 * channels)
+  });
+}
 function finite(value, label) {
   if (typeof value !== "number" || !Number.isFinite(value))
     throw new TypeError(`${label} must be finite`);
@@ -138,6 +162,8 @@ function createModelAnimationSampler(clip, budget, signal) {
 
 export {
   DEFAULT_MODEL_ANIMATION_BUDGET,
+  withoutHeldSamples,
+  animationSnapshotBudget,
   snapshotModelAnimations,
   createModelAnimationSampler
 };

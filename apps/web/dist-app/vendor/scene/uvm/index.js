@@ -8,8 +8,7 @@ import {
   readUvmBillboards,
   readUvmModelStates,
   readUvmShadowMeshBindings
-} from "../../../chunks/chunk-SUUBTARU.js";
-import "../../../chunks/chunk-QONSPCLP.js";
+} from "../../../chunks/chunk-P5XJGR6N.js";
 import {
   array,
   field,
@@ -17,6 +16,7 @@ import {
   required,
   safeIndex
 } from "../../../chunks/chunk-I4Z5J3HX.js";
+import "../../../chunks/chunk-QONSPCLP.js";
 import {
   DEFAULT_UVM_CONTAINER_BUDGET,
   checkUvmContainerBudget,
@@ -34,8 +34,8 @@ import {
   uvmVisibilityPointer,
   uvmVisibilityTarget
 } from "../../../chunks/chunk-3TRK5GFM.js";
-import "../../../chunks/chunk-WYUQ3HXR.js";
 import "../../../chunks/chunk-I675VFQQ.js";
+import "../../../chunks/chunk-WYUQ3HXR.js";
 import {
   snapshotJson
 } from "../../../chunks/chunk-ZSDVUSRM.js";

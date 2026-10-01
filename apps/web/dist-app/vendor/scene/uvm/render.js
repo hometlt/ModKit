@@ -1,4 +1,10 @@
 import {
+  prepareUvmTextureImages,
+  readCollisionMesh,
+  readUvmModel,
+  uvmImageTexels
+} from "../../../chunks/chunk-6MHUSL7M.js";
+import {
   IDENTITY_MATERIAL_FRAME,
   RENDER_MATERIAL_SHADER,
   applyModelBillboards,
@@ -11,14 +17,7 @@ import {
   readUvmModelStates,
   readUvmShadowMeshBindings,
   snapshotModelBillboards
-} from "../../../chunks/chunk-SUUBTARU.js";
-import "../../../chunks/chunk-QONSPCLP.js";
-import {
-  prepareUvmTextureImages,
-  readCollisionMesh,
-  readUvmModel,
-  uvmImageTexels
-} from "../../../chunks/chunk-6MHUSL7M.js";
+} from "../../../chunks/chunk-P5XJGR6N.js";
 import {
   array,
   field,
@@ -30,6 +29,7 @@ import {
   vector3,
   vector4
 } from "../../../chunks/chunk-I4Z5J3HX.js";
+import "../../../chunks/chunk-QONSPCLP.js";
 import {
   readUvmContainer
 } from "../../../chunks/chunk-OAFBQXD6.js";
@@ -42,6 +42,10 @@ import {
   readUvmAnimationClips,
   readUvmPrimitiveVisibility
 } from "../../../chunks/chunk-3TRK5GFM.js";
+import {
+  modelPrimitiveByteLength
+} from "../../../chunks/chunk-IBG4CEKN.js";
+import "../../../chunks/chunk-I675VFQQ.js";
 import {
   createModelSkinDeformer
 } from "../../../chunks/chunk-K6Y7MJMB.js";
@@ -65,17 +69,13 @@ import {
 } from "../../../chunks/chunk-COUIZZOL.js";
 import "../../../chunks/chunk-WYUQ3HXR.js";
 import {
-  modelPrimitiveByteLength
-} from "../../../chunks/chunk-IBG4CEKN.js";
-import "../../../chunks/chunk-I675VFQQ.js";
-import {
   createModelPoseBlendSampler,
   createModelPoseSampler,
   snapshotModelSkeleton
-} from "../../../chunks/chunk-UWXEC6C3.js";
+} from "../../../chunks/chunk-D6GLIKYJ.js";
 import {
   createModelAnimationSampler
-} from "../../../chunks/chunk-GMWDAJID.js";
+} from "../../../chunks/chunk-IJPXHLGV.js";
 import {
   snapshotJson
 } from "../../../chunks/chunk-ZSDVUSRM.js";

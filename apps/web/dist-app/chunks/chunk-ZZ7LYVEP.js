@@ -2,7 +2,7 @@ import {
   collectEncodedMedia,
   createMediaShell,
   mountContributedSections
-} from "./chunk-PBSMUV7F.js";
+} from "./chunk-V22C5AWV.js";
 import {
   AUDIO_FALLBACK_MESSAGES,
   ViewerMountScope,
@@ -14,7 +14,7 @@ import {
   setViewerText,
   unknownSourceLease,
   withEnglishUiFallback
-} from "./chunk-7K5T5UE4.js";
+} from "./chunk-A5JQ45D3.js";
 import {
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
 } from "./chunk-BLWUC7LO.js";
@@ -108,69 +108,74 @@ async function collectCodecPcm(source, trackId, signal, onFrames = () => void 0)
     }
     offset += window.frameCount;
   }
-  return { sampleRate, channels };
+  return { sampleRate, channels, truncated: frames >= AUDIO_MAXIMUM_PCM_FRAMES };
 }
-async function loadWaveform(source, signal, onPhase = () => void 0) {
-  onPhase("info");
-  const info = await source.info(signal);
-  const AudioContextCtor = audioContextConstructor();
-  if (AudioContextCtor === void 0)
-    throw new TypeError("no platform audio decoder is available");
-  const context = new AudioContextCtor();
-  let disposed = false;
-  try {
-    const track = info.tracks.find((item) => item.selected) ?? info.tracks[0];
-    let buffer;
-    let decodedBy;
-    let encodedMedia;
-    let sizeBytes;
-    if (info.pcmAccess && source.readPcm !== void 0 && track !== void 0) {
-      onPhase("codec-pcm");
-      const pcm = await collectCodecPcm(source, track.id, signal, (frames2) => onPhase(`codec-pcm:${frames2}`));
-      const frames = pcm.channels[0]?.length ?? 0;
-      buffer = context.createBuffer(Math.max(1, pcm.channels.length), frames, pcm.sampleRate);
-      for (const [index, channel] of pcm.channels.entries()) {
-        buffer.copyToChannel(channel, index);
-      }
-      sizeBytes = frames * Math.max(1, pcm.channels.length) * 4;
-      decodedBy = "codec-pcm";
-    } else {
-      onPhase("encoded");
-      const lease = await source.encoded(void 0, signal);
-      const media = await collectEncodedMedia(lease, AUDIO_MAXIMUM_BYTES, signal);
-      encodedMedia = { mediaType: media.mediaType, bytes: media.bytes };
-      sizeBytes = media.bytes.byteLength;
-      onPhase("platform-decode");
-      buffer = await context.decodeAudioData(media.bytes.slice().buffer);
-      decodedBy = "platform-decoder";
+async function loadTrack(source, info, track, context, signal, onPhase) {
+  let buffer;
+  let decodedBy;
+  let mediaType;
+  let sizeBytes;
+  let truncated = false;
+  if (info.pcmAccess && source.readPcm !== void 0 && track !== void 0) {
+    onPhase("codec-pcm");
+    const pcm = await collectCodecPcm(source, track.id, signal, (frames2) => onPhase(`codec-pcm:${frames2}`));
+    const frames = pcm.channels[0]?.length ?? 0;
+    buffer = context.createBuffer(Math.max(1, pcm.channels.length), frames, pcm.sampleRate);
+    for (const [index, channel] of pcm.channels.entries()) {
+      buffer.copyToChannel(channel, index);
     }
-    const channels = Array.from({ length: buffer.numberOfChannels }, (_, index) => buffer.getChannelData(index));
-    onPhase("ready");
-    disposed = true;
-    return {
-      model: {
-        peaks: computePeaks(channels, WAVEFORM_BUCKETS),
-        duration: buffer.duration,
-        channels: buffer.numberOfChannels,
-        sampleRate: buffer.sampleRate,
-        bytes: sizeBytes
-      },
-      ...encodedMedia === void 0 ? {} : { encoded: encodedMedia },
-      buffer,
-      context,
-      decodedBy
-    };
-  } finally {
-    if (!disposed)
-      await context.close();
+    sizeBytes = frames * Math.max(1, pcm.channels.length) * 4;
+    decodedBy = "codec-pcm";
+    truncated = pcm.truncated;
+  } else {
+    onPhase("encoded");
+    const lease = await source.encoded(track?.id, signal);
+    const media = await collectEncodedMedia(lease, AUDIO_MAXIMUM_BYTES, signal);
+    mediaType = media.mediaType;
+    sizeBytes = media.bytes.byteLength;
+    onPhase("platform-decode");
+    buffer = await context.decodeAudioData(media.bytes.slice().buffer);
+    decodedBy = "platform-decoder";
   }
+  const channels = Array.from({ length: buffer.numberOfChannels }, (_, index) => buffer.getChannelData(index));
+  onPhase("ready");
+  return {
+    model: {
+      peaks: computePeaks(channels, WAVEFORM_BUCKETS),
+      duration: buffer.duration,
+      channels: buffer.numberOfChannels,
+      sampleRate: buffer.sampleRate,
+      bytes: sizeBytes
+    },
+    buffer,
+    decodedBy,
+    ...mediaType === void 0 ? {} : { mediaType },
+    truncated
+  };
 }
 var clock = (seconds) => {
   const whole = Math.max(0, Math.floor(seconds));
   return `${String(Math.floor(whole / 60)).padStart(2, "0")}:${String(whole % 60).padStart(2, "0")}`;
 };
+function audioTrackLine(track, index) {
+  return [
+    `#${index + 1}`,
+    track.codec,
+    track.channels === "unknown" ? void 0 : `${track.channels} ch`,
+    track.sampleRate === "unknown" ? void 0 : `${(track.sampleRate / 1e3).toFixed(1)} kHz`,
+    track.bitrateKbps === void 0 ? void 0 : `${track.bitrateKbps} kbps`,
+    track.language
+  ].filter((item) => item !== void 0).join(" \xB7 ");
+}
 function metadataGroups(descriptor) {
   return "identity" in descriptor ? descriptor.metadata ?? [] : [];
+}
+function containerOf(descriptor, mediaType) {
+  const identity = "identity" in descriptor ? descriptor.identity : void 0;
+  const type = mediaType ?? identity?.mediaType;
+  if (identity === void 0)
+    return type;
+  return type === void 0 ? identity.formatLabel : `${identity.formatLabel} (${type})`;
 }
 function facts(parent, rows) {
   const list = element(parent, "dl", { part: "image.metadata" });
@@ -199,20 +204,25 @@ function createAudioViewer(options = {}) {
       const toolbar = element(stage, "div", { part: "audio.toolbar", role: "toolbar" });
       toolbar.setAttribute("aria-label", localizer.text("viewer.audioControls"));
       const readout = element(stage, "output", { part: "audio.readout" });
+      const notice = element(stage, "p", { part: "audio.notice" });
+      notice.hidden = true;
+      const failure = element(stage, "p", { part: "viewer.empty" });
+      failure.hidden = true;
       const canvas = element(stage, "canvas", { part: "audio.waveform" });
       canvas.setAttribute("role", "img");
-      const player = element(stage, "audio", { part: "audio.player" });
-      player.controls = true;
       const lease = await unknownSourceLease(args.sources, args.slot, "common.view/audio-media-source");
       if (lease === void 0)
         throw new TypeError("audio binding is unavailable");
       scope.lease(lease);
+      const source = lease.value;
       let model;
       let cursor = 0;
       let audio;
+      let gain;
       let buffer;
       let voice;
       let rate = 1;
+      let volume = 1;
       let playing = false;
       let startedAt = 0;
       let decodedBy = "none";
@@ -268,6 +278,7 @@ function createAudioViewer(options = {}) {
         stage.dataset["rate"] = rate.toFixed(2);
         stage.dataset["decoder"] = decodedBy;
         stage.dataset["position"] = position().toFixed(3);
+        stage.dataset["duration"] = model.duration.toFixed(3);
       };
       const position = () => {
         if (model === void 0)
@@ -293,33 +304,28 @@ function createAudioViewer(options = {}) {
         cursor = position();
         playing = false;
         stopVoice();
-        player.pause();
       };
       const play = () => {
         if (playing || model === void 0)
           return;
-        if (audio !== void 0 && buffer !== void 0) {
-          void audio.resume().catch(() => void 0);
-          const next = audio.createBufferSource();
-          next.buffer = buffer;
-          next.playbackRate.value = rate;
-          next.connect(audio.destination);
-          next.onended = () => {
-            if (voice !== next)
-              return;
-            playing = false;
-            cursor = 0;
-            voice = void 0;
-            paint();
-          };
-          startedAt = audio.currentTime;
-          next.start(0, Math.min(cursor, Math.max(0, buffer.duration - 1e-3)));
-          voice = next;
-        } else {
-          player.playbackRate = rate;
-          player.currentTime = cursor;
-          void player.play().catch(() => void 0);
-        }
+        if (audio === void 0 || gain === void 0 || buffer === void 0)
+          return;
+        void audio.resume().catch(() => void 0);
+        const next = audio.createBufferSource();
+        next.buffer = buffer;
+        next.playbackRate.value = rate;
+        next.connect(gain);
+        next.onended = () => {
+          if (voice !== next)
+            return;
+          playing = false;
+          cursor = 0;
+          voice = void 0;
+          paint();
+        };
+        startedAt = audio.currentTime;
+        next.start(0, Math.min(cursor, Math.max(0, buffer.duration - 1e-3)));
+        voice = next;
         playing = true;
       };
       const transportButton = (label, title, onClick) => {
@@ -347,10 +353,21 @@ function createAudioViewer(options = {}) {
         if (playing) {
           pause();
           play();
-        } else if (voice === void 0) {
-          player.playbackRate = rate;
         }
       });
+      const volumeInput = element(toolbar, "input");
+      volumeInput.type = "range";
+      volumeInput.min = "0";
+      volumeInput.max = "1";
+      volumeInput.step = "0.05";
+      volumeInput.value = String(volume);
+      volumeInput.title = localizer.text("viewer.audioVolume");
+      volumeInput.setAttribute("aria-label", localizer.text("viewer.audioVolume"));
+      volumeInput.addEventListener("input", () => {
+        volume = Number(volumeInput.value);
+        if (gain !== void 0)
+          gain.gain.value = volume;
+      }, { signal: scope.signal });
       canvas.addEventListener("click", (event) => {
         if (model === void 0)
           return;
@@ -366,69 +383,122 @@ function createAudioViewer(options = {}) {
         if (playing)
           paint();
       }, 200);
+      let loading;
       scope.cleanup(() => {
         clearInterval(tick);
+        loading?.abort();
         stopVoice();
         void audio?.close().catch(() => void 0);
       });
-      setState(stage, ["loading"]);
-      stage.dataset["phase"] = "loading";
-      try {
-        const loaded = await loadWaveform(lease.value, scope.signal, (phase) => {
-          stage.dataset["phase"] = phase;
-        });
-        model = loaded.model;
-        audio = loaded.context;
-        buffer = loaded.buffer;
-        decodedBy = loaded.decodedBy;
-        if (loaded.decodedBy === "platform-decoder" && loaded.encoded !== void 0) {
-          const objectUrl = URL.createObjectURL(new Blob([loaded.encoded.bytes], { type: loaded.encoded.mediaType }));
-          player.src = objectUrl;
-          scope.cleanup(() => URL.revokeObjectURL(objectUrl));
-        } else {
-          player.remove();
-        }
-        setState(stage, []);
-        const loadedModel = loaded.model;
-        facts(shell.section("audio", localizer.text("viewer.audio"), { icon: "unmute" }).body, [
-          [localizer.text("viewer.duration"), clock(loadedModel.duration)],
-          [localizer.text("viewer.audioChannels"), String(loadedModel.channels)],
-          [
-            localizer.text("viewer.audioSampleRate"),
-            `${(loadedModel.sampleRate / 1e3).toFixed(1)} kHz`
-          ],
-          [localizer.text("viewer.audioSize"), `${(loadedModel.bytes / 1024).toFixed(0)} KiB`],
-          [localizer.text("viewer.audioDecoder"), loaded.decodedBy]
-        ]);
-        for (const group of metadataGroups(args.descriptor)) {
-          if (/^(identity|traits|detection)$/iu.test(group.id))
-            continue;
-          facts(shell.section(`metadata:${group.id}`, group.label, {
-            icon: "symbol-misc",
-            collapsed: true
-          }).body, group.entries.map((entry) => [entry.key, String(entry.value)]));
-        }
-        args.status?.set([
-          { id: "duration", icon: "watch", text: clock(loadedModel.duration), align: "start" },
-          {
-            id: "format",
-            icon: "unmute",
-            text: `${loadedModel.channels} ch \xB7 ${(loadedModel.sampleRate / 1e3).toFixed(1)} kHz`,
-            align: "start"
-          }
-        ]);
-        scope.cleanup(() => args.status?.clear());
-        paint();
-      } catch (error) {
+      const fail = (error) => {
         setState(stage, ["error"]);
-        canvas.remove();
-        player.remove();
-        element(stage, "p", {
-          part: "viewer.empty",
-          text: localizer.text("viewer.audioDecodeError", {
-            reason: error instanceof Error ? error.message : String(error)
-          })
-        });
+        canvas.hidden = true;
+        failure.hidden = false;
+        setViewerText(failure, localizer.text("viewer.audioDecodeError", {
+          reason: error instanceof Error ? error.message : String(error)
+        }));
+      };
+      const factsBody = shell.section("audio", localizer.text("viewer.audio"), {
+        icon: "unmute"
+      }).body;
+      for (const group of metadataGroups(args.descriptor)) {
+        if (/^(identity|traits|detection)$/iu.test(group.id))
+          continue;
+        facts(shell.section(`metadata:${group.id}`, group.label, {
+          icon: "symbol-misc",
+          collapsed: true
+        }).body, group.entries.map((entry) => [entry.key, String(entry.value)]));
+      }
+      scope.cleanup(() => args.status?.clear());
+      const show = async (info, track) => {
+        loading?.abort();
+        const controller = new AbortController();
+        loading = controller;
+        pause();
+        cursor = 0;
+        model = void 0;
+        buffer = void 0;
+        setState(stage, ["loading"]);
+        stage.dataset["phase"] = "loading";
+        try {
+          if (audio === void 0) {
+            const AudioContextCtor = audioContextConstructor();
+            if (AudioContextCtor === void 0) {
+              throw new TypeError("no platform audio decoder is available");
+            }
+            audio = new AudioContextCtor();
+            gain = audio.createGain();
+            gain.gain.value = volume;
+            gain.connect(audio.destination);
+          }
+          const loaded = await loadTrack(source, info, track, audio, controller.signal, (phase) => {
+            if (loading === controller)
+              stage.dataset["phase"] = phase;
+          });
+          if (loading !== controller)
+            return;
+          model = loaded.model;
+          buffer = loaded.buffer;
+          decodedBy = loaded.decodedBy;
+          setState(stage, []);
+          canvas.hidden = false;
+          failure.hidden = true;
+          notice.hidden = !loaded.truncated;
+          if (loaded.truncated) {
+            setViewerText(notice, localizer.text("viewer.audioTruncated", { duration: clock(loaded.model.duration) }));
+          }
+          const container = containerOf(args.descriptor, loaded.mediaType);
+          factsBody.replaceChildren();
+          facts(factsBody, [
+            [localizer.text("viewer.duration"), clock(loaded.model.duration)],
+            [localizer.text("viewer.audioChannels"), String(loaded.model.channels)],
+            [
+              localizer.text("viewer.audioSampleRate"),
+              `${(loaded.model.sampleRate / 1e3).toFixed(1)} kHz`
+            ],
+            ...track === void 0 ? [] : [[localizer.text("viewer.audioCodec"), track.codec]],
+            ...track?.bitrateKbps === void 0 ? [] : [[localizer.text("viewer.audioBitrate"), `${track.bitrateKbps} kbps`]],
+            ...container === void 0 ? [] : [[localizer.text("viewer.audioContainer"), container]],
+            [localizer.text("viewer.audioSize"), `${(loaded.model.bytes / 1024).toFixed(0)} KiB`],
+            [localizer.text("viewer.audioDecoder"), loaded.decodedBy]
+          ]);
+          args.status?.set([
+            { id: "duration", icon: "watch", text: clock(loaded.model.duration), align: "start" },
+            {
+              id: "format",
+              icon: "unmute",
+              text: `${loaded.model.channels} ch \xB7 ${(loaded.model.sampleRate / 1e3).toFixed(1)} kHz`,
+              align: "start"
+            }
+          ]);
+          paint();
+        } catch (error) {
+          if (loading === controller)
+            fail(error);
+        }
+      };
+      setState(stage, ["loading"]);
+      stage.dataset["phase"] = "info";
+      try {
+        const info = await source.info(scope.signal);
+        const first = info.tracks.find((item) => item.selected) ?? info.tracks[0];
+        if (info.tracks.length > 1) {
+          const select = element(toolbar, "select");
+          select.title = localizer.text("viewer.audioTracks");
+          select.setAttribute("aria-label", localizer.text("viewer.audioTracks"));
+          for (const [index, track] of info.tracks.entries()) {
+            const option = element(select, "option", {
+              text: audioTrackLine(track, index)
+            });
+            option.value = track.id;
+          }
+          if (first !== void 0)
+            select.value = first.id;
+          select.addEventListener("change", () => void show(info, info.tracks.find((track) => track.id === select.value)), { signal: scope.signal });
+        }
+        await show(info, first);
+      } catch (error) {
+        fail(error);
       }
       mountContributedSections(shell, options.sections, args, (unmount) => scope.cleanup(unmount));
       return createViewerMount(root, scope, args, ({ descriptor }) => {
@@ -448,6 +518,7 @@ export {
   AUDIO_RATES,
   computePeaks,
   collectCodecPcm,
+  audioTrackLine,
   createAudioViewer,
   audioViewer
 };

@@ -4,8 +4,8 @@ import {
   createModelPoseSampler,
   createModelSkeletonNodes,
   snapshotModelSkeleton
-} from "../../../chunks/chunk-UWXEC6C3.js";
-import "../../../chunks/chunk-GMWDAJID.js";
+} from "../../../chunks/chunk-D6GLIKYJ.js";
+import "../../../chunks/chunk-IJPXHLGV.js";
 import "../../../chunks/chunk-ZSDVUSRM.js";
 import "../../../chunks/chunk-5SBJANAJ.js";
 import "../../../chunks/chunk-CQ52GEHY.js";

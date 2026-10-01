@@ -192,7 +192,7 @@ var PARTS = Object.freeze([
   "audio.waveform",
   "audio.toolbar",
   "audio.readout",
-  "audio.player",
+  "audio.notice",
   // vector stage
   "vector",
   "vector.image",
@@ -853,6 +853,11 @@ var EN_MESSAGES = Object.freeze({
   "viewer.audioPause": "Pause",
   "viewer.audioRestart": "Back to the start",
   "viewer.audioCycleRate": "Cycle the playback rate",
+  "viewer.audioVolume": "Volume",
+  "viewer.audioCodec": "Codec",
+  "viewer.audioBitrate": "Bitrate",
+  "viewer.audioContainer": "Container",
+  "viewer.audioTruncated": "Only the first {duration} of this track are loaded into the player.",
   "viewer.text": "Bounded text viewer",
   "viewer.searchText": "Search text",
   "viewer.search": "Search",
@@ -1778,6 +1783,11 @@ var RU_MESSAGES = Object.freeze({
   "viewer.audioPause": "\u041F\u0430\u0443\u0437\u0430",
   "viewer.audioRestart": "\u0412 \u043D\u0430\u0447\u0430\u043B\u043E",
   "viewer.audioCycleRate": "\u0421\u043C\u0435\u043D\u0438\u0442\u044C \u0441\u043A\u043E\u0440\u043E\u0441\u0442\u044C \u0432\u043E\u0441\u043F\u0440\u043E\u0438\u0437\u0432\u0435\u0434\u0435\u043D\u0438\u044F",
+  "viewer.audioVolume": "\u0413\u0440\u043E\u043C\u043A\u043E\u0441\u0442\u044C",
+  "viewer.audioCodec": "\u041A\u043E\u0434\u0435\u043A",
+  "viewer.audioBitrate": "\u0411\u0438\u0442\u0440\u0435\u0439\u0442",
+  "viewer.audioContainer": "\u041A\u043E\u043D\u0442\u0435\u0439\u043D\u0435\u0440",
+  "viewer.audioTruncated": "\u0412 \u043F\u0440\u043E\u0438\u0433\u0440\u044B\u0432\u0430\u0442\u0435\u043B\u044C \u0437\u0430\u0433\u0440\u0443\u0436\u0435\u043D\u044B \u0442\u043E\u043B\u044C\u043A\u043E \u043F\u0435\u0440\u0432\u044B\u0435 {duration} \u044D\u0442\u043E\u0439 \u0434\u043E\u0440\u043E\u0436\u043A\u0438.",
   "viewer.text": "\u041F\u0440\u043E\u0441\u043C\u043E\u0442\u0440 \u0442\u0435\u043A\u0441\u0442\u0430",
   "viewer.searchText": "\u041F\u043E\u0438\u0441\u043A \u0432 \u0442\u0435\u043A\u0441\u0442\u0435",
   "viewer.search": "\u041D\u0430\u0439\u0442\u0438",
@@ -2807,7 +2817,10 @@ function contributionContractLabel(localizer, exactContract) {
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var AUDIO_FALLBACK_MESSAGES = {
   "viewer.audio": "Audio viewer",
+  "viewer.audioBitrate": "Bitrate",
   "viewer.audioChannels": "Channels",
+  "viewer.audioCodec": "Codec",
+  "viewer.audioContainer": "Container",
   "viewer.audioControls": "Audio controls",
   "viewer.audioCycleRate": "Cycle the playback rate",
   "viewer.audioDecodeError": "The platform decoder cannot render this audio: {reason}. A format-specific decoder provider is required.",
@@ -2820,7 +2833,10 @@ var AUDIO_FALLBACK_MESSAGES = {
   "viewer.audioSampleRate": "Sample rate",
   "viewer.audioSize": "Decoded size",
   "viewer.audioSummary": "{position} / {duration} \xB7 {channels} channels \xB7 {rate} kHz \xB7 {size} KiB",
+  "viewer.audioTracks": "Audio tracks",
   "viewer.audioTransport": "{state} \xB7 \xD7{speed} \xB7 decoded by {decoder}",
+  "viewer.audioTruncated": "Only the first {duration} of this track are loaded into the player.",
+  "viewer.audioVolume": "Volume",
   "viewer.duration": "Duration"
 };
 var CALCULATIONS_FALLBACK_MESSAGES = {

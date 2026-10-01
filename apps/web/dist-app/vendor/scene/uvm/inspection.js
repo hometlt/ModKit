@@ -30,11 +30,13 @@ import {
   createModelSceneSource,
   createModelSkeletonSource,
   createModelSocketSource
-} from "../../../chunks/chunk-TUA4SHSK.js";
+} from "../../../chunks/chunk-FUAGPPGY.js";
 import "../../../chunks/chunk-IBG4CEKN.js";
 import "../../../chunks/chunk-I675VFQQ.js";
-import "../../../chunks/chunk-UWXEC6C3.js";
-import "../../../chunks/chunk-GMWDAJID.js";
+import "../../../chunks/chunk-D6GLIKYJ.js";
+import {
+  animationSnapshotBudget
+} from "../../../chunks/chunk-IJPXHLGV.js";
 import "../../../chunks/chunk-ZSDVUSRM.js";
 import "../../../chunks/chunk-5SBJANAJ.js";
 import "../../../chunks/chunk-TKIPZ6HV.js";
@@ -310,6 +312,7 @@ function createUvmInspection(container, options) {
   });
   const jsonNodes = countJsonNodes(document, budget, signal);
   const { scene, rig } = readUvmModel(document, container.binary, budget, signal);
+  const clipBudget = animationSnapshotBudget(rig.clips);
   const { collisions, teamColors, advancedMaterials, effects, sockets, materialRefs } = readUvmFacets(document, container.binary, budget, signal);
   const extensions = object(document["extensions"], "UVM extensions");
   const identity = object(extensions["UV_asset"], "UV_asset");
@@ -499,12 +502,14 @@ function createUvmInspection(container, options) {
         })
       },
       ...rig.clips.length === 0 ? {} : {
+        // Sized by the clips already decoded out of the bounded binary: a pose per frame
+        // (Grey Goo ALA, Earth 2160) is millions of snapshot nodes, over the host's node budget.
         "common.view/model-animation-source": createModelAnimationSource({
           clips: rig.clips,
           budget: {
             maxDepth: budget.maxDepth,
-            maxNodes: budget.maxNodes,
-            maxBytes: budget.maxScalarBytes
+            maxNodes: Math.max(budget.maxNodes, clipBudget.maxNodes),
+            maxBytes: Math.max(budget.maxScalarBytes, clipBudget.maxBytes)
           }
         })
       },
