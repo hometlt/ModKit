@@ -8284,6 +8284,7 @@ async function activateModkit(
     lifecycle?: {
       readonly onDirty: (path: string, dirty: boolean) => void
       readonly onSaveRequested: (path: string) => void
+      readonly onRevertRequested?: (path: string) => void
       /** One committed edit in a view with its own history; one editor undo-stack entry. */
       readonly onEdited?: (path: string) => void
     },
@@ -8639,6 +8640,9 @@ async function activateModkit(
         : {
             onDocumentDirty: lifecycle.onDirty,
             onDocumentSaveRequested: lifecycle.onSaveRequested,
+            ...(lifecycle.onRevertRequested === undefined
+              ? {}
+              : { onDocumentRevertRequested: lifecycle.onRevertRequested }),
             ...(lifecycle.onEdited === undefined ? {} : { onDocumentEdited: lifecycle.onEdited }),
           }),
       onDiagnostic: diagnostic => log(`[subject-rpc] ${diagnostic.code}: ${diagnostic.message}`),
@@ -11924,6 +11928,11 @@ async function activateModkit(
           onSaveRequested(path) {
             if (path === document.state.path) {
               void vscode.commands.executeCommand('workbench.action.files.save')
+            }
+          },
+          onRevertRequested(path) {
+            if (path === document.state.path) {
+              void vscode.commands.executeCommand('workbench.action.files.revert')
             }
           },
           onEdited(path) {

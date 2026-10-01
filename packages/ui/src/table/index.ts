@@ -164,6 +164,8 @@ export function createTableViewer(options: TableViewerOptions = {}): ViewerModul
       /** Why this table no longer writes, once a commit left its session behind. */
       let stale: string | undefined
       const activeEdits = new Set<() => Promise<void>>()
+      /** Open editors of draft cells: a save first puts what they hold into the draft. */
+      const openDrafts = new Set<() => Promise<void>>()
       scope.cleanup(async () => {
         for (const dispose of activeEdits) await dispose()
       })
@@ -294,8 +296,21 @@ export function createTableViewer(options: TableViewerOptions = {}): ViewerModul
        * showing the typed value immediately and reverting on refusal is how a surface ends up
        * lying about what is in the file.
        */
+      /** The cell drawn at `coord` now, in a variant table, whose rows start with the selection. */
+      const drawnCell = (coord: CellCoord) =>
+        body.querySelector<HTMLTableCellElement>(
+          `tr[data-row="${coord.row}"] > td:nth-child(${coord.column + 2})`,
+        )
       const beginEdit = async (cell: HTMLTableCellElement, coord: CellCoord): Promise<void> => {
         if (cell.dataset['editing'] === 'true') return
+        // One draft cell editor at a time: the open one keeps its value, as leaving a cell does, and
+        // the page is drawn again, so the cell asked for is the one now drawn at its place.
+        if (openDrafts.size > 0 && variants?.drafts(coord.column) === true) {
+          for (const keep of [...openDrafts]) await keep()
+          const drawn = drawnCell(coord)
+          if (drawn === null) return
+          cell = drawn
+        }
         const facts = await model.cell(coord, scope.signal)
         if (scope.signal.aborted || !body.contains(cell) || cell.dataset['editing'] === 'true')
           return
@@ -304,14 +319,17 @@ export function createTableViewer(options: TableViewerOptions = {}): ViewerModul
           cell.title = stale
           return
         }
-        const refusal = fieldWriteRefusal(args.descriptor, facts.editable, {
-          ...(args.commit === undefined ? {} : { commit: args.commit }),
-          ...(args.authorization === undefined ? {} : { authorization: args.authorization }),
-        })
+        const refusal =
+          fieldWriteRefusal(args.descriptor, facts.editable, {
+            ...(args.commit === undefined ? {} : { commit: args.commit }),
+            ...(args.authorization === undefined ? {} : { authorization: args.authorization }),
+          }) ?? variants?.refusal(coord.column)
         if (refusal !== undefined) {
           cell.title = refusal
           return
         }
+        // A locale value of a table with a draft is edited there and written by Save.
+        const drafting = variants?.drafts(coord.column) === true
         // What was drawn — highlighted or rendered — comes back as it was when the edit is dropped.
         const previous = [...cell.childNodes]
         let written: string | undefined
@@ -321,7 +339,10 @@ export function createTableViewer(options: TableViewerOptions = {}): ViewerModul
         const mount = await mountInlineField(cell, {
           label: header ?? String(coord.column),
           type: facts.type,
-          value: facts.typedValue ?? facts.value,
+          value:
+            (drafting ? variants?.value(coord.row, coord.column) : undefined) ??
+            facts.typedValue ??
+            facts.value,
           ...(facts.unit === undefined ? {} : { unit: facts.unit }),
           ...(facts.editable === undefined ? {} : { editable: facts.editable }),
           target: {
@@ -388,6 +409,7 @@ export function createTableViewer(options: TableViewerOptions = {}): ViewerModul
           finished = true
           assist?.dispose()
           activeEdits.delete(dispose)
+          openDrafts.delete(keep)
           cell.removeEventListener('keydown', onKey)
           delete cell.dataset['editing']
           await mount.unmount()
@@ -396,6 +418,19 @@ export function createTableViewer(options: TableViewerOptions = {}): ViewerModul
           if (finished || finishing) return
           finishing = true
           try {
+            if (write && drafting) {
+              const typed = mount.read()
+              if (typed === undefined) return // the field says why; stay open
+              await dispose()
+              const value = typed.value === null ? '' : String(typed.value)
+              // The draft draws the page again; the cell keeps the focus it had.
+              if (variants?.draft(coord.row, coord.column, value) === true) {
+                drawnCell(coord)?.focus()
+              } else {
+                cell.replaceChildren(...previous)
+              }
+              return
+            }
             const accepted = write ? await mount.commit() : false
             if (!accepted && write) return // the field explains the refusal; stay open
             await dispose()
@@ -412,6 +447,7 @@ export function createTableViewer(options: TableViewerOptions = {}): ViewerModul
             finishing = false
           }
         }
+        const keep = () => finish(true)
         const onKey = (event: KeyboardEvent) => {
           if (event.key === 'Enter') {
             event.preventDefault()
@@ -427,6 +463,7 @@ export function createTableViewer(options: TableViewerOptions = {}): ViewerModul
           return
         }
         activeEdits.add(dispose)
+        if (drafting) openDrafts.add(keep)
         cell.addEventListener('keydown', onKey)
         cell.querySelector<HTMLElement>('input, textarea, select')?.focus()
       }
@@ -527,6 +564,9 @@ export function createTableViewer(options: TableViewerOptions = {}): ViewerModul
           committed,
           writeRefusal: () => stale,
           before: table,
+          flush: async () => {
+            for (const keep of [...openDrafts]) await keep()
+          },
         })
         return createViewerMount(root, scope, args, ({ descriptor }) => {
           cancelLookup('viewer-updated')

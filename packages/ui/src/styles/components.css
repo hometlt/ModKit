@@ -343,6 +343,12 @@
     white-space: nowrap;
   }
 
+  /* A value waiting in the table's draft for Save, marked as a changed byte is in the hex editor. */
+  [data-mk-part='table.cell'][data-mk-state~='mutating'] {
+    color: var(--mk-status-warn);
+    background: var(--mk-status-warn-bg);
+  }
+
   [data-mk-part='table.head'] th {
     position: sticky;
     top: 0;

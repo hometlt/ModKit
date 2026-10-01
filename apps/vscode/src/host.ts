@@ -960,6 +960,8 @@ export interface VsCodeServeOptions {
   readonly onDocumentDirty?: (path: string, dirty: boolean) => void
   /** Route an in-page Save button through VS Code's native save command. */
   readonly onDocumentSaveRequested?: (path: string) => void
+  /** Route an in-page Revert button through VS Code's native revert command. */
+  readonly onDocumentRevertRequested?: (path: string) => void
   /** One committed edit in a view with its own history; becomes one editor undo-stack entry. */
   readonly onDocumentEdited?: (path: string) => void
   readonly onDiagnostic?: (diagnostic: { code: string; message: string }) => void
@@ -2222,6 +2224,8 @@ function serveVsCode(
       options.onDocumentDirty?.(event.path, event.dirty)
     } else if (event.op === 'document-save-requested') {
       options.onDocumentSaveRequested?.(event.path)
+    } else if (event.op === 'document-revert-requested') {
+      options.onDocumentRevertRequested?.(event.path)
     } else if (event.op === 'document-edited') {
       options.onDocumentEdited?.(event.path)
     } else if (event.op === 'timing') {

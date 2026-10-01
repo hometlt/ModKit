@@ -401,7 +401,7 @@ describe('variant table surface', () => {
     expect(await keys()).toEqual(['Unit/Name/C'])
   })
 
-  it('highlights locale values by default and commits only the current cell editor', async () => {
+  it('highlights locale values by default and drafts only the current cell editor', async () => {
     await page.evaluate(() => (globalThis as unknown as Probe).mountTable())
     const cell = '[data-mk-part="table.body"] tr:first-child td:nth-child(3)'
     await page.focus(cell)
@@ -412,18 +412,144 @@ describe('variant table surface', () => {
     await page.dblclick(cell)
     await page.fill(`${cell} input`, 'accepted')
     await page.press(`${cell} input`, 'Enter')
+    // The value waits in the draft, marked, with the focus back on its cell.
+    await page.waitForSelector(`${cell}[data-mk-state~="mutating"]`)
+    expect(await page.textContent(cell)).toBe('accepted')
+    expect(await page.$eval(cell, node => node === document.activeElement)).toBe(true)
+    expect(await page.evaluate(() => (globalThis as unknown as Probe).commits.length)).toBe(0)
+    expect(await page.textContent('[data-modkit-action="save"]')).toBe('Save (1)')
+    await page.click('[data-modkit-action="save"]')
     await page.waitForFunction(() => (globalThis as unknown as Probe).commits.length > 0)
     const writes = await page.evaluate(() =>
-      (globalThis as unknown as Probe).calls.filter(call => call.handler === 'edit-field'),
+      (globalThis as unknown as Probe).calls.filter(call => /^edit-/u.test(call.handler)),
     )
     expect(writes).toEqual([
       {
-        handler: 'edit-field',
-        input: { groupId: 'table', key: 'enUS', path: ['0', '1'], value: 'accepted' },
+        handler: 'edit-strings',
+        input: {
+          action: 'set-many',
+          variant: 'enUS',
+          entries: [{ key: 'Abil/Name/A', value: 'accepted' }],
+        },
       },
     ])
-    await page.focus(cell)
+    // The page's own Save asks the host to reopen the subject on the revision it wrote.
+    expect(await page.evaluate(() => (globalThis as unknown as Probe).reopenedCount())).toBe(1)
     expect(await page.textContent(cell)).toBe('accepted')
+  })
+
+  it('steps the draft with the host Undo and Redo and saves it, open editor included, as one plan', async () => {
+    await page.evaluate(() => (globalThis as unknown as Probe).mountTable())
+    await page.evaluate(() => {
+      Object.assign(globalThis, { announced: 0 })
+      document.addEventListener('modkit-editor-edited', () => {
+        ;(globalThis as unknown as { announced: number }).announced += 1
+      })
+    })
+    const announced = () =>
+      page.evaluate(() => (globalThis as unknown as { announced: number }).announced)
+    const history = (direction: 'undo' | 'redo') =>
+      page.evaluate(direction => {
+        let done: boolean | undefined
+        document.querySelector('[data-modkit-editor]')?.dispatchEvent(
+          new CustomEvent('modkit-editor-history-request', {
+            detail: { direction, answer: (value: boolean) => (done = value) },
+          }),
+        )
+        return done
+      }, direction)
+    const cell = (row: number, column: number) =>
+      `[data-mk-part="table.body"] tr:nth-child(${row}) td:nth-child(${column + 2})`
+    const type = async (selector: string, value: string, enter = true) => {
+      await page.dblclick(selector)
+      await page.fill(`${selector} input`, value)
+      if (enter) await page.press(`${selector} input`, 'Enter')
+    }
+    const drafted = () =>
+      page.locator('[data-mk-part="table.cell"][data-mk-state~="mutating"]').count()
+
+    await type(cell(1, 1), 'Alpha!')
+    await page.waitForSelector(`${cell(1, 1)}[data-mk-state~="mutating"]`)
+    await type(cell(2, 2), 'Бета')
+    await page.waitForSelector(`${cell(2, 2)}[data-mk-state~="mutating"]`)
+    expect(await drafted()).toBe(2)
+    expect(await announced()).toBe(2)
+    expect(await history('undo')).toBe(true)
+    expect(await page.textContent(cell(2, 2))).toBe('')
+    expect(await page.textContent('[data-modkit-action="save"]')).toBe('Save (1)')
+    expect(await history('redo')).toBe(true)
+    expect(await page.textContent(cell(2, 2))).toBe('Бета')
+    expect(await history('redo')).toBe(false)
+    // A key is added, renamed or deleted at once, so the draft must be saved or reverted first.
+    await page.click('button[aria-label="Add key"]')
+    expect(await page.isHidden('[data-mk-part="table.panel"]')).toBe(true)
+    expect(await page.textContent('[data-mk-part="table.controls"] + output')).toContain(
+      'Save or revert the unsaved changes first.',
+    )
+
+    // VS Code's Ctrl+S with a cell editor still open: what it holds is saved with the rest.
+    await type(cell(3, 2), 'Гамма', false)
+    const saved = await page.evaluate(async () => {
+      let operation: Promise<boolean> | undefined
+      document.querySelector('[data-modkit-editor]')?.dispatchEvent(
+        new CustomEvent('modkit-editor-save-request', {
+          detail: { waitUntil: (next: Promise<boolean>) => (operation = next) },
+        }),
+      )
+      return operation === undefined ? 'unanswered' : await operation
+    })
+    expect(saved).toBe(true)
+    const writes = await page.evaluate(() =>
+      (globalThis as unknown as Probe).calls.filter(call => /^edit-/u.test(call.handler)),
+    )
+    expect(writes).toEqual([
+      {
+        handler: 'edit-strings',
+        input: {
+          action: 'set-variants',
+          entries: [
+            { key: 'Abil/Name/A', variant: 'enUS', value: 'Alpha!' },
+            { key: 'Abil/Name/B', variant: 'ruRU', value: 'Бета' },
+            { key: 'Unit/Name/C', variant: 'ruRU', value: 'Гамма' },
+          ],
+        },
+      },
+    ])
+    // The host reopens after its own save, and the flushed editor is no step of its Undo.
+    expect(await page.evaluate(() => (globalThis as unknown as Probe).reopenedCount())).toBe(0)
+    expect(await announced()).toBe(2)
+    expect(await drafted()).toBe(0)
+    expect(await page.isDisabled('[data-modkit-action="save"]')).toBe(true)
+  })
+
+  it('keeps what an open cell editor holds when another cell is opened', async () => {
+    await page.evaluate(() => (globalThis as unknown as Probe).mountTable())
+    const first = '[data-mk-part="table.body"] tr:nth-child(1) td:nth-child(3)'
+    const second = '[data-mk-part="table.body"] tr:nth-child(2) td:nth-child(3)'
+    await page.dblclick(first)
+    await page.fill(`${first} input`, 'Alpha?')
+    await page.dblclick(second)
+    await page.waitForSelector(`${second} input`)
+    expect(await page.textContent(first)).toBe('Alpha?')
+    expect(await page.textContent('[data-modkit-action="save"]')).toBe('Save (1)')
+    await page.fill(`${second} input`, 'Beta?')
+    await page.press(`${second} input`, 'Enter')
+    await page.waitForSelector(`${second}[data-mk-state~="mutating"]`)
+    expect(await page.textContent('[data-modkit-action="save"]')).toBe('Save (2)')
+  })
+
+  it('reverts the draft to the values the source holds, writing nothing', async () => {
+    await page.evaluate(() => (globalThis as unknown as Probe).mountTable())
+    const cell = '[data-mk-part="table.body"] tr:first-child td:nth-child(4)'
+    await page.dblclick(cell)
+    await page.fill(`${cell} input`, 'Альфа!')
+    await page.press(`${cell} input`, 'Enter')
+    await page.waitForSelector(`${cell}[data-mk-state~="mutating"]`)
+    await page.click('[data-modkit-action="revert"]')
+    expect(await page.textContent(cell)).toBe('Альфа')
+    expect(await page.getAttribute(cell, 'data-mk-state')).toBe(null)
+    expect(await page.isDisabled('[data-modkit-action="revert"]')).toBe(true)
+    expect(await page.evaluate(() => (globalThis as unknown as Probe).commits.length)).toBe(0)
   })
 
   it('reviews one translation batch and prevents further writes to an unreopened session', async () => {
@@ -437,6 +563,9 @@ describe('variant table surface', () => {
     await page.evaluate(() => (globalThis as unknown as Probe).finishTranslation())
     await page.waitForSelector('[data-mk-part="table.panel"] button')
     await page.click('[data-mk-part="table.panel"] button')
+    // Accepted translations join the draft; Save writes them.
+    expect(await page.evaluate(() => (globalThis as unknown as Probe).commits.length)).toBe(0)
+    await page.click('[data-modkit-action="save"]')
     await page.waitForFunction(() => (globalThis as unknown as Probe).commits.length === 1)
     const writes = await page.evaluate(() =>
       (globalThis as unknown as Probe).calls.filter(call => call.handler === 'edit-strings'),
@@ -667,6 +796,10 @@ describe('variant table find and replace', () => {
     await page.fill(findInput, 'B(eta)')
     await page.fill(replaceInput, 'b$1!')
     await page.click(findToggle('Replace'))
+    // The replaced value waits in the draft until Save.
+    await page.waitForSelector('[data-mk-part="table.cell"][data-mk-state~="mutating"]')
+    expect(await page.evaluate(() => (globalThis as unknown as Probe).commits.length)).toBe(0)
+    await page.click('[data-modkit-action="save"]')
     await page.waitForFunction(() => (globalThis as unknown as Probe).commits.length === 1)
     expect(await stringWrites()).toEqual([
       { action: 'set-many', variant: 'enUS', entries: [{ key: 'Abil/Name/B', value: 'beta!' }] },
@@ -703,6 +836,7 @@ describe('variant table find and replace', () => {
     await page.fill(findInput, 'Gamma')
     await page.fill(replaceInput, '$1')
     await page.click(findToggle('Replace all'))
+    await page.click('[data-modkit-action="save"]')
     await page.waitForFunction(() => (globalThis as unknown as Probe).commits.length === 1)
     expect(await stringWrites()).toEqual([
       {
@@ -721,6 +855,7 @@ describe('variant table find and replace', () => {
     await page.uncheck(ruRU)
     expect(await marks()).toBe(1)
     await page.click(findToggle('Replace all'))
+    await page.click('[data-modkit-action="save"]')
     await page.waitForFunction(() => (globalThis as unknown as Probe).commits.length === 1)
     expect(await stringWrites()).toEqual([
       { action: 'set-many', variant: 'enUS', entries: [{ key: 'Unit/Name/C', value: '$1' }] },

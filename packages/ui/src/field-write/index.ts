@@ -199,6 +199,11 @@ export interface InlineFieldMount {
   readonly root: HTMLElement
   /** Resolves once the write settled: `true` when the codec accepted it. */
   commit(): Promise<boolean>
+  /**
+   * The value typed so far, checked by its editor and written nowhere — for a surface that keeps
+   * edits in a draft. `undefined` when it is not a value yet; the field says why.
+   */
+  read(): { readonly value: JsonValue } | undefined
   unmount(): Promise<void>
 }
 
@@ -224,6 +229,9 @@ export async function mountInlineField(
       root,
       async commit() {
         return false
+      },
+      read() {
+        return undefined
       },
       async unmount() {
         root.remove()
@@ -257,17 +265,20 @@ export async function mountInlineField(
    * success while the file on disk never changes. Every stage that can refuse is reported where the
    * reader is looking, in its own words, rather than collapsed into a single failure.
    */
+  const read = (): { readonly value: JsonValue } | undefined => {
+    const problem = control.validate()
+    if (problem === undefined) return { value: control.read() }
+    setViewerText(status, problem, 512)
+    return undefined
+  }
   const commit = async (): Promise<boolean> => {
     if (operation === undefined) {
       setViewerText(status, 'no route to save this change', 512)
       return false
     }
-    const problem = control.validate()
-    if (problem !== undefined) {
-      setViewerText(status, problem, 512)
-      return false
-    }
-    const value = control.read()
+    const typed = read()
+    if (typed === undefined) return false
+    const value = typed.value
     const request: FieldWriteRequest = {
       groupId: options.target.groupId,
       key: options.target.key,
@@ -293,6 +304,7 @@ export async function mountInlineField(
   return {
     root,
     commit,
+    read,
     async unmount() {
       await control.unmount?.()
       root.remove()

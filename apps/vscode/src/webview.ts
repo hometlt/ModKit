@@ -1120,13 +1120,22 @@ async function mount(
       if (snapshot.openPath === undefined || focused !== snapshot.openPath) return
       const target = event.target
       if (!(target instanceof Element)) return
-      const save = target.closest<HTMLElement>('[data-modkit-action="save"]')
-      if (save === null) return
+      const button = target.closest<HTMLElement>(
+        '[data-modkit-action="save"], [data-modkit-action="revert"]',
+      )
+      if (button === null) return
       // The provider calls the editor command directly after VS Code dispatches Save. Stopping the
       // page button here avoids committing once in the page and then a second time through Ctrl+S.
+      // Revert goes the same way, so the editor's dirty marker and Undo do not outlive the edits.
       event.preventDefault()
       event.stopPropagation()
-      bridge.emit({ op: 'document-save-requested', path: snapshot.openPath })
+      bridge.emit({
+        op:
+          button.dataset['modkitAction'] === 'revert'
+            ? 'document-revert-requested'
+            : 'document-save-requested',
+        path: snapshot.openPath,
+      })
     },
     true,
   )

@@ -100,6 +100,7 @@ async function wire(
   lifecycle?: {
     readonly onDirty?: (path: string, dirty: boolean) => void
     readonly onSaveRequested?: (path: string) => void
+    readonly onRevertRequested?: (path: string) => void
   },
 ): Promise<Wired> {
   const workspace = mkdtempSync(join(tmpdir(), 'modkit-vscode-rpc-'))
@@ -123,6 +124,9 @@ async function wire(
     ...(lifecycle?.onSaveRequested === undefined
       ? {}
       : { onDocumentSaveRequested: lifecycle.onSaveRequested }),
+    ...(lifecycle?.onRevertRequested === undefined
+      ? {}
+      : { onDocumentRevertRequested: lifecycle.onRevertRequested }),
   })
   const page = createBridge({ channel: channels.page, idPrefix: 'page' })
   const client = await connectSubjectRpc({
@@ -143,11 +147,13 @@ describe('the VS Code subject bridge', () => {
   it('carries native custom-document dirty, save, and revert lifecycle over the shell channel', async () => {
     const dirty: [string, boolean][] = []
     const saveRequested: string[] = []
+    const revertRequested: string[] = []
     const { page, served, workspace } = await wire(
       { 'asset.txt': 'before' },
       {
         onDirty: (path, state) => dirty.push([path, state]),
         onSaveRequested: path => saveRequested.push(path),
+        onRevertRequested: path => revertRequested.push(path),
       },
     )
     const path = join(workspace, 'asset.txt')
@@ -159,11 +165,13 @@ describe('the VS Code subject bridge', () => {
 
     page.emit({ op: 'document-dirty', path, dirty: true })
     page.emit({ op: 'document-save-requested', path })
+    page.emit({ op: 'document-revert-requested', path })
     await served.saveDocument(path)
     await served.revertDocument(path)
 
     expect(dirty).toEqual([[path, true]])
     expect(saveRequested).toEqual([path])
+    expect(revertRequested).toEqual([path])
     expect(requests).toEqual(['document-save', 'document-revert'])
     // composing the real host takes seconds under load, as for the other tests of this bridge
   }, 120_000)

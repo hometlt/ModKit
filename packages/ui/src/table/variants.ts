@@ -4,7 +4,8 @@
  * Everything format-specific arrives as data: `columnInfo` says which column is the key, which are
  * variants (and which of those is the base), and `actions` names the operations for adding a row,
  * comparing a variant with the base and translating. This module only searches, filters and routes
- * requests; every write is an edit plan through `commitOperationWrite`.
+ * requests; every write is an edit plan through `commitOperationWrite`, and value edits wait in a
+ * draft until Save writes them as one.
  */
 import type {
   AnyDescriptor,
@@ -28,6 +29,11 @@ import { setState } from '../parts.js'
 import { element, invokeOperation, setPart, setViewerText } from '../viewer/index.js'
 import { commitOperationWrite } from '../field-write/index.js'
 import { invokeRefusalMessage } from '../field-editor/index.js'
+import {
+  announceEditorEdit,
+  handleEditorHistoryRequest,
+  handleEditorSaveRequest,
+} from '../editor/commands.js'
 import type { UiLocalizer } from '../localization/index.js'
 import { TABLE_VARIANTS_FALLBACK_MESSAGES } from '../localization/fallback-catalogs.generated.js'
 import { withEnglishUiFallback } from '../localization/fallback.js'
@@ -85,11 +91,21 @@ export interface VariantTableArgs {
   readonly documents?: () => Promise<readonly ViewerWorkspaceDocument[] | undefined>
   /** Pixels for the inline images a rendered value names. */
   readonly images?: GameTemplateImageResolver
+  /** Puts what the open cell editors hold into the draft, before a save writes it. */
+  readonly flush?: () => Promise<void>
 }
 
 export interface VariantTable {
   /** A cell write the table committed, so filters and status follow it. */
   written(row: number, column: number, value: string): void
+  /** Whether an edit of this column waits in the draft rather than being written at once. */
+  drafts(column: number): boolean
+  /** The value the table holds for a cell — the draft's, which the pinned source does not know. */
+  value(row: number, column: number): string | undefined
+  /** One cell's new value into the draft; `false` when that changed nothing. */
+  draft(row: number, column: number, value: string): boolean
+  /** Why a cell of this column cannot be edited now: a save in flight, or a draft to keep. */
+  refusal(column: number): string | undefined
 }
 
 /**
@@ -223,10 +239,12 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
     if (page.nextCursor === undefined || page.items.length === 0) break
   }
   const changed = new Set<number>()
+  /** Rows with a value in the draft; they count as changed as well. */
+  let draftedRows = new Set<number>()
   const selected = new Set<number>()
   const statusOf = (row: Row): readonly string[] => [
     ...(statusColumn < 0 ? [] : (row.cells[statusColumn] ?? '').split(' ').filter(Boolean)),
-    ...(changed.has(row.index) ? ['changed'] : []),
+    ...(changed.has(row.index) || draftedRows.has(row.index) ? ['changed'] : []),
   ]
   const state: FilterState = remembered.get(args.descriptor.subjectUri) ?? {
     search: '',
@@ -438,6 +456,23 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
   })
   columns.hidden = header.length < 3
 
+  // The draft's Save and Revert; VS Code takes both into its own Save and Revert File.
+  const drafting = actions.addRow !== undefined
+  const draftButton = (label: string, action: string, run: () => void): HTMLButtonElement => {
+    const button = element(bar, 'button', {
+      part: 'toolbar.action',
+      text: label,
+    }) as HTMLButtonElement
+    button.type = 'button'
+    button.disabled = true
+    button.hidden = !drafting
+    button.dataset['modkitAction'] = action
+    button.addEventListener('click', run)
+    return button
+  }
+  const saveButton = draftButton(text('table.save'), 'save', () => void saveDraft(true))
+  const revertButton = draftButton(text('table.revert'), 'revert', () => revertDraft())
+
   const more = element(args.root, 'button', {
     part: 'table.next',
     text: text('table.more'),
@@ -543,19 +578,19 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
         onInput: value => {
           state.find.replace = value
         },
-        onSubmit: () => void replaceNext(),
+        onSubmit: () => replaceNext(),
       },
       {
         kind: 'action',
         id: 'replace-one',
         label: text('table.replaceOne'),
-        onActivate: () => void replaceNext(),
+        onActivate: () => replaceNext(),
       },
       {
         kind: 'action',
         id: 'replace-all',
         label: text('table.replaceAll'),
-        onActivate: () => void replaceAll(),
+        onActivate: () => replaceAll(),
       },
     ],
   })
@@ -689,6 +724,12 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
         else selected.delete(row.index)
       })
       cell.append(box)
+      for (const column of variants) {
+        const valueCell = tr.cells[column.index + 1]
+        if (valueCell !== undefined && draft.has(`${row.index}:${column.index}`)) {
+          setState(valueCell, ['mutating'])
+        }
+      }
     })
     drawnRows = drawn
     showColumns()
@@ -798,8 +839,8 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
     ...(args.authorization === undefined ? {} : { authorization: args.authorization }),
   }
   let writing = false
-  /** `hint` follows a refusal: what the reader can do instead. */
-  const write = async (operation: string, input: JsonValue, hint?: string): Promise<boolean> => {
+  /** `reopen: false` when the host reopens the subject after its own save (VS Code's Ctrl+S). */
+  const write = async (operation: string, input: JsonValue, reopen = true): Promise<boolean> => {
     if (writing || args.signal.aborted) return false
     const stale = args.writeRefusal?.()
     if (stale !== undefined) {
@@ -807,7 +848,7 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
       return false
     }
     const refused = (reason: string): false => {
-      say(text('table.refused', { reason: hint === undefined ? reason : `${reason} ${hint}` }))
+      say(text('table.refused', { reason }))
       return false
     }
     writing = true
@@ -816,7 +857,7 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
       const refusal = await commitOperationWrite(route, operation, input, args.signal)
       if (refusal !== undefined) return refused(refusal)
       say(text('table.saved'))
-      await args.committed()
+      if (reopen) await args.committed()
       return true
     } catch (error) {
       return refused(error instanceof Error ? error.message : String(error))
@@ -847,67 +888,157 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
       const next = replaced(value)
       return next === value ? [] : [{ row, column, value: next }]
     })
+  /*
+   * Value edits wait in a draft until Save, as MK2's table edited the file's buffer: Save writes
+   * every edited locale as one plan, Revert drops the draft, and each cell edit, replace or accepted
+   * translation is one step of the host's Undo (VS Code's Ctrl+Z, through the editor history
+   * request). Adding, renaming and deleting a key are written at once, so they wait for an empty
+   * draft: the reopen after their write would drop it.
+   */
+  interface DraftChange {
+    readonly row: Row
+    readonly column: VariantColumn
+    readonly from: string
+    readonly to: string
+  }
+  /** Each drafted cell with its value as the source holds it, by `row:column`. */
+  const draft = new Map<string, { row: Row; column: VariantColumn; saved: string }>()
+  const undoSteps: DraftChange[][] = []
+  const redoSteps: DraftChange[][] = []
+  /** A save puts the open cell editors into the draft first, without a step for the host's Undo. */
+  let flushing = false
+  const put = (row: Row, column: VariantColumn, value: string): void => {
+    const id = `${row.index}:${column.index}`
+    const saved = draft.get(id)?.saved ?? row.cells[column.index] ?? ''
+    if (value === saved) draft.delete(id)
+    else if (!draft.has(id)) draft.set(id, { row, column, saved })
+    ;(row.cells as string[])[column.index] = value
+  }
+  /** The page drawn again where it was: rows stay put under the filters until they change. */
+  const afterDraft = (): void => {
+    draftedRows = new Set([...draft.values()].map(entry => entry.row.index))
+    saveButton.disabled = draft.size === 0
+    revertButton.disabled = draft.size === 0
+    setViewerText(
+      saveButton,
+      draft.size === 0 ? text('table.save') : text('table.saveCount', { count: draft.size }),
+    )
+    for (const id of statuses) {
+      toolbar.setCount(id, rows.filter(row => statusOf(row).includes(id)).length)
+    }
+    recount()
+    draw()
+  }
+  const edit = (changes: readonly Change[]): boolean => {
+    if (writing) {
+      say(text('table.working'))
+      return false
+    }
+    const step = changes.flatMap(({ row, column, value }) => {
+      const from = row.cells[column.index] ?? ''
+      return from === value ? [] : [{ row, column, from, to: value }]
+    })
+    if (step.length === 0) return false
+    for (const change of step) put(change.row, change.column, change.to)
+    undoSteps.push(step)
+    redoSteps.length = 0
+    if (!flushing) announceEditorEdit(args.root)
+    afterDraft()
+    return true
+  }
+  const stepDraft = (from: DraftChange[][], into: DraftChange[][], forward: boolean): boolean => {
+    const step = writing ? undefined : from.pop()
+    if (step === undefined) return false
+    for (const change of step) put(change.row, change.column, forward ? change.to : change.from)
+    into.push(step)
+    afterDraft()
+    return true
+  }
+  const revertDraft = (): void => {
+    if (writing) return
+    for (const { row, column, saved } of draft.values()) {
+      ;(row.cells as string[])[column.index] = saved
+    }
+    draft.clear()
+    undoSteps.length = 0
+    redoSteps.length = 0
+    afterDraft()
+  }
+  /**
+   * The draft as one plan, as MK2 saved one buffer: `set-many` writes one locale; several go as
+   * `set-variants`, which a writer that cannot write them in one plan refuses rather than guesses.
+   */
+  const saveDraft = async (reopen: boolean): Promise<boolean> => {
+    flushing = true
+    try {
+      await args.flush?.()
+    } finally {
+      flushing = false
+    }
+    const operation = actions.addRow
+    if (draft.size === 0 || operation === undefined) return true
+    const cells = [...draft.values()].sort(
+      (left, right) => left.row.index - right.row.index || left.column.index - right.column.index,
+    )
+    const entries = cells.map(({ row, column }) => ({
+      key: row.cells[keyColumn] ?? '',
+      variant: column.variant ?? '',
+      value: row.cells[column.index] ?? '',
+    }))
+    const locales = new Set(entries.map(entry => entry.variant))
+    const [only] = locales
+    const request =
+      locales.size === 1
+        ? {
+            action: 'set-many',
+            variant: only ?? '',
+            entries: entries.map(({ key, value }) => ({ key, value })),
+          }
+        : { action: 'set-variants', entries }
+    if (!(await write(operation, request, reopen))) return false
+    for (const { row } of cells) changed.add(row.index)
+    draft.clear()
+    undoSteps.length = 0
+    redoSteps.length = 0
+    afterDraft()
+    say(text('table.saved'))
+    return true
+  }
+  /** Add, rename and delete write at once, and the reopen after that would drop the draft. */
+  const unsaved = (): boolean => {
+    if (draft.size === 0) return false
+    say(text('table.refused', { reason: text('table.draftFirst') }))
+    return true
+  }
+
   /** The first cell a replace changes, from the row the bar stands on round to the one before. */
-  const replaceNext = async (): Promise<void> => {
+  const replaceNext = (): void => {
     for (let offset = 0; offset < findRows.length; offset += 1) {
       const at = (state.find.at + offset) % findRows.length
       const row = visible[findRows[at] ?? -1]
       const change = row === undefined ? undefined : changesIn(row)[0]
       if (change === undefined) continue
       state.find.at = at
-      await replace([change])
+      replace([change])
       return
     }
     say(text('table.replaceNothing'))
   }
-  const replaceAll = async (): Promise<void> => {
+  const replaceAll = (): void => {
     const changes = findRows.flatMap(position => {
       const row = visible[position]
       return row === undefined ? [] : changesIn(row)
     })
     if (changes.length === 0) say(text('table.replaceNothing'))
-    else await replace(changes)
+    else replace(changes)
   }
-  /**
-   * One plan for the lot, as MK2 applied one edit: `set-many` writes one locale; several go as
-   * `set-variants`, which a writer that cannot write them in one plan refuses rather than guesses.
-   */
-  const replace = async (changes: readonly Change[]): Promise<void> => {
-    const operation = actions.addRow
-    if (operation === undefined) return
-    const keyOf = (change: Change): string => change.row.cells[keyColumn] ?? ''
-    const locales = new Set(changes.map(change => change.column.variant ?? ''))
-    const [only] = locales
-    const done =
-      locales.size === 1
-        ? await write(operation, {
-            action: 'set-many',
-            variant: only ?? '',
-            entries: changes.map(change => ({ key: keyOf(change), value: change.value })),
-          })
-        : await write(
-            operation,
-            {
-              action: 'set-variants',
-              entries: changes.map(change => ({
-                key: keyOf(change),
-                variant: change.column.variant ?? '',
-                value: change.value,
-              })),
-            },
-            text('table.replaceLocalesHint'),
-          )
-    if (!done) return
-    for (const change of changes) {
-      ;(change.row.cells as string[])[change.column.index] = change.value
-      changed.add(change.row.index)
-    }
-    refresh()
-    say(text('table.replaced', { count: changes.length }))
+  /** A replace is one step of the draft, however many cells it changes. */
+  const replace = (changes: readonly Change[]): void => {
+    if (edit(changes)) say(text('table.replaced', { count: changes.length }))
   }
 
   const showAdd = (): void => {
-    if (actions.addRow === undefined || base === undefined) return
+    if (actions.addRow === undefined || base === undefined || unsaved()) return
     panel.hidden = false
     panel.replaceChildren()
     const form = element(panel, 'form', { part: 'table.add' }) as HTMLFormElement
@@ -958,6 +1089,7 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
   }
 
   const showRename = (): void => {
+    if (unsaved()) return
     const row = oneSelected()
     if (row === undefined || actions.addRow === undefined) return
     const oldKey = row.cells[keyColumn] ?? ''
@@ -998,6 +1130,7 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
   }
 
   const showDelete = (): void => {
+    if (unsaved()) return
     const row = oneSelected()
     if (row === undefined || actions.addRow === undefined) return
     const key = row.cells[keyColumn] ?? ''
@@ -1179,28 +1312,18 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
       }
       say(text('table.translateReady', { count: ready.length, variant: column.variant ?? '' }))
       if (ready.length === 0 || actions.addRow === undefined) return
-      // A human accepts the batch; one plan writes the whole batch into one locale file.
+      // A human accepts the batch: one step of the draft, which Save writes with the rest.
       const apply = element(panel, 'button', {
         part: 'toolbar.action',
         text: text('table.translateApply'),
       })
       ;(apply as HTMLButtonElement).type = 'button'
       apply.addEventListener('click', () => {
-        void write(actions.addRow as string, {
-          action: 'set-many',
-          variant: column.variant ?? '',
-          entries: ready,
-        }).then(done => {
-          if (!done) return
-          for (const entry of ready) {
-            const row = rows.find(item => item.cells[keyColumn] === entry.key)
-            if (row === undefined) continue
-            ;(row.cells as string[])[column.index] = entry.value
-            changed.add(row.index)
-          }
-          panel.hidden = true
-          refresh()
+        const changes = ready.flatMap(entry => {
+          const row = rows.find(item => item.cells[keyColumn] === entry.key)
+          return row === undefined ? [] : [{ row, column, value: entry.value }]
         })
+        if (edit(changes)) panel.hidden = true
       })
     } catch (error) {
       say(text('table.refused', { reason: error instanceof Error ? error.message : String(error) }))
@@ -1210,8 +1333,27 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
     }
   }
 
+  // The host's Save, Undo and Redo reach the draft through the editor commands every editor answers.
+  if (drafting) {
+    args.root.dataset['modkitEditor'] = 'table'
+    const removeSave = handleEditorSaveRequest(args.root, () => saveDraft(false))
+    const removeHistory = handleEditorHistoryRequest(args.root, {
+      undo: () => stepDraft(undoSteps, redoSteps, false),
+      redo: () => stepDraft(redoSteps, undoSteps, true),
+    })
+    args.signal.addEventListener(
+      'abort',
+      () => {
+        removeSave()
+        removeHistory()
+      },
+      { once: true },
+    )
+  }
+
   showFind()
   refresh()
+  const variantAt = (column: number) => variants.find(item => item.index === column)
   return {
     written(row, column, value) {
       const entry = rows.find(item => item.index === row)
@@ -1219,6 +1361,21 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
       ;(entry.cells as string[])[column] = value
       changed.add(row)
       refresh()
+    },
+    drafts: column => drafting && variantAt(column) !== undefined,
+    value: (row, column) => rows.find(item => item.index === row)?.cells[column],
+    draft(row, column, value) {
+      const entry = rows.find(item => item.index === row)
+      const target = variantAt(column)
+      return (
+        entry !== undefined && target !== undefined && edit([{ row: entry, column: target, value }])
+      )
+    },
+    refusal(column) {
+      if (writing) return text('table.working')
+      return draft.size > 0 && !(drafting && variantAt(column) !== undefined)
+        ? text('table.draftFirst')
+        : undefined
     },
   }
 }
