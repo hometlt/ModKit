@@ -153,6 +153,10 @@
       "title": "%command.browseContainer%"
     },
     {
+      "command": "modkit.closeContainers",
+      "title": "%command.closeContainers%"
+    },
+    {
       "command": "modkit.openExplorer",
       "title": "%command.openExplorer%",
       "icon": "$(folder-library)"

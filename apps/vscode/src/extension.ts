@@ -904,6 +904,28 @@ async function activateModkit(
           process.platform !== 'win32',
         )}`
   }
+  /** Replace the window's folders with `desired`, then wait (bounded) for VS Code to announce it. */
+  const replaceWorkspaceFolders = async (
+    desired: readonly { readonly uri: vscode.Uri; readonly name: string }[],
+    waitMs: number,
+  ): Promise<boolean> => {
+    let announce: (() => void) | undefined
+    const announced = new Promise<void>(resolvePromise => {
+      announce = resolvePromise
+    })
+    const subscription = vscode.workspace.onDidChangeWorkspaceFolders(() => announce?.())
+    try {
+      const current = vscode.workspace.workspaceFolders ?? []
+      if (!vscode.workspace.updateWorkspaceFolders(0, current.length, ...desired)) return false
+      await Promise.race([
+        announced,
+        new Promise<void>(resolvePromise => setTimeout(resolvePromise, waitMs)),
+      ])
+      return true
+    } finally {
+      subscription.dispose()
+    }
+  }
   const synchronizeContainerWorkspaceFolders = async (): Promise<void> => {
     const current = vscode.workspace.workspaceFolders ?? []
     const seen = new Set<string>()
@@ -933,22 +955,11 @@ async function activateModkit(
       return [{ uri: item.uri, name }]
     })
     if (!changed) return
-    let announce: (() => void) | undefined
-    const announced = new Promise<void>(resolvePromise => {
-      announce = resolvePromise
-    })
-    const subscription = vscode.workspace.onDidChangeWorkspaceFolders(() => announce?.())
-    const accepted = vscode.workspace.updateWorkspaceFolders(0, current.length, ...desired)
-    if (accepted) {
-      await Promise.race([
-        announced,
-        new Promise<void>(resolvePromise => setTimeout(resolvePromise, 500)),
-      ])
-      log('normalized container workspace folders')
-    } else {
-      log('the workspace refused container folder normalization')
-    }
-    subscription.dispose()
+    log(
+      (await replaceWorkspaceFolders(desired, 500))
+        ? 'normalized container workspace folders'
+        : 'the workspace refused container folder normalization',
+    )
   }
   await synchronizeContainerWorkspaceFolders()
   const addContainerWorkspaceFolder = (
@@ -992,6 +1003,30 @@ async function activateModkit(
     const mutation = workspaceFolderMutation.then(async () => {
       const first = await attempt(2_000)
       return first === 'rejected' ? await attempt(0) : first
+    })
+    workspaceFolderMutation = mutation.catch(() => undefined)
+    return mutation
+  }
+  /**
+   * Every container folder leaves the window in one change, after any folder change still in
+   * flight; the containers they showed are returned. VS Code restarts the extension host only when
+   * the first folder changes, and that folder stays unless it was a container itself.
+   */
+  const closeContainerFolders = (): Promise<readonly string[]> => {
+    const mutation = workspaceFolderMutation.then(async () => {
+      const current = vscode.workspace.workspaceFolders ?? []
+      const kept = current.filter(item => item.uri.scheme !== CONTAINER_SCHEME)
+      if (kept.length === current.length) return []
+      const closed = current.flatMap(item => {
+        if (item.uri.scheme !== CONTAINER_SCHEME) return []
+        const location = parseContainerUriPath(item.uri.path)
+        return location === undefined ? [] : [location.container]
+      })
+      const replaced = await replaceWorkspaceFolders(
+        kept.map(item => ({ uri: item.uri, name: item.name })),
+        10_000,
+      )
+      return replaced ? [...new Set(closed)] : []
     })
     workspaceFolderMutation = mutation.catch(() => undefined)
     return mutation
@@ -3013,6 +3048,17 @@ async function activateModkit(
         }
         sourcesView.refresh()
         return removed
+      }),
+      // MK2's "Clear Archives": every archive folder leaves the window, its held session closes.
+      vscode.commands.registerCommand('modkit.closeContainers', async () => {
+        const closed = await closeContainerFolders()
+        if (closed.length === 0) {
+          void vscode.window.showInformationMessage(localizer.text('vscode.container.noneOpen'))
+          return 0
+        }
+        for (const container of closed) await containers.release(container)
+        sourcesView.refresh()
+        return closed.length
       }),
     )
   const containerFileSystem: vscode.FileSystemProvider = {
@@ -11206,7 +11252,18 @@ async function activateModkit(
       return refreshed
     }),
 
-    vscode.commands.registerCommand('modkit.resources.refresh', () => {
+    /*
+     * MK2's "Reload mod": the loaded mods read their files again, for a change the file watcher
+     * could not see (a network drive, a file written while the window slept).
+     */
+    vscode.commands.registerCommand('modkit.resources.refresh', async () => {
+      const sessions = await loadedSessions
+      if (sessions !== undefined && sessions.list().length > 0) {
+        const source = await requireContentSources()
+        forgetResourcePaths()
+        await source.refresh('host')
+        await sessions.reloadAll()
+      }
       resourcesView.refresh()
       return true
     }),

@@ -291,6 +291,7 @@ const EN_MESSAGES = Object.freeze({
   'vscode.container.materialize': 'Extract {entry}',
   'vscode.container.browse': 'Browse container',
   'vscode.container.cannotBrowse': 'Modkit cannot browse this: {reason}',
+  'vscode.container.noneOpen': 'No archive is open in this window.',
   'vscode.container.alreadyMember': 'It is already a container member',
   'vscode.container.openFolderFirst':
     'Open a folder in this window first. Adding the first workspace folder restarts the extension host and would close the container. Then run this command again.',
@@ -833,6 +834,7 @@ const RU_MESSAGES: Readonly<Record<keyof typeof EN_MESSAGES, string>> = Object.f
   'vscode.container.materialize': 'Извлечь {entry}',
   'vscode.container.browse': 'Открыть контейнер',
   'vscode.container.cannotBrowse': 'Modkit не может открыть контейнер: {reason}',
+  'vscode.container.noneOpen': 'В этом окне не открыт ни один архив.',
   'vscode.container.alreadyMember': 'Это уже элемент контейнера',
   'vscode.container.openFolderFirst':
     'Сначала откройте папку в этом окне. Добавление первой папки рабочей области перезапускает хост расширений и закроет контейнер. Затем повторите команду.',

@@ -29,6 +29,10 @@
       "title": "%command.browseContainer%"
     },
     {
+      "command": "modkit.closeContainers",
+      "title": "%command.closeContainers%"
+    },
+    {
       "command": "modkit.contentSources",
       "title": "%command.contentSources%",
       "icon": "$(remote-explorer)"
