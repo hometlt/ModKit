@@ -10,7 +10,7 @@ import {
   imageViewer,
   subresourceExtent,
   subresourceLabel
-} from "./chunk-XPBYY73R.js";
+} from "./chunk-M24NO5RP.js";
 import "./chunk-6ZBIN4U4.js";
 import "./chunk-N6RN7GYG.js";
 import "./chunk-M6BGIGEK.js";

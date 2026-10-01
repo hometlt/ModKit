@@ -36,15 +36,15 @@ init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var IMAGE_EDIT_UNDO_DEPTH = 100;
 var TOOL_ICONS = Object.freeze({
-  select: `<svg viewBox="0 0 16 16" width="16" height="16"><rect x="2.5" y="2.5" width="11" height="11" rx=".5" fill="none" stroke="currentColor" stroke-width="1.3" stroke-dasharray="2.2 2"/></svg>`,
-  brush: `<svg viewBox="0 0 16 16" width="16" height="16"><path d="M12.1 1.9a1.6 1.6 0 0 1 2 2.4L7.8 10.6a2.4 2.4 0 0 1-1.5.7l-2.1.2.2-2.1c.1-.6.4-1.1.7-1.5z" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><path d="M4.2 11.4c.2 1.6-1 2.8-2.6 2.8.6-1 .8-2.2.5-3.4" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
-  eraser: `<svg viewBox="0 0 16 16" width="16" height="16"><rect x="3.6" y="6.3" width="9.6" height="5.2" rx="1" transform="rotate(-25 8.4 8.9)" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M5.6 11.6h6.4" stroke="currentColor" stroke-width="1" transform="rotate(-25 8.4 8.9)"/></svg>`,
-  line: `<svg viewBox="0 0 16 16" width="16" height="16"><line x1="3" y1="13" x2="13" y2="3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="3" cy="13" r="1.2" fill="currentColor"/><circle cx="13" cy="3" r="1.2" fill="currentColor"/></svg>`,
-  rect: `<svg viewBox="0 0 16 16" width="16" height="16"><rect x="2.5" y="3.5" width="11" height="9" rx="1" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>`,
-  ellipse: `<svg viewBox="0 0 16 16" width="16" height="16"><ellipse cx="8" cy="8" rx="5.4" ry="4.2" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>`,
-  fill: `<svg viewBox="0 0 16 16" width="16" height="16"><path d="M3 7.6 8.4 2.2l5 5-5.3 5.3a2.7 2.7 0 0 1-3.8 0L3 11.2a2.7 2.7 0 0 1 0-3.6Z" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><path d="M2.3 8.1h9.4" stroke="currentColor" stroke-width="1"/><circle cx="13" cy="12.2" r="1.4" fill="currentColor"/></svg>`,
-  gradient: `<svg viewBox="0 0 16 16" width="16" height="16"><defs><linearGradient id="mk-edit-tool-gradient" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="currentColor"/><stop offset="1" stop-color="currentColor" stop-opacity="0"/></linearGradient></defs><rect x="2.5" y="3.5" width="11" height="9" rx="1" fill="url(#mk-edit-tool-gradient)" stroke="currentColor" stroke-width="1.1"/></svg>`,
-  eyedropper: `<svg viewBox="0 0 16 16" width="16" height="16"><path d="M11.1 2.3 13.7 4.9 6.3 12.3 3.4 12.9l.6-2.9Z" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><path d="M9.1 4.3 11.7 6.9" stroke="currentColor" stroke-width="1"/><circle cx="3.7" cy="12.3" r=".7" fill="currentColor"/></svg>`
+  select: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16"><rect x="2.5" y="2.5" width="11" height="11" rx=".5" fill="none" stroke="currentColor" stroke-width="1.3" stroke-dasharray="2.2 2"/></svg>`,
+  brush: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16"><path d="M12.1 1.9a1.6 1.6 0 0 1 2 2.4L7.8 10.6a2.4 2.4 0 0 1-1.5.7l-2.1.2.2-2.1c.1-.6.4-1.1.7-1.5z" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><path d="M4.2 11.4c.2 1.6-1 2.8-2.6 2.8.6-1 .8-2.2.5-3.4" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  eraser: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16"><rect x="3.6" y="6.3" width="9.6" height="5.2" rx="1" transform="rotate(-25 8.4 8.9)" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M5.6 11.6h6.4" stroke="currentColor" stroke-width="1" transform="rotate(-25 8.4 8.9)"/></svg>`,
+  line: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16"><line x1="3" y1="13" x2="13" y2="3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="3" cy="13" r="1.2" fill="currentColor"/><circle cx="13" cy="3" r="1.2" fill="currentColor"/></svg>`,
+  rect: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16"><rect x="2.5" y="3.5" width="11" height="9" rx="1" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>`,
+  ellipse: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16"><ellipse cx="8" cy="8" rx="5.4" ry="4.2" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>`,
+  fill: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16"><path d="M3 7.6 8.4 2.2l5 5-5.3 5.3a2.7 2.7 0 0 1-3.8 0L3 11.2a2.7 2.7 0 0 1 0-3.6Z" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><path d="M2.3 8.1h9.4" stroke="currentColor" stroke-width="1"/><circle cx="13" cy="12.2" r="1.4" fill="currentColor"/></svg>`,
+  gradient: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16"><defs><linearGradient id="mk-edit-tool-gradient" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="currentColor"/><stop offset="1" stop-color="currentColor" stop-opacity="0"/></linearGradient></defs><rect x="2.5" y="3.5" width="11" height="9" rx="1" fill="url(#mk-edit-tool-gradient)" stroke="currentColor" stroke-width="1.1"/></svg>`,
+  eyedropper: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16"><path d="M11.1 2.3 13.7 4.9 6.3 12.3 3.4 12.9l.6-2.9Z" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><path d="M9.1 4.3 11.7 6.9" stroke="currentColor" stroke-width="1"/><circle cx="3.7" cy="12.3" r=".7" fill="currentColor"/></svg>`
 });
 var TOOLS = [
   ["select", "M"],
@@ -232,9 +232,9 @@ function createImageEditing(parent, options) {
     button.title = title;
     button.setAttribute("aria-label", title);
     if (typeof content === "string") {
-      const template = document.createElement("template");
-      template.innerHTML = content;
-      button.append(template.content);
+      const parser = new (document.defaultView ?? globalThis).DOMParser();
+      const svg = parser.parseFromString(content, "image/svg+xml").documentElement;
+      button.append(document.importNode(svg, true));
     } else
       button.append(content);
     button.addEventListener("click", onClick, listen);

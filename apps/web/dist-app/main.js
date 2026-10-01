@@ -50,14 +50,14 @@ import {
   subjectFactsSourceFromWire,
   webExtensionSubjectCardBundle,
   withoutHiddenEntries
-} from "./chunks/chunk-TS4JRK4K.js";
+} from "./chunks/chunk-OJNVCDCC.js";
 import "./chunks/chunk-5LC2A4JD.js";
 import "./chunks/chunk-JKDWXZ6Y.js";
 import "./chunks/chunk-ARQIWJ3D.js";
 import "./chunks/chunk-UCN4DEWI.js";
 import {
   resolveModelViewerTextures
-} from "./chunks/chunk-XTJKPG2K.js";
+} from "./chunks/chunk-Z4V5CJWJ.js";
 import "./chunks/chunk-O2DY4UGD.js";
 import "./chunks/chunk-JRG6LWG6.js";
 import "./chunks/chunk-XWTSK4JH.js";
@@ -72,7 +72,7 @@ import {
   isRejected,
   mountFieldEditor,
   subjectCandidateProviderLease
-} from "./chunks/chunk-XPBYY73R.js";
+} from "./chunks/chunk-M24NO5RP.js";
 import "./chunks/chunk-6ZBIN4U4.js";
 import {
   DEFAULT_UI_LOCALIZER,
@@ -3611,7 +3611,7 @@ async function boot() {
   if (pageUrl.searchParams.has("format-smoke")) {
     const loaded = await loadPwaFormatSmokeAuthority(
       new URL("./format-smoke.v1.json", document.baseURI).href,
-      "sha256:095ff06d89547feb4555fe6b0b6194218256da046931ccd7ee805128e5bb1fdd"
+      "sha256:7d26c4a16e08b6548c28f0db22c9eead34f3cc9b9780c7a203f503da4a844cf7"
     );
     const control = createPwaFormatSmokeAcceptance({
       authority: loaded.authority,

@@ -79,7 +79,7 @@ import {
   fieldWriteRefusal,
   mountFieldEditTarget,
   mountInlineField
-} from "./chunk-XTJKPG2K.js";
+} from "./chunk-Z4V5CJWJ.js";
 import {
   DEFAULT_MODEL_ANIMATION_BUDGET,
   DEFAULT_MODEL_SKELETON_BUDGET,
@@ -100,7 +100,7 @@ import {
   createImageViewer,
   createNamespaceViewer,
   invokeRefusalMessage
-} from "./chunk-XPBYY73R.js";
+} from "./chunk-M24NO5RP.js";
 import {
   compileMatcher,
   compilePattern,
@@ -64692,9 +64692,9 @@ var PREVIEW_STAGES = [
 async function defaultPreviewStage(kind, localizer) {
   switch (kind) {
     case "model":
-      return (await import("./model-GVJPP2B5.js")).createModelViewer({ localizer });
+      return (await import("./model-Q2ZB7TQ3.js")).createModelViewer({ localizer });
     case "image":
-      return (await import("./image-OXKS76F6.js")).createImageViewer({ localizer });
+      return (await import("./image-W4YTUF52.js")).createImageViewer({ localizer });
     case "video":
       return (await import("./video-VYY5INLA.js")).createVideoViewer({ localizer });
     case "audio":
