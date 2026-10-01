@@ -41,6 +41,12 @@ describe('extension-implementation import gate (MK3/27 §7/§11/§12.5)', () => 
     ).toBe(true)
     // a commented-out import is not an edge
     expect(lines.some(l => l.includes('packages/ui/src/index.ts:3'))).toBe(false)
+    // the bootstrap closure never takes the shared algorithm layer, even when it declares it
+    expect(
+      lines.some(
+        l => l.includes('packages/host/src/index.ts:1') && l.includes('@modkit/codec-kit/checksum'),
+      ),
+    ).toBe(true)
     expect(
       lines.some(
         l =>
@@ -50,6 +56,7 @@ describe('extension-implementation import gate (MK3/27 §7/§11/§12.5)', () => 
     ).toBe(true)
   })
 
+  // the clean tree's packages/scene declares @modkit/codec-kit and imports it: allowed
   it('passes a clean tree and exempts scope-local generated loaders', () => {
     const { status, stdout, stderr } = runGate(['--root', join(fixturesRoot, 'clean')])
     expect(stderr).toBe('')

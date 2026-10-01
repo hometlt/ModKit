@@ -1,0 +1,4 @@
+{
+  "name": "@modkit/host",
+  "dependencies": { "@modkit/codec-kit": "workspace:*" }
+}

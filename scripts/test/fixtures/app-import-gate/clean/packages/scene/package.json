@@ -1,0 +1,4 @@
+{
+  "name": "@modkit/scene",
+  "dependencies": { "@modkit/codec-kit": "workspace:*" }
+}
