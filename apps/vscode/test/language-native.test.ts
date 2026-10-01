@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { completionKindName, languageCommandTarget } from '../src/language-native.js'
+import {
+  associatedLanguageOf,
+  completionKindName,
+  languageCommandTarget,
+} from '../src/language-native.js'
 
 describe('the language adapter', () => {
   it('draws each provider completion kind as its native kind', () => {
@@ -52,5 +56,34 @@ describe('the language adapter', () => {
     ]) {
       expect(languageCommandTarget(value)).toBeUndefined()
     }
+  })
+
+  it('gives a generically labelled document the language its game associates by content', () => {
+    const associations = [
+      { extension: 'xml', rootElement: 'Catalog', languageId: 'sc2-data' },
+      { extension: 'scar', languageId: 'lua', dialect: 'lua51' },
+    ]
+    const catalog = '\uFEFF<?xml version="1.0" encoding="utf-8"?>\r\n<Catalog>\r\n'
+    const document = (fileName: string, languageId: string, head: string) => ({
+      fileName,
+      languageId,
+      head,
+    })
+    // GameData outside GameData/: VS Code says XML, the root element says SC2 data
+    expect(associatedLanguageOf(associations, document('Custom/MyData.xml', 'xml', catalog))).toBe(
+      'sc2-data',
+    )
+    expect(
+      associatedLanguageOf(associations, document('Other.xml', 'xml', '<Layout/>')),
+    ).toBeUndefined()
+    // a kind VS Code has no language for, by its extension
+    expect(associatedLanguageOf(associations, document('ai.scar', 'plaintext', ''))).toBe('lua')
+    // a document VS Code or the user labelled more precisely keeps its language
+    expect(
+      associatedLanguageOf(associations, document('GameData/UnitData.xml', 'sc2-data', catalog)),
+    ).toBeUndefined()
+    expect(
+      associatedLanguageOf(associations, document('Custom/MyData.xml', 'json', catalog)),
+    ).toBeUndefined()
   })
 })

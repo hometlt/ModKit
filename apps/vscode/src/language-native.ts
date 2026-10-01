@@ -3,6 +3,8 @@
  * tested: which native completion kind a provider's kind is drawn as, and where a provider's
  * command leads. `extension.ts` turns the answers into VS Code objects.
  */
+import { languageFileAssociationFor } from '@modkit/host/language'
+import type { LanguageFileAssociation } from '@modkit/sdk'
 import type {
   LanguageCompletionItemKind,
   LanguagePosition,
@@ -112,4 +114,22 @@ export function languageCommandTarget(value: unknown): LanguageCommandTarget | u
     return { kind: 'location', uri: location.uri, range: { start: range.start, end: range.end } }
   }
   return undefined
+}
+
+/**
+ * The language a game gives an open document VS Code labelled only generically (plan 1.25). A plain
+ * association names a file kind VS Code has no language for (`plaintext`); one by root element
+ * relabels a generic XML document whose start opens that element (`<Catalog>` → `sc2-data`, for
+ * GameData anywhere in a mod). A document VS Code labelled more precisely keeps its language.
+ */
+export function associatedLanguageOf(
+  associations: readonly LanguageFileAssociation[],
+  document: { readonly fileName: string; readonly languageId: string; readonly head: string },
+): string | undefined {
+  if (document.languageId !== 'plaintext' && document.languageId !== 'xml') return undefined
+  const association = languageFileAssociationFor(associations, document.fileName, document.head)
+  if (association === undefined) return undefined
+  return document.languageId === 'plaintext' || association.rootElement !== undefined
+    ? association.languageId
+    : undefined
 }

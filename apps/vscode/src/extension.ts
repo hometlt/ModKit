@@ -225,7 +225,12 @@ type EditorDocumentSymbol,
 type EditorLanguageDiagnostic,
 type EditorLanguageDocument,
 } from './language-session.js'
-import { completionKindName, LANGUAGE_COMMAND, languageCommandTarget } from './language-native.js'
+import {
+  associatedLanguageOf,
+  completionKindName,
+  LANGUAGE_COMMAND,
+  languageCommandTarget,
+} from './language-native.js'
 import {
 createRuntimeDebugController,
 type RuntimeDebugCommandRequest,
@@ -5899,13 +5904,20 @@ async function activateModkit(
   const languageRoutes = languageProviderRoutes(host.services.inventory)
   // A game's file association (`.scar` → lua) also gives the editor its language: colours, brackets.
   const fileAssociations = languageFileAssociations(host.services.inventory)
+  // Decided once per document: a user who sets the language back keeps it.
+  const associatedDocuments = new Set<string>()
   const associateLanguage = (document: vscode.TextDocument): void => {
-    if (document.languageId !== 'plaintext') return
-    const name = document.fileName.toLowerCase()
-    const association = fileAssociations.find(item => name.endsWith(`.${item.extension}`))
-    if (association !== undefined) {
-      void vscode.languages.setTextDocumentLanguage(document, association.languageId)
-    }
+    const languageId = associatedLanguageOf(fileAssociations, {
+      fileName: document.fileName,
+      languageId: document.languageId,
+      head: document.getText(
+        new vscode.Range(new vscode.Position(0, 0), document.positionAt(4_096)),
+      ),
+    })
+    const key = document.uri.toString()
+    if (languageId === undefined || associatedDocuments.has(key)) return
+    associatedDocuments.add(key)
+    void vscode.languages.setTextDocumentLanguage(document, languageId)
   }
   vscode.workspace.textDocuments.forEach(associateLanguage)
   context.subscriptions.push(vscode.workspace.onDidOpenTextDocument(associateLanguage))
