@@ -31,7 +31,8 @@ describe('13D packed external editor', () => {
     { timeout: 300_000 },
     () => {
       const tarballDirectory = join(temporary, 'tarballs')
-      for (const name of ['core', 'sdk', 'vfs', 'host', 'ui']) {
+      // ui's own workspace dependencies (codec-kit, scene, uv) are packed too: the lab publishes nothing
+      for (const name of ['core', 'sdk', 'vfs', 'host', 'ui', 'codec-kit', 'scene', 'uv']) {
         const packed = run(
           'pnpm',
           ['pack', '--pack-destination', tarballDirectory],
@@ -42,7 +43,7 @@ describe('13D packed external editor', () => {
       const tarballs = readdirSync(tarballDirectory)
         .filter(name => name.endsWith('.tgz'))
         .map(name => join(tarballDirectory, name))
-      expect(tarballs).toHaveLength(5)
+      expect(tarballs).toHaveLength(8)
 
       const installed = join(temporary, 'extension')
       cpSync(fixture, installed, { recursive: true })

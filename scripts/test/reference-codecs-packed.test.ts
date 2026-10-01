@@ -144,7 +144,10 @@ describe('packed reference codec boundaries', () => {
       const platform = ['core', 'sdk', 'vfs', 'host'].map(name =>
         pack(join(repoRoot, 'packages', name)),
       )
-      const support = pack(join(repoRoot, 'packages', 'codec-kit'))
+      // the extensions' own workspace dependencies: codec-kit for all, uv and scene for models
+      const support = ['codec-kit', 'uv', 'scene'].map(name =>
+        pack(join(repoRoot, 'packages', name)),
+      )
       const extensionDirectories = [
         join(repoRoot, 'extensions', 'archives'),
         join(repoRoot, 'extensions', 'audio'),
@@ -169,7 +172,7 @@ describe('packed reference codec boundaries', () => {
           '--no-fund',
           '--install-links=false',
           ...platform,
-          support,
+          ...support,
           ...extensions,
         ],
         consumer,

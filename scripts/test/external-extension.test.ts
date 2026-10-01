@@ -1,6 +1,14 @@
 import { spawnSync } from 'node:child_process'
 import { createRequire } from 'node:module'
-import { cpSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs'
+import {
+  cpSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -12,6 +20,9 @@ import { afterAll, describe, expect, it } from 'vitest'
 
 const repoRoot = fileURLToPath(new URL('../..', import.meta.url))
 const exampleSrc = join(repoRoot, 'examples', 'modkit-extension-greeter')
+/** testkit's own workspace dependencies beyond the public four (its package.json). */
+const TESTKIT_DEPENDENCIES = ['codec-kit', 'uv'] as const
+const PACKED = ['core', 'sdk', 'vfs', 'host', 'testkit', ...TESTKIT_DEPENDENCIES] as const
 const tmp = mkdtempSync(join(tmpdir(), 'x3-external-'))
 
 afterAll(() => rmSync(tmp, { recursive: true, force: true }))
@@ -48,9 +59,9 @@ describe('external packed-tarball extension (S4/PR-23 shape)', () => {
     'clean temp install of pnpm-pack tarballs runs the full route from its own cwd',
     { timeout: 300_000 },
     () => {
-      // 1. pack every public package + testkit as artifacts
+      // 1. pack every public package + testkit and the packages testkit needs (codec-kit, uv)
       const packDest = join(tmp, 'tarballs')
-      for (const pkg of ['core', 'sdk', 'vfs', 'host', 'testkit']) {
+      for (const pkg of PACKED) {
         const res = sh(
           'pnpm',
           ['pack', '--pack-destination', packDest],
@@ -59,13 +70,22 @@ describe('external packed-tarball extension (S4/PR-23 shape)', () => {
         expect(res.status, `pnpm pack ${pkg}: ${res.stderr}`).toBe(0)
       }
       const tarballs = readdirSync(packDest).filter(f => f.endsWith('.tgz'))
-      expect(tarballs).toHaveLength(5)
+      expect(tarballs).toHaveLength(PACKED.length)
 
       // 2. copy the example outside the workspace and install ONLY the artifacts.
       //    testkit is the dev-only closure (canon §6.1): it goes in as a devDependency so
       //    the extension's production closure stays core+sdk+vfs+host.
       const exampleDir = join(tmp, 'example')
       cpSync(exampleSrc, exampleDir, { recursive: true })
+      // The lab publishes nothing, so testkit's own dependencies come from their artifacts too;
+      // declared beside testkit they stay in the dev closure.
+      const exampleManifestPath = join(exampleDir, 'package.json')
+      const exampleManifest = JSON.parse(readFileSync(exampleManifestPath, 'utf8')) as {
+        devDependencies: Record<string, string>
+      }
+      for (const pkg of TESTKIT_DEPENDENCIES)
+        exampleManifest.devDependencies[`@modkit/${pkg}`] = '*'
+      writeFileSync(exampleManifestPath, JSON.stringify(exampleManifest, null, 2))
       const tarballOf = (pkg: string) => {
         const hit = tarballs.find(t => t.startsWith(`modkit-${pkg}-`))
         if (!hit) throw new Error(`no tarball for ${pkg} in ${tarballs.join(', ')}`)
@@ -76,11 +96,7 @@ describe('external packed-tarball extension (S4/PR-23 shape)', () => {
       // (installing them in two passes would make npm try to fetch the not-yet-supplied
       // half from the registry, and the lab publishes nothing).
       const npmFlags = ['--no-audit', '--no-fund', '--install-links=false']
-      const install = sh(
-        'npm',
-        ['install', ...npmFlags, ...['core', 'sdk', 'vfs', 'host', 'testkit'].map(tarballOf)],
-        exampleDir,
-      )
+      const install = sh('npm', ['install', ...npmFlags, ...PACKED.map(tarballOf)], exampleDir)
       expect(install.status, install.stderr).toBe(0)
       const resolveFromExample = createRequire(join(exampleDir, 'package.json')).resolve
       expect(resolveFromExample('@modkit/core/schemas/source-span.v1.schema.json')).toContain(
@@ -118,8 +134,12 @@ describe('external packed-tarball extension (S4/PR-23 shape)', () => {
         '@modkit/sdk',
         '@modkit/vfs',
       ])
-      expect(Object.keys(installedPkg.devDependencies ?? {})).toEqual(['@modkit/testkit'])
-      for (const pkg of ['core', 'sdk', 'vfs', 'host', 'testkit']) {
+      expect(Object.keys(installedPkg.devDependencies ?? {}).sort()).toEqual([
+        '@modkit/codec-kit',
+        '@modkit/testkit',
+        '@modkit/uv',
+      ])
+      for (const pkg of PACKED) {
         const stat = statSync(join(exampleDir, 'node_modules', '@modkit', pkg))
         expect(stat.isDirectory()).toBe(true)
       }

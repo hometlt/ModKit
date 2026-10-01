@@ -47,7 +47,18 @@ describe('13C packed external viewer in the real browser host (C-18a)', () => {
     { timeout: 300_000 },
     async () => {
       const tarballDir = join(temporary, 'tarballs')
-      for (const packageName of ['core', 'sdk', 'vfs', 'host', 'ui', 'testkit']) {
+      // ui's and testkit's own workspace dependencies (codec-kit, scene, uv) are packed too
+      for (const packageName of [
+        'core',
+        'sdk',
+        'vfs',
+        'host',
+        'ui',
+        'testkit',
+        'codec-kit',
+        'scene',
+        'uv',
+      ]) {
         const packed = command(
           'pnpm',
           ['pack', '--pack-destination', tarballDir],
@@ -64,7 +75,7 @@ describe('13C packed external viewer in the real browser host (C-18a)', () => {
       const tarballs = readdirSync(tarballDir)
         .filter(name => name.endsWith('.tgz'))
         .map(name => join(tarballDir, name))
-      expect(tarballs).toHaveLength(7)
+      expect(tarballs).toHaveLength(10)
 
       const installed = join(temporary, 'installed')
       cpSync(extensionRoot, installed, { recursive: true })
