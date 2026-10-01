@@ -61,6 +61,7 @@ import {
   unknownSourceLease,
   ViewerMountScope,
 } from '../viewer/index.js'
+import { canvasPng } from '../media/encoded.js'
 import { createOrbitController } from './orbit.js'
 import { createViewGizmo } from './gizmo.js'
 import {
@@ -1425,7 +1426,7 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
         const boneCount = facetPages.get('common.view/model-skeleton-source')?.items.length ?? 0
         const resourceCount =
           facetPages.get('common.view/model-resource-refs-source')?.items.length ?? 0
-        args.status?.set([
+        const sceneStatus = [
           {
             id: 'scene',
             icon: 'symbol-misc',
@@ -1462,8 +1463,48 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
                   align: 'start' as const,
                 },
               ]),
-        ])
-        scope.cleanup(() => args.status?.clear())
+        ] as const
+        /*
+         * The camera in the status bar (plan 6.22): its turn, tilt and zoom, refreshed at most every
+         * 150 ms while it moves; a click puts the view back. The bar lives in the host, so every
+         * update crosses the bridge, which is why a drag does not send one per pointer move.
+         */
+        const degrees = (radians: number): number => Math.round((radians * 180) / Math.PI)
+        const publishStatus = (): void =>
+          args.status?.set(
+            [
+              ...sceneStatus,
+              {
+                id: 'camera',
+                icon: 'device-camera',
+                text: localizer.text('viewer.modelCamera', {
+                  yaw: degrees(camera.pose.yaw),
+                  pitch: degrees(camera.pose.pitch),
+                  zoom: (1 / camera.pose.distanceScale).toFixed(2),
+                }),
+                tooltip: localizer.text('viewer.modelCameraReset'),
+                align: 'end',
+                action: true,
+              },
+            ],
+            itemId => {
+              if (itemId === 'camera') camera.reset()
+            },
+          )
+        publishStatus()
+        let statusTimer: ReturnType<typeof setTimeout> | undefined
+        scope.cleanup(
+          camera.onChange(() => {
+            statusTimer ??= setTimeout(() => {
+              statusTimer = undefined
+              publishStatus()
+            }, 150)
+          }),
+        )
+        scope.cleanup(() => {
+          if (statusTimer !== undefined) clearTimeout(statusTimer)
+          args.status?.clear()
+        })
         if (model.primitive === undefined) {
           canvas.remove()
           gizmo.destroy()
@@ -2081,6 +2122,48 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
               )
             }
           }
+          // The view on screen as a PNG (plan 6.22: MK2's snapshot), through the host's writer.
+          const snapshotRow = controlRow(panel.export, localizer.text('viewer.modelSnapshot'))
+          const snapshot = element(snapshotRow.field, 'button', {
+            part: 'operations.button',
+            text: localizer.text('viewer.modelSnapshotSave'),
+          }) as HTMLButtonElement
+          snapshot.type = 'button'
+          const snapshotStatus = element(snapshotRow.field, 'output', {
+            part: 'model.convert-status',
+          })
+          const writeSnapshot = options.exportBytes
+          if (writeSnapshot === undefined) {
+            snapshot.disabled = true
+            snapshotStatus.textContent = localizer.text('viewer.modelConvertUnavailable')
+          } else
+            snapshot.addEventListener(
+              'click',
+              () =>
+                void (async () => {
+                  try {
+                    const base = options.exportBaseName?.(args.descriptor) ?? 'model'
+                    const outcome = await writeSnapshot(
+                      [
+                        {
+                          name: `${base}.png`,
+                          mediaType: 'image/png',
+                          bytes: await canvasPng(canvas),
+                        },
+                      ],
+                      scope.signal,
+                    )
+                    snapshotStatus.textContent =
+                      outcome.state === 'written'
+                        ? localizer.text('viewer.modelSnapshotSaved')
+                        : (outcome.reason ?? outcome.state)
+                  } catch (error) {
+                    snapshotStatus.textContent =
+                      error instanceof Error ? error.message : String(error)
+                  }
+                })(),
+              { signal: scope.signal },
+            )
           const conversions = modelConversions(args.descriptor)
           if (conversions.length > 0) {
             const exportRow = controlRow(panel.export, localizer.text('viewer.modelConvert'))

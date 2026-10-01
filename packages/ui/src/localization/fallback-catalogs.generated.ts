@@ -525,6 +525,8 @@ export const MODEL_FALLBACK_MESSAGES = {
   'viewer.modelBoundsExtent': 'Extent',
   'viewer.modelBoundsMaximum': 'Maximum',
   'viewer.modelBoundsMinimum': 'Minimum',
+  'viewer.modelCamera': 'Camera {yaw}° · {pitch}° · ×{zoom}',
+  'viewer.modelCameraReset': 'Turn, tilt and zoom of the view; click to put the view back',
   'viewer.modelCameras': 'cameras',
   'viewer.modelClipDetail': '{frames} frames · {channels} channels · {samples} samples',
   'viewer.modelClips': 'clips',
@@ -571,6 +573,9 @@ export const MODEL_FALLBACK_MESSAGES = {
   'viewer.modelSceneCount': 'Scenes',
   'viewer.modelSceneCounts': '{meshes} meshes · {materials} materials · {animations} animations',
   'viewer.modelSkeletonOverlay': 'Show the bone overlay',
+  'viewer.modelSnapshot': 'Snapshot',
+  'viewer.modelSnapshotSave': 'Save the view as PNG',
+  'viewer.modelSnapshotSaved': 'The view was saved.',
   'viewer.modelSockets': 'sockets',
   'viewer.modelSpeed': 'Speed',
   'viewer.modelSummary':
