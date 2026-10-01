@@ -255,6 +255,30 @@ describe('editing over the subject RPC (S14)', () => {
     await opened.session.dispose()
   }, 60_000)
 
+  it('tells apart two pending plans an operation names alike, and prepares the one asked for', async () => {
+    const { client, path } = await servingPair({ editable: true, operationPlan: true })
+    const opened = await client.open(path)
+    if (opened.state !== 'opened') throw new Error('open failed')
+    const operations = await opened.session.operations()
+    // an editor's backup takes a plan only for its bytes; the save then asks for the same edit
+    const backup = await operations.invoke('fixture.rename', {})
+    const save = await operations.invoke('fixture.rename', {})
+    if (backup.state !== 'ok' || backup.output.kind !== 'edit-plan') throw new Error('no backup')
+    if (save.state !== 'ok' || save.output.kind !== 'edit-plan') throw new Error('no save plan')
+    expect(save.output.plan.planId).toBe(`${backup.output.plan.planId}#2`)
+    const arm = await client.edit(opened.snapshot.sessionId)
+    const prepared = await arm.prepare(save.output.plan)
+    if (prepared.state !== 'ready') throw new Error('prepare failed')
+    expect((await arm.commit(prepared.preparedId)).state).toBe('committed')
+    expect(readFileSync(path, 'utf8')).toBe('{"name":"Edited","items":[1,2,3]}')
+    // only the newest pending plans are kept
+    for (let index = 0; index < 8; index += 1) await operations.invoke('fixture.rename', {})
+    await expect(arm.prepare(backup.output.plan)).rejects.toThrow(/unknown edit plan/u)
+    await operations.dispose()
+    await arm.dispose()
+    await opened.session.dispose()
+  }, 60_000)
+
   it('a consumer with no grant proposes, plans, prepares and commits — the file changes and the ids are single-use', async () => {
     const { client, path } = await servingPair({ editable: true })
     const opened = await client.open(path)

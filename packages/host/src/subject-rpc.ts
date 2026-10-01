@@ -454,6 +454,9 @@ export function exposeSubjectRpc(options: ExposeSubjectRpcOptions): SubjectRpcEx
   const live = new Map<string, ServedSubject>()
   /** Plans returned by codec operations, before their previews cross the RPC boundary. */
   const operationPlans = new Map<string, Map<string, AssetEditPlan>>()
+  // ponytail: the newest pending plans only; a client that took a plan just for its bytes (an editor
+  // backup, Save As) never prepares it — a call to drop such a plan would free it at once
+  const maximumPendingOperationPlans = 8
   const maximumLiveSessions = 1_024
 
   const canonicalSubject = (value: unknown): SubjectRef | undefined => {
@@ -547,10 +550,19 @@ export function exposeSubjectRpc(options: ExposeSubjectRpcOptions): SubjectRpcEx
                   }
                   const plans =
                     operationPlans.get(sessionId as string) ?? new Map<string, AssetEditPlan>()
-                  if (plans.has(plan.planId))
-                    throw new TypeError('duplicate operation edit plan identity')
-                  plans.set(plan.planId, structuredClone(plan))
+                  // A codec names a plan by what it does, so the same edit asked twice while the
+                  // first is still pending (a backup, then the save) is told apart, not refused.
+                  let planId = plan.planId
+                  for (let copy = 2; plans.has(planId); copy += 1) planId = `${plan.planId}#${copy}`
+                  plans.set(planId, structuredClone({ ...plan, planId }))
+                  if (plans.size > maximumPendingOperationPlans)
+                    plans.delete(plans.keys().next().value!)
                   operationPlans.set(sessionId as string, plans)
+                  if (planId !== plan.planId)
+                    return {
+                      ...result,
+                      output: { ...result.output, plan: { ...result.output.plan, planId } },
+                    }
                 }
               }
               return result
