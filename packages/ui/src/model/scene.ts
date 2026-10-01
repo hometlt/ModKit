@@ -63,17 +63,25 @@ export const MODEL_KEY_LIGHT: SceneRendererDirectionalLight = Object.freeze({
 })
 
 /**
- * The rotation that brings a publisher's up axis onto the viewer's.
+ * The turn that brings a publisher's up axis onto the viewer's, and its handedness onto glTF's.
  *
  * The orbit controller works in y-up viewer space by construction, so a z-up model is turned once,
- * here, rather than every consumer inventing its own correction. `+y` needs no rotation and
- * returns undefined so nothing is multiplied for the common case.
+ * here, rather than every consumer inventing its own correction. A left-handed source (Direct3D:
+ * Emperor, Westwood) is first mirrored on the axis that is neither up nor sideways — z of a `+y`
+ * scene, y of a `+z` one — as the UVM materializer's mirror node does (П21). A right-handed `+y`
+ * scene needs nothing and returns undefined so nothing is multiplied for the common case.
  *
- * Column-major, like every other matrix in this contract: it maps (x, y, z) to (x, z, -y).
+ * Column-major, like every other matrix in this contract: `+z` maps (x, y, z) to (x, z, -y), and a
+ * left-handed `+z` to (x, z, y).
  */
-export function upAxisCorrection(upAxis: ModelUpAxis | undefined): Float32Array | undefined {
-  if (upAxis !== '+z') return undefined
-  return Float32Array.from([1, 0, 0, 0, 0, 0, -1, 0, 0, 1, 0, 0, 0, 0, 0, 1])
+export function upAxisCorrection(
+  upAxis: ModelUpAxis | undefined,
+  handedness?: 'right' | 'left',
+): Float32Array | undefined {
+  const left = handedness === 'left'
+  if (upAxis === '+z')
+    return Float32Array.from([1, 0, 0, 0, 0, 0, left ? 1 : -1, 0, 0, 1, 0, 0, 0, 0, 0, 1])
+  return left ? Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1]) : undefined
 }
 
 /** Apply a world correction to a primitive, composing with any transform it already carries. */

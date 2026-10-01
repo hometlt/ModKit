@@ -1194,7 +1194,7 @@ function mountClipRename(
 /**
  * The orbit camera in the model's own frame, as the scene sampler's camera-facing nodes take it: its
  * rotation from the view composed with the viewer's up-axis turn, its eye brought back through that
- * turn (a rotation, so its transpose).
+ * turn (orthogonal — a rotation, or one with a mirror — so its transpose).
  */
 function modelFrameCamera(placement: CameraPlacement, correction: Float32Array | undefined) {
   const view =
@@ -1661,7 +1661,7 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
            * or it lies on its side and the key light rakes it from below. A publisher that states
            * nothing is read as y-up, which is what every consumer assumed before.
            */
-          const correction = upAxisCorrection(model.info.upAxis)
+          const correction = upAxisCorrection(model.info.upAxis, model.info.handedness)
           const orient = (sampled: ReturnType<typeof player.sample>) =>
             correction === undefined
               ? sampled
