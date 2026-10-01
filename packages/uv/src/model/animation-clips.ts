@@ -25,6 +25,42 @@ export interface UvmAnimationClip {
   readonly frames?: number
 }
 
+/** How one glTF animation plays: its `UV_game_animation_clips` extension (SPEC_UVM §12.2). */
+export interface UvmAnimationPlayback {
+  readonly loop?: 'once' | 'loop' | 'ping-pong' | 'hold'
+  readonly priority?: number
+  readonly speedScale?: number
+  readonly blendInSeconds?: number
+  readonly blendOutSeconds?: number
+}
+
+const LOOP_MODES: readonly unknown[] = ['once', 'loop', 'ping-pong', 'hold']
+
+/** The playback fields of an animation (or of a clip to write as one), checked; empty when none. */
+export function uvmAnimationPlayback(value: unknown): UvmAnimationPlayback {
+  if (value === undefined) return {}
+  const record = object(value, 'UV_game_animation_clips of an animation')
+  const { loop, priority, speedScale, blendInSeconds, blendOutSeconds } = record
+  const seconds = (item: unknown) =>
+    item === undefined || (typeof item === 'number' && Number.isFinite(item) && item >= 0)
+  if (
+    (loop !== undefined && !LOOP_MODES.includes(loop)) ||
+    (priority !== undefined && !integer(priority)) ||
+    (speedScale !== undefined &&
+      (typeof speedScale !== 'number' || !Number.isFinite(speedScale) || speedScale <= 0)) ||
+    !seconds(blendInSeconds) ||
+    !seconds(blendOutSeconds)
+  )
+    throw new TypeError('UVM animation playback is invalid')
+  return Object.freeze({
+    ...(loop === undefined ? {} : { loop: loop as UvmAnimationPlayback['loop'] & string }),
+    ...(priority === undefined ? {} : { priority: priority as number }),
+    ...(speedScale === undefined ? {} : { speedScale }),
+    ...(blendInSeconds === undefined ? {} : { blendInSeconds: blendInSeconds as number }),
+    ...(blendOutSeconds === undefined ? {} : { blendOutSeconds: blendOutSeconds as number }),
+  })
+}
+
 /** A scalar visibility property applies to every instance of one actual mesh primitive. */
 export type UvmPrimitiveVisibility =
   | { readonly mesh: number; readonly primitive: number; readonly value: number }
@@ -135,6 +171,7 @@ export function readUvmAnimationClips(
     if (animation !== undefined) {
       if (linked.has(animation)) throw new TypeError('UVM animation is linked by multiple clips')
       const target = object(animations[animation], 'clip animation')
+      uvmAnimationPlayback(field(target['extensions'], 'UV_game_animation_clips'))
       if (array(target, 'channels').length === 0 || array(target, 'samplers').length === 0)
         throw new TypeError('UVM catalog must not link an empty glTF animation')
       const declared = field(field(target['extras'], 'uv'), 'sourceSequenceIndex')

@@ -10,7 +10,7 @@ import {
   addAccessor,
 } from './legacy/rig-kernels.js'
 import type { UvmJsonObject } from './legacy/rig-types.js'
-import { uvmVisibilityPointer } from './animation-clips.js'
+import { uvmAnimationPlayback, uvmVisibilityPointer } from './animation-clips.js'
 import { uvmKeyTimesMetadata } from './key-times.js'
 
 export interface RigStorage {
@@ -607,10 +607,20 @@ export function writeUvmAnimations(
       ...(clip.repeatCount === undefined ? {} : { repeatCount: clip.repeatCount }),
     })
     if (animationIndex === undefined) continue
+    const playback = uvmAnimationPlayback({
+      ...(clip.loop === undefined ? {} : { loop: clip.loop }),
+      ...(clip.priority === undefined ? {} : { priority: clip.priority }),
+      ...(clip.speedScale === undefined ? {} : { speedScale: clip.speedScale }),
+      ...(clip.blendInSeconds === undefined ? {} : { blendInSeconds: clip.blendInSeconds }),
+      ...(clip.blendOutSeconds === undefined ? {} : { blendOutSeconds: clip.blendOutSeconds }),
+    })
     animations.push({
       name: clip.name,
       samplers,
       channels,
+      ...(Object.keys(playback).length === 0
+        ? {}
+        : { extensions: { UV_game_animation_clips: { ...playback } } }),
       extras: {
         uv: {
           sourceSequenceIndex: sequenceIndex,

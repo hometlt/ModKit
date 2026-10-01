@@ -11,6 +11,7 @@ import type { ModelNodePose } from '../model/node-pose.js'
 import {
   readUvmAnimationClips,
   readUvmPrimitiveVisibility,
+  uvmAnimationPlayback,
   uvmVisibilityTarget,
 } from '@modkit/uv/model/animation-clips'
 import {
@@ -395,6 +396,7 @@ export function decodeUvmRig(
       channels,
       ...(metadata['looping'] === undefined ? {} : { looping: metadata['looping'] }),
       ...(metadata['repeatCount'] === undefined ? {} : { repeatCount: metadata['repeatCount'] }),
+      ...uvmAnimationPlayback(field(animation['extensions'], 'UV_game_animation_clips')),
       ...(unsupportedChannels === 0 ? {} : { unsupportedChannels }),
       ...(sequenceIndex === undefined ? {} : { sequenceIndex }),
     })

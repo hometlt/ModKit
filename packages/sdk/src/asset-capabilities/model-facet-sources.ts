@@ -215,6 +215,18 @@ export interface ModelAnimationClip {
   readonly looping?: boolean
   /** Zero means unbounded looping; a positive integer is the authored number of complete cycles. */
   readonly repeatCount?: number
+  /**
+   * How the clip plays, as UVM's `UV_game_animation_clips` says it: `once`, `loop`, `ping-pong`
+   * (forth and back) or `hold` (stays on its last frame). When absent, `looping` decides.
+   */
+  readonly loop?: 'once' | 'loop' | 'ping-pong' | 'hold'
+  /** Playback rate over the authored timing; positive, default 1. */
+  readonly speedScale?: number
+  /** Among clips eligible at once, the higher wins (StarCraft II selects sequences so); integer. */
+  readonly priority?: number
+  /** Seconds to blend in from the clip before it, and out to the one after. */
+  readonly blendInSeconds?: number
+  readonly blendOutSeconds?: number
   readonly movementSpeed?: number
   readonly boundsSphere?: {
     readonly center: readonly [number, number, number]
