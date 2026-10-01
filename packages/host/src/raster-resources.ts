@@ -180,7 +180,10 @@ export function rasterIdParameters(
   const { region, frame } = parameters
   if (region !== undefined && region.length === 0)
     throw new TypeError('raster id region must name an area')
-  if (frame !== undefined && !(/^(?:0|[1-9][0-9]*)$/u.test(frame) && Number.isSafeInteger(Number(frame))))
+  if (
+    frame !== undefined &&
+    !(/^(?:0|[1-9][0-9]*)$/u.test(frame) && Number.isSafeInteger(Number(frame)))
+  )
     throw new TypeError('raster id frame must be a nonnegative integer')
   return {
     name,
