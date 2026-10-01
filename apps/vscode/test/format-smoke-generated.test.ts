@@ -76,9 +76,9 @@ describe('generated installed format-family smoke', () => {
     })
   })
 
-  it('keeps the installed release at exact 10 Common plus 9 external roots', () => {
-    // Ten since the built-in Lua extension shipped (d7146e77).
-    expect(generated.generatedFrom.bundledCatalog.roots).toHaveLength(10)
+  it('keeps the installed release at exact 11 Common plus 9 external roots', () => {
+    // Ten since the built-in Lua extension shipped (d7146e77), eleven since Java (dfebe839).
+    expect(generated.generatedFrom.bundledCatalog.roots).toHaveLength(11)
     expect(generated.generatedFrom.bundledCatalog.provenance).toBe(
       'checkout-physical-roots-verified-by-host-artifact-digest',
     )

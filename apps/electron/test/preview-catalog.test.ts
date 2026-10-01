@@ -16,6 +16,12 @@ import { APP_STAGE_POLICY, STAGE_ORDER } from '../src/view-policy.js'
 
 const repositoryRoot = join(import.meta.dirname, '..', '..', '..')
 const presentation = COMMON_PRESENTATION_CATALOG.map(entry => entry.slot)
+/**
+ * Stages the shared catalog emits that Electron does not compose yet. The owner's order puts
+ * Electron after the accepted VS Code plugin, so the mod wiki (plan 5.25) is a VS Code and web
+ * stage for now; left out of `STAGE_ORDER`, it is never offered here.
+ */
+const DEFERRED_STAGES: readonly string[] = ['wiki']
 const viewerCatalogSource = readFileSync(
   join(repositoryRoot, 'apps', 'electron', 'generated', 'viewer-catalog.js'),
   'utf8',
@@ -57,7 +63,10 @@ describe('the Electron preview policy', () => {
   })
 
   it('ranks every emitted slot, and every app-composed stage, in the picker order', () => {
-    for (const slot of presentation) expect(STAGE_ORDER).toContain(slot.slotId)
+    for (const slot of presentation) {
+      if (DEFERRED_STAGES.includes(slot.slotId)) expect(STAGE_ORDER).not.toContain(slot.slotId)
+      else expect(STAGE_ORDER).toContain(slot.slotId)
+    }
     for (const policy of APP_STAGE_POLICY) expect(STAGE_ORDER).toContain(policy.id)
   })
 
@@ -71,7 +80,11 @@ describe('the Electron preview policy', () => {
   })
 
   it('binds each slot to exactly one data source, shared by both catalogs', () => {
-    for (const slot of presentation.filter(slot => slot.slotId !== 'archive')) {
+    // The archive is composed by each app, and a deferred stage has no Electron module to bind.
+    const bound = presentation.filter(
+      slot => slot.slotId !== 'archive' && !DEFERRED_STAGES.includes(slot.slotId),
+    )
+    for (const slot of bound) {
       if (slot.slotId === 'template') {
         expect(slot.bindings).toHaveLength(0)
         expect(viewerCatalogSource).toContain("operation: 'view.template'")

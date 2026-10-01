@@ -112,7 +112,10 @@ describe('Electron format-smoke acceptance authority', () => {
       'modkit/data',
       'modkit/documents',
       'modkit/images',
+      'modkit/java',
+      'modkit/lua',
       'modkit/models',
+      'modkit/translation',
       'modkit/vector',
       'modkit/video',
     ])

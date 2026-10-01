@@ -237,7 +237,9 @@ export function summarizeElectronFormatSmokeAuthority(authority: unknown) {
   if (
     packageIds.length !== 2 ||
     externalRoots.length !== 9 ||
-    commonRoots.length !== 8 ||
+    // the Common catalog grows with its built-in roots (eleven since java, 29.09); each is pinned
+    // by digest in the authority, whose own digest the plan pins
+    commonRoots.length === 0 ||
     document.generatedFrom.offlineRelease?.catalogSignature?.algorithm !== 'Ed25519' ||
     document.generatedFrom.offlineRelease.catalogSignature.verified !== true ||
     asString(document.generatedFrom.offlineRelease.catalogSignature.keyId) === undefined ||

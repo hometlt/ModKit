@@ -9,28 +9,36 @@
     },
     "bundledCatalog": {
       "file": "generated/bundled-catalog.json",
-      "sha256": "sha256:41dacc2d7bc9a660a6d953df38c322ad72cd4d3073e5da7f35dc3c99601d06ed",
+      "sha256": "sha256:90ce81d1f5b1b5b9e2d5552f180d15fda66e963355ecfd599c6e2c84be2ba5bb",
       "provenance": "checkout-physical-roots-verified-by-host-artifact-digest",
       "roots": [
         {
           "coordinate": "modkit/archives",
-          "digest": "sha256:064da7e525ab39cf1d29771644644b1ede7d0f501ccf3f49877e7bd217affb9e"
+          "digest": "sha256:30b477896e3a39f5f81e9a19af9f33662623fab356f1158aa1b9c6359db6baaa"
         },
         {
           "coordinate": "modkit/audio",
-          "digest": "sha256:ee747f65044950b9d7c42a75d20908ac69b3ae9e87764fab76ac13bf72f7ee2c"
+          "digest": "sha256:c2e844edcefd48c22b1d25da66ff9c5412b2728c53655087138ae986bed322dd"
         },
         {
           "coordinate": "modkit/data",
-          "digest": "sha256:af06b4e1f6dfbf21a513a7f1acc69b689c40776b152c7df2d9f7dcb8df499feb"
+          "digest": "sha256:ebeff7f72f64e9225eb5d718a0579225c049977ecbe9af7f240e8bf35bc3b5f6"
         },
         {
           "coordinate": "modkit/documents",
-          "digest": "sha256:7b30d28c7977f00a2b5620b514155838265dfb7155406c00d6ab1c606fc8be25"
+          "digest": "sha256:a5c58e6b0030d3a5cce0339b9a471ad012b2878b10735a1a21094e4c9f00d835"
         },
         {
           "coordinate": "modkit/images",
-          "digest": "sha256:cce66be2927e3b2785e267a722ca4720d070c85b285e423022c83453873b4341"
+          "digest": "sha256:d938d0ba220bc50b1b09d3daae34dc0143ec6fc82ba857ad883400552d75f08c"
+        },
+        {
+          "coordinate": "modkit/java",
+          "digest": "sha256:52660c4f067bf7314586f6f149963611a3277cf300558a29b13b0bedefc50f02"
+        },
+        {
+          "coordinate": "modkit/lua",
+          "digest": "sha256:9fca05506a86f6f23ac6520326dc268af43f450f44846cc7b79d1a756835bcd2"
         },
         {
           "coordinate": "modkit/models",
@@ -38,15 +46,15 @@
         },
         {
           "coordinate": "modkit/translation",
-          "digest": "sha256:aa43fef75ca70cd9176c0435e4d2b1a271a770947386c9ce7d18ddad6e6a7dd5"
+          "digest": "sha256:24969c260bd0b8403cb0edb0c092ccc09fdc3a3bc25d9189ee69d6f7665de58e"
         },
         {
           "coordinate": "modkit/vector",
-          "digest": "sha256:35c72e642e3137361d1156a55da46c707f6cf5a8cb496e3a6c0747af8bc695a7"
+          "digest": "sha256:104db82904699682061f555a686e25ca37427956c18886c80ed9c8776d8bf2d6"
         },
         {
           "coordinate": "modkit/video",
-          "digest": "sha256:234da4501402ba810b30b90ca44f7d8098d45f790bd2b8ed926879f6e0e4c80c"
+          "digest": "sha256:a816f21ad06b3d7e9b9d29c92f7fa8aa0b72adc7775c97e4b0d79dd88718c3e6"
         }
       ]
     },
@@ -71,7 +79,7 @@
         "wz2100project/warzone-2100"
       ]
     },
-    "codecContributionCount": 99
+    "codecContributionCount": 102
   },
   "cases": [
     {

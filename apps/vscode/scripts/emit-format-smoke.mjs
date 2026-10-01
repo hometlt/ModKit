@@ -181,11 +181,12 @@ function addContribution(target, extensionId, document, label) {
 function commonContributions(target, bundledCatalog) {
   if (
     bundledCatalog?.schemaVersion !== 1 ||
-    bundledCatalog.rootCount !== 10 ||
     !Array.isArray(bundledCatalog.roots) ||
-    bundledCatalog.roots.length !== 10
+    bundledCatalog.roots.length === 0 ||
+    bundledCatalog.rootCount !== bundledCatalog.roots.length
   ) {
-    throw new TypeError('format smoke requires the exact ten-root Common bundled catalog')
+    // every root the catalog pins, however many: the java root (29.09) made it eleven
+    throw new TypeError('format smoke requires the whole Common bundled catalog')
   }
   for (const root of bundledCatalog.roots) {
     if (

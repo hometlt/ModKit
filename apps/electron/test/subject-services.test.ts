@@ -79,7 +79,9 @@ describe('Electron host-owned subject services', () => {
       },
       { sourceBytes: BigInt(new TextEncoder().encode('{"ready":true}').byteLength) },
     )
-    expect(presentation).toMatchObject({ activeStage: 'code', alternateStages: ['card'] })
+    // The card over the host's fallback facts ranks after the codec's own tree (host f9810357), and
+    // one stage of the center group is offered.
+    expect(presentation).toMatchObject({ activeStage: 'code', alternateStages: ['tree'] })
     const tree = await result.session.dataSource('common.view/tree-data-source', 1)
     await expect(tree.value.root()).resolves.toMatchObject({ id: 'root', hasChildren: true })
     await tree.release()
