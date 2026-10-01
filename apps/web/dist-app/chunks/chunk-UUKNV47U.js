@@ -7063,6 +7063,38 @@ function ownedCompressedTexture(texture, info, plan, maxBytes) {
     source: Object.freeze({ ...texture.source })
   });
 }
+function rasterIdParameters(logicalId) {
+  const hash = logicalId.lastIndexOf("#");
+  if (hash < 0)
+    return { name: logicalId };
+  let region;
+  let frame;
+  for (const part of logicalId.slice(hash + 1).split("&")) {
+    const equals = part.indexOf("=");
+    const key3 = equals < 0 ? part : part.slice(0, equals);
+    if (key3 !== "region" && key3 !== "frame")
+      return { name: logicalId };
+    let value;
+    try {
+      value = decodeURIComponent(part.slice(equals + 1));
+    } catch {
+      return { name: logicalId };
+    }
+    if (equals < 0 || value.length === 0 || (key3 === "region" ? region : frame) !== void 0)
+      throw new TypeError(`raster id parameter ${key3} is empty or repeated`);
+    if (key3 === "region")
+      region = value;
+    else if (/^(?:0|[1-9][0-9]*)$/u.test(value) && Number.isSafeInteger(Number(value)))
+      frame = Number(value);
+    else
+      throw new TypeError("raster id frame must be a nonnegative integer");
+  }
+  return {
+    name: logicalId.slice(0, hash),
+    ...region === void 0 ? {} : { region },
+    ...frame === void 0 ? {} : { frame }
+  };
+}
 function createSubjectRasterResources(options) {
   const refusal = (code, message, provenance) => ({
     state: "unresolved",
@@ -7096,6 +7128,7 @@ function createSubjectRasterResources(options) {
       const releases = [];
       let provenance;
       let atlasRegion;
+      let frameOnly;
       try {
         let source2;
         let hint = {};
@@ -7104,13 +7137,17 @@ function createSubjectRasterResources(options) {
           if (resources === void 0)
             return refusal("x3.host/raster-origin-unavailable", "The subject has no resource origin.");
           const rule = options.companionRule?.(request.requirement.role);
-          const named = /#region=([^#]+)$/u.exec(request.requirement.logicalId);
-          if (named !== null)
-            atlasRegion = decodeURIComponent(named[1]);
-          const asked = named === null ? request.requirement : {
-            ...request.requirement,
-            logicalId: request.requirement.logicalId.slice(0, named.index)
-          };
+          let parameters;
+          try {
+            parameters = rasterIdParameters(request.requirement.logicalId);
+          } catch (error5) {
+            return refusal("x3.host/raster-request-invalid", error5 instanceof Error ? error5.message : "Invalid raster id parameters.");
+          }
+          atlasRegion = parameters.region;
+          frameOnly = parameters.frame;
+          if (frameOnly !== void 0 && (selection.frame ?? 0) !== 0)
+            return refusal("x3.host/raster-selection-invalid", "The resource names one frame of its image: it has no other frame to select.");
+          const asked = parameters.name === request.requirement.logicalId ? request.requirement : { ...request.requirement, logicalId: parameters.name };
           const requirement = rule === void 0 ? asked : { ...asked, scopes: rule.scopes };
           const spellings = rasterSpellings(requirement.logicalId, rule);
           let resolution = await resources.resolve(requirement, signal);
@@ -7163,7 +7200,7 @@ function createSubjectRasterResources(options) {
         const raster = await opened.session.dataSource("common.view/raster-image-source", 1);
         releases.push(() => raster.release());
         const info = Object.freeze({ ...await raster.value.info(signal) });
-        const compressedPlan = compressedFormats.size === 0 || atlasRegion !== void 0 || raster.value.readCompressed === void 0 || ![...compressedFormats].some((format2) => format2.startsWith(`${info.compression}-`)) ? void 0 : compressedSelectionPlan(info, selection, maxBytes);
+        const compressedPlan = compressedFormats.size === 0 || atlasRegion !== void 0 || frameOnly !== void 0 || raster.value.readCompressed === void 0 || ![...compressedFormats].some((format2) => format2.startsWith(`${info.compression}-`)) ? void 0 : compressedSelectionPlan(info, selection, maxBytes);
         if (compressedPlan !== void 0) {
           const subresource = Object.freeze({
             frame: selection.frame ?? 0,
@@ -7197,6 +7234,8 @@ function createSubjectRasterResources(options) {
         }
         if (!info.decodedAccess || raster.value.readRegion === void 0)
           return refusal("x3.host/raster-decode-unavailable", "The selected image codec does not decode pixel regions.", provenance);
+        if (frameOnly !== void 0 && frameOnly >= info.frames)
+          return refusal("x3.host/raster-frame-missing", `The image has no frame ${String(frameOnly)}; it has ${String(info.frames)}.`, provenance);
         if (atlasRegion !== void 0) {
           const area = info.atlasRegions?.find((item) => item.name === atlasRegion);
           if (area === void 0)
@@ -7206,6 +7245,7 @@ function createSubjectRasterResources(options) {
             y: area.y,
             width: area.width,
             height: area.height,
+            ...frameOnly === void 0 ? {} : { frame: frameOnly },
             pixelFormat: "rgba8",
             maxBytes
           }, signal);
@@ -7213,7 +7253,13 @@ function createSubjectRasterResources(options) {
             return refusal("x3.host/raster-region-invalid", "The image codec returned an invalid bounded RGBA region.", provenance);
           const { atlasRegions: _atlas, ...rest } = info;
           return {
-            info: Object.freeze({ ...rest, width: area.width, height: area.height, mipLevels: 1 }),
+            info: Object.freeze({
+              ...rest,
+              width: area.width,
+              height: area.height,
+              mipLevels: 1,
+              ...frameOnly === void 0 ? {} : { frames: 1 }
+            }),
             diagnostics: Object.freeze([...opened.diagnostics]),
             ...provenance === void 0 ? {} : { provenance },
             state: "decoded",
@@ -7222,7 +7268,7 @@ function createSubjectRasterResources(options) {
         }
         let plan;
         try {
-          plan = rasterSelectionPlan(info, selection, maxBytes);
+          plan = rasterSelectionPlan(info, frameOnly === void 0 ? selection : { ...selection, frame: frameOnly }, maxBytes);
         } catch (error5) {
           return refusal(isModkitError(error5) ? error5.code : "x3.host/raster-selection-invalid", error5 instanceof Error ? error5.message : "Invalid raster selection", provenance);
         }
@@ -7248,12 +7294,13 @@ function createSubjectRasterResources(options) {
             return refusal("x3.host/raster-region-invalid", "The image codec returned an invalid bounded RGBA region.", provenance);
           remaining -= region.pixels.length;
           surfaces.push(Object.freeze({
-            subresource,
+            // a named frame is frame 0 of the one-frame image the resource is
+            subresource: frameOnly === void 0 ? subresource : Object.freeze({ ...subresource, frame: 0 }),
             region: Object.freeze({ ...region, pixels: region.pixels.slice() })
           }));
         }
         const common = {
-          info: Object.freeze({ ...info }),
+          info: Object.freeze(frameOnly === void 0 ? { ...info } : { ...info, frames: 1 }),
           diagnostics: Object.freeze([...opened.diagnostics]),
           ...provenance === void 0 ? {} : { provenance }
         };
