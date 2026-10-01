@@ -1,6 +1,7 @@
 import type {
   CandidateWorldSceneInfo,
   CandidateWorldSceneSource,
+  MapWorldCanonicalTransform,
   WorldSceneItem,
   WorldSceneLayerItem,
   WorldSceneObjectItem,
@@ -191,6 +192,35 @@ function regionShape(
     })
   }
   throw new TypeError(`UVW canonical region shape ${shape.kind} is not representable`)
+}
+
+/**
+ * Light directions in UVW axes: a canonical environment's as published, a map-native one's through
+ * the linear part of the admitted transform, renormalized (Emperor's sun, z down in map-native,
+ * would otherwise light UVW from below). A light in any other space has no way into UVW.
+ */
+function canonicalLightDirection(
+  coordinateSpaceId: string,
+  transform: MapWorldCanonicalTransform | undefined,
+): (direction: readonly [number, number, number]) => readonly [number, number, number] {
+  if (coordinateSpaceId === 'uvw-canonical' || coordinateSpaceId.startsWith('uvw-space:'))
+    return direction => direction
+  if (coordinateSpaceId !== 'map-native' || transform === undefined)
+    throw new TypeError(`UVW lighting in ${coordinateSpaceId} has no transform into UVW axes`)
+  const sourceIndex = { x: 0, y: 1, z: 2 } as const
+  return direction => {
+    const axis = (name: 'x' | 'y' | 'z'): number =>
+      direction[sourceIndex[transform.axes[name].sourceAxis]] * transform.axes[name].scale
+    const value = [axis('x'), axis('y'), axis('z')] as const
+    const length = Math.hypot(...value)
+    if (!(length > 0)) throw new TypeError('UVW light direction has no length')
+    // `+ 0` turns the -0 of a negative scale into 0
+    return Object.freeze([
+      value[0] / length + 0,
+      value[1] / length + 0,
+      value[2] / length + 0,
+    ] as const)
+  }
 }
 
 async function reconstructLayer(
@@ -670,6 +700,7 @@ async function reconstructLayer(
     if (items.length !== 1 || items[0]?.facet !== 'lighting')
       throw new TypeError('UVW canonical lighting layer must contain one environment')
     const environment = items[0]
+    const direction = canonicalLightDirection(environment.coordinateSpaceId, info.uvwTransform)
     const localDirectionalIds = environment.directional.map(light => localId(light.id, 'source'))
     const preserveDirectionalIds = environment.directional.every(
       (light, index) =>
@@ -689,6 +720,7 @@ async function reconstructLayer(
         environment.directional.map((light, index) =>
           Object.freeze({
             ...light,
+            direction: direction(light.direction),
             // UVW canonicalization sorts ids. Preserve the publisher's key/fill/back priority so
             // renderers that consume the first directional light keep the intended key light.
             // A canonical source already has valid sorted ids and must round-trip byte-for-byte.

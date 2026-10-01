@@ -253,6 +253,55 @@ describe('production world to UVW materializer', () => {
     expect(layer?.kind === 'objects' && layer.instances.map(instance => instance.id)).toEqual(['tree-1'])
   })
 
+  it('turns a map-native light into UVW axes', async () => {
+    const lightingLayerId = 'native:lighting'
+    const lightingInfo: CandidateWorldSceneInfo = {
+      ...info,
+      unknownFacets: [],
+      facets: [
+        ...info.facets,
+        { facet: 'lighting', layerId: lightingLayerId, state: 'available', itemCount: 1, lods: ['exact'] },
+      ],
+    }
+    const terrainSource = source(4, lightingInfo)
+    const lightingSource: CandidateWorldSceneSource = {
+      ...terrainSource,
+      page: request => {
+        if (request.facet === 'layers')
+          return Promise.resolve({
+            snapshotId,
+            facet: 'layers',
+            state: 'available',
+            items: [{
+              facet: 'layers', id: lightingLayerId, layerId: lightingLayerId,
+              kind: 'lighting', state: 'available', itemCount: 1, lods: ['exact'],
+            }],
+          })
+        if (request.facet === 'lighting')
+          return Promise.resolve({
+            snapshotId,
+            facet: 'lighting',
+            state: 'available',
+            items: [{
+              facet: 'lighting', id: 'native:environment', layerId: lightingLayerId,
+              coordinateSpaceId: 'map-native', ambientColor: [0.2, 0.2, 0.2], ambientIntensity: 1,
+              // z up in map-native: the sun shines down
+              directional: [{ id: 'sun', direction: [1, 2, -2], color: [1, 1, 1], intensity: 1 }],
+            }],
+          })
+        return terrainSource.page(request)
+      },
+    }
+    const result = await materializeWorldToUvw(lightingSource, { ...options, maxFacetItems: 64 })
+    if (result.state !== 'materialized') throw new Error(JSON.stringify(result.refusals))
+    const layer = result.document.spaces[0]?.layers.find(item => item.kind === 'lighting')
+    const direction = layer?.kind === 'lighting' ? layer.directional[0]?.direction : undefined
+    // (x, y, z) -> (x, z, -y), renormalized: down along UVW -y
+    expect(direction?.[0]).toBeCloseTo(1 / 3, 12)
+    expect(direction?.[1]).toBeCloseTo(-2 / 3, 12)
+    expect(direction?.[2]).toBeCloseTo(-2 / 3, 12)
+  })
+
   it('keeps publisher material references joined after UVW id normalization', async () => {
     const materialsLayerId = 'native:materials'
     const materialIds = ['ground-a_yellow', 'ground-a_red'] as const
