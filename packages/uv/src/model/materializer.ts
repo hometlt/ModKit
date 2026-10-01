@@ -60,6 +60,8 @@ export interface ModelProjection {
         readonly color: readonly [number, number, number]
         readonly tolerance?: number
       }
+      /** The game ignores the stored alpha (SDK ModelResourceRef), written as `UV_texture_alpha`. */
+      readonly ignoreStoredAlpha?: true
     }[]
     readonly unavailable?: readonly { readonly logicalId: string }[]
   }
@@ -107,11 +109,13 @@ const GLTF_FILTER = { nearest: 9728, linear: 9729 } as const
 
 /**
  * One texture per image; an image with a stated filter gets a sampler naming it, shared by filter,
- * and one with a colour key states it on its texture (`UV_texture_color_key`).
+ * one with a colour key states it on its texture (`UV_texture_color_key`), and one whose stored
+ * alpha the game ignores says so (`UV_texture_alpha`).
  */
 function texturesWithSamplers(
   filters: readonly ('nearest' | 'linear' | undefined)[],
   colorKeys: readonly (UvmTextureColorKeyValue | undefined)[] = [],
+  alphaIgnored: readonly boolean[] = [],
 ): {
   readonly textures: UvmJsonObject[]
   readonly samplers?: UvmJsonObject[]
@@ -120,19 +124,20 @@ function texturesWithSamplers(
   const samplerOf = new Map<'nearest' | 'linear', number>()
   const textures = filters.map((filter, index) => {
     const colorKey = colorKeys[index]
-    const keyed =
-      colorKey === undefined
+    const extensions = {
+      ...(alphaIgnored[index] === true ? { UV_texture_alpha: { ignoreStoredAlpha: true } } : {}),
+      ...(colorKey === undefined
         ? {}
         : {
-            extensions: {
-              UV_texture_color_key: {
-                color: [...colorKey.color],
-                ...(colorKey.tolerance === undefined || colorKey.tolerance === 0
-                  ? {}
-                  : { tolerance: colorKey.tolerance }),
-              },
+            UV_texture_color_key: {
+              color: [...colorKey.color],
+              ...(colorKey.tolerance === undefined || colorKey.tolerance === 0
+                ? {}
+                : { tolerance: colorKey.tolerance }),
             },
-          }
+          }),
+    }
+    const keyed = Object.keys(extensions).length === 0 ? {} : { extensions }
     if (filter === undefined) return { source: index, ...keyed }
     let sampler = samplerOf.get(filter)
     if (sampler === undefined) {
@@ -1037,6 +1042,7 @@ export function materializeUvmCore(
   const imageFilters: ('nearest' | 'linear' | undefined)[] = []
   /** Colour key per image index, for the images whose closure entry states one. */
   const imageColorKeys: (UvmTextureColorKeyValue | undefined)[] = []
+  const imageAlphaIgnored: boolean[] = []
   if (closure !== undefined && closure !== null) {
     if (closure.mode !== 'logical' && closure.mode !== 'content-qualified') {
       fail('resourceClosure.mode must be logical or content-qualified')
@@ -1059,12 +1065,15 @@ export function materializeUvmCore(
       ) {
         fail('a resource-closure colour key is three stored 8-bit channels and a 0..255 tolerance')
       }
+      if (entry.ignoreStoredAlpha !== undefined && entry.ignoreStoredAlpha !== true)
+        fail('a resource-closure ignoreStoredAlpha is true or absent')
       resourceImages.push({
         uri: uvmImageUri(entry.logicalId),
         ...(typeof entry.mediaHint === 'string' ? { mimeType: entry.mediaHint } : {}),
       })
       imageLogicalIds.push(entry.logicalId)
       imageFilters.push(entry.filter)
+      imageAlphaIgnored.push(entry.ignoreStoredAlpha === true)
       imageColorKeys.push(
         colorKey === undefined
           ? undefined
@@ -1704,6 +1713,7 @@ export function materializeUvmCore(
       ...(visibility.length === 0 ? [] : ['UV_game_variants']),
       ...(animatesPointers ? ['KHR_animation_pointer'] : []),
       ...(imageColorKeys.some(key => key !== undefined) ? ['UV_texture_color_key'] : []),
+      ...(imageAlphaIgnored.includes(true) ? ['UV_texture_alpha'] : []),
       ...(unitsExtension === undefined ? [] : ['UV_units']),
       ...(projection.lods !== undefined && projection.lods.length > 0 ? ['MSFT_lod'] : []),
       ...(lodSelection === undefined ? [] : ['MODKITX_lod_selection']),
@@ -1747,7 +1757,7 @@ export function materializeUvmCore(
       ? {}
       : {
           images: resourceImages,
-          ...texturesWithSamplers(imageFilters, imageColorKeys),
+          ...texturesWithSamplers(imageFilters, imageColorKeys, imageAlphaIgnored),
         }),
     accessors,
     bufferViews: buffers.views,

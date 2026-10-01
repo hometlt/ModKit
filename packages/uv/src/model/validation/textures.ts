@@ -45,6 +45,31 @@ export function readUvmTextureColorKeys(
   return keys
 }
 
+/**
+ * Every texture's alpha policy (`UV_texture_alpha`, SPEC_UVM_EXTENSIONS), by glTF texture index:
+ * true where the stored alpha is ignored (alpha := 1 before a colour key), false where it is kept.
+ */
+export function readUvmTextureAlpha(
+  document: JsonObject,
+  signal?: AbortSignal,
+): ReadonlyMap<number, boolean> {
+  const policies = new Map<number, boolean>()
+  for (const [index, candidate] of array(document, 'textures').entries()) {
+    signal?.throwIfAborted()
+    const extension = field(field(candidate, 'extensions'), 'UV_texture_alpha')
+    if (extension === undefined) continue
+    const label = `texture ${index} UV_texture_alpha`
+    const alpha = object(extension, label)
+    if (Object.keys(alpha).some(key => key !== 'ignoreStoredAlpha' && key !== 'extras'))
+      throw new TypeError(`${label} has an unknown property`)
+    const ignore = alpha['ignoreStoredAlpha']
+    if (typeof ignore !== 'boolean')
+      throw new TypeError(`${label} ignoreStoredAlpha must be a boolean`)
+    policies.set(index, ignore)
+  }
+  return policies
+}
+
 export function validateTextureColorKeys(
   document: JsonObject,
   used: readonly JsonValue[],
@@ -55,4 +80,9 @@ export function validateTextureColorKeys(
     throw new TypeError('UV_texture_color_key is not declared in extensionsUsed')
   if (keys.size === 0 && used.includes('UV_texture_color_key'))
     throw new TypeError('UV_texture_color_key is declared but absent')
+  const alpha = readUvmTextureAlpha(document, signal)
+  if (alpha.size > 0 && !used.includes('UV_texture_alpha'))
+    throw new TypeError('UV_texture_alpha is not declared in extensionsUsed')
+  if (alpha.size === 0 && used.includes('UV_texture_alpha'))
+    throw new TypeError('UV_texture_alpha is declared but absent')
 }

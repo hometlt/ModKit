@@ -29,14 +29,18 @@ import { snapshotJson } from '@modkit/codec-kit/json-snapshot'
 import { createModelAnimationSampler } from '@modkit/codec-kit/model/animation'
 import { readUvmContainer } from '@modkit/uv/model/container'
 import { readUvmAnimationClips, readUvmPrimitiveVisibility } from '@modkit/uv/model/animation-clips'
-import { readUvmTextureColorKeys, validateUvmDocument } from '@modkit/uv/model/validation'
+import {
+  readUvmTextureAlpha,
+  readUvmTextureColorKeys,
+  validateUvmDocument,
+} from '@modkit/uv/model/validation'
 import { applyColorKeyTransparency } from '@modkit/codec-kit/raster'
 import { createModelSceneSampler } from '../model/sampler.js'
 import { encodeRgbaPng } from '../output/png.js'
 import { readUvmModel } from './model.js'
 import { createUvmCollisionOverlay } from './collision-overlay.js'
 import { createUvmEffectFrame } from './effects.js'
-import { prepareUvmTextureImages, uvmImageFilters, uvmImageTexels } from './images.js'
+import { opaqueTexels, prepareUvmTextureImages, uvmImageFilters, uvmImageTexels } from './images.js'
 import { array, field, finiteArray, object, safeIndex, vector4 } from './values.js'
 import {
   uvmMaterialBlendEffect,
@@ -389,15 +393,19 @@ async function prepareNestedUvmRender(
   }
   /*
    * A texture's colour key (UV_texture_color_key, SPEC_UVM §11.6): its texels of that stored colour
-   * become transparent black before anything samples them, as the game's loader made them.
+   * become transparent black before anything samples them, as the game's loader made them. A texture
+   * whose stored alpha the game ignores (UV_texture_alpha) is opaque first.
    */
   const colorKeys = readUvmTextureColorKeys(document, signal)
+  const alphaPolicies = readUvmTextureAlpha(document, signal)
   const keyed = <
     T extends { readonly width: number; readonly height: number; readonly rgba: Uint8Array },
   >(
     index: number,
-    texels: T,
+    stored: T,
   ): T => {
+    const texels =
+      alphaPolicies.get(index) === true ? { ...stored, rgba: opaqueTexels(stored.rgba) } : stored
     const key = colorKeys.get(index)
     if (key === undefined) return texels
     const [r, g, b] = key.color

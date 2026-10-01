@@ -11,9 +11,10 @@ import {
   uvmImageColorKeys,
   uvmImageFilters,
   uvmImageResourceId,
+  uvmImagesIgnoringAlpha,
   uvmImageTexels,
 } from '../uvm/images.js'
-import { colorKeyedTexture } from './color-keys.js'
+import { colorKeyedTexture, storedAlphaIgnored } from './color-keys.js'
 import { readUvmModel } from '../uvm/model.js'
 
 function positive(value: number | undefined, fallback: number): number {
@@ -88,6 +89,7 @@ export function createEmbeddedUvmWorldModelDecoder(
     // images the game loads with a colour key (UV_texture_color_key): keyed once, here; each
     // sampled with the filter its sampler names
     const colorKeys = uvmImageColorKeys(container.document, signal)
+    const opaque = uvmImagesIgnoringAlpha(container.document, signal)
     const filters = uvmImageFilters(container.document)
     let textureBytes = 0
     if (Array.isArray(images)) {
@@ -165,7 +167,8 @@ export function createEmbeddedUvmWorldModelDecoder(
           ...(filter === undefined ? {} : { filter }),
         })
         const key = colorKeys.get(id)
-        textures.push(key === undefined ? texture : colorKeyedTexture(texture, key))
+        const loaded = opaque.has(id) ? storedAlphaIgnored(texture) : texture
+        textures.push(key === undefined ? loaded : colorKeyedTexture(loaded, key))
       }
     }
     return Object.freeze({

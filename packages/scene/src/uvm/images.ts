@@ -1,6 +1,10 @@
 import type { JsonObject, RasterResourceRequest, RasterResourceResult } from '@modkit/sdk'
 import { uvmImageLogicalId } from '@modkit/uv/model/container'
-import { readUvmTextureColorKeys, type UvmTextureColorKey } from '@modkit/uv/model/validation'
+import {
+  readUvmTextureAlpha,
+  readUvmTextureColorKeys,
+  type UvmTextureColorKey,
+} from '@modkit/uv/model/validation'
 import { array, object, safeIndex, string } from './values.js'
 
 export interface UvmImage {
@@ -22,6 +26,38 @@ export function uvmImageResourceId(document: JsonObject, index: number): string 
   if (typeof image['uri'] === 'string' && !image['uri'].startsWith('data:'))
     return uvmImageLogicalId(image['uri'])
   return `uvm-image-${index}`
+}
+
+/** Texels with their stored alpha ignored (UV_texture_alpha): every one opaque, before a colour key. */
+export function opaqueTexels(rgba: Uint8Array): Uint8Array {
+  const opaque = rgba.slice()
+  for (let alpha = 3; alpha < opaque.length; alpha += 4) opaque[alpha] = 255
+  return opaque
+}
+
+/**
+ * The images whose stored alpha the game ignores (UV_texture_alpha), by the resource id material
+ * layers name them with. An image whose textures state different policies is left out: one set of
+ * texels cannot carry two.
+ */
+export function uvmImagesIgnoringAlpha(
+  document: JsonObject,
+  signal?: AbortSignal,
+): ReadonlySet<string> {
+  const textures = array(document, 'textures')
+  const policies = readUvmTextureAlpha(document, signal)
+  const byImage = new Map<number, boolean | null>()
+  for (const [index, texture] of textures.entries()) {
+    const source = object(texture, 'texture')['source']
+    if (typeof source !== 'number') continue
+    const ignore = policies.get(index) ?? false
+    const known = byImage.get(source)
+    byImage.set(source, known === undefined || known === ignore ? ignore : null)
+  }
+  const ignoring = new Set<string>()
+  for (const [image, ignore] of byImage)
+    if (ignore === true) ignoring.add(uvmImageResourceId(document, image))
+  return ignoring
 }
 
 /**

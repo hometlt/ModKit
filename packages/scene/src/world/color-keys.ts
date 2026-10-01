@@ -5,17 +5,33 @@ import { applyColorKeyTransparency } from '@modkit/codec-kit/raster'
 import { readUvmContainer } from '@modkit/uv/model/container'
 import type { UvmTextureColorKey } from '@modkit/uv/model/validation'
 
-import { uvmImageColorKeys, uvmImageFilters } from '../uvm/images.js'
+import {
+  opaqueTexels,
+  uvmImageColorKeys,
+  uvmImageFilters,
+  uvmImagesIgnoringAlpha,
+} from '../uvm/images.js'
 
 const utf8 = new TextDecoder('utf-8', { fatal: false })
 
-/** What a GLB's JSON chunk mentions at all, before anything is parsed: keys, sampler filters. */
-function mentions(bytes: Uint8Array): Readonly<{ colorKey: boolean; filter: boolean }> {
-  if (bytes.byteLength < 20) return { colorKey: false, filter: false }
+/** What a GLB's JSON chunk mentions at all, before anything is parsed: keys, alpha, filters. */
+function mentions(
+  bytes: Uint8Array,
+): Readonly<{ colorKey: boolean; alpha: boolean; filter: boolean }> {
+  if (bytes.byteLength < 20) return { colorKey: false, alpha: false, filter: false }
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
   const jsonLength = Math.min(view.getUint32(12, true), bytes.byteLength - 20)
   const json = utf8.decode(bytes.subarray(20, 20 + jsonLength))
-  return { colorKey: json.includes('UV_texture_color_key'), filter: json.includes('magFilter') }
+  return {
+    colorKey: json.includes('UV_texture_color_key'),
+    alpha: json.includes('UV_texture_alpha'),
+    filter: json.includes('magFilter'),
+  }
+}
+
+/** A decoded texture whose stored alpha the game ignores (UV_texture_alpha): opaque, before keying. */
+export function storedAlphaIgnored<T extends SceneRendererTexture>(texture: T): T {
+  return Object.freeze({ ...texture, rgba: opaqueTexels(texture.rgba) })
 }
 
 /** Texels of one decoded texture keyed as the game's loader keyed them: transparent black. */
@@ -52,7 +68,7 @@ export function presentWorldModelTextures(
   )
     return result
   const mentioned = mentions(result.uvmBytes)
-  if (!mentioned.colorKey && !mentioned.filter) return result
+  if (!mentioned.colorKey && !mentioned.alpha && !mentioned.filter) return result
   const { document } = readUvmContainer(
     result.uvmBytes,
     {
@@ -64,8 +80,9 @@ export function presentWorldModelTextures(
     signal,
   )
   const keys = mentioned.colorKey ? uvmImageColorKeys(document, signal) : new Map()
+  const opaque = mentioned.alpha ? uvmImagesIgnoringAlpha(document, signal) : new Set()
   const filters = mentioned.filter ? uvmImageFilters(document) : new Map()
-  if (keys.size === 0 && filters.size === 0) return result
+  if (keys.size === 0 && opaque.size === 0 && filters.size === 0) return result
   const unkeyed: string[] = []
   const textures = (result.textures ?? []).map(texture => {
     const filter = filters.get(texture.id)
@@ -74,12 +91,13 @@ export function presentWorldModelTextures(
         ? texture
         : Object.freeze({ ...texture, filter })
     const key = keys.get(texture.id)
-    if (key === undefined) return filtered
+    if (key === undefined && !opaque.has(texture.id)) return filtered
     if (texture.compressed !== undefined) {
       unkeyed.push(texture.id)
       return filtered
     }
-    return colorKeyedTexture(filtered, key)
+    const loaded = opaque.has(texture.id) ? storedAlphaIgnored(filtered) : filtered
+    return key === undefined ? loaded : colorKeyedTexture(loaded, key)
   })
   return Object.freeze({
     ...result,
@@ -90,7 +108,7 @@ export function presentWorldModelTextures(
         diagnostic(
           'warning',
           'x3.scene/world-texture-color-key-compressed',
-          `model texture ${id} arrived as GPU-compressed blocks; its colour key is not applied`,
+          `model texture ${id} arrived as GPU-compressed blocks; its colour key or alpha policy is not applied`,
         ),
       ),
     ]),

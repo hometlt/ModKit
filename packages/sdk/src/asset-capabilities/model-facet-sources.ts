@@ -51,6 +51,12 @@ export interface ModelResourceRef {
   /** A texture the game loads with a colour key: that colour is transparent (see ModelTextureColorKey). */
   readonly colorKey?: ModelTextureColorKey
   /**
+   * The game reads the texture without its stored alpha: every texel is opaque before a colour key,
+   * filtering and the material's alpha apply (Emperor). UVM states it as the texture's
+   * `UV_texture_alpha`; the image bytes stay as they are.
+   */
+  readonly ignoreStoredAlpha?: true
+  /**
    * How the game samples the texture: `nearest` for pixel art (no blending, no mips that bleed
    * transparent texels into a cut-out). UVM states it as the texture sampler's filters.
    */

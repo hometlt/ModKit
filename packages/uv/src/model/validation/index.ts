@@ -7,7 +7,11 @@ import { validateUvmAnimationClips } from '../animation-clips.js'
 import { validateGameMaterialMetadata, validateTeamColorMetadata } from './materials.js'
 import { validateTextureColorKeys } from './textures.js'
 
-export { readUvmTextureColorKeys, type UvmTextureColorKey } from './textures.js'
+export {
+  readUvmTextureAlpha,
+  readUvmTextureColorKeys,
+  type UvmTextureColorKey,
+} from './textures.js'
 
 export interface UvmValidationOptions {
   /** Omit only for JSON-only probes. */
