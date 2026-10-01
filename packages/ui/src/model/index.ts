@@ -1570,7 +1570,8 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
             billboardCameraPerSample: true,
           })
           let scene = orient(player.sample(0, scope.signal))
-          let selectedPrimitive: string | undefined
+          /** Primitives the reader switched off; every other one draws (MK2's mesh list). */
+          const hiddenPrimitives = new Set<string>()
           let activeClip: ModelAnimationClip | undefined
           let timeSeconds = 0
           /*
@@ -1635,7 +1636,7 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
               viewport,
             )
             for (const primitive of scene.primitives)
-              if (selectedPrimitive === undefined || primitive.id === selectedPrimitive)
+              if (!hiddenPrimitives.has(primitive.id))
                 drawPrimitive(canvas, primitive, placement.viewProjection)
             const context = canvas.getContext('2d')
             if (context !== null && skeletonVisible)
@@ -1676,9 +1677,7 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
             }
             const drawnTime = timeSeconds
             const joints = scene.joints
-            const primitives = scene.primitives.filter(
-              item => selectedPrimitive === undefined || item.id === selectedPrimitive,
-            )
+            const primitives = scene.primitives.filter(item => !hiddenPrimitives.has(item.id))
             canvas.setAttribute('data-model-primitives', String(primitives.length))
             canvas.setAttribute('data-model-skeleton', String(joints.length))
             if (provider === undefined) {
@@ -1873,29 +1872,44 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
           }
 
           if (model.primitiveIds.length > 1) {
-            const selector = element(
-              controlRow(panel.rendering, localizer.text('viewer.modelPrimitive')).field,
-              'select',
-              { part: 'model.primitive-selector' },
-            ) as HTMLSelectElement
-            selector.setAttribute('aria-label', localizer.text('viewer.modelPrimitive'))
-            const all = element(selector, 'option', {
-              text: localizer.text('viewer.modelAllPrimitives'),
-            }) as HTMLOptionElement
-            all.value = ''
-            for (const id of model.primitiveIds) {
-              const option = element(selector, 'option', { text: id }) as HTMLOptionElement
-              option.value = id
+            // each mesh on or off, and all or none at once, as MK2's mesh list
+            const field = controlRow(panel.rendering, localizer.text('viewer.modelPrimitive')).field
+            const boxes = new Map<string, HTMLInputElement>()
+            const apply = (): void => {
+              for (const [id, box] of boxes) box.checked = !hiddenPrimitives.has(id)
+              generation++
+              redraw()
             }
-            selector.addEventListener(
-              'change',
-              () => {
-                generation++
-                selectedPrimitive = selector.value || undefined
-                redraw()
-              },
-              { signal: scope.signal },
-            )
+            const bulk = element(field, 'div', { part: 'model.toolbar' })
+            button(bulk, localizer.text('viewer.modelAllPrimitives'), '', () => {
+              hiddenPrimitives.clear()
+              apply()
+            })
+            button(bulk, localizer.text('viewer.modelNoPrimitives'), '', () => {
+              for (const id of model.primitiveIds) hiddenPrimitives.add(id)
+              apply()
+            })
+            const list = element(field, 'div', { part: 'model.primitive-selector' })
+            list.setAttribute('role', 'group')
+            list.setAttribute('aria-label', localizer.text('viewer.modelPrimitive'))
+            for (const id of model.primitiveIds) {
+              const line = element(list, 'label')
+              const box = element(line, 'input') as HTMLInputElement
+              box.type = 'checkbox'
+              box.checked = true
+              line.append(' ', id)
+              boxes.set(id, box)
+              box.addEventListener(
+                'change',
+                () => {
+                  if (box.checked) hiddenPrimitives.delete(id)
+                  else hiddenPrimitives.add(id)
+                  generation++
+                  redraw()
+                },
+                { signal: scope.signal },
+              )
+            }
           }
           const conversions = modelConversions(args.descriptor)
           if (conversions.length > 0) {

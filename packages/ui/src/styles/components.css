@@ -1195,10 +1195,18 @@
     align-items: center;
   }
 
-  [data-mk-part='model.primitive-selector'],
   [data-mk-part='model.animation-selector'] {
     min-width: 10rem;
     max-width: min(24rem, 45vw);
+  }
+
+  /* One line per mesh, scrolling past a dozen. */
+  [data-mk-part='model.primitive-selector'] {
+    display: flex;
+    flex-direction: column;
+    max-height: 12rem;
+    overflow: auto;
+    font-size: var(--mk-font-size-sm);
   }
 
   [data-mk-part='model.facets'] {

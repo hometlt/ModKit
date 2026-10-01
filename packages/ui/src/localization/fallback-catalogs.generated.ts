@@ -527,6 +527,7 @@ export const MODEL_FALLBACK_MESSAGES = {
   'viewer.modelMaterials': 'materials',
   'viewer.modelMeshCount': 'Meshes',
   'viewer.modelNoNamedFlags': 'no named flags',
+  'viewer.modelNoPrimitives': 'None',
   'viewer.modelNodeCount': 'Nodes',
   'viewer.modelParent': 'parent {parent}',
   'viewer.modelPhysics': 'physics bodies',
