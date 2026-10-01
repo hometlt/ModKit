@@ -149,6 +149,10 @@
       "title": "%command.convertFiles%"
     },
     {
+      "command": "modkit.exportWorldUvw",
+      "title": "%command.exportWorldUvw%"
+    },
+    {
       "command": "modkit.showHostProfile",
       "title": "%command.openWorkbench%"
     },

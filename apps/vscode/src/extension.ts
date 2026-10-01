@@ -346,6 +346,12 @@ import {
 import { readPackagedManagedRegistry } from './managed-registry.js'
 import { announceModContexts } from './mod-context-progress.js'
 import {
+  commandOutputLeaf,
+  WORLD_UVW_LIMITS,
+  worldUvwReceiptOf,
+  type WorldUvwReceipt,
+} from './command-output.js'
+import {
   BATCH_CONVERT_MAX_FILES,
   runBatchConversion,
   type BatchOutcome,
@@ -8951,6 +8957,27 @@ async function activateModkit(
     if (choice === show) output.show(true)
   }
 
+  /** A map world exported as UVW (П24): where it went and what UVW left out, as a conversion. */
+  const reportWorldExport = (receipt: WorldUvwReceipt, wroteTo: unknown): void => {
+    log(`[world-export] ${typeof wroteTo === 'string' ? wroteTo : '(not written)'}`)
+    log(`[world-export] artifact digest ${receipt.artifactDigest}`)
+    log(`[world-export] excluded facets: ${receipt.excludedFacetIds.join(', ') || '—'}`)
+    log(`[world-export] omitted objects: ${String(receipt.omittedObjects)}`)
+    for (const field of receipt.lostFields) {
+      log(`[world-export] lost field ${field.path} × ${String(field.count)}`)
+    }
+    const show = localizer.text('vscode.batch.showReport')
+    const summary = localizer.text('vscode.world.exported', {
+      file: typeof wroteTo === 'string' ? basename(wroteTo) : '—',
+      facets: receipt.excludedFacetIds.length,
+      objects: receipt.omittedObjects,
+      fields: receipt.lostFields.length,
+    })
+    void vscode.window.showInformationMessage(`Modkit: ${summary}`, show).then(choice => {
+      if (choice === show) output.show(true)
+    })
+  }
+
   /** A file of a conversion run opened as a subject, or the reason it could not be. */
   const openForConversion = async (path: string, signal: AbortSignal): Promise<BatchSubject> => {
     const subject = await commandOpener(path, signal)
@@ -9382,18 +9409,44 @@ async function activateModkit(
    * should ever differ between the three applications.
    */
   const commandRuntime = createModkitCommandRuntime()
-  const commandOpener = commandSubjectsFrom(
+  const commandOpenerOptions: Parameters<typeof createVsCodeCommandOpener>[0] = {
+    readContentSource,
+    services: host.services,
+    roots,
+    containers,
+    subjectCatalog,
+    onRead: event => {
+      if (archiveAcceptanceIoActive) archiveAcceptanceReads.push(event)
+    },
+    onStream: event => {
+      if (archiveAcceptanceIoActive) archiveAcceptanceStreams.push(event)
+    },
+  }
+  const commandOpener = commandSubjectsFrom(createVsCodeCommandOpener(commandOpenerOptions))
+  /** The same, with a map's world, which `subject.convert` makes UVW of (П24). */
+  const worldOpener = commandSubjectsFrom(
     createVsCodeCommandOpener({
-      readContentSource,
-      services: host.services,
-      roots,
-      containers,
-      subjectCatalog,
-      onRead: event => {
-        if (archiveAcceptanceIoActive) archiveAcceptanceReads.push(event)
-      },
-      onStream: event => {
-        if (archiveAcceptanceIoActive) archiveAcceptanceStreams.push(event)
+      ...commandOpenerOptions,
+      mapWorld: {
+        resourcePlanResolver: mapPreviewResourcePlanResolver,
+        locales: configuredGameLocales,
+        contentSources: () => requireContentSources().catch(() => undefined),
+        choose: async candidates =>
+          (
+            await vscode.window.showQuickPick(
+              candidates.map(candidate => ({
+                label: candidate.displayName,
+                ...(candidate.sourcePath === undefined
+                  ? {}
+                  : { description: candidate.sourcePath }),
+                candidateId: candidate.candidateId,
+              })),
+              { title: localizer.text('vscode.world.chooseMap') },
+            )
+          )?.candidateId,
+        report: diagnostics => {
+          for (const item of diagnostics) log(`[world-export] ${item.code}: ${item.message}`)
+        },
       },
     }),
   )
@@ -9632,14 +9685,17 @@ async function activateModkit(
   }
 
   /** Run one command with the editor's own progress and cancellation, and report it natively. */
-  const runSharedCommand = async (request: {
-    readonly command: string
-    readonly subject?: string
-    readonly entry?: string
-    readonly target?: string
-    readonly operationId?: string
-    readonly operationInput?: CommandInput[string]
-  }): Promise<CommandResult> => {
+  const runSharedCommand = async (
+    request: {
+      readonly command: string
+      readonly subject?: string
+      readonly entry?: string
+      readonly target?: string
+      readonly operationId?: string
+      readonly operationInput?: CommandInput[string]
+    },
+    opener = commandOpener,
+  ): Promise<CommandResult> => {
     const descriptor = commandRuntime.get(request.command)
     const title = `Modkit: ${descriptor?.title ?? request.command}`
     const result = await vscode.window.withProgress(
@@ -9665,7 +9721,38 @@ async function activateModkit(
                 : { operationInput: request.operationInput }),
             },
             {
-              openSubject: commandOpener,
+              openSubject: opener,
+              // a map's world becomes one UVW document (П24), the CLI's materializer and limits
+              worldToUvw: async (source, signal) => {
+                const { materializeWorldToUvw } = await import('@modkit/uv/world')
+                return materializeWorldToUvw(source, {
+                  ...WORLD_UVW_LIMITS,
+                  ...(signal === undefined ? {} : { signal }),
+                })
+              },
+              // what a command produces (a converted model, a world, an extracted member) is saved
+              // where the person says; without a place the run ends as cancelled
+              writeOutput: async (name, bytes) => {
+                const leaf = commandOutputLeaf(request.command, request.subject, name)
+                const near =
+                  request.subject === undefined
+                    ? undefined
+                    : (parseContainerUriText(request.subject)?.container ?? request.subject)
+                const folder =
+                  near !== undefined && isAbsolute(near) ? dirname(near) : workspaceFolders()[0]
+                const target = await vscode.window.showSaveDialog({
+                  ...(folder === undefined
+                    ? {}
+                    : { defaultUri: vscode.Uri.file(join(folder, leaf)) }),
+                  saveLabel: localizer.text('vscode.command.saveOutput'),
+                })
+                if (target === undefined) {
+                  controller.abort()
+                  throw new DOMException('the output was not saved', 'AbortError')
+                }
+                await vscode.workspace.fs.writeFile(target, bytes)
+                return target.fsPath
+              },
               serviceOperations: {
                 catalog: request =>
                   discoverServiceOperations({
@@ -9710,6 +9797,12 @@ async function activateModkit(
       })
     }
     if (result.state === 'ok') {
+      // a world exported as UVW reports, as a conversion does, what UVW left out (П24)
+      const receipt = worldUvwReceiptOf(result.data)
+      if (receipt !== undefined) {
+        reportWorldExport(receipt, (result.data as { readonly wroteTo?: unknown }).wroteTo)
+        return result
+      }
       /*
        * An answer that is a document opens as one. A converted catalog or a merged declaration is
        * read, not acknowledged, and a notification saying "completed" hides what was produced.
@@ -11199,6 +11292,25 @@ async function activateModkit(
           `${id}: ${localizer.text('common.disabled')}`,
         )
       }
+    }),
+
+    /*
+     * The open map's world as one UVW document (П24): the shared `subject.convert` with target `uvw`,
+     * over the map opened with the world its preview builds, saved where the person says, and the
+     * receipt of what UVW left out reported like a conversion.
+     */
+    vscode.commands.registerCommand('modkit.exportWorldUvw', (argument: unknown) => {
+      const subject =
+        argument instanceof vscode.Uri
+          ? argument.scheme === 'file'
+            ? argument.fsPath
+            : argument.toString()
+          : activeSubject
+      if (subject === undefined) {
+        void vscode.window.showWarningMessage(localizer.text('vscode.world.exportNoSubject'))
+        return undefined
+      }
+      return runSharedCommand({ command: 'subject.convert', subject, target: 'uvw' }, worldOpener)
     }),
 
     vscode.commands.registerCommand('modkit.convertFiles', (uri: unknown, uris: unknown) => {

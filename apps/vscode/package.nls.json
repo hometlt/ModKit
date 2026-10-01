@@ -31,6 +31,7 @@
   "command.openInModkit": "Modkit: Open in Modkit",
   "command.convertFolder": "Modkit: Convert Folder…",
   "command.convertFiles": "Modkit: Convert…",
+  "command.exportWorldUvw": "Modkit: Export World to UVW…",
   "view.loading": "Loading Modkit…",
   "command.controlRuntime": "Modkit: Control Runtime Session…",
   "command.disableExtension": "Modkit: Disable Extension…",

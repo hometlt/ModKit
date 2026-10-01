@@ -124,7 +124,12 @@ import {
   type ContainerRegistryOptions,
 } from './containers.js'
 import { describeInventoryContributions, type ContributionRow } from './contributions.js'
-import { prepareVsCodeMapPreview, type VsCodeMapPreviewCandidate } from './map-preview.js'
+import {
+  prepareVsCodeMapPreview,
+  withVsCodeMapWorld,
+  type VsCodeMapPreviewCandidate,
+  type VsCodeMapWorldInputs,
+} from './map-preview.js'
 import { parseVsCodeMapPreviewSelectionRequest } from './map-preview-selection.js'
 import {
   configuredDisabledContributions,
@@ -1145,8 +1150,10 @@ export function createVsCodeCommandOpener(options: {
   readonly subjectCatalog?: SubjectCatalogOptions
   readonly onRead?: (event: FileArtifactReadTelemetry) => void
   readonly onStream?: (event: FileArtifactStreamTelemetry) => void
+  /** Open a map with the world its preview builds, under this window's open grant and budget. */
+  readonly mapWorld?: Omit<VsCodeMapWorldInputs, 'services' | 'grant' | 'budgets'>
 }): SubjectOpener {
-  return async (requested, signal) => {
+  const open: SubjectOpener = async (requested, signal) => {
     if (requested.startsWith('modkit-source:')) {
       if (!options.readContentSource) throw new Error('Content source provider is unavailable')
       return contentSourceOpener(
@@ -1173,6 +1180,14 @@ export function createVsCodeCommandOpener(options: {
     })
     return opener(requested, signal)
   }
+  return options.mapWorld === undefined
+    ? open
+    : withVsCodeMapWorld(open, {
+        ...options.mapWorld,
+        services: options.services,
+        grant: DEFAULT_OPEN_GRANT,
+        budgets: DEFAULT_OPEN_BUDGET,
+      })
 }
 
 /**

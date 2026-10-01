@@ -85,6 +85,7 @@
       { "command": "modkit.convertFolder", "title": "%command.convertFolder%" },
       { "command": "modkit.explainResolution", "title": "%command.explainResolution%" },
       { "command": "modkit.exportDiagnostics", "title": "%command.exportDiagnostics%" },
+      { "command": "modkit.exportWorldUvw", "title": "%command.exportWorldUvw%" },
       {
         "command": "modkit.extensions.completeGameSupport",
         "title": "%command.completeGameSupport%",
@@ -1300,6 +1301,7 @@
     "onCommand:modkit.convertFolder",
     "onCommand:modkit.explainResolution",
     "onCommand:modkit.exportDiagnostics",
+    "onCommand:modkit.exportWorldUvw",
     "onCommand:modkit.extensions.completeGameSupport",
     "onCommand:modkit.extensions.disable",
     "onCommand:modkit.extensions.disableAllCodecs",

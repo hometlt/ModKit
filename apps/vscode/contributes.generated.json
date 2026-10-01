@@ -54,6 +54,10 @@
       "title": "%command.exportDiagnostics%"
     },
     {
+      "command": "modkit.exportWorldUvw",
+      "title": "%command.exportWorldUvw%"
+    },
+    {
       "command": "modkit.extensions.completeGameSupport",
       "title": "%command.completeGameSupport%",
       "icon": "$(tools)"

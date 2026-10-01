@@ -3,7 +3,7 @@
 import { diagnostic, type Diagnostic } from '@modkit/core'
 import type { PermissionGrant, ResourceBudget } from '@modkit/sdk'
 import type { MapPreviewSelectionCandidate } from '@modkit/sdk/maps'
-import type { OpenedSubject } from '@modkit/host'
+import type { OpenedSubject, SubjectOpener } from '@modkit/host'
 import {
   coordinateMapPreviewAssetSession,
   type CoordinateMapPreviewAssetSessionRequest,
@@ -150,4 +150,80 @@ export async function prepareVsCodeMapPreview(
     diagnostics,
   })
   return Object.freeze({ state: result.state, opened, candidates })
+}
+
+export interface VsCodeMapWorldInputs {
+  readonly services: CoordinateMapPreviewAssetSessionRequest['services']
+  readonly grant: PermissionGrant
+  readonly budgets: ResourceBudget
+  readonly resourcePlanResolver?: MapPreviewResourcePlanResolver
+  /** Game-string locales the map's names are read in (`modkit.locale`). */
+  readonly locales?: () => readonly string[]
+  readonly contentSources?: () => Promise<
+    CoordinateMapPreviewAssetSessionRequest['contentSources'] | undefined
+  >
+  /** Which of a package's maps; undefined cancels the open. */
+  readonly choose: (
+    candidates: readonly MapPreviewSelectionCandidate[],
+  ) => Promise<string | undefined>
+  /** What the coordinator said when it built no world. */
+  readonly report?: (diagnostics: readonly Diagnostic[]) => void
+  /** Test seam: product callers always use the common host coordinator. */
+  readonly coordinate?: MapPreviewCoordinator
+}
+
+/**
+ * An opener whose maps come with the world their preview builds (П24), so `subject.convert` with
+ * target `uvw` finds it, with this window's preview limits, locales and sources (the session the
+ * served map preview gets). A package of several maps (a campaign, `mp.wz`) asks which one; anything
+ * that is no map opens as before. The preview owns the opened session and releases it with its own.
+ */
+export function withVsCodeMapWorld(
+  opener: SubjectOpener,
+  inputs: VsCodeMapWorldInputs,
+): SubjectOpener {
+  return async (path, signal) => {
+    const opened = await opener(path, signal)
+    const original = opened.session
+    if (opened.snapshot.state !== 'opened' || original === undefined) return opened
+    const contentSources = await inputs.contentSources?.()
+    const locales = inputs.locales?.()
+    const coordinate = (selectionId?: string) =>
+      (inputs.coordinate ?? coordinateMapPreviewAssetSession)({
+        services: inputs.services,
+        grant: inputs.grant,
+        budgets: inputs.budgets,
+        original,
+        ...COORDINATOR_LIMITS,
+        ...(locales === undefined
+          ? {}
+          : {
+              catalogEnrichment: {
+                ...MAP_PREVIEW_CATALOG_ENRICHMENT_POLICY,
+                locales: Object.freeze([...locales]),
+              },
+            }),
+        ...(inputs.resourcePlanResolver === undefined
+          ? {}
+          : { resourcePlanResolver: inputs.resourcePlanResolver }),
+        ...(contentSources === undefined ? {} : { contentSources }),
+        ...(selectionId === undefined ? {} : { selectionId }),
+        ...(signal === undefined ? {} : { signal }),
+      })
+    let preview: CoordinatedMapPreviewAssetSessionResult
+    try {
+      preview = await coordinate()
+      if (preview.state === 'selection-required') {
+        const chosen = await inputs.choose(preview.candidates)
+        if (chosen === undefined) throw new DOMException('no map was chosen', 'AbortError')
+        preview = await coordinate(chosen)
+      }
+    } catch (error) {
+      await original.dispose()
+      throw error
+    }
+    if (preview.state === 'opened') return { ...opened, session: preview.session }
+    if (preview.state !== 'not-applicable') inputs.report?.(preview.diagnostics)
+    return opened
+  }
 }

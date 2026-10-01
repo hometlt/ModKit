@@ -400,6 +400,11 @@ const EN_MESSAGES = Object.freeze({
   'vscode.batch.notOpened': 'no codec opened it',
   'vscode.batch.summary': 'Converted {converted} of {total} files; skipped {skipped}, failed {failed}.',
   'vscode.batch.showReport': 'Show report',
+  'vscode.command.saveOutput': 'Save',
+  'vscode.world.chooseMap': 'Which map of this package to export?',
+  'vscode.world.exportNoSubject': 'Open a map in Modkit to export its world to UVW.',
+  'vscode.world.exported':
+    'World exported to {file}. Left out of UVW: {facets} facets, {objects} objects, {fields} fields.',
   'vscode.modContext.building': 'Modkit: building the mod context…',
   'vscode.modContext.ready': 'Modkit: the mod context is ready, {layers} layers',
   'vscode.batch.filesOnDisk': 'Only files on disk can be converted.',
@@ -973,6 +978,11 @@ const RU_MESSAGES: Readonly<Record<keyof typeof EN_MESSAGES, string>> = Object.f
   'vscode.batch.notOpened': 'ни один кодек его не открыл',
   'vscode.batch.summary': 'Сконвертировано {converted} из {total}; пропущено {skipped}, ошибок {failed}.',
   'vscode.batch.showReport': 'Показать отчёт',
+  'vscode.command.saveOutput': 'Сохранить',
+  'vscode.world.chooseMap': 'Какую карту этого пакета экспортировать?',
+  'vscode.world.exportNoSubject': 'Откройте карту в Modkit, чтобы экспортировать её мир в UVW.',
+  'vscode.world.exported':
+    'Мир экспортирован в {file}. Не вошло в UVW: фасетов {facets}, объектов {objects}, полей {fields}.',
   'vscode.modContext.building': 'Modkit: строится контекст мода…',
   'vscode.modContext.ready': 'Modkit: контекст мода готов, слоёв: {layers}',
   'vscode.batch.filesOnDisk': 'Конвертировать можно только файлы на диске.',

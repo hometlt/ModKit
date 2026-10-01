@@ -142,8 +142,8 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
       decisionRequired: 0,
       releaseCandidateGaps: 5,
       // the 1 October surface: accounts, sources, resources, maps, languages, the mod wiki,
-      // launch options, translation gaps, layout templates, file conversion
-      currentX3ObservedFacts: 260,
+      // launch options, translation gaps, layout templates, file conversion, a world as UVW
+      currentX3ObservedFacts: 261,
     })
     expect(ledger.counts.byKind).toEqual({
       'cli-command': 5,
@@ -255,8 +255,9 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
       legacyVsCode: { commands: 64, customEditors: 11, languages: 8, views: 6 },
       currentX3VsCode: {
         // 1 October: accounts, sources, resources, map and world editors, the game languages, the
-        // mod wiki, folder and file conversion, launch options, translation gaps, layout templates
-        commands: 87,
+        // mod wiki, folder and file conversion, launch options, translation gaps, layout templates,
+        // a map's world exported to UVW
+        commands: 88,
         configurationProperties: 23,
         customEditors: 9,
         fileSystemSchemes: 2,
@@ -287,7 +288,7 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
       'Доказанные callers: Automation, CLI, Electron, PWA, `server`, VS Code.',
     )
     expect(status).not.toContain('PWA не заявлен')
-    expect(ledger.currentX3Facts).toHaveLength(260)
+    expect(ledger.currentX3Facts).toHaveLength(261)
     expect(
       ledger.currentX3Facts.every((row: { state: string }) => row.state === 'observed-only'),
     ).toBe(true)
@@ -439,6 +440,7 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
         'modkit.convertFolder',
         'modkit.explainResolution',
         'modkit.exportDiagnostics',
+        'modkit.exportWorldUvw',
         'modkit.extensions.completeGameSupport',
         'modkit.extensions.disable',
         'modkit.extensions.disableAllCodecs',
@@ -528,6 +530,7 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
         'modkit.convertFolder',
         'modkit.explainResolution',
         'modkit.exportDiagnostics',
+        'modkit.exportWorldUvw',
         'modkit.extensions.completeGameSupport',
         'modkit.extensions.disable',
         'modkit.extensions.disableAllCodecs',
