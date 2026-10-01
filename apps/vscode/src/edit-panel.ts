@@ -69,6 +69,8 @@ export interface EditPanelOptions {
   readonly renderer?: SceneRendererPort
   /** Subject-bound model texture decoding; the page receives pixels, never resource authority. */
   readonly textures?: ModelViewerOptions['textures']
+  /** The same subject-bound port, for the textures a model's effects name (plan WC6). */
+  readonly rasterResources?: ModelViewerOptions['rasterResources']
   /** The same route for the assets a template names, already encoded for a canvas. */
   readonly templateImages?: GameTemplateViewerOptions['images']
   /** Whether archive views list members the codec calls hidden (`modkit.showHiddenEntries`). */

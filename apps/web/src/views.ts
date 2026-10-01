@@ -36,6 +36,7 @@ import {
   type NamespaceEntrySource,
   type OperationSession,
   type PresentationSlot,
+  type RasterResourcePort,
   type SceneRendererPort,
   type ModelResourceRef,
   type SceneRendererTexture,
@@ -102,6 +103,8 @@ export interface WebViewContext {
     references: readonly ModelResourceRef[],
     signal?: AbortSignal,
   ) => Promise<ReadonlyMap<string, SceneRendererTexture>>
+  /** The subject-bound raster port the textures a model's effects name are read through. */
+  readonly rasterResources?: (descriptor: AnyDescriptor) => RasterResourcePort | undefined
   operationsFor(descriptor: AnyDescriptor): OperationSession | undefined
   /**
    * Open one member of this container as a subject of its own (block 13 slice B).
@@ -491,6 +494,9 @@ export function createWebPreviewStages(context: WebViewContext): readonly Previe
       localizer,
       ...(context.renderer === undefined ? {} : { renderer: context.renderer }),
       ...(context.textures === undefined ? {} : { textures: context.textures }),
+      ...(context.rasterResources === undefined
+        ? {}
+        : { rasterResources: context.rasterResources }),
     })
   // One relations stage: its own view and the section of a subject's card.
   const relationsStage = createRelationGraphViewer({ localizer })

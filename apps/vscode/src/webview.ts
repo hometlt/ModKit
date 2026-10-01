@@ -674,6 +674,14 @@ async function mount(
             signal,
           )
         },
+        // The textures a model's effects name, through the same subject-bound port.
+        rasterResources(descriptor) {
+          const record = recordForDescriptor(descriptor as unknown as Record<string, unknown>)
+          const readRaster = record?.session.readRasterResource
+          return readRaster === undefined
+            ? undefined
+            : { read: (request, abort) => readRaster(request, abort) }
+        },
         /*
          * The icons a template names, decoded through the same subject-bound raster port the model
          * stage uses. The page receives pixels, never a path or a codec choice, and encodes them

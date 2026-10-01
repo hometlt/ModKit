@@ -29,6 +29,16 @@ import { billboardCameraRotation, createModelSceneSampler } from '@modkit/scene/
 import { applyColorKeyTransparency } from '@modkit/codec-kit/raster'
 import { loadModelStage, readModelRecords, MODEL_MAXIMUM_RECORDS } from './source.js'
 import { orientPrimitive, upAxisCorrection } from './scene.js'
+import type { UvmFramePreparer } from '@modkit/scene/uvm/render'
+import {
+  effectFraming,
+  MODEL_EFFECT_BUDGET,
+  MODEL_EFFECT_LOOP_SECONDS,
+  modelEffectRequest,
+  rememberingRasterPort,
+  withModelEffectLayer,
+  type ModelEffectFrame,
+} from './effects.js'
 export {
   loadModelStage,
   MODEL_MAXIMUM_PRIMITIVE_BYTES,
@@ -875,6 +885,11 @@ export interface ModelViewerOptions {
     references: readonly ModelResourceRef[],
     signal?: AbortSignal,
   ) => Promise<ReadonlyMap<string, SceneRendererTexture>>
+  /**
+   * The subject-bound raster port the model's effects read their textures through (plan WC6),
+   * the one `textures` resolves the model's own maps with. Absent, effect sprites draw untextured.
+   */
+  readonly rasterResources?: (descriptor: AnyDescriptor) => RasterResourcePort | undefined
 }
 
 /**
@@ -1620,6 +1635,134 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
           const framing = () => restFraming
 
           /*
+           * The model's own effects (plan WC6): offered when it publishes any, its codec exports UVM
+           * and a renderer draws the stage. The UVM is exported once, in the background, and the
+           * model draws without effects until it arrives; each frame then asks the scene for the
+           * effects at this camera and time. A clip's effects follow the clip; at rest they run on a
+           * clock of their own, which loops.
+           */
+          const effectRefs = facetPages.get('common.view/model-effect-source')?.items ?? []
+          const uvmExport = args.descriptor.operations.find(
+            item =>
+              item.id === MODEL_UVM_OPERATION && item.state === 'available' && !item.mutatesSource,
+          )
+          const effectsOffered =
+            provider !== undefined && effectRefs.length > 0 && uvmExport !== undefined
+          let effectsOn = effectsOffered
+          let effectPreparer: UvmFramePreparer | undefined
+          let effectLoading: Promise<void> | undefined
+          let effectFailure: string | undefined
+          let effectUnits: number | undefined
+          let effectStatus: HTMLElement | undefined
+          const effectClockStart = performance.now()
+          canvas.setAttribute('data-model-effects-status', effectsOffered ? 'off' : 'none')
+          const showEffects = (status: string, text: string, title = ''): void => {
+            canvas.setAttribute('data-model-effects-status', status)
+            if (effectStatus === undefined) return
+            setViewerText(effectStatus, text)
+            effectStatus.title = title
+          }
+          const effectsFailed = (error: unknown): void => {
+            effectFailure = error instanceof Error ? error.message : String(error)
+            showEffects(
+              'failed',
+              localizer.text('viewer.modelEffectsFailed', { reason: effectFailure }),
+            )
+          }
+          const loadEffects = (): Promise<void> =>
+            (effectLoading ??= (async () => {
+              if (uvmExport === undefined) return
+              showEffects('loading', localizer.text('viewer.modelEffectsLoading'))
+              try {
+                const result = await args.operations.invoke(uvmExport.handlerId, UVM_EXPORT_INPUT, {
+                  signal: scope.signal,
+                })
+                if (result.state !== 'ok') throw new Error(result.reason)
+                const output = result.output as { kind: string; value?: unknown }
+                if (output.kind !== 'bytes' || !(output.value instanceof Uint8Array))
+                  throw new Error(`the codec answered ${output.kind}, not bytes`)
+                const { createUvmFramePreparer } = await import('@modkit/scene/uvm/render')
+                const raster = options.rasterResources?.(args.descriptor)
+                const preparer = createUvmFramePreparer(output.value, {
+                  budget: MODEL_EFFECT_BUDGET,
+                  ...(raster === undefined
+                    ? {}
+                    : { rasterResources: rememberingRasterPort(raster, scope.signal) }),
+                })
+                scope.cleanup(() => preparer.dispose())
+                effectPreparer = preparer
+                generation++
+                redraw()
+                animateEffects()
+              } catch (error) {
+                if (!scope.signal.aborted) effectsFailed(error)
+              }
+            })())
+          /** The effects of this frame; nothing while they load, are switched off or failed. */
+          const effectLayerFor = async (time: number): Promise<ModelEffectFrame | undefined> => {
+            if (!effectsOn || effectFailure !== undefined) return undefined
+            const preparer = effectPreparer
+            if (preparer === undefined) {
+              void loadEffects()
+              return undefined
+            }
+            try {
+              const at = (units: number) =>
+                preparer.prepare(
+                  modelEffectRequest({
+                    // the frame lies in metres: the same orbit around the model made `units` larger
+                    camera: modelCamera(
+                      effectFraming(framing(), units),
+                      camera.basis(),
+                      camera.pose.distanceScale,
+                      viewport,
+                    ),
+                    viewport,
+                    time:
+                      activeClip === undefined
+                        ? ((performance.now() - effectClockStart) / 1000) %
+                          MODEL_EFFECT_LOOP_SECONDS
+                        : time,
+                    ...(activeClip === undefined ? {} : { clipId: activeClip.id }),
+                    teamColor,
+                  }),
+                  scope.signal,
+                )
+              // the frame states its units once prepared, and its camera has to be in them
+              effectUnits ??= (await at(1)).metersPerSourceUnit
+              const frame = await at(effectUnits)
+              canvas.setAttribute('data-model-effects', String(frame.effectPrimitiveIds.length))
+              showEffects(
+                'drawn',
+                localizer.text('viewer.modelEffectsDrawn', {
+                  count: frame.effectPrimitiveIds.length,
+                }),
+                frame.diagnostics.map(item => item.message).join('\n'),
+              )
+              return frame
+            } catch (error) {
+              if (!scope.signal.aborted) effectsFailed(error)
+              return undefined
+            }
+          }
+          // At rest the effects keep moving: one frame after another while they are shown.
+          let effectFrameId = 0
+          const animateEffects = (): void => {
+            cancelAnimationFrame(effectFrameId)
+            if (
+              !effectsOn ||
+              effectPreparer === undefined ||
+              effectFailure !== undefined ||
+              activeClip !== undefined ||
+              scope.signal.aborted
+            )
+              return
+            redraw()
+            effectFrameId = requestAnimationFrame(animateEffects)
+          }
+          scope.cleanup(() => cancelAnimationFrame(effectFrameId))
+
+          /*
            * One draw at a time. `render` is asynchronous — it may cross a worker boundary — while
            * the orbit controller emits synchronously on every pointer move, so without a token the
            * frames could land out of order and the model would jump backwards while being dragged.
@@ -1692,30 +1835,34 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
             renderBusy = true
             pendingFrame = (async () => {
               try {
+                const effects = await effectLayerFor(drawnTime)
+                const sceneRequest = modelSceneRequest({
+                  primitives,
+                  camera: placement,
+                  viewport,
+                  materials: surfaces.materials,
+                  textures: surfaces.textures,
+                  clearColor: [0, 0, 0, 0],
+                  light: MODEL_KEY_LIGHT,
+                  materialContext: {
+                    // Scene lighting, as the headless render: the key light's ambient lights every
+                    // face and emission and environment show whatever the facing. Without it a
+                    // standard material shaded inside `lambert > 0` — faces turned from the light
+                    // drew black and lost their glow.
+                    sceneLighting: true,
+                    time: drawnTime,
+                    sequenceTime: drawnTime,
+                    teamColor,
+                    ...(activeClip?.sequenceIndex === undefined
+                      ? {}
+                      : { sequenceIndex: activeClip.sequenceIndex }),
+                  },
+                  signal: scope.signal,
+                })
                 const frame = await renderer.render(
-                  modelSceneRequest({
-                    primitives,
-                    camera: placement,
-                    viewport,
-                    materials: surfaces.materials,
-                    textures: surfaces.textures,
-                    clearColor: [0, 0, 0, 0],
-                    light: MODEL_KEY_LIGHT,
-                    materialContext: {
-                      // Scene lighting, as the headless render: the key light's ambient lights every
-                      // face and emission and environment show whatever the facing. Without it a
-                      // standard material shaded inside `lambert > 0` — faces turned from the light
-                      // drew black and lost their glow.
-                      sceneLighting: true,
-                      time: drawnTime,
-                      sequenceTime: drawnTime,
-                      teamColor,
-                      ...(activeClip?.sequenceIndex === undefined
-                        ? {}
-                        : { sequenceIndex: activeClip.sequenceIndex }),
-                    },
-                    signal: scope.signal,
-                  }),
+                  effects === undefined
+                    ? sceneRequest
+                    : withModelEffectLayer(sceneRequest, effects),
                 )
                 if (request !== generation || scope.signal.aborted) return
                 const context = canvas.getContext('2d')
@@ -1820,6 +1967,29 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
             )
             toggle.setAttribute('aria-pressed', String(skeletonVisible))
             canvas.setAttribute('data-model-skeleton-visible', String(skeletonVisible))
+          }
+          if (effectsOffered) {
+            const effectsField = controlRow(
+              panel.rendering,
+              localizer.text('viewer.modelEffectsLabel'),
+            ).field
+            const effectsLabel = element(effectsField, 'label')
+            const effectsBox = element(effectsLabel, 'input') as HTMLInputElement
+            effectsBox.type = 'checkbox'
+            effectsBox.checked = effectsOn
+            effectsLabel.append(' ', localizer.text('viewer.modelEffectsDraw'))
+            effectStatus = element(effectsField, 'output', { part: 'model.readout' })
+            effectsBox.addEventListener(
+              'change',
+              () => {
+                effectsOn = effectsBox.checked
+                if (!effectsOn) showEffects('off', '')
+                generation++
+                redraw()
+                animateEffects()
+              },
+              { signal: scope.signal },
+            )
           }
 
           /*
@@ -2125,6 +2295,8 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
                   seek.disabled = duration <= 0
                   showClock()
                   canvas.setAttribute('data-model-animation', clip?.id ?? '')
+                  // at rest the effects run on their own clock again; a clip's follow the clip
+                  animateEffects()
                   showDiagnostics()
                   redraw()
                 } catch (error) {

@@ -54,6 +54,9 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
       localizer: context.localizer,
       ...(context.renderer === undefined ? {} : { renderer: context.renderer }),
       ...(context.textures === undefined ? {} : { textures: context.textures }),
+      ...(context.rasterResources === undefined
+        ? {}
+        : { rasterResources: context.rasterResources }),
       // Conversion writes a new file, so it needs the same host writer the image view uses.
       ...(context.exportFiles === undefined ? {} : { exportBytes: context.exportFiles }),
       exportBaseName: descriptor => context.exportBaseName?.(descriptor) ?? 'model',

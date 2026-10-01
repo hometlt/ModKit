@@ -778,6 +778,7 @@ async function boot(): Promise<void> {
         ? Promise.resolve(new Map())
         : resolveModelViewerTextures(raster, references, signal)
     },
+    rasterResources: descriptor => rasterResources.get(descriptorKey(descriptor)),
     /*
      * The web half of `block9/archive-entry-as-subject` (block 13 slice B).
      *
