@@ -797,6 +797,7 @@ export const TABLE_VARIANTS_FALLBACK_MESSAGES = {
   'table.replaceToggle': 'Toggle replace',
   'table.replaceWith': 'Replace with',
   'table.replaced': 'Replaced in {count} cells.',
+  'table.resizeColumn': 'Width of the {column} column',
   'table.revert': 'Revert',
   'table.save': 'Save',
   'table.saveCount': 'Save ({count})',

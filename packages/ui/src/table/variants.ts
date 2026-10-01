@@ -236,8 +236,22 @@ interface FilterState {
   render: boolean
   /** Long values wrap in their cells instead of running off the side (MK2's table, plan 7.36). */
   wrap?: boolean
+  /** Widths, in pixels, of the columns the reader sized, by header (MK2's column grips, 7.36). */
+  widths?: Record<string, number>
 }
 const remembered = new Map<string, FilterState>()
+/** The narrowest a dragged column gets, so its grip stays within reach. */
+const MIN_COLUMN_WIDTH = 48
+
+/** A column the reader sized keeps that width, its values cut short at its edge. */
+function sizeCell(cell: HTMLTableCellElement, width: number | undefined): void {
+  const pixels = width === undefined ? '' : `${String(width)}px`
+  cell.style.width = pixels
+  cell.style.minWidth = pixels
+  cell.style.maxWidth = pixels
+  cell.style.overflow = width === undefined ? '' : 'hidden'
+  cell.style.textOverflow = width === undefined ? '' : 'ellipsis'
+}
 
 export async function mountVariantTable(args: VariantTableArgs): Promise<VariantTable> {
   const text = withEnglishUiFallback(args.localizer, TABLE_VARIANTS_FALLBACK_MESSAGES).text
@@ -492,12 +506,56 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
     const head = (args.before as HTMLTableElement).tHead?.rows[0]
     // Each drawn row and the head start with the selection cell, so column c sits at c + 1.
     for (const tr of [...(head === undefined ? [] : [head]), ...drawnRows]) {
-      header.forEach((_, column) => {
+      header.forEach((label, column) => {
         const cell = tr.cells[column + 1]
-        if (cell !== undefined) cell.hidden = isHidden(column)
+        if (cell === undefined) return
+        cell.hidden = isHidden(column)
+        sizeCell(cell, state.widths?.[label])
       })
     }
   }
+  /*
+   * Each column takes the width the reader drags its header's edge to, as MK2's columns did: the
+   * arrow keys move the edge too, and a double click gives the column its own width back.
+   */
+  header.forEach((label, column) => {
+    const th = (args.before as HTMLTableElement).tHead?.rows[0]?.cells[column + 1]
+    if (th === undefined) return
+    const grip = element(th, 'span', { part: 'table.resize' })
+    grip.tabIndex = 0
+    grip.setAttribute('role', 'separator')
+    grip.setAttribute('aria-orientation', 'vertical')
+    grip.setAttribute('aria-label', text('table.resizeColumn', { column: label }))
+    const resize = (width: number | undefined): void => {
+      const widths = Object.fromEntries(
+        Object.entries(state.widths ?? {}).filter(([key]) => key !== label),
+      )
+      if (width !== undefined) widths[label] = Math.max(MIN_COLUMN_WIDTH, Math.round(width))
+      state.widths = widths
+      showColumns()
+    }
+    grip.addEventListener('pointerdown', event => {
+      event.preventDefault()
+      grip.setPointerCapture(event.pointerId)
+      const from = event.clientX
+      const start = th.getBoundingClientRect().width
+      const move = (next: PointerEvent): void => resize(start + next.clientX - from)
+      const end = (): void => {
+        grip.removeEventListener('pointermove', move)
+        grip.removeEventListener('pointerup', end)
+        grip.removeEventListener('pointercancel', end)
+      }
+      grip.addEventListener('pointermove', move)
+      grip.addEventListener('pointerup', end)
+      grip.addEventListener('pointercancel', end)
+    })
+    grip.addEventListener('dblclick', () => resize(undefined))
+    grip.addEventListener('keydown', event => {
+      if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return
+      event.preventDefault()
+      resize(th.getBoundingClientRect().width + (event.key === 'ArrowRight' ? 16 : -16))
+    })
+  })
   header.forEach((label, column) => {
     if (column === keyColumn) return
     const line = element(choices, 'label', {})

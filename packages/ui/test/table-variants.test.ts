@@ -399,6 +399,30 @@ describe('variant table surface', () => {
     await page.click('[data-mk-part="table.columns"] summary')
   })
 
+  it('sizes a column from its header grip, in every row and across reopens (7.36)', async () => {
+    const grip = '[data-mk-part="table.resize"][aria-label="Width of the enUS column"]'
+    const headWidth = () =>
+      page.$eval(
+        '[data-mk-part="table.head"] th:nth-child(3)',
+        cell => (cell as HTMLElement).style.width,
+      )
+    const rowWidths = () =>
+      page.$$eval('[data-mk-part="table.row"]', rows =>
+        rows.map(row => (row.querySelectorAll('td')[2] as HTMLElement | undefined)?.style.width),
+      )
+    await page.focus(grip)
+    await page.keyboard.press('ArrowLeft')
+    const width = await headWidth()
+    expect(width).toMatch(/^\d+px$/u)
+    expect(await rowWidths()).toEqual([width, width, width])
+    // the width stays with the file when its table opens again
+    await page.evaluate(() => (globalThis as unknown as Probe).mountTable())
+    expect(await headWidth()).toBe(width)
+    // a double click gives the column its own width back
+    await page.dispatchEvent(grip, 'dblclick')
+    expect(await rowWidths()).toEqual(['', '', ''])
+  })
+
   it('explains why translation is disabled before anything is sent', async () => {
     expect(await page.isDisabled('button[aria-label="Translate empty cells"]')).toBe(true)
     expect(await page.textContent('[data-mk-part="table.note"]')).toContain(

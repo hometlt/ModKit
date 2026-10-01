@@ -83,6 +83,8 @@ export const PARTS = Object.freeze([
   'table.group',
   'table.context',
   'table.columns',
+  /** The grip on a header's edge that sizes its column. */
+  'table.resize',
   'table.asset',
   'table.unresolved',
   'table.assist',
