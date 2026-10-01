@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import type { RelatedSubjectFact, SubjectFact, SubjectFactsSource } from '@modkit/sdk'
+import type {
+  RelatedSubjectFact,
+  SubjectFact,
+  SubjectFactGroup,
+  SubjectFactsSource,
+} from '@modkit/sdk'
 import {
   cardRefAction,
   loadSubjectCardSections,
@@ -12,8 +17,14 @@ function source(
   facts: Readonly<Record<string, readonly SubjectFact[]>>,
   relations: readonly RelatedSubjectFact[] = [],
   identity: Partial<Awaited<ReturnType<SubjectFactsSource['summary']>>['identity']> = {},
+  shapes: Readonly<Record<string, Partial<SubjectFactGroup>>> = {},
 ): SubjectFactsSource {
-  const groups = Object.keys(facts).map(id => ({ id, label: id, factCount: facts[id]!.length }))
+  const groups = Object.keys(facts).map(id => ({
+    id,
+    label: id,
+    factCount: facts[id]!.length,
+    ...shapes[id],
+  }))
   return {
     async summary() {
       return {
@@ -241,5 +252,67 @@ describe('subject card projection of typed facts', () => {
       key: 'LifeMax',
       path: ['Unit', 'Marine', 'LifeMax'],
     })
+  })
+
+  it('lays a slots group out as a command card, each fact a cell of its grid (5.12)', async () => {
+    const pages = [
+      { id: 'Root', label: 'Commands' },
+      { id: 'Build', label: 'Build structure' },
+    ]
+    const sections = await loadSubjectCardSections(
+      source(
+        {
+          'command-card': [
+            fact(
+              'Move',
+              { description: 'Moves the unit.' },
+              {
+                slot: { row: 0, column: 0, page: 'Root', hotkey: 'M', subjectId: 'button:Move' },
+              },
+            ),
+            fact('Build', 'Opens the build menu', {
+              note: 'A submenu',
+              slot: { row: 2, column: 0, page: 'Root', image: 'btn-build', opensPage: 'Build' },
+            }),
+            fact('Loose', 'not on the grid'),
+          ],
+        },
+        [],
+        {},
+        { 'command-card': { presentation: 'slots', slots: { rows: 3, columns: 5, pages } } },
+      ),
+    )
+    const grid = sections.find(section => section.kind === 'grid')
+    if (grid?.kind !== 'grid') throw new Error('no grid section')
+    expect([grid.rows, grid.columns, grid.pages]).toEqual([3, 5, pages])
+    expect(grid.cells).toEqual([
+      {
+        id: 'Move',
+        label: 'Move',
+        row: 0,
+        column: 0,
+        page: 'Root',
+        hotkey: 'M',
+        detail: 'description: Moves the unit.',
+        ref: { label: 'Move', href: 'button:Move' },
+      },
+      {
+        id: 'Build',
+        label: 'Build',
+        row: 2,
+        column: 0,
+        page: 'Root',
+        image: 'btn-build',
+        detail: 'A submenu\nOpens the build menu',
+        opensPage: 'Build',
+      },
+    ])
+    // a fact without a cell is still shown, as a field
+    const fields = sections.find(
+      section => section.kind === 'fields' && section.id === 'command-card',
+    )
+    expect(fields?.kind === 'fields' ? fields.fields.map(field => field.name) : []).toEqual([
+      'Loose',
+    ])
   })
 })

@@ -189,6 +189,19 @@ export interface CardGridCell {
   readonly hotkey?: string
   readonly label?: string
   readonly empty?: boolean
+  /** Its place from 0 at the top left; a grid whose cells have none fills in order. */
+  readonly row?: number
+  readonly column?: number
+  /** The page of the section's `pages` it is on; absent on a grid of one page. */
+  readonly page?: string
+  /** A logical image id resolved through `SubjectCardOptions.resolveImage`. */
+  readonly image?: string
+  /** What its tooltip says under the label: the fact's note and value. */
+  readonly detail?: string
+  /** The page a click shows: a submenu, or the page its Cancel returns to. */
+  readonly opensPage?: string
+  /** The subject a click opens. */
+  readonly ref?: CardRef
 }
 
 export interface CardSubcard {
@@ -238,6 +251,10 @@ export type CardSection =
       readonly id: string
       readonly title: string
       readonly columns: number
+      /** With `columns`, the fixed grid placed cells fill, empty places drawn. */
+      readonly rows?: number
+      /** Pages of the same grid (submenus), the first shown first. */
+      readonly pages?: readonly { readonly id: string; readonly label: string }[]
       readonly cells: readonly CardGridCell[]
       readonly expanded?: boolean
     }
@@ -548,6 +565,27 @@ function factField(
   }
 }
 
+/** A fact of a `slots` group as its cell; its label, note and value are the cell's tooltip. */
+function slotCell(fact: SubjectFact): CardGridCell | undefined {
+  const slot = fact.slot
+  if (slot === undefined) return undefined
+  const detail = [fact.note, factValue(fact.value)]
+    .filter(text => text !== undefined && text !== '')
+    .join('\n')
+  return {
+    id: fact.id,
+    label: fact.label,
+    row: slot.row,
+    column: slot.column,
+    ...(slot.page === undefined ? {} : { page: slot.page }),
+    ...(slot.hotkey === undefined ? {} : { hotkey: slot.hotkey }),
+    ...(slot.image === undefined ? {} : { image: slot.image }),
+    ...(detail === '' ? {} : { detail }),
+    ...(slot.opensPage === undefined ? {} : { opensPage: slot.opensPage }),
+    ...(slot.subjectId === undefined ? {} : { ref: { label: fact.label, href: slot.subjectId } }),
+  }
+}
+
 /**
  * Where the codec writes the fact: the semantic path its source names (`['Unit', 'Marine',
  * 'LifeMax']` for SC2 Data). The fact id alone does not say which entity a value belongs to.
@@ -774,14 +812,31 @@ export async function loadSubjectCardSections(
       group.id,
       group.label,
     )
+    const title =
+      page.capped || page.items.length < group.factCount
+        ? localizer.text('card.capped', { label: groupLabel })
+        : groupLabel
+    let fields = page.items
+    // a command card: each fact a cell of the producer's grid (plan 5.12)
+    if (group.presentation === 'slots' && group.slots !== undefined) {
+      sections.push({
+        kind: 'grid',
+        id: group.id,
+        title,
+        columns: group.slots.columns,
+        rows: group.slots.rows,
+        ...(group.slots.pages === undefined ? {} : { pages: group.slots.pages }),
+        cells: page.items.flatMap(fact => slotCell(fact) ?? []),
+        expanded: true,
+      })
+      fields = page.items.filter(fact => fact.slot === undefined)
+      if (fields.length === 0) continue
+    }
     sections.push({
       kind: 'fields',
       id: group.id,
-      title:
-        page.capped || page.items.length < group.factCount
-          ? localizer.text('card.capped', { label: groupLabel })
-          : groupLabel,
-      fields: page.items.map(fact => factField(fact, summary.identity.kind, localizer, group.id)),
+      title,
+      fields: fields.map(fact => factField(fact, summary.identity.kind, localizer, group.id)),
       expanded: true,
     })
   }
@@ -882,6 +937,182 @@ function ref(
   return node
 }
 
+/** Draws a logical image the host resolves into `canvas`, which stays hidden until it has pixels. */
+function drawCardImage(
+  canvas: HTMLCanvasElement,
+  id: string,
+  resolveImage: NonNullable<SubjectCardOptions['resolveImage']>,
+  signal: AbortSignal,
+): void {
+  canvas.hidden = true
+  void resolveImage(id, signal)
+    .then(image => {
+      const context = image === undefined ? null : canvas.getContext('2d')
+      if (image === undefined || context === null || signal.aborted) return
+      if (image.rgba.byteLength !== image.width * image.height * 4) return
+      canvas.width = image.width
+      canvas.height = image.height
+      const pixels = context.createImageData(image.width, image.height)
+      pixels.data.set(image.rgba)
+      context.putImageData(pixels, 0, 0)
+      canvas.hidden = false
+    })
+    .catch(() => undefined)
+}
+
+/**
+ * A command card (plan 5.12), laid out as MK2's: a fixed grid, empty places drawn, on one of
+ * several pages (submenus). Cells sharing a place are alternatives shown one at a time; a click
+ * opens the cell's subject, or shows the page the cell opens, and its corner arrow shows that page
+ * as well. The label, note and value are the tooltip.
+ */
+function renderGrid(
+  document: Document,
+  panel: HTMLElement,
+  section: Extract<CardSection, { kind: 'grid' }>,
+  localizer: UiLocalizer,
+  signal: AbortSignal,
+  onNavigate?: (ref: CardRef) => void,
+  resolveImage?: SubjectCardOptions['resolveImage'],
+): void {
+  const pages = section.pages ?? []
+  const first = pages[0]?.id
+  let shown = first
+  // which alternative a shared place shows, by page and place
+  const turned = new Map<string, number>()
+  // a page change or a turn draws again; an image is asked for once
+  const images = new Map<string, Promise<CardImage | undefined>>()
+  const image =
+    resolveImage === undefined
+      ? undefined
+      : (id: string, abort: AbortSignal): Promise<CardImage | undefined> => {
+          let found = images.get(id)
+          if (found === undefined) {
+            found = resolveImage(id, abort)
+            images.set(id, found)
+          }
+          return found
+        }
+  const tabs = document.createElement('div')
+  tabs.setAttribute('role', 'toolbar')
+  tabs.setAttribute('aria-label', localizer.text('card.gridPages'))
+  tabs.hidden = pages.length < 2
+  setPart(tabs, 'card.grid-pages')
+  const grid = document.createElement('div')
+  grid.className = 'modkit-card__grid'
+  grid.setAttribute('role', 'grid')
+  setPart(grid, 'card.grid')
+  // A per-instance runtime slot, validated before it reaches the CSSOM.
+  setToken(grid, 'card.grid-columns', String(section.columns))
+  panel.append(tabs, grid)
+
+  const show = (page: string): void => {
+    if (!pages.some(item => item.id === page)) return
+    shown = page
+    draw()
+  }
+  const cellOf = (stack: readonly CardGridCell[], place: string): HTMLElement => {
+    const cell = document.createElement('div')
+    cell.className = 'modkit-card__grid-cell'
+    cell.setAttribute('role', 'gridcell')
+    setPart(cell, 'card.grid-cell')
+    const turn = (turned.get(place) ?? 0) % Math.max(1, stack.length)
+    const item = stack[turn]
+    if (item === undefined || item.empty === true) {
+      setState(cell, ['disabled'])
+      return cell
+    }
+    const face = document.createElement('button')
+    face.type = 'button'
+    face.setAttribute('aria-label', item.label ?? item.id)
+    const tip = [item.label, item.detail].filter(text => text !== undefined && text !== '')
+    if (tip.length > 0) face.title = safeViewerText(tip.join('\n'), 2048)
+    setPart(face, 'card.grid-face')
+    if (item.image !== undefined && image !== undefined) {
+      const canvas = document.createElement('canvas')
+      canvas.setAttribute('aria-hidden', 'true')
+      setPart(canvas, 'card.grid-image')
+      face.append(canvas)
+      drawCardImage(canvas, item.image, image, signal)
+    } else if (item.icon !== undefined) {
+      const icon = document.createElement('span')
+      icon.textContent = safeViewerText(item.icon, 4)
+      setPart(icon, 'card.grid-icon')
+      face.append(icon)
+    }
+    if (item.hotkey !== undefined) {
+      const hotkey = document.createElement('span')
+      hotkey.setAttribute('aria-hidden', 'true')
+      hotkey.textContent = safeViewerText(item.hotkey, 2)
+      setPart(hotkey, 'card.grid-hotkey')
+      face.append(hotkey)
+    }
+    const ref = item.ref
+    const opens = item.opensPage
+    if (ref !== undefined && onNavigate !== undefined) {
+      face.addEventListener('click', () => onNavigate(ref))
+    } else if (opens !== undefined) {
+      face.addEventListener('click', () => show(opens))
+    } else {
+      face.disabled = true
+    }
+    cell.append(face)
+    if (stack.length > 1) {
+      const cycle = document.createElement('button')
+      cycle.type = 'button'
+      cycle.textContent = '\u21BA'
+      cycle.title = localizer.text('card.gridAlternatives', { count: stack.length })
+      setPart(cycle, 'card.grid-cycle')
+      cycle.addEventListener('click', () => {
+        turned.set(place, turn + 1)
+        draw()
+      })
+      cell.append(cycle)
+    }
+    if (opens !== undefined) {
+      const arrow = document.createElement('button')
+      arrow.type = 'button'
+      // back to the first page, as Cancel does, or on into a submenu
+      arrow.textContent = opens === first ? '\u21A9' : '\u21AA'
+      arrow.title = localizer.text('card.gridShowPage', {
+        page: pages.find(page => page.id === opens)?.label ?? opens,
+      })
+      setPart(arrow, 'card.grid-opens')
+      arrow.addEventListener('click', () => show(opens))
+      cell.append(arrow)
+    }
+    return cell
+  }
+  const draw = (): void => {
+    tabs.replaceChildren(
+      ...pages.map(page => {
+        const tab = document.createElement('button')
+        tab.type = 'button'
+        tab.textContent = safeViewerText(page.label, 64)
+        tab.setAttribute('aria-pressed', String(page.id === shown))
+        setPart(tab, 'card.grid-page')
+        tab.addEventListener('click', () => show(page.id))
+        return tab
+      }),
+    )
+    const onPage = section.cells.filter(cell => (cell.page ?? first) === shown)
+    const rows = section.rows
+    const stacks =
+      rows !== undefined &&
+      onPage.every(cell => cell.row !== undefined && cell.column !== undefined)
+        ? Array.from({ length: rows * section.columns }, (_, index) =>
+            onPage.filter(
+              cell =>
+                cell.row === Math.floor(index / section.columns) &&
+                cell.column === index % section.columns,
+            ),
+          )
+        : onPage.map(cell => [cell])
+    grid.replaceChildren(...stacks.map((stack, index) => cellOf(stack, `${shown ?? ''}:${index}`)))
+  }
+  draw()
+}
+
 function renderHeader(
   document: Document,
   host: HTMLElement,
@@ -905,19 +1136,7 @@ function renderHeader(
     portrait.hidden = true
     setPart(portrait, 'card.portrait')
     header.append(portrait)
-    void resolveImage(section.portraitImage, signal)
-      .then(image => {
-        const context = image === undefined ? null : portrait.getContext('2d')
-        if (image === undefined || context === null || signal.aborted) return
-        if (image.rgba.byteLength !== image.width * image.height * 4) return
-        portrait.width = image.width
-        portrait.height = image.height
-        const pixels = context.createImageData(image.width, image.height)
-        pixels.data.set(image.rgba)
-        context.putImageData(pixels, 0, 0)
-        portrait.hidden = false
-      })
-      .catch(() => undefined)
+    drawCardImage(portrait, section.portraitImage, resolveImage, signal)
   } else if (section.portrait !== undefined) {
     const portrait = document.createElement('div')
     portrait.className = 'modkit-card__portrait'
@@ -1244,40 +1463,17 @@ export function createSubjectCard(document: Document, options: SubjectCardOption
             panel.append(list)
             return
           }
-          case 'grid': {
-            const grid = document.createElement('div')
-            grid.className = 'modkit-card__grid'
-            grid.setAttribute('role', 'grid')
-            setPart(grid, 'card.grid')
-            // A per-instance runtime slot, validated before it reaches the CSSOM.
-            setToken(grid, 'card.grid-columns', String(section.columns))
-            for (const cell of section.cells) {
-              const node = document.createElement('button')
-              node.type = 'button'
-              node.className = 'modkit-card__grid-cell'
-              node.disabled = cell.empty === true
-              setPart(node, 'card.grid-cell')
-              if (cell.empty === true) setState(node, ['disabled'])
-              if (cell.label !== undefined) node.title = cell.label
-              if (cell.hotkey !== undefined) {
-                const hotkey = document.createElement('span')
-                hotkey.setAttribute('aria-hidden', 'true')
-                hotkey.textContent = safeViewerText(cell.hotkey, 2)
-                setPart(hotkey, 'card.grid-hotkey')
-                node.append(hotkey)
-              }
-              if (cell.icon !== undefined) {
-                const icon = document.createElement('span')
-                icon.textContent = safeViewerText(cell.icon, 4)
-                setPart(icon, 'card.grid-icon')
-                node.append(icon)
-              }
-              node.setAttribute('aria-label', cell.label ?? cell.id)
-              grid.append(node)
-            }
-            panel.append(grid)
+          case 'grid':
+            renderGrid(
+              document,
+              panel,
+              section,
+              localizer,
+              images.signal,
+              options.onNavigate,
+              options.resolveImage,
+            )
             return
-          }
           case 'cards': {
             const list = document.createElement('div')
             list.className = 'modkit-card__subcards'
