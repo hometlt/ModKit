@@ -618,6 +618,8 @@ export interface TransportTimelineMarker {
 }
 
 export interface TransportTimeline {
+  /** What plays, as the source names it (a replay's map and date); a player shows it as its title. */
+  readonly label?: string
   readonly participants: readonly TransportParticipant[]
   readonly series: readonly TransportTimelineSeries[]
   /** Ordered by position. */
