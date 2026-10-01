@@ -1,12 +1,12 @@
 import {
   createVideoViewer
-} from "./chunk-WISH5XOF.js";
+} from "./chunk-BQ7JEYJN.js";
 import {
   createAudioViewer
-} from "./chunk-PDLZUNZU.js";
+} from "./chunk-I7RSGSTR.js";
 import {
   createRelationGraphViewer
-} from "./chunk-3TCNBX7M.js";
+} from "./chunk-37DORWOX.js";
 import {
   MODEL_FACET_CONTRACTS,
   commitOperationWrite,
@@ -15,7 +15,7 @@ import {
   modelMaterialTeamColor,
   mountFieldEditTarget,
   mountInlineField
-} from "./chunk-O37BI45Q.js";
+} from "./chunk-CI5CLTJB.js";
 import {
   metadataFieldProjections
 } from "./chunk-CW2HIMYV.js";
@@ -110,7 +110,7 @@ import {
   createImageViewer,
   createNamespaceViewer,
   invokeRefusalMessage
-} from "./chunk-OMON3H53.js";
+} from "./chunk-HWMMUAOT.js";
 import {
   MEDIA_ZOOM_CHOICES,
   canvasPng,
@@ -119,7 +119,7 @@ import {
   createMediaShell,
   mediaFacts,
   textMatches
-} from "./chunk-KTQLJDWD.js";
+} from "./chunk-DBS2ISXT.js";
 import {
   CALCULATIONS_FALLBACK_MESSAGES,
   CARD_FALLBACK_MESSAGES,
@@ -165,7 +165,7 @@ import {
   uiPreference,
   unknownSourceLease,
   withEnglishUiFallback
-} from "./chunk-HBDJKHSZ.js";
+} from "./chunk-7RXWLRMX.js";
 import {
   PERMISSION_CLASSES,
   contributionId,
@@ -64548,6 +64548,24 @@ function factField(fact4, subjectKind, localizer, groupId) {
     }
   };
 }
+function slotCell(fact4) {
+  const slot = fact4.slot;
+  if (slot === void 0)
+    return void 0;
+  const detail = [fact4.note, factValue(fact4.value)].filter((text3) => text3 !== void 0 && text3 !== "").join("\n");
+  return {
+    id: fact4.id,
+    label: fact4.label,
+    row: slot.row,
+    column: slot.column,
+    ...slot.page === void 0 ? {} : { page: slot.page },
+    ...slot.hotkey === void 0 ? {} : { hotkey: slot.hotkey },
+    ...slot.image === void 0 ? {} : { image: slot.image },
+    ...detail === "" ? {} : { detail },
+    ...slot.opensPage === void 0 ? {} : { opensPage: slot.opensPage },
+    ...slot.subjectId === void 0 ? {} : { ref: { label: fact4.label, href: slot.subjectId } }
+  };
+}
 function factWritePath(fact4) {
   const path = fact4.provenance.find((item) => item.semanticPath !== void 0)?.semanticPath;
   return path === void 0 ? {} : { path };
@@ -64696,13 +64714,13 @@ async function loadSubjectCardSections(source2, options = {}) {
       }
     }
     if (summary.identity.kind === VENDOR_SUBJECT_KIND2 && group2.id === "offerings") {
-      const fields = page2.items.map(repositorySubjectTableField).filter((item) => item !== void 0);
-      if (fields.length === page2.items.length) {
+      const fields2 = page2.items.map(repositorySubjectTableField).filter((item) => item !== void 0);
+      if (fields2.length === page2.items.length) {
         sections.push({
           kind: "fields",
           id: group2.id,
           title: localizer.text("card.repository.group.offerings"),
-          fields,
+          fields: fields2,
           expanded: true
         });
         continue;
@@ -64710,11 +64728,28 @@ async function loadSubjectCardSections(source2, options = {}) {
     }
     const groupKeys = isRepositorySubjectKind(summary.identity.kind) ? REPOSITORY_SUBJECT_GROUP_MESSAGE_KEYS : EXTENSION_GROUP_MESSAGE_KEYS;
     const groupLabel = systemSubjectLabel(localizer, summary.identity.kind, groupKeys, group2.id, group2.label);
+    const title = page2.capped || page2.items.length < group2.factCount ? localizer.text("card.capped", { label: groupLabel }) : groupLabel;
+    let fields = page2.items;
+    if (group2.presentation === "slots" && group2.slots !== void 0) {
+      sections.push({
+        kind: "grid",
+        id: group2.id,
+        title,
+        columns: group2.slots.columns,
+        rows: group2.slots.rows,
+        ...group2.slots.pages === void 0 ? {} : { pages: group2.slots.pages },
+        cells: page2.items.flatMap((fact4) => slotCell(fact4) ?? []),
+        expanded: true
+      });
+      fields = page2.items.filter((fact4) => fact4.slot === void 0);
+      if (fields.length === 0)
+        continue;
+    }
     sections.push({
       kind: "fields",
       id: group2.id,
-      title: page2.capped || page2.items.length < group2.factCount ? localizer.text("card.capped", { label: groupLabel }) : groupLabel,
-      fields: page2.items.map((fact4) => factField(fact4, summary.identity.kind, localizer, group2.id)),
+      title,
+      fields: fields.map((fact4) => factField(fact4, summary.identity.kind, localizer, group2.id)),
       expanded: true
     });
   }
@@ -64791,6 +64826,142 @@ function ref(document, item, onNavigate, onOpenSource) {
   }
   return node;
 }
+function drawCardImage(canvas, id, resolveImage, signal) {
+  canvas.hidden = true;
+  void resolveImage(id, signal).then((image) => {
+    const context = image === void 0 ? null : canvas.getContext("2d");
+    if (image === void 0 || context === null || signal.aborted)
+      return;
+    if (image.rgba.byteLength !== image.width * image.height * 4)
+      return;
+    canvas.width = image.width;
+    canvas.height = image.height;
+    const pixels = context.createImageData(image.width, image.height);
+    pixels.data.set(image.rgba);
+    context.putImageData(pixels, 0, 0);
+    canvas.hidden = false;
+  }).catch(() => void 0);
+}
+function renderGrid(document, panel, section, localizer, signal, onNavigate, resolveImage) {
+  const pages = section.pages ?? [];
+  const first = pages[0]?.id;
+  let shown = first;
+  const turned = /* @__PURE__ */ new Map();
+  const images = /* @__PURE__ */ new Map();
+  const image = resolveImage === void 0 ? void 0 : (id, abort) => {
+    let found2 = images.get(id);
+    if (found2 === void 0) {
+      found2 = resolveImage(id, abort);
+      images.set(id, found2);
+    }
+    return found2;
+  };
+  const tabs = document.createElement("div");
+  tabs.setAttribute("role", "toolbar");
+  tabs.setAttribute("aria-label", localizer.text("card.gridPages"));
+  tabs.hidden = pages.length < 2;
+  setPart(tabs, "card.grid-pages");
+  const grid = document.createElement("div");
+  grid.className = "modkit-card__grid";
+  grid.setAttribute("role", "grid");
+  setPart(grid, "card.grid");
+  setToken(grid, "card.grid-columns", String(section.columns));
+  panel.append(tabs, grid);
+  const show = (page2) => {
+    if (!pages.some((item) => item.id === page2))
+      return;
+    shown = page2;
+    draw();
+  };
+  const cellOf = (stack, place) => {
+    const cell = document.createElement("div");
+    cell.className = "modkit-card__grid-cell";
+    cell.setAttribute("role", "gridcell");
+    setPart(cell, "card.grid-cell");
+    const turn = (turned.get(place) ?? 0) % Math.max(1, stack.length);
+    const item = stack[turn];
+    if (item === void 0 || item.empty === true) {
+      setState(cell, ["disabled"]);
+      return cell;
+    }
+    const face = document.createElement("button");
+    face.type = "button";
+    face.setAttribute("aria-label", item.label ?? item.id);
+    const tip = [item.label, item.detail].filter((text3) => text3 !== void 0 && text3 !== "");
+    if (tip.length > 0)
+      face.title = safeViewerText(tip.join("\n"), 2048);
+    setPart(face, "card.grid-face");
+    if (item.image !== void 0 && image !== void 0) {
+      const canvas = document.createElement("canvas");
+      canvas.setAttribute("aria-hidden", "true");
+      setPart(canvas, "card.grid-image");
+      face.append(canvas);
+      drawCardImage(canvas, item.image, image, signal);
+    } else if (item.icon !== void 0) {
+      const icon = document.createElement("span");
+      icon.textContent = safeViewerText(item.icon, 4);
+      setPart(icon, "card.grid-icon");
+      face.append(icon);
+    }
+    if (item.hotkey !== void 0) {
+      const hotkey = document.createElement("span");
+      hotkey.setAttribute("aria-hidden", "true");
+      hotkey.textContent = safeViewerText(item.hotkey, 2);
+      setPart(hotkey, "card.grid-hotkey");
+      face.append(hotkey);
+    }
+    const ref2 = item.ref;
+    const opens = item.opensPage;
+    if (ref2 !== void 0 && onNavigate !== void 0) {
+      face.addEventListener("click", () => onNavigate(ref2));
+    } else if (opens !== void 0) {
+      face.addEventListener("click", () => show(opens));
+    } else {
+      face.disabled = true;
+    }
+    cell.append(face);
+    if (stack.length > 1) {
+      const cycle = document.createElement("button");
+      cycle.type = "button";
+      cycle.textContent = "\u21BA";
+      cycle.title = localizer.text("card.gridAlternatives", { count: stack.length });
+      setPart(cycle, "card.grid-cycle");
+      cycle.addEventListener("click", () => {
+        turned.set(place, turn + 1);
+        draw();
+      });
+      cell.append(cycle);
+    }
+    if (opens !== void 0) {
+      const arrow = document.createElement("button");
+      arrow.type = "button";
+      arrow.textContent = opens === first ? "\u21A9" : "\u21AA";
+      arrow.title = localizer.text("card.gridShowPage", {
+        page: pages.find((page2) => page2.id === opens)?.label ?? opens
+      });
+      setPart(arrow, "card.grid-opens");
+      arrow.addEventListener("click", () => show(opens));
+      cell.append(arrow);
+    }
+    return cell;
+  };
+  const draw = () => {
+    tabs.replaceChildren(...pages.map((page2) => {
+      const tab = document.createElement("button");
+      tab.type = "button";
+      tab.textContent = safeViewerText(page2.label, 64);
+      tab.setAttribute("aria-pressed", String(page2.id === shown));
+      setPart(tab, "card.grid-page");
+      tab.addEventListener("click", () => show(page2.id));
+      return tab;
+    }));
+    const onPage = section.cells.filter((cell) => (cell.page ?? first) === shown);
+    const rows = section.rows;
+    const stacks = rows !== void 0 && onPage.every((cell) => cell.row !== void 0 && cell.column !== void 0) ? Array.from({ length: rows * section.columns }, (_, index) => onPage.filter((cell) => cell.row === Math.floor(index / section.columns) && cell.column === index % section.columns)) : onPage.map((cell) => [cell]);
+    grid.replaceChildren(...stacks.map((stack, index) => cellOf(stack, `${shown ?? ""}:${index}`)));
+  };
+  draw();
+}
 function renderHeader(document, host, section, localizer, signal, onNavigate, resolveImage, named = true, onOpenSource) {
   const header = document.createElement("div");
   header.className = "modkit-card__header";
@@ -64802,19 +64973,7 @@ function renderHeader(document, host, section, localizer, signal, onNavigate, re
     portrait.hidden = true;
     setPart(portrait, "card.portrait");
     header.append(portrait);
-    void resolveImage(section.portraitImage, signal).then((image) => {
-      const context = image === void 0 ? null : portrait.getContext("2d");
-      if (image === void 0 || context === null || signal.aborted)
-        return;
-      if (image.rgba.byteLength !== image.width * image.height * 4)
-        return;
-      portrait.width = image.width;
-      portrait.height = image.height;
-      const pixels = context.createImageData(image.width, image.height);
-      pixels.data.set(image.rgba);
-      context.putImageData(pixels, 0, 0);
-      portrait.hidden = false;
-    }).catch(() => void 0);
+    drawCardImage(portrait, section.portraitImage, resolveImage, signal);
   } else if (section.portrait !== void 0) {
     const portrait = document.createElement("div");
     portrait.className = "modkit-card__portrait";
@@ -65103,41 +65262,9 @@ function createSubjectCard(document, options) {
             panel.append(list);
             return;
           }
-          case "grid": {
-            const grid = document.createElement("div");
-            grid.className = "modkit-card__grid";
-            grid.setAttribute("role", "grid");
-            setPart(grid, "card.grid");
-            setToken(grid, "card.grid-columns", String(section.columns));
-            for (const cell of section.cells) {
-              const node = document.createElement("button");
-              node.type = "button";
-              node.className = "modkit-card__grid-cell";
-              node.disabled = cell.empty === true;
-              setPart(node, "card.grid-cell");
-              if (cell.empty === true)
-                setState(node, ["disabled"]);
-              if (cell.label !== void 0)
-                node.title = cell.label;
-              if (cell.hotkey !== void 0) {
-                const hotkey = document.createElement("span");
-                hotkey.setAttribute("aria-hidden", "true");
-                hotkey.textContent = safeViewerText(cell.hotkey, 2);
-                setPart(hotkey, "card.grid-hotkey");
-                node.append(hotkey);
-              }
-              if (cell.icon !== void 0) {
-                const icon = document.createElement("span");
-                icon.textContent = safeViewerText(cell.icon, 4);
-                setPart(icon, "card.grid-icon");
-                node.append(icon);
-              }
-              node.setAttribute("aria-label", cell.label ?? cell.id);
-              grid.append(node);
-            }
-            panel.append(grid);
+          case "grid":
+            renderGrid(document, panel, section, localizer, images.signal, options.onNavigate, options.resolveImage);
             return;
-          }
           case "cards": {
             const list = document.createElement("div");
             list.className = "modkit-card__subcards";
@@ -65467,13 +65594,13 @@ var PREVIEW_STAGES = [
 async function defaultPreviewStage(kind, localizer) {
   switch (kind) {
     case "model":
-      return (await import("./model-5B5IN6VH.js")).createModelViewer({ localizer });
+      return (await import("./model-RVYVQAIY.js")).createModelViewer({ localizer });
     case "image":
-      return (await import("./image-OD5NCKWL.js")).createImageViewer({ localizer });
+      return (await import("./image-UQ7YYYDB.js")).createImageViewer({ localizer });
     case "video":
-      return (await import("./video-X47GYJ6D.js")).createVideoViewer({ localizer });
+      return (await import("./video-T6C3653X.js")).createVideoViewer({ localizer });
     case "audio":
-      return (await import("./audio-36HD47XI.js")).createAudioViewer({ localizer });
+      return (await import("./audio-522T3ABE.js")).createAudioViewer({ localizer });
   }
 }
 function embedPreview(sections, args, scope, localizer, previews) {
@@ -65512,7 +65639,7 @@ function embedRelationGraph(sections, args, scope, localizer, graph) {
   return [
     ...sections,
     stageSection({ id: "relations-graph", title: localizer.text("card.relationGraph"), expanded: false }, scope, localizer, "card.relationGraphUnavailable", async (host) => {
-      const module = graph ?? (await import("./graph-G4RQC3PG.js")).createRelationGraphViewer({ localizer });
+      const module = graph ?? (await import("./graph-FV4BWR72.js")).createRelationGraphViewer({ localizer });
       return scope.signal.aborted ? void 0 : module.mount({ ...args, container: host, signal: scope.signal });
     })
   ];

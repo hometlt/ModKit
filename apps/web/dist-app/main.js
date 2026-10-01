@@ -50,13 +50,13 @@ import {
   subjectFactsSourceFromWire,
   webExtensionSubjectCardBundle,
   withoutHiddenEntries
-} from "./chunks/chunk-CB5Y66AK.js";
-import "./chunks/chunk-WISH5XOF.js";
-import "./chunks/chunk-PDLZUNZU.js";
-import "./chunks/chunk-3TCNBX7M.js";
+} from "./chunks/chunk-774ZXZ5S.js";
+import "./chunks/chunk-BQ7JEYJN.js";
+import "./chunks/chunk-I7RSGSTR.js";
+import "./chunks/chunk-37DORWOX.js";
 import {
   resolveModelViewerTextures
-} from "./chunks/chunk-O37BI45Q.js";
+} from "./chunks/chunk-CI5CLTJB.js";
 import "./chunks/chunk-O2DY4UGD.js";
 import "./chunks/chunk-CW2HIMYV.js";
 import {
@@ -71,8 +71,8 @@ import {
   isRejected,
   mountFieldEditor,
   subjectCandidateProviderLease
-} from "./chunks/chunk-OMON3H53.js";
-import "./chunks/chunk-KTQLJDWD.js";
+} from "./chunks/chunk-HWMMUAOT.js";
+import "./chunks/chunk-DBS2ISXT.js";
 import {
   DEFAULT_UI_LOCALIZER,
   PANELS_FALLBACK_MESSAGES,
@@ -90,7 +90,7 @@ import {
   setState,
   setViewerText,
   withEnglishUiFallback
-} from "./chunks/chunk-HBDJKHSZ.js";
+} from "./chunks/chunk-7RXWLRMX.js";
 import "./chunks/chunk-5MQCQKKD.js";
 import {
   revisionId
