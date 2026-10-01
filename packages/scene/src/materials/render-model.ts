@@ -10,6 +10,7 @@ import type { RenderScalarAnimationTrack } from '@modkit/codec-kit/legacy/models
 import { sampleTrackValue } from '@modkit/codec-kit/model-math/sequence-pose'
 import { materialFrame } from './frame.js'
 import type { NormalBlendPolicy } from './normal-blending.js'
+import { SCENE_ENVIRONMENT_RESOURCE } from './environment.js'
 
 /** Vocabulary carried by UV_game_material.params; this module never reads native extras. */
 export const RENDER_MATERIAL_SHADER = 'modkit.render-material.v1'
@@ -59,6 +60,8 @@ const PRESENTATIONS: readonly string[] = ['surface', 'screen-distortion', 'terra
 export interface RenderMaterialSampler {
   /** Stable, deduplicated logical resource ids, in authored pass/layer order. */
   readonly resources: readonly string[]
+  /** An `envi` layer reads the scene's environment (SCENE_ENVIRONMENT_RESOURCE, not in `resources`). */
+  readonly usesSceneEnvironment: boolean
   readonly presentation: RenderMaterialPresentation
   readonly worldToMaterial?: readonly number[]
   readonly usesWorldProjection: boolean
@@ -159,7 +162,18 @@ function validateLayer(value: JsonValue, slot: string, path: string, signal?: Ab
     (typeof layer['texturePath'] !== 'string' || layer['texturePath'].trim() === '')
   )
     throw new TypeError(`${path}.texturePath must be a nonempty logical id or null`)
-  if (layer['texturePath'] === null && layer['constantColor'] === undefined)
+  // `sceneEnvironment`: an environment layer without a map of its own reflects the scene's
+  if (layer['sceneEnvironment'] !== undefined) {
+    if (
+      layer['sceneEnvironment'] !== true ||
+      slot !== 'envi' ||
+      layer['texturePath'] !== null ||
+      layer['constantColor'] !== undefined
+    )
+      throw new TypeError(
+        `${path}.sceneEnvironment is true only on an envi layer without a texture or constant color`,
+      )
+  } else if (layer['texturePath'] === null && layer['constantColor'] === undefined)
     throw new TypeError(`${path} has no texture or constant color`)
   integer(layer['uvSource'], `${path}.uvSource`, 0, 18)
   integer(layer['channels'], `${path}.channels`, 0, 5)
@@ -304,14 +318,17 @@ export function createRenderMaterialSampler(
       animated(pass['alphaFactor'], `material pass ${index}.alphaFactor`, 1, signal)
     }
     // Every field used by the shared typed kernels has been checked above; unknown JSON stays inert.
-    passes = composite['passes'] as unknown as typeof passes
+    passes = (composite['passes'] as unknown as typeof passes).map(pass => ({
+      ...pass,
+      material: withSceneEnvironment(pass.material),
+    }))
     if (model['standard'] !== undefined)
       validateStandard(model['standard'], 'standard material', signal)
   } else {
     validateStandard(model['standard'], 'standard material', signal)
     passes = [
       {
-        material: model['standard'] as unknown as SceneStandardMaterial,
+        material: withSceneEnvironment(model['standard'] as unknown as SceneStandardMaterial),
         alphaFactor: { value: 1 },
       },
     ]
@@ -323,7 +340,9 @@ export function createRenderMaterialSampler(
           ...new Set(
             passes.flatMap(pass =>
               activeLayers(pass.material).flatMap(layer =>
-                layer.texturePath === null ? [] : [layer.texturePath],
+                layer.texturePath === null || layer.texturePath === SCENE_ENVIRONMENT_RESOURCE
+                  ? []
+                  : [layer.texturePath],
               ),
             ),
           ),
@@ -331,6 +350,9 @@ export function createRenderMaterialSampler(
   )
   return Object.freeze({
     resources,
+    usesSceneEnvironment:
+      !colorless &&
+      passes.some(pass => pass.material.layers.envi?.texturePath === SCENE_ENVIRONMENT_RESOURCE),
     presentation: presentation as RenderMaterialPresentation,
     ...(worldToMaterial === undefined ? {} : { worldToMaterial }),
     usesWorldProjection: passes.some(pass =>
@@ -364,6 +386,19 @@ export function createRenderMaterialSampler(
       )
     },
   })
+}
+
+/** The program binds a `sceneEnvironment` layer as the scene's environment resource. */
+function withSceneEnvironment(material: SceneStandardMaterial): SceneStandardMaterial {
+  const envi = material.layers.envi as
+    (StandardMaterialLayer & { sceneEnvironment?: true }) | undefined
+  if (envi?.sceneEnvironment !== true) return material
+  const { sceneEnvironment: _, ...layer } = envi
+  void _
+  return {
+    ...material,
+    layers: { ...material.layers, envi: { ...layer, texturePath: SCENE_ENVIRONMENT_RESOURCE } },
+  }
 }
 
 function sampleAnimated<T extends number | readonly number[]>(

@@ -66,6 +66,7 @@ import {
 import { uniformLocation } from '../materials/webgl.js'
 import { invertMaterialFrame } from '../materials/frame.js'
 import { textureNormalFormat } from '../materials/normal-maps.js'
+import { DEFAULT_SCENE_ENVIRONMENT } from '../materials/environment.js'
 import { createWorldToneMapper } from './tone-mapping.js'
 import { transparentOrderLevels } from './transparent-order.js'
 
@@ -7704,22 +7705,57 @@ function worldUniform1i(
   held.set(location, stored)
 }
 
+const SCENE_ENVIRONMENT_TEXTURES = Object.freeze([DEFAULT_SCENE_ENVIRONMENT])
+
+/** Uploads once by content and binds a material texture: a 2D image, or a cube map of six faces. */
 function bindTexture2d(
   resources: WorldWebGlOwnedResources,
   texture: SceneRendererTexture,
   unit: number,
 ): WebGLTexture {
+  const cube = texture.dimension === 'cube'
   if (
     texture.width <= 0 ||
     texture.height <= 0 ||
+    (cube && texture.compressed !== undefined) ||
     (texture.compressed === undefined &&
-      texture.rgba.byteLength !== texture.width * texture.height * 4)
+      texture.rgba.byteLength !== texture.width * texture.height * 4 * (cube ? 6 : 1))
   )
     throw new TypeError(`world texture ${texture.id} is not tightly packed RGBA8`)
   const gl = resources.gl
   const contentKey = worldTextureKey(texture)
   let entry = resources.textures.get(contentKey)
-  if (entry === undefined) {
+  if (entry === undefined && cube) {
+    const handle = gl.createTexture()
+    if (handle === null) throw new TypeError('WebGL could not allocate a world texture')
+    gl.activeTexture(gl.TEXTURE0 + unit)
+    gl.bindTexture(gl.TEXTURE_CUBE_MAP, handle)
+    gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1)
+    const faceBytes = texture.width * texture.height * 4
+    for (let face = 0; face < 6; face++)
+      gl.texImage2D(
+        gl.TEXTURE_CUBE_MAP_POSITIVE_X + face,
+        0,
+        gl.RGBA,
+        texture.width,
+        texture.height,
+        0,
+        gl.RGBA,
+        gl.UNSIGNED_BYTE,
+        texture.rgba.subarray(face * faceBytes, (face + 1) * faceBytes),
+      )
+    for (const wrap of [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T, gl.TEXTURE_WRAP_R])
+      gl.texParameteri(gl.TEXTURE_CUBE_MAP, wrap, gl.CLAMP_TO_EDGE)
+    applyTextureFilter(gl, gl.TEXTURE_CUBE_MAP, texture.filter === 'nearest' ? 'nearest' : 'linear')
+    entry = Object.freeze({
+      key: texture,
+      handle,
+      target: gl.TEXTURE_CUBE_MAP,
+      bytes: faceBytes * 6,
+    })
+    resources.textures.set(contentKey, entry)
+    resources.textureUploads += 1
+  } else if (entry === undefined) {
     const handle = gl.createTexture()
     if (handle === null) throw new TypeError('WebGL could not allocate a world texture')
     try {
@@ -7762,7 +7798,7 @@ function bindTexture2d(
   } else {
     resources.textureCacheHits += 1
     gl.activeTexture(gl.TEXTURE0 + unit)
-    gl.bindTexture(gl.TEXTURE_2D, entry.handle)
+    gl.bindTexture(entry.target, entry.handle)
   }
   resources.usedTextures.add(entry)
   return entry.handle
@@ -8323,6 +8359,8 @@ function prepareWorldMaterialResources(
   }
   for (const scene of plan.modelMaterialScenes) bind(scene.textures)
   for (const effect of plan.modelEffects) bind(effect.textures)
+  // what an `envi` layer reflects when it names no map of its own (6 KiB, uploaded once)
+  bind(SCENE_ENVIRONMENT_TEXTURES)
   // The poses of the frame's skins, uploaded at once before the shadow pass draws any of them.
   const palettes = new Set<Float32Array>()
   for (const scene of plan.modelMaterialScenes)

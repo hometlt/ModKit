@@ -195,6 +195,7 @@ export function createStandardMaterialPrograms(
   const sources = new Map<string, ShaderSources>()
   return Object.freeze({
     resources: sampler.resources,
+    usesSceneEnvironment: sampler.usesSceneEnvironment,
     sample(
       time: MaterialSampleTime,
       lighting: MaterialFrameOptions = {},

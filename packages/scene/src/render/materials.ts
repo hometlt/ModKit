@@ -7,7 +7,11 @@ import type {
 import { snapshotJson } from '@modkit/codec-kit/json-snapshot'
 import { textureNormalFormat } from '../materials/normal-maps.js'
 import { UnsupportedCubeCoordinatesError } from '../materials/cube-maps.js'
-import { snapshotEnvironment } from '../materials/environment.js'
+import {
+  DEFAULT_SCENE_ENVIRONMENT,
+  SCENE_ENVIRONMENT_RESOURCE,
+  snapshotEnvironment,
+} from '../materials/environment.js'
 import { sceneTexturePixels } from './compressed-textures.js'
 import type { NormalMapFormat } from '@modkit/codec-kit/legacy/models/material'
 import {
@@ -192,6 +196,9 @@ export function createSceneMaterialProgramSampler(
       entries.push({ kind: 'skip', diagnostics: skipped })
       continue
     }
+    // ponytail: every scene reflects the neutral default; a world's own (UVW lighting, П47) replaces it here.
+    if (sampler.usesSceneEnvironment)
+      bound.set(SCENE_ENVIRONMENT_RESOURCE, DEFAULT_SCENE_ENVIRONMENT)
     const normalMapFormats = new Map<string, NormalMapFormat>()
     for (const [id, texture] of bound) {
       const format = textureNormalFormat(texture)

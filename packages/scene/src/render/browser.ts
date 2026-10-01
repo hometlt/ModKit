@@ -464,6 +464,17 @@ export async function renderBrowser(request: SceneRenderRequest): Promise<SceneR
       diagnostics,
       request.signal,
     )
+    // textures a program binds that the scene does not carry: the default environment
+    uploadTextures(
+      gl,
+      [
+        ...new Set(
+          [...materialPrograms.values()].flatMap(program => [...program.textures.values()]),
+        ),
+      ].filter(texture => !textures.has(texture.id)),
+      diagnostics,
+      textures,
+    )
     const cubeIds = new Set(
       (request.scene.textures ?? [])
         .filter(texture => texture.dimension === 'cube')

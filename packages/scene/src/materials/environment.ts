@@ -1,4 +1,4 @@
-import type { SceneRendererEnvironment } from '@modkit/sdk/renderer'
+import type { SceneRendererEnvironment, SceneRendererTexture } from '@modkit/sdk/renderer'
 import type { Vec3 } from '@modkit/codec-kit/model-math/standard-material-glsl'
 import type { StandardMaterialProgram, MaterialTextureBinding } from './standard-program.js'
 
@@ -50,6 +50,48 @@ export function snapshotEnvironment(value: unknown): SceneRendererEnvironment | 
 export function snapshotEyePosition(value: unknown): Vec3 | undefined {
   return value === undefined ? undefined : (vector(value, 3, 'eyePosition') as Vec3)
 }
+
+/**
+ * The resource an `envi` layer with `sceneEnvironment: true` reads: the environment of the scene the
+ * model is drawn in, not a file of the model (a level's sky, a map's reflection). A scene without
+ * one of its own - a model viewer, a world whose lighting names none - gives the neutral default.
+ */
+export const SCENE_ENVIRONMENT_RESOURCE = 'modkit:scene-environment'
+
+const SKY_SIZE = 16
+const ZENITH = [168, 180, 196],
+  HORIZON = [216, 216, 212],
+  NADIR = [92, 88, 84]
+
+/**
+ * The neutral default environment: a soft grey sky, lighter above the horizon than below it (cube
+ * space +Y up), so glass and metal reflect something readable without tinting the model.
+ */
+export const DEFAULT_SCENE_ENVIRONMENT: SceneRendererTexture = Object.freeze({
+  id: SCENE_ENVIRONMENT_RESOURCE,
+  dimension: 'cube',
+  width: SKY_SIZE,
+  height: SKY_SIZE,
+  rgba: (() => {
+    const rgba = new Uint8Array(SKY_SIZE * SKY_SIZE * 4 * 6)
+    for (let face = 0; face < 6; face++)
+      for (let row = 0; row < SKY_SIZE; row++)
+        for (let column = 0; column < SKY_SIZE; column++) {
+          // the face's texel direction, as cube sampling defines it (+X,-X,+Y,-Y,+Z,-Z; rows down)
+          const x = ((column + 0.5) / SKY_SIZE) * 2 - 1,
+            y = ((row + 0.5) / SKY_SIZE) * 2 - 1
+          const up = (face === 2 ? 1 : face === 3 ? -1 : -y) / Math.hypot(1, x, y)
+          const [toward, amount] = up >= 0 ? [ZENITH, up] : [NADIR, Math.min(1, -up * 1.5)]
+          const at = ((face * SKY_SIZE + row) * SKY_SIZE + column) * 4
+          for (let channel = 0; channel < 3; channel++)
+            rgba[at + channel] = Math.round(
+              HORIZON[channel]! + (toward[channel]! - HORIZON[channel]!) * amount,
+            )
+          rgba[at + 3] = 255
+        }
+    return rgba
+  })(),
+})
 
 export const isEnvironmentBinding = (binding: MaterialTextureBinding): boolean =>
   binding.dimension === 'cube' && (binding.slot === 'envi' || binding.slot === 'enviMask')
