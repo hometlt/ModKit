@@ -1700,16 +1700,19 @@ function pushCellCoordinates(
  */
 function atlasTileUv(
   local: readonly [number, number],
-  rows: number,
+  atlas: NonNullable<MapTerrainMaterialDefinition['atlas']>,
   texture: SceneRendererTexture,
   tile: Readonly<{ column: number; row: number }>,
 ): readonly [number, number] {
+  const { rows } = atlas
   const { columns } = atlasGrid(rows, texture)
+  // the tile's top row on the cell edge `tileTop` names
+  const down = atlas.tileTop === 'local-y-0' ? local[1] : 1 - local[1]
   const inside = (value: number, start: number, size: number, texels: number) =>
     Math.min(Math.max(value, start / size + 0.5 / texels), (start + 1) / size - 0.5 / texels)
   return [
     inside((tile.column + local[0]) / columns, tile.column, columns, texture.width),
-    inside((tile.row + 1 - local[1]) / rows, tile.row, rows, texture.height),
+    inside((tile.row + down) / rows, tile.row, rows, texture.height),
   ]
 }
 
@@ -5219,7 +5222,7 @@ function prepareWorldStaticTerrain(
             (local, definition, texture) =>
               definition.atlas === undefined
                 ? terrainSurfaceUv(item, local, undefined, definition.uvTransform)
-                : atlasTileUv(local, definition.atlas.rows, texture, layer.tile),
+                : atlasTileUv(local, definition.atlas, texture, layer.tile),
             true,
           ),
         )
@@ -5425,7 +5428,7 @@ function prepareWorldStaticTerrain(
         textured.set(key, target)
         const uv = (local: readonly [number, number]) =>
           groundLayer !== undefined && material?.atlas !== undefined
-            ? atlasTileUv(local, material.atlas.rows, texture, groundLayer.tile)
+            ? atlasTileUv(local, material.atlas, texture, groundLayer.tile)
             : terrainSurfaceUv(item, local, materialSample?.uvTransform, material?.uvTransform)
         const [uvA, uvB, uvC, uvD] = patch.locals.map(uv) as [
           readonly [number, number],

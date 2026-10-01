@@ -152,6 +152,44 @@ describe('world terrain overlays', () => {
     )
   })
 
+  it('lays a tile top row on the cell edge its atlas names (a map whose row 0 is north)', () => {
+    const items = [
+      ...cell(),
+      {
+        facet: 'terrain-materials',
+        id: 'overlay-materials:0',
+        layerId: 'terrain-materials',
+        coordinateSpaceId: 'height-grid',
+        lod: 'exact',
+        x: 0,
+        y: 0,
+        textureIndex: 0,
+        layers: [{ materialId: 'sand', tile: { column: 1, row: 2 } }],
+      },
+    ]
+    const plan = createWorldWebGlPlan({
+      items,
+      terrainMaterials: [
+        {
+          materialId: 'sand',
+          baseColorResourceId: 'sand.png',
+          atlas: { rows: 4, tileTop: 'local-y-0' },
+        },
+      ],
+      terrainTextures: new Map([['sand.png', texture('sand.png', 128, 128)]]),
+    })
+    const batch = plan.texturedTriangles[0]
+    for (let vertex = 0; vertex < 6; vertex += 1) {
+      const z = batch.positions[vertex * 3 + 2]
+      // local y = 0 on the tile's top row, half a texel inside
+      const v = (2 + z) / 4 + (z === 0 ? 0.5 / 128 : -0.5 / 128)
+      assert.ok(
+        Math.abs(batch.textureCoordinates[vertex * 2 + 1] - v) < 1e-9,
+        `v of vertex ${vertex}`,
+      )
+    }
+  })
+
   it('blends a cell decal tile over its ground with the tile orientation', () => {
     const items = [
       ...cell(),
