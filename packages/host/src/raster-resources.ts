@@ -16,6 +16,7 @@ import {
 } from '@modkit/sdk'
 import { createMemorySource } from '@modkit/vfs'
 import { artifactByteSourceFromRandomAccess } from './source-bridge.js'
+import { resourceIdParameters } from './resource-id.js'
 import type { OpenSubjectResult } from './subject-open.js'
 import {
   captureCompressedFormats,
@@ -164,40 +165,27 @@ function ownedCompressedTexture(
 }
 
 /**
- * The parameters a logical raster id names after its last `#`, and the resource name before them:
- * a named atlas area (`textures/tex.gaf#region=Metal01`), one frame of a many-frame image
- * (`gi.shp#frame=3`), or both, joined by `&` (an area of that frame). Each part of a parameter
- * list is one of these words; a fragment of other words stays part of the name, as file names may
- * hold `#`. A known word with an unusable value is refused rather than read as a name.
+ * What a logical raster id names after its last `#` (resourceIdParameters): a named atlas area
+ * (`textures/tex.gaf#region=Metal01`), one frame of a many-frame image (`gi.shp#frame=3`), or both
+ * (an area of that frame). A parameter list of other words stays part of the name, as before; a
+ * frame that is no nonnegative integer is refused rather than read as a name.
  */
 export function rasterIdParameters(
   logicalId: string,
 ): Readonly<{ name: string; region?: string; frame?: number }> {
-  const hash = logicalId.lastIndexOf('#')
-  if (hash < 0) return { name: logicalId }
-  let region: string | undefined
-  let frame: number | undefined
-  for (const part of logicalId.slice(hash + 1).split('&')) {
-    const equals = part.indexOf('=')
-    const key = equals < 0 ? part : part.slice(0, equals)
-    if (key !== 'region' && key !== 'frame') return { name: logicalId }
-    let value: string
-    try {
-      value = decodeURIComponent(part.slice(equals + 1))
-    } catch {
-      return { name: logicalId }
-    }
-    if (equals < 0 || value.length === 0 || (key === 'region' ? region : frame) !== undefined)
-      throw new TypeError(`raster id parameter ${key} is empty or repeated`)
-    if (key === 'region') region = value
-    else if (/^(?:0|[1-9][0-9]*)$/u.test(value) && Number.isSafeInteger(Number(value)))
-      frame = Number(value)
-    else throw new TypeError('raster id frame must be a nonnegative integer')
-  }
+  const { name, parameters } = resourceIdParameters(logicalId)
+  const keys = Object.keys(parameters)
+  if (keys.length === 0 || keys.some(key => key !== 'region' && key !== 'frame'))
+    return { name: logicalId }
+  const { region, frame } = parameters
+  if (region !== undefined && region.length === 0)
+    throw new TypeError('raster id region must name an area')
+  if (frame !== undefined && !(/^(?:0|[1-9][0-9]*)$/u.test(frame) && Number.isSafeInteger(Number(frame))))
+    throw new TypeError('raster id frame must be a nonnegative integer')
   return {
-    name: logicalId.slice(0, hash),
+    name,
     ...(region === undefined ? {} : { region }),
-    ...(frame === undefined ? {} : { frame }),
+    ...(frame === undefined ? {} : { frame: Number(frame) }),
   }
 }
 

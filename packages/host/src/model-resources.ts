@@ -1,4 +1,4 @@
-import { diagnostic } from '@modkit/core'
+import { canonicalJsonStringify, diagnostic } from '@modkit/core'
 import { revisionIdFromRef } from '@modkit/sdk'
 import type {
   ArtifactByteSource,
@@ -6,6 +6,7 @@ import type {
   ModelAnimationSource,
   ModelMaterialSource,
   ModelResourceRefsSource,
+  ModelExportUvmInput,
   ModelResourceAsset,
   ModelResourcePort,
   ModelResourceRequest,
@@ -21,6 +22,7 @@ import {
 } from './raster-resources.js'
 import type { OpenSubjectResult } from './subject-open.js'
 import { createModelProjectionCache, modelProjectionKey } from './model-projection-cache.js'
+import { resourceIdParameters } from './resource-id.js'
 
 /** Host-local profiling hook, deliberately outside the codec/worker SDK contracts. */
 export interface ModelResourceProfile {
@@ -260,9 +262,16 @@ export function createSubjectModelResources(options: Options): ModelResourcePort
         if (failure !== undefined) throw failure
       }
       try {
-        const resolution = await timed('resolveMs', () =>
-          resources.resolve(request.requirement, signal),
-        )
+        /*
+         * A model named with parameters (`data/DATA.R16#frame=3`) is the file before `#`, exported
+         * as the codec reads the parameters: one sprite file holds every frame, each frame a model.
+         */
+        const { name, parameters } = resourceIdParameters(request.requirement.logicalId)
+        const parameterised = Object.keys(parameters).length > 0
+        const requirement = parameterised
+          ? { ...request.requirement, logicalId: name }
+          : request.requirement
+        const resolution = await timed('resolveMs', () => resources.resolve(requirement, signal))
         if (resolution.state !== 'resolved') {
           await release()
           return refuse(resolution.diagnostic.message)
@@ -305,6 +314,8 @@ export function createSubjectModelResources(options: Options): ModelResourcePort
           operation.handlerId,
           'schemaVersion=1',
           `metersPerSourceUnit=${units === undefined ? 'source-unit' : String(units)}`,
+          // each parameter set is a model of its own
+          ...(parameterised ? [`parameters=${canonicalJsonStringify(parameters)}`] : []),
         ].join('|')
         projection = await timed('projectionWaitMs', () =>
           projections.claim(
@@ -329,7 +340,8 @@ export function createSubjectModelResources(options: Options): ModelResourcePort
               {
                 schemaVersion: 1,
                 ...(units === undefined ? {} : { metersPerSourceUnit: units }),
-              },
+                ...(parameterised ? { parameters } : {}),
+              } satisfies ModelExportUvmInput,
               signal === undefined ? {} : { signal },
             ),
           )

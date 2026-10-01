@@ -23,6 +23,19 @@ export interface ModelResourceRequest {
   /** Explicit native conversion scale. Omit when the source does not prove physical meters. */
   readonly metersPerSourceUnit?: number
 }
+
+/** The input a codec's `model.export-uvm` operation receives from the host's model resources. */
+export interface ModelExportUvmInput {
+  readonly schemaVersion: 1
+  readonly metersPerSourceUnit?: number
+  /**
+   * The parameters the resource's logical id names after `#` (`data/DATA.R16#frame=3`, values
+   * percent-decoded, parsed by the host), for the codec to read: `{ frame: '3' }` asks a
+   * many-frame sprite file for frame 3 as a model. The model is distinct per parameter set; a codec
+   * ignores a parameter it does not read.
+   */
+  readonly parameters?: Readonly<Record<string, string>>
+}
 export type ModelResourceResult =
   | {
       readonly state: 'converted'

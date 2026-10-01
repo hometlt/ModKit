@@ -891,6 +891,7 @@ export type {
   RegistryHive,
 } from './installation-probes.js'
 export type {
+  ModelExportUvmInput,
   ModelResourcePort,
   ModelResourceAsset,
   ModelResourceRequest,
