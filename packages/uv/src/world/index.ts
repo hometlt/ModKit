@@ -60,6 +60,8 @@ export interface UvwTerrainMaterial {
   readonly label?: string
   readonly classification?: string
   readonly sourceIndex?: number
+  /** glTF `baseColorFactor`: linear RGBA 0..1 multiplying the base colour, or the colour itself. */
+  readonly baseColorFactor?: readonly [number, number, number, number]
   readonly baseColorResourceId?: string
   readonly normalResourceId?: string
   readonly specularResourceId?: string
@@ -708,6 +710,7 @@ function terrainMaterialsLayer(
         'label',
         'classification',
         'sourceIndex',
+        'baseColorFactor',
         'baseColorResourceId',
         'normalResourceId',
         'specularResourceId',
@@ -716,6 +719,15 @@ function terrainMaterialsLayer(
       ['id'],
       materialPath,
     )
+    const baseColorFactor =
+      material['baseColorFactor'] === undefined
+        ? undefined
+        : vec4(material['baseColorFactor'], `${materialPath}.baseColorFactor`, state, depth + 3)
+    if (baseColorFactor?.some(component => component < 0 || component > 1))
+      fail(
+        'terrain material baseColorFactor components must lie in [0, 1]',
+        `${materialPath}.baseColorFactor`,
+      )
     const materialId = layerId(material['id'], `${materialPath}.id`, state, depth + 3)
     const sourceIndex =
       material['sourceIndex'] === undefined
@@ -747,6 +759,7 @@ function terrainMaterialsLayer(
             ),
           }),
       ...(sourceIndex === undefined ? {} : { sourceIndex }),
+      ...(baseColorFactor === undefined ? {} : { baseColorFactor }),
       ...(optionalId('baseColorResourceId') === undefined
         ? {}
         : { baseColorResourceId: optionalId('baseColorResourceId')! }),

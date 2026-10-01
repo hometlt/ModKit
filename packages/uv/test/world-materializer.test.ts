@@ -327,7 +327,11 @@ describe('production world to UVW materializer', () => {
               facet: 'layers', id: materialsLayerId, layerId: materialsLayerId,
               kind: 'terrain-materials', state: 'available', itemCount: 4, lods: ['exact'],
               grid: { columns: 2, rows: 2, cellSize: 1, origin: [0, 0, -1], coordinateSpaceId: 'height-grid' },
-              materials: materialIds.map((materialId, sourceIndex) => ({ materialId, sourceIndex })),
+              materials: materialIds.map((materialId, sourceIndex) => ({
+                materialId,
+                sourceIndex,
+                ...(sourceIndex === 1 ? { baseColorFactor: [0.5, 0.25, 1, 1] as const } : {}),
+              })),
             }, {
               facet: 'layers', id: 'native:water', layerId: 'native:water',
               kind: 'water', state: 'available', itemCount: 1, lods: ['exact'],
@@ -374,6 +378,7 @@ describe('production world to UVW materializer', () => {
     expect(layer?.kind).toBe('terrain-materials')
     if (layer?.kind !== 'terrain-materials') return
     expect(layer.materials.map(material => material.id)).toEqual(['material-ground-a-red', 'material-ground-a-yellow'])
+    expect(layer.materials.map(material => material.baseColorFactor)).toEqual([[0.5, 0.25, 1, 1], undefined])
     expect(layer.samples?.[0]?.map(sample => sample.weights[0]?.materialId)).toEqual([
       'material-ground-a-yellow', 'material-ground-a-red',
     ])
@@ -417,8 +422,11 @@ describe('production world to UVW materializer', () => {
     if (rasterResult.state === 'materialized') {
       const raster = parseUvwProfile(rasterResult.bytes).spaces[0]?.layers.find(item => item.kind === 'terrain-materials')
       expect(raster?.kind).toBe('terrain-materials')
-      if (raster?.kind === 'terrain-materials')
+      if (raster?.kind === 'terrain-materials') {
         expect(raster.weightRasters?.[0]?.materialIds).toEqual(['material-ground-a-yellow', 'material-ground-a-red'])
+        expect(raster.materials.find(material => material.id === 'material-ground-a-red')?.baseColorFactor)
+          .toEqual([0.5, 0.25, 1, 1])
+      }
     }
   })
 

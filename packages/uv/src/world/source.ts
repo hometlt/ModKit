@@ -640,6 +640,9 @@ export function createUvwWorldSceneSource(
                     ...(material.sourceIndex === undefined
                       ? {}
                       : { sourceIndex: material.sourceIndex }),
+                    ...(material.baseColorFactor === undefined
+                      ? {}
+                      : { baseColorFactor: material.baseColorFactor }),
                     ...(material.baseColorResourceId === undefined
                       ? {}
                       : {

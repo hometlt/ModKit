@@ -263,6 +263,9 @@ async function reconstructLayer(
               ? {}
               : { classification: material.classification }),
             ...(material.sourceIndex === undefined ? {} : { sourceIndex: material.sourceIndex }),
+            ...(material.baseColorFactor === undefined
+              ? {}
+              : { baseColorFactor: material.baseColorFactor }),
             ...(resource(material.baseColorResourceId) === undefined
               ? {}
               : { baseColorResourceId: resource(material.baseColorResourceId)! }),
@@ -382,6 +385,9 @@ async function reconstructLayer(
               ? {}
               : { classification: material.classification }),
             ...(material.sourceIndex === undefined ? {} : { sourceIndex: material.sourceIndex }),
+            ...(material.baseColorFactor === undefined
+              ? {}
+              : { baseColorFactor: material.baseColorFactor }),
             ...(resources(material.baseColorResourceId) === undefined
               ? {}
               : { baseColorResourceId: resources(material.baseColorResourceId)! }),

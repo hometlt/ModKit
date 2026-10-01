@@ -433,6 +433,34 @@ describe('UVW 1.0 production document', () => {
     })
   })
 
+  it('carries a terrain material base colour factor both ways and bounds it', async () => {
+    const base = JSON.parse(
+      new TextDecoder().decode(await fixture('uvw-profile-renderable-world.uvw.json')),
+    ) as { spaces: Array<{ layers: Array<Record<string, unknown>> }> }
+    const withFactor = (factor: readonly number[]) => {
+      const document = structuredClone(base)
+      const materials = document.spaces[0]!.layers.find(
+        layer => layer['kind'] === 'terrain-materials',
+      )!['materials'] as Array<Record<string, unknown>>
+      materials[0]!['baseColorFactor'] = factor
+      return document
+    }
+    const document = validateUvwProfile(withFactor([0.5, 0.25, 1, 1]))
+    const source = createUvwWorldSceneSource(document, {
+      snapshotId: 'factor-revision',
+      maxPageSize: 32,
+    })
+    const layer = (await source.page({ facet: 'layers', limit: 32 })).items.find(
+      item => item.facet === 'layers' && item.kind === 'terrain-materials',
+    )
+    expect(layer?.facet === 'layers' && layer.materials?.[0]?.baseColorFactor).toEqual([
+      0.5, 0.25, 1, 1,
+    ])
+    expect(errorCode(() => validateUvwProfile(withFactor([1.5, 0, 0, 1])))).toBe(
+      'x3.uv/uvw-invalid',
+    )
+  })
+
   it('rejects dangling refs, invalid blends, traversal URIs and non-unit rotations', async () => {
     const base = JSON.parse(
       new TextDecoder().decode(await fixture('uvw-profile-renderable-world.uvw.json')),
