@@ -43,11 +43,13 @@ export async function answerCatalogQueries<Result>(options: {
   readonly queriesOf: (result: Result) => readonly DataEntityRef[]
   readonly catalogEntities: CatalogEntities
   readonly rounds: number
+  /** The unanswered first run, when the caller already has it (a world shown before the answers). */
+  readonly initial?: Result
   readonly signal?: AbortSignal
 }): Promise<Result> {
   const asked = new Set<string>()
   const entities = new Map<string, DataResolvedEntity>()
-  let result = await options.run(undefined, 0)
+  let result = options.initial ?? (await options.run(undefined, 0))
   for (let round = 1; round <= options.rounds; round += 1) {
     const refs = options.queriesOf(result).filter(ref => !asked.has(key(ref)))
     if (refs.length === 0) break

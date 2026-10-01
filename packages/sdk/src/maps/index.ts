@@ -1847,6 +1847,13 @@ export interface CandidateWorldSceneSource {
     request: WorldSceneTextureRequest,
     signal?: AbortSignal,
   ): Promise<WorldSceneTextureResult>
+  /**
+   * Resolves true once a refined world has replaced this one: a map preview shows its world before
+   * the map's catalog has answered, then the answered world (models and terrain the catalog names).
+   * After it resolves, `info` and every page name the refined snapshot; a reader reads again. Resolves
+   * false when no refinement will come. Absent: the world is final when opened.
+   */
+  refined?(signal?: AbortSignal): Promise<boolean>
 }
 
 /**
@@ -1872,6 +1879,8 @@ export interface WorldSceneSource {
     request: WorldSceneTextureRequest,
     signal?: AbortSignal,
   ): Promise<WorldSceneTextureResult>
+  /** See CandidateWorldSceneSource.refined. */
+  refined?(signal?: AbortSignal): Promise<boolean>
 }
 
 /** Activated game-specific semantic map analyzer. */

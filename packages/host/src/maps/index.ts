@@ -702,9 +702,12 @@ export async function analyzeWithCatalogEntities<
   readonly workspace: Pick<ModWorkspaceLock, 'workspaceId' | 'gameId'>
   readonly analyze: (catalog: DataCatalogSnapshot | undefined, round: number) => Promise<Snapshot>
   readonly catalogEntities: CatalogEntities
+  /** The analysis without answers, when the caller already ran it. */
+  readonly initial?: Snapshot
   readonly signal?: AbortSignal
 }): Promise<Snapshot> {
   return answerCatalogQueries({
+    ...(options.initial === undefined ? {} : { initial: options.initial }),
     run: (answered, round) =>
       options.analyze(
         answered === undefined
@@ -743,6 +746,12 @@ export interface AnalyzeResolvedMapWorkspaceRequest {
   readonly catalog?: DataCatalogSnapshot
   /** Asked for what the map references when no `catalog` is given (see {@link CatalogEntities}). */
   readonly catalogEntities?: CatalogEntities
+  /**
+   * With `catalogEntities`: the world is published from the analysis before any answer, and the
+   * answered world replaces it when its reader asks (`CandidateWorldSceneSource.refined`). A viewer
+   * shows the map at once instead of after its catalog questions (Amphion: 22 s).
+   */
+  readonly progressiveCatalog?: boolean
   /** Operation ids the opened map subject declares; the publisher names its edit route among them. */
   readonly subjectOperationIds?: readonly string[]
   readonly limits: ResolvedMapWorkspaceLimits
@@ -1121,15 +1130,25 @@ export async function analyzeResolvedMapWorkspace(
         .map(item => item.requirementId),
       ...(request.signal === undefined ? {} : { signal: request.signal }),
     })
+    const asking = request.catalog === undefined ? request.catalogEntities : undefined
+    const progressive = asking !== undefined && request.progressiveCatalog === true
+    // ends the background rounds of a progressive world when its lease is released
+    const background = new AbortController()
+    const backgroundSignal =
+      request.signal === undefined
+        ? background.signal
+        : AbortSignal.any([request.signal, background.signal])
     const snapshot =
-      request.catalog === undefined && request.catalogEntities !== undefined
-        ? await analyzeWithCatalogEntities({
-            workspace: request.workspace,
-            analyze,
-            catalogEntities: request.catalogEntities,
-            ...(request.signal === undefined ? {} : { signal: request.signal }),
-          })
-        : await analyze(request.catalog, 0)
+      asking === undefined
+        ? await analyze(request.catalog, 0)
+        : progressive
+          ? await analyze(undefined, 0)
+          : await analyzeWithCatalogEntities({
+              workspace: request.workspace,
+              analyze,
+              catalogEntities: asking,
+              ...(request.signal === undefined ? {} : { signal: request.signal }),
+            })
     if (request.resources.state() !== 'live') {
       throw new Error('resource session was disposed while workspace map was analyzed')
     }
@@ -1210,14 +1229,36 @@ export async function analyzeResolvedMapWorkspace(
           ...(signal === undefined ? {} : { signal }),
         }),
     })
-    const world = createCandidateWorldSceneLease(
-      snapshot,
-      request.resources.provenance().slice(provenanceOffset),
-      limits.maxPageSize,
-      modelResources,
-      releaseModelResources,
-      rasterResources,
-    )
+    const worldOf = (analyzed: ResolvedMapWorkspaceSnapshot, release?: () => Promise<void>) =>
+      createCandidateWorldSceneLease(
+        analyzed,
+        request.resources.provenance().slice(provenanceOffset),
+        limits.maxPageSize,
+        modelResources,
+        release,
+        rasterResources,
+      )
+    const world = !progressive
+      ? worldOf(snapshot, releaseModelResources)
+      : refinableWorldLease(
+          worldOf(snapshot),
+          analyzeWithCatalogEntities({
+            workspace: request.workspace,
+            analyze: (catalog, round) =>
+              analyze(catalog, round).then(result => {
+                backgroundSignal.throwIfAborted()
+                return result
+              }),
+            catalogEntities: asking!,
+            initial: snapshot,
+            signal: backgroundSignal,
+          }).then(
+            answered => (answered === snapshot ? undefined : worldOf(answered)),
+            () => undefined,
+          ),
+          () => background.abort(),
+          releaseModelResources,
+        )
     let released = false
     return Object.freeze({
       state: 'resolved',
@@ -1308,7 +1349,18 @@ function borrowCommonWorldScene(candidate: CandidateWorldSceneSource): Lease<Wor
   const source: WorldSceneSource = Object.freeze({
     contract: WORLD_SCENE_SOURCE_CONTRACT,
     major: 1,
-    snapshotId: candidate.snapshotId,
+    // a refinable world names a new snapshot once refined
+    get snapshotId() {
+      return candidate.snapshotId
+    },
+    ...(candidate.refined === undefined
+      ? {}
+      : {
+          async refined(signal?: AbortSignal) {
+            assertLive(signal)
+            return candidate.refined!(signal)
+          },
+        }),
     async info(signal?: AbortSignal) {
       assertLive(signal)
       const info = await candidate.info(signal)
@@ -1528,6 +1580,11 @@ export interface CoordinateMapPreviewAssetSessionRequest {
    * resources, as an ordinary open of the same file does.
    */
   readonly contentSources?: ContentSources
+  /**
+   * Publish the world before the map's catalog questions are answered and refine it afterwards
+   * (AnalyzeResolvedMapWorkspaceRequest.progressiveCatalog): for a viewer, not for an export.
+   */
+  readonly progressiveCatalog?: boolean
   readonly signal?: AbortSignal
 }
 
@@ -2618,6 +2675,74 @@ async function resolveSubjectNamespacePreviewResources(request: {
 }
 
 /**
+ * A world published before its catalog answered: `initial` until a reader asks whether a refined
+ * world came (`refined`), then the answered one, which the release of the old lease does not
+ * disturb (both share the analysis's model resources; `releaseShared` releases them once, last;
+ * `abort` ends the rounds still running).
+ * A refinement that fails or answers nothing new leaves the initial world as the final one.
+ */
+export function refinableWorldLease(
+  initial: Lease<CandidateWorldSceneSource>,
+  refinement: Promise<Lease<CandidateWorldSceneSource> | undefined>,
+  abort: () => void,
+  releaseShared: () => Promise<void>,
+): Lease<CandidateWorldSceneSource> {
+  let current = initial
+  let swapped = false
+  let released = false
+  const value: CandidateWorldSceneSource = Object.freeze({
+    contract: initial.value.contract,
+    major: 1,
+    get snapshotId() {
+      return current.value.snapshotId
+    },
+    info: (signal?: AbortSignal) => current.value.info(signal),
+    page: (request: WorldScenePageRequest, signal?: AbortSignal) =>
+      current.value.page(request, signal),
+    ...(initial.value.model === undefined
+      ? {}
+      : {
+          model: (resourceId: string, request: WorldSceneModelRequest, signal?: AbortSignal) =>
+            current.value.model!(resourceId, request, signal),
+        }),
+    ...(initial.value.texture === undefined
+      ? {}
+      : {
+          texture: (resourceId: string, request: WorldSceneTextureRequest, signal?: AbortSignal) =>
+            current.value.texture!(resourceId, request, signal),
+        }),
+    async refined(signal?: AbortSignal) {
+      const next = await Promise.race([
+        refinement,
+        new Promise<never>((_, reject) => {
+          signal?.throwIfAborted()
+          signal?.addEventListener('abort', () => reject(signal.reason), { once: true })
+        }),
+      ])
+      if (next === undefined || released) return false
+      if (!swapped) {
+        const old = current
+        current = next
+        swapped = true
+        await old.release()
+      }
+      return true
+    },
+  })
+  return Object.freeze({
+    value,
+    async release() {
+      if (released) return
+      released = true
+      abort()
+      await current.release()
+      if (!swapped) await (await refinement)?.release()
+      await releaseShared()
+    },
+  })
+}
+
+/**
  * Convert an ordinary namespace codec session into a host-owned world preview session.
  *
  * Preparation is JSON-only. The host validates the returned graph, owns every namespace read and
@@ -3036,6 +3161,7 @@ export async function coordinateMapPreviewAssetSession(
         : { onModelResourceProfile: request.onModelResourceProfile }),
       ...(enrichment.catalog === undefined ? {} : { catalog: enrichment.catalog }),
       ...(catalogEntities === undefined ? {} : { catalogEntities }),
+      ...(request.progressiveCatalog === true ? { progressiveCatalog: true } : {}),
       ...(enrichment.sources === undefined ? {} : { catalogSources: enrichment.sources }),
       limits: request.limits,
       ...(request.signal === undefined ? {} : { signal: request.signal }),

@@ -183,6 +183,8 @@ export async function materializeWorldToUvw(
 
   let info: Awaited<ReturnType<CandidateWorldSceneSource['info']>>
   try {
+    // a world shown before its catalog answered is written once answered
+    await source.refined?.(options.signal)
     info = await source.info(options.signal)
   } catch (error) {
     if (cancelled(options.signal))
