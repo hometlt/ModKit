@@ -21,4 +21,9 @@ describe('custom editors', () => {
     expect(STAGE_CUSTOM_EDITOR_TYPES['modkit.worldViewer']).toBe('world')
     expect(STAGE_CUSTOM_EDITOR_TYPES['modkit.mapLayersViewer']).toBe('map-layers')
   })
+
+  it('offers a recording in its player and a model in its viewer (plan 6.8)', () => {
+    expect(STAGE_CUSTOM_EDITOR_TYPES['modkit.playbackViewer']).toBe('playback')
+    expect(STAGE_CUSTOM_EDITOR_TYPES['modkit.modelViewer']).toBe('model')
+  })
 })

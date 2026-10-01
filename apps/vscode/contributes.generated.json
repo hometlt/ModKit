@@ -627,6 +627,26 @@
       "priority": "option"
     },
     {
+      "viewType": "modkit.modelViewer",
+      "displayName": "%customEditor.modelViewer%",
+      "selector": [
+        {
+          "filenamePattern": "*"
+        }
+      ],
+      "priority": "option"
+    },
+    {
+      "viewType": "modkit.playbackViewer",
+      "displayName": "%customEditor.playbackViewer%",
+      "selector": [
+        {
+          "filenamePattern": "*"
+        }
+      ],
+      "priority": "option"
+    },
+    {
       "viewType": "modkit.worldViewer",
       "displayName": "%customEditor.worldViewer%",
       "selector": [

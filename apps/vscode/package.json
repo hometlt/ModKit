@@ -524,6 +524,18 @@
         "priority": "option"
       },
       {
+        "viewType": "modkit.modelViewer",
+        "displayName": "%customEditor.modelViewer%",
+        "selector": [{ "filenamePattern": "*" }],
+        "priority": "option"
+      },
+      {
+        "viewType": "modkit.playbackViewer",
+        "displayName": "%customEditor.playbackViewer%",
+        "selector": [{ "filenamePattern": "*" }],
+        "priority": "option"
+      },
+      {
         "viewType": "modkit.worldViewer",
         "displayName": "%customEditor.worldViewer%",
         "selector": [{ "filenamePattern": "*" }],
@@ -1288,6 +1300,8 @@
     "onCustomEditor:modkit.hexViewer",
     "onCustomEditor:modkit.imageViewer",
     "onCustomEditor:modkit.mapLayersViewer",
+    "onCustomEditor:modkit.modelViewer",
+    "onCustomEditor:modkit.playbackViewer",
     "onCustomEditor:modkit.worldViewer",
     "onView:modkit.accounts",
     "onView:modkit.extensions",
