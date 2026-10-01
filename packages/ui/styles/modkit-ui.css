@@ -1441,6 +1441,8 @@
     display: flex;
     flex: 0 0 auto;
     flex-wrap: wrap;
+    /* in a row of controls it would keep its one-line width and push its last buttons out of view */
+    max-width: 100%;
     gap: var(--mk-space-2);
     align-items: center;
     min-height: var(--mk-toolbar-height);
@@ -1777,6 +1779,14 @@
   [data-wrap='true'] [data-mk-part='table.cell'] {
     white-space: pre-wrap;
     overflow-wrap: anywhere;
+  }
+
+  /* A key stays one name, cut short past a share of the width, as MK2 kept its key column. */
+  [data-wrap='true'] [data-mk-part='table.cell'][data-key] {
+    max-width: 40vw;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
   }
 
   /* A value's trailing white space: kept by the game, invisible unless marked. */

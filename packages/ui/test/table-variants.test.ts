@@ -347,6 +347,10 @@ describe('variant table surface', () => {
     expect(await wrapped()).toBe('true')
     await page.click('button[aria-label="Wrap"]')
     expect(await wrapped()).toBe(null)
+    // and keeps each key one name, whole in its tooltip
+    const key = '[data-mk-part="table.body"] tr:first-child td:nth-child(2)'
+    expect(await page.getAttribute(key, 'data-key')).toBe('true')
+    expect(await page.getAttribute(key, 'title')).toBe('Abil/Name/A')
     await page.selectOption('select[aria-label="Key group"]', 'Unit/')
     expect(await keys()).toEqual(['Unit/Name/C'])
     await page.selectOption('select[aria-label="Key group"]', '')

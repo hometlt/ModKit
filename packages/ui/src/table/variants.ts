@@ -747,6 +747,12 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
         else selected.delete(row.index)
       })
       cell.append(box)
+      const keyCell = tr.cells[keyColumn + 1]
+      if (keyCell !== undefined) {
+        // «Wrap» keeps a key on one line and may cut it short; the whole key stays at hand
+        keyCell.dataset['key'] = 'true'
+        keyCell.title = row.cells[keyColumn] ?? ''
+      }
       for (const column of variants) {
         const valueCell = tr.cells[column.index + 1]
         if (valueCell === undefined) continue
