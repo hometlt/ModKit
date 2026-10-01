@@ -343,6 +343,7 @@ import {
   formatSmokeFileDigest,
 } from './packaged-acceptance.js'
 import { readPackagedManagedRegistry } from './managed-registry.js'
+import { announceModContexts } from './mod-context-progress.js'
 import {
   BATCH_CONVERT_MAX_FILES,
   runBatchConversion,
@@ -473,6 +474,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     void vscode.commands.executeCommand('setContext', 'modkit.ready', true)
   }
 }
+
+/** How long a mod context may take before the status bar says it is being built (plan 0.8). */
+const MOD_CONTEXT_PROGRESS_DELAY_MS = 400
 
 async function activateModkit(
   context: vscode.ExtensionContext,
@@ -1222,7 +1226,27 @@ async function activateModkit(
         },
         // each extension's module reaches only the credentials that extension declared
         credentials: extension => host.services.credentials?.portFor(extension),
-      })
+      }).then(created =>
+        created === undefined
+          ? undefined
+          : // a context that takes a while says so in the status bar, as MK2's did (plan 0.8)
+            announceModContexts(created, {
+              delayMs: MOD_CONTEXT_PROGRESS_DELAY_MS,
+              building: opening =>
+                void vscode.window.withProgress(
+                  {
+                    location: vscode.ProgressLocation.Window,
+                    title: localizer.text('vscode.modContext.building'),
+                  },
+                  () => opening,
+                ),
+              ready: layers =>
+                vscode.window.setStatusBarMessage(
+                  localizer.text('vscode.modContext.ready', { layers }),
+                  4_000,
+                ),
+            }),
+      )
       // Tickets and keys kept before the broker move into it once the sources say whose they are.
       void contentSources
         .then(created => (created === undefined ? undefined : moveKeptTickets(created)))
