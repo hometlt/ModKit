@@ -48,13 +48,24 @@ describe('browser-safety of the portable closure (S2)', () => {
     for (const pkg of ['core', 'sdk', 'ui']) {
       expect(offenders(join(root, 'packages', pkg, 'dist')), pkg).toEqual([])
     }
-    const nodeOnlyProviders = ['file', 'rapid'].map(provider =>
-      join(root, 'packages', 'vfs', 'dist', 'providers', provider),
-    )
+    // node-only by name, as host's /node: the file and rapid providers and `content-sources/node`
+    // (fileRangeSource, folderLayer, windowsHiddenPaths)
+    const nodeOnly = [
+      ...['file', 'rapid'].map(provider =>
+        join(root, 'packages', 'vfs', 'dist', 'providers', provider),
+      ),
+      join(root, 'packages', 'vfs', 'dist', 'content-sources-node.js'),
+    ]
     expect(
       offenders(join(root, 'packages', 'vfs', 'dist'), path =>
-        nodeOnlyProviders.some(provider => path.startsWith(provider)),
+        nodeOnly.some(prefix => path.startsWith(prefix)),
       ),
+    ).toEqual([])
+    // and no portable module reaches it
+    expect(
+      jsFiles(join(root, 'packages', 'vfs', 'dist'))
+        .filter(path => !nodeOnly.some(prefix => path.startsWith(prefix)))
+        .filter(path => readFileSync(path, 'utf8').includes('content-sources-node.js')),
     ).toEqual([])
   })
 
