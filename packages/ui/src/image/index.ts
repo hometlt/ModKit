@@ -104,13 +104,13 @@ export interface ImageExportFile {
 /**
  * File name for one conversion preset: `<base>.<ext>` when the preset is named after its target,
  * `<base>.<preset>.<ext>` otherwise — `tex.png`, `tex.dxt1.dds`, `tex.button.dds`, as MK2 wrote.
+ * A preset named `<target>-<variant>`, as codecs name their encodings (`dds-dxt1`), is the variant.
  */
 export function convertedFileName(baseName: string, presetId: string, ext: string): string {
   // a form's `writes.extension` carries its dot (sdk fields); one dot joins, never two
   const bare = ext.replace(/^\./u, '')
-  return presetId === bare
-    ? `${baseName}.${bare}`
-    : `${baseName}.${exportSafeName(presetId)}.${bare}`
+  const variant = presetId.startsWith(`${bare}-`) ? presetId.slice(bare.length + 1) : presetId
+  return variant === bare ? `${baseName}.${bare}` : `${baseName}.${exportSafeName(variant)}.${bare}`
 }
 
 /** What the host did with them. A refusal is a stated outcome, never a silent no-op. */

@@ -51,6 +51,8 @@ describe('image conversion presets', () => {
     expect(convertedFileName('tex', 'dxt1', '.dds')).toBe('tex.dxt1.dds')
     expect(convertedFileName('tex', 'button', '.dds')).toBe('tex.button.dds')
     expect(convertedFileName('tex', 'png', 'png')).toBe('tex.png')
+    // a codec's encoding preset, `<target>-<encoding>`, by its encoding
+    expect(convertedFileName('tex', 'dds-dxt5', '.dds')).toBe('tex.dxt5.dds')
   })
 })
 
