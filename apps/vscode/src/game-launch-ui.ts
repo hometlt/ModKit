@@ -85,6 +85,33 @@ export function gameLaunchConfigurationFor(
   }
 }
 
+/** One change of a document, in lines of the text before it, and how many line breaks it wrote. */
+export interface LineEdit {
+  readonly startLine: number
+  readonly endLine: number
+  readonly insertedBreaks: number
+}
+
+/**
+ * Where a log's findings stand after an edit (plan 6.16): a finding on a line the edit touched
+ * belongs to the text the run saw and goes (`undefined`); one below moves with its line; one above
+ * stays. `edits` are one change event's changes, each in the coordinates of the text before it.
+ */
+export function linesAfterEdit(
+  lines: readonly number[],
+  edits: readonly LineEdit[],
+): readonly (number | undefined)[] {
+  return lines.map(line => {
+    let shift = 0
+    for (const change of edits) {
+      if (line >= change.startLine && line <= change.endLine) return undefined
+      if (change.endLine < line)
+        shift += change.insertedBreaks - (change.endLine - change.startLine)
+    }
+    return line + shift
+  })
+}
+
 /** A log's findings by file; findings that name no file go to the launched package. */
 export function gameLogFindingsByFile(
   diagnostics: readonly GameLaunchLogDiagnostic[],

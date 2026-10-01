@@ -272,6 +272,7 @@ gameLaunchConfiguration,
 gameLaunchConfigurationFor,
 gameLogFindingsByFile,
 launchTargetOf,
+linesAfterEdit,
 VSCODE_GAME_LAUNCH_DEBUG_TYPE,
 VSCODE_GAME_LAUNCH_MOD_COMMAND,
 type GameLaunchConfiguration,
@@ -10786,10 +10787,36 @@ async function activateModkit(
         }
   }
 
-  // An edited file's findings belong to the run that reported them, not to the new text.
+  // An edited line's findings belong to the run that reported them, not to the new text; the
+  // rest of the file's findings move with their lines (plan 6.16).
   context.subscriptions.push(
     vscode.workspace.onDidChangeTextDocument(event => {
-      if (event.contentChanges.length > 0) launchDiagnostics.delete(event.document.uri)
+      const findings = launchDiagnostics.get(event.document.uri)
+      if (event.contentChanges.length === 0 || findings === undefined || findings.length === 0)
+        return
+      const moved = linesAfterEdit(
+        findings.map(item => item.range.start.line),
+        event.contentChanges.map(change => ({
+          startLine: change.range.start.line,
+          endLine: change.range.end.line,
+          insertedBreaks: change.text.split('\n').length - 1,
+        })),
+      )
+      launchDiagnostics.set(
+        event.document.uri,
+        findings.flatMap((item, index) => {
+          const line = moved[index]
+          if (line === undefined) return []
+          const kept = new vscode.Diagnostic(
+            new vscode.Range(line, 0, line, Number.MAX_SAFE_INTEGER),
+            item.message,
+            item.severity,
+          )
+          if (item.source !== undefined) kept.source = item.source
+          if (item.code !== undefined) kept.code = item.code
+          return [kept]
+        }),
+      )
     }),
   )
 

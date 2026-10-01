@@ -5,6 +5,7 @@ import {
   gameLaunchConfiguration,
   gameLaunchConfigurationFor,
   gameLogFindingsByFile,
+  linesAfterEdit,
   launchTargetOf,
 } from '../src/game-launch-ui.js'
 
@@ -66,5 +67,20 @@ describe('the VS Code launch surface', () => {
       'modkit.game.configureLaunch',
     )
     expect(JSON.stringify(manifest.contributes.debuggers)).not.toMatch(/triggerDebug|sc2/iu)
+  })
+
+  it('keeps the findings an edit did not touch, moved with their lines (6.16)', () => {
+    // findings on lines 2, 5 and 9; line 5 is rewritten, two lines are inserted at line 3
+    expect(
+      linesAfterEdit(
+        [2, 5, 9],
+        [
+          { startLine: 5, endLine: 5, insertedBreaks: 0 },
+          { startLine: 3, endLine: 3, insertedBreaks: 2 },
+        ],
+      ),
+    ).toEqual([2, undefined, 11])
+    // three lines joined into one above a finding move it up by two
+    expect(linesAfterEdit([7], [{ startLine: 1, endLine: 3, insertedBreaks: 0 }])).toEqual([5])
   })
 })
