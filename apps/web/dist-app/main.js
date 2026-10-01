@@ -50,19 +50,19 @@ import {
   subjectFactsSourceFromWire,
   webExtensionSubjectCardBundle,
   withoutHiddenEntries
-} from "./chunks/chunk-BH4KUVUU.js";
+} from "./chunks/chunk-ETF5TORF.js";
 import "./chunks/chunk-NZQUMSVU.js";
 import "./chunks/chunk-ZUJKKWDD.js";
-import "./chunks/chunk-JIUDJPOO.js";
+import "./chunks/chunk-FHVBI4IR.js";
 import {
   resolveModelViewerTextures
-} from "./chunks/chunk-34MHHPU4.js";
+} from "./chunks/chunk-ZNDXYFVM.js";
 import "./chunks/chunk-O2DY4UGD.js";
-import "./chunks/chunk-KO272EQO.js";
+import "./chunks/chunk-CW2HIMYV.js";
 import {
   normalizeModkitIdentifier,
   presentationSlotId
-} from "./chunks/chunk-BCFM5UHF.js";
+} from "./chunks/chunk-ECZ32GDU.js";
 import {
   declaredMutatingOperations,
   editOffer,
@@ -71,7 +71,7 @@ import {
   isRejected,
   mountFieldEditor,
   subjectCandidateProviderLease
-} from "./chunks/chunk-77WQ6SRV.js";
+} from "./chunks/chunk-HYSNN3B5.js";
 import "./chunks/chunk-GP4R44PF.js";
 import {
   DEFAULT_UI_LOCALIZER,
@@ -94,9 +94,9 @@ import {
 import "./chunks/chunk-5MQCQKKD.js";
 import {
   revisionId
-} from "./chunks/chunk-IXZGU3XP.js";
-import "./chunks/chunk-PQV76MGI.js";
-import "./chunks/chunk-TS6JMP3F.js";
+} from "./chunks/chunk-U4VIZDRF.js";
+import "./chunks/chunk-WYGR4445.js";
+import "./chunks/chunk-7IPDRXA2.js";
 import "./chunks/chunk-OZX7B633.js";
 import "./chunks/chunk-Q27WXNQ4.js";
 import "./chunks/chunk-QQJVD7VT.js";

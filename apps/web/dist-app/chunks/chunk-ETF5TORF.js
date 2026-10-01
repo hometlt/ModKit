@@ -6,7 +6,7 @@ import {
 } from "./chunk-ZUJKKWDD.js";
 import {
   createRelationGraphViewer
-} from "./chunk-JIUDJPOO.js";
+} from "./chunk-FHVBI4IR.js";
 import {
   MODEL_FACET_CONTRACTS,
   commitOperationWrite,
@@ -14,10 +14,10 @@ import {
   fieldWriteRefusal,
   mountFieldEditTarget,
   mountInlineField
-} from "./chunk-34MHHPU4.js";
+} from "./chunk-ZNDXYFVM.js";
 import {
   metadataFieldProjections
-} from "./chunk-KO272EQO.js";
+} from "./chunk-CW2HIMYV.js";
 import {
   A1_SPEC_SCHEMA_ENTRIES,
   AUXILIARY_DATA_SOURCE_SURFACES,
@@ -104,12 +104,12 @@ import {
   validateContributionManifest,
   writerOfferSatisfies,
   writerSelectionKey
-} from "./chunk-BCFM5UHF.js";
+} from "./chunk-ECZ32GDU.js";
 import {
   createImageViewer,
   createNamespaceViewer,
   invokeRefusalMessage
-} from "./chunk-77WQ6SRV.js";
+} from "./chunk-HYSNN3B5.js";
 import {
   MEDIA_ZOOM_CHOICES,
   canvasPng,
@@ -178,7 +178,7 @@ import {
   serializeSubjectRef,
   subjectRefEquals,
   validateSubjectDescriptorV2
-} from "./chunk-IXZGU3XP.js";
+} from "./chunk-U4VIZDRF.js";
 import {
   Box3,
   BufferBuilder,
@@ -243,7 +243,7 @@ import {
   uvmImageUri,
   uvmKeyTimesMetadata,
   uvmVisibilityPointer
-} from "./chunk-PQV76MGI.js";
+} from "./chunk-WYGR4445.js";
 import {
   DEFAULT_MODEL_ANIMATION_BUDGET,
   DEFAULT_MODEL_SKELETON_BUDGET,
@@ -254,7 +254,7 @@ import {
   snapshotJson,
   snapshotModelAnimations,
   snapshotModelSkeleton
-} from "./chunk-TS6JMP3F.js";
+} from "./chunk-7IPDRXA2.js";
 import {
   SCENE_RENDERER_CONTRACT,
   SCENE_RENDERER_MATCHER_PROFILE
@@ -6182,7 +6182,7 @@ function sessionAdapter(realm, session, exposedInput, watch, openingSignal) {
 
 // ../MODDING/modkit-core/packages/host/dist/session.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-var projection = () => import("./subject-projection-ACUT6PHQ.js");
+var projection = () => import("./subject-projection-VNDCDUZ4.js");
 function rejected(reason, message) {
   return {
     state: "rejected",
@@ -7077,7 +7077,7 @@ function createSubjectRasterResources(options) {
         return refusal("x3.host/resource-permission-missing", "The subject grant does not permit raster resource reads.");
       if (request === null || typeof request !== "object")
         return refusal("x3.host/raster-request-invalid", "A raster resource request is required.");
-      const maxBytes = request.maxBytes;
+      const requestedBytes = request.maxBytes;
       let selection;
       let compressedFormats;
       const explicitSelection = request.selection !== void 0;
@@ -7087,6 +7087,8 @@ function createSubjectRasterResources(options) {
       } catch (error5) {
         return refusal("x3.host/raster-request-invalid", error5 instanceof Error ? error5.message : "Invalid raster selection");
       }
+      const available = options.budget.maxScalarBytes - options.state.reservedBytes;
+      const maxBytes = selection.mipLevel === "fit" && Number.isSafeInteger(requestedBytes) && requestedBytes > available ? available : requestedBytes;
       if (!Number.isSafeInteger(maxBytes) || maxBytes <= 0 || options.state.reservedBytes + maxBytes > options.budget.maxScalarBytes)
         return refusal("x3.host/resource-budget-exceeded", "Raster reads exceed the subject decoded byte budget.");
       options.state.reservedBytes += maxBytes;
@@ -19408,7 +19410,17 @@ function registerStandardCompressionDefinitions(definitions) {
 // ../MODDING/modkit-core/packages/host/dist/games/index.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var STANDARD_GAMES_OWNER = "modkit/games";
-var OFFER_KEYS6 = /* @__PURE__ */ new Set(["gameIds", "markers", "searchFolders"]);
+var OFFER_KEYS6 = /* @__PURE__ */ new Set(["gameIds", "markers", "searchFolders", "launchOptions"]);
+var OPTION_NAME = /^[A-Za-z][A-Za-z0-9]{0,63}$/u;
+var OPTION_KEYS = /* @__PURE__ */ new Set([
+  "type",
+  "description",
+  "default",
+  "enum",
+  "minimum",
+  "maximum",
+  "path"
+]);
 var FOLDER_NAME = /^[^\\/:*?"<>|\u0000-\u001f]{1,255}$/u;
 var REQUEST_KEYS5 = /* @__PURE__ */ new Set(["gameId"]);
 function recordOf7(value) {
@@ -19426,6 +19438,38 @@ function stringList5(value) {
 function nameList(value) {
   const names = stringList5(value);
   return names?.every((name) => FOLDER_NAME.test(name) && name !== "." && name !== "..") ? names : void 0;
+}
+function launchOptionsOf(value) {
+  const record6 = recordOf7(value);
+  const entries = record6 === void 0 ? [] : Object.entries(record6);
+  if (entries.length === 0 || entries.length > 64)
+    return void 0;
+  const options = {};
+  for (const [name, raw] of entries) {
+    const option = recordOf7(raw);
+    if (!OPTION_NAME.test(name) || option === void 0 || Object.keys(option).some((key3) => !OPTION_KEYS.has(key3)))
+      return void 0;
+    const type = option["type"];
+    if (type !== "boolean" && type !== "string" && type !== "number" && type !== "integer")
+      return void 0;
+    const numeric = type === "number" || type === "integer";
+    const fits = (item) => numeric ? typeof item === "number" && Number.isFinite(item) && (type === "number" || Number.isInteger(item)) : typeof item === type;
+    const { description, enum: choices, minimum, maximum, path } = option;
+    const fallback = option["default"];
+    const bound = (item) => item === void 0 || numeric && typeof item === "number" && Number.isFinite(item);
+    if (description !== void 0 && (typeof description !== "string" || description.length > 512) || choices !== void 0 && (type === "boolean" || !Array.isArray(choices) || choices.length === 0 || choices.length > 64 || !choices.every(fits)) || !bound(minimum) || !bound(maximum) || typeof minimum === "number" && typeof maximum === "number" && minimum > maximum || path !== void 0 && (path !== true || type !== "string") || fallback !== void 0 && (!fits(fallback) || Array.isArray(choices) && !choices.includes(fallback) || typeof minimum === "number" && fallback < minimum || typeof maximum === "number" && fallback > maximum))
+      return void 0;
+    options[name] = Object.freeze({
+      type,
+      ...description === void 0 ? {} : { description },
+      ...fallback === void 0 ? {} : { default: fallback },
+      ...choices === void 0 ? {} : { enum: Object.freeze([...choices]) },
+      ...minimum === void 0 ? {} : { minimum },
+      ...maximum === void 0 ? {} : { maximum },
+      ...path === void 0 ? {} : { path: true }
+    });
+  }
+  return Object.freeze(options);
 }
 function parseOffer7(value) {
   const record6 = recordOf7(value);
@@ -19449,10 +19493,14 @@ function parseOffer7(value) {
   const searchFolders = record6["searchFolders"] === void 0 ? void 0 : nameList(record6["searchFolders"]);
   if (record6["searchFolders"] !== void 0 && searchFolders === void 0)
     return void 0;
+  const launchOptions = record6["launchOptions"] === void 0 ? void 0 : launchOptionsOf(record6["launchOptions"]);
+  if (record6["launchOptions"] !== void 0 && launchOptions === void 0)
+    return void 0;
   return {
     gameIds,
     ...markers.length === 0 ? {} : { markers },
-    ...searchFolders === void 0 ? {} : { searchFolders }
+    ...searchFolders === void 0 ? {} : { searchFolders },
+    ...launchOptions === void 0 ? {} : { launchOptions }
   };
 }
 function parseRequest7(value) {
@@ -48380,7 +48428,8 @@ function mergeMaterialDraws(draws) {
   const indexed = lead.indices !== void 0;
   let vertices = 0, corners = 0;
   for (const primitive2 of primitives) {
-    if (primitive2.topology !== "triangles" || primitive2.indices !== void 0 !== indexed || primitive2.positions.length % 3 !== 0 || materialSkinOf(primitive2) !== void 0 || primitiveVertexPlacements(primitive2) !== void 0)
+    if (primitive2.topology !== "triangles" || primitive2.indices !== void 0 !== indexed || primitive2.positions.length % 3 !== 0 || materialSkinOf(primitive2) !== void 0 || primitiveVertexPlacements(primitive2) !== void 0 || // a mirrored draw culls its other winding (glTF); a joined draw has one winding for all
+    materialNormalMatrix(materialModelMatrix(primitive2)).sign < 0)
       return void 0;
     vertices += primitive2.positions.length / 3;
     corners += primitive2.indices?.length ?? 0;
@@ -48819,7 +48868,7 @@ function materialWebGlDraws(gl, textures, options = {}) {
     gl.uniform3fv(uniform2("u_sceneLightingViewDirection"), lighting.viewDirection);
     gl.uniform1f(uniform2("u_sceneLightingOrthographic"), lighting.orthographic ? 1 : 0);
   };
-  const applyDrawState = (source2, primitive, depthOnly, state) => {
+  const applyDrawState = (source2, primitive, depthOnly, state, mirrored) => {
     const color2 = !depthOnly;
     if (state.colorMask !== color2) {
       gl.colorMask(color2, color2, color2, color2);
@@ -48842,11 +48891,13 @@ function materialWebGlDraws(gl, textures, options = {}) {
       state.depthBias = biasKey;
     }
     const cull = !source2.twoSided;
-    if (state.cull !== cull) {
+    const front = mirrored ? gl.CW : gl.CCW;
+    if (state.cull !== cull || cull && state.frontFace !== front) {
       if (cull) {
         gl.enable(gl.CULL_FACE);
         gl.cullFace(gl.BACK);
-        gl.frontFace(gl.CCW);
+        gl.frontFace(front);
+        state.frontFace = front;
       } else
         gl.disable(gl.CULL_FACE);
       state.cull = cull;
@@ -49020,7 +49071,7 @@ function materialWebGlDraws(gl, textures, options = {}) {
     bindFrameUniforms(program, source2, frame);
     if (model !== void 0 && source2.normalMapSpace === "object")
       gl.uniformMatrix3fv(uniformLocation(gl, program, "u_sceneWorldNormalMatrix"), false, materialNormalMatrix(model).matrix);
-    applyDrawState(source2, primitive, draw.depthOnly === true, state);
+    applyDrawState(source2, primitive, draw.depthOnly === true, state, model !== void 0 && materialNormalMatrix(model).sign < 0);
     return submit(mode, primitive, instances?.count);
   };
   const drawSequence = (draws, camera, light, programs2) => {
@@ -50230,7 +50281,7 @@ function sampleTexture(texture, u2, v) {
     (texture.rgba[offset + 3] ?? 255) / 255
   ];
 }
-function rasterizeTriangle(context, vertices, surface, uvs, normals, materialDraw, depthBias, colors, tint = [1, 1, 1, 1]) {
+function rasterizeTriangle(context, vertices, surface, uvs, normals, materialDraw, depthBias, colors, tint = [1, 1, 1, 1], mirrored = false) {
   const [first, second, third] = vertices;
   const effect = surface.simpleEffect;
   const materialTint = materialDraw === void 0 ? void 0 : primitiveTint(materialDraw.draw.primitive);
@@ -50238,7 +50289,7 @@ function rasterizeTriangle(context, vertices, surface, uvs, normals, materialDra
   const area = edge(first, second, third.x, third.y);
   if (!Number.isFinite(area) || Math.abs(area) < 1e-6)
     return 0;
-  if ((materialDraw?.draw.program?.twoSided === false || effect?.doubleSided === false) && area < 0)
+  if ((materialDraw?.draw.program?.twoSided === false || effect?.doubleSided === false) && area < 0 !== mirrored)
     return 0;
   const inclusive = (a2, b2) => area < 0 ? b2.y < a2.y || b2.y === a2.y && b2.x > a2.x : b2.y > a2.y || b2.y === a2.y && b2.x < a2.x;
   const edges = [inclusive(second, third), inclusive(third, first), inclusive(first, second)];
@@ -50431,6 +50482,7 @@ function renderMaterialDraw(context, draw, request) {
     });
     return;
   }
+  const mirrored = materialNormalMatrix(materialModelMatrix(primitive)).sign < 0;
   for (const indices of elements) {
     context.signal?.throwIfAborted();
     const source2 = [
@@ -50451,7 +50503,7 @@ function renderMaterialDraw(context, draw, request) {
         invW: 1 / v.clip[3],
         world: v.worldPosition
       });
-      context.fragments += rasterizeTriangle(context, [screen(a2), screen(b2), screen(c3)], DEFAULT_SURFACE, void 0, void 0, { draw, vertices: [a2, b2, c3] });
+      context.fragments += rasterizeTriangle(context, [screen(a2), screen(b2), screen(c3)], DEFAULT_SURFACE, void 0, void 0, { draw, vertices: [a2, b2, c3] }, void 0, void 0, void 0, mirrored);
     }
   }
 }
@@ -50589,6 +50641,7 @@ function renderPrimitive(context, primitive) {
     throw new TypeError(`primitive ${primitive.id} indices must be a Uint32Array`);
   }
   const model = primitive.transform === void 0 ? void 0 : matrix(primitive.transform, `primitive ${primitive.id} transform`);
+  const mirrored = model !== void 0 && materialNormalMatrix(Float32Array.from(model)).sign < 0;
   const vertexCount = primitive.positions.length / 3;
   const order = primitive.indices;
   const elementCount = order?.length ?? vertexCount;
@@ -50623,7 +50676,7 @@ function renderPrimitive(context, primitive) {
       colorBuffer[index * 4 + 1] ?? 1,
       colorBuffer[index * 4 + 2] ?? 1,
       colorBuffer[index * 4 + 3] ?? 1
-    ]), primitiveTint(primitive));
+    ]), primitiveTint(primitive), mirrored);
   }
 }
 async function renderHeadless(request) {
@@ -64698,9 +64751,9 @@ var PREVIEW_STAGES = [
 async function defaultPreviewStage(kind, localizer) {
   switch (kind) {
     case "model":
-      return (await import("./model-3GGWYJJI.js")).createModelViewer({ localizer });
+      return (await import("./model-TGNRPI2X.js")).createModelViewer({ localizer });
     case "image":
-      return (await import("./image-W64FQWFC.js")).createImageViewer({ localizer });
+      return (await import("./image-IFAGVIEI.js")).createImageViewer({ localizer });
     case "video":
       return (await import("./video-EBZKAWPJ.js")).createVideoViewer({ localizer });
     case "audio":
@@ -64743,7 +64796,7 @@ function embedRelationGraph(sections, args, scope, localizer, graph) {
   return [
     ...sections,
     stageSection({ id: "relations-graph", title: localizer.text("card.relationGraph"), expanded: false }, scope, localizer, "card.relationGraphUnavailable", async (host) => {
-      const module = graph ?? (await import("./graph-QOIA3GA7.js")).createRelationGraphViewer({ localizer });
+      const module = graph ?? (await import("./graph-4WFFJNO3.js")).createRelationGraphViewer({ localizer });
       return scope.signal.aborted ? void 0 : module.mount({ ...args, container: host, signal: scope.signal });
     })
   ];
@@ -69417,6 +69470,16 @@ var MISSING_TERRAIN_LAYER_TEXTURE = Object.freeze({
   height: 1,
   rgba: Uint8Array.of(128, 128, 128, 255)
 });
+var WHITE_TERRAIN_LAYER_TEXTURE = Object.freeze({
+  id: "modkit.world/white-terrain-layer",
+  width: 1,
+  height: 1,
+  rgba: Uint8Array.of(255, 255, 255, 255)
+});
+function terrainLayerColor(definition2) {
+  const factor = definition2?.baseColorFactor;
+  return factor === void 0 ? [1, 1, 1] : [factor[0], factor[1], factor[2]];
+}
 function normalSwizzleOf(encoding) {
   return encoding === "xy-in-alpha-green" ? 1 : encoding === "rgb-inverted-y" ? 2 : 0;
 }
@@ -69814,6 +69877,9 @@ function frozenSplatBatch(source2) {
     ...source2.specularTextures === void 0 ? {} : { specularTextures: Object.freeze([...source2.specularTextures]) },
     ...source2.specularGloss === void 0 ? {} : { specularGloss: source2.specularGloss },
     normalSwizzles: Object.freeze([...source2.normalSwizzles]),
+    ...source2.layerColors === void 0 ? {} : {
+      layerColors: Object.freeze(source2.layerColors.map((color2) => Object.freeze([color2[0], color2[1], color2[2]])))
+    },
     ...source2.weightTextures === void 0 ? {} : { weightTextures: Object.freeze([...source2.weightTextures]) },
     ...source2.weightTextureCoordinates === void 0 ? {} : { weightTextureCoordinates: Float32Array.from(source2.weightTextureCoordinates) },
     ...source2.maskTexture === void 0 || source2.maskTextureCoordinates === void 0 ? {} : {
@@ -70855,8 +70921,10 @@ function prepareWorldStaticTerrain(input, sampleSharedModel) {
     const resolved2 = definitions;
     return Object.freeze({
       definitions: resolved2,
-      // One unresolved layer must not drop per-pixel blending for the whole map.
-      textures: resolved2.map((definition2) => definition2.baseColorResourceId === void 0 ? MISSING_TERRAIN_LAYER_TEXTURE : input.terrainTextures?.get(definition2.baseColorResourceId) ?? MISSING_TERRAIN_LAYER_TEXTURE),
+      // One unresolved layer must not drop per-pixel blending for the whole map; a layer that
+      // declares only a colour is that colour (glTF baseColorFactor without a texture).
+      textures: resolved2.map((definition2) => definition2.baseColorResourceId === void 0 ? definition2.baseColorFactor === void 0 ? MISSING_TERRAIN_LAYER_TEXTURE : WHITE_TERRAIN_LAYER_TEXTURE : input.terrainTextures?.get(definition2.baseColorResourceId) ?? MISSING_TERRAIN_LAYER_TEXTURE),
+      layerColors: resolved2.map(terrainLayerColor),
       normalTextures: resolved2.map((definition2) => definition2.normalResourceId === void 0 ? void 0 : input.terrainTextures?.get(definition2.normalResourceId)),
       specularTextures: resolved2.map((definition2) => definition2.specularResourceId === void 0 ? void 0 : input.terrainTextures?.get(definition2.specularResourceId)),
       normalSwizzles: resolved2.map((definition2) => normalSwizzleOf(definition2.normalEncoding)),
@@ -70872,7 +70940,8 @@ function prepareWorldStaticTerrain(input, sampleSharedModel) {
     prefix,
     group2.textures.map((candidate) => candidate.id).join(String.fromCharCode(0)),
     group2.normalTextures.map((candidate) => candidate?.id ?? "").join(String.fromCharCode(0)),
-    group2.weightTextures.map((candidate) => candidate.id).join(String.fromCharCode(0))
+    group2.weightTextures.map((candidate) => candidate.id).join(String.fromCharCode(0)),
+    group2.layerColors.map((color2) => color2.join(",")).join(";")
   ].join(String.fromCharCode(0));
   const rasterSplatKey = exactRasterSplat === void 0 ? void 0 : rasterSplatGroupKey("terrain-raster-splat", exactRasterSplat);
   const newRasterSplatBatch = (group2, mask) => ({
@@ -70886,6 +70955,7 @@ function prepareWorldStaticTerrain(input, sampleSharedModel) {
     specularTextures: group2.specularTextures,
     specularGloss: group2.specularGloss,
     normalSwizzles: group2.normalSwizzles,
+    layerColors: group2.layerColors,
     weightTextures: group2.weightTextures,
     weightTextureCoordinates: []
   });
@@ -71387,7 +71457,8 @@ function prepareWorldStaticTerrain(input, sampleSharedModel) {
       if (declaredWeights.length > 1 && declaredWeights.length <= 8 && resolvedSplat.length === declaredWeights.length) {
         const textures = resolvedSplat.map((layer2) => layer2.texture);
         const normalTextures = resolvedSplat.map((layer2) => layer2.definition.normalResourceId === void 0 ? void 0 : input.terrainTextures?.get(layer2.definition.normalResourceId));
-        const key3 = `terrain-splat\0${textures.map((candidate) => candidate.id).join("\0")}\0${normalTextures.map((candidate) => candidate?.id ?? "").join("\0")}`;
+        const layerColors = resolvedSplat.map((layer2) => terrainLayerColor(layer2.definition));
+        const key3 = `terrain-splat\0${textures.map((candidate) => candidate.id).join("\0")}\0${normalTextures.map((candidate) => candidate?.id ?? "").join("\0")}\0${layerColors.map((color3) => color3.join(",")).join(";")}`;
         const target = splat.get(key3) ?? {
           ...batch(),
           textureCoordinates: textures.map(() => []),
@@ -71397,6 +71468,7 @@ function prepareWorldStaticTerrain(input, sampleSharedModel) {
           normalTextures,
           specularTextures: resolvedSplat.map((layer2) => layer2.definition.specularResourceId === void 0 ? void 0 : input.terrainTextures?.get(layer2.definition.specularResourceId)),
           normalSwizzles: resolvedSplat.map((layer2) => normalSwizzleOf(layer2.definition.normalEncoding)),
+          layerColors,
           specularGloss: resolvedSplat.some((layer2) => layer2.definition.specularEncoding === "gloss")
         };
         splat.set(key3, target);
@@ -72593,6 +72665,8 @@ uniform sampler2D secondaryColorMap;
 uniform sampler2DArray terrainMaps;
 uniform sampler2DArray terrainNormalMaps;
 uniform sampler2D terrainWeightMaps[2];
+// Each blended layer's baseColorFactor RGB; indexed by literals only (ANGLE, see the fill lights).
+uniform vec4 terrainLayerColor[8];
 uniform vec4 terrainNormalMask0;
 uniform vec4 terrainNormalMask1;
 uniform vec4 terrainNormalSwizzle0;
@@ -72848,14 +72922,15 @@ void main() {
   }
   if (splatTextured > 0.5) {
     vec4 mixedSurface = vec4(0.0);
-    mixedSurface += terrainLayerSample(terrainMaps, 0, splatTextureCoordinates[0]) * resolvedSplatWeights0.x;
-    mixedSurface += terrainLayerSample(terrainMaps, 1, splatTextureCoordinates[1]) * resolvedSplatWeights0.y;
-    mixedSurface += terrainLayerSample(terrainMaps, 2, splatTextureCoordinates[2]) * resolvedSplatWeights0.z;
-    mixedSurface += terrainLayerSample(terrainMaps, 3, splatTextureCoordinates[3]) * resolvedSplatWeights0.w;
-    mixedSurface += terrainLayerSample(terrainMaps, 4, splatTextureCoordinates[4]) * resolvedSplatWeights1.x;
-    mixedSurface += terrainLayerSample(terrainMaps, 5, splatTextureCoordinates[5]) * resolvedSplatWeights1.y;
-    mixedSurface += terrainLayerSample(terrainMaps, 6, splatTextureCoordinates[6]) * resolvedSplatWeights1.z;
-    mixedSurface += terrainLayerSample(terrainMaps, 7, splatTextureCoordinates[7]) * resolvedSplatWeights1.w;
+    // glTF baseColorFactor multiplies each layer's colour; its alpha (SC2 specular) stays as read.
+    mixedSurface += terrainLayerSample(terrainMaps, 0, splatTextureCoordinates[0]) * vec4(terrainLayerColor[0].rgb, 1.0) * resolvedSplatWeights0.x;
+    mixedSurface += terrainLayerSample(terrainMaps, 1, splatTextureCoordinates[1]) * vec4(terrainLayerColor[1].rgb, 1.0) * resolvedSplatWeights0.y;
+    mixedSurface += terrainLayerSample(terrainMaps, 2, splatTextureCoordinates[2]) * vec4(terrainLayerColor[2].rgb, 1.0) * resolvedSplatWeights0.z;
+    mixedSurface += terrainLayerSample(terrainMaps, 3, splatTextureCoordinates[3]) * vec4(terrainLayerColor[3].rgb, 1.0) * resolvedSplatWeights0.w;
+    mixedSurface += terrainLayerSample(terrainMaps, 4, splatTextureCoordinates[4]) * vec4(terrainLayerColor[4].rgb, 1.0) * resolvedSplatWeights1.x;
+    mixedSurface += terrainLayerSample(terrainMaps, 5, splatTextureCoordinates[5]) * vec4(terrainLayerColor[5].rgb, 1.0) * resolvedSplatWeights1.y;
+    mixedSurface += terrainLayerSample(terrainMaps, 6, splatTextureCoordinates[6]) * vec4(terrainLayerColor[6].rgb, 1.0) * resolvedSplatWeights1.z;
+    mixedSurface += terrainLayerSample(terrainMaps, 7, splatTextureCoordinates[7]) * vec4(terrainLayerColor[7].rgb, 1.0) * resolvedSplatWeights1.w;
     // SC2 TerrainBlend_CopyTerrainSpec reads diffuse alpha as specular, not coverage.
     terrainSpecular = mixedSurface.a;
     surface.rgb *= mixedSurface.rgb;
@@ -74200,6 +74275,9 @@ function drawSplatBatch(resources, program, source2) {
     uniformLayers("terrainClampU1", clampU.slice(4, 8));
     uniformLayers("terrainClampV0", clampV.slice(0, 4));
     uniformLayers("terrainClampV1", clampV.slice(4, 8));
+    const layerColors = new Float32Array(32).fill(1);
+    source2.layerColors?.forEach((color2, layer2) => layerColors.set(color2, layer2 * 4));
+    gl.uniform4fv(uniformLocation(gl, program, "terrainLayerColor"), layerColors);
     worldUniform1f(gl, program, "textured", 0);
     worldUniform1f(gl, program, "alphaCutoff", 0);
     worldUniform1f(gl, program, "normalTextured", 0);

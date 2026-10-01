@@ -84,6 +84,7 @@ import {
   definePresentationPlan,
   expandContributionManifests,
   foreignServiceContractId,
+  gameLaunchOptionsJsonSchema,
   hostFacilityDiagnostics,
   hostFacilityId,
   hostRealmCacheKey,
@@ -119,7 +120,7 @@ import {
   worldModelRequiredBytes,
   writerOfferSatisfies,
   writerSelectionKey
-} from "../../chunks/chunk-JXRBAVYA.js";
+} from "../../chunks/chunk-RP2NZG33.js";
 import {
   SCENE_RENDERER_CONTRACT,
   SCENE_RENDERER_MATCHER_PROFILE
@@ -218,7 +219,7 @@ import {
   viewerContributionSpecV1Schema,
   writerOfferV1Schema,
   writerRequirementV1Schema
-} from "../../chunks/chunk-VI4QBV4T.js";
+} from "../../chunks/chunk-3PXCW2IQ.js";
 import "../../chunks/chunk-V3DESLW4.js";
 import "../../chunks/chunk-CQ52GEHY.js";
 export {
@@ -361,6 +362,7 @@ export {
   fieldWriteRequestV1Schema,
   foreignDataSource,
   foreignServiceContractId,
+  gameLaunchOptionsJsonSchema,
   grantValidity,
   hostFacilityDiagnostics,
   hostFacilityId,

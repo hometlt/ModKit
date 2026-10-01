@@ -23,7 +23,7 @@ import {
   traitDefinitionSpecV1Schema,
   validateWithSchema,
   viewerContributionSpecV1Schema
-} from "./chunk-VI4QBV4T.js";
+} from "./chunk-3PXCW2IQ.js";
 import {
   ModkitError,
   OPERATION_DOMAINS,
@@ -1636,6 +1636,20 @@ var SERVICE_OPERATION_MATCHER_PROFILE = "modkit/service-operation-matcher";
 var GAME_INSTALLATION_DISCOVERY_CONTRACT = "common.game/installation-discovery";
 var GAME_LAUNCH_PLAN_CONTRACT = "common.game/launch-plan";
 var GAME_INSTALLATION_MATCHER_PROFILE = "modkit/game-installation-matcher";
+function gameLaunchOptionsJsonSchema(options) {
+  const properties = {};
+  for (const [name, option] of Object.entries(options)) {
+    properties[name] = {
+      type: option.type,
+      ...option.description === void 0 ? {} : { description: option.description },
+      ...option.default === void 0 ? {} : { default: option.default },
+      ...option.enum === void 0 ? {} : { enum: [...option.enum] },
+      ...option.minimum === void 0 ? {} : { minimum: option.minimum },
+      ...option.maximum === void 0 ? {} : { maximum: option.maximum }
+    };
+  }
+  return { type: "object", additionalProperties: false, properties };
+}
 
 // ../MODDING/modkit-core/packages/sdk/dist/mods/index.js
 var MOD_WORKSPACE_COMPOSITION_CONTRACT = "common.mod/workspace-composition";
@@ -3599,6 +3613,7 @@ export {
   GAME_INSTALLATION_DISCOVERY_CONTRACT,
   GAME_LAUNCH_PLAN_CONTRACT,
   GAME_INSTALLATION_MATCHER_PROFILE,
+  gameLaunchOptionsJsonSchema,
   MOD_WORKSPACE_COMPOSITION_CONTRACT,
   MOD_WORKSPACE_MATCHER_PROFILE,
   resolveModWorkspaceGraph,

@@ -13,24 +13,46 @@ function decomposeMatrix4(matrix) {
   const sx = (determinant < 0 ? -1 : 1) * Math.hypot(m(0), m(1), m(2));
   const sy = Math.hypot(m(4), m(5), m(6));
   const sz = Math.hypot(m(8), m(9), m(10));
-  const dx = sx || 1;
-  const dy = sy || 1;
-  const dz = sz || 1;
+  const tiny = 1e-12 * Math.max(1, Math.abs(sx), sy, sz);
+  const unit = (scale, at) => Math.abs(scale) <= tiny ? void 0 : [m(at) / scale, m(at + 1) / scale, m(at + 2) / scale];
+  let x = unit(sx, 0);
+  let y = unit(sy, 4);
+  let z = unit(sz, 8);
+  if (x === void 0 && y === void 0 && z === void 0)
+    [x, y, z] = [
+      [1, 0, 0],
+      [0, 1, 0],
+      [0, 0, 1]
+    ];
+  if (x !== void 0 && y === void 0 && z === void 0)
+    y = perpendicular(x);
+  else if (y !== void 0 && z === void 0 && x === void 0)
+    z = perpendicular(y);
+  else if (z !== void 0 && x === void 0 && y === void 0)
+    x = perpendicular(z);
+  if (z === void 0)
+    z = cross(x, y);
+  if (x === void 0)
+    x = cross(y, z);
+  if (y === void 0)
+    y = cross(z, x);
   return {
     translation: [m(12), m(13), m(14)],
     scaling: [sx, sy, sz],
-    rotation: quaternionFromRotationMatrix([
-      m(0) / dx,
-      m(1) / dx,
-      m(2) / dx,
-      m(4) / dy,
-      m(5) / dy,
-      m(6) / dy,
-      m(8) / dz,
-      m(9) / dz,
-      m(10) / dz
-    ])
+    rotation: quaternionFromRotationMatrix([...x, ...y, ...z])
   };
+}
+function cross(a, b) {
+  const c = [
+    a[1] * b[2] - a[2] * b[1],
+    a[2] * b[0] - a[0] * b[2],
+    a[0] * b[1] - a[1] * b[0]
+  ];
+  const length = Math.hypot(c[0], c[1], c[2]) || 1;
+  return [c[0] / length, c[1] / length, c[2] / length];
+}
+function perpendicular(v) {
+  return cross(v, Math.abs(v[0]) < 0.9 ? [1, 0, 0] : [0, 1, 0]);
 }
 function quaternionFromRotationMatrix(matrix) {
   const m00 = matrix[0] ?? 1;

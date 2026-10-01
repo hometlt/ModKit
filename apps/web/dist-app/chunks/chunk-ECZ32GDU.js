@@ -22,7 +22,7 @@ import {
   traitDefinitionSpecV1Schema,
   validateWithSchema,
   viewerContributionSpecV1Schema
-} from "./chunk-IXZGU3XP.js";
+} from "./chunk-U4VIZDRF.js";
 import {
   ModkitError,
   OPERATION_DOMAINS,

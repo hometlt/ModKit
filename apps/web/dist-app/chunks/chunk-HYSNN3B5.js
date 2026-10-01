@@ -27,7 +27,7 @@ import {
   createSubjectCandidateProvider,
   isKnowledgeTarget,
   loadSubjectCandidatePage
-} from "./chunk-IXZGU3XP.js";
+} from "./chunk-U4VIZDRF.js";
 import {
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
 } from "./chunk-BLWUC7LO.js";

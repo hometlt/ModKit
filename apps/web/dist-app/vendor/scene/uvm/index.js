@@ -8,7 +8,7 @@ import {
   readUvmBillboards,
   readUvmModelStates,
   readUvmShadowMeshBindings
-} from "../../../chunks/chunk-P5XJGR6N.js";
+} from "../../../chunks/chunk-4AVVF7AB.js";
 import {
   array,
   field,
@@ -35,7 +35,7 @@ import {
   uvmVisibilityTarget
 } from "../../../chunks/chunk-3TRK5GFM.js";
 import "../../../chunks/chunk-I675VFQQ.js";
-import "../../../chunks/chunk-WYUQ3HXR.js";
+import "../../../chunks/chunk-MUN4JEOH.js";
 import {
   snapshotJson
 } from "../../../chunks/chunk-ZSDVUSRM.js";

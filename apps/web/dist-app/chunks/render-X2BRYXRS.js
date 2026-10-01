@@ -46,7 +46,7 @@ import {
   validateUvmDocument,
   vector3,
   vector4
-} from "./chunk-PQV76MGI.js";
+} from "./chunk-WYGR4445.js";
 import {
   applyColorKeyTransparency,
   billboardCameraRotation,
@@ -56,7 +56,7 @@ import {
   modelPrimitiveByteLength,
   snapshotJson,
   snapshotModelBillboards
-} from "./chunk-TS6JMP3F.js";
+} from "./chunk-7IPDRXA2.js";
 import {
   SCENE_RENDERER_CONTRACT
 } from "./chunk-OZX7B633.js";
@@ -1855,7 +1855,9 @@ async function acquireUvmMaterialTextures(resources, port, maxBytes, diagnostics
   const textures = [], textureIds = /* @__PURE__ */ new Map();
   let remaining = maxBytes;
   let resourceIndex = 0;
-  for (const path of new Set([...resources.values()].flat())) {
+  const paths = new Set([...resources.values()].flat());
+  const share = Math.max(4 * 1024 * 1024, Math.floor(maxBytes / Math.max(1, paths.size)));
+  for (const path of paths) {
     signal?.throwIfAborted();
     if (port === void 0)
       continue;
@@ -1873,8 +1875,8 @@ async function acquireUvmMaterialTextures(resources, port, maxBytes, diagnostics
           "enclosing-container"
         ]
       },
-      maxBytes: remaining,
-      selection: { face: "all" }
+      maxBytes: Math.min(remaining, share),
+      selection: { face: "all", mipLevel: "fit" }
     }, signal);
     signal?.throwIfAborted();
     for (const item of result.diagnostics)
@@ -1899,28 +1901,52 @@ async function acquireUvmMaterialTextures(resources, port, maxBytes, diagnostics
         throw new TypeError("cube faces must be square");
       const surfaces = result.state === "decoded-surfaces" ? result.surfaces : [
         {
-          subresource: { frame: 0, mipLevel: 0, layer: 0, face: 0, slice: 0 },
+          subresource: result.subresource ?? {
+            frame: 0,
+            mipLevel: 0,
+            layer: 0,
+            face: 0,
+            slice: 0
+          },
           region: result.region
         }
       ];
       if (surfaces.length !== result.info.faces)
         throw new TypeError("raster port did not return every requested face");
-      if (result.info.width * result.info.height * 4 * surfaces.length > remaining)
+      const chosen = surfaces[0];
+      const mipLevel = chosen.subresource.mipLevel;
+      const { width, height } = chosen.region;
+      const faceBytes = width * height * 4;
+      if (faceBytes * surfaces.length > remaining)
         throw new RangeError("decoded material textures exceed budget");
-      const faceBytes = result.info.width * result.info.height * 4;
       const rgba = new Uint8Array(faceBytes * surfaces.length);
       for (const [face, surface] of surfaces.entries()) {
         const selected = surface.subresource;
-        if (selected.face !== face || selected.mipLevel !== 0 || selected.frame !== 0 || selected.layer !== 0 || selected.slice !== 0)
+        if (selected.face !== face || selected.mipLevel !== mipLevel || selected.frame !== 0 || selected.layer !== 0 || selected.slice !== 0 || surface.region.width !== width || surface.region.height !== height)
           throw new TypeError("raster port returned a different subresource selection");
-        rgba.set(uvmImageTexels({ ...result, state: "decoded", region: surface.region }, { channels: "data" }), face * faceBytes);
+        rgba.set(uvmImageTexels(
+          // the chosen level's size, not the image's
+          {
+            ...result,
+            state: "decoded",
+            info: { ...result.info, width, height },
+            region: surface.region
+          },
+          { channels: "data" }
+        ), face * faceBytes);
       }
       remaining -= rgba.length;
+      if (mipLevel > 0)
+        diagnostics.push({
+          severity: "information",
+          code: "common.uvm/material-image-reduced",
+          message: `${path}: drawn at mip ${mipLevel} (${width}\xD7${height}) of ${result.info.width}\xD7${result.info.height} to fit the texture budget`
+        });
       textureIds.set(path, id);
       textures.push({
         id,
-        width: result.info.width,
-        height: result.info.height,
+        width,
+        height,
         rgba,
         ...cube ? { dimension: "cube" } : {},
         ...result.info.channelLayout === void 0 ? {} : { channelLayout: result.info.channelLayout },

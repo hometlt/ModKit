@@ -5,7 +5,7 @@ import {
   createDescriptorFallbackSubjectFactsSource,
   createFieldRelationGraphSource,
   descriptorSubjectRef
-} from "../../chunks/chunk-M6IANCT6.js";
+} from "../../chunks/chunk-JYZH2GF4.js";
 import {
   ABI_ASSET_SESSION,
   base64Of,
@@ -13,14 +13,14 @@ import {
   createStandardSurfaceRegistry,
   framePortFromMessagePort,
   protocolLimits
-} from "../../chunks/chunk-LNCN76CN.js";
+} from "../../chunks/chunk-CWN72PN7.js";
 import {
   assembleSubjectDescriptor,
   createAssetSession,
   createByteRangeSource,
   createLazyTableDataSource,
   createUtf8TextDataSource
-} from "../../chunks/chunk-PBUKUNP6.js";
+} from "../../chunks/chunk-6WWYE5QA.js";
 import {
   metadataFieldProjections
 } from "../../chunks/chunk-5GGWVEQJ.js";
@@ -90,7 +90,7 @@ import {
   validateContributionManifest,
   writerOfferSatisfies,
   writerSelectionKey
-} from "../../chunks/chunk-JXRBAVYA.js";
+} from "../../chunks/chunk-RP2NZG33.js";
 import {
   SCENE_RENDERER_CONTRACT,
   SCENE_RENDERER_MATCHER_PROFILE
@@ -119,7 +119,7 @@ import {
   serializeSubjectRef,
   snapshotJsonWireData,
   subjectRefEquals
-} from "../../chunks/chunk-VI4QBV4T.js";
+} from "../../chunks/chunk-3PXCW2IQ.js";
 import {
   CONTAINER_EXTRACT_OPERATION_ID,
   ModkitError,
@@ -6449,6 +6449,55 @@ function languageFileExtension(path) {
   const dot = name.lastIndexOf(".");
   return dot <= 0 || dot === name.length - 1 ? void 0 : name.slice(dot + 1).toLowerCase();
 }
+function xmlRootElementName(head) {
+  let at = head.charCodeAt(0) === 65279 ? 1 : 0;
+  for (; ; ) {
+    while (at < head.length && /\s/u.test(head[at]))
+      at += 1;
+    if (head.startsWith("<?", at)) {
+      const end = head.indexOf("?>", at + 2);
+      if (end < 0)
+        return void 0;
+      at = end + 2;
+    } else if (head.startsWith("<!--", at)) {
+      const end = head.indexOf("-->", at + 4);
+      if (end < 0)
+        return void 0;
+      at = end + 3;
+    } else if (head.startsWith("<!", at)) {
+      let depth = 0;
+      let end = at + 2;
+      for (; end < head.length; end += 1) {
+        if (head[end] === "[")
+          depth += 1;
+        else if (head[end] === "]")
+          depth -= 1;
+        else if (head[end] === ">" && depth <= 0)
+          break;
+      }
+      if (end >= head.length)
+        return void 0;
+      at = end + 1;
+    } else
+      break;
+  }
+  const name = /^<([A-Za-z_][\w.-]*:)?([A-Za-z_][\w.-]*)(?=[\s/>])/u.exec(head.slice(at, at + 260));
+  return name?.[2];
+}
+function languageFileAssociationFor(associations, path, head) {
+  const extension = languageFileExtension(path);
+  if (extension === void 0)
+    return void 0;
+  const matching = associations.filter((association) => association.extension === extension);
+  const rooted = matching.filter((association) => association.rootElement !== void 0);
+  if (head !== void 0 && rooted.length > 0) {
+    const root = xmlRootElementName(head);
+    const hit = rooted.find((association) => association.rootElement === root);
+    if (hit !== void 0)
+      return hit;
+  }
+  return matching.find((association) => association.rootElement === void 0);
+}
 function languageRouteServesFile(route, path) {
   if (route.fileName !== void 0)
     return route.fileName.toLowerCase() === baseNameOf(path).toLowerCase();
@@ -6474,7 +6523,8 @@ function languageFileAssociations(inventory) {
       const normalized2 = Object.freeze({
         extension: normalizedExtension2(association.extension),
         languageId: association.languageId,
-        ...association.dialect === void 0 ? {} : { dialect: association.dialect }
+        ...association.dialect === void 0 ? {} : { dialect: association.dialect },
+        ...association.rootElement === void 0 ? {} : { rootElement: association.rootElement }
       });
       seen.set(canonicalJsonStringify(normalized2), normalized2);
     }
@@ -6531,7 +6581,7 @@ function languageProviderRoutes(inventory) {
   }
   const provided = new Set([...routes.values()].map((route) => route.languageId));
   for (const association of languageFileAssociations(inventory)) {
-    if (!provided.has(association.languageId))
+    if (!provided.has(association.languageId) || association.rootElement !== void 0)
       continue;
     const identity = { languageId: association.languageId, extension: association.extension };
     routes.set(canonicalJsonStringify({ ...identity, dialect: association.dialect ?? null }), Object.freeze({
@@ -8218,7 +8268,7 @@ function createContentDependencyLanguageDocumentSource(options) {
       const accepted = new Set(request.workspaceLanguageIds);
       const openUris = new Set(request.workspaceDocuments.map((document) => document.uri));
       const candidates = [];
-      const contentPaths = /* @__PURE__ */ new Set();
+      const contentPaths = /* @__PURE__ */ new Map();
       const wantedKnowledge = new Set((request.knowledgeFileNames ?? []).map((name) => name.toLowerCase()));
       const knowledge = [];
       let visited = 0;
@@ -8254,7 +8304,7 @@ function createContentDependencyLanguageDocumentSource(options) {
             await walk(mount, entry2.path);
             continue;
           }
-          contentPaths.add(relative);
+          contentPaths.set(relative, mounts.indexOf(mount));
           if (path === mount.sourcePath && wantedKnowledge.has(relative.toLowerCase())) {
             knowledge.push({ mount, path: entry2.path, fileName: relative });
             continue;
@@ -8281,11 +8331,13 @@ function createContentDependencyLanguageDocumentSource(options) {
           break;
         await walk(mount, mount.sourcePath);
       }
-      const indexedPaths = Object.freeze([...contentPaths].sort(compareUtf8));
+      const indexedPaths = Object.freeze([...contentPaths.keys()].sort(compareUtf8));
+      const pathLayers = Object.freeze(indexedPaths.map((path) => contentPaths.get(path)));
       const pathIndexRevision = languageWorkspaceContextToken({
         contextRevision,
         complete: pathIndexComplete,
-        paths: indexedPaths
+        paths: indexedPaths,
+        layers: pathLayers
       });
       const documents = [];
       const documentOrigins = [];
@@ -8386,7 +8438,17 @@ function createContentDependencyLanguageDocumentSource(options) {
             Object.freeze({
               kind: "dependency-closure",
               id: `${options.resolution.gameId}:${contextId}`,
-              revision: contextRevision
+              revision: contextRevision,
+              // Where each layer's files live: a file `path` of layer `layerId` is
+              // `content-source://<sourceId>/<sourcePath>/<path>`, open or not (weaker first).
+              payload: Object.freeze({
+                schemaVersion: 1,
+                layers: Object.freeze(mounts.map((mount) => Object.freeze({
+                  layerId: `${contextId}:${mount.order}:${mount.dependencyId}`,
+                  sourceId: mount.sourceId,
+                  sourcePath: mount.sourcePath
+                })))
+              })
             }),
             Object.freeze({
               kind: "content-path-index",
@@ -8395,7 +8457,9 @@ function createContentDependencyLanguageDocumentSource(options) {
               payload: Object.freeze({
                 schemaVersion: 1,
                 isComplete: pathIndexComplete,
-                paths: indexedPaths
+                paths: indexedPaths,
+                // the dependency-closure layer each path is read from (its strongest)
+                layers: pathLayers
               })
             })
           ])
@@ -8958,7 +9022,7 @@ function createSubjectRasterResources(options) {
         return refusal("x3.host/resource-permission-missing", "The subject grant does not permit raster resource reads.");
       if (request === null || typeof request !== "object")
         return refusal("x3.host/raster-request-invalid", "A raster resource request is required.");
-      const maxBytes = request.maxBytes;
+      const requestedBytes = request.maxBytes;
       let selection;
       let compressedFormats;
       const explicitSelection = request.selection !== void 0;
@@ -8968,6 +9032,8 @@ function createSubjectRasterResources(options) {
       } catch (error3) {
         return refusal("x3.host/raster-request-invalid", error3 instanceof Error ? error3.message : "Invalid raster selection");
       }
+      const available = options.budget.maxScalarBytes - options.state.reservedBytes;
+      const maxBytes = selection.mipLevel === "fit" && Number.isSafeInteger(requestedBytes) && requestedBytes > available ? available : requestedBytes;
       if (!Number.isSafeInteger(maxBytes) || maxBytes <= 0 || options.state.reservedBytes + maxBytes > options.budget.maxScalarBytes)
         return refusal("x3.host/resource-budget-exceeded", "Raster reads exceed the subject decoded byte budget.");
       options.state.reservedBytes += maxBytes;
@@ -18784,7 +18850,17 @@ function registerStandardCompressionDefinitions(definitions) {
 
 // ../MODDING/modkit-core/packages/host/dist/games/index.js
 var STANDARD_GAMES_OWNER = "modkit/games";
-var OFFER_KEYS6 = /* @__PURE__ */ new Set(["gameIds", "markers", "searchFolders"]);
+var OFFER_KEYS6 = /* @__PURE__ */ new Set(["gameIds", "markers", "searchFolders", "launchOptions"]);
+var OPTION_NAME = /^[A-Za-z][A-Za-z0-9]{0,63}$/u;
+var OPTION_KEYS = /* @__PURE__ */ new Set([
+  "type",
+  "description",
+  "default",
+  "enum",
+  "minimum",
+  "maximum",
+  "path"
+]);
 var FOLDER_NAME = /^[^\\/:*?"<>|\u0000-\u001f]{1,255}$/u;
 var REQUEST_KEYS5 = /* @__PURE__ */ new Set(["gameId"]);
 var ORIGINS = /* @__PURE__ */ new Set([
@@ -18817,6 +18893,38 @@ function nameList(value) {
   const names = stringList5(value);
   return names?.every((name) => FOLDER_NAME.test(name) && name !== "." && name !== "..") ? names : void 0;
 }
+function launchOptionsOf(value) {
+  const record3 = recordOf8(value);
+  const entries = record3 === void 0 ? [] : Object.entries(record3);
+  if (entries.length === 0 || entries.length > 64)
+    return void 0;
+  const options = {};
+  for (const [name, raw] of entries) {
+    const option = recordOf8(raw);
+    if (!OPTION_NAME.test(name) || option === void 0 || Object.keys(option).some((key3) => !OPTION_KEYS.has(key3)))
+      return void 0;
+    const type = option["type"];
+    if (type !== "boolean" && type !== "string" && type !== "number" && type !== "integer")
+      return void 0;
+    const numeric = type === "number" || type === "integer";
+    const fits = (item) => numeric ? typeof item === "number" && Number.isFinite(item) && (type === "number" || Number.isInteger(item)) : typeof item === type;
+    const { description, enum: choices, minimum, maximum, path } = option;
+    const fallback = option["default"];
+    const bound = (item) => item === void 0 || numeric && typeof item === "number" && Number.isFinite(item);
+    if (description !== void 0 && (typeof description !== "string" || description.length > 512) || choices !== void 0 && (type === "boolean" || !Array.isArray(choices) || choices.length === 0 || choices.length > 64 || !choices.every(fits)) || !bound(minimum) || !bound(maximum) || typeof minimum === "number" && typeof maximum === "number" && minimum > maximum || path !== void 0 && (path !== true || type !== "string") || fallback !== void 0 && (!fits(fallback) || Array.isArray(choices) && !choices.includes(fallback) || typeof minimum === "number" && fallback < minimum || typeof maximum === "number" && fallback > maximum))
+      return void 0;
+    options[name] = Object.freeze({
+      type,
+      ...description === void 0 ? {} : { description },
+      ...fallback === void 0 ? {} : { default: fallback },
+      ...choices === void 0 ? {} : { enum: Object.freeze([...choices]) },
+      ...minimum === void 0 ? {} : { minimum },
+      ...maximum === void 0 ? {} : { maximum },
+      ...path === void 0 ? {} : { path: true }
+    });
+  }
+  return Object.freeze(options);
+}
 function parseOffer7(value) {
   const record3 = recordOf8(value);
   if (record3 === void 0 || Object.keys(record3).some((key3) => !OFFER_KEYS6.has(key3)))
@@ -18839,15 +18947,17 @@ function parseOffer7(value) {
   const searchFolders = record3["searchFolders"] === void 0 ? void 0 : nameList(record3["searchFolders"]);
   if (record3["searchFolders"] !== void 0 && searchFolders === void 0)
     return void 0;
+  const launchOptions = record3["launchOptions"] === void 0 ? void 0 : launchOptionsOf(record3["launchOptions"]);
+  if (record3["launchOptions"] !== void 0 && launchOptions === void 0)
+    return void 0;
   return {
     gameIds,
     ...markers.length === 0 ? {} : { markers },
-    ...searchFolders === void 0 ? {} : { searchFolders }
+    ...searchFolders === void 0 ? {} : { searchFolders },
+    ...launchOptions === void 0 ? {} : { launchOptions }
   };
 }
-function gameInstallationSearchOf(inventory) {
-  const markers = [];
-  const searchFolders = /* @__PURE__ */ new Map();
+function* gameOffersOf(inventory, contract) {
   for (const extension of inventory.extensions) {
     for (const contribution of extension.contributions) {
       const manifest = contribution.manifest;
@@ -18855,15 +18965,31 @@ function gameInstallationSearchOf(inventory) {
         continue;
       const spec = manifest.spec;
       for (const offer of spec.provides) {
-        if (offer.contract !== GAME_INSTALLATION_DISCOVERY_CONTRACT || offer.major !== 1)
+        if (offer.contract !== contract || offer.major !== 1)
           continue;
         const facet = parseOffer7(offer.facet);
-        markers.push(...facet?.markers ?? []);
-        for (const folder of facet?.searchFolders ?? [])
-          if (!searchFolders.has(folder.toLowerCase()))
-            searchFolders.set(folder.toLowerCase(), folder);
+        if (facet !== void 0)
+          yield facet;
       }
     }
+  }
+}
+function gameLaunchOptionsOf(inventory) {
+  const byGame = /* @__PURE__ */ new Map();
+  for (const facet of gameOffersOf(inventory, GAME_LAUNCH_PLAN_CONTRACT))
+    for (const gameId of facet.gameIds)
+      if (facet.launchOptions !== void 0 && !byGame.has(gameId))
+        byGame.set(gameId, facet.launchOptions);
+  return byGame;
+}
+function gameInstallationSearchOf(inventory) {
+  const markers = [];
+  const searchFolders = /* @__PURE__ */ new Map();
+  for (const facet of gameOffersOf(inventory, GAME_INSTALLATION_DISCOVERY_CONTRACT)) {
+    markers.push(...facet.markers ?? []);
+    for (const folder of facet.searchFolders ?? [])
+      if (!searchFolders.has(folder.toLowerCase()))
+        searchFolders.set(folder.toLowerCase(), folder);
   }
   return Object.freeze({
     markers: Object.freeze(markers),
@@ -29829,6 +29955,7 @@ export {
   explainProviderResolution,
   exposeSubjectRpc,
   gameInstallationSearchOf,
+  gameLaunchOptionsOf,
   interpretGameLaunchLog,
   inventoryHasErrors,
   invokeContainerPack,
@@ -29836,6 +29963,7 @@ export {
   isDetectionUntieRule,
   isolationChangeFromDataGraphProposal,
   languageAssetPictures,
+  languageFileAssociationFor,
   languageFileAssociations,
   languageFileExtension,
   languageProviderRoutes,
@@ -29925,5 +30053,6 @@ export {
   withNativeTextModules,
   withoutHiddenEntries,
   worldSceneModel,
-  worldSceneModelLimits
+  worldSceneModelLimits,
+  xmlRootElementName
 };

@@ -2,8 +2,8 @@ import {
   bakeSkinToRigidParts,
   createModelSkinDeformer,
   splitTrianglesByBoneLimit
-} from "../../../chunks/chunk-K6Y7MJMB.js";
-import "../../../chunks/chunk-WYUQ3HXR.js";
+} from "../../../chunks/chunk-L2VMGJ76.js";
+import "../../../chunks/chunk-MUN4JEOH.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 export {
   bakeSkinToRigidParts,

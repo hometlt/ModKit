@@ -118,24 +118,46 @@ function decomposeMatrix4(matrix2) {
   const sx = (determinant < 0 ? -1 : 1) * Math.hypot(m(0), m(1), m(2));
   const sy = Math.hypot(m(4), m(5), m(6));
   const sz = Math.hypot(m(8), m(9), m(10));
-  const dx = sx || 1;
-  const dy = sy || 1;
-  const dz = sz || 1;
+  const tiny = 1e-12 * Math.max(1, Math.abs(sx), sy, sz);
+  const unit3 = (scale, at2) => Math.abs(scale) <= tiny ? void 0 : [m(at2) / scale, m(at2 + 1) / scale, m(at2 + 2) / scale];
+  let x = unit3(sx, 0);
+  let y = unit3(sy, 4);
+  let z = unit3(sz, 8);
+  if (x === void 0 && y === void 0 && z === void 0)
+    [x, y, z] = [
+      [1, 0, 0],
+      [0, 1, 0],
+      [0, 0, 1]
+    ];
+  if (x !== void 0 && y === void 0 && z === void 0)
+    y = perpendicular(x);
+  else if (y !== void 0 && z === void 0 && x === void 0)
+    z = perpendicular(y);
+  else if (z !== void 0 && x === void 0 && y === void 0)
+    x = perpendicular(z);
+  if (z === void 0)
+    z = cross(x, y);
+  if (x === void 0)
+    x = cross(y, z);
+  if (y === void 0)
+    y = cross(z, x);
   return {
     translation: [m(12), m(13), m(14)],
     scaling: [sx, sy, sz],
-    rotation: quaternionFromRotationMatrix([
-      m(0) / dx,
-      m(1) / dx,
-      m(2) / dx,
-      m(4) / dy,
-      m(5) / dy,
-      m(6) / dy,
-      m(8) / dz,
-      m(9) / dz,
-      m(10) / dz
-    ])
+    rotation: quaternionFromRotationMatrix([...x, ...y, ...z])
   };
+}
+function cross(a, b) {
+  const c = [
+    a[1] * b[2] - a[2] * b[1],
+    a[2] * b[0] - a[0] * b[2],
+    a[0] * b[1] - a[1] * b[0]
+  ];
+  const length = Math.hypot(c[0], c[1], c[2]) || 1;
+  return [c[0] / length, c[1] / length, c[2] / length];
+}
+function perpendicular(v) {
+  return cross(v, Math.abs(v[0]) < 0.9 ? [1, 0, 0] : [0, 1, 0]);
 }
 function quaternionFromRotationMatrix(matrix2) {
   const m00 = matrix2[0] ?? 1;
@@ -450,7 +472,7 @@ function applyModelBillboards(pose, bindings, constraints, cameraRotation, hiera
 }
 var sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
 var dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
-var cross = (a, b) => [
+var cross2 = (a, b) => [
   a[1] * b[2] - a[2] * b[1],
   a[2] * b[0] - a[0] * b[2],
   a[0] * b[1] - a[1] * b[0]
@@ -465,9 +487,9 @@ var unit2 = (a, b) => {
 };
 function rotateVector(q, v) {
   const u = [q[0], q[1], q[2]];
-  const c1 = cross(u, v);
+  const c1 = cross2(u, v);
   const t = [c1[0] * 2, c1[1] * 2, c1[2] * 2];
-  const c2 = cross(u, t);
+  const c2 = cross2(u, t);
   return [v[0] + q[3] * t[0] + c2[0], v[1] + q[3] * t[1] + c2[1], v[2] + q[3] * t[2] + c2[2]];
 }
 function transformPoint(m, p) {
@@ -524,19 +546,19 @@ function aimRotation(constraint, camera, world, root, spin) {
     case "own-y": {
       const column = constraint.lock === "own-x" ? 0 : 4;
       const a = unit([world[column] ?? 0, world[column + 1] ?? 0, world[column + 2] ?? 0]);
-      const c = cross(a, d);
+      const c = cross2(a, d);
       if (dot(c, c) < DEGENERATE_LENGTH_SQUARED)
         return void 0;
       const cn = unit(c);
-      rows = constraint.lock === "own-x" ? [a, cn, cross(a, cn)] : [cn, cross(a, cn), a];
+      rows = constraint.lock === "own-x" ? [a, cn, cross2(a, cn)] : [cn, cross2(a, cn), a];
       break;
     }
     case "free": {
-      const e = cross(d, camera.up);
+      const e = cross2(d, camera.up);
       if (dot(e, e) < DEGENERATE_LENGTH_SQUARED)
         break;
       const en = unit(e);
-      rows = [en, d, unit(cross(en, d))];
+      rows = [en, d, unit(cross2(en, d))];
       break;
     }
   }

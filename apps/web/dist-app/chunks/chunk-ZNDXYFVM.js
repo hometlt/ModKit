@@ -7,7 +7,7 @@ import {
   invokeRefusalMessage,
   isRejected,
   mountFieldEditor
-} from "./chunk-77WQ6SRV.js";
+} from "./chunk-HYSNN3B5.js";
 import {
   createMediaShell,
   mountContributedSections
@@ -34,7 +34,7 @@ import {
   createModelSkeletonNodes,
   modelPrimitiveByteLength,
   snapshotJson
-} from "./chunk-TS6JMP3F.js";
+} from "./chunk-7IPDRXA2.js";
 import {
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
 } from "./chunk-BLWUC7LO.js";
@@ -1764,7 +1764,7 @@ function createModelViewer(options = {}) {
               const output = result.output;
               if (output.kind !== "bytes" || !(output.value instanceof Uint8Array))
                 throw new Error(`the codec answered ${output.kind}, not bytes`);
-              const { createUvmFramePreparer } = await import("./render-AL6JJDSE.js");
+              const { createUvmFramePreparer } = await import("./render-X2BRYXRS.js");
               const raster = options.rasterResources?.(args.descriptor);
               const preparer = createUvmFramePreparer(output.value, {
                 budget: MODEL_EFFECT_BUDGET,

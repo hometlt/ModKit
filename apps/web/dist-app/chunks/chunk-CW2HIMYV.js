@@ -1,14 +1,26 @@
 import {
-  referencePath
-} from "./chunk-5GGWVEQJ.js";
-import {
   parseSubjectRef,
   rootSubject,
   serializeSubjectRef
-} from "./chunk-VI4QBV4T.js";
+} from "./chunk-U4VIZDRF.js";
 import {
   compareUtf8
-} from "./chunk-V3DESLW4.js";
+} from "./chunk-33VOQNJR.js";
+import {
+  init_define_MODKIT_EMBED_EXTENSION_ORIGINS
+} from "./chunk-BLWUC7LO.js";
+
+// ../MODDING/modkit-core/packages/host/dist/subject-projection.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
+// ../MODDING/modkit-core/packages/host/dist/subject-field-projections.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+function referencePath(path, segment) {
+  return path === "" ? segment : `${path}.${segment}`;
+}
+function metadataFieldProjections(groups) {
+  return Object.freeze(groups.flatMap((group) => group.entries.flatMap((entry) => entry.type === void 0 ? [] : [{ path: referencePath(group.id, entry.key), type: entry.type, value: entry.value }])));
+}
 
 // ../MODDING/modkit-core/packages/host/dist/subject-projection.js
 var DEFAULT_SUBJECT_RELATION_PROJECTION_BUDGET = Object.freeze({
@@ -655,6 +667,7 @@ function descriptorSubjectRef(descriptor) {
 }
 
 export {
+  metadataFieldProjections,
   DEFAULT_SUBJECT_RELATION_PROJECTION_BUDGET,
   createFieldRelationGraphSource,
   createCompositeRelationGraphSource,

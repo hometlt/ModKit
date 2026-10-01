@@ -1,12 +1,14 @@
 import {
   __commonJS,
-  __toESM
-} from "./chunk-CQ52GEHY.js";
+  __toESM,
+  init_define_MODKIT_EMBED_EXTENSION_ORIGINS
+} from "./chunk-BLWUC7LO.js";
 
 // ../MODDING/modkit-core/node_modules/.pnpm/ajv@8.20.0/node_modules/ajv/dist/runtime/ucs2length.js
 var require_ucs2length = __commonJS({
   "../MODDING/modkit-core/node_modules/.pnpm/ajv@8.20.0/node_modules/ajv/dist/runtime/ucs2length.js"(exports) {
     "use strict";
+    init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
     Object.defineProperty(exports, "__esModule", { value: true });
     function ucs2length(str) {
       const len = str.length;
@@ -33,6 +35,7 @@ var require_ucs2length = __commonJS({
 var require_fast_deep_equal = __commonJS({
   "../MODDING/modkit-core/node_modules/.pnpm/fast-deep-equal@3.1.3/node_modules/fast-deep-equal/index.js"(exports, module) {
     "use strict";
+    init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
     module.exports = function equal(a, b) {
       if (a === b) return true;
       if (a && b && typeof a == "object" && typeof b == "object") {
@@ -68,6 +71,7 @@ var require_fast_deep_equal = __commonJS({
 var require_equal = __commonJS({
   "../MODDING/modkit-core/node_modules/.pnpm/ajv@8.20.0/node_modules/ajv/dist/runtime/equal.js"(exports) {
     "use strict";
+    init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
     Object.defineProperty(exports, "__esModule", { value: true });
     var equal = require_fast_deep_equal();
     equal.code = 'require("ajv/dist/runtime/equal").default';
@@ -75,7 +79,11 @@ var require_equal = __commonJS({
   }
 });
 
+// ../MODDING/modkit-core/packages/sdk/dist/manifest/validators.generated.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
 // ../MODDING/modkit-core/packages/sdk/dist/manifest/validators.generated/fieldTypeV1.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var func1Module = __toESM(require_ucs2length(), 1);
 var fieldTypeV1 = validate20;
 var schema32 = { "title": "FieldType", "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "const": "text" }, "multiline": { "type": "boolean" }, "pattern": { "type": "string" }, "maxLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "const": "number" }, "min": { "type": "number" }, "max": { "type": "number" }, "integer": { "type": "boolean" }, "unit": { "type": "string" } } }, { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "const": "boolean" } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "members"], "properties": { "kind": { "const": "enum" }, "members": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id"], "properties": { "id": { "type": "string", "minLength": 1 }, "label": { "type": "string" } } } }, "unknown": { "type": "string" } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "members"], "properties": { "kind": { "const": "flags" }, "members": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id"], "properties": { "id": { "type": "string", "minLength": 1 }, "label": { "type": "string" } } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "model"], "properties": { "kind": { "const": "color" }, "model": { "enum": ["rgb", "rgba", "argb"] } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "size"], "properties": { "kind": { "const": "vector" }, "size": { "enum": [2, 3, 4] }, "unit": { "type": "string" } } }, { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "enum": ["duration", "date", "bytes", "id", "path"] } } }, { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "const": "text-key" }, "catalog": { "type": "string", "minLength": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "subjectKind"], "properties": { "kind": { "const": "subject-ref" }, "subjectKind": { "type": "string", "minLength": 1 }, "filter": { "type": "object", "additionalProperties": false, "properties": { "type": { "type": "string", "minLength": 1 }, "sameTypeAs": { "type": "string", "minLength": 1 }, "text": { "type": "string" }, "requireTags": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "excludeTags": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "predicate": { "type": "object", "additionalProperties": false, "required": ["id"], "properties": { "id": { "type": "string", "minLength": 1 }, "params": { "$ref": "#/$defs/jsonValue" } } } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "accepts"], "properties": { "kind": { "const": "asset-ref" }, "accepts": { "type": "object", "additionalProperties": false, "properties": { "formatIds": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "traits": { "type": "array", "items": { "type": "string", "minLength": 1 } } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "language"], "properties": { "kind": { "const": "script" }, "language": { "type": "string", "minLength": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "fields"], "properties": { "kind": { "const": "struct" }, "fields": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["key", "label", "type"], "properties": { "key": { "type": "string", "minLength": 1 }, "label": { "type": "string" }, "type": { "$ref": "#/$defs/fieldType" }, "cardinality": { "enum": ["scalar", "append", "indexed"] }, "description": { "type": "string" }, "knowledgeTarget": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "schema", "typeId", "canonicalPath"], "properties": { "kind": { "const": "field" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "schema": { "type": "object", "additionalProperties": false, "required": ["contract", "major", "revision"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "maxLength": 256 }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "revision": { "type": "string", "minLength": 1, "maxLength": 256 } } }, "typeId": { "type": "string", "minLength": 1, "maxLength": 128 }, "canonicalPath": { "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 128 }, "minItems": 1, "maxItems": 32 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "subjectKind"], "properties": { "kind": { "const": "subject" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "subjectKind": { "type": "string", "minLength": 1, "maxLength": 128 }, "subjectId": { "type": "string", "minLength": 1, "maxLength": 512 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "formatId"], "properties": { "kind": { "const": "format" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "formatId": { "type": "string", "minLength": 1, "maxLength": 128 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "code"], "properties": { "kind": { "const": "diagnostic" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "code": { "type": "string", "minLength": 1, "maxLength": 256 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "conceptId"], "properties": { "kind": { "const": "concept" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "conceptId": { "type": "string", "minLength": 1, "maxLength": 128 } } }] } } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "item"], "properties": { "kind": { "const": "array" }, "item": { "$ref": "#/$defs/fieldType" }, "max": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "key", "value"], "properties": { "kind": { "const": "record" }, "key": { "$ref": "#/$defs/fieldType" }, "value": { "$ref": "#/$defs/fieldType" } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "keywords", "delimiter"], "properties": { "kind": { "const": "instructions" }, "keywords": { "type": "object", "additionalProperties": { "type": "array", "items": { "$ref": "#/$defs/fieldType" } } }, "delimiter": { "type": "string" }, "listDelimiter": { "type": "string" } } }, { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "const": "json" }, "schema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 }, "document": { "title": "JsonValue" } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "const": "text-runs" } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "typeId"], "properties": { "kind": { "const": "custom" }, "typeId": { "type": "string", "minLength": 1 }, "params": { "$ref": "#/$defs/jsonValue" } } }] };
@@ -3421,6 +3429,7 @@ function validate20(data, { instancePath = "", parentData, parentDataProperty, r
 validate20.evaluated = { "dynamicProps": true, "dynamicItems": false };
 
 // ../MODDING/modkit-core/packages/sdk/dist/manifest/validators.generated/fieldSchemaV1.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var func1Module2 = __toESM(require_ucs2length(), 1);
 var fieldSchemaV1 = validate202;
 var schema31 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/field-schema.v1.schema.json", "$defs": { "jsonValue": { "title": "JsonValue", "oneOf": [{ "type": "null" }, { "type": "boolean" }, { "type": "number" }, { "type": "string" }, { "type": "array", "items": { "$ref": "#/$defs/jsonValue" } }, { "type": "object", "additionalProperties": { "$ref": "#/$defs/jsonValue" } }] }, "fieldType": { "title": "FieldType", "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "const": "text" }, "multiline": { "type": "boolean" }, "pattern": { "type": "string" }, "maxLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "const": "number" }, "min": { "type": "number" }, "max": { "type": "number" }, "integer": { "type": "boolean" }, "unit": { "type": "string" } } }, { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "const": "boolean" } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "members"], "properties": { "kind": { "const": "enum" }, "members": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id"], "properties": { "id": { "type": "string", "minLength": 1 }, "label": { "type": "string" } } } }, "unknown": { "type": "string" } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "members"], "properties": { "kind": { "const": "flags" }, "members": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id"], "properties": { "id": { "type": "string", "minLength": 1 }, "label": { "type": "string" } } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "model"], "properties": { "kind": { "const": "color" }, "model": { "enum": ["rgb", "rgba", "argb"] } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "size"], "properties": { "kind": { "const": "vector" }, "size": { "enum": [2, 3, 4] }, "unit": { "type": "string" } } }, { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "enum": ["duration", "date", "bytes", "id", "path"] } } }, { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "const": "text-key" }, "catalog": { "type": "string", "minLength": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "subjectKind"], "properties": { "kind": { "const": "subject-ref" }, "subjectKind": { "type": "string", "minLength": 1 }, "filter": { "type": "object", "additionalProperties": false, "properties": { "type": { "type": "string", "minLength": 1 }, "sameTypeAs": { "type": "string", "minLength": 1 }, "text": { "type": "string" }, "requireTags": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "excludeTags": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "predicate": { "type": "object", "additionalProperties": false, "required": ["id"], "properties": { "id": { "type": "string", "minLength": 1 }, "params": { "$ref": "#/$defs/jsonValue" } } } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "accepts"], "properties": { "kind": { "const": "asset-ref" }, "accepts": { "type": "object", "additionalProperties": false, "properties": { "formatIds": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "traits": { "type": "array", "items": { "type": "string", "minLength": 1 } } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "language"], "properties": { "kind": { "const": "script" }, "language": { "type": "string", "minLength": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "fields"], "properties": { "kind": { "const": "struct" }, "fields": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["key", "label", "type"], "properties": { "key": { "type": "string", "minLength": 1 }, "label": { "type": "string" }, "type": { "$ref": "#/$defs/fieldType" }, "cardinality": { "enum": ["scalar", "append", "indexed"] }, "description": { "type": "string" }, "knowledgeTarget": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "schema", "typeId", "canonicalPath"], "properties": { "kind": { "const": "field" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "schema": { "type": "object", "additionalProperties": false, "required": ["contract", "major", "revision"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "maxLength": 256 }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "revision": { "type": "string", "minLength": 1, "maxLength": 256 } } }, "typeId": { "type": "string", "minLength": 1, "maxLength": 128 }, "canonicalPath": { "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 128 }, "minItems": 1, "maxItems": 32 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "subjectKind"], "properties": { "kind": { "const": "subject" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "subjectKind": { "type": "string", "minLength": 1, "maxLength": 128 }, "subjectId": { "type": "string", "minLength": 1, "maxLength": 512 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "formatId"], "properties": { "kind": { "const": "format" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "formatId": { "type": "string", "minLength": 1, "maxLength": 128 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "code"], "properties": { "kind": { "const": "diagnostic" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "code": { "type": "string", "minLength": 1, "maxLength": 256 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "conceptId"], "properties": { "kind": { "const": "concept" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "conceptId": { "type": "string", "minLength": 1, "maxLength": 128 } } }] } } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "item"], "properties": { "kind": { "const": "array" }, "item": { "$ref": "#/$defs/fieldType" }, "max": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "key", "value"], "properties": { "kind": { "const": "record" }, "key": { "$ref": "#/$defs/fieldType" }, "value": { "$ref": "#/$defs/fieldType" } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "keywords", "delimiter"], "properties": { "kind": { "const": "instructions" }, "keywords": { "type": "object", "additionalProperties": { "type": "array", "items": { "$ref": "#/$defs/fieldType" } } }, "delimiter": { "type": "string" }, "listDelimiter": { "type": "string" } } }, { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "const": "json" }, "schema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 }, "document": { "title": "JsonValue" } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "const": "text-runs" } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "typeId"], "properties": { "kind": { "const": "custom" }, "typeId": { "type": "string", "minLength": 1 }, "params": { "$ref": "#/$defs/jsonValue" } } }] } }, "type": "object", "additionalProperties": false, "required": ["key", "label", "type"], "properties": { "key": { "type": "string", "minLength": 1 }, "label": { "type": "string" }, "type": { "$ref": "#/$defs/fieldType" }, "cardinality": { "enum": ["scalar", "append", "indexed"] }, "description": { "type": "string" }, "knowledgeTarget": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "schema", "typeId", "canonicalPath"], "properties": { "kind": { "const": "field" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "schema": { "type": "object", "additionalProperties": false, "required": ["contract", "major", "revision"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "maxLength": 256 }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "revision": { "type": "string", "minLength": 1, "maxLength": 256 } } }, "typeId": { "type": "string", "minLength": 1, "maxLength": 128 }, "canonicalPath": { "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 128 }, "minItems": 1, "maxItems": 32 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "subjectKind"], "properties": { "kind": { "const": "subject" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "subjectKind": { "type": "string", "minLength": 1, "maxLength": 128 }, "subjectId": { "type": "string", "minLength": 1, "maxLength": 512 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "formatId"], "properties": { "kind": { "const": "format" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "formatId": { "type": "string", "minLength": 1, "maxLength": 128 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "code"], "properties": { "kind": { "const": "diagnostic" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "code": { "type": "string", "minLength": 1, "maxLength": 256 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "conceptId"], "properties": { "kind": { "const": "concept" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "conceptId": { "type": "string", "minLength": 1, "maxLength": 128 } } }] } } };
@@ -7819,6 +7828,7 @@ function validate202(data, { instancePath = "", parentData, parentDataProperty, 
 validate202.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
 
 // ../MODDING/modkit-core/packages/sdk/dist/manifest/validators.generated/fieldWriteRequestV1.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var func1Module3 = __toESM(require_ucs2length(), 1);
 var fieldWriteRequestV1 = validate203;
 var func13 = func1Module3.default?.default ?? func1Module3.default;
@@ -8132,6 +8142,7 @@ function validate203(data, { instancePath = "", parentData, parentDataProperty, 
 validate203.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
 
 // ../MODDING/modkit-core/packages/sdk/dist/manifest/validators.generated/fieldEditInputSchemaV1.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var func1Module4 = __toESM(require_ucs2length(), 1);
 var fieldEditInputSchemaV1 = validate204;
 var schema312 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/field-edit-input-schema.v1.schema.json", "$defs": { "jsonValue": { "title": "JsonValue", "oneOf": [{ "type": "null" }, { "type": "boolean" }, { "type": "number" }, { "type": "string" }, { "type": "array", "items": { "$ref": "#/$defs/jsonValue" } }, { "type": "object", "additionalProperties": { "$ref": "#/$defs/jsonValue" } }] }, "fieldType": { "title": "FieldType", "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "const": "text" }, "multiline": { "type": "boolean" }, "pattern": { "type": "string" }, "maxLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "const": "number" }, "min": { "type": "number" }, "max": { "type": "number" }, "integer": { "type": "boolean" }, "unit": { "type": "string" } } }, { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "const": "boolean" } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "members"], "properties": { "kind": { "const": "enum" }, "members": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id"], "properties": { "id": { "type": "string", "minLength": 1 }, "label": { "type": "string" } } } }, "unknown": { "type": "string" } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "members"], "properties": { "kind": { "const": "flags" }, "members": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id"], "properties": { "id": { "type": "string", "minLength": 1 }, "label": { "type": "string" } } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "model"], "properties": { "kind": { "const": "color" }, "model": { "enum": ["rgb", "rgba", "argb"] } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "size"], "properties": { "kind": { "const": "vector" }, "size": { "enum": [2, 3, 4] }, "unit": { "type": "string" } } }, { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "enum": ["duration", "date", "bytes", "id", "path"] } } }, { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "const": "text-key" }, "catalog": { "type": "string", "minLength": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "subjectKind"], "properties": { "kind": { "const": "subject-ref" }, "subjectKind": { "type": "string", "minLength": 1 }, "filter": { "type": "object", "additionalProperties": false, "properties": { "type": { "type": "string", "minLength": 1 }, "sameTypeAs": { "type": "string", "minLength": 1 }, "text": { "type": "string" }, "requireTags": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "excludeTags": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "predicate": { "type": "object", "additionalProperties": false, "required": ["id"], "properties": { "id": { "type": "string", "minLength": 1 }, "params": { "$ref": "#/$defs/jsonValue" } } } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "accepts"], "properties": { "kind": { "const": "asset-ref" }, "accepts": { "type": "object", "additionalProperties": false, "properties": { "formatIds": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "traits": { "type": "array", "items": { "type": "string", "minLength": 1 } } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "language"], "properties": { "kind": { "const": "script" }, "language": { "type": "string", "minLength": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "fields"], "properties": { "kind": { "const": "struct" }, "fields": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["key", "label", "type"], "properties": { "key": { "type": "string", "minLength": 1 }, "label": { "type": "string" }, "type": { "$ref": "#/$defs/fieldType" }, "cardinality": { "enum": ["scalar", "append", "indexed"] }, "description": { "type": "string" }, "knowledgeTarget": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "schema", "typeId", "canonicalPath"], "properties": { "kind": { "const": "field" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "schema": { "type": "object", "additionalProperties": false, "required": ["contract", "major", "revision"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "maxLength": 256 }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "revision": { "type": "string", "minLength": 1, "maxLength": 256 } } }, "typeId": { "type": "string", "minLength": 1, "maxLength": 128 }, "canonicalPath": { "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 128 }, "minItems": 1, "maxItems": 32 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "subjectKind"], "properties": { "kind": { "const": "subject" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "subjectKind": { "type": "string", "minLength": 1, "maxLength": 128 }, "subjectId": { "type": "string", "minLength": 1, "maxLength": 512 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "formatId"], "properties": { "kind": { "const": "format" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "formatId": { "type": "string", "minLength": 1, "maxLength": 128 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "code"], "properties": { "kind": { "const": "diagnostic" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "code": { "type": "string", "minLength": 1, "maxLength": 256 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "conceptId"], "properties": { "kind": { "const": "concept" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "conceptId": { "type": "string", "minLength": 1, "maxLength": 128 } } }] } } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "item"], "properties": { "kind": { "const": "array" }, "item": { "$ref": "#/$defs/fieldType" }, "max": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "key", "value"], "properties": { "kind": { "const": "record" }, "key": { "$ref": "#/$defs/fieldType" }, "value": { "$ref": "#/$defs/fieldType" } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "keywords", "delimiter"], "properties": { "kind": { "const": "instructions" }, "keywords": { "type": "object", "additionalProperties": { "type": "array", "items": { "$ref": "#/$defs/fieldType" } } }, "delimiter": { "type": "string" }, "listDelimiter": { "type": "string" } } }, { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "const": "json" }, "schema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 }, "document": { "title": "JsonValue" } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "const": "text-runs" } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "typeId"], "properties": { "kind": { "const": "custom" }, "typeId": { "type": "string", "minLength": 1 }, "params": { "$ref": "#/$defs/jsonValue" } } }] } }, "type": "object", "additionalProperties": false, "required": ["schemaVersion", "forms"], "properties": { "schemaVersion": { "const": 1 }, "forms": { "type": "array", "minItems": 1, "items": { "type": "object", "additionalProperties": false, "required": ["id", "label", "summary", "fields"], "properties": { "id": { "type": "string", "minLength": 1 }, "label": { "type": "string" }, "summary": { "type": "string" }, "binding": { "type": "object", "additionalProperties": false, "required": ["groupId"], "properties": { "groupId": { "type": "string", "minLength": 1 }, "entryKey": { "type": "string", "minLength": 1 } } }, "fields": { "type": "array", "minItems": 1, "items": { "type": "object", "additionalProperties": false, "required": ["key", "label", "type", "inputPath"], "properties": { "key": { "type": "string", "minLength": 1 }, "label": { "type": "string" }, "type": { "$ref": "#/$defs/fieldType" }, "cardinality": { "enum": ["scalar", "append", "indexed"] }, "description": { "type": "string" }, "knowledgeTarget": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "schema", "typeId", "canonicalPath"], "properties": { "kind": { "const": "field" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "schema": { "type": "object", "additionalProperties": false, "required": ["contract", "major", "revision"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "maxLength": 256 }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "revision": { "type": "string", "minLength": 1, "maxLength": 256 } } }, "typeId": { "type": "string", "minLength": 1, "maxLength": 128 }, "canonicalPath": { "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 128 }, "minItems": 1, "maxItems": 32 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "subjectKind"], "properties": { "kind": { "const": "subject" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "subjectKind": { "type": "string", "minLength": 1, "maxLength": 128 }, "subjectId": { "type": "string", "minLength": 1, "maxLength": 512 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "formatId"], "properties": { "kind": { "const": "format" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "formatId": { "type": "string", "minLength": 1, "maxLength": 128 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "code"], "properties": { "kind": { "const": "diagnostic" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "code": { "type": "string", "minLength": 1, "maxLength": 256 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "conceptId"], "properties": { "kind": { "const": "concept" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "conceptId": { "type": "string", "minLength": 1, "maxLength": 128 } } }] }, "inputPath": { "type": "array", "items": { "oneOf": [{ "type": "string", "minLength": 1 }, { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }] }, "minItems": 1 }, "required": { "type": "boolean" }, "initial": { "$ref": "#/$defs/jsonValue" }, "source": { "enum": ["entry-key", "entry-value"] }, "encoding": { "const": "utf8-base64" } } } } } } } } };
@@ -12972,6 +12983,7 @@ function validate204(data, { instancePath = "", parentData, parentDataProperty, 
 validate204.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
 
 // ../MODDING/modkit-core/packages/sdk/dist/manifest/validators.generated/fieldEditorContributionSpecV1.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var func1Module5 = __toESM(require_ucs2length(), 1);
 var fieldEditorContributionSpecV1 = validate205;
 var func15 = func1Module5.default?.default ?? func1Module5.default;
@@ -13184,6 +13196,7 @@ function validate205(data, { instancePath = "", parentData, parentDataProperty, 
 validate205.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
 
 // ../MODDING/modkit-core/packages/sdk/dist/manifest/validators.generated/subjectKindDefinitionSpecV1.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var func1Module6 = __toESM(require_ucs2length(), 1);
 var subjectKindDefinitionSpecV1 = validate206;
 var schema313 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/subject-kind-definition-spec.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["kindId", "label"], "properties": { "kindId": { "type": "string", "minLength": 1 }, "label": { "type": "string" }, "icon": { "type": "object", "additionalProperties": false, "required": ["path"], "properties": { "path": { "type": "string", "pattern": "^(?:\\./)?(?![A-Za-z]:)(?!\\\\)(?!.*\\\\)(?!.*\\u0000)(?!\\.{1,2}(?:/|$))(?!.*\\/\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$" }, "displayName": { "type": "string", "minLength": 1 }, "mediaType": { "type": "string", "minLength": 1 } } }, "parentKinds": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "card": { "type": "object", "additionalProperties": false, "required": ["sections"], "properties": { "sections": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "preview": { "enum": ["raster", "model", "none"] } } }, "selector": { "type": "object", "additionalProperties": false, "required": ["facets", "predicates"], "properties": { "facets": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "predicates": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "label"], "properties": { "id": { "type": "string", "minLength": 1 }, "label": { "type": "string" }, "params": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 }, "document": { "title": "JsonValue" } } } } } } } }, "diff": { "type": "object", "additionalProperties": false, "required": ["profile"], "properties": { "profile": { "enum": ["generic", "provider"] } } }, "knowledgeEcosystem": { "type": "string", "minLength": 1 } } };
@@ -13783,6 +13796,7 @@ function validate206(data, { instancePath = "", parentData, parentDataProperty, 
 validate206.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
 
 // ../MODDING/modkit-core/packages/sdk/dist/manifest/validators.generated/sourceSpanV1.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var sourceSpanV1 = validate207;
 var pattern45 = new RegExp("^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$", "u");
 function validate207(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
@@ -14374,9 +14388,10 @@ function validate207(data, { instancePath = "", parentData, parentDataProperty, 
 validate207.evaluated = { "dynamicProps": true, "dynamicItems": false };
 
 // ../MODDING/modkit-core/packages/sdk/dist/manifest/validators.generated/extensionManifestV1.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var func2Module = __toESM(require_ucs2length(), 1);
 var extensionManifestV1 = validate208;
-var schema314 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/extension-manifest.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["schemaVersion", "publisher", "id", "version", "license", "contributionManifests"], "properties": { "schemaVersion": { "const": 1 }, "publisher": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "version": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "license": { "type": "string", "minLength": 1 }, "contributionManifests": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "dependsOn": { "type": "array", "items": { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/extension-requirement.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["extension", "mode", "scope"], "properties": { "extension": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "mode": { "enum": ["required", "default", "suggested", "integrates"] }, "scope": { "type": "object", "additionalProperties": false, "required": ["kind", "id"], "properties": { "kind": { "enum": ["contribution", "offer", "operation", "intent", "variant", "profile", "projection", "slot"] }, "id": { "type": "string", "minLength": 1 } } } } } }, "presentation": { "type": "object", "additionalProperties": false, "properties": { "displayName": { "type": "string", "minLength": 1 }, "description": { "type": "string", "minLength": 1 }, "vendor": { "type": "object", "additionalProperties": false, "required": ["id", "displayName"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "displayName": { "type": "string", "minLength": 1 } } }, "games": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "displayName"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "displayName": { "type": "string", "minLength": 1 } } } }, "icon": { "type": "object", "additionalProperties": false, "required": ["path"], "properties": { "path": { "type": "string", "pattern": "^(?:\\./)?(?![A-Za-z]:)(?!\\\\)(?!.*\\\\)(?!.*\\u0000)(?!\\.{1,2}(?:/|$))(?!.*\\/\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$" }, "displayName": { "type": "string", "minLength": 1 }, "mediaType": { "type": "string", "minLength": 1 } } }, "source": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "root"], "properties": { "kind": { "const": "root" }, "root": { "type": "string", "pattern": "^(?:\\./)?(?![A-Za-z]:)(?!\\\\)(?!.*\\\\)(?!.*\\u0000)(?!\\.{1,2}(?:/|$))(?!.*\\/\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$" } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "url"], "properties": { "kind": { "const": "url" }, "url": { "type": "string", "pattern": "^https?://[^\\s]+$" } } }] }, "licenseFiles": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["path"], "properties": { "path": { "type": "string", "pattern": "^(?:\\./)?(?![A-Za-z]:)(?!\\\\)(?!.*\\\\)(?!.*\\u0000)(?!\\.{1,2}(?:/|$))(?!.*\\/\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$" }, "displayName": { "type": "string", "minLength": 1 }, "mediaType": { "type": "string", "minLength": 1 } } } } } }, "contentSources": { "type": "string", "pattern": "^(?:\\./)?(?![A-Za-z]:)(?!\\\\)(?!.*\\\\)(?!.*\\u0000)(?!\\.{1,2}(?:/|$))(?!.*\\/\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$" }, "languageFiles": { "type": "array", "maxItems": 64, "items": { "type": "object", "additionalProperties": false, "required": ["extension", "languageId"], "properties": { "extension": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" }, "languageId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" }, "dialect": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" } } } }, "credentials": { "type": "array", "maxItems": 32, "items": { "type": "object", "additionalProperties": false, "required": ["id", "kind", "label"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9.-]*/[a-z0-9][a-z0-9._-]*$", "maxLength": 128 }, "kind": { "enum": ["api-key", "oauth2-pkce", "provider-session", "symmetric-key"] }, "label": { "type": "string", "minLength": 1, "maxLength": 128 }, "audience": { "type": "array", "maxItems": 16, "items": { "type": "string", "pattern": "^https?://[^\\s]+$", "maxLength": 512 } }, "header": { "type": "string", "pattern": "^[A-Za-z0-9-]{1,64}$" }, "scopes": { "type": "array", "maxItems": 32, "items": { "type": "string", "minLength": 1, "maxLength": 128 } }, "oauth": { "type": "object", "additionalProperties": false, "required": ["authorizationEndpoint", "tokenEndpoint"], "properties": { "authorizationEndpoint": { "type": "string", "pattern": "^https?://[^\\s]+$", "maxLength": 512 }, "tokenEndpoint": { "type": "string", "pattern": "^https?://[^\\s]+$", "maxLength": 512 }, "revocationEndpoint": { "type": "string", "pattern": "^https?://[^\\s]+$", "maxLength": 512 }, "clientId": { "type": "string", "minLength": 1, "maxLength": 256 }, "clientIdSetting": { "type": "string", "pattern": "^[A-Za-z0-9._-]{1,64}$" }, "loopbackPort": { "type": "integer", "minimum": 1024, "maximum": 65535 }, "loopbackHost": { "enum": ["localhost", "127.0.0.1"] } } }, "scoped": { "type": "boolean" }, "environment": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]{0,63}$" }, "replacesSettings": { "type": "array", "maxItems": 16, "items": { "type": "object", "additionalProperties": false, "required": ["contribution", "key"], "properties": { "contribution": { "type": "string", "minLength": 1, "maxLength": 256 }, "key": { "type": "string", "pattern": "^[A-Za-z0-9._-]{1,64}$" }, "scoped": { "const": true } } } }, "replacesApplicationSettings": { "type": "array", "maxItems": 16, "items": { "type": "object", "additionalProperties": false, "required": ["setting"], "properties": { "setting": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9]*(?:\\.[A-Za-z0-9_-]+)+$", "maxLength": 128 }, "scoped": { "const": true } } } }, "scopeFormat": { "enum": ["hex"] } } } }, "workspaceMarkers": { "type": "array", "maxItems": 32, "items": { "type": "string", "pattern": "^(?!/)(?![A-Za-z]:)[^\\\\\\u0000]+$", "maxLength": 128 } } } };
+var schema314 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/extension-manifest.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["schemaVersion", "publisher", "id", "version", "license", "contributionManifests"], "properties": { "schemaVersion": { "const": 1 }, "publisher": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "version": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "license": { "type": "string", "minLength": 1 }, "contributionManifests": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "dependsOn": { "type": "array", "items": { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/extension-requirement.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["extension", "mode", "scope"], "properties": { "extension": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "mode": { "enum": ["required", "default", "suggested", "integrates"] }, "scope": { "type": "object", "additionalProperties": false, "required": ["kind", "id"], "properties": { "kind": { "enum": ["contribution", "offer", "operation", "intent", "variant", "profile", "projection", "slot"] }, "id": { "type": "string", "minLength": 1 } } } } } }, "presentation": { "type": "object", "additionalProperties": false, "properties": { "displayName": { "type": "string", "minLength": 1 }, "description": { "type": "string", "minLength": 1 }, "vendor": { "type": "object", "additionalProperties": false, "required": ["id", "displayName"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "displayName": { "type": "string", "minLength": 1 } } }, "games": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "displayName"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "displayName": { "type": "string", "minLength": 1 } } } }, "icon": { "type": "object", "additionalProperties": false, "required": ["path"], "properties": { "path": { "type": "string", "pattern": "^(?:\\./)?(?![A-Za-z]:)(?!\\\\)(?!.*\\\\)(?!.*\\u0000)(?!\\.{1,2}(?:/|$))(?!.*\\/\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$" }, "displayName": { "type": "string", "minLength": 1 }, "mediaType": { "type": "string", "minLength": 1 } } }, "source": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "root"], "properties": { "kind": { "const": "root" }, "root": { "type": "string", "pattern": "^(?:\\./)?(?![A-Za-z]:)(?!\\\\)(?!.*\\\\)(?!.*\\u0000)(?!\\.{1,2}(?:/|$))(?!.*\\/\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$" } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "url"], "properties": { "kind": { "const": "url" }, "url": { "type": "string", "pattern": "^https?://[^\\s]+$" } } }] }, "licenseFiles": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["path"], "properties": { "path": { "type": "string", "pattern": "^(?:\\./)?(?![A-Za-z]:)(?!\\\\)(?!.*\\\\)(?!.*\\u0000)(?!\\.{1,2}(?:/|$))(?!.*\\/\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$" }, "displayName": { "type": "string", "minLength": 1 }, "mediaType": { "type": "string", "minLength": 1 } } } } } }, "contentSources": { "type": "string", "pattern": "^(?:\\./)?(?![A-Za-z]:)(?!\\\\)(?!.*\\\\)(?!.*\\u0000)(?!\\.{1,2}(?:/|$))(?!.*\\/\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$" }, "languageFiles": { "type": "array", "maxItems": 64, "items": { "type": "object", "additionalProperties": false, "required": ["extension", "languageId"], "properties": { "extension": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" }, "languageId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" }, "dialect": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" }, "rootElement": { "type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9._-]{0,127}$" } } } }, "credentials": { "type": "array", "maxItems": 32, "items": { "type": "object", "additionalProperties": false, "required": ["id", "kind", "label"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9.-]*/[a-z0-9][a-z0-9._-]*$", "maxLength": 128 }, "kind": { "enum": ["api-key", "oauth2-pkce", "provider-session", "symmetric-key"] }, "label": { "type": "string", "minLength": 1, "maxLength": 128 }, "audience": { "type": "array", "maxItems": 16, "items": { "type": "string", "pattern": "^https?://[^\\s]+$", "maxLength": 512 } }, "header": { "type": "string", "pattern": "^[A-Za-z0-9-]{1,64}$" }, "scopes": { "type": "array", "maxItems": 32, "items": { "type": "string", "minLength": 1, "maxLength": 128 } }, "oauth": { "type": "object", "additionalProperties": false, "required": ["authorizationEndpoint", "tokenEndpoint"], "properties": { "authorizationEndpoint": { "type": "string", "pattern": "^https?://[^\\s]+$", "maxLength": 512 }, "tokenEndpoint": { "type": "string", "pattern": "^https?://[^\\s]+$", "maxLength": 512 }, "revocationEndpoint": { "type": "string", "pattern": "^https?://[^\\s]+$", "maxLength": 512 }, "clientId": { "type": "string", "minLength": 1, "maxLength": 256 }, "clientIdSetting": { "type": "string", "pattern": "^[A-Za-z0-9._-]{1,64}$" }, "loopbackPort": { "type": "integer", "minimum": 1024, "maximum": 65535 }, "loopbackHost": { "enum": ["localhost", "127.0.0.1"] } } }, "scoped": { "type": "boolean" }, "environment": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]{0,63}$" }, "replacesSettings": { "type": "array", "maxItems": 16, "items": { "type": "object", "additionalProperties": false, "required": ["contribution", "key"], "properties": { "contribution": { "type": "string", "minLength": 1, "maxLength": 256 }, "key": { "type": "string", "pattern": "^[A-Za-z0-9._-]{1,64}$" }, "scoped": { "const": true } } } }, "replacesApplicationSettings": { "type": "array", "maxItems": 16, "items": { "type": "object", "additionalProperties": false, "required": ["setting"], "properties": { "setting": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9]*(?:\\.[A-Za-z0-9_-]+)+$", "maxLength": 128 }, "scoped": { "const": true } } } }, "scopeFormat": { "enum": ["hex"] } } } }, "workspaceMarkers": { "type": "array", "maxItems": 32, "items": { "type": "string", "pattern": "^(?!/)(?![A-Za-z]:)[^\\\\\\u0000]+$", "maxLength": 128 } } } };
 var func17 = Object.prototype.hasOwnProperty;
 var func2 = func2Module.default?.default ?? func2Module.default;
 var pattern46 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
@@ -14386,12 +14401,13 @@ var pattern8 = new RegExp("^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?
 var pattern11 = new RegExp("^(?:\\./)?(?![A-Za-z]:)(?!\\\\)(?!.*\\\\)(?!.*\\u0000)(?!\\.{1,2}(?:/|$))(?!.*\\/\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$", "u");
 var pattern13 = new RegExp("^https?://[^\\s]+$", "u");
 var pattern16 = new RegExp("^[a-z0-9][a-z0-9._-]{0,63}$", "u");
-var pattern19 = new RegExp("^[a-z0-9][a-z0-9.-]*/[a-z0-9][a-z0-9._-]*$", "u");
-var pattern21 = new RegExp("^[A-Za-z0-9-]{1,64}$", "u");
-var pattern25 = new RegExp("^[A-Za-z0-9._-]{1,64}$", "u");
-var pattern26 = new RegExp("^[A-Z][A-Z0-9_]{0,63}$", "u");
-var pattern28 = new RegExp("^[A-Za-z][A-Za-z0-9]*(?:\\.[A-Za-z0-9_-]+)+$", "u");
-var pattern29 = new RegExp("^(?!/)(?![A-Za-z]:)[^\\\\\\u0000]+$", "u");
+var pattern19 = new RegExp("^[A-Za-z_][A-Za-z0-9._-]{0,127}$", "u");
+var pattern20 = new RegExp("^[a-z0-9][a-z0-9.-]*/[a-z0-9][a-z0-9._-]*$", "u");
+var pattern22 = new RegExp("^[A-Za-z0-9-]{1,64}$", "u");
+var pattern26 = new RegExp("^[A-Za-z0-9._-]{1,64}$", "u");
+var pattern27 = new RegExp("^[A-Z][A-Z0-9_]{0,63}$", "u");
+var pattern29 = new RegExp("^[A-Za-z][A-Za-z0-9]*(?:\\.[A-Za-z0-9_-]+)+$", "u");
+var pattern30 = new RegExp("^(?!/)(?![A-Za-z]:)[^\\\\\\u0000]+$", "u");
 function validate208(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
   ;
   let vErrors = null;
@@ -15513,7 +15529,7 @@ function validate208(data, { instancePath = "", parentData, parentDataProperty, 
               errors++;
             }
             for (const key10 in data41) {
-              if (!(key10 === "extension" || key10 === "languageId" || key10 === "dialect")) {
+              if (!(key10 === "extension" || key10 === "languageId" || key10 === "dialect" || key10 === "rootElement")) {
                 const err99 = { instancePath: instancePath + "/languageFiles/" + i4, schemaPath: "#/properties/languageFiles/items/additionalProperties", keyword: "additionalProperties", params: { additionalProperty: key10 }, message: "must NOT have additional properties" };
                 if (vErrors === null) {
                   vErrors = [err99];
@@ -15589,62 +15605,66 @@ function validate208(data, { instancePath = "", parentData, parentDataProperty, 
                 errors++;
               }
             }
+            if (data41.rootElement !== void 0) {
+              let data45 = data41.rootElement;
+              if (typeof data45 === "string") {
+                if (!pattern19.test(data45)) {
+                  const err106 = { instancePath: instancePath + "/languageFiles/" + i4 + "/rootElement", schemaPath: "#/properties/languageFiles/items/properties/rootElement/pattern", keyword: "pattern", params: { pattern: "^[A-Za-z_][A-Za-z0-9._-]{0,127}$" }, message: 'must match pattern "^[A-Za-z_][A-Za-z0-9._-]{0,127}$"' };
+                  if (vErrors === null) {
+                    vErrors = [err106];
+                  } else {
+                    vErrors.push(err106);
+                  }
+                  errors++;
+                }
+              } else {
+                const err107 = { instancePath: instancePath + "/languageFiles/" + i4 + "/rootElement", schemaPath: "#/properties/languageFiles/items/properties/rootElement/type", keyword: "type", params: { type: "string" }, message: "must be string" };
+                if (vErrors === null) {
+                  vErrors = [err107];
+                } else {
+                  vErrors.push(err107);
+                }
+                errors++;
+              }
+            }
           } else {
-            const err106 = { instancePath: instancePath + "/languageFiles/" + i4, schemaPath: "#/properties/languageFiles/items/type", keyword: "type", params: { type: "object" }, message: "must be object" };
+            const err108 = { instancePath: instancePath + "/languageFiles/" + i4, schemaPath: "#/properties/languageFiles/items/type", keyword: "type", params: { type: "object" }, message: "must be object" };
             if (vErrors === null) {
-              vErrors = [err106];
+              vErrors = [err108];
             } else {
-              vErrors.push(err106);
+              vErrors.push(err108);
             }
             errors++;
           }
         }
       } else {
-        const err107 = { instancePath: instancePath + "/languageFiles", schemaPath: "#/properties/languageFiles/type", keyword: "type", params: { type: "array" }, message: "must be array" };
+        const err109 = { instancePath: instancePath + "/languageFiles", schemaPath: "#/properties/languageFiles/type", keyword: "type", params: { type: "array" }, message: "must be array" };
         if (vErrors === null) {
-          vErrors = [err107];
+          vErrors = [err109];
         } else {
-          vErrors.push(err107);
+          vErrors.push(err109);
         }
         errors++;
       }
     }
     if (data.credentials !== void 0) {
-      let data45 = data.credentials;
-      if (Array.isArray(data45)) {
-        if (data45.length > 32) {
-          const err108 = { instancePath: instancePath + "/credentials", schemaPath: "#/properties/credentials/maxItems", keyword: "maxItems", params: { limit: 32 }, message: "must NOT have more than 32 items" };
+      let data46 = data.credentials;
+      if (Array.isArray(data46)) {
+        if (data46.length > 32) {
+          const err110 = { instancePath: instancePath + "/credentials", schemaPath: "#/properties/credentials/maxItems", keyword: "maxItems", params: { limit: 32 }, message: "must NOT have more than 32 items" };
           if (vErrors === null) {
-            vErrors = [err108];
+            vErrors = [err110];
           } else {
-            vErrors.push(err108);
+            vErrors.push(err110);
           }
           errors++;
         }
-        const len5 = data45.length;
+        const len5 = data46.length;
         for (let i5 = 0; i5 < len5; i5++) {
-          let data46 = data45[i5];
-          if (data46 && typeof data46 == "object" && !Array.isArray(data46)) {
-            if (data46.id === void 0) {
-              const err109 = { instancePath: instancePath + "/credentials/" + i5, schemaPath: "#/properties/credentials/items/required", keyword: "required", params: { missingProperty: "id" }, message: "must have required property 'id'" };
-              if (vErrors === null) {
-                vErrors = [err109];
-              } else {
-                vErrors.push(err109);
-              }
-              errors++;
-            }
-            if (data46.kind === void 0) {
-              const err110 = { instancePath: instancePath + "/credentials/" + i5, schemaPath: "#/properties/credentials/items/required", keyword: "required", params: { missingProperty: "kind" }, message: "must have required property 'kind'" };
-              if (vErrors === null) {
-                vErrors = [err110];
-              } else {
-                vErrors.push(err110);
-              }
-              errors++;
-            }
-            if (data46.label === void 0) {
-              const err111 = { instancePath: instancePath + "/credentials/" + i5, schemaPath: "#/properties/credentials/items/required", keyword: "required", params: { missingProperty: "label" }, message: "must have required property 'label'" };
+          let data47 = data46[i5];
+          if (data47 && typeof data47 == "object" && !Array.isArray(data47)) {
+            if (data47.id === void 0) {
+              const err111 = { instancePath: instancePath + "/credentials/" + i5, schemaPath: "#/properties/credentials/items/required", keyword: "required", params: { missingProperty: "id" }, message: "must have required property 'id'" };
               if (vErrors === null) {
                 vErrors = [err111];
               } else {
@@ -15652,96 +15672,92 @@ function validate208(data, { instancePath = "", parentData, parentDataProperty, 
               }
               errors++;
             }
-            for (const key11 in data46) {
+            if (data47.kind === void 0) {
+              const err112 = { instancePath: instancePath + "/credentials/" + i5, schemaPath: "#/properties/credentials/items/required", keyword: "required", params: { missingProperty: "kind" }, message: "must have required property 'kind'" };
+              if (vErrors === null) {
+                vErrors = [err112];
+              } else {
+                vErrors.push(err112);
+              }
+              errors++;
+            }
+            if (data47.label === void 0) {
+              const err113 = { instancePath: instancePath + "/credentials/" + i5, schemaPath: "#/properties/credentials/items/required", keyword: "required", params: { missingProperty: "label" }, message: "must have required property 'label'" };
+              if (vErrors === null) {
+                vErrors = [err113];
+              } else {
+                vErrors.push(err113);
+              }
+              errors++;
+            }
+            for (const key11 in data47) {
               if (!func17.call(schema314.properties.credentials.items.properties, key11)) {
-                const err112 = { instancePath: instancePath + "/credentials/" + i5, schemaPath: "#/properties/credentials/items/additionalProperties", keyword: "additionalProperties", params: { additionalProperty: key11 }, message: "must NOT have additional properties" };
+                const err114 = { instancePath: instancePath + "/credentials/" + i5, schemaPath: "#/properties/credentials/items/additionalProperties", keyword: "additionalProperties", params: { additionalProperty: key11 }, message: "must NOT have additional properties" };
                 if (vErrors === null) {
-                  vErrors = [err112];
+                  vErrors = [err114];
                 } else {
-                  vErrors.push(err112);
+                  vErrors.push(err114);
                 }
                 errors++;
               }
             }
-            if (data46.id !== void 0) {
-              let data47 = data46.id;
-              if (typeof data47 === "string") {
-                if (func2(data47) > 128) {
-                  const err113 = { instancePath: instancePath + "/credentials/" + i5 + "/id", schemaPath: "#/properties/credentials/items/properties/id/maxLength", keyword: "maxLength", params: { limit: 128 }, message: "must NOT have more than 128 characters" };
+            if (data47.id !== void 0) {
+              let data48 = data47.id;
+              if (typeof data48 === "string") {
+                if (func2(data48) > 128) {
+                  const err115 = { instancePath: instancePath + "/credentials/" + i5 + "/id", schemaPath: "#/properties/credentials/items/properties/id/maxLength", keyword: "maxLength", params: { limit: 128 }, message: "must NOT have more than 128 characters" };
                   if (vErrors === null) {
-                    vErrors = [err113];
+                    vErrors = [err115];
                   } else {
-                    vErrors.push(err113);
+                    vErrors.push(err115);
                   }
                   errors++;
                 }
-                if (!pattern19.test(data47)) {
-                  const err114 = { instancePath: instancePath + "/credentials/" + i5 + "/id", schemaPath: "#/properties/credentials/items/properties/id/pattern", keyword: "pattern", params: { pattern: "^[a-z0-9][a-z0-9.-]*/[a-z0-9][a-z0-9._-]*$" }, message: 'must match pattern "^[a-z0-9][a-z0-9.-]*/[a-z0-9][a-z0-9._-]*$"' };
+                if (!pattern20.test(data48)) {
+                  const err116 = { instancePath: instancePath + "/credentials/" + i5 + "/id", schemaPath: "#/properties/credentials/items/properties/id/pattern", keyword: "pattern", params: { pattern: "^[a-z0-9][a-z0-9.-]*/[a-z0-9][a-z0-9._-]*$" }, message: 'must match pattern "^[a-z0-9][a-z0-9.-]*/[a-z0-9][a-z0-9._-]*$"' };
                   if (vErrors === null) {
-                    vErrors = [err114];
+                    vErrors = [err116];
                   } else {
-                    vErrors.push(err114);
-                  }
-                  errors++;
-                }
-              } else {
-                const err115 = { instancePath: instancePath + "/credentials/" + i5 + "/id", schemaPath: "#/properties/credentials/items/properties/id/type", keyword: "type", params: { type: "string" }, message: "must be string" };
-                if (vErrors === null) {
-                  vErrors = [err115];
-                } else {
-                  vErrors.push(err115);
-                }
-                errors++;
-              }
-            }
-            if (data46.kind !== void 0) {
-              let data48 = data46.kind;
-              if (!(data48 === "api-key" || data48 === "oauth2-pkce" || data48 === "provider-session" || data48 === "symmetric-key")) {
-                const err116 = { instancePath: instancePath + "/credentials/" + i5 + "/kind", schemaPath: "#/properties/credentials/items/properties/kind/enum", keyword: "enum", params: { allowedValues: schema314.properties.credentials.items.properties.kind.enum }, message: "must be equal to one of the allowed values" };
-                if (vErrors === null) {
-                  vErrors = [err116];
-                } else {
-                  vErrors.push(err116);
-                }
-                errors++;
-              }
-            }
-            if (data46.label !== void 0) {
-              let data49 = data46.label;
-              if (typeof data49 === "string") {
-                if (func2(data49) > 128) {
-                  const err117 = { instancePath: instancePath + "/credentials/" + i5 + "/label", schemaPath: "#/properties/credentials/items/properties/label/maxLength", keyword: "maxLength", params: { limit: 128 }, message: "must NOT have more than 128 characters" };
-                  if (vErrors === null) {
-                    vErrors = [err117];
-                  } else {
-                    vErrors.push(err117);
-                  }
-                  errors++;
-                }
-                if (func2(data49) < 1) {
-                  const err118 = { instancePath: instancePath + "/credentials/" + i5 + "/label", schemaPath: "#/properties/credentials/items/properties/label/minLength", keyword: "minLength", params: { limit: 1 }, message: "must NOT have fewer than 1 characters" };
-                  if (vErrors === null) {
-                    vErrors = [err118];
-                  } else {
-                    vErrors.push(err118);
+                    vErrors.push(err116);
                   }
                   errors++;
                 }
               } else {
-                const err119 = { instancePath: instancePath + "/credentials/" + i5 + "/label", schemaPath: "#/properties/credentials/items/properties/label/type", keyword: "type", params: { type: "string" }, message: "must be string" };
+                const err117 = { instancePath: instancePath + "/credentials/" + i5 + "/id", schemaPath: "#/properties/credentials/items/properties/id/type", keyword: "type", params: { type: "string" }, message: "must be string" };
                 if (vErrors === null) {
-                  vErrors = [err119];
+                  vErrors = [err117];
                 } else {
-                  vErrors.push(err119);
+                  vErrors.push(err117);
                 }
                 errors++;
               }
             }
-            if (data46.audience !== void 0) {
-              let data50 = data46.audience;
-              if (Array.isArray(data50)) {
-                if (data50.length > 16) {
-                  const err120 = { instancePath: instancePath + "/credentials/" + i5 + "/audience", schemaPath: "#/properties/credentials/items/properties/audience/maxItems", keyword: "maxItems", params: { limit: 16 }, message: "must NOT have more than 16 items" };
+            if (data47.kind !== void 0) {
+              let data49 = data47.kind;
+              if (!(data49 === "api-key" || data49 === "oauth2-pkce" || data49 === "provider-session" || data49 === "symmetric-key")) {
+                const err118 = { instancePath: instancePath + "/credentials/" + i5 + "/kind", schemaPath: "#/properties/credentials/items/properties/kind/enum", keyword: "enum", params: { allowedValues: schema314.properties.credentials.items.properties.kind.enum }, message: "must be equal to one of the allowed values" };
+                if (vErrors === null) {
+                  vErrors = [err118];
+                } else {
+                  vErrors.push(err118);
+                }
+                errors++;
+              }
+            }
+            if (data47.label !== void 0) {
+              let data50 = data47.label;
+              if (typeof data50 === "string") {
+                if (func2(data50) > 128) {
+                  const err119 = { instancePath: instancePath + "/credentials/" + i5 + "/label", schemaPath: "#/properties/credentials/items/properties/label/maxLength", keyword: "maxLength", params: { limit: 128 }, message: "must NOT have more than 128 characters" };
+                  if (vErrors === null) {
+                    vErrors = [err119];
+                  } else {
+                    vErrors.push(err119);
+                  }
+                  errors++;
+                }
+                if (func2(data50) < 1) {
+                  const err120 = { instancePath: instancePath + "/credentials/" + i5 + "/label", schemaPath: "#/properties/credentials/items/properties/label/minLength", keyword: "minLength", params: { limit: 1 }, message: "must NOT have fewer than 1 characters" };
                   if (vErrors === null) {
                     vErrors = [err120];
                   } else {
@@ -15749,62 +15765,62 @@ function validate208(data, { instancePath = "", parentData, parentDataProperty, 
                   }
                   errors++;
                 }
-                const len6 = data50.length;
+              } else {
+                const err121 = { instancePath: instancePath + "/credentials/" + i5 + "/label", schemaPath: "#/properties/credentials/items/properties/label/type", keyword: "type", params: { type: "string" }, message: "must be string" };
+                if (vErrors === null) {
+                  vErrors = [err121];
+                } else {
+                  vErrors.push(err121);
+                }
+                errors++;
+              }
+            }
+            if (data47.audience !== void 0) {
+              let data51 = data47.audience;
+              if (Array.isArray(data51)) {
+                if (data51.length > 16) {
+                  const err122 = { instancePath: instancePath + "/credentials/" + i5 + "/audience", schemaPath: "#/properties/credentials/items/properties/audience/maxItems", keyword: "maxItems", params: { limit: 16 }, message: "must NOT have more than 16 items" };
+                  if (vErrors === null) {
+                    vErrors = [err122];
+                  } else {
+                    vErrors.push(err122);
+                  }
+                  errors++;
+                }
+                const len6 = data51.length;
                 for (let i6 = 0; i6 < len6; i6++) {
-                  let data51 = data50[i6];
-                  if (typeof data51 === "string") {
-                    if (func2(data51) > 512) {
-                      const err121 = { instancePath: instancePath + "/credentials/" + i5 + "/audience/" + i6, schemaPath: "#/properties/credentials/items/properties/audience/items/maxLength", keyword: "maxLength", params: { limit: 512 }, message: "must NOT have more than 512 characters" };
+                  let data52 = data51[i6];
+                  if (typeof data52 === "string") {
+                    if (func2(data52) > 512) {
+                      const err123 = { instancePath: instancePath + "/credentials/" + i5 + "/audience/" + i6, schemaPath: "#/properties/credentials/items/properties/audience/items/maxLength", keyword: "maxLength", params: { limit: 512 }, message: "must NOT have more than 512 characters" };
                       if (vErrors === null) {
-                        vErrors = [err121];
+                        vErrors = [err123];
                       } else {
-                        vErrors.push(err121);
+                        vErrors.push(err123);
                       }
                       errors++;
                     }
-                    if (!pattern13.test(data51)) {
-                      const err122 = { instancePath: instancePath + "/credentials/" + i5 + "/audience/" + i6, schemaPath: "#/properties/credentials/items/properties/audience/items/pattern", keyword: "pattern", params: { pattern: "^https?://[^\\s]+$" }, message: 'must match pattern "^https?://[^\\s]+$"' };
+                    if (!pattern13.test(data52)) {
+                      const err124 = { instancePath: instancePath + "/credentials/" + i5 + "/audience/" + i6, schemaPath: "#/properties/credentials/items/properties/audience/items/pattern", keyword: "pattern", params: { pattern: "^https?://[^\\s]+$" }, message: 'must match pattern "^https?://[^\\s]+$"' };
                       if (vErrors === null) {
-                        vErrors = [err122];
+                        vErrors = [err124];
                       } else {
-                        vErrors.push(err122);
+                        vErrors.push(err124);
                       }
                       errors++;
                     }
                   } else {
-                    const err123 = { instancePath: instancePath + "/credentials/" + i5 + "/audience/" + i6, schemaPath: "#/properties/credentials/items/properties/audience/items/type", keyword: "type", params: { type: "string" }, message: "must be string" };
+                    const err125 = { instancePath: instancePath + "/credentials/" + i5 + "/audience/" + i6, schemaPath: "#/properties/credentials/items/properties/audience/items/type", keyword: "type", params: { type: "string" }, message: "must be string" };
                     if (vErrors === null) {
-                      vErrors = [err123];
+                      vErrors = [err125];
                     } else {
-                      vErrors.push(err123);
+                      vErrors.push(err125);
                     }
                     errors++;
                   }
                 }
               } else {
-                const err124 = { instancePath: instancePath + "/credentials/" + i5 + "/audience", schemaPath: "#/properties/credentials/items/properties/audience/type", keyword: "type", params: { type: "array" }, message: "must be array" };
-                if (vErrors === null) {
-                  vErrors = [err124];
-                } else {
-                  vErrors.push(err124);
-                }
-                errors++;
-              }
-            }
-            if (data46.header !== void 0) {
-              let data52 = data46.header;
-              if (typeof data52 === "string") {
-                if (!pattern21.test(data52)) {
-                  const err125 = { instancePath: instancePath + "/credentials/" + i5 + "/header", schemaPath: "#/properties/credentials/items/properties/header/pattern", keyword: "pattern", params: { pattern: "^[A-Za-z0-9-]{1,64}$" }, message: 'must match pattern "^[A-Za-z0-9-]{1,64}$"' };
-                  if (vErrors === null) {
-                    vErrors = [err125];
-                  } else {
-                    vErrors.push(err125);
-                  }
-                  errors++;
-                }
-              } else {
-                const err126 = { instancePath: instancePath + "/credentials/" + i5 + "/header", schemaPath: "#/properties/credentials/items/properties/header/type", keyword: "type", params: { type: "string" }, message: "must be string" };
+                const err126 = { instancePath: instancePath + "/credentials/" + i5 + "/audience", schemaPath: "#/properties/credentials/items/properties/audience/type", keyword: "type", params: { type: "array" }, message: "must be array" };
                 if (vErrors === null) {
                   vErrors = [err126];
                 } else {
@@ -15813,11 +15829,11 @@ function validate208(data, { instancePath = "", parentData, parentDataProperty, 
                 errors++;
               }
             }
-            if (data46.scopes !== void 0) {
-              let data53 = data46.scopes;
-              if (Array.isArray(data53)) {
-                if (data53.length > 32) {
-                  const err127 = { instancePath: instancePath + "/credentials/" + i5 + "/scopes", schemaPath: "#/properties/credentials/items/properties/scopes/maxItems", keyword: "maxItems", params: { limit: 32 }, message: "must NOT have more than 32 items" };
+            if (data47.header !== void 0) {
+              let data53 = data47.header;
+              if (typeof data53 === "string") {
+                if (!pattern22.test(data53)) {
+                  const err127 = { instancePath: instancePath + "/credentials/" + i5 + "/header", schemaPath: "#/properties/credentials/items/properties/header/pattern", keyword: "pattern", params: { pattern: "^[A-Za-z0-9-]{1,64}$" }, message: 'must match pattern "^[A-Za-z0-9-]{1,64}$"' };
                   if (vErrors === null) {
                     vErrors = [err127];
                   } else {
@@ -15825,116 +15841,116 @@ function validate208(data, { instancePath = "", parentData, parentDataProperty, 
                   }
                   errors++;
                 }
-                const len7 = data53.length;
+              } else {
+                const err128 = { instancePath: instancePath + "/credentials/" + i5 + "/header", schemaPath: "#/properties/credentials/items/properties/header/type", keyword: "type", params: { type: "string" }, message: "must be string" };
+                if (vErrors === null) {
+                  vErrors = [err128];
+                } else {
+                  vErrors.push(err128);
+                }
+                errors++;
+              }
+            }
+            if (data47.scopes !== void 0) {
+              let data54 = data47.scopes;
+              if (Array.isArray(data54)) {
+                if (data54.length > 32) {
+                  const err129 = { instancePath: instancePath + "/credentials/" + i5 + "/scopes", schemaPath: "#/properties/credentials/items/properties/scopes/maxItems", keyword: "maxItems", params: { limit: 32 }, message: "must NOT have more than 32 items" };
+                  if (vErrors === null) {
+                    vErrors = [err129];
+                  } else {
+                    vErrors.push(err129);
+                  }
+                  errors++;
+                }
+                const len7 = data54.length;
                 for (let i7 = 0; i7 < len7; i7++) {
-                  let data54 = data53[i7];
-                  if (typeof data54 === "string") {
-                    if (func2(data54) > 128) {
-                      const err128 = { instancePath: instancePath + "/credentials/" + i5 + "/scopes/" + i7, schemaPath: "#/properties/credentials/items/properties/scopes/items/maxLength", keyword: "maxLength", params: { limit: 128 }, message: "must NOT have more than 128 characters" };
+                  let data55 = data54[i7];
+                  if (typeof data55 === "string") {
+                    if (func2(data55) > 128) {
+                      const err130 = { instancePath: instancePath + "/credentials/" + i5 + "/scopes/" + i7, schemaPath: "#/properties/credentials/items/properties/scopes/items/maxLength", keyword: "maxLength", params: { limit: 128 }, message: "must NOT have more than 128 characters" };
                       if (vErrors === null) {
-                        vErrors = [err128];
+                        vErrors = [err130];
                       } else {
-                        vErrors.push(err128);
+                        vErrors.push(err130);
                       }
                       errors++;
                     }
-                    if (func2(data54) < 1) {
-                      const err129 = { instancePath: instancePath + "/credentials/" + i5 + "/scopes/" + i7, schemaPath: "#/properties/credentials/items/properties/scopes/items/minLength", keyword: "minLength", params: { limit: 1 }, message: "must NOT have fewer than 1 characters" };
+                    if (func2(data55) < 1) {
+                      const err131 = { instancePath: instancePath + "/credentials/" + i5 + "/scopes/" + i7, schemaPath: "#/properties/credentials/items/properties/scopes/items/minLength", keyword: "minLength", params: { limit: 1 }, message: "must NOT have fewer than 1 characters" };
                       if (vErrors === null) {
-                        vErrors = [err129];
+                        vErrors = [err131];
                       } else {
-                        vErrors.push(err129);
+                        vErrors.push(err131);
                       }
                       errors++;
                     }
                   } else {
-                    const err130 = { instancePath: instancePath + "/credentials/" + i5 + "/scopes/" + i7, schemaPath: "#/properties/credentials/items/properties/scopes/items/type", keyword: "type", params: { type: "string" }, message: "must be string" };
+                    const err132 = { instancePath: instancePath + "/credentials/" + i5 + "/scopes/" + i7, schemaPath: "#/properties/credentials/items/properties/scopes/items/type", keyword: "type", params: { type: "string" }, message: "must be string" };
                     if (vErrors === null) {
-                      vErrors = [err130];
+                      vErrors = [err132];
                     } else {
-                      vErrors.push(err130);
+                      vErrors.push(err132);
                     }
                     errors++;
                   }
                 }
               } else {
-                const err131 = { instancePath: instancePath + "/credentials/" + i5 + "/scopes", schemaPath: "#/properties/credentials/items/properties/scopes/type", keyword: "type", params: { type: "array" }, message: "must be array" };
+                const err133 = { instancePath: instancePath + "/credentials/" + i5 + "/scopes", schemaPath: "#/properties/credentials/items/properties/scopes/type", keyword: "type", params: { type: "array" }, message: "must be array" };
                 if (vErrors === null) {
-                  vErrors = [err131];
+                  vErrors = [err133];
                 } else {
-                  vErrors.push(err131);
+                  vErrors.push(err133);
                 }
                 errors++;
               }
             }
-            if (data46.oauth !== void 0) {
-              let data55 = data46.oauth;
-              if (data55 && typeof data55 == "object" && !Array.isArray(data55)) {
-                if (data55.authorizationEndpoint === void 0) {
-                  const err132 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth", schemaPath: "#/properties/credentials/items/properties/oauth/required", keyword: "required", params: { missingProperty: "authorizationEndpoint" }, message: "must have required property 'authorizationEndpoint'" };
+            if (data47.oauth !== void 0) {
+              let data56 = data47.oauth;
+              if (data56 && typeof data56 == "object" && !Array.isArray(data56)) {
+                if (data56.authorizationEndpoint === void 0) {
+                  const err134 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth", schemaPath: "#/properties/credentials/items/properties/oauth/required", keyword: "required", params: { missingProperty: "authorizationEndpoint" }, message: "must have required property 'authorizationEndpoint'" };
                   if (vErrors === null) {
-                    vErrors = [err132];
+                    vErrors = [err134];
                   } else {
-                    vErrors.push(err132);
+                    vErrors.push(err134);
                   }
                   errors++;
                 }
-                if (data55.tokenEndpoint === void 0) {
-                  const err133 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth", schemaPath: "#/properties/credentials/items/properties/oauth/required", keyword: "required", params: { missingProperty: "tokenEndpoint" }, message: "must have required property 'tokenEndpoint'" };
+                if (data56.tokenEndpoint === void 0) {
+                  const err135 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth", schemaPath: "#/properties/credentials/items/properties/oauth/required", keyword: "required", params: { missingProperty: "tokenEndpoint" }, message: "must have required property 'tokenEndpoint'" };
                   if (vErrors === null) {
-                    vErrors = [err133];
+                    vErrors = [err135];
                   } else {
-                    vErrors.push(err133);
+                    vErrors.push(err135);
                   }
                   errors++;
                 }
-                for (const key12 in data55) {
+                for (const key12 in data56) {
                   if (!(key12 === "authorizationEndpoint" || key12 === "tokenEndpoint" || key12 === "revocationEndpoint" || key12 === "clientId" || key12 === "clientIdSetting" || key12 === "loopbackPort" || key12 === "loopbackHost")) {
-                    const err134 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth", schemaPath: "#/properties/credentials/items/properties/oauth/additionalProperties", keyword: "additionalProperties", params: { additionalProperty: key12 }, message: "must NOT have additional properties" };
+                    const err136 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth", schemaPath: "#/properties/credentials/items/properties/oauth/additionalProperties", keyword: "additionalProperties", params: { additionalProperty: key12 }, message: "must NOT have additional properties" };
                     if (vErrors === null) {
-                      vErrors = [err134];
+                      vErrors = [err136];
                     } else {
-                      vErrors.push(err134);
+                      vErrors.push(err136);
                     }
                     errors++;
                   }
                 }
-                if (data55.authorizationEndpoint !== void 0) {
-                  let data56 = data55.authorizationEndpoint;
-                  if (typeof data56 === "string") {
-                    if (func2(data56) > 512) {
-                      const err135 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/authorizationEndpoint", schemaPath: "#/properties/credentials/items/properties/oauth/properties/authorizationEndpoint/maxLength", keyword: "maxLength", params: { limit: 512 }, message: "must NOT have more than 512 characters" };
-                      if (vErrors === null) {
-                        vErrors = [err135];
-                      } else {
-                        vErrors.push(err135);
-                      }
-                      errors++;
-                    }
-                    if (!pattern13.test(data56)) {
-                      const err136 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/authorizationEndpoint", schemaPath: "#/properties/credentials/items/properties/oauth/properties/authorizationEndpoint/pattern", keyword: "pattern", params: { pattern: "^https?://[^\\s]+$" }, message: 'must match pattern "^https?://[^\\s]+$"' };
-                      if (vErrors === null) {
-                        vErrors = [err136];
-                      } else {
-                        vErrors.push(err136);
-                      }
-                      errors++;
-                    }
-                  } else {
-                    const err137 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/authorizationEndpoint", schemaPath: "#/properties/credentials/items/properties/oauth/properties/authorizationEndpoint/type", keyword: "type", params: { type: "string" }, message: "must be string" };
-                    if (vErrors === null) {
-                      vErrors = [err137];
-                    } else {
-                      vErrors.push(err137);
-                    }
-                    errors++;
-                  }
-                }
-                if (data55.tokenEndpoint !== void 0) {
-                  let data57 = data55.tokenEndpoint;
+                if (data56.authorizationEndpoint !== void 0) {
+                  let data57 = data56.authorizationEndpoint;
                   if (typeof data57 === "string") {
                     if (func2(data57) > 512) {
-                      const err138 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/tokenEndpoint", schemaPath: "#/properties/credentials/items/properties/oauth/properties/tokenEndpoint/maxLength", keyword: "maxLength", params: { limit: 512 }, message: "must NOT have more than 512 characters" };
+                      const err137 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/authorizationEndpoint", schemaPath: "#/properties/credentials/items/properties/oauth/properties/authorizationEndpoint/maxLength", keyword: "maxLength", params: { limit: 512 }, message: "must NOT have more than 512 characters" };
+                      if (vErrors === null) {
+                        vErrors = [err137];
+                      } else {
+                        vErrors.push(err137);
+                      }
+                      errors++;
+                    }
+                    if (!pattern13.test(data57)) {
+                      const err138 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/authorizationEndpoint", schemaPath: "#/properties/credentials/items/properties/oauth/properties/authorizationEndpoint/pattern", keyword: "pattern", params: { pattern: "^https?://[^\\s]+$" }, message: 'must match pattern "^https?://[^\\s]+$"' };
                       if (vErrors === null) {
                         vErrors = [err138];
                       } else {
@@ -15942,30 +15958,30 @@ function validate208(data, { instancePath = "", parentData, parentDataProperty, 
                       }
                       errors++;
                     }
-                    if (!pattern13.test(data57)) {
-                      const err139 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/tokenEndpoint", schemaPath: "#/properties/credentials/items/properties/oauth/properties/tokenEndpoint/pattern", keyword: "pattern", params: { pattern: "^https?://[^\\s]+$" }, message: 'must match pattern "^https?://[^\\s]+$"' };
-                      if (vErrors === null) {
-                        vErrors = [err139];
-                      } else {
-                        vErrors.push(err139);
-                      }
-                      errors++;
-                    }
                   } else {
-                    const err140 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/tokenEndpoint", schemaPath: "#/properties/credentials/items/properties/oauth/properties/tokenEndpoint/type", keyword: "type", params: { type: "string" }, message: "must be string" };
+                    const err139 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/authorizationEndpoint", schemaPath: "#/properties/credentials/items/properties/oauth/properties/authorizationEndpoint/type", keyword: "type", params: { type: "string" }, message: "must be string" };
                     if (vErrors === null) {
-                      vErrors = [err140];
+                      vErrors = [err139];
                     } else {
-                      vErrors.push(err140);
+                      vErrors.push(err139);
                     }
                     errors++;
                   }
                 }
-                if (data55.revocationEndpoint !== void 0) {
-                  let data58 = data55.revocationEndpoint;
+                if (data56.tokenEndpoint !== void 0) {
+                  let data58 = data56.tokenEndpoint;
                   if (typeof data58 === "string") {
                     if (func2(data58) > 512) {
-                      const err141 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/revocationEndpoint", schemaPath: "#/properties/credentials/items/properties/oauth/properties/revocationEndpoint/maxLength", keyword: "maxLength", params: { limit: 512 }, message: "must NOT have more than 512 characters" };
+                      const err140 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/tokenEndpoint", schemaPath: "#/properties/credentials/items/properties/oauth/properties/tokenEndpoint/maxLength", keyword: "maxLength", params: { limit: 512 }, message: "must NOT have more than 512 characters" };
+                      if (vErrors === null) {
+                        vErrors = [err140];
+                      } else {
+                        vErrors.push(err140);
+                      }
+                      errors++;
+                    }
+                    if (!pattern13.test(data58)) {
+                      const err141 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/tokenEndpoint", schemaPath: "#/properties/credentials/items/properties/oauth/properties/tokenEndpoint/pattern", keyword: "pattern", params: { pattern: "^https?://[^\\s]+$" }, message: 'must match pattern "^https?://[^\\s]+$"' };
                       if (vErrors === null) {
                         vErrors = [err141];
                       } else {
@@ -15973,30 +15989,30 @@ function validate208(data, { instancePath = "", parentData, parentDataProperty, 
                       }
                       errors++;
                     }
-                    if (!pattern13.test(data58)) {
-                      const err142 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/revocationEndpoint", schemaPath: "#/properties/credentials/items/properties/oauth/properties/revocationEndpoint/pattern", keyword: "pattern", params: { pattern: "^https?://[^\\s]+$" }, message: 'must match pattern "^https?://[^\\s]+$"' };
-                      if (vErrors === null) {
-                        vErrors = [err142];
-                      } else {
-                        vErrors.push(err142);
-                      }
-                      errors++;
-                    }
                   } else {
-                    const err143 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/revocationEndpoint", schemaPath: "#/properties/credentials/items/properties/oauth/properties/revocationEndpoint/type", keyword: "type", params: { type: "string" }, message: "must be string" };
+                    const err142 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/tokenEndpoint", schemaPath: "#/properties/credentials/items/properties/oauth/properties/tokenEndpoint/type", keyword: "type", params: { type: "string" }, message: "must be string" };
                     if (vErrors === null) {
-                      vErrors = [err143];
+                      vErrors = [err142];
                     } else {
-                      vErrors.push(err143);
+                      vErrors.push(err142);
                     }
                     errors++;
                   }
                 }
-                if (data55.clientId !== void 0) {
-                  let data59 = data55.clientId;
+                if (data56.revocationEndpoint !== void 0) {
+                  let data59 = data56.revocationEndpoint;
                   if (typeof data59 === "string") {
-                    if (func2(data59) > 256) {
-                      const err144 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/clientId", schemaPath: "#/properties/credentials/items/properties/oauth/properties/clientId/maxLength", keyword: "maxLength", params: { limit: 256 }, message: "must NOT have more than 256 characters" };
+                    if (func2(data59) > 512) {
+                      const err143 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/revocationEndpoint", schemaPath: "#/properties/credentials/items/properties/oauth/properties/revocationEndpoint/maxLength", keyword: "maxLength", params: { limit: 512 }, message: "must NOT have more than 512 characters" };
+                      if (vErrors === null) {
+                        vErrors = [err143];
+                      } else {
+                        vErrors.push(err143);
+                      }
+                      errors++;
+                    }
+                    if (!pattern13.test(data59)) {
+                      const err144 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/revocationEndpoint", schemaPath: "#/properties/credentials/items/properties/oauth/properties/revocationEndpoint/pattern", keyword: "pattern", params: { pattern: "^https?://[^\\s]+$" }, message: 'must match pattern "^https?://[^\\s]+$"' };
                       if (vErrors === null) {
                         vErrors = [err144];
                       } else {
@@ -16004,30 +16020,30 @@ function validate208(data, { instancePath = "", parentData, parentDataProperty, 
                       }
                       errors++;
                     }
-                    if (func2(data59) < 1) {
-                      const err145 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/clientId", schemaPath: "#/properties/credentials/items/properties/oauth/properties/clientId/minLength", keyword: "minLength", params: { limit: 1 }, message: "must NOT have fewer than 1 characters" };
-                      if (vErrors === null) {
-                        vErrors = [err145];
-                      } else {
-                        vErrors.push(err145);
-                      }
-                      errors++;
-                    }
                   } else {
-                    const err146 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/clientId", schemaPath: "#/properties/credentials/items/properties/oauth/properties/clientId/type", keyword: "type", params: { type: "string" }, message: "must be string" };
+                    const err145 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/revocationEndpoint", schemaPath: "#/properties/credentials/items/properties/oauth/properties/revocationEndpoint/type", keyword: "type", params: { type: "string" }, message: "must be string" };
                     if (vErrors === null) {
-                      vErrors = [err146];
+                      vErrors = [err145];
                     } else {
-                      vErrors.push(err146);
+                      vErrors.push(err145);
                     }
                     errors++;
                   }
                 }
-                if (data55.clientIdSetting !== void 0) {
-                  let data60 = data55.clientIdSetting;
+                if (data56.clientId !== void 0) {
+                  let data60 = data56.clientId;
                   if (typeof data60 === "string") {
-                    if (!pattern25.test(data60)) {
-                      const err147 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/clientIdSetting", schemaPath: "#/properties/credentials/items/properties/oauth/properties/clientIdSetting/pattern", keyword: "pattern", params: { pattern: "^[A-Za-z0-9._-]{1,64}$" }, message: 'must match pattern "^[A-Za-z0-9._-]{1,64}$"' };
+                    if (func2(data60) > 256) {
+                      const err146 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/clientId", schemaPath: "#/properties/credentials/items/properties/oauth/properties/clientId/maxLength", keyword: "maxLength", params: { limit: 256 }, message: "must NOT have more than 256 characters" };
+                      if (vErrors === null) {
+                        vErrors = [err146];
+                      } else {
+                        vErrors.push(err146);
+                      }
+                      errors++;
+                    }
+                    if (func2(data60) < 1) {
+                      const err147 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/clientId", schemaPath: "#/properties/credentials/items/properties/oauth/properties/clientId/minLength", keyword: "minLength", params: { limit: 1 }, message: "must NOT have fewer than 1 characters" };
                       if (vErrors === null) {
                         vErrors = [err147];
                       } else {
@@ -16036,7 +16052,7 @@ function validate208(data, { instancePath = "", parentData, parentDataProperty, 
                       errors++;
                     }
                   } else {
-                    const err148 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/clientIdSetting", schemaPath: "#/properties/credentials/items/properties/oauth/properties/clientIdSetting/type", keyword: "type", params: { type: "string" }, message: "must be string" };
+                    const err148 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/clientId", schemaPath: "#/properties/credentials/items/properties/oauth/properties/clientId/type", keyword: "type", params: { type: "string" }, message: "must be string" };
                     if (vErrors === null) {
                       vErrors = [err148];
                     } else {
@@ -16045,85 +16061,85 @@ function validate208(data, { instancePath = "", parentData, parentDataProperty, 
                     errors++;
                   }
                 }
-                if (data55.loopbackPort !== void 0) {
-                  let data61 = data55.loopbackPort;
-                  if (!(typeof data61 == "number" && (!(data61 % 1) && !isNaN(data61)) && isFinite(data61))) {
-                    const err149 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/loopbackPort", schemaPath: "#/properties/credentials/items/properties/oauth/properties/loopbackPort/type", keyword: "type", params: { type: "integer" }, message: "must be integer" };
-                    if (vErrors === null) {
-                      vErrors = [err149];
-                    } else {
-                      vErrors.push(err149);
-                    }
-                    errors++;
-                  }
-                  if (typeof data61 == "number" && isFinite(data61)) {
-                    if (data61 > 65535 || isNaN(data61)) {
-                      const err150 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/loopbackPort", schemaPath: "#/properties/credentials/items/properties/oauth/properties/loopbackPort/maximum", keyword: "maximum", params: { comparison: "<=", limit: 65535 }, message: "must be <= 65535" };
+                if (data56.clientIdSetting !== void 0) {
+                  let data61 = data56.clientIdSetting;
+                  if (typeof data61 === "string") {
+                    if (!pattern26.test(data61)) {
+                      const err149 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/clientIdSetting", schemaPath: "#/properties/credentials/items/properties/oauth/properties/clientIdSetting/pattern", keyword: "pattern", params: { pattern: "^[A-Za-z0-9._-]{1,64}$" }, message: 'must match pattern "^[A-Za-z0-9._-]{1,64}$"' };
                       if (vErrors === null) {
-                        vErrors = [err150];
+                        vErrors = [err149];
                       } else {
-                        vErrors.push(err150);
+                        vErrors.push(err149);
                       }
                       errors++;
                     }
-                    if (data61 < 1024 || isNaN(data61)) {
-                      const err151 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/loopbackPort", schemaPath: "#/properties/credentials/items/properties/oauth/properties/loopbackPort/minimum", keyword: "minimum", params: { comparison: ">=", limit: 1024 }, message: "must be >= 1024" };
-                      if (vErrors === null) {
-                        vErrors = [err151];
-                      } else {
-                        vErrors.push(err151);
-                      }
-                      errors++;
-                    }
-                  }
-                }
-                if (data55.loopbackHost !== void 0) {
-                  let data62 = data55.loopbackHost;
-                  if (!(data62 === "localhost" || data62 === "127.0.0.1")) {
-                    const err152 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/loopbackHost", schemaPath: "#/properties/credentials/items/properties/oauth/properties/loopbackHost/enum", keyword: "enum", params: { allowedValues: schema314.properties.credentials.items.properties.oauth.properties.loopbackHost.enum }, message: "must be equal to one of the allowed values" };
-                    if (vErrors === null) {
-                      vErrors = [err152];
-                    } else {
-                      vErrors.push(err152);
-                    }
-                    errors++;
-                  }
-                }
-              } else {
-                const err153 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth", schemaPath: "#/properties/credentials/items/properties/oauth/type", keyword: "type", params: { type: "object" }, message: "must be object" };
-                if (vErrors === null) {
-                  vErrors = [err153];
-                } else {
-                  vErrors.push(err153);
-                }
-                errors++;
-              }
-            }
-            if (data46.scoped !== void 0) {
-              if (typeof data46.scoped !== "boolean") {
-                const err154 = { instancePath: instancePath + "/credentials/" + i5 + "/scoped", schemaPath: "#/properties/credentials/items/properties/scoped/type", keyword: "type", params: { type: "boolean" }, message: "must be boolean" };
-                if (vErrors === null) {
-                  vErrors = [err154];
-                } else {
-                  vErrors.push(err154);
-                }
-                errors++;
-              }
-            }
-            if (data46.environment !== void 0) {
-              let data64 = data46.environment;
-              if (typeof data64 === "string") {
-                if (!pattern26.test(data64)) {
-                  const err155 = { instancePath: instancePath + "/credentials/" + i5 + "/environment", schemaPath: "#/properties/credentials/items/properties/environment/pattern", keyword: "pattern", params: { pattern: "^[A-Z][A-Z0-9_]{0,63}$" }, message: 'must match pattern "^[A-Z][A-Z0-9_]{0,63}$"' };
-                  if (vErrors === null) {
-                    vErrors = [err155];
                   } else {
-                    vErrors.push(err155);
+                    const err150 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/clientIdSetting", schemaPath: "#/properties/credentials/items/properties/oauth/properties/clientIdSetting/type", keyword: "type", params: { type: "string" }, message: "must be string" };
+                    if (vErrors === null) {
+                      vErrors = [err150];
+                    } else {
+                      vErrors.push(err150);
+                    }
+                    errors++;
                   }
-                  errors++;
+                }
+                if (data56.loopbackPort !== void 0) {
+                  let data62 = data56.loopbackPort;
+                  if (!(typeof data62 == "number" && (!(data62 % 1) && !isNaN(data62)) && isFinite(data62))) {
+                    const err151 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/loopbackPort", schemaPath: "#/properties/credentials/items/properties/oauth/properties/loopbackPort/type", keyword: "type", params: { type: "integer" }, message: "must be integer" };
+                    if (vErrors === null) {
+                      vErrors = [err151];
+                    } else {
+                      vErrors.push(err151);
+                    }
+                    errors++;
+                  }
+                  if (typeof data62 == "number" && isFinite(data62)) {
+                    if (data62 > 65535 || isNaN(data62)) {
+                      const err152 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/loopbackPort", schemaPath: "#/properties/credentials/items/properties/oauth/properties/loopbackPort/maximum", keyword: "maximum", params: { comparison: "<=", limit: 65535 }, message: "must be <= 65535" };
+                      if (vErrors === null) {
+                        vErrors = [err152];
+                      } else {
+                        vErrors.push(err152);
+                      }
+                      errors++;
+                    }
+                    if (data62 < 1024 || isNaN(data62)) {
+                      const err153 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/loopbackPort", schemaPath: "#/properties/credentials/items/properties/oauth/properties/loopbackPort/minimum", keyword: "minimum", params: { comparison: ">=", limit: 1024 }, message: "must be >= 1024" };
+                      if (vErrors === null) {
+                        vErrors = [err153];
+                      } else {
+                        vErrors.push(err153);
+                      }
+                      errors++;
+                    }
+                  }
+                }
+                if (data56.loopbackHost !== void 0) {
+                  let data63 = data56.loopbackHost;
+                  if (!(data63 === "localhost" || data63 === "127.0.0.1")) {
+                    const err154 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/loopbackHost", schemaPath: "#/properties/credentials/items/properties/oauth/properties/loopbackHost/enum", keyword: "enum", params: { allowedValues: schema314.properties.credentials.items.properties.oauth.properties.loopbackHost.enum }, message: "must be equal to one of the allowed values" };
+                    if (vErrors === null) {
+                      vErrors = [err154];
+                    } else {
+                      vErrors.push(err154);
+                    }
+                    errors++;
+                  }
                 }
               } else {
-                const err156 = { instancePath: instancePath + "/credentials/" + i5 + "/environment", schemaPath: "#/properties/credentials/items/properties/environment/type", keyword: "type", params: { type: "string" }, message: "must be string" };
+                const err155 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth", schemaPath: "#/properties/credentials/items/properties/oauth/type", keyword: "type", params: { type: "object" }, message: "must be object" };
+                if (vErrors === null) {
+                  vErrors = [err155];
+                } else {
+                  vErrors.push(err155);
+                }
+                errors++;
+              }
+            }
+            if (data47.scoped !== void 0) {
+              if (typeof data47.scoped !== "boolean") {
+                const err156 = { instancePath: instancePath + "/credentials/" + i5 + "/scoped", schemaPath: "#/properties/credentials/items/properties/scoped/type", keyword: "type", params: { type: "boolean" }, message: "must be boolean" };
                 if (vErrors === null) {
                   vErrors = [err156];
                 } else {
@@ -16132,11 +16148,11 @@ function validate208(data, { instancePath = "", parentData, parentDataProperty, 
                 errors++;
               }
             }
-            if (data46.replacesSettings !== void 0) {
-              let data65 = data46.replacesSettings;
-              if (Array.isArray(data65)) {
-                if (data65.length > 16) {
-                  const err157 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesSettings", schemaPath: "#/properties/credentials/items/properties/replacesSettings/maxItems", keyword: "maxItems", params: { limit: 16 }, message: "must NOT have more than 16 items" };
+            if (data47.environment !== void 0) {
+              let data65 = data47.environment;
+              if (typeof data65 === "string") {
+                if (!pattern27.test(data65)) {
+                  const err157 = { instancePath: instancePath + "/credentials/" + i5 + "/environment", schemaPath: "#/properties/credentials/items/properties/environment/pattern", keyword: "pattern", params: { pattern: "^[A-Z][A-Z0-9_]{0,63}$" }, message: 'must match pattern "^[A-Z][A-Z0-9_]{0,63}$"' };
                   if (vErrors === null) {
                     vErrors = [err157];
                   } else {
@@ -16144,75 +16160,75 @@ function validate208(data, { instancePath = "", parentData, parentDataProperty, 
                   }
                   errors++;
                 }
-                const len8 = data65.length;
+              } else {
+                const err158 = { instancePath: instancePath + "/credentials/" + i5 + "/environment", schemaPath: "#/properties/credentials/items/properties/environment/type", keyword: "type", params: { type: "string" }, message: "must be string" };
+                if (vErrors === null) {
+                  vErrors = [err158];
+                } else {
+                  vErrors.push(err158);
+                }
+                errors++;
+              }
+            }
+            if (data47.replacesSettings !== void 0) {
+              let data66 = data47.replacesSettings;
+              if (Array.isArray(data66)) {
+                if (data66.length > 16) {
+                  const err159 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesSettings", schemaPath: "#/properties/credentials/items/properties/replacesSettings/maxItems", keyword: "maxItems", params: { limit: 16 }, message: "must NOT have more than 16 items" };
+                  if (vErrors === null) {
+                    vErrors = [err159];
+                  } else {
+                    vErrors.push(err159);
+                  }
+                  errors++;
+                }
+                const len8 = data66.length;
                 for (let i8 = 0; i8 < len8; i8++) {
-                  let data66 = data65[i8];
-                  if (data66 && typeof data66 == "object" && !Array.isArray(data66)) {
-                    if (data66.contribution === void 0) {
-                      const err158 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesSettings/" + i8, schemaPath: "#/properties/credentials/items/properties/replacesSettings/items/required", keyword: "required", params: { missingProperty: "contribution" }, message: "must have required property 'contribution'" };
+                  let data67 = data66[i8];
+                  if (data67 && typeof data67 == "object" && !Array.isArray(data67)) {
+                    if (data67.contribution === void 0) {
+                      const err160 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesSettings/" + i8, schemaPath: "#/properties/credentials/items/properties/replacesSettings/items/required", keyword: "required", params: { missingProperty: "contribution" }, message: "must have required property 'contribution'" };
                       if (vErrors === null) {
-                        vErrors = [err158];
+                        vErrors = [err160];
                       } else {
-                        vErrors.push(err158);
+                        vErrors.push(err160);
                       }
                       errors++;
                     }
-                    if (data66.key === void 0) {
-                      const err159 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesSettings/" + i8, schemaPath: "#/properties/credentials/items/properties/replacesSettings/items/required", keyword: "required", params: { missingProperty: "key" }, message: "must have required property 'key'" };
+                    if (data67.key === void 0) {
+                      const err161 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesSettings/" + i8, schemaPath: "#/properties/credentials/items/properties/replacesSettings/items/required", keyword: "required", params: { missingProperty: "key" }, message: "must have required property 'key'" };
                       if (vErrors === null) {
-                        vErrors = [err159];
+                        vErrors = [err161];
                       } else {
-                        vErrors.push(err159);
+                        vErrors.push(err161);
                       }
                       errors++;
                     }
-                    for (const key13 in data66) {
+                    for (const key13 in data67) {
                       if (!(key13 === "contribution" || key13 === "key" || key13 === "scoped")) {
-                        const err160 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesSettings/" + i8, schemaPath: "#/properties/credentials/items/properties/replacesSettings/items/additionalProperties", keyword: "additionalProperties", params: { additionalProperty: key13 }, message: "must NOT have additional properties" };
+                        const err162 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesSettings/" + i8, schemaPath: "#/properties/credentials/items/properties/replacesSettings/items/additionalProperties", keyword: "additionalProperties", params: { additionalProperty: key13 }, message: "must NOT have additional properties" };
                         if (vErrors === null) {
-                          vErrors = [err160];
+                          vErrors = [err162];
                         } else {
-                          vErrors.push(err160);
+                          vErrors.push(err162);
                         }
                         errors++;
                       }
                     }
-                    if (data66.contribution !== void 0) {
-                      let data67 = data66.contribution;
-                      if (typeof data67 === "string") {
-                        if (func2(data67) > 256) {
-                          const err161 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesSettings/" + i8 + "/contribution", schemaPath: "#/properties/credentials/items/properties/replacesSettings/items/properties/contribution/maxLength", keyword: "maxLength", params: { limit: 256 }, message: "must NOT have more than 256 characters" };
-                          if (vErrors === null) {
-                            vErrors = [err161];
-                          } else {
-                            vErrors.push(err161);
-                          }
-                          errors++;
-                        }
-                        if (func2(data67) < 1) {
-                          const err162 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesSettings/" + i8 + "/contribution", schemaPath: "#/properties/credentials/items/properties/replacesSettings/items/properties/contribution/minLength", keyword: "minLength", params: { limit: 1 }, message: "must NOT have fewer than 1 characters" };
-                          if (vErrors === null) {
-                            vErrors = [err162];
-                          } else {
-                            vErrors.push(err162);
-                          }
-                          errors++;
-                        }
-                      } else {
-                        const err163 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesSettings/" + i8 + "/contribution", schemaPath: "#/properties/credentials/items/properties/replacesSettings/items/properties/contribution/type", keyword: "type", params: { type: "string" }, message: "must be string" };
-                        if (vErrors === null) {
-                          vErrors = [err163];
-                        } else {
-                          vErrors.push(err163);
-                        }
-                        errors++;
-                      }
-                    }
-                    if (data66.key !== void 0) {
-                      let data68 = data66.key;
+                    if (data67.contribution !== void 0) {
+                      let data68 = data67.contribution;
                       if (typeof data68 === "string") {
-                        if (!pattern25.test(data68)) {
-                          const err164 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesSettings/" + i8 + "/key", schemaPath: "#/properties/credentials/items/properties/replacesSettings/items/properties/key/pattern", keyword: "pattern", params: { pattern: "^[A-Za-z0-9._-]{1,64}$" }, message: 'must match pattern "^[A-Za-z0-9._-]{1,64}$"' };
+                        if (func2(data68) > 256) {
+                          const err163 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesSettings/" + i8 + "/contribution", schemaPath: "#/properties/credentials/items/properties/replacesSettings/items/properties/contribution/maxLength", keyword: "maxLength", params: { limit: 256 }, message: "must NOT have more than 256 characters" };
+                          if (vErrors === null) {
+                            vErrors = [err163];
+                          } else {
+                            vErrors.push(err163);
+                          }
+                          errors++;
+                        }
+                        if (func2(data68) < 1) {
+                          const err164 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesSettings/" + i8 + "/contribution", schemaPath: "#/properties/credentials/items/properties/replacesSettings/items/properties/contribution/minLength", keyword: "minLength", params: { limit: 1 }, message: "must NOT have fewer than 1 characters" };
                           if (vErrors === null) {
                             vErrors = [err164];
                           } else {
@@ -16221,7 +16237,7 @@ function validate208(data, { instancePath = "", parentData, parentDataProperty, 
                           errors++;
                         }
                       } else {
-                        const err165 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesSettings/" + i8 + "/key", schemaPath: "#/properties/credentials/items/properties/replacesSettings/items/properties/key/type", keyword: "type", params: { type: "string" }, message: "must be string" };
+                        const err165 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesSettings/" + i8 + "/contribution", schemaPath: "#/properties/credentials/items/properties/replacesSettings/items/properties/contribution/type", keyword: "type", params: { type: "string" }, message: "must be string" };
                         if (vErrors === null) {
                           vErrors = [err165];
                         } else {
@@ -16230,226 +16246,248 @@ function validate208(data, { instancePath = "", parentData, parentDataProperty, 
                         errors++;
                       }
                     }
-                    if (data66.scoped !== void 0) {
-                      if (true !== data66.scoped) {
-                        const err166 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesSettings/" + i8 + "/scoped", schemaPath: "#/properties/credentials/items/properties/replacesSettings/items/properties/scoped/const", keyword: "const", params: { allowedValue: true }, message: "must be equal to constant" };
+                    if (data67.key !== void 0) {
+                      let data69 = data67.key;
+                      if (typeof data69 === "string") {
+                        if (!pattern26.test(data69)) {
+                          const err166 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesSettings/" + i8 + "/key", schemaPath: "#/properties/credentials/items/properties/replacesSettings/items/properties/key/pattern", keyword: "pattern", params: { pattern: "^[A-Za-z0-9._-]{1,64}$" }, message: 'must match pattern "^[A-Za-z0-9._-]{1,64}$"' };
+                          if (vErrors === null) {
+                            vErrors = [err166];
+                          } else {
+                            vErrors.push(err166);
+                          }
+                          errors++;
+                        }
+                      } else {
+                        const err167 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesSettings/" + i8 + "/key", schemaPath: "#/properties/credentials/items/properties/replacesSettings/items/properties/key/type", keyword: "type", params: { type: "string" }, message: "must be string" };
                         if (vErrors === null) {
-                          vErrors = [err166];
+                          vErrors = [err167];
                         } else {
-                          vErrors.push(err166);
+                          vErrors.push(err167);
+                        }
+                        errors++;
+                      }
+                    }
+                    if (data67.scoped !== void 0) {
+                      if (true !== data67.scoped) {
+                        const err168 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesSettings/" + i8 + "/scoped", schemaPath: "#/properties/credentials/items/properties/replacesSettings/items/properties/scoped/const", keyword: "const", params: { allowedValue: true }, message: "must be equal to constant" };
+                        if (vErrors === null) {
+                          vErrors = [err168];
+                        } else {
+                          vErrors.push(err168);
                         }
                         errors++;
                       }
                     }
                   } else {
-                    const err167 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesSettings/" + i8, schemaPath: "#/properties/credentials/items/properties/replacesSettings/items/type", keyword: "type", params: { type: "object" }, message: "must be object" };
+                    const err169 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesSettings/" + i8, schemaPath: "#/properties/credentials/items/properties/replacesSettings/items/type", keyword: "type", params: { type: "object" }, message: "must be object" };
                     if (vErrors === null) {
-                      vErrors = [err167];
+                      vErrors = [err169];
                     } else {
-                      vErrors.push(err167);
+                      vErrors.push(err169);
                     }
                     errors++;
                   }
                 }
               } else {
-                const err168 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesSettings", schemaPath: "#/properties/credentials/items/properties/replacesSettings/type", keyword: "type", params: { type: "array" }, message: "must be array" };
+                const err170 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesSettings", schemaPath: "#/properties/credentials/items/properties/replacesSettings/type", keyword: "type", params: { type: "array" }, message: "must be array" };
                 if (vErrors === null) {
-                  vErrors = [err168];
+                  vErrors = [err170];
                 } else {
-                  vErrors.push(err168);
+                  vErrors.push(err170);
                 }
                 errors++;
               }
             }
-            if (data46.replacesApplicationSettings !== void 0) {
-              let data70 = data46.replacesApplicationSettings;
-              if (Array.isArray(data70)) {
-                if (data70.length > 16) {
-                  const err169 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesApplicationSettings", schemaPath: "#/properties/credentials/items/properties/replacesApplicationSettings/maxItems", keyword: "maxItems", params: { limit: 16 }, message: "must NOT have more than 16 items" };
+            if (data47.replacesApplicationSettings !== void 0) {
+              let data71 = data47.replacesApplicationSettings;
+              if (Array.isArray(data71)) {
+                if (data71.length > 16) {
+                  const err171 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesApplicationSettings", schemaPath: "#/properties/credentials/items/properties/replacesApplicationSettings/maxItems", keyword: "maxItems", params: { limit: 16 }, message: "must NOT have more than 16 items" };
                   if (vErrors === null) {
-                    vErrors = [err169];
+                    vErrors = [err171];
                   } else {
-                    vErrors.push(err169);
+                    vErrors.push(err171);
                   }
                   errors++;
                 }
-                const len9 = data70.length;
+                const len9 = data71.length;
                 for (let i9 = 0; i9 < len9; i9++) {
-                  let data71 = data70[i9];
-                  if (data71 && typeof data71 == "object" && !Array.isArray(data71)) {
-                    if (data71.setting === void 0) {
-                      const err170 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesApplicationSettings/" + i9, schemaPath: "#/properties/credentials/items/properties/replacesApplicationSettings/items/required", keyword: "required", params: { missingProperty: "setting" }, message: "must have required property 'setting'" };
+                  let data72 = data71[i9];
+                  if (data72 && typeof data72 == "object" && !Array.isArray(data72)) {
+                    if (data72.setting === void 0) {
+                      const err172 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesApplicationSettings/" + i9, schemaPath: "#/properties/credentials/items/properties/replacesApplicationSettings/items/required", keyword: "required", params: { missingProperty: "setting" }, message: "must have required property 'setting'" };
                       if (vErrors === null) {
-                        vErrors = [err170];
+                        vErrors = [err172];
                       } else {
-                        vErrors.push(err170);
+                        vErrors.push(err172);
                       }
                       errors++;
                     }
-                    for (const key14 in data71) {
+                    for (const key14 in data72) {
                       if (!(key14 === "setting" || key14 === "scoped")) {
-                        const err171 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesApplicationSettings/" + i9, schemaPath: "#/properties/credentials/items/properties/replacesApplicationSettings/items/additionalProperties", keyword: "additionalProperties", params: { additionalProperty: key14 }, message: "must NOT have additional properties" };
+                        const err173 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesApplicationSettings/" + i9, schemaPath: "#/properties/credentials/items/properties/replacesApplicationSettings/items/additionalProperties", keyword: "additionalProperties", params: { additionalProperty: key14 }, message: "must NOT have additional properties" };
                         if (vErrors === null) {
-                          vErrors = [err171];
+                          vErrors = [err173];
                         } else {
-                          vErrors.push(err171);
+                          vErrors.push(err173);
                         }
                         errors++;
                       }
                     }
-                    if (data71.setting !== void 0) {
-                      let data72 = data71.setting;
-                      if (typeof data72 === "string") {
-                        if (func2(data72) > 128) {
-                          const err172 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesApplicationSettings/" + i9 + "/setting", schemaPath: "#/properties/credentials/items/properties/replacesApplicationSettings/items/properties/setting/maxLength", keyword: "maxLength", params: { limit: 128 }, message: "must NOT have more than 128 characters" };
+                    if (data72.setting !== void 0) {
+                      let data73 = data72.setting;
+                      if (typeof data73 === "string") {
+                        if (func2(data73) > 128) {
+                          const err174 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesApplicationSettings/" + i9 + "/setting", schemaPath: "#/properties/credentials/items/properties/replacesApplicationSettings/items/properties/setting/maxLength", keyword: "maxLength", params: { limit: 128 }, message: "must NOT have more than 128 characters" };
                           if (vErrors === null) {
-                            vErrors = [err172];
+                            vErrors = [err174];
                           } else {
-                            vErrors.push(err172);
+                            vErrors.push(err174);
                           }
                           errors++;
                         }
-                        if (!pattern28.test(data72)) {
-                          const err173 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesApplicationSettings/" + i9 + "/setting", schemaPath: "#/properties/credentials/items/properties/replacesApplicationSettings/items/properties/setting/pattern", keyword: "pattern", params: { pattern: "^[A-Za-z][A-Za-z0-9]*(?:\\.[A-Za-z0-9_-]+)+$" }, message: 'must match pattern "^[A-Za-z][A-Za-z0-9]*(?:\\.[A-Za-z0-9_-]+)+$"' };
+                        if (!pattern29.test(data73)) {
+                          const err175 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesApplicationSettings/" + i9 + "/setting", schemaPath: "#/properties/credentials/items/properties/replacesApplicationSettings/items/properties/setting/pattern", keyword: "pattern", params: { pattern: "^[A-Za-z][A-Za-z0-9]*(?:\\.[A-Za-z0-9_-]+)+$" }, message: 'must match pattern "^[A-Za-z][A-Za-z0-9]*(?:\\.[A-Za-z0-9_-]+)+$"' };
                           if (vErrors === null) {
-                            vErrors = [err173];
+                            vErrors = [err175];
                           } else {
-                            vErrors.push(err173);
+                            vErrors.push(err175);
                           }
                           errors++;
                         }
                       } else {
-                        const err174 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesApplicationSettings/" + i9 + "/setting", schemaPath: "#/properties/credentials/items/properties/replacesApplicationSettings/items/properties/setting/type", keyword: "type", params: { type: "string" }, message: "must be string" };
+                        const err176 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesApplicationSettings/" + i9 + "/setting", schemaPath: "#/properties/credentials/items/properties/replacesApplicationSettings/items/properties/setting/type", keyword: "type", params: { type: "string" }, message: "must be string" };
                         if (vErrors === null) {
-                          vErrors = [err174];
+                          vErrors = [err176];
                         } else {
-                          vErrors.push(err174);
+                          vErrors.push(err176);
                         }
                         errors++;
                       }
                     }
-                    if (data71.scoped !== void 0) {
-                      if (true !== data71.scoped) {
-                        const err175 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesApplicationSettings/" + i9 + "/scoped", schemaPath: "#/properties/credentials/items/properties/replacesApplicationSettings/items/properties/scoped/const", keyword: "const", params: { allowedValue: true }, message: "must be equal to constant" };
+                    if (data72.scoped !== void 0) {
+                      if (true !== data72.scoped) {
+                        const err177 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesApplicationSettings/" + i9 + "/scoped", schemaPath: "#/properties/credentials/items/properties/replacesApplicationSettings/items/properties/scoped/const", keyword: "const", params: { allowedValue: true }, message: "must be equal to constant" };
                         if (vErrors === null) {
-                          vErrors = [err175];
+                          vErrors = [err177];
                         } else {
-                          vErrors.push(err175);
+                          vErrors.push(err177);
                         }
                         errors++;
                       }
                     }
                   } else {
-                    const err176 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesApplicationSettings/" + i9, schemaPath: "#/properties/credentials/items/properties/replacesApplicationSettings/items/type", keyword: "type", params: { type: "object" }, message: "must be object" };
+                    const err178 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesApplicationSettings/" + i9, schemaPath: "#/properties/credentials/items/properties/replacesApplicationSettings/items/type", keyword: "type", params: { type: "object" }, message: "must be object" };
                     if (vErrors === null) {
-                      vErrors = [err176];
+                      vErrors = [err178];
                     } else {
-                      vErrors.push(err176);
+                      vErrors.push(err178);
                     }
                     errors++;
                   }
                 }
               } else {
-                const err177 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesApplicationSettings", schemaPath: "#/properties/credentials/items/properties/replacesApplicationSettings/type", keyword: "type", params: { type: "array" }, message: "must be array" };
+                const err179 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesApplicationSettings", schemaPath: "#/properties/credentials/items/properties/replacesApplicationSettings/type", keyword: "type", params: { type: "array" }, message: "must be array" };
                 if (vErrors === null) {
-                  vErrors = [err177];
+                  vErrors = [err179];
                 } else {
-                  vErrors.push(err177);
+                  vErrors.push(err179);
                 }
                 errors++;
               }
             }
-            if (data46.scopeFormat !== void 0) {
-              if (!(data46.scopeFormat === "hex")) {
-                const err178 = { instancePath: instancePath + "/credentials/" + i5 + "/scopeFormat", schemaPath: "#/properties/credentials/items/properties/scopeFormat/enum", keyword: "enum", params: { allowedValues: schema314.properties.credentials.items.properties.scopeFormat.enum }, message: "must be equal to one of the allowed values" };
+            if (data47.scopeFormat !== void 0) {
+              if (!(data47.scopeFormat === "hex")) {
+                const err180 = { instancePath: instancePath + "/credentials/" + i5 + "/scopeFormat", schemaPath: "#/properties/credentials/items/properties/scopeFormat/enum", keyword: "enum", params: { allowedValues: schema314.properties.credentials.items.properties.scopeFormat.enum }, message: "must be equal to one of the allowed values" };
                 if (vErrors === null) {
-                  vErrors = [err178];
+                  vErrors = [err180];
                 } else {
-                  vErrors.push(err178);
+                  vErrors.push(err180);
                 }
                 errors++;
               }
             }
           } else {
-            const err179 = { instancePath: instancePath + "/credentials/" + i5, schemaPath: "#/properties/credentials/items/type", keyword: "type", params: { type: "object" }, message: "must be object" };
+            const err181 = { instancePath: instancePath + "/credentials/" + i5, schemaPath: "#/properties/credentials/items/type", keyword: "type", params: { type: "object" }, message: "must be object" };
             if (vErrors === null) {
-              vErrors = [err179];
+              vErrors = [err181];
             } else {
-              vErrors.push(err179);
+              vErrors.push(err181);
             }
             errors++;
           }
         }
       } else {
-        const err180 = { instancePath: instancePath + "/credentials", schemaPath: "#/properties/credentials/type", keyword: "type", params: { type: "array" }, message: "must be array" };
+        const err182 = { instancePath: instancePath + "/credentials", schemaPath: "#/properties/credentials/type", keyword: "type", params: { type: "array" }, message: "must be array" };
         if (vErrors === null) {
-          vErrors = [err180];
+          vErrors = [err182];
         } else {
-          vErrors.push(err180);
+          vErrors.push(err182);
         }
         errors++;
       }
     }
     if (data.workspaceMarkers !== void 0) {
-      let data75 = data.workspaceMarkers;
-      if (Array.isArray(data75)) {
-        if (data75.length > 32) {
-          const err181 = { instancePath: instancePath + "/workspaceMarkers", schemaPath: "#/properties/workspaceMarkers/maxItems", keyword: "maxItems", params: { limit: 32 }, message: "must NOT have more than 32 items" };
+      let data76 = data.workspaceMarkers;
+      if (Array.isArray(data76)) {
+        if (data76.length > 32) {
+          const err183 = { instancePath: instancePath + "/workspaceMarkers", schemaPath: "#/properties/workspaceMarkers/maxItems", keyword: "maxItems", params: { limit: 32 }, message: "must NOT have more than 32 items" };
           if (vErrors === null) {
-            vErrors = [err181];
+            vErrors = [err183];
           } else {
-            vErrors.push(err181);
+            vErrors.push(err183);
           }
           errors++;
         }
-        const len10 = data75.length;
+        const len10 = data76.length;
         for (let i10 = 0; i10 < len10; i10++) {
-          let data76 = data75[i10];
-          if (typeof data76 === "string") {
-            if (func2(data76) > 128) {
-              const err182 = { instancePath: instancePath + "/workspaceMarkers/" + i10, schemaPath: "#/properties/workspaceMarkers/items/maxLength", keyword: "maxLength", params: { limit: 128 }, message: "must NOT have more than 128 characters" };
+          let data77 = data76[i10];
+          if (typeof data77 === "string") {
+            if (func2(data77) > 128) {
+              const err184 = { instancePath: instancePath + "/workspaceMarkers/" + i10, schemaPath: "#/properties/workspaceMarkers/items/maxLength", keyword: "maxLength", params: { limit: 128 }, message: "must NOT have more than 128 characters" };
               if (vErrors === null) {
-                vErrors = [err182];
+                vErrors = [err184];
               } else {
-                vErrors.push(err182);
+                vErrors.push(err184);
               }
               errors++;
             }
-            if (!pattern29.test(data76)) {
-              const err183 = { instancePath: instancePath + "/workspaceMarkers/" + i10, schemaPath: "#/properties/workspaceMarkers/items/pattern", keyword: "pattern", params: { pattern: "^(?!/)(?![A-Za-z]:)[^\\\\\\u0000]+$" }, message: 'must match pattern "^(?!/)(?![A-Za-z]:)[^\\\\\\u0000]+$"' };
+            if (!pattern30.test(data77)) {
+              const err185 = { instancePath: instancePath + "/workspaceMarkers/" + i10, schemaPath: "#/properties/workspaceMarkers/items/pattern", keyword: "pattern", params: { pattern: "^(?!/)(?![A-Za-z]:)[^\\\\\\u0000]+$" }, message: 'must match pattern "^(?!/)(?![A-Za-z]:)[^\\\\\\u0000]+$"' };
               if (vErrors === null) {
-                vErrors = [err183];
+                vErrors = [err185];
               } else {
-                vErrors.push(err183);
+                vErrors.push(err185);
               }
               errors++;
             }
           } else {
-            const err184 = { instancePath: instancePath + "/workspaceMarkers/" + i10, schemaPath: "#/properties/workspaceMarkers/items/type", keyword: "type", params: { type: "string" }, message: "must be string" };
+            const err186 = { instancePath: instancePath + "/workspaceMarkers/" + i10, schemaPath: "#/properties/workspaceMarkers/items/type", keyword: "type", params: { type: "string" }, message: "must be string" };
             if (vErrors === null) {
-              vErrors = [err184];
+              vErrors = [err186];
             } else {
-              vErrors.push(err184);
+              vErrors.push(err186);
             }
             errors++;
           }
         }
       } else {
-        const err185 = { instancePath: instancePath + "/workspaceMarkers", schemaPath: "#/properties/workspaceMarkers/type", keyword: "type", params: { type: "array" }, message: "must be array" };
+        const err187 = { instancePath: instancePath + "/workspaceMarkers", schemaPath: "#/properties/workspaceMarkers/type", keyword: "type", params: { type: "array" }, message: "must be array" };
         if (vErrors === null) {
-          vErrors = [err185];
+          vErrors = [err187];
         } else {
-          vErrors.push(err185);
+          vErrors.push(err187);
         }
         errors++;
       }
     }
   } else {
-    const err186 = { instancePath, schemaPath: "#/type", keyword: "type", params: { type: "object" }, message: "must be object" };
+    const err188 = { instancePath, schemaPath: "#/type", keyword: "type", params: { type: "object" }, message: "must be object" };
     if (vErrors === null) {
-      vErrors = [err186];
+      vErrors = [err188];
     } else {
-      vErrors.push(err186);
+      vErrors.push(err188);
     }
     errors++;
   }
@@ -16459,9 +16497,10 @@ function validate208(data, { instancePath = "", parentData, parentDataProperty, 
 validate208.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
 
 // ../MODDING/modkit-core/packages/sdk/dist/manifest/validators.generated/extensionManifestModkitBlockV1.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var func2Module2 = __toESM(require_ucs2length(), 1);
 var extensionManifestModkitBlockV1 = validate209;
-var schema315 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/extension-manifest-modkit-block.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["schemaVersion", "publisher", "id", "contributionManifests"], "properties": { "schemaVersion": { "const": 1 }, "publisher": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "contributionManifests": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "dependsOn": { "type": "array", "items": { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/extension-requirement.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["extension", "mode", "scope"], "properties": { "extension": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "mode": { "enum": ["required", "default", "suggested", "integrates"] }, "scope": { "type": "object", "additionalProperties": false, "required": ["kind", "id"], "properties": { "kind": { "enum": ["contribution", "offer", "operation", "intent", "variant", "profile", "projection", "slot"] }, "id": { "type": "string", "minLength": 1 } } } } } }, "presentation": { "type": "object", "additionalProperties": false, "properties": { "displayName": { "type": "string", "minLength": 1 }, "description": { "type": "string", "minLength": 1 }, "vendor": { "type": "object", "additionalProperties": false, "required": ["id", "displayName"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "displayName": { "type": "string", "minLength": 1 } } }, "games": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "displayName"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "displayName": { "type": "string", "minLength": 1 } } } }, "icon": { "type": "object", "additionalProperties": false, "required": ["path"], "properties": { "path": { "type": "string", "pattern": "^(?:\\./)?(?![A-Za-z]:)(?!\\\\)(?!.*\\\\)(?!.*\\u0000)(?!\\.{1,2}(?:/|$))(?!.*\\/\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$" }, "displayName": { "type": "string", "minLength": 1 }, "mediaType": { "type": "string", "minLength": 1 } } }, "source": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "root"], "properties": { "kind": { "const": "root" }, "root": { "type": "string", "pattern": "^(?:\\./)?(?![A-Za-z]:)(?!\\\\)(?!.*\\\\)(?!.*\\u0000)(?!\\.{1,2}(?:/|$))(?!.*\\/\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$" } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "url"], "properties": { "kind": { "const": "url" }, "url": { "type": "string", "pattern": "^https?://[^\\s]+$" } } }] }, "licenseFiles": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["path"], "properties": { "path": { "type": "string", "pattern": "^(?:\\./)?(?![A-Za-z]:)(?!\\\\)(?!.*\\\\)(?!.*\\u0000)(?!\\.{1,2}(?:/|$))(?!.*\\/\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$" }, "displayName": { "type": "string", "minLength": 1 }, "mediaType": { "type": "string", "minLength": 1 } } } } } }, "contentSources": { "type": "string", "pattern": "^(?:\\./)?(?![A-Za-z]:)(?!\\\\)(?!.*\\\\)(?!.*\\u0000)(?!\\.{1,2}(?:/|$))(?!.*\\/\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$" }, "languageFiles": { "type": "array", "maxItems": 64, "items": { "type": "object", "additionalProperties": false, "required": ["extension", "languageId"], "properties": { "extension": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" }, "languageId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" }, "dialect": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" } } } }, "credentials": { "type": "array", "maxItems": 32, "items": { "type": "object", "additionalProperties": false, "required": ["id", "kind", "label"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9.-]*/[a-z0-9][a-z0-9._-]*$", "maxLength": 128 }, "kind": { "enum": ["api-key", "oauth2-pkce", "provider-session", "symmetric-key"] }, "label": { "type": "string", "minLength": 1, "maxLength": 128 }, "audience": { "type": "array", "maxItems": 16, "items": { "type": "string", "pattern": "^https?://[^\\s]+$", "maxLength": 512 } }, "header": { "type": "string", "pattern": "^[A-Za-z0-9-]{1,64}$" }, "scopes": { "type": "array", "maxItems": 32, "items": { "type": "string", "minLength": 1, "maxLength": 128 } }, "oauth": { "type": "object", "additionalProperties": false, "required": ["authorizationEndpoint", "tokenEndpoint"], "properties": { "authorizationEndpoint": { "type": "string", "pattern": "^https?://[^\\s]+$", "maxLength": 512 }, "tokenEndpoint": { "type": "string", "pattern": "^https?://[^\\s]+$", "maxLength": 512 }, "revocationEndpoint": { "type": "string", "pattern": "^https?://[^\\s]+$", "maxLength": 512 }, "clientId": { "type": "string", "minLength": 1, "maxLength": 256 }, "clientIdSetting": { "type": "string", "pattern": "^[A-Za-z0-9._-]{1,64}$" }, "loopbackPort": { "type": "integer", "minimum": 1024, "maximum": 65535 }, "loopbackHost": { "enum": ["localhost", "127.0.0.1"] } } }, "scoped": { "type": "boolean" }, "environment": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]{0,63}$" }, "replacesSettings": { "type": "array", "maxItems": 16, "items": { "type": "object", "additionalProperties": false, "required": ["contribution", "key"], "properties": { "contribution": { "type": "string", "minLength": 1, "maxLength": 256 }, "key": { "type": "string", "pattern": "^[A-Za-z0-9._-]{1,64}$" }, "scoped": { "const": true } } } }, "replacesApplicationSettings": { "type": "array", "maxItems": 16, "items": { "type": "object", "additionalProperties": false, "required": ["setting"], "properties": { "setting": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9]*(?:\\.[A-Za-z0-9_-]+)+$", "maxLength": 128 }, "scoped": { "const": true } } } }, "scopeFormat": { "enum": ["hex"] } } } }, "workspaceMarkers": { "type": "array", "maxItems": 32, "items": { "type": "string", "pattern": "^(?!/)(?![A-Za-z]:)[^\\\\\\u0000]+$", "maxLength": 128 } } } };
+var schema315 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/extension-manifest-modkit-block.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["schemaVersion", "publisher", "id", "contributionManifests"], "properties": { "schemaVersion": { "const": 1 }, "publisher": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "contributionManifests": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "dependsOn": { "type": "array", "items": { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/extension-requirement.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["extension", "mode", "scope"], "properties": { "extension": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "mode": { "enum": ["required", "default", "suggested", "integrates"] }, "scope": { "type": "object", "additionalProperties": false, "required": ["kind", "id"], "properties": { "kind": { "enum": ["contribution", "offer", "operation", "intent", "variant", "profile", "projection", "slot"] }, "id": { "type": "string", "minLength": 1 } } } } } }, "presentation": { "type": "object", "additionalProperties": false, "properties": { "displayName": { "type": "string", "minLength": 1 }, "description": { "type": "string", "minLength": 1 }, "vendor": { "type": "object", "additionalProperties": false, "required": ["id", "displayName"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "displayName": { "type": "string", "minLength": 1 } } }, "games": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "displayName"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "displayName": { "type": "string", "minLength": 1 } } } }, "icon": { "type": "object", "additionalProperties": false, "required": ["path"], "properties": { "path": { "type": "string", "pattern": "^(?:\\./)?(?![A-Za-z]:)(?!\\\\)(?!.*\\\\)(?!.*\\u0000)(?!\\.{1,2}(?:/|$))(?!.*\\/\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$" }, "displayName": { "type": "string", "minLength": 1 }, "mediaType": { "type": "string", "minLength": 1 } } }, "source": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "root"], "properties": { "kind": { "const": "root" }, "root": { "type": "string", "pattern": "^(?:\\./)?(?![A-Za-z]:)(?!\\\\)(?!.*\\\\)(?!.*\\u0000)(?!\\.{1,2}(?:/|$))(?!.*\\/\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$" } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "url"], "properties": { "kind": { "const": "url" }, "url": { "type": "string", "pattern": "^https?://[^\\s]+$" } } }] }, "licenseFiles": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["path"], "properties": { "path": { "type": "string", "pattern": "^(?:\\./)?(?![A-Za-z]:)(?!\\\\)(?!.*\\\\)(?!.*\\u0000)(?!\\.{1,2}(?:/|$))(?!.*\\/\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$" }, "displayName": { "type": "string", "minLength": 1 }, "mediaType": { "type": "string", "minLength": 1 } } } } } }, "contentSources": { "type": "string", "pattern": "^(?:\\./)?(?![A-Za-z]:)(?!\\\\)(?!.*\\\\)(?!.*\\u0000)(?!\\.{1,2}(?:/|$))(?!.*\\/\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$" }, "languageFiles": { "type": "array", "maxItems": 64, "items": { "type": "object", "additionalProperties": false, "required": ["extension", "languageId"], "properties": { "extension": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" }, "languageId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" }, "dialect": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" }, "rootElement": { "type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9._-]{0,127}$" } } } }, "credentials": { "type": "array", "maxItems": 32, "items": { "type": "object", "additionalProperties": false, "required": ["id", "kind", "label"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9.-]*/[a-z0-9][a-z0-9._-]*$", "maxLength": 128 }, "kind": { "enum": ["api-key", "oauth2-pkce", "provider-session", "symmetric-key"] }, "label": { "type": "string", "minLength": 1, "maxLength": 128 }, "audience": { "type": "array", "maxItems": 16, "items": { "type": "string", "pattern": "^https?://[^\\s]+$", "maxLength": 512 } }, "header": { "type": "string", "pattern": "^[A-Za-z0-9-]{1,64}$" }, "scopes": { "type": "array", "maxItems": 32, "items": { "type": "string", "minLength": 1, "maxLength": 128 } }, "oauth": { "type": "object", "additionalProperties": false, "required": ["authorizationEndpoint", "tokenEndpoint"], "properties": { "authorizationEndpoint": { "type": "string", "pattern": "^https?://[^\\s]+$", "maxLength": 512 }, "tokenEndpoint": { "type": "string", "pattern": "^https?://[^\\s]+$", "maxLength": 512 }, "revocationEndpoint": { "type": "string", "pattern": "^https?://[^\\s]+$", "maxLength": 512 }, "clientId": { "type": "string", "minLength": 1, "maxLength": 256 }, "clientIdSetting": { "type": "string", "pattern": "^[A-Za-z0-9._-]{1,64}$" }, "loopbackPort": { "type": "integer", "minimum": 1024, "maximum": 65535 }, "loopbackHost": { "enum": ["localhost", "127.0.0.1"] } } }, "scoped": { "type": "boolean" }, "environment": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]{0,63}$" }, "replacesSettings": { "type": "array", "maxItems": 16, "items": { "type": "object", "additionalProperties": false, "required": ["contribution", "key"], "properties": { "contribution": { "type": "string", "minLength": 1, "maxLength": 256 }, "key": { "type": "string", "pattern": "^[A-Za-z0-9._-]{1,64}$" }, "scoped": { "const": true } } } }, "replacesApplicationSettings": { "type": "array", "maxItems": 16, "items": { "type": "object", "additionalProperties": false, "required": ["setting"], "properties": { "setting": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9]*(?:\\.[A-Za-z0-9_-]+)+$", "maxLength": 128 }, "scoped": { "const": true } } } }, "scopeFormat": { "enum": ["hex"] } } } }, "workspaceMarkers": { "type": "array", "maxItems": 32, "items": { "type": "string", "pattern": "^(?!/)(?![A-Za-z]:)[^\\\\\\u0000]+$", "maxLength": 128 } } } };
 var func18 = Object.prototype.hasOwnProperty;
 var func22 = func2Module2.default?.default ?? func2Module2.default;
 var pattern47 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
@@ -16470,12 +16509,13 @@ var pattern72 = new RegExp("^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(
 var pattern10 = new RegExp("^(?:\\./)?(?![A-Za-z]:)(?!\\\\)(?!.*\\\\)(?!.*\\u0000)(?!\\.{1,2}(?:/|$))(?!.*\\/\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$", "u");
 var pattern12 = new RegExp("^https?://[^\\s]+$", "u");
 var pattern15 = new RegExp("^[a-z0-9][a-z0-9._-]{0,63}$", "u");
-var pattern18 = new RegExp("^[a-z0-9][a-z0-9.-]*/[a-z0-9][a-z0-9._-]*$", "u");
-var pattern20 = new RegExp("^[A-Za-z0-9-]{1,64}$", "u");
-var pattern24 = new RegExp("^[A-Za-z0-9._-]{1,64}$", "u");
-var pattern252 = new RegExp("^[A-Z][A-Z0-9_]{0,63}$", "u");
-var pattern27 = new RegExp("^[A-Za-z][A-Za-z0-9]*(?:\\.[A-Za-z0-9_-]+)+$", "u");
-var pattern282 = new RegExp("^(?!/)(?![A-Za-z]:)[^\\\\\\u0000]+$", "u");
+var pattern18 = new RegExp("^[A-Za-z_][A-Za-z0-9._-]{0,127}$", "u");
+var pattern192 = new RegExp("^[a-z0-9][a-z0-9.-]*/[a-z0-9][a-z0-9._-]*$", "u");
+var pattern21 = new RegExp("^[A-Za-z0-9-]{1,64}$", "u");
+var pattern25 = new RegExp("^[A-Za-z0-9._-]{1,64}$", "u");
+var pattern262 = new RegExp("^[A-Z][A-Z0-9_]{0,63}$", "u");
+var pattern28 = new RegExp("^[A-Za-z][A-Za-z0-9]*(?:\\.[A-Za-z0-9_-]+)+$", "u");
+var pattern292 = new RegExp("^(?!/)(?![A-Za-z]:)[^\\\\\\u0000]+$", "u");
 function validate209(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
   ;
   let vErrors = null;
@@ -17535,7 +17575,7 @@ function validate209(data, { instancePath = "", parentData, parentDataProperty, 
               errors++;
             }
             for (const key10 in data39) {
-              if (!(key10 === "extension" || key10 === "languageId" || key10 === "dialect")) {
+              if (!(key10 === "extension" || key10 === "languageId" || key10 === "dialect" || key10 === "rootElement")) {
                 const err93 = { instancePath: instancePath + "/languageFiles/" + i4, schemaPath: "#/properties/languageFiles/items/additionalProperties", keyword: "additionalProperties", params: { additionalProperty: key10 }, message: "must NOT have additional properties" };
                 if (vErrors === null) {
                   vErrors = [err93];
@@ -17611,62 +17651,66 @@ function validate209(data, { instancePath = "", parentData, parentDataProperty, 
                 errors++;
               }
             }
+            if (data39.rootElement !== void 0) {
+              let data43 = data39.rootElement;
+              if (typeof data43 === "string") {
+                if (!pattern18.test(data43)) {
+                  const err100 = { instancePath: instancePath + "/languageFiles/" + i4 + "/rootElement", schemaPath: "#/properties/languageFiles/items/properties/rootElement/pattern", keyword: "pattern", params: { pattern: "^[A-Za-z_][A-Za-z0-9._-]{0,127}$" }, message: 'must match pattern "^[A-Za-z_][A-Za-z0-9._-]{0,127}$"' };
+                  if (vErrors === null) {
+                    vErrors = [err100];
+                  } else {
+                    vErrors.push(err100);
+                  }
+                  errors++;
+                }
+              } else {
+                const err101 = { instancePath: instancePath + "/languageFiles/" + i4 + "/rootElement", schemaPath: "#/properties/languageFiles/items/properties/rootElement/type", keyword: "type", params: { type: "string" }, message: "must be string" };
+                if (vErrors === null) {
+                  vErrors = [err101];
+                } else {
+                  vErrors.push(err101);
+                }
+                errors++;
+              }
+            }
           } else {
-            const err100 = { instancePath: instancePath + "/languageFiles/" + i4, schemaPath: "#/properties/languageFiles/items/type", keyword: "type", params: { type: "object" }, message: "must be object" };
+            const err102 = { instancePath: instancePath + "/languageFiles/" + i4, schemaPath: "#/properties/languageFiles/items/type", keyword: "type", params: { type: "object" }, message: "must be object" };
             if (vErrors === null) {
-              vErrors = [err100];
+              vErrors = [err102];
             } else {
-              vErrors.push(err100);
+              vErrors.push(err102);
             }
             errors++;
           }
         }
       } else {
-        const err101 = { instancePath: instancePath + "/languageFiles", schemaPath: "#/properties/languageFiles/type", keyword: "type", params: { type: "array" }, message: "must be array" };
+        const err103 = { instancePath: instancePath + "/languageFiles", schemaPath: "#/properties/languageFiles/type", keyword: "type", params: { type: "array" }, message: "must be array" };
         if (vErrors === null) {
-          vErrors = [err101];
+          vErrors = [err103];
         } else {
-          vErrors.push(err101);
+          vErrors.push(err103);
         }
         errors++;
       }
     }
     if (data.credentials !== void 0) {
-      let data43 = data.credentials;
-      if (Array.isArray(data43)) {
-        if (data43.length > 32) {
-          const err102 = { instancePath: instancePath + "/credentials", schemaPath: "#/properties/credentials/maxItems", keyword: "maxItems", params: { limit: 32 }, message: "must NOT have more than 32 items" };
+      let data44 = data.credentials;
+      if (Array.isArray(data44)) {
+        if (data44.length > 32) {
+          const err104 = { instancePath: instancePath + "/credentials", schemaPath: "#/properties/credentials/maxItems", keyword: "maxItems", params: { limit: 32 }, message: "must NOT have more than 32 items" };
           if (vErrors === null) {
-            vErrors = [err102];
+            vErrors = [err104];
           } else {
-            vErrors.push(err102);
+            vErrors.push(err104);
           }
           errors++;
         }
-        const len5 = data43.length;
+        const len5 = data44.length;
         for (let i5 = 0; i5 < len5; i5++) {
-          let data44 = data43[i5];
-          if (data44 && typeof data44 == "object" && !Array.isArray(data44)) {
-            if (data44.id === void 0) {
-              const err103 = { instancePath: instancePath + "/credentials/" + i5, schemaPath: "#/properties/credentials/items/required", keyword: "required", params: { missingProperty: "id" }, message: "must have required property 'id'" };
-              if (vErrors === null) {
-                vErrors = [err103];
-              } else {
-                vErrors.push(err103);
-              }
-              errors++;
-            }
-            if (data44.kind === void 0) {
-              const err104 = { instancePath: instancePath + "/credentials/" + i5, schemaPath: "#/properties/credentials/items/required", keyword: "required", params: { missingProperty: "kind" }, message: "must have required property 'kind'" };
-              if (vErrors === null) {
-                vErrors = [err104];
-              } else {
-                vErrors.push(err104);
-              }
-              errors++;
-            }
-            if (data44.label === void 0) {
-              const err105 = { instancePath: instancePath + "/credentials/" + i5, schemaPath: "#/properties/credentials/items/required", keyword: "required", params: { missingProperty: "label" }, message: "must have required property 'label'" };
+          let data45 = data44[i5];
+          if (data45 && typeof data45 == "object" && !Array.isArray(data45)) {
+            if (data45.id === void 0) {
+              const err105 = { instancePath: instancePath + "/credentials/" + i5, schemaPath: "#/properties/credentials/items/required", keyword: "required", params: { missingProperty: "id" }, message: "must have required property 'id'" };
               if (vErrors === null) {
                 vErrors = [err105];
               } else {
@@ -17674,96 +17718,92 @@ function validate209(data, { instancePath = "", parentData, parentDataProperty, 
               }
               errors++;
             }
-            for (const key11 in data44) {
+            if (data45.kind === void 0) {
+              const err106 = { instancePath: instancePath + "/credentials/" + i5, schemaPath: "#/properties/credentials/items/required", keyword: "required", params: { missingProperty: "kind" }, message: "must have required property 'kind'" };
+              if (vErrors === null) {
+                vErrors = [err106];
+              } else {
+                vErrors.push(err106);
+              }
+              errors++;
+            }
+            if (data45.label === void 0) {
+              const err107 = { instancePath: instancePath + "/credentials/" + i5, schemaPath: "#/properties/credentials/items/required", keyword: "required", params: { missingProperty: "label" }, message: "must have required property 'label'" };
+              if (vErrors === null) {
+                vErrors = [err107];
+              } else {
+                vErrors.push(err107);
+              }
+              errors++;
+            }
+            for (const key11 in data45) {
               if (!func18.call(schema315.properties.credentials.items.properties, key11)) {
-                const err106 = { instancePath: instancePath + "/credentials/" + i5, schemaPath: "#/properties/credentials/items/additionalProperties", keyword: "additionalProperties", params: { additionalProperty: key11 }, message: "must NOT have additional properties" };
+                const err108 = { instancePath: instancePath + "/credentials/" + i5, schemaPath: "#/properties/credentials/items/additionalProperties", keyword: "additionalProperties", params: { additionalProperty: key11 }, message: "must NOT have additional properties" };
                 if (vErrors === null) {
-                  vErrors = [err106];
+                  vErrors = [err108];
                 } else {
-                  vErrors.push(err106);
+                  vErrors.push(err108);
                 }
                 errors++;
               }
             }
-            if (data44.id !== void 0) {
-              let data45 = data44.id;
-              if (typeof data45 === "string") {
-                if (func22(data45) > 128) {
-                  const err107 = { instancePath: instancePath + "/credentials/" + i5 + "/id", schemaPath: "#/properties/credentials/items/properties/id/maxLength", keyword: "maxLength", params: { limit: 128 }, message: "must NOT have more than 128 characters" };
+            if (data45.id !== void 0) {
+              let data46 = data45.id;
+              if (typeof data46 === "string") {
+                if (func22(data46) > 128) {
+                  const err109 = { instancePath: instancePath + "/credentials/" + i5 + "/id", schemaPath: "#/properties/credentials/items/properties/id/maxLength", keyword: "maxLength", params: { limit: 128 }, message: "must NOT have more than 128 characters" };
                   if (vErrors === null) {
-                    vErrors = [err107];
+                    vErrors = [err109];
                   } else {
-                    vErrors.push(err107);
+                    vErrors.push(err109);
                   }
                   errors++;
                 }
-                if (!pattern18.test(data45)) {
-                  const err108 = { instancePath: instancePath + "/credentials/" + i5 + "/id", schemaPath: "#/properties/credentials/items/properties/id/pattern", keyword: "pattern", params: { pattern: "^[a-z0-9][a-z0-9.-]*/[a-z0-9][a-z0-9._-]*$" }, message: 'must match pattern "^[a-z0-9][a-z0-9.-]*/[a-z0-9][a-z0-9._-]*$"' };
+                if (!pattern192.test(data46)) {
+                  const err110 = { instancePath: instancePath + "/credentials/" + i5 + "/id", schemaPath: "#/properties/credentials/items/properties/id/pattern", keyword: "pattern", params: { pattern: "^[a-z0-9][a-z0-9.-]*/[a-z0-9][a-z0-9._-]*$" }, message: 'must match pattern "^[a-z0-9][a-z0-9.-]*/[a-z0-9][a-z0-9._-]*$"' };
                   if (vErrors === null) {
-                    vErrors = [err108];
+                    vErrors = [err110];
                   } else {
-                    vErrors.push(err108);
-                  }
-                  errors++;
-                }
-              } else {
-                const err109 = { instancePath: instancePath + "/credentials/" + i5 + "/id", schemaPath: "#/properties/credentials/items/properties/id/type", keyword: "type", params: { type: "string" }, message: "must be string" };
-                if (vErrors === null) {
-                  vErrors = [err109];
-                } else {
-                  vErrors.push(err109);
-                }
-                errors++;
-              }
-            }
-            if (data44.kind !== void 0) {
-              let data46 = data44.kind;
-              if (!(data46 === "api-key" || data46 === "oauth2-pkce" || data46 === "provider-session" || data46 === "symmetric-key")) {
-                const err110 = { instancePath: instancePath + "/credentials/" + i5 + "/kind", schemaPath: "#/properties/credentials/items/properties/kind/enum", keyword: "enum", params: { allowedValues: schema315.properties.credentials.items.properties.kind.enum }, message: "must be equal to one of the allowed values" };
-                if (vErrors === null) {
-                  vErrors = [err110];
-                } else {
-                  vErrors.push(err110);
-                }
-                errors++;
-              }
-            }
-            if (data44.label !== void 0) {
-              let data47 = data44.label;
-              if (typeof data47 === "string") {
-                if (func22(data47) > 128) {
-                  const err111 = { instancePath: instancePath + "/credentials/" + i5 + "/label", schemaPath: "#/properties/credentials/items/properties/label/maxLength", keyword: "maxLength", params: { limit: 128 }, message: "must NOT have more than 128 characters" };
-                  if (vErrors === null) {
-                    vErrors = [err111];
-                  } else {
-                    vErrors.push(err111);
-                  }
-                  errors++;
-                }
-                if (func22(data47) < 1) {
-                  const err112 = { instancePath: instancePath + "/credentials/" + i5 + "/label", schemaPath: "#/properties/credentials/items/properties/label/minLength", keyword: "minLength", params: { limit: 1 }, message: "must NOT have fewer than 1 characters" };
-                  if (vErrors === null) {
-                    vErrors = [err112];
-                  } else {
-                    vErrors.push(err112);
+                    vErrors.push(err110);
                   }
                   errors++;
                 }
               } else {
-                const err113 = { instancePath: instancePath + "/credentials/" + i5 + "/label", schemaPath: "#/properties/credentials/items/properties/label/type", keyword: "type", params: { type: "string" }, message: "must be string" };
+                const err111 = { instancePath: instancePath + "/credentials/" + i5 + "/id", schemaPath: "#/properties/credentials/items/properties/id/type", keyword: "type", params: { type: "string" }, message: "must be string" };
                 if (vErrors === null) {
-                  vErrors = [err113];
+                  vErrors = [err111];
                 } else {
-                  vErrors.push(err113);
+                  vErrors.push(err111);
                 }
                 errors++;
               }
             }
-            if (data44.audience !== void 0) {
-              let data48 = data44.audience;
-              if (Array.isArray(data48)) {
-                if (data48.length > 16) {
-                  const err114 = { instancePath: instancePath + "/credentials/" + i5 + "/audience", schemaPath: "#/properties/credentials/items/properties/audience/maxItems", keyword: "maxItems", params: { limit: 16 }, message: "must NOT have more than 16 items" };
+            if (data45.kind !== void 0) {
+              let data47 = data45.kind;
+              if (!(data47 === "api-key" || data47 === "oauth2-pkce" || data47 === "provider-session" || data47 === "symmetric-key")) {
+                const err112 = { instancePath: instancePath + "/credentials/" + i5 + "/kind", schemaPath: "#/properties/credentials/items/properties/kind/enum", keyword: "enum", params: { allowedValues: schema315.properties.credentials.items.properties.kind.enum }, message: "must be equal to one of the allowed values" };
+                if (vErrors === null) {
+                  vErrors = [err112];
+                } else {
+                  vErrors.push(err112);
+                }
+                errors++;
+              }
+            }
+            if (data45.label !== void 0) {
+              let data48 = data45.label;
+              if (typeof data48 === "string") {
+                if (func22(data48) > 128) {
+                  const err113 = { instancePath: instancePath + "/credentials/" + i5 + "/label", schemaPath: "#/properties/credentials/items/properties/label/maxLength", keyword: "maxLength", params: { limit: 128 }, message: "must NOT have more than 128 characters" };
+                  if (vErrors === null) {
+                    vErrors = [err113];
+                  } else {
+                    vErrors.push(err113);
+                  }
+                  errors++;
+                }
+                if (func22(data48) < 1) {
+                  const err114 = { instancePath: instancePath + "/credentials/" + i5 + "/label", schemaPath: "#/properties/credentials/items/properties/label/minLength", keyword: "minLength", params: { limit: 1 }, message: "must NOT have fewer than 1 characters" };
                   if (vErrors === null) {
                     vErrors = [err114];
                   } else {
@@ -17771,62 +17811,62 @@ function validate209(data, { instancePath = "", parentData, parentDataProperty, 
                   }
                   errors++;
                 }
-                const len6 = data48.length;
+              } else {
+                const err115 = { instancePath: instancePath + "/credentials/" + i5 + "/label", schemaPath: "#/properties/credentials/items/properties/label/type", keyword: "type", params: { type: "string" }, message: "must be string" };
+                if (vErrors === null) {
+                  vErrors = [err115];
+                } else {
+                  vErrors.push(err115);
+                }
+                errors++;
+              }
+            }
+            if (data45.audience !== void 0) {
+              let data49 = data45.audience;
+              if (Array.isArray(data49)) {
+                if (data49.length > 16) {
+                  const err116 = { instancePath: instancePath + "/credentials/" + i5 + "/audience", schemaPath: "#/properties/credentials/items/properties/audience/maxItems", keyword: "maxItems", params: { limit: 16 }, message: "must NOT have more than 16 items" };
+                  if (vErrors === null) {
+                    vErrors = [err116];
+                  } else {
+                    vErrors.push(err116);
+                  }
+                  errors++;
+                }
+                const len6 = data49.length;
                 for (let i6 = 0; i6 < len6; i6++) {
-                  let data49 = data48[i6];
-                  if (typeof data49 === "string") {
-                    if (func22(data49) > 512) {
-                      const err115 = { instancePath: instancePath + "/credentials/" + i5 + "/audience/" + i6, schemaPath: "#/properties/credentials/items/properties/audience/items/maxLength", keyword: "maxLength", params: { limit: 512 }, message: "must NOT have more than 512 characters" };
+                  let data50 = data49[i6];
+                  if (typeof data50 === "string") {
+                    if (func22(data50) > 512) {
+                      const err117 = { instancePath: instancePath + "/credentials/" + i5 + "/audience/" + i6, schemaPath: "#/properties/credentials/items/properties/audience/items/maxLength", keyword: "maxLength", params: { limit: 512 }, message: "must NOT have more than 512 characters" };
                       if (vErrors === null) {
-                        vErrors = [err115];
+                        vErrors = [err117];
                       } else {
-                        vErrors.push(err115);
+                        vErrors.push(err117);
                       }
                       errors++;
                     }
-                    if (!pattern12.test(data49)) {
-                      const err116 = { instancePath: instancePath + "/credentials/" + i5 + "/audience/" + i6, schemaPath: "#/properties/credentials/items/properties/audience/items/pattern", keyword: "pattern", params: { pattern: "^https?://[^\\s]+$" }, message: 'must match pattern "^https?://[^\\s]+$"' };
+                    if (!pattern12.test(data50)) {
+                      const err118 = { instancePath: instancePath + "/credentials/" + i5 + "/audience/" + i6, schemaPath: "#/properties/credentials/items/properties/audience/items/pattern", keyword: "pattern", params: { pattern: "^https?://[^\\s]+$" }, message: 'must match pattern "^https?://[^\\s]+$"' };
                       if (vErrors === null) {
-                        vErrors = [err116];
+                        vErrors = [err118];
                       } else {
-                        vErrors.push(err116);
+                        vErrors.push(err118);
                       }
                       errors++;
                     }
                   } else {
-                    const err117 = { instancePath: instancePath + "/credentials/" + i5 + "/audience/" + i6, schemaPath: "#/properties/credentials/items/properties/audience/items/type", keyword: "type", params: { type: "string" }, message: "must be string" };
+                    const err119 = { instancePath: instancePath + "/credentials/" + i5 + "/audience/" + i6, schemaPath: "#/properties/credentials/items/properties/audience/items/type", keyword: "type", params: { type: "string" }, message: "must be string" };
                     if (vErrors === null) {
-                      vErrors = [err117];
+                      vErrors = [err119];
                     } else {
-                      vErrors.push(err117);
+                      vErrors.push(err119);
                     }
                     errors++;
                   }
                 }
               } else {
-                const err118 = { instancePath: instancePath + "/credentials/" + i5 + "/audience", schemaPath: "#/properties/credentials/items/properties/audience/type", keyword: "type", params: { type: "array" }, message: "must be array" };
-                if (vErrors === null) {
-                  vErrors = [err118];
-                } else {
-                  vErrors.push(err118);
-                }
-                errors++;
-              }
-            }
-            if (data44.header !== void 0) {
-              let data50 = data44.header;
-              if (typeof data50 === "string") {
-                if (!pattern20.test(data50)) {
-                  const err119 = { instancePath: instancePath + "/credentials/" + i5 + "/header", schemaPath: "#/properties/credentials/items/properties/header/pattern", keyword: "pattern", params: { pattern: "^[A-Za-z0-9-]{1,64}$" }, message: 'must match pattern "^[A-Za-z0-9-]{1,64}$"' };
-                  if (vErrors === null) {
-                    vErrors = [err119];
-                  } else {
-                    vErrors.push(err119);
-                  }
-                  errors++;
-                }
-              } else {
-                const err120 = { instancePath: instancePath + "/credentials/" + i5 + "/header", schemaPath: "#/properties/credentials/items/properties/header/type", keyword: "type", params: { type: "string" }, message: "must be string" };
+                const err120 = { instancePath: instancePath + "/credentials/" + i5 + "/audience", schemaPath: "#/properties/credentials/items/properties/audience/type", keyword: "type", params: { type: "array" }, message: "must be array" };
                 if (vErrors === null) {
                   vErrors = [err120];
                 } else {
@@ -17835,11 +17875,11 @@ function validate209(data, { instancePath = "", parentData, parentDataProperty, 
                 errors++;
               }
             }
-            if (data44.scopes !== void 0) {
-              let data51 = data44.scopes;
-              if (Array.isArray(data51)) {
-                if (data51.length > 32) {
-                  const err121 = { instancePath: instancePath + "/credentials/" + i5 + "/scopes", schemaPath: "#/properties/credentials/items/properties/scopes/maxItems", keyword: "maxItems", params: { limit: 32 }, message: "must NOT have more than 32 items" };
+            if (data45.header !== void 0) {
+              let data51 = data45.header;
+              if (typeof data51 === "string") {
+                if (!pattern21.test(data51)) {
+                  const err121 = { instancePath: instancePath + "/credentials/" + i5 + "/header", schemaPath: "#/properties/credentials/items/properties/header/pattern", keyword: "pattern", params: { pattern: "^[A-Za-z0-9-]{1,64}$" }, message: 'must match pattern "^[A-Za-z0-9-]{1,64}$"' };
                   if (vErrors === null) {
                     vErrors = [err121];
                   } else {
@@ -17847,116 +17887,116 @@ function validate209(data, { instancePath = "", parentData, parentDataProperty, 
                   }
                   errors++;
                 }
-                const len7 = data51.length;
+              } else {
+                const err122 = { instancePath: instancePath + "/credentials/" + i5 + "/header", schemaPath: "#/properties/credentials/items/properties/header/type", keyword: "type", params: { type: "string" }, message: "must be string" };
+                if (vErrors === null) {
+                  vErrors = [err122];
+                } else {
+                  vErrors.push(err122);
+                }
+                errors++;
+              }
+            }
+            if (data45.scopes !== void 0) {
+              let data52 = data45.scopes;
+              if (Array.isArray(data52)) {
+                if (data52.length > 32) {
+                  const err123 = { instancePath: instancePath + "/credentials/" + i5 + "/scopes", schemaPath: "#/properties/credentials/items/properties/scopes/maxItems", keyword: "maxItems", params: { limit: 32 }, message: "must NOT have more than 32 items" };
+                  if (vErrors === null) {
+                    vErrors = [err123];
+                  } else {
+                    vErrors.push(err123);
+                  }
+                  errors++;
+                }
+                const len7 = data52.length;
                 for (let i7 = 0; i7 < len7; i7++) {
-                  let data52 = data51[i7];
-                  if (typeof data52 === "string") {
-                    if (func22(data52) > 128) {
-                      const err122 = { instancePath: instancePath + "/credentials/" + i5 + "/scopes/" + i7, schemaPath: "#/properties/credentials/items/properties/scopes/items/maxLength", keyword: "maxLength", params: { limit: 128 }, message: "must NOT have more than 128 characters" };
+                  let data53 = data52[i7];
+                  if (typeof data53 === "string") {
+                    if (func22(data53) > 128) {
+                      const err124 = { instancePath: instancePath + "/credentials/" + i5 + "/scopes/" + i7, schemaPath: "#/properties/credentials/items/properties/scopes/items/maxLength", keyword: "maxLength", params: { limit: 128 }, message: "must NOT have more than 128 characters" };
                       if (vErrors === null) {
-                        vErrors = [err122];
+                        vErrors = [err124];
                       } else {
-                        vErrors.push(err122);
+                        vErrors.push(err124);
                       }
                       errors++;
                     }
-                    if (func22(data52) < 1) {
-                      const err123 = { instancePath: instancePath + "/credentials/" + i5 + "/scopes/" + i7, schemaPath: "#/properties/credentials/items/properties/scopes/items/minLength", keyword: "minLength", params: { limit: 1 }, message: "must NOT have fewer than 1 characters" };
+                    if (func22(data53) < 1) {
+                      const err125 = { instancePath: instancePath + "/credentials/" + i5 + "/scopes/" + i7, schemaPath: "#/properties/credentials/items/properties/scopes/items/minLength", keyword: "minLength", params: { limit: 1 }, message: "must NOT have fewer than 1 characters" };
                       if (vErrors === null) {
-                        vErrors = [err123];
+                        vErrors = [err125];
                       } else {
-                        vErrors.push(err123);
+                        vErrors.push(err125);
                       }
                       errors++;
                     }
                   } else {
-                    const err124 = { instancePath: instancePath + "/credentials/" + i5 + "/scopes/" + i7, schemaPath: "#/properties/credentials/items/properties/scopes/items/type", keyword: "type", params: { type: "string" }, message: "must be string" };
+                    const err126 = { instancePath: instancePath + "/credentials/" + i5 + "/scopes/" + i7, schemaPath: "#/properties/credentials/items/properties/scopes/items/type", keyword: "type", params: { type: "string" }, message: "must be string" };
                     if (vErrors === null) {
-                      vErrors = [err124];
+                      vErrors = [err126];
                     } else {
-                      vErrors.push(err124);
+                      vErrors.push(err126);
                     }
                     errors++;
                   }
                 }
               } else {
-                const err125 = { instancePath: instancePath + "/credentials/" + i5 + "/scopes", schemaPath: "#/properties/credentials/items/properties/scopes/type", keyword: "type", params: { type: "array" }, message: "must be array" };
+                const err127 = { instancePath: instancePath + "/credentials/" + i5 + "/scopes", schemaPath: "#/properties/credentials/items/properties/scopes/type", keyword: "type", params: { type: "array" }, message: "must be array" };
                 if (vErrors === null) {
-                  vErrors = [err125];
+                  vErrors = [err127];
                 } else {
-                  vErrors.push(err125);
+                  vErrors.push(err127);
                 }
                 errors++;
               }
             }
-            if (data44.oauth !== void 0) {
-              let data53 = data44.oauth;
-              if (data53 && typeof data53 == "object" && !Array.isArray(data53)) {
-                if (data53.authorizationEndpoint === void 0) {
-                  const err126 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth", schemaPath: "#/properties/credentials/items/properties/oauth/required", keyword: "required", params: { missingProperty: "authorizationEndpoint" }, message: "must have required property 'authorizationEndpoint'" };
+            if (data45.oauth !== void 0) {
+              let data54 = data45.oauth;
+              if (data54 && typeof data54 == "object" && !Array.isArray(data54)) {
+                if (data54.authorizationEndpoint === void 0) {
+                  const err128 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth", schemaPath: "#/properties/credentials/items/properties/oauth/required", keyword: "required", params: { missingProperty: "authorizationEndpoint" }, message: "must have required property 'authorizationEndpoint'" };
                   if (vErrors === null) {
-                    vErrors = [err126];
+                    vErrors = [err128];
                   } else {
-                    vErrors.push(err126);
+                    vErrors.push(err128);
                   }
                   errors++;
                 }
-                if (data53.tokenEndpoint === void 0) {
-                  const err127 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth", schemaPath: "#/properties/credentials/items/properties/oauth/required", keyword: "required", params: { missingProperty: "tokenEndpoint" }, message: "must have required property 'tokenEndpoint'" };
+                if (data54.tokenEndpoint === void 0) {
+                  const err129 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth", schemaPath: "#/properties/credentials/items/properties/oauth/required", keyword: "required", params: { missingProperty: "tokenEndpoint" }, message: "must have required property 'tokenEndpoint'" };
                   if (vErrors === null) {
-                    vErrors = [err127];
+                    vErrors = [err129];
                   } else {
-                    vErrors.push(err127);
+                    vErrors.push(err129);
                   }
                   errors++;
                 }
-                for (const key12 in data53) {
+                for (const key12 in data54) {
                   if (!(key12 === "authorizationEndpoint" || key12 === "tokenEndpoint" || key12 === "revocationEndpoint" || key12 === "clientId" || key12 === "clientIdSetting" || key12 === "loopbackPort" || key12 === "loopbackHost")) {
-                    const err128 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth", schemaPath: "#/properties/credentials/items/properties/oauth/additionalProperties", keyword: "additionalProperties", params: { additionalProperty: key12 }, message: "must NOT have additional properties" };
+                    const err130 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth", schemaPath: "#/properties/credentials/items/properties/oauth/additionalProperties", keyword: "additionalProperties", params: { additionalProperty: key12 }, message: "must NOT have additional properties" };
                     if (vErrors === null) {
-                      vErrors = [err128];
+                      vErrors = [err130];
                     } else {
-                      vErrors.push(err128);
+                      vErrors.push(err130);
                     }
                     errors++;
                   }
                 }
-                if (data53.authorizationEndpoint !== void 0) {
-                  let data54 = data53.authorizationEndpoint;
-                  if (typeof data54 === "string") {
-                    if (func22(data54) > 512) {
-                      const err129 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/authorizationEndpoint", schemaPath: "#/properties/credentials/items/properties/oauth/properties/authorizationEndpoint/maxLength", keyword: "maxLength", params: { limit: 512 }, message: "must NOT have more than 512 characters" };
-                      if (vErrors === null) {
-                        vErrors = [err129];
-                      } else {
-                        vErrors.push(err129);
-                      }
-                      errors++;
-                    }
-                    if (!pattern12.test(data54)) {
-                      const err130 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/authorizationEndpoint", schemaPath: "#/properties/credentials/items/properties/oauth/properties/authorizationEndpoint/pattern", keyword: "pattern", params: { pattern: "^https?://[^\\s]+$" }, message: 'must match pattern "^https?://[^\\s]+$"' };
-                      if (vErrors === null) {
-                        vErrors = [err130];
-                      } else {
-                        vErrors.push(err130);
-                      }
-                      errors++;
-                    }
-                  } else {
-                    const err131 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/authorizationEndpoint", schemaPath: "#/properties/credentials/items/properties/oauth/properties/authorizationEndpoint/type", keyword: "type", params: { type: "string" }, message: "must be string" };
-                    if (vErrors === null) {
-                      vErrors = [err131];
-                    } else {
-                      vErrors.push(err131);
-                    }
-                    errors++;
-                  }
-                }
-                if (data53.tokenEndpoint !== void 0) {
-                  let data55 = data53.tokenEndpoint;
+                if (data54.authorizationEndpoint !== void 0) {
+                  let data55 = data54.authorizationEndpoint;
                   if (typeof data55 === "string") {
                     if (func22(data55) > 512) {
-                      const err132 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/tokenEndpoint", schemaPath: "#/properties/credentials/items/properties/oauth/properties/tokenEndpoint/maxLength", keyword: "maxLength", params: { limit: 512 }, message: "must NOT have more than 512 characters" };
+                      const err131 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/authorizationEndpoint", schemaPath: "#/properties/credentials/items/properties/oauth/properties/authorizationEndpoint/maxLength", keyword: "maxLength", params: { limit: 512 }, message: "must NOT have more than 512 characters" };
+                      if (vErrors === null) {
+                        vErrors = [err131];
+                      } else {
+                        vErrors.push(err131);
+                      }
+                      errors++;
+                    }
+                    if (!pattern12.test(data55)) {
+                      const err132 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/authorizationEndpoint", schemaPath: "#/properties/credentials/items/properties/oauth/properties/authorizationEndpoint/pattern", keyword: "pattern", params: { pattern: "^https?://[^\\s]+$" }, message: 'must match pattern "^https?://[^\\s]+$"' };
                       if (vErrors === null) {
                         vErrors = [err132];
                       } else {
@@ -17964,30 +18004,30 @@ function validate209(data, { instancePath = "", parentData, parentDataProperty, 
                       }
                       errors++;
                     }
-                    if (!pattern12.test(data55)) {
-                      const err133 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/tokenEndpoint", schemaPath: "#/properties/credentials/items/properties/oauth/properties/tokenEndpoint/pattern", keyword: "pattern", params: { pattern: "^https?://[^\\s]+$" }, message: 'must match pattern "^https?://[^\\s]+$"' };
-                      if (vErrors === null) {
-                        vErrors = [err133];
-                      } else {
-                        vErrors.push(err133);
-                      }
-                      errors++;
-                    }
                   } else {
-                    const err134 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/tokenEndpoint", schemaPath: "#/properties/credentials/items/properties/oauth/properties/tokenEndpoint/type", keyword: "type", params: { type: "string" }, message: "must be string" };
+                    const err133 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/authorizationEndpoint", schemaPath: "#/properties/credentials/items/properties/oauth/properties/authorizationEndpoint/type", keyword: "type", params: { type: "string" }, message: "must be string" };
                     if (vErrors === null) {
-                      vErrors = [err134];
+                      vErrors = [err133];
                     } else {
-                      vErrors.push(err134);
+                      vErrors.push(err133);
                     }
                     errors++;
                   }
                 }
-                if (data53.revocationEndpoint !== void 0) {
-                  let data56 = data53.revocationEndpoint;
+                if (data54.tokenEndpoint !== void 0) {
+                  let data56 = data54.tokenEndpoint;
                   if (typeof data56 === "string") {
                     if (func22(data56) > 512) {
-                      const err135 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/revocationEndpoint", schemaPath: "#/properties/credentials/items/properties/oauth/properties/revocationEndpoint/maxLength", keyword: "maxLength", params: { limit: 512 }, message: "must NOT have more than 512 characters" };
+                      const err134 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/tokenEndpoint", schemaPath: "#/properties/credentials/items/properties/oauth/properties/tokenEndpoint/maxLength", keyword: "maxLength", params: { limit: 512 }, message: "must NOT have more than 512 characters" };
+                      if (vErrors === null) {
+                        vErrors = [err134];
+                      } else {
+                        vErrors.push(err134);
+                      }
+                      errors++;
+                    }
+                    if (!pattern12.test(data56)) {
+                      const err135 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/tokenEndpoint", schemaPath: "#/properties/credentials/items/properties/oauth/properties/tokenEndpoint/pattern", keyword: "pattern", params: { pattern: "^https?://[^\\s]+$" }, message: 'must match pattern "^https?://[^\\s]+$"' };
                       if (vErrors === null) {
                         vErrors = [err135];
                       } else {
@@ -17995,30 +18035,30 @@ function validate209(data, { instancePath = "", parentData, parentDataProperty, 
                       }
                       errors++;
                     }
-                    if (!pattern12.test(data56)) {
-                      const err136 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/revocationEndpoint", schemaPath: "#/properties/credentials/items/properties/oauth/properties/revocationEndpoint/pattern", keyword: "pattern", params: { pattern: "^https?://[^\\s]+$" }, message: 'must match pattern "^https?://[^\\s]+$"' };
-                      if (vErrors === null) {
-                        vErrors = [err136];
-                      } else {
-                        vErrors.push(err136);
-                      }
-                      errors++;
-                    }
                   } else {
-                    const err137 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/revocationEndpoint", schemaPath: "#/properties/credentials/items/properties/oauth/properties/revocationEndpoint/type", keyword: "type", params: { type: "string" }, message: "must be string" };
+                    const err136 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/tokenEndpoint", schemaPath: "#/properties/credentials/items/properties/oauth/properties/tokenEndpoint/type", keyword: "type", params: { type: "string" }, message: "must be string" };
                     if (vErrors === null) {
-                      vErrors = [err137];
+                      vErrors = [err136];
                     } else {
-                      vErrors.push(err137);
+                      vErrors.push(err136);
                     }
                     errors++;
                   }
                 }
-                if (data53.clientId !== void 0) {
-                  let data57 = data53.clientId;
+                if (data54.revocationEndpoint !== void 0) {
+                  let data57 = data54.revocationEndpoint;
                   if (typeof data57 === "string") {
-                    if (func22(data57) > 256) {
-                      const err138 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/clientId", schemaPath: "#/properties/credentials/items/properties/oauth/properties/clientId/maxLength", keyword: "maxLength", params: { limit: 256 }, message: "must NOT have more than 256 characters" };
+                    if (func22(data57) > 512) {
+                      const err137 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/revocationEndpoint", schemaPath: "#/properties/credentials/items/properties/oauth/properties/revocationEndpoint/maxLength", keyword: "maxLength", params: { limit: 512 }, message: "must NOT have more than 512 characters" };
+                      if (vErrors === null) {
+                        vErrors = [err137];
+                      } else {
+                        vErrors.push(err137);
+                      }
+                      errors++;
+                    }
+                    if (!pattern12.test(data57)) {
+                      const err138 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/revocationEndpoint", schemaPath: "#/properties/credentials/items/properties/oauth/properties/revocationEndpoint/pattern", keyword: "pattern", params: { pattern: "^https?://[^\\s]+$" }, message: 'must match pattern "^https?://[^\\s]+$"' };
                       if (vErrors === null) {
                         vErrors = [err138];
                       } else {
@@ -18026,30 +18066,30 @@ function validate209(data, { instancePath = "", parentData, parentDataProperty, 
                       }
                       errors++;
                     }
-                    if (func22(data57) < 1) {
-                      const err139 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/clientId", schemaPath: "#/properties/credentials/items/properties/oauth/properties/clientId/minLength", keyword: "minLength", params: { limit: 1 }, message: "must NOT have fewer than 1 characters" };
-                      if (vErrors === null) {
-                        vErrors = [err139];
-                      } else {
-                        vErrors.push(err139);
-                      }
-                      errors++;
-                    }
                   } else {
-                    const err140 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/clientId", schemaPath: "#/properties/credentials/items/properties/oauth/properties/clientId/type", keyword: "type", params: { type: "string" }, message: "must be string" };
+                    const err139 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/revocationEndpoint", schemaPath: "#/properties/credentials/items/properties/oauth/properties/revocationEndpoint/type", keyword: "type", params: { type: "string" }, message: "must be string" };
                     if (vErrors === null) {
-                      vErrors = [err140];
+                      vErrors = [err139];
                     } else {
-                      vErrors.push(err140);
+                      vErrors.push(err139);
                     }
                     errors++;
                   }
                 }
-                if (data53.clientIdSetting !== void 0) {
-                  let data58 = data53.clientIdSetting;
+                if (data54.clientId !== void 0) {
+                  let data58 = data54.clientId;
                   if (typeof data58 === "string") {
-                    if (!pattern24.test(data58)) {
-                      const err141 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/clientIdSetting", schemaPath: "#/properties/credentials/items/properties/oauth/properties/clientIdSetting/pattern", keyword: "pattern", params: { pattern: "^[A-Za-z0-9._-]{1,64}$" }, message: 'must match pattern "^[A-Za-z0-9._-]{1,64}$"' };
+                    if (func22(data58) > 256) {
+                      const err140 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/clientId", schemaPath: "#/properties/credentials/items/properties/oauth/properties/clientId/maxLength", keyword: "maxLength", params: { limit: 256 }, message: "must NOT have more than 256 characters" };
+                      if (vErrors === null) {
+                        vErrors = [err140];
+                      } else {
+                        vErrors.push(err140);
+                      }
+                      errors++;
+                    }
+                    if (func22(data58) < 1) {
+                      const err141 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/clientId", schemaPath: "#/properties/credentials/items/properties/oauth/properties/clientId/minLength", keyword: "minLength", params: { limit: 1 }, message: "must NOT have fewer than 1 characters" };
                       if (vErrors === null) {
                         vErrors = [err141];
                       } else {
@@ -18058,7 +18098,7 @@ function validate209(data, { instancePath = "", parentData, parentDataProperty, 
                       errors++;
                     }
                   } else {
-                    const err142 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/clientIdSetting", schemaPath: "#/properties/credentials/items/properties/oauth/properties/clientIdSetting/type", keyword: "type", params: { type: "string" }, message: "must be string" };
+                    const err142 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/clientId", schemaPath: "#/properties/credentials/items/properties/oauth/properties/clientId/type", keyword: "type", params: { type: "string" }, message: "must be string" };
                     if (vErrors === null) {
                       vErrors = [err142];
                     } else {
@@ -18067,85 +18107,85 @@ function validate209(data, { instancePath = "", parentData, parentDataProperty, 
                     errors++;
                   }
                 }
-                if (data53.loopbackPort !== void 0) {
-                  let data59 = data53.loopbackPort;
-                  if (!(typeof data59 == "number" && (!(data59 % 1) && !isNaN(data59)) && isFinite(data59))) {
-                    const err143 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/loopbackPort", schemaPath: "#/properties/credentials/items/properties/oauth/properties/loopbackPort/type", keyword: "type", params: { type: "integer" }, message: "must be integer" };
-                    if (vErrors === null) {
-                      vErrors = [err143];
-                    } else {
-                      vErrors.push(err143);
-                    }
-                    errors++;
-                  }
-                  if (typeof data59 == "number" && isFinite(data59)) {
-                    if (data59 > 65535 || isNaN(data59)) {
-                      const err144 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/loopbackPort", schemaPath: "#/properties/credentials/items/properties/oauth/properties/loopbackPort/maximum", keyword: "maximum", params: { comparison: "<=", limit: 65535 }, message: "must be <= 65535" };
+                if (data54.clientIdSetting !== void 0) {
+                  let data59 = data54.clientIdSetting;
+                  if (typeof data59 === "string") {
+                    if (!pattern25.test(data59)) {
+                      const err143 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/clientIdSetting", schemaPath: "#/properties/credentials/items/properties/oauth/properties/clientIdSetting/pattern", keyword: "pattern", params: { pattern: "^[A-Za-z0-9._-]{1,64}$" }, message: 'must match pattern "^[A-Za-z0-9._-]{1,64}$"' };
                       if (vErrors === null) {
-                        vErrors = [err144];
+                        vErrors = [err143];
                       } else {
-                        vErrors.push(err144);
+                        vErrors.push(err143);
                       }
                       errors++;
                     }
-                    if (data59 < 1024 || isNaN(data59)) {
-                      const err145 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/loopbackPort", schemaPath: "#/properties/credentials/items/properties/oauth/properties/loopbackPort/minimum", keyword: "minimum", params: { comparison: ">=", limit: 1024 }, message: "must be >= 1024" };
-                      if (vErrors === null) {
-                        vErrors = [err145];
-                      } else {
-                        vErrors.push(err145);
-                      }
-                      errors++;
-                    }
-                  }
-                }
-                if (data53.loopbackHost !== void 0) {
-                  let data60 = data53.loopbackHost;
-                  if (!(data60 === "localhost" || data60 === "127.0.0.1")) {
-                    const err146 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/loopbackHost", schemaPath: "#/properties/credentials/items/properties/oauth/properties/loopbackHost/enum", keyword: "enum", params: { allowedValues: schema315.properties.credentials.items.properties.oauth.properties.loopbackHost.enum }, message: "must be equal to one of the allowed values" };
-                    if (vErrors === null) {
-                      vErrors = [err146];
-                    } else {
-                      vErrors.push(err146);
-                    }
-                    errors++;
-                  }
-                }
-              } else {
-                const err147 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth", schemaPath: "#/properties/credentials/items/properties/oauth/type", keyword: "type", params: { type: "object" }, message: "must be object" };
-                if (vErrors === null) {
-                  vErrors = [err147];
-                } else {
-                  vErrors.push(err147);
-                }
-                errors++;
-              }
-            }
-            if (data44.scoped !== void 0) {
-              if (typeof data44.scoped !== "boolean") {
-                const err148 = { instancePath: instancePath + "/credentials/" + i5 + "/scoped", schemaPath: "#/properties/credentials/items/properties/scoped/type", keyword: "type", params: { type: "boolean" }, message: "must be boolean" };
-                if (vErrors === null) {
-                  vErrors = [err148];
-                } else {
-                  vErrors.push(err148);
-                }
-                errors++;
-              }
-            }
-            if (data44.environment !== void 0) {
-              let data62 = data44.environment;
-              if (typeof data62 === "string") {
-                if (!pattern252.test(data62)) {
-                  const err149 = { instancePath: instancePath + "/credentials/" + i5 + "/environment", schemaPath: "#/properties/credentials/items/properties/environment/pattern", keyword: "pattern", params: { pattern: "^[A-Z][A-Z0-9_]{0,63}$" }, message: 'must match pattern "^[A-Z][A-Z0-9_]{0,63}$"' };
-                  if (vErrors === null) {
-                    vErrors = [err149];
                   } else {
-                    vErrors.push(err149);
+                    const err144 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/clientIdSetting", schemaPath: "#/properties/credentials/items/properties/oauth/properties/clientIdSetting/type", keyword: "type", params: { type: "string" }, message: "must be string" };
+                    if (vErrors === null) {
+                      vErrors = [err144];
+                    } else {
+                      vErrors.push(err144);
+                    }
+                    errors++;
                   }
-                  errors++;
+                }
+                if (data54.loopbackPort !== void 0) {
+                  let data60 = data54.loopbackPort;
+                  if (!(typeof data60 == "number" && (!(data60 % 1) && !isNaN(data60)) && isFinite(data60))) {
+                    const err145 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/loopbackPort", schemaPath: "#/properties/credentials/items/properties/oauth/properties/loopbackPort/type", keyword: "type", params: { type: "integer" }, message: "must be integer" };
+                    if (vErrors === null) {
+                      vErrors = [err145];
+                    } else {
+                      vErrors.push(err145);
+                    }
+                    errors++;
+                  }
+                  if (typeof data60 == "number" && isFinite(data60)) {
+                    if (data60 > 65535 || isNaN(data60)) {
+                      const err146 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/loopbackPort", schemaPath: "#/properties/credentials/items/properties/oauth/properties/loopbackPort/maximum", keyword: "maximum", params: { comparison: "<=", limit: 65535 }, message: "must be <= 65535" };
+                      if (vErrors === null) {
+                        vErrors = [err146];
+                      } else {
+                        vErrors.push(err146);
+                      }
+                      errors++;
+                    }
+                    if (data60 < 1024 || isNaN(data60)) {
+                      const err147 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/loopbackPort", schemaPath: "#/properties/credentials/items/properties/oauth/properties/loopbackPort/minimum", keyword: "minimum", params: { comparison: ">=", limit: 1024 }, message: "must be >= 1024" };
+                      if (vErrors === null) {
+                        vErrors = [err147];
+                      } else {
+                        vErrors.push(err147);
+                      }
+                      errors++;
+                    }
+                  }
+                }
+                if (data54.loopbackHost !== void 0) {
+                  let data61 = data54.loopbackHost;
+                  if (!(data61 === "localhost" || data61 === "127.0.0.1")) {
+                    const err148 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth/loopbackHost", schemaPath: "#/properties/credentials/items/properties/oauth/properties/loopbackHost/enum", keyword: "enum", params: { allowedValues: schema315.properties.credentials.items.properties.oauth.properties.loopbackHost.enum }, message: "must be equal to one of the allowed values" };
+                    if (vErrors === null) {
+                      vErrors = [err148];
+                    } else {
+                      vErrors.push(err148);
+                    }
+                    errors++;
+                  }
                 }
               } else {
-                const err150 = { instancePath: instancePath + "/credentials/" + i5 + "/environment", schemaPath: "#/properties/credentials/items/properties/environment/type", keyword: "type", params: { type: "string" }, message: "must be string" };
+                const err149 = { instancePath: instancePath + "/credentials/" + i5 + "/oauth", schemaPath: "#/properties/credentials/items/properties/oauth/type", keyword: "type", params: { type: "object" }, message: "must be object" };
+                if (vErrors === null) {
+                  vErrors = [err149];
+                } else {
+                  vErrors.push(err149);
+                }
+                errors++;
+              }
+            }
+            if (data45.scoped !== void 0) {
+              if (typeof data45.scoped !== "boolean") {
+                const err150 = { instancePath: instancePath + "/credentials/" + i5 + "/scoped", schemaPath: "#/properties/credentials/items/properties/scoped/type", keyword: "type", params: { type: "boolean" }, message: "must be boolean" };
                 if (vErrors === null) {
                   vErrors = [err150];
                 } else {
@@ -18154,11 +18194,11 @@ function validate209(data, { instancePath = "", parentData, parentDataProperty, 
                 errors++;
               }
             }
-            if (data44.replacesSettings !== void 0) {
-              let data63 = data44.replacesSettings;
-              if (Array.isArray(data63)) {
-                if (data63.length > 16) {
-                  const err151 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesSettings", schemaPath: "#/properties/credentials/items/properties/replacesSettings/maxItems", keyword: "maxItems", params: { limit: 16 }, message: "must NOT have more than 16 items" };
+            if (data45.environment !== void 0) {
+              let data63 = data45.environment;
+              if (typeof data63 === "string") {
+                if (!pattern262.test(data63)) {
+                  const err151 = { instancePath: instancePath + "/credentials/" + i5 + "/environment", schemaPath: "#/properties/credentials/items/properties/environment/pattern", keyword: "pattern", params: { pattern: "^[A-Z][A-Z0-9_]{0,63}$" }, message: 'must match pattern "^[A-Z][A-Z0-9_]{0,63}$"' };
                   if (vErrors === null) {
                     vErrors = [err151];
                   } else {
@@ -18166,75 +18206,75 @@ function validate209(data, { instancePath = "", parentData, parentDataProperty, 
                   }
                   errors++;
                 }
-                const len8 = data63.length;
+              } else {
+                const err152 = { instancePath: instancePath + "/credentials/" + i5 + "/environment", schemaPath: "#/properties/credentials/items/properties/environment/type", keyword: "type", params: { type: "string" }, message: "must be string" };
+                if (vErrors === null) {
+                  vErrors = [err152];
+                } else {
+                  vErrors.push(err152);
+                }
+                errors++;
+              }
+            }
+            if (data45.replacesSettings !== void 0) {
+              let data64 = data45.replacesSettings;
+              if (Array.isArray(data64)) {
+                if (data64.length > 16) {
+                  const err153 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesSettings", schemaPath: "#/properties/credentials/items/properties/replacesSettings/maxItems", keyword: "maxItems", params: { limit: 16 }, message: "must NOT have more than 16 items" };
+                  if (vErrors === null) {
+                    vErrors = [err153];
+                  } else {
+                    vErrors.push(err153);
+                  }
+                  errors++;
+                }
+                const len8 = data64.length;
                 for (let i8 = 0; i8 < len8; i8++) {
-                  let data64 = data63[i8];
-                  if (data64 && typeof data64 == "object" && !Array.isArray(data64)) {
-                    if (data64.contribution === void 0) {
-                      const err152 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesSettings/" + i8, schemaPath: "#/properties/credentials/items/properties/replacesSettings/items/required", keyword: "required", params: { missingProperty: "contribution" }, message: "must have required property 'contribution'" };
+                  let data65 = data64[i8];
+                  if (data65 && typeof data65 == "object" && !Array.isArray(data65)) {
+                    if (data65.contribution === void 0) {
+                      const err154 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesSettings/" + i8, schemaPath: "#/properties/credentials/items/properties/replacesSettings/items/required", keyword: "required", params: { missingProperty: "contribution" }, message: "must have required property 'contribution'" };
                       if (vErrors === null) {
-                        vErrors = [err152];
+                        vErrors = [err154];
                       } else {
-                        vErrors.push(err152);
+                        vErrors.push(err154);
                       }
                       errors++;
                     }
-                    if (data64.key === void 0) {
-                      const err153 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesSettings/" + i8, schemaPath: "#/properties/credentials/items/properties/replacesSettings/items/required", keyword: "required", params: { missingProperty: "key" }, message: "must have required property 'key'" };
+                    if (data65.key === void 0) {
+                      const err155 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesSettings/" + i8, schemaPath: "#/properties/credentials/items/properties/replacesSettings/items/required", keyword: "required", params: { missingProperty: "key" }, message: "must have required property 'key'" };
                       if (vErrors === null) {
-                        vErrors = [err153];
+                        vErrors = [err155];
                       } else {
-                        vErrors.push(err153);
+                        vErrors.push(err155);
                       }
                       errors++;
                     }
-                    for (const key13 in data64) {
+                    for (const key13 in data65) {
                       if (!(key13 === "contribution" || key13 === "key" || key13 === "scoped")) {
-                        const err154 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesSettings/" + i8, schemaPath: "#/properties/credentials/items/properties/replacesSettings/items/additionalProperties", keyword: "additionalProperties", params: { additionalProperty: key13 }, message: "must NOT have additional properties" };
+                        const err156 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesSettings/" + i8, schemaPath: "#/properties/credentials/items/properties/replacesSettings/items/additionalProperties", keyword: "additionalProperties", params: { additionalProperty: key13 }, message: "must NOT have additional properties" };
                         if (vErrors === null) {
-                          vErrors = [err154];
+                          vErrors = [err156];
                         } else {
-                          vErrors.push(err154);
+                          vErrors.push(err156);
                         }
                         errors++;
                       }
                     }
-                    if (data64.contribution !== void 0) {
-                      let data65 = data64.contribution;
-                      if (typeof data65 === "string") {
-                        if (func22(data65) > 256) {
-                          const err155 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesSettings/" + i8 + "/contribution", schemaPath: "#/properties/credentials/items/properties/replacesSettings/items/properties/contribution/maxLength", keyword: "maxLength", params: { limit: 256 }, message: "must NOT have more than 256 characters" };
-                          if (vErrors === null) {
-                            vErrors = [err155];
-                          } else {
-                            vErrors.push(err155);
-                          }
-                          errors++;
-                        }
-                        if (func22(data65) < 1) {
-                          const err156 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesSettings/" + i8 + "/contribution", schemaPath: "#/properties/credentials/items/properties/replacesSettings/items/properties/contribution/minLength", keyword: "minLength", params: { limit: 1 }, message: "must NOT have fewer than 1 characters" };
-                          if (vErrors === null) {
-                            vErrors = [err156];
-                          } else {
-                            vErrors.push(err156);
-                          }
-                          errors++;
-                        }
-                      } else {
-                        const err157 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesSettings/" + i8 + "/contribution", schemaPath: "#/properties/credentials/items/properties/replacesSettings/items/properties/contribution/type", keyword: "type", params: { type: "string" }, message: "must be string" };
-                        if (vErrors === null) {
-                          vErrors = [err157];
-                        } else {
-                          vErrors.push(err157);
-                        }
-                        errors++;
-                      }
-                    }
-                    if (data64.key !== void 0) {
-                      let data66 = data64.key;
+                    if (data65.contribution !== void 0) {
+                      let data66 = data65.contribution;
                       if (typeof data66 === "string") {
-                        if (!pattern24.test(data66)) {
-                          const err158 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesSettings/" + i8 + "/key", schemaPath: "#/properties/credentials/items/properties/replacesSettings/items/properties/key/pattern", keyword: "pattern", params: { pattern: "^[A-Za-z0-9._-]{1,64}$" }, message: 'must match pattern "^[A-Za-z0-9._-]{1,64}$"' };
+                        if (func22(data66) > 256) {
+                          const err157 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesSettings/" + i8 + "/contribution", schemaPath: "#/properties/credentials/items/properties/replacesSettings/items/properties/contribution/maxLength", keyword: "maxLength", params: { limit: 256 }, message: "must NOT have more than 256 characters" };
+                          if (vErrors === null) {
+                            vErrors = [err157];
+                          } else {
+                            vErrors.push(err157);
+                          }
+                          errors++;
+                        }
+                        if (func22(data66) < 1) {
+                          const err158 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesSettings/" + i8 + "/contribution", schemaPath: "#/properties/credentials/items/properties/replacesSettings/items/properties/contribution/minLength", keyword: "minLength", params: { limit: 1 }, message: "must NOT have fewer than 1 characters" };
                           if (vErrors === null) {
                             vErrors = [err158];
                           } else {
@@ -18243,7 +18283,7 @@ function validate209(data, { instancePath = "", parentData, parentDataProperty, 
                           errors++;
                         }
                       } else {
-                        const err159 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesSettings/" + i8 + "/key", schemaPath: "#/properties/credentials/items/properties/replacesSettings/items/properties/key/type", keyword: "type", params: { type: "string" }, message: "must be string" };
+                        const err159 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesSettings/" + i8 + "/contribution", schemaPath: "#/properties/credentials/items/properties/replacesSettings/items/properties/contribution/type", keyword: "type", params: { type: "string" }, message: "must be string" };
                         if (vErrors === null) {
                           vErrors = [err159];
                         } else {
@@ -18252,226 +18292,248 @@ function validate209(data, { instancePath = "", parentData, parentDataProperty, 
                         errors++;
                       }
                     }
-                    if (data64.scoped !== void 0) {
-                      if (true !== data64.scoped) {
-                        const err160 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesSettings/" + i8 + "/scoped", schemaPath: "#/properties/credentials/items/properties/replacesSettings/items/properties/scoped/const", keyword: "const", params: { allowedValue: true }, message: "must be equal to constant" };
+                    if (data65.key !== void 0) {
+                      let data67 = data65.key;
+                      if (typeof data67 === "string") {
+                        if (!pattern25.test(data67)) {
+                          const err160 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesSettings/" + i8 + "/key", schemaPath: "#/properties/credentials/items/properties/replacesSettings/items/properties/key/pattern", keyword: "pattern", params: { pattern: "^[A-Za-z0-9._-]{1,64}$" }, message: 'must match pattern "^[A-Za-z0-9._-]{1,64}$"' };
+                          if (vErrors === null) {
+                            vErrors = [err160];
+                          } else {
+                            vErrors.push(err160);
+                          }
+                          errors++;
+                        }
+                      } else {
+                        const err161 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesSettings/" + i8 + "/key", schemaPath: "#/properties/credentials/items/properties/replacesSettings/items/properties/key/type", keyword: "type", params: { type: "string" }, message: "must be string" };
                         if (vErrors === null) {
-                          vErrors = [err160];
+                          vErrors = [err161];
                         } else {
-                          vErrors.push(err160);
+                          vErrors.push(err161);
+                        }
+                        errors++;
+                      }
+                    }
+                    if (data65.scoped !== void 0) {
+                      if (true !== data65.scoped) {
+                        const err162 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesSettings/" + i8 + "/scoped", schemaPath: "#/properties/credentials/items/properties/replacesSettings/items/properties/scoped/const", keyword: "const", params: { allowedValue: true }, message: "must be equal to constant" };
+                        if (vErrors === null) {
+                          vErrors = [err162];
+                        } else {
+                          vErrors.push(err162);
                         }
                         errors++;
                       }
                     }
                   } else {
-                    const err161 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesSettings/" + i8, schemaPath: "#/properties/credentials/items/properties/replacesSettings/items/type", keyword: "type", params: { type: "object" }, message: "must be object" };
+                    const err163 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesSettings/" + i8, schemaPath: "#/properties/credentials/items/properties/replacesSettings/items/type", keyword: "type", params: { type: "object" }, message: "must be object" };
                     if (vErrors === null) {
-                      vErrors = [err161];
+                      vErrors = [err163];
                     } else {
-                      vErrors.push(err161);
+                      vErrors.push(err163);
                     }
                     errors++;
                   }
                 }
               } else {
-                const err162 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesSettings", schemaPath: "#/properties/credentials/items/properties/replacesSettings/type", keyword: "type", params: { type: "array" }, message: "must be array" };
+                const err164 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesSettings", schemaPath: "#/properties/credentials/items/properties/replacesSettings/type", keyword: "type", params: { type: "array" }, message: "must be array" };
                 if (vErrors === null) {
-                  vErrors = [err162];
+                  vErrors = [err164];
                 } else {
-                  vErrors.push(err162);
+                  vErrors.push(err164);
                 }
                 errors++;
               }
             }
-            if (data44.replacesApplicationSettings !== void 0) {
-              let data68 = data44.replacesApplicationSettings;
-              if (Array.isArray(data68)) {
-                if (data68.length > 16) {
-                  const err163 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesApplicationSettings", schemaPath: "#/properties/credentials/items/properties/replacesApplicationSettings/maxItems", keyword: "maxItems", params: { limit: 16 }, message: "must NOT have more than 16 items" };
+            if (data45.replacesApplicationSettings !== void 0) {
+              let data69 = data45.replacesApplicationSettings;
+              if (Array.isArray(data69)) {
+                if (data69.length > 16) {
+                  const err165 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesApplicationSettings", schemaPath: "#/properties/credentials/items/properties/replacesApplicationSettings/maxItems", keyword: "maxItems", params: { limit: 16 }, message: "must NOT have more than 16 items" };
                   if (vErrors === null) {
-                    vErrors = [err163];
+                    vErrors = [err165];
                   } else {
-                    vErrors.push(err163);
+                    vErrors.push(err165);
                   }
                   errors++;
                 }
-                const len9 = data68.length;
+                const len9 = data69.length;
                 for (let i9 = 0; i9 < len9; i9++) {
-                  let data69 = data68[i9];
-                  if (data69 && typeof data69 == "object" && !Array.isArray(data69)) {
-                    if (data69.setting === void 0) {
-                      const err164 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesApplicationSettings/" + i9, schemaPath: "#/properties/credentials/items/properties/replacesApplicationSettings/items/required", keyword: "required", params: { missingProperty: "setting" }, message: "must have required property 'setting'" };
+                  let data70 = data69[i9];
+                  if (data70 && typeof data70 == "object" && !Array.isArray(data70)) {
+                    if (data70.setting === void 0) {
+                      const err166 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesApplicationSettings/" + i9, schemaPath: "#/properties/credentials/items/properties/replacesApplicationSettings/items/required", keyword: "required", params: { missingProperty: "setting" }, message: "must have required property 'setting'" };
                       if (vErrors === null) {
-                        vErrors = [err164];
+                        vErrors = [err166];
                       } else {
-                        vErrors.push(err164);
+                        vErrors.push(err166);
                       }
                       errors++;
                     }
-                    for (const key14 in data69) {
+                    for (const key14 in data70) {
                       if (!(key14 === "setting" || key14 === "scoped")) {
-                        const err165 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesApplicationSettings/" + i9, schemaPath: "#/properties/credentials/items/properties/replacesApplicationSettings/items/additionalProperties", keyword: "additionalProperties", params: { additionalProperty: key14 }, message: "must NOT have additional properties" };
+                        const err167 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesApplicationSettings/" + i9, schemaPath: "#/properties/credentials/items/properties/replacesApplicationSettings/items/additionalProperties", keyword: "additionalProperties", params: { additionalProperty: key14 }, message: "must NOT have additional properties" };
                         if (vErrors === null) {
-                          vErrors = [err165];
+                          vErrors = [err167];
                         } else {
-                          vErrors.push(err165);
+                          vErrors.push(err167);
                         }
                         errors++;
                       }
                     }
-                    if (data69.setting !== void 0) {
-                      let data70 = data69.setting;
-                      if (typeof data70 === "string") {
-                        if (func22(data70) > 128) {
-                          const err166 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesApplicationSettings/" + i9 + "/setting", schemaPath: "#/properties/credentials/items/properties/replacesApplicationSettings/items/properties/setting/maxLength", keyword: "maxLength", params: { limit: 128 }, message: "must NOT have more than 128 characters" };
+                    if (data70.setting !== void 0) {
+                      let data71 = data70.setting;
+                      if (typeof data71 === "string") {
+                        if (func22(data71) > 128) {
+                          const err168 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesApplicationSettings/" + i9 + "/setting", schemaPath: "#/properties/credentials/items/properties/replacesApplicationSettings/items/properties/setting/maxLength", keyword: "maxLength", params: { limit: 128 }, message: "must NOT have more than 128 characters" };
                           if (vErrors === null) {
-                            vErrors = [err166];
+                            vErrors = [err168];
                           } else {
-                            vErrors.push(err166);
+                            vErrors.push(err168);
                           }
                           errors++;
                         }
-                        if (!pattern27.test(data70)) {
-                          const err167 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesApplicationSettings/" + i9 + "/setting", schemaPath: "#/properties/credentials/items/properties/replacesApplicationSettings/items/properties/setting/pattern", keyword: "pattern", params: { pattern: "^[A-Za-z][A-Za-z0-9]*(?:\\.[A-Za-z0-9_-]+)+$" }, message: 'must match pattern "^[A-Za-z][A-Za-z0-9]*(?:\\.[A-Za-z0-9_-]+)+$"' };
+                        if (!pattern28.test(data71)) {
+                          const err169 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesApplicationSettings/" + i9 + "/setting", schemaPath: "#/properties/credentials/items/properties/replacesApplicationSettings/items/properties/setting/pattern", keyword: "pattern", params: { pattern: "^[A-Za-z][A-Za-z0-9]*(?:\\.[A-Za-z0-9_-]+)+$" }, message: 'must match pattern "^[A-Za-z][A-Za-z0-9]*(?:\\.[A-Za-z0-9_-]+)+$"' };
                           if (vErrors === null) {
-                            vErrors = [err167];
+                            vErrors = [err169];
                           } else {
-                            vErrors.push(err167);
+                            vErrors.push(err169);
                           }
                           errors++;
                         }
                       } else {
-                        const err168 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesApplicationSettings/" + i9 + "/setting", schemaPath: "#/properties/credentials/items/properties/replacesApplicationSettings/items/properties/setting/type", keyword: "type", params: { type: "string" }, message: "must be string" };
+                        const err170 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesApplicationSettings/" + i9 + "/setting", schemaPath: "#/properties/credentials/items/properties/replacesApplicationSettings/items/properties/setting/type", keyword: "type", params: { type: "string" }, message: "must be string" };
                         if (vErrors === null) {
-                          vErrors = [err168];
+                          vErrors = [err170];
                         } else {
-                          vErrors.push(err168);
+                          vErrors.push(err170);
                         }
                         errors++;
                       }
                     }
-                    if (data69.scoped !== void 0) {
-                      if (true !== data69.scoped) {
-                        const err169 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesApplicationSettings/" + i9 + "/scoped", schemaPath: "#/properties/credentials/items/properties/replacesApplicationSettings/items/properties/scoped/const", keyword: "const", params: { allowedValue: true }, message: "must be equal to constant" };
+                    if (data70.scoped !== void 0) {
+                      if (true !== data70.scoped) {
+                        const err171 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesApplicationSettings/" + i9 + "/scoped", schemaPath: "#/properties/credentials/items/properties/replacesApplicationSettings/items/properties/scoped/const", keyword: "const", params: { allowedValue: true }, message: "must be equal to constant" };
                         if (vErrors === null) {
-                          vErrors = [err169];
+                          vErrors = [err171];
                         } else {
-                          vErrors.push(err169);
+                          vErrors.push(err171);
                         }
                         errors++;
                       }
                     }
                   } else {
-                    const err170 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesApplicationSettings/" + i9, schemaPath: "#/properties/credentials/items/properties/replacesApplicationSettings/items/type", keyword: "type", params: { type: "object" }, message: "must be object" };
+                    const err172 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesApplicationSettings/" + i9, schemaPath: "#/properties/credentials/items/properties/replacesApplicationSettings/items/type", keyword: "type", params: { type: "object" }, message: "must be object" };
                     if (vErrors === null) {
-                      vErrors = [err170];
+                      vErrors = [err172];
                     } else {
-                      vErrors.push(err170);
+                      vErrors.push(err172);
                     }
                     errors++;
                   }
                 }
               } else {
-                const err171 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesApplicationSettings", schemaPath: "#/properties/credentials/items/properties/replacesApplicationSettings/type", keyword: "type", params: { type: "array" }, message: "must be array" };
+                const err173 = { instancePath: instancePath + "/credentials/" + i5 + "/replacesApplicationSettings", schemaPath: "#/properties/credentials/items/properties/replacesApplicationSettings/type", keyword: "type", params: { type: "array" }, message: "must be array" };
                 if (vErrors === null) {
-                  vErrors = [err171];
+                  vErrors = [err173];
                 } else {
-                  vErrors.push(err171);
+                  vErrors.push(err173);
                 }
                 errors++;
               }
             }
-            if (data44.scopeFormat !== void 0) {
-              if (!(data44.scopeFormat === "hex")) {
-                const err172 = { instancePath: instancePath + "/credentials/" + i5 + "/scopeFormat", schemaPath: "#/properties/credentials/items/properties/scopeFormat/enum", keyword: "enum", params: { allowedValues: schema315.properties.credentials.items.properties.scopeFormat.enum }, message: "must be equal to one of the allowed values" };
+            if (data45.scopeFormat !== void 0) {
+              if (!(data45.scopeFormat === "hex")) {
+                const err174 = { instancePath: instancePath + "/credentials/" + i5 + "/scopeFormat", schemaPath: "#/properties/credentials/items/properties/scopeFormat/enum", keyword: "enum", params: { allowedValues: schema315.properties.credentials.items.properties.scopeFormat.enum }, message: "must be equal to one of the allowed values" };
                 if (vErrors === null) {
-                  vErrors = [err172];
+                  vErrors = [err174];
                 } else {
-                  vErrors.push(err172);
+                  vErrors.push(err174);
                 }
                 errors++;
               }
             }
           } else {
-            const err173 = { instancePath: instancePath + "/credentials/" + i5, schemaPath: "#/properties/credentials/items/type", keyword: "type", params: { type: "object" }, message: "must be object" };
+            const err175 = { instancePath: instancePath + "/credentials/" + i5, schemaPath: "#/properties/credentials/items/type", keyword: "type", params: { type: "object" }, message: "must be object" };
             if (vErrors === null) {
-              vErrors = [err173];
+              vErrors = [err175];
             } else {
-              vErrors.push(err173);
+              vErrors.push(err175);
             }
             errors++;
           }
         }
       } else {
-        const err174 = { instancePath: instancePath + "/credentials", schemaPath: "#/properties/credentials/type", keyword: "type", params: { type: "array" }, message: "must be array" };
+        const err176 = { instancePath: instancePath + "/credentials", schemaPath: "#/properties/credentials/type", keyword: "type", params: { type: "array" }, message: "must be array" };
         if (vErrors === null) {
-          vErrors = [err174];
+          vErrors = [err176];
         } else {
-          vErrors.push(err174);
+          vErrors.push(err176);
         }
         errors++;
       }
     }
     if (data.workspaceMarkers !== void 0) {
-      let data73 = data.workspaceMarkers;
-      if (Array.isArray(data73)) {
-        if (data73.length > 32) {
-          const err175 = { instancePath: instancePath + "/workspaceMarkers", schemaPath: "#/properties/workspaceMarkers/maxItems", keyword: "maxItems", params: { limit: 32 }, message: "must NOT have more than 32 items" };
+      let data74 = data.workspaceMarkers;
+      if (Array.isArray(data74)) {
+        if (data74.length > 32) {
+          const err177 = { instancePath: instancePath + "/workspaceMarkers", schemaPath: "#/properties/workspaceMarkers/maxItems", keyword: "maxItems", params: { limit: 32 }, message: "must NOT have more than 32 items" };
           if (vErrors === null) {
-            vErrors = [err175];
+            vErrors = [err177];
           } else {
-            vErrors.push(err175);
+            vErrors.push(err177);
           }
           errors++;
         }
-        const len10 = data73.length;
+        const len10 = data74.length;
         for (let i10 = 0; i10 < len10; i10++) {
-          let data74 = data73[i10];
-          if (typeof data74 === "string") {
-            if (func22(data74) > 128) {
-              const err176 = { instancePath: instancePath + "/workspaceMarkers/" + i10, schemaPath: "#/properties/workspaceMarkers/items/maxLength", keyword: "maxLength", params: { limit: 128 }, message: "must NOT have more than 128 characters" };
+          let data75 = data74[i10];
+          if (typeof data75 === "string") {
+            if (func22(data75) > 128) {
+              const err178 = { instancePath: instancePath + "/workspaceMarkers/" + i10, schemaPath: "#/properties/workspaceMarkers/items/maxLength", keyword: "maxLength", params: { limit: 128 }, message: "must NOT have more than 128 characters" };
               if (vErrors === null) {
-                vErrors = [err176];
+                vErrors = [err178];
               } else {
-                vErrors.push(err176);
+                vErrors.push(err178);
               }
               errors++;
             }
-            if (!pattern282.test(data74)) {
-              const err177 = { instancePath: instancePath + "/workspaceMarkers/" + i10, schemaPath: "#/properties/workspaceMarkers/items/pattern", keyword: "pattern", params: { pattern: "^(?!/)(?![A-Za-z]:)[^\\\\\\u0000]+$" }, message: 'must match pattern "^(?!/)(?![A-Za-z]:)[^\\\\\\u0000]+$"' };
+            if (!pattern292.test(data75)) {
+              const err179 = { instancePath: instancePath + "/workspaceMarkers/" + i10, schemaPath: "#/properties/workspaceMarkers/items/pattern", keyword: "pattern", params: { pattern: "^(?!/)(?![A-Za-z]:)[^\\\\\\u0000]+$" }, message: 'must match pattern "^(?!/)(?![A-Za-z]:)[^\\\\\\u0000]+$"' };
               if (vErrors === null) {
-                vErrors = [err177];
+                vErrors = [err179];
               } else {
-                vErrors.push(err177);
+                vErrors.push(err179);
               }
               errors++;
             }
           } else {
-            const err178 = { instancePath: instancePath + "/workspaceMarkers/" + i10, schemaPath: "#/properties/workspaceMarkers/items/type", keyword: "type", params: { type: "string" }, message: "must be string" };
+            const err180 = { instancePath: instancePath + "/workspaceMarkers/" + i10, schemaPath: "#/properties/workspaceMarkers/items/type", keyword: "type", params: { type: "string" }, message: "must be string" };
             if (vErrors === null) {
-              vErrors = [err178];
+              vErrors = [err180];
             } else {
-              vErrors.push(err178);
+              vErrors.push(err180);
             }
             errors++;
           }
         }
       } else {
-        const err179 = { instancePath: instancePath + "/workspaceMarkers", schemaPath: "#/properties/workspaceMarkers/type", keyword: "type", params: { type: "array" }, message: "must be array" };
+        const err181 = { instancePath: instancePath + "/workspaceMarkers", schemaPath: "#/properties/workspaceMarkers/type", keyword: "type", params: { type: "array" }, message: "must be array" };
         if (vErrors === null) {
-          vErrors = [err179];
+          vErrors = [err181];
         } else {
-          vErrors.push(err179);
+          vErrors.push(err181);
         }
         errors++;
       }
     }
   } else {
-    const err180 = { instancePath, schemaPath: "#/type", keyword: "type", params: { type: "object" }, message: "must be object" };
+    const err182 = { instancePath, schemaPath: "#/type", keyword: "type", params: { type: "object" }, message: "must be object" };
     if (vErrors === null) {
-      vErrors = [err180];
+      vErrors = [err182];
     } else {
-      vErrors.push(err180);
+      vErrors.push(err182);
     }
     errors++;
   }
@@ -18481,6 +18543,7 @@ function validate209(data, { instancePath = "", parentData, parentDataProperty, 
 validate209.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
 
 // ../MODDING/modkit-core/packages/sdk/dist/manifest/validators.generated/extensionRequirementV1.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var func1Module7 = __toESM(require_ucs2length(), 1);
 var extensionRequirementV1 = validate2010;
 var schema316 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/extension-requirement.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["extension", "mode", "scope"], "properties": { "extension": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "mode": { "enum": ["required", "default", "suggested", "integrates"] }, "scope": { "type": "object", "additionalProperties": false, "required": ["kind", "id"], "properties": { "kind": { "enum": ["contribution", "offer", "operation", "intent", "variant", "profile", "projection", "slot"] }, "id": { "type": "string", "minLength": 1 } } } } };
@@ -18684,6 +18747,7 @@ function validate2010(data, { instancePath = "", parentData, parentDataProperty,
 validate2010.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
 
 // ../MODDING/modkit-core/packages/sdk/dist/manifest/validators.generated/codecContributionSpecV1.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var func2Module3 = __toESM(require_ucs2length(), 1);
 var func0Module = __toESM(require_equal(), 1);
 var codecContributionSpecV1 = validate2011;
@@ -18698,8 +18762,8 @@ var pattern82 = new RegExp("^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(
 var pattern132 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
 var pattern17 = new RegExp("^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$", "u");
 var pattern212 = new RegExp("^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$", "u");
-var pattern253 = new RegExp("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z$", "u");
-var pattern262 = new RegExp("^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$", "u");
+var pattern252 = new RegExp("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z$", "u");
+var pattern263 = new RegExp("^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$", "u");
 var pattern50 = new RegExp("^[^/\\\\]+$", "u");
 function validate2011(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
   ;
@@ -21988,7 +22052,7 @@ function validate2011(data, { instancePath = "", parentData, parentDataProperty,
             if (data102.provenAt !== void 0) {
               let data124 = data102.provenAt;
               if (typeof data124 === "string") {
-                if (!pattern253.test(data124)) {
+                if (!pattern252.test(data124)) {
                   const err288 = { instancePath: instancePath + "/fidelityEvidence/" + i31 + "/provenAt", schemaPath: "#/oneOf/0/properties/fidelityEvidence/items/properties/provenAt/pattern", keyword: "pattern", params: { pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z$" }, message: 'must match pattern "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z$"' };
                   if (vErrors === null) {
                     vErrors = [err288];
@@ -22134,7 +22198,7 @@ function validate2011(data, { instancePath = "", parentData, parentDataProperty,
         if (data127.maxInputBytes !== void 0) {
           let data128 = data127.maxInputBytes;
           if (typeof data128 === "string") {
-            if (!pattern262.test(data128)) {
+            if (!pattern263.test(data128)) {
               const err302 = { instancePath: instancePath + "/budgets/maxInputBytes", schemaPath: "#/oneOf/0/properties/budgets/properties/maxInputBytes/pattern", keyword: "pattern", params: { pattern: "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, message: 'must match pattern "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$"' };
               if (vErrors === null) {
                 vErrors = [err302];
@@ -25817,7 +25881,7 @@ function validate2011(data, { instancePath = "", parentData, parentDataProperty,
             if (data244.provenAt !== void 0) {
               let data266 = data244.provenAt;
               if (typeof data266 === "string") {
-                if (!pattern253.test(data266)) {
+                if (!pattern252.test(data266)) {
                   const err628 = { instancePath: instancePath + "/fidelityEvidence/" + i67 + "/provenAt", schemaPath: "#/oneOf/1/properties/fidelityEvidence/items/properties/provenAt/pattern", keyword: "pattern", params: { pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z$" }, message: 'must match pattern "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z$"' };
                   if (vErrors === null) {
                     vErrors = [err628];
@@ -25963,7 +26027,7 @@ function validate2011(data, { instancePath = "", parentData, parentDataProperty,
         if (data269.maxInputBytes !== void 0) {
           let data270 = data269.maxInputBytes;
           if (typeof data270 === "string") {
-            if (!pattern262.test(data270)) {
+            if (!pattern263.test(data270)) {
               const err642 = { instancePath: instancePath + "/budgets/maxInputBytes", schemaPath: "#/oneOf/1/properties/budgets/properties/maxInputBytes/pattern", keyword: "pattern", params: { pattern: "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, message: 'must match pattern "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$"' };
               if (vErrors === null) {
                 vErrors = [err642];
@@ -29982,7 +30046,7 @@ function validate2011(data, { instancePath = "", parentData, parentDataProperty,
               if (data395.provenAt !== void 0) {
                 let data417 = data395.provenAt;
                 if (typeof data417 === "string") {
-                  if (!pattern253.test(data417)) {
+                  if (!pattern252.test(data417)) {
                     const err997 = { instancePath: instancePath + "/fidelityEvidence/" + i108 + "/provenAt", schemaPath: "#/oneOf/2/properties/fidelityEvidence/items/properties/provenAt/pattern", keyword: "pattern", params: { pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z$" }, message: 'must match pattern "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z$"' };
                     if (vErrors === null) {
                       vErrors = [err997];
@@ -30128,7 +30192,7 @@ function validate2011(data, { instancePath = "", parentData, parentDataProperty,
           if (data420.maxInputBytes !== void 0) {
             let data421 = data420.maxInputBytes;
             if (typeof data421 === "string") {
-              if (!pattern262.test(data421)) {
+              if (!pattern263.test(data421)) {
                 const err1011 = { instancePath: instancePath + "/budgets/maxInputBytes", schemaPath: "#/oneOf/2/properties/budgets/properties/maxInputBytes/pattern", keyword: "pattern", params: { pattern: "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, message: 'must match pattern "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$"' };
                 if (vErrors === null) {
                   vErrors = [err1011];
@@ -30502,6 +30566,7 @@ function validate2011(data, { instancePath = "", parentData, parentDataProperty,
 validate2011.evaluated = { "dynamicProps": true, "dynamicItems": false };
 
 // ../MODDING/modkit-core/packages/sdk/dist/manifest/validators.generated/serviceProviderContributionSpecV1.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var func3Module = __toESM(require_ucs2length(), 1);
 var serviceProviderContributionSpecV1 = validate2012;
 var schema318 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/service-provider-contribution-spec.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["provides", "lifecycleScope"], "properties": { "provides": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["offerId", "contract", "major", "version"], "properties": { "offerId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" }, "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "version": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "facet": { "title": "JsonValue" } } }, "minItems": 1 }, "fidelityEvidence": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["offerId", "evidenceId", "claim", "corpusId", "corpusDigest", "conformanceProfile", "optionsFingerprint", "inputClass", "provenAt"], "properties": { "offerId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" }, "evidenceId": { "type": "string", "minLength": 1 }, "claim": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["roundTrip", "preservesUnknownData"], "properties": { "roundTrip": { "const": "byte-identical" }, "preservesUnknownData": { "const": true }, "notes": { "type": "array", "items": { "type": "string", "minLength": 1 } } } }, { "type": "object", "additionalProperties": false, "required": ["roundTrip", "preservesUnknownData"], "properties": { "roundTrip": { "const": "semantic" }, "preservesUnknownData": { "type": "boolean" }, "notes": { "type": "array", "items": { "type": "string", "minLength": 1 } } } }, { "type": "object", "additionalProperties": false, "required": ["roundTrip", "preservesUnknownData"], "properties": { "roundTrip": { "enum": ["lossy", "none"] }, "preservesUnknownData": { "const": false }, "notes": { "type": "array", "items": { "type": "string", "minLength": 1 } } } }] }, "corpusId": { "type": "string", "minLength": 1 }, "corpusDigest": { "type": "string", "minLength": 1 }, "conformanceProfile": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "optionsFingerprint": { "type": "string", "minLength": 1 }, "inputClass": { "type": "string", "minLength": 1 }, "provenAt": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z$" } } } }, "requires": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } } }, "inputs": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "outputs": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "representation", "presence"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "definitionVersion": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "representation": { "enum": ["source", "compiled", "runtime"] }, "presence": { "enum": ["may-expose", "will-expose"] }, "prerequisites": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } } }, "evidenceRefs": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true } } } }, "protocolOperations": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "replacement": { "type": "object", "additionalProperties": false, "required": ["target", "compatible"], "properties": { "target": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } }, "compatible": { "type": "boolean" } } }, "lifecycleScope": { "enum": ["session", "operation", "process"] }, "applicableVariants": { "type": "array", "items": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" } } } };
@@ -32143,6 +32208,7 @@ function validate2012(data, { instancePath = "", parentData, parentDataProperty,
 validate2012.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
 
 // ../MODDING/modkit-core/packages/sdk/dist/manifest/validators.generated/viewerContributionSpecV1.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var func0Module2 = __toESM(require_equal(), 1);
 var func3Module2 = __toESM(require_ucs2length(), 1);
 var viewerContributionSpecV1 = validate2013;
@@ -33346,6 +33412,7 @@ function validate2013(data, { instancePath = "", parentData, parentDataProperty,
 validate2013.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
 
 // ../MODDING/modkit-core/packages/sdk/dist/manifest/validators.generated/editorContributionSpecV1.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var func2Module4 = __toESM(require_ucs2length(), 1);
 var func0Module3 = __toESM(require_equal(), 1);
 var editorContributionSpecV1 = validate2014;
@@ -34257,6 +34324,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
 validate2014.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
 
 // ../MODDING/modkit-core/packages/sdk/dist/manifest/validators.generated/knowledgePackSpecV1.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var func1Module8 = __toESM(require_ucs2length(), 1);
 var knowledgePackSpecV1 = validate2015;
 var schema3111 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/knowledge-pack-spec.v1.schema.json", "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["schemaVersion", "sourceLocale", "priority", "entries"], "properties": { "schemaVersion": { "const": 1 }, "sourceLocale": { "type": "string", "pattern": "^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$", "maxLength": 64 }, "priority": { "type": "number" }, "gameIds": { "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 128 }, "maxItems": 32, "uniqueItems": true }, "entries": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "target", "locale", "title", "summary", "claimKind", "confidence", "sources"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "maxLength": 256 }, "target": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "schema", "typeId", "canonicalPath"], "properties": { "kind": { "const": "field" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "schema": { "type": "object", "additionalProperties": false, "required": ["contract", "major", "revision"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "maxLength": 256 }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "revision": { "type": "string", "minLength": 1, "maxLength": 256 } } }, "typeId": { "type": "string", "minLength": 1, "maxLength": 128 }, "canonicalPath": { "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 128 }, "minItems": 1, "maxItems": 32 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "subjectKind"], "properties": { "kind": { "const": "subject" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "subjectKind": { "type": "string", "minLength": 1, "maxLength": 128 }, "subjectId": { "type": "string", "minLength": 1, "maxLength": 512 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "formatId"], "properties": { "kind": { "const": "format" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "formatId": { "type": "string", "minLength": 1, "maxLength": 128 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "code"], "properties": { "kind": { "const": "diagnostic" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "code": { "type": "string", "minLength": 1, "maxLength": 256 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "conceptId"], "properties": { "kind": { "const": "concept" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "conceptId": { "type": "string", "minLength": 1, "maxLength": 128 } } }] }, "locale": { "type": "string", "pattern": "^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$", "maxLength": 64 }, "title": { "type": "string", "minLength": 1, "maxLength": 256 }, "summary": { "type": "string", "minLength": 1, "maxLength": 1024 }, "claimKind": { "enum": ["schema-derived-fact", "documented-interpretation", "community-note", "external-reference"] }, "confidence": { "enum": ["verified", "high", "medium", "low"] }, "aliases": { "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 128 }, "maxItems": 32, "uniqueItems": true }, "keywords": { "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 128 }, "maxItems": 32, "uniqueItems": true }, "details": { "type": "object", "additionalProperties": false, "properties": { "valueType": { "type": "string", "minLength": 1, "maxLength": 128 }, "units": { "type": "string", "minLength": 1, "maxLength": 128 }, "defaultValue": { "title": "JsonValue" }, "allowedValues": { "type": "array", "items": { "title": "JsonValue" }, "maxItems": 512 }, "deprecated": { "type": "boolean" }, "formulaRole": { "type": "string", "minLength": 1, "maxLength": 512 } } }, "relations": { "type": "array", "maxItems": 64, "items": { "type": "object", "additionalProperties": false, "required": ["role", "target"], "properties": { "role": { "type": "string", "minLength": 1, "maxLength": 128 }, "target": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "schema", "typeId", "canonicalPath"], "properties": { "kind": { "const": "field" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "schema": { "type": "object", "additionalProperties": false, "required": ["contract", "major", "revision"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "maxLength": 256 }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "revision": { "type": "string", "minLength": 1, "maxLength": 256 } } }, "typeId": { "type": "string", "minLength": 1, "maxLength": 128 }, "canonicalPath": { "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 128 }, "minItems": 1, "maxItems": 32 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "subjectKind"], "properties": { "kind": { "const": "subject" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "subjectKind": { "type": "string", "minLength": 1, "maxLength": 128 }, "subjectId": { "type": "string", "minLength": 1, "maxLength": 512 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "formatId"], "properties": { "kind": { "const": "format" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "formatId": { "type": "string", "minLength": 1, "maxLength": 128 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "code"], "properties": { "kind": { "const": "diagnostic" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "code": { "type": "string", "minLength": 1, "maxLength": 256 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "conceptId"], "properties": { "kind": { "const": "concept" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "conceptId": { "type": "string", "minLength": 1, "maxLength": 128 } } }] } } } }, "examples": { "type": "array", "maxItems": 16, "items": { "type": "object", "additionalProperties": false, "required": ["title", "text"], "properties": { "title": { "type": "string", "minLength": 1, "maxLength": 256 }, "text": { "type": "string", "minLength": 1, "maxLength": 2048 } } } }, "sources": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["kind", "title", "reviewedAt"], "properties": { "kind": { "enum": ["schema", "official-documentation", "source-code", "community-wiki", "observed-corpus", "external-reference"] }, "title": { "type": "string", "minLength": 1, "maxLength": 256 }, "url": { "type": "string", "pattern": "^https://[^\\s]+$", "maxLength": 2048 }, "schema": { "type": "object", "additionalProperties": false, "required": ["contract", "major", "revision"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "maxLength": 256 }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "revision": { "type": "string", "minLength": 1, "maxLength": 256 } } }, "revision": { "type": "string", "minLength": 1, "maxLength": 256 }, "license": { "type": "string", "minLength": 1, "maxLength": 256 }, "reviewedAt": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" } } }, "minItems": 1, "maxItems": 16 } } }, "minItems": 1, "maxItems": 1e4 } } }, { "type": "object", "additionalProperties": false, "required": ["schemaVersion", "sourceLocale", "priority", "entriesPath"], "properties": { "schemaVersion": { "const": 1 }, "sourceLocale": { "type": "string", "pattern": "^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$", "maxLength": 64 }, "priority": { "type": "number" }, "gameIds": { "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 128 }, "maxItems": 32, "uniqueItems": true }, "entriesPath": { "type": "string", "maxLength": 1024, "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*(?:/[A-Za-z0-9][A-Za-z0-9._-]*)*\\.json$" } } }] };
@@ -37821,6 +37889,7 @@ function validate2015(data, { instancePath = "", parentData, parentDataProperty,
 validate2015.evaluated = { "dynamicProps": true, "dynamicItems": false };
 
 // ../MODDING/modkit-core/packages/sdk/dist/manifest/validators.generated/localizationContributionSpecV1.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var func1Module9 = __toESM(require_ucs2length(), 1);
 var localizationContributionSpecV1 = validate2016;
 var func115 = func1Module9.default?.default ?? func1Module9.default;
@@ -38105,6 +38174,7 @@ function validate2016(data, { instancePath = "", parentData, parentDataProperty,
 validate2016.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
 
 // ../MODDING/modkit-core/packages/sdk/dist/manifest/validators.generated/writerRequirementV1.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var func1Module10 = __toESM(require_ucs2length(), 1);
 var writerRequirementV1 = validate2017;
 var schema3112 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/writer-requirement.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["formatId", "representationId", "mutationMode", "minimumRoundTrip"], "properties": { "formatId": { "type": "string", "minLength": 1 }, "representationId": { "type": "string", "minLength": 1 }, "mutationMode": { "enum": ["export-only", "mutate"] }, "minimumRoundTrip": { "enum": ["byte-identical", "semantic", "lossy", "none"] } } };
@@ -38251,6 +38321,7 @@ function validate2017(data, { instancePath = "", parentData, parentDataProperty,
 validate2017.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
 
 // ../MODDING/modkit-core/packages/sdk/dist/manifest/validators.generated/writerOfferV1.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var func1Module11 = __toESM(require_ucs2length(), 1);
 var writerOfferV1 = validate2018;
 var schema3113 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/writer-offer.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["formatId", "representationId", "mutationMode", "minimumRoundTrip", "providerId", "fidelityEvidenceId"], "properties": { "formatId": { "type": "string", "minLength": 1 }, "representationId": { "type": "string", "minLength": 1 }, "mutationMode": { "enum": ["export-only", "mutate"] }, "minimumRoundTrip": { "enum": ["byte-identical", "semantic", "lossy", "none"] }, "providerId": { "type": "string", "minLength": 1 }, "fidelityEvidenceId": { "type": "string", "minLength": 1 } } };
@@ -38459,6 +38530,7 @@ function validate2018(data, { instancePath = "", parentData, parentDataProperty,
 validate2018.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
 
 // ../MODDING/modkit-core/packages/sdk/dist/manifest/validators.generated/traitDefinitionSpecV1.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var func1Module12 = __toESM(require_ucs2length(), 1);
 var traitDefinitionSpecV1 = validate2019;
 var schema3114 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/trait-definition-spec.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["schemaVersion", "id", "version", "scope", "parametersSchema", "transport"], "properties": { "schemaVersion": { "const": 1 }, "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "version": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "scope": { "anyOf": [{ "enum": ["source", "asset", "subject", "workspace", "service", "operation", "view-session", "representation"] }, { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }] }, "parametersSchema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 }, "document": { "title": "JsonValue" } } }, "transport": { "enum": ["json", "structured-clone"] }, "documentation": { "type": "string", "minLength": 1 }, "imports": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "range"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } } } } };
@@ -38860,6 +38932,7 @@ function validate2019(data, { instancePath = "", parentData, parentDataProperty,
 validate2019.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
 
 // ../MODDING/modkit-core/packages/sdk/dist/manifest/validators.generated/contractDefinitionSpecV1.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var func2Module5 = __toESM(require_ucs2length(), 1);
 var contractDefinitionSpecV1 = validate2020;
 var schema3115 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/contract-definition-spec.v1.schema.json", "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["schemaVersion", "kind", "contract", "major", "offerFacet", "requestFacet", "matching", "conformanceProfile"], "properties": { "schemaVersion": { "const": 1 }, "kind": { "const": "service" }, "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "offerFacet": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["presence"], "properties": { "presence": { "const": "forbidden" } } }, { "type": "object", "additionalProperties": false, "required": ["presence", "schema"], "properties": { "presence": { "enum": ["optional", "required"] }, "schema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 }, "document": { "title": "JsonValue" } } } } }] }, "requestFacet": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["presence"], "properties": { "presence": { "const": "forbidden" } } }, { "type": "object", "additionalProperties": false, "required": ["presence", "schema"], "properties": { "presence": { "enum": ["optional", "required"] }, "schema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 }, "document": { "title": "JsonValue" } } } } }] }, "matching": { "type": "object", "additionalProperties": false, "required": ["profile", "major"], "properties": { "profile": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "configuration": { "title": "JsonValue" } } }, "conformanceProfile": { "type": "string", "minLength": 1 }, "surface": { "type": "object", "additionalProperties": false, "required": ["methods"], "properties": { "releaseVia": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "fields": { "type": "array", "items": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "maxItems": 64, "uniqueItems": true }, "methods": { "type": "object", "minProperties": 1, "propertyNames": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "additionalProperties": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "result"], "properties": { "kind": { "const": "lease" }, "result": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "wrapper": { "enum": ["lease", "bare"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "enum": ["value", "leased-value", "iterable", "events"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }] } } } } } }, { "type": "object", "additionalProperties": false, "required": ["schemaVersion", "kind", "contract", "major", "schema", "conformanceProfile"], "properties": { "schemaVersion": { "const": 1 }, "kind": { "const": "data-source" }, "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "schema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 }, "document": { "title": "JsonValue" } } }, "conformanceProfile": { "type": "string", "minLength": 1 }, "surface": { "type": "object", "additionalProperties": false, "required": ["methods"], "properties": { "releaseVia": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "fields": { "type": "array", "items": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "maxItems": 64, "uniqueItems": true }, "methods": { "type": "object", "minProperties": 1, "propertyNames": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "additionalProperties": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "result"], "properties": { "kind": { "const": "lease" }, "result": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "wrapper": { "enum": ["lease", "bare"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "enum": ["value", "leased-value", "iterable", "events"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }] } } } } } }] };
@@ -42230,6 +42303,7 @@ function validate2020(data, { instancePath = "", parentData, parentDataProperty,
 validate2020.evaluated = { "dynamicProps": true, "dynamicItems": false };
 
 // ../MODDING/modkit-core/packages/sdk/dist/manifest/validators.generated/subjectDescriptorV2.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var func2Module6 = __toESM(require_ucs2length(), 1);
 var func0Module4 = __toESM(require_equal(), 1);
 var subjectDescriptorV2 = validate2021;
@@ -42240,9 +42314,9 @@ var func04 = func0Module4.default?.default ?? func0Module4.default;
 var pattern417 = new RegExp("\\S", "u");
 var pattern84 = new RegExp("^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$", "u");
 var pattern182 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
-var pattern192 = new RegExp("^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$", "u");
+var pattern193 = new RegExp("^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$", "u");
 var pattern213 = new RegExp("^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$", "u");
-var pattern263 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
+var pattern264 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
 var pattern32 = new RegExp("^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$", "u");
 var wrapper05 = { validate: validate215 };
 function validate215(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
@@ -47074,7 +47148,7 @@ function validate2021(data, { instancePath = "", parentData, parentDataProperty,
                 if (data46.extensionVersion !== void 0) {
                   let data48 = data46.extensionVersion;
                   if (typeof data48 === "string") {
-                    if (!pattern192.test(data48)) {
+                    if (!pattern193.test(data48)) {
                       const err139 = { instancePath: instancePath + "/origin/recipe/extensionVersion", schemaPath: "#/oneOf/0/properties/origin/oneOf/3/properties/recipe/properties/extensionVersion/pattern", keyword: "pattern", params: { pattern: "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, message: 'must match pattern "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"' };
                       if (vErrors === null) {
                         vErrors = [err139];
@@ -47465,7 +47539,7 @@ function validate2021(data, { instancePath = "", parentData, parentDataProperty,
             if (data61.id !== void 0) {
               let data62 = data61.id;
               if (typeof data62 === "string") {
-                if (!pattern263.test(data62)) {
+                if (!pattern264.test(data62)) {
                   const err172 = { instancePath: instancePath + "/traits/" + i6 + "/id", schemaPath: "#/oneOf/0/properties/traits/items/oneOf/0/properties/id/pattern", keyword: "pattern", params: { pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, message: 'must match pattern "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$"' };
                   if (vErrors === null) {
                     vErrors = [err172];
@@ -47498,7 +47572,7 @@ function validate2021(data, { instancePath = "", parentData, parentDataProperty,
             if (data61.definitionVersion !== void 0) {
               let data64 = data61.definitionVersion;
               if (typeof data64 === "string") {
-                if (!pattern192.test(data64)) {
+                if (!pattern193.test(data64)) {
                   const err175 = { instancePath: instancePath + "/traits/" + i6 + "/definitionVersion", schemaPath: "#/oneOf/0/properties/traits/items/oneOf/0/properties/definitionVersion/pattern", keyword: "pattern", params: { pattern: "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, message: 'must match pattern "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"' };
                   if (vErrors === null) {
                     vErrors = [err175];
@@ -47601,7 +47675,7 @@ function validate2021(data, { instancePath = "", parentData, parentDataProperty,
             if (data61.id !== void 0) {
               let data67 = data61.id;
               if (typeof data67 === "string") {
-                if (!pattern263.test(data67)) {
+                if (!pattern264.test(data67)) {
                   const err184 = { instancePath: instancePath + "/traits/" + i6 + "/id", schemaPath: "#/oneOf/0/properties/traits/items/oneOf/1/properties/id/pattern", keyword: "pattern", params: { pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, message: 'must match pattern "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$"' };
                   if (vErrors === null) {
                     vErrors = [err184];
@@ -47634,7 +47708,7 @@ function validate2021(data, { instancePath = "", parentData, parentDataProperty,
             if (data61.definitionVersion !== void 0) {
               let data69 = data61.definitionVersion;
               if (typeof data69 === "string") {
-                if (!pattern192.test(data69)) {
+                if (!pattern193.test(data69)) {
                   const err187 = { instancePath: instancePath + "/traits/" + i6 + "/definitionVersion", schemaPath: "#/oneOf/0/properties/traits/items/oneOf/1/properties/definitionVersion/pattern", keyword: "pattern", params: { pattern: "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, message: 'must match pattern "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"' };
                   if (vErrors === null) {
                     vErrors = [err187];
@@ -53112,7 +53186,7 @@ function validate2021(data, { instancePath = "", parentData, parentDataProperty,
                 if (data240.extensionVersion !== void 0) {
                   let data242 = data240.extensionVersion;
                   if (typeof data242 === "string") {
-                    if (!pattern192.test(data242)) {
+                    if (!pattern193.test(data242)) {
                       const err667 = { instancePath: instancePath + "/origin/recipe/extensionVersion", schemaPath: "#/oneOf/1/properties/origin/oneOf/3/properties/recipe/properties/extensionVersion/pattern", keyword: "pattern", params: { pattern: "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, message: 'must match pattern "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"' };
                       if (vErrors === null) {
                         vErrors = [err667];
@@ -53503,7 +53577,7 @@ function validate2021(data, { instancePath = "", parentData, parentDataProperty,
             if (data255.id !== void 0) {
               let data256 = data255.id;
               if (typeof data256 === "string") {
-                if (!pattern263.test(data256)) {
+                if (!pattern264.test(data256)) {
                   const err700 = { instancePath: instancePath + "/traits/" + i27 + "/id", schemaPath: "#/oneOf/1/properties/traits/items/oneOf/0/properties/id/pattern", keyword: "pattern", params: { pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, message: 'must match pattern "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$"' };
                   if (vErrors === null) {
                     vErrors = [err700];
@@ -53536,7 +53610,7 @@ function validate2021(data, { instancePath = "", parentData, parentDataProperty,
             if (data255.definitionVersion !== void 0) {
               let data258 = data255.definitionVersion;
               if (typeof data258 === "string") {
-                if (!pattern192.test(data258)) {
+                if (!pattern193.test(data258)) {
                   const err703 = { instancePath: instancePath + "/traits/" + i27 + "/definitionVersion", schemaPath: "#/oneOf/1/properties/traits/items/oneOf/0/properties/definitionVersion/pattern", keyword: "pattern", params: { pattern: "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, message: 'must match pattern "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"' };
                   if (vErrors === null) {
                     vErrors = [err703];
@@ -53639,7 +53713,7 @@ function validate2021(data, { instancePath = "", parentData, parentDataProperty,
             if (data255.id !== void 0) {
               let data261 = data255.id;
               if (typeof data261 === "string") {
-                if (!pattern263.test(data261)) {
+                if (!pattern264.test(data261)) {
                   const err712 = { instancePath: instancePath + "/traits/" + i27 + "/id", schemaPath: "#/oneOf/1/properties/traits/items/oneOf/1/properties/id/pattern", keyword: "pattern", params: { pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, message: 'must match pattern "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$"' };
                   if (vErrors === null) {
                     vErrors = [err712];
@@ -53672,7 +53746,7 @@ function validate2021(data, { instancePath = "", parentData, parentDataProperty,
             if (data255.definitionVersion !== void 0) {
               let data263 = data255.definitionVersion;
               if (typeof data263 === "string") {
-                if (!pattern192.test(data263)) {
+                if (!pattern193.test(data263)) {
                   const err715 = { instancePath: instancePath + "/traits/" + i27 + "/definitionVersion", schemaPath: "#/oneOf/1/properties/traits/items/oneOf/1/properties/definitionVersion/pattern", keyword: "pattern", params: { pattern: "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, message: 'must match pattern "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"' };
                   if (vErrors === null) {
                     vErrors = [err715];
@@ -55986,7 +56060,7 @@ function validate2021(data, { instancePath = "", parentData, parentDataProperty,
         if (data337.codecVersion !== void 0) {
           let data339 = data337.codecVersion;
           if (typeof data339 === "string") {
-            if (!pattern192.test(data339)) {
+            if (!pattern193.test(data339)) {
               const err911 = { instancePath: instancePath + "/identity/codecVersion", schemaPath: "#/oneOf/1/properties/identity/properties/codecVersion/pattern", keyword: "pattern", params: { pattern: "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, message: 'must match pattern "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"' };
               if (vErrors === null) {
                 vErrors = [err911];
@@ -60950,6 +61024,7 @@ function validate2021(data, { instancePath = "", parentData, parentDataProperty,
 validate2021.evaluated = { "dynamicProps": true, "dynamicItems": false };
 
 // ../MODDING/modkit-core/packages/sdk/dist/manifest/validators.generated/contributionManifestV1.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var func2Module7 = __toESM(require_ucs2length(), 1);
 var contributionManifestV1 = validate2022;
 var schema3117 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/contribution-manifest.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["schemaVersion", "contract", "id", "displayName", "spec"], "properties": { "schemaVersion": { "const": 1 }, "contract": { "type": "object", "additionalProperties": false, "required": ["id", "major"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "displayName": { "type": "string", "minLength": 1 }, "status": { "enum": ["supported", "partial", "unsupported", "experimental"] }, "runtimeVariants": { "type": "array", "items": { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/runtime-variant-declaration.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["variantId", "entrypoint", "target", "executionProfile", "requestedPermissionClasses"], "properties": { "variantId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" }, "entrypoint": { "type": "string", "pattern": "^(?![a-zA-Z][a-zA-Z0-9+.-]*:)(?!/)(?!\\\\)(?:(?!\\.\\.(?:/|$))[^\\\\/\\u0000-\\u001f]+/)*(?!\\.\\.$)[^\\\\/\\u0000-\\u001f]+$" }, "target": { "type": "object", "additionalProperties": false, "properties": { "environments": { "type": "array", "items": { "enum": ["browser-main", "browser-worker", "node", "node-worker", "wasm", "native", "external-tool"] }, "minItems": 1 }, "operatingSystems": { "type": "array", "items": { "enum": ["any", "windows", "linux", "darwin", "android", "ios"] }, "minItems": 1 }, "architectures": { "type": "array", "items": { "enum": ["any", "x86", "x64", "arm32", "arm64", "wasm32"] }, "minItems": 1 }, "requiredHostCapabilities": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "requiredWebApis": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "externalTools": { "type": "array", "items": { "type": "string", "minLength": 1 } } } }, "executionProfile": { "enum": ["browser-sandbox", "worker-brokered", "process-brokered", "wasm-brokered", "trusted-in-process", "remote-provider"] }, "requestedPermissionClasses": { "type": "array", "items": { "enum": ["read-source", "write-source", "filesystem-read", "filesystem-write", "network", "process-launch", "native-code", "credentials", "clipboard", "persistent-storage"] } } } } }, "dependsOn": { "type": "array", "items": { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/scoped-contract-requirement.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["contract", "major", "mode", "scope"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "mode": { "enum": ["required", "default", "suggested", "integrates"] }, "scope": { "type": "object", "additionalProperties": false, "required": ["kind", "id"], "properties": { "kind": { "enum": ["contribution", "offer", "operation", "intent", "variant", "profile", "projection", "slot"] }, "id": { "type": "string", "minLength": 1 } } } } } }, "limitations": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "spec": { "title": "JsonValue" } } };
@@ -61881,6 +61956,7 @@ function validate2022(data, { instancePath = "", parentData, parentDataProperty,
 validate2022.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
 
 // ../MODDING/modkit-core/packages/sdk/dist/manifest/validators.generated/runtimeVariantDeclarationV1.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var func1Module13 = __toESM(require_ucs2length(), 1);
 var runtimeVariantDeclarationV1 = validate2023;
 var schema3118 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/runtime-variant-declaration.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["variantId", "entrypoint", "target", "executionProfile", "requestedPermissionClasses"], "properties": { "variantId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" }, "entrypoint": { "type": "string", "pattern": "^(?![a-zA-Z][a-zA-Z0-9+.-]*:)(?!/)(?!\\\\)(?:(?!\\.\\.(?:/|$))[^\\\\/\\u0000-\\u001f]+/)*(?!\\.\\.$)[^\\\\/\\u0000-\\u001f]+$" }, "target": { "type": "object", "additionalProperties": false, "properties": { "environments": { "type": "array", "items": { "enum": ["browser-main", "browser-worker", "node", "node-worker", "wasm", "native", "external-tool"] }, "minItems": 1 }, "operatingSystems": { "type": "array", "items": { "enum": ["any", "windows", "linux", "darwin", "android", "ios"] }, "minItems": 1 }, "architectures": { "type": "array", "items": { "enum": ["any", "x86", "x64", "arm32", "arm64", "wasm32"] }, "minItems": 1 }, "requiredHostCapabilities": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "requiredWebApis": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "externalTools": { "type": "array", "items": { "type": "string", "minLength": 1 } } } }, "executionProfile": { "enum": ["browser-sandbox", "worker-brokered", "process-brokered", "wasm-brokered", "trusted-in-process", "remote-provider"] }, "requestedPermissionClasses": { "type": "array", "items": { "enum": ["read-source", "write-source", "filesystem-read", "filesystem-write", "network", "process-launch", "native-code", "credentials", "clipboard", "persistent-storage"] } } } };
@@ -62289,6 +62365,7 @@ function validate2023(data, { instancePath = "", parentData, parentDataProperty,
 validate2023.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
 
 // ../MODDING/modkit-core/packages/sdk/dist/manifest/validators.generated/scopedContractRequirementV1.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var func1Module14 = __toESM(require_ucs2length(), 1);
 var scopedContractRequirementV1 = validate2024;
 var schema3119 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/scoped-contract-requirement.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["contract", "major", "mode", "scope"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "mode": { "enum": ["required", "default", "suggested", "integrates"] }, "scope": { "type": "object", "additionalProperties": false, "required": ["kind", "id"], "properties": { "kind": { "enum": ["contribution", "offer", "operation", "intent", "variant", "profile", "projection", "slot"] }, "id": { "type": "string", "minLength": 1 } } } } };
@@ -62533,6 +62610,7 @@ function validate2024(data, { instancePath = "", parentData, parentDataProperty,
 validate2024.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
 
 // ../MODDING/modkit-core/packages/sdk/dist/manifest/validators.generated/dataSourceContractDefinitionV1.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var func1Module15 = __toESM(require_ucs2length(), 1);
 var dataSourceContractDefinitionV1 = validate2025;
 var schema3120 = { "type": "object", "additionalProperties": false, "required": ["schemaVersion", "kind", "contract", "major", "schema", "conformanceProfile"], "properties": { "schemaVersion": { "const": 1 }, "kind": { "const": "data-source" }, "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "schema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 }, "document": { "title": "JsonValue" } } }, "conformanceProfile": { "type": "string", "minLength": 1 }, "surface": { "type": "object", "additionalProperties": false, "required": ["methods"], "properties": { "releaseVia": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "fields": { "type": "array", "items": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "maxItems": 64, "uniqueItems": true }, "methods": { "type": "object", "minProperties": 1, "propertyNames": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "additionalProperties": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "result"], "properties": { "kind": { "const": "lease" }, "result": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "wrapper": { "enum": ["lease", "bare"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "enum": ["value", "leased-value", "iterable", "events"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }] } } } } } };
@@ -63985,6 +64063,7 @@ function validate2025(data, { instancePath = "", parentData, parentDataProperty,
 validate2025.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
 
 // ../MODDING/modkit-core/packages/sdk/dist/manifest/validators.generated/dataSourceSurfaceV1.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var dataSourceSurfaceV1 = validate2026;
 var schema3121 = { "type": "object", "additionalProperties": false, "required": ["methods"], "properties": { "releaseVia": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "fields": { "type": "array", "items": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "maxItems": 64, "uniqueItems": true }, "methods": { "type": "object", "minProperties": 1, "propertyNames": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "additionalProperties": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "result"], "properties": { "kind": { "const": "lease" }, "result": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "wrapper": { "enum": ["lease", "bare"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "enum": ["value", "leased-value", "iterable", "events"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }] } } } };
 var pattern422 = new RegExp("^[a-z][a-zA-Z0-9]{0,63}$", "u");
@@ -65204,6 +65283,7 @@ function validate2026(data, { instancePath = "", parentData, parentDataProperty,
 validate2026.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
 
 // ../MODDING/modkit-core/packages/sdk/dist/manifest/validators.generated/dataSourceMethodSurfaceV1.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var dataSourceMethodSurfaceV1 = validate2027;
 var schema3122 = { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "result"], "properties": { "kind": { "const": "lease" }, "result": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "wrapper": { "enum": ["lease", "bare"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "enum": ["value", "leased-value", "iterable", "events"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }] };
 var pattern423 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
@@ -66255,8 +66335,8 @@ var PRECOMPILED_SCHEMA_VALIDATORS = /* @__PURE__ */ new Map([
   ['{\n  "$id": "https://schemas.modkit.org/x3/field-editor-contribution-spec.v1.schema.json",\n  "$schema": "https://json-schema.org/draft/2020-12/schema",\n  "additionalProperties": false,\n  "properties": {\n    "editorId": {\n      "minLength": 1,\n      "type": "string"\n    },\n    "fieldTypeId": {\n      "minLength": 1,\n      "type": "string"\n    },\n    "hosts": {\n      "items": {\n        "minLength": 1,\n        "type": "string"\n      },\n      "minItems": 1,\n      "type": "array",\n      "uniqueItems": true\n    },\n    "priority": {\n      "maximum": 1000000,\n      "minimum": -1000000,\n      "type": "integer"\n    }\n  },\n  "required": [\n    "fieldTypeId",\n    "editorId",\n    "priority"\n  ],\n  "type": "object"\n}\n', fieldEditorContributionSpecV1],
   ['{\n  "$id": "https://schemas.modkit.org/x3/subject-kind-definition-spec.v1.schema.json",\n  "$schema": "https://json-schema.org/draft/2020-12/schema",\n  "additionalProperties": false,\n  "properties": {\n    "card": {\n      "additionalProperties": false,\n      "properties": {\n        "preview": {\n          "enum": [\n            "raster",\n            "model",\n            "none"\n          ]\n        },\n        "sections": {\n          "items": {\n            "minLength": 1,\n            "type": "string"\n          },\n          "type": "array"\n        }\n      },\n      "required": [\n        "sections"\n      ],\n      "type": "object"\n    },\n    "diff": {\n      "additionalProperties": false,\n      "properties": {\n        "profile": {\n          "enum": [\n            "generic",\n            "provider"\n          ]\n        }\n      },\n      "required": [\n        "profile"\n      ],\n      "type": "object"\n    },\n    "icon": {\n      "additionalProperties": false,\n      "properties": {\n        "displayName": {\n          "minLength": 1,\n          "type": "string"\n        },\n        "mediaType": {\n          "minLength": 1,\n          "type": "string"\n        },\n        "path": {\n          "pattern": "^(?:\\\\./)?(?![A-Za-z]:)(?!\\\\\\\\)(?!.*\\\\\\\\)(?!.*\\\\u0000)(?!\\\\.{1,2}(?:/|$))(?!.*\\\\/\\\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$",\n          "type": "string"\n        }\n      },\n      "required": [\n        "path"\n      ],\n      "type": "object"\n    },\n    "kindId": {\n      "minLength": 1,\n      "type": "string"\n    },\n    "knowledgeEcosystem": {\n      "minLength": 1,\n      "type": "string"\n    },\n    "label": {\n      "type": "string"\n    },\n    "parentKinds": {\n      "items": {\n        "minLength": 1,\n        "type": "string"\n      },\n      "type": "array"\n    },\n    "selector": {\n      "additionalProperties": false,\n      "properties": {\n        "facets": {\n          "items": {\n            "minLength": 1,\n            "type": "string"\n          },\n          "type": "array"\n        },\n        "predicates": {\n          "items": {\n            "additionalProperties": false,\n            "properties": {\n              "id": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "label": {\n                "type": "string"\n              },\n              "params": {\n                "additionalProperties": false,\n                "properties": {\n                  "$ref": {\n                    "minLength": 1,\n                    "type": "string"\n                  },\n                  "document": {\n                    "title": "JsonValue"\n                  }\n                },\n                "required": [\n                  "$ref"\n                ],\n                "type": "object"\n              }\n            },\n            "required": [\n              "id",\n              "label"\n            ],\n            "type": "object"\n          },\n          "type": "array"\n        }\n      },\n      "required": [\n        "facets",\n        "predicates"\n      ],\n      "type": "object"\n    }\n  },\n  "required": [\n    "kindId",\n    "label"\n  ],\n  "type": "object"\n}\n', subjectKindDefinitionSpecV1],
   ['{\n  "$id": "https://schemas.modkit.org/x3/source-span.v1.schema.json",\n  "$schema": "https://json-schema.org/draft/2020-12/schema",\n  "oneOf": [\n    {\n      "additionalProperties": false,\n      "properties": {\n        "byteLength": {\n          "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$",\n          "type": "string"\n        },\n        "byteOffset": {\n          "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$",\n          "type": "string"\n        }\n      },\n      "required": [\n        "byteOffset",\n        "byteLength"\n      ],\n      "type": "object"\n    },\n    {\n      "additionalProperties": false,\n      "properties": {\n        "column": {\n          "maximum": 9007199254740991,\n          "minimum": 0,\n          "type": "integer"\n        },\n        "line": {\n          "maximum": 9007199254740991,\n          "minimum": 0,\n          "type": "integer"\n        },\n        "utf16Length": {\n          "maximum": 9007199254740991,\n          "minimum": 0,\n          "type": "integer"\n        },\n        "utf16Offset": {\n          "maximum": 9007199254740991,\n          "minimum": 0,\n          "type": "integer"\n        }\n      },\n      "required": [\n        "utf16Offset",\n        "utf16Length",\n        "line",\n        "column"\n      ],\n      "type": "object"\n    },\n    {\n      "additionalProperties": false,\n      "properties": {\n        "byteLength": {\n          "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$",\n          "type": "string"\n        },\n        "byteOffset": {\n          "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$",\n          "type": "string"\n        },\n        "column": {\n          "maximum": 9007199254740991,\n          "minimum": 0,\n          "type": "integer"\n        },\n        "line": {\n          "maximum": 9007199254740991,\n          "minimum": 0,\n          "type": "integer"\n        },\n        "utf16Length": {\n          "maximum": 9007199254740991,\n          "minimum": 0,\n          "type": "integer"\n        },\n        "utf16Offset": {\n          "maximum": 9007199254740991,\n          "minimum": 0,\n          "type": "integer"\n        }\n      },\n      "required": [\n        "byteOffset",\n        "byteLength",\n        "utf16Offset",\n        "utf16Length",\n        "line",\n        "column"\n      ],\n      "type": "object"\n    }\n  ]\n}\n', sourceSpanV1],
-  ['{\n  "$id": "https://schemas.modkit.org/x3/extension-manifest.v1.schema.json",\n  "$schema": "https://json-schema.org/draft/2020-12/schema",\n  "additionalProperties": false,\n  "properties": {\n    "contentSources": {\n      "pattern": "^(?:\\\\./)?(?![A-Za-z]:)(?!\\\\\\\\)(?!.*\\\\\\\\)(?!.*\\\\u0000)(?!\\\\.{1,2}(?:/|$))(?!.*\\\\/\\\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$",\n      "type": "string"\n    },\n    "contributionManifests": {\n      "items": {\n        "minLength": 1,\n        "type": "string"\n      },\n      "type": "array"\n    },\n    "credentials": {\n      "items": {\n        "additionalProperties": false,\n        "properties": {\n          "audience": {\n            "items": {\n              "maxLength": 512,\n              "pattern": "^https?://[^\\\\s]+$",\n              "type": "string"\n            },\n            "maxItems": 16,\n            "type": "array"\n          },\n          "environment": {\n            "pattern": "^[A-Z][A-Z0-9_]{0,63}$",\n            "type": "string"\n          },\n          "header": {\n            "pattern": "^[A-Za-z0-9-]{1,64}$",\n            "type": "string"\n          },\n          "id": {\n            "maxLength": 128,\n            "pattern": "^[a-z0-9][a-z0-9.-]*/[a-z0-9][a-z0-9._-]*$",\n            "type": "string"\n          },\n          "kind": {\n            "enum": [\n              "api-key",\n              "oauth2-pkce",\n              "provider-session",\n              "symmetric-key"\n            ]\n          },\n          "label": {\n            "maxLength": 128,\n            "minLength": 1,\n            "type": "string"\n          },\n          "oauth": {\n            "additionalProperties": false,\n            "properties": {\n              "authorizationEndpoint": {\n                "maxLength": 512,\n                "pattern": "^https?://[^\\\\s]+$",\n                "type": "string"\n              },\n              "clientId": {\n                "maxLength": 256,\n                "minLength": 1,\n                "type": "string"\n              },\n              "clientIdSetting": {\n                "pattern": "^[A-Za-z0-9._-]{1,64}$",\n                "type": "string"\n              },\n              "loopbackHost": {\n                "enum": [\n                  "localhost",\n                  "127.0.0.1"\n                ]\n              },\n              "loopbackPort": {\n                "maximum": 65535,\n                "minimum": 1024,\n                "type": "integer"\n              },\n              "revocationEndpoint": {\n                "maxLength": 512,\n                "pattern": "^https?://[^\\\\s]+$",\n                "type": "string"\n              },\n              "tokenEndpoint": {\n                "maxLength": 512,\n                "pattern": "^https?://[^\\\\s]+$",\n                "type": "string"\n              }\n            },\n            "required": [\n              "authorizationEndpoint",\n              "tokenEndpoint"\n            ],\n            "type": "object"\n          },\n          "replacesApplicationSettings": {\n            "items": {\n              "additionalProperties": false,\n              "properties": {\n                "scoped": {\n                  "const": true\n                },\n                "setting": {\n                  "maxLength": 128,\n                  "pattern": "^[A-Za-z][A-Za-z0-9]*(?:\\\\.[A-Za-z0-9_-]+)+$",\n                  "type": "string"\n                }\n              },\n              "required": [\n                "setting"\n              ],\n              "type": "object"\n            },\n            "maxItems": 16,\n            "type": "array"\n          },\n          "replacesSettings": {\n            "items": {\n              "additionalProperties": false,\n              "properties": {\n                "contribution": {\n                  "maxLength": 256,\n                  "minLength": 1,\n                  "type": "string"\n                },\n                "key": {\n                  "pattern": "^[A-Za-z0-9._-]{1,64}$",\n                  "type": "string"\n                },\n                "scoped": {\n                  "const": true\n                }\n              },\n              "required": [\n                "contribution",\n                "key"\n              ],\n              "type": "object"\n            },\n            "maxItems": 16,\n            "type": "array"\n          },\n          "scopeFormat": {\n            "enum": [\n              "hex"\n            ]\n          },\n          "scoped": {\n            "type": "boolean"\n          },\n          "scopes": {\n            "items": {\n              "maxLength": 128,\n              "minLength": 1,\n              "type": "string"\n            },\n            "maxItems": 32,\n            "type": "array"\n          }\n        },\n        "required": [\n          "id",\n          "kind",\n          "label"\n        ],\n        "type": "object"\n      },\n      "maxItems": 32,\n      "type": "array"\n    },\n    "dependsOn": {\n      "items": {\n        "$id": "https://schemas.modkit.org/x3/extension-requirement.v1.schema.json",\n        "$schema": "https://json-schema.org/draft/2020-12/schema",\n        "additionalProperties": false,\n        "properties": {\n          "extension": {\n            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n            "type": "string"\n          },\n          "mode": {\n            "enum": [\n              "required",\n              "default",\n              "suggested",\n              "integrates"\n            ]\n          },\n          "range": {\n            "pattern": "^(?:\\\\*|x|(?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2}))*)$",\n            "type": "string"\n          },\n          "scope": {\n            "additionalProperties": false,\n            "properties": {\n              "id": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "kind": {\n                "enum": [\n                  "contribution",\n                  "offer",\n                  "operation",\n                  "intent",\n                  "variant",\n                  "profile",\n                  "projection",\n                  "slot"\n                ]\n              }\n            },\n            "required": [\n              "kind",\n              "id"\n            ],\n            "type": "object"\n          }\n        },\n        "required": [\n          "extension",\n          "mode",\n          "scope"\n        ],\n        "type": "object"\n      },\n      "type": "array"\n    },\n    "id": {\n      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n      "type": "string"\n    },\n    "languageFiles": {\n      "items": {\n        "additionalProperties": false,\n        "properties": {\n          "dialect": {\n            "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",\n            "type": "string"\n          },\n          "extension": {\n            "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",\n            "type": "string"\n          },\n          "languageId": {\n            "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",\n            "type": "string"\n          }\n        },\n        "required": [\n          "extension",\n          "languageId"\n        ],\n        "type": "object"\n      },\n      "maxItems": 64,\n      "type": "array"\n    },\n    "license": {\n      "minLength": 1,\n      "type": "string"\n    },\n    "presentation": {\n      "additionalProperties": false,\n      "properties": {\n        "description": {\n          "minLength": 1,\n          "type": "string"\n        },\n        "displayName": {\n          "minLength": 1,\n          "type": "string"\n        },\n        "games": {\n          "items": {\n            "additionalProperties": false,\n            "properties": {\n              "displayName": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "id": {\n                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n                "type": "string"\n              }\n            },\n            "required": [\n              "id",\n              "displayName"\n            ],\n            "type": "object"\n          },\n          "type": "array"\n        },\n        "icon": {\n          "additionalProperties": false,\n          "properties": {\n            "displayName": {\n              "minLength": 1,\n              "type": "string"\n            },\n            "mediaType": {\n              "minLength": 1,\n              "type": "string"\n            },\n            "path": {\n              "pattern": "^(?:\\\\./)?(?![A-Za-z]:)(?!\\\\\\\\)(?!.*\\\\\\\\)(?!.*\\\\u0000)(?!\\\\.{1,2}(?:/|$))(?!.*\\\\/\\\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$",\n              "type": "string"\n            }\n          },\n          "required": [\n            "path"\n          ],\n          "type": "object"\n        },\n        "licenseFiles": {\n          "items": {\n            "additionalProperties": false,\n            "properties": {\n              "displayName": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "mediaType": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "path": {\n                "pattern": "^(?:\\\\./)?(?![A-Za-z]:)(?!\\\\\\\\)(?!.*\\\\\\\\)(?!.*\\\\u0000)(?!\\\\.{1,2}(?:/|$))(?!.*\\\\/\\\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$",\n                "type": "string"\n              }\n            },\n            "required": [\n              "path"\n            ],\n            "type": "object"\n          },\n          "type": "array"\n        },\n        "source": {\n          "oneOf": [\n            {\n              "additionalProperties": false,\n              "properties": {\n                "kind": {\n                  "const": "root"\n                },\n                "root": {\n                  "pattern": "^(?:\\\\./)?(?![A-Za-z]:)(?!\\\\\\\\)(?!.*\\\\\\\\)(?!.*\\\\u0000)(?!\\\\.{1,2}(?:/|$))(?!.*\\\\/\\\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$",\n                  "type": "string"\n                }\n              },\n              "required": [\n                "kind",\n                "root"\n              ],\n              "type": "object"\n            },\n            {\n              "additionalProperties": false,\n              "properties": {\n                "kind": {\n                  "const": "url"\n                },\n                "url": {\n                  "pattern": "^https?://[^\\\\s]+$",\n                  "type": "string"\n                }\n              },\n              "required": [\n                "kind",\n                "url"\n              ],\n              "type": "object"\n            }\n          ]\n        },\n        "vendor": {\n          "additionalProperties": false,\n          "properties": {\n            "displayName": {\n              "minLength": 1,\n              "type": "string"\n            },\n            "id": {\n              "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n              "type": "string"\n            }\n          },\n          "required": [\n            "id",\n            "displayName"\n          ],\n          "type": "object"\n        }\n      },\n      "type": "object"\n    },\n    "publisher": {\n      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n      "type": "string"\n    },\n    "schemaVersion": {\n      "const": 1\n    },\n    "version": {\n      "pattern": "^(0|[1-9]\\\\d*)\\\\.(0|[1-9]\\\\d*)\\\\.(0|[1-9]\\\\d*)(?:-((?:0|[1-9]\\\\d*|\\\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\\\.(?:0|[1-9]\\\\d*|\\\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\\\+([0-9a-zA-Z-]+(?:\\\\.[0-9a-zA-Z-]+)*))?$",\n      "type": "string"\n    },\n    "workspaceMarkers": {\n      "items": {\n        "maxLength": 128,\n        "pattern": "^(?!/)(?![A-Za-z]:)[^\\\\\\\\\\\\u0000]+$",\n        "type": "string"\n      },\n      "maxItems": 32,\n      "type": "array"\n    }\n  },\n  "required": [\n    "schemaVersion",\n    "publisher",\n    "id",\n    "version",\n    "license",\n    "contributionManifests"\n  ],\n  "type": "object"\n}\n', extensionManifestV1],
-  ['{\n  "$id": "https://schemas.modkit.org/x3/extension-manifest-modkit-block.v1.schema.json",\n  "$schema": "https://json-schema.org/draft/2020-12/schema",\n  "additionalProperties": false,\n  "properties": {\n    "contentSources": {\n      "pattern": "^(?:\\\\./)?(?![A-Za-z]:)(?!\\\\\\\\)(?!.*\\\\\\\\)(?!.*\\\\u0000)(?!\\\\.{1,2}(?:/|$))(?!.*\\\\/\\\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$",\n      "type": "string"\n    },\n    "contributionManifests": {\n      "items": {\n        "minLength": 1,\n        "type": "string"\n      },\n      "type": "array"\n    },\n    "credentials": {\n      "items": {\n        "additionalProperties": false,\n        "properties": {\n          "audience": {\n            "items": {\n              "maxLength": 512,\n              "pattern": "^https?://[^\\\\s]+$",\n              "type": "string"\n            },\n            "maxItems": 16,\n            "type": "array"\n          },\n          "environment": {\n            "pattern": "^[A-Z][A-Z0-9_]{0,63}$",\n            "type": "string"\n          },\n          "header": {\n            "pattern": "^[A-Za-z0-9-]{1,64}$",\n            "type": "string"\n          },\n          "id": {\n            "maxLength": 128,\n            "pattern": "^[a-z0-9][a-z0-9.-]*/[a-z0-9][a-z0-9._-]*$",\n            "type": "string"\n          },\n          "kind": {\n            "enum": [\n              "api-key",\n              "oauth2-pkce",\n              "provider-session",\n              "symmetric-key"\n            ]\n          },\n          "label": {\n            "maxLength": 128,\n            "minLength": 1,\n            "type": "string"\n          },\n          "oauth": {\n            "additionalProperties": false,\n            "properties": {\n              "authorizationEndpoint": {\n                "maxLength": 512,\n                "pattern": "^https?://[^\\\\s]+$",\n                "type": "string"\n              },\n              "clientId": {\n                "maxLength": 256,\n                "minLength": 1,\n                "type": "string"\n              },\n              "clientIdSetting": {\n                "pattern": "^[A-Za-z0-9._-]{1,64}$",\n                "type": "string"\n              },\n              "loopbackHost": {\n                "enum": [\n                  "localhost",\n                  "127.0.0.1"\n                ]\n              },\n              "loopbackPort": {\n                "maximum": 65535,\n                "minimum": 1024,\n                "type": "integer"\n              },\n              "revocationEndpoint": {\n                "maxLength": 512,\n                "pattern": "^https?://[^\\\\s]+$",\n                "type": "string"\n              },\n              "tokenEndpoint": {\n                "maxLength": 512,\n                "pattern": "^https?://[^\\\\s]+$",\n                "type": "string"\n              }\n            },\n            "required": [\n              "authorizationEndpoint",\n              "tokenEndpoint"\n            ],\n            "type": "object"\n          },\n          "replacesApplicationSettings": {\n            "items": {\n              "additionalProperties": false,\n              "properties": {\n                "scoped": {\n                  "const": true\n                },\n                "setting": {\n                  "maxLength": 128,\n                  "pattern": "^[A-Za-z][A-Za-z0-9]*(?:\\\\.[A-Za-z0-9_-]+)+$",\n                  "type": "string"\n                }\n              },\n              "required": [\n                "setting"\n              ],\n              "type": "object"\n            },\n            "maxItems": 16,\n            "type": "array"\n          },\n          "replacesSettings": {\n            "items": {\n              "additionalProperties": false,\n              "properties": {\n                "contribution": {\n                  "maxLength": 256,\n                  "minLength": 1,\n                  "type": "string"\n                },\n                "key": {\n                  "pattern": "^[A-Za-z0-9._-]{1,64}$",\n                  "type": "string"\n                },\n                "scoped": {\n                  "const": true\n                }\n              },\n              "required": [\n                "contribution",\n                "key"\n              ],\n              "type": "object"\n            },\n            "maxItems": 16,\n            "type": "array"\n          },\n          "scopeFormat": {\n            "enum": [\n              "hex"\n            ]\n          },\n          "scoped": {\n            "type": "boolean"\n          },\n          "scopes": {\n            "items": {\n              "maxLength": 128,\n              "minLength": 1,\n              "type": "string"\n            },\n            "maxItems": 32,\n            "type": "array"\n          }\n        },\n        "required": [\n          "id",\n          "kind",\n          "label"\n        ],\n        "type": "object"\n      },\n      "maxItems": 32,\n      "type": "array"\n    },\n    "dependsOn": {\n      "items": {\n        "$id": "https://schemas.modkit.org/x3/extension-requirement.v1.schema.json",\n        "$schema": "https://json-schema.org/draft/2020-12/schema",\n        "additionalProperties": false,\n        "properties": {\n          "extension": {\n            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n            "type": "string"\n          },\n          "mode": {\n            "enum": [\n              "required",\n              "default",\n              "suggested",\n              "integrates"\n            ]\n          },\n          "range": {\n            "pattern": "^(?:\\\\*|x|(?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2}))*)$",\n            "type": "string"\n          },\n          "scope": {\n            "additionalProperties": false,\n            "properties": {\n              "id": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "kind": {\n                "enum": [\n                  "contribution",\n                  "offer",\n                  "operation",\n                  "intent",\n                  "variant",\n                  "profile",\n                  "projection",\n                  "slot"\n                ]\n              }\n            },\n            "required": [\n              "kind",\n              "id"\n            ],\n            "type": "object"\n          }\n        },\n        "required": [\n          "extension",\n          "mode",\n          "scope"\n        ],\n        "type": "object"\n      },\n      "type": "array"\n    },\n    "id": {\n      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n      "type": "string"\n    },\n    "languageFiles": {\n      "items": {\n        "additionalProperties": false,\n        "properties": {\n          "dialect": {\n            "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",\n            "type": "string"\n          },\n          "extension": {\n            "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",\n            "type": "string"\n          },\n          "languageId": {\n            "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",\n            "type": "string"\n          }\n        },\n        "required": [\n          "extension",\n          "languageId"\n        ],\n        "type": "object"\n      },\n      "maxItems": 64,\n      "type": "array"\n    },\n    "presentation": {\n      "additionalProperties": false,\n      "properties": {\n        "description": {\n          "minLength": 1,\n          "type": "string"\n        },\n        "displayName": {\n          "minLength": 1,\n          "type": "string"\n        },\n        "games": {\n          "items": {\n            "additionalProperties": false,\n            "properties": {\n              "displayName": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "id": {\n                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n                "type": "string"\n              }\n            },\n            "required": [\n              "id",\n              "displayName"\n            ],\n            "type": "object"\n          },\n          "type": "array"\n        },\n        "icon": {\n          "additionalProperties": false,\n          "properties": {\n            "displayName": {\n              "minLength": 1,\n              "type": "string"\n            },\n            "mediaType": {\n              "minLength": 1,\n              "type": "string"\n            },\n            "path": {\n              "pattern": "^(?:\\\\./)?(?![A-Za-z]:)(?!\\\\\\\\)(?!.*\\\\\\\\)(?!.*\\\\u0000)(?!\\\\.{1,2}(?:/|$))(?!.*\\\\/\\\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$",\n              "type": "string"\n            }\n          },\n          "required": [\n            "path"\n          ],\n          "type": "object"\n        },\n        "licenseFiles": {\n          "items": {\n            "additionalProperties": false,\n            "properties": {\n              "displayName": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "mediaType": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "path": {\n                "pattern": "^(?:\\\\./)?(?![A-Za-z]:)(?!\\\\\\\\)(?!.*\\\\\\\\)(?!.*\\\\u0000)(?!\\\\.{1,2}(?:/|$))(?!.*\\\\/\\\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$",\n                "type": "string"\n              }\n            },\n            "required": [\n              "path"\n            ],\n            "type": "object"\n          },\n          "type": "array"\n        },\n        "source": {\n          "oneOf": [\n            {\n              "additionalProperties": false,\n              "properties": {\n                "kind": {\n                  "const": "root"\n                },\n                "root": {\n                  "pattern": "^(?:\\\\./)?(?![A-Za-z]:)(?!\\\\\\\\)(?!.*\\\\\\\\)(?!.*\\\\u0000)(?!\\\\.{1,2}(?:/|$))(?!.*\\\\/\\\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$",\n                  "type": "string"\n                }\n              },\n              "required": [\n                "kind",\n                "root"\n              ],\n              "type": "object"\n            },\n            {\n              "additionalProperties": false,\n              "properties": {\n                "kind": {\n                  "const": "url"\n                },\n                "url": {\n                  "pattern": "^https?://[^\\\\s]+$",\n                  "type": "string"\n                }\n              },\n              "required": [\n                "kind",\n                "url"\n              ],\n              "type": "object"\n            }\n          ]\n        },\n        "vendor": {\n          "additionalProperties": false,\n          "properties": {\n            "displayName": {\n              "minLength": 1,\n              "type": "string"\n            },\n            "id": {\n              "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n              "type": "string"\n            }\n          },\n          "required": [\n            "id",\n            "displayName"\n          ],\n          "type": "object"\n        }\n      },\n      "type": "object"\n    },\n    "publisher": {\n      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n      "type": "string"\n    },\n    "schemaVersion": {\n      "const": 1\n    },\n    "workspaceMarkers": {\n      "items": {\n        "maxLength": 128,\n        "pattern": "^(?!/)(?![A-Za-z]:)[^\\\\\\\\\\\\u0000]+$",\n        "type": "string"\n      },\n      "maxItems": 32,\n      "type": "array"\n    }\n  },\n  "required": [\n    "schemaVersion",\n    "publisher",\n    "id",\n    "contributionManifests"\n  ],\n  "type": "object"\n}\n', extensionManifestModkitBlockV1],
+  ['{\n  "$id": "https://schemas.modkit.org/x3/extension-manifest.v1.schema.json",\n  "$schema": "https://json-schema.org/draft/2020-12/schema",\n  "additionalProperties": false,\n  "properties": {\n    "contentSources": {\n      "pattern": "^(?:\\\\./)?(?![A-Za-z]:)(?!\\\\\\\\)(?!.*\\\\\\\\)(?!.*\\\\u0000)(?!\\\\.{1,2}(?:/|$))(?!.*\\\\/\\\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$",\n      "type": "string"\n    },\n    "contributionManifests": {\n      "items": {\n        "minLength": 1,\n        "type": "string"\n      },\n      "type": "array"\n    },\n    "credentials": {\n      "items": {\n        "additionalProperties": false,\n        "properties": {\n          "audience": {\n            "items": {\n              "maxLength": 512,\n              "pattern": "^https?://[^\\\\s]+$",\n              "type": "string"\n            },\n            "maxItems": 16,\n            "type": "array"\n          },\n          "environment": {\n            "pattern": "^[A-Z][A-Z0-9_]{0,63}$",\n            "type": "string"\n          },\n          "header": {\n            "pattern": "^[A-Za-z0-9-]{1,64}$",\n            "type": "string"\n          },\n          "id": {\n            "maxLength": 128,\n            "pattern": "^[a-z0-9][a-z0-9.-]*/[a-z0-9][a-z0-9._-]*$",\n            "type": "string"\n          },\n          "kind": {\n            "enum": [\n              "api-key",\n              "oauth2-pkce",\n              "provider-session",\n              "symmetric-key"\n            ]\n          },\n          "label": {\n            "maxLength": 128,\n            "minLength": 1,\n            "type": "string"\n          },\n          "oauth": {\n            "additionalProperties": false,\n            "properties": {\n              "authorizationEndpoint": {\n                "maxLength": 512,\n                "pattern": "^https?://[^\\\\s]+$",\n                "type": "string"\n              },\n              "clientId": {\n                "maxLength": 256,\n                "minLength": 1,\n                "type": "string"\n              },\n              "clientIdSetting": {\n                "pattern": "^[A-Za-z0-9._-]{1,64}$",\n                "type": "string"\n              },\n              "loopbackHost": {\n                "enum": [\n                  "localhost",\n                  "127.0.0.1"\n                ]\n              },\n              "loopbackPort": {\n                "maximum": 65535,\n                "minimum": 1024,\n                "type": "integer"\n              },\n              "revocationEndpoint": {\n                "maxLength": 512,\n                "pattern": "^https?://[^\\\\s]+$",\n                "type": "string"\n              },\n              "tokenEndpoint": {\n                "maxLength": 512,\n                "pattern": "^https?://[^\\\\s]+$",\n                "type": "string"\n              }\n            },\n            "required": [\n              "authorizationEndpoint",\n              "tokenEndpoint"\n            ],\n            "type": "object"\n          },\n          "replacesApplicationSettings": {\n            "items": {\n              "additionalProperties": false,\n              "properties": {\n                "scoped": {\n                  "const": true\n                },\n                "setting": {\n                  "maxLength": 128,\n                  "pattern": "^[A-Za-z][A-Za-z0-9]*(?:\\\\.[A-Za-z0-9_-]+)+$",\n                  "type": "string"\n                }\n              },\n              "required": [\n                "setting"\n              ],\n              "type": "object"\n            },\n            "maxItems": 16,\n            "type": "array"\n          },\n          "replacesSettings": {\n            "items": {\n              "additionalProperties": false,\n              "properties": {\n                "contribution": {\n                  "maxLength": 256,\n                  "minLength": 1,\n                  "type": "string"\n                },\n                "key": {\n                  "pattern": "^[A-Za-z0-9._-]{1,64}$",\n                  "type": "string"\n                },\n                "scoped": {\n                  "const": true\n                }\n              },\n              "required": [\n                "contribution",\n                "key"\n              ],\n              "type": "object"\n            },\n            "maxItems": 16,\n            "type": "array"\n          },\n          "scopeFormat": {\n            "enum": [\n              "hex"\n            ]\n          },\n          "scoped": {\n            "type": "boolean"\n          },\n          "scopes": {\n            "items": {\n              "maxLength": 128,\n              "minLength": 1,\n              "type": "string"\n            },\n            "maxItems": 32,\n            "type": "array"\n          }\n        },\n        "required": [\n          "id",\n          "kind",\n          "label"\n        ],\n        "type": "object"\n      },\n      "maxItems": 32,\n      "type": "array"\n    },\n    "dependsOn": {\n      "items": {\n        "$id": "https://schemas.modkit.org/x3/extension-requirement.v1.schema.json",\n        "$schema": "https://json-schema.org/draft/2020-12/schema",\n        "additionalProperties": false,\n        "properties": {\n          "extension": {\n            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n            "type": "string"\n          },\n          "mode": {\n            "enum": [\n              "required",\n              "default",\n              "suggested",\n              "integrates"\n            ]\n          },\n          "range": {\n            "pattern": "^(?:\\\\*|x|(?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2}))*)$",\n            "type": "string"\n          },\n          "scope": {\n            "additionalProperties": false,\n            "properties": {\n              "id": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "kind": {\n                "enum": [\n                  "contribution",\n                  "offer",\n                  "operation",\n                  "intent",\n                  "variant",\n                  "profile",\n                  "projection",\n                  "slot"\n                ]\n              }\n            },\n            "required": [\n              "kind",\n              "id"\n            ],\n            "type": "object"\n          }\n        },\n        "required": [\n          "extension",\n          "mode",\n          "scope"\n        ],\n        "type": "object"\n      },\n      "type": "array"\n    },\n    "id": {\n      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n      "type": "string"\n    },\n    "languageFiles": {\n      "items": {\n        "additionalProperties": false,\n        "properties": {\n          "dialect": {\n            "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",\n            "type": "string"\n          },\n          "extension": {\n            "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",\n            "type": "string"\n          },\n          "languageId": {\n            "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",\n            "type": "string"\n          },\n          "rootElement": {\n            "pattern": "^[A-Za-z_][A-Za-z0-9._-]{0,127}$",\n            "type": "string"\n          }\n        },\n        "required": [\n          "extension",\n          "languageId"\n        ],\n        "type": "object"\n      },\n      "maxItems": 64,\n      "type": "array"\n    },\n    "license": {\n      "minLength": 1,\n      "type": "string"\n    },\n    "presentation": {\n      "additionalProperties": false,\n      "properties": {\n        "description": {\n          "minLength": 1,\n          "type": "string"\n        },\n        "displayName": {\n          "minLength": 1,\n          "type": "string"\n        },\n        "games": {\n          "items": {\n            "additionalProperties": false,\n            "properties": {\n              "displayName": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "id": {\n                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n                "type": "string"\n              }\n            },\n            "required": [\n              "id",\n              "displayName"\n            ],\n            "type": "object"\n          },\n          "type": "array"\n        },\n        "icon": {\n          "additionalProperties": false,\n          "properties": {\n            "displayName": {\n              "minLength": 1,\n              "type": "string"\n            },\n            "mediaType": {\n              "minLength": 1,\n              "type": "string"\n            },\n            "path": {\n              "pattern": "^(?:\\\\./)?(?![A-Za-z]:)(?!\\\\\\\\)(?!.*\\\\\\\\)(?!.*\\\\u0000)(?!\\\\.{1,2}(?:/|$))(?!.*\\\\/\\\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$",\n              "type": "string"\n            }\n          },\n          "required": [\n            "path"\n          ],\n          "type": "object"\n        },\n        "licenseFiles": {\n          "items": {\n            "additionalProperties": false,\n            "properties": {\n              "displayName": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "mediaType": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "path": {\n                "pattern": "^(?:\\\\./)?(?![A-Za-z]:)(?!\\\\\\\\)(?!.*\\\\\\\\)(?!.*\\\\u0000)(?!\\\\.{1,2}(?:/|$))(?!.*\\\\/\\\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$",\n                "type": "string"\n              }\n            },\n            "required": [\n              "path"\n            ],\n            "type": "object"\n          },\n          "type": "array"\n        },\n        "source": {\n          "oneOf": [\n            {\n              "additionalProperties": false,\n              "properties": {\n                "kind": {\n                  "const": "root"\n                },\n                "root": {\n                  "pattern": "^(?:\\\\./)?(?![A-Za-z]:)(?!\\\\\\\\)(?!.*\\\\\\\\)(?!.*\\\\u0000)(?!\\\\.{1,2}(?:/|$))(?!.*\\\\/\\\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$",\n                  "type": "string"\n                }\n              },\n              "required": [\n                "kind",\n                "root"\n              ],\n              "type": "object"\n            },\n            {\n              "additionalProperties": false,\n              "properties": {\n                "kind": {\n                  "const": "url"\n                },\n                "url": {\n                  "pattern": "^https?://[^\\\\s]+$",\n                  "type": "string"\n                }\n              },\n              "required": [\n                "kind",\n                "url"\n              ],\n              "type": "object"\n            }\n          ]\n        },\n        "vendor": {\n          "additionalProperties": false,\n          "properties": {\n            "displayName": {\n              "minLength": 1,\n              "type": "string"\n            },\n            "id": {\n              "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n              "type": "string"\n            }\n          },\n          "required": [\n            "id",\n            "displayName"\n          ],\n          "type": "object"\n        }\n      },\n      "type": "object"\n    },\n    "publisher": {\n      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n      "type": "string"\n    },\n    "schemaVersion": {\n      "const": 1\n    },\n    "version": {\n      "pattern": "^(0|[1-9]\\\\d*)\\\\.(0|[1-9]\\\\d*)\\\\.(0|[1-9]\\\\d*)(?:-((?:0|[1-9]\\\\d*|\\\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\\\.(?:0|[1-9]\\\\d*|\\\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\\\+([0-9a-zA-Z-]+(?:\\\\.[0-9a-zA-Z-]+)*))?$",\n      "type": "string"\n    },\n    "workspaceMarkers": {\n      "items": {\n        "maxLength": 128,\n        "pattern": "^(?!/)(?![A-Za-z]:)[^\\\\\\\\\\\\u0000]+$",\n        "type": "string"\n      },\n      "maxItems": 32,\n      "type": "array"\n    }\n  },\n  "required": [\n    "schemaVersion",\n    "publisher",\n    "id",\n    "version",\n    "license",\n    "contributionManifests"\n  ],\n  "type": "object"\n}\n', extensionManifestV1],
+  ['{\n  "$id": "https://schemas.modkit.org/x3/extension-manifest-modkit-block.v1.schema.json",\n  "$schema": "https://json-schema.org/draft/2020-12/schema",\n  "additionalProperties": false,\n  "properties": {\n    "contentSources": {\n      "pattern": "^(?:\\\\./)?(?![A-Za-z]:)(?!\\\\\\\\)(?!.*\\\\\\\\)(?!.*\\\\u0000)(?!\\\\.{1,2}(?:/|$))(?!.*\\\\/\\\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$",\n      "type": "string"\n    },\n    "contributionManifests": {\n      "items": {\n        "minLength": 1,\n        "type": "string"\n      },\n      "type": "array"\n    },\n    "credentials": {\n      "items": {\n        "additionalProperties": false,\n        "properties": {\n          "audience": {\n            "items": {\n              "maxLength": 512,\n              "pattern": "^https?://[^\\\\s]+$",\n              "type": "string"\n            },\n            "maxItems": 16,\n            "type": "array"\n          },\n          "environment": {\n            "pattern": "^[A-Z][A-Z0-9_]{0,63}$",\n            "type": "string"\n          },\n          "header": {\n            "pattern": "^[A-Za-z0-9-]{1,64}$",\n            "type": "string"\n          },\n          "id": {\n            "maxLength": 128,\n            "pattern": "^[a-z0-9][a-z0-9.-]*/[a-z0-9][a-z0-9._-]*$",\n            "type": "string"\n          },\n          "kind": {\n            "enum": [\n              "api-key",\n              "oauth2-pkce",\n              "provider-session",\n              "symmetric-key"\n            ]\n          },\n          "label": {\n            "maxLength": 128,\n            "minLength": 1,\n            "type": "string"\n          },\n          "oauth": {\n            "additionalProperties": false,\n            "properties": {\n              "authorizationEndpoint": {\n                "maxLength": 512,\n                "pattern": "^https?://[^\\\\s]+$",\n                "type": "string"\n              },\n              "clientId": {\n                "maxLength": 256,\n                "minLength": 1,\n                "type": "string"\n              },\n              "clientIdSetting": {\n                "pattern": "^[A-Za-z0-9._-]{1,64}$",\n                "type": "string"\n              },\n              "loopbackHost": {\n                "enum": [\n                  "localhost",\n                  "127.0.0.1"\n                ]\n              },\n              "loopbackPort": {\n                "maximum": 65535,\n                "minimum": 1024,\n                "type": "integer"\n              },\n              "revocationEndpoint": {\n                "maxLength": 512,\n                "pattern": "^https?://[^\\\\s]+$",\n                "type": "string"\n              },\n              "tokenEndpoint": {\n                "maxLength": 512,\n                "pattern": "^https?://[^\\\\s]+$",\n                "type": "string"\n              }\n            },\n            "required": [\n              "authorizationEndpoint",\n              "tokenEndpoint"\n            ],\n            "type": "object"\n          },\n          "replacesApplicationSettings": {\n            "items": {\n              "additionalProperties": false,\n              "properties": {\n                "scoped": {\n                  "const": true\n                },\n                "setting": {\n                  "maxLength": 128,\n                  "pattern": "^[A-Za-z][A-Za-z0-9]*(?:\\\\.[A-Za-z0-9_-]+)+$",\n                  "type": "string"\n                }\n              },\n              "required": [\n                "setting"\n              ],\n              "type": "object"\n            },\n            "maxItems": 16,\n            "type": "array"\n          },\n          "replacesSettings": {\n            "items": {\n              "additionalProperties": false,\n              "properties": {\n                "contribution": {\n                  "maxLength": 256,\n                  "minLength": 1,\n                  "type": "string"\n                },\n                "key": {\n                  "pattern": "^[A-Za-z0-9._-]{1,64}$",\n                  "type": "string"\n                },\n                "scoped": {\n                  "const": true\n                }\n              },\n              "required": [\n                "contribution",\n                "key"\n              ],\n              "type": "object"\n            },\n            "maxItems": 16,\n            "type": "array"\n          },\n          "scopeFormat": {\n            "enum": [\n              "hex"\n            ]\n          },\n          "scoped": {\n            "type": "boolean"\n          },\n          "scopes": {\n            "items": {\n              "maxLength": 128,\n              "minLength": 1,\n              "type": "string"\n            },\n            "maxItems": 32,\n            "type": "array"\n          }\n        },\n        "required": [\n          "id",\n          "kind",\n          "label"\n        ],\n        "type": "object"\n      },\n      "maxItems": 32,\n      "type": "array"\n    },\n    "dependsOn": {\n      "items": {\n        "$id": "https://schemas.modkit.org/x3/extension-requirement.v1.schema.json",\n        "$schema": "https://json-schema.org/draft/2020-12/schema",\n        "additionalProperties": false,\n        "properties": {\n          "extension": {\n            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n            "type": "string"\n          },\n          "mode": {\n            "enum": [\n              "required",\n              "default",\n              "suggested",\n              "integrates"\n            ]\n          },\n          "range": {\n            "pattern": "^(?:\\\\*|x|(?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2}))*)$",\n            "type": "string"\n          },\n          "scope": {\n            "additionalProperties": false,\n            "properties": {\n              "id": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "kind": {\n                "enum": [\n                  "contribution",\n                  "offer",\n                  "operation",\n                  "intent",\n                  "variant",\n                  "profile",\n                  "projection",\n                  "slot"\n                ]\n              }\n            },\n            "required": [\n              "kind",\n              "id"\n            ],\n            "type": "object"\n          }\n        },\n        "required": [\n          "extension",\n          "mode",\n          "scope"\n        ],\n        "type": "object"\n      },\n      "type": "array"\n    },\n    "id": {\n      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n      "type": "string"\n    },\n    "languageFiles": {\n      "items": {\n        "additionalProperties": false,\n        "properties": {\n          "dialect": {\n            "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",\n            "type": "string"\n          },\n          "extension": {\n            "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",\n            "type": "string"\n          },\n          "languageId": {\n            "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",\n            "type": "string"\n          },\n          "rootElement": {\n            "pattern": "^[A-Za-z_][A-Za-z0-9._-]{0,127}$",\n            "type": "string"\n          }\n        },\n        "required": [\n          "extension",\n          "languageId"\n        ],\n        "type": "object"\n      },\n      "maxItems": 64,\n      "type": "array"\n    },\n    "presentation": {\n      "additionalProperties": false,\n      "properties": {\n        "description": {\n          "minLength": 1,\n          "type": "string"\n        },\n        "displayName": {\n          "minLength": 1,\n          "type": "string"\n        },\n        "games": {\n          "items": {\n            "additionalProperties": false,\n            "properties": {\n              "displayName": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "id": {\n                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n                "type": "string"\n              }\n            },\n            "required": [\n              "id",\n              "displayName"\n            ],\n            "type": "object"\n          },\n          "type": "array"\n        },\n        "icon": {\n          "additionalProperties": false,\n          "properties": {\n            "displayName": {\n              "minLength": 1,\n              "type": "string"\n            },\n            "mediaType": {\n              "minLength": 1,\n              "type": "string"\n            },\n            "path": {\n              "pattern": "^(?:\\\\./)?(?![A-Za-z]:)(?!\\\\\\\\)(?!.*\\\\\\\\)(?!.*\\\\u0000)(?!\\\\.{1,2}(?:/|$))(?!.*\\\\/\\\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$",\n              "type": "string"\n            }\n          },\n          "required": [\n            "path"\n          ],\n          "type": "object"\n        },\n        "licenseFiles": {\n          "items": {\n            "additionalProperties": false,\n            "properties": {\n              "displayName": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "mediaType": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "path": {\n                "pattern": "^(?:\\\\./)?(?![A-Za-z]:)(?!\\\\\\\\)(?!.*\\\\\\\\)(?!.*\\\\u0000)(?!\\\\.{1,2}(?:/|$))(?!.*\\\\/\\\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$",\n                "type": "string"\n              }\n            },\n            "required": [\n              "path"\n            ],\n            "type": "object"\n          },\n          "type": "array"\n        },\n        "source": {\n          "oneOf": [\n            {\n              "additionalProperties": false,\n              "properties": {\n                "kind": {\n                  "const": "root"\n                },\n                "root": {\n                  "pattern": "^(?:\\\\./)?(?![A-Za-z]:)(?!\\\\\\\\)(?!.*\\\\\\\\)(?!.*\\\\u0000)(?!\\\\.{1,2}(?:/|$))(?!.*\\\\/\\\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$",\n                  "type": "string"\n                }\n              },\n              "required": [\n                "kind",\n                "root"\n              ],\n              "type": "object"\n            },\n            {\n              "additionalProperties": false,\n              "properties": {\n                "kind": {\n                  "const": "url"\n                },\n                "url": {\n                  "pattern": "^https?://[^\\\\s]+$",\n                  "type": "string"\n                }\n              },\n              "required": [\n                "kind",\n                "url"\n              ],\n              "type": "object"\n            }\n          ]\n        },\n        "vendor": {\n          "additionalProperties": false,\n          "properties": {\n            "displayName": {\n              "minLength": 1,\n              "type": "string"\n            },\n            "id": {\n              "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n              "type": "string"\n            }\n          },\n          "required": [\n            "id",\n            "displayName"\n          ],\n          "type": "object"\n        }\n      },\n      "type": "object"\n    },\n    "publisher": {\n      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n      "type": "string"\n    },\n    "schemaVersion": {\n      "const": 1\n    },\n    "workspaceMarkers": {\n      "items": {\n        "maxLength": 128,\n        "pattern": "^(?!/)(?![A-Za-z]:)[^\\\\\\\\\\\\u0000]+$",\n        "type": "string"\n      },\n      "maxItems": 32,\n      "type": "array"\n    }\n  },\n  "required": [\n    "schemaVersion",\n    "publisher",\n    "id",\n    "contributionManifests"\n  ],\n  "type": "object"\n}\n', extensionManifestModkitBlockV1],
   ['{\n  "$id": "https://schemas.modkit.org/x3/extension-requirement.v1.schema.json",\n  "$schema": "https://json-schema.org/draft/2020-12/schema",\n  "additionalProperties": false,\n  "properties": {\n    "extension": {\n      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n      "type": "string"\n    },\n    "mode": {\n      "enum": [\n        "required",\n        "default",\n        "suggested",\n        "integrates"\n      ]\n    },\n    "range": {\n      "pattern": "^(?:\\\\*|x|(?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2}))*)$",\n      "type": "string"\n    },\n    "scope": {\n      "additionalProperties": false,\n      "properties": {\n        "id": {\n          "minLength": 1,\n          "type": "string"\n        },\n        "kind": {\n          "enum": [\n            "contribution",\n            "offer",\n            "operation",\n            "intent",\n            "variant",\n            "profile",\n            "projection",\n            "slot"\n          ]\n        }\n      },\n      "required": [\n        "kind",\n        "id"\n      ],\n      "type": "object"\n    }\n  },\n  "required": [\n    "extension",\n    "mode",\n    "scope"\n  ],\n  "type": "object"\n}\n', extensionRequirementV1],
   ['{\n  "$id": "https://schemas.modkit.org/x3/codec-contribution-spec.v1.schema.json",\n  "$schema": "https://json-schema.org/draft/2020-12/schema",\n  "oneOf": [\n    {\n      "additionalProperties": false,\n      "properties": {\n        "anchorDocuments": {\n          "items": {\n            "maxLength": 256,\n            "minLength": 1,\n            "type": "string"\n          },\n          "maxItems": 8,\n          "type": "array"\n        },\n        "artifactStages": {\n          "items": {\n            "enum": [\n              "authored",\n              "compiled",\n              "runtime"\n            ]\n          },\n          "minItems": 1,\n          "type": "array"\n        },\n        "budgets": {\n          "additionalProperties": false,\n          "properties": {\n            "deadlineMs": {\n              "maximum": 9007199254740991,\n              "minimum": 0,\n              "type": "integer"\n            },\n            "maxDepth": {\n              "maximum": 9007199254740991,\n              "minimum": 0,\n              "type": "integer"\n            },\n            "maxDiagnostics": {\n              "maximum": 9007199254740991,\n              "minimum": 0,\n              "type": "integer"\n            },\n            "maxInputBytes": {\n              "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$",\n              "type": "string"\n            },\n            "maxNodes": {\n              "maximum": 9007199254740991,\n              "minimum": 0,\n              "type": "integer"\n            },\n            "maxScalarBytes": {\n              "maximum": 9007199254740991,\n              "minimum": 0,\n              "type": "integer"\n            }\n          },\n          "required": [\n            "maxInputBytes",\n            "maxDepth",\n            "maxNodes",\n            "maxScalarBytes",\n            "maxDiagnostics"\n          ],\n          "type": "object"\n        },\n        "companions": {\n          "items": {\n            "additionalProperties": false,\n            "properties": {\n              "expected": {\n                "additionalProperties": false,\n                "properties": {\n                  "all": {\n                    "items": {\n                      "additionalProperties": false,\n                      "properties": {\n                        "definitionRange": {\n                          "pattern": "^(?:\\\\*|x|(?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2}))*)$",\n                          "type": "string"\n                        },\n                        "id": {\n                          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n                          "type": "string"\n                        },\n                        "states": {\n                          "items": {\n                            "enum": [\n                              "available",\n                              "partial",\n                              "disabled",\n                              "dependency-required"\n                            ]\n                          },\n                          "minItems": 1,\n                          "type": "array",\n                          "uniqueItems": true\n                        }\n                      },\n                      "required": [\n                        "id"\n                      ],\n                      "type": "object"\n                    },\n                    "type": "array"\n                  },\n                  "any": {\n                    "items": {\n                      "additionalProperties": false,\n                      "properties": {\n                        "definitionRange": {\n                          "pattern": "^(?:\\\\*|x|(?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2}))*)$",\n                          "type": "string"\n                        },\n                        "id": {\n                          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n                          "type": "string"\n                        },\n                        "states": {\n                          "items": {\n                            "enum": [\n                              "available",\n                              "partial",\n                              "disabled",\n                              "dependency-required"\n                            ]\n                          },\n                          "minItems": 1,\n                          "type": "array",\n                          "uniqueItems": true\n                        }\n                      },\n                      "required": [\n                        "id"\n                      ],\n                      "type": "object"\n                    },\n                    "type": "array"\n                  },\n                  "none": {\n                    "items": {\n                      "additionalProperties": false,\n                      "properties": {\n                        "definitionRange": {\n                          "pattern": "^(?:\\\\*|x|(?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2}))*)$",\n                          "type": "string"\n                        },\n                        "id": {\n                          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n                          "type": "string"\n                        },\n                        "states": {\n                          "items": {\n                            "enum": [\n                              "available",\n                              "partial",\n                              "disabled",\n                              "dependency-required"\n                            ]\n                          },\n                          "minItems": 1,\n                          "type": "array",\n                          "uniqueItems": true\n                        }\n                      },\n                      "required": [\n                        "id"\n                      ],\n                      "type": "object"\n                    },\n                    "type": "array"\n                  }\n                },\n                "type": "object"\n              },\n              "id": {\n                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",\n                "type": "string"\n              },\n              "patterns": {\n                "items": {\n                  "minLength": 1,\n                  "type": "string"\n                },\n                "minItems": 1,\n                "type": "array"\n              },\n              "required": {\n                "type": "boolean"\n              },\n              "role": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "searchScopes": {\n                "items": {\n                  "enum": [\n                    "sibling-directory",\n                    "current-mount",\n                    "enclosing-container",\n                    "workspace-dependency-layer",\n                    "explicit-user-selection"\n                  ]\n                },\n                "minItems": 1,\n                "type": "array"\n              }\n            },\n            "required": [\n              "id",\n              "role",\n              "required",\n              "patterns",\n              "searchScopes"\n            ],\n            "type": "object"\n          },\n          "type": "array"\n        },\n        "fidelityEvidence": {\n          "items": {\n            "additionalProperties": false,\n            "properties": {\n              "claim": {\n                "oneOf": [\n                  {\n                    "additionalProperties": false,\n                    "properties": {\n                      "notes": {\n                        "items": {\n                          "minLength": 1,\n                          "type": "string"\n                        },\n                        "type": "array"\n                      },\n                      "preservesUnknownData": {\n                        "const": true\n                      },\n                      "roundTrip": {\n                        "const": "byte-identical"\n                      }\n                    },\n                    "required": [\n                      "roundTrip",\n                      "preservesUnknownData"\n                    ],\n                    "type": "object"\n                  },\n                  {\n                    "additionalProperties": false,\n                    "properties": {\n                      "notes": {\n                        "items": {\n                          "minLength": 1,\n                          "type": "string"\n                        },\n                        "type": "array"\n                      },\n                      "preservesUnknownData": {\n                        "type": "boolean"\n                      },\n                      "roundTrip": {\n                        "const": "semantic"\n                      }\n                    },\n                    "required": [\n                      "roundTrip",\n                      "preservesUnknownData"\n                    ],\n                    "type": "object"\n                  },\n                  {\n                    "additionalProperties": false,\n                    "properties": {\n                      "notes": {\n                        "items": {\n                          "minLength": 1,\n                          "type": "string"\n                        },\n                        "type": "array"\n                      },\n                      "preservesUnknownData": {\n                        "const": false\n                      },\n                      "roundTrip": {\n                        "enum": [\n                          "lossy",\n                          "none"\n                        ]\n                      }\n                    },\n                    "required": [\n                      "roundTrip",\n                      "preservesUnknownData"\n                    ],\n                    "type": "object"\n                  }\n                ]\n              },\n              "conformanceProfile": {\n                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n                "type": "string"\n              },\n              "corpusDigest": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "corpusId": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "evidenceId": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "formatId": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "inputClass": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "optionsFingerprint": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "provenAt": {\n                "pattern": "^\\\\d{4}-\\\\d{2}-\\\\d{2}T\\\\d{2}:\\\\d{2}:\\\\d{2}(?:\\\\.\\\\d+)?Z$",\n                "type": "string"\n              },\n              "representationId": {\n                "minLength": 1,\n                "type": "string"\n              }\n            },\n            "required": [\n              "formatId",\n              "representationId",\n              "claim",\n              "evidenceId",\n              "corpusId",\n              "corpusDigest",\n              "conformanceProfile",\n              "optionsFingerprint",\n              "inputClass",\n              "provenAt"\n            ],\n            "type": "object"\n          },\n          "type": "array"\n        },\n        "formatRefs": {\n          "items": {\n            "additionalProperties": false,\n            "properties": {\n              "formatId": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "label": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "mediaType": {\n                "minLength": 1,\n                "type": "string"\n              }\n            },\n            "required": [\n              "formatId",\n              "label"\n            ],\n            "type": "object"\n          },\n          "minItems": 1,\n          "type": "array"\n        },\n        "implementationTier": {\n          "additionalProperties": false,\n          "properties": {\n            "claimed": {\n              "enum": [\n                1,\n                2,\n                3,\n                4,\n                5\n              ]\n            }\n          },\n          "required": [\n            "claimed"\n          ],\n          "type": "object"\n        },\n        "match": {\n          "additionalProperties": false,\n          "properties": {\n            "extensions": {\n              "items": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "type": "array"\n            },\n            "mediaTypes": {\n              "items": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "type": "array"\n            },\n            "pathGlobs": {\n              "items": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "type": "array"\n            },\n            "signatures": {\n              "items": {\n                "additionalProperties": false,\n                "properties": {\n                  "bytesHex": {\n                    "pattern": "^(?:[0-9a-f]{2}){1,64}$",\n                    "type": "string"\n                  },\n                  "from": {\n                    "enum": [\n                      "start",\n                      "end"\n                    ]\n                  },\n                  "maskHex": {\n                    "pattern": "^(?:[0-9a-f]{2}){1,64}$",\n                    "type": "string"\n                  },\n                  "offset": {\n                    "maximum": 4096,\n                    "minimum": 0,\n                    "type": "integer"\n                  }\n                },\n                "required": [\n                  "from",\n                  "offset",\n                  "bytesHex"\n                ],\n                "type": "object"\n              },\n              "maxItems": 8,\n              "type": "array"\n            }\n          },\n          "type": "object"\n        },\n        "openIntents": {\n          "items": {\n            "enum": [\n              "probe",\n              "inspect",\n              "thumbnail",\n              "full",\n              "stream",\n              "export"\n            ]\n          },\n          "minItems": 1,\n          "type": "array"\n        },\n        "operations": {\n          "items": {\n            "additionalProperties": false,\n            "properties": {\n              "handlerId": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "id": {\n                "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)$",\n                "type": "string"\n              },\n              "inputSchema": {\n                "additionalProperties": false,\n                "properties": {\n                  "$ref": {\n                    "minLength": 1,\n                    "type": "string"\n                  },\n                  "document": {\n                    "title": "JsonValue"\n                  }\n                },\n                "required": [\n                  "$ref"\n                ],\n                "type": "object"\n              },\n              "mutatesSource": {\n                "type": "boolean"\n              },\n              "outputKinds": {\n                "items": {\n                  "enum": [\n                    "json",\n                    "bytes",\n                    "stream",\n                    "source",\n                    "artifact",\n                    "none",\n                    "edit-plan",\n                    "transaction"\n                  ]\n                },\n                "type": "array"\n              },\n              "requiredPermissions": {\n                "items": {\n                  "enum": [\n                    "read-source",\n                    "write-source",\n                    "filesystem-read",\n                    "filesystem-write",\n                    "network",\n                    "process-launch",\n                    "native-code",\n                    "credentials",\n                    "clipboard",\n                    "persistent-storage"\n                  ]\n                },\n                "type": "array"\n              },\n              "requiresContract": {\n                "additionalProperties": false,\n                "properties": {\n                  "contract": {\n                    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n                    "type": "string"\n                  },\n                  "major": {\n                    "maximum": 9007199254740991,\n                    "minimum": 0,\n                    "type": "integer"\n                  },\n                  "range": {\n                    "pattern": "^(?:\\\\*|x|(?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2}))*)$",\n                    "type": "string"\n                  }\n                },\n                "required": [\n                  "contract",\n                  "major"\n                ],\n                "type": "object"\n              }\n            },\n            "required": [\n              "id",\n              "handlerId",\n              "mutatesSource"\n            ],\n            "type": "object"\n          },\n          "type": "array"\n        },\n        "probe": {\n          "additionalProperties": false,\n          "properties": {\n            "kind": {\n              "const": "bytes"\n            },\n            "maxBytes": {\n              "maximum": 9007199254740991,\n              "minimum": 0,\n              "type": "integer"\n            },\n            "ranges": {\n              "items": {\n                "additionalProperties": false,\n                "properties": {\n                  "from": {\n                    "enum": [\n                      "start",\n                      "end"\n                    ]\n                  },\n                  "length": {\n                    "maximum": 9007199254740991,\n                    "minimum": 0,\n                    "type": "integer"\n                  }\n                },\n                "required": [\n                  "from",\n                  "length"\n                ],\n                "type": "object"\n              },\n              "type": "array"\n            }\n          },\n          "required": [\n            "kind",\n            "ranges",\n            "maxBytes"\n          ],\n          "type": "object"\n        },\n        "publishesDataSources": {\n          "items": {\n            "oneOf": [\n              {\n                "additionalProperties": false,\n                "properties": {\n                  "contract": {\n                    "enum": [\n                      "common.view/text-data-source",\n                      "common.view/byte-range-source",\n                      "common.view/tree-data-source",\n                      "common.view/table-data-source",\n                      "common.view/transport-source",\n                      "common.view/namespace-entry-source",\n                      "common.view/raster-image-source",\n                      "common.view/vector-scene-source",\n                      "common.view/audio-media-source",\n                      "common.view/video-media-source",\n                      "common.view/model-scene-source",\n                      "common.view/world-scene-source",\n                      "common.view/model-resource-refs-source",\n                      "common.view/model-skeleton-source",\n                      "common.view/model-animation-source",\n                      "common.view/model-collision-source",\n                      "common.view/model-material-source",\n                      "common.view/model-socket-source",\n                      "common.view/model-effect-source",\n                      "common.view/model-light-source",\n                      "common.view/model-camera-source",\n                      "common.view/model-physics-source",\n                      "common.view/model-node-behaviour-source",\n                      "common.view/model-lod-source",\n                      "common.view/relation-graph-source",\n                      "common.view/subject-selector-source",\n                      "common.view/subject-facts-source",\n                      "common.view/subject-calculations-source",\n                      "common.view/slide-deck-source"\n                    ]\n                  },\n                  "major": {\n                    "const": 1\n                  }\n                },\n                "required": [\n                  "contract",\n                  "major"\n                ],\n                "type": "object"\n              },\n              {\n                "additionalProperties": false,\n                "properties": {\n                  "contract": {\n                    "not": {\n                      "enum": [\n                        "common.view/text-data-source",\n                        "common.view/byte-range-source",\n                        "common.view/tree-data-source",\n                        "common.view/table-data-source",\n                        "common.view/transport-source",\n                        "common.view/namespace-entry-source",\n                        "common.view/raster-image-source",\n                        "common.view/vector-scene-source",\n                        "common.view/audio-media-source",\n                        "common.view/video-media-source",\n                        "common.view/model-scene-source",\n                        "common.view/world-scene-source",\n                        "common.view/model-resource-refs-source",\n                        "common.view/model-skeleton-source",\n                        "common.view/model-animation-source",\n                        "common.view/model-collision-source",\n                        "common.view/model-material-source",\n                        "common.view/model-socket-source",\n                        "common.view/model-effect-source",\n                        "common.view/model-light-source",\n                        "common.view/model-camera-source",\n                        "common.view/model-physics-source",\n                        "common.view/model-node-behaviour-source",\n                        "common.view/model-lod-source",\n                        "common.view/relation-graph-source",\n                        "common.view/subject-selector-source",\n                        "common.view/subject-facts-source",\n                        "common.view/subject-calculations-source",\n                        "common.view/slide-deck-source"\n                      ]\n                    },\n                    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n                    "type": "string"\n                  },\n                  "major": {\n                    "maximum": 9007199254740991,\n                    "minimum": 0,\n                    "type": "integer"\n                  },\n                  "opaque": {\n                    "const": true\n                  }\n                },\n                "required": [\n                  "contract",\n                  "major",\n                  "opaque"\n                ],\n                "type": "object"\n              }\n            ]\n          },\n          "type": "array"\n        },\n        "representations": {\n          "items": {\n            "additionalProperties": false,\n            "properties": {\n              "contract": {\n                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n                "type": "string"\n              },\n              "id": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "lossy": {\n                "type": "boolean"\n              },\n              "major": {\n                "maximum": 9007199254740991,\n                "minimum": 0,\n                "type": "integer"\n              },\n              "stage": {\n                "enum": [\n                  "authored",\n                  "compiled",\n                  "runtime"\n                ]\n              }\n            },\n            "required": [\n              "id",\n              "contract",\n              "major",\n              "stage",\n              "lossy"\n            ],\n            "type": "object"\n          },\n          "minItems": 1,\n          "type": "array"\n        },\n        "requires": {\n          "items": {\n            "additionalProperties": false,\n            "properties": {\n              "contract": {\n                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n                "type": "string"\n              },\n              "major": {\n                "maximum": 9007199254740991,\n                "minimum": 0,\n                "type": "integer"\n              },\n              "range": {\n                "pattern": "^(?:\\\\*|x|(?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2}))*)$",\n                "type": "string"\n              }\n            },\n            "required": [\n              "contract",\n              "major"\n            ],\n            "type": "object"\n          },\n          "type": "array"\n        },\n        "roles": {\n          "items": {\n            "enum": [\n              "container",\n              "media",\n              "byte-transform",\n              "semantic",\n              "index",\n              "sidecar"\n            ]\n          },\n          "minItems": 1,\n          "type": "array"\n        },\n        "sourceTopology": {\n          "enum": [\n            "single",\n            "bundle"\n          ]\n        },\n        "traitDeclarations": {\n          "items": {\n            "additionalProperties": false,\n            "properties": {\n              "definitionVersion": {\n                "pattern": "^(0|[1-9]\\\\d*)\\\\.(0|[1-9]\\\\d*)\\\\.(0|[1-9]\\\\d*)(?:-((?:0|[1-9]\\\\d*|\\\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\\\.(?:0|[1-9]\\\\d*|\\\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\\\+([0-9a-zA-Z-]+(?:\\\\.[0-9a-zA-Z-]+)*))?$",\n                "type": "string"\n              },\n              "evidenceRefs": {\n                "items": {\n                  "minLength": 1,\n                  "type": "string"\n                },\n                "type": "array",\n                "uniqueItems": true\n              },\n              "id": {\n                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n                "type": "string"\n              },\n              "prerequisites": {\n                "items": {\n                  "additionalProperties": false,\n                  "properties": {\n                    "contract": {\n                      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n                      "type": "string"\n                    },\n                    "major": {\n                      "maximum": 9007199254740991,\n                      "minimum": 0,\n                      "type": "integer"\n                    },\n                    "range": {\n                      "pattern": "^(?:\\\\*|x|(?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2}))*)$",\n                      "type": "string"\n                    }\n                  },\n                  "required": [\n                    "contract",\n                    "major"\n                  ],\n                  "type": "object"\n                },\n                "type": "array"\n              },\n              "presence": {\n                "enum": [\n                  "may-expose",\n                  "will-expose"\n                ]\n              },\n              "representation": {\n                "enum": [\n                  "source",\n                  "compiled",\n                  "runtime"\n                ]\n              }\n            },\n            "required": [\n              "id",\n              "representation",\n              "presence"\n            ],\n            "type": "object"\n          },\n          "type": "array"\n        }\n      },\n      "required": [\n        "formatRefs",\n        "roles",\n        "sourceTopology",\n        "artifactStages",\n        "openIntents",\n        "match",\n        "probe",\n        "representations",\n        "publishesDataSources",\n        "operations",\n        "implementationTier",\n        "budgets"\n      ],\n      "type": "object"\n    },\n    {\n      "additionalProperties": false,\n      "properties": {\n        "anchorDocuments": {\n          "items": {\n            "maxLength": 256,\n            "minLength": 1,\n            "type": "string"\n          },\n          "maxItems": 8,\n          "type": "array"\n        },\n        "artifactStages": {\n          "items": {\n            "enum": [\n              "authored",\n              "compiled",\n              "runtime"\n            ]\n          },\n          "minItems": 1,\n          "type": "array"\n        },\n        "budgets": {\n          "additionalProperties": false,\n          "properties": {\n            "deadlineMs": {\n              "maximum": 9007199254740991,\n              "minimum": 0,\n              "type": "integer"\n            },\n            "maxDepth": {\n              "maximum": 9007199254740991,\n              "minimum": 0,\n              "type": "integer"\n            },\n            "maxDiagnostics": {\n              "maximum": 9007199254740991,\n              "minimum": 0,\n              "type": "integer"\n            },\n            "maxInputBytes": {\n              "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$",\n              "type": "string"\n            },\n            "maxNodes": {\n              "maximum": 9007199254740991,\n              "minimum": 0,\n              "type": "integer"\n            },\n            "maxScalarBytes": {\n              "maximum": 9007199254740991,\n              "minimum": 0,\n              "type": "integer"\n            }\n          },\n          "required": [\n            "maxInputBytes",\n            "maxDepth",\n            "maxNodes",\n            "maxScalarBytes",\n            "maxDiagnostics"\n          ],\n          "type": "object"\n        },\n        "companions": {\n          "items": {\n            "additionalProperties": false,\n            "properties": {\n              "expected": {\n                "additionalProperties": false,\n                "properties": {\n                  "all": {\n                    "items": {\n                      "additionalProperties": false,\n                      "properties": {\n                        "definitionRange": {\n                          "pattern": "^(?:\\\\*|x|(?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2}))*)$",\n                          "type": "string"\n                        },\n                        "id": {\n                          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n                          "type": "string"\n                        },\n                        "states": {\n                          "items": {\n                            "enum": [\n                              "available",\n                              "partial",\n                              "disabled",\n                              "dependency-required"\n                            ]\n                          },\n                          "minItems": 1,\n                          "type": "array",\n                          "uniqueItems": true\n                        }\n                      },\n                      "required": [\n                        "id"\n                      ],\n                      "type": "object"\n                    },\n                    "type": "array"\n                  },\n                  "any": {\n                    "items": {\n                      "additionalProperties": false,\n                      "properties": {\n                        "definitionRange": {\n                          "pattern": "^(?:\\\\*|x|(?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2}))*)$",\n                          "type": "string"\n                        },\n                        "id": {\n                          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n                          "type": "string"\n                        },\n                        "states": {\n                          "items": {\n                            "enum": [\n                              "available",\n                              "partial",\n                              "disabled",\n                              "dependency-required"\n                            ]\n                          },\n                          "minItems": 1,\n                          "type": "array",\n                          "uniqueItems": true\n                        }\n                      },\n                      "required": [\n                        "id"\n                      ],\n                      "type": "object"\n                    },\n                    "type": "array"\n                  },\n                  "none": {\n                    "items": {\n                      "additionalProperties": false,\n                      "properties": {\n                        "definitionRange": {\n                          "pattern": "^(?:\\\\*|x|(?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2}))*)$",\n                          "type": "string"\n                        },\n                        "id": {\n                          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n                          "type": "string"\n                        },\n                        "states": {\n                          "items": {\n                            "enum": [\n                              "available",\n                              "partial",\n                              "disabled",\n                              "dependency-required"\n                            ]\n                          },\n                          "minItems": 1,\n                          "type": "array",\n                          "uniqueItems": true\n                        }\n                      },\n                      "required": [\n                        "id"\n                      ],\n                      "type": "object"\n                    },\n                    "type": "array"\n                  }\n                },\n                "type": "object"\n              },\n              "id": {\n                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",\n                "type": "string"\n              },\n              "patterns": {\n                "items": {\n                  "minLength": 1,\n                  "type": "string"\n                },\n                "minItems": 1,\n                "type": "array"\n              },\n              "required": {\n                "type": "boolean"\n              },\n              "role": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "searchScopes": {\n                "items": {\n                  "enum": [\n                    "sibling-directory",\n                    "current-mount",\n                    "enclosing-container",\n                    "workspace-dependency-layer",\n                    "explicit-user-selection"\n                  ]\n                },\n                "minItems": 1,\n                "type": "array"\n              }\n            },\n            "required": [\n              "id",\n              "role",\n              "required",\n              "patterns",\n              "searchScopes"\n            ],\n            "type": "object"\n          },\n          "type": "array"\n        },\n        "container": {\n          "additionalProperties": false,\n          "properties": {\n            "assetRoots": {\n              "items": {\n                "maxLength": 256,\n                "type": "string"\n              },\n              "maxItems": 16,\n              "type": "array"\n            },\n            "formatId": {\n              "minLength": 1,\n              "type": "string"\n            },\n            "markers": {\n              "items": {\n                "maxLength": 256,\n                "minLength": 1,\n                "pattern": "^[^/\\\\\\\\]+$",\n                "type": "string"\n              },\n              "maxItems": 8,\n              "type": "array"\n            }\n          },\n          "required": [\n            "formatId"\n          ],\n          "type": "object"\n        },\n        "fidelityEvidence": {\n          "items": {\n            "additionalProperties": false,\n            "properties": {\n              "claim": {\n                "oneOf": [\n                  {\n                    "additionalProperties": false,\n                    "properties": {\n                      "notes": {\n                        "items": {\n                          "minLength": 1,\n                          "type": "string"\n                        },\n                        "type": "array"\n                      },\n                      "preservesUnknownData": {\n                        "const": true\n                      },\n                      "roundTrip": {\n                        "const": "byte-identical"\n                      }\n                    },\n                    "required": [\n                      "roundTrip",\n                      "preservesUnknownData"\n                    ],\n                    "type": "object"\n                  },\n                  {\n                    "additionalProperties": false,\n                    "properties": {\n                      "notes": {\n                        "items": {\n                          "minLength": 1,\n                          "type": "string"\n                        },\n                        "type": "array"\n                      },\n                      "preservesUnknownData": {\n                        "type": "boolean"\n                      },\n                      "roundTrip": {\n                        "const": "semantic"\n                      }\n                    },\n                    "required": [\n                      "roundTrip",\n                      "preservesUnknownData"\n                    ],\n                    "type": "object"\n                  },\n                  {\n                    "additionalProperties": false,\n                    "properties": {\n                      "notes": {\n                        "items": {\n                          "minLength": 1,\n                          "type": "string"\n                        },\n                        "type": "array"\n                      },\n                      "preservesUnknownData": {\n                        "const": false\n                      },\n                      "roundTrip": {\n                        "enum": [\n                          "lossy",\n                          "none"\n                        ]\n                      }\n                    },\n                    "required": [\n                      "roundTrip",\n                      "preservesUnknownData"\n                    ],\n                    "type": "object"\n                  }\n                ]\n              },\n              "conformanceProfile": {\n                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n                "type": "string"\n              },\n              "corpusDigest": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "corpusId": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "evidenceId": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "formatId": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "inputClass": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "optionsFingerprint": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "provenAt": {\n                "pattern": "^\\\\d{4}-\\\\d{2}-\\\\d{2}T\\\\d{2}:\\\\d{2}:\\\\d{2}(?:\\\\.\\\\d+)?Z$",\n                "type": "string"\n              },\n              "representationId": {\n                "minLength": 1,\n                "type": "string"\n              }\n            },\n            "required": [\n              "formatId",\n              "representationId",\n              "claim",\n              "evidenceId",\n              "corpusId",\n              "corpusDigest",\n              "conformanceProfile",\n              "optionsFingerprint",\n              "inputClass",\n              "provenAt"\n            ],\n            "type": "object"\n          },\n          "type": "array"\n        },\n        "formatRefs": {\n          "items": {\n            "additionalProperties": false,\n            "properties": {\n              "formatId": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "label": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "mediaType": {\n                "minLength": 1,\n                "type": "string"\n              }\n            },\n            "required": [\n              "formatId",\n              "label"\n            ],\n            "type": "object"\n          },\n          "minItems": 1,\n          "type": "array"\n        },\n        "implementationTier": {\n          "additionalProperties": false,\n          "properties": {\n            "claimed": {\n              "enum": [\n                1,\n                2,\n                3,\n                4,\n                5\n              ]\n            }\n          },\n          "required": [\n            "claimed"\n          ],\n          "type": "object"\n        },\n        "match": {\n          "additionalProperties": false,\n          "properties": {\n            "extensions": {\n              "items": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "type": "array"\n            },\n            "mediaTypes": {\n              "items": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "type": "array"\n            },\n            "pathGlobs": {\n              "items": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "type": "array"\n            },\n            "signatures": {\n              "items": {\n                "additionalProperties": false,\n                "properties": {\n                  "bytesHex": {\n                    "pattern": "^(?:[0-9a-f]{2}){1,64}$",\n                    "type": "string"\n                  },\n                  "from": {\n                    "enum": [\n                      "start",\n                      "end"\n                    ]\n                  },\n                  "maskHex": {\n                    "pattern": "^(?:[0-9a-f]{2}){1,64}$",\n                    "type": "string"\n                  },\n                  "offset": {\n                    "maximum": 4096,\n                    "minimum": 0,\n                    "type": "integer"\n                  }\n                },\n                "required": [\n                  "from",\n                  "offset",\n                  "bytesHex"\n                ],\n                "type": "object"\n              },\n              "maxItems": 8,\n              "type": "array"\n            }\n          },\n          "type": "object"\n        },\n        "openIntents": {\n          "items": {\n            "enum": [\n              "probe",\n              "inspect",\n              "thumbnail",\n              "full",\n              "stream",\n              "export"\n            ]\n          },\n          "minItems": 1,\n          "type": "array"\n        },\n        "operations": {\n          "items": {\n            "additionalProperties": false,\n            "properties": {\n              "handlerId": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "id": {\n                "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)$",\n                "type": "string"\n              },\n              "inputSchema": {\n                "additionalProperties": false,\n                "properties": {\n                  "$ref": {\n                    "minLength": 1,\n                    "type": "string"\n                  },\n                  "document": {\n                    "title": "JsonValue"\n                  }\n                },\n                "required": [\n                  "$ref"\n                ],\n                "type": "object"\n              },\n              "mutatesSource": {\n                "type": "boolean"\n              },\n              "outputKinds": {\n                "items": {\n                  "enum": [\n                    "json",\n                    "bytes",\n                    "stream",\n                    "source",\n                    "artifact",\n                    "none",\n                    "edit-plan",\n                    "transaction"\n                  ]\n                },\n                "type": "array"\n              },\n              "requiredPermissions": {\n                "items": {\n                  "enum": [\n                    "read-source",\n                    "write-source",\n                    "filesystem-read",\n                    "filesystem-write",\n                    "network",\n                    "process-launch",\n                    "native-code",\n                    "credentials",\n                    "clipboard",\n                    "persistent-storage"\n                  ]\n                },\n                "type": "array"\n              },\n              "requiresContract": {\n                "additionalProperties": false,\n                "properties": {\n                  "contract": {\n                    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n                    "type": "string"\n                  },\n                  "major": {\n                    "maximum": 9007199254740991,\n                    "minimum": 0,\n                    "type": "integer"\n                  },\n                  "range": {\n                    "pattern": "^(?:\\\\*|x|(?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2}))*)$",\n                    "type": "string"\n                  }\n                },\n                "required": [\n                  "contract",\n                  "major"\n                ],\n                "type": "object"\n              }\n            },\n            "required": [\n              "id",\n              "handlerId",\n              "mutatesSource"\n            ],\n            "type": "object"\n          },\n          "type": "array"\n        },\n        "probe": {\n          "additionalProperties": false,\n          "properties": {\n            "kind": {\n              "const": "namespace"\n            },\n            "markers": {\n              "items": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "maxItems": 256,\n              "minItems": 1,\n              "type": "array",\n              "uniqueItems": true\n            },\n            "maxBytes": {\n              "maximum": 9007199254740991,\n              "minimum": 0,\n              "type": "integer"\n            },\n            "maxDepth": {\n              "maximum": 9007199254740991,\n              "minimum": 0,\n              "type": "integer"\n            },\n            "maxEntries": {\n              "maximum": 9007199254740991,\n              "minimum": 0,\n              "type": "integer"\n            },\n            "maxPathBytes": {\n              "maximum": 9007199254740991,\n              "minimum": 0,\n              "type": "integer"\n            },\n            "prefixes": {\n              "items": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "maxItems": 256,\n              "type": "array",\n              "uniqueItems": true\n            }\n          },\n          "required": [\n            "kind",\n            "markers",\n            "maxEntries",\n            "maxBytes",\n            "maxDepth",\n            "maxPathBytes"\n          ],\n          "type": "object"\n        },\n        "publishesDataSources": {\n          "items": {\n            "oneOf": [\n              {\n                "additionalProperties": false,\n                "properties": {\n                  "contract": {\n                    "enum": [\n                      "common.view/text-data-source",\n                      "common.view/byte-range-source",\n                      "common.view/tree-data-source",\n                      "common.view/table-data-source",\n                      "common.view/transport-source",\n                      "common.view/namespace-entry-source",\n                      "common.view/raster-image-source",\n                      "common.view/vector-scene-source",\n                      "common.view/audio-media-source",\n                      "common.view/video-media-source",\n                      "common.view/model-scene-source",\n                      "common.view/world-scene-source",\n                      "common.view/model-resource-refs-source",\n                      "common.view/model-skeleton-source",\n                      "common.view/model-animation-source",\n                      "common.view/model-collision-source",\n                      "common.view/model-material-source",\n                      "common.view/model-socket-source",\n                      "common.view/model-effect-source",\n                      "common.view/model-light-source",\n                      "common.view/model-camera-source",\n                      "common.view/model-physics-source",\n                      "common.view/model-node-behaviour-source",\n                      "common.view/model-lod-source",\n                      "common.view/relation-graph-source",\n                      "common.view/subject-selector-source",\n                      "common.view/subject-facts-source",\n                      "common.view/subject-calculations-source",\n                      "common.view/slide-deck-source"\n                    ]\n                  },\n                  "major": {\n                    "const": 1\n                  }\n                },\n                "required": [\n                  "contract",\n                  "major"\n                ],\n                "type": "object"\n              },\n              {\n                "additionalProperties": false,\n                "properties": {\n                  "contract": {\n                    "not": {\n                      "enum": [\n                        "common.view/text-data-source",\n                        "common.view/byte-range-source",\n                        "common.view/tree-data-source",\n                        "common.view/table-data-source",\n                        "common.view/transport-source",\n                        "common.view/namespace-entry-source",\n                        "common.view/raster-image-source",\n                        "common.view/vector-scene-source",\n                        "common.view/audio-media-source",\n                        "common.view/video-media-source",\n                        "common.view/model-scene-source",\n                        "common.view/world-scene-source",\n                        "common.view/model-resource-refs-source",\n                        "common.view/model-skeleton-source",\n                        "common.view/model-animation-source",\n                        "common.view/model-collision-source",\n                        "common.view/model-material-source",\n                        "common.view/model-socket-source",\n                        "common.view/model-effect-source",\n                        "common.view/model-light-source",\n                        "common.view/model-camera-source",\n                        "common.view/model-physics-source",\n                        "common.view/model-node-behaviour-source",\n                        "common.view/model-lod-source",\n                        "common.view/relation-graph-source",\n                        "common.view/subject-selector-source",\n                        "common.view/subject-facts-source",\n                        "common.view/subject-calculations-source",\n                        "common.view/slide-deck-source"\n                      ]\n                    },\n                    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n                    "type": "string"\n                  },\n                  "major": {\n                    "maximum": 9007199254740991,\n                    "minimum": 0,\n                    "type": "integer"\n                  },\n                  "opaque": {\n                    "const": true\n                  }\n                },\n                "required": [\n                  "contract",\n                  "major",\n                  "opaque"\n                ],\n                "type": "object"\n              }\n            ]\n          },\n          "type": "array"\n        },\n        "representations": {\n          "items": {\n            "additionalProperties": false,\n            "properties": {\n              "contract": {\n                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n                "type": "string"\n              },\n              "id": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "lossy": {\n                "type": "boolean"\n              },\n              "major": {\n                "maximum": 9007199254740991,\n                "minimum": 0,\n                "type": "integer"\n              },\n              "stage": {\n                "enum": [\n                  "authored",\n                  "compiled",\n                  "runtime"\n                ]\n              }\n            },\n            "required": [\n              "id",\n              "contract",\n              "major",\n              "stage",\n              "lossy"\n            ],\n            "type": "object"\n          },\n          "minItems": 1,\n          "type": "array"\n        },\n        "requires": {\n          "items": {\n            "additionalProperties": false,\n            "properties": {\n              "contract": {\n                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n                "type": "string"\n              },\n              "major": {\n                "maximum": 9007199254740991,\n                "minimum": 0,\n                "type": "integer"\n              },\n              "range": {\n                "pattern": "^(?:\\\\*|x|(?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2}))*)$",\n                "type": "string"\n              }\n            },\n            "required": [\n              "contract",\n              "major"\n            ],\n            "type": "object"\n          },\n          "type": "array"\n        },\n        "roles": {\n          "items": {\n            "enum": [\n              "container",\n              "media",\n              "byte-transform",\n              "semantic",\n              "index",\n              "sidecar"\n            ]\n          },\n          "minItems": 1,\n          "type": "array"\n        },\n        "sourceTopology": {\n          "const": "namespace"\n        },\n        "traitDeclarations": {\n          "items": {\n            "additionalProperties": false,\n            "properties": {\n              "definitionVersion": {\n                "pattern": "^(0|[1-9]\\\\d*)\\\\.(0|[1-9]\\\\d*)\\\\.(0|[1-9]\\\\d*)(?:-((?:0|[1-9]\\\\d*|\\\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\\\.(?:0|[1-9]\\\\d*|\\\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\\\+([0-9a-zA-Z-]+(?:\\\\.[0-9a-zA-Z-]+)*))?$",\n                "type": "string"\n              },\n              "evidenceRefs": {\n                "items": {\n                  "minLength": 1,\n                  "type": "string"\n                },\n                "type": "array",\n                "uniqueItems": true\n              },\n              "id": {\n                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n                "type": "string"\n              },\n              "prerequisites": {\n                "items": {\n                  "additionalProperties": false,\n                  "properties": {\n                    "contract": {\n                      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n                      "type": "string"\n                    },\n                    "major": {\n                      "maximum": 9007199254740991,\n                      "minimum": 0,\n                      "type": "integer"\n                    },\n                    "range": {\n                      "pattern": "^(?:\\\\*|x|(?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2}))*)$",\n                      "type": "string"\n                    }\n                  },\n                  "required": [\n                    "contract",\n                    "major"\n                  ],\n                  "type": "object"\n                },\n                "type": "array"\n              },\n              "presence": {\n                "enum": [\n                  "may-expose",\n                  "will-expose"\n                ]\n              },\n              "representation": {\n                "enum": [\n                  "source",\n                  "compiled",\n                  "runtime"\n                ]\n              }\n            },\n            "required": [\n              "id",\n              "representation",\n              "presence"\n            ],\n            "type": "object"\n          },\n          "type": "array"\n        }\n      },\n      "required": [\n        "formatRefs",\n        "roles",\n        "sourceTopology",\n        "artifactStages",\n        "openIntents",\n        "match",\n        "probe",\n        "representations",\n        "publishesDataSources",\n        "operations",\n        "implementationTier",\n        "budgets"\n      ],\n      "type": "object"\n    },\n    {\n      "additionalProperties": false,\n      "properties": {\n        "anchorDocuments": {\n          "items": {\n            "maxLength": 256,\n            "minLength": 1,\n            "type": "string"\n          },\n          "maxItems": 8,\n          "type": "array"\n        },\n        "artifactStages": {\n          "items": {\n            "enum": [\n              "authored",\n              "compiled",\n              "runtime"\n            ]\n          },\n          "minItems": 1,\n          "type": "array"\n        },\n        "budgets": {\n          "additionalProperties": false,\n          "properties": {\n            "deadlineMs": {\n              "maximum": 9007199254740991,\n              "minimum": 0,\n              "type": "integer"\n            },\n            "maxDepth": {\n              "maximum": 9007199254740991,\n              "minimum": 0,\n              "type": "integer"\n            },\n            "maxDiagnostics": {\n              "maximum": 9007199254740991,\n              "minimum": 0,\n              "type": "integer"\n            },\n            "maxInputBytes": {\n              "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$",\n              "type": "string"\n            },\n            "maxNodes": {\n              "maximum": 9007199254740991,\n              "minimum": 0,\n              "type": "integer"\n            },\n            "maxScalarBytes": {\n              "maximum": 9007199254740991,\n              "minimum": 0,\n              "type": "integer"\n            }\n          },\n          "required": [\n            "maxInputBytes",\n            "maxDepth",\n            "maxNodes",\n            "maxScalarBytes",\n            "maxDiagnostics"\n          ],\n          "type": "object"\n        },\n        "companions": {\n          "items": {\n            "additionalProperties": false,\n            "properties": {\n              "expected": {\n                "additionalProperties": false,\n                "properties": {\n                  "all": {\n                    "items": {\n                      "additionalProperties": false,\n                      "properties": {\n                        "definitionRange": {\n                          "pattern": "^(?:\\\\*|x|(?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2}))*)$",\n                          "type": "string"\n                        },\n                        "id": {\n                          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n                          "type": "string"\n                        },\n                        "states": {\n                          "items": {\n                            "enum": [\n                              "available",\n                              "partial",\n                              "disabled",\n                              "dependency-required"\n                            ]\n                          },\n                          "minItems": 1,\n                          "type": "array",\n                          "uniqueItems": true\n                        }\n                      },\n                      "required": [\n                        "id"\n                      ],\n                      "type": "object"\n                    },\n                    "type": "array"\n                  },\n                  "any": {\n                    "items": {\n                      "additionalProperties": false,\n                      "properties": {\n                        "definitionRange": {\n                          "pattern": "^(?:\\\\*|x|(?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2}))*)$",\n                          "type": "string"\n                        },\n                        "id": {\n                          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n                          "type": "string"\n                        },\n                        "states": {\n                          "items": {\n                            "enum": [\n                              "available",\n                              "partial",\n                              "disabled",\n                              "dependency-required"\n                            ]\n                          },\n                          "minItems": 1,\n                          "type": "array",\n                          "uniqueItems": true\n                        }\n                      },\n                      "required": [\n                        "id"\n                      ],\n                      "type": "object"\n                    },\n                    "type": "array"\n                  },\n                  "none": {\n                    "items": {\n                      "additionalProperties": false,\n                      "properties": {\n                        "definitionRange": {\n                          "pattern": "^(?:\\\\*|x|(?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2}))*)$",\n                          "type": "string"\n                        },\n                        "id": {\n                          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n                          "type": "string"\n                        },\n                        "states": {\n                          "items": {\n                            "enum": [\n                              "available",\n                              "partial",\n                              "disabled",\n                              "dependency-required"\n                            ]\n                          },\n                          "minItems": 1,\n                          "type": "array",\n                          "uniqueItems": true\n                        }\n                      },\n                      "required": [\n                        "id"\n                      ],\n                      "type": "object"\n                    },\n                    "type": "array"\n                  }\n                },\n                "type": "object"\n              },\n              "id": {\n                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",\n                "type": "string"\n              },\n              "patterns": {\n                "items": {\n                  "minLength": 1,\n                  "type": "string"\n                },\n                "minItems": 1,\n                "type": "array"\n              },\n              "required": {\n                "type": "boolean"\n              },\n              "role": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "searchScopes": {\n                "items": {\n                  "enum": [\n                    "sibling-directory",\n                    "current-mount",\n                    "enclosing-container",\n                    "workspace-dependency-layer",\n                    "explicit-user-selection"\n                  ]\n                },\n                "minItems": 1,\n                "type": "array"\n              }\n            },\n            "required": [\n              "id",\n              "role",\n              "required",\n              "patterns",\n              "searchScopes"\n            ],\n            "type": "object"\n          },\n          "type": "array"\n        },\n        "fidelityEvidence": {\n          "items": {\n            "additionalProperties": false,\n            "properties": {\n              "claim": {\n                "oneOf": [\n                  {\n                    "additionalProperties": false,\n                    "properties": {\n                      "notes": {\n                        "items": {\n                          "minLength": 1,\n                          "type": "string"\n                        },\n                        "type": "array"\n                      },\n                      "preservesUnknownData": {\n                        "const": true\n                      },\n                      "roundTrip": {\n                        "const": "byte-identical"\n                      }\n                    },\n                    "required": [\n                      "roundTrip",\n                      "preservesUnknownData"\n                    ],\n                    "type": "object"\n                  },\n                  {\n                    "additionalProperties": false,\n                    "properties": {\n                      "notes": {\n                        "items": {\n                          "minLength": 1,\n                          "type": "string"\n                        },\n                        "type": "array"\n                      },\n                      "preservesUnknownData": {\n                        "type": "boolean"\n                      },\n                      "roundTrip": {\n                        "const": "semantic"\n                      }\n                    },\n                    "required": [\n                      "roundTrip",\n                      "preservesUnknownData"\n                    ],\n                    "type": "object"\n                  },\n                  {\n                    "additionalProperties": false,\n                    "properties": {\n                      "notes": {\n                        "items": {\n                          "minLength": 1,\n                          "type": "string"\n                        },\n                        "type": "array"\n                      },\n                      "preservesUnknownData": {\n                        "const": false\n                      },\n                      "roundTrip": {\n                        "enum": [\n                          "lossy",\n                          "none"\n                        ]\n                      }\n                    },\n                    "required": [\n                      "roundTrip",\n                      "preservesUnknownData"\n                    ],\n                    "type": "object"\n                  }\n                ]\n              },\n              "conformanceProfile": {\n                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n                "type": "string"\n              },\n              "corpusDigest": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "corpusId": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "evidenceId": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "formatId": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "inputClass": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "optionsFingerprint": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "provenAt": {\n                "pattern": "^\\\\d{4}-\\\\d{2}-\\\\d{2}T\\\\d{2}:\\\\d{2}:\\\\d{2}(?:\\\\.\\\\d+)?Z$",\n                "type": "string"\n              },\n              "representationId": {\n                "minLength": 1,\n                "type": "string"\n              }\n            },\n            "required": [\n              "formatId",\n              "representationId",\n              "claim",\n              "evidenceId",\n              "corpusId",\n              "corpusDigest",\n              "conformanceProfile",\n              "optionsFingerprint",\n              "inputClass",\n              "provenAt"\n            ],\n            "type": "object"\n          },\n          "type": "array"\n        },\n        "formatRefs": {\n          "items": {\n            "additionalProperties": false,\n            "properties": {\n              "formatId": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "label": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "mediaType": {\n                "minLength": 1,\n                "type": "string"\n              }\n            },\n            "required": [\n              "formatId",\n              "label"\n            ],\n            "type": "object"\n          },\n          "minItems": 1,\n          "type": "array"\n        },\n        "implementationTier": {\n          "additionalProperties": false,\n          "properties": {\n            "claimed": {\n              "enum": [\n                1,\n                2,\n                3,\n                4,\n                5\n              ]\n            }\n          },\n          "required": [\n            "claimed"\n          ],\n          "type": "object"\n        },\n        "match": {\n          "additionalProperties": false,\n          "properties": {\n            "extensions": {\n              "items": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "type": "array"\n            },\n            "mediaTypes": {\n              "items": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "type": "array"\n            },\n            "pathGlobs": {\n              "items": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "type": "array"\n            },\n            "signatures": {\n              "items": {\n                "additionalProperties": false,\n                "properties": {\n                  "bytesHex": {\n                    "pattern": "^(?:[0-9a-f]{2}){1,64}$",\n                    "type": "string"\n                  },\n                  "from": {\n                    "enum": [\n                      "start",\n                      "end"\n                    ]\n                  },\n                  "maskHex": {\n                    "pattern": "^(?:[0-9a-f]{2}){1,64}$",\n                    "type": "string"\n                  },\n                  "offset": {\n                    "maximum": 4096,\n                    "minimum": 0,\n                    "type": "integer"\n                  }\n                },\n                "required": [\n                  "from",\n                  "offset",\n                  "bytesHex"\n                ],\n                "type": "object"\n              },\n              "maxItems": 8,\n              "type": "array"\n            }\n          },\n          "type": "object"\n        },\n        "openIntents": {\n          "items": {\n            "enum": [\n              "probe",\n              "inspect",\n              "thumbnail",\n              "full",\n              "stream",\n              "export"\n            ]\n          },\n          "minItems": 1,\n          "type": "array"\n        },\n        "operations": {\n          "items": {\n            "additionalProperties": false,\n            "properties": {\n              "handlerId": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "id": {\n                "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)$",\n                "type": "string"\n              },\n              "inputSchema": {\n                "additionalProperties": false,\n                "properties": {\n                  "$ref": {\n                    "minLength": 1,\n                    "type": "string"\n                  },\n                  "document": {\n                    "title": "JsonValue"\n                  }\n                },\n                "required": [\n                  "$ref"\n                ],\n                "type": "object"\n              },\n              "mutatesSource": {\n                "type": "boolean"\n              },\n              "outputKinds": {\n                "items": {\n                  "enum": [\n                    "json",\n                    "bytes",\n                    "stream",\n                    "source",\n                    "artifact",\n                    "none",\n                    "edit-plan",\n                    "transaction"\n                  ]\n                },\n                "type": "array"\n              },\n              "requiredPermissions": {\n                "items": {\n                  "enum": [\n                    "read-source",\n                    "write-source",\n                    "filesystem-read",\n                    "filesystem-write",\n                    "network",\n                    "process-launch",\n                    "native-code",\n                    "credentials",\n                    "clipboard",\n                    "persistent-storage"\n                  ]\n                },\n                "type": "array"\n              },\n              "requiresContract": {\n                "additionalProperties": false,\n                "properties": {\n                  "contract": {\n                    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n                    "type": "string"\n                  },\n                  "major": {\n                    "maximum": 9007199254740991,\n                    "minimum": 0,\n                    "type": "integer"\n                  },\n                  "range": {\n                    "pattern": "^(?:\\\\*|x|(?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2}))*)$",\n                    "type": "string"\n                  }\n                },\n                "required": [\n                  "contract",\n                  "major"\n                ],\n                "type": "object"\n              }\n            },\n            "required": [\n              "id",\n              "handlerId",\n              "mutatesSource"\n            ],\n            "type": "object"\n          },\n          "type": "array"\n        },\n        "probe": {\n          "additionalProperties": false,\n          "properties": {\n            "kind": {\n              "const": "derived"\n            },\n            "maxRelationDepth": {\n              "maximum": 9007199254740991,\n              "minimum": 0,\n              "type": "integer"\n            },\n            "maxSubjects": {\n              "maximum": 9007199254740991,\n              "minimum": 0,\n              "type": "integer"\n            }\n          },\n          "required": [\n            "kind",\n            "maxSubjects",\n            "maxRelationDepth"\n          ],\n          "type": "object"\n        },\n        "publishesDataSources": {\n          "items": {\n            "oneOf": [\n              {\n                "additionalProperties": false,\n                "properties": {\n                  "contract": {\n                    "enum": [\n                      "common.view/text-data-source",\n                      "common.view/byte-range-source",\n                      "common.view/tree-data-source",\n                      "common.view/table-data-source",\n                      "common.view/transport-source",\n                      "common.view/namespace-entry-source",\n                      "common.view/raster-image-source",\n                      "common.view/vector-scene-source",\n                      "common.view/audio-media-source",\n                      "common.view/video-media-source",\n                      "common.view/model-scene-source",\n                      "common.view/world-scene-source",\n                      "common.view/model-resource-refs-source",\n                      "common.view/model-skeleton-source",\n                      "common.view/model-animation-source",\n                      "common.view/model-collision-source",\n                      "common.view/model-material-source",\n                      "common.view/model-socket-source",\n                      "common.view/model-effect-source",\n                      "common.view/model-light-source",\n                      "common.view/model-camera-source",\n                      "common.view/model-physics-source",\n                      "common.view/model-node-behaviour-source",\n                      "common.view/model-lod-source",\n                      "common.view/relation-graph-source",\n                      "common.view/subject-selector-source",\n                      "common.view/subject-facts-source",\n                      "common.view/subject-calculations-source",\n                      "common.view/slide-deck-source"\n                    ]\n                  },\n                  "major": {\n                    "const": 1\n                  }\n                },\n                "required": [\n                  "contract",\n                  "major"\n                ],\n                "type": "object"\n              },\n              {\n                "additionalProperties": false,\n                "properties": {\n                  "contract": {\n                    "not": {\n                      "enum": [\n                        "common.view/text-data-source",\n                        "common.view/byte-range-source",\n                        "common.view/tree-data-source",\n                        "common.view/table-data-source",\n                        "common.view/transport-source",\n                        "common.view/namespace-entry-source",\n                        "common.view/raster-image-source",\n                        "common.view/vector-scene-source",\n                        "common.view/audio-media-source",\n                        "common.view/video-media-source",\n                        "common.view/model-scene-source",\n                        "common.view/world-scene-source",\n                        "common.view/model-resource-refs-source",\n                        "common.view/model-skeleton-source",\n                        "common.view/model-animation-source",\n                        "common.view/model-collision-source",\n                        "common.view/model-material-source",\n                        "common.view/model-socket-source",\n                        "common.view/model-effect-source",\n                        "common.view/model-light-source",\n                        "common.view/model-camera-source",\n                        "common.view/model-physics-source",\n                        "common.view/model-node-behaviour-source",\n                        "common.view/model-lod-source",\n                        "common.view/relation-graph-source",\n                        "common.view/subject-selector-source",\n                        "common.view/subject-facts-source",\n                        "common.view/subject-calculations-source",\n                        "common.view/slide-deck-source"\n                      ]\n                    },\n                    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n                    "type": "string"\n                  },\n                  "major": {\n                    "maximum": 9007199254740991,\n                    "minimum": 0,\n                    "type": "integer"\n                  },\n                  "opaque": {\n                    "const": true\n                  }\n                },\n                "required": [\n                  "contract",\n                  "major",\n                  "opaque"\n                ],\n                "type": "object"\n              }\n            ]\n          },\n          "type": "array"\n        },\n        "representations": {\n          "items": {\n            "additionalProperties": false,\n            "properties": {\n              "contract": {\n                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n                "type": "string"\n              },\n              "id": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "lossy": {\n                "type": "boolean"\n              },\n              "major": {\n                "maximum": 9007199254740991,\n                "minimum": 0,\n                "type": "integer"\n              },\n              "stage": {\n                "enum": [\n                  "authored",\n                  "compiled",\n                  "runtime"\n                ]\n              }\n            },\n            "required": [\n              "id",\n              "contract",\n              "major",\n              "stage",\n              "lossy"\n            ],\n            "type": "object"\n          },\n          "minItems": 1,\n          "type": "array"\n        },\n        "requires": {\n          "items": {\n            "additionalProperties": false,\n            "properties": {\n              "contract": {\n                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n                "type": "string"\n              },\n              "major": {\n                "maximum": 9007199254740991,\n                "minimum": 0,\n                "type": "integer"\n              },\n              "range": {\n                "pattern": "^(?:\\\\*|x|(?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2}))*)$",\n                "type": "string"\n              }\n            },\n            "required": [\n              "contract",\n              "major"\n            ],\n            "type": "object"\n          },\n          "type": "array"\n        },\n        "roles": {\n          "items": {\n            "enum": [\n              "container",\n              "media",\n              "byte-transform",\n              "semantic",\n              "index",\n              "sidecar"\n            ]\n          },\n          "minItems": 1,\n          "type": "array"\n        },\n        "sourceTopology": {\n          "const": "derived"\n        },\n        "traitDeclarations": {\n          "items": {\n            "additionalProperties": false,\n            "properties": {\n              "definitionVersion": {\n                "pattern": "^(0|[1-9]\\\\d*)\\\\.(0|[1-9]\\\\d*)\\\\.(0|[1-9]\\\\d*)(?:-((?:0|[1-9]\\\\d*|\\\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\\\.(?:0|[1-9]\\\\d*|\\\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\\\+([0-9a-zA-Z-]+(?:\\\\.[0-9a-zA-Z-]+)*))?$",\n                "type": "string"\n              },\n              "evidenceRefs": {\n                "items": {\n                  "minLength": 1,\n                  "type": "string"\n                },\n                "type": "array",\n                "uniqueItems": true\n              },\n              "id": {\n                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n                "type": "string"\n              },\n              "prerequisites": {\n                "items": {\n                  "additionalProperties": false,\n                  "properties": {\n                    "contract": {\n                      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n                      "type": "string"\n                    },\n                    "major": {\n                      "maximum": 9007199254740991,\n                      "minimum": 0,\n                      "type": "integer"\n                    },\n                    "range": {\n                      "pattern": "^(?:\\\\*|x|(?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2}))*)$",\n                      "type": "string"\n                    }\n                  },\n                  "required": [\n                    "contract",\n                    "major"\n                  ],\n                  "type": "object"\n                },\n                "type": "array"\n              },\n              "presence": {\n                "enum": [\n                  "may-expose",\n                  "will-expose"\n                ]\n              },\n              "representation": {\n                "enum": [\n                  "source",\n                  "compiled",\n                  "runtime"\n                ]\n              }\n            },\n            "required": [\n              "id",\n              "representation",\n              "presence"\n            ],\n            "type": "object"\n          },\n          "type": "array"\n        }\n      },\n      "required": [\n        "formatRefs",\n        "roles",\n        "sourceTopology",\n        "artifactStages",\n        "openIntents",\n        "match",\n        "probe",\n        "representations",\n        "publishesDataSources",\n        "operations",\n        "implementationTier",\n        "budgets"\n      ],\n      "type": "object"\n    }\n  ]\n}\n', codecContributionSpecV1],
   ['{\n  "$id": "https://schemas.modkit.org/x3/service-provider-contribution-spec.v1.schema.json",\n  "$schema": "https://json-schema.org/draft/2020-12/schema",\n  "additionalProperties": false,\n  "properties": {\n    "applicableVariants": {\n      "items": {\n        "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",\n        "type": "string"\n      },\n      "type": "array"\n    },\n    "fidelityEvidence": {\n      "items": {\n        "additionalProperties": false,\n        "properties": {\n          "claim": {\n            "oneOf": [\n              {\n                "additionalProperties": false,\n                "properties": {\n                  "notes": {\n                    "items": {\n                      "minLength": 1,\n                      "type": "string"\n                    },\n                    "type": "array"\n                  },\n                  "preservesUnknownData": {\n                    "const": true\n                  },\n                  "roundTrip": {\n                    "const": "byte-identical"\n                  }\n                },\n                "required": [\n                  "roundTrip",\n                  "preservesUnknownData"\n                ],\n                "type": "object"\n              },\n              {\n                "additionalProperties": false,\n                "properties": {\n                  "notes": {\n                    "items": {\n                      "minLength": 1,\n                      "type": "string"\n                    },\n                    "type": "array"\n                  },\n                  "preservesUnknownData": {\n                    "type": "boolean"\n                  },\n                  "roundTrip": {\n                    "const": "semantic"\n                  }\n                },\n                "required": [\n                  "roundTrip",\n                  "preservesUnknownData"\n                ],\n                "type": "object"\n              },\n              {\n                "additionalProperties": false,\n                "properties": {\n                  "notes": {\n                    "items": {\n                      "minLength": 1,\n                      "type": "string"\n                    },\n                    "type": "array"\n                  },\n                  "preservesUnknownData": {\n                    "const": false\n                  },\n                  "roundTrip": {\n                    "enum": [\n                      "lossy",\n                      "none"\n                    ]\n                  }\n                },\n                "required": [\n                  "roundTrip",\n                  "preservesUnknownData"\n                ],\n                "type": "object"\n              }\n            ]\n          },\n          "conformanceProfile": {\n            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n            "type": "string"\n          },\n          "corpusDigest": {\n            "minLength": 1,\n            "type": "string"\n          },\n          "corpusId": {\n            "minLength": 1,\n            "type": "string"\n          },\n          "evidenceId": {\n            "minLength": 1,\n            "type": "string"\n          },\n          "inputClass": {\n            "minLength": 1,\n            "type": "string"\n          },\n          "offerId": {\n            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",\n            "type": "string"\n          },\n          "optionsFingerprint": {\n            "minLength": 1,\n            "type": "string"\n          },\n          "provenAt": {\n            "pattern": "^\\\\d{4}-\\\\d{2}-\\\\d{2}T\\\\d{2}:\\\\d{2}:\\\\d{2}(?:\\\\.\\\\d+)?Z$",\n            "type": "string"\n          }\n        },\n        "required": [\n          "offerId",\n          "evidenceId",\n          "claim",\n          "corpusId",\n          "corpusDigest",\n          "conformanceProfile",\n          "optionsFingerprint",\n          "inputClass",\n          "provenAt"\n        ],\n        "type": "object"\n      },\n      "type": "array"\n    },\n    "inputs": {\n      "items": {\n        "minLength": 1,\n        "type": "string"\n      },\n      "type": "array"\n    },\n    "lifecycleScope": {\n      "enum": [\n        "session",\n        "operation",\n        "process"\n      ]\n    },\n    "outputs": {\n      "items": {\n        "additionalProperties": false,\n        "properties": {\n          "definitionVersion": {\n            "pattern": "^(0|[1-9]\\\\d*)\\\\.(0|[1-9]\\\\d*)\\\\.(0|[1-9]\\\\d*)(?:-((?:0|[1-9]\\\\d*|\\\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\\\.(?:0|[1-9]\\\\d*|\\\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\\\+([0-9a-zA-Z-]+(?:\\\\.[0-9a-zA-Z-]+)*))?$",\n            "type": "string"\n          },\n          "evidenceRefs": {\n            "items": {\n              "minLength": 1,\n              "type": "string"\n            },\n            "type": "array",\n            "uniqueItems": true\n          },\n          "id": {\n            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n            "type": "string"\n          },\n          "prerequisites": {\n            "items": {\n              "additionalProperties": false,\n              "properties": {\n                "contract": {\n                  "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n                  "type": "string"\n                },\n                "major": {\n                  "maximum": 9007199254740991,\n                  "minimum": 0,\n                  "type": "integer"\n                },\n                "range": {\n                  "pattern": "^(?:\\\\*|x|(?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2}))*)$",\n                  "type": "string"\n                }\n              },\n              "required": [\n                "contract",\n                "major"\n              ],\n              "type": "object"\n            },\n            "type": "array"\n          },\n          "presence": {\n            "enum": [\n              "may-expose",\n              "will-expose"\n            ]\n          },\n          "representation": {\n            "enum": [\n              "source",\n              "compiled",\n              "runtime"\n            ]\n          }\n        },\n        "required": [\n          "id",\n          "representation",\n          "presence"\n        ],\n        "type": "object"\n      },\n      "type": "array"\n    },\n    "protocolOperations": {\n      "items": {\n        "minLength": 1,\n        "type": "string"\n      },\n      "type": "array"\n    },\n    "provides": {\n      "items": {\n        "additionalProperties": false,\n        "properties": {\n          "contract": {\n            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n            "type": "string"\n          },\n          "facet": {\n            "title": "JsonValue"\n          },\n          "major": {\n            "maximum": 9007199254740991,\n            "minimum": 0,\n            "type": "integer"\n          },\n          "offerId": {\n            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",\n            "type": "string"\n          },\n          "version": {\n            "pattern": "^(0|[1-9]\\\\d*)\\\\.(0|[1-9]\\\\d*)\\\\.(0|[1-9]\\\\d*)(?:-((?:0|[1-9]\\\\d*|\\\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\\\.(?:0|[1-9]\\\\d*|\\\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\\\+([0-9a-zA-Z-]+(?:\\\\.[0-9a-zA-Z-]+)*))?$",\n            "type": "string"\n          }\n        },\n        "required": [\n          "offerId",\n          "contract",\n          "major",\n          "version"\n        ],\n        "type": "object"\n      },\n      "minItems": 1,\n      "type": "array"\n    },\n    "replacement": {\n      "additionalProperties": false,\n      "properties": {\n        "compatible": {\n          "type": "boolean"\n        },\n        "target": {\n          "additionalProperties": false,\n          "properties": {\n            "contract": {\n              "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n              "type": "string"\n            },\n            "major": {\n              "maximum": 9007199254740991,\n              "minimum": 0,\n              "type": "integer"\n            },\n            "range": {\n              "pattern": "^(?:\\\\*|x|(?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2}))*)$",\n              "type": "string"\n            }\n          },\n          "required": [\n            "contract",\n            "major"\n          ],\n          "type": "object"\n        }\n      },\n      "required": [\n        "target",\n        "compatible"\n      ],\n      "type": "object"\n    },\n    "requires": {\n      "items": {\n        "additionalProperties": false,\n        "properties": {\n          "contract": {\n            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n            "type": "string"\n          },\n          "major": {\n            "maximum": 9007199254740991,\n            "minimum": 0,\n            "type": "integer"\n          },\n          "range": {\n            "pattern": "^(?:\\\\*|x|(?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2}))*)$",\n            "type": "string"\n          }\n        },\n        "required": [\n          "contract",\n          "major"\n        ],\n        "type": "object"\n      },\n      "type": "array"\n    }\n  },\n  "required": [\n    "provides",\n    "lifecycleScope"\n  ],\n  "type": "object"\n}\n', serviceProviderContributionSpecV1],

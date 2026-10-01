@@ -26,7 +26,7 @@ import {
   decomposeMatrix4,
   normalizeQuat,
   quaternionFromRotationMatrix
-} from "./chunk-WYUQ3HXR.js";
+} from "./chunk-MUN4JEOH.js";
 import {
   snapshotJson
 } from "./chunk-ZSDVUSRM.js";
