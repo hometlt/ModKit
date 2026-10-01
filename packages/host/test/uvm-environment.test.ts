@@ -127,7 +127,8 @@ it.each(['environment', 'eyePosition'] as const)(
     const rasterResources: RasterResourcePort = {
       async read(request) {
         reads++
-        expect(request.selection).toEqual({ face: 'all' })
+        // every cube face, at the most detailed level that fits the texture's share
+        expect(request.selection).toEqual({ face: 'all', mipLevel: 'fit' })
         entered.resolve()
         await gate.promise
         return {
