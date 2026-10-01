@@ -157,6 +157,25 @@ function found(value: string, pattern: RegExp): boolean {
   return pattern.test(value)
 }
 
+/**
+ * Letters a locale does not write in, as MK2 checked each cell: Cyrillic, Han, Hangul or kana
+ * outside the locales that use them. Latin is never foreign — markup and names are Latin everywhere.
+ * `locale` is a language or a locale code (`ru`, `ruRU`, `zhCN` …).
+ */
+export function foreignScript(locale: string, value: string): boolean {
+  if (value === '') return false
+  const cyrillic = /[\u0400-\u04FF]/u.test(value)
+  const han = /[\u3400-\u9FFF]/u.test(value)
+  const hangul = /[\uAC00-\uD7AF\u1100-\u11FF]/u.test(value)
+  const kana = /[\u3040-\u30FF]/u.test(value)
+  const code = locale.toLowerCase()
+  if (code.startsWith('ru')) return han || hangul || kana
+  if (code.startsWith('zh')) return cyrillic || hangul || kana
+  if (code.startsWith('ko')) return cyrillic || kana
+  if (code.startsWith('ja')) return cyrillic || hangul
+  return cyrillic || han || hangul || kana
+}
+
 /** Wrap what `pattern` finds in each text node of `cell`; a match across two nodes stays unmarked. */
 function markMatches(cell: HTMLElement, pattern: RegExp): boolean {
   const document = cell.ownerDocument
@@ -247,10 +266,14 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
   /** Rows with a value in the draft; they count as changed as well. */
   let draftedRows = new Set<number>()
   const selected = new Set<number>()
+  /** A locale's value written in letters it does not use: an error of that cell (7.36). */
+  const foreignIn = (row: Row, column: (typeof variants)[number]): boolean =>
+    foreignScript(column.language ?? column.variant ?? '', row.cells[column.index] ?? '')
   const statusOf = (row: Row): readonly string[] => [
     ...(statusColumn < 0 ? [] : (row.cells[statusColumn] ?? '').split(' ').filter(Boolean)),
     // a locale without a value, missing or blank (MK2's «empty» filter)
     ...(variants.some(column => (row.cells[column.index] ?? '') === '') ? ['empty'] : []),
+    ...(variants.some(column => foreignIn(row, column)) ? ['error'] : []),
     ...(changed.has(row.index) || draftedRows.has(row.index) ? ['changed'] : []),
   ]
   const state: FilterState = remembered.get(args.descriptor.subjectUri) ?? {
@@ -764,12 +787,16 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
             : base !== undefined && column.index !== base.index && value === row.cells[base.index]
               ? ('stale' as const)
               : undefined
+        const foreign = foreignIn(row, column)
         const states = [
           ...(draft.has(`${row.index}:${column.index}`) ? (['mutating'] as const) : []),
           ...(state === undefined ? [] : [state]),
+          ...(foreign ? (['invalid'] as const) : []),
         ]
         if (states.length > 0) setState(valueCell, states)
-        if (state !== undefined) {
+        if (foreign) {
+          valueCell.title = text('table.cellForeignScript', { locale: column.variant ?? '' })
+        } else if (state !== undefined) {
           const key = state === 'empty' ? 'table.cellMissing' : 'table.cellUntranslated'
           valueCell.title = text(key, { locale: column.variant ?? '' })
         }

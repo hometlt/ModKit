@@ -733,6 +733,7 @@ export const TABLE_VARIANTS_FALLBACK_MESSAGES = {
   'table.addKeyName': 'New key',
   'table.addKeySubmit': 'Add',
   'table.addKeyValue': 'Value ({variant})',
+  'table.cellForeignScript': '{locale} has letters of a script it does not use',
   'table.cellMissing': 'No value in {locale}',
   'table.cellUntranslated': '{locale} still has the base text',
   'table.columns': 'Columns',
