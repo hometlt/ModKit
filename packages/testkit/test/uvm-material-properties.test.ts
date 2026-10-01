@@ -83,7 +83,7 @@ describe('publisher material properties', () => {
       priority: 17,
     })
     expect(refs[1]).toMatchObject({ depthWrite: true, priority: 2, baseColorFactor: [0, 0, 1, 1] })
-    expect(refs[1]!.unlit).toBeUndefined()
+    expect(refs[1]).not.toHaveProperty('unlit')
   })
 
   it('refuses a colour factor outside glTF 0..1', () => {
