@@ -3873,10 +3873,15 @@ describe('13C real-browser viewer host', () => {
     expect(
       await page.locator('[data-mk-part="model.canvas"]').getAttribute('data-model-renderer'),
     ).toBe('wireframe')
-    expect(await page.getByRole('combobox', { name: 'Model primitive' }).inputValue()).toBe('')
+    // Every mesh drawn at first, each one a checkbox of its own, as MK2's mesh list.
+    const meshes = page.getByRole('group', { name: 'Model primitive' })
+    expect(await meshes.getByRole('checkbox', { name: 'hull' }).isChecked()).toBe(true)
+    expect(await meshes.getByRole('checkbox', { name: 'turret' }).isChecked()).toBe(true)
     expect(await page.getByText('Bones (2)', { exact: true }).isVisible()).toBe(true)
     expect(await page.getByText('Materials (1)', { exact: true }).isVisible()).toBe(true)
-    await page.getByRole('combobox', { name: 'Model primitive' }).selectOption('turret')
+    await meshes.getByRole('checkbox', { name: 'hull' }).uncheck()
+    expect(await meshes.getByRole('checkbox', { name: 'hull' }).isChecked()).toBe(false)
+    expect(await meshes.getByRole('checkbox', { name: 'turret' }).isChecked()).toBe(true)
     await page.waitForFunction(() =>
       (
         globalThis as unknown as { modelFixture: { primitiveCalls: string[] } }
