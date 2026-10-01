@@ -548,12 +548,10 @@ describe('Block 20 six-app permission, cancellation and recovery matrix', () => 
         ).toHaveLength(1)
         await lease.release()
         leases.splice(leases.indexOf(lease), 1)
-        await expect(
-          recovered.probe({ source: crashSource('/ok'), plan: {} }),
-          app.name,
-        ).rejects.toMatchObject({
-          code: 'x3.host/rpc-endpoint-closed',
-        })
+        // The realm stays warm across leases and a codec holds its own lease until releaseCodec
+        // (ad71752b): letting go of the module does not cut off a codec still in use.
+        const kept = await recovered.probe({ source: crashSource('/ok'), plan: {} })
+        expect(kept['threadId'], app.name).toBe(after['threadId'])
       }
 
       const pwa = apps.find(app => app.name === 'pwa')
