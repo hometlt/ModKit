@@ -20062,8 +20062,11 @@ async function worldSceneModel(asset, request, options, signal) {
     const loaded = await pending;
     textureDiagnostics.push(...loaded.diagnostics);
     const texture = loaded.texture;
-    if (texture === void 0)
+    if (texture === void 0) {
+      if (textureCache.get(cacheKey) === pending)
+        textureCache.delete(cacheKey);
       continue;
+    }
     const bytes = worldTextureBytes(texture);
     if (bytes > remaining) {
       textureDiagnostics.push(diagnostic("warning", "x3.host/world-model-texture-budget-exhausted", `decoded model texture ${reference.id} exceeds the aggregate texture budget`));
@@ -25724,6 +25727,37 @@ var COMMON_PRESENTATION_CATALOG = Object.freeze([
       kind: "stage",
       consumesDataSources: [{ contract: "common.view/namespace-entry-source", major: 1 }],
       priority: 340,
+      singletonGroup: "center-stage"
+    })
+  }),
+  Object.freeze({
+    slot: Object.freeze({
+      slotId: "wiki",
+      kind: "stage",
+      contributionId: "modkit.ui/subject-wiki-stage",
+      extensionId: "modkit/ui",
+      priority: 385,
+      singletonGroup: "center-stage",
+      bindings: Object.freeze([
+        Object.freeze({
+          bindingId: "wiki-content",
+          contract: "common.view/subject-selector-source",
+          major: 1
+        })
+      ])
+    }),
+    optionalBindings: Object.freeze([
+      Object.freeze({
+        bindingId: "wiki-optional-1",
+        contract: "common.view/subject-facts-source",
+        major: 1
+      })
+    ]),
+    spec: Object.freeze({
+      kind: "stage",
+      consumesDataSources: [{ contract: "common.view/subject-selector-source", major: 1 }],
+      optionalDataSources: [{ contract: "common.view/subject-facts-source", major: 1 }],
+      priority: 385,
       singletonGroup: "center-stage"
     })
   })

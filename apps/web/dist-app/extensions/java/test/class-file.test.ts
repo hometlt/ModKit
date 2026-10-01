@@ -165,6 +165,10 @@ describe('the bounded constant interpreter', () => {
       state: 'refused',
       reason: 'the method handles exceptions',
     })
+    // a caller that knows nothing throws walks the protected code straight through
+    const guarded = interpretMethod(file, method(file, 'guarded'), { exceptions: 'never-thrown' })
+    expect(guarded).toMatchObject({ state: 'ok', returned: { kind: 'result', call: 0 } })
+    expect(guarded.calls.map(call => call.name)).toEqual(['parseInt'])
     // a walk stopped by its budget hands back the parts made before
     const stopped = interpretMethod(file, method(file, 'rows'), { maxInstructions: 40 })
     expect(stopped.state).toBe('refused')

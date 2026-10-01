@@ -1,12 +1,12 @@
 import {
   createVideoViewer
-} from "./chunk-AKPN3O2W.js";
+} from "./chunk-TIOGNGDQ.js";
 import {
   createAudioViewer
-} from "./chunk-CHJXHITU.js";
+} from "./chunk-R3G76J7H.js";
 import {
   createRelationGraphViewer
-} from "./chunk-URAS4C7Z.js";
+} from "./chunk-KTRK3BPX.js";
 import {
   Box3,
   BufferBuilder,
@@ -79,7 +79,7 @@ import {
   fieldWriteRefusal,
   mountFieldEditTarget,
   mountInlineField
-} from "./chunk-AOBHKK4R.js";
+} from "./chunk-5M3EB3OH.js";
 import {
   DEFAULT_MODEL_ANIMATION_BUDGET,
   DEFAULT_MODEL_SKELETON_BUDGET,
@@ -100,16 +100,17 @@ import {
   createImageViewer,
   createNamespaceViewer,
   invokeRefusalMessage
-} from "./chunk-T5VB5FND.js";
+} from "./chunk-UNTTKTWI.js";
 import {
   compileMatcher,
   compilePattern,
   createMediaShell,
   textMatches
-} from "./chunk-BZC27BIS.js";
+} from "./chunk-T3OMRXCG.js";
 import {
   CALCULATIONS_FALLBACK_MESSAGES,
   CARD_FALLBACK_MESSAGES,
+  CARD_WIKI_FALLBACK_MESSAGES,
   CODE_FALLBACK_MESSAGES,
   DEFAULT_UI_LOCALIZER,
   EDITOR_FALLBACK_MESSAGES,
@@ -141,15 +142,17 @@ import {
   element,
   invokeOperation,
   parseUiCatalogDocument,
+  rememberUiPreference,
   requireContainer,
   resolveUiLocale,
   safeViewerText,
   setPart,
   setState,
   setViewerText,
+  uiPreference,
   unknownSourceLease,
   withEnglishUiFallback
-} from "./chunk-DYNIDBAC.js";
+} from "./chunk-763L25CS.js";
 import {
   A1_SPEC_SCHEMA_ENTRIES,
   AUXILIARY_DATA_SOURCE_SURFACES,
@@ -15646,6 +15649,37 @@ var COMMON_PRESENTATION_CATALOG = Object.freeze([
       priority: 340,
       singletonGroup: "center-stage"
     })
+  }),
+  Object.freeze({
+    slot: Object.freeze({
+      slotId: "wiki",
+      kind: "stage",
+      contributionId: "modkit.ui/subject-wiki-stage",
+      extensionId: "modkit/ui",
+      priority: 385,
+      singletonGroup: "center-stage",
+      bindings: Object.freeze([
+        Object.freeze({
+          bindingId: "wiki-content",
+          contract: "common.view/subject-selector-source",
+          major: 1
+        })
+      ])
+    }),
+    optionalBindings: Object.freeze([
+      Object.freeze({
+        bindingId: "wiki-optional-1",
+        contract: "common.view/subject-facts-source",
+        major: 1
+      })
+    ]),
+    spec: Object.freeze({
+      kind: "stage",
+      consumesDataSources: [{ contract: "common.view/subject-selector-source", major: 1 }],
+      optionalDataSources: [{ contract: "common.view/subject-facts-source", major: 1 }],
+      priority: 385,
+      singletonGroup: "center-stage"
+    })
   })
 ]);
 
@@ -20027,8 +20061,11 @@ async function worldSceneModel(asset, request, options, signal) {
     const loaded = await pending;
     textureDiagnostics.push(...loaded.diagnostics);
     const texture = loaded.texture;
-    if (texture === void 0)
+    if (texture === void 0) {
+      if (textureCache.get(cacheKey2) === pending)
+        textureCache.delete(cacheKey2);
       continue;
+    }
     const bytes = worldTextureBytes(texture);
     if (bytes > remaining) {
       textureDiagnostics.push(diagnostic("warning", "x3.host/world-model-texture-budget-exhausted", `decoded model texture ${reference.id} exceeds the aggregate texture budget`));
@@ -40043,7 +40080,7 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: "sha256:2d7957608c08dc4dfe1eb078dafecd5264f4f36a957e057bbad6e21df22e050c",
+        artifactDigest: "sha256:52660c4f067bf7314586f6f149963611a3277cf300558a29b13b0bedefc50f02",
         fileDigests: {
           "README.md": "sha256:e88ae59915e47ee0d3549aeb19cefd2b952214ab977edaed243918a0947d2f7c",
           "contributions/codec-java-class.json": "sha256:abeaf9e56aa1a4a1fd91d10fe7cb98bdebb953b0796dadccd97bbf870fca3647",
@@ -40063,17 +40100,17 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
           "dist/index.d.ts.map": "sha256:4e48b0ab1fc7e712837c5ec80354dc9113b1a53cbb329c958c8eba6eb3b1ccb0",
           "dist/index.js": "sha256:0028b845707c649e1b5b9e91d79c1e2fea4429e4b41db0b261b42061ef06561f",
           "dist/index.js.map": "sha256:4618118effa3f9dd6de4e26d5e3b13e083f0f445c3923245dea21a4d076cac58",
-          "dist/interpreter.d.ts": "sha256:f1ca0ecc0ceb39a3b612216c4f288d3bada5d57e5c95279134d760f5ab902b0b",
-          "dist/interpreter.d.ts.map": "sha256:87611521608218167394df3a2e1c11d35e380ce7d7b55afb1b6123c9002dcdb8",
-          "dist/interpreter.js": "sha256:57f180c37d2c10e9006e916a53bb7f39b5a55ec857b12c9e2274ccfdd905e81a",
-          "dist/interpreter.js.map": "sha256:d810bb4febd69c9b01f10a5c9907d15aeed553dfd42d1902e37d18c002b61f72",
+          "dist/interpreter.d.ts": "sha256:4ad93e2a47ee198eb2a99c366e030cbc8991d558d311212665c45d2dc2f65470",
+          "dist/interpreter.d.ts.map": "sha256:a38f4f5e4394612a08c1ac420fcd9dddff594581ea1c0089aac1cbdb05122d62",
+          "dist/interpreter.js": "sha256:ba01ff9bf831694dc1ea28601ab2aa29071d1e725cb9b2641a8e2974bb39fc9b",
+          "dist/interpreter.js.map": "sha256:c7068136f5a02a27f63a95909566b556ef70d773b8516eec038507fd66da91df",
           "package.json": "sha256:bbc40fcdf10b49710604f8019903157f4d221e58aaef96b298b5dc6f8118a952",
           "src/bytecode.ts": "sha256:c9beb7f1f6c92ad84b0fe6b842eef99be908f798db6b8bbca008d828893a31cd",
           "src/class-file.ts": "sha256:08bab8bce935fb8a57134a87fbdc1920f718ecce267710ca6ed1fd297433f891",
           "src/codec.ts": "sha256:0b11ebffa5132857c86d14d2426de9f4f754109ab1759b769663cec0fbfff97e",
           "src/index.ts": "sha256:2542de1574c447ff09f0f2bd0edc5ab9d6073956f475aa2e7fbb6930994a996a",
-          "src/interpreter.ts": "sha256:ea48127ad33a7dc987eb89a1a6a96815daa868abd0645a2b7ab63427f6a4f3cb",
-          "test/class-file.test.ts": "sha256:0b636ff59b13a75414a9fe072d3616e1ab06b7d312caa89b68533bfdfc5c2888",
+          "src/interpreter.ts": "sha256:7e49c8a6affc06dc35029fea98034b31da999dc31519a895e53dab49ee826216",
+          "test/class-file.test.ts": "sha256:69d66ea85ddaa76b24e89d8530ebd527b25138dec95759c7a6279c9924bb48f1",
           "test/fixtures/Heap.class": "sha256:c0d69d0881a47c3f3401ee4b28b6591b0533369fc9ab74efc96b4bed4b6f4c9c",
           "test/fixtures/Heap.java": "sha256:747758948bb7a24d6b4f80172ed9466b29f1917629939c858253aabc6546a1e2",
           "test/fixtures/Sample.class": "sha256:0e6bca2c5fc36451a73e353e247779f252db8a62a200cdc24752d938491bd900",
@@ -40081,7 +40118,7 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
           "test/interpreter-heap.test.ts": "sha256:d9cf33d27037c86d1b6cc5b368a8ca40bddd5fb6ccafb421fe2296b78faefe9a",
           "tsconfig.json": "sha256:daba80f2abbe46449d7ffad22c2029633475f729b9380cc79daeb850c2223492"
         },
-        inventoryRecordId: "artifact:sha256:2d7957608c08dc4dfe1eb078dafecd5264f4f36a957e057bbad6e21df22e050c"
+        inventoryRecordId: "artifact:sha256:52660c4f067bf7314586f6f149963611a3277cf300558a29b13b0bedefc50f02"
       },
       artifactRoot: "extensions/java/",
       containers: {
@@ -46209,6 +46246,7 @@ var EN = parseUiCatalogDocument(
       "web.view.archive": "Entries",
       "web.view.template": "Template",
       "web.view.card": "Card",
+      "web.view.wiki": "Wiki",
       "web.view.calculations": "Calculations",
       "web.view.table": "Table",
       "web.view.tree": "Tree",
@@ -46390,6 +46428,7 @@ var RU = parseUiCatalogDocument(
       "web.view.archive": "\u0421\u043E\u0434\u0435\u0440\u0436\u0438\u043C\u043E\u0435",
       "web.view.template": "\u0428\u0430\u0431\u043B\u043E\u043D",
       "web.view.card": "\u041A\u0430\u0440\u0442\u043E\u0447\u043A\u0430",
+      "web.view.wiki": "\u0412\u0438\u043A\u0438",
       "web.view.calculations": "\u0420\u0430\u0441\u0447\u0451\u0442\u044B",
       "web.view.table": "\u0422\u0430\u0431\u043B\u0438\u0446\u0430",
       "web.view.tree": "\u0414\u0435\u0440\u0435\u0432\u043E",
@@ -63159,6 +63198,221 @@ function createAccordion(document, options) {
   };
 }
 
+// ../MODDING/modkit-core/packages/ui/dist/card/wiki.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var WIKI_PAGE_SIZE = 200;
+var WIKI_ICON_CONCURRENCY = 4;
+var WIKI_MODE = "wiki.mode";
+function wikiKinds(summary) {
+  const kinds = summary.kinds?.filter((item) => item.count > 0) ?? [];
+  return kinds.length > 0 ? kinds : [{ count: summary.totalSubjects }];
+}
+function createSubjectWikiViewer(options) {
+  const localizer = withEnglishUiFallback(options.localizer, CARD_WIKI_FALLBACK_MESSAGES);
+  return defineViewerModule({
+    abiVersion: 1,
+    async mount(args) {
+      const scope = new ViewerMountScope(args.signal);
+      const root = createSurface(args.container, localizer.text("viewer.wiki"));
+      const lease2 = await unknownSourceLease(args.sources, args.slot, "common.view/subject-selector-source");
+      if (lease2 === void 0)
+        throw new TypeError("subject selector binding is unavailable");
+      scope.lease(lease2);
+      const selector = lease2.value;
+      const summary = await selector.summary(scope.signal);
+      const wiki = element(root, "div", { part: "wiki" });
+      const kindList = element(wiki, "nav", { part: "wiki.kinds" });
+      kindList.setAttribute("aria-label", localizer.text("viewer.wikiKinds"));
+      const pane = element(wiki, "section", { part: "wiki.pane" });
+      const toolbar = element(pane, "div", { part: "wiki.toolbar", role: "toolbar" });
+      const search = element(toolbar, "input", { part: "wiki.search" });
+      search.type = "search";
+      search.placeholder = localizer.text("viewer.wikiSearch");
+      search.setAttribute("aria-label", localizer.text("viewer.wikiSearch"));
+      const modeButton = element(toolbar, "button", {
+        part: "operations.button"
+      });
+      modeButton.type = "button";
+      const status = element(pane, "output", { part: "wiki.status" });
+      if (summary.completeness !== "complete" && summary.reason !== void 0)
+        element(pane, "p", {
+          part: "wiki.status",
+          text: localizer.text("viewer.wikiIncomplete", { reason: summary.reason })
+        });
+      const list = element(pane, "ul", { part: "wiki.subjects" });
+      const more = element(pane, "button", {
+        part: "operations.button",
+        text: localizer.text("viewer.wikiMore")
+      });
+      more.type = "button";
+      more.hidden = true;
+      const cardHost = element(wiki, "section", { part: "wiki.card" });
+      element(cardHost, "p", { part: "viewer.empty", text: localizer.text("viewer.wikiPick") });
+      let mode = uiPreference(WIKI_MODE) === "grid" ? "grid" : "list";
+      const showMode = () => {
+        list.dataset["mode"] = mode;
+        setViewerText(modeButton, localizer.text(mode === "list" ? "viewer.wikiGrid" : "viewer.wikiList"));
+      };
+      showMode();
+      modeButton.addEventListener("click", () => {
+        mode = mode === "list" ? "grid" : "list";
+        rememberUiPreference(WIKI_MODE, mode);
+        showMode();
+      }, { signal: scope.signal });
+      const kinds = wikiKinds(summary);
+      let kind = kinds[0]?.kind;
+      let cursor5;
+      let shown = 0;
+      let listing;
+      let selected;
+      let card;
+      const openCard = async (subject, row) => {
+        selected?.removeAttribute("aria-current");
+        row.setAttribute("aria-current", "true");
+        selected = row;
+        const previous = card;
+        card = void 0;
+        await previous?.mount.unmount();
+        await previous?.scope.close();
+        const cardScope = new ViewerMountScope(scope.signal);
+        const container = root.ownerDocument.createElement("div");
+        cardHost.replaceChildren(container);
+        try {
+          const mount = await options.card(subject.subjectId).mount({
+            ...args,
+            container,
+            signal: cardScope.signal
+          });
+          card = { mount, scope: cardScope };
+          wiki.dataset["subject"] = subject.subjectId;
+        } catch (error5) {
+          await cardScope.close();
+          if (scope.signal.aborted)
+            return;
+          element(cardHost, "p", {
+            part: "viewer.empty",
+            text: error5 instanceof Error ? error5.message : String(error5)
+          });
+        }
+      };
+      scope.cleanup(async () => {
+        await card?.mount.unmount();
+        await card?.scope.close();
+      });
+      const drawIcons = async (rows, signal) => {
+        const textures = options.textures;
+        if (textures === void 0)
+          return;
+        const queue = [...rows];
+        const worker = async () => {
+          for (let next = queue.shift(); next !== void 0; next = queue.shift()) {
+            if (signal.aborted)
+              return;
+            const reference = {
+              id: next.portrait,
+              role: "texture",
+              provenance: "reference-only"
+            };
+            const decoded = await textures(args.descriptor, [reference], signal).catch(() => void 0);
+            const texture = decoded?.get(next.portrait);
+            const context = next.canvas.getContext("2d");
+            if (texture === void 0 || texture.dimension === "cube" || context === null)
+              continue;
+            next.canvas.width = texture.width;
+            next.canvas.height = texture.height;
+            const pixels = new Uint8ClampedArray(texture.width * texture.height * 4);
+            pixels.set(texture.rgba.subarray(0, pixels.length));
+            context.putImageData(new ImageData(pixels, texture.width, texture.height), 0, 0);
+            next.canvas.hidden = false;
+          }
+        };
+        await Promise.all(Array.from({ length: WIKI_ICON_CONCURRENCY }, () => worker()));
+      };
+      const total = () => search.value.trim() === "" ? kinds.find((item) => item.kind === kind)?.count : void 0;
+      const showStatus = () => {
+        const all = total();
+        setViewerText(status, shown === 0 ? localizer.text("viewer.wikiEmpty") : all === void 0 ? String(shown) : localizer.text("viewer.wikiShown", { shown, total: all }));
+      };
+      const load = async (reset) => {
+        if (reset) {
+          listing?.abort();
+          list.replaceChildren();
+          cursor5 = void 0;
+          shown = 0;
+        }
+        const controller = new AbortController();
+        listing = controller;
+        const signal = controller.signal;
+        const text3 = search.value.trim();
+        try {
+          const page2 = await selector.subjects({
+            limit: WIKI_PAGE_SIZE,
+            ...cursor5 === void 0 ? {} : { cursor: cursor5 },
+            ...kind === void 0 ? {} : { kind },
+            ...text3 === "" ? {} : { text: text3 }
+          }, signal);
+          if (signal.aborted)
+            return;
+          const icons = [];
+          for (const subject of page2.items) {
+            const item = element(list, "li", { part: "wiki.subject" });
+            const row = element(item, "button");
+            row.type = "button";
+            row.title = subject.subjectId;
+            const icon = element(row, "canvas", { part: "wiki.icon" });
+            icon.hidden = true;
+            icon.setAttribute("aria-hidden", "true");
+            if (subject.portrait !== void 0)
+              icons.push({ portrait: subject.portrait, canvas: icon });
+            element(row, "span", { text: subject.label });
+            element(row, "small", { part: "wiki.id", text: subject.subjectId });
+            row.addEventListener("click", () => void openCard(subject, row), {
+              signal: scope.signal
+            });
+          }
+          shown += page2.items.length;
+          cursor5 = page2.nextCursor;
+          more.hidden = cursor5 === void 0;
+          showStatus();
+          void drawIcons(icons, signal);
+        } catch (error5) {
+          if (signal.aborted)
+            return;
+          setViewerText(status, error5 instanceof Error ? error5.message : String(error5));
+        }
+      };
+      for (const entry2 of kinds) {
+        const button = element(kindList, "button", { part: "wiki.kind" });
+        button.type = "button";
+        element(button, "span", { text: entry2.kind ?? localizer.text("viewer.wikiAll") });
+        element(button, "small", { text: String(entry2.count) });
+        if (entry2.kind === kind)
+          button.setAttribute("aria-current", "true");
+        button.addEventListener("click", () => {
+          kindList.querySelector("[aria-current]")?.removeAttribute("aria-current");
+          button.setAttribute("aria-current", "true");
+          kind = entry2.kind;
+          void load(true);
+        }, { signal: scope.signal });
+      }
+      let typing;
+      search.addEventListener("input", () => {
+        clearTimeout(typing);
+        typing = setTimeout(() => void load(true), 250);
+      }, { signal: scope.signal });
+      more.addEventListener("click", () => void load(false), { signal: scope.signal });
+      scope.cleanup(() => {
+        clearTimeout(typing);
+        listing?.abort();
+      });
+      await load(true);
+      return createViewerMount(root, scope, args, ({ descriptor }) => {
+        root.dataset["revision"] = descriptor.revision;
+      });
+    }
+  });
+}
+
 // ../MODDING/modkit-core/packages/ui/dist/card/index.js
 var SubjectNavigationHistory = class {
   currentAddress;
@@ -64132,7 +64386,8 @@ function createSubjectCardViewer(options = {}) {
         const ownId = (await own.summary(scope.signal)).identity.subjectId;
         const document = root.ownerDocument;
         const history = new SubjectNavigationHistory();
-        history.reset(ownId);
+        const start = options.subject ?? ownId;
+        history.reset(start);
         const nav = document.createElement("div");
         setPart(nav, "card.nav");
         const back = document.createElement("button");
@@ -64284,7 +64539,7 @@ function createSubjectCardViewer(options = {}) {
           if (address !== void 0)
             void show(address).catch(() => void 0);
         });
-        await show(ownId);
+        await show(start);
         scope.cleanup(() => page2?.scope.close());
         root.dataset["revision"] = args.descriptor.revision;
         return createViewerMount(root, scope, args, ({ descriptor }) => {
@@ -64309,13 +64564,13 @@ var PREVIEW_STAGES = [
 async function defaultPreviewStage(kind, localizer) {
   switch (kind) {
     case "model":
-      return (await import("./model-WFHGVKPX.js")).createModelViewer({ localizer });
+      return (await import("./model-G4PGY4HA.js")).createModelViewer({ localizer });
     case "image":
-      return (await import("./image-7LQGZO37.js")).createImageViewer({ localizer });
+      return (await import("./image-KJKITAK4.js")).createImageViewer({ localizer });
     case "video":
-      return (await import("./video-EIV7AIVZ.js")).createVideoViewer({ localizer });
+      return (await import("./video-PMIRCVEL.js")).createVideoViewer({ localizer });
     case "audio":
-      return (await import("./audio-VVIHN3PV.js")).createAudioViewer({ localizer });
+      return (await import("./audio-UBD375KI.js")).createAudioViewer({ localizer });
   }
 }
 function embedPreview(sections, args, scope, localizer, previews) {
@@ -64354,7 +64609,7 @@ function embedRelationGraph(sections, args, scope, localizer, graph) {
   return [
     ...sections,
     stageSection({ id: "relations-graph", title: localizer.text("card.relationGraph"), expanded: false }, scope, localizer, "card.relationGraphUnavailable", async (host) => {
-      const module = graph ?? (await import("./graph-FTKCZ3TA.js")).createRelationGraphViewer({ localizer });
+      const module = graph ?? (await import("./graph-RBSNJBOX.js")).createRelationGraphViewer({ localizer });
       return scope.signal.aborted ? void 0 : module.mount({ ...args, container: host, signal: scope.signal });
     })
   ];
@@ -76785,6 +77040,12 @@ function createWebPreviewStages(context) {
     ...context.rasterResources === void 0 ? {} : { rasterResources: context.rasterResources }
   });
   const relationsStage = createRelationGraphViewer({ localizer });
+  const cardOptions = {
+    localizer,
+    previews: { model: modelViewer(), audio: audioStage(localizer) },
+    ...context.textures === void 0 ? {} : { textures: context.textures },
+    graph: relationsStage
+  };
   return Object.freeze([
     {
       id: "image",
@@ -76849,13 +77110,7 @@ function createWebPreviewStages(context) {
       id: "card",
       label: text3("web.view.card"),
       contract: "common.view/subject-facts-source",
-      // The card's preview section mounts the same model, image, video or audio stage.
-      module: createSubjectCardViewer({
-        localizer,
-        previews: { model: modelViewer(), audio: audioStage(localizer) },
-        ...context.textures === void 0 ? {} : { textures: context.textures },
-        graph: relationsStage
-      }),
+      module: createSubjectCardViewer(cardOptions),
       optionalContracts: [
         "common.view/raster-image-source",
         "common.view/model-scene-source",
@@ -76866,6 +77121,18 @@ function createWebPreviewStages(context) {
         "common.view/subject-selector-source",
         "common.view/relation-graph-source"
       ]
+    },
+    {
+      id: "wiki",
+      label: text3("web.view.wiki"),
+      contract: "common.view/subject-selector-source",
+      // A mod's entities by kind, each opening in the same card, started on it (plan 5.25).
+      module: createSubjectWikiViewer({
+        localizer,
+        card: (subject) => createSubjectCardViewer({ ...cardOptions, subject }),
+        ...context.textures === void 0 ? {} : { textures: context.textures }
+      }),
+      optionalContracts: ["common.view/subject-facts-source"]
     },
     {
       id: "calculations",
