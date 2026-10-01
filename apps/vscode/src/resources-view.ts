@@ -114,21 +114,34 @@ export class ResourcesView implements vscode.TreeDataProvider<ResourceTreeNode>,
     if (lease === undefined) return undefined
     const tree = lease.value
     type Item = vscode.QuickPickItem & { readonly node: ResourceTreeNode }
-    // The loaded mods answer the search; the picker must not filter their answer again.
+    /*
+     * The loaded mods answer the search, each with its best matches first; the picker must not
+     * filter their answer again, and ranks the union by label, an exact id first. The bound is on
+     * the whole union: a bound of 200 on the first mods' answers left the Unit SCV of Liberty
+     * behind Core's matches.
+     */
     const find = async (pattern: string): Promise<Item[]> => {
-      const found: Item[] = []
-      if (pattern === '') return found
+      if (pattern === '') return []
+      const refs: TreeNodeRef[] = []
       for await (const ref of tree.search({ pattern })) {
-        const facts = await tree.facts(ref)
-        if (facts.subjectId === undefined) continue
-        found.push({
-          label: facts.label,
-          ...(facts.preview === undefined ? {} : { description: facts.preview }),
-          detail: facts.kind,
-          alwaysShow: true,
-          node: Object.freeze({ kind: 'resource' as const, ref, facts }),
+        refs.push(ref)
+        if (refs.length >= 1000) break
+      }
+      const found: Item[] = []
+      for (let start = 0; start < refs.length; start += 32) {
+        const batch = refs.slice(start, start + 32)
+        const facts = await Promise.all(batch.map(ref => tree.facts(ref)))
+        facts.forEach((fact, index) => {
+          const ref = batch[index]
+          if (fact.subjectId === undefined || ref === undefined) return
+          found.push({
+            label: fact.label,
+            ...(fact.preview === undefined ? {} : { description: fact.preview }),
+            detail: fact.kind,
+            alwaysShow: true,
+            node: Object.freeze({ kind: 'resource' as const, ref, facts: fact }),
+          })
         })
-        if (found.length >= 200) break
       }
       return found
     }
