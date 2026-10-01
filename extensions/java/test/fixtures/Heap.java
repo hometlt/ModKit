@@ -15,6 +15,10 @@ public class Heap {
     public void turn(float by) {
       rotation += by;
     }
+
+    public boolean isTwoHanded() {
+      return rotation > 1.0F;
+    }
   }
 
   public void animate(float time) {
@@ -27,5 +31,16 @@ public class Heap {
 
   public void first(Part part) {
     if (parts[0] == part) part.turn(1.0F);
+  }
+
+  /** A getter the caller answers decides the branch, as `getArmPose(arm).isTwoHanded()` does. */
+  public void pose(Part part) {
+    if (part.isTwoHanded()) part.turn(2.0F);
+  }
+
+  /** Reads back what it just wrote, as a constructor building its parts does. */
+  public void build() {
+    this.parts = new Part[3];
+    for (int i = 0; i < this.parts.length; i++) this.parts[i] = new Part();
   }
 }

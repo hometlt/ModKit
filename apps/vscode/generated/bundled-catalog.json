@@ -132,7 +132,7 @@
       "declared": true,
       "coordinate": "modkit/java",
       "contributions": ["modkit/java-class"],
-      "digest": "sha256:68b6d3b1f4d1a0fb002d1a42aea6e2bea5b0e4faca70aa04b883e0a851d6defb"
+      "digest": "sha256:2d7957608c08dc4dfe1eb078dafecd5264f4f36a957e057bbad6e21df22e050c"
     },
     {
       "name": "lua",
