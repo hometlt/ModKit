@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { it } from 'node:test'
 
 import { createWorldWebGlPlan } from '../src/world/webgl.js'
+import { modelMaterialTeamColor } from '../src/model/index.js'
 
 const texture = id => ({ id, width: 1, height: 1, rgba: Uint8Array.of(255, 255, 255, 255) })
 const model = (key, material, textures) => ({
@@ -77,4 +78,30 @@ it('takes a whole team colour into an untextured model as its colour', () => {
     ]),
   })
   assert.deepEqual([...plan.opaqueTriangles.colors.subarray(0, 4)], [0.5, 0, 0, 1])
+})
+
+it('reads a material team colour once for every renderer (modelMaterialTeamColor)', () => {
+  const textures = new Map([['team.dds', { ...texture('team.dds'), id: 'scene-texture-7' }]])
+  assert.deepEqual(
+    modelMaterialTeamColor(
+      { id: 'm', layers: [{ slot: 'team-color', resourceId: 'team.dds', colorChannels: 8 }] },
+      textures,
+      0,
+    ),
+    { mask: { texture: 'scene-texture-7', channel: 'a' }, blend: 'multiply' },
+  )
+  assert.deepEqual(
+    modelMaterialTeamColor(
+      { id: 'm', layers: [{ slot: 'teamColor', blend: 'lerp' }] },
+      textures,
+      0,
+    ),
+    { mask: 'whole', blend: 'lerp' },
+  )
+  // a mask on other UVs, or one that did not arrive, is not drawn
+  for (const layer of [
+    { slot: 'teamColor', resourceId: 'team.dds', uvSource: 1 },
+    { slot: 'teamColor', resourceId: 'absent.dds' },
+  ])
+    assert.equal(modelMaterialTeamColor({ id: 'm', layers: [layer] }, textures, 0), undefined)
 })

@@ -26,7 +26,7 @@ import {
   TEAM_COLOR_GLSL,
   teamColorChannel,
 } from '@modkit/codec-kit/model-math/color-remap'
-import { createModelSceneSampler } from '../model/index.js'
+import { createModelSceneSampler, modelMaterialTeamColor } from '../model/index.js'
 import { createUvmEffectSource, type UvmEffectSource } from '../uvm/effect-source.js'
 import { TERRAIN_RECEIVER_ID } from '../uvm/projectors.js'
 import {
@@ -2301,12 +2301,15 @@ function frozenSplatBatch(source: MutableSplatBatch): WorldWebGlSplatBatch {
 const BASE_COLOR_SLOTS = new Set(['diffuse', 'basecolor', 'albedo', 'color', 'colour', 'mapkd'])
 const NORMAL_SLOTS = new Set(['normal', 'normalmap', 'mapnormal', 'mapbump', 'bump'])
 const materialSlot = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/gu, '')
-const TEAM_COLOR_SLOTS = new Set(['teamcolor', 'team'])
+/** A model result's textures by id (its resource ids), once per texture list. */
+const texturesById = new WeakMap<
+  readonly SceneRendererTexture[],
+  ReadonlyMap<string, SceneRendererTexture>
+>()
 
 /**
- * The team colour of a model material's team-colour layer (UV_game_material_team_color, as
- * the layer a publisher states it with), on the base layer's UVs; undefined when the material has
- * none, the object has none (intensity 0), or its mask texture did not arrive.
+ * The team colour a fallback batch of a model material draws (modelMaterialTeamColor), in the
+ * object's colour; undefined when the material has none or the object has none (intensity 0).
  */
 function worldBatchTeamColor(
   material: ModelMaterialRef | undefined,
@@ -2315,22 +2318,19 @@ function worldBatchTeamColor(
   color: readonly [number, number, number] | undefined,
   intensity: number | undefined,
 ): WorldBatchTeamColor | undefined {
-  const layer = material?.layers?.find(candidate =>
-    TEAM_COLOR_SLOTS.has(materialSlot(candidate.slot)),
-  )
-  if (layer === undefined || intensity === 0) return undefined
-  const mask =
-    layer.resourceId === undefined
-      ? undefined
-      : textures?.find(candidate => candidate.id === layer.resourceId)
-  if (layer.resourceId !== undefined && (mask === undefined || (layer.uvSource ?? 0) !== uvSource))
-    return undefined
-  const bits = [1, 2, 4, 8].indexOf(layer.colorChannels ?? 0)
+  if (material === undefined || intensity === 0) return undefined
+  const list = textures ?? []
+  let byId = texturesById.get(list)
+  if (byId === undefined)
+    texturesById.set(list, (byId = new Map(list.map(texture => [texture.id, texture]))))
+  const team = modelMaterialTeamColor(material, byId, uvSource)
+  if (team === undefined) return undefined
+  const mask = team.mask === 'whole' ? undefined : byId.get(team.mask.texture)
   return Object.freeze({
     ...(mask === undefined ? {} : { mask }),
-    channel: bits < 0 ? 4 : bits,
-    blend: Math.max(0, TEAM_COLOR_BLENDS.indexOf(layer.blend ?? 'multiply')),
-    strength: 1,
+    channel: team.mask === 'whole' ? 4 : ['r', 'g', 'b', 'a', 'rgb'].indexOf(team.mask.channel),
+    blend: TEAM_COLOR_BLENDS.indexOf(team.blend),
+    strength: team.strength ?? 1,
     color: color ?? ([1, 1, 1] as const),
   })
 }

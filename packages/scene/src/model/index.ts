@@ -8,6 +8,7 @@ export {
 export { preserveUnweightedVertices, type GeneratedSkinBinding } from './unweighted.js'
 export { expandOrderedEulerNode, type OrderedEulerKey } from './ordered-euler.js'
 export { decomposeMatrix4 } from './billboard-math.js'
+export { modelMaterialTeamColor } from './team-color.js'
 export {
   applyModelBillboards,
   applyModelFaceCameraBillboard,
