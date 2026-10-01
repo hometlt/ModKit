@@ -229,6 +229,21 @@ function base64Of(bytes: Uint8Array): string {
   return btoa(text)
 }
 
+/**
+ * The fields an edit form asks for. Encoding is not asked twice: the status bar's format menu is
+ * where a target encoding is chosen, and an in-place transform keeps whatever the source used,
+ * which is what omitting the field means — except on a form that asks for nothing else, which
+ * changes the encoding in place and is nothing without it (Change the DDS encoding, plan 7.11).
+ */
+export function editFormFields(
+  form: EditOperationForm,
+  omitEncoding: boolean,
+): EditOperationForm['fields'] {
+  return omitEncoding && form.fields.some(item => item.name !== 'format')
+    ? form.fields.filter(item => item.name !== 'format')
+    : form.fields
+}
+
 export function createVsCodeEditPanel(options: EditPanelOptions): ViewerModule {
   return defineViewerModule({
     abiVersion: 1,
@@ -307,13 +322,7 @@ export function createVsCodeEditPanel(options: EditPanelOptions): ViewerModule {
         }
         apply.removeAttribute('disabled')
         setViewerText(summary, `${chosen.summary} (${chosen.operationId} → ${chosen.handlerId})`)
-        for (const item of chosen.fields) {
-          /*
-           * Encoding is not asked twice. The status bar's format menu is where a target encoding is
-           * chosen for this subject; an in-place transform keeps whatever the source used, which is
-           * what omitting the field means to every one of these forms.
-           */
-          if (options.omitEncoding === true && item.name === 'format') continue
+        for (const item of editFormFields(chosen, options.omitEncoding === true)) {
           const row = element(pane, 'div', { part: 'form.row' })
           element(row, 'label', { part: 'form.label', text: item.label })
           const control = element(row, 'div', { part: 'form.control' })

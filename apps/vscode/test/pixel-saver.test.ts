@@ -2,7 +2,12 @@ import { describe, expect, it, vi } from 'vitest'
 
 import type { AnyDescriptor, AssetEditPlan, OperationSession } from '@modkit/sdk'
 
-import { createVsCodePixelSaver, pixelSaveRefusal, wholeFileBytes } from '../src/edit-panel.js'
+import {
+  createVsCodePixelSaver,
+  editFormFields,
+  pixelSaveRefusal,
+  wholeFileBytes,
+} from '../src/edit-panel.js'
 import { createVscodeLocalizer } from '../src/localization.js'
 
 const planWith = (edits: readonly unknown[]): AssetEditPlan =>
@@ -99,5 +104,19 @@ describe('pixel saver', () => {
     expect(wholeFileBytes(planWith([replace({ kind: 'staged', ref: {} })]))).toBeUndefined()
     const both = [replace({ kind: 'inline', bytes }), replace({ kind: 'inline', bytes })]
     expect(wholeFileBytes(planWith(both))).toBeUndefined()
+  })
+
+  it('leaves the encoding out of a transform form, but not of one that only asks for it (7.11)', () => {
+    const field = (name: string) => ({ name }) as never
+    const form = (...names: string[]) =>
+      ({ id: 'f', fields: names.map(field) }) as unknown as Parameters<typeof editFormFields>[0]
+    const names = (fields: readonly { readonly name: string }[]) => fields.map(item => item.name)
+    expect(names(editFormFields(form('width', 'height', 'format'), true))).toEqual([
+      'width',
+      'height',
+    ])
+    // Change the DDS encoding: the encoding is the whole form
+    expect(names(editFormFields(form('format'), true))).toEqual(['format'])
+    expect(names(editFormFields(form('width', 'format'), false))).toEqual(['width', 'format'])
   })
 })
