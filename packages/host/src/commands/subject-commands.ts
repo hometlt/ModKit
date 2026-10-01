@@ -586,6 +586,14 @@ const convertCommand: CommandDescriptor = {
             await lease.release()
           }
         }
+        // without a world, the codec's raw or model export would be written under a `.uvw` name
+        if (input['target'] === 'uvw' && input['operation'] === undefined)
+          return unavailable(
+            CONVERT_COMMAND,
+            'this subject publishes no map world to write as UVW',
+            'open the map itself, or a package naming one map; name an operation to run it instead',
+            diagnostics,
+          )
         const operation = selectedOperation(
           descriptor,
           SUBJECT_COMMAND_TARGETS.convert.operationIds,

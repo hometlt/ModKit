@@ -256,6 +256,7 @@ describe('production world to UVW materializer', () => {
   it('names in its receipt every field of a kept facet the UVW leaves out (П23)', async () => {
     const objectsLayerId = 'native:objects'
     const lightingLayerId = 'native:lighting'
+    const gatewaysLayerId = 'native:gateways'
     const lossInfo: CandidateWorldSceneInfo = {
       ...info,
       unknownFacets: [],
@@ -271,6 +272,13 @@ describe('production world to UVW materializer', () => {
         {
           facet: 'lighting',
           layerId: lightingLayerId,
+          state: 'available',
+          itemCount: 1,
+          lods: ['exact'],
+        },
+        {
+          facet: 'gateways',
+          layerId: gatewaysLayerId,
           state: 'available',
           itemCount: 1,
           lods: ['exact'],
@@ -316,6 +324,36 @@ describe('production world to UVW materializer', () => {
                 state: 'available',
                 itemCount: 1,
                 lods: ['exact'],
+              },
+              {
+                facet: 'layers',
+                id: gatewaysLayerId,
+                layerId: gatewaysLayerId,
+                kind: 'gateways',
+                state: 'available',
+                itemCount: 1,
+                lods: ['exact'],
+              },
+            ],
+          })
+        // a gateway's native ends are what its canonical ends stand for: nothing is lost
+        if (request.facet === 'gateways')
+          return Promise.resolve({
+            snapshotId,
+            facet: 'gateways',
+            state: 'available',
+            items: [
+              {
+                facet: 'gateways',
+                id: 'native:gateway-1',
+                layerId: gatewaysLayerId,
+                coordinateSpaceId: 'map-native',
+                x1: 0,
+                y1: 0,
+                x2: 1,
+                y2: 0,
+                uvwStart: { x: 0, y: 0, z: 0 },
+                uvwEnd: { x: 1, y: 0, z: 0 },
               },
             ],
           })

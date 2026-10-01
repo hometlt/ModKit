@@ -1103,7 +1103,9 @@ export async function analyzeResolvedMapWorkspace(
       ...(request.subjectOperationIds === undefined
         ? {}
         : { subjectOperationIds: request.subjectOperationIds }),
-      maxDocuments: limits.maxRequirements,
+      // the documents this request carries, not the caller's budget: a provider's own ceiling (SC2
+      // maps take 16) never refuses a map because an application allows more (32, for Warzone)
+      maxDocuments: Math.max(1, documents.length),
       maxDocumentBytes: limits.maxDocumentBytes,
       maxTotalBytes: limits.maxTotalBytes,
       maxObjects: limits.maxObjects,
@@ -1580,6 +1582,91 @@ export type CoordinatedMapPreviewAssetSessionResult =
       catalog?: DataCatalogSnapshot
       diagnostics: readonly Diagnostic[]
     }>
+
+/**
+ * The bounded product limits a map preview is coordinated with, as VS Code, Electron and the PWA
+ * spell them in their own copies; an application without its own reasons (the CLI) takes these.
+ */
+export const MAP_PREVIEW_COORDINATOR_LIMITS = Object.freeze({
+  // Pinned mp.wz publishes 39 map candidates; 64 is the bounded product ceiling above that corpus.
+  maxCandidates: 64,
+  maxSubjectEntries: 4_096,
+  maxSubjectPages: 64,
+  maxRoots: 64,
+  maxDepth: 16,
+  catalogEnrichment: Object.freeze({
+    locales: Object.freeze(['enUS']),
+    limits: Object.freeze({
+      // Full catalog planning over the installed StarCraft II stock chain asks for 555 reads.
+      maxRequirements: 512,
+      maxDocumentBytes: 16_777_216,
+      maxTextBytes: 268_435_456,
+      maxEntities: 100_000,
+      maxDepth: 128,
+      maxPageSize: 1_000,
+    }),
+  }),
+  limits: Object.freeze({
+    // Warzone 2100 reads 22 map documents (level.json and each tileset's ground and decal files).
+    maxRequirements: 32,
+    maxDocumentBytes: 33_554_432,
+    maxTotalBytes: 67_108_864,
+    maxObjects: 100_000,
+    maxRegions: 10_000,
+    maxTerrainCells: 100_000,
+    maxTerrainSamples: 100_000,
+    maxDepth: 64,
+    maxPageSize: 4_096,
+    maxDiagnostics: 100,
+  }),
+}) satisfies Pick<
+  CoordinateMapPreviewAssetSessionRequest,
+  | 'maxCandidates'
+  | 'maxSubjectEntries'
+  | 'maxSubjectPages'
+  | 'maxRoots'
+  | 'maxDepth'
+  | 'catalogEnrichment'
+  | 'limits'
+>
+
+/**
+ * The opened subject together with the world its map preview built for it: the codec's own
+ * descriptor, operations and edits, plus the preview's data sources (world, graph, selector) the
+ * codec does not publish itself. Replacing the subject by its preview dropped every codec operation.
+ * The preview owns the opened session, so disposing the result releases both.
+ */
+export function withMapPreviewSources(codec: AssetSession, preview: AssetSession): AssetSession {
+  const key = (offer: { readonly contract: string; readonly major: number }) =>
+    `${offer.contract}@${offer.major}`
+  const descriptor = async () => {
+    const [own, previewed] = await Promise.all([codec.descriptor(), preview.descriptor()])
+    const owned = new Set(own.dataSources.map(key))
+    const added = previewed.dataSources.filter(offer => !owned.has(key(offer)))
+    return {
+      added,
+      merged: Object.freeze({
+        ...own,
+        dataSources: Object.freeze([...own.dataSources, ...added]),
+      }),
+    }
+  }
+  return Object.freeze({
+    revision: codec.revision,
+    state: () => codec.state(),
+    descriptor: async () => (await descriptor()).merged,
+    dataSource: (async (contract: string, major: number, ...rest: unknown[]) => {
+      const { added } = await descriptor()
+      const from = added.some(offer => offer.contract === contract && offer.major === major)
+        ? preview
+        : codec
+      return (from.dataSource as (...args: unknown[]) => unknown)(contract, major, ...rest)
+    }) as unknown as AssetSession['dataSource'],
+    operations: () => codec.operations(),
+    events: (signal?: AbortSignal) => codec.events(signal),
+    dispose: () => preview.dispose(),
+  })
+}
 
 const PREVIEW_DIAGNOSTIC_SEVERITIES = new Set(['error', 'warning', 'information', 'hint'])
 const MAX_PREVIEW_NAMESPACE_SEARCHES = 8

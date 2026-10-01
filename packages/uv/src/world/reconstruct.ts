@@ -223,7 +223,15 @@ function canonicalLightDirection(
   }
 }
 
-const PLACING_FIELDS = ['facet', 'id', 'layerId', 'coordinateSpaceId', 'lod']
+const PLACING_FIELDS = [
+  'facet',
+  'id',
+  'layerId',
+  'coordinateSpaceId',
+  'lod',
+  'mapNativePosition',
+  'zoneId',
+]
 /**
  * The item fields each facet writes into UVW, or that only place the item (its ids, the native
  * coordinates its canonical ones stand for). Any other field an item carries is not in the UVW, and
@@ -244,7 +252,7 @@ const KEPT_FIELDS: Readonly<Record<string, ReadonlySet<string>>> = Object.freeze
   ]),
   regions: new Set(['regionId', 'name', 'color', 'shapes', 'uvwShapes']),
   navigation: new Set(['x', 'y', 'flags', 'uvwPosition']),
-  gateways: new Set(['start', 'end', 'uvwStart', 'uvwEnd']),
+  gateways: new Set(['x1', 'y1', 'x2', 'y2', 'uvwStart', 'uvwEnd']),
   lighting: new Set(['ambientColor', 'ambientIntensity', 'toneMapping', 'terrain', 'directional']),
   objects: new Set([
     'kind',

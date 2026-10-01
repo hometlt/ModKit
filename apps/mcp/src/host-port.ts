@@ -43,7 +43,7 @@ import {
 } from '@modkit/host/node'
 import { sceneModule } from '@modkit/scene/module'
 import { uvModule } from '@modkit/uv/module'
-import { coordinateMapPreviewAssetSession } from '@modkit/host/maps'
+import { coordinateMapPreviewAssetSession, withMapPreviewSources } from '@modkit/host/maps'
 import type {
   AnyDescriptor,
   AssetSession,
@@ -377,35 +377,6 @@ const mapPreviewBudget = Object.freeze({
   maxScalarBytes: 268_435_456,
   maxDiagnostics: 1_000,
 })
-
-/**
- * The opened subject together with the world its map preview built for it: the codec's own
- * descriptor, operations and edits, plus the preview's data sources (world, graph, selector) the
- * codec does not publish itself. Replacing the subject by its preview dropped every codec operation.
- */
-function withPreviewSources(codec: AssetSession, preview: AssetSession): AssetSession {
-  const key = (offer: { readonly contract: string; readonly major: number }) => `${offer.contract}@${offer.major}`
-  const descriptor = async () => {
-    const [own, previewed] = await Promise.all([codec.descriptor(), preview.descriptor()])
-    const owned = new Set(own.dataSources.map(key))
-    const added = previewed.dataSources.filter(offer => !owned.has(key(offer)))
-    return { own, added, merged: Object.freeze({ ...own, dataSources: Object.freeze([...own.dataSources, ...added]) }) }
-  }
-  return Object.freeze({
-    revision: codec.revision,
-    state: () => codec.state(),
-    descriptor: async () => (await descriptor()).merged,
-    dataSource: (async (contract: string, major: number, ...rest: unknown[]) => {
-      const { added } = await descriptor()
-      const from = added.some(offer => offer.contract === contract && offer.major === major) ? preview : codec
-      return (from.dataSource as (...args: unknown[]) => unknown)(contract, major, ...rest)
-    }) as unknown as AssetSession['dataSource'],
-    operations: () => codec.operations(),
-    events: (signal?: AbortSignal) => codec.events(signal),
-    // The preview session owns the opened one and releases both.
-    dispose: () => preview.dispose(),
-  })
-}
 
 const inside = (roots: readonly string[], path: string): boolean =>
   roots.some(root => {
@@ -1606,7 +1577,7 @@ export async function createHostMcpPort(
         })
       }
       let closed = false
-      const session = withPreviewSources(originalSession, preview.session)
+      const session = withMapPreviewSources(originalSession, preview.session)
       return Object.freeze({
         snapshot: Object.freeze({
           ...opened.snapshot,

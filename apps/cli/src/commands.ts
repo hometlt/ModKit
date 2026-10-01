@@ -29,18 +29,26 @@ import {
   type CommandReceipt,
   type CommandResult,
   type ExtensionInput,
+  type SubjectOpener,
 } from '@modkit/host'
 import {
+  coordinateMapPreviewAssetSession,
+  MAP_PREVIEW_COORDINATOR_LIMITS,
+  withMapPreviewSources,
+} from '@modkit/host/maps'
+import {
   createModkit,
+  createNodeMapPreviewResourcePlanResolver,
   createPathSubjectOpener,
   DEFAULT_SUBJECT_OPEN_BUDGET,
   loadExtensionDirectory,
+  type NodeSubjectServices,
 } from '@modkit/host/node'
 import { sceneModule } from '@modkit/scene/module'
 import { uvModule } from '@modkit/uv/module'
 import { createModkitCliSubjectServices, modkitCliCredentials } from './profile.js'
 import { snapshotJson } from '@modkit/codec-kit/json-snapshot'
-import type { JsonValue } from '@modkit/sdk'
+import type { JsonValue, ResourceBudget } from '@modkit/sdk'
 
 export const RUN_USAGE =
   'usage: modkit run <command> <file> --ext <dir> [--ext <dir>...] [--entry <path>] ' +
@@ -67,6 +75,55 @@ const WORLD_UVW_LIMITS = Object.freeze({
   maxFacetItems: 4096 * 1024,
   maxOutputBytes: 256 * 1024 * 1024,
 })
+
+/**
+ * Opens a map together with the world its preview builds (MCP opens maps the same way), so that
+ * `subject.convert --target uvw` finds it; anything that is no map opens as before. A package of
+ * several maps (a campaign, `mp.wz`) needs one named with `--entry`, by candidate id or path.
+ */
+function withMapWorld(
+  opener: SubjectOpener,
+  services: NodeSubjectServices,
+  budgets: ResourceBudget,
+  entry: string | undefined,
+): SubjectOpener {
+  const resourcePlanResolver = createNodeMapPreviewResourcePlanResolver({ subjects: services })
+  return async (path, signal) => {
+    const opened = await opener(path, signal)
+    const original = opened.session
+    if (opened.snapshot.state !== 'opened' || original === undefined) return opened
+    const coordinate = (selectionId?: string) =>
+      coordinateMapPreviewAssetSession({
+        services,
+        grant: { id: 'modkit-cli-map-preview', classes: ['read-source', 'filesystem-read'] },
+        budgets,
+        original,
+        resourcePlanResolver,
+        ...MAP_PREVIEW_COORDINATOR_LIMITS,
+        ...(selectionId === undefined ? {} : { selectionId }),
+        ...(signal === undefined ? {} : { signal }),
+      })
+    let preview = await coordinate()
+    if (preview.state === 'selection-required') {
+      const { candidates } = preview
+      const chosen =
+        entry === undefined && candidates.length === 1
+          ? candidates[0]
+          : candidates.find(item => item.candidateId === entry || item.sourcePath === entry)
+      if (chosen === undefined) {
+        await original.dispose()
+        throw new Error(
+          `${path} holds ${candidates.length} maps; name one with --entry: ` +
+            candidates.map(item => item.sourcePath ?? item.candidateId).join(', '),
+        )
+      }
+      preview = await coordinate(chosen.candidateId)
+    }
+    return preview.state === 'opened'
+      ? { ...opened, session: withMapPreviewSources(original, preview.session) }
+      : opened
+  }
+}
 
 export type RunOutputFormat = 'text' | 'json' | 'protocol-json'
 
@@ -301,18 +358,23 @@ export async function runCommand(
       execution: { origin: 'linked', allowTrustedInProcess: arguments_.trust },
     }))
     const services = await createModkitCliSubjectServices(extensions)
-    const opener = createPathSubjectOpener({
+    const budget =
+      arguments_.maxInputBytes === undefined
+        ? DEFAULT_SUBJECT_OPEN_BUDGET
+        : { ...DEFAULT_SUBJECT_OPEN_BUDGET, maxInputBytes: arguments_.maxInputBytes }
+    const pathOpener = createPathSubjectOpener({
       subjects: services,
       // A named file is the CLI's whole grant: it opens what argv points at, and its companions
       // beside it. Nothing is discovered, which is the CLI profile's own limit (§4.1).
       roots: [dirname(file)],
       grant: { id: 'modkit-cli', classes: ['read-source'] },
-      ...(arguments_.maxInputBytes === undefined
-        ? {}
-        : {
-            budget: { ...DEFAULT_SUBJECT_OPEN_BUDGET, maxInputBytes: arguments_.maxInputBytes },
-          }),
+      budget,
     })
+    // A native map publishes its world through the host's map preview, as VS Code and MCP open it.
+    const opener =
+      arguments_.command === 'subject.convert' && arguments_.target === 'uvw'
+        ? withMapWorld(pathOpener, services, budget, arguments_.entry)
+        : pathOpener
     const input: CommandInput = {
       subject: file,
       ...(arguments_.entry === undefined ? {} : { entry: arguments_.entry }),

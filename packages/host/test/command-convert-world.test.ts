@@ -11,12 +11,12 @@ import {
 
 // a map that publishes its world, and an export.convert of its own
 const WORLD = { name: 'the world source' }
-function subject(released: string[]): CommandSubject {
+function subject(released: string[], world = true): CommandSubject {
   const session = {
     async descriptor() {
       return {
         operations: [{ id: 'export.convert', handlerId: 'convert', state: 'available' }],
-        dataSources: [{ contract: 'common.view/world-scene-source', major: 1 }],
+        dataSources: world ? [{ contract: 'common.view/world-scene-source', major: 1 }] : [],
       }
     },
     async dataSource(contract: string) {
@@ -39,6 +39,7 @@ function subject(released: string[]): CommandSubject {
 async function convert(
   input: Readonly<Record<string, string>>,
   worldToUvw?: CommandContext['worldToUvw'],
+  world = true,
 ) {
   const released: string[] = []
   const written: string[] = []
@@ -46,7 +47,7 @@ async function convert(
     createSubjectCommandRuntime(),
     commandRequest('subject.convert', { subject: 'map.sc2map', ...input }),
     {
-      openSubject: async () => subject(released),
+      openSubject: async () => subject(released, world),
       writeOutput: async name => {
         written.push(name)
         return `out/${name}`
@@ -109,6 +110,12 @@ describe('subject.convert to UVW', () => {
   it('is unavailable where the application has no UV module', async () => {
     const run = await convert({ target: 'uvw' })
     expect(run.result).toMatchObject({ state: 'unavailable' })
+  })
+
+  it('refuses UVW for a subject without a world, rather than writing its raw export', async () => {
+    const run = await convert({ target: 'uvw' }, async () => materialized, false)
+    expect(run.result).toMatchObject({ state: 'unavailable' })
+    expect(run.written).toEqual([])
   })
 
   it('leaves a named operation and any other target to the codec', async () => {
