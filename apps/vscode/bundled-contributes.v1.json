@@ -141,6 +141,10 @@
       "title": "%command.openInModkit%"
     },
     {
+      "command": "modkit.convertFolder",
+      "title": "%command.convertFolder%"
+    },
+    {
       "command": "modkit.showHostProfile",
       "title": "%command.openWorkbench%"
     },
@@ -1149,6 +1153,11 @@
       {
         "command": "modkit.openExplorer",
         "when": "explorerResourceIsFolder",
+        "group": "navigation@19"
+      },
+      {
+        "command": "modkit.convertFolder",
+        "when": "explorerResourceIsFolder && resourceScheme == file",
         "group": "navigation@19"
       },
       {

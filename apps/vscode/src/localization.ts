@@ -371,6 +371,16 @@ const EN_MESSAGES = Object.freeze({
   'vscode.export.saveHere': 'Export here',
   'vscode.export.saveManyTitle': 'Folder for {count} exported files',
   'vscode.export.cancelled': 'Export cancelled',
+  'vscode.batch.pickFolder': 'Convert this folder',
+  'vscode.batch.diskOnly': 'Only a folder on disk can be converted.',
+  'vscode.batch.title': 'Convert a folder',
+  'vscode.batch.targetPrompt': 'Extension of the files to write (png, wav, json…): each file uses its codec\'s conversion to it.',
+  'vscode.batch.targetInvalid': 'An extension: letters and digits, up to 12.',
+  'vscode.batch.pickOutput': 'Write the results here',
+  'vscode.batch.running': 'Converting {count} files to .{extension}',
+  'vscode.batch.notOpened': 'no codec opened it',
+  'vscode.batch.summary': 'Converted {converted} of {total} files; skipped {skipped}, failed {failed}.',
+  'vscode.batch.showReport': 'Show report',
   'vscode.webview.noCodecClaimed':
     '{name} — no codec claimed it ({reason}); showing the raw bytes.',
   'vscode.webview.mapWorldUnavailable':
@@ -900,6 +910,16 @@ const RU_MESSAGES: Readonly<Record<keyof typeof EN_MESSAGES, string>> = Object.f
   'vscode.export.saveHere': 'Экспортировать сюда',
   'vscode.export.saveManyTitle': 'Папка для экспорта файлов: {count}',
   'vscode.export.cancelled': 'Экспорт отменён',
+  'vscode.batch.pickFolder': 'Конвертировать эту папку',
+  'vscode.batch.diskOnly': 'Конвертировать можно только папку на диске.',
+  'vscode.batch.title': 'Конвертация папки',
+  'vscode.batch.targetPrompt': 'Расширение записываемых файлов (png, wav, json…): каждый файл конвертирует его кодек.',
+  'vscode.batch.targetInvalid': 'Расширение: буквы и цифры, не больше 12.',
+  'vscode.batch.pickOutput': 'Записать результаты сюда',
+  'vscode.batch.running': 'Конвертация файлов: {count} → .{extension}',
+  'vscode.batch.notOpened': 'ни один кодек его не открыл',
+  'vscode.batch.summary': 'Сконвертировано {converted} из {total}; пропущено {skipped}, ошибок {failed}.',
+  'vscode.batch.showReport': 'Показать отчёт',
   'vscode.webview.noCodecClaimed':
     '{name} — ни один кодек не распознал файл ({reason}); показаны исходные байты.',
   'vscode.webview.mapWorldUnavailable':

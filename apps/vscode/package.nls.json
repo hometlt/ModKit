@@ -25,6 +25,7 @@
   "command.browseContainer": "Modkit: Browse Container in Explorer",
   "command.openExplorer": "Modkit: Open in Modkit Explorer",
   "command.openInModkit": "Modkit: Open in Modkit",
+  "command.convertFolder": "Modkit: Convert Folder…",
   "view.loading": "Loading Modkit…",
   "command.controlRuntime": "Modkit: Control Runtime Session…",
   "command.disableExtension": "Modkit: Disable Extension…",

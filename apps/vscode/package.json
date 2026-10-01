@@ -80,6 +80,7 @@
         "title": "%command.contentSources%",
         "icon": "$(remote-explorer)"
       },
+      { "command": "modkit.convertFolder", "title": "%command.convertFolder%" },
       { "command": "modkit.explainResolution", "title": "%command.explainResolution%" },
       { "command": "modkit.exportDiagnostics", "title": "%command.exportDiagnostics%" },
       {
@@ -858,6 +859,11 @@
       ],
       "explorer/context": [
         {
+          "command": "modkit.convertFolder",
+          "when": "explorerResourceIsFolder && resourceScheme == file",
+          "group": "navigation@19"
+        },
+        {
           "command": "modkit.game.launchActiveMap",
           "when": "resourceExtname =~ /^\\.(sc2map|s2ma)$/i",
           "group": "navigation@90"
@@ -1223,6 +1229,7 @@
     "onCommand:modkit.addExtensionFolder",
     "onCommand:modkit.browseContainer",
     "onCommand:modkit.contentSources",
+    "onCommand:modkit.convertFolder",
     "onCommand:modkit.explainResolution",
     "onCommand:modkit.exportDiagnostics",
     "onCommand:modkit.extensions.completeGameSupport",

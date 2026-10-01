@@ -34,6 +34,10 @@
       "icon": "$(remote-explorer)"
     },
     {
+      "command": "modkit.convertFolder",
+      "title": "%command.convertFolder%"
+    },
+    {
       "command": "modkit.explainResolution",
       "title": "%command.explainResolution%"
     },
@@ -1061,6 +1065,11 @@
       }
     ],
     "explorer/context": [
+      {
+        "command": "modkit.convertFolder",
+        "when": "explorerResourceIsFolder && resourceScheme == file",
+        "group": "navigation@19"
+      },
       {
         "command": "modkit.game.launchActiveMap",
         "when": "resourceExtname =~ /^\\.(sc2map|s2ma)$/i",
