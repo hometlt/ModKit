@@ -215,6 +215,8 @@ interface FilterState {
   hidden: string[]
   /** Values drawn as the game shows them rather than as stored. */
   render: boolean
+  /** Long values wrap in their cells instead of running off the side (MK2's table, plan 7.36). */
+  wrap?: boolean
 }
 const remembered = new Map<string, FilterState>()
 
@@ -280,6 +282,10 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
   const panel = element(args.root, 'section', { part: 'table.panel' })
   panel.hidden = true
   args.before.before(bar, status, panel)
+  const applyWrap = (): void => {
+    if (state.wrap === true) args.before.dataset['wrap'] = 'true'
+    else delete args.before.dataset['wrap']
+  }
   const statuses = ['missing', 'untranslated', 'duplicate', 'empty', 'error', 'changed'] as const
   const matchToggles = (
     target: { caseSensitive: boolean; wholeWord: boolean; regex: boolean },
@@ -326,6 +332,17 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
         },
       })),
       { kind: 'separator' },
+      {
+        kind: 'toggle' as const,
+        id: 'wrap',
+        label: text('table.wrap'),
+        active: state.wrap === true,
+        onToggle: (active: boolean) => {
+          state.wrap = active
+          toolbar.setActive('wrap', active)
+          applyWrap()
+        },
+      },
       ...(actions.renderValues === undefined
         ? []
         : [
@@ -387,6 +404,7 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
           ]),
     ],
   })
+  applyWrap()
 
   // Key groups from the key path, so one area can be worked through at a time.
   const group = element(bar, 'select', { part: 'table.group' }) as HTMLSelectElement

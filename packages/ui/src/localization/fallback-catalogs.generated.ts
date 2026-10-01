@@ -784,6 +784,7 @@ export const TABLE_VARIANTS_FALLBACK_MESSAGES = {
   'table.translateTarget': 'Translation target',
   'table.translateUnavailable': 'Translation is unavailable: {reason}',
   'table.working': 'Working…',
+  'table.wrap': 'Wrap',
 } as const satisfies UiMessageCatalog
 
 export const TEMPLATE_FALLBACK_MESSAGES = {

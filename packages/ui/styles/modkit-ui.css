@@ -1764,6 +1764,12 @@
     white-space: nowrap;
   }
 
+  /* «Wrap»: long values break inside their cells. */
+  [data-wrap='true'] [data-mk-part='table.cell'] {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
   /* A value's trailing white space: kept by the game, invisible unless marked. */
   [data-mk-part='table.trailing'] {
     white-space: pre;

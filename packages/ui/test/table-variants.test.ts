@@ -341,6 +341,12 @@ describe('variant table surface', () => {
     await page.click('button[aria-label="Errors"]')
     expect(await keys()).toEqual(['Unit/Name/C'])
     await page.click('button[aria-label="Errors"]')
+    // «Wrap» lets long values break inside their cells
+    const wrapped = () => page.getAttribute('table:has([data-mk-part="table.body"])', 'data-wrap')
+    await page.click('button[aria-label="Wrap"]')
+    expect(await wrapped()).toBe('true')
+    await page.click('button[aria-label="Wrap"]')
+    expect(await wrapped()).toBe(null)
     await page.selectOption('select[aria-label="Key group"]', 'Unit/')
     expect(await keys()).toEqual(['Unit/Name/C'])
     await page.selectOption('select[aria-label="Key group"]', '')
