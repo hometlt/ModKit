@@ -390,8 +390,12 @@ export interface TableColumnInfo {
   readonly base?: boolean
 }
 
-/** Tokens a `status` column may carry. */
-export type TableRowStatus = 'missing' | 'untranslated' | 'duplicate'
+/**
+ * Tokens a `status` column may carry. `broken-ref`: the value names what its context lacks (an SC2
+ * string's `<d ref>` naming an entity the mod context does not have); `error`: the value cannot be
+ * read as written (markup the game rejects).
+ */
+export type TableRowStatus = 'missing' | 'untranslated' | 'duplicate' | 'broken-ref' | 'error'
 
 /**
  * Operations a table offers over its rows, by descriptor operation id.
