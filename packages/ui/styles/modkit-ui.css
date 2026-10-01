@@ -4794,6 +4794,12 @@
     font-size: var(--mk-font-size-xs);
   }
 
+  /* What an edge's arrow means, beside the counts. */
+  [data-mk-part='graph.legend'] {
+    color: var(--mk-color-fg-subtle);
+    font-size: var(--mk-font-size-sm);
+  }
+
   [data-mk-part='graph.status'] {
     margin-inline-end: auto;
     color: var(--mk-color-fg-subtle);

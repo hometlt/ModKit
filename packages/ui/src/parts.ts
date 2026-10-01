@@ -543,6 +543,7 @@ export const PARTS = Object.freeze([
   'graph.control',
   'graph.canvas',
   'graph.status',
+  'graph.legend',
   'graph.hint',
   'graph.search',
   'graph.node-list',

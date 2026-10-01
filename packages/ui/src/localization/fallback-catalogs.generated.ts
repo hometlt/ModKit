@@ -271,6 +271,7 @@ export const GRAPH_FALLBACK_MESSAGES = {
   'graph.direction': 'Direction',
   'graph.directionBoth': 'both ways',
   'graph.directionIncoming': 'incoming',
+  'graph.directionLegend': 'an arrow points from the subject that refers to the one it refers to',
   'graph.directionOutgoing': 'outgoing',
   'graph.edgeCount': '{count} visible edges',
   'graph.filterClasses': 'Filter classes…',

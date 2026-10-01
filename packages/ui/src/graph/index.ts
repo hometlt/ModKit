@@ -153,6 +153,36 @@ function loadedCountReason(
 }
 
 /** Host-side adapter: codecs publish facts; the UI decides how many pages to materialize. */
+/**
+ * A filled arrowhead at an edge's target end, `inset` short of its centre so the target's dot does
+ * not cover it: an edge points from the subject that refers to the one it refers to (plan 5.22).
+ */
+function arrowhead(
+  context: CanvasRenderingContext2D,
+  from: { readonly x: number; readonly y: number },
+  to: { readonly x: number; readonly y: number },
+  inset: number,
+  size: number,
+): void {
+  const dx = to.x - from.x
+  const dy = to.y - from.y
+  const length = Math.hypot(dx, dy)
+  if (length <= inset + size) return
+  const ux = dx / length
+  const uy = dy / length
+  const tipX = to.x - ux * inset
+  const tipY = to.y - uy * inset
+  const baseX = tipX - ux * size
+  const baseY = tipY - uy * size
+  const half = size * 0.45
+  context.beginPath()
+  context.moveTo(tipX, tipY)
+  context.lineTo(baseX - uy * half, baseY + ux * half)
+  context.lineTo(baseX + uy * half, baseY - ux * half)
+  context.closePath()
+  context.fill()
+}
+
 export async function loadRelationGraphOptions(
   source: RelationGraphSource,
   options: RelationGraphLoadOptions,
@@ -435,7 +465,11 @@ export function createRelationGraph(
   const status = document.createElement('output')
   status.className = 'modkit-graph__status'
   setPart(status, 'graph.status')
-  controls.append(status)
+  // what an edge's arrow means, said once beside the counts
+  const legend = document.createElement('span')
+  legend.textContent = localizer.text('graph.directionLegend')
+  setPart(legend, 'graph.legend')
+  controls.append(status, legend)
 
   const search = document.createElement('input')
   search.type = 'search'
@@ -800,11 +834,13 @@ export function createRelationGraph(
       const to = index.get(edge.to)
       if (from === undefined || to === undefined) continue
       context.strokeStyle = edgeColour(token, edge)
+      context.fillStyle = context.strokeStyle
       context.globalAlpha = edge.dead === true ? 0.9 : 0.45
       context.beginPath()
       context.moveTo(from.x, from.y)
       context.lineTo(to.x, to.y)
       context.stroke()
+      arrowhead(context, from, to, 4 / zoom + 1, 6 / zoom)
       drawnEdges += 1
     }
     context.globalAlpha = 1
@@ -853,6 +889,18 @@ export function createRelationGraph(
     }
     const index = new Map(placed.map((item, position) => [item.node.id, position]))
     const selectedId = placed[selected]?.node.id
+    // MK2 mesh scale: root 9, others 4.5 + log2(degree + 1) capped at +4; the 1.5 factor and the
+    // pixel floor stand in for MK2's bloom halo, which kept distant nodes visible.
+    const radiusAt = (position: number): number => {
+      const point = projected[position]
+      const item = placed[position]
+      if (point === undefined || item === undefined) return 0
+      const size =
+        item.node.id === rootId
+          ? 9
+          : 4.5 + Math.min(4, Math.log2((degree.get(item.node.id) ?? 0) + 1))
+      return Math.max(2.5, Math.min(24, size * point.scale * 1.5))
+    }
 
     let drawnEdges = 0
     context.lineWidth = 1
@@ -868,6 +916,7 @@ export function createRelationGraph(
         selectedId !== undefined && (edge.from === selectedId || edge.to === selectedId)
       const fade = depthFade((from.depth + to.depth) / 2, near, far)
       context.strokeStyle = edgeColour(token, edge)
+      context.fillStyle = context.strokeStyle
       context.globalAlpha =
         (edge.dead === true ? 0.9 : 0.45) * fade * (selectedId === undefined || incident ? 1 : 0.35)
       context.lineWidth = incident ? 2 : 1
@@ -875,6 +924,7 @@ export function createRelationGraph(
       context.moveTo(from.x, from.y)
       context.lineTo(to.x, to.y)
       context.stroke()
+      arrowhead(context, from, to, radiusAt(toIndex), incident ? 9 : 7)
       drawnEdges += 1
     }
 
@@ -889,10 +939,7 @@ export function createRelationGraph(
       const item = placed[position]
       if (point === undefined || item === undefined) continue
       const isRoot = item.node.id === rootId
-      // MK2 mesh scale: root 9, others 4.5 + log2(degree + 1) capped at +4; the 1.5 factor and the
-      // pixel floor stand in for MK2's bloom halo, which kept distant nodes visible.
-      const size = isRoot ? 9 : 4.5 + Math.min(4, Math.log2((degree.get(item.node.id) ?? 0) + 1))
-      const radius = Math.max(2.5, Math.min(24, size * point.scale * 1.5))
+      const radius = radiusAt(position)
       const match = matches(item.node)
       const fade = depthFade(point.depth, near, far)
       hits[position] = { x: point.x, y: point.y, radius, depth: point.depth }
