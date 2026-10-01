@@ -224,6 +224,20 @@ const EN_MESSAGES = Object.freeze({
   'vscode.extensions.licenseOpened': 'License file opened.',
 
   'vscode.resolution.noFile': 'Open the file whose mod resolution should be explained first.',
+  'vscode.strings.noFile': 'Open a localized strings file first.',
+  'vscode.strings.noComparison': 'This file has no comparison of its locales.',
+  'vscode.strings.oneLocale': '{name} has no other locale to compare.',
+  'vscode.strings.gapsTitle': 'Translation gaps — {name}',
+  'vscode.strings.gapLine':
+    '{missing} missing, {empty} empty, {untranslated} untranslated, {orphaned} not in the base',
+  'vscode.strings.translated': '{translated} of {total} translated',
+  'vscode.strings.noGaps': 'No translation gaps in {name}.',
+  'vscode.strings.refPrompt': 'Compare with the file at a git revision',
+  'vscode.strings.refPlaceholder': 'HEAD~1, a tag or a commit hash',
+  'vscode.strings.noGit': 'Only a file on disk inside a git repository has revisions.',
+  'vscode.strings.noChanges': 'No string was added or changed since {ref} ({deleted} removed).',
+  'vscode.strings.staged':
+    '{count} strings of {locale} added or changed since {ref} ({added} added, {modified} changed, {deleted} removed) are in the new document.',
   'vscode.resolution.noLoader': 'No content source of this window loads mods for {name}.',
   'vscode.resolution.title': 'Mod resolution: {name}',
   'vscode.resolution.inPackage': 'The file lies in **{name}** ({source}: `{path}`).',
@@ -768,6 +782,20 @@ const RU_MESSAGES: Readonly<Record<keyof typeof EN_MESSAGES, string>> = Object.f
   'vscode.extensions.licenseOpened': 'Файл лицензии открыт.',
 
   'vscode.resolution.noFile': 'Сначала откройте файл, разрешение модов которого нужно объяснить.',
+  'vscode.strings.noFile': 'Сначала откройте файл строк локали.',
+  'vscode.strings.noComparison': 'У этого файла нет сравнения локалей.',
+  'vscode.strings.oneLocale': 'У {name} нет других локалей для сравнения.',
+  'vscode.strings.gapsTitle': 'Пробелы перевода — {name}',
+  'vscode.strings.gapLine':
+    'нет: {missing}, пустых: {empty}, не переведено: {untranslated}, нет в базовой: {orphaned}',
+  'vscode.strings.translated': 'Переведено {translated} из {total}',
+  'vscode.strings.noGaps': 'В {name} нет пробелов перевода.',
+  'vscode.strings.refPrompt': 'Сравнить с файлом в ревизии git',
+  'vscode.strings.refPlaceholder': 'HEAD~1, тег или хеш коммита',
+  'vscode.strings.noGit': 'Ревизии есть только у файла на диске внутри репозитория git.',
+  'vscode.strings.noChanges': 'С {ref} строки не добавлялись и не менялись (удалено: {deleted}).',
+  'vscode.strings.staged':
+    '{count} строк {locale}, добавленных или изменённых с {ref} (добавлено {added}, изменено {modified}, удалено {deleted}), — в новом документе.',
   'vscode.resolution.noLoader': 'Ни один источник контента этого окна не загружает моды для {name}.',
   'vscode.resolution.title': 'Разрешение модов: {name}',
   'vscode.resolution.inPackage': 'Файл лежит в **{name}** ({source}: `{path}`).',

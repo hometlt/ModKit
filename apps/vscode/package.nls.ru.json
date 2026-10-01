@@ -25,6 +25,8 @@
   "command.addExtensionFolder": "Modkit: Добавить папку расширения…",
   "command.browseContainer": "Modkit: Показать контейнер в проводнике",
   "command.closeContainers": "Modkit: Закрыть все архивы",
+  "command.translationGaps": "Modkit: Пробелы перевода",
+  "command.extractChangedStrings": "Modkit: Изменённые строки с ревизии git…",
   "command.openExplorer": "Modkit: Открыть в проводнике Modkit",
   "command.openInModkit": "Modkit: Открыть в Modkit",
   "command.convertFolder": "Modkit: Конвертировать папку…",

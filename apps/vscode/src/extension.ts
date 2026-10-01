@@ -136,6 +136,9 @@ LanguageCompletionItem,
 OperationSession,
 SubjectCandidateProviderSource,
 SubjectCandidateScope,
+TableColumnInfo,
+TableDataSource,
+TableVariantComparison,
 TreeDataSource,
 TreeNodeFacts
 } from '@modkit/sdk'
@@ -328,6 +331,16 @@ import {
 } from './packaged-acceptance.js'
 import { readPackagedManagedRegistry } from './managed-registry.js'
 import { BATCH_CONVERT_MAX_FILES, runBatchConversion } from './batch-convert.js'
+import {
+  comparedLocales,
+  gitRevision,
+  gitShowSpec,
+  gitText,
+  hasGaps,
+  missingAtRevision,
+  withoutByteOrderMark,
+  type StringChangesAnswer,
+} from './translation-report.js'
 import {
   subjectPathOf,
   modContextTargetOf,
@@ -10553,6 +10566,160 @@ async function activateModkit(
     vscode.window.tabGroups.onDidChangeTabs(updateLaunchStatus),
   )
 
+  /*
+   * The locale commands MK2 had beside its strings table (plan 4.12/4.13), over the codec's own
+   * comparison — the operation its table names (`compareVariants`): asked for each bound locale it
+   * gives the translation gaps, and given the file's text at a git revision, the strings changed
+   * since. The codec reads nothing itself; git runs here, where the file is.
+   */
+  const withLocaleComparison = async (
+    argument: unknown,
+    run: (
+      compare: (input: JsonValue) => Promise<unknown>,
+      columns: readonly TableColumnInfo[],
+      uri: vscode.Uri,
+    ) => Promise<void>,
+  ): Promise<void> => {
+    const tab = vscode.window.tabGroups.activeTabGroup.activeTab?.input
+    const uri =
+      argument instanceof vscode.Uri
+        ? argument
+        : tab instanceof vscode.TabInputCustom || tab instanceof vscode.TabInputText
+          ? tab.uri
+          : undefined
+    if (uri === undefined) {
+      void vscode.window.showInformationMessage(
+        `Modkit: ${localizer.text('vscode.strings.noFile')}`,
+      )
+      return
+    }
+    try {
+      const subject = await commandOpener(subjectPathOf(uri))
+      try {
+        const session = subject.session
+        if (session === undefined) throw new Error(localizer.text('vscode.strings.noComparison'))
+        const lease = await session.dataSource('common.view/table-data-source', 1)
+        const shape = await (lease.value as TableDataSource).shape().finally(() => lease.release())
+        const operationId = shape.actions?.compareVariants
+        const descriptor = await session.descriptor()
+        const operation = descriptor.operations.find(
+          item => item.id === operationId && item.state === 'available',
+        )
+        if (operation === undefined) throw new Error(localizer.text('vscode.strings.noComparison'))
+        const operations = session.operations()
+        await run(
+          async input => {
+            const result = await operations.invoke(operation.handlerId, input)
+            if (result.state === 'ok' && result.output.kind === 'json') return result.output.value
+            throw new Error(
+              result.state === 'ok' ? `the codec answered ${result.output.kind}` : result.reason,
+            )
+          },
+          shape.columnInfo ?? [],
+          uri,
+        )
+      } finally {
+        await subject.dispose()
+      }
+    } catch (error) {
+      void vscode.window.showErrorMessage(
+        `Modkit: ${error instanceof Error ? error.message : String(error)}`,
+      )
+    }
+  }
+
+  const translationGaps = (argument: unknown): Promise<void> =>
+    withLocaleComparison(argument, async (compare, columns, uri) => {
+      const name = basename(uri.path)
+      const locales = comparedLocales(columns)
+      if (locales.length === 0) {
+        void vscode.window.showInformationMessage(
+          `Modkit: ${localizer.text('vscode.strings.oneLocale', { name })}`,
+        )
+        return
+      }
+      const lines: vscode.QuickPickItem[] = []
+      for (const locale of locales) {
+        const value = (await compare({ variant: locale })) as TableVariantComparison
+        if (!hasGaps(value)) continue
+        lines.push({
+          label: locale,
+          description: localizer.text('vscode.strings.gapLine', {
+            missing: value.missing.length,
+            empty: value.empty.length,
+            untranslated: value.identical.length,
+            orphaned: value.orphaned.length,
+          }),
+          detail: localizer.text('vscode.strings.translated', {
+            translated: value.translated,
+            total: value.total,
+          }),
+        })
+      }
+      if (lines.length === 0) {
+        void vscode.window.showInformationMessage(
+          `Modkit: ${localizer.text('vscode.strings.noGaps', { name })}`,
+        )
+        return
+      }
+      await vscode.window.showQuickPick(lines, {
+        title: localizer.text('vscode.strings.gapsTitle', { name }),
+      })
+    })
+
+  const extractChangedStrings = (argument: unknown): Promise<void> =>
+    withLocaleComparison(argument, async (compare, _columns, uri) => {
+      if (uri.scheme !== 'file') {
+        void vscode.window.showInformationMessage(
+          `Modkit: ${localizer.text('vscode.strings.noGit')}`,
+        )
+        return
+      }
+      const ref = gitRevision(
+        await vscode.window.showInputBox({
+          prompt: localizer.text('vscode.strings.refPrompt'),
+          value: 'HEAD~1',
+          placeHolder: localizer.text('vscode.strings.refPlaceholder'),
+        }),
+      )
+      if (ref === undefined) return
+      const topLevel = (await gitText(['rev-parse', '--show-toplevel'], dirname(uri.fsPath))).trim()
+      const spec = gitShowSpec(ref, topLevel, uri.fsPath)
+      if (spec === undefined) throw new Error(localizer.text('vscode.strings.noGit'))
+      // a file the revision did not have yet: every key of it is new since
+      const text = await gitText(['show', spec], topLevel).catch((error: unknown) => {
+        const stderr = (error as { readonly stderr?: unknown }).stderr
+        if (typeof stderr === 'string' && missingAtRevision(stderr)) return ''
+        throw error
+      })
+      const answer = (await compare({
+        since: { text: withoutByteOrderMark(text), label: ref },
+      })) as StringChangesAnswer
+      if (answer.added + answer.modified === 0) {
+        void vscode.window.showInformationMessage(
+          `Modkit: ${localizer.text('vscode.strings.noChanges', { ref, deleted: answer.deleted })}`,
+        )
+        return
+      }
+      // What a translator is handed, unsaved: the reader decides where it goes.
+      const language = (await vscode.workspace.openTextDocument(uri)).languageId
+      const document = await vscode.workspace.openTextDocument({
+        content: answer.staged,
+        language,
+      })
+      await vscode.window.showTextDocument(document, { preview: false })
+      void vscode.window.showInformationMessage(
+        `Modkit: ${localizer.text('vscode.strings.staged', {
+          count: answer.added + answer.modified,
+          ref,
+          added: answer.added,
+          modified: answer.modified,
+          deleted: answer.deleted,
+          locale: answer.locale,
+        })}`,
+      )
+    })
+
   /** The package of the mod the active (or given) file belongs to, at its anchor, in `viewType`. */
   const openModPackage = async (argument: unknown, viewType: string): Promise<boolean> => {
     const tab = vscode.window.tabGroups.activeTabGroup.activeTab?.input
@@ -11396,6 +11563,8 @@ async function activateModkit(
         ? resourcesView.open(row, 'wiki')
         : openModPackage(argument, 'modkit.wikiViewer')
     }),
+    vscode.commands.registerCommand('modkit.strings.translationGaps', translationGaps),
+    vscode.commands.registerCommand('modkit.strings.extractChanged', extractChangedStrings),
 
     /** Unload a mod from Resources: the row it ran on, else one picked from the loaded mods. */
     vscode.commands.registerCommand('modkit.resources.unloadMod', async (argument: unknown) => {

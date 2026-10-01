@@ -25,6 +25,8 @@
   "command.addExtensionFolder": "Modkit: Add Extension Folder…",
   "command.browseContainer": "Modkit: Browse Container in Explorer",
   "command.closeContainers": "Modkit: Close All Archives",
+  "command.translationGaps": "Modkit: Translation Gaps",
+  "command.extractChangedStrings": "Modkit: Extract Changed Strings (since git ref)…",
   "command.openExplorer": "Modkit: Open in Modkit Explorer",
   "command.openInModkit": "Modkit: Open in Modkit",
   "command.convertFolder": "Modkit: Convert Folder…",

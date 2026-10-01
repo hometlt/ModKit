@@ -157,6 +157,14 @@
       "title": "%command.closeContainers%"
     },
     {
+      "command": "modkit.strings.translationGaps",
+      "title": "%command.translationGaps%"
+    },
+    {
+      "command": "modkit.strings.extractChanged",
+      "title": "%command.extractChangedStrings%"
+    },
+    {
       "command": "modkit.openExplorer",
       "title": "%command.openExplorer%",
       "icon": "$(folder-library)"

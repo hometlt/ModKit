@@ -363,6 +363,14 @@
       "icon": "$(debug-disconnect)"
     },
     {
+      "command": "modkit.strings.extractChanged",
+      "title": "%command.extractChangedStrings%"
+    },
+    {
+      "command": "modkit.strings.translationGaps",
+      "title": "%command.translationGaps%"
+    },
+    {
       "command": "modkit.syncEditorAssociations",
       "title": "%command.syncEditorAssociations%"
     },
