@@ -5,9 +5,9 @@ import type {
 } from '@modkit/sdk/renderer'
 import type { StandardMaterialProgram } from '../materials/index.js'
 import type { SceneMaterialPrograms } from './materials.js'
-import { alphaDrawOrder, materialAlpha } from './alpha.js'
+import { alphaDrawOrder, depthSortedTriangles, materialAlpha } from './alpha.js'
 import { prepareMaterialGeometry } from './material-geometry.js'
-import { primitiveVertexTints } from './tint.js'
+import { primitiveFade, primitiveVertexTints } from './tint.js'
 
 export interface MaterialDraw {
   readonly primitive: SceneRendererPrimitive
@@ -253,7 +253,10 @@ export function sceneMaterialDraws(
     const original = originals[Number(key.materialId)],
       entry = original === undefined ? undefined : entries.get(original)
     if (entry === undefined) throw new TypeError('invalid material draw')
-    return entry
+    // a blended primitive's own triangles go back to front as the primitives do
+    return alpha(original!).mode === 'blend' || primitiveFade(entry.primitive) < 1
+      ? { ...entry, primitive: depthSortedTriangles(entry.primitive, viewProjection) }
+      : entry
   })
   return [...prepasses, ...draws]
 }

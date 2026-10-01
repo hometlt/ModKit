@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { it } from 'node:test'
 import { renderHeadless } from '../src/render/headless.js'
 import { materialAlpha, alphaDrawOrder } from '../src/render/alpha.js'
+import { sceneMaterialDraws } from '../src/render/material-draws.js'
 
 const identity = Float32Array.of(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
 const quad = (id, z = 0, materialId = id) => ({
@@ -167,4 +168,40 @@ it('poses a skin on the CPU only when there are blended primitives to order', ()
     ['far', 'near'],
   )
   assert.equal(posed, 2)
+})
+
+it("draws a blended primitive's own triangles back to front, again while the view stays", () => {
+  // one primitive of two quads: z -0.5 is nearer than z 0.5 under the identity view
+  const water = {
+    id: 'water',
+    materialId: 'water',
+    topology: 'triangles',
+    positions: Float32Array.of(
+      ...[-1, -1, 1, -1, 1, 1, -1, 1].flatMap((value, index) =>
+        index % 2 ? [value, -0.5] : [value],
+      ),
+      ...[-1, -1, 1, -1, 1, 1, -1, 1].flatMap((value, index) =>
+        index % 2 ? [value, 0.5] : [value],
+      ),
+    ),
+    indices: Uint32Array.of(0, 1, 2, 0, 2, 3, 4, 5, 6, 4, 6, 7),
+  }
+  const draws = (view, alphaMode = 'blend') =>
+    sceneMaterialDraws(
+      [water],
+      [{ id: 'water', baseColor: [0, 0, 1, 0.5], alphaMode }],
+      new Map(),
+      view,
+      [],
+      1,
+    )[0].primitive.indices
+  const sorted = draws(identity)
+  assert.deepEqual([...sorted], [4, 5, 6, 4, 6, 7, 0, 1, 2, 0, 2, 3])
+  // the same view draws the same index array again
+  assert.equal(draws(identity), sorted)
+  // seen from the other side the far quad is the near one
+  const behind = Float32Array.of(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1)
+  assert.deepEqual([...draws(behind)], [0, 1, 2, 0, 2, 3, 4, 5, 6, 4, 6, 7])
+  // an opaque primitive keeps its own order
+  assert.equal(draws(identity, 'opaque'), water.indices)
 })
