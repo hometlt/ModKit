@@ -677,6 +677,25 @@ describe('variant table find and replace', () => {
     await resetFind()
   })
 
+  it('renames a ticked key in every locale and deletes it, one plan each', async () => {
+    await page.evaluate(() => (globalThis as unknown as Probe).mountTable())
+    const tick = '[data-mk-part="table.body"] tr:first-child input[type="checkbox"]'
+    await page.click(tick)
+    await page.click('button[aria-label="Rename key…"]')
+    await page.fill('[data-mk-part="table.add"] input', 'Abil/Name/Z')
+    await page.click('[data-mk-part="table.add"] button')
+    await page.waitForFunction(() => (globalThis as unknown as Probe).commits.length === 1)
+    expect(await stringWrites()).toEqual([
+      { action: 'rename-variants', oldKey: 'Abil/Name/A', newKey: 'Abil/Name/Z' },
+    ])
+    await page.evaluate(() => (globalThis as unknown as Probe).mountTable())
+    await page.click(tick)
+    await page.click('button[aria-label="Delete key…"]')
+    await page.click('[data-mk-part="table.add"] button')
+    await page.waitForFunction(() => (globalThis as unknown as Probe).commits.length === 1)
+    expect(await stringWrites()).toEqual([{ action: 'delete-variants', key: 'Abil/Name/A' }])
+  })
+
   it('replaces all in one plan across locales, literally, and only in the columns on screen', async () => {
     await page.evaluate(() => (globalThis as unknown as Probe).mountTable())
     await page.focus('[data-mk-part="table.body"] tr:first-child td:nth-child(2)')

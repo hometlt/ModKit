@@ -327,6 +327,19 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
               label: text('table.addKey'),
               onActivate: () => showAdd(),
             },
+            // the key across every locale at once, as MK2's table renamed and removed it
+            {
+              kind: 'action' as const,
+              id: 'rename',
+              label: text('table.renameKey'),
+              onActivate: () => showRename(),
+            },
+            {
+              kind: 'action' as const,
+              id: 'delete',
+              label: text('table.deleteKey'),
+              onActivate: () => showDelete(),
+            },
           ]),
       ...(actions.compareVariants === undefined || variants.length < 2
         ? []
@@ -934,6 +947,86 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
       })
     })
     key.focus()
+  }
+
+  /** The one row the reader ticked, or a word on why there is none. */
+  const oneSelected = (): Row | undefined => {
+    const chosen = rows.filter(row => selected.has(row.index))
+    if (chosen.length === 1) return chosen[0]
+    say(text('table.selectOneRow'))
+    return undefined
+  }
+
+  const showRename = (): void => {
+    const row = oneSelected()
+    if (row === undefined || actions.addRow === undefined) return
+    const oldKey = row.cells[keyColumn] ?? ''
+    panel.hidden = false
+    panel.replaceChildren()
+    const form = element(panel, 'form', { part: 'table.add' }) as HTMLFormElement
+    const key = element(form, 'input', { part: 'toolbar.search-input' }) as HTMLInputElement
+    key.value = oldKey
+    key.setAttribute('aria-label', text('table.renameKeyName'))
+    key.required = true
+    const submit = element(form, 'button', {
+      part: 'toolbar.action',
+      text: text('table.renameKeySubmit'),
+    })
+    ;(submit as HTMLButtonElement).type = 'submit'
+    form.addEventListener('submit', event => {
+      event.preventDefault()
+      const newKey = key.value.trim()
+      if (newKey === '' || newKey === oldKey) return
+      if (rows.some(other => other.cells[keyColumn] === newKey)) {
+        say(text('table.refused', { reason: text('table.keyExists', { key: newKey }) }))
+        return
+      }
+      void write(actions.addRow as string, { action: 'rename-variants', oldKey, newKey }).then(
+        done => {
+          if (!done) return
+          rows[rows.indexOf(row)] = {
+            ...row,
+            cells: row.cells.map((cell, index) => (index === keyColumn ? newKey : cell)),
+          }
+          changed.add(row.index)
+          panel.hidden = true
+          refresh()
+        },
+      )
+    })
+    key.select()
+  }
+
+  const showDelete = (): void => {
+    const row = oneSelected()
+    if (row === undefined || actions.addRow === undefined) return
+    const key = row.cells[keyColumn] ?? ''
+    // the locales that hold the key now: one is a plain delete, several go as one plan
+    const holders = variants.filter(column => (row.cells[column.index] ?? '') !== '')
+    panel.hidden = false
+    panel.replaceChildren()
+    const form = element(panel, 'form', { part: 'table.add' }) as HTMLFormElement
+    element(form, 'span', {
+      text: text('table.deleteKeyConfirm', { key, count: Math.max(1, holders.length) }),
+    })
+    const submit = element(form, 'button', {
+      part: 'toolbar.action',
+      text: text('table.deleteKeySubmit'),
+    })
+    ;(submit as HTMLButtonElement).type = 'submit'
+    form.addEventListener('submit', event => {
+      event.preventDefault()
+      const request =
+        variants.length > 1 ? { action: 'delete-variants', key } : { action: 'delete', key }
+      void write(actions.addRow as string, request).then(done => {
+        if (!done) return
+        rows.splice(rows.indexOf(row), 1)
+        selected.delete(row.index)
+        panel.hidden = true
+        refresh()
+      })
+    })
+    ;(submit as HTMLButtonElement).focus()
   }
 
   const compare = async (): Promise<void> => {
