@@ -5,8 +5,9 @@
  * no execution, no globbing beyond the declared patterns (expansion is pure sdk code).
  */
 
-import { createHash } from 'node:crypto'
+import { createHash, type Hash } from 'node:crypto'
 import { readdirSync, readFileSync, statSync, watch } from 'node:fs'
+import { readdir, readFile, stat } from 'node:fs/promises'
 import { join, relative, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { throwIfAborted } from '@modkit/core'
@@ -30,12 +31,13 @@ export function listFilesRecursive(root: string): string[] {
   return out
 }
 
+const byName = (a: { readonly name: string }, b: { readonly name: string }): number =>
+  a.name < b.name ? -1 : a.name > b.name ? 1 : 0
+
 function listArtifactFiles(root: string): string[] {
   const out: string[] = []
   const walk = (dir: string): void => {
-    for (const entry of readdirSync(dir, { withFileTypes: true }).sort((a, b) =>
-      a.name < b.name ? -1 : a.name > b.name ? 1 : 0,
-    )) {
+    for (const entry of readdirSync(dir, { withFileTypes: true }).sort(byName)) {
       if (entry.name === 'node_modules' || entry.name === '.git') continue
       const path = join(dir, entry.name)
       if (entry.isDirectory()) walk(path)
@@ -45,6 +47,41 @@ function listArtifactFiles(root: string): string[] {
   walk(root)
   return out
 }
+
+/** listArtifactFiles without holding the thread: the same files in the same order. */
+async function listArtifactFilesAsync(root: string): Promise<string[]> {
+  const out: string[] = []
+  const walk = async (dir: string): Promise<void> => {
+    for (const entry of (await readdir(dir, { withFileTypes: true })).sort(byName)) {
+      if (entry.name === 'node_modules' || entry.name === '.git') continue
+      const path = join(dir, entry.name)
+      if (entry.isDirectory()) await walk(path)
+      else out.push(relative(root, path).split(sep).join('/'))
+    }
+  }
+  await walk(root)
+  return out
+}
+
+/**
+ * `read` over `items` with at most `width` in flight, results in the items' order: an activation
+ * that hashes every file of every root (after a snapshot rebuild) keeps the extension host
+ * responsive and the disk busy, where the synchronous walk froze the window for a minute.
+ */
+async function inOrder<T, R>(
+  items: readonly T[],
+  width: number,
+  read: (item: T) => Promise<R>,
+  use: (item: T, value: R) => void,
+): Promise<void> {
+  for (let start = 0; start < items.length; start += width) {
+    const chunk = items.slice(start, start + width)
+    const values = await Promise.all(chunk.map(read))
+    chunk.forEach((item, index) => use(item, values[index] as R))
+  }
+}
+
+const IO_WIDTH = 32
 
 function sha256(value: Uint8Array | string): string {
   return `sha256:${createHash('sha256').update(value).digest('hex')}`
@@ -64,18 +101,42 @@ interface ArtifactDigests {
 function artifactDigests(root: string): ArtifactDigests {
   const hash = createHash('sha256')
   const fileDigests: Record<string, string> = {}
-  for (const path of listArtifactFiles(root)) {
-    const pathBytes = Buffer.from(path, 'utf8')
-    const contents = readFileSync(join(root, path))
-    hash.update(Buffer.from(String(pathBytes.byteLength)))
-    hash.update(Buffer.from([0]))
-    hash.update(pathBytes)
-    hash.update(Buffer.from([0]))
-    hash.update(Buffer.from(String(contents.byteLength)))
-    hash.update(Buffer.from([0]))
-    hash.update(contents)
-    fileDigests[path] = sha256(contents)
-  }
+  for (const path of listArtifactFiles(root))
+    hashArtifactFile(hash, fileDigests, path, readFileSync(join(root, path)))
+  return { artifactDigest: `sha256:${hash.digest('hex')}`, fileDigests: Object.freeze(fileDigests) }
+}
+
+/** One file of the tree digest (length-prefixed path and contents) and its own digest. */
+function hashArtifactFile(
+  hash: Hash,
+  fileDigests: Record<string, string>,
+  path: string,
+  contents: Uint8Array,
+): void {
+  const pathBytes = Buffer.from(path, 'utf8')
+  hash.update(Buffer.from(String(pathBytes.byteLength)))
+  hash.update(Buffer.from([0]))
+  hash.update(pathBytes)
+  hash.update(Buffer.from([0]))
+  hash.update(Buffer.from(String(contents.byteLength)))
+  hash.update(Buffer.from([0]))
+  hash.update(contents)
+  fileDigests[path] = sha256(contents)
+}
+
+/** artifactDigests over a listing, reading files in parallel: the same digests. */
+async function artifactDigestsAsync(
+  root: string,
+  listed: readonly string[],
+): Promise<ArtifactDigests> {
+  const hash = createHash('sha256')
+  const fileDigests: Record<string, string> = {}
+  await inOrder(
+    listed,
+    IO_WIDTH,
+    path => readFile(join(root, path)),
+    (path, contents) => hashArtifactFile(hash, fileDigests, path, contents),
+  )
   return { artifactDigest: `sha256:${hash.digest('hex')}`, fileDigests: Object.freeze(fileDigests) }
 }
 
@@ -117,10 +178,24 @@ function statFingerprint(
   listed: readonly string[] = listArtifactFiles(root),
 ): string {
   const fingerprint = createHash('sha256')
-  for (const path of listed) {
-    const info = statSync(join(root, path), { bigint: true })
-    fingerprint.update(`${path}\0${String(info.size)}\0${String(info.mtimeNs)}\0`)
-  }
+  for (const path of listed)
+    fingerprint.update(fingerprintLine(path, statSync(join(root, path), { bigint: true })))
+  return fingerprint.digest('hex')
+}
+
+const fingerprintLine = (
+  path: string,
+  info: { readonly size: bigint; readonly mtimeNs: bigint },
+): string => `${path}\0${String(info.size)}\0${String(info.mtimeNs)}\0`
+
+async function statFingerprintAsync(root: string, listed: readonly string[]): Promise<string> {
+  const fingerprint = createHash('sha256')
+  await inOrder(
+    listed,
+    IO_WIDTH,
+    path => stat(join(root, path), { bigint: true }),
+    (path, info) => fingerprint.update(fingerprintLine(path, info)),
+  )
   return fingerprint.digest('hex')
 }
 
@@ -133,18 +208,39 @@ function statFingerprint(
  */
 function digestsFor(root: string, listed?: readonly string[]): ArtifactDigests {
   const fingerprint = statFingerprint(root, listed)
+  return (
+    knownDigests(root, fingerprint) ?? rememberDigests(root, fingerprint, artifactDigests(root))
+  )
+}
+
+/** digestsFor without holding the thread, for loading a root. */
+async function digestsForAsync(root: string, listed: readonly string[]): Promise<ArtifactDigests> {
+  const fingerprint = await statFingerprintAsync(root, listed)
+  return (
+    knownDigests(root, fingerprint) ??
+    rememberDigests(root, fingerprint, await artifactDigestsAsync(root, listed))
+  )
+}
+
+/** In-process memory, then the application's persistent cache, at this fingerprint. */
+function knownDigests(root: string, fingerprint: string): ArtifactDigests | undefined {
   const live = verifiedDigests.get(root)
   if (live?.fingerprint === fingerprint) return live.digests
   const stored = cachedArtifactDigest(root, fingerprint)
-  if (stored !== undefined) {
-    const digests: ArtifactDigests = {
-      artifactDigest: stored.artifactDigest,
-      fileDigests: stored.fileDigests,
-    }
-    verifiedDigests.set(root, { fingerprint, digests })
-    return digests
+  if (stored === undefined) return undefined
+  const digests: ArtifactDigests = {
+    artifactDigest: stored.artifactDigest,
+    fileDigests: stored.fileDigests,
   }
-  const digests = artifactDigests(root)
+  verifiedDigests.set(root, { fingerprint, digests })
+  return digests
+}
+
+function rememberDigests(
+  root: string,
+  fingerprint: string,
+  digests: ArtifactDigests,
+): ArtifactDigests {
   verifiedDigests.set(root, { fingerprint, digests })
   rememberArtifactDigest(root, {
     fingerprint,
@@ -162,9 +258,9 @@ function artifactDigest(root: string): string {
   return digestsFor(root).artifactDigest
 }
 
-function readJsonIfExists(path: string): unknown {
+async function readJsonIfExists(path: string): Promise<unknown> {
   try {
-    return JSON.parse(readFileSync(path, 'utf8')) as unknown
+    return JSON.parse(await readFile(path, 'utf8')) as unknown
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined
     throw error
@@ -177,11 +273,11 @@ export async function loadExtensionDirectory(
   signal?: AbortSignal,
 ): Promise<ExtensionInput> {
   throwIfAborted(signal)
-  if (!statSync(dir, { throwIfNoEntry: false })?.isDirectory()) {
+  if (!(await stat(dir).catch(() => undefined))?.isDirectory()) {
     throw new Error(`not a directory: ${dir}`)
   }
-  const packageJson = readJsonIfExists(join(dir, 'package.json'))
-  const standalone = readJsonIfExists(join(dir, 'modkit.extension.json'))
+  const packageJson = await readJsonIfExists(join(dir, 'package.json'))
+  const standalone = await readJsonIfExists(join(dir, 'modkit.extension.json'))
   const containers = {
     ...(packageJson === undefined ? {} : { packageJson }),
     ...(standalone === undefined ? {} : { standalone }),
@@ -193,20 +289,20 @@ export async function loadExtensionDirectory(
    * artifact listing instead of walking the tree a second time — 7,000 files over 39 roots
    * cost the extension host about a second per extra walk.
    */
-  const artifactFiles = listArtifactFiles(dir)
+  const artifactFiles = await listArtifactFilesAsync(dir)
   const files = artifactFiles.filter(path => !path.split('/').includes('dist'))
   const documents = new Map<string, unknown>()
   const documentDigests = new Map<string, string>()
   // Pre-read only the documents the declared patterns select; the inventory re-runs the
   // same pure expansion, so both sides see one declared set.
-  const initial = digestsFor(dir, artifactFiles)
+  const initial = await digestsForAsync(dir, artifactFiles)
   const normalized = await normalizeExtensionManifest(containers)
   if (normalized.manifest) {
     throwIfAborted(signal)
     const expansion = expandContributionManifests(normalized.manifest.contributionManifests, files)
     for (const entry of expansion.entries) {
       const documentPath = join(dir, entry.path)
-      const document = readJsonIfExists(documentPath)
+      const document = await readJsonIfExists(documentPath)
       if (document !== undefined) {
         documents.set(entry.path, document)
         /*
@@ -217,7 +313,7 @@ export async function loadExtensionDirectory(
          */
         documentDigests.set(
           entry.path,
-          initial.fileDigests[entry.path] ?? sha256(readFileSync(documentPath)),
+          initial.fileDigests[entry.path] ?? sha256(await readFile(documentPath)),
         )
       }
     }
