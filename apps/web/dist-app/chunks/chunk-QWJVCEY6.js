@@ -15,7 +15,7 @@ import {
 } from "./chunk-6S27EKIS.js";
 import {
   relationGraphNeighbourhood
-} from "./chunk-BPQHTKO4.js";
+} from "./chunk-CIWTP27X.js";
 import {
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
 } from "./chunk-BLWUC7LO.js";

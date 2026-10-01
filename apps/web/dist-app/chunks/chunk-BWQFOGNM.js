@@ -6,7 +6,7 @@ import {
 } from "./chunk-GSFZBIQN.js";
 import {
   createRelationGraphViewer
-} from "./chunk-26CNHD5J.js";
+} from "./chunk-QWJVCEY6.js";
 import {
   DEFAULT_MODEL_ANIMATION_BUDGET,
   DEFAULT_MODEL_SKELETON_BUDGET,
@@ -24,18 +24,18 @@ import {
   snapshotJson,
   snapshotModelAnimations,
   snapshotModelSkeleton
-} from "./chunk-P3UIQ2VQ.js";
+} from "./chunk-UOFWHONS.js";
 import {
   metadataFieldProjections
-} from "./chunk-64G7DVXS.js";
+} from "./chunk-T52KF3Q6.js";
 import {
   applyColorKeyTransparency
-} from "./chunk-T4WDAZUT.js";
+} from "./chunk-S46IJQIE.js";
 import {
   createImageViewer,
   createNamespaceViewer,
   invokeRefusalMessage
-} from "./chunk-XOBS3R2V.js";
+} from "./chunk-TJCMN5YR.js";
 import {
   compileMatcher,
   compilePattern,
@@ -204,7 +204,7 @@ import {
   validateSubjectDescriptorV2,
   writerOfferSatisfies,
   writerSelectionKey
-} from "./chunk-BPQHTKO4.js";
+} from "./chunk-CIWTP27X.js";
 import {
   __export,
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
@@ -6106,7 +6106,7 @@ function sessionAdapter(realm, session, exposedInput, watch, openingSignal) {
 
 // ../MODDING/modkit-core/packages/host/dist/session.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-var projection = () => import("./subject-projection-JZ6HD6KO.js");
+var projection = () => import("./subject-projection-WUKZZW5I.js");
 function rejected(reason, message) {
   return {
     state: "rejected",
@@ -39974,9 +39974,9 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: "sha256:68b6d3b1f4d1a0fb002d1a42aea6e2bea5b0e4faca70aa04b883e0a851d6defb",
+        artifactDigest: "sha256:2d7957608c08dc4dfe1eb078dafecd5264f4f36a957e057bbad6e21df22e050c",
         fileDigests: {
-          "README.md": "sha256:dc21108b37dc3a12e6621c2a3a7ac470eae82047f2be78a687358ccbd94b92d1",
+          "README.md": "sha256:e88ae59915e47ee0d3549aeb19cefd2b952214ab977edaed243918a0947d2f7c",
           "contributions/codec-java-class.json": "sha256:abeaf9e56aa1a4a1fd91d10fe7cb98bdebb953b0796dadccd97bbf870fca3647",
           "dist/bytecode.d.ts": "sha256:f9c542f6a73b6586fffb2177172bf24ca63abc22d464d45f2680b629ef468dc6",
           "dist/bytecode.d.ts.map": "sha256:f8c2f7f5bd9a4c2b95806f3d77d15fc2e6d984c010abf8b9e56b22479c0f8a5c",
@@ -39994,25 +39994,25 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
           "dist/index.d.ts.map": "sha256:4e48b0ab1fc7e712837c5ec80354dc9113b1a53cbb329c958c8eba6eb3b1ccb0",
           "dist/index.js": "sha256:0028b845707c649e1b5b9e91d79c1e2fea4429e4b41db0b261b42061ef06561f",
           "dist/index.js.map": "sha256:4618118effa3f9dd6de4e26d5e3b13e083f0f445c3923245dea21a4d076cac58",
-          "dist/interpreter.d.ts": "sha256:436fca33a83a914317719a27d51fb5640e30f531a906e7f1c50bf4b5e8bf5d8a",
-          "dist/interpreter.d.ts.map": "sha256:53bbd3e5ecbe9909783ce15a186c47901668ceedeacf8ee1d9c51503808c8daa",
-          "dist/interpreter.js": "sha256:9c60f9b6c8df7768f6f8512c98da02f8053ae607905e87c259eda94e2ccb7a3b",
-          "dist/interpreter.js.map": "sha256:2c4f8209bae5676ee2f91ddd121c4fa89b3e4502e4f3ef184be713a50576e3f1",
+          "dist/interpreter.d.ts": "sha256:f1ca0ecc0ceb39a3b612216c4f288d3bada5d57e5c95279134d760f5ab902b0b",
+          "dist/interpreter.d.ts.map": "sha256:87611521608218167394df3a2e1c11d35e380ce7d7b55afb1b6123c9002dcdb8",
+          "dist/interpreter.js": "sha256:57f180c37d2c10e9006e916a53bb7f39b5a55ec857b12c9e2274ccfdd905e81a",
+          "dist/interpreter.js.map": "sha256:d810bb4febd69c9b01f10a5c9907d15aeed553dfd42d1902e37d18c002b61f72",
           "package.json": "sha256:bbc40fcdf10b49710604f8019903157f4d221e58aaef96b298b5dc6f8118a952",
           "src/bytecode.ts": "sha256:c9beb7f1f6c92ad84b0fe6b842eef99be908f798db6b8bbca008d828893a31cd",
           "src/class-file.ts": "sha256:08bab8bce935fb8a57134a87fbdc1920f718ecce267710ca6ed1fd297433f891",
           "src/codec.ts": "sha256:0b11ebffa5132857c86d14d2426de9f4f754109ab1759b769663cec0fbfff97e",
           "src/index.ts": "sha256:2542de1574c447ff09f0f2bd0edc5ab9d6073956f475aa2e7fbb6930994a996a",
-          "src/interpreter.ts": "sha256:76da936479aad43a8d7213761202f82892bedc337e9d3271a3473089bbcd5f75",
+          "src/interpreter.ts": "sha256:ea48127ad33a7dc987eb89a1a6a96815daa868abd0645a2b7ab63427f6a4f3cb",
           "test/class-file.test.ts": "sha256:0b636ff59b13a75414a9fe072d3616e1ab06b7d312caa89b68533bfdfc5c2888",
-          "test/fixtures/Heap.class": "sha256:8c6d93052e3fcfade678ed5b8c1b76fea8c655cee5efce08185d6cfd9beb8614",
-          "test/fixtures/Heap.java": "sha256:3bfefaca93328cebb9914635fedfaf29eb37a2d791473588ebedc43ea1d7a501",
+          "test/fixtures/Heap.class": "sha256:c0d69d0881a47c3f3401ee4b28b6591b0533369fc9ab74efc96b4bed4b6f4c9c",
+          "test/fixtures/Heap.java": "sha256:747758948bb7a24d6b4f80172ed9466b29f1917629939c858253aabc6546a1e2",
           "test/fixtures/Sample.class": "sha256:0e6bca2c5fc36451a73e353e247779f252db8a62a200cdc24752d938491bd900",
           "test/fixtures/Sample.java": "sha256:a232f456df6e55858e48d1b2bdc1727ee96b55013e147c5a14d544fa80f813be",
-          "test/interpreter-heap.test.ts": "sha256:5989a2ffaa07a6b17dd695146b7a5e88db7bdd543f13619e86db1f9b11884681",
+          "test/interpreter-heap.test.ts": "sha256:d9cf33d27037c86d1b6cc5b368a8ca40bddd5fb6ccafb421fe2296b78faefe9a",
           "tsconfig.json": "sha256:daba80f2abbe46449d7ffad22c2029633475f729b9380cc79daeb850c2223492"
         },
-        inventoryRecordId: "artifact:sha256:68b6d3b1f4d1a0fb002d1a42aea6e2bea5b0e4faca70aa04b883e0a851d6defb"
+        inventoryRecordId: "artifact:sha256:2d7957608c08dc4dfe1eb078dafecd5264f4f36a957e057bbad6e21df22e050c"
       },
       artifactRoot: "extensions/java/",
       containers: {
@@ -45470,8 +45470,8 @@ function projectExtensionSubjects(input) {
     fail5("extension must be an object");
   }
   const publisher = requiredText(extensionInput.publisher, "extension.publisher");
-  const localId = requiredText(extensionInput.id, "extension.id");
-  const extensionId = `${publisher}/${localId}`;
+  const localId2 = requiredText(extensionInput.id, "extension.id");
+  const extensionId = `${publisher}/${localId2}`;
   const version = requiredText(extensionInput.version, "extension.version");
   const license = requiredText(extensionInput.license, "extension.license");
   const metadata = normalizedInput.metadata ?? {};
@@ -68024,9 +68024,9 @@ var PREVIEW_STAGES = [
 async function defaultPreviewStage(kind, localizer) {
   switch (kind) {
     case "model":
-      return (await import("./model-UGHQS5SY.js")).createModelViewer({ localizer });
+      return (await import("./model-5EEQPDZR.js")).createModelViewer({ localizer });
     case "image":
-      return (await import("./image-JZP75TYN.js")).createImageViewer({ localizer });
+      return (await import("./image-P2ZGPXE2.js")).createImageViewer({ localizer });
     case "video":
       return (await import("./video-3KWORBK2.js")).createVideoViewer({ localizer });
     case "audio":
@@ -68069,7 +68069,7 @@ function embedRelationGraph(sections, args, scope, localizer, graph) {
   return [
     ...sections,
     stageSection({ id: "relations-graph", title: localizer.text("card.relationGraph"), expanded: false }, scope, localizer, "card.relationGraphUnavailable", async (host) => {
-      const module = graph ?? (await import("./graph-WFHSMAFM.js")).createRelationGraphViewer({ localizer });
+      const module = graph ?? (await import("./graph-W7AHDNYR.js")).createRelationGraphViewer({ localizer });
       return scope.signal.aborted ? void 0 : module.mount({ ...args, container: host, signal: scope.signal });
     })
   ];

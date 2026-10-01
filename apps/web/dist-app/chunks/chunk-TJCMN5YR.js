@@ -24,7 +24,7 @@ import {
   createSubjectCandidateProvider,
   isKnowledgeTarget,
   loadSubjectCandidatePage
-} from "./chunk-BPQHTKO4.js";
+} from "./chunk-CIWTP27X.js";
 import {
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
 } from "./chunk-BLWUC7LO.js";
@@ -2443,7 +2443,7 @@ function createImageViewer(options = {}) {
         paint();
         void (async () => {
           try {
-            const { encodePng } = await import("./raster-T4YEKZDR.js");
+            const { encodePng } = await import("./raster-5QR4VMAI.js");
             const scratch = root.ownerDocument.createElement("canvas");
             const scratchContext = scratch.getContext("2d", { willReadFrequently: true });
             if (scratchContext === null)

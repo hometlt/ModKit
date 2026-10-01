@@ -63,7 +63,7 @@ import {
 } from "../../../chunks/chunk-4A3BDPFP.js";
 import {
   encodePng
-} from "../../../chunks/chunk-3TXS6OSI.js";
+} from "../../../chunks/chunk-P3KDCCMI.js";
 import {
   applyColorKeyTransparency
 } from "../../../chunks/chunk-COUIZZOL.js";

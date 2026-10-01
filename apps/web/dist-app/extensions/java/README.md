@@ -15,7 +15,8 @@ Minecraft extension.
   values as constants or symbols (a parameter, a static field, another call's result). Nothing
   runs. A branch or switch whose condition folds takes its side, so constant loops unroll within
   `maxInstructions`; `args` binds parameters, and `heap` lets the caller answer field, static and
-  array reads (`setupAnim` over a model's parts, a static table from `<clinit>`). A condition over
+  array reads and call results (`setupAnim` over a model's parts and getters, a static table from
+  `<clinit>`); a field the method wrote reads back what it wrote. A condition over
   a symbol, a throw or an exception handler refuses with its program counter and hands back what
   was recorded. Model builders (`CubeListBuilder.create().texOffs(0, 0).addBox(...)`) read back as
   call lists.

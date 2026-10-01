@@ -117,7 +117,7 @@ import {
   worldModelRequiredBytes,
   writerOfferSatisfies,
   writerSelectionKey
-} from "../../chunks/chunk-QAFTCMTY.js";
+} from "../../chunks/chunk-HYIVL2HG.js";
 import {
   SCENE_RENDERER_CONTRACT,
   SCENE_RENDERER_MATCHER_PROFILE

@@ -118,7 +118,8 @@ export interface JvmField {
 }
 
 /**
- * The caller's answers for the memory a method reads. An answer replaces the symbolic value, so a
+ * The caller's answers for the memory a method reads. A field the method itself wrote before
+ * reading it (on the same object, parameter or class) reads back what it wrote, ahead of these. An answer replaces the symbolic value, so a
  * constant folds branches and unrolls loops; `undefined` keeps the read symbolic (an array read
  * then refuses, as without a heap). An object the caller hands out is `{ kind: 'object',
  * className, id }` with its own ids, an array `{ kind: 'array', elementType, elements }` or
@@ -130,6 +131,12 @@ export interface JvmHeap {
   getField?(target: JvmValue, field: JvmField): JvmValue | undefined
   arrayLength?(array: JvmValue): number | undefined
   arrayElement?(array: JvmValue, index: number): JvmValue | undefined
+  /**
+   * What a call returns (a getter: `state.getArmPose(arm).isTwoHanded()`), in place of the
+   * symbol `{ kind: 'result', call }`. The call stays recorded: the caller still makes it, the
+   * heap only tells what it gives back. Not asked for constructors or `invokedynamic`.
+   */
+  invoke?(call: JvmCall): JvmValue | undefined
 }
 
 export interface InterpretOptions {
@@ -462,6 +469,20 @@ export function interpretMethod(
   let objects = options.firstObjectId ?? 0
   let step = 0
   const heap = options.heap
+  /** Fields the method wrote, by target and field: what it reads back. */
+  const written = new Map<string, JvmValue>()
+  const targetKey = (target: JvmValue | undefined): string | undefined =>
+    target === undefined
+      ? 'static'
+      : target.kind === 'object'
+        ? `object:${target.id}`
+        : target.kind === 'parameter'
+          ? `parameter:${target.index}`
+          : undefined
+  const fieldKey = (target: JvmValue | undefined, owner: string, field: string) => {
+    const at = targetKey(target)
+    return at === undefined ? undefined : `${at}|${owner}.${field}`
+  }
   let instruction: Instruction | undefined
   const pc = () => instruction?.pc ?? 0
   const pop = (): JvmValue => {
@@ -636,29 +657,34 @@ export function interpretMethod(
       } else if (name === 'getstatic') {
         const { owner, name: field, descriptor } = pool.member(operand)
         push(
-          heap?.getStatic?.({ owner, name: field, descriptor }) ?? {
-            kind: 'static',
-            owner,
-            name: field,
-            descriptor,
-          },
+          written.get(fieldKey(undefined, owner, field)!) ??
+            heap?.getStatic?.({ owner, name: field, descriptor }) ?? {
+              kind: 'static',
+              owner,
+              name: field,
+              descriptor,
+            },
         )
       } else if (name === 'getfield') {
         const { owner, name: field, descriptor } = pool.member(operand)
         const target = pop()
+        const key = fieldKey(target, owner, field)
         push(
-          heap?.getField?.(target, { owner, name: field, descriptor }) ?? {
-            kind: 'field',
-            target,
-            owner,
-            name: field,
-            descriptor,
-          },
+          (key === undefined ? undefined : written.get(key)) ??
+            heap?.getField?.(target, { owner, name: field, descriptor }) ?? {
+              kind: 'field',
+              target,
+              owner,
+              name: field,
+              descriptor,
+            },
         )
       } else if (name === 'putstatic' || name === 'putfield') {
         const { owner, name: field } = pool.member(operand)
         const value = pop()
         const target = name === 'putfield' ? pop() : undefined
+        const key = fieldKey(target, owner, field)
+        if (key !== undefined) written.set(key, value)
         stores.push({
           step: step++,
           pc: pc(),
@@ -720,7 +746,12 @@ export function interpretMethod(
           receiver.init === undefined
         )
           receiver.init = at
-        else if (returnsValue(descriptor)) push({ kind: 'result', call: at })
+        else if (returnsValue(descriptor))
+          push(
+            (invoke === 'invokedynamic' || called === '<init>'
+              ? undefined
+              : heap?.invoke?.(calls[at]!)) ?? { kind: 'result', call: at },
+          )
       } else if (/^[ilfda]?return$/u.test(name)) {
         const returned = name === 'return' ? undefined : pop()
         return { state: 'ok', calls, stores, ...(returned === undefined ? {} : { returned }) }

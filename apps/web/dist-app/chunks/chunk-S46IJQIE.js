@@ -244,7 +244,16 @@ async function decodePngSamples(bytes, options = {}) {
       samples[y * width * stored + index] = Math.round(sampleAt2(y, index) * scale);
     }
   }
-  return Object.freeze({ width, height, bitDepth: depth === 16 ? 16 : 8, channels: stored, samples });
+  const keyed = colorType === 0 ? 1 : colorType === 2 ? 3 : 0;
+  const transparent = transparency === void 0 || keyed === 0 || transparency.byteLength < keyed * 2 ? void 0 : Array.from({ length: keyed }, (_, index) => Math.round(((transparency[index * 2] << 8 | transparency[index * 2 + 1]) & (1 << depth) - 1) * scale));
+  return Object.freeze({
+    width,
+    height,
+    bitDepth: depth === 16 ? 16 : 8,
+    channels: stored,
+    samples,
+    ...transparent === void 0 ? {} : { transparent: Object.freeze(transparent) }
+  });
 }
 var greyDepthFor = (maximum) => maximum > 255 ? 16 : 8;
 async function greyGridToPng(grid, maximum, signal) {

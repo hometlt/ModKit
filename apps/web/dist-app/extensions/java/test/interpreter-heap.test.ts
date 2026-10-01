@@ -44,7 +44,11 @@ describe('interpreter with the caller heap', () => {
       )
     const time = { kind: 'parameter', index: 1 }
     const angle = (value: number) => ({ kind: 'float', value })
-    const times = (value: number) => ({ kind: 'operation', op: 'fmul', operands: [angle(value), time] })
+    const times = (value: number) => ({
+      kind: 'operation',
+      op: 'fmul',
+      operands: [angle(value), time],
+    })
     expect(events).toEqual([
       ['turn', 100, time],
       ['rotation', 100, times(0.5)],
@@ -65,5 +69,43 @@ describe('interpreter with the caller heap', () => {
       state: 'refused',
       reason: 'ifle tests a value that is not a constant',
     })
+  })
+
+  it('takes a call result from the heap and keeps the call recorded', () => {
+    const asked: string[] = []
+    const answered = interpretMethod(file, method('pose'), {
+      args: [self, part(5)],
+      heap: {
+        invoke: call => {
+          asked.push(call.name)
+          return call.name === 'isTwoHanded' ? { kind: 'int', value: 1 } : undefined
+        },
+      },
+    })
+    if (answered.state !== 'ok') throw new Error(answered.reason)
+    expect(answered.calls.map(call => [call.step, call.name])).toEqual([
+      [0, 'isTwoHanded'],
+      [1, 'turn'],
+    ])
+    expect(asked).toEqual(['isTwoHanded'])
+    expect(interpretMethod(file, method('pose'), { args: [self, part(5)] })).toMatchObject({
+      state: 'refused',
+      reason: 'ifeq tests a value that is not a constant',
+    })
+  })
+
+  it('reads back a field the method wrote: an array it just built', () => {
+    const built = interpretMethod(file, method('build'), { args: [self], firstObjectId: 1000 })
+    if (built.state !== 'ok') throw new Error(built.reason)
+    expect(built.calls.map(call => [call.name, (call.receiver as { id: number }).id])).toEqual([
+      ['<init>', 1000],
+      ['<init>', 1001],
+      ['<init>', 1002],
+    ])
+    expect(built.stores.map(store => store.name)).toEqual(['parts'])
+    const parts = built.stores[0]!.value
+    expect(
+      parts.kind === 'array' && parts.elements.map(item => (item as { id: number }).id),
+    ).toEqual([1000, 1001, 1002])
   })
 })

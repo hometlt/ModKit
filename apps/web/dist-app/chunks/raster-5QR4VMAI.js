@@ -24,7 +24,7 @@ import {
   readJpegFrameInfo,
   resizeRgba,
   surfaceRegionReader
-} from "./chunk-T4WDAZUT.js";
+} from "./chunk-S46IJQIE.js";
 import "./chunk-Q27WXNQ4.js";
 import "./chunk-QQJVD7VT.js";
 import "./chunk-BLWUC7LO.js";
