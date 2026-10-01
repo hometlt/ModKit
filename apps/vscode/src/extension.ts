@@ -21,6 +21,7 @@ renderGalleryThumbnail,
 type GalleryThumbnail,
 } from './image-gallery.js'
 import { copyFileSync, existsSync, readFileSync, statSync } from 'node:fs'
+import { homedir } from 'node:os'
 import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import * as vscode from 'vscode'
@@ -331,6 +332,7 @@ import {
 } from './packaged-acceptance.js'
 import { readPackagedManagedRegistry } from './managed-registry.js'
 import { BATCH_CONVERT_MAX_FILES, runBatchConversion } from './batch-convert.js'
+import { contentSourceOptionsFor } from './content-source-options.js'
 import {
   comparedLocales,
   gitRevision,
@@ -1182,7 +1184,24 @@ async function activateModkit(
             selectedSources,
             extension,
           )
-          return installationDirectory === undefined ? undefined : { installationDirectory }
+          // the settings a team commits (plan 8.9) win over the installation one user picked here
+          const configured = contentSourceOptionsFor(
+            vscode.workspace.getConfiguration('modkit').inspect('contentSourceOptions') ?? {},
+            extension,
+            {
+              workspaceFolders: (vscode.workspace.workspaceFolders ?? []).map(folder => ({
+                name: folder.name,
+                path: folder.uri.fsPath,
+              })),
+              env: process.env,
+              userHome: homedir(),
+            },
+          )
+          if (installationDirectory === undefined && configured === undefined) return undefined
+          return {
+            ...(installationDirectory === undefined ? {} : { installationDirectory }),
+            ...configured,
+          }
         },
         // each extension's module reaches only the credentials that extension declared
         credentials: extension => host.services.credentials?.portFor(extension),
@@ -2916,10 +2935,11 @@ async function activateModkit(
         return true
       }),
       vscode.workspace.onDidChangeConfiguration(event => {
-        // content sources are composed with both: a new provider file, or new index switches
+        // content sources are composed with these: a provider file, index switches, module options
         if (
           !event.affectsConfiguration('modkit.contentSourceConfig') &&
-          !event.affectsConfiguration('modkit.indexCaches')
+          !event.affectsConfiguration('modkit.indexCaches') &&
+          !event.affectsConfiguration('modkit.contentSourceOptions')
         )
           return
         resetContentSources()

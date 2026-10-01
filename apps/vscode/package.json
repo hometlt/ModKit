@@ -354,6 +354,12 @@
           "markdownDescription": "%configuration.contentSourceConfig.description%",
           "type": "string"
         },
+        "modkit.contentSourceOptions": {
+          "additionalProperties": { "type": "object" },
+          "default": {},
+          "markdownDescription": "%configuration.contentSourceOptions.description%",
+          "type": "object"
+        },
         "modkit.contributionSettings": {
           "additionalProperties": { "type": "object" },
           "default": {},

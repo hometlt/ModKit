@@ -549,6 +549,14 @@
           "type": "string"
         }
       },
+      "modkit.contentSourceOptions": {
+        "type": "object",
+        "default": {},
+        "additionalProperties": {
+          "type": "object"
+        },
+        "markdownDescription": "%configuration.contentSourceOptions.description%"
+      },
       "modkit.contributionSettings": {
         "type": "object",
         "default": {},
