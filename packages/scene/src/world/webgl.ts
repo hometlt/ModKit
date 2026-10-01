@@ -2243,7 +2243,11 @@ function frozenSplatBatch(source: MutableSplatBatch): WorldWebGlSplatBatch {
     normalSwizzles: Object.freeze([...source.normalSwizzles]),
     ...(source.layerColors === undefined
       ? {}
-      : { layerColors: Object.freeze(source.layerColors.map(color => Object.freeze([...color]))) }),
+      : {
+          layerColors: Object.freeze(
+            source.layerColors.map(color => Object.freeze([color[0], color[1], color[2]] as const)),
+          ),
+        }),
     ...(source.weightTextures === undefined
       ? {}
       : { weightTextures: Object.freeze([...source.weightTextures]) }),
