@@ -617,6 +617,85 @@ describe('common world source native visual facets', () => {
     ).toBe('its bounds are not the canonical image of the terrain bounds')
   })
 
+  it('places the objects of a world without terrain by its measured transform (MW1)', async () => {
+    const { terrain: _terrain, ...semantic } = snapshot.semantic
+    const { terrainMaterials: _materials, cliffs: _cliffs, ...rest } = snapshot
+    // chunks: map-native y runs north, canonical +z south
+    const uvwTransform = {
+      schemaVersion: 1 as const,
+      snapshotId: snapshot.snapshotId,
+      sourceCoordinateSpaceId: 'map-native',
+      targetCoordinateSpaceId: 'uvw-canonical' as const,
+      basis: {
+        handedness: 'right' as const,
+        upAxis: 'y' as const,
+        forwardAxis: '+z' as const,
+        unit: 'meter' as const,
+      },
+      axes: {
+        x: { sourceAxis: 'x' as const, scale: 1, offset: 0 },
+        y: { sourceAxis: 'z' as const, scale: 1, offset: 0 },
+        z: { sourceAxis: 'y' as const, scale: -1, offset: 0 },
+      },
+      heightfield: {
+        columns: 16,
+        rows: 16,
+        cellSize: 1,
+        origin: [0, 0, -16] as const,
+        sourceRowOrder: 'reverse' as const,
+      },
+      bounds: {
+        coordinateSpaceId: 'uvw-canonical' as const,
+        minimum: { x: 0, y: 0, z: -16 },
+        maximum: { x: 16, y: 64, z: 0 },
+      },
+      proof: {
+        kind: 'adapter-qualification' as const,
+        method: 'official-reference-differential' as const,
+        oracle: 'fixture',
+        corpus: 'fixture',
+        sourceDigests: { fixture: `sha256:${'a'.repeat(64)}` as const },
+        tupleCount: 4,
+        comparison: 'ieee-754-binary64-exact' as const,
+        nativeTupleDigest: `sha256:${'b'.repeat(64)}` as const,
+        canonicalTupleDigest: `sha256:${'c'.repeat(64)}` as const,
+      },
+    }
+    const objectsOf = async (transform: typeof uvwTransform | undefined) => {
+      const lease = createSourceWorldSceneLease(
+        { ...rest, semantic, ...(transform === undefined ? {} : { uvwTransform: transform }) },
+        [],
+        64,
+      )
+      try {
+        const info = await lease.value.info()
+        const facet = info.facets.find(item => item.facet === 'objects')!
+        const page = await lease.value.page({ facet: 'objects', layerId: facet.layerId, limit: 64 })
+        return { info, facet, items: page.items }
+      } finally {
+        await lease.release()
+      }
+    }
+    const placed = await objectsOf(uvwTransform)
+    expect((placed.info as { uvwTransformRefusal?: string }).uvwTransformRefusal).toBeUndefined()
+    expect(placed.info.uvwTransform?.axes.z.scale).toBe(-1)
+    const marine = placed.items.find(item => item.facet === 'objects' && item.objectId === 7)
+    expect(marine).toMatchObject({ uvwPosition: { x: 0.5, y: 0, z: -0.5 } })
+    expect(placed.facet.reason).toBeUndefined()
+    expect(
+      (
+        await objectsOf({
+          ...uvwTransform,
+          heightfield: { ...uvwTransform.heightfield, columns: 0 },
+        })
+      ).info,
+    ).toMatchObject({ uvwTransformRefusal: 'its heightfield 0x16 is not a grid of positive size' })
+    // without a transform the objects keep native positions, and the facet says so
+    const unplaced = await objectsOf(undefined)
+    expect(unplaced.items.some(item => 'uvwPosition' in item)).toBe(false)
+    expect(unplaced.facet.reason).toContain('objects have no canonical UVW placement')
+  })
+
   it('reads rectangles, diamonds and polygons of regions as geometry', async () => {
     const region = (regionId: number, type: string, parameters: Record<string, string>) => ({
       regionId,

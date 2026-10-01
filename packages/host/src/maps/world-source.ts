@@ -454,14 +454,19 @@ function admittedTerrainTransform(
 /**
  * The publisher's map-native to UVW transform when every check holds, or the first check it failed:
  * a refused transform is reported (`uvwTransformRefusal`), not dropped as if it was never published.
+ *
+ * A world without terrain (its ground is objects: Minecraft chunks, a Diablo III scene) has no
+ * terrain to qualify the transform against: its heightfield is the declared grid frame and its
+ * bounds stand as declared; its proof is the publisher's, as for any world.
  */
 function admittedWorldCanonicalTransform(
   snapshot: ResolvedMapWorkspaceSnapshot,
   terrainTransform: MapTerrainNativeTransform | undefined,
+  hasTerrain: boolean,
 ): Readonly<{ transform?: MapWorldCanonicalTransform; refusal?: string }> {
   const transform = snapshot.uvwTransform
   if (transform === undefined) return {}
-  if (terrainTransform === undefined) {
+  if (terrainTransform === undefined && hasTerrain) {
     return { refusal: 'the terrain has no admitted exact native transform to qualify it against' }
   }
   const finite = (value: number): boolean => Number.isFinite(value)
@@ -469,7 +474,7 @@ function admittedWorldCanonicalTransform(
   const sha256 = (value: string): boolean => /^sha256:[0-9a-f]{64}$/u.test(value)
   const { basis, heightfield, bounds, proof } = transform
   const axes = Object.values(transform.axes)
-  const [columns, rows] = terrainTransform.heightMap.dim
+  const [columns, rows] = terrainTransform?.heightMap.dim ?? [0, 0]
   // In order: a check may rely on the ones before it.
   const checks: readonly (readonly [string, () => boolean])[] = [
     ['its schemaVersion is not 1', () => transform.schemaVersion !== 1],
@@ -502,12 +507,15 @@ function admittedWorldCanonicalTransform(
       () => new Set(axes.map(item => item.sourceAxis)).size !== 3,
     ],
     [
-      `its heightfield ${String(heightfield.columns)}x${String(heightfield.rows)} is not the terrain grid ${String(columns)}x${String(rows)}`,
+      terrainTransform === undefined
+        ? `its heightfield ${String(heightfield.columns)}x${String(heightfield.rows)} is not a grid of positive size`
+        : `its heightfield ${String(heightfield.columns)}x${String(heightfield.rows)} is not the terrain grid ${String(columns)}x${String(rows)}`,
       () =>
         !Number.isSafeInteger(heightfield.columns) ||
         !Number.isSafeInteger(heightfield.rows) ||
-        heightfield.columns !== columns ||
-        heightfield.rows !== rows,
+        (terrainTransform === undefined
+          ? heightfield.columns <= 0 || heightfield.rows <= 0
+          : heightfield.columns !== columns || heightfield.rows !== rows),
     ],
     [
       'its cellSize is not positive or unitsPerCell differs from it',
@@ -563,6 +571,7 @@ function admittedWorldCanonicalTransform(
   ]
   const failed = checks.find(([, fails]) => fails())
   if (failed !== undefined) return { refusal: failed[0] }
+  if (terrainTransform === undefined) return { transform }
 
   const nativeBounds = terrainTransform.bounds
   const corners = [nativeBounds.minimum.x, nativeBounds.maximum.x].flatMap(x =>
@@ -624,6 +633,7 @@ export function createCandidateWorldSceneLease(
   const { transform: uvwTransform, refusal: uvwTransformRefusal } = admittedWorldCanonicalTransform(
     snapshot,
     terrainTransform,
+    terrainSummary !== undefined,
   )
   const terrainLod = terrainExact ? ('exact' as const) : ('sampled' as const)
   const terrainMaterialExact =
@@ -1235,7 +1245,9 @@ export function createCandidateWorldSceneLease(
       contentRevision: contentRevisions.objects,
       ...(semanticObjects.length === 0
         ? { reason: 'semantic snapshot contains no objects' }
-        : duplicateObjectCount > 0 || incompleteObjectPositionCount > 0
+        : duplicateObjectCount > 0 ||
+            incompleteObjectPositionCount > 0 ||
+            uvwTransform === undefined
           ? {
               reason: [
                 ...(duplicateObjectCount > 0
@@ -1244,6 +1256,12 @@ export function createCandidateWorldSceneLease(
                 ...(incompleteObjectPositionCount > 0
                   ? [
                       `${incompleteObjectPositionCount} objects publish two-dimensional source positions; elevation remains unknown`,
+                    ]
+                  : []),
+                // a viewer then places them by their native axes as (x, z, y)
+                ...(uvwTransform === undefined
+                  ? [
+                      `objects have no canonical UVW placement: ${uvwTransformRefusal === undefined ? 'no map-native to UVW transform is published' : `the UVW transform was refused (${uvwTransformRefusal})`}`,
                     ]
                   : []),
               ].join('; '),
