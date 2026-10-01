@@ -133,7 +133,8 @@
    */
   [data-mk-part='tree.row'] {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 18rem);
+    /* the value column is at most half the row: in a narrow sidebar it took the key's place */
+    grid-template-columns: minmax(0, 1fr) minmax(0, min(18rem, 50%));
     gap: var(--mk-space-2);
     align-items: center;
     min-width: 0;

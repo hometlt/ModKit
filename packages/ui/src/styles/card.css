@@ -8,6 +8,7 @@
     min-height: 0;
     overflow: auto;
     background: var(--mk-color-surface);
+    container-type: inline-size;
   }
 
   [data-mk-part='card.header'] {
@@ -205,6 +206,22 @@
     color: var(--mk-color-fg-muted);
     font-size: var(--mk-font-size-xs);
     white-space: normal;
+  }
+
+  /*
+   * A narrow card (a sidebar section of the world or the model): a field's name over its value and
+   * its sources under them. Three columns left the value a few pixels, one character to a line.
+   */
+  @container (inline-size < 44ch) {
+    [data-mk-part='card.field'] {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 0;
+      padding-block: var(--mk-space-1);
+    }
+
+    [data-mk-part='card.sources'] {
+      justify-content: start;
+    }
   }
 
   [data-mk-part='card.nav'] {
