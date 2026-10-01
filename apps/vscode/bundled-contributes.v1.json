@@ -1009,7 +1009,7 @@
       {
         "id": "modkit",
         "title": "%viewContainer.modkit%",
-        "icon": "media/modkit.svg"
+        "icon": "media/icon-128.png"
       }
     ]
   },
