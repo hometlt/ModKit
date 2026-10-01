@@ -790,6 +790,13 @@ async function activateModkit(
     contentSources: () => requireContentSources().catch(() => undefined),
     fallback: createNodeMapPreviewResourcePlanResolver({
       subjects: host.services,
+      // The installation the user chose for each game, read at each preview: a game whose maps
+      // resolve through its installation (Dune 2000, Warzone) opens the one chosen in Games.
+      get configuredPaths() {
+        return Object.fromEntries(
+          selectedSources.map(source => [source.gameId, [source.installPath]] as const),
+        )
+      },
       // Same classes the explicit discovery commands pass; without them the installed game is never
       // located and a map opens as its archive entry list instead of the world view.
       installationDiscoveryGrant: {
