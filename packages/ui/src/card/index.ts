@@ -1554,8 +1554,12 @@ export function createSubjectCardViewer(options: SubjectCardViewerOptions = {}):
                 ? {}
                 : { onNavigate: navigate }),
               ...(options.openSource === undefined ? {} : { onOpenSource: options.openSource }),
-              // only the subject this card was opened on writes through this session's ports
-              ...(address === ownId ? { onEditField: editField } : {}),
+              /*
+               * A value writes through this session's ports, whether the card shows the subject or
+               * one its selector lends (an entity of a GameData file, plan 5.3): the session declares
+               * a write only on the facts it can write, by their own semantic path.
+               */
+              onEditField: editField,
               ...(resolveImage === undefined ? {} : { resolveImage }),
             })
             commit?.()
