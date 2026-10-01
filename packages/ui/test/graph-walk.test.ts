@@ -87,6 +87,7 @@ beforeAll(async () => {
         return { items: edges }
       },
     }
+    ;(globalThis as unknown as { graphSource: unknown }).graphSource = source
     const viewer = (
       globalThis as unknown as {
         createRelationGraphViewer(options: unknown): { mount(args: unknown): Promise<unknown> }
@@ -153,5 +154,52 @@ describe('the relation graph walk', () => {
     expect(await page.textContent(`${walk} output`)).toBe('Root: Node B')
     await page.check(`${walk} input[type="checkbox"]`)
     await expect.poll(listed).toHaveLength(5)
+  })
+
+  it('offers more of a graph past its limit, doubling it until the graph is whole (5.22)', async () => {
+    await page.evaluate(async () => {
+      const probe = globalThis as unknown as {
+        createRelationGraphViewer(options: unknown): { mount(args: unknown): Promise<unknown> }
+        graphSource: unknown
+      }
+      const container = document.createElement('main')
+      container.id = 'small'
+      container.style.width = '800px'
+      container.style.height = '600px'
+      document.body.append(container)
+      await probe.createRelationGraphViewer({ depth: 2, nodeLimit: 2, edgeLimit: 2 }).mount({
+        container,
+        descriptor: { revision: 'r', operations: [], diagnostics: [] },
+        slot: {
+          slotId: 'relations',
+          kind: 'stage',
+          contributionId: 'modkit.ui/relation-graph-stage',
+          extensionId: 'modkit/ui',
+          priority: 300,
+          bindings: [
+            { bindingId: 'relations', contract: 'common.view/relation-graph-source', major: 1 },
+          ],
+        },
+        sources: {
+          async get() {
+            return { value: probe.graphSource, release: async () => undefined }
+          },
+        },
+        operations: { async invoke() {}, async dispose() {} },
+      })
+    })
+    const small = '#small'
+    const smallListed = () =>
+      page.locator(`${small} .modkit-graph__node-list option`).allTextContents()
+    await page.check(`${small} ${walk} input[type="checkbox"]`)
+    await expect.poll(smallListed).toHaveLength(2)
+    const more = `${small} ${walk} button:has-text("Load more")`
+    expect(await page.textContent(more)).toBe('Load more (up to 4 nodes)')
+    await page.click(more)
+    await expect.poll(smallListed).toHaveLength(4)
+    await page.click(more)
+    await expect.poll(smallListed).toHaveLength(5)
+    // the whole graph is loaded: nothing more to offer
+    expect(await page.isHidden(more)).toBe(true)
   })
 })

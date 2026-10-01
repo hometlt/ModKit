@@ -283,6 +283,7 @@ export const GRAPH_FALLBACK_MESSAGES = {
   'graph.hintOpen':
     'Drag empty space to pan · drag a node to reposition it · scroll to zoom · click a node to select it · double-click or Enter opens its linked subject',
   'graph.labels': 'Labels',
+  'graph.loadMore': 'Load more (up to {nodes} nodes)',
   'graph.loadedCounts': 'loaded {nodes} of {totalNodes} nodes and {edges} of {totalEdges} edges',
   'graph.makeRoot': 'Make root',
   'graph.matches': '{count} matches',

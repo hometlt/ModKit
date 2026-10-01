@@ -1242,7 +1242,13 @@ export interface RelationGraphViewerOptions {
   readonly localizer?: UiLocalizer
   /** Edges followed from the root when the view opens, 1–4 (VS Code `modkit.maxGraphHops`). */
   readonly depth?: number
+  /** Nodes and edges the first load materializes; "Load more" doubles them (500 and 5 000). */
+  readonly nodeLimit?: number
+  readonly edgeLimit?: number
 }
+
+/** How many times "Load more" may double the first limits: 16 times 500 nodes is 8 000. */
+const GRAPH_MORE_FACTOR = 16
 
 export function createRelationGraphViewer(options: RelationGraphViewerOptions = {}): ViewerModule {
   const localizer = withEnglishUiFallback(options.localizer, GRAPH_FALLBACK_MESSAGES)
@@ -1325,21 +1331,42 @@ export function createRelationGraphViewer(options: RelationGraphViewerOptions = 
           rootLine.textContent = whole ? '' : localizer.text('graph.root', { label: rootLabel })
         }
 
+        // What a load materializes. A graph past it says so and offers more, as MK2's paged
+        // relation view did (plan 5.22): each "Load more" doubles both limits, to 16 times.
+        const firstNodes = positiveLimit(options.nodeLimit ?? 500, 'nodeLimit')
+        const firstEdges = positiveLimit(options.edgeLimit ?? 5_000, 'edgeLimit')
+        let factor = 1
+        const more = document.createElement('button')
+        more.type = 'button'
+        more.hidden = true
+        more.addEventListener('click', () => {
+          factor *= 2
+          void show().catch(() => undefined)
+        })
+        bar.append(more)
+
         const navigation = args.subjectNavigation
         let graph: RelationGraph | undefined
         let pass = 0
         const show = async (): Promise<void> => {
           const current = ++pass
           syncBar()
+          const limits = {
+            label,
+            localizer,
+            nodeLimit: firstNodes * factor,
+            edgeLimit: firstEdges * factor,
+            signal: scope.signal,
+          }
           const loaded =
             whole || walk === undefined
-              ? await loadRelationGraphOptions(source, { label, localizer, signal: scope.signal })
-              : await loadRelationNeighbourhoodOptions(source, walk, {
-                  label,
-                  localizer,
-                  signal: scope.signal,
-                })
+              ? await loadRelationGraphOptions(source, limits)
+              : await loadRelationNeighbourhoodOptions(source, walk, limits)
           if (current !== pass || scope.signal.aborted) return
+          more.hidden = loaded.consumerCompleteness !== 'capped' || factor >= GRAPH_MORE_FACTOR
+          more.textContent = localizer.text('graph.loadMore', {
+            nodes: (firstNodes * factor * 2).toLocaleString(localizer.locale),
+          })
           graph?.destroy()
           graph = createRelationGraph(document, {
             ...loaded,
