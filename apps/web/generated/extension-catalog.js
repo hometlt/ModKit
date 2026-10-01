@@ -11477,7 +11477,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:2d7957608c08dc4dfe1eb078dafecd5264f4f36a957e057bbad6e21df22e050c',
+        artifactDigest: 'sha256:52660c4f067bf7314586f6f149963611a3277cf300558a29b13b0bedefc50f02',
         fileDigests: {
           'README.md': 'sha256:e88ae59915e47ee0d3549aeb19cefd2b952214ab977edaed243918a0947d2f7c',
           'contributions/codec-java-class.json':
@@ -11515,13 +11515,13 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'dist/index.js.map':
             'sha256:4618118effa3f9dd6de4e26d5e3b13e083f0f445c3923245dea21a4d076cac58',
           'dist/interpreter.d.ts':
-            'sha256:f1ca0ecc0ceb39a3b612216c4f288d3bada5d57e5c95279134d760f5ab902b0b',
+            'sha256:4ad93e2a47ee198eb2a99c366e030cbc8991d558d311212665c45d2dc2f65470',
           'dist/interpreter.d.ts.map':
-            'sha256:87611521608218167394df3a2e1c11d35e380ce7d7b55afb1b6123c9002dcdb8',
+            'sha256:a38f4f5e4394612a08c1ac420fcd9dddff594581ea1c0089aac1cbdb05122d62',
           'dist/interpreter.js':
-            'sha256:57f180c37d2c10e9006e916a53bb7f39b5a55ec857b12c9e2274ccfdd905e81a',
+            'sha256:ba01ff9bf831694dc1ea28601ab2aa29071d1e725cb9b2641a8e2974bb39fc9b',
           'dist/interpreter.js.map':
-            'sha256:d810bb4febd69c9b01f10a5c9907d15aeed553dfd42d1902e37d18c002b61f72',
+            'sha256:c7068136f5a02a27f63a95909566b556ef70d773b8516eec038507fd66da91df',
           'package.json': 'sha256:bbc40fcdf10b49710604f8019903157f4d221e58aaef96b298b5dc6f8118a952',
           'src/bytecode.ts':
             'sha256:c9beb7f1f6c92ad84b0fe6b842eef99be908f798db6b8bbca008d828893a31cd',
@@ -11530,9 +11530,9 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'src/codec.ts': 'sha256:0b11ebffa5132857c86d14d2426de9f4f754109ab1759b769663cec0fbfff97e',
           'src/index.ts': 'sha256:2542de1574c447ff09f0f2bd0edc5ab9d6073956f475aa2e7fbb6930994a996a',
           'src/interpreter.ts':
-            'sha256:ea48127ad33a7dc987eb89a1a6a96815daa868abd0645a2b7ab63427f6a4f3cb',
+            'sha256:7e49c8a6affc06dc35029fea98034b31da999dc31519a895e53dab49ee826216',
           'test/class-file.test.ts':
-            'sha256:0b636ff59b13a75414a9fe072d3616e1ab06b7d312caa89b68533bfdfc5c2888',
+            'sha256:69d66ea85ddaa76b24e89d8530ebd527b25138dec95759c7a6279c9924bb48f1',
           'test/fixtures/Heap.class':
             'sha256:c0d69d0881a47c3f3401ee4b28b6591b0533369fc9ab74efc96b4bed4b6f4c9c',
           'test/fixtures/Heap.java':
@@ -11547,7 +11547,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:daba80f2abbe46449d7ffad22c2029633475f729b9380cc79daeb850c2223492',
         },
         inventoryRecordId:
-          'artifact:sha256:2d7957608c08dc4dfe1eb078dafecd5264f4f36a957e057bbad6e21df22e050c',
+          'artifact:sha256:52660c4f067bf7314586f6f149963611a3277cf300558a29b13b0bedefc50f02',
       },
       artifactRoot: 'extensions/java/',
       containers: {

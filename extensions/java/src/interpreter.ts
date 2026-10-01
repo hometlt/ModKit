@@ -147,6 +147,12 @@ export interface InterpretOptions {
   readonly heap?: JvmHeap
   /** The id of the first object `new` makes here, above the ids of the caller's objects. Default 0. */
   readonly firstObjectId?: number
+  /**
+   * `never-thrown`: the code an exception handler protects runs as straight code and the handlers
+   * are never entered — a switch over another class's enum fills its table in `<clinit>` inside
+   * `try { … } catch (NoSuchFieldError)`. By default a method with handlers is refused.
+   */
+  readonly exceptions?: 'refuse' | 'never-thrown'
 }
 
 class Refusal extends Error {
@@ -449,7 +455,7 @@ export function interpretMethod(
   })
   const code = method.code
   if (code === undefined) return refused(0, 'the method has no code')
-  if (code.exceptionHandlers.length > 0)
+  if (code.exceptionHandlers.length > 0 && options.exceptions !== 'never-thrown')
     return refused(code.exceptionHandlers[0]?.startPc ?? 0, 'the method handles exceptions')
   const pool = new ConstantPool(file.constantPool)
   const isStatic = (method.accessFlags & 0x0008) !== 0
