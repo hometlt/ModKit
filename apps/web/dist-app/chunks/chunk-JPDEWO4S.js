@@ -10,11 +10,11 @@ import {
   invokeRefusalMessage,
   isRejected,
   mountFieldEditor
-} from "./chunk-Z4ICPSYR.js";
+} from "./chunk-PAU2QRE2.js";
 import {
   createMediaShell,
   mountContributedSections
-} from "./chunk-GKHLLKSX.js";
+} from "./chunk-RNSUXHQ3.js";
 import {
   MODEL_FALLBACK_MESSAGES,
   MODEL_GIZMO_FALLBACK_MESSAGES,
@@ -29,7 +29,7 @@ import {
   setViewerText,
   unknownSourceLease,
   withEnglishUiFallback
-} from "./chunk-PFC7QEWI.js";
+} from "./chunk-N263OVTM.js";
 import {
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
 } from "./chunk-BLWUC7LO.js";
@@ -3480,6 +3480,7 @@ function modelFrameCamera(placement, correction) {
   const position2 = correction === void 0 ? [x, y, z] : [0, 1, 2].map((axis) => (correction[axis * 4] ?? 0) * x + (correction[axis * 4 + 1] ?? 0) * y + (correction[axis * 4 + 2] ?? 0) * z);
   return { rotation: billboardCameraRotation(Array.from(view)), position: position2 };
 }
+var MODEL_ANIMATION_SPEEDS = [0.25, 0.5, 1, 2, 4];
 function createModelViewer(options = {}) {
   const localizer = withEnglishUiFallback(options.localizer, MODEL_FALLBACK_MESSAGES);
   return defineViewerModule({
@@ -4030,7 +4031,26 @@ function createModelViewer(options = {}) {
               option.value = clip.id;
             }
             const playbackField = controlRow(panel.animation, localizer.text("viewer.modelPlayback")).field;
-            const seek = element(controlRow(panel.animation, localizer.text("viewer.modelAnimationTime")).field, "input", { part: "model.animation-seek" });
+            const seekField = controlRow(panel.animation, localizer.text("viewer.modelAnimationTime")).field;
+            const seek = element(seekField, "input", {
+              part: "model.animation-seek"
+            });
+            const clock = element(seekField, "output", { part: "model.readout" });
+            const pace = controlRow(panel.animation, localizer.text("viewer.modelSpeed")).field;
+            const speedSelect = element(pace, "select");
+            speedSelect.setAttribute("aria-label", localizer.text("viewer.modelSpeed"));
+            for (const value of MODEL_ANIMATION_SPEEDS) {
+              const option = element(speedSelect, "option", {
+                text: `${value}\xD7`
+              });
+              option.value = String(value);
+            }
+            speedSelect.value = "1";
+            const loopLabel = element(pace, "label");
+            const loop = element(loopLabel, "input");
+            loop.type = "checkbox";
+            loopLabel.append(" ", localizer.text("viewer.modelLoop"));
+            let speed = 1;
             seek.type = "range";
             seek.min = "0";
             seek.max = "0";
@@ -4042,6 +4062,10 @@ function createModelViewer(options = {}) {
             let playing = false;
             let duration = 0;
             let startedAt = 0;
+            const showClock = () => setViewerText(clock, localizer.text("viewer.modelClock", {
+              time: timeSeconds.toFixed(2),
+              duration: duration.toFixed(2)
+            }));
             const toggle = button(playbackField, "\u25B6", localizer.text("viewer.playPause"), () => {
               if (duration <= 0)
                 return;
@@ -4049,12 +4073,17 @@ function createModelViewer(options = {}) {
               if (playing) {
                 if (timeSeconds >= duration)
                   timeSeconds = 0;
-                startedAt = performance.now() - timeSeconds * 1e3;
+                startedAt = performance.now() - timeSeconds / speed * 1e3;
                 frameId = requestAnimationFrame(tick);
               } else
                 cancelAnimationFrame(frameId);
               toggle.setAttribute("aria-pressed", String(playing));
             });
+            speedSelect.addEventListener("change", () => {
+              speed = Number(speedSelect.value) || 1;
+              if (playing)
+                startedAt = performance.now() - timeSeconds / speed * 1e3;
+            }, { signal: scope.signal });
             toggle.setAttribute("aria-pressed", "false");
             const stop = () => {
               playing = false;
@@ -4064,8 +4093,13 @@ function createModelViewer(options = {}) {
             const tick = (now) => {
               if (!playing || scope.signal.aborted)
                 return;
-              timeSeconds = Math.min(duration, (now - startedAt) / 1e3);
+              timeSeconds = Math.min(duration, (now - startedAt) / 1e3 * speed);
+              if (timeSeconds >= duration && loop.checked) {
+                startedAt = now;
+                timeSeconds = 0;
+              }
               seek.value = String(timeSeconds);
+              showClock();
               redraw();
               if (timeSeconds < duration)
                 frameId = requestAnimationFrame(tick);
@@ -4089,6 +4123,7 @@ function createModelViewer(options = {}) {
                 seek.max = String(duration);
                 seek.value = "0";
                 seek.disabled = duration <= 0;
+                showClock();
                 canvas.setAttribute("data-model-animation", clip?.id ?? "");
                 showDiagnostics();
                 redraw();
@@ -4100,6 +4135,7 @@ function createModelViewer(options = {}) {
               stop();
               generation++;
               timeSeconds = Number(seek.value);
+              showClock();
               redraw();
             }, { signal: scope.signal });
             scope.cleanup(stop);

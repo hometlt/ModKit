@@ -16121,14 +16121,16 @@ function createModContextDataWorkspaceInputs(context, options) {
     if (ids.has(layer.id))
       throw new TypeError(`duplicate ModContext layer ${layer.id}`);
     ids.add(layer.id);
-    const rawPrefix = layer.sourcePath === "" || /^[a-z]:[\\/]|^[\\/]/iu.test(layer.sourcePath) ? `context-layers/${index}` : layer.sourcePath;
+    const hostPath = layer.sourcePath !== "" && /^[a-z]:[\\/]|^[\\/]/iu.test(layer.sourcePath);
+    const rawPrefix = layer.sourcePath === "" || hostPath ? `context-layers/${index}` : layer.sourcePath;
     const prefix = normalizeCompanionLogicalId(rawPrefix);
     if (prefixes.has(prefix.toLowerCase())) {
       throw new TypeError(`ambiguous ModContext layer path ${prefix}`);
     }
     prefixes.add(prefix.toLowerCase());
     const revision = layer.fingerprint !== void 0 && isRevisionId(layer.fingerprint) ? revisionId(layer.fingerprint) : revisionId(`provider-token:${encodeURIComponent(`${context.contextId}/${layer.id}`)}`);
-    return { layer, prefix, revision, readLayerId: layer.id, readPrefix: "" };
+    const location = hostPath ? layer.sourcePath : void 0;
+    return { layer, prefix, location, revision, readLayerId: layer.id, readPrefix: "" };
   });
   if (options?.nestedRoot !== void 0) {
     const parent = layers.find((item) => item.layer.id === options.nestedRoot?.parentLayerId);
@@ -16150,6 +16152,7 @@ function createModContextDataWorkspaceInputs(context, options) {
     layers.push({
       layer,
       prefix,
+      location: parent.location === void 0 ? void 0 : `${parent.location.replace(/[\\/]+$/u, "")}/${readPrefix}`,
       revision: parent.revision,
       readLayerId: parent.layer.id,
       readPrefix
@@ -16158,10 +16161,11 @@ function createModContextDataWorkspaceInputs(context, options) {
   if (context.unresolved.length > 0) {
     throw new TypeError(`ModContext has unresolved dependencies: ${context.unresolved.join(", ")}`);
   }
-  const roots = Object.freeze(layers.map(({ layer, prefix }) => Object.freeze({
+  const roots = Object.freeze(layers.map(({ layer, prefix, location }) => Object.freeze({
     rootId: layer.id,
     sourceId: layer.sourceId,
     sourcePath: prefix,
+    ...location === void 0 ? {} : { location },
     displayName: layer.displayName,
     kind: layer.role,
     ...layer.fingerprint === void 0 ? {} : { fingerprint: layer.fingerprint },

@@ -1,12 +1,12 @@
 import {
   createVideoViewer
-} from "./chunk-C2VJA5SX.js";
+} from "./chunk-WQ4DVHS5.js";
 import {
   createAudioViewer
-} from "./chunk-2S5CO2SF.js";
+} from "./chunk-MXXWJZBP.js";
 import {
   createRelationGraphViewer
-} from "./chunk-ACG7OB36.js";
+} from "./chunk-6TP5P6JB.js";
 import {
   DEFAULT_MODEL_ANIMATION_BUDGET,
   DEFAULT_MODEL_SKELETON_BUDGET,
@@ -24,7 +24,7 @@ import {
   snapshotJson,
   snapshotModelAnimations,
   snapshotModelSkeleton
-} from "./chunk-TJYBFRSA.js";
+} from "./chunk-JPDEWO4S.js";
 import {
   metadataFieldProjections
 } from "./chunk-64G7DVXS.js";
@@ -35,13 +35,13 @@ import {
   createImageViewer,
   createNamespaceViewer,
   invokeRefusalMessage
-} from "./chunk-Z4ICPSYR.js";
+} from "./chunk-PAU2QRE2.js";
 import {
   compileMatcher,
   compilePattern,
   createMediaShell,
   textMatches
-} from "./chunk-GKHLLKSX.js";
+} from "./chunk-RNSUXHQ3.js";
 import {
   CALCULATIONS_FALLBACK_MESSAGES,
   CARD_FALLBACK_MESSAGES,
@@ -84,7 +84,7 @@ import {
   setViewerText,
   unknownSourceLease,
   withEnglishUiFallback
-} from "./chunk-PFC7QEWI.js";
+} from "./chunk-N263OVTM.js";
 import {
   A1_SPEC_SCHEMA_ENTRIES,
   AUXILIARY_DATA_SOURCE_SURFACES,
@@ -68007,13 +68007,13 @@ var PREVIEW_STAGES = [
 async function defaultPreviewStage(kind, localizer) {
   switch (kind) {
     case "model":
-      return (await import("./model-VXCTXGJX.js")).createModelViewer({ localizer });
+      return (await import("./model-OO3JP6RD.js")).createModelViewer({ localizer });
     case "image":
-      return (await import("./image-O25HCUJP.js")).createImageViewer({ localizer });
+      return (await import("./image-FDCXX5KZ.js")).createImageViewer({ localizer });
     case "video":
-      return (await import("./video-YDTFH4H6.js")).createVideoViewer({ localizer });
+      return (await import("./video-QLGTHIXN.js")).createVideoViewer({ localizer });
     case "audio":
-      return (await import("./audio-VRGFGDT6.js")).createAudioViewer({ localizer });
+      return (await import("./audio-D4BDNSSE.js")).createAudioViewer({ localizer });
   }
 }
 function embedPreview(sections, args, scope, localizer, previews) {
@@ -68052,7 +68052,7 @@ function embedRelationGraph(sections, args, scope, localizer, graph) {
   return [
     ...sections,
     stageSection({ id: "relations-graph", title: localizer.text("card.relationGraph"), expanded: false }, scope, localizer, "card.relationGraphUnavailable", async (host) => {
-      const module = graph ?? (await import("./graph-DDO7IVLM.js")).createRelationGraphViewer({ localizer });
+      const module = graph ?? (await import("./graph-IH3T4LQB.js")).createRelationGraphViewer({ localizer });
       return scope.signal.aborted ? void 0 : module.mount({ ...args, container: host, signal: scope.signal });
     })
   ];

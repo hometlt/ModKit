@@ -2,7 +2,7 @@ import {
   collectEncodedMedia,
   createMediaShell,
   mountContributedSections
-} from "./chunk-GKHLLKSX.js";
+} from "./chunk-RNSUXHQ3.js";
 import {
   IMAGE_EDITING_FALLBACK_MESSAGES,
   IMAGE_FALLBACK_MESSAGES,
@@ -17,7 +17,7 @@ import {
   setViewerText,
   unknownSourceLease,
   withEnglishUiFallback
-} from "./chunk-PFC7QEWI.js";
+} from "./chunk-N263OVTM.js";
 import {
   createSubjectCandidateProvider,
   isKnowledgeTarget,
@@ -1866,6 +1866,23 @@ function metadataGroups(descriptor) {
 }
 var ZOOM_CHOICES = [0.25, 0.5, 1, 2, 4, 8];
 var CHANNELS = ["rgb", "r", "g", "b", "a"];
+var viewStates = /* @__PURE__ */ new Map();
+var VIEW_STATES = 64;
+var RECENT_COLORS_KEY = "modkit.image.recentColors";
+function rememberedColors() {
+  try {
+    const value = JSON.parse(globalThis.localStorage?.getItem(RECENT_COLORS_KEY) ?? "[]");
+    return Array.isArray(value) ? value.filter((item) => typeof item === "string") : [];
+  } catch {
+    return [];
+  }
+}
+function rememberColors(colors) {
+  try {
+    globalThis.localStorage?.setItem(RECENT_COLORS_KEY, JSON.stringify(colors));
+  } catch {
+  }
+}
 function createImageViewer(options = {}) {
   const localizer = withEnglishUiFallback(options.localizer, IMAGE_FALLBACK_MESSAGES);
   return defineViewerModule({
@@ -1905,6 +1922,9 @@ function createImageViewer(options = {}) {
       let panY = 0;
       const background = "checker";
       let channel = "rgb";
+      const kept = viewStates.get(args.descriptor.subjectUri);
+      if (kept !== void 0)
+        ({ zoom, fit, panX, panY, channel } = kept);
       let note = "";
       let fileBytes;
       let descriptor = args.descriptor;
@@ -2177,6 +2197,13 @@ function createImageViewer(options = {}) {
         renderOverlay();
         publishStatus();
         editing?.refresh();
+        viewStates.delete(args.descriptor.subjectUri);
+        viewStates.set(args.descriptor.subjectUri, { zoom, fit, panX, panY, channel });
+        if (viewStates.size > VIEW_STATES) {
+          const oldest = viewStates.keys().next().value;
+          if (oldest !== void 0)
+            viewStates.delete(oldest);
+        }
       };
       const drawFramePreview = () => {
         const current = shown();
@@ -2802,6 +2829,8 @@ function createImageViewer(options = {}) {
             surface: editSurface,
             overlay: stage,
             editable: writable,
+            recentColors: rememberedColors(),
+            onRecentColors: rememberColors,
             ...refusal === void 0 ? {} : { unavailableReason: refusal },
             ...writable ? { onSave: saveEdits } : {},
             onDirty(dirty) {
