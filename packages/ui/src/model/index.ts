@@ -1057,6 +1057,11 @@ export async function resolveModelViewerTextures(
     }
     if (!valid) continue
     remaining -= byteLength
+    // a texture the game reads without its stored alpha is opaque first (UV_texture_alpha); the
+    // buffer is this texture's own copy, so the texels are set in place
+    if (reference.ignoreStoredAlpha === true) {
+      for (let alpha = 3; alpha < rgba.length; alpha += 4) rgba[alpha] = 255
+    }
     // a texture the game loads with a colour key: those texels are transparent black (SPEC_UVM §11.6)
     const key = reference.colorKey
     const keyed =

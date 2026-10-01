@@ -104,4 +104,45 @@ describe('model viewer textures', () => {
     ])
     expect(textures.get('hk_maingirder_128.tga')?.filter).toBe('nearest')
   })
+
+  it('makes a texture the game reads without its stored alpha opaque, then keys it', async () => {
+    // Emperor loads its textures without their alpha (UV_texture_alpha), then keys magenta
+    const pixels = Uint8Array.of(255, 0, 255, 0, 10, 20, 30, 0)
+    const textures = await resolveModelViewerTextures(
+      {
+        async read() {
+          return {
+            state: 'decoded',
+            info: {
+              width: 2,
+              height: 1,
+              depth: 1,
+              layers: 1,
+              faces: 1,
+              mipLevels: 1,
+              frames: 1,
+              channels: 4,
+              bitDepth: 8,
+              colorSpace: 'srgb',
+              alphaMode: 'straight',
+              orientation: 'top-left',
+              decodedAccess: true,
+            },
+            region: { x: 0, y: 0, width: 2, height: 1, rowStride: 8, pixelFormat: 'rgba8', pixels },
+            diagnostics: [],
+          }
+        },
+      },
+      [
+        {
+          id: 'hk_wall.tga',
+          role: 'texture',
+          provenance: 'companion',
+          ignoreStoredAlpha: true,
+          colorKey: { color: [255, 0, 255] },
+        },
+      ],
+    )
+    expect([...(textures.get('hk_wall.tga')?.rgba ?? [])]).toEqual([0, 0, 0, 0, 10, 20, 30, 255])
+  })
 })
