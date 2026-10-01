@@ -1069,6 +1069,10 @@ export function createCandidateWorldSceneLease(
             id: `${lightingLayerId}:environment`,
             layerId: lightingLayerId,
             coordinateSpaceId: snapshot.lighting.coordinateSpaceId,
+            ...(snapshot.lighting.model === undefined ? {} : { model: snapshot.lighting.model }),
+            ...(snapshot.lighting.unlitColor === undefined
+              ? {}
+              : { unlitColor: snapshot.lighting.unlitColor }),
             ambientColor: snapshot.lighting.ambientColor,
             ambientIntensity: snapshot.lighting.ambientIntensity,
             directional: snapshot.lighting.directional,

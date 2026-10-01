@@ -1329,6 +1329,13 @@ export interface WorldHeightFog {
 
 /** One resolved, renderer-neutral world-lighting environment for a map snapshot. */
 export interface MapWorldLightingSummary {
+  /**
+   * `unlit`: the game shows tiles and sprites as stored, their shading painted in (Dune 2000,
+   * Tiberian Sun): the world draws each texel times `unlitColor` (default white), without light
+   * direction, shadow or highlight, and the other light fields do not apply. `lit` is the default.
+   */
+  readonly model?: 'lit' | 'unlit'
+  readonly unlitColor?: readonly [number, number, number]
   readonly coordinateSpaceId: string
   readonly ambientColor: readonly [number, number, number]
   readonly ambientIntensity: number
@@ -1629,6 +1636,9 @@ export interface WorldSceneLightingItem {
   readonly facet: 'lighting'
   readonly id: string
   readonly layerId: string
+  /** As MapWorldLightingSummary: `unlit` draws each texel times `unlitColor`, without light. */
+  readonly model?: 'lit' | 'unlit'
+  readonly unlitColor?: readonly [number, number, number]
   readonly coordinateSpaceId: string
   readonly ambientColor: readonly [number, number, number]
   readonly ambientIntensity: number

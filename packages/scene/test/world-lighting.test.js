@@ -174,3 +174,30 @@ describe('world lighting rig', () => {
     assert.equal(plan.light.fills.length, 0)
   })
 })
+
+describe('an unlit world', () => {
+  it('draws each texel times its unlit colour, without light, highlight or fills', () => {
+    const plan = createWorldWebGlPlan({
+      items: [
+        ...terrain,
+        {
+          ...lighting([
+            { id: 'sun', direction: [0, -1, 0], color: [1, 1, 1], intensity: 0.9 },
+            { id: 'fill', direction: [1, 0, 0], color: [1, 1, 1], intensity: 0.5 },
+          ]),
+          model: 'unlit',
+          unlitColor: [0.9, 0.95, 1],
+        },
+      ],
+    })
+    assert.deepEqual(plan.light.ambient, [0.9, 0.95, 1])
+    assert.equal(plan.light.ambientIntensity, 1)
+    assert.equal(plan.light.intensity, 0)
+    assert.equal(plan.light.specularIntensity, 0)
+    assert.deepEqual(plan.light.fills, [])
+    // model materials take the same: their ambient is the unlit colour, their key light black
+    const light = worldMaterialLight(plan)
+    assert.deepEqual(light.ambientColor, [0.9, 0.95, 1])
+    assert.deepEqual(light.color, [0, 0, 0, 1])
+  })
+})

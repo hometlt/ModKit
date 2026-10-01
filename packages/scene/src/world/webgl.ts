@@ -6704,8 +6704,12 @@ export function createWorldWebGlPlan(
     maximum.fill(0.5)
   }
   const lighting = worldFacetItems(preparation, input.items, 'lighting')[0]
-  const directional = lighting?.directional[0]
-  const ambient: readonly [number, number, number] = lighting?.ambientColor ?? [1, 1, 1]
+  // an unlit world (tiles shaded in their pixels): each texel times unlitColor, no light, no highlight
+  const unlit = lighting?.model === 'unlit'
+  const directional = unlit ? undefined : lighting?.directional[0]
+  const ambient: readonly [number, number, number] = unlit
+    ? (lighting?.unlitColor ?? [1, 1, 1])
+    : (lighting?.ambientColor ?? [1, 1, 1])
   const stated = directional?.direction
   // a direction in the map's native axes (x east, y south, z up) turns as its positions do
   const direction: readonly [number, number, number] =
@@ -6815,19 +6819,21 @@ export function createWorldWebGlPlan(
     bounds: Object.freeze({ minimum: Object.freeze(minimum), maximum: Object.freeze(maximum) }),
     light: Object.freeze({
       ...(lighting?.toneMapping === undefined ? {} : { toneMapping: lighting.toneMapping }),
-      ...(lighting?.terrain === undefined ? {} : { terrain: lighting.terrain }),
+      ...(lighting?.terrain === undefined || unlit ? {} : { terrain: lighting.terrain }),
       ...(lighting?.shadowRange === undefined ? {} : { shadowRange: lighting.shadowRange }),
       ...(lighting?.fog === undefined ? {} : { fog: lighting.fog }),
       specularColor: directional?.specularColor ?? lightColor,
-      specularIntensity: directional?.specularIntensity ?? directional?.intensity ?? 0.9,
-      useAmbientOcclusion: directional?.useAmbientOcclusion ?? true,
+      specularIntensity: unlit
+        ? 0
+        : (directional?.specularIntensity ?? directional?.intensity ?? 0.9),
+      useAmbientOcclusion: !unlit && (directional?.useAmbientOcclusion ?? true),
       ambient,
-      ambientIntensity: lighting?.ambientIntensity ?? 0.36,
+      ambientIntensity: unlit ? 1 : (lighting?.ambientIntensity ?? 0.36),
       direction,
       color: lightColor,
-      intensity: directional?.intensity ?? 0.9,
+      intensity: unlit ? 0 : (directional?.intensity ?? 0.9),
       fills: Object.freeze(
-        (lighting?.directional ?? []).slice(1, 1 + MAXIMUM_FILL_LIGHTS).map(light =>
+        (unlit ? [] : (lighting?.directional ?? [])).slice(1, 1 + MAXIMUM_FILL_LIGHTS).map(light =>
           Object.freeze({
             direction: light.direction,
             color: light.color,
