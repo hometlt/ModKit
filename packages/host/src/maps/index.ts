@@ -2900,6 +2900,21 @@ export async function coordinateMapPreviewAssetSession(
       ]),
     }
   }
+  /*
+   * Phase timings, as ordinary diagnostics (x3.host/map-preview-resource-timing), whichever resolver
+   * serves the resources: a preview that takes a minute says where the minute went.
+   */
+  const timings: Diagnostic[] = []
+  const timed = (label: string, since: number): void => {
+    timings.push(
+      diagnostic(
+        'information',
+        'x3.host/map-preview-resource-timing',
+        `${label}: ${String(Date.now() - since)} ms`,
+      ),
+    )
+  }
+  const resolvingAt = Date.now()
   let resourceResolution: MapPreviewResourcePlanResolution
   try {
     if (prepared.plan.resources.strategy === 'subject-namespace') {
@@ -2958,6 +2973,7 @@ export async function coordinateMapPreviewAssetSession(
     }
   }
 
+  timed('resources resolved', resolvingAt)
   const releasePreparedResources = releaseOnce(resourceResolution.release)
   let resources: ResourceSessionPort | undefined
   try {
@@ -2982,12 +2998,30 @@ export async function coordinateMapPreviewAssetSession(
     const inputResolver = createCompanionInputResolver(origin)
     // A resolver that holds the merged catalog answers what the map places; the whole-catalog
     // enrichment is only for a resolver that does not.
-    const catalogEntities =
+    const resolvedCatalog =
       request.catalog === undefined ? resourceResolution.catalogEntities : undefined
+    // the catalog questions the map analysis asks, timed together
+    let catalogQuestions = 0
+    let catalogMilliseconds = 0
+    const catalogEntities: CatalogEntities | undefined =
+      resolvedCatalog === undefined
+        ? undefined
+        : async (refs, signal) => {
+            const askedAt = Date.now()
+            try {
+              return await resolvedCatalog(refs, signal)
+            } finally {
+              catalogQuestions += 1
+              catalogMilliseconds += Date.now() - askedAt
+            }
+          }
+    const enrichedAt = Date.now()
     const enrichment =
       catalogEntities === undefined
         ? await enrichMapPreviewCatalog(request, workspace, resources)
         : (Object.freeze({ diagnostics: Object.freeze([]) }) as MapPreviewCatalogEnrichment)
+    if (catalogEntities === undefined) timed('catalog enrichment', enrichedAt)
+    const analyzedAt = Date.now()
     const opened = await openMapPreviewAssetSession({
       services: request.services,
       grant: request.grant,
@@ -3006,6 +3040,15 @@ export async function coordinateMapPreviewAssetSession(
       limits: request.limits,
       ...(request.signal === undefined ? {} : { signal: request.signal }),
     })
+    timed('map analysis and world', analyzedAt)
+    if (catalogQuestions > 0)
+      timings.push(
+        diagnostic(
+          'information',
+          'x3.host/map-preview-resource-timing',
+          `catalog questions (${String(catalogQuestions)}): ${String(catalogMilliseconds)} ms`,
+        ),
+      )
     if (opened.state === 'unresolved') {
       await releasePreparedResources()
       return {
@@ -3016,6 +3059,7 @@ export async function coordinateMapPreviewAssetSession(
           ...resourceResolution.diagnostics,
           ...enrichment.diagnostics,
           ...opened.diagnostics,
+          ...timings,
         ]),
       }
     }
@@ -3033,6 +3077,7 @@ export async function coordinateMapPreviewAssetSession(
         ...resourceResolution.diagnostics,
         ...enrichment.diagnostics,
         ...opened.diagnostics,
+        ...timings,
       ]),
     })
   } catch (error) {

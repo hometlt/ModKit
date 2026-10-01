@@ -196,6 +196,7 @@ export function createContentSourceMapPreviewResourcePlanResolver(
           'x3.host/content-dependency-resolver-unavailable',
           'no content source is configured to resolve map dependencies')])
       }
+      const openedAt = Date.now()
       const closure = await resolveSubjectClosure({
         contentSources: sources,
         subject: { descriptor },
@@ -219,7 +220,14 @@ export function createContentSourceMapPreviewResourcePlanResolver(
       }
       const catalogEntities = context === undefined ? undefined : modContextCatalogEntities(context)
       const resolution: ContentDependencyResolution = closure.resolution
-      const findings: Diagnostic[] = [...closure.diagnostics]
+      const findings: Diagnostic[] = [
+        ...closure.diagnostics,
+        diagnostic(
+          'information',
+          'x3.host/map-preview-resource-timing',
+          `mod context opened: ${String(Date.now() - openedAt)} ms`,
+        ),
+      ]
 
       const sourcePathOf = (rootId: string) =>
         request.workspace.loadOrder.find(root => root.rootId === rootId)?.sourcePath
