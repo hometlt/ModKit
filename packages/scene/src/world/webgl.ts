@@ -2526,6 +2526,11 @@ const worldObjectResources = new WeakMap<
   }>
 >()
 
+/** Every model resource an object places, without repeats: its own, its list and its components'. */
+export function worldObjectModelResources(item: WorldSceneObjectItem): readonly string[] {
+  return worldObjectResourcesOf(item).keyed
+}
+
 function worldObjectResourcesOf(item: WorldSceneObjectItem) {
   let resources = worldObjectResources.get(item)
   if (resources === undefined) {

@@ -11,6 +11,7 @@ import {
   panWorldWebGlCamera,
   pickWorldWebGl,
   SCENE_COMPRESSED_TEXTURE_FORMATS,
+  worldObjectModelResources,
   zoomWorldWebGlCamera,
   type WorldWebGlCamera,
   type WorldWebGlInput,
@@ -1444,6 +1445,8 @@ export interface WorldViewerModuleOptions {
    * bind to this subject removes itself rather than showing an empty box.
    */
   readonly sections?: readonly ImageSidebarSection[]
+  /** Objects play their clips and water moves (the default); false keeps the world still. */
+  readonly animations?: boolean
 }
 
 /**
@@ -1582,8 +1585,11 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
       let webGlRenderer: WorldWebGlRenderer | undefined
       const worldEpoch = (view?.performance.now() ?? Date.now()) / 1000
       let animationFrame: number | undefined
-      const currentWorldTime = () => (view?.performance.now() ?? Date.now()) / 1000 - worldEpoch
+      const animate = options.animations !== false
+      const currentWorldTime = () =>
+        animate ? (view?.performance.now() ?? Date.now()) / 1000 - worldEpoch : 0
       const hasAnimatedWater = () =>
+        animate &&
         currentModel?.layers.some(layer =>
           layer.layer.waterMaterials?.some(
             material =>
@@ -1594,7 +1600,7 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
         ) === true
       const currentAnimationTimes = () => {
         const times = new Map<number, number>()
-        if (currentModel === undefined) return times
+        if (currentModel === undefined || !animate) return times
         const now = (view?.performance.now() ?? Date.now()) / 1000
         const liveObjects = new Set<number>()
         for (const item of currentModel.layers
@@ -1603,18 +1609,18 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
             (candidate): candidate is WorldSceneObjectItem => candidate.facet === 'objects',
           )) {
           liveObjects.add(item.objectId)
-          const result =
-            item.resourceId === undefined ? undefined : currentModel.models?.get(item.resourceId)
-          if (
-            result?.state !== 'converted' ||
-            !(
-              result.animations?.some(
+          // every model the object places: an object of components or a list has no resourceId
+          const plays = worldObjectModelResources(item).some(resourceId => {
+            const result = currentModel?.models?.get(resourceId)
+            return (
+              result?.state === 'converted' &&
+              (result.animations?.some(
                 clip => clip.kind === 'animation' && clip.channels.length > 0,
-              ) ||
-              (item.presentationAnimation !== undefined && (result.animations?.length ?? 0) > 0)
+              ) === true ||
+                (item.presentationAnimation !== undefined && (result.animations?.length ?? 0) > 0))
             )
-          )
-            continue
+          })
+          if (!plays) continue
           const epoch = animationEpochs.get(item.objectId) ?? now
           animationEpochs.set(item.objectId, epoch)
           times.set(item.objectId, now - epoch)
