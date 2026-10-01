@@ -14,7 +14,7 @@ import {
 } from "./chunk-OAFBQXD6.js";
 import {
   readUvmAccessor
-} from "./chunk-VWR4X3UB.js";
+} from "./chunk-GE6PEFUL.js";
 import {
   readUvmAnimationClips,
   readUvmKeyTimes,
@@ -606,6 +606,12 @@ function uvmImageResourceId(document, index) {
     return uvmImageLogicalId(image["uri"]);
   return `uvm-image-${index}`;
 }
+function opaqueTexels(rgba) {
+  const opaque = rgba.slice();
+  for (let alpha = 3; alpha < opaque.length; alpha += 4)
+    opaque[alpha] = 255;
+  return opaque;
+}
 function uvmImageFilters(document) {
   const textures = array(document, "textures");
   const samplers = document["samplers"] === void 0 ? [] : array(document, "samplers");
@@ -780,6 +786,7 @@ export {
   readUvmModel,
   readCollisionMesh,
   uvmImageResourceId,
+  opaqueTexels,
   uvmImageFilters,
   prepareUvmTextureImages,
   uvmImageTexels

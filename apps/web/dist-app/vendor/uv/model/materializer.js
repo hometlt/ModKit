@@ -490,19 +490,21 @@ function singleChannel(mask) {
   return mask === 1 ? "r" : mask === 2 ? "g" : mask === 4 ? "b" : mask === 8 ? "a" : void 0;
 }
 var GLTF_FILTER = { nearest: 9728, linear: 9729 };
-function texturesWithSamplers(filters, colorKeys = []) {
+function texturesWithSamplers(filters, colorKeys = [], alphaIgnored = []) {
   const samplers = [];
   const samplerOf = /* @__PURE__ */ new Map();
   const textures = filters.map((filter, index) => {
     const colorKey = colorKeys[index];
-    const keyed = colorKey === void 0 ? {} : {
-      extensions: {
+    const extensions = {
+      ...alphaIgnored[index] === true ? { UV_texture_alpha: { ignoreStoredAlpha: true } } : {},
+      ...colorKey === void 0 ? {} : {
         UV_texture_color_key: {
           color: [...colorKey.color],
           ...colorKey.tolerance === void 0 || colorKey.tolerance === 0 ? {} : { tolerance: colorKey.tolerance }
         }
       }
     };
+    const keyed = Object.keys(extensions).length === 0 ? {} : { extensions };
     if (filter === void 0)
       return { source: index, ...keyed };
     let sampler = samplerOf.get(filter);
@@ -521,6 +523,7 @@ var UVM_GAME_BLEND_MODES = [
   "alpha-blend",
   "alpha-test",
   "additive",
+  "add-alpha",
   "modulate",
   "modulate2x",
   "alpha-key",
@@ -1010,6 +1013,7 @@ function materializeUvmCore(projection, request, { digest, materialBudget = DEFA
   const imageLogicalIds = [];
   const imageFilters = [];
   const imageColorKeys = [];
+  const imageAlphaIgnored = [];
   if (closure !== void 0 && closure !== null) {
     if (closure.mode !== "logical" && closure.mode !== "content-qualified") {
       fail("resourceClosure.mode must be logical or content-qualified");
@@ -1027,12 +1031,15 @@ function materializeUvmCore(projection, request, { digest, materialBudget = DEFA
       if (colorKey !== void 0 && (!Array.isArray(colorKey.color) || colorKey.color.length !== 3 || !colorKey.color.every(colorChannel) || colorKey.tolerance !== void 0 && !colorChannel(colorKey.tolerance))) {
         fail("a resource-closure colour key is three stored 8-bit channels and a 0..255 tolerance");
       }
+      if (entry.ignoreStoredAlpha !== void 0 && entry.ignoreStoredAlpha !== true)
+        fail("a resource-closure ignoreStoredAlpha is true or absent");
       resourceImages.push({
         uri: uvmImageUri(entry.logicalId),
         ...typeof entry.mediaHint === "string" ? { mimeType: entry.mediaHint } : {}
       });
       imageLogicalIds.push(entry.logicalId);
       imageFilters.push(entry.filter);
+      imageAlphaIgnored.push(entry.ignoreStoredAlpha === true);
       imageColorKeys.push(colorKey === void 0 ? void 0 : {
         color: [colorKey.color[0], colorKey.color[1], colorKey.color[2]],
         ...colorKey.tolerance === void 0 ? {} : { tolerance: colorKey.tolerance }
@@ -1448,6 +1455,7 @@ function materializeUvmCore(projection, request, { digest, materialBudget = DEFA
       ...visibility.length === 0 ? [] : ["UV_game_variants"],
       ...animatesPointers ? ["KHR_animation_pointer"] : [],
       ...imageColorKeys.some((key) => key !== void 0) ? ["UV_texture_color_key"] : [],
+      ...imageAlphaIgnored.includes(true) ? ["UV_texture_alpha"] : [],
       ...unitsExtension === void 0 ? [] : ["UV_units"],
       ...projection.lods !== void 0 && projection.lods.length > 0 ? ["MSFT_lod"] : [],
       ...lodSelection === void 0 ? [] : ["MODKITX_lod_selection"],
@@ -1485,7 +1493,7 @@ function materializeUvmCore(projection, request, { digest, materialBudget = DEFA
     ...animation === void 0 || animation.animations.length === 0 ? {} : { animations: animation.animations },
     ...resourceImages.length === 0 ? {} : {
       images: resourceImages,
-      ...texturesWithSamplers(imageFilters, imageColorKeys)
+      ...texturesWithSamplers(imageFilters, imageColorKeys, imageAlphaIgnored)
     },
     accessors,
     bufferViews: buffers.views,

@@ -15,7 +15,7 @@ import {
   modelMaterialTeamColor,
   mountFieldEditTarget,
   mountInlineField
-} from "./chunk-5LQ2RDC2.js";
+} from "./chunk-XYHGZFNJ.js";
 import {
   metadataFieldProjections
 } from "./chunk-CW2HIMYV.js";
@@ -227,6 +227,7 @@ import {
   materialPosedPrimitive,
   materialSkinOf,
   materializeUvmAnimationMaterialTargets,
+  opaqueTexels,
   packUvmGlb,
   planarLocalUvCpu,
   prepareMaterialGeometry,
@@ -253,9 +254,10 @@ import {
   uvmImageColorKeys,
   uvmImageFilters,
   uvmImageUri,
+  uvmImagesIgnoringAlpha,
   uvmKeyTimesMetadata,
   uvmVisibilityPointer
-} from "./chunk-INSSLGBI.js";
+} from "./chunk-WCNOEKSC.js";
 import {
   DEFAULT_MODEL_ANIMATION_BUDGET,
   DEFAULT_MODEL_SKELETON_BUDGET,
@@ -263,12 +265,16 @@ import {
   composeTrsMatrix,
   createModelSceneSampler,
   createModelSkeletonNodes,
+  decomposeMatrix4,
+  invertQuat,
   linearToSrgb,
+  multiplyQuat,
+  quaternionFromRotationMatrix,
   snapshotJson,
   snapshotModelAnimations,
   snapshotModelSkeleton,
   srgbToLinear
-} from "./chunk-LVYXWGG6.js";
+} from "./chunk-S3XCLL57.js";
 import {
   SCENE_RENDERER_CONTRACT,
   SCENE_RENDERER_MATCHER_PROFILE
@@ -23347,6 +23353,11 @@ async function coordinateMapPreviewAssetSession(request) {
       ])
     };
   }
+  const timings = [];
+  const timed = (label, since) => {
+    timings.push(diagnostic("information", "x3.host/map-preview-resource-timing", `${label}: ${String(Date.now() - since)} ms`));
+  };
+  const resolvingAt = Date.now();
   let resourceResolution;
   try {
     if (prepared.plan.resources.strategy === "subject-namespace") {
@@ -23396,6 +23407,7 @@ async function coordinateMapPreviewAssetSession(request) {
       ])
     };
   }
+  timed("resources resolved", resolvingAt);
   const releasePreparedResources = releaseOnce(resourceResolution.release);
   let resources;
   try {
@@ -23410,8 +23422,23 @@ async function coordinateMapPreviewAssetSession(request) {
       revision: resourceResolution.revision
     });
     const inputResolver = createCompanionInputResolver(origin);
-    const catalogEntities = request.catalog === void 0 ? resourceResolution.catalogEntities : void 0;
+    const resolvedCatalog = request.catalog === void 0 ? resourceResolution.catalogEntities : void 0;
+    let catalogQuestions = 0;
+    let catalogMilliseconds = 0;
+    const catalogEntities = resolvedCatalog === void 0 ? void 0 : async (refs, signal) => {
+      const askedAt = Date.now();
+      try {
+        return await resolvedCatalog(refs, signal);
+      } finally {
+        catalogQuestions += 1;
+        catalogMilliseconds += Date.now() - askedAt;
+      }
+    };
+    const enrichedAt = Date.now();
     const enrichment = catalogEntities === void 0 ? await enrichMapPreviewCatalog(request, workspace, resources) : Object.freeze({ diagnostics: Object.freeze([]) });
+    if (catalogEntities === void 0)
+      timed("catalog enrichment", enrichedAt);
+    const analyzedAt = Date.now();
     const opened = await openMapPreviewAssetSession({
       services: request.services,
       grant: request.grant,
@@ -23428,6 +23455,9 @@ async function coordinateMapPreviewAssetSession(request) {
       limits: request.limits,
       ...request.signal === void 0 ? {} : { signal: request.signal }
     });
+    timed("map analysis and world", analyzedAt);
+    if (catalogQuestions > 0)
+      timings.push(diagnostic("information", "x3.host/map-preview-resource-timing", `catalog questions (${String(catalogQuestions)}): ${String(catalogMilliseconds)} ms`));
     if (opened.state === "unresolved") {
       await releasePreparedResources();
       return {
@@ -23437,7 +23467,8 @@ async function coordinateMapPreviewAssetSession(request) {
           ...workspaceDiagnostics(workspace),
           ...resourceResolution.diagnostics,
           ...enrichment.diagnostics,
-          ...opened.diagnostics
+          ...opened.diagnostics,
+          ...timings
         ])
       };
     }
@@ -23450,7 +23481,8 @@ async function coordinateMapPreviewAssetSession(request) {
         ...workspaceDiagnostics(workspace),
         ...resourceResolution.diagnostics,
         ...enrichment.diagnostics,
-        ...opened.diagnostics
+        ...opened.diagnostics,
+        ...timings
       ])
     });
   } catch (error5) {
@@ -52597,19 +52629,21 @@ function singleChannel(mask) {
   return mask === 1 ? "r" : mask === 2 ? "g" : mask === 4 ? "b" : mask === 8 ? "a" : void 0;
 }
 var GLTF_FILTER = { nearest: 9728, linear: 9729 };
-function texturesWithSamplers(filters, colorKeys = []) {
+function texturesWithSamplers(filters, colorKeys = [], alphaIgnored = []) {
   const samplers = [];
   const samplerOf = /* @__PURE__ */ new Map();
   const textures = filters.map((filter, index) => {
     const colorKey = colorKeys[index];
-    const keyed = colorKey === void 0 ? {} : {
-      extensions: {
+    const extensions = {
+      ...alphaIgnored[index] === true ? { UV_texture_alpha: { ignoreStoredAlpha: true } } : {},
+      ...colorKey === void 0 ? {} : {
         UV_texture_color_key: {
           color: [...colorKey.color],
           ...colorKey.tolerance === void 0 || colorKey.tolerance === 0 ? {} : { tolerance: colorKey.tolerance }
         }
       }
     };
+    const keyed = Object.keys(extensions).length === 0 ? {} : { extensions };
     if (filter === void 0)
       return { source: index, ...keyed };
     let sampler = samplerOf.get(filter);
@@ -52628,6 +52662,7 @@ var UVM_GAME_BLEND_MODES = [
   "alpha-blend",
   "alpha-test",
   "additive",
+  "add-alpha",
   "modulate",
   "modulate2x",
   "alpha-key",
@@ -53117,6 +53152,7 @@ function materializeUvmCore(projection2, request, { digest, materialBudget = DEF
   const imageLogicalIds = [];
   const imageFilters = [];
   const imageColorKeys = [];
+  const imageAlphaIgnored = [];
   if (closure !== void 0 && closure !== null) {
     if (closure.mode !== "logical" && closure.mode !== "content-qualified") {
       fail6("resourceClosure.mode must be logical or content-qualified");
@@ -53134,12 +53170,15 @@ function materializeUvmCore(projection2, request, { digest, materialBudget = DEF
       if (colorKey !== void 0 && (!Array.isArray(colorKey.color) || colorKey.color.length !== 3 || !colorKey.color.every(colorChannel) || colorKey.tolerance !== void 0 && !colorChannel(colorKey.tolerance))) {
         fail6("a resource-closure colour key is three stored 8-bit channels and a 0..255 tolerance");
       }
+      if (entry2.ignoreStoredAlpha !== void 0 && entry2.ignoreStoredAlpha !== true)
+        fail6("a resource-closure ignoreStoredAlpha is true or absent");
       resourceImages.push({
         uri: uvmImageUri(entry2.logicalId),
         ...typeof entry2.mediaHint === "string" ? { mimeType: entry2.mediaHint } : {}
       });
       imageLogicalIds.push(entry2.logicalId);
       imageFilters.push(entry2.filter);
+      imageAlphaIgnored.push(entry2.ignoreStoredAlpha === true);
       imageColorKeys.push(colorKey === void 0 ? void 0 : {
         color: [colorKey.color[0], colorKey.color[1], colorKey.color[2]],
         ...colorKey.tolerance === void 0 ? {} : { tolerance: colorKey.tolerance }
@@ -53555,6 +53594,7 @@ function materializeUvmCore(projection2, request, { digest, materialBudget = DEF
       ...visibility.length === 0 ? [] : ["UV_game_variants"],
       ...animatesPointers ? ["KHR_animation_pointer"] : [],
       ...imageColorKeys.some((key3) => key3 !== void 0) ? ["UV_texture_color_key"] : [],
+      ...imageAlphaIgnored.includes(true) ? ["UV_texture_alpha"] : [],
       ...unitsExtension === void 0 ? [] : ["UV_units"],
       ...projection2.lods !== void 0 && projection2.lods.length > 0 ? ["MSFT_lod"] : [],
       ...lodSelection === void 0 ? [] : ["MODKITX_lod_selection"],
@@ -53592,7 +53632,7 @@ function materializeUvmCore(projection2, request, { digest, materialBudget = DEF
     ...animation === void 0 || animation.animations.length === 0 ? {} : { animations: animation.animations },
     ...resourceImages.length === 0 ? {} : {
       images: resourceImages,
-      ...texturesWithSamplers(imageFilters, imageColorKeys)
+      ...texturesWithSamplers(imageFilters, imageColorKeys, imageAlphaIgnored)
     },
     accessors,
     bufferViews: buffers.views,
@@ -55794,7 +55834,9 @@ function recordItems(record6, bounds2) {
             ...instance.typeId === void 0 ? {} : { typeId: instance.typeId },
             ...instance.player === void 0 ? {} : { player: instance.player },
             ...instance.variation === void 0 ? {} : { variation: instance.variation },
-            ...instance.name === void 0 ? {} : { name: instance.name }
+            ...instance.name === void 0 ? {} : { name: instance.name },
+            ...instance.presentationTint === void 0 ? {} : { presentationTint: instance.presentationTint },
+            ...instance.presentationAnimation === void 0 ? {} : { presentationAnimation: instance.presentationAnimation }
           })
         ] : [];
       }));
@@ -56345,7 +56387,9 @@ var KEPT_FIELDS = Object.freeze({
     "variation",
     "name",
     "resourceIds",
-    "modelComponents"
+    "modelComponents",
+    "presentationTint",
+    "presentationAnimation"
   ])
 });
 
@@ -56499,6 +56543,28 @@ function booleanValue(value, path, state, depth) {
   if (typeof value !== "boolean")
     fail8("expected a boolean", path);
   return value;
+}
+function presentationAnimationOf(value, path, state, depth) {
+  const animation = record4(value, path, state, depth);
+  exactKeys2(animation, ["name", "groups", "loop", "speed", "randomStart"], ["name", "groups", "loop", "speed"], path);
+  const name = string2(animation["name"], `${path}.name`, state, depth + 1);
+  if (name === "")
+    fail8("the clip name must not be empty", `${path}.name`);
+  const groups = array(animation["groups"], `${path}.groups`, state, depth + 1).map((group2, index) => {
+    const value2 = string2(group2, `${path}.groups[${String(index)}]`, state, depth + 2);
+    if (value2 === "")
+      fail8("a clip group must not be empty", `${path}.groups[${String(index)}]`);
+    return value2;
+  });
+  return Object.freeze({
+    name,
+    groups: Object.freeze(groups),
+    loop: booleanValue(animation["loop"], `${path}.loop`, state, depth + 1),
+    speed: finite2(animation["speed"], `${path}.speed`, state, depth + 1),
+    ...animation["randomStart"] === void 0 ? {} : {
+      randomStart: booleanValue(animation["randomStart"], `${path}.randomStart`, state, depth + 1)
+    }
+  });
 }
 function layerId2(value, path, state, depth) {
   const id = string2(value, path, state, depth);
@@ -56999,7 +57065,9 @@ function objectsLayer(value, path, state, depth) {
       "typeId",
       "player",
       "variation",
-      "name"
+      "name",
+      "presentationTint",
+      "presentationAnimation"
     ], ["id", "objectKind", "position", "rotation", "scale", "resourceIds"], instancePath);
     const objectKind = string2(instance["objectKind"], `${instancePath}.objectKind`, state, depth + 3);
     if (!OBJECT_KINDS.has(objectKind))
@@ -57057,6 +57125,11 @@ function objectsLayer(value, path, state, depth) {
     }
     const optionalString = (key3) => instance[key3] === void 0 ? void 0 : string2(instance[key3], `${instancePath}.${key3}`, state, depth + 3);
     const optionalInteger = (key3) => instance[key3] === void 0 ? void 0 : key3 === "player" ? safeInteger(instance[key3], `${instancePath}.${key3}`, state, depth + 3) : integerAtLeast(instance[key3], 0, `${instancePath}.${key3}`, state, depth + 3);
+    const tintPath = `${instancePath}.presentationTint`;
+    const presentationTint = instance["presentationTint"] === void 0 ? void 0 : vec3(instance["presentationTint"], tintPath, state, depth + 3);
+    if (presentationTint?.some((factor2) => factor2 < 0 || factor2 > 1))
+      fail8("presentation tint factors must lie in 0..1", tintPath);
+    const presentationAnimation = instance["presentationAnimation"] === void 0 ? void 0 : presentationAnimationOf(instance["presentationAnimation"], `${instancePath}.presentationAnimation`, state, depth + 3);
     return Object.freeze({
       id: layerId2(instance["id"], `${instancePath}.id`, state, depth + 3),
       objectKind,
@@ -57068,7 +57141,9 @@ function objectsLayer(value, path, state, depth) {
       ...optionalString("typeId") === void 0 ? {} : { typeId: optionalString("typeId") },
       ...optionalInteger("player") === void 0 ? {} : { player: optionalInteger("player") },
       ...optionalInteger("variation") === void 0 ? {} : { variation: optionalInteger("variation") },
-      ...optionalString("name") === void 0 ? {} : { name: optionalString("name") }
+      ...optionalString("name") === void 0 ? {} : { name: optionalString("name") },
+      ...presentationTint === void 0 ? {} : { presentationTint },
+      ...presentationAnimation === void 0 ? {} : { presentationAnimation }
     });
   });
   const ids = /* @__PURE__ */ new Set();
@@ -65843,7 +65918,7 @@ var PREVIEW_STAGES = [
 async function defaultPreviewStage(kind, localizer) {
   switch (kind) {
     case "model":
-      return (await import("./model-QSXGNKAJ.js")).createModelViewer({ localizer });
+      return (await import("./model-RI6IGFTU.js")).createModelViewer({ localizer });
     case "image":
       return (await import("./image-3KATOXWA.js")).createImageViewer({ localizer });
     case "video":
@@ -71100,12 +71175,14 @@ function pushCellCoordinates(target, cell, locals) {
   for (const local of locals)
     target.secondaryTextureCoordinates?.push(cell.x + local[0], cell.y + local[1]);
 }
-function atlasTileUv(local, rows, texture, tile) {
+function atlasTileUv(local, atlas, texture, tile) {
+  const { rows } = atlas;
   const { columns } = atlasGrid(rows, texture);
+  const down = atlas.tileTop === "local-y-0" ? local[1] : 1 - local[1];
   const inside = (value, start, size, texels) => Math.min(Math.max(value, start / size + 0.5 / texels), (start + 1) / size - 0.5 / texels);
   return [
     inside((tile.column + local[0]) / columns, tile.column, columns, texture.width),
-    inside((tile.row + 1 - local[1]) / rows, tile.row, rows, texture.height)
+    inside((tile.row + down) / rows, tile.row, rows, texture.height)
   ];
 }
 function pushLine(target, a2, b2, color2) {
@@ -71658,7 +71735,8 @@ function modelMaterialCoverage(material) {
   if (cutoff !== void 0 && (!Number.isFinite(cutoff) || cutoff < 0))
     throw new TypeError(`world material ${material?.id ?? "(unknown)"} has invalid alpha cutoff`);
   const nativeBlend = material?.blendMode;
-  const mode = material?.alphaMode === "mask" || material?.alphaMode === void 0 && (cutoff ?? 0) > 0 && nativeBlend !== "blend" && nativeBlend !== "additive" ? "mask" : material?.alphaMode === "blend" || nativeBlend === "blend" || nativeBlend === "additive" ? "blend" : "opaque";
+  const blended = nativeBlend === "blend" || nativeBlend === "additive" || nativeBlend === "add-alpha";
+  const mode = material?.alphaMode === "mask" || material?.alphaMode === void 0 && (cutoff ?? 0) > 0 && !blended ? "mask" : material?.alphaMode === "blend" || blended ? "blend" : "opaque";
   return Object.freeze({ mode, cutoff: mode === "mask" ? cutoff ?? 0.5 : 0 });
 }
 var DEFAULT_SHADOW_POLICY = Object.freeze({
@@ -71754,6 +71832,44 @@ function worldModelSceneSampler(result, clip) {
   return sampler;
 }
 var staticModelSamples = /* @__PURE__ */ new WeakMap();
+var cameraFacingWorldModels = /* @__PURE__ */ new WeakMap();
+function worldModelFacesCamera(result) {
+  let faces2 = cameraFacingWorldModels.get(result);
+  if (faces2 === void 0)
+    cameraFacingWorldModels.set(result, faces2 = (result.nodes ?? []).some((node) => node.billboard !== void 0));
+  return faces2;
+}
+var cameraFacingWorldInputs = /* @__PURE__ */ new WeakMap();
+function worldInputFacesCamera(input) {
+  if (input.models === void 0)
+    return false;
+  let faces2 = cameraFacingWorldInputs.get(input.models);
+  if (faces2 === void 0)
+    cameraFacingWorldInputs.set(input.models, faces2 = [...input.models.values()].some((result) => result.state === "converted" && worldModelFacesCamera(result)));
+  return faces2;
+}
+function worldCameraTurnKey(requested) {
+  const view = cameraState(requested);
+  return `${view.azimuth}|${view.elevation}`;
+}
+function worldModelCamera(input, item) {
+  const view = cameraState(input.camera);
+  const horizontal = Math.cos(view.elevation);
+  const z = [
+    Math.cos(view.azimuth) * horizontal,
+    Math.sin(view.elevation),
+    Math.sin(view.azimuth) * horizontal
+  ];
+  const length = Math.hypot(z[0], z[2]);
+  const x = [z[2] / length, 0, -z[0] / length];
+  const y = [z[1] * x[2] - z[2] * x[1], z[2] * x[0] - z[0] * x[2], z[0] * x[1] - z[1] * x[0]];
+  const toModel = invertQuat(decomposeMatrix4(worldObjectTransform(item, [0, 0, 0])).rotation);
+  const eye = rotateQuaternion([z[0] * 1e4, z[1] * 1e4, z[2] * 1e4], toModel);
+  return Object.freeze({
+    rotation: multiplyQuat(toModel, quaternionFromRotationMatrix([...x, ...y, ...z])),
+    position: eye
+  });
+}
 var restWorldModelSamples = /* @__PURE__ */ new WeakMap();
 function restWorldModelSample(result) {
   let sample = restWorldModelSamples.get(result);
@@ -72236,6 +72352,10 @@ function worldStaticObjectKey(item, input, preparation, models) {
     const result = input.models?.get(resourceId2);
     results.push(result);
     key3.push(resourceId2, result);
+    if (result?.state === "converted" && worldModelFacesCamera(result)) {
+      key3.push(worldCameraTurnKey(input.camera));
+      timed = true;
+    }
     if (result?.state !== "converted" || !worldObjectFollowsTime(result, item))
       continue;
     const selected = worldModelAnimation(result, item);
@@ -73059,7 +73179,7 @@ function prepareWorldStaticTerrain(input, sampleSharedModel) {
         terrainDecalTriangles += 2;
       };
       const groundLayer = materialSample?.layers?.[0];
-      const drawUpperLayers = () => materialSample?.layers?.slice(1).forEach((layer2, index) => drawOverlay(layer2.materialId, index + 1, (local, definition2, texture2) => definition2.atlas === void 0 ? terrainSurfaceUv(item, local, void 0, definition2.uvTransform) : atlasTileUv(local, definition2.atlas.rows, texture2, layer2.tile), true));
+      const drawUpperLayers = () => materialSample?.layers?.slice(1).forEach((layer2, index) => drawOverlay(layer2.materialId, index + 1, (local, definition2, texture2) => definition2.atlas === void 0 ? terrainSurfaceUv(item, local, void 0, definition2.uvTransform) : atlasTileUv(local, definition2.atlas, texture2, layer2.tile), true));
       const drawDecal = () => {
         const decal = materialSample?.decal;
         if (decal === void 0)
@@ -73153,7 +73273,7 @@ function prepareWorldStaticTerrain(input, sampleSharedModel) {
           ...atlas === void 0 ? {} : { atlas, secondaryTextureCoordinates: [] }
         };
         textured.set(key3, target);
-        const uv = (local) => groundLayer !== void 0 && material?.atlas !== void 0 ? atlasTileUv(local, material.atlas.rows, texture, groundLayer.tile) : terrainSurfaceUv(item, local, materialSample?.uvTransform, material?.uvTransform);
+        const uv = (local) => groundLayer !== void 0 && material?.atlas !== void 0 ? atlasTileUv(local, material.atlas, texture, groundLayer.tile) : terrainSurfaceUv(item, local, materialSample?.uvTransform, material?.uvTransform);
         const [uvA, uvB, uvC, uvD] = patch.locals.map(uv);
         pushTexturedTriangle(target, tri(quad, 0), tri([uvA, uvB, uvC, uvD], 0), color2, tri(cornerNormals, 0));
         pushCellCoordinates(target, item, tri(patch.locals, 0));
@@ -73431,19 +73551,20 @@ function createWorldWebGlPlan(input, previousPlan) {
     if (result?.state !== "converted")
       return void 0;
     const selected = worldModelAnimation(result, item);
-    const staticGeometry = !worldModelHasAnimatedGeometry(result, item);
+    const camera = worldModelFacesCamera(result) ? worldModelCamera(input, item) : void 0;
+    const staticGeometry = camera === void 0 && !worldModelHasAnimatedGeometry(result, item);
     const staticKey = selected?.id ?? "";
     const previousStatic = staticGeometry ? staticModelSamples.get(result)?.get(staticKey) : void 0;
     if (previousStatic !== void 0)
       return previousStatic;
     const clock = worldObjectTime(input, item, selected !== void 0, selected?.durationSeconds);
     const time = selected?.durationSeconds && (item.presentationAnimation?.loop ?? selected.looping) ? clock % selected.durationSeconds : clock;
-    const sharedKey = `${resourceId2}\0${selected?.id ?? ""}\0${time}`;
+    const sharedKey = `${resourceId2}\0${selected?.id ?? ""}\0${time}` + (camera === void 0 ? "" : `\0${camera.rotation.join(",")}`);
     const shared = planSamples.get(sharedKey);
     if (shared !== void 0)
       return shared;
     const clip = selected?.kind === "animation" ? selected : void 0;
-    const sample = (result.nodes?.length ?? 0) === 0 ? { primitives: result.primitives, nodeTransforms: /* @__PURE__ */ new Map() } : worldModelSceneSampler(result, clip).sample(time);
+    const sample = (result.nodes?.length ?? 0) === 0 ? { primitives: result.primitives, nodeTransforms: /* @__PURE__ */ new Map() } : worldModelSceneSampler(result, clip).sample(time, void 0, camera);
     const current = {
       result,
       // A skin whose pose does not follow the clock is posed on the CPU once for every frame to
@@ -73706,7 +73827,10 @@ function createWorldWebGlPlan(input, previousPlan) {
         const requestedUv = layer2?.uvSource ?? 0;
         const team = worldBatchTeamColor(material, result.textures, requestedUv, moment.teamColor, materialContext.teamColorIntensity);
         const coverage = modelMaterialCoverage(material);
-        const blendMode = coverage.mode !== "blend" ? void 0 : material?.blendMode === "additive" ? "additive" : "blend";
+        const blendMode = coverage.mode !== "blend" ? void 0 : (
+          // the world's adding blend is SrcAlpha, One: add-alpha's (UV_game_material)
+          material?.blendMode === "additive" || material?.blendMode === "add-alpha" ? "additive" : "blend"
+        );
         const normalTexture = normalLayer?.resourceId === void 0 || (normalLayer.uvSource ?? 0) !== requestedUv ? void 0 : result.textures?.find((candidate) => candidate.id === normalLayer.resourceId);
         const textureCoordinates = primitive.textureCoordinateSets?.find((candidate) => candidate.set === requestedUv)?.coordinates ?? (requestedUv === 0 ? primitive.textureCoordinates : void 0);
         const factor2 = material?.baseColorFactor ?? (texture === void 0 && primitive.colors === void 0 ? colorHash(primitive.materialId ?? item.kind) : [1, 1, 1, 1]);
@@ -75058,7 +75182,8 @@ function sameWorldPlanInputExceptAnimationTimes(left, right) {
   return sameArrayIdentity(left.items, right.items) && sameWorldMap(left.models, right.models) && sameArrayIdentity(left.terrainMaterials, right.terrainMaterials) && sameArrayIdentity(left.terrainWeightRasters, right.terrainWeightRasters) && sameWorldMap(left.terrainTextures, right.terrainTextures) && sameArrayIdentity(left.waterMaterials, right.waterMaterials) && left.selectedObjectId === right.selectedObjectId && samePreviewPosition(left.previewPosition, right.previewPosition) && sameWorldMap(left.teamColors, right.teamColors);
 }
 function sameWorldPlanInput(left, right) {
-  return (left.timeSeconds ?? 0) === (right.timeSeconds ?? 0) && sameNumberMap(left.animationTimes, right.animationTimes) && sameWorldPlanInputExceptAnimationTimes(left, right);
+  return (left.timeSeconds ?? 0) === (right.timeSeconds ?? 0) && sameNumberMap(left.animationTimes, right.animationTimes) && sameWorldPlanInputExceptAnimationTimes(left, right) && // a camera-facing node draws differently as the camera turns
+  (!worldInputFacesCamera(right) || worldCameraTurnKey(left.camera) === worldCameraTurnKey(right.camera));
 }
 var worldInputsCompared;
 var worldCliffItemLists = /* @__PURE__ */ new WeakMap();
@@ -77511,11 +77636,18 @@ init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var utf8 = new TextDecoder("utf-8", { fatal: false });
 function mentions(bytes) {
   if (bytes.byteLength < 20)
-    return { colorKey: false, filter: false };
+    return { colorKey: false, alpha: false, filter: false };
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   const jsonLength = Math.min(view.getUint32(12, true), bytes.byteLength - 20);
   const json2 = utf8.decode(bytes.subarray(20, 20 + jsonLength));
-  return { colorKey: json2.includes("UV_texture_color_key"), filter: json2.includes("magFilter") };
+  return {
+    colorKey: json2.includes("UV_texture_color_key"),
+    alpha: json2.includes("UV_texture_alpha"),
+    filter: json2.includes("magFilter")
+  };
+}
+function storedAlphaIgnored(texture) {
+  return Object.freeze({ ...texture, rgba: opaqueTexels(texture.rgba) });
 }
 function colorKeyedTexture(texture, key3) {
   const [r2, g, b2] = key3.color;
@@ -77528,7 +77660,7 @@ function presentWorldModelTextures(result, signal) {
   if (result.state !== "converted" || result.uvmBytes === void 0 || (result.textures?.length ?? 0) === 0)
     return result;
   const mentioned = mentions(result.uvmBytes);
-  if (!mentioned.colorKey && !mentioned.filter)
+  if (!mentioned.colorKey && !mentioned.alpha && !mentioned.filter)
     return result;
   const { document } = readUvmContainer(result.uvmBytes, {
     maxInputBytes: result.uvmBytes.byteLength,
@@ -77537,28 +77669,30 @@ function presentWorldModelTextures(result, signal) {
     maxNodes: 1e6
   }, signal);
   const keys = mentioned.colorKey ? uvmImageColorKeys(document, signal) : /* @__PURE__ */ new Map();
+  const opaque = mentioned.alpha ? uvmImagesIgnoringAlpha(document, signal) : /* @__PURE__ */ new Set();
   const filters = mentioned.filter ? uvmImageFilters(document) : /* @__PURE__ */ new Map();
-  if (keys.size === 0 && filters.size === 0)
+  if (keys.size === 0 && opaque.size === 0 && filters.size === 0)
     return result;
   const unkeyed = [];
   const textures = (result.textures ?? []).map((texture) => {
     const filter = filters.get(texture.id);
     const filtered = filter === void 0 || texture.filter !== void 0 ? texture : Object.freeze({ ...texture, filter });
     const key3 = keys.get(texture.id);
-    if (key3 === void 0)
+    if (key3 === void 0 && !opaque.has(texture.id))
       return filtered;
     if (texture.compressed !== void 0) {
       unkeyed.push(texture.id);
       return filtered;
     }
-    return colorKeyedTexture(filtered, key3);
+    const loaded = opaque.has(texture.id) ? storedAlphaIgnored(filtered) : filtered;
+    return key3 === void 0 ? loaded : colorKeyedTexture(loaded, key3);
   });
   return Object.freeze({
     ...result,
     textures: Object.freeze(textures),
     diagnostics: Object.freeze([
       ...result.diagnostics,
-      ...unkeyed.map((id) => diagnostic("warning", "x3.scene/world-texture-color-key-compressed", `model texture ${id} arrived as GPU-compressed blocks; its colour key is not applied`))
+      ...unkeyed.map((id) => diagnostic("warning", "x3.scene/world-texture-color-key-compressed", `model texture ${id} arrived as GPU-compressed blocks; its colour key or alpha policy is not applied`))
     ])
   });
 }

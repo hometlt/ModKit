@@ -16,7 +16,7 @@ import {
 import {
   uvmAccessorWidth,
   validateUvmDocument
-} from "./chunk-VWR4X3UB.js";
+} from "./chunk-GE6PEFUL.js";
 import {
   array,
   isStandardLayerSlot,

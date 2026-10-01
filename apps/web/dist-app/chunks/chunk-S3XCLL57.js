@@ -2376,6 +2376,10 @@ init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
 export {
   snapshotJson,
+  decomposeMatrix4,
+  quaternionFromRotationMatrix,
+  invertQuat,
+  multiplyQuat,
   snapshotModelBillboards,
   billboardCameraRotation,
   sampleTrackValue,

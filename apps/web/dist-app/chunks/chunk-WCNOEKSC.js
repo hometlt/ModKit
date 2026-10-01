@@ -5,7 +5,7 @@ import {
   sampleTrackValue,
   snapshotJson,
   srgbToLinear
-} from "./chunk-LVYXWGG6.js";
+} from "./chunk-S3XCLL57.js";
 import {
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
 } from "./chunk-BLWUC7LO.js";
@@ -766,12 +766,35 @@ function readUvmTextureColorKeys(document2, signal) {
   }
   return keys;
 }
+function readUvmTextureAlpha(document2, signal) {
+  const policies = /* @__PURE__ */ new Map();
+  for (const [index2, candidate] of array2(document2, "textures").entries()) {
+    signal?.throwIfAborted();
+    const extension = field2(field2(candidate, "extensions"), "UV_texture_alpha");
+    if (extension === void 0)
+      continue;
+    const label = `texture ${index2} UV_texture_alpha`;
+    const alpha = object2(extension, label);
+    if (Object.keys(alpha).some((key) => key !== "ignoreStoredAlpha" && key !== "extras"))
+      throw new TypeError(`${label} has an unknown property`);
+    const ignore = alpha["ignoreStoredAlpha"];
+    if (typeof ignore !== "boolean")
+      throw new TypeError(`${label} ignoreStoredAlpha must be a boolean`);
+    policies.set(index2, ignore);
+  }
+  return policies;
+}
 function validateTextureColorKeys(document2, used, signal) {
   const keys = readUvmTextureColorKeys(document2, signal);
   if (keys.size > 0 && !used.includes("UV_texture_color_key"))
     throw new TypeError("UV_texture_color_key is not declared in extensionsUsed");
   if (keys.size === 0 && used.includes("UV_texture_color_key"))
     throw new TypeError("UV_texture_color_key is declared but absent");
+  const alpha = readUvmTextureAlpha(document2, signal);
+  if (alpha.size > 0 && !used.includes("UV_texture_alpha"))
+    throw new TypeError("UV_texture_alpha is not declared in extensionsUsed");
+  if (alpha.size === 0 && used.includes("UV_texture_alpha"))
+    throw new TypeError("UV_texture_alpha is declared but absent");
 }
 
 // ../MODDING/modkit-core/packages/uv/dist/model/validation/index.js
@@ -9406,6 +9429,30 @@ function uvmImageResourceId(document2, index2) {
   if (typeof image["uri"] === "string" && !image["uri"].startsWith("data:"))
     return uvmImageLogicalId(image["uri"]);
   return `uvm-image-${index2}`;
+}
+function opaqueTexels(rgba) {
+  const opaque = rgba.slice();
+  for (let alpha = 3; alpha < opaque.length; alpha += 4)
+    opaque[alpha] = 255;
+  return opaque;
+}
+function uvmImagesIgnoringAlpha(document2, signal) {
+  const textures = array(document2, "textures");
+  const policies = readUvmTextureAlpha(document2, signal);
+  const byImage = /* @__PURE__ */ new Map();
+  for (const [index2, texture] of textures.entries()) {
+    const source = object(texture, "texture")["source"];
+    if (typeof source !== "number")
+      continue;
+    const ignore = policies.get(index2) ?? false;
+    const known = byImage.get(source);
+    byImage.set(source, known === void 0 || known === ignore ? ignore : null);
+  }
+  const ignoring = /* @__PURE__ */ new Set();
+  for (const [image, ignore] of byImage)
+    if (ignore === true)
+      ignoring.add(uvmImageResourceId(document2, image));
+  return ignoring;
 }
 function uvmImageColorKeys(document2, signal) {
   const textures = array(document2, "textures");
@@ -25235,6 +25282,7 @@ export {
   addAccessor,
   uvmKeyTimesMetadata,
   readUvmTextureColorKeys,
+  readUvmTextureAlpha,
   validateUvmDocument,
   shadePbr,
   SRGB_GLSL,
@@ -25281,6 +25329,8 @@ export {
   snapshotUvmEffectExtension,
   createUvmEffectFrameCache,
   createUvmEffectFrame,
+  opaqueTexels,
+  uvmImagesIgnoringAlpha,
   uvmImageColorKeys,
   uvmImageFilters,
   prepareUvmTextureImages,

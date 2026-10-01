@@ -1,10 +1,11 @@
 import {
+  opaqueTexels,
   prepareUvmTextureImages,
   readCollisionMesh,
   readUvmModel,
   uvmImageFilters,
   uvmImageTexels
-} from "../../../chunks/chunk-N565EHNO.js";
+} from "../../../chunks/chunk-7E747Z63.js";
 import {
   IDENTITY_MATERIAL_FRAME,
   MATERIAL_LAYERS_SHADER,
@@ -22,7 +23,7 @@ import {
   snapshotEnvironment,
   snapshotEyePosition,
   snapshotModelBillboards
-} from "../../../chunks/chunk-3RFEOXBM.js";
+} from "../../../chunks/chunk-4LSJBOIV.js";
 import {
   array,
   field,
@@ -40,9 +41,10 @@ import {
 } from "../../../chunks/chunk-OAFBQXD6.js";
 import {
   readUvmAccessor,
+  readUvmTextureAlpha,
   readUvmTextureColorKeys,
   validateUvmDocument
-} from "../../../chunks/chunk-VWR4X3UB.js";
+} from "../../../chunks/chunk-GE6PEFUL.js";
 import {
   readUvmAnimationClips,
   readUvmPrimitiveVisibility
@@ -21073,7 +21075,7 @@ function uvmMaterialBlendEffect(material, wrap) {
     return void 0;
   const data = object(extension, "game material");
   const mode = data["blendMode"];
-  const blend = mode === "additive" || mode === "modulate" || mode === "modulate2x" ? mode : void 0;
+  const blend = mode === "additive" || mode === "add-alpha" || mode === "modulate" || mode === "modulate2x" ? mode : void 0;
   if (blend === void 0)
     return void 0;
   const renderModel = field(object(data["params"] ?? {}, "game material parameters"), "renderModel");
@@ -21521,7 +21523,9 @@ async function prepareNestedUvmRender(bytes, value, options, depth, cache) {
     return settings;
   };
   const colorKeys = readUvmTextureColorKeys(document2, signal);
-  const keyed = (index, texels) => {
+  const alphaPolicies = readUvmTextureAlpha(document2, signal);
+  const keyed = (index, stored) => {
+    const texels = alphaPolicies.get(index) === true ? { ...stored, rgba: opaqueTexels(stored.rgba) } : stored;
     const key = colorKeys.get(index);
     if (key === void 0)
       return texels;

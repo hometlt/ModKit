@@ -35,7 +35,7 @@ import {
   createModelSkeletonNodes,
   modelPrimitiveByteLength,
   snapshotJson
-} from "./chunk-LVYXWGG6.js";
+} from "./chunk-S3XCLL57.js";
 import {
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
 } from "./chunk-BLWUC7LO.js";
@@ -1476,6 +1476,10 @@ async function resolveModelViewerTextures(port, references, signal) {
     if (!valid)
       continue;
     remaining -= byteLength;
+    if (reference.ignoreStoredAlpha === true) {
+      for (let alpha = 3; alpha < rgba.length; alpha += 4)
+        rgba[alpha] = 255;
+    }
     const key = reference.colorKey;
     const keyed = key === void 0 || faces !== 1 ? rgba : applyColorKeyTransparency({ width, height, pixels: rgba }, {
       target: { r: key.color[0], g: key.color[1], b: key.color[2] },
@@ -1944,7 +1948,7 @@ function createModelViewer(options = {}) {
               const output = result.output;
               if (output.kind !== "bytes" || !(output.value instanceof Uint8Array))
                 throw new Error(`the codec answered ${output.kind}, not bytes`);
-              const { createUvmFramePreparer } = await import("./render-PDZGN2F7.js");
+              const { createUvmFramePreparer } = await import("./render-Q5OF23MJ.js");
               const raster = options.rasterResources?.(args.descriptor);
               const preparer = createUvmFramePreparer(output.value, {
                 budget: MODEL_EFFECT_BUDGET,

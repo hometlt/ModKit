@@ -487,12 +487,35 @@ function readUvmTextureColorKeys(document, signal) {
   }
   return keys;
 }
+function readUvmTextureAlpha(document, signal) {
+  const policies = /* @__PURE__ */ new Map();
+  for (const [index2, candidate] of array(document, "textures").entries()) {
+    signal?.throwIfAborted();
+    const extension = field(field(candidate, "extensions"), "UV_texture_alpha");
+    if (extension === void 0)
+      continue;
+    const label = `texture ${index2} UV_texture_alpha`;
+    const alpha = object(extension, label);
+    if (Object.keys(alpha).some((key) => key !== "ignoreStoredAlpha" && key !== "extras"))
+      throw new TypeError(`${label} has an unknown property`);
+    const ignore = alpha["ignoreStoredAlpha"];
+    if (typeof ignore !== "boolean")
+      throw new TypeError(`${label} ignoreStoredAlpha must be a boolean`);
+    policies.set(index2, ignore);
+  }
+  return policies;
+}
 function validateTextureColorKeys(document, used, signal) {
   const keys = readUvmTextureColorKeys(document, signal);
   if (keys.size > 0 && !used.includes("UV_texture_color_key"))
     throw new TypeError("UV_texture_color_key is not declared in extensionsUsed");
   if (keys.size === 0 && used.includes("UV_texture_color_key"))
     throw new TypeError("UV_texture_color_key is declared but absent");
+  const alpha = readUvmTextureAlpha(document, signal);
+  if (alpha.size > 0 && !used.includes("UV_texture_alpha"))
+    throw new TypeError("UV_texture_alpha is not declared in extensionsUsed");
+  if (alpha.size === 0 && used.includes("UV_texture_alpha"))
+    throw new TypeError("UV_texture_alpha is declared but absent");
 }
 
 // ../MODDING/modkit-core/packages/uv/dist/model/validation/index.js
@@ -543,5 +566,6 @@ export {
   uvmAccessorWidth,
   readUvmAccessor,
   readUvmTextureColorKeys,
+  readUvmTextureAlpha,
   validateUvmDocument
 };

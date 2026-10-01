@@ -23429,6 +23429,11 @@ async function coordinateMapPreviewAssetSession(request) {
       ])
     };
   }
+  const timings = [];
+  const timed = (label, since) => {
+    timings.push(diagnostic("information", "x3.host/map-preview-resource-timing", `${label}: ${String(Date.now() - since)} ms`));
+  };
+  const resolvingAt = Date.now();
   let resourceResolution;
   try {
     if (prepared.plan.resources.strategy === "subject-namespace") {
@@ -23478,6 +23483,7 @@ async function coordinateMapPreviewAssetSession(request) {
       ])
     };
   }
+  timed("resources resolved", resolvingAt);
   const releasePreparedResources = releaseOnce(resourceResolution.release);
   let resources;
   try {
@@ -23492,8 +23498,23 @@ async function coordinateMapPreviewAssetSession(request) {
       revision: resourceResolution.revision
     });
     const inputResolver = createCompanionInputResolver(origin);
-    const catalogEntities = request.catalog === void 0 ? resourceResolution.catalogEntities : void 0;
+    const resolvedCatalog = request.catalog === void 0 ? resourceResolution.catalogEntities : void 0;
+    let catalogQuestions = 0;
+    let catalogMilliseconds = 0;
+    const catalogEntities = resolvedCatalog === void 0 ? void 0 : async (refs, signal) => {
+      const askedAt = Date.now();
+      try {
+        return await resolvedCatalog(refs, signal);
+      } finally {
+        catalogQuestions += 1;
+        catalogMilliseconds += Date.now() - askedAt;
+      }
+    };
+    const enrichedAt = Date.now();
     const enrichment = catalogEntities === void 0 ? await enrichMapPreviewCatalog(request, workspace, resources) : Object.freeze({ diagnostics: Object.freeze([]) });
+    if (catalogEntities === void 0)
+      timed("catalog enrichment", enrichedAt);
+    const analyzedAt = Date.now();
     const opened = await openMapPreviewAssetSession({
       services: request.services,
       grant: request.grant,
@@ -23510,6 +23531,9 @@ async function coordinateMapPreviewAssetSession(request) {
       limits: request.limits,
       ...request.signal === void 0 ? {} : { signal: request.signal }
     });
+    timed("map analysis and world", analyzedAt);
+    if (catalogQuestions > 0)
+      timings.push(diagnostic("information", "x3.host/map-preview-resource-timing", `catalog questions (${String(catalogQuestions)}): ${String(catalogMilliseconds)} ms`));
     if (opened.state === "unresolved") {
       await releasePreparedResources();
       return {
@@ -23519,7 +23543,8 @@ async function coordinateMapPreviewAssetSession(request) {
           ...workspaceDiagnostics(workspace),
           ...resourceResolution.diagnostics,
           ...enrichment.diagnostics,
-          ...opened.diagnostics
+          ...opened.diagnostics,
+          ...timings
         ])
       };
     }
@@ -23532,7 +23557,8 @@ async function coordinateMapPreviewAssetSession(request) {
         ...workspaceDiagnostics(workspace),
         ...resourceResolution.diagnostics,
         ...enrichment.diagnostics,
-        ...opened.diagnostics
+        ...opened.diagnostics,
+        ...timings
       ])
     });
   } catch (error3) {

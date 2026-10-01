@@ -52,13 +52,13 @@ import {
   webExtensionSubjectCardBundle,
   withMapPreviewSources,
   withoutHiddenEntries
-} from "./chunks/chunk-RMCJWGFV.js";
+} from "./chunks/chunk-OEU4SOLQ.js";
 import "./chunks/chunk-YHDKYGJK.js";
 import "./chunks/chunk-BBPEOGNI.js";
 import "./chunks/chunk-DWYOZ2DI.js";
 import {
   resolveModelViewerTextures
-} from "./chunks/chunk-5LQ2RDC2.js";
+} from "./chunks/chunk-XYHGZFNJ.js";
 import "./chunks/chunk-O2DY4UGD.js";
 import "./chunks/chunk-CW2HIMYV.js";
 import {
@@ -97,8 +97,8 @@ import "./chunks/chunk-5MQCQKKD.js";
 import {
   revisionId
 } from "./chunks/chunk-U4VIZDRF.js";
-import "./chunks/chunk-INSSLGBI.js";
-import "./chunks/chunk-LVYXWGG6.js";
+import "./chunks/chunk-WCNOEKSC.js";
+import "./chunks/chunk-S3XCLL57.js";
 import "./chunks/chunk-OZX7B633.js";
 import "./chunks/chunk-R3U752LL.js";
 import "./chunks/chunk-QQJVD7VT.js";
