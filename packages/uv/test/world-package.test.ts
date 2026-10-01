@@ -570,6 +570,8 @@ describe('portable UVP map bundle', () => {
     expect(requests.map(request => request.maxBytes)).toEqual([16 * 1024 * 1024, 36 * 1024 * 1024])
     for (const request of requests)
       expect(request.maxTextureTotalBytes).toBeLessThanOrEqual(request.maxBytes)
+    // the UVM stays reserved while textures decode: the second ask gives them what it leaves
+    expect(requests[1]?.maxTextureTotalBytes).toBe(36 * 1024 * 1024 - needed)
   })
 
   it('keeps a model whose image came without texels, naming the image', async () => {

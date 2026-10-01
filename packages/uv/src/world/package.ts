@@ -1256,7 +1256,7 @@ export async function materializeWorldToUvpMap(
               1,
               Math.min(maxModelResourceBytes, options.maxMediaBytes - encodedTotal),
             )
-            const ask = (maxBytes: number) =>
+            const ask = (maxBytes: number, textureTotal: number) =>
               source.model!(
                 sourceResourceId,
                 {
@@ -1266,22 +1266,23 @@ export async function materializeWorldToUvpMap(
                   maxPrimitives: Math.min(options.maxPageItems, 1_024),
                   maxPrimitiveBytes: maxBytes,
                   maxResources: Math.min(options.maxPageItems, 1_024),
-                  maxTextureBytes: Math.min(options.maxTextureBytes, maxBytes),
-                  maxTextureTotalBytes: Math.min(textureBytes, maxBytes),
+                  maxTextureBytes: Math.min(options.maxTextureBytes, textureTotal),
+                  maxTextureTotalBytes: textureTotal,
                 },
                 options.signal,
               )
             const modelRequestBytes = Math.min(remaining, maxModelResourceBytes)
-            let result = await ask(modelRequestBytes)
-            // A model that names what it needed is asked once more, as the world viewer does.
+            let result = await ask(modelRequestBytes, Math.min(textureBytes, modelRequestBytes))
+            // A model that names what it needed is asked once more, as the world viewer does. Its
+            // UVM stays reserved while its textures decode, so they get what the UVM leaves.
             const required =
               result.state === 'converted' && result.complete && result.uvmBytes !== undefined
                 ? undefined
                 : worldModelRequiredBytes(result)
             const retryBytes =
               required === undefined ? undefined : Math.min(remaining, required + textureBytes)
-            if (retryBytes !== undefined && retryBytes > modelRequestBytes)
-              result = await ask(retryBytes)
+            if (required !== undefined && retryBytes !== undefined && retryBytes > required)
+              result = await ask(retryBytes, retryBytes - required)
             if (result.state !== 'converted' || !result.complete || result.uvmBytes === undefined) {
               unpackagedModelResourceIds.add(sourceResourceId)
               continue
