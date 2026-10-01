@@ -1,12 +1,12 @@
 import {
   createVideoViewer
-} from "./chunk-ASPZNQTQ.js";
+} from "./chunk-C2VJA5SX.js";
 import {
   createAudioViewer
-} from "./chunk-34ZFSIL2.js";
+} from "./chunk-2S5CO2SF.js";
 import {
   createRelationGraphViewer
-} from "./chunk-XPBF7FM6.js";
+} from "./chunk-ACG7OB36.js";
 import {
   DEFAULT_MODEL_ANIMATION_BUDGET,
   DEFAULT_MODEL_SKELETON_BUDGET,
@@ -24,7 +24,7 @@ import {
   snapshotJson,
   snapshotModelAnimations,
   snapshotModelSkeleton
-} from "./chunk-IJOJCD2M.js";
+} from "./chunk-TJYBFRSA.js";
 import {
   metadataFieldProjections
 } from "./chunk-64G7DVXS.js";
@@ -35,13 +35,13 @@ import {
   createImageViewer,
   createNamespaceViewer,
   invokeRefusalMessage
-} from "./chunk-R6DLKFH6.js";
+} from "./chunk-Z4ICPSYR.js";
 import {
   compileMatcher,
   compilePattern,
   createMediaShell,
   textMatches
-} from "./chunk-Z7DHDFGG.js";
+} from "./chunk-GKHLLKSX.js";
 import {
   CALCULATIONS_FALLBACK_MESSAGES,
   CARD_FALLBACK_MESSAGES,
@@ -84,7 +84,7 @@ import {
   setViewerText,
   unknownSourceLease,
   withEnglishUiFallback
-} from "./chunk-CL6TKSRK.js";
+} from "./chunk-PFC7QEWI.js";
 import {
   A1_SPEC_SCHEMA_ENTRIES,
   AUXILIARY_DATA_SOURCE_SURFACES,
@@ -67843,8 +67843,37 @@ function createSubjectCardViewer(options = {}) {
         forward.textContent = "\u2192";
         forward.title = localizer.text("card.historyForward");
         forward.setAttribute("aria-label", localizer.text("card.historyForward"));
-        nav.append(back, forward);
+        const trail = document2.createElement("span");
+        setPart(trail, "card.breadcrumbs");
+        nav.append(back, forward, trail);
         root.append(nav);
+        const labels = /* @__PURE__ */ new Map();
+        const renderTrail = () => {
+          trail.replaceChildren();
+          const crumbs = history.breadcrumbs;
+          const shown = crumbs.slice(-CARD_BREADCRUMBS);
+          if (shown.length < crumbs.length)
+            trail.append("\u2026 \u203A ");
+          shown.forEach((address, index2) => {
+            const label = safeViewerText(labels.get(address) ?? address, 64);
+            if (index2 === shown.length - 1) {
+              const current = document2.createElement("strong");
+              current.textContent = label;
+              trail.append(current);
+              return;
+            }
+            const crumb = document2.createElement("button");
+            crumb.type = "button";
+            crumb.textContent = label;
+            crumb.title = address;
+            crumb.addEventListener("click", () => {
+              const target = history.jump(address);
+              if (target !== void 0)
+                void show(target).catch(() => void 0);
+            });
+            trail.append(crumb, " \u203A ");
+          });
+        };
         const resolveImage = options.textures === void 0 ? void 0 : async (id, signal) => {
           const textures = await options.textures?.(args.descriptor, [
             {
@@ -67904,6 +67933,9 @@ function createSubjectCardViewer(options = {}) {
               ...resolveImage === void 0 ? {} : { resolveImage }
             });
             commit?.();
+            const heading = loaded.find((section) => section.kind === "header");
+            if (heading?.kind === "header")
+              labels.set(address, heading.title);
             const previous = page2;
             page2 = { card, scope: pageScope };
             pageScope.cleanup(() => card.destroy());
@@ -67915,6 +67947,7 @@ function createSubjectCardViewer(options = {}) {
             back.disabled = !history.canBack;
             forward.disabled = !history.canForward;
             nav.hidden = !history.canBack && !history.canForward;
+            renderTrail();
             root.dataset["subject"] = address;
           } catch (error5) {
             await pageScope.close();
@@ -67964,6 +67997,7 @@ function createSubjectCardViewer(options = {}) {
   });
 }
 var SUBJECT_SELECTOR_CONTRACT = "common.view/subject-selector-source";
+var CARD_BREADCRUMBS = 6;
 var PREVIEW_STAGES = [
   { kind: "model", contract: "common.view/model-scene-source" },
   { kind: "image", contract: "common.view/raster-image-source" },
@@ -67973,13 +68007,13 @@ var PREVIEW_STAGES = [
 async function defaultPreviewStage(kind, localizer) {
   switch (kind) {
     case "model":
-      return (await import("./model-KY2UTXI2.js")).createModelViewer({ localizer });
+      return (await import("./model-VXCTXGJX.js")).createModelViewer({ localizer });
     case "image":
-      return (await import("./image-G5HTOAAA.js")).createImageViewer({ localizer });
+      return (await import("./image-O25HCUJP.js")).createImageViewer({ localizer });
     case "video":
-      return (await import("./video-TZP7MZMU.js")).createVideoViewer({ localizer });
+      return (await import("./video-YDTFH4H6.js")).createVideoViewer({ localizer });
     case "audio":
-      return (await import("./audio-QPH3VPRF.js")).createAudioViewer({ localizer });
+      return (await import("./audio-VRGFGDT6.js")).createAudioViewer({ localizer });
   }
 }
 function embedPreview(sections, args, scope, localizer, previews) {
@@ -68018,7 +68052,7 @@ function embedRelationGraph(sections, args, scope, localizer, graph) {
   return [
     ...sections,
     stageSection({ id: "relations-graph", title: localizer.text("card.relationGraph"), expanded: false }, scope, localizer, "card.relationGraphUnavailable", async (host) => {
-      const module = graph ?? (await import("./graph-OUY2XBVJ.js")).createRelationGraphViewer({ localizer });
+      const module = graph ?? (await import("./graph-DDO7IVLM.js")).createRelationGraphViewer({ localizer });
       return scope.signal.aborted ? void 0 : module.mount({ ...args, container: host, signal: scope.signal });
     })
   ];

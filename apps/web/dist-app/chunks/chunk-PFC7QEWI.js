@@ -400,6 +400,7 @@ var PARTS = Object.freeze([
   "card.field-value",
   "card.field-note",
   "card.nav",
+  "card.breadcrumbs",
   "card.knowledge",
   "card.links",
   "card.link-item",
