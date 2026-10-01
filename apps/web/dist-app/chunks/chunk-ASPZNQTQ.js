@@ -2,7 +2,7 @@ import {
   collectEncodedMedia,
   createMediaShell,
   mountContributedSections
-} from "./chunk-XMM5M5LA.js";
+} from "./chunk-Z7DHDFGG.js";
 import {
   VIDEO_FALLBACK_MESSAGES,
   ViewerMountScope,
@@ -14,7 +14,7 @@ import {
   setViewerText,
   unknownSourceLease,
   withEnglishUiFallback
-} from "./chunk-BD2JSGWD.js";
+} from "./chunk-CL6TKSRK.js";
 import {
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
 } from "./chunk-BLWUC7LO.js";
@@ -22,6 +22,28 @@ import {
 // ../MODDING/modkit-core/packages/ui/dist/video/index.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var VIDEO_MAXIMUM_BYTES = 256 * 1024 * 1024;
+var POSTER_MAXIMUM_BYTES = 64 * 1024 * 1024;
+function videoTrackLine(track) {
+  return [
+    track.codec,
+    track.width === void 0 || track.height === void 0 ? void 0 : `${track.width}\xD7${track.height}`,
+    track.frameRate === void 0 ? void 0 : `${Number(track.frameRate.toFixed(3))} fps`,
+    track.language
+  ].filter((part) => part !== void 0 && part !== "").join(" \xB7 ");
+}
+function remembered(key) {
+  try {
+    return globalThis.localStorage?.getItem(key) === "true";
+  } catch {
+    return false;
+  }
+}
+function remember(key, value) {
+  try {
+    globalThis.localStorage?.setItem(key, String(value));
+  } catch {
+  }
+}
 function metadataGroups(descriptor) {
   return "identity" in descriptor ? descriptor.metadata ?? [] : [];
 }
@@ -53,6 +75,8 @@ function createVideoViewer(options = {}) {
       const player = element(stage, "video", { part: "video.player" });
       player.controls = true;
       player.preload = "metadata";
+      player.loop = remembered("modkit.video.loop");
+      player.autoplay = remembered("modkit.video.autoplay");
       const lease = await unknownSourceLease(args.sources, args.slot, "common.view/video-media-source");
       if (lease === void 0)
         throw new TypeError("video binding is unavailable");
@@ -80,9 +104,70 @@ function createVideoViewer(options = {}) {
           [localizer.text("viewer.videoTracks"), String(videoTracks.length)],
           [localizer.text("viewer.audioTracks"), String(audioTracks.length)],
           [localizer.text("viewer.duration"), duration],
-          [localizer.text("viewer.mediaType"), media.mediaType]
+          [localizer.text("viewer.mediaType"), media.mediaType],
+          // each track's codec, picture size and frame rate, as MK2's media panel listed them
+          ...info.tracks.map((track, index) => [
+            localizer.text("viewer.videoTrack", { kind: track.kind, index: index + 1 }),
+            videoTrackLine(track)
+          ])
         ];
-        facts(shell.section("video", localizer.text("viewer.video"), { icon: "device-camera-video" }).body, rows);
+        const section = shell.section("video", localizer.text("viewer.video"), {
+          icon: "device-camera-video"
+        }).body;
+        facts(section, rows);
+        const playback = element(section, "div", { part: "video.options" });
+        for (const [key, label, apply] of [
+          [
+            "modkit.video.loop",
+            localizer.text("viewer.videoLoop"),
+            (on) => {
+              player.loop = on;
+            }
+          ],
+          [
+            "modkit.video.autoplay",
+            localizer.text("viewer.videoAutoplay"),
+            (on) => {
+              player.autoplay = on;
+              if (on && player.paused)
+                void player.play().catch(() => void 0);
+            }
+          ]
+        ]) {
+          const option = element(playback, "label");
+          const box = element(option, "input");
+          box.type = "checkbox";
+          box.checked = remembered(key);
+          option.append(" ", label);
+          box.addEventListener("change", () => {
+            remember(key, box.checked);
+            apply(box.checked);
+          });
+        }
+        const first = videoTracks[0];
+        if (info.frameAccess && source.readFrame !== void 0 && first !== void 0) {
+          void source.readFrame({
+            trackId: first.id,
+            timestampMs: 0,
+            pixelFormat: "rgba8",
+            maxBytes: POSTER_MAXIMUM_BYTES
+          }, scope.signal).then((frame) => {
+            if (scope.signal.aborted || frame.pixelFormat !== "rgba8")
+              return;
+            const canvas = root.ownerDocument.createElement("canvas");
+            canvas.width = frame.width;
+            canvas.height = frame.height;
+            const context = canvas.getContext("2d");
+            if (context === null)
+              return;
+            const image = context.createImageData(frame.width, frame.height);
+            for (let row = 0; row < frame.height; row += 1) {
+              image.data.set(frame.pixels.subarray(row * frame.rowStride, row * frame.rowStride + frame.width * 4), row * frame.width * 4);
+            }
+            context.putImageData(image, 0, 0);
+            player.poster = canvas.toDataURL("image/png");
+          }).catch(() => void 0);
+        }
         for (const group of metadataGroups(args.descriptor)) {
           if (/^(identity|traits|detection)$/iu.test(group.id))
             continue;
@@ -131,6 +216,7 @@ var videoViewer = createVideoViewer();
 
 export {
   VIDEO_MAXIMUM_BYTES,
+  videoTrackLine,
   createVideoViewer,
   videoViewer
 };

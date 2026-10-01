@@ -2741,6 +2741,14 @@
     background: var(--mk-color-sunken);
   }
 
+  [data-mk-part='video.options'] {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--mk-space-1) var(--mk-space-3);
+    margin-block-start: var(--mk-space-2);
+    font-size: var(--mk-font-size-sm);
+  }
+
   [data-mk-part='video.player'] {
     display: block;
     flex: 1 1 auto;

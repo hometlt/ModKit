@@ -1,12 +1,12 @@
 import {
   createVideoViewer
-} from "./chunk-C6BD32XP.js";
+} from "./chunk-ASPZNQTQ.js";
 import {
   createAudioViewer
-} from "./chunk-4FI3CWMI.js";
+} from "./chunk-34ZFSIL2.js";
 import {
   createRelationGraphViewer
-} from "./chunk-OL2ISRO5.js";
+} from "./chunk-XPBF7FM6.js";
 import {
   DEFAULT_MODEL_ANIMATION_BUDGET,
   DEFAULT_MODEL_SKELETON_BUDGET,
@@ -24,7 +24,7 @@ import {
   snapshotJson,
   snapshotModelAnimations,
   snapshotModelSkeleton
-} from "./chunk-IKJEYTGU.js";
+} from "./chunk-IJOJCD2M.js";
 import {
   metadataFieldProjections
 } from "./chunk-64G7DVXS.js";
@@ -35,13 +35,13 @@ import {
   createImageViewer,
   createNamespaceViewer,
   invokeRefusalMessage
-} from "./chunk-VYEBGA3S.js";
+} from "./chunk-R6DLKFH6.js";
 import {
   compileMatcher,
   compilePattern,
   createMediaShell,
   textMatches
-} from "./chunk-XMM5M5LA.js";
+} from "./chunk-Z7DHDFGG.js";
 import {
   CALCULATIONS_FALLBACK_MESSAGES,
   CARD_FALLBACK_MESSAGES,
@@ -84,7 +84,7 @@ import {
   setViewerText,
   unknownSourceLease,
   withEnglishUiFallback
-} from "./chunk-BD2JSGWD.js";
+} from "./chunk-CL6TKSRK.js";
 import {
   A1_SPEC_SCHEMA_ENTRIES,
   AUXILIARY_DATA_SOURCE_SURFACES,
@@ -67895,13 +67895,13 @@ var PREVIEW_STAGES = [
 async function defaultPreviewStage(kind, localizer) {
   switch (kind) {
     case "model":
-      return (await import("./model-7IYRC2ZH.js")).createModelViewer({ localizer });
+      return (await import("./model-KY2UTXI2.js")).createModelViewer({ localizer });
     case "image":
-      return (await import("./image-XQXXF36Y.js")).createImageViewer({ localizer });
+      return (await import("./image-G5HTOAAA.js")).createImageViewer({ localizer });
     case "video":
-      return (await import("./video-N4PSPMCL.js")).createVideoViewer({ localizer });
+      return (await import("./video-TZP7MZMU.js")).createVideoViewer({ localizer });
     case "audio":
-      return (await import("./audio-CIF6JXHH.js")).createAudioViewer({ localizer });
+      return (await import("./audio-QPH3VPRF.js")).createAudioViewer({ localizer });
   }
 }
 function embedPreview(sections, args, scope, localizer, previews) {
@@ -67940,7 +67940,7 @@ function embedRelationGraph(sections, args, scope, localizer, graph) {
   return [
     ...sections,
     stageSection({ id: "relations-graph", title: localizer.text("card.relationGraph"), expanded: false }, scope, localizer, "card.relationGraphUnavailable", async (host) => {
-      const module = graph ?? (await import("./graph-BYRCH66U.js")).createRelationGraphViewer({ localizer });
+      const module = graph ?? (await import("./graph-OUY2XBVJ.js")).createRelationGraphViewer({ localizer });
       return scope.signal.aborted ? void 0 : module.mount({ ...args, container: host, signal: scope.signal });
     })
   ];
@@ -68721,6 +68721,19 @@ async function mountVariantTable(args) {
           id: "add",
           label: text4("table.addKey"),
           onActivate: () => showAdd()
+        },
+        // the key across every locale at once, as MK2's table renamed and removed it
+        {
+          kind: "action",
+          id: "rename",
+          label: text4("table.renameKey"),
+          onActivate: () => showRename()
+        },
+        {
+          kind: "action",
+          id: "delete",
+          label: text4("table.deleteKey"),
+          onActivate: () => showDelete()
         }
       ],
       ...actions.compareVariants === void 0 || variants.length < 2 ? [] : [
@@ -69272,6 +69285,84 @@ async function mountVariantTable(args) {
       });
     });
     key3.focus();
+  };
+  const oneSelected = () => {
+    const chosen = rows.filter((row) => selected.has(row.index));
+    if (chosen.length === 1)
+      return chosen[0];
+    say(text4("table.selectOneRow"));
+    return void 0;
+  };
+  const showRename = () => {
+    const row = oneSelected();
+    if (row === void 0 || actions.addRow === void 0)
+      return;
+    const oldKey = row.cells[keyColumn] ?? "";
+    panel.hidden = false;
+    panel.replaceChildren();
+    const form = element(panel, "form", { part: "table.add" });
+    const key3 = element(form, "input", { part: "toolbar.search-input" });
+    key3.value = oldKey;
+    key3.setAttribute("aria-label", text4("table.renameKeyName"));
+    key3.required = true;
+    const submit = element(form, "button", {
+      part: "toolbar.action",
+      text: text4("table.renameKeySubmit")
+    });
+    submit.type = "submit";
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const newKey = key3.value.trim();
+      if (newKey === "" || newKey === oldKey)
+        return;
+      if (rows.some((other) => other.cells[keyColumn] === newKey)) {
+        say(text4("table.refused", { reason: text4("table.keyExists", { key: newKey }) }));
+        return;
+      }
+      void write(actions.addRow, { action: "rename-variants", oldKey, newKey }).then((done) => {
+        if (!done)
+          return;
+        rows[rows.indexOf(row)] = {
+          ...row,
+          cells: row.cells.map((cell, index2) => index2 === keyColumn ? newKey : cell)
+        };
+        changed.add(row.index);
+        panel.hidden = true;
+        refresh();
+      });
+    });
+    key3.select();
+  };
+  const showDelete = () => {
+    const row = oneSelected();
+    if (row === void 0 || actions.addRow === void 0)
+      return;
+    const key3 = row.cells[keyColumn] ?? "";
+    const holders = variants.filter((column) => (row.cells[column.index] ?? "") !== "");
+    panel.hidden = false;
+    panel.replaceChildren();
+    const form = element(panel, "form", { part: "table.add" });
+    element(form, "span", {
+      text: text4("table.deleteKeyConfirm", { key: key3, count: Math.max(1, holders.length) })
+    });
+    const submit = element(form, "button", {
+      part: "toolbar.action",
+      text: text4("table.deleteKeySubmit")
+    });
+    submit.type = "submit";
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const request = variants.length > 1 ? { action: "delete-variants", key: key3 } : { action: "delete", key: key3 };
+      void write(actions.addRow, request).then((done) => {
+        if (!done)
+          return;
+        rows.splice(rows.indexOf(row), 1);
+        selected.delete(row.index);
+        panel.hidden = true;
+        refresh();
+      });
+    });
+    submit.focus();
   };
   const compare = async () => {
     if (actions.compareVariants === void 0 || base === void 0)
