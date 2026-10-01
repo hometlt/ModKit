@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   createLayeredArchiveContentSources,
+  layeredModContext,
   type ContentSourceRoot,
   type LayerArchive,
   type LayerArchiveEntry,
@@ -223,5 +224,117 @@ describe('archives as the one tree a game reads', () => {
     ])
     await expect(sources.list('local:game', '')).rejects.toThrow(/damaged/u)
     expect(log.closed).toEqual(['broken.mpq', 'patch.big', 'expansion.big', 'base.big'])
+  })
+})
+
+describe('the mod context of a layered installation', () => {
+  it('opens a file of a root over the whole installation, as a game without packages does', async () => {
+    const log: Log = { closed: [], lookups: [] }
+    const sources = createLayeredArchiveContentSources(
+      'Game',
+      [{ root: root('local:game'), open: async () => chain(log) }],
+      { modContext: { gameId: 'test/game' } },
+    )
+    expect(
+      await sources.locateModPackage!({ sourceId: 'local:game', path: 'art/unit.dds' }),
+    ).toEqual({ kind: 'loose' })
+    expect(await sources.locateModPackage!({ sourceId: 'local:other', path: 'a' })).toEqual({
+      kind: 'foreign',
+    })
+    expect(await sources.locateModPackage!('C:/Games/unit.dds')).toEqual({ kind: 'foreign' })
+    const context = await sources.openModContext!({
+      schemaVersion: 1,
+      target: { sourceId: 'local:game', path: 'Art/Unit.dds' },
+    })
+    expect(context.gameId).toBe('test/game')
+    expect(
+      context.layers.map(layer => [layer.id, layer.role, layer.kind, layer.sourcePath]),
+    ).toEqual([
+      ['installation', 'dependency', 'files', ''],
+      ['opened', 'primary', 'files', 'Art/Unit.dds'],
+    ])
+    expect(context.layers.some(layer => 'content' in layer)).toBe(false)
+    // the installation lists every served file once; pages narrow by prefix without case
+    expect((await context.files('installation', { limit: 10, prefix: 'DATA/' })).items).toEqual([
+      'Data/INI/eva.ini',
+      'data/ini/gamedata.ini',
+      'data/new.txt',
+    ])
+    const first = await context.files('installation', { limit: 2 })
+    expect(first).toEqual({ items: ['art/unit.dds', 'Data/INI/eva.ini'], nextCursor: '2' })
+    expect((await context.files('opened', { limit: 10 })).items).toEqual(['Unit.dds'])
+    // the highest layer that lists a path serves it
+    expect(await context.locate('data/ini/EVA.ini')).toEqual({
+      layerId: 'installation',
+      path: 'Data/INI/eva.ini',
+    })
+    expect(await context.locate('unit.dds')).toEqual({ layerId: 'opened', path: 'Unit.dds' })
+    expect(await context.locate('missing.txt')).toBeUndefined()
+    expect(decode(await context.read('opened', 'unit.dds', 64))).toBe('dds')
+    expect(decode(await context.read('installation', 'data/ini/eva.ini', 64))).toBe('patched eva')
+    await expect(context.read('installation', 'missing.txt', 64)).rejects.toThrow(/not a file/u)
+    await expect(context.read('nowhere', 'readme.txt', 64)).rejects.toThrow(/no layer/u)
+    await context.dispose()
+    // the root itself opens as the installation alone
+    const whole = await sources.openModContext!({
+      schemaVersion: 1,
+      target: { sourceId: 'local:game', path: '' },
+    })
+    expect(whole.layers.map(layer => [layer.id, layer.role])).toEqual([['installation', 'primary']])
+    await expect(
+      sources.openModContext!({ schemaVersion: 1, target: 'C:/Games/unit.dds' }),
+    ).rejects.toThrow(TypeError)
+  })
+
+  it('reads an opened archive over the installation, without its hidden entries, and closes it', async () => {
+    const log: Log = { closed: [], lookups: [] }
+    const sources = createLayeredArchiveContentSources('Game', [
+      { root: root('local:game'), open: async () => chain(log) },
+    ])
+    const map = archive('map.w3x', { 'war3map.j': 'map script', '(listfile)': 'names' }, log, {
+      hidden: '(listfile)',
+    })
+    const context = layeredModContext(sources, {
+      gameId: 'test/game',
+      contextId: 'test:map',
+      layers: [
+        {
+          id: 'game',
+          displayName: 'Game',
+          sourceId: 'local:game',
+          sourcePath: '',
+          role: 'dependency',
+          provenance: 'implicit',
+          kind: 'files',
+          content: { root: 'local:game' },
+        },
+        {
+          id: 'map',
+          displayName: 'map.w3x',
+          sourceId: 'host',
+          sourcePath: 'C:/Maps/map.w3x',
+          role: 'primary',
+          provenance: 'opened',
+          kind: 'package',
+          content: { archive: map },
+        },
+      ],
+    })
+    expect((await context.files('map', { limit: 10 })).items).toEqual(['war3map.j'])
+    expect(decode(await context.read('map', 'WAR3MAP.J', 64))).toBe('map script')
+    await expect(context.read('map', '(listfile)', 64)).rejects.toThrow(/not a file/u)
+    expect(await context.locate('readme.txt')).toEqual({ layerId: 'game', path: 'readme.txt' })
+    await context.dispose()
+    expect(log.closed).toEqual(['map.w3x'])
+    expect(() =>
+      layeredModContext(sources, {
+        gameId: 'g',
+        contextId: 'c',
+        layers: [
+          { ...context.layers[0]!, content: { root: 'local:game' } },
+          { ...context.layers[0]!, content: { root: 'local:game' } },
+        ],
+      }),
+    ).toThrow(/repeat/u)
   })
 })

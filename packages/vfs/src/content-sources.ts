@@ -840,10 +840,13 @@ const OPTIONAL_CONTENT_SOURCE_METHODS = [
 
 export {
   createLayeredArchiveContentSources,
+  layeredModContext,
   type ArchiveLayers,
   type LayerArchive,
   type LayerArchiveEntry,
   type LayeredArchiveContentSources,
+  type LayeredContextLayer,
+  type LayeredModContextOptions,
   type LayeredRoot,
   type LayerOrigin,
 } from './layered-archive-sources.js'

@@ -11,6 +11,10 @@
  * An archive that finds a path it does not name (an MPQ without its file list, by hash) declares
  * `lookup`: it is asked for every path the others name, so a patch still serves a file only the
  * base archive's list spells, and for a path nobody names at all when it is read.
+ *
+ * The mod context a game's files open in is built here too ({@link layeredModContext}): the
+ * installation as one `files` layer, the opened package or file over it. A game with no packages
+ * of its own takes the default with `modContext: { gameId }`.
  */
 import type {
   ContentSourceEntry,
@@ -20,6 +24,11 @@ import type {
   ContentSourceRoot,
   ContentSources,
   ContentSourceSnapshot,
+  ModContext,
+  ModContextLayer,
+  ModContextRequest,
+  ModContextTarget,
+  ModPackagePlacement,
 } from './content-sources.js'
 
 /** One file an archive names, or finds by path. */
@@ -74,6 +83,21 @@ export interface ArchiveLayers {
   shadowedBy(path: string): readonly LayerOrigin[]
   /** The copy at `rank`, a hidden one too; the served copy by default. */
   read(path: string, maxBytes: number, rank?: number): Promise<Uint8Array>
+}
+
+/**
+ * A layer of a {@link layeredModContext} and where its files come from: a root of the sources
+ * whole (the installation), an opened archive (a map; closed with the context) or one file of the
+ * layer's source, listed by its name.
+ */
+export interface LayeredContextLayer extends ModContextLayer {
+  readonly content:
+    { readonly root: string } | { readonly archive: LayerArchive } | { readonly file: string }
+}
+
+export interface LayeredModContextOptions {
+  /** `ModContext.gameId`. */
+  readonly gameId: string
 }
 
 export interface LayeredArchiveContentSources extends ContentSources {
@@ -271,6 +295,13 @@ function childrenOf(files: readonly Served[]): ReadonlyMap<string, readonly Cont
 export function createLayeredArchiveContentSources(
   label: string,
   roots: readonly LayeredRoot[],
+  options: {
+    /**
+     * Open a game's files in a context of their own (model textures, scripts): a path inside a
+     * root opens as one file over the whole installation. Host paths stay another module's.
+     */
+    readonly modContext?: LayeredModContextOptions
+  } = {},
 ): LayeredArchiveContentSources {
   const trees = new Map<string, Promise<Tree>>()
   const planOf = (sourceId: string): LayeredRoot => {
@@ -309,7 +340,55 @@ export function createLayeredArchiveContentSources(
   const none = (what: string) => async (): Promise<never> => {
     throw new TypeError(`${label} content sources have no ${what}`)
   }
-  return {
+  const rootOf = (target: ModContextTarget) =>
+    typeof target === 'string' ? undefined : roots.find(plan => plan.root.id === target.sourceId)
+  const modContext = options.modContext
+  const contexts =
+    modContext === undefined
+      ? {}
+      : {
+          async locateModPackage(target: ModContextTarget): Promise<ModPackagePlacement> {
+            return rootOf(target) === undefined ? { kind: 'foreign' } : { kind: 'loose' }
+          },
+          async openModContext(request: ModContextRequest): Promise<ModContext> {
+            const plan = rootOf(request.target)
+            if (plan === undefined || typeof request.target === 'string')
+              throw new TypeError(`${label} opens only paths inside its own content sources`)
+            const path = normalized(request.target.path)
+            const { root } = plan
+            const installation: LayeredContextLayer = {
+              id: 'installation',
+              displayName: root.label,
+              sourceId: root.id,
+              sourcePath: '',
+              role: path === '' ? 'primary' : 'dependency',
+              provenance: path === '' ? 'opened' : 'implicit',
+              kind: 'files',
+              content: { root: root.id },
+            }
+            const opened: LayeredContextLayer[] =
+              path === ''
+                ? []
+                : [
+                    {
+                      id: 'opened',
+                      displayName: path.slice(path.lastIndexOf('/') + 1),
+                      sourceId: root.id,
+                      sourcePath: path,
+                      role: 'primary',
+                      provenance: 'opened',
+                      kind: 'files',
+                      content: { file: path },
+                    },
+                  ]
+            return layeredModContext(sources, {
+              gameId: modContext.gameId,
+              contextId: `${modContext.gameId}:${root.id}:${root.revision ?? '-'}:${keyOf(path)}`,
+              layers: [installation, ...opened],
+            })
+          },
+        }
+  const sources: LayeredArchiveContentSources = {
     async snapshot(): Promise<ContentSourceSnapshot> {
       return { label, regions: [], connections: [], roots: roots.map(plan => plan.root) }
     },
@@ -357,5 +436,116 @@ export function createLayeredArchiveContentSources(
     search: none('catalogue'),
     add: none('catalogue'),
     remove: none('catalogue'),
+    ...contexts,
+  }
+  return sources
+}
+
+/**
+ * A mod context over layered sources, lowest layer first, the opened one last: each layer's names
+ * listed once for the context's life (hidden entries left out), pages of them narrowed by prefix
+ * without case, a read refused for a name its layer does not list, `locate` answered by the
+ * highest layer that lists the path, opened archives closed on `dispose`. The game decides the
+ * layers and adds what only it knows (`query` for its data); this is the rest, once.
+ */
+export function layeredModContext(
+  sources: Pick<LayeredArchiveContentSources, 'files' | 'read'>,
+  context: {
+    readonly gameId: string
+    readonly contextId: string
+    readonly layers: readonly LayeredContextLayer[]
+    readonly unresolved?: readonly string[]
+    readonly diagnostics?: readonly unknown[]
+  },
+): ModContext {
+  const byId = new Map(context.layers.map(layer => [layer.id, layer]))
+  if (byId.size !== context.layers.length) throw new TypeError('context layer ids repeat')
+  /** Each layer's names by lower-case path, sorted, listed on first use. */
+  const listed = new Map<string, Promise<ReadonlyMap<string, string>>>()
+  const namesOf = (layerId: string): Promise<ReadonlyMap<string, string>> => {
+    const layer = byId.get(layerId)
+    if (layer === undefined)
+      return Promise.reject(new RangeError(`no layer «${layerId}» in context ${context.contextId}`))
+    let names = listed.get(layerId)
+    if (names === undefined) {
+      const listing = (async () => {
+        const paths: string[] = []
+        const { content } = layer
+        if ('archive' in content) {
+          for (const entry of content.archive.entries)
+            if (entry.hidden !== true) paths.push(normalized(entry.path))
+        } else if ('file' in content) {
+          const path = normalized(content.file)
+          paths.push(path.slice(path.lastIndexOf('/') + 1))
+        } else {
+          let cursor: string | undefined
+          do {
+            const page = await sources.files(content.root, '', {
+              limit: 10_000,
+              ...(cursor === undefined ? {} : { cursor }),
+            })
+            for (const item of page.items) if (item.hidden !== true) paths.push(item.path)
+            cursor = page.nextCursor
+          } while (cursor !== undefined)
+        }
+        return new Map(
+          paths.map(path => [keyOf(path), path] as const).sort(([a], [b]) => (a < b ? -1 : 1)),
+        )
+      })()
+      // a refused listing is not kept: the next read tries again
+      listing.catch(() => {
+        if (listed.get(layerId) === listing) listed.delete(layerId)
+      })
+      listed.set(layerId, listing)
+      names = listing
+    }
+    return names
+  }
+  return {
+    schemaVersion: 1,
+    gameId: context.gameId,
+    contextId: context.contextId,
+    layers: context.layers.map(({ content: _content, ...layer }) => Object.freeze(layer)),
+    unresolved: context.unresolved ?? [],
+    diagnostics: context.diagnostics ?? [],
+    async files(layerId, page) {
+      if (!Number.isSafeInteger(page.limit) || page.limit < 1)
+        throw new RangeError('Invalid context file page limit')
+      const start = page.cursor === undefined ? 0 : Number(page.cursor)
+      if (!Number.isSafeInteger(start) || start < 0)
+        throw new RangeError('Invalid context file cursor')
+      const prefix = (page.prefix ?? '').toLowerCase()
+      const all = [...(await namesOf(layerId))]
+        .filter(([lower]) => lower.startsWith(prefix))
+        .map(([, path]) => path)
+      const items = all.slice(start, start + page.limit)
+      return start + items.length < all.length
+        ? { items, nextCursor: String(start + items.length) }
+        : { items }
+    },
+    async read(layerId, path, maxBytes) {
+      const spelled = (await namesOf(layerId)).get(keyOf(path))
+      if (spelled === undefined)
+        throw new RangeError(`«${path}» is not a file of layer «${layerId}»`)
+      const { content, sourceId } = byId.get(layerId)!
+      if ('archive' in content) {
+        const entry = content.archive.entries.find(item => keyOf(item.path) === keyOf(spelled))
+        return content.archive.read(entry?.path ?? spelled, maxBytes)
+      }
+      return 'file' in content
+        ? sources.read(sourceId, normalized(content.file), maxBytes)
+        : sources.read(content.root, spelled, maxBytes)
+    },
+    async locate(path) {
+      for (const layer of [...context.layers].reverse()) {
+        const spelled = (await namesOf(layer.id).catch(() => undefined))?.get(keyOf(path))
+        if (spelled !== undefined) return { layerId: layer.id, path: spelled }
+      }
+      return undefined
+    },
+    async dispose() {
+      for (const { content } of context.layers)
+        if ('archive' in content) await content.archive.close()
+    },
   }
 }
