@@ -2,7 +2,7 @@ import {
   collectEncodedMedia,
   createMediaShell,
   mountContributedSections
-} from "./chunk-RNSUXHQ3.js";
+} from "./chunk-7AYCSCX4.js";
 import {
   IMAGE_EDITING_FALLBACK_MESSAGES,
   IMAGE_FALLBACK_MESSAGES,
@@ -17,7 +17,7 @@ import {
   setViewerText,
   unknownSourceLease,
   withEnglishUiFallback
-} from "./chunk-N263OVTM.js";
+} from "./chunk-2WG2ZDR7.js";
 import {
   createSubjectCandidateProvider,
   isKnowledgeTarget,

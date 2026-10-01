@@ -4973,6 +4973,21 @@
     resize: vertical;
   }
 
+  /* Opens the embedded model in a tab of its own; over the stage, out of the way of its controls. */
+  [data-mk-part='card.preview-open'] {
+    position: absolute;
+    z-index: 2;
+    inset-block-end: var(--mk-space-2);
+    inset-inline-start: var(--mk-space-2);
+    padding: var(--mk-space-1) var(--mk-space-2);
+    color: var(--mk-color-fg);
+    border: 1px solid var(--mk-color-border);
+    border-radius: var(--mk-radius-sm);
+    background: var(--mk-color-surface);
+    font-size: var(--mk-font-size-xs);
+    cursor: pointer;
+  }
+
   [data-mk-part='metadata.note'] {
     display: block;
     margin-block-start: var(--mk-space-1);

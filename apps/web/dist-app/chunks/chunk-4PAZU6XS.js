@@ -1,12 +1,12 @@
 import {
   createVideoViewer
-} from "./chunk-WQ4DVHS5.js";
+} from "./chunk-DCD44BUQ.js";
 import {
   createAudioViewer
-} from "./chunk-MXXWJZBP.js";
+} from "./chunk-2NR2UCAI.js";
 import {
   createRelationGraphViewer
-} from "./chunk-6TP5P6JB.js";
+} from "./chunk-CB2JHQUQ.js";
 import {
   DEFAULT_MODEL_ANIMATION_BUDGET,
   DEFAULT_MODEL_SKELETON_BUDGET,
@@ -24,7 +24,7 @@ import {
   snapshotJson,
   snapshotModelAnimations,
   snapshotModelSkeleton
-} from "./chunk-JPDEWO4S.js";
+} from "./chunk-SJMJ256G.js";
 import {
   metadataFieldProjections
 } from "./chunk-64G7DVXS.js";
@@ -35,13 +35,13 @@ import {
   createImageViewer,
   createNamespaceViewer,
   invokeRefusalMessage
-} from "./chunk-PAU2QRE2.js";
+} from "./chunk-T2ZATGII.js";
 import {
   compileMatcher,
   compilePattern,
   createMediaShell,
   textMatches
-} from "./chunk-RNSUXHQ3.js";
+} from "./chunk-7AYCSCX4.js";
 import {
   CALCULATIONS_FALLBACK_MESSAGES,
   CARD_FALLBACK_MESSAGES,
@@ -84,7 +84,7 @@ import {
   setViewerText,
   unknownSourceLease,
   withEnglishUiFallback
-} from "./chunk-N263OVTM.js";
+} from "./chunk-2WG2ZDR7.js";
 import {
   A1_SPEC_SCHEMA_ENTRIES,
   AUXILIARY_DATA_SOURCE_SURFACES,
@@ -67917,7 +67917,7 @@ function createSubjectCardViewer(options = {}) {
               await pageScope.close();
               return;
             }
-            const sections = await embedRelatedModel(address === ownId ? embedRelationGraph(embedPreview(loaded, args, pageScope, localizer, options.previews), args, pageScope, localizer, options.graph) : loaded, source2, args, pageScope, localizer, options.previews);
+            const sections = await embedRelatedModel(address === ownId ? embedRelationGraph(embedPreview(loaded, args, pageScope, localizer, options.previews), args, pageScope, localizer, options.graph) : loaded, source2, args, pageScope, localizer, options.previews, options.openModel);
             const card = createSubjectCard(document2, {
               label: localizer.text("card.subject"),
               localizer,
@@ -68007,13 +68007,13 @@ var PREVIEW_STAGES = [
 async function defaultPreviewStage(kind, localizer) {
   switch (kind) {
     case "model":
-      return (await import("./model-OO3JP6RD.js")).createModelViewer({ localizer });
+      return (await import("./model-2ZQ77SIL.js")).createModelViewer({ localizer });
     case "image":
-      return (await import("./image-FDCXX5KZ.js")).createImageViewer({ localizer });
+      return (await import("./image-DZLPSSZ4.js")).createImageViewer({ localizer });
     case "video":
-      return (await import("./video-QLGTHIXN.js")).createVideoViewer({ localizer });
+      return (await import("./video-A5JVNOCF.js")).createVideoViewer({ localizer });
     case "audio":
-      return (await import("./audio-D4BDNSSE.js")).createAudioViewer({ localizer });
+      return (await import("./audio-DRNBAW6O.js")).createAudioViewer({ localizer });
   }
 }
 function embedPreview(sections, args, scope, localizer, previews) {
@@ -68052,7 +68052,7 @@ function embedRelationGraph(sections, args, scope, localizer, graph) {
   return [
     ...sections,
     stageSection({ id: "relations-graph", title: localizer.text("card.relationGraph"), expanded: false }, scope, localizer, "card.relationGraphUnavailable", async (host) => {
-      const module = graph ?? (await import("./graph-IH3T4LQB.js")).createRelationGraphViewer({ localizer });
+      const module = graph ?? (await import("./graph-DSNJO5U3.js")).createRelationGraphViewer({ localizer });
       return scope.signal.aborted ? void 0 : module.mount({ ...args, container: host, signal: scope.signal });
     })
   ];
@@ -68091,7 +68091,7 @@ function relatedModelStageInputs(source2, parent, signal) {
   };
   return { slot, sources };
 }
-async function embedRelatedModel(sections, source2, args, scope, localizer, previews) {
+async function embedRelatedModel(sections, source2, args, scope, localizer, previews, openModel) {
   if (source2.openModel === void 0)
     return sections;
   const model = (await source2.summary(scope.signal)).identity.model;
@@ -68101,7 +68101,25 @@ async function embedRelatedModel(sections, source2, args, scope, localizer, prev
   const section = stageSection({ id: "model", title: localizer.text("card.preview"), expanded: true }, scope, localizer, "card.previewUnavailable", async (host) => {
     host.dataset["model"] = model;
     const module = previews?.model ?? await defaultPreviewStage("model", localizer);
-    return scope.signal.aborted ? void 0 : module.mount({ ...args, container: host, slot, sources, signal: scope.signal });
+    if (scope.signal.aborted)
+      return void 0;
+    const mount = await module.mount({
+      ...args,
+      container: host,
+      slot,
+      sources,
+      signal: scope.signal
+    });
+    if (openModel !== void 0) {
+      const open = host.ownerDocument.createElement("button");
+      open.type = "button";
+      open.textContent = localizer.text("card.openModel");
+      open.title = model;
+      setPart(open, "card.preview-open");
+      open.addEventListener("click", () => openModel(model));
+      host.append(open);
+    }
+    return mount;
   });
   const at2 = sections.findIndex((item) => item.kind !== "header");
   return at2 < 0 ? [...sections, section] : [...sections.slice(0, at2), section, ...sections.slice(at2)];
