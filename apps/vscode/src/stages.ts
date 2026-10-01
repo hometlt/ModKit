@@ -239,6 +239,9 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
           ],
         }),
       ),
+      // An object moved in the world is saved through the map's own editing arm (6.4); without the
+      // ports, «Save selected move» answered «host edit route is unavailable» (v83).
+      usesEditorPorts: true,
       // A timed world (a replay, a cutscene) follows its transport. The Card and Structure sections
       // mount on this stage's slot, so they get the subject's facts and tree only when it binds them.
       optionalContracts: [

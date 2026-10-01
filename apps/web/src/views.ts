@@ -538,6 +538,8 @@ export function createWebPreviewStages(context: WebViewContext): readonly Previe
       label: text('web.view.world'),
       contract: 'common.view/world-scene-source',
       module: createWorldViewer({ localizer }),
+      // an object moved in the world is saved through the map's own editing arm (6.4)
+      usesEditorPorts: true,
       // A timed world (a replay, a cutscene) follows its transport.
       optionalContracts: ['common.view/transport-source'],
     },
