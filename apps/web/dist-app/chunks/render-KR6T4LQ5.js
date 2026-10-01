@@ -46,7 +46,7 @@ import {
   validateUvmDocument,
   vector3,
   vector4
-} from "./chunk-WYGR4445.js";
+} from "./chunk-CBCIV5JO.js";
 import {
   applyColorKeyTransparency,
   billboardCameraRotation,
@@ -1801,6 +1801,16 @@ function uvmMaterialBlendEffect(material, wrap) {
     ...wrap()
   };
 }
+function uvmMaterialDrawOrder(material) {
+  const game = field(material["extensions"], "UV_game_material");
+  const fields = field(field(field(material["extras"], "modkit"), "material"), "fields");
+  const depthWrite = field(game, "depthWrite") ?? field(fields, "depthWrite");
+  const priority = field(game, "sortPriority") ?? field(fields, "priority");
+  return {
+    ...typeof depthWrite === "boolean" ? { depthWrite } : {},
+    ...typeof priority === "number" && Number.isFinite(priority) ? { priority } : {}
+  };
+}
 function uvmMaterialShader(material) {
   const extension = field(material["extensions"], "UV_game_material");
   if (extension === void 0) {
@@ -2310,6 +2320,7 @@ async function prepareNestedUvmRender(bytes, value, options, depth, cache) {
       shading: "unlit",
       ...textureIndex === void 0 ? {} : { baseColorTexture: `uvm-texture-${textureIndex}` },
       doubleSided: material["doubleSided"] === true,
+      ...uvmMaterialDrawOrder(material),
       ...shader === void 0 ? {} : { shader },
       ...simpleEffect === void 0 ? {} : { simpleEffect }
     };

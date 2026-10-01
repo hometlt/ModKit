@@ -14,7 +14,7 @@ import {
 } from "./chunk-OAFBQXD6.js";
 import {
   readUvmAccessor
-} from "./chunk-OLH77CRA.js";
+} from "./chunk-U6K3QYX2.js";
 import {
   readUvmAnimationClips,
   readUvmKeyTimes,

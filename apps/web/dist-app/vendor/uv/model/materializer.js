@@ -505,6 +505,11 @@ var encoder = new TextEncoder();
 function fail(message) {
   throw new TypeError(`UVM materialization refused: ${message}`);
 }
+function colorFactor(value, length, label) {
+  if (value.length !== length || !value.every((component) => Number.isFinite(component) && component >= 0 && component <= 1))
+    fail(`${label} must be ${length} finite components in 0..1`);
+  return [...value];
+}
 function finite(values, label) {
   for (const value of values) {
     if (!Number.isFinite(value))
@@ -905,22 +910,32 @@ function materializeUvmCore(projection, request, { digest, materialBudget = DEFA
   for (const definition of definitions ?? []) {
     const index = materialIndexById.get(definition.id);
     const target = materials[index];
-    const { id: _id, name, shader, contracts, alphaMode, alphaCutoff, ...fields } = definition;
+    const { id: _id, name, shader, contracts, alphaMode, alphaCutoff, doubleSided, baseColorFactor, emissiveFactor, unlit, ...fields } = definition;
     if (name !== void 0)
       target.name = name;
     if (alphaMode !== void 0)
       target.alphaMode = alphaMode === "opaque" ? "OPAQUE" : alphaMode === "mask" ? "MASK" : "BLEND";
     if (alphaCutoff !== void 0)
       target.alphaCutoff = alphaCutoff;
+    if (doubleSided === true)
+      target.doubleSided = true;
+    if (baseColorFactor !== void 0)
+      target.pbrMetallicRoughness.baseColorFactor = colorFactor(baseColorFactor, 4, `material ${definition.id} baseColorFactor`);
+    if (emissiveFactor !== void 0)
+      target.emissiveFactor = colorFactor(emissiveFactor, 3, `material ${definition.id} emissiveFactor`);
     if (Object.keys(fields).length > 0)
       target.extras = { modkit: { material: { version: 1, fields } } };
     const artifactContracts = [];
     if (shader !== void 0) {
       const blendMode = fields["blendMode"];
+      const { depthWrite, priority } = fields;
       target.extensions = {
         UV_game_material: {
           shader: shader.id,
           ...isUvmGameBlendMode(blendMode) ? { blendMode } : {},
+          ...depthWrite === void 0 ? {} : { depthWrite },
+          // the extension's integer order; a fractional priority stays in extras only
+          ...priority !== void 0 && Number.isSafeInteger(priority) ? { sortPriority: priority } : {},
           params: shader.parameters
         }
       };
@@ -933,6 +948,8 @@ function materializeUvmCore(projection, request, { digest, materialBudget = DEFA
           artifactContracts.push("UV_game_material/composite");
       }
     }
+    if (unlit === true)
+      target.extensions = { ...target.extensions, KHR_materials_unlit: {} };
     if (JSON.stringify([...contracts ?? []].sort(byUtf8)) !== JSON.stringify(artifactContracts.sort(byUtf8))) {
       note("common.view/model-material-source@1", "value-differs", `/materials/${definition.id}/contracts`, "contract coverage is derived from the extensions actually written to UVM");
     }
@@ -1011,7 +1028,7 @@ function materializeUvmCore(projection, request, { digest, materialBudget = DEFA
         target.occlusionTexture ??= ref;
       else if (slot === "emissive" && target.emissiveTexture === void 0) {
         target.emissiveTexture = ref;
-        target.emissiveFactor = [1, 1, 1];
+        target.emissiveFactor ??= [1, 1, 1];
       } else if (slot === "teamColor" && target.extensions?.UV_game_material_team_color === void 0) {
         const channel = singleChannel(layer.colorChannels);
         target.extensions = {
@@ -1359,6 +1376,7 @@ function materializeUvmCore(projection, request, { digest, materialBudget = DEFA
       ...billboardNodes === 0 ? [] : ["UV_node_billboard"],
       ...materials.some((material) => material.extensions?.UV_game_material !== void 0) ? ["UV_game_material"] : [],
       ...materials.some((material) => material.extensions?.UV_game_material_team_color !== void 0) ? ["UV_game_material_team_color"] : [],
+      ...materials.some((material) => material.extensions?.KHR_materials_unlit !== void 0) ? ["KHR_materials_unlit"] : [],
       ...animation === void 0 || animation.catalog.length === 0 ? [] : ["UV_game_animation_clips"],
       ...visibility.length === 0 ? [] : ["UV_game_variants"],
       ...animatesPointers ? ["KHR_animation_pointer"] : [],

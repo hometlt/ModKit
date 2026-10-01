@@ -5,13 +5,14 @@ import {
   readCollisionMesh,
   readUvmModel,
   uvmImageResourceId
-} from "../../../chunks/chunk-6MHUSL7M.js";
+} from "../../../chunks/chunk-ELMFYHZT.js";
 import {
   createJsonTreeSource
 } from "../../../chunks/chunk-KA3J6DLB.js";
 import {
   array,
   field,
+  finiteArray,
   nonBlank,
   object,
   required,
@@ -21,7 +22,7 @@ import {
 import "../../../chunks/chunk-OAFBQXD6.js";
 import {
   validateUvmDocument
-} from "../../../chunks/chunk-OLH77CRA.js";
+} from "../../../chunks/chunk-U6K3QYX2.js";
 import "../../../chunks/chunk-3TRK5GFM.js";
 import {
   createModelAnimationSource,
@@ -167,7 +168,18 @@ function decodeMaterialRefs(document) {
       if (metadata["version"] !== 1)
         throw new TypeError(`material ${index} has unsupported Modkit metadata version`);
       fields = object(metadata["fields"], `material ${index} Modkit fields`);
-      for (const key of ["id", "name", "shader", "contracts", "alphaMode", "alphaCutoff"]) {
+      for (const key of [
+        "id",
+        "name",
+        "shader",
+        "contracts",
+        "alphaMode",
+        "alphaCutoff",
+        "doubleSided",
+        "baseColorFactor",
+        "emissiveFactor",
+        "unlit"
+      ]) {
         if (Object.hasOwn(fields, key))
           throw new TypeError(`material ${index} metadata shadows ${key}`);
       }
@@ -179,9 +191,27 @@ function decodeMaterialRefs(document) {
       throw new TypeError(`material ${index} alphaCutoff must be finite and nonnegative`);
     }
     const layers = fields["layers"] === void 0 ? materialImageLayers(document, material) : [];
+    const factor = (value, length, label) => {
+      if (value === void 0)
+        return void 0;
+      if (!finiteArray(value, length) || value.some((component) => component < 0 || component > 1))
+        throw new TypeError(`material ${index} ${label} must be ${length} components in 0..1`);
+      return Object.freeze([...value]);
+    };
+    const baseColorFactor = factor(field(material["pbrMetallicRoughness"], "baseColorFactor"), 4, "baseColorFactor");
+    const emissiveFactor = factor(material["emissiveFactor"], 3, "emissiveFactor");
+    const gameMaterial = field(material["extensions"], "UV_game_material");
+    const depthWrite = field(gameMaterial, "depthWrite");
+    const sortPriority = field(gameMaterial, "sortPriority");
     return Object.freeze({
+      ...typeof depthWrite === "boolean" ? { depthWrite } : {},
+      ...typeof sortPriority === "number" ? { priority: sortPriority } : {},
       ...fields,
       ...layers.length === 0 ? {} : { layers },
+      ...material["doubleSided"] === true ? { doubleSided: true } : {},
+      ...baseColorFactor === void 0 ? {} : { baseColorFactor },
+      ...emissiveFactor === void 0 ? {} : { emissiveFactor },
+      ...field(material["extensions"], "KHR_materials_unlit") === void 0 ? {} : { unlit: true },
       // the identity the artifact binding fixes, so a primitive and its material can be joined
       id: `material-${index}`,
       ...typeof material["name"] === "string" ? { name: material["name"] } : {},

@@ -14,7 +14,7 @@ import {
   fieldWriteRefusal,
   mountFieldEditTarget,
   mountInlineField
-} from "./chunk-ZNDXYFVM.js";
+} from "./chunk-4MBVYYX6.js";
 import {
   metadataFieldProjections
 } from "./chunk-CW2HIMYV.js";
@@ -243,7 +243,7 @@ import {
   uvmImageUri,
   uvmKeyTimesMetadata,
   uvmVisibilityPointer
-} from "./chunk-WYGR4445.js";
+} from "./chunk-CBCIV5JO.js";
 import {
   DEFAULT_MODEL_ANIMATION_BUDGET,
   DEFAULT_MODEL_SKELETON_BUDGET,
@@ -47402,15 +47402,30 @@ function headlessDepthBias(vertices, value) {
 // ../MODDING/modkit-core/packages/scene/dist/render/alpha.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 function materialAlpha(material) {
+  const priority = material?.priority ?? 0;
+  if (typeof priority !== "number" || !Number.isFinite(priority))
+    throw new TypeError("material priority must be finite");
+  if (material?.depthWrite !== void 0 && typeof material.depthWrite !== "boolean")
+    throw new TypeError("material depthWrite must be boolean");
   const effect = readSimpleEffect(material?.simpleEffect);
   if (effect !== void 0)
-    return { mode: simpleEffectSolid(effect) ? "opaque" : "blend", cutoff: effect.alphaCutoff };
+    return {
+      mode: simpleEffectSolid(effect) ? "opaque" : "blend",
+      cutoff: effect.alphaCutoff,
+      depthWrite: effect.depthWrite,
+      priority
+    };
   const mode = material?.alphaMode ?? "opaque", cutoff = material?.alphaCutoff ?? 0.5;
   if (!["opaque", "mask", "blend"].includes(mode))
     throw new TypeError("invalid material alpha mode");
   if (typeof cutoff !== "number" || !Number.isFinite(cutoff) || cutoff < 0)
     throw new TypeError("material alpha cutoff must be finite and nonnegative");
-  return { mode, cutoff: cutoff > 1 ? 2 : Math.fround(cutoff) };
+  return {
+    mode,
+    cutoff: cutoff > 1 ? 2 : Math.fround(cutoff),
+    depthWrite: material?.depthWrite ?? mode !== "blend",
+    priority
+  };
 }
 var boundsCenters = /* @__PURE__ */ new WeakMap();
 function boundsCenter(positions) {
@@ -47455,9 +47470,9 @@ function alphaDrawOrder(primitives, alphaFor, viewProjection) {
     const depth = w === 0 ? z : z / w;
     if (!Number.isFinite(depth))
       throw new TypeError("blend depth exceeds finite range");
-    blended.push({ primitive, depth, order });
+    blended.push({ primitive, priority: alphaFor(primitive.materialId).priority, depth, order });
   }
-  blended.sort((a2, b2) => b2.depth - a2.depth || a2.order - b2.order);
+  blended.sort((a2, b2) => a2.priority - b2.priority || b2.depth - a2.depth || a2.order - b2.order);
   return [...opaque, ...blended.map((item) => item.primitive)];
 }
 function straightenAlpha(rgba) {
@@ -48138,7 +48153,15 @@ function sceneMaterialDraws(primitives, materials, programs, viewProjection, dia
     });
   const alpha = (primitive) => {
     const program = entries.get(primitive)?.program;
-    return program === void 0 ? alphas.get(primitive.materialId ?? "") ?? materialAlpha() : { mode: materialIsSolid(program) ? "opaque" : "blend", cutoff: 0 };
+    if (program === void 0)
+      return alphas.get(primitive.materialId ?? "") ?? materialAlpha();
+    const solid = materialIsSolid(program);
+    return {
+      mode: solid ? "opaque" : "blend",
+      cutoff: 0,
+      depthWrite: solid,
+      priority: program.priority
+    };
   };
   const keys = [...entries.keys()].map((primitive, index) => ({
     ...primitive,
@@ -48154,10 +48177,6 @@ function sceneMaterialDraws(primitives, materials, programs, viewProjection, dia
     if (entry2 === void 0)
       throw new TypeError("invalid material draw");
     return entry2;
-  });
-  draws.sort((a2, b2) => {
-    const solid = (draw) => draw.program === void 0 ? (alphas.get(draw.primitive.materialId ?? "")?.mode ?? "opaque") !== "blend" : materialIsSolid(draw.program);
-    return Number(solid(b2)) - Number(solid(a2)) || (solid(a2) ? 0 : (a2.program?.priority ?? 0) - (b2.program?.priority ?? 0));
   });
   return [...prepasses, ...draws];
 }
@@ -49785,7 +49804,7 @@ async function renderBrowser(request) {
         gl.uniform1f(coverageMode, alpha.mode === "opaque" ? 0 : alpha.mode === "mask" ? 1 : 2);
       if (alphaCutoff !== null)
         gl.uniform1f(alphaCutoff, alpha.cutoff);
-      gl.depthMask(alpha.mode !== "blend");
+      gl.depthMask(alpha.depthWrite);
       if (alpha.mode === "blend") {
         gl.enable(gl.BLEND);
         gl.blendEquation(gl.FUNC_ADD);
@@ -50427,10 +50446,10 @@ function rasterizeTriangle(context, vertices, surface, uvs, normals, materialDra
       }
       if (surface.alpha.mode === "mask" && alpha < surface.alpha.cutoff)
         continue;
-      if (surface.alpha.mode !== "blend") {
+      if (surface.alpha.mode !== "blend")
         alpha = 1;
+      if (surface.alpha.depthWrite)
         context.depth[pixel] = sampleDepth;
-      }
       const remaining = 1 - alpha;
       context.frame[offset] = byte(Math.min(1, Math.max(0, red)) * alpha + (context.frame[offset] ?? 0) / 255 * remaining);
       context.frame[offset + 1] = byte(Math.min(1, Math.max(0, green)) * alpha + (context.frame[offset + 1] ?? 0) / 255 * remaining);
@@ -51876,6 +51895,11 @@ var encoder7 = new TextEncoder();
 function fail6(message) {
   throw new TypeError(`UVM materialization refused: ${message}`);
 }
+function colorFactor(value, length, label) {
+  if (value.length !== length || !value.every((component) => Number.isFinite(component) && component >= 0 && component <= 1))
+    fail6(`${label} must be ${length} finite components in 0..1`);
+  return [...value];
+}
 function finite(values, label) {
   for (const value of values) {
     if (!Number.isFinite(value))
@@ -52276,22 +52300,32 @@ function materializeUvmCore(projection2, request, { digest, materialBudget = DEF
   for (const definition2 of definitions ?? []) {
     const index = materialIndexById.get(definition2.id);
     const target = materials[index];
-    const { id: _id, name, shader: shader2, contracts, alphaMode, alphaCutoff, ...fields } = definition2;
+    const { id: _id, name, shader: shader2, contracts, alphaMode, alphaCutoff, doubleSided, baseColorFactor, emissiveFactor, unlit, ...fields } = definition2;
     if (name !== void 0)
       target.name = name;
     if (alphaMode !== void 0)
       target.alphaMode = alphaMode === "opaque" ? "OPAQUE" : alphaMode === "mask" ? "MASK" : "BLEND";
     if (alphaCutoff !== void 0)
       target.alphaCutoff = alphaCutoff;
+    if (doubleSided === true)
+      target.doubleSided = true;
+    if (baseColorFactor !== void 0)
+      target.pbrMetallicRoughness.baseColorFactor = colorFactor(baseColorFactor, 4, `material ${definition2.id} baseColorFactor`);
+    if (emissiveFactor !== void 0)
+      target.emissiveFactor = colorFactor(emissiveFactor, 3, `material ${definition2.id} emissiveFactor`);
     if (Object.keys(fields).length > 0)
       target.extras = { modkit: { material: { version: 1, fields } } };
     const artifactContracts = [];
     if (shader2 !== void 0) {
       const blendMode = fields["blendMode"];
+      const { depthWrite, priority } = fields;
       target.extensions = {
         UV_game_material: {
           shader: shader2.id,
           ...isUvmGameBlendMode(blendMode) ? { blendMode } : {},
+          ...depthWrite === void 0 ? {} : { depthWrite },
+          // the extension's integer order; a fractional priority stays in extras only
+          ...priority !== void 0 && Number.isSafeInteger(priority) ? { sortPriority: priority } : {},
           params: shader2.parameters
         }
       };
@@ -52304,6 +52338,8 @@ function materializeUvmCore(projection2, request, { digest, materialBudget = DEF
           artifactContracts.push("UV_game_material/composite");
       }
     }
+    if (unlit === true)
+      target.extensions = { ...target.extensions, KHR_materials_unlit: {} };
     if (JSON.stringify([...contracts ?? []].sort(byUtf8)) !== JSON.stringify(artifactContracts.sort(byUtf8))) {
       note("common.view/model-material-source@1", "value-differs", `/materials/${definition2.id}/contracts`, "contract coverage is derived from the extensions actually written to UVM");
     }
@@ -52382,7 +52418,7 @@ function materializeUvmCore(projection2, request, { digest, materialBudget = DEF
         target.occlusionTexture ??= ref2;
       else if (slot === "emissive" && target.emissiveTexture === void 0) {
         target.emissiveTexture = ref2;
-        target.emissiveFactor = [1, 1, 1];
+        target.emissiveFactor ??= [1, 1, 1];
       } else if (slot === "teamColor" && target.extensions?.UV_game_material_team_color === void 0) {
         const channel = singleChannel(layer2.colorChannels);
         target.extensions = {
@@ -52730,6 +52766,7 @@ function materializeUvmCore(projection2, request, { digest, materialBudget = DEF
       ...billboardNodes === 0 ? [] : ["UV_node_billboard"],
       ...materials.some((material) => material.extensions?.UV_game_material !== void 0) ? ["UV_game_material"] : [],
       ...materials.some((material) => material.extensions?.UV_game_material_team_color !== void 0) ? ["UV_game_material_team_color"] : [],
+      ...materials.some((material) => material.extensions?.KHR_materials_unlit !== void 0) ? ["KHR_materials_unlit"] : [],
       ...animation === void 0 || animation.catalog.length === 0 ? [] : ["UV_game_animation_clips"],
       ...visibility.length === 0 ? [] : ["UV_game_variants"],
       ...animatesPointers ? ["KHR_animation_pointer"] : [],
@@ -64751,7 +64788,7 @@ var PREVIEW_STAGES = [
 async function defaultPreviewStage(kind, localizer) {
   switch (kind) {
     case "model":
-      return (await import("./model-TGNRPI2X.js")).createModelViewer({ localizer });
+      return (await import("./model-4RGGIBDO.js")).createModelViewer({ localizer });
     case "image":
       return (await import("./image-IFAGVIEI.js")).createImageViewer({ localizer });
     case "video":
@@ -69863,7 +69900,9 @@ function frozenTexturedBatch(source2) {
     ...source2.secondaryTexture === void 0 ? {} : { secondaryTexture: source2.secondaryTexture },
     ...source2.alphaCutoff === void 0 ? {} : { alphaCutoff: source2.alphaCutoff },
     ...source2.castShadows === void 0 ? {} : { castShadows: source2.castShadows },
-    ...source2.receiveShadows === void 0 ? {} : { receiveShadows: source2.receiveShadows }
+    ...source2.receiveShadows === void 0 ? {} : { receiveShadows: source2.receiveShadows },
+    ...source2.unlit === void 0 ? {} : { unlit: source2.unlit },
+    ...source2.priority === void 0 ? {} : { priority: source2.priority }
   });
 }
 function frozenSplatBatch(source2) {
@@ -70505,7 +70544,9 @@ function writtenTexturedBatch(template, writes) {
     ...template.waterDetail === void 0 ? {} : { waterDetail: template.waterDetail },
     ...template.alphaCutoff === void 0 ? {} : { alphaCutoff: template.alphaCutoff },
     ...template.castShadows === void 0 ? {} : { castShadows: template.castShadows },
-    ...template.receiveShadows === void 0 ? {} : { receiveShadows: template.receiveShadows }
+    ...template.receiveShadows === void 0 ? {} : { receiveShadows: template.receiveShadows },
+    ...template.unlit === void 0 ? {} : { unlit: template.unlit },
+    ...template.priority === void 0 ? {} : { priority: template.priority }
   });
 }
 var worldObjectProjections = /* @__PURE__ */ new WeakMap();
@@ -72049,7 +72090,9 @@ function createWorldWebGlPlan(input, previousPlan) {
         const blendMode = coverage.mode !== "blend" ? void 0 : material?.blendMode === "additive" ? "additive" : "blend";
         const normalTexture = normalLayer?.resourceId === void 0 || (normalLayer.uvSource ?? 0) !== requestedUv ? void 0 : result.textures?.find((candidate) => candidate.id === normalLayer.resourceId);
         const textureCoordinates = primitive.textureCoordinateSets?.find((candidate) => candidate.set === requestedUv)?.coordinates ?? (requestedUv === 0 ? primitive.textureCoordinates : void 0);
-        const factor = texture === void 0 && primitive.colors === void 0 ? colorHash(primitive.materialId ?? item.kind) : [1, 1, 1, 1];
+        const factor = material?.baseColorFactor ?? (texture === void 0 && primitive.colors === void 0 ? colorHash(primitive.materialId ?? item.kind) : [1, 1, 1, 1]);
+        const unlit = material?.unlit === true;
+        const priority = blendMode === void 0 ? 0 : material?.priority ?? 0;
         const tint = item.presentationTint ?? [1, 1, 1];
         const base = [
           factor[0] * tint[0],
@@ -72073,7 +72116,7 @@ function createWorldWebGlPlan(input, previousPlan) {
           const vertices = triangle.map((index) => instanceVertex(transformedComponentVertex(transformedPrimitiveVertex(primitive, index), componentTransform), item, translation));
           if (texture !== void 0 && textureCoordinates !== void 0 && textureCoordinates.length >= primitive.positions.length / 3 * 2) {
             if (texturedWrite === void 0) {
-              const key3 = `${result.sourceKey}\0${texture.id}\0${normalTexture?.id ?? ""}\0${blendMode ?? "opaque"}\0${String(coverage.cutoff)}\0${String(shadowPolicy.castShadows)}\0${String(shadowPolicy.receiveShadows)}`;
+              const key3 = `${result.sourceKey}\0${texture.id}\0${normalTexture?.id ?? ""}\0${blendMode ?? "opaque"}\0${String(coverage.cutoff)}\0${String(shadowPolicy.castShadows)}\0${String(shadowPolicy.receiveShadows)}\0${String(unlit)}\0${String(priority)}`;
               const collection = blendMode === void 0 ? textured : transparentTextured;
               const target = collection.get(key3) ?? {
                 ...batch(),
@@ -72083,7 +72126,9 @@ function createWorldWebGlPlan(input, previousPlan) {
                 ...blendMode === void 0 ? {} : { blendMode },
                 castShadows: shadowPolicy.castShadows,
                 receiveShadows: shadowPolicy.receiveShadows,
-                ...coverage.cutoff === 0 ? {} : { alphaCutoff: coverage.cutoff }
+                ...coverage.cutoff === 0 ? {} : { alphaCutoff: coverage.cutoff },
+                ...unlit ? { unlit } : {},
+                ...priority === 0 ? {} : { priority }
               };
               collection.set(key3, target);
               texturedWrite = { ...batch(), textureCoordinates: [], texture };
@@ -74138,7 +74183,11 @@ function drawTexturedBatch(resources, program, source2, range) {
   }
   worldUniform1f(gl, program, "textured", 1);
   worldUniform1f(gl, program, "alphaCutoff", source2.alphaCutoff ?? 0);
+  if (source2.unlit === true)
+    worldUniform1f(gl, program, "unlitSurface", 1);
   drawBatch(resources, program, source2, gl.TRIANGLES, source2, range);
+  if (source2.unlit === true)
+    worldUniform1f(gl, program, "unlitSurface", 0);
   if (detail !== void 0)
     worldUniform1f(gl, program, "waterDetailMode", 0);
 }
@@ -74363,17 +74412,18 @@ function sortedWorldWebGlTransparentDraws(plan, view, excludeClippedWater = fals
       throw new TypeError("world transparent batch attributes must align to complete triangles");
     }
     const first = excludeClippedWater && source2.kind === "untextured" ? plan.transparentWaterTriangles * 9 : 0;
+    const priority = source2.kind === "textured" ? source2.batch.priority ?? 0 : 0;
     for (let offset = first; offset < positions.length; offset += 9) {
       let depth = 0;
       for (let vertex = 0; vertex < 3; vertex += 1) {
         const start = offset + vertex * 3;
         depth += positions[start] * direction[0] + positions[start + 1] * direction[1] + positions[start + 2] * direction[2];
       }
-      triangles.push({ sourceIndex, offset, depth, ordinal });
+      triangles.push({ sourceIndex, priority, offset, depth, ordinal });
       ordinal += 1;
     }
   }
-  triangles.sort((left, right) => left.depth - right.depth || left.ordinal - right.ordinal);
+  triangles.sort((left, right) => left.priority - right.priority || left.depth - right.depth || left.ordinal - right.ordinal);
   const output = [];
   const indices = sources.map((source2) => new Uint32Array(source2.batch.positions.length / 3));
   const filled = sources.map(() => 0);
@@ -74488,7 +74538,7 @@ function createWorldWebGlCompositeTransparentDrawPlan(plan, requested, materialD
   for (const draw of worldDraws)
     entries.push({
       value: Object.freeze({ kind: "world", draw }),
-      priority: 0,
+      priority: draw.kind === "textured" ? draw.batch.priority ?? 0 : 0,
       depth: draw.range.depth,
       ordinal: entries.length
     });

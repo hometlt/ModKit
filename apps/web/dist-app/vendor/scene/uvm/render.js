@@ -3,7 +3,7 @@ import {
   readCollisionMesh,
   readUvmModel,
   uvmImageTexels
-} from "../../../chunks/chunk-6MHUSL7M.js";
+} from "../../../chunks/chunk-ELMFYHZT.js";
 import {
   IDENTITY_MATERIAL_FRAME,
   RENDER_MATERIAL_SHADER,
@@ -17,7 +17,7 @@ import {
   readUvmModelStates,
   readUvmShadowMeshBindings,
   snapshotModelBillboards
-} from "../../../chunks/chunk-4AVVF7AB.js";
+} from "../../../chunks/chunk-KAS7MIDG.js";
 import {
   array,
   field,
@@ -37,7 +37,7 @@ import {
   readUvmAccessor,
   readUvmTextureColorKeys,
   validateUvmDocument
-} from "../../../chunks/chunk-OLH77CRA.js";
+} from "../../../chunks/chunk-U6K3QYX2.js";
 import {
   readUvmAnimationClips,
   readUvmPrimitiveVisibility
@@ -20941,6 +20941,16 @@ function uvmMaterialBlendEffect(material, wrap) {
     ...wrap()
   };
 }
+function uvmMaterialDrawOrder(material) {
+  const game = field(material["extensions"], "UV_game_material");
+  const fields = field(field(field(material["extras"], "modkit"), "material"), "fields");
+  const depthWrite = field(game, "depthWrite") ?? field(fields, "depthWrite");
+  const priority = field(game, "sortPriority") ?? field(fields, "priority");
+  return {
+    ...typeof depthWrite === "boolean" ? { depthWrite } : {},
+    ...typeof priority === "number" && Number.isFinite(priority) ? { priority } : {}
+  };
+}
 function uvmMaterialShader(material) {
   const extension = field(material["extensions"], "UV_game_material");
   if (extension === void 0) {
@@ -21450,6 +21460,7 @@ async function prepareNestedUvmRender(bytes, value, options, depth, cache) {
       shading: "unlit",
       ...textureIndex === void 0 ? {} : { baseColorTexture: `uvm-texture-${textureIndex}` },
       doubleSided: material["doubleSided"] === true,
+      ...uvmMaterialDrawOrder(material),
       ...shader === void 0 ? {} : { shader },
       ...simpleEffect === void 0 ? {} : { simpleEffect }
     };

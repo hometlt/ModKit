@@ -394,6 +394,10 @@ function validateGameMaterialMetadata(document, used, signal) {
     const gameMaterial = object(extension, label);
     if (!nonBlank(gameMaterial["shader"]))
       throw new TypeError(`${label} requires a shader identity`);
+    if (gameMaterial["depthWrite"] !== void 0 && typeof gameMaterial["depthWrite"] !== "boolean")
+      throw new TypeError(`${label} depthWrite must be boolean`);
+    if (gameMaterial["sortPriority"] !== void 0 && !Number.isSafeInteger(gameMaterial["sortPriority"]))
+      throw new TypeError(`${label} sortPriority must be an integer`);
     const params = gameMaterial["params"] === void 0 ? {} : object(gameMaterial["params"], `${label} parameters`);
     const snapshot = params["renderModel"];
     if (snapshot === void 0)

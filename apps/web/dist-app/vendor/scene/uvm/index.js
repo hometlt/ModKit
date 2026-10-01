@@ -8,7 +8,7 @@ import {
   readUvmBillboards,
   readUvmModelStates,
   readUvmShadowMeshBindings
-} from "../../../chunks/chunk-4AVVF7AB.js";
+} from "../../../chunks/chunk-KAS7MIDG.js";
 import {
   array,
   field,
@@ -26,7 +26,7 @@ import {
 import {
   readUvmAccessor,
   validateUvmDocument
-} from "../../../chunks/chunk-OLH77CRA.js";
+} from "../../../chunks/chunk-U6K3QYX2.js";
 import {
   readUvmAnimationClips,
   readUvmAnimationMaterialTargets,
