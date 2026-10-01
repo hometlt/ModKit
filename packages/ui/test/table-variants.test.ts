@@ -399,6 +399,34 @@ describe('variant table surface', () => {
     await page.click('[data-mk-part="table.columns"] summary')
   })
 
+  it('reads and translates the other locales against the base the reader picks (7.36)', async () => {
+    const baseChoice = 'select[aria-label^="Base locale"]'
+    // the cells still holding the base's text, by row: td 2 is enUS, td 3 ruRU
+    const stale = () =>
+      page.$$eval('[data-mk-part="table.row"]', rows =>
+        rows.map(row =>
+          [...row.querySelectorAll('td')]
+            .filter(cell => cell.dataset['mkState']?.split(' ').includes('stale') === true)
+            .map(cell => cell.cellIndex),
+        ),
+      )
+    const targets = () =>
+      page.$$eval('select[aria-label="Translation target"] option', options =>
+        options.map(option => option.textContent),
+      )
+    expect(await page.inputValue(baseChoice)).toBe('enUS')
+    expect(await stale()).toEqual([[], [], [3]])
+    expect(await targets()).toEqual(['ruRU'])
+    await page.selectOption(baseChoice, 'ruRU')
+    expect(await stale()).toEqual([[], [], [2]])
+    expect(await targets()).toEqual(['enUS'])
+    // the choice stays with the file
+    await page.evaluate(() => (globalThis as unknown as Probe).mountTable())
+    expect(await page.inputValue(baseChoice)).toBe('ruRU')
+    await page.selectOption(baseChoice, 'enUS')
+    expect(await stale()).toEqual([[], [], [3]])
+  })
+
   it('sizes a column from its header grip, in every row and across reopens (7.36)', async () => {
     const grip = '[data-mk-part="table.resize"][aria-label="Width of the enUS column"]'
     const headWidth = () =>

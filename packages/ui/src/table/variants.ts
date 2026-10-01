@@ -238,6 +238,8 @@ interface FilterState {
   wrap?: boolean
   /** Widths, in pixels, of the columns the reader sized, by header (MK2's column grips, 7.36). */
   widths?: Record<string, number>
+  /** The locale the others are read against, when the reader chose one (MK2's first column). */
+  base?: string
 }
 const remembered = new Map<string, FilterState>()
 /** The narrowest a dragged column gets, so its grip stays within reach. */
@@ -266,7 +268,19 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
   const variants = info.flatMap((column, index) =>
     column.role === 'variant' && column.variant !== undefined ? [{ ...column, index }] : [],
   )
-  const base = variants.find(column => column.base === true) ?? variants[0]
+  /** The file's own locale: a new key is written in it, and the codec compares against it. */
+  const fileBase = variants.find(column => column.base === true) ?? variants[0]
+  /** The locale the reader reads the others against (7.36); the file's own unless chosen. */
+  let base = fileBase
+  /** Still the base's text in another locale: MK2's «same», against the base the reader chose. */
+  const untranslatedIn = (row: Row): boolean => {
+    const reference = base
+    const value = reference === undefined ? '' : (row.cells[reference.index] ?? '')
+    return (
+      value !== '' &&
+      variants.some(column => column !== reference && row.cells[column.index] === value)
+    )
+  }
   const separator = args.shape.keySeparator
 
   // The whole table, once: search and filters work on every row, not on the page on screen.
@@ -284,7 +298,13 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
   const foreignIn = (row: Row, column: (typeof variants)[number]): boolean =>
     foreignScript(column.language ?? column.variant ?? '', row.cells[column.index] ?? '')
   const statusOf = (row: Row): readonly string[] => [
-    ...(statusColumn < 0 ? [] : (row.cells[statusColumn] ?? '').split(' ').filter(Boolean)),
+    // the codec says untranslated against the file's own locale; the table, against the chosen base
+    ...(statusColumn < 0
+      ? []
+      : (row.cells[statusColumn] ?? '')
+          .split(' ')
+          .filter(status => status !== '' && status !== 'untranslated')),
+    ...(untranslatedIn(row) ? ['untranslated'] : []),
     // a locale without a value, missing or blank (MK2's «empty» filter)
     ...(variants.some(column => (row.cells[column.index] ?? '') === '') ? ['empty'] : []),
     ...(variants.some(column => foreignIn(row, column)) ? ['error'] : []),
@@ -311,6 +331,7 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
     render: false,
   }
   remembered.set(args.descriptor.subjectUri, state)
+  base = variants.find(column => column.variant === state.base) ?? fileBase
 
   const bar = element(args.root, 'div', { part: 'table.controls' })
   const status = element(args.root, 'output', { part: 'viewer.status' })
@@ -395,7 +416,7 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
               },
             },
           ]),
-      ...(actions.addRow === undefined || base === undefined
+      ...(actions.addRow === undefined || fileBase === undefined
         ? []
         : [
             {
@@ -473,15 +494,42 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
     refresh()
   })
 
+  // The base the others are read against, as MK2 made its first column; the file's own by default
+  const baseChoice = element(bar, 'select', { part: 'table.group' }) as HTMLSelectElement
+  baseChoice.setAttribute('aria-label', text('table.base'))
+  baseChoice.title = text('table.base')
+  for (const column of variants) {
+    const node = baseChoice.ownerDocument.createElement('option')
+    node.value = column.variant ?? ''
+    node.textContent = column.variant ?? header[column.index] ?? ''
+    baseChoice.append(node)
+  }
+  baseChoice.value = base?.variant ?? ''
+  baseChoice.hidden = variants.length < 2
+
   const target = element(bar, 'select', { part: 'table.group' }) as HTMLSelectElement
   target.setAttribute('aria-label', text('table.translateTarget'))
-  for (const column of variants.filter(column => column !== base)) {
-    const node = target.ownerDocument.createElement('option')
-    node.value = String(column.index)
-    node.textContent = column.variant ?? header[column.index] ?? ''
-    target.append(node)
+  /** The locales a batch can translate into: every one but the base. */
+  const listTargets = (): void => {
+    const kept = target.value
+    target.replaceChildren()
+    for (const column of variants.filter(column => column !== base)) {
+      const node = target.ownerDocument.createElement('option')
+      node.value = String(column.index)
+      node.textContent = column.variant ?? header[column.index] ?? ''
+      target.append(node)
+    }
+    if ([...target.options].some(option => option.value === kept)) target.value = kept
   }
+  listTargets()
   target.hidden = actions.translateVariant === undefined || variants.length < 2
+  baseChoice.addEventListener('change', () => {
+    base = variants.find(column => column.variant === baseChoice.value) ?? fileBase
+    if (base === fileBase || base?.variant === undefined) delete state.base
+    else state.base = base.variant
+    listTargets()
+    refresh()
+  })
   // What the translator should know about the text (a game, a unit's voice), sent with each value
   const translateContext = element(bar, 'input', { part: 'table.context' }) as HTMLInputElement
   translateContext.type = 'text'
@@ -1200,7 +1248,7 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
   }
 
   const showAdd = (): void => {
-    if (actions.addRow === undefined || base === undefined || unsaved()) return
+    if (actions.addRow === undefined || fileBase === undefined || unsaved()) return
     panel.hidden = false
     panel.replaceChildren()
     const form = element(panel, 'form', { part: 'table.add' }) as HTMLFormElement
@@ -1209,7 +1257,7 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
     key.setAttribute('aria-label', text('table.addKeyName'))
     key.required = true
     const value = element(form, 'input', { part: 'toolbar.search-input' }) as HTMLInputElement
-    const valueLabel = text('table.addKeyValue', { variant: base.variant ?? '' })
+    const valueLabel = text('table.addKeyValue', { variant: fileBase.variant ?? '' })
     value.placeholder = valueLabel
     value.setAttribute('aria-label', valueLabel)
     const submit = element(form, 'button', {
@@ -1225,11 +1273,16 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
         say(text('table.refused', { reason: text('table.keyExists', { key: name }) }))
         return
       }
-      const request = { action: 'add', key: name, value: value.value, variant: base.variant ?? '' }
+      const request = {
+        action: 'add',
+        key: name,
+        value: value.value,
+        variant: fileBase.variant ?? '',
+      }
       void write(actions.addRow as string, request).then(done => {
         if (!done) return
         const cells = header.map((_, index) =>
-          index === keyColumn ? name : index === base.index ? value.value : '',
+          index === keyColumn ? name : index === fileBase.index ? value.value : '',
         )
         if (statusColumn >= 0) cells[statusColumn] = variants.length > 1 ? 'missing' : ''
         const row = { index: rows.length, cells }
@@ -1325,10 +1378,11 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
   }
 
   const compare = async (): Promise<void> => {
-    if (actions.compareVariants === undefined || base === undefined) return
+    // the codec compares each locale with the file's own
+    if (actions.compareVariants === undefined || fileBase === undefined) return
     panel.hidden = false
     panel.replaceChildren()
-    for (const column of variants.filter(item => item !== base)) {
+    for (const column of variants.filter(item => item !== fileBase)) {
       const result = await invokeOperation(
         args.descriptor,
         args.operations,
@@ -1347,7 +1401,7 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
         line,
         text('table.compareLine', {
           variant: column.variant ?? '',
-          base: base.variant ?? '',
+          base: fileBase.variant ?? '',
           translated: value.translated,
           total: value.total,
           missing: value.missing.length,
@@ -1440,12 +1494,14 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
   let translating = false
   const translate = async (): Promise<void> => {
     if (translating || args.signal.aborted) return
-    if (actions.translateVariant === undefined || base === undefined) return
+    // from the base the reader chose, the file's own unless they chose another
+    const source = base
+    if (actions.translateVariant === undefined || source === undefined) return
     const column = variants.find(item => String(item.index) === target.value)
     if (column === undefined) return
     const chosen = visible.filter(row => selected.size === 0 || selected.has(row.index))
     const empty = chosen.filter(
-      row => (row.cells[column.index] ?? '') === '' && (row.cells[base.index] ?? '') !== '',
+      row => (row.cells[column.index] ?? '') === '' && (row.cells[source.index] ?? '') !== '',
     )
     panel.hidden = false
     panel.replaceChildren()
@@ -1485,9 +1541,9 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
           actions.translateVariant,
           {
             key,
-            sourceVariant: base.variant ?? '',
+            sourceVariant: source.variant ?? '',
             targetVariant: column.variant ?? '',
-            sourceLanguage: base.language ?? base.variant ?? '',
+            sourceLanguage: source.language ?? source.variant ?? '',
             targetLanguage: column.language ?? column.variant ?? '',
             ...(context === '' ? {} : { context }),
             ...(backend === '' ? {} : { backend }),
