@@ -1033,6 +1033,27 @@ function shownWorldItems(
   return shown
 }
 
+/** Each world's player colours by slot, once per scene info (the plan compares inputs by identity). */
+const worldTeamColors = new WeakMap<
+  object,
+  ReadonlyMap<number, readonly [number, number, number]>
+>()
+
+function worldTeamColorsOf(
+  info: CandidateWorldViewerModel['info'],
+): ReadonlyMap<number, readonly [number, number, number]> {
+  let colors = worldTeamColors.get(info)
+  if (colors === undefined) {
+    colors = new Map(
+      (info.players ?? []).flatMap(player =>
+        player.color === undefined ? [] : [[player.id, player.color] as const],
+      ),
+    )
+    worldTeamColors.set(info, colors)
+  }
+  return colors
+}
+
 export function drawCandidateWorld(
   canvas: HTMLCanvasElement,
   model: CandidateWorldViewerModel,
@@ -1046,8 +1067,11 @@ export function drawCandidateWorld(
   const flattened = flattenedWorldLayersOf(model.layers)
   const worldItems = shownWorldItems(flattened.items, hiddenOverlays)
   const selectedObjectId = typeof selection === 'number' ? selection : selection?.selectedObjectId
+  // objects of a player slot take its colour (an object's own presentationTeamColor still wins)
+  const teamColors = worldTeamColorsOf(model.info)
   const webGlInput = {
     items: worldItems,
+    ...(teamColors.size === 0 ? {} : { teamColors }),
     ...(model.models === undefined ? {} : { models: model.models }),
     terrainMaterials: flattened.terrainMaterials,
     waterMaterials: flattened.waterMaterials,

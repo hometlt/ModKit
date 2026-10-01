@@ -696,6 +696,23 @@ describe('common world source native visual facets', () => {
     expect(unplaced.facet.reason).toContain('objects have no canonical UVW placement')
   })
 
+  it('publishes the map player slots a viewer colours objects by (П10)', async () => {
+    const players = [
+      { id: 1, color: [1, 0, 0] as const, team: 1, race: 'Terr' },
+      { id: 2, color: [0, 0, 1] as const, team: 2 },
+    ]
+    const lease = createSourceWorldSceneLease(
+      { ...snapshot, semantic: { ...snapshot.semantic, players } },
+      [],
+      64,
+    )
+    try {
+      expect((await lease.value.info()).players).toEqual(players)
+    } finally {
+      await lease.release()
+    }
+  })
+
   it('reads rectangles, diamonds and polygons of regions as geometry', async () => {
     const region = (regionId: number, type: string, parameters: Record<string, string>) => ({
       regionId,

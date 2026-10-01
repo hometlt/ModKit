@@ -1618,6 +1618,9 @@ export function createCandidateWorldSceneLease(
     ...(terrainTransform === undefined ? {} : { terrainTransform }),
     ...(uvwTransform === undefined ? {} : { uvwTransform }),
     ...(uvwTransformRefusal === undefined ? {} : { uvwTransformRefusal }),
+    ...(semantic.players === undefined
+      ? {}
+      : { players: Object.freeze(semantic.players.map(player => Object.freeze({ ...player }))) }),
     facets,
     provenance: Object.freeze(provenance.map(item => Object.freeze({ ...item }))),
     unknownFacets: snapshot.worldCandidate.unknownFacets,

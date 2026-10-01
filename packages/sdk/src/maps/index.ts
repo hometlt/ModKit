@@ -1256,6 +1256,22 @@ export interface MapSemanticDiagnostic {
   readonly catalogRef?: DataEntityRef
 }
 
+/**
+ * One player slot of a map, as the map states it: objects whose `player` is `id` are drawn in its
+ * colour (unless they state `presentationTeamColor` themselves).
+ */
+export interface MapPlayer {
+  /** The slot objects name in `MapPlacedObject.player`. */
+  readonly id: number
+  /** Team colour, RGB in 0..1 as `presentationTeamColor`. */
+  readonly color?: readonly [number, number, number]
+  /** The alliance the slot starts in. */
+  readonly team?: number
+  readonly name?: string
+  /** The publisher's own faction or race name. */
+  readonly race?: string
+}
+
 export interface MapSemanticSnapshot {
   readonly schemaVersion: 1
   readonly workspaceId: string
@@ -1268,6 +1284,8 @@ export interface MapSemanticSnapshot {
   readonly terrain?: MapTerrainSummary
   readonly regions: readonly MapRegion[]
   readonly objects: readonly MapPlacedObject[]
+  /** The map's player slots, when it states them. */
+  readonly players?: readonly MapPlayer[]
   /** Queries a consumer can feed to the data catalog before reopening with `catalog`. */
   readonly catalogQueries: readonly DataEntityRef[]
   readonly resolvedCatalogObjects: number
@@ -1403,6 +1421,8 @@ interface WorldSceneInfoBase {
   readonly uvwTransform?: MapWorldCanonicalTransform
   /** Why the publisher's `uvwTransform` was refused: the first check it failed. */
   readonly uvwTransformRefusal?: string
+  /** The map's player slots (MapSemanticSnapshot.players): a viewer colours objects by them. */
+  readonly players?: readonly MapPlayer[]
   readonly facets: readonly WorldSceneFacetState[]
   readonly provenance: readonly ResourceProvenanceRecord[]
   readonly unknownFacets: readonly string[]
