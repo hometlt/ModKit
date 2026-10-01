@@ -1,5 +1,6 @@
 /** Protocol-neutral contracts and deterministic schema-driven catalog resolution. */
 
+import type { SourceSpan } from '@modkit/core'
 import type {
   Lease,
   RelationGraphSource,
@@ -167,6 +168,8 @@ export interface DataEntitySource {
   readonly path: string
   readonly documentIndex: number
   readonly revision?: RevisionId
+  /** Where the entity's declaration sits in that document, when the provider read it. */
+  readonly range?: SourceSpan
 }
 
 /** A provider-parsed entity patch. Patches are applied in array order. */

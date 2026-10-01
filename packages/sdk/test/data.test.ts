@@ -175,6 +175,22 @@ describe('game-neutral data catalog resolution', () => {
     expect(snapshot.entities[0]?.sources.map(item => item.documentIndex)).toEqual([0, 1, 2])
   })
 
+  it('keeps the declaration range a source names', () => {
+    const range = { utf16Offset: 10, utf16Length: 24, line: 2, column: 4 }
+    const declared = patch('Marine', 0, { Life: 45 })
+    const snapshot = resolveDataCatalog({
+      workspaceId: 'semantic-map',
+      gameId: 'example/game',
+      analyzerId: 'example/analyzer',
+      schemas,
+      patches: [{ ...declared, source: { ...declared.source, range } }],
+      queries: [{ namespace: 'Unit', entityId: 'Marine' }],
+      maxEntities: 16,
+      maxDepth: 8,
+    })
+    expect(snapshot.entities[0]?.sources[0]?.range).toEqual(range)
+  })
+
   /*
    * A child that overrides one subfield of a struct, or one attribute of an indexed slot, inherits
    * everything else — the engine's rule and MK2's `TypedCatalog`. Replacing the whole value made
