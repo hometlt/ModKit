@@ -495,6 +495,8 @@ const definition = Object.freeze({
               { id: 'vector.scene', parameters: { nodes: sheet.glyphs + 4 } },
               { id: 'vector.paths', parameters: { count: sheet.glyphs } },
             ]),
+        // the font itself, which a viewer sets in text from these bytes
+        { id: 'content.fonts' },
         { id: 'content.binary', parameters: { bytes: String(bytes.byteLength) } },
       ],
       dataSources,

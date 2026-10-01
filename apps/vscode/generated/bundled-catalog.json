@@ -171,7 +171,7 @@
       "declared": true,
       "coordinate": "modkit/vector",
       "contributions": ["modkit/emf", "modkit/vector-font", "modkit/vector-svg", "modkit/wmf"],
-      "digest": "sha256:104db82904699682061f555a686e25ca37427956c18886c80ed9c8776d8bf2d6"
+      "digest": "sha256:882cd7b8a2d3609276c20b50428af5553a4e164531aa181cf243ee93f6ffef0b"
     },
     {
       "name": "video",

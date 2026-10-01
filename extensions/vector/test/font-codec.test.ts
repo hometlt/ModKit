@@ -139,6 +139,7 @@ async function inspect(bytes: Uint8Array) {
     const descriptor = (await session.descriptor()) as unknown as {
       metadata: { id: string; entries: { key: string; value: unknown }[] }[]
       dataSources: { contract: string }[]
+      traits: { id: string }[]
     }
     const facts = Object.fromEntries(
       descriptor.metadata.find(group => group.id === 'font')!.entries.map(e => [e.key, e.value]),
@@ -149,7 +150,7 @@ async function inspect(bytes: Uint8Array) {
       svg = (await (lease.value as VectorSceneSource).document()).text
       await lease.release()
     }
-    return { facts, svg }
+    return { facts, svg, traits: descriptor.traits.map(trait => trait.id) }
   } finally {
     await session.dispose()
   }
@@ -157,7 +158,9 @@ async function inspect(bytes: Uint8Array) {
 
 describe('font codec', () => {
   it('reads TrueType facts and draws the mapped glyph', async () => {
-    const { facts, svg } = await inspect(ttf())
+    const { facts, svg, traits } = await inspect(ttf())
+    // the font stage shows a subject by this trait
+    expect(traits).toContain('content.fonts')
     expect(facts).toMatchObject({
       container: 'ttf',
       family: 'Probe',

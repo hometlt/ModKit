@@ -12830,7 +12830,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:104db82904699682061f555a686e25ca37427956c18886c80ed9c8776d8bf2d6',
+        artifactDigest: 'sha256:882cd7b8a2d3609276c20b50428af5553a4e164531aa181cf243ee93f6ffef0b',
         fileDigests: {
           'MIGRATION-NOTES-common-vector.json':
             'sha256:76e47ea6385d042f14075f379848628612d27d2c63d0038ee67ca818210aaba8',
@@ -12838,7 +12838,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-emf.json':
             'sha256:0d196b6736562daa810ae0bd54485bedffc517c7be39a48e6b2215d22c2996a3',
           'contributions/codec-font.json':
-            'sha256:c9d88b9d3fc10d4cdb44994b7c0ab95ca2f3892b861f7b448ed1f72a19bbadb6',
+            'sha256:4c8bf6aec177ed25982558670c360c0f97ca38cdea95de2996a0ffcea05312c0',
           'contributions/codec-svg.json':
             'sha256:596c58a8118c261a02149081225e0551a5eb86f0903078ae1a1c2a618016c972',
           'contributions/codec-wmf.json':
@@ -12847,7 +12847,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'src/emf/codec.js':
             'sha256:6d5cefb8afb9903a197aaec92997b263e1b7ce7c377954ee2c456b09d3d0186b',
           'src/font/codec.js':
-            'sha256:e288d99416fe8c415c482a47a2325e8f87da77517d21bf39347fe0162954d73e',
+            'sha256:b3ecfffe3475858cefdd0a55b688e10700822ddae3d45141ebcf81bc5732c649',
           'src/index.js': 'sha256:904e9a577bfa759ce7ab355a01d2431961c7f7d3551a8b627a2eb56406948360',
           'src/linked.js':
             'sha256:1e605ad3eabcb7a41588dfaf196eef273984c8f644a3a6a6deb6bc1238af9db1',
@@ -12858,10 +12858,10 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'test/codec-session.ts':
             'sha256:c2c0dd0f73ab028035bb4c798a9703bbed78500b29343de2906e7c6c2de39591',
           'test/font-codec.test.ts':
-            'sha256:3545bef7d7d838dcb253c8aaea4a0f831b823478cb5637cb9d6c3c43972d928c',
+            'sha256:0cd27d08a9cab5c41eafb1d7e719a73afc27e7cd49ee46b6cafd0866c4c10afd',
         },
         inventoryRecordId:
-          'artifact:sha256:104db82904699682061f555a686e25ca37427956c18886c80ed9c8776d8bf2d6',
+          'artifact:sha256:882cd7b8a2d3609276c20b50428af5553a4e164531aa181cf243ee93f6ffef0b',
       },
       artifactRoot: 'extensions/vector/',
       containers: {
@@ -12917,7 +12917,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         ],
         [
           'contributions/codec-font.json',
-          'sha256:c9d88b9d3fc10d4cdb44994b7c0ab95ca2f3892b861f7b448ed1f72a19bbadb6',
+          'sha256:4c8bf6aec177ed25982558670c360c0f97ca38cdea95de2996a0ffcea05312c0',
         ],
         [
           'contributions/codec-svg.json',
@@ -13208,6 +13208,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                 {
                   id: 'vector.paths',
                   presence: 'may-expose',
+                  representation: 'source',
+                },
+                {
+                  id: 'content.fonts',
+                  presence: 'will-expose',
                   representation: 'source',
                 },
               ],
