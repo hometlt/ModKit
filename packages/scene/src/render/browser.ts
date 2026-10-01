@@ -259,7 +259,7 @@ function uploadTextures(
     gl.texParameteri(target, gl.TEXTURE_WRAP_S, cube ? gl.CLAMP_TO_EDGE : wrap(texture.wrapU))
     gl.texParameteri(target, gl.TEXTURE_WRAP_T, cube ? gl.CLAMP_TO_EDGE : wrap(texture.wrapV))
     if (cube) gl.texParameteri(target, gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE)
-    applyTextureFilter(gl, target, 'linear')
+    applyTextureFilter(gl, target, texture.filter ?? 'linear')
     uploaded.set(texture.id, handle)
   }
   return uploaded

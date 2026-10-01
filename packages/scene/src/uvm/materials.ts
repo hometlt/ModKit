@@ -175,13 +175,15 @@ export function uvmMaterialResources(
 }
 
 /** Resolve each shared resource once through the host's image capabilities, including all cube
- * faces. Native filenames never give the renderer filesystem or container authority. */
+ * faces. Native filenames never give the renderer filesystem or container authority. A resource
+ * keeps the sampling filter its document states for it (uvmImageFilters): pixel art stays sharp. */
 export async function acquireUvmMaterialTextures(
   resources: ReadonlyMap<string, readonly string[]>,
   port: RasterResourcePort | undefined,
   maxBytes: number,
   diagnostics: SceneRendererDiagnostic[],
   signal?: AbortSignal,
+  filters: ReadonlyMap<string, 'nearest' | 'linear'> = new Map(),
 ) {
   const textures: SceneRendererTexture[] = [],
     textureIds = new Map<string, string>()
@@ -296,11 +298,13 @@ export async function acquireUvmMaterialTextures(
           message: `${path}: drawn at mip ${mipLevel} (${width}×${height}) of ${result.info.width}×${result.info.height} to fit the texture budget`,
         })
       textureIds.set(path, id)
+      const filter = filters.get(path)
       textures.push({
         id,
         width,
         height,
         rgba,
+        ...(filter === undefined ? {} : { filter }),
         ...(cube ? { dimension: 'cube' as const } : {}),
         ...(result.info.channelLayout === undefined
           ? {}

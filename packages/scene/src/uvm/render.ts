@@ -36,7 +36,7 @@ import { encodeRgbaPng } from '../output/png.js'
 import { readUvmModel } from './model.js'
 import { createUvmCollisionOverlay } from './collision-overlay.js'
 import { createUvmEffectFrame } from './effects.js'
-import { prepareUvmTextureImages, uvmImageTexels } from './images.js'
+import { prepareUvmTextureImages, uvmImageFilters, uvmImageTexels } from './images.js'
 import { array, field, finiteArray, object, safeIndex, vector4 } from './values.js'
 import {
   uvmMaterialBlendEffect,
@@ -863,6 +863,7 @@ async function prepareNestedUvmRender(
     remainingDecodedBytes,
     diagnostics,
     signal,
+    uvmImageFilters(document),
   )
   for (const texture of acquiredMaterials.textures) remainingDecodedBytes -= texture.rgba.length
   const drawnByShader = new Set(

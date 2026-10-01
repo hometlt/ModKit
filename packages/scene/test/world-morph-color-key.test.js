@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { it } from 'node:test'
 import { materializeUvmCore } from '@modkit/uv/model/materializer'
 import { createWorldWebGlPlan } from '../src/world/webgl.js'
-import { keyWorldModelTextures } from '../src/world/color-keys.js'
+import { presentWorldModelTextures } from '../src/world/color-keys.js'
 import { createEmbeddedUvmWorldModelDecoder } from '../src/world/embedded-uvm.js'
 
 const identity = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
@@ -171,7 +171,7 @@ it('keys the texels of a map model texture the game loads with a colour key', ()
       },
     ],
   }
-  const keyed = keyWorldModelTextures(result)
+  const keyed = presentWorldModelTextures(result)
   assert.deepEqual([...keyed.textures[0].rgba], [0, 0, 0, 0, 10, 20, 30, 255])
   // blocks are drawn as stored: the key cannot reach them, and the model says so
   assert.equal(keyed.textures[1], result.textures[1])
@@ -181,7 +181,7 @@ it('keys the texels of a map model texture the game loads with a colour key', ()
   )
   // a model without the extension comes back as it was
   const plain = { ...result, uvmBytes: undefined }
-  assert.equal(keyWorldModelTextures(plain), plain)
+  assert.equal(presentWorldModelTextures(plain), plain)
 })
 
 it('keys a colour-keyed texture of a model packaged in a world', async () => {

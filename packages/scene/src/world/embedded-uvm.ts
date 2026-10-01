@@ -9,6 +9,7 @@ import { readUvmFacets } from '../uvm/facets.js'
 import {
   prepareUvmImages,
   uvmImageColorKeys,
+  uvmImageFilters,
   uvmImageResourceId,
   uvmImageTexels,
 } from '../uvm/images.js'
@@ -84,8 +85,10 @@ export function createEmbeddedUvmWorldModelDecoder(
     const resources = []
     const textures: SceneRendererTexture[] = []
     const images = container.document['images']
-    // images the game loads with a colour key (UV_texture_color_key): keyed once, here
+    // images the game loads with a colour key (UV_texture_color_key): keyed once, here; each
+    // sampled with the filter its sampler names
     const colorKeys = uvmImageColorKeys(container.document, signal)
+    const filters = uvmImageFilters(container.document)
     let textureBytes = 0
     if (Array.isArray(images)) {
       if (images.length > maxResources) throw new RangeError('embedded UVM exceeds maxResources')
@@ -153,11 +156,13 @@ export function createEmbeddedUvmWorldModelDecoder(
         // Preserve their channel values; material presentation owns their interpretation.
         const rgba = uvmImageTexels(decoded, { channels: 'data' })
         textureBytes += rgba.byteLength
+        const filter = filters.get(id)
         const texture = Object.freeze({
           id,
           width: decoded.info.width,
           height: decoded.info.height,
           rgba,
+          ...(filter === undefined ? {} : { filter }),
         })
         const key = colorKeys.get(id)
         textures.push(key === undefined ? texture : colorKeyedTexture(texture, key))

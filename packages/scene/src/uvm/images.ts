@@ -53,6 +53,32 @@ export function uvmImageColorKeys(
   return keys
 }
 
+/**
+ * The sampling filter each image is stated with (glTF sampler magFilter: NEAREST 9728, LINEAR
+ * 9729), by the resource id material layers name it with. An image whose textures state different
+ * filters is left out: one set of texels is sampled one way.
+ */
+export function uvmImageFilters(document: JsonObject): ReadonlyMap<string, 'nearest' | 'linear'> {
+  const textures = array(document, 'textures')
+  const samplers = document['samplers'] === undefined ? [] : array(document, 'samplers')
+  const byImage = new Map<number, 'nearest' | 'linear' | null>()
+  for (const candidate of textures) {
+    const texture = object(candidate, 'texture')
+    const source = texture['source']
+    const samplerIndex = texture['sampler']
+    if (typeof source !== 'number' || typeof samplerIndex !== 'number') continue
+    const magnified = object(samplers[samplerIndex] ?? {}, 'sampler')['magFilter']
+    const filter = magnified === 9728 ? 'nearest' : magnified === 9729 ? 'linear' : undefined
+    if (filter === undefined) continue
+    const known = byImage.get(source)
+    byImage.set(source, known === undefined || known === filter ? filter : null)
+  }
+  const filters = new Map<string, 'nearest' | 'linear'>()
+  for (const [image, filter] of byImage)
+    if (filter !== null) filters.set(uvmImageResourceId(document, image), filter)
+  return filters
+}
+
 /** Snapshot referenced image payloads before asynchronous host acquisition. No URI is opened here. */
 export function prepareUvmTextureImages(
   document: JsonObject,

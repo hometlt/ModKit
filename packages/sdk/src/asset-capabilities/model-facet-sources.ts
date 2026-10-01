@@ -50,6 +50,11 @@ export interface ModelResourceRef {
   readonly bytes?: number
   /** A texture the game loads with a colour key: that colour is transparent (see ModelTextureColorKey). */
   readonly colorKey?: ModelTextureColorKey
+  /**
+   * How the game samples the texture: `nearest` for pixel art (no blending, no mips that bleed
+   * transparent texels into a cut-out). UVM states it as the texture sampler's filters.
+   */
+  readonly filter?: 'nearest' | 'linear'
 }
 
 /**
