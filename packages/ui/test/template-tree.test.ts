@@ -5,7 +5,12 @@
  */
 import { describe, expect, it } from 'vitest'
 import { isGameTemplateTreeNode, type GameTemplateTreeNode } from '@modkit/sdk/templates'
-import { templateChain, templatePropertyRows, templateTreeRows } from '../src/template/index.js'
+import {
+  templateChain,
+  templateNodeAt,
+  templatePropertyRows,
+  templateTreeRows,
+} from '../src/template/index.js'
 
 const TREE: GameTemplateTreeNode = {
   name: 'Panel',
@@ -89,5 +94,35 @@ describe('template element view', () => {
   it('names the template chain a node inherits', () => {
     expect(templateChain(yard)).toEqual(['Standard/TechItem', 'TechItem'])
     expect(templateChain(TREE)).toEqual([])
+  })
+})
+
+describe('reveal in the template tree (3.33)', () => {
+  const uri = 'file:///c%3A/mod/Base.SC2Data/UI/Layout/Tech.SC2Layout'
+  const tree: GameTemplateTreeNode = {
+    name: 'Panel',
+    path: ['Panel'],
+    source: { uri, start: 10, end: 400 },
+    children: [
+      { name: 'Yard', path: ['Panel', 'Yard'], source: { uri, start: 50, end: 120 }, children: [] },
+      {
+        name: 'Inherited',
+        path: ['Panel', 'Inherited'],
+        // declared in the template's file, not this one
+        source: { uri: 'file:///c%3A/mod/Standard.SC2Layout', start: 60, end: 90 },
+        children: [],
+      },
+    ],
+  }
+
+  it('finds the innermost node declared around an offset of the same document', () => {
+    expect(templateNodeAt(tree, uri, 70)?.name).toBe('Yard')
+    expect(templateNodeAt(tree, uri, 200)?.name).toBe('Panel')
+    expect(templateNodeAt(tree, uri, 5)).toBeUndefined()
+    // the same file however its URI is spelled
+    expect(
+      templateNodeAt(tree, 'file:///C:/mod/Base.SC2Data/UI/Layout/Tech.SC2Layout', 70)?.name,
+    ).toBe('Yard')
+    expect(templateNodeAt(tree, 'file:///c%3A/mod/Standard.SC2Layout', 70)?.name).toBe('Inherited')
   })
 })

@@ -883,7 +883,12 @@ export interface VsCodeServeOptions {
   /** Open a file in an editor of its own kind (a gallery pick). */
   readonly openInEditor?: (path: string) => Promise<void>
   /** Show a card's source file as text, at its declaration when the line is known. */
-  readonly openSource?: (uri: string, line?: number, column?: number) => Promise<void>
+  readonly openSource?: (
+    uri: string,
+    line?: number,
+    column?: number,
+    range?: { readonly start: number; readonly end?: number },
+  ) => Promise<void>
   /** Keep a viewer preference the page sent; the next pages get it in their bootstrap. */
   readonly preference?: (key: string, value: unknown) => Promise<void>
   /** Open the model a subject names, found through the subject's own mod chain. */
@@ -1062,6 +1067,8 @@ export interface VsCodeServed {
    * (the card, the relations graph) when the subject offers it.
    */
   navigate(subjectId: string, stage?: string): void
+  /** Select the template node declared at `offset` of the document `uri` (plan 3.33). */
+  revealTemplate(uri: string, offset: number): void
   /**
    * Bring the codec this path needs up while the page is still loading.
    *
@@ -1909,7 +1916,14 @@ function serveVsCode(
         return true
       }
       case 'open-source':
-        await options.openSource?.(request.uri, request.line, request.column)
+        await options.openSource?.(
+          request.uri,
+          request.line,
+          request.column,
+          request.start === undefined
+            ? undefined
+            : { start: request.start, ...(request.end === undefined ? {} : { end: request.end }) },
+        )
         return true
       case 'preference':
         await options.preference?.(request.key, request.value)
@@ -2241,6 +2255,9 @@ function serveVsCode(
     },
     navigate(subjectId: string, stage?: string) {
       bridge.emit({ op: 'navigate-subject', subjectId, ...(stage === undefined ? {} : { stage }) })
+    },
+    revealTemplate(uri: string, offset: number) {
+      bridge.emit({ op: 'reveal-template', uri, offset })
     },
     warm(path: string) {
       if (warmed.has(subjectKey(path))) return

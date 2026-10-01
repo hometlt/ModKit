@@ -26,7 +26,7 @@ import { EDITOR_EDITED_EVENT, requestEditorHistory } from '@modkit/ui/editor'
 import { createWorkbench } from '@modkit/ui/workbench'
 import { setUiPreferenceStore } from '@modkit/ui/viewer'
 import { resolveModelViewerTextures } from '@modkit/ui/model'
-import { templateImagesFromRaster } from '@modkit/ui/template'
+import { TEMPLATE_REVEAL_EVENT, templateImagesFromRaster } from '@modkit/ui/template'
 import type { UiCatalogDocument, UiLocale, UiLocalizer } from '@modkit/ui/localization'
 import type {
   AnyDescriptor,
@@ -421,10 +421,23 @@ async function mount(
     subjectMounted = resolve
   })
   bridge.onEvent(event => {
-    if (event.op !== 'navigate-subject') return
-    void mounted
-      .then(() => navigateSubject(event.subjectId, event.stage))
-      .catch((error: unknown) => say(describe(error)))
+    if (event.op === 'navigate-subject') {
+      void mounted
+        .then(() => navigateSubject(event.subjectId, event.stage))
+        .catch((error: unknown) => say(describe(error)))
+    } else if (event.op === 'reveal-template') {
+      // «Reveal in DescTree»: the template stage, then its viewer selects the node
+      void mounted
+        .then(async () => {
+          if (editors.activeViews()?.active !== 'template') await editors.showView('template')
+          document.dispatchEvent(
+            new CustomEvent(TEMPLATE_REVEAL_EVENT, {
+              detail: { uri: event.uri, offset: event.offset },
+            }),
+          )
+        })
+        .catch((error: unknown) => say(describe(error)))
+    }
   })
   /*
    * Viewer preferences (the media shell's layout, recent colours) are kept by the extension host:

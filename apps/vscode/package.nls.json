@@ -102,6 +102,7 @@
   "command.sources.publishNew.title": "Publish a new mod or map",
   "command.launchActiveMod": "Modkit: Test Active Mod in Game…",
   "command.configureLaunch": "Modkit: Configure Game Launch…",
+  "command.revealTemplate": "Modkit: Reveal in Template Tree",
   "configuration.launch.warnIfRunning.description": "Ask before closing a running game to launch again.",
   "configuration.extensionPackages.description": "Folder of game packages published beside Modkit (`catalog.v1.json` and the bundles). Games install from it only when its catalog is signed by the Modkit registry key; takes effect in a new window.",
   "configuration.maxGraphHops.description": "How many relations the relations graph follows from its root when it walks from a node (1–4).",

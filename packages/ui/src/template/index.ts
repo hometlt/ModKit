@@ -247,15 +247,77 @@ export function templateChain(node: GameTemplateTreeNode): readonly string[] {
   return [...links]
 }
 
+/**
+ * «Reveal in DescTree» (plan 3.33): the template stage selects the node declared at `offset` of the
+ * document `uri`. Dispatched on the page's document; the mounted viewer answers it.
+ */
+export const TEMPLATE_REVEAL_EVENT = 'modkit-template-reveal'
+
+export interface TemplateRevealDetail {
+  readonly uri: string
+  readonly offset: number
+}
+
+/** A node's declaration to show as text: the document and the declaration's range in it. */
+export interface TemplateSourceLocation {
+  readonly uri: string
+  readonly start?: number
+  readonly end?: number
+}
+
+const sameDocument = (left: string, right: string): boolean => {
+  const normal = (uri: string) => {
+    let text = uri
+    try {
+      text = decodeURIComponent(uri)
+    } catch {
+      // a malformed escape is compared as written
+    }
+    return text.replaceAll('\\', '/').toLowerCase()
+  }
+  return left === right || normal(left) === normal(right)
+}
+
+/** The innermost node declared around `offset` of the document `uri`, if any. */
+export function templateNodeAt(
+  root: GameTemplateTreeNode,
+  uri: string,
+  offset: number,
+): GameTemplateTreeNode | undefined {
+  let found: GameTemplateTreeNode | undefined
+  const pending = [root]
+  for (let node = pending.pop(); node !== undefined; node = pending.pop()) {
+    const source = node.source
+    if (
+      source?.uri !== undefined &&
+      source.start !== undefined &&
+      source.end !== undefined &&
+      source.start <= offset &&
+      offset <= source.end &&
+      sameDocument(source.uri, uri) &&
+      (found?.source?.start === undefined || source.start >= found.source.start)
+    ) {
+      found = node
+    }
+    pending.push(...node.children)
+  }
+  return found
+}
+
 /** The node a viewer shows as selected; shared by re-renders of one mount. */
 export interface TemplateSelection {
   key: string | undefined
+  /** Selects the node declared at a document offset; set while a tree is on screen. */
+  reveal?: ((uri: string, offset: number) => boolean) | undefined
+  /** A reveal that arrived before the tree did. */
+  pending?: TemplateRevealDetail | undefined
 }
 
 function renderTreePanel(
   host: HTMLElement,
   rows: readonly TemplateTreeRow[],
   select: (key: string) => void,
+  openSource: ((node: GameTemplateTreeNode) => void) | undefined,
 ): Map<string, HTMLElement> {
   const panel = element(host, 'nav', { className: 'modkit-template__tree', part: 'tree' })
   const list = element(panel, 'ul', { part: 'tree.list', role: 'tree' })
@@ -275,6 +337,7 @@ function renderTreePanel(
       element(line, 'span', { part: 'tree.key', text: `→ ${row.node.template}` })
     }
     item.addEventListener('click', () => select(row.key))
+    if (openSource !== undefined) item.addEventListener('dblclick', () => openSource(row.node))
     item.addEventListener('keydown', event => {
       const step = event.key === 'ArrowDown' ? 1 : event.key === 'ArrowUp' ? -1 : 0
       const next = step === 0 ? undefined : rows[index + step]
@@ -292,6 +355,7 @@ function renderPropertiesPanel(
   panel: HTMLElement,
   node: GameTemplateTreeNode | undefined,
   localizer: UiLocalizer,
+  openSource: ((node: GameTemplateTreeNode) => void) | undefined,
 ): void {
   panel.replaceChildren()
   if (node === undefined) {
@@ -300,6 +364,14 @@ function renderPropertiesPanel(
   }
   element(panel, 'strong', { part: 'viewer.status', text: node.path.join('/') })
   if (node.type !== undefined) element(panel, 'div', { part: 'viewer.status', text: node.type })
+  if (openSource !== undefined && node.source?.uri !== undefined) {
+    const show = element(panel, 'button', {
+      part: 'operations.button',
+      text: localizer.text('viewer.templateShowSource'),
+    }) as HTMLButtonElement
+    show.type = 'button'
+    show.addEventListener('click', () => openSource(node))
+  }
   const chain = templateChain(node)
   if (chain.length > 0) {
     element(panel, 'div', {
@@ -341,8 +413,21 @@ function renderTemplateBody(
   images: ReadonlyMap<string, string>,
   localizer: UiLocalizer,
   selection: TemplateSelection,
+  openSource: ((location: TemplateSourceLocation) => void) | undefined,
 ): void {
   const body = element(host, 'div', { className: 'modkit-template__body', part: 'template.body' })
+  const showSource =
+    openSource === undefined
+      ? undefined
+      : (node: GameTemplateTreeNode) => {
+          const source = node.source
+          if (source?.uri === undefined) return
+          openSource({
+            uri: source.uri,
+            ...(source.start === undefined ? {} : { start: source.start }),
+            ...(source.end === undefined ? {} : { end: source.end }),
+          })
+        }
   const rows = templateTreeRows(tree)
   const nodes = new Map(rows.map(row => [row.key, row.node]))
   let byKey = new Map<string, HTMLElement>()
@@ -355,9 +440,9 @@ function renderTemplateBody(
     for (const group of canvas?.querySelectorAll('g[data-path]') ?? []) {
       setState(group, group.getAttribute('data-path') === key ? ['selected'] : [])
     }
-    renderPropertiesPanel(panel, nodes.get(key), localizer)
+    renderPropertiesPanel(panel, nodes.get(key), localizer, showSource)
   }
-  byKey = renderTreePanel(body, rows, select)
+  byKey = renderTreePanel(body, rows, select, showSource)
   const stage = element(body, 'div', { className: 'modkit-template__stage' })
   const canvas =
     drawable.length > 0 ? drawTemplateItems(document, stage, drawable, images) : undefined
@@ -384,6 +469,17 @@ function renderTemplateBody(
   const initial =
     selection.key !== undefined && nodes.has(selection.key) ? selection.key : rows[0]?.key
   if (initial !== undefined) select(initial)
+  selection.reveal = (uri, offset) => {
+    const key = templateNodeAt(tree, uri, offset)?.path.join('/')
+    if (key === undefined || !nodes.has(key)) return false
+    select(key)
+    byKey.get(key)?.scrollIntoView({ block: 'nearest' })
+    byKey.get(key)?.focus()
+    return true
+  }
+  const pending = selection.pending
+  selection.pending = undefined
+  if (pending !== undefined) selection.reveal(pending.uri, pending.offset)
 }
 
 /** Render the common semantic template envelope without assuming one game's template format. */
@@ -398,6 +494,8 @@ export function renderGameTemplatePreview(
     readonly selection?: TemplateSelection
     /** Preview from another root the producer offered. */
     readonly chooseRoot?: (root: string) => void
+    /** Show a node's declaration as text («Show in Text Editor»). */
+    readonly openSource?: (location: TemplateSourceLocation) => void
   } = {},
 ): void {
   host.replaceChildren()
@@ -460,6 +558,7 @@ export function renderGameTemplatePreview(
       images,
       localizer,
       options.selection ?? { key: undefined },
+      options.openSource,
     )
   } else if (drawable.length > 0) drawTemplateItems(document, host, drawable, images)
 
@@ -628,6 +727,8 @@ export async function templateImagesFromRaster(
 
 export interface GameTemplateViewerOptions extends UiLocalizationOptions {
   readonly images?: GameTemplateImageResolver
+  /** Show a node's declaration in the host's text editor (plan 3.33). */
+  readonly openSource?: (location: TemplateSourceLocation) => void
 }
 
 /** Standard operation-backed stage shared by publisher-defined document templates. */
@@ -641,8 +742,17 @@ export function createGameTemplateViewer(options: GameTemplateViewerOptions = {}
       let renderRevision = 0
       let rootPath: string | undefined
       const selection: TemplateSelection = { key: undefined }
+      // «Reveal in DescTree»: a reveal that arrives before the tree is drawn waits for it
+      const onReveal = (event: Event): void => {
+        const detail = (event as CustomEvent<TemplateRevealDetail>).detail
+        if (selection.reveal === undefined) selection.pending = detail
+        else selection.reveal(detail.uri, detail.offset)
+      }
+      root.ownerDocument.addEventListener(TEMPLATE_REVEAL_EVENT, onReveal)
+      scope.cleanup(() => root.ownerDocument.removeEventListener(TEMPLATE_REVEAL_EVENT, onReveal))
       const render = async (descriptor: typeof args.descriptor): Promise<void> => {
         const revision = ++renderRevision
+        selection.reveal = undefined
         root.replaceChildren()
         element(root, 'output', {
           text: localizer.text('viewer.loadingTemplate'),
@@ -690,6 +800,7 @@ export function createGameTemplateViewer(options: GameTemplateViewerOptions = {}
         if (scope.signal.aborted || revision !== renderRevision) return
         renderGameTemplatePreview(root.ownerDocument, root, preview, localizer, images, {
           selection,
+          ...(options.openSource === undefined ? {} : { openSource: options.openSource }),
           chooseRoot: next => {
             rootPath = next
             selection.key = undefined

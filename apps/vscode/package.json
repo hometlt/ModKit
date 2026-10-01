@@ -317,6 +317,7 @@
       { "command": "modkit.strings.extractChanged", "title": "%command.extractChangedStrings%" },
       { "command": "modkit.strings.translationGaps", "title": "%command.translationGaps%" },
       { "command": "modkit.syncEditorAssociations", "title": "%command.syncEditorAssociations%" },
+      { "command": "modkit.template.reveal", "title": "%command.revealTemplate%" },
       {
         "command": "modkit.unloadSource",
         "title": "%command.unloadContentSource%",
@@ -1333,6 +1334,7 @@
     "onCommand:modkit.strings.extractChanged",
     "onCommand:modkit.strings.translationGaps",
     "onCommand:modkit.syncEditorAssociations",
+    "onCommand:modkit.template.reveal",
     "onCommand:modkit.unloadSource",
     "onCommand:modkit.verifyDocument",
     "onCommand:modkit.verifyMod",

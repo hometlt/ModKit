@@ -8630,11 +8630,27 @@ async function activateModkit(
         )
       },
       // A card's source opens where Resources opens a declaration: the file, at its line.
-      openSource: async (address, line, column) => {
+      openSource: async (address, line, column, range) => {
         const uri = linkTarget(address)
         // the page names files only; a link of any other kind is not this request's to follow
         if (uri === undefined || !SOURCE_SCHEMES.has(uri.scheme)) {
           log(`[card] not a file this window opens: ${address}`)
+          return
+        }
+        if (range !== undefined) {
+          // a declaration by its offsets (a template node, plan 3.33): selected, as text
+          const document = await vscode.workspace.openTextDocument(uri)
+          const shown = vscode.window.visibleTextEditors.find(
+            editor => editor.document.uri.toString() === uri.toString(),
+          )
+          await vscode.window.showTextDocument(document, {
+            selection: new vscode.Range(
+              document.positionAt(range.start),
+              document.positionAt(range.end ?? range.start),
+            ),
+            viewColumn: shown?.viewColumn ?? vscode.ViewColumn.Beside,
+            preview: false,
+          })
           return
         }
         await openResourceFile(
@@ -11553,6 +11569,29 @@ async function activateModkit(
     }),
 
     /** Re-run the active subject route; relation/tree stages refresh from the new descriptor. */
+    /*
+     * «Reveal in DescTree» (plan 3.33): the template node declared at the cursor, selected in the
+     * file's Modkit editor — the one open, or one opened beside.
+     */
+    vscode.commands.registerCommand('modkit.template.reveal', async () => {
+      const editor = vscode.window.activeTextEditor
+      if (editor === undefined) return false
+      const uri = editor.document.uri
+      const offset = editor.document.offsetAt(editor.selection.active)
+      const key = subjectKey(subjectPathOf(uri))
+      const servedFor = () => [...liveSubjects].find(([, path]) => path === key)?.[0]
+      if (servedFor() === undefined) {
+        await vscode.commands.executeCommand('vscode.openWith', uri, CUSTOM_EDITOR_TYPE, {
+          viewColumn: vscode.ViewColumn.Beside,
+          preserveFocus: true,
+        })
+      }
+      const served = servedFor()
+      if (served === undefined) return false
+      served.revealTemplate(uri.toString(), offset)
+      return true
+    }),
+
     vscode.commands.registerCommand('modkit.refreshRelations', () => {
       if (activeSubject === undefined) return false
       let refreshed = false

@@ -379,6 +379,10 @@
       "title": "%command.syncEditorAssociations%"
     },
     {
+      "command": "modkit.template.reveal",
+      "title": "%command.revealTemplate%"
+    },
+    {
       "command": "modkit.unloadSource",
       "title": "%command.unloadContentSource%",
       "icon": "$(trash)"

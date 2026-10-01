@@ -789,6 +789,7 @@ export const TEMPLATE_FALLBACK_MESSAGES = {
   'viewer.templateNoProperties': 'This node sets no properties.',
   'viewer.templateRoot': 'Preview root',
   'viewer.templateSelectNode': 'Select a node to see its properties.',
+  'viewer.templateShowSource': 'Show in Text Editor',
   'viewer.templateUnavailable': 'Template unavailable: {reason}',
 } as const satisfies UiMessageCatalog
 

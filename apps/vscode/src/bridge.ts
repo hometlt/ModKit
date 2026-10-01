@@ -145,6 +145,8 @@ export type ShellRequest =
       readonly uri: string
       readonly line?: number
       readonly column?: number
+      readonly start?: number
+      readonly end?: number
     }
   /** A file-manager action inside the archive `subject` shows (a file, or a member archive). */
   | {
@@ -277,6 +279,8 @@ export type ShellEvent =
   | { readonly op: 'open'; readonly path: string; readonly name: string }
   /** Open an opaque subject reference through the navigation port of the mounted parent session. */
   | { readonly op: 'navigate-subject'; readonly subjectId: string; readonly stage?: string }
+  /** «Reveal in DescTree»: select the template node declared at `offset` of `uri` (plan 3.33). */
+  | { readonly op: 'reveal-template'; readonly uri: string; readonly offset: number }
   | { readonly op: 'notice'; readonly text: string; readonly severity: 'info' | 'error' }
   /** The webview's status line, mirrored into the extension's output channel. */
   | { readonly op: 'status'; readonly text: string }

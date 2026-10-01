@@ -309,6 +309,8 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
       operation: 'view.template',
       module: createGameTemplateViewer({
         localizer: context.localizer,
+        // «Show in Text Editor» (plan 3.33): a node's declaration, as a card shows its source
+        ...(context.openSource === undefined ? {} : { openSource: context.openSource }),
         // Pixels for the assets a template names, when this window can decode them.
         ...(context.templateImages === undefined ? {} : { images: context.templateImages }),
       }),

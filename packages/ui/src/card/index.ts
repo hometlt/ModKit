@@ -68,6 +68,9 @@ export interface CardLocation {
   readonly uri: string
   readonly line?: number
   readonly column?: number
+  /** The declaration as UTF-16 offsets into the document, when the publisher names a range. */
+  readonly start?: number
+  readonly end?: number
 }
 
 /** Host-neutral back/forward state for serialized subject references. */

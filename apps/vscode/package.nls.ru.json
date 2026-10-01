@@ -102,6 +102,7 @@
   "command.sources.publishNew.title": "Опубликовать новый мод или карту",
   "command.launchActiveMod": "Modkit: Протестировать активный мод в игре…",
   "command.configureLaunch": "Modkit: настроить запуск в игре…",
+  "command.revealTemplate": "Modkit: показать в дереве шаблона",
   "configuration.launch.warnIfRunning.description": "Спрашивать перед закрытием запущенной игры для нового запуска.",
   "configuration.extensionPackages.description": "Папка пакетов игр, опубликованных рядом с Modkit (`catalog.v1.json` и бандлы). Игры ставятся из неё, только если её каталог подписан ключом реестра Modkit; действует в новом окне.",
   "configuration.maxGraphHops.description": "Сколько связей граф связей проходит от корня, когда строится от узла (1–4).",

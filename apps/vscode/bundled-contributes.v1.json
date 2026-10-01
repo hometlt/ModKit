@@ -377,6 +377,10 @@
       "title": "%command.configureLaunch%"
     },
     {
+      "command": "modkit.template.reveal",
+      "title": "%command.revealTemplate%"
+    },
+    {
       "command": "modkit.accounts.refresh",
       "title": "%command.accountsRefresh%",
       "icon": "$(refresh)"
