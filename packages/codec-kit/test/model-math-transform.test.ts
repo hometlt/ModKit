@@ -25,6 +25,39 @@ describe('model-math transform', () => {
     expect(hidden.rotation.every(Number.isFinite)).toBe(true)
   })
 
+  it('keeps the true turn of a node flattened to nothing along one or two axes', () => {
+    // rotate 90° about Z, scale (0, 1, 1): x collapses (Emperor's lightning keys)
+    const flattened = decomposeMatrix4([0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1])
+    expect(flattened.scaling).toEqual([0, 1, 1])
+    const half = Math.SQRT1_2
+    flattened.rotation.forEach((value, index) =>
+      expect(value).toBeCloseTo([0, 0, half, half][index]!, 6),
+    )
+    // T·R·S rebuilds the matrix: compose and compare
+    const compose = ({ rotation: [qx, qy, qz, qw], scaling: [sx, sy, sz] }: typeof flattened) => [
+      (1 - 2 * (qy * qy + qz * qz)) * sx,
+      2 * (qx * qy + qz * qw) * sx,
+      2 * (qx * qz - qy * qw) * sx,
+      2 * (qx * qy - qz * qw) * sy,
+      (1 - 2 * (qx * qx + qz * qz)) * sy,
+      2 * (qy * qz + qx * qw) * sy,
+      2 * (qx * qz + qy * qw) * sz,
+      2 * (qy * qz - qx * qw) * sz,
+      (1 - 2 * (qx * qx + qy * qy)) * sz,
+    ]
+    compose(flattened).forEach((value, index) =>
+      expect(value).toBeCloseTo([0, 0, 0, -1, 0, 0, 0, 0, 1][index]!, 6),
+    )
+    // only z survives: the rotation still carries it
+    const line = decomposeMatrix4([0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 1])
+    expect(line.scaling).toEqual([0, 0, 3])
+    compose(line).forEach((value, index) =>
+      expect(value).toBeCloseTo([0, 0, 0, 0, 0, 0, 0, 3, 0][index]!, 6),
+    )
+    const nothing = decomposeMatrix4([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1])
+    expect(nothing.rotation).toEqual([0, 0, 0, 1])
+  })
+
   it('inverts an affine matrix and refuses a singular basis', () => {
     const inverse = invertAffine(matrix)
     // inverse · (5, 6, 7) is the origin

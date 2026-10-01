@@ -19,7 +19,8 @@ export function normalizeQuat(
 /**
  * Translation, unit rotation quaternion `[x, y, z, w]` and per-axis scale of a column-major matrix,
  * so that T·R·S reproduces it: a reflection (negative determinant) reads as a negative x scale, and
- * a zero column as a zero scale on that axis.
+ * a zero column as a zero scale on that axis, its rotation axis completed from the other two (a
+ * key that flattens a node to nothing along one axis keeps its true turn).
  */
 export function decomposeMatrix4(matrix: ArrayLike<number>): {
   translation: [number, number, number]
@@ -34,25 +35,47 @@ export function decomposeMatrix4(matrix: ArrayLike<number>): {
   const sx = (determinant < 0 ? -1 : 1) * Math.hypot(m(0), m(1), m(2))
   const sy = Math.hypot(m(4), m(5), m(6))
   const sz = Math.hypot(m(8), m(9), m(10))
-  // a zero column's rotation axis is arbitrary; dividing by 1 keeps the quaternion finite
-  const dx = sx || 1
-  const dy = sy || 1
-  const dz = sz || 1
+  const tiny = 1e-12 * Math.max(1, Math.abs(sx), sy, sz)
+  const unit = (scale: number, at: number): Vector3 | undefined =>
+    Math.abs(scale) <= tiny ? undefined : [m(at) / scale, m(at + 1) / scale, m(at + 2) / scale]
+  // Rebuild degenerate axes as a right-handed basis: x × y = z, y × z = x, z × x = y.
+  let x = unit(sx, 0)
+  let y = unit(sy, 4)
+  let z = unit(sz, 8)
+  if (x === undefined && y === undefined && z === undefined)
+    [x, y, z] = [
+      [1, 0, 0],
+      [0, 1, 0],
+      [0, 0, 1],
+    ]
+  if (x !== undefined && y === undefined && z === undefined) y = perpendicular(x)
+  else if (y !== undefined && z === undefined && x === undefined) z = perpendicular(y)
+  else if (z !== undefined && x === undefined && y === undefined) x = perpendicular(z)
+  if (z === undefined) z = cross(x!, y!)
+  if (x === undefined) x = cross(y!, z)
+  if (y === undefined) y = cross(z, x)
   return {
     translation: [m(12), m(13), m(14)],
     scaling: [sx, sy, sz],
-    rotation: quaternionFromRotationMatrix([
-      m(0) / dx,
-      m(1) / dx,
-      m(2) / dx,
-      m(4) / dy,
-      m(5) / dy,
-      m(6) / dy,
-      m(8) / dz,
-      m(9) / dz,
-      m(10) / dz,
-    ]),
+    rotation: quaternionFromRotationMatrix([...x, ...y, ...z]),
   }
+}
+
+type Vector3 = [number, number, number]
+
+function cross(a: Vector3, b: Vector3): Vector3 {
+  const c: Vector3 = [
+    a[1] * b[2] - a[2] * b[1],
+    a[2] * b[0] - a[0] * b[2],
+    a[0] * b[1] - a[1] * b[0],
+  ]
+  const length = Math.hypot(c[0], c[1], c[2]) || 1
+  return [c[0] / length, c[1] / length, c[2] / length]
+}
+
+/** A unit vector perpendicular to the unit vector `v`. */
+function perpendicular(v: Vector3): Vector3 {
+  return cross(v, Math.abs(v[0]) < 0.9 ? [1, 0, 0] : [0, 1, 0])
 }
 
 /** Unit quaternion `[x, y, z, w]` of a column-major 3x3 rotation matrix. */
