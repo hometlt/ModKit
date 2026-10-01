@@ -1,12 +1,12 @@
 import {
   createVideoViewer
-} from "./chunk-VACF7Q3Q.js";
+} from "./chunk-FNEHQK2V.js";
 import {
   createAudioViewer
-} from "./chunk-2TDTIOTQ.js";
+} from "./chunk-HRNN2JGI.js";
 import {
   createRelationGraphViewer
-} from "./chunk-435AQ7QC.js";
+} from "./chunk-4JUCZ4NB.js";
 import {
   MODEL_FACET_CONTRACTS,
   commitOperationWrite,
@@ -14,7 +14,7 @@ import {
   fieldWriteRefusal,
   mountFieldEditTarget,
   mountInlineField
-} from "./chunk-6UK2KRST.js";
+} from "./chunk-CPOBEMCF.js";
 import {
   metadataFieldProjections
 } from "./chunk-CW2HIMYV.js";
@@ -109,7 +109,7 @@ import {
   createImageViewer,
   createNamespaceViewer,
   invokeRefusalMessage
-} from "./chunk-SEYT6RD2.js";
+} from "./chunk-TC4FJKZD.js";
 import {
   MEDIA_ZOOM_CHOICES,
   canvasPng,
@@ -118,7 +118,7 @@ import {
   createMediaShell,
   mediaFacts,
   textMatches
-} from "./chunk-32RBDAGR.js";
+} from "./chunk-3FSZZJDK.js";
 import {
   CALCULATIONS_FALLBACK_MESSAGES,
   CARD_FALLBACK_MESSAGES,
@@ -164,7 +164,7 @@ import {
   uiPreference,
   unknownSourceLease,
   withEnglishUiFallback
-} from "./chunk-SMVZNSDO.js";
+} from "./chunk-SD76C35E.js";
 import {
   PERMISSION_CLASSES,
   contributionId,
@@ -6899,6 +6899,28 @@ var VirtualFileSystem = class {
   }
 };
 
+// ../MODDING/modkit-core/packages/host/dist/resource-id.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+function resourceIdParameters(logicalId) {
+  const none = Object.freeze({ name: logicalId, parameters: Object.freeze({}) });
+  const hash = logicalId.lastIndexOf("#");
+  if (hash < 0)
+    return none;
+  const parameters = {};
+  for (const part of logicalId.slice(hash + 1).split("&")) {
+    const equals = part.indexOf("=");
+    const key3 = part.slice(0, Math.max(equals, 0));
+    if (equals <= 0 || !/^[A-Za-z][A-Za-z0-9_.-]*$/u.test(key3) || Object.hasOwn(parameters, key3))
+      return none;
+    try {
+      parameters[key3] = decodeURIComponent(part.slice(equals + 1));
+    } catch {
+      return none;
+    }
+  }
+  return Object.freeze({ name: logicalId.slice(0, hash), parameters: Object.freeze(parameters) });
+}
+
 // ../MODDING/modkit-core/packages/host/dist/raster-selection.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var coordinates = ["frame", "mipLevel", "layer", "face", "slice"];
@@ -7064,35 +7086,19 @@ function ownedCompressedTexture(texture, info, plan, maxBytes) {
   });
 }
 function rasterIdParameters(logicalId) {
-  const hash = logicalId.lastIndexOf("#");
-  if (hash < 0)
+  const { name, parameters } = resourceIdParameters(logicalId);
+  const keys = Object.keys(parameters);
+  if (keys.length === 0 || keys.some((key3) => key3 !== "region" && key3 !== "frame"))
     return { name: logicalId };
-  let region;
-  let frame;
-  for (const part of logicalId.slice(hash + 1).split("&")) {
-    const equals = part.indexOf("=");
-    const key3 = equals < 0 ? part : part.slice(0, equals);
-    if (key3 !== "region" && key3 !== "frame")
-      return { name: logicalId };
-    let value;
-    try {
-      value = decodeURIComponent(part.slice(equals + 1));
-    } catch {
-      return { name: logicalId };
-    }
-    if (equals < 0 || value.length === 0 || (key3 === "region" ? region : frame) !== void 0)
-      throw new TypeError(`raster id parameter ${key3} is empty or repeated`);
-    if (key3 === "region")
-      region = value;
-    else if (/^(?:0|[1-9][0-9]*)$/u.test(value) && Number.isSafeInteger(Number(value)))
-      frame = Number(value);
-    else
-      throw new TypeError("raster id frame must be a nonnegative integer");
-  }
+  const { region, frame } = parameters;
+  if (region !== void 0 && region.length === 0)
+    throw new TypeError("raster id region must name an area");
+  if (frame !== void 0 && !(/^(?:0|[1-9][0-9]*)$/u.test(frame) && Number.isSafeInteger(Number(frame))))
+    throw new TypeError("raster id frame must be a nonnegative integer");
   return {
-    name: logicalId.slice(0, hash),
+    name,
     ...region === void 0 ? {} : { region },
-    ...frame === void 0 ? {} : { frame }
+    ...frame === void 0 ? {} : { frame: Number(frame) }
   };
 }
 function createSubjectRasterResources(options) {
@@ -9616,7 +9622,10 @@ function createSubjectModelResources(options) {
           throw failure4;
       };
       try {
-        const resolution = await timed("resolveMs", () => resources.resolve(request.requirement, signal));
+        const { name, parameters } = resourceIdParameters(request.requirement.logicalId);
+        const parameterised = Object.keys(parameters).length > 0;
+        const requirement = parameterised ? { ...request.requirement, logicalId: name } : request.requirement;
+        const resolution = await timed("resolveMs", () => resources.resolve(requirement, signal));
         if (resolution.state !== "resolved") {
           await release();
           return refuse5(resolution.diagnostic.message);
@@ -9649,7 +9658,9 @@ function createSubjectModelResources(options) {
           operation.id,
           operation.handlerId,
           "schemaVersion=1",
-          `metersPerSourceUnit=${units === void 0 ? "source-unit" : String(units)}`
+          `metersPerSourceUnit=${units === void 0 ? "source-unit" : String(units)}`,
+          // each parameter set is a model of its own
+          ...parameterised ? [`parameters=${canonicalJsonStringify(parameters)}`] : []
         ].join("|");
         projection2 = await timed("projectionWaitMs", () => projections.claim(resources === options.state.resources ? modelProjectionKey(opened, source2, sourceKey, resolution.provenance.logicalId) : void 0, signal));
         profile3.cache = projection2.state;
@@ -9664,7 +9675,8 @@ function createSubjectModelResources(options) {
           profile3.exportInvocations++;
           const converted = await timed("exportUvmMs", () => opened.session.operations().invoke(operation.handlerId, {
             schemaVersion: 1,
-            ...units === void 0 ? {} : { metersPerSourceUnit: units }
+            ...units === void 0 ? {} : { metersPerSourceUnit: units },
+            ...parameterised ? { parameters } : {}
           }, signal === void 0 ? {} : { signal }));
           if (converted.state !== "ok" || converted.output.kind !== "bytes" || !(converted.output.value instanceof Uint8Array))
             throw new RangeError("model resource conversion did not return UVM bytes");
@@ -62623,13 +62635,45 @@ function createGameTemplateViewer(options = {}) {
       const root = createSurface(args.container, localizer.text("viewer.gameTemplate"));
       let renderRevision = 0;
       let rootPath;
+      let shown;
       const selection = { key: void 0 };
+      const fetchPreview = async (descriptor, from) => {
+        const input = await templateInput(args.workspaceDocuments, scope.signal);
+        const result = await invokeOperation(descriptor, args.operations, GAME_TEMPLATE_PREVIEW_OPERATION_ID, from === void 0 ? input : { ...input, rootPath: from }, { signal: scope.signal });
+        if (result.state !== "ok")
+          return { refused: result.reason };
+        if (result.output.kind !== "json" || !isGameTemplatePreviewResult(result.output.value)) {
+          throw new TypeError("view.template returned an invalid game-template-preview result");
+        }
+        return result.output.value;
+      };
+      const revealElsewhere = async (detail) => {
+        const current = shown;
+        if (current === void 0)
+          return;
+        for (const candidate of current.preview.roots ?? []) {
+          if (candidate === (current.preview.rootPath ?? rootPath))
+            continue;
+          const other = await fetchPreview(current.descriptor, candidate);
+          if (scope.signal.aborted || shown !== current)
+            return;
+          if ("refused" in other || !isGameTemplateTreeNode(other.resolvedTree))
+            continue;
+          if (templateNodeAt(other.resolvedTree, detail.uri, detail.offset) === void 0)
+            continue;
+          rootPath = candidate;
+          selection.key = void 0;
+          selection.pending = detail;
+          await render(current.descriptor);
+          return;
+        }
+      };
       const onReveal = (event) => {
         const detail = event.detail;
         if (selection.reveal === void 0)
           selection.pending = detail;
-        else
-          selection.reveal(detail.uri, detail.offset);
+        else if (!selection.reveal(detail.uri, detail.offset))
+          void revealElsewhere(detail).catch(() => void 0);
       };
       root.ownerDocument.addEventListener(TEMPLATE_REVEAL_EVENT, onReveal);
       scope.cleanup(() => root.ownerDocument.removeEventListener(TEMPLATE_REVEAL_EVENT, onReveal));
@@ -62641,28 +62685,25 @@ function createGameTemplateViewer(options = {}) {
           text: localizer.text("viewer.loadingTemplate"),
           part: "viewer.status"
         });
-        const input = await templateInput(args.workspaceDocuments, scope.signal);
-        const result = await invokeOperation(descriptor, args.operations, GAME_TEMPLATE_PREVIEW_OPERATION_ID, rootPath === void 0 ? input : { ...input, rootPath }, { signal: scope.signal });
+        const answer = await fetchPreview(descriptor, rootPath);
         if (scope.signal.aborted || revision !== renderRevision)
           return;
-        if (result.state !== "ok") {
+        if ("refused" in answer) {
           root.replaceChildren();
           element(root, "output", {
-            text: localizer.text("viewer.templateUnavailable", { reason: result.reason }),
+            text: localizer.text("viewer.templateUnavailable", { reason: answer.refused }),
             part: "viewer.status"
           });
           return;
         }
-        if (result.output.kind !== "json" || !isGameTemplatePreviewResult(result.output.value)) {
-          throw new TypeError("view.template returned an invalid game-template-preview result");
-        }
-        const preview2 = result.output.value;
+        const preview2 = answer;
         const assets = [
           ...new Set(preview2.displayItems.flatMap((item) => isGameTemplateDisplayItem(item) && item.asset !== void 0 ? [item.asset] : []))
         ];
         const images = options.images === void 0 || assets.length === 0 ? /* @__PURE__ */ new Map() : await options.images(descriptor, assets, scope.signal);
         if (scope.signal.aborted || revision !== renderRevision)
           return;
+        shown = { descriptor, preview: preview2 };
         renderGameTemplatePreview(root.ownerDocument, root, preview2, localizer, images, {
           selection,
           ...options.openSource === void 0 ? {} : { openSource: options.openSource },
@@ -64831,8 +64872,12 @@ function createSubjectCardViewer(options = {}) {
               // subjects; without either it stays text rather than a button that does nothing.
               ...args.subjectNavigation === void 0 && selector === void 0 ? {} : { onNavigate: navigate },
               ...options.openSource === void 0 ? {} : { onOpenSource: options.openSource },
-              // only the subject this card was opened on writes through this session's ports
-              ...address === ownId ? { onEditField: editField2 } : {},
+              /*
+               * A value writes through this session's ports, whether the card shows the subject or
+               * one its selector lends (an entity of a GameData file, plan 5.3): the session declares
+               * a write only on the facts it can write, by their own semantic path.
+               */
+              onEditField: editField2,
               ...resolveImage === void 0 ? {} : { resolveImage }
             });
             commit?.();
@@ -64910,13 +64955,13 @@ var PREVIEW_STAGES = [
 async function defaultPreviewStage(kind, localizer) {
   switch (kind) {
     case "model":
-      return (await import("./model-5AJXVOKT.js")).createModelViewer({ localizer });
+      return (await import("./model-TUT36NWE.js")).createModelViewer({ localizer });
     case "image":
-      return (await import("./image-CYCRPYAN.js")).createImageViewer({ localizer });
+      return (await import("./image-P6BOSUNE.js")).createImageViewer({ localizer });
     case "video":
-      return (await import("./video-SUSZAN6I.js")).createVideoViewer({ localizer });
+      return (await import("./video-3IYUAKLL.js")).createVideoViewer({ localizer });
     case "audio":
-      return (await import("./audio-N4JOBWBY.js")).createAudioViewer({ localizer });
+      return (await import("./audio-YPCMZAEZ.js")).createAudioViewer({ localizer });
   }
 }
 function embedPreview(sections, args, scope, localizer, previews) {
@@ -64955,7 +65000,7 @@ function embedRelationGraph(sections, args, scope, localizer, graph) {
   return [
     ...sections,
     stageSection({ id: "relations-graph", title: localizer.text("card.relationGraph"), expanded: false }, scope, localizer, "card.relationGraphUnavailable", async (host) => {
-      const module = graph ?? (await import("./graph-YWVZC5TE.js")).createRelationGraphViewer({ localizer });
+      const module = graph ?? (await import("./graph-L7OGCHZK.js")).createRelationGraphViewer({ localizer });
       return scope.signal.aborted ? void 0 : module.mount({ ...args, container: host, signal: scope.signal });
     })
   ];
@@ -70220,6 +70265,9 @@ function modelMaterialById(materials, id) {
   return byId.get(id);
 }
 var worldObjectResources = /* @__PURE__ */ new WeakMap();
+function worldObjectModelResources(item) {
+  return worldObjectResourcesOf(item).keyed;
+}
 function worldObjectResourcesOf(item) {
   let resources = worldObjectResources.get(item);
   if (resources === void 0) {
@@ -77241,18 +77289,22 @@ function createWorldViewer(options = {}) {
       let webGlRenderer;
       const worldEpoch = (view?.performance.now() ?? Date.now()) / 1e3;
       let animationFrame;
-      const currentWorldTime = () => (view?.performance.now() ?? Date.now()) / 1e3 - worldEpoch;
-      const hasAnimatedWater = () => currentModel?.layers.some((layer2) => layer2.layer.waterMaterials?.some((material) => material.scroll?.some((component) => component !== 0) || (material.causticsFrameResourceIds?.length ?? 0) > 1 && (material.causticsFramesPerSecond ?? 0) > 0)) === true;
+      const animate = options.animations !== false;
+      const currentWorldTime = () => animate ? (view?.performance.now() ?? Date.now()) / 1e3 - worldEpoch : 0;
+      const hasAnimatedWater = () => animate && currentModel?.layers.some((layer2) => layer2.layer.waterMaterials?.some((material) => material.scroll?.some((component) => component !== 0) || (material.causticsFrameResourceIds?.length ?? 0) > 1 && (material.causticsFramesPerSecond ?? 0) > 0)) === true;
       const currentAnimationTimes = () => {
         const times = /* @__PURE__ */ new Map();
-        if (currentModel === void 0)
+        if (currentModel === void 0 || !animate)
           return times;
         const now = (view?.performance.now() ?? Date.now()) / 1e3;
         const liveObjects = /* @__PURE__ */ new Set();
         for (const item of currentModel.layers.flatMap((layer2) => layer2.page.items).filter((candidate) => candidate.facet === "objects")) {
           liveObjects.add(item.objectId);
-          const result = item.resourceId === void 0 ? void 0 : currentModel.models?.get(item.resourceId);
-          if (result?.state !== "converted" || !(result.animations?.some((clip) => clip.kind === "animation" && clip.channels.length > 0) || item.presentationAnimation !== void 0 && (result.animations?.length ?? 0) > 0))
+          const plays = worldObjectModelResources(item).some((resourceId2) => {
+            const result = currentModel?.models?.get(resourceId2);
+            return result?.state === "converted" && (result.animations?.some((clip) => clip.kind === "animation" && clip.channels.length > 0) === true || item.presentationAnimation !== void 0 && (result.animations?.length ?? 0) > 0);
+          });
+          if (!plays)
             continue;
           const epoch = animationEpochs.get(item.objectId) ?? now;
           animationEpochs.set(item.objectId, epoch);

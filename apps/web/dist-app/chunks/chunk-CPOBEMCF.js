@@ -7,11 +7,12 @@ import {
   invokeRefusalMessage,
   isRejected,
   mountFieldEditor
-} from "./chunk-SEYT6RD2.js";
+} from "./chunk-TC4FJKZD.js";
 import {
+  canvasPng,
   createMediaShell,
   mountContributedSections
-} from "./chunk-32RBDAGR.js";
+} from "./chunk-3FSZZJDK.js";
 import {
   MODEL_FALLBACK_MESSAGES,
   MODEL_GIZMO_FALLBACK_MESSAGES,
@@ -26,7 +27,7 @@ import {
   setViewerText,
   unknownSourceLease,
   withEnglishUiFallback
-} from "./chunk-SMVZNSDO.js";
+} from "./chunk-SD76C35E.js";
 import {
   applyColorKeyTransparency,
   billboardCameraRotation,
@@ -1372,6 +1373,8 @@ async function resolveModelViewerTextures(port, references, signal) {
       height,
       rgba: keyed,
       ...faces === 6 ? { dimension: "cube" } : {},
+      // sampled as the game samples it: `nearest` keeps pixel art and its cut-outs sharp
+      ...reference.filter === void 0 ? {} : { filter: reference.filter },
       ...result.info.channelLayout === void 0 ? {} : { channelLayout: result.info.channelLayout },
       ...result.info.compression === void 0 ? {} : { compression: result.info.compression }
     });
@@ -1610,7 +1613,7 @@ function createModelViewer(options = {}) {
         }), { vertices: 0, triangles: 0 });
         const boneCount = facetPages.get("common.view/model-skeleton-source")?.items.length ?? 0;
         const resourceCount = facetPages.get("common.view/model-resource-refs-source")?.items.length ?? 0;
-        args.status?.set([
+        const sceneStatus = [
           {
             id: "scene",
             icon: "symbol-misc",
@@ -1643,8 +1646,39 @@ function createModelViewer(options = {}) {
               align: "start"
             }
           ]
-        ]);
-        scope.cleanup(() => args.status?.clear());
+        ];
+        const degrees = (radians) => Math.round(radians * 180 / Math.PI);
+        const publishStatus = () => args.status?.set([
+          ...sceneStatus,
+          {
+            id: "camera",
+            icon: "device-camera",
+            text: localizer.text("viewer.modelCamera", {
+              yaw: degrees(camera.pose.yaw),
+              pitch: degrees(camera.pose.pitch),
+              zoom: (1 / camera.pose.distanceScale).toFixed(2)
+            }),
+            tooltip: localizer.text("viewer.modelCameraReset"),
+            align: "end",
+            action: true
+          }
+        ], (itemId) => {
+          if (itemId === "camera")
+            camera.reset();
+        });
+        publishStatus();
+        let statusTimer;
+        scope.cleanup(camera.onChange(() => {
+          statusTimer ??= setTimeout(() => {
+            statusTimer = void 0;
+            publishStatus();
+          }, 150);
+        }));
+        scope.cleanup(() => {
+          if (statusTimer !== void 0)
+            clearTimeout(statusTimer);
+          args.status?.clear();
+        });
         if (model.primitive === void 0) {
           canvas.remove();
           gizmo.destroy();
@@ -2053,6 +2087,35 @@ function createModelViewer(options = {}) {
               }, { signal: scope.signal });
             }
           }
+          const snapshotRow = controlRow(panel.export, localizer.text("viewer.modelSnapshot"));
+          const snapshot = element(snapshotRow.field, "button", {
+            part: "operations.button",
+            text: localizer.text("viewer.modelSnapshotSave")
+          });
+          snapshot.type = "button";
+          const snapshotStatus = element(snapshotRow.field, "output", {
+            part: "model.convert-status"
+          });
+          const writeSnapshot = options.exportBytes;
+          if (writeSnapshot === void 0) {
+            snapshot.disabled = true;
+            snapshotStatus.textContent = localizer.text("viewer.modelConvertUnavailable");
+          } else
+            snapshot.addEventListener("click", () => void (async () => {
+              try {
+                const base = options.exportBaseName?.(args.descriptor) ?? "model";
+                const outcome = await writeSnapshot([
+                  {
+                    name: `${base}.png`,
+                    mediaType: "image/png",
+                    bytes: await canvasPng(canvas)
+                  }
+                ], scope.signal);
+                snapshotStatus.textContent = outcome.state === "written" ? localizer.text("viewer.modelSnapshotSaved") : outcome.reason ?? outcome.state;
+              } catch (error) {
+                snapshotStatus.textContent = error instanceof Error ? error.message : String(error);
+              }
+            })(), { signal: scope.signal });
           const conversions = modelConversions(args.descriptor);
           if (conversions.length > 0) {
             const exportRow = controlRow(panel.export, localizer.text("viewer.modelConvert"));

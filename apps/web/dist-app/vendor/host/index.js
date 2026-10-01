@@ -8844,6 +8844,27 @@ async function releaseCodec(codec) {
   await release?.();
 }
 
+// ../MODDING/modkit-core/packages/host/dist/resource-id.js
+function resourceIdParameters(logicalId) {
+  const none = Object.freeze({ name: logicalId, parameters: Object.freeze({}) });
+  const hash = logicalId.lastIndexOf("#");
+  if (hash < 0)
+    return none;
+  const parameters = {};
+  for (const part of logicalId.slice(hash + 1).split("&")) {
+    const equals = part.indexOf("=");
+    const key3 = part.slice(0, Math.max(equals, 0));
+    if (equals <= 0 || !/^[A-Za-z][A-Za-z0-9_.-]*$/u.test(key3) || Object.hasOwn(parameters, key3))
+      return none;
+    try {
+      parameters[key3] = decodeURIComponent(part.slice(equals + 1));
+    } catch {
+      return none;
+    }
+  }
+  return Object.freeze({ name: logicalId.slice(0, hash), parameters: Object.freeze(parameters) });
+}
+
 // ../MODDING/modkit-core/packages/host/dist/raster-selection.js
 var coordinates = ["frame", "mipLevel", "layer", "face", "slice"];
 function captureRasterSelection(value) {
@@ -9008,35 +9029,19 @@ function ownedCompressedTexture(texture, info, plan, maxBytes) {
   });
 }
 function rasterIdParameters(logicalId) {
-  const hash = logicalId.lastIndexOf("#");
-  if (hash < 0)
+  const { name, parameters } = resourceIdParameters(logicalId);
+  const keys = Object.keys(parameters);
+  if (keys.length === 0 || keys.some((key3) => key3 !== "region" && key3 !== "frame"))
     return { name: logicalId };
-  let region;
-  let frame;
-  for (const part of logicalId.slice(hash + 1).split("&")) {
-    const equals = part.indexOf("=");
-    const key3 = equals < 0 ? part : part.slice(0, equals);
-    if (key3 !== "region" && key3 !== "frame")
-      return { name: logicalId };
-    let value;
-    try {
-      value = decodeURIComponent(part.slice(equals + 1));
-    } catch {
-      return { name: logicalId };
-    }
-    if (equals < 0 || value.length === 0 || (key3 === "region" ? region : frame) !== void 0)
-      throw new TypeError(`raster id parameter ${key3} is empty or repeated`);
-    if (key3 === "region")
-      region = value;
-    else if (/^(?:0|[1-9][0-9]*)$/u.test(value) && Number.isSafeInteger(Number(value)))
-      frame = Number(value);
-    else
-      throw new TypeError("raster id frame must be a nonnegative integer");
-  }
+  const { region, frame } = parameters;
+  if (region !== void 0 && region.length === 0)
+    throw new TypeError("raster id region must name an area");
+  if (frame !== void 0 && !(/^(?:0|[1-9][0-9]*)$/u.test(frame) && Number.isSafeInteger(Number(frame))))
+    throw new TypeError("raster id frame must be a nonnegative integer");
   return {
-    name: logicalId.slice(0, hash),
+    name,
     ...region === void 0 ? {} : { region },
-    ...frame === void 0 ? {} : { frame }
+    ...frame === void 0 ? {} : { frame: Number(frame) }
   };
 }
 function createSubjectRasterResources(options) {
@@ -11571,7 +11576,10 @@ function createSubjectModelResources(options) {
           throw failure3;
       };
       try {
-        const resolution = await timed("resolveMs", () => resources.resolve(request.requirement, signal));
+        const { name, parameters } = resourceIdParameters(request.requirement.logicalId);
+        const parameterised = Object.keys(parameters).length > 0;
+        const requirement = parameterised ? { ...request.requirement, logicalId: name } : request.requirement;
+        const resolution = await timed("resolveMs", () => resources.resolve(requirement, signal));
         if (resolution.state !== "resolved") {
           await release();
           return refuse3(resolution.diagnostic.message);
@@ -11604,7 +11612,9 @@ function createSubjectModelResources(options) {
           operation.id,
           operation.handlerId,
           "schemaVersion=1",
-          `metersPerSourceUnit=${units === void 0 ? "source-unit" : String(units)}`
+          `metersPerSourceUnit=${units === void 0 ? "source-unit" : String(units)}`,
+          // each parameter set is a model of its own
+          ...parameterised ? [`parameters=${canonicalJsonStringify(parameters)}`] : []
         ].join("|");
         projection = await timed("projectionWaitMs", () => projections.claim(resources === options.state.resources ? modelProjectionKey(opened, source, sourceKey, resolution.provenance.logicalId) : void 0, signal));
         profile3.cache = projection.state;
@@ -11619,7 +11629,8 @@ function createSubjectModelResources(options) {
           profile3.exportInvocations++;
           const converted = await timed("exportUvmMs", () => opened.session.operations().invoke(operation.handlerId, {
             schemaVersion: 1,
-            ...units === void 0 ? {} : { metersPerSourceUnit: units }
+            ...units === void 0 ? {} : { metersPerSourceUnit: units },
+            ...parameterised ? { parameters } : {}
           }, signal === void 0 ? {} : { signal }));
           if (converted.state !== "ok" || converted.output.kind !== "bytes" || !(converted.output.value instanceof Uint8Array))
             throw new RangeError("model resource conversion did not return UVM bytes");
