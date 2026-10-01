@@ -15,7 +15,7 @@ import {
   IDENTITY_MATERIAL_FRAME,
 } from '../materials/frame.js'
 import type { UvmModelParticleDraw } from './effect-particles.js'
-import type { UvmRenderOptions, PreparedUvmRender } from './render.js'
+import type { UvmFrameOptions, PreparedUvmRender } from './render.js'
 
 export type ModelParticleInstance = UvmModelParticleDraw & { readonly transform: readonly number[] }
 const multiplyAffine = (a: ArrayLike<number>, b: ArrayLike<number>) =>
@@ -83,13 +83,13 @@ export function modelParticleMatrix(instance: ModelParticleInstance): Float32Arr
 export async function composeModelParticles(
   instances: readonly ModelParticleInstance[],
   parent: SceneRenderRequest,
-  options: UvmRenderOptions,
+  options: UvmFrameOptions,
   depth: number,
   maxBytes: number,
   prepare: (
     bytes: Uint8Array,
     input: JsonValue,
-    options: UvmRenderOptions,
+    options: UvmFrameOptions,
     depth: number,
   ) => Promise<PreparedUvmRender>,
   purpose: {

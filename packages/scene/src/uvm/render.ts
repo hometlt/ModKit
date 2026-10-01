@@ -47,16 +47,20 @@ import {
 import { snapshotEnvironment } from '../materials/environment.js'
 import { RENDER_MATERIAL_SHADER } from '../materials/render-model.js'
 
-export interface UvmRenderOptions {
+/** What preparing a frame takes: everything `renderUvm` does but the renderer. */
+export interface UvmFrameOptions {
   readonly modelResources?: ModelResourcePort
   /** Trusted collision callback in UV_game_effects simulation space; never supplied by JSON. */
   readonly effectCollisionProvider?: EffectParticleCollisionProvider
-  readonly contracts: ContractResolverPort
   readonly budget: ResourceBudget
   /** Decoded texels keyed by UVM texture index. UVM owns sampler modes; supplied wrap modes are ignored. */
   readonly textures?: ReadonlyMap<number, SceneRendererTexture>
   readonly rasterResources?: RasterResourcePort
   readonly signal?: AbortSignal
+}
+
+export interface UvmRenderOptions extends UvmFrameOptions {
+  readonly contracts: ContractResolverPort
 }
 
 /** Read a UVM frame, then invoke the selected standard scene renderer. The request is inert JSON:
@@ -72,11 +76,26 @@ export interface PreparedUvmRender {
   readonly rendererId?: string
 }
 
-async function prepareUvmRender(
+/**
+ * The scene request `renderUvm` hands its renderer, for a viewer that draws frames itself (the VS
+ * Code model viewer): the same JSON request, sampled at its camera, clip and time, with effects,
+ * model states, model particles (through `modelResources`) and textures (`textures`,
+ * `rasterResources`), and the diagnostics of what will not render.
+ */
+export function prepareUvmRender(
   bytes: Uint8Array,
   value: JsonValue,
-  options: UvmRenderOptions,
-  depth = 0,
+  options: UvmFrameOptions,
+): Promise<PreparedUvmRender> {
+  return prepareNestedUvmRender(bytes, value, options, 0)
+}
+
+/** {@link prepareUvmRender} at a nesting depth: model states and particles prepare their models. */
+async function prepareNestedUvmRender(
+  bytes: Uint8Array,
+  value: JsonValue,
+  options: UvmFrameOptions,
+  depth: number,
 ): Promise<PreparedUvmRender> {
   const { budget, signal, rasterResources } = options
   signal?.throwIfAborted()
@@ -882,7 +901,7 @@ async function prepareUvmRender(
     options,
     depth,
     nestedBudget,
-    prepareUvmRender,
+    prepareNestedUvmRender,
     { id: 'model-state', label: 'Model states', prefix: 'model-state' },
   )
   const stateApplied = modelStateNested.composedInstances > 0
@@ -892,7 +911,7 @@ async function prepareUvmRender(
     options,
     depth,
     nestedBudget,
-    prepareUvmRender,
+    prepareNestedUvmRender,
   )
   if (
     diagnostics.length + modelStateNested.diagnostics.length + nested.diagnostics.length >
