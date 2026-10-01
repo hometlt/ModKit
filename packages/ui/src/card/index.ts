@@ -539,10 +539,19 @@ function factField(
             ...(fact.unit === undefined ? {} : { unit: fact.unit }),
             editable: fact.editable,
             value: fact.value,
-            target: { groupId, key: fact.id },
+            target: { groupId, key: fact.id, ...factWritePath(fact) },
           },
         }),
   }
+}
+
+/**
+ * Where the codec writes the fact: the semantic path its source names (`['Unit', 'Marine',
+ * 'LifeMax']` for SC2 Data). The fact id alone does not say which entity a value belongs to.
+ */
+function factWritePath(fact: SubjectFact): { readonly path?: readonly string[] } {
+  const path = fact.provenance.find(item => item.semanticPath !== undefined)?.semanticPath
+  return path === undefined ? {} : { path }
 }
 
 function repositoryResourceRef(value: JsonValue): CardRef | undefined {

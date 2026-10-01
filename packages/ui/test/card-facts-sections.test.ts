@@ -218,4 +218,28 @@ describe('subject card projection of typed facts', () => {
     // a value without a declared write stays text
     expect(fields?.kind === 'fields' ? fields.fields[1]?.edit : 'not fields').toBeUndefined()
   })
+
+  it('writes a fact at the semantic path its source names, so the codec knows the entity', async () => {
+    const editable = { write: { operation: 'edit.field' } } as unknown as SubjectFact['editable']
+    const sections = await loadSubjectCardSections(
+      source({
+        combat: [
+          fact('LifeMax', 45, {
+            type: { kind: 'number' } as SubjectFact['type'],
+            editable,
+            provenance: [
+              { label: 'Liberty' },
+              { label: 'Core', semanticPath: ['Unit', 'Marine', 'LifeMax'] },
+            ],
+          }),
+        ],
+      }),
+    )
+    const fields = sections.find(section => section.kind === 'fields')
+    expect(fields?.kind === 'fields' ? fields.fields[0]?.edit?.target : 'not fields').toEqual({
+      groupId: 'combat',
+      key: 'LifeMax',
+      path: ['Unit', 'Marine', 'LifeMax'],
+    })
+  })
 })
