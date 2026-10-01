@@ -137,11 +137,17 @@ test(
       open('lib', 'galaxy', LIB)
       open('data', 'sc2-data', DATA)
       open('strings', 'sc2-strings', STRINGS)
-      const dataRootCompletion = await ok('textDocument/completion', at('data', 2, 5))
+      // The catalog root offers its classes, const and the structures a root may default (`S…`),
+      // as the provider has since 23.09 (blizzard: "offers only %s classes, const and valid root
+      // structure defaults").
+      const dataRootLabels = (await ok('textDocument/completion', at('data', 2, 5))).items.map(
+        item => item.label,
+      )
       assert.deepEqual(
-        dataRootCompletion.items.map(item => item.label),
+        dataRootLabels.filter(label => !/^S[A-Z]/u.test(label)),
         ['CUnit', 'CUnitHero', 'const'],
       )
+      assert.ok(dataRootLabels.includes('SCost'), 'root structure defaults are offered')
       const dataHover = await ok('textDocument/hover', at('data', 4, 10))
       assert.match(dataHover.contents.value, /LifeMax/u)
       const parent = await ok('textDocument/definition', at('data', 6, 30))
