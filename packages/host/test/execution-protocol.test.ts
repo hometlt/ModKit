@@ -93,6 +93,12 @@ describe('capability-rpc protocol v1 — wire values', () => {
     expect(checked.violation.code).toBe(code)
   })
 
+  it('carries the 1024² image of a pixel operation as base64 in its JSON input by default', () => {
+    const pixels = 'A'.repeat(Math.ceil((1024 * 1024 * 4) / 3) * 4)
+    const image = { width: 1024, height: 1024, pixels }
+    expect(validateWireValue({ image }, DEFAULT_PROTOCOL_LIMITS).ok).toBe(true)
+  })
+
   it.each([
     ['Int32Array', new Int32Array([-1, 2])],
     ['Float32Array', new Float32Array([1.5, -0])],
