@@ -21280,6 +21280,7 @@ function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize, mode
     ...terrainTransform === void 0 ? {} : { terrainTransform },
     ...uvwTransform === void 0 ? {} : { uvwTransform },
     ...uvwTransformRefusal === void 0 ? {} : { uvwTransformRefusal },
+    ...semantic.players === void 0 ? {} : { players: Object.freeze(semantic.players.map((player) => Object.freeze({ ...player }))) },
     facets,
     provenance: Object.freeze(provenance.map((item) => Object.freeze({ ...item }))),
     unknownFacets: snapshot2.worldCandidate.unknownFacets,

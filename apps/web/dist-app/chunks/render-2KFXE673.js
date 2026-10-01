@@ -1812,6 +1812,54 @@ function uvmMaterialDrawOrder(material) {
     ...typeof priority === "number" && Number.isFinite(priority) ? { priority } : {}
   };
 }
+var TEAM_BLENDS = /* @__PURE__ */ new Set(["multiply", "add", "replace", "overlay", "lerp"]);
+var TEAM_CHANNELS = /* @__PURE__ */ new Set(["r", "g", "b", "a", "rgb"]);
+function uvmMaterialTeamColor(material, baseTexCoord) {
+  const extension = field(material["extensions"], "UV_game_material_team_color");
+  if (extension === void 0)
+    return {};
+  const team = object(extension, "team colour");
+  const blend = team["blend"] ?? "multiply";
+  const strength = team["strength"] ?? 1;
+  if (typeof blend !== "string" || !TEAM_BLENDS.has(blend))
+    return { unrendered: `blend ${String(blend)} is not one the extension names` };
+  if (typeof strength !== "number" || !Number.isFinite(strength) || strength < 0)
+    return { unrendered: "its strength is not a nonnegative number" };
+  const defaults = team["defaultColor"];
+  const defaultColor = Array.isArray(defaults) && defaults.length >= 3 && defaults.slice(0, 3).every((item) => typeof item === "number" && item >= 0 && item <= 1) ? [defaults[0], defaults[1], defaults[2]] : void 0;
+  const common = {
+    blend,
+    ...strength === 1 ? {} : { strength },
+    ...defaultColor === void 0 ? {} : { defaultColor }
+  };
+  const source = team["maskSource"];
+  if (source === "whole")
+    return { teamColor: { mask: "whole", ...common } };
+  if (source !== "texture")
+    return { unrendered: `its ${String(source)} mask is not drawn yet` };
+  const mask = object(team["maskTexture"] ?? {}, "team colour mask texture");
+  const index = mask["index"];
+  const texCoord = mask["texCoord"] ?? 0;
+  const channel = mask["channel"] ?? "rgb";
+  if (typeof index !== "number" || !Number.isSafeInteger(index) || index < 0)
+    return { unrendered: "its mask names no texture" };
+  if (texCoord !== baseTexCoord)
+    return {
+      unrendered: `its mask reads TEXCOORD_${String(texCoord)}, the base colour another set`
+    };
+  if (typeof channel !== "string" || !TEAM_CHANNELS.has(channel))
+    return { unrendered: `its mask channel ${String(channel)} is unknown` };
+  return {
+    teamColor: {
+      mask: {
+        texture: `uvm-texture-${String(index)}`,
+        channel
+      },
+      ...common
+    },
+    maskTexture: index
+  };
+}
 function uvmMaterialShader(material) {
   const extension = field(material["extensions"], "UV_game_material");
   if (extension === void 0) {
@@ -2311,6 +2359,9 @@ async function prepareNestedUvmRender(bytes, value, options, depth, cache) {
       warn("common.uvm/pbr-lighting-unrendered", `Material ${index} is rendered without PBR lighting by the current base-color scene route.`);
     if (material["normalTexture"] !== void 0 || material["emissiveTexture"] !== void 0 || pbr["metallicRoughnessTexture"] !== void 0)
       warn("common.uvm/material-features-unrendered", `Material ${index} uses shading features beyond the current base-color scene contract.`);
+    const team2 = uvmMaterialTeamColor(material, texCoord);
+    if (team2.unrendered !== void 0)
+      warn("common.uvm/team-color-unrendered", `Material ${index} team colour is not drawn: ${team2.unrendered}.`);
     const simpleEffect = uvmMaterialBlendEffect(material, () => {
       const { wrapU, wrapV } = textureIndex === void 0 ? { wrapU: "repeat", wrapV: "repeat" } : textureSampler(textureIndex);
       return { wrapU: wrapU ?? "repeat", wrapV: wrapV ?? "repeat" };
@@ -2324,6 +2375,7 @@ async function prepareNestedUvmRender(bytes, value, options, depth, cache) {
       ...textureIndex === void 0 ? {} : { baseColorTexture: `uvm-texture-${textureIndex}` },
       doubleSided: material["doubleSided"] === true,
       ...uvmMaterialDrawOrder(material),
+      ...team2.teamColor === void 0 ? {} : { teamColor: team2.teamColor },
       ...shader === void 0 ? {} : { shader },
       ...simpleEffect === void 0 ? {} : { simpleEffect }
     };
@@ -2445,10 +2497,15 @@ async function prepareNestedUvmRender(bytes, value, options, depth, cache) {
       });
   }
   const materialById = new Map(materials.map((material) => [material.id, material]));
-  const usedTextures = new Set(primitives.flatMap((primitive) => {
-    const index = materialTextures.get(primitive.materialId ?? "") ?? documentTextureIndex(materialById.get(primitive.materialId ?? "")?.baseColorTexture);
-    return index === void 0 ? [] : [index];
-  }));
+  const drawnTextures = (materialId) => {
+    const material = materialById.get(materialId ?? "");
+    const mask = material?.teamColor?.mask;
+    return [
+      materialTextures.get(materialId ?? "") ?? documentTextureIndex(material?.baseColorTexture),
+      mask === void 0 || mask === "whole" ? void 0 : documentTextureIndex(mask.texture)
+    ].filter((index) => index !== void 0);
+  };
+  const usedTextures = new Set(primitives.flatMap((primitive) => drawnTextures(primitive.materialId)));
   const images = rasterResources === void 0 ? [] : prepareUvmTextureImages(document, binary, [...usedTextures].filter((index) => !textures.has(index)), Math.floor(rasterBudget / 2), signal);
   for (const image of images)
     textureSampler(image.texture);
@@ -2460,12 +2517,7 @@ async function prepareNestedUvmRender(bytes, value, options, depth, cache) {
   for (const texture of acquiredMaterials.textures)
     remainingDecodedBytes -= texture.rgba.length;
   const drawnByShader = new Set(materials.filter((material) => material.shader?.id === RENDER_MATERIAL_SHADER && (materialResources.get(material.id) ?? []).length === acquiredMaterials.bindings(material.id).length).map((material) => material.id));
-  const fallbackTextures = new Set(primitives.flatMap((primitive) => {
-    if (drawnByShader.has(primitive.materialId ?? ""))
-      return [];
-    const index = materialTextures.get(primitive.materialId ?? "") ?? documentTextureIndex(materialById.get(primitive.materialId ?? "")?.baseColorTexture);
-    return index === void 0 ? [] : [index];
-  }));
+  const fallbackTextures = new Set(primitives.flatMap((primitive) => drawnByShader.has(primitive.materialId ?? "") ? [] : drawnTextures(primitive.materialId)));
   const decodedImages = /* @__PURE__ */ new Map();
   const failedImages = /* @__PURE__ */ new Set();
   for (const image of images) {

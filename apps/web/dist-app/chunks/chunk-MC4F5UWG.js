@@ -83,6 +83,8 @@ var PARTS = Object.freeze([
   "table.find",
   /** One occurrence of the find text inside a drawn cell. */
   "table.match",
+  /** A value's trailing white space, shown where it is drawn. */
+  "table.trailing",
   // namespace
   "namespace",
   "namespace.list",
@@ -1553,6 +1555,7 @@ var EN_MESSAGES = Object.freeze({
   "table.filterMissing": "Missing",
   "table.filterUntranslated": "Untranslated",
   "table.filterDuplicate": "Duplicates",
+  "table.filterEmpty": "Empty",
   "table.filterChanged": "Changed",
   "table.group": "Key group",
   "table.groupAll": "All groups",
@@ -1594,6 +1597,7 @@ var EN_MESSAGES = Object.freeze({
   "table.draftFirst": "Save or revert the unsaved changes first.",
   "table.saved": "Saved.",
   "table.refused": "Not saved: {reason}",
+  "table.trailingSpace": "White space at the end of the value: the game keeps it",
   "table.stale": "Saved. Reopen the file to make further changes.",
   "viewer.virtualText": "Virtual text viewer",
   "viewer.transport": "Transport controls",
@@ -2525,6 +2529,7 @@ var RU_MESSAGES = Object.freeze({
   "table.filterMissing": "\u041E\u0442\u0441\u0443\u0442\u0441\u0442\u0432\u0443\u044E\u0442",
   "table.filterUntranslated": "\u041D\u0435 \u043F\u0435\u0440\u0435\u0432\u0435\u0434\u0435\u043D\u044B",
   "table.filterDuplicate": "\u0414\u0443\u0431\u043B\u0438\u043A\u0430\u0442\u044B",
+  "table.filterEmpty": "\u041F\u0443\u0441\u0442\u044B\u0435",
   "table.filterChanged": "\u0418\u0437\u043C\u0435\u043D\u0435\u043D\u044B",
   "table.group": "\u0413\u0440\u0443\u043F\u043F\u0430 \u043A\u043B\u044E\u0447\u0435\u0439",
   "table.groupAll": "\u0412\u0441\u0435 \u0433\u0440\u0443\u043F\u043F\u044B",
@@ -2566,6 +2571,7 @@ var RU_MESSAGES = Object.freeze({
   "table.draftFirst": "\u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u0441\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u0435 \u0438\u043B\u0438 \u043E\u0442\u043C\u0435\u043D\u0438\u0442\u0435 \u043D\u0435\u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D\u043D\u044B\u0435 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F.",
   "table.saved": "\u0421\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u043E.",
   "table.refused": "\u041D\u0435 \u0441\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u043E: {reason}",
+  "table.trailingSpace": "\u041F\u0440\u043E\u0431\u0435\u043B\u044B \u0432 \u043A\u043E\u043D\u0446\u0435 \u0437\u043D\u0430\u0447\u0435\u043D\u0438\u044F: \u0438\u0433\u0440\u0430 \u0438\u0445 \u0441\u043E\u0445\u0440\u0430\u043D\u044F\u0435\u0442",
   "table.stale": "\u0421\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u043E. \u041E\u0442\u043A\u0440\u043E\u0439\u0442\u0435 \u0444\u0430\u0439\u043B \u0437\u0430\u043D\u043E\u0432\u043E, \u0447\u0442\u043E\u0431\u044B \u043F\u0440\u043E\u0434\u043E\u043B\u0436\u0438\u0442\u044C \u043F\u0440\u0430\u0432\u043A\u0443.",
   "viewer.virtualText": "\u041F\u043E\u0441\u0442\u0440\u0430\u043D\u0438\u0447\u043D\u044B\u0439 \u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440 \u0442\u0435\u043A\u0441\u0442\u0430",
   "viewer.transport": "\u0423\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u0438\u0435 \u0432\u043E\u0441\u043F\u0440\u043E\u0438\u0437\u0432\u0435\u0434\u0435\u043D\u0438\u0435\u043C",
@@ -3494,6 +3500,7 @@ var TABLE_FALLBACK_MESSAGES = {
   "card.loadingDescription": "Loading description\u2026",
   "table.stale": "Saved. Reopen the file to make further changes.",
   "table.suggestions": "Suggestions",
+  "table.trailingSpace": "White space at the end of the value: the game keeps it",
   "viewer.nextRows": "Next rows",
   "viewer.table": "Table viewer",
   "viewer.tableShape": "{rows} rows, {columns} columns"
@@ -3517,6 +3524,7 @@ var TABLE_VARIANTS_FALLBACK_MESSAGES = {
   "table.draftFirst": "Save or revert the unsaved changes first.",
   "table.filterChanged": "Changed",
   "table.filterDuplicate": "Duplicates",
+  "table.filterEmpty": "Empty",
   "table.filterMissing": "Missing",
   "table.filterUntranslated": "Untranslated",
   "table.filters": "Table filters",

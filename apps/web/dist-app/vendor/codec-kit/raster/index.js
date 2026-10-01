@@ -25,10 +25,12 @@ import {
   applyColorKeyTransparency,
   applyRoundedAlpha,
   combineNormalSpecular,
+  hsvToRgb,
   linearToSrgb,
   resizeRgba,
+  rgbToHsv,
   srgbToLinear
-} from "../../../chunks/chunk-GO3VAZA2.js";
+} from "../../../chunks/chunk-SNT2IRUT.js";
 import "../../../chunks/chunk-GDKG5J25.js";
 import "../../../chunks/chunk-TWH75SBL.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
@@ -52,12 +54,14 @@ export {
   greyDepthFor,
   greyGridFromPng,
   greyGridToPng,
+  hsvToRgb,
   linearToSrgb,
   parsePcx,
   parseTga,
   plausibleTgaHeader,
   readJpegFrameInfo,
   resizeRgba,
+  rgbToHsv,
   srgbToLinear,
   surfaceRegionReader
 };

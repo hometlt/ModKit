@@ -1,20 +1,21 @@
 import {
   createVideoViewer
-} from "./chunk-FNEHQK2V.js";
+} from "./chunk-Z7LIMOFD.js";
 import {
   createAudioViewer
-} from "./chunk-HRNN2JGI.js";
+} from "./chunk-QRXHZS5R.js";
 import {
   createRelationGraphViewer
-} from "./chunk-4JUCZ4NB.js";
+} from "./chunk-OTPIASW6.js";
 import {
   MODEL_FACET_CONTRACTS,
   commitOperationWrite,
   createModelViewer,
   fieldWriteRefusal,
+  modelMaterialTeamColor,
   mountFieldEditTarget,
   mountInlineField
-} from "./chunk-CPOBEMCF.js";
+} from "./chunk-H3W3B6JV.js";
 import {
   metadataFieldProjections
 } from "./chunk-CW2HIMYV.js";
@@ -109,7 +110,7 @@ import {
   createImageViewer,
   createNamespaceViewer,
   invokeRefusalMessage
-} from "./chunk-TC4FJKZD.js";
+} from "./chunk-L7SNTLK7.js";
 import {
   MEDIA_ZOOM_CHOICES,
   canvasPng,
@@ -118,7 +119,7 @@ import {
   createMediaShell,
   mediaFacts,
   textMatches
-} from "./chunk-3FSZZJDK.js";
+} from "./chunk-KWS6AF3F.js";
 import {
   CALCULATIONS_FALLBACK_MESSAGES,
   CARD_FALLBACK_MESSAGES,
@@ -164,7 +165,7 @@ import {
   uiPreference,
   unknownSourceLease,
   withEnglishUiFallback
-} from "./chunk-SD76C35E.js";
+} from "./chunk-MC4F5UWG.js";
 import {
   PERMISSION_CLASSES,
   contributionId,
@@ -21209,6 +21210,7 @@ function createCandidateWorldSceneLease(snapshot3, provenance, maxPageSize, mode
     ...terrainTransform === void 0 ? {} : { terrainTransform },
     ...uvwTransform === void 0 ? {} : { uvwTransform },
     ...uvwTransformRefusal === void 0 ? {} : { uvwTransformRefusal },
+    ...semantic.players === void 0 ? {} : { players: Object.freeze(semantic.players.map((player) => Object.freeze({ ...player }))) },
     facets,
     provenance: Object.freeze(provenance.map((item) => Object.freeze({ ...item }))),
     unknownFacets: snapshot3.worldCandidate.unknownFacets,
@@ -49497,6 +49499,74 @@ function sampleCubeTexture(texture, direction) {
   return [0, 1, 2, 3].map((channel) => ((a2[channel] ?? 0) * (1 - fx) + (b2[channel] ?? 0) * fx) * (1 - fy) + ((c3[channel] ?? 0) * (1 - fx) + (d[channel] ?? 0) * fx) * fy);
 }
 
+// ../MODDING/modkit-core/packages/codec-kit/dist/model-math/color-remap.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var TEAM_COLOR_BLENDS = ["multiply", "add", "replace", "overlay", "lerp"];
+function teamColorChannel(base, mask, team, blend, strength = 1) {
+  const weight = Math.max(0, mask * strength);
+  const mixed = Math.min(weight, 1);
+  if (blend === "add")
+    return base + team * weight;
+  if (blend === "multiply")
+    return base * (1 + (team - 1) * mixed);
+  const target = blend === "overlay" ? base < 0.5 ? 2 * base * team : 1 - 2 * (1 - base) * (1 - team) : team;
+  return base + (target - base) * mixed;
+}
+var TEAM_COLOR_GLSL = `vec3 modkitTeamColor(vec3 base, vec3 mask, vec3 team, int blend, float strength) {
+  vec3 weight = max(mask * strength, vec3(0.0));
+  vec3 mixed = min(weight, vec3(1.0));
+  if (blend == 1) return base + team * weight;
+  if (blend == 0) return base * (vec3(1.0) + (team - vec3(1.0)) * mixed);
+  vec3 target = team;
+  if (blend == 3) target = mix(1.0 - 2.0 * (1.0 - base) * (1.0 - team), 2.0 * base * team, vec3(lessThan(base, vec3(0.5))));
+  return base + (target - base) * mixed;
+}`;
+
+// ../MODDING/modkit-core/packages/scene/dist/render/team-color.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var CHANNELS2 = { r: 0, g: 1, b: 2, a: 3, rgb: "rgb" };
+function rgb(value, label) {
+  if (!Array.isArray(value) || value.length !== 3 || !value.every((item) => typeof item === "number" && item >= 0 && item <= 1))
+    throw new TypeError(`${label} must be three components in 0..1`);
+  return [value[0], value[1], value[2]];
+}
+function drawTeamColor(material, scene) {
+  const team = material.teamColor;
+  if (team === void 0)
+    return void 0;
+  const blendIndex = TEAM_COLOR_BLENDS.indexOf(team.blend);
+  if (blendIndex < 0)
+    throw new TypeError(`material ${material.id} team colour blend is unknown`);
+  const strength = team.strength ?? 1;
+  if (!Number.isFinite(strength) || strength < 0)
+    throw new TypeError(`material ${material.id} team colour strength must be nonnegative`);
+  const mask = team.mask;
+  if (mask !== "whole" && (typeof mask.texture !== "string" || !(mask.channel in CHANNELS2)))
+    throw new TypeError(`material ${material.id} team colour mask is invalid`);
+  const context = material.context ?? scene;
+  if (context?.teamColorIntensity === 0)
+    return void 0;
+  const color2 = context?.teamColor !== void 0 ? rgb(context.teamColor, "team colour") : rgb(team.defaultColor ?? [1, 1, 1], `material ${material.id} team colour default`);
+  return {
+    ...mask === "whole" ? {} : { maskTexture: mask.texture },
+    channel: mask === "whole" ? "rgb" : CHANNELS2[mask.channel],
+    blend: team.blend,
+    blendIndex,
+    strength,
+    color: color2
+  };
+}
+function applyDrawTeamColor(team, color2, maskTexel) {
+  const weight = (channel) => maskTexel === void 0 ? 1 : maskTexel[team.channel === "rgb" ? channel : team.channel] ?? 0;
+  return [0, 1, 2].map((channel) => teamColorChannel(color2[channel], weight(channel), team.color[channel], team.blend, team.strength));
+}
+function teamMaskTexture(team, textures) {
+  if (team?.maskTexture === void 0)
+    return void 0;
+  const texture = textures.get(team.maskTexture);
+  return texture?.dimension === "cube" ? void 0 : texture;
+}
+
 // ../MODDING/modkit-core/packages/scene/dist/render/browser.js
 var RENDERER_ID = "modkit.browser-webgl";
 var MAX_DIMENSION = 4096;
@@ -49554,7 +49624,16 @@ uniform vec2 screenUvTiling;
 uniform float screenUvAngle;
 uniform float screenUvThreshold;
 uniform sampler2D baseColorMap;
+// UV_game_material_team_color: 0 none, 1 whole, 2 weighed by a mask texture
+uniform float teamColorMode;
+uniform sampler2D teamMaskMap;
+// mask channel 0-3, or 4 for one weight per channel
+uniform float teamMaskChannel;
+uniform float teamBlend;
+uniform float teamStrength;
+uniform vec3 teamColor;
 ${PREVIEW_LIGHT_GLSL}
+${TEAM_COLOR_GLSL}
 out vec4 outColor;
 void main() {
   vec4 base = color;
@@ -49568,6 +49647,15 @@ void main() {
     sampleUv = (mat2(cosine, -sine, sine, cosine) * centered + vec2(0.5)) * screenUvTiling + screenUvOffset;
   }
   if (textured > 0.5) base *= texture(baseColorMap, sampleUv);
+  if (teamColorMode > 0.5) {
+    vec3 mask = vec3(1.0);
+    if (teamColorMode > 1.5) {
+      vec4 texel = texture(teamMaskMap, sampleUv);
+      float channel = teamMaskChannel < 0.5 ? texel.r : teamMaskChannel < 1.5 ? texel.g : teamMaskChannel < 2.5 ? texel.b : texel.a;
+      mask = teamMaskChannel > 3.5 ? texel.rgb : vec3(channel);
+    }
+    base.rgb = modkitTeamColor(base.rgb, mask, teamColor, int(teamBlend + 0.5), teamStrength);
+  }
   if (shaded > 0.5) {
     /*
      * Derivatives of the world position stand in for a normal the geometry did not publish, which
@@ -49757,6 +49845,7 @@ async function renderBrowser(request) {
   const texturedUniform = uniform2("textured");
   const hasNormalsUniform = uniform2("hasNormals");
   const baseColorMap = uniform2("baseColorMap");
+  const teamColorMode = uniform2("teamColorMode"), teamMaskMap = uniform2("teamMaskMap"), teamMaskChannel = uniform2("teamMaskChannel"), teamBlend = uniform2("teamBlend"), teamStrength = uniform2("teamStrength"), teamColorUniform = uniform2("teamColor");
   const coverageMode = uniform2("coverageMode");
   const alphaCutoff = uniform2("alphaCutoff");
   const screenUvEnabled = uniform2("screenUvEnabled"), screenUvViewport = uniform2("screenUvViewport"), screenUvOffset = uniform2("screenUvOffset"), screenUvTiling = uniform2("screenUvTiling"), screenUvAngle = uniform2("screenUvAngle"), screenUvThreshold = uniform2("screenUvThreshold");
@@ -49771,9 +49860,24 @@ async function renderBrowser(request) {
     uploadTextures(gl, request.scene.textures, diagnostics, textures);
     const materialPrograms = prepareSceneMaterialPrograms(request.scene.materials ?? [], new Map((request.scene.textures ?? []).filter((texture) => textures.has(texture.id)).map((texture) => [texture.id, texture])), request.scene.materialContext, diagnostics, request.signal);
     const cubeIds = new Set((request.scene.textures ?? []).filter((texture) => texture.dimension === "cube").map((texture) => texture.id));
-    const materials = new Map((request.scene.materials ?? []).map(bindSimpleEffectTexture).map((material) => [
-      material.id,
+    const sceneTextures = new Map((request.scene.textures ?? []).map((texture) => [texture.id, texture]));
+    const materials = new Map((request.scene.materials ?? []).map(bindSimpleEffectTexture).map((material) => {
+      let team = drawTeamColor(material, request.scene.materialContext);
+      const mask = teamMaskTexture(team, sceneTextures);
+      if (team?.maskTexture !== void 0 && (mask === void 0 || !textures.has(mask.id))) {
+        diagnostics.push({
+          severity: "warning",
+          code: "common.scene/team-color-mask-missing",
+          message: `material ${material.id} names team colour mask ${team.maskTexture}, which the scene did not carry as a 2D texture`
+        });
+        team = void 0;
+      }
+      return [material.id, team, mask, material];
+    }).map(([id, team, mask, material]) => [
+      id,
       Object.freeze({
+        team,
+        teamMask: team === void 0 || mask === void 0 ? void 0 : mask,
         baseColor: material.baseColor,
         simpleEffect: readSimpleEffect(material.simpleEffect),
         sourceTexture: (request.scene.textures ?? []).find((texture) => texture.id === material.baseColorTexture),
@@ -49817,6 +49921,8 @@ async function renderBrowser(request) {
     }
     if (baseColorMap !== null)
       gl.uniform1i(baseColorMap, 0);
+    if (teamMaskMap !== null)
+      gl.uniform1i(teamMaskMap, 1);
     let triangles = 0;
     for (const draw of sceneMaterialDraws(request.scene.primitives, request.scene.materials ?? [], materialPrograms, request.camera.viewProjection, diagnostics, clear[3])) {
       const primitive = draw.primitive;
@@ -49892,7 +49998,8 @@ async function renderBrowser(request) {
       const shaded = effect === void 0 && (light !== void 0 || preview2 !== void 0) && surface?.shading === "lambert";
       const normalBuffer = normal < 0 || !shaded || !(primitive.normals instanceof Float32Array) || primitive.normals.length < primitive.positions.length ? void 0 : attributeBuffer(gl, normal, primitive.normals, 3);
       const textured = surface?.texture !== void 0;
-      const uvBuffer = uv < 0 || !textured || !(primitive.textureCoordinates instanceof Float32Array) || primitive.textureCoordinates.length < vertexCount * 2 ? void 0 : attributeBuffer(gl, uv, primitive.textureCoordinates, 2);
+      const team = effect === void 0 ? surface?.team : void 0;
+      const uvBuffer = uv < 0 || !textured && surface?.teamMask === void 0 || !(primitive.textureCoordinates instanceof Float32Array) || primitive.textureCoordinates.length < vertexCount * 2 ? void 0 : attributeBuffer(gl, uv, primitive.textureCoordinates, 2);
       if (normalBuffer === void 0 && normal >= 0) {
         gl.disableVertexAttribArray(normal);
         gl.vertexAttrib3f(normal, 0, 0, 1);
@@ -49925,6 +50032,27 @@ async function renderBrowser(request) {
       if (sampling && effect !== void 0) {
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, effect.wrapU === "repeat" ? gl.REPEAT : gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, effect.wrapV === "repeat" ? gl.REPEAT : gl.CLAMP_TO_EDGE);
+      }
+      const teamMasked = team !== void 0 && surface?.teamMask !== void 0;
+      if (teamColorMode !== null)
+        gl.uniform1f(teamColorMode, team === void 0 ? 0 : !teamMasked ? 1 : uvBuffer === void 0 ? 0 : 2);
+      if (team !== void 0) {
+        if (teamBlend !== null)
+          gl.uniform1f(teamBlend, team.blendIndex);
+        if (teamStrength !== null)
+          gl.uniform1f(teamStrength, team.strength);
+        if (teamColorUniform !== null)
+          gl.uniform3f(teamColorUniform, ...team.color);
+        if (teamMaskChannel !== null)
+          gl.uniform1f(teamMaskChannel, team.channel === "rgb" ? 4 : team.channel);
+        if (teamMasked) {
+          const mask = surface.teamMask;
+          gl.activeTexture(gl.TEXTURE1);
+          gl.bindTexture(gl.TEXTURE_2D, textures.get(mask.id));
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, mask.wrapU === "clamp" ? gl.CLAMP_TO_EDGE : gl.REPEAT);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, mask.wrapV === "clamp" ? gl.CLAMP_TO_EDGE : gl.REPEAT);
+          gl.activeTexture(gl.TEXTURE0);
+        }
       }
       let count = vertexCount;
       let indexBuffer;
@@ -50451,7 +50579,8 @@ function rasterizeTriangle(context, vertices, surface, uvs, normals, materialDra
         blue *= (a2 * colors[0][2] + b2 * colors[1][2] + c3 * colors[2][2]) / sum;
         alpha = Math.fround(alpha * ((a2 * colors[0][3] + b2 * colors[1][3] + c3 * colors[2][3]) / sum));
       }
-      if (surface.texture !== void 0 && (uvs !== void 0 || effect?.screenUv !== void 0)) {
+      let maskTexel;
+      if ((surface.texture !== void 0 || surface.teamMask !== void 0) && (uvs !== void 0 || effect?.screenUv !== void 0)) {
         const invW = firstWeight * first.invW + secondWeight * second.invW + thirdWeight * third.invW;
         if (invW > 1e-9) {
           let u2 = uvs === void 0 ? 0 : (firstWeight * uvs[0][0] * first.invW + secondWeight * uvs[1][0] * second.invW + thirdWeight * uvs[2][0] * third.invW) / invW;
@@ -50461,13 +50590,19 @@ function rasterizeTriangle(context, vertices, surface, uvs, normals, materialDra
             if (screen !== void 0)
               [u2, v] = screen;
           }
-          const texel = effect === void 0 ? sampleTexture(surface.texture, u2, v) : sampleMaterialTexture(surface.texture, u2, v, effect.wrapU, effect.wrapV);
-          red *= texel[0];
-          green *= texel[1];
-          blue *= texel[2];
-          alpha = Math.fround(alpha * Math.fround(texel[3]));
+          if (surface.texture !== void 0) {
+            const texel = effect === void 0 ? sampleTexture(surface.texture, u2, v) : sampleMaterialTexture(surface.texture, u2, v, effect.wrapU, effect.wrapV);
+            red *= texel[0];
+            green *= texel[1];
+            blue *= texel[2];
+            alpha = Math.fround(alpha * Math.fround(texel[3]));
+          }
+          if (surface.teamMask !== void 0)
+            maskTexel = sampleTexture(surface.teamMask, u2, v);
         }
       }
+      if (surface.teamColor !== void 0 && (surface.teamMask === void 0 || maskTexel !== void 0))
+        [red, green, blue] = applyDrawTeamColor(surface.teamColor, [red, green, blue], maskTexel);
       let shade = flatShade;
       if (shaded && normals !== void 0 && light !== void 0) {
         const smooth = normalize3([
@@ -50487,10 +50622,10 @@ function rasterizeTriangle(context, vertices, surface, uvs, normals, materialDra
           (a2 * values[0][1] + b2 * values[1][1] + c3 * values[2][1]) / sum,
           (a2 * values[0][2] + b2 * values[1][2] + c3 * values[2][2]) / sum
         ];
-        const rgb = samplePreviewLighting(context.previewLighting, normals === void 0 ? flatNormal ?? [0, 0, 1] : interpolate(normals), interpolate([first.world, second.world, third.world]));
-        red *= rgb[0];
-        green *= rgb[1];
-        blue *= rgb[2];
+        const rgb2 = samplePreviewLighting(context.previewLighting, normals === void 0 ? flatNormal ?? [0, 0, 1] : interpolate(normals), interpolate([first.world, second.world, third.world]));
+        red *= rgb2[0];
+        green *= rgb2[1];
+        blue *= rgb2[2];
       } else if (shaded && light !== void 0) {
         red *= shade * light.color[0];
         green *= shade * light.color[1];
@@ -50629,7 +50764,7 @@ function diffuseLayerTexture(material, textures, diagnostics) {
   }
   return texture;
 }
-function materialSurfaces(materials, textures, diagnostics) {
+function materialSurfaces(materials, textures, diagnostics, context) {
   const surfaces = /* @__PURE__ */ new Map();
   for (const material of (materials ?? []).map(bindSimpleEffectTexture)) {
     if (!nonEmptyString8(material.id) || surfaces.has(material.id)) {
@@ -50662,12 +50797,24 @@ function materialSurfaces(materials, textures, diagnostics) {
     }
     if (texture !== void 0 && material.simpleEffect !== void 0)
       texture = { ...texture, filter: "linear" };
+    let teamColor = drawTeamColor(material, context);
+    const teamMask = teamMaskTexture(teamColor, textures);
+    if (teamColor?.maskTexture !== void 0 && teamMask === void 0) {
+      diagnostics.push({
+        severity: "warning",
+        code: "common.scene/team-color-mask-missing",
+        message: `material ${material.id} names team colour mask ${teamColor.maskTexture}, which the scene did not carry as a 2D texture`
+      });
+      teamColor = void 0;
+    }
     surfaces.set(material.id, Object.freeze({
       baseColor: color(material.baseColor, `material ${material.id} baseColor`),
       alpha: materialAlpha(material),
       ...material.simpleEffect === void 0 ? {} : { simpleEffect: readSimpleEffect(material.simpleEffect) },
       shading,
-      ...texture === void 0 ? {} : { texture }
+      ...texture === void 0 ? {} : { texture },
+      ...teamColor === void 0 ? {} : { teamColor },
+      ...teamMask === void 0 || teamColor === void 0 ? {} : { teamMask }
     }));
   }
   return surfaces;
@@ -50796,7 +50943,7 @@ async function renderHeadless(request) {
     frame,
     depth,
     viewProjection: matrix(camera.viewProjection, "camera viewProjection"),
-    materials: materialSurfaces(scene.materials, textures, diagnostics),
+    materials: materialSurfaces(scene.materials, textures, diagnostics, scene.materialContext),
     light: sceneLight(scene.light),
     previewLighting: readPreviewLighting(scene.lights, scene.ambientLight),
     diagnostics,
@@ -52406,6 +52553,16 @@ function materializeUvmCore(projection2, request, { digest, materialBudget = DEF
     }
     if (unlit === true)
       target.extensions = { ...target.extensions, KHR_materials_unlit: {} };
+    const wholeTeam = definition2.layers?.find((layer2) => GLTF_LAYER_SLOTS[layer2.slot.toLowerCase()] === "teamColor" && layer2.resourceId === void 0);
+    if (wholeTeam !== void 0)
+      target.extensions = {
+        ...target.extensions,
+        UV_game_material_team_color: {
+          maskSource: "whole",
+          targets: ["baseColor"],
+          blend: wholeTeam.blend ?? "multiply"
+        }
+      };
     if (JSON.stringify([...contracts ?? []].sort(byUtf8)) !== JSON.stringify(artifactContracts.sort(byUtf8))) {
       note("common.view/model-material-source@1", "value-differs", `/materials/${definition2.id}/contracts`, "contract coverage is derived from the extensions actually written to UVM");
     }
@@ -64955,13 +65112,13 @@ var PREVIEW_STAGES = [
 async function defaultPreviewStage(kind, localizer) {
   switch (kind) {
     case "model":
-      return (await import("./model-TUT36NWE.js")).createModelViewer({ localizer });
+      return (await import("./model-6B23Q2VH.js")).createModelViewer({ localizer });
     case "image":
-      return (await import("./image-P6BOSUNE.js")).createImageViewer({ localizer });
+      return (await import("./image-772O5HQF.js")).createImageViewer({ localizer });
     case "video":
-      return (await import("./video-3IYUAKLL.js")).createVideoViewer({ localizer });
+      return (await import("./video-WUF42ONE.js")).createVideoViewer({ localizer });
     case "audio":
-      return (await import("./audio-YPCMZAEZ.js")).createAudioViewer({ localizer });
+      return (await import("./audio-22QVTCHO.js")).createAudioViewer({ localizer });
   }
 }
 function embedPreview(sections, args, scope, localizer, previews) {
@@ -65000,7 +65157,7 @@ function embedRelationGraph(sections, args, scope, localizer, graph) {
   return [
     ...sections,
     stageSection({ id: "relations-graph", title: localizer.text("card.relationGraph"), expanded: false }, scope, localizer, "card.relationGraphUnavailable", async (host) => {
-      const module = graph ?? (await import("./graph-L7OGCHZK.js")).createRelationGraphViewer({ localizer });
+      const module = graph ?? (await import("./graph-PIR76M34.js")).createRelationGraphViewer({ localizer });
       return scope.signal.aborted ? void 0 : module.mount({ ...args, container: host, signal: scope.signal });
     })
   ];
@@ -65602,6 +65759,7 @@ var FILTER_LABELS = {
   missing: "table.filterMissing",
   untranslated: "table.filterUntranslated",
   duplicate: "table.filterDuplicate",
+  empty: "table.filterEmpty",
   changed: "table.filterChanged"
 };
 var COMPARE_LABELS = {
@@ -65712,6 +65870,8 @@ async function mountVariantTable(args) {
   const selected = /* @__PURE__ */ new Set();
   const statusOf = (row) => [
     ...statusColumn < 0 ? [] : (row.cells[statusColumn] ?? "").split(" ").filter(Boolean),
+    // a locale without a value, missing or blank (MK2's «empty» filter)
+    ...variants.some((column) => (row.cells[column.index] ?? "") === "") ? ["empty"] : [],
     ...changed.has(row.index) || draftedRows.has(row.index) ? ["changed"] : []
   ];
   const state = remembered.get(args.descriptor.subjectUri) ?? {
@@ -65742,7 +65902,7 @@ async function mountVariantTable(args) {
   const panel = element(args.root, "section", { part: "table.panel" });
   panel.hidden = true;
   args.before.before(bar, status, panel);
-  const statuses = ["missing", "untranslated", "duplicate", "changed"];
+  const statuses = ["missing", "untranslated", "duplicate", "empty", "changed"];
   const matchToggles = (target2, prefix, changed2) => MATCH_TOGGLES.map(([id, glyph, label, key3]) => ({
     kind: "toggle",
     id: `${prefix}-${id}`,
@@ -66726,6 +66886,28 @@ async function mountVariantTable(args) {
 var TABLE_PAGE_ROWS = 200;
 var TABLE_KNOWLEDGE_SUMMARY_CHARACTERS = 512;
 var TABLE_KNOWLEDGE_SOURCE_TITLE_CHARACTERS = 160;
+function markTrailingSpace(cell, title) {
+  const walker = cell.ownerDocument.createTreeWalker(cell, NodeFilter.SHOW_TEXT);
+  let last;
+  for (let node = walker.nextNode(); node !== null; node = walker.nextNode())
+    last = node;
+  const text3 = last?.data ?? "";
+  const kept = text3.trimEnd();
+  if (last === void 0 || kept.length === text3.length)
+    return;
+  const trailing = cell.ownerDocument.createElement("span");
+  setPart(trailing, "table.trailing");
+  trailing.title = title;
+  trailing.textContent = text3.slice(kept.length);
+  last.data = kept;
+  last.after(trailing);
+}
+var CELL_STEPS = {
+  ArrowUp: [-1, 0],
+  ArrowDown: [1, 0],
+  ArrowLeft: [0, -1],
+  ArrowRight: [0, 1]
+};
 var LazyTableModel = class {
   source;
   #cursor;
@@ -66921,6 +67103,19 @@ function createTableViewer(options = {}) {
         })();
       };
       const drawnCell = (coord) => body.querySelector(`tr[data-row="${coord.row}"] > td:nth-child(${coord.column + 2})`);
+      const besideCell = (cell, rows, columns) => {
+        const isValue = (item) => item instanceof HTMLTableCellElement && item.dataset["mkPart"] === "table.cell";
+        const row = cell.parentElement;
+        if (rows !== 0) {
+          const next2 = rows > 0 ? row?.nextElementSibling : row?.previousElementSibling;
+          const target2 = next2 instanceof HTMLTableRowElement ? next2.cells[cell.cellIndex] : void 0;
+          return isValue(target2) ? target2 : void 0;
+        }
+        let target = columns > 0 ? cell.nextElementSibling : cell.previousElementSibling;
+        while (target !== null && !isValue(target))
+          target = columns > 0 ? target.nextElementSibling : target.previousElementSibling;
+        return isValue(target) ? target : void 0;
+      };
       const beginEdit = async (cell, coord) => {
         if (cell.dataset["editing"] === "true")
           return;
@@ -67036,6 +67231,7 @@ function createTableViewer(options = {}) {
               cell.replaceChildren(...previous);
             } else {
               setViewerText(cell, written);
+              markTrailingSpace(cell, localizer.text("table.trailingSpace"));
               variants?.written(coord.row, coord.column, written);
               await committed();
             }
@@ -67047,7 +67243,7 @@ function createTableViewer(options = {}) {
         };
         const keep = () => finish(true);
         const onKey = (event) => {
-          if (event.key === "Enter") {
+          if (event.key === "Enter" && !event.shiftKey) {
             event.preventDefault();
             void finish(true);
           }
@@ -67055,6 +67251,26 @@ function createTableViewer(options = {}) {
             event.preventDefault();
             void finish(false);
           }
+          if (event.key !== "ArrowDown" && event.key !== "ArrowUp")
+            return;
+          const step = event.key === "ArrowDown" ? 1 : -1;
+          const control2 = event.target;
+          const atEdge = control2 instanceof HTMLTextAreaElement ? step > 0 ? !control2.value.slice(control2.selectionEnd).includes("\n") : !control2.value.slice(0, control2.selectionStart).includes("\n") : control2 instanceof HTMLInputElement && (control2.type === "text" || control2.type === "search");
+          const next2 = atEdge ? besideCell(cell, step, 0) : void 0;
+          const nextRow = next2?.parentElement?.dataset["row"];
+          if (next2 === void 0 || nextRow === void 0)
+            return;
+          event.preventDefault();
+          const index = cell.cellIndex;
+          void finish(true).then(() => {
+            if (!finished)
+              return;
+            const target = body.querySelector(`tr[data-row="${nextRow}"]`)?.cells[index];
+            if (target === void 0)
+              return;
+            target.focus();
+            void beginEdit(target, { row: Number(nextRow), column: coord.column }).catch(() => void 0);
+          });
         };
         if (scope.signal.aborted || !body.contains(cell)) {
           await dispose();
@@ -67084,6 +67300,7 @@ function createTableViewer(options = {}) {
             setPart(cell, "table.cell");
             cell.tabIndex = 0;
             setViewerText(cell, value);
+            markTrailingSpace(cell, localizer.text("table.trailingSpace"));
             const coord = { row: row.index, column };
             const inspect = () => inspectCell(coord);
             cell.addEventListener("focus", inspect);
@@ -67098,6 +67315,7 @@ function createTableViewer(options = {}) {
                   if (scope.signal.aborted || !body.contains(cell) || facts.value !== value || facts.spans === void 0 || cell.dataset["editing"] === "true" || cell.dataset["rendered"] === "true")
                     return;
                   renderValueWithSpans(cell, facts.value, facts.spans);
+                  markTrailingSpace(cell, localizer.text("table.trailingSpace"));
                 }).catch(() => void 0);
               };
               cell.addEventListener("focus", highlight);
@@ -67109,10 +67327,19 @@ function createTableViewer(options = {}) {
             });
             cell.addEventListener("dblclick", begin);
             const onKey = (event) => {
-              if (event.key === "Enter" && cell.dataset["editing"] !== "true") {
+              if (cell.dataset["editing"] === "true")
+                return;
+              if (event.key === "Enter") {
                 event.preventDefault();
                 begin();
+                return;
               }
+              const step = CELL_STEPS[event.key];
+              const next2 = step === void 0 ? void 0 : besideCell(cell, step[0], step[1]);
+              if (next2 === void 0)
+                return;
+              event.preventDefault();
+              next2.focus();
             };
             cell.addEventListener("keydown", onKey);
             scope.cleanup(() => {
@@ -70069,7 +70296,8 @@ function frozenTexturedBatch(source2) {
     ...source2.castShadows === void 0 ? {} : { castShadows: source2.castShadows },
     ...source2.receiveShadows === void 0 ? {} : { receiveShadows: source2.receiveShadows },
     ...source2.unlit === void 0 ? {} : { unlit: source2.unlit },
-    ...source2.priority === void 0 ? {} : { priority: source2.priority }
+    ...source2.priority === void 0 ? {} : { priority: source2.priority },
+    ...source2.team === void 0 ? {} : { team: source2.team }
   });
 }
 function frozenSplatBatch(source2) {
@@ -70098,6 +70326,26 @@ function frozenSplatBatch(source2) {
 var BASE_COLOR_SLOTS = /* @__PURE__ */ new Set(["diffuse", "basecolor", "albedo", "color", "colour", "mapkd"]);
 var NORMAL_SLOTS = /* @__PURE__ */ new Set(["normal", "normalmap", "mapnormal", "mapbump", "bump"]);
 var materialSlot = (value) => value.toLowerCase().replace(/[^a-z0-9]/gu, "");
+var texturesById = /* @__PURE__ */ new WeakMap();
+function worldBatchTeamColor(material, textures, uvSource, color2, intensity) {
+  if (material === void 0 || intensity === 0)
+    return void 0;
+  const list = textures ?? [];
+  let byId = texturesById.get(list);
+  if (byId === void 0)
+    texturesById.set(list, byId = new Map(list.map((texture) => [texture.id, texture])));
+  const team = modelMaterialTeamColor(material, byId, uvSource);
+  if (team === void 0)
+    return void 0;
+  const mask = team.mask === "whole" ? void 0 : byId.get(team.mask.texture);
+  return Object.freeze({
+    ...mask === void 0 ? {} : { mask },
+    channel: team.mask === "whole" ? 4 : ["r", "g", "b", "a", "rgb"].indexOf(team.mask.channel),
+    blend: TEAM_COLOR_BLENDS.indexOf(team.blend),
+    strength: team.strength ?? 1,
+    color: color2 ?? [1, 1, 1]
+  });
+}
 var record5 = (value) => value !== null && typeof value === "object" && !Array.isArray(value) ? value : void 0;
 function presentationMaterials(item, refs) {
   const cliff = item.derivedFrom === "cliffs";
@@ -70716,7 +70964,8 @@ function writtenTexturedBatch(template, writes) {
     ...template.castShadows === void 0 ? {} : { castShadows: template.castShadows },
     ...template.receiveShadows === void 0 ? {} : { receiveShadows: template.receiveShadows },
     ...template.unlit === void 0 ? {} : { unlit: template.unlit },
-    ...template.priority === void 0 ? {} : { priority: template.priority }
+    ...template.priority === void 0 ? {} : { priority: template.priority },
+    ...template.team === void 0 ? {} : { team: template.team }
   });
 }
 var worldObjectProjections = /* @__PURE__ */ new WeakMap();
@@ -72256,6 +72505,7 @@ function createWorldWebGlPlan(input, previousPlan) {
         const normalLayer = material?.layers?.find((candidate) => NORMAL_SLOTS.has(materialSlot(candidate.slot)));
         const texture = layer2?.resourceId === void 0 ? void 0 : result.textures?.find((candidate) => candidate.id === layer2.resourceId);
         const requestedUv = layer2?.uvSource ?? 0;
+        const team = worldBatchTeamColor(material, result.textures, requestedUv, moment.teamColor, materialContext.teamColorIntensity);
         const coverage = modelMaterialCoverage(material);
         const blendMode = coverage.mode !== "blend" ? void 0 : material?.blendMode === "additive" ? "additive" : "blend";
         const normalTexture = normalLayer?.resourceId === void 0 || (normalLayer.uvSource ?? 0) !== requestedUv ? void 0 : result.textures?.find((candidate) => candidate.id === normalLayer.resourceId);
@@ -72264,11 +72514,15 @@ function createWorldWebGlPlan(input, previousPlan) {
         const unlit = material?.unlit === true;
         const priority = blendMode === void 0 ? 0 : material?.priority ?? 0;
         const tint = item.presentationTint ?? [1, 1, 1];
-        const base = [
-          factor[0] * tint[0],
-          factor[1] * tint[1],
-          factor[2] * tint[2],
+        const albedo = team !== void 0 && team.mask === void 0 && texture === void 0 ? [
+          ...[0, 1, 2].map((channel) => teamColorChannel(factor[channel], 1, team.color[channel], TEAM_COLOR_BLENDS[team.blend], team.strength)),
           factor[3]
+        ] : factor;
+        const base = [
+          albedo[0] * tint[0],
+          albedo[1] * tint[1],
+          albedo[2] * tint[2],
+          albedo[3]
         ];
         const vertexColors = primitive.colors;
         const colorAt = (index) => vertexColors === void 0 || vertexColors.length < (index + 1) * 4 ? base : [
@@ -72286,7 +72540,8 @@ function createWorldWebGlPlan(input, previousPlan) {
           const vertices = triangle.map((index) => instanceVertex(transformedComponentVertex(transformedPrimitiveVertex(primitive, index), componentTransform), item, translation));
           if (texture !== void 0 && textureCoordinates !== void 0 && textureCoordinates.length >= primitive.positions.length / 3 * 2) {
             if (texturedWrite === void 0) {
-              const key3 = `${result.sourceKey}\0${texture.id}\0${normalTexture?.id ?? ""}\0${blendMode ?? "opaque"}\0${String(coverage.cutoff)}\0${String(shadowPolicy.castShadows)}\0${String(shadowPolicy.receiveShadows)}\0${String(unlit)}\0${String(priority)}`;
+              const teamKey = team === void 0 ? "" : `${team.mask?.id ?? "whole"}:${String(team.channel)}:${String(team.blend)}:${team.color.join(",")}`;
+              const key3 = `${result.sourceKey}\0${texture.id}\0${normalTexture?.id ?? ""}\0${blendMode ?? "opaque"}\0${String(coverage.cutoff)}\0${String(shadowPolicy.castShadows)}\0${String(shadowPolicy.receiveShadows)}\0${String(unlit)}\0${String(priority)}\0${teamKey}`;
               const collection = blendMode === void 0 ? textured : transparentTextured;
               const target = collection.get(key3) ?? {
                 ...batch(),
@@ -72298,7 +72553,8 @@ function createWorldWebGlPlan(input, previousPlan) {
                 receiveShadows: shadowPolicy.receiveShadows,
                 ...coverage.cutoff === 0 ? {} : { alphaCutoff: coverage.cutoff },
                 ...unlit ? { unlit } : {},
-                ...priority === 0 ? {} : { priority }
+                ...priority === 0 ? {} : { priority },
+                ...team === void 0 ? {} : { team }
               };
               collection.set(key3, target);
               texturedWrite = { ...batch(), textureCoordinates: [], texture };
@@ -72873,6 +73129,13 @@ uniform float terrainWeightMapCount;
 uniform float terrainWeightOverlay;
 // The surface colour as it is, no light: water that multiplies the ground under it.
 uniform float unlitSurface;
+// UV_game_material_team_color of a model batch: 0 none, 1 whole, 2 weighed by the mask on the
+// secondary unit at the base UVs; mask channel 0-3, or 4 per channel
+uniform float teamColorMode;
+uniform float teamMaskChannel;
+uniform float teamBlend;
+uniform float teamStrength;
+uniform vec3 teamColor;
 uniform sampler2D baseColorMap;
 uniform float alphaCutoff;
 uniform sampler2D normalMap;
@@ -72921,6 +73184,7 @@ uniform float waterTime;
 uniform float cliffMaskMode;
 uniform vec4 cliffMaskSelector;
 out vec4 outColor;
+${TEAM_COLOR_GLSL}
 float layerValue(vec4 first, vec4 second, int layer) {
   return layer < 4 ? first[layer] : second[layer - 4];
 }
@@ -73131,6 +73395,15 @@ void main() {
   // A decal's colour alpha is its AO; its coverage is the texture's own alpha.
   if (terrainSurface) surface.a = 1.0;
   if (textured > 0.5) surface *= texture(baseColorMap, textureCoordinate);
+  if (teamColorMode > 0.5) {
+    vec3 teamMask = vec3(1.0);
+    if (teamColorMode > 1.5) {
+      vec4 maskTexel = texture(secondaryColorMap, textureCoordinate);
+      float maskChannel = teamMaskChannel < 0.5 ? maskTexel.r : teamMaskChannel < 1.5 ? maskTexel.g : teamMaskChannel < 2.5 ? maskTexel.b : maskTexel.a;
+      teamMask = teamMaskChannel > 3.5 ? maskTexel.rgb : vec3(maskChannel);
+    }
+    surface.rgb = modkitTeamColor(surface.rgb, teamMask, teamColor, int(teamBlend + 0.5), teamStrength);
+  }
   if (secondaryTextured > 0.5) {
     float secondarySurface = texture(secondaryColorMap, secondaryTextureCoordinate).r;
     surface.rgb *= secondarySurface;
@@ -74355,9 +74628,23 @@ function drawTexturedBatch(resources, program, source2, range) {
   worldUniform1f(gl, program, "alphaCutoff", source2.alphaCutoff ?? 0);
   if (source2.unlit === true)
     worldUniform1f(gl, program, "unlitSurface", 1);
+  const team = source2.team;
+  if (team !== void 0) {
+    worldUniform1f(gl, program, "teamColorMode", team.mask === void 0 ? 1 : 2);
+    worldUniform1f(gl, program, "teamMaskChannel", team.channel);
+    worldUniform1f(gl, program, "teamBlend", team.blend);
+    worldUniform1f(gl, program, "teamStrength", team.strength);
+    gl.uniform3f(uniformLocation(gl, program, "teamColor"), ...team.color);
+    if (team.mask !== void 0) {
+      bindTexture2d(resources, team.mask, 6);
+      worldUniform1i(gl, program, "secondaryColorMap", 6);
+    }
+  }
   drawBatch(resources, program, source2, gl.TRIANGLES, source2, range);
   if (source2.unlit === true)
     worldUniform1f(gl, program, "unlitSurface", 0);
+  if (team !== void 0)
+    worldUniform1f(gl, program, "teamColorMode", 0);
   if (detail !== void 0)
     worldUniform1f(gl, program, "waterDetailMode", 0);
 }
@@ -76849,12 +77136,23 @@ function shownWorldItems(items, hidden) {
   }
   return shown;
 }
+var worldTeamColors = /* @__PURE__ */ new WeakMap();
+function worldTeamColorsOf(info) {
+  let colors = worldTeamColors.get(info);
+  if (colors === void 0) {
+    colors = new Map((info.players ?? []).flatMap((player) => player.color === void 0 ? [] : [[player.id, player.color]]));
+    worldTeamColors.set(info, colors);
+  }
+  return colors;
+}
 function drawCandidateWorld(canvas, model, selection, camera, animationTimes, timeSeconds = 0, renderer, hiddenOverlays) {
   const flattened = flattenedWorldLayersOf(model.layers);
   const worldItems = shownWorldItems(flattened.items, hiddenOverlays);
   const selectedObjectId = typeof selection === "number" ? selection : selection?.selectedObjectId;
+  const teamColors = worldTeamColorsOf(model.info);
   const webGlInput = {
     items: worldItems,
+    ...teamColors.size === 0 ? {} : { teamColors },
     ...model.models === void 0 ? {} : { models: model.models },
     terrainMaterials: flattened.terrainMaterials,
     waterMaterials: flattened.waterMaterials,

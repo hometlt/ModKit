@@ -7,12 +7,12 @@ import {
   invokeRefusalMessage,
   isRejected,
   mountFieldEditor
-} from "./chunk-TC4FJKZD.js";
+} from "./chunk-L7SNTLK7.js";
 import {
   canvasPng,
   createMediaShell,
   mountContributedSections
-} from "./chunk-3FSZZJDK.js";
+} from "./chunk-KWS6AF3F.js";
 import {
   MODEL_FALLBACK_MESSAGES,
   MODEL_GIZMO_FALLBACK_MESSAGES,
@@ -27,7 +27,7 @@ import {
   setViewerText,
   unknownSourceLease,
   withEnglishUiFallback
-} from "./chunk-SD76C35E.js";
+} from "./chunk-MC4F5UWG.js";
 import {
   applyColorKeyTransparency,
   billboardCameraRotation,
@@ -45,6 +45,27 @@ init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
 // ../MODDING/modkit-core/packages/scene/dist/model/index.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
+// ../MODDING/modkit-core/packages/scene/dist/model/team-color.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var TEAM_COLOR_SLOTS = /* @__PURE__ */ new Set(["teamcolor", "team"]);
+var CHANNELS = { 1: "r", 2: "g", 4: "b", 8: "a" };
+var slotKey = (slot) => slot.toLowerCase().replace(/[^a-z0-9]/gu, "");
+function modelMaterialTeamColor(material, textures, uvSource) {
+  const layer = material.layers?.find((candidate) => TEAM_COLOR_SLOTS.has(slotKey(candidate.slot)));
+  if (layer === void 0)
+    return void 0;
+  const blend = layer.blend ?? "multiply";
+  if (layer.resourceId === void 0)
+    return { mask: "whole", blend };
+  const texture = textures.get(layer.resourceId);
+  if (texture === void 0 || (layer.uvSource ?? 0) !== uvSource)
+    return void 0;
+  return {
+    mask: { texture: texture.id, channel: CHANNELS[layer.colorChannels ?? 0] ?? "rgb" },
+    blend
+  };
+}
 
 // ../MODDING/modkit-core/packages/ui/dist/model/source.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
@@ -307,12 +328,12 @@ var BASE_COLOR_SLOTS = Object.freeze([
   "colour",
   "mapkd"
 ]);
-var slotKey = (value) => value.toLowerCase().replace(/[^a-z0-9]/gu, "");
+var slotKey2 = (value) => value.toLowerCase().replace(/[^a-z0-9]/gu, "");
 function baseColorResourceOf(material) {
   const layers = material.layers ?? [];
   for (const slot of BASE_COLOR_SLOTS) {
     for (const layer of layers) {
-      if (slotKey(layer.slot) === slot && layer.resourceId !== void 0)
+      if (slotKey2(layer.slot) === slot && layer.resourceId !== void 0)
         return layer.resourceId;
     }
   }
@@ -337,6 +358,8 @@ function sceneMaterials(refs, textures, shaded) {
       used.set(layerTexture.id, layerTexture);
       bindings.push({ resourceId: layer.resourceId, textureId: layerTexture.id });
     }
+    const base = ref.layers?.find((layer) => layer.resourceId === resourceId);
+    const teamColor = modelMaterialTeamColor(ref, textures, base?.uvSource ?? 0);
     return Object.freeze({
       id: ref.id,
       /*
@@ -351,6 +374,7 @@ function sceneMaterials(refs, textures, shaded) {
       ...ref.doubleSided === void 0 ? {} : { doubleSided: ref.doubleSided },
       ...ref.depthWrite === void 0 ? {} : { depthWrite: ref.depthWrite },
       ...ref.priority === void 0 ? {} : { priority: ref.priority },
+      ...teamColor === void 0 ? {} : { teamColor },
       ...ref.alphaMode === void 0 ? {} : { alphaMode: ref.alphaMode },
       ...ref.alphaCutoff === void 0 ? {} : { alphaCutoff: ref.alphaCutoff },
       ...ref.shader === void 0 ? {} : { shader: ref.shader },
@@ -1802,7 +1826,7 @@ function createModelViewer(options = {}) {
               const output = result.output;
               if (output.kind !== "bytes" || !(output.value instanceof Uint8Array))
                 throw new Error(`the codec answered ${output.kind}, not bytes`);
-              const { createUvmFramePreparer } = await import("./render-SKC7NDO6.js");
+              const { createUvmFramePreparer } = await import("./render-2KFXE673.js");
               const raster = options.rasterResources?.(args.descriptor);
               const preparer = createUvmFramePreparer(output.value, {
                 budget: MODEL_EFFECT_BUDGET,
@@ -2345,6 +2369,7 @@ function createModelViewer(options = {}) {
 var modelViewer = createModelViewer();
 
 export {
+  modelMaterialTeamColor,
   MODEL_MAXIMUM_PRIMITIVE_BYTES,
   MODEL_MAXIMUM_PRIMITIVES,
   loadModelStage,

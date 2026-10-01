@@ -950,6 +950,16 @@ function materializeUvmCore(projection, request, { digest, materialBudget = DEFA
     }
     if (unlit === true)
       target.extensions = { ...target.extensions, KHR_materials_unlit: {} };
+    const wholeTeam = definition.layers?.find((layer) => GLTF_LAYER_SLOTS[layer.slot.toLowerCase()] === "teamColor" && layer.resourceId === void 0);
+    if (wholeTeam !== void 0)
+      target.extensions = {
+        ...target.extensions,
+        UV_game_material_team_color: {
+          maskSource: "whole",
+          targets: ["baseColor"],
+          blend: wholeTeam.blend ?? "multiply"
+        }
+      };
     if (JSON.stringify([...contracts ?? []].sort(byUtf8)) !== JSON.stringify(artifactContracts.sort(byUtf8))) {
       note("common.view/model-material-source@1", "value-differs", `/materials/${definition.id}/contracts`, "contract coverage is derived from the extensions actually written to UVM");
     }
