@@ -162,18 +162,41 @@ test(
       assert.equal(dataReferences.length, 2)
       const fields = await ok('textDocument/completion', at('data', 4, 9))
       assert.ok(fields.items.length > 0)
+      // The open `<` above is for completion; the strict catalog parse refuses it and leaves the
+      // authoring index partial, so the line goes before the rename (Marine moves to line 2).
+      server.notify('textDocument/didChange', {
+        textDocument: { uri: uri('data'), version: 2 },
+        contentChanges: [
+          { range: { start: { line: 2, character: 0 }, end: { line: 3, character: 0 } }, text: '' },
+        ],
+      })
       const dataRename = await ok('textDocument/rename', {
-        ...at('data', 3, 19),
+        ...at('data', 2, 19),
         newName: 'Trooper',
       })
-      assert.equal(dataRename.documentChanges.length, 1)
-      assert.equal(dataRename.documentChanges[0].edits.length, 2)
+      // The declaration and the parent link, and the entity's string key in the other language.
+      assert.deepEqual(
+        dataRename.documentChanges.map(change => [
+          change.textDocument.uri,
+          change.edits.map(edit => [edit.range.start.line, edit.newText]),
+        ]),
+        [
+          [uri('data'), [[2, 'Trooper'], [5, 'Trooper']]],
+          [uri('strings'), [[0, 'Trooper']]],
+        ],
+      )
 
       // GameStrings.
       const stringHover = await ok('textDocument/hover', at('strings', 0, 12))
       assert.match(stringHover.contents.value, /Unit\/Name\/Marine/u)
-      const stringDefinition = await ok('textDocument/definition', at('strings', 0, 12))
+      // The key leads to itself; its entity segment leads to the entity's declaration in Data.
+      const stringDefinition = await ok('textDocument/definition', at('strings', 0, 3))
       assert.equal(stringDefinition[0].uri, uri('strings'))
+      const entityDefinition = await ok('textDocument/definition', at('strings', 0, 12))
+      assert.deepEqual(
+        entityDefinition.map(item => [item.uri, item.range.start.line]),
+        [[uri('data'), 2]],
+      )
       const stringRename = await ok('textDocument/rename', {
         ...at('strings', 0, 12),
         newName: 'Unit/Name/Trooper',
