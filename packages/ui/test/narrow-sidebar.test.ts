@@ -63,7 +63,9 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await browser?.close()
-  await new Promise<void>(resolve => (server === undefined ? resolve() : server.close(() => resolve())))
+  await new Promise<void>(resolve =>
+    server === undefined ? resolve() : server.close(() => resolve()),
+  )
 })
 
 describe('a narrow sidebar', () => {
