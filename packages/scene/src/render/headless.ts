@@ -31,7 +31,12 @@ import {
   materialIsSolid,
   type MaterialDraw,
 } from './material-draws.js'
-import { materialGeometry, type MaterialVertex } from './material-geometry.js'
+import {
+  materialGeometry,
+  materialModelMatrix,
+  materialNormalMatrix,
+  type MaterialVertex,
+} from './material-geometry.js'
 import { shadeMaterial, interpolateMaterialVertex } from './material-sampling.js'
 import { sceneTextureBytes } from '../textures/cube.js'
 import { requiresEnvironmentEye, snapshotEyePosition } from '../materials/environment.js'
@@ -273,6 +278,8 @@ function rasterizeTriangle(
   depthBias?: SceneDepthBias,
   colors?: Triangle<Vec4>,
   tint: readonly [number, number, number, number] = [1, 1, 1, 1],
+  /** The model matrix mirrors (negative determinant): front faces wind clockwise (glTF). */
+  mirrored = false,
 ) {
   const [first, second, third] = vertices
   const effect = surface.simpleEffect
@@ -284,7 +291,10 @@ function rasterizeTriangle(
   )
   const area = edge(first, second, third.x, third.y)
   if (!Number.isFinite(area) || Math.abs(area) < 0.000_001) return 0
-  if ((materialDraw?.draw.program?.twoSided === false || effect?.doubleSided === false) && area < 0)
+  if (
+    (materialDraw?.draw.program?.twoSided === false || effect?.doubleSided === false) &&
+    area < 0 !== mirrored
+  )
     return 0
   // A shared edge belongs to one triangle. Without a half-open coverage rule, alpha doubles
   // along the diagonal of a triangulated quad. Account for either authored winding.
@@ -558,6 +568,7 @@ function renderMaterialDraw(
     })
     return
   }
+  const mirrored = materialNormalMatrix(materialModelMatrix(primitive)).sign < 0
   for (const indices of elements) {
     context.signal?.throwIfAborted()
     const source: Triangle<MaterialVertex> = [
@@ -592,6 +603,10 @@ function renderMaterialDraw(
         undefined,
         undefined,
         { draw, vertices: [a, b, c] },
+        undefined,
+        undefined,
+        undefined,
+        mirrored,
       )
     }
   }
@@ -774,6 +789,7 @@ function renderPrimitive(context: RasterContext, primitive: SceneRendererPrimiti
     primitive.transform === undefined
       ? undefined
       : matrix(primitive.transform, `primitive ${primitive.id} transform`)
+  const mirrored = model !== undefined && materialNormalMatrix(Float32Array.from(model)).sign < 0
   const vertexCount = primitive.positions.length / 3
   const order = primitive.indices
   const elementCount = order?.length ?? vertexCount
@@ -855,6 +871,7 @@ function renderPrimitive(context: RasterContext, primitive: SceneRendererPrimiti
             colorBuffer[index * 4 + 3] ?? 1,
           ]) as unknown as Triangle<Vec4>),
       primitiveTint(primitive),
+      mirrored,
     )
   }
 }

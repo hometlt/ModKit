@@ -205,6 +205,8 @@ export function materialWebGlDraws(
     depthTest?: boolean
     depthBias?: string
     cull?: boolean
+    /** The winding culling keeps: CCW, or CW for a mirrored model (glTF). */
+    frontFace?: number
     blend?: string
   }
   interface MaterialFrame {
@@ -617,6 +619,7 @@ export function materialWebGlDraws(
     primitive: MaterialDraw['primitive'],
     depthOnly: boolean,
     state: SequenceState,
+    mirrored: boolean,
   ) => {
     const color = !depthOnly
     if (state.colorMask !== color) {
@@ -640,11 +643,14 @@ export function materialWebGlDraws(
       state.depthBias = biasKey
     }
     const cull = !source.twoSided
-    if (state.cull !== cull) {
+    // glTF: a node whose world matrix mirrors (negative determinant) has clockwise front faces
+    const front = mirrored ? gl.CW : gl.CCW
+    if (state.cull !== cull || (cull && state.frontFace !== front)) {
       if (cull) {
         gl.enable(gl.CULL_FACE)
         gl.cullFace(gl.BACK)
-        gl.frontFace(gl.CCW)
+        gl.frontFace(front)
+        state.frontFace = front
       } else gl.disable(gl.CULL_FACE)
       state.cull = cull
     }
@@ -834,7 +840,13 @@ export function materialWebGlDraws(
         false,
         materialNormalMatrix(model).matrix,
       )
-    applyDrawState(source, primitive, draw.depthOnly === true, state)
+    applyDrawState(
+      source,
+      primitive,
+      draw.depthOnly === true,
+      state,
+      model !== undefined && materialNormalMatrix(model).sign < 0,
+    )
     return submit(mode, primitive, instances?.count)
   }
   /**

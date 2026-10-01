@@ -1,6 +1,6 @@
 import type { SceneRendererPrimitive } from '@modkit/sdk/renderer'
 import type { MaterialDraw } from './material-draws.js'
-import { materialModelMatrix } from './material-geometry.js'
+import { materialModelMatrix, materialNormalMatrix } from './material-geometry.js'
 import { materialSkinOf } from './material-skin.js'
 import { primitiveVertexTints } from './tint.js'
 
@@ -42,7 +42,9 @@ export function mergeMaterialDraws<Draw extends MaterialDraw>(
       (primitive.indices !== undefined) !== indexed ||
       primitive.positions.length % 3 !== 0 ||
       materialSkinOf(primitive) !== undefined ||
-      primitiveVertexPlacements(primitive) !== undefined
+      primitiveVertexPlacements(primitive) !== undefined ||
+      // a mirrored draw culls its other winding (glTF); a joined draw has one winding for all
+      materialNormalMatrix(materialModelMatrix(primitive)).sign < 0
     )
       return undefined
     vertices += primitive.positions.length / 3
