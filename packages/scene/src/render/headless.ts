@@ -412,6 +412,7 @@ function rasterizeTriangle(
               shaded.rgba[3] * multiplier[3],
             ],
             draw.program,
+            multiplier[3],
           )
         }
         fragments++
@@ -585,9 +586,9 @@ function rasterizeTriangle(
       red *= tint[0]
       green *= tint[1]
       blue *= tint[2]
-      alpha *= tint[3]
       const offset = pixel * 4
       if (effect !== undefined) {
+        alpha *= tint[3]
         if (effect.alphaCutoff > 0 && alpha < effect.alphaCutoff) continue
         if (effect.depthTest && effect.depthWrite) context.depth[pixel] = sampleDepth
         blendSimpleEffectPixel(context.frame, offset, [red, green, blue, alpha], effect)
@@ -596,6 +597,8 @@ function rasterizeTriangle(
       }
       if (surface.alpha.mode === 'mask' && alpha < surface.alpha.cutoff) continue
       if (surface.alpha.mode !== 'blend') alpha = 1
+      // the primitive's fade scales its coverage after the material's own rule (primitiveFade)
+      alpha *= tint[3]
       if (surface.alpha.depthWrite) context.depth[pixel] = sampleDepth
       const remaining = 1 - alpha
       context.frame[offset] = byte(

@@ -264,10 +264,13 @@ export function blendMaterialPixel(
   offset: number,
   rgba: readonly [number, number, number, number],
   program: StandardMaterialProgram,
+  /** The primitive's fade (primitiveFade): a solid pass below 1 is blended by it. */
+  fade = 1,
 ): void {
+  const fading = fade < 1 && materialIsSolid(program)
   const clamp = (value: number) => Math.max(0, Math.min(1, value)),
-    a = clamp(rgba[3]),
-    mode = program.blend
+    a = clamp(fading ? fade : rgba[3]),
+    mode = fading ? 'blend' : program.blend
   for (let channel = 0; channel < 3; channel++) {
     const source = clamp(rgba[channel] ?? 0),
       dest = (frame[offset + channel] ?? 0) / 255
@@ -288,7 +291,7 @@ export function blendMaterialPixel(
     frame[offset + channel] = Math.round(clamp(value) * 255)
   }
   // A solid pass covers the pixel whole (an alpha-tested fragment that survived is opaque).
-  if (materialIsSolid(program)) frame[offset + 3] = 255
+  if (materialIsSolid(program) && !fading) frame[offset + 3] = 255
   else if (mode === 'blend' || mode === 'premultiplied')
     frame[offset + 3] = Math.round((a + ((frame[offset + 3] ?? 0) / 255) * (1 - a)) * 255)
 }

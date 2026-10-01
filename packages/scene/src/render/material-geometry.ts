@@ -574,6 +574,8 @@ export function prepareMaterialGeometry(
     ...(primitive.materialId === undefined ? {} : { materialId: primitive.materialId }),
     ...(primitive.transform === undefined ? {} : { transform: primitive.transform }),
     ...(primitive.depthBias === undefined ? {} : { depthBias: primitive.depthBias }),
+    // the instance's colour and fade stay with the expanded triangles
+    ...(primitive.tint === undefined ? {} : { tint: primitive.tint }),
     ...(primitive.colors === undefined ? {} : { colors: expand(primitive.colors, 4) }),
     ...(primitive.textureCoordinates === undefined
       ? {}

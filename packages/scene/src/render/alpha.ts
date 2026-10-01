@@ -1,5 +1,6 @@
 import { readSimpleEffect, simpleEffectSolid } from './simple-effect.js'
 import { materialPosedPositions } from './material-skin.js'
+import { primitiveFade } from './tint.js'
 import type {
   SceneRendererAlphaMode,
   SceneRendererMaterial,
@@ -82,8 +83,10 @@ export function alphaDrawOrder(
 ): readonly SceneRendererPrimitive[] {
   const opaque: SceneRendererPrimitive[] = []
   const blending: SceneRendererPrimitive[] = []
+  // a fading primitive (tint alpha below 1) is drawn over what is behind it, as a blended one
   for (const primitive of primitives)
-    if (alphaFor(primitive.materialId).mode !== 'blend') opaque.push(primitive)
+    if (alphaFor(primitive.materialId).mode !== 'blend' && primitiveFade(primitive) >= 1)
+      opaque.push(primitive)
     else blending.push(primitive)
   const blended: {
     primitive: SceneRendererPrimitive

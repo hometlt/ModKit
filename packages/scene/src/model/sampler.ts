@@ -715,11 +715,19 @@ export function createModelSceneSampler(
           .filter(primitive => primitive.hidden === true)
           .map(primitive => primitive.id),
       )
+      // a visibility between 0 and 1 fades the primitive (WC3 geoset alpha): its tint's alpha
+      const fades = new Map<string, number>()
       for (const value of visibilitySampler?.sample(timeSeconds, requestSignal) ?? [])
         if (primitiveIds.has(value.target)) {
-          if ((value.value[0] ?? 0) > 0) hiddenPrimitives.delete(value.target)
+          const visibility = value.value[0] ?? 0
+          if (visibility > 0) hiddenPrimitives.delete(value.target)
           else hiddenPrimitives.add(value.target)
+          if (visibility > 0 && visibility < 1) fades.set(value.target, visibility)
         }
+      const faded = (primitive: ModelPrimitive) => {
+        const fade = fades.get(primitive.id)
+        return fade === undefined ? {} : { tint: [1, 1, 1, fade] as const }
+      }
       const nodeWeights = new Map<string, readonly number[]>()
       for (const value of morphSampler?.sample(timeSeconds, requestSignal) ?? [])
         if (value.value.length === morphTargetCounts.get(value.target))
@@ -835,6 +843,7 @@ export function createModelSceneSampler(
               ...drawn(skin === undefined ? present(deformed, 'deformed skin') : gpu!.bindPose),
               ...(transformed ? { transform: new Float32Array(frame) } : {}),
               ...(skin === undefined ? {} : { skin }),
+              ...faded(primitive),
             }
             primitives.push(posed)
           }
@@ -852,6 +861,7 @@ export function createModelSceneSampler(
             primitives.push({
               ...drawn(shaped),
               ...(transform === undefined ? {} : { transform: new Float32Array(transform) }),
+              ...faded(primitive),
             })
           }
         }

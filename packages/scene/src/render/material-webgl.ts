@@ -20,7 +20,7 @@ import {
 } from './material-geometry.js'
 import { materialIsSolid, type MaterialDraw } from './material-draws.js'
 import { materialSkinOf } from './material-skin.js'
-import { primitiveVertexTints } from './tint.js'
+import { primitiveFade, primitiveVertexTints } from './tint.js'
 import { primitiveVertexPlacements } from './vertex-placements.js'
 
 /**
@@ -654,14 +654,21 @@ export function materialWebGlDraws(
       } else gl.disable(gl.CULL_FACE)
       state.cull = cull
     }
-    const blend = materialIsSolid(source) || depthOnly ? 'none' : source.blend
+    // a fading solid pass (tint alpha below 1) blends by its fade
+    const fading = materialIsSolid(source) && primitiveFade(primitive) < 1
+    const blend =
+      depthOnly || (materialIsSolid(source) && !fading)
+        ? 'none'
+        : fading
+          ? 'blend'
+          : source.blend
     if (state.blend === blend) return
     state.blend = blend
     if (blend === 'none') gl.disable(gl.BLEND)
     else {
       gl.enable(gl.BLEND)
       gl.blendEquation(gl.FUNC_ADD)
-      switch (source.blend) {
+      switch (blend) {
         case 'blend':
           gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
           break
@@ -1148,8 +1155,10 @@ function buildLeaseShaderSources(
       : '') +
     // A solid pass covers its pixel whole: an alpha-tested leaf that survives the test is opaque.
     // Multiplying its colour by the texel alpha drew SC2 foliage (alpha 0.3-0.7) dark with black rims.
+    // A fading solid pass (tint alpha below 1) covers by its fade instead.
     (materialIsSolid(source)
-      ? (source.defines.sceneLighting ? '' : 'materialColor.rgb=clamp(materialColor.rgb,0.0,1.0);') + 'materialColor.a=1.0;'
+      ? (source.defines.sceneLighting ? '' : 'materialColor.rgb=clamp(materialColor.rgb,0.0,1.0);') +
+        'materialColor.a=u_instanceTint.a;'
       : '') +
     '}\n'
   // One program serves single and instanced draws: both read the placement from attributes.

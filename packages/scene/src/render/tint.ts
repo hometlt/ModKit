@@ -8,6 +8,11 @@ export function primitiveVertexTints(primitive: SceneRendererPrimitive): Float32
   return (primitive as { readonly vertexTints?: Float32Array }).vertexTints
 }
 
+/** The primitive's fade: its tint's alpha (1 when it has none). Below 1 it draws blended. */
+export function primitiveFade(primitive: Pick<SceneRendererPrimitive, 'tint'>): number {
+  return primitive.tint?.[3] ?? 1
+}
+
 /**
  * The draw's colour multiplier. RGB may exceed 1: an SC2 doodad's TintColor carries an HDR intensity
  * (Lockdown LE's PortCity_Trims multiply by 3), and the float uniform and vertex tints keep it; alpha

@@ -201,14 +201,17 @@ void main() {
       base.rgb *= lambert * lightColor.rgb;
     }
   }
-  base *= instanceTint;
+  base.rgb *= instanceTint.rgb;
   if (coverageMode > 2.5) {
+    base.a *= instanceTint.a;
     if (alphaCutoff > 0.0 && base.a < alphaCutoff) discard;
     outColor = coverageMode > 3.5 ? vec4(base.rgb * base.a, base.a) : base;
     return;
   }
   if (coverageMode > 0.5 && coverageMode < 1.5 && base.a < alphaCutoff) discard;
   if (coverageMode < 1.5) base.a = 1.0;
+  // the primitive's fade scales its coverage after the material's own rule
+  base.a *= instanceTint.a;
   outColor = vec4(base.rgb * base.a, base.a);
 }`
 
@@ -602,7 +605,7 @@ export async function renderBrowser(request: SceneRenderRequest): Promise<SceneR
         gl.uniform1f(coverageMode, alpha.mode === 'opaque' ? 0 : alpha.mode === 'mask' ? 1 : 2)
       if (alphaCutoff !== null) gl.uniform1f(alphaCutoff, alpha.cutoff)
       gl.depthMask(alpha.depthWrite)
-      if (alpha.mode === 'blend') {
+      if (alpha.mode === 'blend' || primitiveFade(primitive) < 1) {
         gl.enable(gl.BLEND)
         gl.blendEquation(gl.FUNC_ADD)
         gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
@@ -847,4 +850,4 @@ export function createProvider(selection: { readonly contract: string; readonly 
     release: async () => undefined,
   })
 }
-import { primitiveTint } from './tint.js'
+import { primitiveFade, primitiveTint } from './tint.js'

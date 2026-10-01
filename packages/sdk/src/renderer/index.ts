@@ -242,7 +242,12 @@ export interface SceneRendererLight {
 
 /** Existing decoded primitive plus an optional column-major model transform. */
 export interface SceneRendererPrimitive extends ModelPrimitive {
-  /** Instance color multiplier after material shading; authored blend/depth policy is retained. */
+  /**
+   * Instance color multiplier after material shading. Its alpha fades the primitive (a clip's
+   * fractional visibility): coverage after the material's own alpha rule, so a primitive below 1
+   * draws blended, back to front, whatever its material's alpha mode; depth writing stays the
+   * material's.
+   */
   readonly tint?: readonly [number, number, number, number]
   /** Draw-local polygon offset. Units are steps in the provider depth representation; absent disables it. */
   readonly depthBias?: { readonly slopeScale: number; readonly units: number }
