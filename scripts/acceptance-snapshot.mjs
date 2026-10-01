@@ -47,6 +47,8 @@ const REPOSITORIES = [
   'multiverse',
   // Optional GPL Oodle decoder (rad/oodle): no lockfile, so no install; its build runs the core's tsc.
   'modkit-extensions-rad',
+  // Optional Luau VM (question 56): no lockfile yet, so no install; its build is a stub for now.
+  'modkit-extensions-luau',
 ]
 
 const argument = name => {
