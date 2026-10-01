@@ -39,6 +39,25 @@ export const TABLE_PAGE_ROWS = 200
 export const TABLE_KNOWLEDGE_SUMMARY_CHARACTERS = 512
 export const TABLE_KNOWLEDGE_SOURCE_TITLE_CHARACTERS = 160
 export const TABLE_KNOWLEDGE_MISSING = 'Description is not available yet.'
+/**
+ * A value's trailing white space, marked where it is drawn (plan 7.36): the game keeps it and a
+ * reader cannot see it, so it shows instead of being trimmed. The cell's text stays the value.
+ */
+function markTrailingSpace(cell: HTMLElement, title: string): void {
+  const walker = cell.ownerDocument.createTreeWalker(cell, NodeFilter.SHOW_TEXT)
+  let last: Text | undefined
+  for (let node = walker.nextNode(); node !== null; node = walker.nextNode()) last = node as Text
+  const text = last?.data ?? ''
+  const kept = text.trimEnd()
+  if (last === undefined || kept.length === text.length) return
+  const trailing = cell.ownerDocument.createElement('span')
+  setPart(trailing, 'table.trailing')
+  trailing.title = title
+  trailing.textContent = text.slice(kept.length)
+  last.data = kept
+  last.after(trailing)
+}
+
 /** Rows and columns an arrow key moves the focus between cells. */
 const CELL_STEPS: Readonly<Record<string, readonly [number, number]>> = {
   ArrowUp: [-1, 0],
@@ -465,6 +484,7 @@ export function createTableViewer(options: TableViewerOptions = {}): ViewerModul
               cell.replaceChildren(...previous)
             } else {
               setViewerText(cell, written)
+              markTrailingSpace(cell, localizer.text('table.trailingSpace'))
               variants?.written(coord.row, coord.column, written)
               await committed()
             }
@@ -540,6 +560,7 @@ export function createTableViewer(options: TableViewerOptions = {}): ViewerModul
             setPart(cell, 'table.cell')
             cell.tabIndex = 0
             setViewerText(cell, value)
+            markTrailingSpace(cell, localizer.text('table.trailingSpace'))
             const coord = { row: row.index, column }
             const inspect = () => inspectCell(coord)
             cell.addEventListener('focus', inspect)
@@ -569,6 +590,7 @@ export function createTableViewer(options: TableViewerOptions = {}): ViewerModul
                     )
                       return
                     renderValueWithSpans(cell, facts.value, facts.spans)
+                    markTrailingSpace(cell, localizer.text('table.trailingSpace'))
                   })
                   .catch(() => undefined)
               }

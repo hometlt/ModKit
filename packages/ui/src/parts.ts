@@ -95,6 +95,8 @@ export const PARTS = Object.freeze([
   'table.find',
   /** One occurrence of the find text inside a drawn cell. */
   'table.match',
+  /** A value's trailing white space, shown where it is drawn. */
+  'table.trailing',
 
   // namespace
   'namespace',

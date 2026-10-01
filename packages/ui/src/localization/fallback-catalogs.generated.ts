@@ -710,6 +710,7 @@ export const TABLE_FALLBACK_MESSAGES = {
   'card.loadingDescription': 'Loading description…',
   'table.stale': 'Saved. Reopen the file to make further changes.',
   'table.suggestions': 'Suggestions',
+  'table.trailingSpace': 'White space at the end of the value: the game keeps it',
   'viewer.nextRows': 'Next rows',
   'viewer.table': 'Table viewer',
   'viewer.tableShape': '{rows} rows, {columns} columns',

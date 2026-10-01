@@ -566,6 +566,17 @@ describe('variant table surface', () => {
     await page.keyboard.press('Escape')
   })
 
+  it("shows a value's trailing white space without changing its text (7.36)", async () => {
+    await page.evaluate(() => (globalThis as unknown as Probe).mountTable())
+    const cell = '[data-mk-part="table.body"] tr:first-child td:nth-child(3)'
+    await page.dblclick(cell)
+    await page.fill(`${cell} input`, 'Alpha  ')
+    await page.press(`${cell} input`, 'Enter')
+    await page.waitForSelector(`${cell}[data-mk-state~="mutating"]`)
+    expect(await page.textContent(cell)).toBe('Alpha  ')
+    expect(await page.textContent(`${cell} [data-mk-part="table.trailing"]`)).toBe('  ')
+  })
+
   it('reverts the draft to the values the source holds, writing nothing', async () => {
     await page.evaluate(() => (globalThis as unknown as Probe).mountTable())
     const cell = '[data-mk-part="table.body"] tr:first-child td:nth-child(4)'

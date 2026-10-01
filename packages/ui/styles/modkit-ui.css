@@ -1764,6 +1764,13 @@
     white-space: nowrap;
   }
 
+  /* A value's trailing white space: kept by the game, invisible unless marked. */
+  [data-mk-part='table.trailing'] {
+    white-space: pre;
+    background: var(--mk-status-warn-bg);
+    outline: 1px dotted var(--mk-status-warn);
+  }
+
   /* A value waiting in the table's draft for Save, marked as a changed byte is in the hex editor. */
   [data-mk-part='table.cell'][data-mk-state~='mutating'] {
     color: var(--mk-status-warn);
