@@ -23,6 +23,7 @@ function declaresEffects(bytes) {
  * bytes only when they carry effects (geyser smoke), to keep the payload small.
  */
 export function worldRenderSource(inspected, { objects = () => true } = {}) {
+  const players = inspected.info?.players ?? []
   const items = inspected.layers
     .flatMap(layer => layer.page.items)
     .flatMap(item => {
@@ -60,6 +61,15 @@ export function worldRenderSource(inspected, { objects = () => true } = {}) {
     terrainWeightRasters: inspected.layers.flatMap(layer => layer.layer.weightRasters ?? []),
     terrainTextures: inspected.terrainTextures,
     waterMaterials: inspected.layers.flatMap(layer => layer.layer.waterMaterials ?? []),
+    // player slots' colours and ramps, as drawCandidateWorld hands them to the renderer
+    teamColors: new Map(
+      players.flatMap(player => (player.color === undefined ? [] : [[player.id, player.color]])),
+    ),
+    teamRamps: new Map(
+      players.flatMap(player =>
+        player.colorRamp === undefined ? [] : [[player.id, player.colorRamp]],
+      ),
+    ),
   }
 }
 

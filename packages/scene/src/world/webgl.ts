@@ -1135,7 +1135,9 @@ function objectPosition(
   if (preview !== undefined) return [preview.x, preview.z, preview.y]
   if (item.uvwPosition !== undefined)
     return [item.uvwPosition.x, item.uvwPosition.y, item.uvwPosition.z]
-  return [item.position.x, item.position.z, item.position.y]
+  // a position without its height (Westwood's 2D placements) stands where its terrain puts it
+  const position = item.mapNativePresentationPosition ?? item.position
+  return [position.x, position.z, position.y]
 }
 
 function faceNormal(

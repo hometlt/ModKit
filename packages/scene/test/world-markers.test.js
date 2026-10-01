@@ -31,6 +31,18 @@ it('marks map points only on request, and a model that did not load always', () 
   // A selected point is marked, so a picked start location stays visible.
   const selected = createWorldWebGlPlan({ items, selectedObjectId: 2 })
   assert.equal(selected.stats.diagnosticPlaceholders, 2)
+  // A position without its height stands where the host's terrain reference put it.
+  const placed = createWorldWebGlPlan({
+    items: [
+      object(5, 'unit', {
+        resourceId: 'resource:missing',
+        position: { x: 7, y: 3, z: 0 },
+        uvwPosition: undefined,
+        mapNativePresentationPosition: { x: 7, y: 3, z: 6 },
+      }),
+    ],
+  })
+  assert.deepEqual([...placed.points.positions], [7, 6, 3])
   // The request is followed on the next plan built from this one.
   const first = createWorldWebGlPlan({ items })
   assert.equal(

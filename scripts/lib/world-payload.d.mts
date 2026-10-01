@@ -11,6 +11,14 @@ export interface WorldPayloadInspection {
   }[]
   readonly models?: ReadonlyMap<string, { readonly state: string; readonly uvmBytes?: Uint8Array }>
   readonly terrainTextures?: ReadonlyMap<string, unknown>
+  /** The scene info's player slots (`MapPlayer`): their colours and ramps reach the renderer. */
+  readonly info?: {
+    readonly players?: readonly {
+      readonly id: number
+      readonly color?: readonly [number, number, number]
+      readonly colorRamp?: readonly (readonly [number, number, number])[]
+    }[]
+  }
 }
 
 export interface WorldPayloadItem {
@@ -31,6 +39,8 @@ export interface WorldPayloadSource {
   readonly terrainWeightRasters: readonly unknown[]
   readonly terrainTextures: ReadonlyMap<string, unknown> | undefined
   readonly waterMaterials: readonly unknown[]
+  readonly teamColors: ReadonlyMap<number, readonly [number, number, number]>
+  readonly teamRamps: ReadonlyMap<number, readonly (readonly [number, number, number])[]>
 }
 
 export function worldRenderSource(

@@ -60,6 +60,19 @@ describe('world payload', () => {
           ['rock', { state: 'converted', uvmBytes: Uint8Array.of(1, 2) }],
           ['lost', { state: 'unresolved' }],
         ]),
+        info: {
+          players: [
+            { id: 1, color: [1, 0, 0] },
+            {
+              id: 2,
+              colorRamp: [
+                [0, 0, 0],
+                [0, 0, 1],
+              ],
+            },
+            { id: 3 },
+          ],
+        },
       },
       { objects: item => item.derivedFrom === 'cliffs' },
     )
@@ -72,5 +85,16 @@ describe('world payload', () => {
     expect(source.models.get('rock')?.uvmBytes).toBeUndefined()
     expect(source.terrainMaterials).toEqual(['ground'])
     expect(source.waterMaterials).toEqual(['sea'])
+    // house colours draw headless as in the viewer
+    expect([...source.teamColors]).toEqual([[1, [1, 0, 0]]])
+    expect([...source.teamRamps]).toEqual([
+      [
+        2,
+        [
+          [0, 0, 0],
+          [0, 0, 1],
+        ],
+      ],
+    ])
   })
 })
