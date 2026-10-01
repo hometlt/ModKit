@@ -350,6 +350,7 @@ const EN_MESSAGES = Object.freeze({
   'vscode.webview.noSnapshot': 'The extension host did not provide a host snapshot.',
   'vscode.webview.notInside': 'This page is not running inside a VS Code webview.',
   'vscode.webview.workbenchFailed': 'The Modkit workbench could not start: {reason}',
+  'vscode.webview.stillOpening': 'The codec is still starting; asking again…',
   'vscode.webview.workspace': 'Workspace',
   'vscode.webview.chooseMap': 'Choose a map for the World view by entering its ID:\n\n{candidates}',
   'vscode.map.diagnostic.selectionRequired':
@@ -891,6 +892,7 @@ const RU_MESSAGES: Readonly<Record<keyof typeof EN_MESSAGES, string>> = Object.f
   'vscode.webview.noSnapshot': 'Хост расширений не передал снимок состояния.',
   'vscode.webview.notInside': 'Эта страница запущена не внутри веб-представления VS Code.',
   'vscode.webview.workbenchFailed': 'Не удалось запустить рабочую область Modkit: {reason}',
+  'vscode.webview.stillOpening': 'Кодек ещё запускается, спрашиваю снова…',
   'vscode.webview.workspace': 'Рабочая область',
   'vscode.webview.chooseMap': 'Введите ID карты для представления мира:\n\n{candidates}',
   'vscode.map.diagnostic.selectionRequired':

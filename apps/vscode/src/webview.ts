@@ -493,6 +493,22 @@ async function mount(
   /** The view a navigated subject opens on, when the extension asked for one (its graph, say). */
   const pendingStages = new Map<string, string>()
   let openNavigatedSubject: ((event: NavigationEvent) => Promise<void>) | undefined
+  /*
+   * A cold codec realm can take longer to start than one RPC call may last (60 s; a Roblox place
+   * took 89 s on a loaded machine). The extension host goes on warming it after the call gives up,
+   * so the page asks again, at most twice, and says it is still waiting.
+   */
+  const openPatiently = async (path: string): Promise<SubjectClientOpenResult> => {
+    for (let attempt = 1; ; attempt += 1) {
+      try {
+        return await client.open(path)
+      } catch (error) {
+        const code = (error as { readonly code?: unknown } | null)?.code
+        if (code !== 'x3.host/rpc-deadline-exceeded' || attempt >= 3) throw error
+        say(localizer.text('vscode.webview.stillOpening'))
+      }
+    }
+  }
   const client = await connectSubjectRpc({
     framePort: bridge.framePort,
     // This port is emitter-shaped (`on`), and its payload is the frame itself.
@@ -869,7 +885,7 @@ async function mount(
     async openSession(entry) {
       const preopened = preopenedSubjects.get(entry.id)
       let result: SubjectClientOpenResult
-      if (preopened === undefined) result = await client.open(entry.id)
+      if (preopened === undefined) result = await openPatiently(entry.id)
       else {
         preopenedSubjects.delete(entry.id)
         result = preopened
