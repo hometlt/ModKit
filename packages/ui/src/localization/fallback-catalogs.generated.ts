@@ -814,8 +814,11 @@ export const VIDEO_FALLBACK_MESSAGES = {
   'viewer.durationUnknown': 'duration unknown',
   'viewer.mediaType': 'Media type',
   'viewer.video': 'Video viewer',
+  'viewer.videoAutoplay': 'Play on open',
+  'viewer.videoLoop': 'Loop',
   'viewer.videoPlayError': 'The platform cannot play this video representation: {reason}',
   'viewer.videoSummary': '{video} video · {audio} audio · {duration}',
+  'viewer.videoTrack': 'Track {index} ({kind})',
   'viewer.videoTrackCount': '{video} video · {audio} audio',
   'viewer.videoTracks': 'Video tracks',
 } as const satisfies UiMessageCatalog

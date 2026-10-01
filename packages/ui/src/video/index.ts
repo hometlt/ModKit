@@ -1,4 +1,10 @@
-import type { AnyDescriptor, MetadataGroup, VideoMediaSource, ViewerModule } from '@modkit/sdk'
+import type {
+  AnyDescriptor,
+  MetadataGroup,
+  VideoMediaSource,
+  VideoTrackInfo,
+  ViewerModule,
+} from '@modkit/sdk'
 import { collectEncodedMedia } from '../media/encoded.js'
 import {
   createMediaShell,
@@ -20,6 +26,39 @@ import {
 } from '../viewer/index.js'
 
 export const VIDEO_MAXIMUM_BYTES = 256 * 1024 * 1024
+/** Largest still the poster asks the host's frame decoder for. */
+const POSTER_MAXIMUM_BYTES = 64 * 1024 * 1024
+
+/** One track as a line of facts: codec, picture size, frame rate, language. */
+export function videoTrackLine(track: VideoTrackInfo): string {
+  return [
+    track.codec,
+    track.width === undefined || track.height === undefined
+      ? undefined
+      : `${track.width}×${track.height}`,
+    track.frameRate === undefined ? undefined : `${Number(track.frameRate.toFixed(3))} fps`,
+    track.language,
+  ]
+    .filter((part): part is string => part !== undefined && part !== '')
+    .join(' · ')
+}
+
+/** A per-reader choice kept by the page (loop, autoplay); a page without storage keeps defaults. */
+function remembered(key: string): boolean {
+  try {
+    return globalThis.localStorage?.getItem(key) === 'true'
+  } catch {
+    return false
+  }
+}
+
+function remember(key: string, value: boolean): void {
+  try {
+    globalThis.localStorage?.setItem(key, String(value))
+  } catch {
+    // a page without storage keeps the choice until it closes
+  }
+}
 
 export interface VideoViewerOptions {
   readonly localizer?: UiLocalizer
@@ -69,6 +108,8 @@ export function createVideoViewer(options: VideoViewerOptions = {}): ViewerModul
       const player = element(stage, 'video', { part: 'video.player' }) as HTMLVideoElement
       player.controls = true
       player.preload = 'metadata'
+      player.loop = remembered('modkit.video.loop')
+      player.autoplay = remembered('modkit.video.autoplay')
 
       const lease = await unknownSourceLease(
         args.sources,
@@ -111,12 +152,85 @@ export function createVideoViewer(options: VideoViewerOptions = {}): ViewerModul
           [localizer.text('viewer.audioTracks'), String(audioTracks.length)],
           [localizer.text('viewer.duration'), duration],
           [localizer.text('viewer.mediaType'), media.mediaType],
+          // each track's codec, picture size and frame rate, as MK2's media panel listed them
+          ...info.tracks.map(
+            (track, index) =>
+              [
+                localizer.text('viewer.videoTrack', { kind: track.kind, index: index + 1 }),
+                videoTrackLine(track),
+              ] as const,
+          ),
         ]
-        facts(
-          shell.section('video', localizer.text('viewer.video'), { icon: 'device-camera-video' })
-            .body,
-          rows,
-        )
+        const section = shell.section('video', localizer.text('viewer.video'), {
+          icon: 'device-camera-video',
+        }).body
+        facts(section, rows)
+        const playback = element(section, 'div', { part: 'video.options' })
+        for (const [key, label, apply] of [
+          [
+            'modkit.video.loop',
+            localizer.text('viewer.videoLoop'),
+            (on: boolean) => {
+              player.loop = on
+            },
+          ],
+          [
+            'modkit.video.autoplay',
+            localizer.text('viewer.videoAutoplay'),
+            (on: boolean) => {
+              player.autoplay = on
+              if (on && player.paused) void player.play().catch(() => undefined)
+            },
+          ],
+        ] as const) {
+          const option = element(playback, 'label')
+          const box = element(option, 'input') as HTMLInputElement
+          box.type = 'checkbox'
+          box.checked = remembered(key)
+          option.append(' ', label)
+          box.addEventListener('change', () => {
+            remember(key, box.checked)
+            apply(box.checked)
+          })
+        }
+        /*
+         * A still before playback, decoded by the host (ffmpeg) when it can: also all a reader sees of
+         * a stream the platform cannot play (AVI, WMV, Bink).
+         */
+        const first = videoTracks[0]
+        if (info.frameAccess && source.readFrame !== undefined && first !== undefined) {
+          void source
+            .readFrame(
+              {
+                trackId: first.id,
+                timestampMs: 0,
+                pixelFormat: 'rgba8',
+                maxBytes: POSTER_MAXIMUM_BYTES,
+              },
+              scope.signal,
+            )
+            .then(frame => {
+              if (scope.signal.aborted || frame.pixelFormat !== 'rgba8') return
+              const canvas = root.ownerDocument.createElement('canvas')
+              canvas.width = frame.width
+              canvas.height = frame.height
+              const context = canvas.getContext('2d')
+              if (context === null) return
+              const image = context.createImageData(frame.width, frame.height)
+              for (let row = 0; row < frame.height; row += 1) {
+                image.data.set(
+                  frame.pixels.subarray(
+                    row * frame.rowStride,
+                    row * frame.rowStride + frame.width * 4,
+                  ),
+                  row * frame.width * 4,
+                )
+              }
+              context.putImageData(image, 0, 0)
+              player.poster = canvas.toDataURL('image/png')
+            })
+            .catch(() => undefined)
+        }
         for (const group of metadataGroups(args.descriptor)) {
           if (/^(identity|traits|detection)$/iu.test(group.id)) continue
           facts(

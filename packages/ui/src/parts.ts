@@ -236,6 +236,7 @@ export const PARTS = Object.freeze([
   // video stage
   'video',
   'video.player',
+  'video.options',
   'video.readout',
 
   // model stage
