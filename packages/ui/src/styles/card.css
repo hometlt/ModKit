@@ -808,6 +808,110 @@
     cursor: pointer;
   }
 
+  /* The wiki: kinds, the subjects of one kind, and the chosen subject's card, side by side. */
+  [data-mk-part='wiki'] {
+    display: grid;
+    grid-template-columns: minmax(8rem, 12rem) minmax(14rem, 22rem) minmax(0, 1fr);
+    gap: var(--mk-space-2);
+    height: 100%;
+    min-height: 0;
+  }
+
+  [data-mk-part='wiki.kinds'],
+  [data-mk-part='wiki.pane'],
+  [data-mk-part='wiki.card'] {
+    min-height: 0;
+    overflow: auto;
+  }
+
+  [data-mk-part='wiki.kinds'] {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  [data-mk-part='wiki.kind'],
+  [data-mk-part='wiki.subject'] > button {
+    display: flex;
+    gap: var(--mk-space-2);
+    align-items: center;
+    width: 100%;
+    padding: var(--mk-space-1) var(--mk-space-2);
+    color: var(--mk-color-fg);
+    text-align: start;
+    border: 0;
+    border-radius: var(--mk-radius-sm);
+    background: transparent;
+    cursor: pointer;
+  }
+
+  [data-mk-part='wiki.kind'] > small {
+    margin-inline-start: auto;
+    color: var(--mk-color-fg-muted);
+  }
+
+  [data-mk-part='wiki.kind'][aria-current='true'],
+  [data-mk-part='wiki.subject'] > button[aria-current='true'] {
+    color: var(--mk-color-selection-fg);
+    background: var(--mk-color-selection);
+  }
+
+  [data-mk-part='wiki.toolbar'] {
+    display: flex;
+    gap: var(--mk-space-2);
+    align-items: center;
+    margin-block-end: var(--mk-space-2);
+  }
+
+  [data-mk-part='wiki.search'] {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  [data-mk-part='wiki.status'] {
+    display: block;
+    margin: 0 0 var(--mk-space-1);
+    color: var(--mk-color-fg-muted);
+    font-size: var(--mk-font-size-xs);
+  }
+
+  [data-mk-part='wiki.subjects'] {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  [data-mk-part='wiki.subjects'][data-mode='grid'] {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr));
+    gap: var(--mk-space-1);
+  }
+
+  [data-mk-part='wiki.subjects'][data-mode='grid'] > [data-mk-part='wiki.subject'] > button {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  [data-mk-part='wiki.icon'] {
+    flex: none;
+    width: 1.5rem;
+    height: 1.5rem;
+    object-fit: contain;
+  }
+
+  [data-mk-part='wiki.subjects'][data-mode='grid'] [data-mk-part='wiki.icon'] {
+    width: 4rem;
+    height: 4rem;
+  }
+
+  [data-mk-part='wiki.id'] {
+    overflow: hidden;
+    color: var(--mk-color-fg-muted);
+    font-size: var(--mk-font-size-xs);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   [data-mk-part='metadata.note'] {
     display: block;
     margin-block-start: var(--mk-space-1);

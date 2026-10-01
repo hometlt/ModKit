@@ -1335,6 +1335,11 @@ export function createSubjectCard(document: Document, options: SubjectCardOption
 export interface SubjectCardViewerOptions {
   readonly localizer?: UiLocalizer
   /**
+   * A subject of the bound selector to open on instead of the subject itself (a wiki's chosen
+   * entity); its history starts there.
+   */
+  readonly subject?: string
+  /**
    * The stages the preview section mounts. A host passes the same configured modules its own
    * image and model stages use (renderer port, texture resolver, export writer); without them the
    * card falls back to unconfigured ones, which draw a wireframe model and untextured materials.
@@ -1393,7 +1398,8 @@ export function createSubjectCardViewer(options: SubjectCardViewerOptions = {}):
         const ownId = (await own.summary(scope.signal)).identity.subjectId
         const document = root.ownerDocument
         const history = new SubjectNavigationHistory()
-        history.reset(ownId)
+        const start = options.subject ?? ownId
+        history.reset(start)
         const nav = document.createElement('div')
         setPart(nav, 'card.nav')
         const back = document.createElement('button')
@@ -1623,7 +1629,7 @@ export function createSubjectCardViewer(options: SubjectCardViewerOptions = {}):
           const address = history.forward()
           if (address !== undefined) void show(address).catch(() => undefined)
         })
-        await show(ownId)
+        await show(start)
         scope.cleanup(() => page?.scope.close())
         root.dataset['revision'] = args.descriptor.revision
         return createViewerMount(root, scope, args, ({ descriptor }) => {
@@ -1867,3 +1873,5 @@ export const subjectCardViewer: ViewerModule = createSubjectCardViewer()
 export default subjectCardViewer
 
 export { accordionField }
+export { createSubjectWikiViewer, wikiKinds, WIKI_PAGE_SIZE } from './wiki.js'
+export type { SubjectWikiViewerOptions } from './wiki.js'

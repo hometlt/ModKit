@@ -127,6 +127,20 @@ export const CARD_FALLBACK_MESSAGES = {
   'card.subject': 'Subject card',
 } as const satisfies UiMessageCatalog
 
+export const CARD_WIKI_FALLBACK_MESSAGES = {
+  'viewer.wiki': 'Wiki',
+  'viewer.wikiAll': 'All',
+  'viewer.wikiEmpty': 'Nothing matches.',
+  'viewer.wikiGrid': 'Icons',
+  'viewer.wikiIncomplete': 'The list may be incomplete: {reason}',
+  'viewer.wikiKinds': 'Kinds',
+  'viewer.wikiList': 'List',
+  'viewer.wikiMore': 'Show more',
+  'viewer.wikiPick': 'Choose an entity to see its card.',
+  'viewer.wikiSearch': 'Search by name or id',
+  'viewer.wikiShown': '{shown} of {total}',
+} as const satisfies UiMessageCatalog
+
 export const CODE_FALLBACK_MESSAGES = {
   'viewer.enterSearch': 'Enter a search term',
   'viewer.ready': 'Ready',

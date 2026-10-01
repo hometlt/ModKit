@@ -507,6 +507,19 @@ export const PARTS = Object.freeze([
   'image-editing.select',
   'image-editing.check',
   'card.preview',
+  // the wiki of a mod's entities (plan 5.25)
+  'wiki',
+  'wiki.kinds',
+  'wiki.kind',
+  'wiki.pane',
+  'wiki.toolbar',
+  'wiki.search',
+  'wiki.status',
+  'wiki.subjects',
+  'wiki.subject',
+  'wiki.icon',
+  'wiki.id',
+  'wiki.card',
   'card.preview-open',
 
   // relation graph
