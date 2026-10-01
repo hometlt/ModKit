@@ -185,6 +185,66 @@ describe('production world to UVW materializer', () => {
     expect(incomplete.refusalCodes).toEqual(['terrain-budget-exceeded'])
   })
 
+  it('keeps a partial object facet, losing alone the objects without a canonical place', async () => {
+    const objectsLayerId = 'native:objects'
+    const objectInfo: CandidateWorldSceneInfo = {
+      ...info,
+      unknownFacets: [],
+      facets: [
+        ...info.facets,
+        { facet: 'objects', layerId: objectsLayerId, state: 'partial', itemCount: 4, lods: ['exact'] },
+      ],
+    }
+    const object = (id: string, placed: boolean, extra: object = {}) => ({
+      facet: 'objects' as const,
+      id,
+      layerId: objectsLayerId,
+      coordinateSpaceId: 'map-native',
+      kind: 'doodad' as const,
+      objectId: 1,
+      position: { x: 0, y: 0 },
+      ...(placed
+        ? { uvwPosition: { x: 0.5, y: 1, z: -0.5 }, uvwRotation: [0, 0, 0, 1] as const }
+        : {}),
+      ...extra,
+    })
+    const terrainSource = source(4, objectInfo)
+    const objectSource: CandidateWorldSceneSource = {
+      ...terrainSource,
+      page: request => {
+        if (request.facet === 'layers')
+          return Promise.resolve({
+            snapshotId,
+            facet: 'layers',
+            state: 'available',
+            items: [{
+              facet: 'layers', id: objectsLayerId, layerId: objectsLayerId,
+              kind: 'objects', state: 'partial', itemCount: 4, lods: ['exact'],
+            }],
+          })
+        if (request.facet === 'objects')
+          return Promise.resolve({
+            snapshotId,
+            facet: 'objects',
+            state: 'available',
+            items: [
+              object('native:tree-1', true),
+              object('native:start-1', false),
+              object('native:tree-1', true),
+              object('native:cliff-1', true, { derivedFrom: 'cliffs' }),
+            ],
+          })
+        return terrainSource.page(request)
+      },
+    }
+    const result = await materializeWorldToUvw(objectSource, { ...options, maxFacetItems: 64 })
+    if (result.state !== 'materialized') throw new Error(JSON.stringify(result.refusals))
+    expect(result.excludedFacetIds).not.toContain('world.objects')
+    expect(result.omittedObjects).toBe(2)
+    const layer = result.document.spaces[0]?.layers.find(item => item.kind === 'objects')
+    expect(layer?.kind === 'objects' && layer.instances.map(instance => instance.id)).toEqual(['tree-1'])
+  })
+
   it('keeps publisher material references joined after UVW id normalization', async () => {
     const materialsLayerId = 'native:materials'
     const materialIds = ['ground-a_yellow', 'ground-a_red'] as const

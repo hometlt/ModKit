@@ -1235,9 +1235,18 @@ export async function materializeWorldToUvpMap(
         options.maxPageItems,
         options.signal,
       )
-      if (objects.length !== target.layer.instances.length)
-        throw new TypeError(`object layer ${catalog.layerId} changed during UVP materialization`)
-      for (const [instanceIndex, object] of objects.entries()) {
+      // Joined by the instance id the UVW gave each object, as the reconstruction names it: the
+      // canonical UVW sorts instances, and an object it left out (a cliff piece, no canonical
+      // place, a repeated id) has no instance to bind.
+      const instanceIndexById = new Map(
+        target.layer.instances.map((instance, index) => [instance.id, index] as const),
+      )
+      const bound = new Set<number>()
+      for (const object of objects) {
+        if (object.derivedFrom !== undefined) continue
+        const instanceIndex = instanceIndexById.get(localId(object.id, 'instance'))
+        if (instanceIndex === undefined || bound.has(instanceIndex)) continue
+        bound.add(instanceIndex)
         const sourceIds =
           object.resourceIds ?? (object.resourceId === undefined ? [] : [object.resourceId])
         for (const sourceResourceId of sourceIds) {
@@ -1328,6 +1337,8 @@ export async function materializeWorldToUvpMap(
           )
         }
       }
+      if (bound.size !== target.layer.instances.length)
+        throw new TypeError(`object layer ${catalog.layerId} changed during UVP materialization`)
     }
     let document = rewriteDocument(materialized.document, bindings, weightBindings)
     document = rewriteObjectModels(document, objectBindings)

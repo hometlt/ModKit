@@ -64,6 +64,8 @@ export type WorldUvwMaterializationResult =
       readonly bytes: Uint8Array
       readonly artifactDigest: `sha256:${string}`
       readonly excludedFacetIds: readonly string[]
+      /** Objects of a partial object facet left out alone (no canonical place, a repeated id). */
+      readonly omittedObjects: number
       readonly refusalCodes: readonly []
       readonly refusals: readonly []
     }>
@@ -227,6 +229,8 @@ export async function materializeWorldToUvw(
         excludedFacetIds: Object.freeze(
           info.unknownFacets.map(facet => `world.unknown.${facet}`).sort(),
         ),
+        // a canonical UVW source places every object
+        omittedObjects: 0,
         refusalCodes: Object.freeze([]) as readonly [],
         refusals: Object.freeze([]) as readonly [],
       })
@@ -489,6 +493,7 @@ export async function materializeWorldToUvw(
       bytes,
       artifactDigest: `sha256:${digest}`,
       excludedFacetIds,
+      omittedObjects: additional.omittedObjects,
       refusalCodes: Object.freeze([]) as readonly [],
       refusals: Object.freeze([]) as readonly [],
     })

@@ -199,7 +199,7 @@ async function reconstructLayer(
   layer: WorldSceneLayerItem,
   spaceId: string,
   options: CanonicalUvwReconstructionOptions,
-  state: { pageRequests: number; observedItems: number },
+  state: { pageRequests: number; observedItems: number; omittedObjects?: number },
 ): Promise<UvwHeightfieldSpaceLayer> {
   const id = layer.localLayerId ?? localId(layer.layerId)
   const label = layerLabel(layer)
@@ -529,61 +529,71 @@ async function reconstructLayer(
     })
   }
   if (layer.kind === 'objects') {
+    const seenInstances = new Set<string>()
     return Object.freeze({
       schemaVersion: 1,
       id,
       kind: 'objects',
       ...label,
       instances: Object.freeze(
-        // Presentation-only instances (authored cliff meshes) belong to their source facet.
-        items.flatMap(raw => ((raw as WorldSceneObjectItem).derivedFrom === undefined ? [raw] : [])).map(raw => {
+        items.flatMap(raw => {
           const item = raw as WorldSceneObjectItem
+          if (item.facet !== 'objects') throw new TypeError('UVW object layer item is not an object')
+          // Presentation-only instances (authored cliff meshes) belong to their source facet.
+          if (item.derivedFrom !== undefined) return []
+          // An object without a canonical place (a 2D unit) or a repeated id is lost alone and
+          // counted, not the whole facet with it.
+          const instanceId = localId(item.id, 'instance')
           if (
-            item.facet !== 'objects' ||
             item.uvwPosition === undefined ||
-            item.uvwRotation === undefined
+            item.uvwRotation === undefined ||
+            seenInstances.has(instanceId)
           ) {
-            throw new TypeError('UVW canonical object item lacks canonical transform')
+            state.omittedObjects = (state.omittedObjects ?? 0) + 1
+            return []
           }
+          seenInstances.add(instanceId)
           const scale = item.uvwScale ?? { x: 1, y: 1, z: 1 }
-          return Object.freeze({
-            id: localId(item.id, 'instance'),
-            objectKind: item.kind,
-            position: Object.freeze([
-              item.uvwPosition.x,
-              item.uvwPosition.y,
-              item.uvwPosition.z,
-            ] as const),
-            rotation: item.uvwRotation,
-            scale: Object.freeze([scale.x, scale.y, scale.z] as const),
-            resourceIds: Object.freeze(
-              (item.resourceIds ?? []).flatMap(resourceId =>
-                resourceId.startsWith('uvw-resource:')
-                  ? [localResourceId(resourceId, spaceId)]
-                  : [],
+          return [
+            Object.freeze({
+              id: instanceId,
+              objectKind: item.kind,
+              position: Object.freeze([
+                item.uvwPosition.x,
+                item.uvwPosition.y,
+                item.uvwPosition.z,
+              ] as const),
+              rotation: item.uvwRotation,
+              scale: Object.freeze([scale.x, scale.y, scale.z] as const),
+              resourceIds: Object.freeze(
+                (item.resourceIds ?? []).flatMap(resourceId =>
+                  resourceId.startsWith('uvw-resource:')
+                    ? [localResourceId(resourceId, spaceId)]
+                    : [],
+                ),
               ),
-            ),
-            ...(item.modelComponents === undefined
-              ? {}
-              : {
-                  modelComponents: Object.freeze(
-                    item.modelComponents.flatMap(component =>
-                      component.resourceId.startsWith('uvw-resource:')
-                        ? [
-                            Object.freeze({
-                              ...component,
-                              resourceId: localResourceId(component.resourceId, spaceId),
-                            }),
-                          ]
-                        : [],
+              ...(item.modelComponents === undefined
+                ? {}
+                : {
+                    modelComponents: Object.freeze(
+                      item.modelComponents.flatMap(component =>
+                        component.resourceId.startsWith('uvw-resource:')
+                          ? [
+                              Object.freeze({
+                                ...component,
+                                resourceId: localResourceId(component.resourceId, spaceId),
+                              }),
+                            ]
+                          : [],
+                      ),
                     ),
-                  ),
-                }),
-            ...(item.typeId === undefined ? {} : { typeId: item.typeId }),
-            ...(item.player === undefined ? {} : { player: item.player }),
-            ...(item.variation === undefined ? {} : { variation: item.variation }),
-            ...(item.name === undefined ? {} : { name: item.name }),
-          })
+                  }),
+              ...(item.typeId === undefined ? {} : { typeId: item.typeId }),
+              ...(item.player === undefined ? {} : { player: item.player }),
+              ...(item.variation === undefined ? {} : { variation: item.variation }),
+              ...(item.name === undefined ? {} : { name: item.name }),
+            }),
+          ]
         }),
       ),
     })
@@ -762,6 +772,8 @@ export interface AdditionalExactLayers {
   readonly retainedFacets: readonly string[]
   readonly pageRequests: number
   readonly observedItems: number
+  /** Objects left out alone: no canonical place (a 2D unit) or a repeated id. */
+  readonly omittedObjects: number
 }
 
 /** Reconstruct the exact native facets whose current common contract already proves UVW geometry. */
@@ -770,7 +782,7 @@ export async function reconstructAdditionalExactLayers(
   info: CandidateWorldSceneInfo,
   options: CanonicalUvwReconstructionOptions,
 ): Promise<AdditionalExactLayers> {
-  const state = { pageRequests: 0, observedItems: 0 }
+  const state = { pageRequests: 0, observedItems: 0, omittedObjects: 0 }
   const supported = new Set([
     'terrain-materials',
     'cliffs',
@@ -783,7 +795,8 @@ export async function reconstructAdditionalExactLayers(
   const candidates = info.facets.filter(
     facet =>
       supported.has(facet.facet) &&
-      facet.state === 'available' &&
+      // a partial object facet keeps its placed objects; the rest are counted, not the facet lost
+      (facet.state === 'available' || (facet.facet === 'objects' && facet.state === 'partial')) &&
       (facet.lods.includes('exact') ||
         (facet.facet === 'terrain-materials' && facet.lods.includes('raster-exact'))),
   )
@@ -793,6 +806,7 @@ export async function reconstructAdditionalExactLayers(
       retainedFacets: Object.freeze([]),
       pageRequests: 0,
       observedItems: 0,
+      omittedObjects: 0,
     })
   }
   const catalog = (await drain(source, info, 'layers', undefined, options, state)).map(item => {
@@ -834,5 +848,6 @@ export async function reconstructAdditionalExactLayers(
     retainedFacets: Object.freeze(retainedFacets),
     pageRequests: state.pageRequests,
     observedItems: state.observedItems,
+    omittedObjects: state.omittedObjects,
   })
 }
