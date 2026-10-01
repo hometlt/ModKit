@@ -115,32 +115,69 @@ it('real MCP host retrieves complete M3 UVM/native/PNG results and reuses owned 
         encoding: 'hex',
       },
     )
-    expect(await retrieve(nativeArtifact)).toEqual(source)
-    const mapping = object(
-      object(object(readUvmContainer(uvm).document['extras'])['BlizzardM3'])['mapping'],
+    // model.write builds a fresh M3 in the writer's canonical layout, not the source bytes (lossless
+    // bytes are export.raw and edit.field): the M3 it writes must carry the model back through export.
+    const native = await retrieve(nativeArtifact)
+    expect(native.subarray(0, 4)).toEqual(source.subarray(0, 4))
+    const nativePath = resolve(outputRoot, 'native.m3')
+    await writeFile(nativePath, native)
+    const nativeOpened = envelope(
+      await client.callTool({ name: 'modkit.open_subject', arguments: { path: nativePath } }),
     )
-    const strings = mapping['nativeStrings']
-    if (!Array.isArray(strings)) throw new Error('native string bindings absent')
-    const binding = strings
-      .map(object)
-      .find(
-        item =>
-          object(item['native'])['kind'] === 'sequence' &&
-          Array.isArray(item['aliases']) &&
-          item['aliases'].length > 1,
-      )
-    if (binding === undefined || !Array.isArray(binding['aliases']))
-      throw new Error('sequence aliases absent')
+    const nativeHandle = text(object(nativeOpened.data)['handle'])
+    const nativeUvm = await retrieve(
+      await invoke(
+        'model.export-uvm',
+        { schemaVersion: 1, metersPerSourceUnit: 2 },
+        undefined,
+        nativeHandle,
+      ),
+    )
+    envelope(
+      await client.callTool({ name: 'modkit.close_subject', arguments: { handle: nativeHandle } }),
+    )
+    const shape = (bytes: Uint8Array) => {
+      const document = readUvmContainer(bytes).document
+      const list = (key: string) => {
+        const value = document[key]
+        return Array.isArray(value) ? value.map(object) : []
+      }
+      return {
+        nodes: list('nodes').map(node => node['name']),
+        meshes: list('meshes').map(mesh =>
+          Array.isArray(mesh['primitives']) ? mesh['primitives'].length : 0,
+        ),
+        materials: list('materials').map(material => material['name']),
+        animations: list('animations').map(animation => animation['name']),
+        // M3 sequences are clips of UV_game_animation_clips, with or without keyframe channels
+        clips: (() => {
+          const clips = object(
+            object(document['extensions'] ?? {})['UV_game_animation_clips'] ?? {},
+          )['clips']
+          return Array.isArray(clips) ? clips.map(clip => object(clip)['name']) : []
+        })(),
+        skins: list('skins').map(skin =>
+          Array.isArray(skin['joints']) ? skin['joints'].length : 0,
+        ),
+      }
+    }
+    expect(shape(nativeUvm)).toEqual(shape(uvm))
+    // A clip renamed in the owned UVM (a JSON patch on the scene, no large JSON input) comes back
+    // from the M3 the writer makes of it.
+    const clips = shape(uvm).clips
+    expect(clips.length).toBeGreaterThan(0)
     const replacement = 'MCP edited sequence'
     const editedArtifact = await invoke(
       'model.write',
       {
         schemaVersion: 1,
-        json: binding['aliases'].map(alias => ({
-          op: 'replace',
-          path: text(object(alias)['path']),
-          value: replacement,
-        })),
+        json: [
+          {
+            op: 'replace',
+            path: '/extensions/UV_game_animation_clips/clips/0/name',
+            value: replacement,
+          },
+        ],
       },
       { id: uvmArtifact['id'], field: 'uvmBytesHex', encoding: 'hex' },
     )
@@ -160,13 +197,7 @@ it('real MCP host retrieves complete M3 UVM/native/PNG results and reuses owned 
         reopenedHandle,
       ),
     )
-    const reopenedStrings = object(
-      object(object(readUvmContainer(reopenedUvm).document['extras'])['BlizzardM3'])['mapping'],
-    )['nativeStrings']
-    if (!Array.isArray(reopenedStrings)) throw new Error('reopened string bindings absent')
-    expect(
-      reopenedStrings.some(item => object(object(item)['native'])['value'] === replacement),
-    ).toBe(true)
+    expect(shape(reopenedUvm).clips).toEqual([replacement, ...clips.slice(1)])
     envelope(
       await client.callTool({
         name: 'modkit.close_subject',
