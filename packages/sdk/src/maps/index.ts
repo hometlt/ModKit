@@ -143,19 +143,32 @@ export interface MapLayerWindow {
 }
 
 /** The representation a map codec's layer-write fidelity proof names. */
-export const MAP_LAYERS_REPRESENTATION = Object.freeze({
+export const MAP_LAYERS_REPRESENTATION = /* @__PURE__ */ Object.freeze({
   id: 'map-layers',
   contract: 'common.map/layers',
   major: 1,
 } as const)
 
-const sampleOrigin = {
-  x: { type: 'integer', minimum: 0, description: 'Column of the first sample, counted from the west edge.' },
-  y: { type: 'integer', minimum: 0, description: 'Row of the first sample, counted from the north edge (row 0).' },
+// Plain constants, no spreads: a bundle that takes one constant of this module drops the schemas.
+const sampleX = {
+  type: 'integer',
+  minimum: 0,
+  description: 'Column of the first sample, counted from the west edge.',
 } as const
-const windowSize = {
-  width: { type: 'integer', minimum: 1, description: 'Columns in the window; x + width stays within the layer.' },
-  height: { type: 'integer', minimum: 1, description: 'Rows in the window; y + height stays within the layer.' },
+const sampleY = {
+  type: 'integer',
+  minimum: 0,
+  description: 'Row of the first sample, counted from the north edge (row 0).',
+} as const
+const windowWidth = {
+  type: 'integer',
+  minimum: 1,
+  description: 'Columns in the window; x + width stays within the layer.',
+} as const
+const windowHeight = {
+  type: 'integer',
+  minimum: 1,
+  description: 'Rows in the window; y + height stays within the layer.',
 } as const
 const layerId = {
   type: 'string',
@@ -165,7 +178,7 @@ const layerId = {
 const anyNamed = (...names: readonly string[]) => ({ anyOf: names.map(name => ({ required: [name] })) })
 
 /** `map.layers` input: none. */
-export const MAP_LAYERS_INPUT_SCHEMA: JsonSchemaRef = Object.freeze({
+export const MAP_LAYERS_INPUT_SCHEMA: JsonSchemaRef = /* @__PURE__ */ Object.freeze({
   $ref: 'modkit://map/layers.v1',
   document: {
     $id: 'modkit://map/layers.v1',
@@ -176,7 +189,7 @@ export const MAP_LAYERS_INPUT_SCHEMA: JsonSchemaRef = Object.freeze({
 })
 
 /** `map.layer-read` input; `mapLayerWindow` checks the same rules against the layer. */
-export const MAP_LAYER_READ_INPUT_SCHEMA: JsonSchemaRef = Object.freeze({
+export const MAP_LAYER_READ_INPUT_SCHEMA: JsonSchemaRef = /* @__PURE__ */ Object.freeze({
   $ref: 'modkit://map/layer-read.v1',
   document: {
     $id: 'modkit://map/layer-read.v1',
@@ -185,13 +198,22 @@ export const MAP_LAYER_READ_INPUT_SCHEMA: JsonSchemaRef = Object.freeze({
     type: 'object',
     required: ['layer'],
     additionalProperties: false,
-    properties: { layer: layerId, ...sampleOrigin, ...windowSize },
-    anyOf: [{ not: anyNamed('x', 'y', 'width', 'height') }, { required: ['x', 'y', 'width', 'height'] }],
+    properties: {
+      layer: layerId,
+      x: sampleX,
+      y: sampleY,
+      width: windowWidth,
+      height: windowHeight,
+    },
+    anyOf: [
+      { not: /* @__PURE__ */ anyNamed('x', 'y', 'width', 'height') },
+      { required: ['x', 'y', 'width', 'height'] },
+    ],
   },
 })
 
 /** `map.layer-write` input; the answer is an edit plan, applied only by prepare and commit. */
-export const MAP_LAYER_WRITE_INPUT_SCHEMA: JsonSchemaRef = Object.freeze({
+export const MAP_LAYER_WRITE_INPUT_SCHEMA: JsonSchemaRef = /* @__PURE__ */ Object.freeze({
   $ref: 'modkit://map/layer-write.v1',
   document: {
     $id: 'modkit://map/layer-write.v1',
@@ -202,8 +224,10 @@ export const MAP_LAYER_WRITE_INPUT_SCHEMA: JsonSchemaRef = Object.freeze({
     additionalProperties: false,
     properties: {
       layer: layerId,
-      ...sampleOrigin,
-      ...windowSize,
+      x: sampleX,
+      y: sampleY,
+      width: windowWidth,
+      height: windowHeight,
       values: {
         type: 'array',
         minItems: 1,
@@ -212,7 +236,7 @@ export const MAP_LAYER_WRITE_INPUT_SCHEMA: JsonSchemaRef = Object.freeze({
       },
       expectedSourceRevision: { type: 'string', minLength: 1, description: 'Revision the window was read from.' },
     },
-    anyOf: [{ required: ['x', 'y'] }, { not: anyNamed('x', 'y') }],
+    anyOf: [{ required: ['x', 'y'] }, { not: /* @__PURE__ */ anyNamed('x', 'y') }],
   },
 })
 
