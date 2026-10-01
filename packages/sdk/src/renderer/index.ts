@@ -51,6 +51,12 @@ export interface SceneRendererPbr {
   /** Emitted colour, RGB 0..1 in the base colour's space; multiplies `emissiveTexture`. */
   readonly emissive?: readonly [number, number, number]
   readonly emissiveTexture?: string
+  /**
+   * glTF normalTexture in tangent space (+Y up), scaled in X and Y by `normalScale` (default 1). The
+   * tangent frame is the primitive's TANGENT, or one derived from its UVs as glTF viewers do.
+   */
+  readonly normalTexture?: string
+  readonly normalScale?: number
 }
 
 /** glTF-style coverage: opaque ignores alpha, mask tests it, blend uses source-over. */

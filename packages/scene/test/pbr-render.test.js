@@ -70,3 +70,32 @@ it('reads team masks and pbr maps on a primitive without a base colour texture',
   })
   assert.deepEqual([...frame.rgba.subarray((4 * 8 + 4) * 4, (4 * 8 + 4) * 4 + 4)], [0, 0, 255, 255])
 })
+
+it('turns the normal by a normal map in the frame of the UVs (glTF, without TANGENT)', async () => {
+  const lit = async texel => {
+    const frame = await renderHeadless({
+      outputKind: 'rgba8',
+      viewport: { width: 8, height: 8 },
+      camera: { viewProjection: identity, eyePosition: [0, 0, 5] },
+      scene: {
+        materials: [
+          {
+            id: 'm',
+            baseColor: [1, 1, 1, 1],
+            shading: 'pbr',
+            pbr: { metallic: 0, roughness: 1, normalTexture: 'normals' },
+          },
+        ],
+        primitives: [{ ...quad, textureCoordinates: Float32Array.of(0, 0, 1, 0, 1, 1, 0, 1) }],
+        textures: [{ id: 'normals', width: 1, height: 1, rgba: Uint8Array.of(...texel, 255) }],
+        // a light grazing the quad from +x
+        light: { direction: [1, 0, 0], color: [1, 1, 1, 1], ambient: 0 },
+      },
+    })
+    return frame.rgba[(4 * 8 + 4) * 4]
+  }
+  // flat (128 is a hair past the middle): the light grazes, next to nothing lit
+  assert.ok((await lit([128, 128, 255])) < 20)
+  // a normal tilted along the tangent (u, here +x) faces the light
+  assert.ok((await lit([255, 128, 128])) > 200)
+})

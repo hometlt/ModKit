@@ -117,6 +117,10 @@ uniform float pbrOcclusionTextured;
 uniform sampler2D pbrOcclusionMap;
 uniform float pbrEmissiveTextured;
 uniform sampler2D pbrEmissiveMap;
+// a normal map in tangent space; the frame from the UV derivatives, as the glTF sample viewer does
+uniform float pbrNormalTextured;
+uniform sampler2D pbrNormalMap;
+uniform float pbrNormalScale;
 uniform float eyeKnown;
 uniform vec3 eyePosition;
 ${PREVIEW_LIGHT_GLSL}
@@ -154,6 +158,22 @@ void main() {
     vec3 surfaceNormal = hasNormals > 0.5
       ? normalize(worldNormal)
       : normalize(cross(dFdx(worldPosition), dFdy(worldPosition)));
+    if (pbrNormalTextured > 0.5) {
+      vec3 uvDx = dFdx(vec3(sampleUv, 0.0));
+      vec3 uvDy = dFdy(vec3(sampleUv, 0.0));
+      float determinant = uvDx.s * uvDy.t - uvDy.s * uvDx.t;
+      if (abs(determinant) > 1e-12) {
+        vec3 tangent = (uvDy.t * dFdx(worldPosition) - uvDx.t * dFdy(worldPosition)) / determinant;
+        tangent -= surfaceNormal * dot(surfaceNormal, tangent);
+        if (dot(tangent, tangent) > 1e-20) {
+          tangent = normalize(tangent);
+          vec3 bitangent = cross(surfaceNormal, tangent);
+          vec3 texel = texture(pbrNormalMap, sampleUv).rgb * 2.0 - 1.0;
+          surfaceNormal = normalize(tangent * texel.x * pbrNormalScale + bitangent * texel.y * pbrNormalScale
+            + surfaceNormal * texel.z);
+        }
+      }
+    }
     vec3 view = eyeKnown > 0.5 ? normalize(eyePosition - worldPosition) : surfaceNormal;
     vec4 metallicRoughness = pbrMetallicRoughnessTextured > 0.5
       ? texture(pbrMetallicRoughnessMap, sampleUv)
@@ -615,7 +635,8 @@ export async function renderBrowser(request: SceneRenderRequest): Promise<SceneR
           surface?.teamMask === undefined &&
           pbr?.metallicRoughness === undefined &&
           pbr?.occlusion === undefined &&
-          pbr?.emissiveTexture === undefined) ||
+          pbr?.emissiveTexture === undefined &&
+          pbr?.normal === undefined) ||
         !(primitive.textureCoordinates instanceof Float32Array) ||
         primitive.textureCoordinates.length < vertexCount * 2
           ? undefined
@@ -714,6 +735,8 @@ export async function renderBrowser(request: SceneRenderRequest): Promise<SceneR
         bindPbr(pbr.metallicRoughness, 'pbrMetallicRoughnessTextured', 'pbrMetallicRoughnessMap', 2)
         bindPbr(pbr.occlusion, 'pbrOcclusionTextured', 'pbrOcclusionMap', 3)
         bindPbr(pbr.emissiveTexture, 'pbrEmissiveTextured', 'pbrEmissiveMap', 4)
+        bindPbr(pbr.normal, 'pbrNormalTextured', 'pbrNormalMap', 5)
+        gl.uniform1f(uniform('pbrNormalScale'), pbr.normalScale)
       }
       const teamMasked = team !== undefined && surface?.teamMask !== undefined
       if (teamColorMode !== null)

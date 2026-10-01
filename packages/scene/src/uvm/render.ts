@@ -852,6 +852,7 @@ async function prepareNestedUvmRender(
       documentTextureIndex(material?.pbr?.metallicRoughnessTexture),
       documentTextureIndex(material?.pbr?.occlusionTexture),
       documentTextureIndex(material?.pbr?.emissiveTexture),
+      documentTextureIndex(material?.pbr?.normalTexture),
     ].filter((index): index is number => index !== undefined)
   }
   const usedTextures = new Set(primitives.flatMap(primitive => drawnTextures(primitive.materialId)))

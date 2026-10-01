@@ -16,6 +16,8 @@ export interface DrawPbr {
   /** Linear. */
   readonly emissive: PbrVec3
   readonly emissiveTexture?: SceneRendererTexture
+  readonly normal?: SceneRendererTexture
+  readonly normalScale: number
 }
 
 const factor = (value: unknown, label: string) => {
@@ -50,6 +52,10 @@ export function drawPbr(
   const metallicRoughness = texture(pbr.metallicRoughnessTexture, 'metallic-roughness')
   const occlusion = texture(pbr.occlusionTexture, 'occlusion')
   const emissiveTexture = texture(pbr.emissiveTexture, 'emissive')
+  const normal = texture(pbr.normalTexture, 'normal')
+  const normalScale = pbr.normalScale ?? 1
+  if (!Number.isFinite(normalScale))
+    throw new TypeError(`material ${material.id} normal scale must be finite`)
   return {
     metallic: factor(pbr.metallic, `material ${material.id} metallic`),
     roughness: factor(pbr.roughness, `material ${material.id} roughness`),
@@ -60,7 +66,40 @@ export function drawPbr(
       srgbToLinear(factor(value, `material ${material.id} emissive ${index}`)),
     ) as unknown as PbrVec3,
     ...(emissiveTexture === undefined ? {} : { emissiveTexture }),
+    ...(normal === undefined ? {} : { normal }),
+    normalScale,
   }
+}
+
+/**
+ * The normal a normal-map texel names (glTF: tangent space, +Y up, X and Y scaled), around the
+ * interpolated `normal`: `tangent` is the primitive's TANGENT (with its handedness `sign`) or the
+ * triangle's dP/du, made orthogonal to the normal; the bitangent is normal × tangent × sign, as
+ * glTF and its sample viewer define it. A degenerate tangent leaves the normal as it is.
+ */
+export function perturbedNormal(
+  normal: PbrVec3,
+  tangent: PbrVec3,
+  sign: number,
+  texel: readonly number[],
+  scale: number,
+): PbrVec3 {
+  const along = normal[0] * tangent[0] + normal[1] * tangent[1] + normal[2] * tangent[2]
+  const t = [0, 1, 2].map(axis => tangent[axis]! - normal[axis]! * along)
+  const length = Math.hypot(t[0]!, t[1]!, t[2]!)
+  if (!(length > 1e-10)) return normal
+  const unit = t.map(value => value / length)
+  const b = [
+    (normal[1] * unit[2]! - normal[2] * unit[1]!) * sign,
+    (normal[2] * unit[0]! - normal[0] * unit[2]!) * sign,
+    (normal[0] * unit[1]! - normal[1] * unit[0]!) * sign,
+  ]
+  const x = ((texel[0] ?? 0.5) * 2 - 1) * scale
+  const y = ((texel[1] ?? 0.5) * 2 - 1) * scale
+  const z = (texel[2] ?? 1) * 2 - 1
+  const n = [0, 1, 2].map(axis => unit[axis]! * x + b[axis]! * y + normal[axis]! * z)
+  const size = Math.hypot(n[0]!, n[1]!, n[2]!)
+  return size > 0 ? ([n[0]! / size, n[1]! / size, n[2]! / size] as const) : normal
 }
 
 /**

@@ -124,7 +124,6 @@ export function uvmMaterialPbr(
     }
     return `uvm-texture-${String(index)}`
   }
-  if (material['normalTexture'] !== undefined) unrendered.push('has a normal map, not drawn yet')
   const emissive = material['emissiveFactor']
   if (
     emissive !== undefined &&
@@ -137,6 +136,11 @@ export function uvmMaterialPbr(
   const metallicRoughnessTexture = texture(pbr['metallicRoughnessTexture'], 'metallic-roughness')
   const occlusionTexture = texture(occlusion, 'occlusion')
   const emissiveTexture = texture(material['emissiveTexture'], 'emissive')
+  const normal = material['normalTexture']
+  const normalTexture = texture(normal, 'normal')
+  const normalScale = field(normal, 'scale') ?? 1
+  if (typeof normalScale !== 'number' || !Number.isFinite(normalScale))
+    throw new TypeError('material normal texture scale must be finite')
   return {
     pbr: {
       metallic: unit(pbr['metallicFactor'], 1, 'metallicFactor'),
@@ -152,6 +156,9 @@ export function uvmMaterialPbr(
         ? {}
         : { emissive: [emissive[0], emissive[1], emissive[2]] as [number, number, number] }),
       ...(emissiveTexture === undefined ? {} : { emissiveTexture }),
+      ...(normalTexture === undefined
+        ? {}
+        : { normalTexture, ...(normalScale === 1 ? {} : { normalScale }) }),
     },
     unrendered,
   }

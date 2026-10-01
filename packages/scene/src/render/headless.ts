@@ -18,7 +18,7 @@ import {
   teamMaskTexture,
   type DrawTeamColor,
 } from './team-color.js'
-import { drawPbr, shadeDrawPbr, type DrawPbr } from './pbr-material.js'
+import { drawPbr, perturbedNormal, shadeDrawPbr, type DrawPbr } from './pbr-material.js'
 import { headlessDepthBias, type SceneDepthBias } from './depth-bias.js'
 import type {
   SceneRenderRequest,
@@ -295,6 +295,8 @@ function rasterizeTriangle(
   tint: readonly [number, number, number, number] = [1, 1, 1, 1],
   /** The model matrix mirrors (negative determinant): front faces wind clockwise (glTF). */
   mirrored = false,
+  /** The primitive's TANGENT at the corners (world xyz, handedness w), for a normal map. */
+  tangents?: Triangle<Vec4>,
 ) {
   const [first, second, third] = vertices
   const effect = surface.simpleEffect
@@ -333,6 +335,21 @@ function rasterizeTriangle(
    */
   // a `pbr` material under the scene light: the one glTF BRDF (codec-kit model-math/pbr)
   const pbr = light !== undefined && effect === undefined ? surface.pbr : undefined
+  // a normal map without TANGENT: the triangle's dP/du, as glTF viewers derive it from the UVs
+  const triangleTangent: Vec3 | undefined = (() => {
+    if (pbr?.normal === undefined || tangents !== undefined || uvs === undefined) return undefined
+    const e1 = [0, 1, 2].map(axis => second.world[axis]! - first.world[axis]!)
+    const e2 = [0, 1, 2].map(axis => third.world[axis]! - first.world[axis]!)
+    const du1 = uvs[1][0] - uvs[0][0],
+      dv1 = uvs[1][1] - uvs[0][1],
+      du2 = uvs[2][0] - uvs[0][0],
+      dv2 = uvs[2][1] - uvs[0][1]
+    const determinant = du1 * dv2 - du2 * dv1
+    if (Math.abs(determinant) < 1e-12) return undefined
+    return [0, 1, 2].map(
+      axis => (dv2 * e1[axis]! - dv1 * e2[axis]!) / determinant,
+    ) as unknown as Vec3
+  })()
   const flatNormal =
     (shaded || pbr !== undefined) && normals === undefined
       ? faceNormal(first, second, third)
@@ -422,13 +439,15 @@ function rasterizeTriangle(
         metallicRoughness?: Vec4
         occlusion?: Vec4
         emissive?: Vec4
+        normal?: Vec4
       } = {}
       if (
         (surface.texture !== undefined ||
           surface.teamMask !== undefined ||
           pbr?.metallicRoughness !== undefined ||
           pbr?.occlusion !== undefined ||
-          pbr?.emissiveTexture !== undefined) &&
+          pbr?.emissiveTexture !== undefined ||
+          pbr?.normal !== undefined) &&
         (uvs !== undefined || effect?.screenUv !== undefined)
       ) {
         // perspective-correct: interpolate attribute/w and 1/w, then divide
@@ -482,6 +501,7 @@ function rasterizeTriangle(
               ...(pbr.emissiveTexture === undefined
                 ? {}
                 : { emissive: sampleTexture(pbr.emissiveTexture, u, v) }),
+              ...(pbr.normal === undefined ? {} : { normal: sampleTexture(pbr.normal, u, v) }),
             }
         }
       }
@@ -502,7 +522,25 @@ function rasterizeTriangle(
           (a * values[0][1] + b * values[1][1] + c * values[2][1]) / sum,
           (a * values[0][2] + b * values[1][2] + c * values[2][2]) / sum,
         ]
-        const normal = (normals === undefined ? flatNormal : normalize(at(normals))) ?? [0, 0, 1]
+        const smooth = (normals === undefined ? flatNormal : normalize(at(normals))) ?? [0, 0, 1]
+        const tangent =
+          tangents === undefined
+            ? triangleTangent
+            : at([
+                [tangents[0][0], tangents[0][1], tangents[0][2]],
+                [tangents[1][0], tangents[1][1], tangents[1][2]],
+                [tangents[2][0], tangents[2][1], tangents[2][2]],
+              ])
+        const normal =
+          pbrTexels.normal === undefined || tangent === undefined
+            ? smooth
+            : perturbedNormal(
+                smooth,
+                tangent,
+                tangents?.[0][3] ?? 1,
+                pbrTexels.normal,
+                pbr.normalScale,
+              )
         const eye = context.eye
         const world = at([first.world, second.world, third.world])
         const view =
@@ -903,7 +941,15 @@ function renderPrimitive(context: RasterContext, primitive: SceneRendererPrimiti
     surface.teamMask !== undefined ||
     surface.pbr?.metallicRoughness !== undefined ||
     surface.pbr?.occlusion !== undefined ||
-    surface.pbr?.emissiveTexture !== undefined
+    surface.pbr?.emissiveTexture !== undefined ||
+    surface.pbr?.normal !== undefined
+  // a normal map reads the primitive's TANGENT (xyz in the model frame, handedness w) when it has one
+  const tangentBuffer =
+    surface.pbr?.normal !== undefined &&
+    primitive.tangents instanceof Float32Array &&
+    primitive.tangents.length >= vertexCount * 4
+      ? primitive.tangents
+      : undefined
   const uvBuffer =
     !sampled || !(primitive.textureCoordinates instanceof Float32Array)
       ? undefined
@@ -966,6 +1012,17 @@ function renderPrimitive(context: RasterContext, primitive: SceneRendererPrimiti
           ]) as unknown as Triangle<Vec4>),
       primitiveTint(primitive),
       mirrored,
+      tangentBuffer === undefined
+        ? undefined
+        : (indices.map(index => [
+            ...transformDirection(
+              model,
+              tangentBuffer[index * 4] ?? 0,
+              tangentBuffer[index * 4 + 1] ?? 0,
+              tangentBuffer[index * 4 + 2] ?? 0,
+            ),
+            tangentBuffer[index * 4 + 3] ?? 1,
+          ]) as unknown as Triangle<Vec4>),
     )
   }
 }
