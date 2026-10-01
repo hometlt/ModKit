@@ -94,11 +94,14 @@ describe('model viewer textures', () => {
           role: 'texture',
           provenance: 'companion',
           colorKey: { color: [255, 0, 255] },
+          // and sampled as the game samples it (Minecraft's pixel art: nearest)
+          filter: 'nearest',
         },
       ],
     )
     expect([...(textures.get('hk_maingirder_128.tga')?.rgba ?? [])]).toEqual([
       0, 0, 0, 0, 10, 20, 30, 255,
     ])
+    expect(textures.get('hk_maingirder_128.tga')?.filter).toBe('nearest')
   })
 })

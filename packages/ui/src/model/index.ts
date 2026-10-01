@@ -1015,6 +1015,8 @@ export async function resolveModelViewerTextures(
       height,
       rgba: keyed,
       ...(faces === 6 ? { dimension: 'cube' as const } : {}),
+      // sampled as the game samples it: `nearest` keeps pixel art and its cut-outs sharp
+      ...(reference.filter === undefined ? {} : { filter: reference.filter }),
       ...(result.info.channelLayout === undefined
         ? {}
         : { channelLayout: result.info.channelLayout }),
