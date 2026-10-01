@@ -190,7 +190,7 @@ export function createSubjectRasterResources(
         )
       if (request === null || typeof request !== 'object')
         return refusal('x3.host/raster-request-invalid', 'A raster resource request is required.')
-      const maxBytes = request.maxBytes
+      const requestedBytes = request.maxBytes
       let selection: ReturnType<typeof captureRasterSelection>
       let compressedFormats: ReadonlySet<string>
       const explicitSelection = request.selection !== undefined
@@ -203,6 +203,15 @@ export function createSubjectRasterResources(
           error instanceof Error ? error.message : 'Invalid raster selection',
         )
       }
+      // A read that lets the host pick its mip ('fit') is held to what the subject's budget has left
+      // instead of refused: the texture comes back at a smaller level rather than not at all.
+      const available = options.budget.maxScalarBytes - options.state.reservedBytes
+      const maxBytes =
+        selection.mipLevel === 'fit' &&
+        Number.isSafeInteger(requestedBytes) &&
+        requestedBytes > available
+          ? available
+          : requestedBytes
       if (
         !Number.isSafeInteger(maxBytes) ||
         maxBytes <= 0 ||

@@ -72,7 +72,8 @@ it('acquires shared cube faces once, owns canonical rows and preserves raw data 
         reads++
         assert.equal(request.kind, 'logical')
         assert.equal(request.requirement.logicalId, 'cube.dds')
-        assert.deepEqual(request.selection, { face: 'all' })
+        // the most detailed level that fits its share of the budget
+        assert.deepEqual(request.selection, { face: 'all', mipLevel: 'fit' })
         assert.equal(request.maxBytes, 96)
         return input
       },

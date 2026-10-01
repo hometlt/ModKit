@@ -191,6 +191,31 @@ it('selects the most detailed mip that fits without reopening the raster source'
   expect(f.state.reservedBytes).toBe(0)
 })
 
+it('holds a fit read to what the subject budget has left instead of refusing it', async () => {
+  const f = fixture()
+  // the subject budget is 1 000 000 bytes: a caller asking for more still gets a fitting level
+  const fitted = await f.port.read({
+    kind: 'embedded',
+    bytes: f.bytes,
+    maxBytes: 2_000_000,
+    selection: { mipLevel: 'fit' },
+  })
+  if (fitted.state !== 'decoded') throw new Error(JSON.stringify(fitted))
+  expect(fitted.subresource?.mipLevel).toBe(0)
+  expect(f.state.reservedBytes).toBe(0)
+  // a read of one exact level is not resized: it is refused as before
+  const exact = await f.port.read({
+    kind: 'embedded',
+    bytes: f.bytes,
+    maxBytes: 2_000_000,
+    selection: { mipLevel: 0 },
+  })
+  expect(exact).toMatchObject({
+    state: 'unresolved',
+    diagnostics: [{ code: 'x3.host/resource-budget-exceeded' }],
+  })
+})
+
 it('refuses fit selection when no available mip satisfies the shared surface budget', async () => {
   const f = fixture()
   const result = await f.port.read({

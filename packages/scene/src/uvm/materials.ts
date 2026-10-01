@@ -170,7 +170,13 @@ export async function acquireUvmMaterialTextures(
     textureIds = new Map<string, string>()
   let remaining = maxBytes
   let resourceIndex = 0
-  for (const path of new Set([...resources.values()].flat())) {
+  const paths = new Set([...resources.values()].flat())
+  /*
+   * Each texture gets its share of the budget and comes as its most detailed mip that fits, as in
+   * the model viewer: three 4096² maps (64 MiB each at mip 0) left a BAR unit untextured.
+   */
+  const share = Math.max(4 * 1024 * 1024, Math.floor(maxBytes / Math.max(1, paths.size)))
+  for (const path of paths) {
     signal?.throwIfAborted()
     if (port === undefined) continue
     const id = `uvm-material-resource-${resourceIndex++}`
@@ -188,8 +194,8 @@ export async function acquireUvmMaterialTextures(
             'enclosing-container',
           ],
         },
-        maxBytes: remaining,
-        selection: { face: 'all' },
+        maxBytes: Math.min(remaining, share),
+        selection: { face: 'all', mipLevel: 'fit' },
       },
       signal,
     )
@@ -219,40 +225,64 @@ export async function acquireUvmMaterialTextures(
           ? result.surfaces
           : [
               {
-                subresource: { frame: 0, mipLevel: 0, layer: 0, face: 0, slice: 0 },
+                subresource: result.subresource ?? {
+                  frame: 0,
+                  mipLevel: 0,
+                  layer: 0,
+                  face: 0,
+                  slice: 0,
+                },
                 region: result.region,
               },
             ]
       if (surfaces.length !== result.info.faces)
         throw new TypeError('raster port did not return every requested face')
-      if (result.info.width * result.info.height * 4 * surfaces.length > remaining)
+      // The level the host chose: every face is that one mip, of that mip's size.
+      const chosen = surfaces[0]!
+      const mipLevel = chosen.subresource.mipLevel
+      const { width, height } = chosen.region
+      const faceBytes = width * height * 4
+      if (faceBytes * surfaces.length > remaining)
         throw new RangeError('decoded material textures exceed budget')
-      const faceBytes = result.info.width * result.info.height * 4
       const rgba = new Uint8Array(faceBytes * surfaces.length)
       for (const [face, surface] of surfaces.entries()) {
         const selected = surface.subresource
         if (
           selected.face !== face ||
-          selected.mipLevel !== 0 ||
+          selected.mipLevel !== mipLevel ||
           selected.frame !== 0 ||
           selected.layer !== 0 ||
-          selected.slice !== 0
+          selected.slice !== 0 ||
+          surface.region.width !== width ||
+          surface.region.height !== height
         )
           throw new TypeError('raster port returned a different subresource selection')
         rgba.set(
           uvmImageTexels(
-            { ...result, state: 'decoded', region: surface.region },
+            // the chosen level's size, not the image's
+            {
+              ...result,
+              state: 'decoded',
+              info: { ...result.info, width, height },
+              region: surface.region,
+            },
             { channels: 'data' },
           ),
           face * faceBytes,
         )
       }
       remaining -= rgba.length
+      if (mipLevel > 0)
+        diagnostics.push({
+          severity: 'information',
+          code: 'common.uvm/material-image-reduced',
+          message: `${path}: drawn at mip ${mipLevel} (${width}×${height}) of ${result.info.width}×${result.info.height} to fit the texture budget`,
+        })
       textureIds.set(path, id)
       textures.push({
         id,
-        width: result.info.width,
-        height: result.info.height,
+        width,
+        height,
         rgba,
         ...(cube ? { dimension: 'cube' as const } : {}),
         ...(result.info.channelLayout === undefined
