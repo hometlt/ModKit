@@ -278,8 +278,14 @@ const KEPT_FIELDS: Readonly<Record<string, ReadonlySet<string>>> = Object.freeze
     'name',
     'resourceIds',
     'modelComponents',
+    'presentationTint',
+    'presentationAnimation',
   ]),
 })
+
+/** A tint UVW holds: multiplication factors within 0..1. */
+const unitTint = (tint: readonly number[]): boolean =>
+  tint.every(factor => Number.isFinite(factor) && factor >= 0 && factor <= 1)
 
 /** Counts, per facet field, the items whose field the UVW leaves out (see KEPT_FIELDS). */
 function noteLostFields(
@@ -306,6 +312,8 @@ function noteLostFields(
     if (kind !== 'objects') continue
     // only resources the UVW package holds are written; a model named only by the host is not
     const object = item as WorldSceneObjectItem
+    if (object.presentationTint !== undefined && !unitTint(object.presentationTint))
+      add('world.objects.presentationTint (outside 0..1)')
     if (
       (object.resourceIds ?? []).some(id => !id.startsWith('uvw-resource:')) ||
       (object.modelComponents ?? []).some(
@@ -727,6 +735,12 @@ async function reconstructLayer(
               ...(item.player === undefined ? {} : { player: item.player }),
               ...(item.variation === undefined ? {} : { variation: item.variation }),
               ...(item.name === undefined ? {} : { name: item.name }),
+              ...(item.presentationTint === undefined || !unitTint(item.presentationTint)
+                ? {}
+                : { presentationTint: item.presentationTint }),
+              ...(item.presentationAnimation === undefined
+                ? {}
+                : { presentationAnimation: item.presentationAnimation }),
             }),
           ]
         }),

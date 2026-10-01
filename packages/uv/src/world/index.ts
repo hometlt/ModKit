@@ -155,6 +155,16 @@ export interface UvwWaterLayer {
 
 export type UvwObjectKind = 'unit' | 'structure' | 'feature' | 'doodad' | 'point' | 'camera'
 
+/** The clip an object starts with (SPEC_UVW_PROFILE, initial object presentation). */
+export interface UvwPresentationAnimation {
+  readonly name: string
+  readonly groups: readonly string[]
+  readonly loop: boolean
+  /** Signed presentation-time multiplier; zero pauses. */
+  readonly speed: number
+  readonly randomStart?: boolean
+}
+
 export interface UvwObjectInstance {
   readonly id: string
   readonly objectKind: UvwObjectKind
@@ -167,6 +177,9 @@ export interface UvwObjectInstance {
   readonly player?: number
   readonly variation?: number
   readonly name?: string
+  /** RGB multiplication factors 0..1 of the object's model, not player colour or opacity. */
+  readonly presentationTint?: readonly [number, number, number]
+  readonly presentationAnimation?: UvwPresentationAnimation
 }
 
 export interface UvwObjectsLayer {
@@ -501,6 +514,46 @@ function booleanValue(
   enter(state, path, depth)
   if (typeof value !== 'boolean') fail('expected a boolean', path)
   return value
+}
+
+function presentationAnimationOf(
+  value: unknown,
+  path: string,
+  state: ValidationBudget,
+  depth: number,
+): UvwPresentationAnimation {
+  const animation = record(value, path, state, depth)
+  exactKeys(
+    animation,
+    ['name', 'groups', 'loop', 'speed', 'randomStart'],
+    ['name', 'groups', 'loop', 'speed'],
+    path,
+  )
+  const name = string(animation['name'], `${path}.name`, state, depth + 1)
+  if (name === '') fail('the clip name must not be empty', `${path}.name`)
+  const groups = array(animation['groups'], `${path}.groups`, state, depth + 1).map(
+    (group, index) => {
+      const value = string(group, `${path}.groups[${String(index)}]`, state, depth + 2)
+      if (value === '') fail('a clip group must not be empty', `${path}.groups[${String(index)}]`)
+      return value
+    },
+  )
+  return Object.freeze({
+    name,
+    groups: Object.freeze(groups),
+    loop: booleanValue(animation['loop'], `${path}.loop`, state, depth + 1),
+    speed: finite(animation['speed'], `${path}.speed`, state, depth + 1),
+    ...(animation['randomStart'] === undefined
+      ? {}
+      : {
+          randomStart: booleanValue(
+            animation['randomStart'],
+            `${path}.randomStart`,
+            state,
+            depth + 1,
+          ),
+        }),
+  })
 }
 
 function layerId(value: unknown, path: string, state: ValidationBudget, depth: number): string {
@@ -1306,6 +1359,8 @@ function objectsLayer(
           'player',
           'variation',
           'name',
+          'presentationTint',
+          'presentationAnimation',
         ],
         ['id', 'objectKind', 'position', 'rotation', 'scale', 'resourceIds'],
         instancePath,
@@ -1444,6 +1499,22 @@ function objectsLayer(
           : key === 'player'
             ? safeInteger(instance[key], `${instancePath}.${key}`, state, depth + 3)
             : integerAtLeast(instance[key], 0, `${instancePath}.${key}`, state, depth + 3)
+      const tintPath = `${instancePath}.presentationTint`
+      const presentationTint =
+        instance['presentationTint'] === undefined
+          ? undefined
+          : vec3(instance['presentationTint'], tintPath, state, depth + 3)
+      if (presentationTint?.some(factor => factor < 0 || factor > 1))
+        fail('presentation tint factors must lie in 0..1', tintPath)
+      const presentationAnimation =
+        instance['presentationAnimation'] === undefined
+          ? undefined
+          : presentationAnimationOf(
+              instance['presentationAnimation'],
+              `${instancePath}.presentationAnimation`,
+              state,
+              depth + 3,
+            )
       return Object.freeze({
         id: layerId(instance['id'], `${instancePath}.id`, state, depth + 3),
         objectKind,
@@ -1460,6 +1531,8 @@ function objectsLayer(
           ? {}
           : { variation: optionalInteger('variation')! }),
         ...(optionalString('name') === undefined ? {} : { name: optionalString('name')! }),
+        ...(presentationTint === undefined ? {} : { presentationTint }),
+        ...(presentationAnimation === undefined ? {} : { presentationAnimation }),
       })
     },
   )

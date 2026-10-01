@@ -420,7 +420,16 @@ describe('production world to UVW materializer', () => {
                 presentationTint: [1, 0.5, 0.5],
                 resourceIds: ['model:marine'],
               }),
-              placed('native:marine-2', { presentationTint: [1, 1, 1] }),
+              placed('native:marine-2', {
+                presentationTint: [1, 1, 1],
+                presentationAnimation: {
+                  name: 'Stand',
+                  groups: ['Work'],
+                  loop: true,
+                  speed: 1,
+                  randomStart: true,
+                },
+              }),
             ],
           })
         if (request.facet === 'lighting')
@@ -448,9 +457,38 @@ describe('production world to UVW materializer', () => {
     if (result.state !== 'materialized') throw new Error(JSON.stringify(result.refusals))
     expect(result.lostFields).toEqual([
       { path: 'world.lighting.fog', count: 1 },
-      { path: 'world.objects.presentationTint', count: 2 },
       { path: 'world.objects.resourceIds (not packaged)', count: 1 },
     ])
+    // the object's tint and initial clip are UVW object fields (Runtime 02.10), read back as written
+    const instances = result.document.spaces[0]?.layers.flatMap(layer =>
+      layer.kind === 'objects' ? layer.instances : [],
+    )
+    expect(instances?.map(instance => instance.presentationTint)).toEqual([
+      [1, 0.5, 0.5],
+      [1, 1, 1],
+    ])
+    expect(instances?.[1]?.presentationAnimation).toEqual({
+      name: 'Stand',
+      groups: ['Work'],
+      loop: true,
+      speed: 1,
+      randomStart: true,
+    })
+    const reopened = createUvwWorldSceneSource(result.document, {
+      snapshotId: 'reopened',
+      maxPageSize: 64,
+    })
+    const objectLayer = (await reopened.page({ facet: 'layers', limit: 64 })).items.find(
+      item => item.facet === 'layers' && item.kind === 'objects',
+    )
+    const page = await reopened.page({
+      facet: 'objects',
+      layerId: objectLayer!.layerId,
+      limit: 64,
+    })
+    expect(
+      page.items.map(item => item.facet === 'objects' && item.presentationAnimation?.name),
+    ).toEqual([undefined, 'Stand'])
   })
   it('turns a map-native light into UVW axes', async () => {
     const lightingLayerId = 'native:lighting'

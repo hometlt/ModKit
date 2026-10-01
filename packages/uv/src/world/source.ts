@@ -327,6 +327,12 @@ function recordItems(
                   ...(instance.player === undefined ? {} : { player: instance.player }),
                   ...(instance.variation === undefined ? {} : { variation: instance.variation }),
                   ...(instance.name === undefined ? {} : { name: instance.name }),
+                  ...(instance.presentationTint === undefined
+                    ? {}
+                    : { presentationTint: instance.presentationTint }),
+                  ...(instance.presentationAnimation === undefined
+                    ? {}
+                    : { presentationAnimation: instance.presentationAnimation }),
                 }),
               ]
             : []
