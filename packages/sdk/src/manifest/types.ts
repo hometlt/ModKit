@@ -79,6 +79,12 @@ export interface LanguageFileAssociation {
   readonly extension: string
   readonly languageId: string
   readonly dialect?: string
+  /**
+   * Only XML files whose document element has this local name, compared with case (SC2 GameData
+   * anywhere in a mod: `{ extension: 'xml', rootElement: 'Catalog', languageId: 'sc2-data' }`). Such
+   * an association never claims files by the extension alone.
+   */
+  readonly rootElement?: string
 }
 
 export interface ExtensionManifest {

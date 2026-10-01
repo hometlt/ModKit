@@ -698,6 +698,8 @@ export async function resolveLanguageProvider(
 
 export {
   languageFileAssociations,
+  languageFileAssociationFor,
+  xmlRootElementName,
   createLanguageWorkspace,
   classifyLanguageFile,
   languageFileExtension,

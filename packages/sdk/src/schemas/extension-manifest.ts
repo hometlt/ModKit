@@ -143,7 +143,13 @@ const languageFilesSchema = {
     type: 'object',
     additionalProperties: false,
     required: ['extension', 'languageId'],
-    properties: { extension: LANGUAGE_TOKEN, languageId: LANGUAGE_TOKEN, dialect: LANGUAGE_TOKEN },
+    properties: {
+      extension: LANGUAGE_TOKEN,
+      languageId: LANGUAGE_TOKEN,
+      dialect: LANGUAGE_TOKEN,
+      // an XML local name, without a prefix
+      rootElement: { type: 'string', pattern: '^[A-Za-z_][A-Za-z0-9._-]{0,127}$' },
+    },
   },
 } as const
 

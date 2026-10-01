@@ -292,6 +292,62 @@ export function languageFileExtension(path: string): string | undefined {
   return dot <= 0 || dot === name.length - 1 ? undefined : name.slice(dot + 1).toLowerCase()
 }
 
+/**
+ * The local name of an XML text's document element, or none when the text does not start one. A
+ * byte-order mark, white space, the declaration, processing instructions, comments and a document
+ * type before it are skipped; `head` may be only the start of the file.
+ */
+export function xmlRootElementName(head: string): string | undefined {
+  let at = head.charCodeAt(0) === 0xfeff ? 1 : 0
+  for (;;) {
+    while (at < head.length && /\s/u.test(head[at]!)) at += 1
+    if (head.startsWith('<?', at)) {
+      const end = head.indexOf('?>', at + 2)
+      if (end < 0) return undefined
+      at = end + 2
+    } else if (head.startsWith('<!--', at)) {
+      const end = head.indexOf('-->', at + 4)
+      if (end < 0) return undefined
+      at = end + 3
+    } else if (head.startsWith('<!', at)) {
+      // a document type, with an internal subset in brackets
+      let depth = 0
+      let end = at + 2
+      for (; end < head.length; end += 1) {
+        if (head[end] === '[') depth += 1
+        else if (head[end] === ']') depth -= 1
+        else if (head[end] === '>' && depth <= 0) break
+      }
+      if (end >= head.length) return undefined
+      at = end + 1
+    } else break
+  }
+  const name = /^<([A-Za-z_][\w.-]*:)?([A-Za-z_][\w.-]*)(?=[\s/>])/u.exec(head.slice(at, at + 260))
+  return name?.[2]
+}
+
+/**
+ * The game association of a file (`modkit.languageFiles`). An association naming a root element
+ * applies when the start of the file, `head`, opens that element, and wins over the plain ones of
+ * its extension; without `head` only plain associations apply.
+ */
+export function languageFileAssociationFor(
+  associations: readonly LanguageFileAssociation[],
+  path: string,
+  head?: string,
+): LanguageFileAssociation | undefined {
+  const extension = languageFileExtension(path)
+  if (extension === undefined) return undefined
+  const matching = associations.filter(association => association.extension === extension)
+  const rooted = matching.filter(association => association.rootElement !== undefined)
+  if (head !== undefined && rooted.length > 0) {
+    const root = xmlRootElementName(head)
+    const hit = rooted.find(association => association.rootElement === root)
+    if (hit !== undefined) return hit
+  }
+  return matching.find(association => association.rootElement === undefined)
+}
+
 /** Whether a route serves this file: by its exact name, else by its extension. */
 export function languageRouteServesFile(
   route: LanguageProviderRequestFacet,
@@ -341,6 +397,7 @@ export function languageFileAssociations(inventory: Inventory): readonly Languag
         extension: normalizedExtension(association.extension),
         languageId: association.languageId,
         ...(association.dialect === undefined ? {} : { dialect: association.dialect }),
+        ...(association.rootElement === undefined ? {} : { rootElement: association.rootElement }),
       })
       seen.set(canonicalJsonStringify(normalized), normalized)
     }
@@ -429,7 +486,8 @@ export function languageProviderRoutes(inventory: Inventory): readonly LanguageP
   // that language is resolved without the extension (see resolveLanguageProvider).
   const provided = new Set([...routes.values()].map(route => route.languageId))
   for (const association of languageFileAssociations(inventory)) {
-    if (!provided.has(association.languageId)) continue
+    // a root element is decided by content (languageFileAssociationFor), never by the extension alone
+    if (!provided.has(association.languageId) || association.rootElement !== undefined) continue
     const identity = { languageId: association.languageId, extension: association.extension }
     routes.set(
       canonicalJsonStringify({ ...identity, dialect: association.dialect ?? null }),
