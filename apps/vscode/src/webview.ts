@@ -24,11 +24,13 @@ import {
 } from '@modkit/ui/explorer'
 import { EDITOR_EDITED_EVENT, requestEditorHistory } from '@modkit/ui/editor'
 import { createWorkbench } from '@modkit/ui/workbench'
+import { setUiPreferenceStore } from '@modkit/ui/viewer'
 import { resolveModelViewerTextures } from '@modkit/ui/model'
 import { templateImagesFromRaster } from '@modkit/ui/template'
 import type { UiCatalogDocument, UiLocale, UiLocalizer } from '@modkit/ui/localization'
 import type {
   AnyDescriptor,
+  JsonValue,
   NamespaceEntry,
   NamespaceEntrySource,
   Page,
@@ -131,6 +133,8 @@ interface Bootstrap {
   readonly gameLocale?: string
   /** Relations a graph walk follows from its root (`modkit.maxGraphHops`). */
   readonly graphDepth?: number
+  /** The viewer preferences the extension keeps for its pages. */
+  readonly preferences?: Readonly<Record<string, unknown>>
 }
 
 /** The live "show hidden files and folders" option: the bootstrap value, then `show-hidden` events. */
@@ -406,6 +410,21 @@ async function mount(
     },
   }
   const bridge = createBridge({ channel, idPrefix: 'view' })
+  /*
+   * Viewer preferences (the media shell's layout, recent colours) are kept by the extension host:
+   * this page's storage is its own origin's and ends with the tab. Read from the bootstrap, each
+   * change sent back for the pages after this one.
+   */
+  const preferences = new Map(Object.entries(snapshot.preferences ?? {}))
+  setUiPreferenceStore({
+    get: key => preferences.get(key),
+    set(key, value) {
+      preferences.set(key, value)
+      void bridge
+        .request({ op: 'preference', key, value: value as JsonValue })
+        .catch(() => undefined)
+    },
+  })
 
   // ---------------------------------------------------------------- chrome
   /*

@@ -80,6 +80,8 @@ export interface PageBootstrap {
   readonly gameLocale?: string
   /** Relations a graph walk follows from its root (`modkit.maxGraphHops`). */
   readonly graphDepth?: number
+  /** The viewer preferences the extension keeps (`ui-preferences.ts`), when the page was built. */
+  readonly preferences?: Readonly<Record<string, unknown>>
   /** Function-free extension/contribution subject cards for the generic subject-card renderer. */
   readonly extensionCard?: import('./extension-cards.js').ExtensionCardBundle
   /**

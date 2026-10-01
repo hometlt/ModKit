@@ -18,6 +18,7 @@ import { createFilterWidget, textMatches } from '../filter/index.js'
 import type { UiLocalizer } from '../localization/index.js'
 import { MEDIA_SHELL_FALLBACK_MESSAGES } from '../localization/fallback-catalogs.generated.js'
 import { withEnglishUiFallback } from '../localization/fallback.js'
+import { rememberUiPreference, uiPreference } from '../viewer/preferences.js'
 
 export interface MediaShellState {
   leftWidth?: number
@@ -26,6 +27,8 @@ export interface MediaShellState {
   rightCollapsed?: boolean
   galleryMode?: GalleryMode
   collapsedSections?: readonly string[]
+  /** Sections the person opened although they start collapsed. */
+  expandedSections?: readonly string[]
   filterCase?: boolean
   filterWord?: boolean
   filterRegex?: boolean
@@ -35,7 +38,10 @@ export type GalleryMode = 'list' | 'small' | 'big'
 
 export interface MediaShellOptions {
   readonly localizer?: UiLocalizer
-  /** Previous layout, e.g. from the host's per-view state. */
+  /**
+   * Previous layout, e.g. from the host's per-view state. Without it and `onStateChange` the shell
+   * keeps its layout itself, in the viewer preferences, so every viewer opens as it was left.
+   */
   readonly state?: MediaShellState
   /** Called whenever the layout changes, so a host can remember it. */
   onStateChange?(state: MediaShellState): void
@@ -106,6 +112,50 @@ export function mountContributedSections(
 
 const MIN_PANE = 120
 const MAX_PANE = 640
+const LEFT_WIDTH = 240
+const RIGHT_WIDTH = 280
+/** Remembered section ids, newest last; the oldest go past this many. */
+const REMEMBERED_SECTIONS = 64
+const SHELL_PREFERENCE = 'mediaShell.layout'
+
+/**
+ * A remembered layout, cleaned: it comes from storage another version may have written, so every
+ * field is checked, widths are held to the pane limits and section lists are bounded.
+ */
+export function mediaShellStateOf(value: unknown): MediaShellState {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return {}
+  const record = value as Readonly<Record<string, unknown>>
+  const width = (key: string) => {
+    const item = record[key]
+    return typeof item === 'number' && Number.isFinite(item)
+      ? { [key]: Math.min(MAX_PANE, Math.max(MIN_PANE, Math.round(item))) }
+      : {}
+  }
+  const flag = (key: string) => (typeof record[key] === 'boolean' ? { [key]: record[key] } : {})
+  const ids = (key: string) => {
+    const item = record[key]
+    return Array.isArray(item)
+      ? {
+          [key]: item
+            .filter((id): id is string => typeof id === 'string' && id.length <= 256)
+            .slice(-REMEMBERED_SECTIONS),
+        }
+      : {}
+  }
+  const mode = record['galleryMode']
+  return {
+    ...width('leftWidth'),
+    ...width('rightWidth'),
+    ...flag('leftCollapsed'),
+    ...flag('rightCollapsed'),
+    ...(mode === 'list' || mode === 'small' || mode === 'big' ? { galleryMode: mode } : {}),
+    ...ids('collapsedSections'),
+    ...ids('expandedSections'),
+    ...flag('filterCase'),
+    ...flag('filterWord'),
+    ...flag('filterRegex'),
+  }
+}
 const THUMB_EDGE = { small: 76, big: 128 } as const
 const THUMB_CONCURRENCY = 6
 /** A group auto-expands the first time it appears, only while the gallery holds this many items. */
@@ -125,15 +175,20 @@ function el<K extends keyof HTMLElementTagNameMap>(
 
 export function createMediaShell(document: Document, options: MediaShellOptions): MediaShell {
   const localizer = withEnglishUiFallback(options.localizer, MEDIA_SHELL_FALLBACK_MESSAGES)
+  // The shell keeps its own layout unless the host keeps it.
+  const remembers = options.state === undefined && options.onStateChange === undefined
   const state: MediaShellState = {
-    leftWidth: 240,
-    rightWidth: 280,
+    leftWidth: LEFT_WIDTH,
+    rightWidth: RIGHT_WIDTH,
     leftCollapsed: false,
     rightCollapsed: false,
     galleryMode: 'list',
     collapsedSections: [],
-    ...options.state,
+    expandedSections: [],
+    ...(remembers ? mediaShellStateOf(uiPreference(SHELL_PREFERENCE)) : options.state),
   }
+  // A viewer without a gallery hides it without changing what the person chose for the others.
+  const chosenLeftCollapsed = state.leftCollapsed
   if (options.gallery === undefined) state.leftCollapsed = true
   const cleanup: (() => void)[] = []
 
@@ -167,7 +222,14 @@ export function createMediaShell(document: Document, options: MediaShellOptions)
   const right = el(document, 'aside', 'media-shell.sidebar', root)
   right.setAttribute('aria-label', localizer.text('mediaShell.sidebar'))
 
-  const emit = (): void => options.onStateChange?.({ ...state })
+  const emit = (): void => {
+    options.onStateChange?.({ ...state })
+    if (remembers)
+      rememberUiPreference(SHELL_PREFERENCE, {
+        ...state,
+        leftCollapsed: options.gallery === undefined ? chosenLeftCollapsed : state.leftCollapsed,
+      })
+  }
   const applyLayout = (): void => {
     root.style.setProperty('--shell-left', `${state.leftWidth}px`)
     root.style.setProperty('--shell-right', `${state.rightWidth}px`)
@@ -221,6 +283,13 @@ export function createMediaShell(document: Document, options: MediaShellOptions)
       splitter.addEventListener('pointerup', up)
       splitter.addEventListener('pointercancel', up)
     })
+    // A double click puts the pane back to its first width, as MK2's splitter did.
+    splitter.addEventListener('dblclick', () => {
+      if (side === 'left') state.leftWidth = LEFT_WIDTH
+      else state.rightWidth = RIGHT_WIDTH
+      applyLayout()
+      emit()
+    })
   }
   dragSplitter(splitLeft, 'left')
   dragSplitter(splitRight, 'right')
@@ -254,13 +323,21 @@ export function createMediaShell(document: Document, options: MediaShellOptions)
       header.setAttribute('aria-expanded', String(!collapsed))
       body.hidden = collapsed
     }
-    const remembered = state.collapsedSections?.includes(id)
-    setCollapsed(remembered === true ? true : (sectionOptions.collapsed ?? false))
+    // What the person last did with this section, else its own default.
+    setCollapsed(
+      state.collapsedSections?.includes(id) === true
+        ? true
+        : state.expandedSections?.includes(id) === true
+          ? false
+          : (sectionOptions.collapsed ?? false),
+    )
     header.addEventListener('click', () => {
       const collapsed = box.dataset['collapsed'] !== 'true'
       setCollapsed(collapsed)
-      const others = (state.collapsedSections ?? []).filter(item => item !== id)
-      state.collapsedSections = collapsed ? [...others, id] : others
+      const closed = (state.collapsedSections ?? []).filter(item => item !== id)
+      const opened = (state.expandedSections ?? []).filter(item => item !== id)
+      state.collapsedSections = (collapsed ? [...closed, id] : closed).slice(-REMEMBERED_SECTIONS)
+      state.expandedSections = (collapsed ? opened : [...opened, id]).slice(-REMEMBERED_SECTIONS)
       for (const listener of listeners) listener(collapsed)
       emit()
     })

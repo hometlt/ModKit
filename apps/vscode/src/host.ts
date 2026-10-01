@@ -884,6 +884,8 @@ export interface VsCodeServeOptions {
   readonly openInEditor?: (path: string) => Promise<void>
   /** Show a card's source file as text, at its declaration when the line is known. */
   readonly openSource?: (uri: string, line?: number, column?: number) => Promise<void>
+  /** Keep a viewer preference the page sent; the next pages get it in their bootstrap. */
+  readonly preference?: (key: string, value: unknown) => Promise<void>
   /** Open the model a subject names, found through the subject's own mod chain. */
   readonly openModel?: (subject: string, model: string) => Promise<void>
   /**
@@ -1906,6 +1908,9 @@ function serveVsCode(
       }
       case 'open-source':
         await options.openSource?.(request.uri, request.line, request.column)
+        return true
+      case 'preference':
+        await options.preference?.(request.key, request.value)
         return true
       case 'open-model':
         await options.openModel?.(request.subject, request.model)

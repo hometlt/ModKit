@@ -24,6 +24,12 @@ export {
   STATE_ATTRIBUTE,
 } from '../parts.js'
 export type { PartName, StateName, PartAudit } from '../parts.js'
+export {
+  rememberUiPreference,
+  setUiPreferenceStore,
+  uiPreference,
+  type UiPreferenceStore,
+} from './preferences.js'
 
 export const VIEWER_CSP = Object.freeze({
   defaultSrc: "'none'",

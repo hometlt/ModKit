@@ -32,7 +32,9 @@ import {
   defineViewerModule,
   element,
   setState,
+  rememberUiPreference,
   setViewerText,
+  uiPreference,
   unknownSourceLease,
   ViewerMountScope,
 } from '../viewer/index.js'
@@ -449,24 +451,29 @@ const viewStates = new Map<string, ImageViewState>()
 /** ponytail: the oldest subject is dropped past this many; an LRU if readers keep hundreds open. */
 const VIEW_STATES = 64
 
-/** The editor's recent colours, kept between sessions where the page has storage. */
-const RECENT_COLORS_KEY = 'modkit.image.recentColors'
+/** The editor's recent colours, kept between sessions in the viewer preferences. */
+const RECENT_COLORS_KEY = 'image.recentColors'
 function rememberedColors(): readonly string[] {
-  try {
-    const value: unknown = JSON.parse(globalThis.localStorage?.getItem(RECENT_COLORS_KEY) ?? '[]')
-    return Array.isArray(value)
-      ? value.filter((item): item is string => typeof item === 'string')
-      : []
-  } catch {
-    return []
-  }
+  const value = uiPreference(RECENT_COLORS_KEY)
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === 'string')
+    : []
 }
 function rememberColors(colors: readonly string[]): void {
-  try {
-    globalThis.localStorage?.setItem(RECENT_COLORS_KEY, JSON.stringify(colors))
-  } catch {
-    // a page without storage keeps them until it closes
-  }
+  rememberUiPreference(RECENT_COLORS_KEY, colors)
+}
+
+/** Cube faces in the order every cube-map format stores them. */
+const CUBE_FACES = ['+X', '−X', '+Y', '−Y', '+Z', '−Z'] as const
+
+/** How many of an axis the shown mip holds: a volume's depth halves with each level, as its sides do. */
+function axisCountAt(
+  info: RasterImageInfo,
+  axis: keyof ImageSubresource,
+  mipLevel: number,
+): number {
+  const count = axisCount(info, axis)
+  return axis === 'slice' ? Math.max(1, count >>> mipLevel) : count
 }
 
 export function createImageViewer(options: ImageViewerOptions = {}): ViewerModule {
@@ -1567,23 +1574,53 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
             const bar = element(body, 'div', { part: 'image.subresources', role: 'toolbar' })
             const current = info
             for (const [axis, name] of axes) {
-              const count = axisCount(current, axis)
-              if (count <= 1) continue
-              const step = (delta: number): void => {
-                const next = Math.min(count - 1, Math.max(0, subresource[axis] + delta))
-                subresource = Object.freeze({ ...subresource, [axis]: next })
+              if (axisCount(current, axis) <= 1) continue
+              const count = axisCountAt(current, axis, subresource.mipLevel)
+              const go = (value: number): void => {
+                const next = Math.min(count - 1, Math.max(0, value))
+                const moved = Object.freeze({ ...subresource, [axis]: next })
+                // a smaller mip of a volume holds fewer slices
+                subresource = Object.freeze({
+                  ...moved,
+                  slice: Math.min(moved.slice, axisCountAt(current, 'slice', moved.mipLevel) - 1),
+                })
                 reload()
               }
+              const step = (delta: number): void => go(subresource[axis] + delta)
               button(
                 bar,
                 `${name}−`,
                 localizer.text('viewer.imagePreviousSubresource', { axis: name }),
                 () => step(-1),
               )
-              element(bar, 'span', {
-                part: 'image.readout',
-                text: `${subresource[axis]}/${count - 1}`,
-              })
+              // the number itself, typed or picked; a cube's faces by their names
+              const label = localizer.text('viewer.imageSubresourceIndex', { axis: name })
+              if (axis === 'face' && count === CUBE_FACES.length) {
+                const faces = element(bar, 'select') as HTMLSelectElement
+                faces.setAttribute('aria-label', label)
+                faces.title = label
+                for (const [index, face] of CUBE_FACES.entries()) {
+                  const option = element(faces, 'option', { text: face }) as HTMLOptionElement
+                  option.value = String(index)
+                }
+                faces.value = String(subresource.face)
+                faces.addEventListener('change', () => go(Number(faces.value)))
+              } else {
+                const field = element(bar, 'input', { part: 'image.readout' }) as HTMLInputElement
+                field.type = 'number'
+                field.min = '0'
+                field.max = String(count - 1)
+                field.step = '1'
+                field.value = String(subresource[axis])
+                field.setAttribute('aria-label', label)
+                field.title = label
+                field.addEventListener('change', () => {
+                  const value = Number(field.value)
+                  if (Number.isInteger(value)) go(value)
+                  else field.value = String(subresource[axis])
+                })
+                element(bar, 'span', { part: 'image.readout', text: `/${count - 1}` })
+              }
               button(
                 bar,
                 `${name}+`,

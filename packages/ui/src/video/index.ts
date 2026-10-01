@@ -20,7 +20,9 @@ import {
   defineViewerModule,
   element,
   setState,
+  rememberUiPreference,
   setViewerText,
+  uiPreference,
   unknownSourceLease,
   ViewerMountScope,
 } from '../viewer/index.js'
@@ -43,21 +45,13 @@ export function videoTrackLine(track: VideoTrackInfo): string {
     .join(' · ')
 }
 
-/** A per-reader choice kept by the page (loop, autoplay); a page without storage keeps defaults. */
+/** A per-reader choice (loop, autoplay), kept in the viewer preferences. */
 function remembered(key: string): boolean {
-  try {
-    return globalThis.localStorage?.getItem(key) === 'true'
-  } catch {
-    return false
-  }
+  return uiPreference(key) === true
 }
 
 function remember(key: string, value: boolean): void {
-  try {
-    globalThis.localStorage?.setItem(key, String(value))
-  } catch {
-    // a page without storage keeps the choice until it closes
-  }
+  rememberUiPreference(key, value)
 }
 
 export interface VideoViewerOptions {
@@ -108,8 +102,8 @@ export function createVideoViewer(options: VideoViewerOptions = {}): ViewerModul
       const player = element(stage, 'video', { part: 'video.player' }) as HTMLVideoElement
       player.controls = true
       player.preload = 'metadata'
-      player.loop = remembered('modkit.video.loop')
-      player.autoplay = remembered('modkit.video.autoplay')
+      player.loop = remembered('video.loop')
+      player.autoplay = remembered('video.autoplay')
 
       const lease = await unknownSourceLease(
         args.sources,
@@ -168,14 +162,14 @@ export function createVideoViewer(options: VideoViewerOptions = {}): ViewerModul
         const playback = element(section, 'div', { part: 'video.options' })
         for (const [key, label, apply] of [
           [
-            'modkit.video.loop',
+            'video.loop',
             localizer.text('viewer.videoLoop'),
             (on: boolean) => {
               player.loop = on
             },
           ],
           [
-            'modkit.video.autoplay',
+            'video.autoplay',
             localizer.text('viewer.videoAutoplay'),
             (on: boolean) => {
               player.autoplay = on

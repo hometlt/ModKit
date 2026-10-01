@@ -22,6 +22,7 @@
  * Nothing here interprets a frame, and nothing here grants anything — it is a pipe with a codec.
  */
 
+import type { JsonValue } from '@modkit/sdk'
 import type { ArchiveAction, ArchiveTarget } from '@modkit/ui/archive'
 import {
   decodeJsonValue,
@@ -136,6 +137,8 @@ export type ShellRequest =
   | { readonly op: 'open-in-editor'; readonly path: string; readonly entry?: string }
   /** The model a card's subject names (a logical path), opened from that subject's mod chain. */
   | { readonly op: 'open-model'; readonly subject: string; readonly model: string }
+  /** Keep one viewer preference (layout, recent colours) for every later page. */
+  | { readonly op: 'preference'; readonly key: string; readonly value: JsonValue }
   /** A card's source: the declaring file, at its zero-based line and column when known. */
   | {
       readonly op: 'open-source'

@@ -341,6 +341,7 @@ import { BACKSLASH, ModkitCustomDocument } from './modkit-custom-document.js'
 import { workspaceFolders, findDiskFiles } from './workspace-files.js'
 import { exportViewerFiles } from './viewer-export.js'
 import { nonce, panelHtml } from './panel-page.js'
+import { UI_PREFERENCES_KEY, withUiPreference } from './ui-preferences.js'
 import { ExtensionsView } from './extensions-view.js'
 import { HostView } from './host-view.js'
 import { SourcesView } from './sources-view.js'
@@ -8548,6 +8549,12 @@ async function activateModkit(
         // A tab of its own: a preview tab would replace the archive the member was opened from.
         await vscode.commands.executeCommand('vscode.open', subjectUriOf(path), { preview: false })
       },
+      // A viewer preference from a page, kept for the pages after it (plan 7.18).
+      preference: async (key, value) => {
+        const next = withUiPreference(context.globalState.get(UI_PREFERENCES_KEY), key, value)
+        if (next === undefined) throw new TypeError(`a page cannot keep the preference «${key}»`)
+        await context.globalState.update(UI_PREFERENCES_KEY, next)
+      },
       // A card's model: found in its subject's mod chain, opened as a subject of its own (plan 5.5).
       openModel: async (subject, model) => {
         const ref = await locateInModChain(subjectUriOf(subject), model)
@@ -8665,6 +8672,7 @@ async function activateModkit(
       ...(displayedExtensionCard === undefined ? {} : { extensionCard: displayedExtensionCard }),
       galleryExtensions: [...galleryExtensions].sort(),
       ...(explorer === undefined ? {} : { explorer: { label: explorer.label } }),
+      preferences: context.globalState.get(UI_PREFERENCES_KEY) ?? {},
     })
     /*
      * The page is now fetching and evaluating its bundle; the codec can come up in that time

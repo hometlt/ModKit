@@ -37,6 +37,8 @@ export interface PanelPageOptions {
   readonly galleryExtensions?: readonly string[]
   /** Raised as a Modkit Explorer over one folder rather than for a subject. */
   readonly explorer?: { readonly label: string }
+  /** The viewer preferences the extension keeps for its pages. */
+  readonly preferences?: Readonly<Record<string, unknown>>
 }
 
 /**
@@ -86,6 +88,7 @@ export function panelHtml(options: PanelPageOptions): string {
         ? {}
         : { galleryExtensions: options.galleryExtensions }),
       ...(options.explorer === undefined ? {} : { explorer: options.explorer }),
+      ...(options.preferences === undefined ? {} : { preferences: options.preferences }),
       showHiddenEntries:
         vscode.workspace.getConfiguration('modkit').get<boolean>('showHiddenEntries') === true,
       graphDepth: vscode.workspace.getConfiguration('modkit').get<number>('maxGraphHops') ?? 2,

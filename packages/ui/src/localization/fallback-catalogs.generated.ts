@@ -436,6 +436,7 @@ export const IMAGE_FALLBACK_MESSAGES = {
   'viewer.imageSectionFrames': 'Frames',
   'viewer.imageSectionImage': 'Image',
   'viewer.imageSectionMetadata': 'Header / metadata',
+  'viewer.imageSubresourceIndex': '{axis} number',
   'viewer.imageSubresources': 'Subresource, comparison and export',
   'viewer.isolateChannel': 'Isolate the {channel} channel',
   'viewer.pause': 'Pause',
