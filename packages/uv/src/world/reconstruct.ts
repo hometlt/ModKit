@@ -31,7 +31,8 @@ function finite(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value)
 }
 
-function localId(id: string, prefix = 'item'): string {
+/** A source id as a UVW id: its last `:` segment when already one, else `<prefix>-<slug>`. */
+export function localId(id: string, prefix = 'item'): string {
   const index = id.lastIndexOf(':')
   const candidate = index < 0 ? id : id.slice(index + 1)
   if (/^[a-z][a-z0-9-]*$/u.test(candidate)) return candidate

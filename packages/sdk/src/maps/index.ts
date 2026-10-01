@@ -1676,6 +1676,26 @@ export type WorldSceneModelResult =
     }>
   | Extract<ModelResourceResult, { readonly state: 'unresolved' }>
 
+/**
+ * The UVM bytes a world model result says it needed when it did not fit its request: the size a
+ * `x3.host/model-resource-too-large` refusal names, or the converted UVM of a result whose textures
+ * ran out of the `maxBytes` they share with it (`x3.host/resource-budget-exceeded`). A caller asks
+ * again with these bytes and its texture budget; undefined when the result names neither.
+ */
+export function worldModelRequiredBytes(result: WorldSceneModelResult): number | undefined {
+  let required: number | undefined
+  for (const item of result.diagnostics) {
+    const named = (item.data as { readonly requiredBytes?: unknown } | undefined)?.requiredBytes
+    if (item.code === 'x3.host/model-resource-too-large' && typeof named === 'number')
+      required = named
+    else if (item.code === 'x3.host/resource-budget-exceeded' && result.state === 'converted')
+      required = result.uvmBytes?.byteLength ?? required
+  }
+  return required !== undefined && Number.isSafeInteger(required) && required > 0
+    ? required
+    : undefined
+}
+
 export interface WorldScenePage {
   readonly snapshotId: string
   readonly facet: string
