@@ -886,6 +886,23 @@ async function mount(
           const answer = await bridge.request({ op: 'ask', message, choices })
           return typeof answer === 'number' ? answer : undefined
         },
+        // A baseline copy of a locale table: the extension host lets the reader pick and reads it.
+        async tableBaseline(variant) {
+          const answer = (await bridge.request({ op: 'table-baseline', variant })) as {
+            readonly label?: unknown
+            readonly values?: unknown
+          } | null
+          if (typeof answer?.label !== 'string' || !Array.isArray(answer.values)) return undefined
+          return {
+            label: answer.label,
+            values: new Map(
+              answer.values.filter(
+                (pair): pair is [string, string] =>
+                  Array.isArray(pair) && typeof pair[0] === 'string' && typeof pair[1] === 'string',
+              ),
+            ),
+          }
+        },
         async openArchiveEntry(entry, preview) {
           const container = focused ?? snapshot.openPath
           if (container === undefined) return

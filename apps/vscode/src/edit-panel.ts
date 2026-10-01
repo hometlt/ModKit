@@ -25,6 +25,7 @@ import type { CardLocation } from '@modkit/ui/card'
 import type { UiLocalizer } from '@modkit/ui/localization'
 import type { ModelViewerOptions } from '@modkit/ui/model'
 import type { GameTemplateViewerOptions } from '@modkit/ui/template'
+import type { TableViewerOptions } from '@modkit/ui/table'
 import {
   mountFieldEditor,
   type FieldEditorControlV1,
@@ -109,6 +110,8 @@ export interface EditPanelOptions {
   readonly pixelOperations?: ImageViewerOptions['pixelOperations']
   /** Ask the person to pick one of `choices` in a modal; the index, or undefined for none. */
   ask?(message: string, choices: readonly string[]): Promise<number | undefined>
+  /** A baseline copy of a locale table the reader picks, for the table's review (plan 7.36). */
+  readonly tableBaseline?: TableViewerOptions['baseline']
 }
 
 const asRecord = (descriptor: AnyDescriptor): Record<string, unknown> =>

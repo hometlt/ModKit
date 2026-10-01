@@ -8514,6 +8514,7 @@ async function activateModkit(
           }),
       confirmClose,
       ask,
+      tableBaseline: pickTableBaseline,
       confirmLossyWrite,
       ...(openPath === undefined
         ? {}
@@ -8955,6 +8956,60 @@ async function activateModkit(
       ? vscode.window.showWarningMessage(`Modkit: ${summary}`, show)
       : vscode.window.showInformationMessage(`Modkit: ${summary}`, show))
     if (choice === show) output.show(true)
+  }
+
+  /*
+   * A baseline copy of a locale table (plan 7.36, MK2's «review»): a file the reader picks, opened
+   * as a subject of its own, its table read in one locale — or in its own base when it names none.
+   */
+  const pickTableBaseline = async (
+    variant: string,
+  ): Promise<{ label: string; values: [string, string][] } | undefined> => {
+    const picked = await vscode.window.showOpenDialog({
+      canSelectMany: false,
+      openLabel: localizer.text('vscode.table.baselineOpen'),
+      title: localizer.text('vscode.table.baselineTitle', { locale: variant }),
+    })
+    const path = picked?.[0]?.fsPath
+    if (path === undefined) return undefined
+    const subject = await commandOpener(path, new AbortController().signal)
+    try {
+      if (subject.snapshot.state !== 'opened' || subject.session === undefined) {
+        throw new Error(localizer.text('vscode.table.baselineRefused', { file: basename(path) }))
+      }
+      const lease = await subject.session.dataSource('common.view/table-data-source', 1)
+      try {
+        const table = lease.value as unknown as TableDataSource
+        const info = (await table.shape()).columnInfo ?? []
+        const key = Math.max(
+          0,
+          info.findIndex(column => column.role === 'key'),
+        )
+        const locales = info.flatMap((column, index) =>
+          column.role === 'variant' ? [{ ...column, index }] : [],
+        )
+        const locale =
+          locales.find(column => column.variant === variant) ??
+          locales.find(column => column.base === true) ??
+          locales[0]
+        if (locale === undefined) {
+          throw new Error(localizer.text('vscode.table.baselineRefused', { file: basename(path) }))
+        }
+        const values: [string, string][] = []
+        for (let from = 0; ; from += 1_000) {
+          const page = await table.rows({ kind: 'range', from, count: 1_000 })
+          for (const row of page.items) {
+            values.push([row.cells[key] ?? '', row.cells[locale.index] ?? ''])
+          }
+          if (page.nextCursor === undefined || page.items.length === 0) break
+        }
+        return { label: basename(path), values }
+      } finally {
+        await lease.release()
+      }
+    } finally {
+      await subject.dispose()
+    }
   }
 
   /** A map world exported as UVW (П24): where it went and what UVW left out, as a conversion. */

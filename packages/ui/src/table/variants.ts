@@ -57,6 +57,7 @@ const FILTER_LABELS = {
   // a value the codec's checks refuse in some locale (SC2: markup, a hotkey)
   error: 'table.filterErrors',
   changed: 'table.filterChanged',
+  review: 'table.filterReview',
 } as const
 /** A row's status as a badge in its status cell, as MK2 marked its keys (dup, syn…). */
 const BADGE_LABELS: Readonly<Record<string, UiMessageKey>> = {
@@ -66,6 +67,7 @@ const BADGE_LABELS: Readonly<Record<string, UiMessageKey>> = {
   empty: 'table.badgeEmpty',
   error: 'table.badgeError',
   changed: 'table.badgeChanged',
+  review: 'table.badgeReview',
 }
 const COMPARE_LABELS = {
   missing: 'table.filterMissing',
@@ -81,6 +83,12 @@ const MATCH_TOGGLES = [
 ] as const
 
 type Shape = Awaited<ReturnType<TableDataSource['shape']>>
+
+/** A baseline copy of a locale table: what each key held in one locale, and a name for the copy. */
+export interface TableBaseline {
+  readonly label: string
+  readonly values: ReadonlyMap<string, string>
+}
 
 export interface VariantTableArgs {
   readonly root: HTMLElement
@@ -108,6 +116,8 @@ export interface VariantTableArgs {
   readonly images?: GameTemplateImageResolver
   /** Puts what the open cell editors hold into the draft, before a save writes it. */
   readonly flush?: () => Promise<void>
+  /** A baseline copy's values in a locale, which the reader picks; absent, none can be picked. */
+  readonly baseline?: (variant: string, signal?: AbortSignal) => Promise<TableBaseline | undefined>
 }
 
 export interface VariantTable {
@@ -323,7 +333,11 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
     ...(variants.some(column => (row.cells[column.index] ?? '') === '') ? ['empty'] : []),
     ...(variants.some(column => foreignIn(row, column)) ? ['error'] : []),
     ...(changed.has(row.index) || draftedRows.has(row.index) ? ['changed'] : []),
+    ...(review?.rows.has(row.index) === true ? ['review'] : []),
   ]
+  /** The keys whose base text changed or appeared since a baseline copy (MK2's «review»). */
+  let review:
+    { readonly label: string; readonly rows: ReadonlyMap<number, 'changed' | 'added'> } | undefined
   const state: FilterState = remembered.get(args.descriptor.subjectUri) ?? {
     search: '',
     caseSensitive: false,
@@ -358,7 +372,15 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
     if (state.wrap === true) args.before.dataset['wrap'] = 'true'
     else delete args.before.dataset['wrap']
   }
-  const statuses = ['missing', 'untranslated', 'duplicate', 'empty', 'error', 'changed'] as const
+  const statuses = [
+    'missing',
+    'untranslated',
+    'duplicate',
+    'empty',
+    'error',
+    'changed',
+    ...(args.baseline === undefined ? [] : (['review'] as const)),
+  ] as const
   const matchToggles = (
     target: { caseSensitive: boolean; wholeWord: boolean; regex: boolean },
     prefix: string,
@@ -463,6 +485,16 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
               onActivate: () => void compare(),
             },
           ]),
+      ...(args.baseline === undefined
+        ? []
+        : [
+            {
+              kind: 'action' as const,
+              id: 'baseline',
+              label: text('table.baseline'),
+              onActivate: () => void compareBaseline(),
+            },
+          ]),
       ...(actions.translateVariant === undefined || variants.length < 2
         ? []
         : [
@@ -541,6 +573,8 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
     base = variants.find(column => column.variant === baseChoice.value) ?? fileBase
     if (base === fileBase || base?.variant === undefined) delete state.base
     else state.base = base.variant
+    // a baseline was read in the previous base locale
+    review = undefined
     listTargets()
     refresh()
   })
@@ -1007,6 +1041,12 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
             text: key === undefined ? status : text(key),
           })
           badge.dataset['status'] = status
+          const since = status === 'review' ? review?.rows.get(row.index) : undefined
+          if (since !== undefined && review !== undefined) {
+            badge.title = text(since === 'added' ? 'table.reviewAdded' : 'table.reviewChanged', {
+              baseline: review.label,
+            })
+          }
         }
       }
       for (const column of variants) {
@@ -1487,6 +1527,28 @@ export async function mountVariantTable(args: VariantTableArgs): Promise<Variant
       })
     })
     ;(submit as HTMLButtonElement).focus()
+  }
+
+  /*
+   * The base locale against a baseline copy the reader picks (MK2's «review»): a key whose base
+   * text changed since, or that appeared since, may have translations to look at again.
+   */
+  const compareBaseline = async (): Promise<void> => {
+    const reference = base
+    if (args.baseline === undefined || reference === undefined) return
+    const loaded = await args.baseline(reference.variant ?? '', args.signal)
+    if (loaded === undefined || args.signal.aborted) return
+    const changes = new Map<number, 'changed' | 'added'>()
+    for (const row of rows) {
+      const value = row.cells[reference.index] ?? ''
+      const before = loaded.values.get(row.cells[keyColumn] ?? '')
+      if (before === undefined ? value !== '' : before !== value) {
+        changes.set(row.index, before === undefined ? 'added' : 'changed')
+      }
+    }
+    review = { label: loaded.label, rows: changes }
+    refresh()
+    say(text('table.reviewLoaded', { count: changes.size, baseline: loaded.label }))
   }
 
   const compare = async (): Promise<void> => {

@@ -877,6 +877,8 @@ export interface VsCodeServeOptions {
   readonly confirmClose?: (message: string, savable: boolean) => Promise<CloseAnswer>
   /** One of a page's choices in a modal (the encoding to save in, say); the index, or undefined. */
   readonly ask?: (message: string, choices: readonly string[]) => Promise<number | undefined>
+  /** A baseline copy of a locale table the reader picks, read in one locale (plan 7.36). */
+  readonly tableBaseline?: (variant: string) => Promise<VsCodeTableBaseline | undefined>
   /**
    * A file-manager action inside a container (`container` may be a member archive): the adapter
    * asks for names, confirms deletes, owns the clipboard. `true` when the container changed.
@@ -1141,6 +1143,12 @@ export interface VsCodeServed {
  * Exported because `./extension.ts` composes the runtime at activation, before any webview exists:
  * a command run from the palette must not require an open editor.
  */
+/** A baseline copy of a locale table over the bridge: a name for it and its values by key. */
+export interface VsCodeTableBaseline {
+  readonly label: string
+  readonly values: readonly (readonly [key: string, value: string])[]
+}
+
 export function createVsCodeCommandOpener(options: {
   readonly readContentSource?: ContentSourceReader
   readonly services: NodeSubjectServices
@@ -2021,6 +2029,12 @@ function serveVsCode(
           throw new TypeError('a question needs a message and one to four short choices')
         }
         return (await options.ask?.(request.message, choices)) ?? null
+      }
+      case 'table-baseline': {
+        if (typeof request.variant !== 'string' || request.variant.length > 64) {
+          throw new TypeError('a baseline is read in one named locale')
+        }
+        return (await options.tableBaseline?.(request.variant)) ?? null
       }
       case 'export-files': {
         if (options.exportFiles === undefined) {

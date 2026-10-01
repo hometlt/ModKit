@@ -30,6 +30,7 @@ interface Probe {
     wait?: boolean
     many?: number
     backends?: readonly { id: string; label: string; available: boolean }[]
+    baseline?: Record<string, string>
   }): Promise<void>
   finishTranslation(): void
 }
@@ -81,6 +82,7 @@ beforeAll(async () => {
         wait?: boolean
         many?: number
         backends?: readonly { id: string; label: string; available: boolean }[]
+        baseline?: Record<string, string>
       } = {},
     ) => {
       await mounted?.unmount()
@@ -273,11 +275,20 @@ beforeAll(async () => {
       }
       const container = document.getElementById('app') as HTMLElement
       let reopened = 0
+      const baseline = options.baseline
       const viewer = (globalThis as unknown as Probe).createTableViewer({
         onCommitted: async () => {
           reopened += 1
           return options.reopen !== false
         },
+        ...(baseline === undefined
+          ? {}
+          : {
+              baseline: async (variant: string) => {
+                calls.push({ handler: 'baseline', input: variant })
+                return { label: 'v1.0', values: new Map(Object.entries(baseline)) }
+              },
+            }),
       })
       mounted = (await viewer.mount({
         container,
@@ -397,6 +408,41 @@ describe('variant table surface', () => {
     expect(await visibleHead()).toEqual(['', 'Key', 'enUS', 'ruRU', 'Preview', 'Status'])
     expect(await visibleCells()).toEqual([6, 6, 6])
     await page.click('[data-mk-part="table.columns"] summary')
+  })
+
+  it('marks the keys whose base text changed or appeared since a baseline copy (7.36)', async () => {
+    await page.evaluate(() =>
+      (globalThis as unknown as Probe).mountTable({
+        // A kept its text, B changed since, C is new since
+        baseline: { 'Abil/Name/A': 'Alpha', 'Abil/Name/B': 'Bet' },
+      }),
+    )
+    await page.click('button[aria-label="Compare with a baseline copy…"]')
+    await page.waitForFunction(() =>
+      document.querySelector('[data-mk-part="viewer.status"]')?.textContent?.includes('v1.0'),
+    )
+    const reviews = () =>
+      page.$$eval('[data-mk-part="table.row"]', rows =>
+        rows.map(
+          row =>
+            (
+              row.querySelector(
+                '[data-mk-part="table.badge"][data-status="review"]',
+              ) as HTMLElement | null
+            )?.title ?? '',
+        ),
+      )
+    expect(await reviews()).toEqual(['', 'The base text changed since v1.0', 'Added since v1.0'])
+    expect(
+      await page.evaluate(() =>
+        (globalThis as unknown as Probe).calls.filter(call => call.handler === 'baseline'),
+      ),
+    ).toEqual([{ handler: 'baseline', input: 'enUS' }])
+    // the review filter keeps only those keys
+    await page.click('[data-mk-part="toolbar.chip"]:has-text("Changed since the baseline")')
+    expect(await keys()).toEqual(['Abil/Name/B', 'Unit/Name/C'])
+    await page.click('[data-mk-part="toolbar.chip"]:has-text("Changed since the baseline")')
+    await page.evaluate(() => (globalThis as unknown as Probe).mountTable())
   })
 
   it('moves a column, in the head and every row, and keeps the order with the file (7.36)', async () => {

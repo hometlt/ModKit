@@ -415,6 +415,10 @@
     color: var(--mk-status-warn);
   }
 
+  [data-mk-part='table.badge'][data-status='review'] {
+    color: var(--mk-color-accent);
+  }
+
   /* A value's trailing white space: kept by the game, invisible unless marked. */
   [data-mk-part='table.trailing'] {
     white-space: pre;

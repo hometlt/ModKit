@@ -134,6 +134,8 @@ export type ShellRequest =
   | { readonly op: 'confirm'; readonly message: string; readonly savable: boolean }
   /** A modal with up to four choices; answers the picked index, or null. */
   | { readonly op: 'ask'; readonly message: string; readonly choices: readonly string[] }
+  /** A baseline copy of a locale table the reader picks: its values in one locale, or null. */
+  | { readonly op: 'table-baseline'; readonly variant: string }
   /** Show another file in this editor (a gallery pick). */
   /** A file, or with `entry` one member of the container file at `path`. */
   | {

@@ -32,7 +32,7 @@ import { renderValueWithSpans } from '../spans/index.js'
 import { type UiLocalizationOptions } from '../localization/index.js'
 import { TABLE_FALLBACK_MESSAGES } from '../localization/fallback-catalogs.generated.js'
 import { withEnglishUiFallback } from '../localization/fallback.js'
-import { mountVariantTable, type VariantTable } from './variants.js'
+import { mountVariantTable, type TableBaseline, type VariantTable } from './variants.js'
 import type { GameTemplateImageResolver } from '../template/index.js'
 
 export const TABLE_PAGE_ROWS = 200
@@ -122,6 +122,12 @@ export interface TableViewerOptions extends UiLocalizationOptions {
   readonly onCommitted?: (descriptor: AnyDescriptor) => boolean | Promise<boolean>
   /** Pixels for the inline images a rendered value names; the host resolves the logical ids. */
   readonly images?: GameTemplateImageResolver
+  /**
+   * A baseline copy of a locale table, for one locale: the locale table then marks the keys whose
+   * text in that locale changed or appeared since (MK2's «review»). The host lets the reader pick
+   * the copy; without it no baseline can be chosen.
+   */
+  readonly baseline?: (variant: string, signal?: AbortSignal) => Promise<TableBaseline | undefined>
 }
 
 export function createTableViewer(options: TableViewerOptions = {}): ViewerModule {
@@ -650,6 +656,7 @@ export function createTableViewer(options: TableViewerOptions = {}): ViewerModul
           ...(options.localizer === undefined ? {} : { localizer: options.localizer }),
           documents,
           ...(options.images === undefined ? {} : { images: options.images }),
+          ...(options.baseline === undefined ? {} : { baseline: options.baseline }),
           render,
           committed,
           writeRefusal: () => stale,
@@ -696,3 +703,5 @@ export function createTableViewer(options: TableViewerOptions = {}): ViewerModul
 export const tableViewer: ViewerModule = createTableViewer()
 
 export default tableViewer
+
+export type { TableBaseline } from './variants.js'

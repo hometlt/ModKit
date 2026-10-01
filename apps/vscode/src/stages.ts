@@ -383,6 +383,8 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
         onCommitted: descriptor => context.reopen(descriptor as unknown as Record<string, unknown>),
         // Inline images of a value drawn as in game, through the template stage's raster port.
         ...(context.templateImages === undefined ? {} : { images: context.templateImages }),
+        // a baseline copy the reader picks marks the keys to look at again (MK2's «review»)
+        ...(context.tableBaseline === undefined ? {} : { baseline: context.tableBaseline }),
       }),
     },
     {
