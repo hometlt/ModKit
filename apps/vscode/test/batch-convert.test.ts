@@ -66,4 +66,40 @@ describe('batch conversion', () => {
     expect(opened).toEqual(['a.dds', 'notes.txt', 'b.dds'])
     expect(written).toEqual(['a.png:2'])
   })
+
+  it('runs a preset by its id and writes where the caller names (Convert…, 7.11)', async () => {
+    const encoding = (id: string): BatchConversion => ({
+      form: { ...preset('dds', `convert-${id}`).form, id },
+      input: { target: 'dds', format: id },
+    })
+    const ran: string[] = []
+    const operations = {
+      async invoke(handlerId: string) {
+        ran.push(handlerId)
+        return { state: 'ok', output: { kind: 'bytes', value: new Uint8Array([1]) } }
+      },
+    } as unknown as OperationSession
+    const written: string[] = []
+    const outcomes = await runBatchConversion({
+      files: ['icons/btn.dds'],
+      extension: 'dds',
+      formId: 'dds-dxt1',
+      open: async () => ({
+        descriptor: {} as unknown as AnyDescriptor,
+        operations,
+        dispose: async () => undefined,
+      }),
+      conversions: () => [encoding('dds-dxt5'), encoding('dds-dxt1')],
+      outputPath: (file, conversion) => `${file}.${conversion.form.id ?? ''}`,
+      write: async output => {
+        written.push(output)
+        return output
+      },
+      signal: new AbortController().signal,
+    })
+    // the DXT1 preset, not the first one writing .dds, and never over the source
+    expect(ran).toEqual(['convert-dds-dxt1'])
+    expect(written).toEqual(['icons/btn.dds.dds-dxt1'])
+    expect(outcomes[0]?.state).toBe('converted')
+  })
 })

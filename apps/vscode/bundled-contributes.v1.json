@@ -145,6 +145,10 @@
       "title": "%command.convertFolder%"
     },
     {
+      "command": "modkit.convertFiles",
+      "title": "%command.convertFiles%"
+    },
+    {
       "command": "modkit.showHostProfile",
       "title": "%command.openWorkbench%"
     },
@@ -1194,6 +1198,13 @@
         "group": "modkit@7"
       }
     ],
+    "editor/title/context": [
+      {
+        "command": "modkit.convertFiles",
+        "when": "resourceScheme == file && resourceExtname in modkit.pictureExtensions",
+        "group": "modkit@1"
+      }
+    ],
     "editor/title": [
       {
         "command": "modkit.verifyDocument",
@@ -1230,6 +1241,11 @@
       {
         "command": "modkit.convertFolder",
         "when": "explorerResourceIsFolder && resourceScheme == file",
+        "group": "navigation@19"
+      },
+      {
+        "command": "modkit.convertFiles",
+        "when": "!explorerResourceIsFolder && resourceScheme == file && resourceExtname in modkit.pictureExtensions",
         "group": "navigation@19"
       },
       {

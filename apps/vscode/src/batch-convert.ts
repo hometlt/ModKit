@@ -12,6 +12,7 @@ export const BATCH_CONVERT_MAX_FILES = 2_000
 
 export interface BatchConversion {
   readonly form: {
+    readonly id?: string
     readonly handlerId: string
     readonly label: string
     readonly writes: { readonly extension: string; readonly mediaType: string }
@@ -62,6 +63,10 @@ export async function runBatchConversion(options: {
   readonly write: (output: string, bytes: Uint8Array) => Promise<string>
   readonly progress?: (done: number, file: string) => void
   readonly signal: AbortSignal
+  /** The preset to run, by id: one of several writing the extension (a DDS's encodings). */
+  readonly formId?: string
+  /** Where a file's result goes; by default its own place with the new extension. */
+  readonly outputPath?: (file: string, conversion: BatchConversion) => string
 }): Promise<readonly BatchOutcome[]> {
   const outcomes: BatchOutcome[] = []
   for (const [index, file] of options.files.entries()) {
@@ -76,10 +81,11 @@ export async function runBatchConversion(options: {
         outcomes.push({ state: 'skipped', file, reason: subject.reason ?? 'no codec opened it' })
         continue
       }
-      const conversion = batchConversionFor(
-        options.conversions(subject.descriptor),
-        options.extension,
-      )
+      const conversions = options.conversions(subject.descriptor)
+      const conversion =
+        options.formId === undefined
+          ? batchConversionFor(conversions, options.extension)
+          : conversions.find(item => item.form.id === options.formId)
       if (conversion === undefined) {
         outcomes.push({ state: 'skipped', file, reason: `no conversion to .${options.extension}` })
         continue
@@ -101,7 +107,8 @@ export async function runBatchConversion(options: {
         continue
       }
       const written = await options.write(
-        batchOutputPath(file, conversion.form.writes.extension),
+        options.outputPath?.(file, conversion) ??
+          batchOutputPath(file, conversion.form.writes.extension),
         output.value,
       )
       outcomes.push({ state: 'converted', file, output: written })

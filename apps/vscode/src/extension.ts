@@ -37,6 +37,7 @@ type ContentSources
 } from '@modkit/vfs/content-sources'
 import { chooseContentSource } from '@modkit/ui/content-sources'
 import { exportConversions } from '@modkit/ui/export'
+import { convertedFileName } from '@modkit/ui/image'
 import type { CatalogSource, ExtensionManagerEntry } from '@modkit/extension-manager'
 import {
 loadRepositorySubjectProfiles,
@@ -342,7 +343,12 @@ import {
   formatSmokeFileDigest,
 } from './packaged-acceptance.js'
 import { readPackagedManagedRegistry } from './managed-registry.js'
-import { BATCH_CONVERT_MAX_FILES, runBatchConversion } from './batch-convert.js'
+import {
+  BATCH_CONVERT_MAX_FILES,
+  runBatchConversion,
+  type BatchOutcome,
+  type BatchSubject,
+} from './batch-convert.js'
 import { contentSourceOptionsFor } from './content-source-options.js'
 import {
   comparedLocales,
@@ -8331,6 +8337,13 @@ async function activateModkit(
    * images cannot flood the codec workers.
    */
   const galleryExtensions = imageGalleryExtensions(host.services.inventory)
+  // the pictures "Convert…" is offered on in menus; a menu matches an extension as written
+  void vscode.commands.executeCommand('setContext', 'modkit.pictureExtensions', [
+    ...[...galleryExtensions].flatMap(extension => [
+      `.${extension}`,
+      `.${extension.toUpperCase()}`,
+    ]),
+  ])
   const thumbnailOpener = createVsCodeCommandOpener({
     services: host.services,
     roots,
@@ -8867,6 +8880,142 @@ async function activateModkit(
     return anchor === undefined ? undefined : vscode.Uri.joinPath(target, anchor[0])
   }
 
+  /** Write `bytes` at `destination`, or beside it as `name (2).ext` …, never over a file. */
+  const writeFresh = async (destination: vscode.Uri, bytes: Uint8Array): Promise<vscode.Uri> => {
+    const directory = vscode.Uri.joinPath(destination, '..')
+    const name = basename(destination.path)
+    const dot = name.lastIndexOf('.')
+    let target = destination
+    for (let copy = 2; ; copy += 1) {
+      const exists = await vscode.workspace.fs.stat(target).then(
+        () => true,
+        () => false,
+      )
+      if (!exists) break
+      target = vscode.Uri.joinPath(
+        directory,
+        dot <= 0 ? `${name} (${copy})` : `${name.slice(0, dot)} (${copy})${name.slice(dot)}`,
+      )
+    }
+    await vscode.workspace.fs.writeFile(target, new Uint8Array(bytes))
+    return target
+  }
+
+  /** What a conversion run did, in the log line by line and in one notification. */
+  const reportConversion = async (
+    heading: string,
+    outcomes: readonly BatchOutcome[],
+    total: number,
+  ): Promise<void> => {
+    const converted = outcomes.filter(item => item.state === 'converted').length
+    const skipped = outcomes.filter(item => item.state === 'skipped').length
+    const failed = outcomes.filter(item => item.state === 'failed').length
+    log(`[batch] ${heading}`)
+    for (const item of outcomes) {
+      log(
+        item.state === 'converted'
+          ? `[batch] converted ${item.file} → ${item.output}`
+          : `[batch] ${item.state} ${item.file}: ${item.reason}`,
+      )
+    }
+    const summary = localizer.text('vscode.batch.summary', { converted, skipped, failed, total })
+    const show = localizer.text('vscode.batch.showReport')
+    const choice = await (failed > 0
+      ? vscode.window.showWarningMessage(`Modkit: ${summary}`, show)
+      : vscode.window.showInformationMessage(`Modkit: ${summary}`, show))
+    if (choice === show) output.show(true)
+  }
+
+  /** A file of a conversion run opened as a subject, or the reason it could not be. */
+  const openForConversion = async (path: string, signal: AbortSignal): Promise<BatchSubject> => {
+    const subject = await commandOpener(path, signal)
+    const dispose = () => subject.dispose()
+    if (subject.snapshot.state !== 'opened' || subject.session === undefined) {
+      return { reason: localizer.text('vscode.batch.notOpened'), dispose }
+    }
+    return {
+      descriptor: await subject.session.descriptor(),
+      operations: subject.session.operations(),
+      dispose,
+    }
+  }
+
+  /**
+   * Convert the pictures a menu names through their codec's own conversion (plan 7.11, MK2's
+   * "DDS → PNG" and "DXT5 → DXT1"): the first file's conversions are offered, and each file writes
+   * its result beside itself as `<name>.<variant>.<extension>`, never over its source.
+   */
+  const convertFiles = async (picked: readonly vscode.Uri[]): Promise<void> => {
+    const files = picked.filter(uri => uri.scheme === 'file')
+    const first = files[0]
+    if (first === undefined) {
+      void vscode.window.showWarningMessage(`Modkit: ${localizer.text('vscode.batch.filesOnDisk')}`)
+      return
+    }
+    for (const file of files) granted.add(file.fsPath)
+    const offered = await openForConversion(first.fsPath, new AbortController().signal)
+    let conversions: ReturnType<typeof exportConversions> = []
+    try {
+      if (offered.descriptor !== undefined) conversions = exportConversions(offered.descriptor)
+    } finally {
+      await offered.dispose().catch(() => undefined)
+    }
+    if (conversions.length === 0) {
+      void vscode.window.showWarningMessage(
+        `Modkit: ${localizer.text('vscode.batch.noConversions', { name: basename(first.path) })}`,
+      )
+      return
+    }
+    const choice = await vscode.window.showQuickPick(
+      conversions.map(conversion => ({
+        label: conversion.form.label,
+        description: conversion.form.writes.extension,
+        conversion,
+      })),
+      { title: localizer.text('vscode.batch.convertFiles', { count: files.length }) },
+    )
+    if (choice === undefined) return
+    const { form } = choice.conversion
+    const outcomes = await vscode.window.withProgress(
+      {
+        location: vscode.ProgressLocation.Notification,
+        title: `${localizer.text('vscode.batch.convertFiles', { count: files.length })} ${form.label}`,
+        cancellable: true,
+      },
+      async (_progress, token) => {
+        const controller = new AbortController()
+        const subscription = token.onCancellationRequested(() => controller.abort())
+        try {
+          return await runBatchConversion({
+            files: files.map(file => file.fsPath),
+            extension: form.writes.extension,
+            formId: form.id,
+            open: openForConversion,
+            conversions: descriptor => exportConversions(descriptor),
+            outputPath: (file, conversion) => {
+              const name = basename(file)
+              const dot = name.lastIndexOf('.')
+              const stem = dot <= 0 ? name : name.slice(0, dot)
+              return join(
+                dirname(file),
+                convertedFileName(stem, conversion.form.id ?? '', conversion.form.writes.extension),
+              )
+            },
+            write: async (path, bytes) =>
+              vscode.workspace.asRelativePath(
+                await writeFresh(vscode.Uri.file(path), bytes),
+                false,
+              ),
+            signal: controller.signal,
+          })
+        } finally {
+          subscription.dispose()
+        }
+      },
+    )
+    await reportConversion(`${files.length} file(s) → ${form.label}`, outcomes, files.length)
+  }
+
   /**
    * Convert every file of a folder through its codec's own conversion to one extension (plan 7.12):
    * the folder, the extension and where the results go are asked; the run shows progress, stops on
@@ -8935,39 +9084,16 @@ async function activateModkit(
           return await runBatchConversion({
             files,
             extension,
-            open: async (file, signal) => {
-              const subject = await commandOpener(join(folder.fsPath, ...file.split('/')), signal)
-              const dispose = () => subject.dispose()
-              if (subject.snapshot.state !== 'opened' || subject.session === undefined) {
-                return { reason: localizer.text('vscode.batch.notOpened'), dispose }
-              }
-              return {
-                descriptor: await subject.session.descriptor(),
-                operations: subject.session.operations(),
-                dispose,
-              }
-            },
+            open: (file, signal) =>
+              openForConversion(join(folder.fsPath, ...file.split('/')), signal),
             conversions: descriptor => exportConversions(descriptor),
             write: async (relative, bytes) => {
               const parts = relative.split('/')
               const name = parts.pop() ?? relative
               const directory = vscode.Uri.joinPath(into, ...parts)
               await vscode.workspace.fs.createDirectory(directory)
-              const dot = name.lastIndexOf('.')
-              let destination = vscode.Uri.joinPath(directory, name)
-              for (let copy = 2; ; copy += 1) {
-                const exists = await vscode.workspace.fs.stat(destination).then(
-                  () => true,
-                  () => false,
-                )
-                if (!exists) break
-                destination = vscode.Uri.joinPath(
-                  directory,
-                  `${name.slice(0, dot)} (${copy})${name.slice(dot)}`,
-                )
-              }
-              await vscode.workspace.fs.writeFile(destination, new Uint8Array(bytes))
-              return vscode.workspace.asRelativePath(destination, false)
+              const written = await writeFresh(vscode.Uri.joinPath(directory, name), bytes)
+              return vscode.workspace.asRelativePath(written, false)
             },
             progress: (done, file) =>
               progress.report({
@@ -8981,28 +9107,11 @@ async function activateModkit(
         }
       },
     )
-    const converted = outcomes.filter(item => item.state === 'converted').length
-    const skipped = outcomes.filter(item => item.state === 'skipped').length
-    const failed = outcomes.filter(item => item.state === 'failed').length
-    log(`[batch] ${folder.fsPath} → ${into.fsPath} (.${extension})`)
-    for (const item of outcomes) {
-      log(
-        item.state === 'converted'
-          ? `[batch] converted ${item.file} → ${item.output}`
-          : `[batch] ${item.state} ${item.file}: ${item.reason}`,
-      )
-    }
-    const summary = localizer.text('vscode.batch.summary', {
-      converted,
-      skipped,
-      failed,
-      total: files.length,
-    })
-    const show = localizer.text('vscode.batch.showReport')
-    const choice = await (failed > 0
-      ? vscode.window.showWarningMessage(`Modkit: ${summary}`, show)
-      : vscode.window.showInformationMessage(`Modkit: ${summary}`, show))
-    if (choice === show) output.show(true)
+    await reportConversion(
+      `${folder.fsPath} → ${into.fsPath} (.${extension})`,
+      outcomes,
+      files.length,
+    )
   }
 
   /**
@@ -11037,6 +11146,21 @@ async function activateModkit(
           `${id}: ${localizer.text('common.disabled')}`,
         )
       }
+    }),
+
+    vscode.commands.registerCommand('modkit.convertFiles', (uri: unknown, uris: unknown) => {
+      // from a menu: every selected resource; from the palette: the active tab's
+      const tab = vscode.window.tabGroups.activeTabGroup.activeTab?.input as
+        | { readonly uri?: unknown }
+        | undefined
+      const picked = Array.isArray(uris) ? uris : [uri ?? tab?.uri]
+      void convertFiles(
+        picked.filter((item): item is vscode.Uri => item instanceof vscode.Uri),
+      ).catch(error =>
+        vscode.window.showErrorMessage(
+          `Modkit: ${error instanceof Error ? error.message : String(error)}`,
+        ),
+      )
     }),
 
     vscode.commands.registerCommand('modkit.convertFolder', (uri: unknown) => {
