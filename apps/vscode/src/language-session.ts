@@ -120,6 +120,11 @@ export interface LanguageSessionControllerOptions {
   readonly workspace: LanguageWorkspace
   readonly routes: readonly LanguageProviderRoute[]
   readonly debounceMs?: number
+  /**
+   * After an edit, how long the other open documents wait for the edits to pause before their
+   * semantic diagnostics are asked again (an edit here can break a reference there). Default 750 ms.
+   */
+  readonly relatedDiagnosticsDelayMs?: number
   /** Delay background analysis and semantic diagnostics so interactive requests run first. */
   readonly semanticDiagnosticsDelayMs?: number
   /** Document diagnostics have their own native collection. Host notices must not enter it. */
@@ -295,6 +300,8 @@ const EDITOR_MAX_RESULTS = 512
 // A mod is the unit these languages resolve against; the host's byte budget is the real bound.
 const EDITOR_MAX_DOCUMENTS = 1_024
 const EDITOR_MAX_EDITS = 4_096
+/** Most other open documents one edit asks diagnostics for again. */
+const RELATED_DIAGNOSTICS_LIMIT = 32
 
 interface Selection {
   readonly state: 'selected'
@@ -493,6 +500,7 @@ export function createLanguageSessionController(
   const refusals = new Map<string, string>()
   const debounceMs = options.debounceMs ?? 150
   const semanticDiagnosticsDelayMs = options.semanticDiagnosticsDelayMs ?? 0
+  const relatedDiagnosticsDelayMs = options.relatedDiagnosticsDelayMs ?? 750
   let state: 'new' | 'ready' | 'shut-down' = 'new'
   let shutdownPromise: Promise<void> | undefined
 
@@ -538,6 +546,48 @@ export function createLanguageSessionController(
       tracked.document.uri,
       semanticDiagnostics ?? result.analysis.diagnostics,
     )
+  }
+
+  /*
+   * An edit can break or mend references in the other documents open in editors — an entity
+   * removed here leaves a dangling reference there (plan 0.7). Once the edits pause, every other
+   * editor document whose own analysis is not running gets its semantic diagnostics again.
+   */
+  const changedSince = new Set<string>()
+  let relatedTimer: ReturnType<typeof setTimeout> | undefined
+  const refreshRelated = async (changed: ReadonlySet<string>): Promise<void> => {
+    let left = RELATED_DIAGNOSTICS_LIMIT
+    for (const tracked of [...documents.values()]) {
+      if (state !== 'ready' || left <= 0) return
+      const document = tracked.document
+      if (changed.has(document.uri) || tracked.editorOpened !== true || !tracked.opened) continue
+      if (tracked.task !== undefined) continue
+      left -= 1
+      try {
+        const answer = await options.workspace.diagnostics({
+          uri: document.uri,
+          documentVersion: document.version,
+          maxResults: EDITOR_MAX_RESULTS,
+          maxDocuments: EDITOR_MAX_DOCUMENTS,
+        })
+        // a newer version, or its own analysis, owns what is published now
+        if (documents.get(document.uri) !== tracked || tracked.document !== document) continue
+        if (tracked.task !== undefined || answer === undefined) continue
+        options.publishDiagnostics(document.uri, answer.diagnostics)
+      } catch (error) {
+        if (!isCancellation(error)) options.reportNotice?.(noticeFor(error, document.uri))
+      }
+    }
+  }
+  const scheduleRelated = (uri: string): void => {
+    changedSince.add(uri)
+    if (relatedTimer !== undefined) clearTimeout(relatedTimer)
+    relatedTimer = setTimeout(() => {
+      relatedTimer = undefined
+      const changed = new Set(changedSince)
+      changedSince.clear()
+      void refreshRelated(changed)
+    }, relatedDiagnosticsDelayMs)
   }
 
   const execute = (tracked: TrackedDocument): Promise<void> => {
@@ -624,6 +674,8 @@ export function createLanguageSessionController(
           }
         }
         reportResult(tracked, generation, result, semanticDiagnostics)
+        // an edit (not the first analysis of an opened file) may have changed the others' references
+        if (generation > 1 && result.state === 'resolved') scheduleRelated(document.uri)
       } catch (error) {
         if (isCancellation(error) || controller.signal.aborted) return
         options.reportNotice?.(noticeFor(error, document.uri))
@@ -1200,6 +1252,8 @@ export function createLanguageSessionController(
     shutdown(): Promise<void> {
       if (shutdownPromise !== undefined) return shutdownPromise
       state = 'shut-down'
+      if (relatedTimer !== undefined) clearTimeout(relatedTimer)
+      changedSince.clear()
       shutdownPromise = (async () => {
         const tracked = [...documents.values()]
         documents.clear()

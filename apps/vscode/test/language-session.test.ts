@@ -459,6 +459,49 @@ describe('VS Code-free language session controller', () => {
     await controller.shutdown()
   })
 
+  it('asks the other open documents again after an edit breaks their references (plan 0.7)', async () => {
+    const dangling = {
+      severity: 'error' as const,
+      message: "Unit 'Marine' is not declared.",
+      range: { start: { line: 0, character: 0 }, end: { line: 0, character: 6 } },
+    }
+    const workspace = fakeWorkspace()
+    let removed = false
+    const diagnostics = vi.spyOn(workspace, 'diagnostics').mockImplementation(async request => ({
+      diagnostics: request.uri.endsWith('other.fixture') && removed ? [dangling] : [],
+      isIncomplete: false,
+    }))
+    const published = new Map<string, readonly unknown[]>()
+    const controller = createLanguageSessionController({
+      workspace,
+      routes: [ROUTE],
+      debounceMs: 0,
+      relatedDiagnosticsDelayMs: 0,
+      publishDiagnostics: (uri, items) => published.set(uri, items),
+    })
+    await controller.initialize()
+    const other: EditorLanguageDocument = {
+      ...editorDocument(1, 'Marine'),
+      uri: 'file:///workspace/other.fixture',
+      fileName: '/workspace/other.fixture',
+    }
+    controller.open(editorDocument(1))
+    controller.open(other)
+    await controller.documentSymbols(editorDocument(1))
+    await controller.documentSymbols(other)
+    expect(published.get(other.uri)).toEqual([])
+
+    // the declaration goes away in the first document; the second one has not changed
+    removed = true
+    controller.change(editorDocument(2, ''))
+    await controller.documentSymbols(editorDocument(2, ''))
+    await vi.waitFor(() => expect(published.get(other.uri)).toEqual([dangling]))
+    expect(diagnostics).toHaveBeenCalledWith(
+      expect.objectContaining({ uri: other.uri, documentVersion: 1 }),
+    )
+    await controller.shutdown()
+  })
+
   it('verifies the unsaved buffer and publishes semantic findings with incomplete status', async () => {
     const workspace = fakeWorkspace()
     const finding = {
