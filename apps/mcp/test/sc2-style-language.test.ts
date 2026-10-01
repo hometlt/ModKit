@@ -166,16 +166,14 @@ describe('installed SC2 Style language through MCP', () => {
         },
       })
 
+      // Loose files see neither the rest of a mod nor all of its dependencies, so a style rename is
+      // refused rather than leave uses behind (the Style provider renames only in a complete
+      // workspace, blizzard 1733d1c2).
       const renamed = await feature({ feature: 'rename', position, newName: 'Heading', maxEdits: 8 })
       expect(renamed.data, JSON.stringify(renamed)).toMatchObject({
-        result: {
-          isComplete: true,
-          documentChanges: [{ uri: sheetUri, documentVersion: 2, edits: [{ newText: 'Heading' }] }],
-        },
+        result: null,
+        workspaceIncomplete: true,
       })
-      expect(
-        (renamed.data as { result: { documentChanges: unknown[] } }).result.documentChanges,
-      ).toHaveLength(1)
 
       const colors = await feature({ feature: 'document-colors' })
       expect(colors.data, JSON.stringify(colors)).toMatchObject({
