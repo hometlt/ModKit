@@ -20,11 +20,19 @@ const budget = {
   deadlineMs: 30_000,
 } as const
 
+/** The codec's own subject: an archive with nothing of a world. */
+const codecDescriptor = {
+  subjectUri: 'memory://map.wz',
+  dataSources: [{ contract: 'common.view/namespace-entry-source', major: 1 }],
+  traits: [],
+  diagnostics: [],
+}
+
 function opened(dispose: () => Promise<void>): OpenedSubject {
   return {
     state: 'opened',
-    descriptor: { subjectUri: 'memory://map.wz' },
-    session: { dispose },
+    descriptor: codecDescriptor,
+    session: { dispose, descriptor: async () => codecDescriptor },
     selected: { contributionId: 'archive', variantId: 'main', confidence: 1 },
     candidates: [],
     diagnostics: [],
@@ -38,7 +46,12 @@ describe('VS Code map preview binding', () => {
     const resolveResourcePlan = vi.fn()
     const resourcePlanResolver = { resolve: resolveResourcePlan } as never
     const explicitCatalog = { schemaVersion: 1, workspaceId: 'explicit' } as never
-    const derived = { subjectUri: 'world://map' } as never
+    const derived = {
+      subjectUri: 'world://map',
+      dataSources: [{ contract: 'common.view/world-scene-source', major: 1 }],
+      traits: [{ id: 'model.geometry' }],
+      diagnostics: [],
+    } as never
     const result = await prepareVsCodeMapPreview({
       services: {} as never,
       opened: opened(disposeOriginal),
@@ -53,7 +66,7 @@ describe('VS Code map preview binding', () => {
         expect(request.resourcePlanResolver).toBe(resourcePlanResolver)
         return {
           state: 'opened',
-          session: { dispose: disposePreview } as never,
+          session: { dispose: disposePreview, descriptor: async () => derived } as never,
           descriptor: derived,
           snapshot: {} as never,
           plan: {} as never,
@@ -63,8 +76,13 @@ describe('VS Code map preview binding', () => {
     })
 
     expect(result.state).toBe('opened')
-    expect(result.opened.descriptor).toBe(derived)
-    expect(result.opened.session).not.toBeUndefined()
+    // the world joins the codec's subject, whose archive stays beside it (plan 6.4)
+    expect(result.opened.descriptor.subjectUri).toBe('memory://map.wz')
+    expect(result.opened.descriptor.dataSources.map(offer => offer.contract)).toEqual([
+      'common.view/namespace-entry-source',
+      'common.view/world-scene-source',
+    ])
+    expect(result.opened.descriptor.traits.map(trait => trait.id)).toEqual(['model.geometry'])
     expect(disposeOriginal).not.toHaveBeenCalled()
     await result.opened.session.dispose()
     expect(disposePreview).toHaveBeenCalledOnce()

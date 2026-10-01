@@ -7,6 +7,7 @@ import type { OpenedSubject } from '@modkit/host'
 import {
   coordinateMapPreviewAssetSession,
   MAP_PREVIEW_COORDINATOR_LIMITS,
+  withMapPreviewSources,
   type CoordinateMapPreviewAssetSessionRequest,
   type CoordinatedMapPreviewAssetSessionResult,
 } from '@modkit/host/maps'
@@ -101,16 +102,29 @@ export async function prepareWebMapPreview(
           ),
         )
       : Object.freeze([])
-  const opened = Object.freeze({
-    ...request.opened,
-    ...(result.state === 'opened'
-      ? { descriptor: result.descriptor, session: result.session }
-      : {}),
-    diagnostics,
-  })
+  const joined = result.state === 'opened' ? await joinWorld(request.opened, result.session) : {}
+  const opened = Object.freeze({ ...request.opened, ...joined, diagnostics })
   return Object.freeze({
     state: permissionRequired ? ('permission-required' as const) : result.state,
     opened,
     candidates,
   })
+}
+
+/**
+ * The subject with the world its preview built joined to it (plan 6.4): the codec's archive, layers,
+ * card and edits stay beside the world, whose sources and traits the codec lacks are added.
+ */
+async function joinWorld(
+  opened: OpenedSubject,
+  preview: OpenedSubject['session'],
+): Promise<Pick<OpenedSubject, 'descriptor' | 'session'>> {
+  const session = withMapPreviewSources(opened.session, preview)
+  try {
+    return { descriptor: await session.descriptor(), session }
+  } catch (error) {
+    // the preview owns the opened session: releasing it releases both
+    await session.dispose()
+    throw error
+  }
 }
