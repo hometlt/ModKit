@@ -1,5 +1,9 @@
 /** Portable material programs and playback; scene owns their execution over UVM. */
-export { RENDER_MATERIAL_SHADER, createRenderMaterialSampler } from './render-model.js'
+export {
+  MATERIAL_LAYERS_SHADER,
+  RENDER_MATERIAL_SHADER,
+  createRenderMaterialSampler,
+} from './render-model.js'
 export type {
   MaterialSampleTime,
   RenderMaterialPass,

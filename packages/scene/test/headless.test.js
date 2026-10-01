@@ -6,6 +6,40 @@ import { renderHeadless } from '../src/render/headless.js'
 const identity = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1])
 
 describe('headless scene renderer', () => {
+  it('draws a neutral layer list by its diffuse layer without calling its shader unsupported', async () => {
+    const result = await renderHeadless({
+      outputKind: 'rgba8',
+      viewport: { width: 4, height: 4 },
+      camera: { viewProjection: identity },
+      scene: {
+        materials: [
+          {
+            id: 'listed',
+            baseColor: [1, 1, 1, 1],
+            shader: {
+              id: 'modkit.material-layers.v1',
+              parameters: { renderModel: { layers: [{ label: 'diffuse', path: 'skin.png' }] } },
+            },
+            textureBindings: [{ resourceId: 'skin.png', textureId: 'skin' }],
+          },
+        ],
+        textures: [{ id: 'skin', width: 1, height: 1, rgba: Uint8Array.of(0, 128, 255, 255) }],
+        primitives: [
+          {
+            id: 'quad',
+            topology: 'triangles',
+            materialId: 'listed',
+            positions: Float32Array.from([-1, -1, 0, 1, -1, 0, 1, 1, 0, -1, 1, 0]),
+            textureCoordinates: Float32Array.from([0, 0, 1, 0, 1, 1, 0, 1]),
+            indices: Uint32Array.from([0, 1, 2, 0, 2, 3]),
+          },
+        ],
+      },
+    })
+    assert.deepEqual([...result.rgba.subarray(20 * 2, 20 * 2 + 4)], [0, 128, 255, 255])
+    assert.deepEqual(result.diagnostics, [])
+  })
+
   it('renders a neutral triangle without DOM or game-specific knowledge', async () => {
     const result = await renderHeadless({
       outputKind: 'rgba8',

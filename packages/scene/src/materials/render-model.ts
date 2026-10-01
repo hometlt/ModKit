@@ -15,6 +15,12 @@ import { SCENE_ENVIRONMENT_RESOURCE } from './environment.js'
 /** Vocabulary carried by UV_game_material.params; this module never reads native extras. */
 export const RENDER_MATERIAL_SHADER = 'modkit.render-material.v1'
 
+/**
+ * The renderer's own view of a material whose only texture statement is its neutral layer list
+ * (`renderModel.layers`: label and resource path); the base route draws its diffuse layer.
+ */
+export const MATERIAL_LAYERS_SHADER = 'modkit.material-layers.v1'
+
 export interface MaterialSampleTime {
   /** Elapsed playback time, used by independently looping concurrent tracks. */
   readonly time: number

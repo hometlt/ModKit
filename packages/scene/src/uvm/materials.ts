@@ -6,12 +6,16 @@ import type {
   SceneRendererTeamColor,
   SceneRendererTexture,
 } from '@modkit/sdk/renderer'
-import { createStandardMaterialPrograms, RENDER_MATERIAL_SHADER } from '../materials/index.js'
+import {
+  createStandardMaterialPrograms,
+  MATERIAL_LAYERS_SHADER,
+  RENDER_MATERIAL_SHADER,
+} from '../materials/index.js'
 import { field, object, string } from './values.js'
 import { uvmImageTexels } from './images.js'
 
 /**
- * A material whose only texture statement is its neutral layer list.
+ * A material whose only texture statement is its neutral layer list (MATERIAL_LAYERS_SHADER).
  *
  * A publisher that does not carry StarCraft II's standard-material payload still says which
  * logical resource each layer wants, in the bounded native envelope every model facet writes.
@@ -21,8 +25,6 @@ import { uvmImageTexels } from './images.js'
  * This shader identity is the renderer's own view of the document, assembled here. Nothing is
  * written back, and no material model is claimed beyond "these layers name these resources".
  */
-export const MATERIAL_LAYERS_SHADER = 'modkit.material-layers.v1'
-
 function layerList(material: JsonObject): { label: string; path: string }[] {
   const extras = field(material['extras'], 'modkit')
   const native = extras === undefined ? undefined : field(extras, 'material')

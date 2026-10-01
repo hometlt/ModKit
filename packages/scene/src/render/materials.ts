@@ -16,6 +16,7 @@ import { sceneTexturePixels } from './compressed-textures.js'
 import type { NormalMapFormat } from '@modkit/codec-kit/legacy/models/material'
 import {
   createStandardMaterialPrograms,
+  MATERIAL_LAYERS_SHADER,
   RENDER_MATERIAL_SHADER,
   type StandardMaterialProgram,
 } from '../materials/index.js'
@@ -149,6 +150,11 @@ export function createSceneMaterialProgramSampler(
       continue
     }
     if (material.shader === undefined) {
+      entries.push({ kind: 'skip', diagnostics: skipped })
+      continue
+    }
+    // a neutral layer list is drawn by the base route (its diffuse layer): nothing is unsupported
+    if (material.shader.id === MATERIAL_LAYERS_SHADER) {
       entries.push({ kind: 'skip', diagnostics: skipped })
       continue
     }
