@@ -71415,8 +71415,10 @@ function normalSwizzleOf(encoding) {
 function transformedTerrainUv(uv, transform) {
   return transform === void 0 ? uv : transformTerrainUv(uv, transform);
 }
-function terrainSurfaceUv(cell, local, sampleTransform, materialTransform) {
-  const inCell = transformedTerrainUv(local, sampleTransform);
+function terrainSurfaceUv(cell, local, sample, materialTransform) {
+  const corners = sample?.cornerUv;
+  const [x, y] = local;
+  const inCell = corners === void 0 ? transformedTerrainUv(local, sample?.uvTransform) : [0, 1].map((axis) => (1 - x) * (1 - y) * corners[0][axis] + x * (1 - y) * corners[1][axis] + x * y * corners[2][axis] + (1 - x) * y * corners[3][axis]);
   return transformedTerrainUv([cell.x + inCell[0], cell.y + inCell[1]], materialTransform);
 }
 function atlasGrid(rows, texture) {
@@ -73289,7 +73291,7 @@ function prepareWorldStaticTerrain(input, sampleSharedModel) {
       `${item.x + 1}:${item.y + 1}`,
       `${item.x}:${item.y + 1}`
     ];
-    const split = Math.abs(corners[0][1] - corners[2][1]) <= Math.abs(corners[1][1] - corners[3][1]) ? SPLIT_AC : SPLIT_BD;
+    const split = cornerAlphaSplit(materialByCell.get(`${item.x}:${item.y}`)) ?? (Math.abs(corners[0][1] - corners[2][1]) <= Math.abs(corners[1][1] - corners[3][1]) ? SPLIT_AC : SPLIT_BD);
     drawnCells.set(`${item.x}:${item.y}`, {
       item,
       patches: [
@@ -73405,7 +73407,7 @@ function prepareWorldStaticTerrain(input, sampleSharedModel) {
       const quad = patch.positions;
       const cornerAo = patch.locals.map(([x, y]) => terrainAoAt(item.x + x, item.y + y));
       const materialSample = materialByCell.get(`${item.x}:${item.y}`);
-      const drawOverlay = (materialId, depth, uvAt, atlasLayer = false) => {
+      const drawOverlay = (materialId, depth, uvAt, atlasLayer = false, cornerAlpha) => {
         const definition2 = input.terrainMaterials?.find((candidate) => candidate.materialId === materialId);
         const texture2 = definition2?.baseColorResourceId === void 0 ? void 0 : input.terrainTextures?.get(definition2.baseColorResourceId);
         if (texture2 === void 0)
@@ -73431,7 +73433,12 @@ function prepareWorldStaticTerrain(input, sampleSharedModel) {
         };
         decals.set(key3, target);
         const uvs = patch.locals.map((local) => uvAt(local, definition2, texture2));
-        const aoColors = cornerAo.map((ao) => [1, 1, 1, ao]);
+        const aoColors = patch.locals.map(([x, y], corner) => [
+          cornerAlpha === void 0 ? 1 : (1 - x) * (1 - y) * cornerAlpha[0] + x * (1 - y) * cornerAlpha[1] + x * y * cornerAlpha[2] + (1 - x) * y * cornerAlpha[3],
+          1,
+          1,
+          cornerAo[corner]
+        ]);
         for (const index of [0, 1]) {
           pushTexturedTriangle(target, tri(quad, index), tri(uvs, index), tri(aoColors, index), tri(cornerNormals, index));
           pushCellCoordinates(target, item, tri(patch.locals, index));
@@ -73439,12 +73446,12 @@ function prepareWorldStaticTerrain(input, sampleSharedModel) {
         terrainDecalTriangles += 2;
       };
       const groundLayer = materialSample?.layers?.[0];
-      const drawUpperLayers = () => materialSample?.layers?.slice(1).forEach((layer2, index) => drawOverlay(layer2.materialId, index + 1, (local, definition2, texture2) => definition2.atlas === void 0 ? terrainSurfaceUv(item, local, void 0, definition2.uvTransform) : atlasTileUv(local, definition2.atlas, texture2, layer2.tile), true));
+      const drawUpperLayers = () => materialSample?.layers?.slice(1).forEach((layer2, index) => drawOverlay(layer2.materialId, index + 1, (local, definition2, texture2) => definition2.atlas === void 0 ? terrainSurfaceUv(item, local, void 0, definition2.uvTransform) : atlasTileUv(local, definition2.atlas, texture2, layer2.tile), true, layer2.cornerAlpha));
       const drawDecal = () => {
         const decal = materialSample?.decal;
         if (decal === void 0)
           return;
-        drawOverlay(decal.materialId, Number.MAX_SAFE_INTEGER, (local, definition2) => terrainSurfaceUv(item, local, decal.uvTransform, definition2.uvTransform));
+        drawOverlay(decal.materialId, Number.MAX_SAFE_INTEGER, (local, definition2) => terrainSurfaceUv(item, local, decal, definition2.uvTransform));
       };
       if (exactRasterSplat !== void 0) {
         const [uvA, uvB, uvC, uvD] = patch.locals.map((local) => rasterUv(item.x + local[0], item.y + local[1]));
@@ -73503,7 +73510,7 @@ function prepareWorldStaticTerrain(input, sampleSharedModel) {
         };
         splat.set(key3, target);
         const coordinates2 = resolvedSplat.map((layer2) => {
-          const transform = (uv) => terrainSurfaceUv(item, uv, materialSample?.uvTransform, layer2.definition.uvTransform);
+          const transform = (uv) => terrainSurfaceUv(item, uv, materialSample, layer2.definition.uvTransform);
           const [uvA, uvB, uvC, uvD] = patch.locals.map(transform);
           return { first: tri([uvA, uvB, uvC, uvD], 0), second: tri([uvA, uvB, uvC, uvD], 1) };
         });
@@ -73533,7 +73540,7 @@ function prepareWorldStaticTerrain(input, sampleSharedModel) {
           ...atlas === void 0 ? {} : { atlas, secondaryTextureCoordinates: [] }
         };
         textured.set(key3, target);
-        const uv = (local) => groundLayer !== void 0 && material?.atlas !== void 0 ? atlasTileUv(local, material.atlas, texture, groundLayer.tile) : terrainSurfaceUv(item, local, materialSample?.uvTransform, material?.uvTransform);
+        const uv = (local) => groundLayer !== void 0 && material?.atlas !== void 0 ? atlasTileUv(local, material.atlas, texture, groundLayer.tile) : terrainSurfaceUv(item, local, materialSample, material?.uvTransform);
         const [uvA, uvB, uvC, uvD] = patch.locals.map(uv);
         pushTexturedTriangle(target, tri(quad, 0), tri([uvA, uvB, uvC, uvD], 0), color2, tri(cornerNormals, 0));
         pushCellCoordinates(target, item, tri(patch.locals, 0));
@@ -75011,8 +75018,10 @@ void main() {
   lighting += fillLight(resolvedNormal, fillLightDirection1, fillLightRadiance1) * diffuseScale * mix(1.0, ao, fillUsesVertexAo1);
   vec4 surface = vertexColor;
   float terrainSpecular = 0.0;
-  // A decal's colour alpha is its AO; its coverage is the texture's own alpha.
-  if (terrainSurface) surface.a = 1.0;
+  // A terrain surface's colour alpha is its AO; a decal's red is its coverage at the cell's corners,
+  // which the texture's own alpha multiplies.
+  if (terrainDecal > 0.5) surface = vec4(1.0, 1.0, 1.0, vertexColor.r);
+  else if (terrainSurface) surface.a = 1.0;
   if (textured > 0.5) surface *= baseColorSample(textureCoordinate);
   if (teamColorMode > 0.5) {
     vec3 teamMask = vec3(1.0);
@@ -77894,6 +77903,20 @@ var SPLIT_BD = [
   [1, 2, 3],
   [1, 3, 0]
 ];
+function cornerAlphaSplit(sample) {
+  for (const layer2 of sample?.layers?.slice(1) ?? []) {
+    const alpha = layer2.cornerAlpha;
+    if (alpha === void 0)
+      continue;
+    const odd = alpha.findIndex((value, corner) => {
+      const others = alpha.filter((_, index) => index !== corner);
+      return others.every((other) => other === others[0] && other !== value);
+    });
+    if (odd >= 0)
+      return odd % 2 === 0 ? SPLIT_BD : SPLIT_AC;
+  }
+  return void 0;
+}
 var MAXIMUM_FILL_LIGHTS = 2;
 var WORLD_TEXTURE_KEY_SAMPLES = 256;
 var WATER_SURFACE_NORMAL = [0, 1, 0];
