@@ -148,6 +148,7 @@
         "title": "%command.updateExtension%",
         "icon": "$(sync)"
       },
+      { "command": "modkit.game.configureLaunch", "title": "%command.configureLaunch%" },
       {
         "command": "modkit.game.launchActiveMap",
         "title": "%command.launchActiveMap%",
@@ -597,33 +598,23 @@
         },
         "configurationSnippets": [
           {
-            "label": "%debugger.launch.sc2Map%",
+            "label": "%debugger.launch.map%",
             "body": {
               "type": "modkit-launch",
               "request": "launch",
-              "name": "%debugger.launch.sc2MapName%",
+              "name": "%debugger.launch.mapName%",
               "kind": "map",
-              "options": {
-                "triggerDebug": false,
-                "difficulty": 2,
-                "speed": 2,
-                "meleeMod": "Void",
-                "preload": true,
-                "noUserCheats": true,
-                "reloadCheck": false,
-                "testMod": "",
-                "testConfig": ""
-              }
+              "options": {}
             }
           },
           {
-            "label": "%debugger.launch.sc2Mod%",
+            "label": "%debugger.launch.mod%",
             "body": {
               "type": "modkit-launch",
               "request": "launch",
-              "name": "%debugger.launch.sc2ModName%",
+              "name": "%debugger.launch.modName%",
               "kind": "mod",
-              "options": { "map": "", "triggerDebug": false }
+              "options": {}
             }
           }
         ]
@@ -1288,6 +1279,7 @@
     "onCommand:modkit.extensions.removeGameSupport",
     "onCommand:modkit.extensions.removeVendorSupport",
     "onCommand:modkit.extensions.update",
+    "onCommand:modkit.game.configureLaunch",
     "onCommand:modkit.game.launchActiveMap",
     "onCommand:modkit.game.launchActiveMod",
     "onCommand:modkit.indexCaches",

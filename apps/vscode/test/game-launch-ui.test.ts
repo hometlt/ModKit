@@ -1,6 +1,9 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
   gameLaunchConfiguration,
+  gameLaunchConfigurationFor,
   gameLogFindingsByFile,
   launchTargetOf,
 } from '../src/game-launch-ui.js'
@@ -37,5 +40,31 @@ describe('the VS Code launch surface', () => {
       ['C:/Maps/A.SC2Map/MapScript.galaxy', ['a', 'c']],
       ['C:/Maps/A.SC2Map', ['b']],
     ])
+  })
+
+  it('configures a launch with the options its game declares, at their defaults (8.8)', () => {
+    const configuration = gameLaunchConfigurationFor('Launch map (blizzard/starcraft2)', {
+      triggerDebug: { type: 'boolean', default: false },
+      difficulty: { type: 'integer', minimum: 1, maximum: 7, default: 2 },
+      testMod: { type: 'string', path: true },
+    })
+    expect(configuration).toEqual({
+      type: 'modkit-launch',
+      request: 'launch',
+      name: 'Launch map (blizzard/starcraft2)',
+      kind: 'map',
+      // an option without a default is left for the user
+      options: { difficulty: 2, triggerDebug: false },
+    })
+    // it reads back as the configuration F5 launches
+    expect(gameLaunchConfiguration(configuration).options).toEqual(configuration['options'])
+    // the manifest offers the command and names no game's options itself
+    const manifest = JSON.parse(
+      readFileSync(join(import.meta.dirname, '..', 'package.json'), 'utf8'),
+    ) as { contributes: { commands: { command: string }[]; debuggers: unknown[] } }
+    expect(manifest.contributes.commands.map(row => row.command)).toContain(
+      'modkit.game.configureLaunch',
+    )
+    expect(JSON.stringify(manifest.contributes.debuggers)).not.toMatch(/triggerDebug|sc2/iu)
   })
 })

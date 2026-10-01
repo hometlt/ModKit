@@ -235,6 +235,11 @@ const EN_MESSAGES = Object.freeze({
   'vscode.strings.refPrompt': 'Compare with the file at a git revision',
   'vscode.strings.refPlaceholder': 'HEAD~1, a tag or a commit hash',
   'vscode.strings.noGit': 'Only a file on disk inside a git repository has revisions.',
+  'vscode.launch.noOptions': 'No installed game declares launch options.',
+  'vscode.launch.pickGame': 'Launch options of which game?',
+  'vscode.launch.noFolder':
+    'Open a folder first: a launch configuration is kept in its launch.json.',
+  'vscode.launch.configurationName': 'Launch map ({game})',
   'vscode.strings.noChanges': 'No string was added or changed since {ref} ({deleted} removed).',
   'vscode.strings.staged':
     '{count} strings of {locale} added or changed since {ref} ({added} added, {modified} changed, {deleted} removed) are in the new document.',
@@ -793,6 +798,11 @@ const RU_MESSAGES: Readonly<Record<keyof typeof EN_MESSAGES, string>> = Object.f
   'vscode.strings.refPrompt': 'Сравнить с файлом в ревизии git',
   'vscode.strings.refPlaceholder': 'HEAD~1, тег или хеш коммита',
   'vscode.strings.noGit': 'Ревизии есть только у файла на диске внутри репозитория git.',
+  'vscode.launch.noOptions': 'Ни одна установленная игра не объявляет параметры запуска.',
+  'vscode.launch.pickGame': 'Параметры запуска какой игры?',
+  'vscode.launch.noFolder':
+    'Сначала откройте папку: конфигурация запуска хранится в её launch.json.',
+  'vscode.launch.configurationName': 'Запуск карты ({game})',
   'vscode.strings.noChanges': 'С {ref} строки не добавлялись и не менялись (удалено: {deleted}).',
   'vscode.strings.staged':
     '{count} строк {locale}, добавленных или изменённых с {ref} (добавлено {added}, изменено {modified}, удалено {deleted}), — в новом документе.',

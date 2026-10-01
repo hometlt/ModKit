@@ -5,7 +5,11 @@
  */
 import { basename, dirname } from 'node:path'
 import type { JsonValue } from '@modkit/sdk'
-import type { GameLaunchLogDiagnostic, GameLaunchResource } from '@modkit/sdk/games'
+import type {
+  GameLaunchLogDiagnostic,
+  GameLaunchOptionSchema,
+  GameLaunchResource,
+} from '@modkit/sdk/games'
 
 export const VSCODE_GAME_LAUNCH_MOD_COMMAND = 'modkit.game.launchActiveMod'
 export const VSCODE_GAME_LAUNCH_DEBUG_TYPE = 'modkit-launch'
@@ -56,6 +60,29 @@ export function gameLaunchConfiguration(value: Readonly<Record<string, unknown>>
         ? (options as Readonly<Record<string, JsonValue>>)
         : {},
   })
+}
+
+/**
+ * A `modkit-launch` configuration with the options its game's launch-plan offer declares, each at
+ * its default (plan 8.8): written by «Configure Game Launch», so the options of any game reach
+ * `launch.json` without the app knowing them. An option without a default is left for the user.
+ */
+export function gameLaunchConfigurationFor(
+  name: string,
+  options: Readonly<Record<string, GameLaunchOptionSchema>>,
+): Readonly<Record<string, JsonValue>> {
+  const values: Record<string, JsonValue> = {}
+  for (const key of Object.keys(options).sort()) {
+    const value = options[key]?.default
+    if (value !== undefined) values[key] = value
+  }
+  return {
+    type: VSCODE_GAME_LAUNCH_DEBUG_TYPE,
+    request: 'launch',
+    name,
+    kind: 'map',
+    options: values,
+  }
 }
 
 /** A log's findings by file; findings that name no file go to the launched package. */

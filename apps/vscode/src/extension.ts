@@ -106,6 +106,7 @@ import { encodeRgbaPng } from '@modkit/scene/output/png'
 import {
 discoverGameInstallations,
 gameInstallationSearchOf,
+gameLaunchOptionsOf,
 interpretGameLaunchLog,
 planGameLaunch,
 } from '@modkit/host/games'
@@ -264,6 +265,7 @@ type ExplicitGameLaunchRequest,
 } from './game-launch-workflow.js'
 import {
 gameLaunchConfiguration,
+gameLaunchConfigurationFor,
 gameLogFindingsByFile,
 launchTargetOf,
 VSCODE_GAME_LAUNCH_DEBUG_TYPE,
@@ -11508,6 +11510,45 @@ async function activateModkit(
         void launchGame(undefined, configured.kind ?? 'map', configured)
         return undefined
       },
+    }),
+    /*
+     * «Configure Game Launch» (plan 8.8, MK2's «Configure Map Launch»): a configuration with the
+     * options the game declares, at their defaults, added to the folder's launch.json and shown.
+     */
+    vscode.commands.registerCommand('modkit.game.configureLaunch', async () => {
+      const games = gameLaunchOptionsOf(host.services.inventory)
+      if (games.size === 0) {
+        void vscode.window.showInformationMessage(
+          `Modkit: ${localizer.text('vscode.launch.noOptions')}`,
+        )
+        return false
+      }
+      const gameId =
+        games.size === 1
+          ? [...games.keys()][0]
+          : await vscode.window.showQuickPick([...games.keys()].sort(), {
+              title: localizer.text('vscode.launch.pickGame'),
+            })
+      const options = gameId === undefined ? undefined : games.get(gameId)
+      if (gameId === undefined || options === undefined) return false
+      const folders = vscode.workspace.workspaceFolders ?? []
+      const folder = folders.length > 1 ? await vscode.window.showWorkspaceFolderPick() : folders[0]
+      if (folder === undefined) {
+        void vscode.window.showWarningMessage(`Modkit: ${localizer.text('vscode.launch.noFolder')}`)
+        return false
+      }
+      const launch = vscode.workspace.getConfiguration('launch', folder.uri)
+      const configured = launch.inspect<unknown[]>('configurations')?.workspaceFolderValue ?? []
+      const name = localizer.text('vscode.launch.configurationName', { game: gameId })
+      await launch.update(
+        'configurations',
+        [...configured, gameLaunchConfigurationFor(name, options)],
+        vscode.ConfigurationTarget.WorkspaceFolder,
+      )
+      await vscode.window.showTextDocument(
+        vscode.Uri.joinPath(folder.uri, '.vscode', 'launch.json'),
+      )
+      return true
     }),
 
     /** Re-run the active subject route; relation/tree stages refresh from the new descriptor. */
