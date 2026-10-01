@@ -51,7 +51,7 @@ import {
   type ImageEditing,
   type ImageEditSurface,
 } from '../image-editing/index.js'
-import { collectEncodedMedia } from '../media/encoded.js'
+import { canvasPng, collectEncodedMedia } from '../media/encoded.js'
 import { formatEntryBytes } from '../namespace/index.js'
 import { frameFileName, gridFrames, shownRegion } from './frames.js'
 import {
@@ -1221,9 +1221,8 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
         paint()
         void (async () => {
           try {
-            const { encodePng } = await import('@modkit/codec-kit/raster')
             const scratch = root.ownerDocument.createElement('canvas')
-            const scratchContext = scratch.getContext('2d', { willReadFrequently: true })
+            const scratchContext = scratch.getContext('2d')
             if (scratchContext === null) throw new TypeError('2d canvas context is unavailable')
             const files: ImageExportFile[] = []
             for (const [index, region] of list.entries()) {
@@ -1242,16 +1241,10 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
                 crop.width,
                 crop.height,
               )
-              const pixels = scratchContext.getImageData(0, 0, crop.width, crop.height)
               files.push({
                 name: frameFileName(baseName, index, list.length, region.name),
                 mediaType: 'image/png',
-                bytes: await encodePng(
-                  crop.width,
-                  crop.height,
-                  new Uint8Array(pixels.data.buffer),
-                  scope.signal,
-                ),
+                bytes: await canvasPng(scratch),
               })
             }
             const outcome = await write(files, scope.signal)

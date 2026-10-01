@@ -11,6 +11,7 @@ import {
 } from '../viewer/index.js'
 import { createMediaShell, MEDIA_ZOOM_CHOICES, mediaFacts } from '../media-shell/index.js'
 import type { ImageExportFile, ImageExportOutcome } from '../image/index.js'
+import { canvasPng } from '../media/encoded.js'
 import { type UiLocalizer } from '../localization/index.js'
 import { VECTOR_FALLBACK_MESSAGES } from '../localization/fallback-catalogs.generated.js'
 import { withEnglishUiFallback } from '../localization/fallback.js'
@@ -269,20 +270,13 @@ export function createVectorViewer(options: VectorViewerOptions = {}): ViewerMod
           const context = canvas.getContext('2d')
           if (context === null) throw new TypeError('2d canvas context is unavailable')
           context.drawImage(drawing, 0, 0, width, height)
-          const pixels = context.getImageData(0, 0, width, height)
-          const { encodePng } = await import('@modkit/codec-kit/raster')
           const base = exportName(options.exportBaseName?.(descriptor) ?? 'vector')
           const outcome = await write(
             [
               {
                 name: factor === 1 ? `${base}.png` : `${base}@${factor}x.png`,
                 mediaType: 'image/png',
-                bytes: await encodePng(
-                  width,
-                  height,
-                  new Uint8Array(pixels.data.buffer),
-                  scope.signal,
-                ),
+                bytes: await canvasPng(canvas),
               },
             ],
             scope.signal,

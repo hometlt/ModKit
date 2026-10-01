@@ -14,7 +14,7 @@ import type {
   SubjectCandidateProvider,
 } from '@modkit/sdk'
 import { compareUtf8 } from '@modkit/core'
-import { isKnowledgeTarget } from '@modkit/sdk'
+import { isKnowledgeTarget } from '@modkit/sdk/knowledge'
 import { candidateTargetForField, mountSubjectSelector } from '../selector/index.js'
 
 export interface FieldEditorControlV1 {

@@ -1,18 +1,18 @@
 /** Format-neutral, bounded subject and root-asset selector. */
-import {
-  createSubjectCandidateProvider,
-  loadSubjectCandidatePage,
-  type FieldType,
-  type Lease,
-  type PresentationSlot,
-  type SelectableSubject,
-  type SubjectCandidateProvider,
-  type SubjectCandidateTarget,
-  type SubjectSelectorCompleteness,
-  type SubjectSelectorSource,
-  type SubjectSelectorSummary,
-  type ViewerSources,
+import type {
+  FieldType,
+  Lease,
+  PresentationSlot,
+  SelectableSubject,
+  SubjectCandidateProvider,
+  SubjectCandidateTarget,
+  SubjectSelectorCompleteness,
+  SubjectSelectorSource,
+  SubjectSelectorSummary,
+  ViewerSources,
 } from '@modkit/sdk'
+// the subpath, not the root: a viewer that imports the selector must not carry every sdk schema
+import { createSubjectCandidateProvider, loadSubjectCandidatePage } from '@modkit/sdk/subjects'
 import { unknownSourceLease } from '../viewer/index.js'
 
 /** Translate a portable reference field into the shared selector query without format branches. */

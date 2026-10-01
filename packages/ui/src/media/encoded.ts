@@ -32,3 +32,14 @@ export async function collectEncodedMedia(
   }
   return { mediaType: descriptor.mediaType, bytes }
 }
+
+/**
+ * A canvas's pixels as PNG bytes, through the platform's own encoder. A viewer's export draws on a
+ * canvas anyway; importing codec-kit's raster barrel for its encoder carried every raster codec
+ * (and the sdk schemas they reach) into each viewer bundle.
+ */
+export async function canvasPng(canvas: HTMLCanvasElement): Promise<Uint8Array> {
+  const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png'))
+  if (blob === null) throw new TypeError('the canvas did not encode as PNG')
+  return new Uint8Array(await blob.arrayBuffer())
+}
