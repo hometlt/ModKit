@@ -410,9 +410,10 @@ describe('A4 — ZIP editing on the 13D seam (ADR-HOST-002 Path A)', () => {
       throw new Error(`missing entries: ${[...byPath.keys()].join(', ')}`)
     }
 
-    // a stored entry: the two sizes agree, and saying so is the honest answer, not a missing field
+    // a stored entry: the two sizes agree, which `compression: 'stored'` says; storedSize is given
+    // only where it differs (sdk NamespaceEntry, the host's entry table)
     expect(stored.compression).toBe('stored')
-    expect(stored.storedSize).toBe(stored.size)
+    expect(stored.storedSize).toBeUndefined()
     // a deflated one really is smaller, which is the fact a ratio column exists to show
     expect(deflated.compression).toBe('deflate')
     if (deflated.storedSize === undefined || deflated.size === undefined) throw new Error('sizes')
