@@ -1233,6 +1233,7 @@ async function activateModkit(
       configuredPath ??
       (existsSync(defaultConfig) ? defaultConfig : undefined)
     if (contentSources === undefined) {
+      const finished = timing.phase('content sources (every extension that declares them)')
       contentSources = resolveContentSources({
         extensionRoots: extensionRootPaths(),
         ...(configured === undefined ? {} : { configPath: configured }),
@@ -1290,6 +1291,7 @@ async function activateModkit(
                 ),
             }),
       )
+      void contentSources.finally(finished).catch(() => undefined)
       // Tickets and keys kept before the broker move into it once the sources say whose they are.
       void contentSources
         .then(created => (created === undefined ? undefined : moveKeptTickets(created)))
@@ -13337,6 +13339,12 @@ async function activateModkit(
   }
 
   const activationMs = Date.now() - activationStarted
+  /*
+   * The content sources are composed now, in the background, not at the first open: every open
+   * waits for them (a game file resolves its mod and installation through them), and composing
+   * them took 14 s that the first map opened in a window spent before its codec even started (v83).
+   */
+  if (vscode.workspace.isTrusted) void requireContentSources().catch(() => undefined)
   log(
     `Modkit MK3 ${String((context.extension.packageJSON as { version?: unknown }).version)} activated in ` +
       `${activationMs} ms: ${host.extensions.bundled.length} bundled and ` +
