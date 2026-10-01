@@ -74,6 +74,17 @@ export interface PreparedUvmRender {
   readonly request: SceneRenderRequest
   readonly diagnostics: readonly SceneRendererDiagnostic[]
   readonly rendererId?: string
+  /**
+   * `UV_units.metersPerSourceUnit` of the document, 1 without it: the frame is in metres under one
+   * `uv:units` scale node, so a viewer that draws in source units divides by it (and multiplies
+   * its camera into the frame's space).
+   */
+  readonly metersPerSourceUnit: number
+  /**
+   * The primitives of `request.scene` that are effects, not the model's meshes: particles,
+   * ribbons, projector decals and model particles.
+   */
+  readonly effectPrimitiveIds: readonly string[]
 }
 
 /**
@@ -232,6 +243,15 @@ async function prepareNestedUvmRender(
     binaryByteLength: binary.length,
     ...(signal === undefined ? {} : { signal }),
   })
+  const units = field(document['extensions'], 'UV_units')
+  const metersPerSourceUnit = units === undefined ? 1 : field(units, 'metersPerSourceUnit')
+  if (
+    typeof metersPerSourceUnit !== 'number' ||
+    !Number.isFinite(metersPerSourceUnit) ||
+    metersPerSourceUnit <= 0
+  )
+    throw new TypeError('UV_units.metersPerSourceUnit must be a positive finite number')
+  const effectPrimitiveIds: string[] = []
   const modelStates = readUvmModelStates(document, budget.maxScalarBytes, signal)
   const selectedModelState =
     modelState === 'base'
@@ -662,6 +682,7 @@ async function prepareNestedUvmRender(
       ...(signal === undefined ? {} : { signal }),
     })
     primitives.push(...effects.primitives)
+    effectPrimitiveIds.push(...effects.primitives.map(primitive => primitive.id))
     modelParticles = effects.modelParticles
     materials.push(...effects.materials)
     diagnostics.push(...effects.diagnostics)
@@ -690,6 +711,7 @@ async function prepareNestedUvmRender(
       ...(signal === undefined ? {} : { signal }),
     })
     primitives.push(...projected.primitives)
+    effectPrimitiveIds.push(...projected.primitives.map(primitive => primitive.id))
     materials.push(...projected.materials)
   }
   if (input['collisions'] === true) {
@@ -933,6 +955,11 @@ async function prepareNestedUvmRender(
     },
     diagnostics: [...diagnostics, ...modelStateNested.diagnostics, ...nested.diagnostics],
     ...(rendererId === undefined ? {} : { rendererId }),
+    metersPerSourceUnit,
+    effectPrimitiveIds: [
+      ...effectPrimitiveIds,
+      ...nested.primitives.map(primitive => primitive.id),
+    ],
   }
 }
 

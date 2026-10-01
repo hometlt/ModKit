@@ -76,4 +76,45 @@ it('prepares the frame renderUvm draws, without a renderer', async () => {
     Array.from(rendered.camera.viewProjection),
     Array.from(prepared.request.camera.viewProjection),
   )
+  assert.equal(prepared.metersPerSourceUnit, 1)
+  assert.deepEqual(prepared.effectPrimitiveIds, [])
+})
+
+it('names the source unit the frame was scaled from (UV_units)', async () => {
+  const { bytes: scaled } = materializeUvmCore(
+    {
+      info: {
+        scenes: 1,
+        nodes: 1,
+        meshes: 1,
+        primitives: 1,
+        materials: 0,
+        textures: 0,
+        animations: 0,
+        geometryAccess: 'decoded',
+      },
+      nodes: [{ id: 'body', childIds: [], meshIds: ['mesh'], transform: identity }],
+      meshes: [{ id: 'mesh', primitiveIds: ['tri'] }],
+      primitives: [
+        {
+          id: 'tri',
+          topology: 'triangles',
+          positions: Float32Array.from([0, 0, 0, 1, 0, 0, 0, 1, 0]),
+          indices: Uint32Array.from([0, 1, 2]),
+        },
+      ],
+    },
+    {
+      scope: { scopeId: 'model-interchange-v1', version: '1.0.0' },
+      profile: 'UVM/core@1.0',
+      subjectRevision: 'provider-token:inches',
+      options: {
+        assetId: 'fixture/inches',
+        sourceFormat: 'test',
+        units: { metersPerSourceUnit: 0.0254, sourceUnit: 'inch' },
+      },
+    },
+  )
+  const prepared = await prepareUvmRender(scaled, request, { budget })
+  assert.equal(prepared.metersPerSourceUnit, 0.0254)
 })

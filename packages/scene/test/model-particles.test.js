@@ -5,7 +5,7 @@ import { readUvmContainer, writeUvmContainer } from '@modkit/uv/model/container'
 import { ModelEffectSimulation } from '@modkit/codec-kit/model-math/effects-sim'
 import { createUvmParticleGeometry } from '../src/uvm/effect-particles.js'
 import { modelParticleMatrix } from '../src/uvm/model-particles.js'
-import { renderUvm } from '../src/uvm/render.js'
+import { prepareUvmRender, renderUvm } from '../src/uvm/render.js'
 import { renderHeadless } from '../src/render/headless.js'
 
 const identity = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
@@ -240,6 +240,32 @@ test('actual UVM child composition acquires once, samples ages, applies tint and
     captured.scene.primitives.filter(x => x.id.startsWith('uvm-effect-particle-')).length,
     2,
   )
+})
+
+test('a prepared frame names its effect primitives: particles and model particles', async () => {
+  const bytes = child()
+  const models = {
+    async acquire() {
+      return {
+        value: {
+          result: { state: 'converted', bytes, sourceKey: 'child', diagnostics: [] },
+          acquire: models.acquire,
+          async readRaster() {
+            throw new Error('unexpected raster acquisition')
+          },
+        },
+        async release() {},
+      }
+    },
+  }
+  const prepared = await prepareUvmRender(parent(), request, { budget, modelResources: models })
+  const ids = prepared.request.scene.primitives.map(primitive => primitive.id)
+  const effects = new Set(prepared.effectPrimitiveIds)
+  assert.ok(prepared.effectPrimitiveIds.length > 0)
+  assert.ok(prepared.effectPrimitiveIds.every(id => ids.includes(id)))
+  assert.ok(ids.filter(id => id.startsWith('model-particle-')).every(id => effects.has(id)))
+  assert.ok(ids.filter(id => id.startsWith('uvm-effect-particle-')).every(id => effects.has(id)))
+  assert.equal(prepared.metersPerSourceUnit, 1)
 })
 
 test('nested model composition preserves a projective camera chain', async () => {
