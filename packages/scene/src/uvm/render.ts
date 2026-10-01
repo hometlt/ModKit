@@ -62,6 +62,8 @@ export interface UvmRenderOptions {
 /** Read a UVM frame, then invoke the selected standard scene renderer. The request is inert JSON:
  * {schemaVersion:1, viewport:{width,height}, camera:{viewProjection:[16 numbers],viewMatrix?,eyePosition?},
  *  sceneIndex?, modelState?, clipId?, time?, poseSamples?:[{clipId,time,weight,additive?}], materialContext?:{teamColor?,teamColorIntensity?,ambient?,environment?}, collisions?, shadows?, clearColor?, rendererId?}.
+ * A `clipId` is the `id` of a clip in `UV_game_animation_clips` (the publisher's clip id), or
+ * `animation-<index>` of a glTF animation when the document has no clip catalog; `time` is seconds.
  * Native extras are never interpreted here. Unsupported material/effect rendering is reported.
  */
 export interface PreparedUvmRender {
