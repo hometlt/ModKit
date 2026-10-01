@@ -1,5 +1,6 @@
 import { canonicalJsonStringify, ModkitError } from '@modkit/core'
 import { sha256Hex } from '@modkit/codec-kit/crypto/digest'
+import { encodePng } from '@modkit/codec-kit/raster'
 import type { RasterResourcePort, SceneRendererTexture } from '@modkit/sdk'
 import {
   worldModelRequiredBytes,
@@ -319,34 +320,22 @@ async function digest(bytes: Uint8Array): Promise<`sha256:${string}`> {
   return `sha256:${await sha256Hex(bytes)}`
 }
 
-function encodeTga(texture: SceneRendererTexture): Uint8Array {
+/**
+ * A decoded texture as package media: PNG, which the glTF form of UVW reads (SPEC_UVW_GLTF; the
+ * TGA this wrote before was not a glTF image).
+ */
+async function encodeMedia(texture: SceneRendererTexture): Promise<Uint8Array> {
   if (
     !Number.isSafeInteger(texture.width) ||
     !Number.isSafeInteger(texture.height) ||
     texture.width <= 0 ||
     texture.height <= 0 ||
-    texture.width > 0xffff ||
-    texture.height > 0xffff ||
     !(texture.rgba instanceof Uint8Array) ||
     texture.rgba.byteLength !== texture.width * texture.height * 4
   ) {
-    throw new TypeError(`texture ${texture.id} is not tightly packed RGBA8 within TGA dimensions`)
+    throw new TypeError(`texture ${texture.id} is not tightly packed RGBA8`)
   }
-  const bytes = new Uint8Array(18 + texture.rgba.byteLength + 26)
-  const view = new DataView(bytes.buffer)
-  bytes[2] = 2
-  view.setUint16(12, texture.width, true)
-  view.setUint16(14, texture.height, true)
-  bytes[16] = 32
-  bytes[17] = 0x28
-  for (let offset = 0; offset < texture.rgba.byteLength; offset += 4) {
-    bytes[18 + offset] = texture.rgba[offset + 2]!
-    bytes[18 + offset + 1] = texture.rgba[offset + 1]!
-    bytes[18 + offset + 2] = texture.rgba[offset]!
-    bytes[18 + offset + 3] = texture.rgba[offset + 3]!
-  }
-  bytes.set(new TextEncoder().encode('TRUEVISION-XFILE.\0'), bytes.byteLength - 18)
-  return bytes
+  return encodePng(texture.width, texture.height, texture.rgba)
 }
 
 async function drainLayerCatalog(
@@ -585,9 +574,9 @@ async function makePortableUvm(
     [...textures]
       .sort((left, right) => left.id.localeCompare(right.id))
       .map(async (texture, textureOrdinal): Promise<PortableModelTexture> => {
-        const encoded = encodeTga(texture)
+        const encoded = await encodeMedia(texture)
         const localResourceId = `object-model-${String(modelOrdinal).padStart(4, '0')}-texture-${String(textureOrdinal).padStart(4, '0')}`
-        const mediaPath = `media/models/${localResourceId}.tga`
+        const mediaPath = `media/models/${localResourceId}.png`
         return Object.freeze({
           localResourceId,
           mediaPath,
@@ -645,7 +634,7 @@ async function makePortableUvm(
       return image
     }
     matched.add(key)
-    return { ...image, name: texture.id, uri: portable.mediaPath, mimeType: 'image/x-tga' }
+    return { ...image, name: texture.id, uri: portable.mediaPath, mimeType: 'image/png' }
   })
   if ([...textureByName.keys()].some(key => !matched.has(key)))
     throw new TypeError('decoded model texture has no matching UVM image declaration')
@@ -1040,14 +1029,14 @@ export async function materializeWorldToUvpMap(
               throw new TypeError(
                 `terrain texture ${resourceId} could not be decoded for portable packaging`,
               )
-            const bytes = encodeTga(result.texture)
+            const bytes = await encodeMedia(result.texture)
             encodedTotal += bytes.byteLength
             if (encodedTotal > options.maxMediaBytes)
               throw new RangeError(
                 `encoded terrain media exceeds maxMediaBytes ${String(options.maxMediaBytes)}`,
               )
             const localResourceId = `terrain-media-${String(ordinal).padStart(4, '0')}`
-            const mediaPath = `media/terrain/${localResourceId}.tga`
+            const mediaPath = `media/terrain/${localResourceId}.png`
             ordinal += 1
             encoded = Object.freeze({
               bytes,
@@ -1101,14 +1090,14 @@ export async function materializeWorldToUvpMap(
             throw new TypeError(
               `terrain weight raster ${raster.resourceId} decoded with unexpected dimensions`,
             )
-          const bytes = encodeTga(result.texture)
+          const bytes = await encodeMedia(result.texture)
           encodedTotal += bytes.byteLength
           if (encodedTotal > options.maxMediaBytes)
             throw new RangeError(
               `encoded terrain media exceeds maxMediaBytes ${String(options.maxMediaBytes)}`,
             )
           const localResourceId = `terrain-media-${String(ordinal).padStart(4, '0')}`
-          const mediaPath = `media/terrain/${localResourceId}.tga`
+          const mediaPath = `media/terrain/${localResourceId}.png`
           ordinal += 1
           encoded = Object.freeze({
             bytes,
@@ -1168,14 +1157,14 @@ export async function materializeWorldToUvpMap(
               unpackagedWaterResourceIds.add(resourceId)
               continue
             }
-            const bytes = encodeTga(result.texture)
+            const bytes = await encodeMedia(result.texture)
             encodedTotal += bytes.byteLength
             if (encodedTotal > options.maxMediaBytes)
               throw new RangeError(
                 `encoded world media exceeds maxMediaBytes ${String(options.maxMediaBytes)}`,
               )
             const localResourceId = `water-media-${String(ordinal).padStart(4, '0')}`
-            const mediaPath = `media/water/${localResourceId}.tga`
+            const mediaPath = `media/water/${localResourceId}.png`
             ordinal += 1
             encoded = Object.freeze({
               bytes,

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { isModkitError } from '@modkit/core'
+import { decodePngSamples } from '@modkit/codec-kit/raster'
 import type { RasterResourcePort } from '@modkit/sdk'
 import { materializeUvmCore } from '../src/model/materializer.js'
 import { readUvmContainer } from '../src/model/container.js'
@@ -15,22 +16,12 @@ import {
 
 const rgba = Uint8Array.of(255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 255, 255, 255, 0, 128)
 
-function decodeFixtureRaster(bytes: Uint8Array): Uint8Array {
+/** The fixture's own one-byte texture, or a PNG the packer wrote (8-bit RGBA). */
+async function decodeFixtureRaster(bytes: Uint8Array): Promise<Uint8Array> {
   if (bytes.byteLength === 1) return rgba.slice()
-  expect(new TextDecoder().decode(bytes.subarray(bytes.byteLength - 18))).toBe(
-    'TRUEVISION-XFILE.\0',
-  )
-  expect(bytes[2]).toBe(2)
-  expect(bytes[16]).toBe(32)
-  expect(bytes[17]).toBe(0x28)
-  const pixels = new Uint8Array(16)
-  for (let offset = 0; offset < pixels.byteLength; offset += 4) {
-    pixels[offset] = bytes[18 + offset + 2]!
-    pixels[offset + 1] = bytes[18 + offset + 1]!
-    pixels[offset + 2] = bytes[18 + offset]!
-    pixels[offset + 3] = bytes[18 + offset + 3]!
-  }
-  return pixels
+  const image = await decodePngSamples(bytes)
+  expect(image).toMatchObject({ width: 2, height: 2, bitDepth: 8, channels: 4 })
+  return Uint8Array.from(image.samples)
 }
 
 const rasterResources: RasterResourcePort = {
@@ -59,7 +50,7 @@ const rasterResources: RasterResourcePort = {
         height: 2,
         rowStride: 8,
         pixelFormat: 'rgba8',
-        pixels: decodeFixtureRaster(request.bytes),
+        pixels: await decodeFixtureRaster(request.bytes),
       },
     }
   },
@@ -369,9 +360,9 @@ describe('portable UVP map bundle', () => {
     expect([...packed.entries.keys()]).toEqual([
       'uvp.manifest.json',
       'world/main.uvw.json',
-      'media/terrain/terrain-media-0000.tga',
-      'media/water/water-media-0001.tga',
-      'media/water/water-media-0002.tga',
+      'media/terrain/terrain-media-0000.png',
+      'media/water/water-media-0001.png',
+      'media/water/water-media-0002.png',
     ])
     const reopened = await openUvpMapBundle(
       new Map([...packed.entries].map(([path, bytes]) => [path, bytes.slice()])),
@@ -401,8 +392,8 @@ describe('portable UVP map bundle', () => {
     expect([...packed.entries.keys()]).toEqual([
       'uvp.manifest.json',
       'world/main.uvw.json',
-      'media/terrain/terrain-media-0000.tga',
-      'media/terrain/terrain-media-0001.tga',
+      'media/terrain/terrain-media-0000.png',
+      'media/terrain/terrain-media-0001.png',
     ])
     const reopened = await openUvpMapBundle(
       new Map([...packed.entries].map(([path, bytes]) => [path, bytes.slice()])),
@@ -438,7 +429,7 @@ describe('portable UVP map bundle', () => {
     expect([...packed.entries.keys()]).toEqual([
       'uvp.manifest.json',
       'world/main.uvw.json',
-      'media/terrain/terrain-media-0000.tga',
+      'media/terrain/terrain-media-0000.png',
     ])
 
     const detached = new Map(
@@ -464,7 +455,7 @@ describe('portable UVP map bundle', () => {
     const packed = await materializeWorldToUvpMap(source(), options)
     if (packed.state !== 'materialized') throw new Error(JSON.stringify(packed.refusals))
     const tampered = new Map(packed.entries)
-    tampered.set('media/terrain/terrain-media-0000.tga', Uint8Array.of(0))
+    tampered.set('media/terrain/terrain-media-0000.png', Uint8Array.of(0))
     await expect(openUvpMapBundle(tampered, { snapshotId: 'tampered' })).rejects.toSatisfy(
       error => isModkitError(error) && error.code === 'x3.uv/uvp-hash-mismatch',
     )
@@ -502,8 +493,8 @@ describe('portable UVP map bundle', () => {
       'uvp.manifest.json',
       'world/main.uvw.json',
       'models/object-model-0000.uvm.glb',
-      'media/terrain/terrain-media-0000.tga',
-      'media/models/object-model-0000-texture-0000.tga',
+      'media/terrain/terrain-media-0000.png',
+      'media/models/object-model-0000-texture-0000.png',
     ])
     const detached = new Map([...packed.entries].map(([path, bytes]) => [path, bytes.slice()]))
     const packagedModel = detached.get('models/object-model-0000.uvm.glb')!
@@ -512,7 +503,7 @@ describe('portable UVP map bundle', () => {
     expect(Array.isArray(images)).toBe(true)
     const image = (images as { uri?: string; name?: string }[])[0]!
     expect(image.name).toBe('texture.dds')
-    expect(image.uri).toBe('media/models/object-model-0000-texture-0000.tga')
+    expect(image.uri).toBe('media/models/object-model-0000-texture-0000.png')
     const reopened = await openUvpMapBundle(detached, {
       snapshotId: 'detached-model-snapshot',
       rasterResources,
@@ -621,7 +612,7 @@ describe('portable UVP map bundle', () => {
     const images = readUvmContainer(packed.entries.get('models/object-model-0000.uvm.glb')!)
       .document['images'] as { uri: string }[]
     expect(images.map(image => image.uri).sort()).toEqual(
-      ['!fire', 'media/models/object-model-0000-texture-0000.tga'].sort(),
+      ['!fire', 'media/models/object-model-0000-texture-0000.png'].sort(),
     )
   })
 })
