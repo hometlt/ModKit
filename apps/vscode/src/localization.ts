@@ -18,7 +18,7 @@ const EN_MESSAGES = Object.freeze({
   'vscode.verifyMod.title': 'Modkit: Verify Mod',
   'vscode.verifyMod.complete': 'Modkit: {documents} files of the mod checked, issues: {count}.',
   'vscode.verifyMod.incomplete':
-    'Modkit: {documents} files of the mod checked, issues: {count}; some files of the mod were left out.',
+    'Modkit: {documents} files of the mod checked, issues: {count}; the workspace was not read in full (the mod or its dependencies), so some files may be missing.',
   'vscode.host.topology': 'Topology',
   'vscode.host.extensionHost': 'Extension host',
   'vscode.host.codecs': 'Codecs',
@@ -579,7 +579,7 @@ const RU_MESSAGES: Readonly<Record<keyof typeof EN_MESSAGES, string>> = Object.f
   'vscode.verifyMod.title': 'Modkit: Проверить мод',
   'vscode.verifyMod.complete': 'Modkit: проверено файлов мода: {documents}, замечаний: {count}.',
   'vscode.verifyMod.incomplete':
-    'Modkit: проверено файлов мода: {documents}, замечаний: {count}; часть файлов мода не вошла.',
+    'Modkit: проверено файлов мода: {documents}, замечаний: {count}; рабочая область прочитана не целиком (мод или его зависимости), часть файлов могла не войти.',
   'vscode.host.topology': 'Топология',
   'vscode.host.extensionHost': 'Хост расширений',
   'vscode.host.codecs': 'Кодеки',

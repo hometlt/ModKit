@@ -6760,8 +6760,9 @@ async function activateModkit(
                 : undefined
           if (languageId === undefined) {
             // `.xml` and `.txt` commonly have several SC2 meanings. Extension-only routing would
-            // inject the wrong semantic document, so leave the snapshot honestly incomplete.
-            isComplete = false
+            // inject the wrong semantic document, so leave the snapshot honestly incomplete. A file
+            // only another language claims (`Preload.xml`) is simply not part of this snapshot.
+            if (routedLanguageIds.length > 1) isComplete = false
             continue
           }
           const version = open?.version ?? 0
