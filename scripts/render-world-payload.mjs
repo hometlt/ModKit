@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Render a saved world browser payload (world.json + world.bin) with the current Scene WebGL2 renderer.
-// Payloads are written by product-route tests via MODKIT_WORLD_PAYLOAD_OUT; no CASC or conversion runs here.
+// Payloads are written by product-route tests via MODKIT_WORLD_PAYLOAD_OUT (scripts/lib/world-payload.mjs);
+// no CASC or conversion runs here.
 //
 //   node scripts/render-world-payload.mjs --payload <dir> --out <dir> [--cameras <file>] [--size 1280x900]
 //        [--backend gpu|swiftshader] [--time 0] [--shadows 1] [--terrain-only]
@@ -66,33 +67,9 @@ const bundled = await build({
     contents: `
       import { createWorldWebGlRenderer } from './packages/scene/src/world/webgl.ts';
       import { createWorldLatticePlan, drawWorldLattice } from './packages/ui/src/world/lattice.ts';
-      const constructors = { Int8Array, Uint8Array, Uint8ClampedArray, Int16Array, Uint16Array,
-        Int32Array, Uint32Array, Float32Array, Float64Array, DataView };
+      import { reviveWorldPayload } from './scripts/lib/world-payload-revive.mjs';
       const binary = await fetch('/world.bin').then(response => response.arrayBuffer());
-      const revived = new Map();
-      const revive = value => {
-        if (Array.isArray(value)) return value.map(revive);
-        if (value === null || typeof value !== 'object') return value;
-        if ('$bigint' in value) return BigInt(value.$bigint);
-        if ('$typed' in value) {
-          const Constructor = constructors[value.$typed];
-          // One object per offset keeps shared arrays shared; aligned payloads are viewed in place.
-          const shared = revived.get(value.offset);
-          if (shared !== undefined && shared.byteLength === value.byteLength && shared.constructor === Constructor) return shared;
-          const size = Constructor === DataView ? 1 : Constructor.BYTES_PER_ELEMENT;
-          const aligned = value.offset % size === 0;
-          const result = Constructor === DataView
-            ? new DataView(binary, value.offset, value.byteLength)
-            : aligned
-              ? new Constructor(binary, value.offset, value.byteLength / size)
-              : new Constructor(binary.slice(value.offset, value.offset + value.byteLength));
-          revived.set(value.offset, result);
-          return result;
-        }
-        if ('$map' in value) return new Map(value.$map.map(([key, item]) => [revive(key), revive(item)]));
-        return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, revive(item)]));
-      };
-      const payload = revive(await fetch('/world.json').then(response => response.json()));
+      const payload = reviveWorldPayload(await fetch('/world.json').then(response => response.json()), binary);
       if (${values['geometry-only']}) {
         payload.models = new Map();
         payload.terrainTextures = new Map();
