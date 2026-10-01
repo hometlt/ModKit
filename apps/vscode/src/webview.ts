@@ -881,6 +881,11 @@ async function mount(
             .catch((error: unknown) => say(describe(error)))
         },
         // An archive member opens as a tab of its own, addressed through the container VFS.
+        // A question the page cannot show itself: the extension host asks in a modal.
+        async ask(message, choices) {
+          const answer = await bridge.request({ op: 'ask', message, choices })
+          return typeof answer === 'number' ? answer : undefined
+        },
         async openArchiveEntry(entry, preview) {
           const container = focused ?? snapshot.openPath
           if (container === undefined) return

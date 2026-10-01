@@ -870,6 +870,8 @@ export interface VsCodeServeOptions {
   readonly confirmLossyWrite?: (notes: readonly string[]) => Promise<boolean>
   /** Confirm discarding unsaved work; a webview iframe cannot show a modal of its own. */
   readonly confirmClose?: (message: string, savable: boolean) => Promise<CloseAnswer>
+  /** One of a page's choices in a modal (the encoding to save in, say); the index, or undefined. */
+  readonly ask?: (message: string, choices: readonly string[]) => Promise<number | undefined>
   /**
    * A file-manager action inside a container (`container` may be a member archive): the adapter
    * asks for names, confirms deletes, owns the clipboard. `true` when the container changed.
@@ -1992,6 +1994,19 @@ function serveVsCode(
         // No adapter means no way to ask, and discarding silently is the one answer that loses
         // work — so an unanswerable prompt keeps the tab open.
         return (await options.confirmClose?.(request.message, request.savable)) ?? 'cancel'
+      case 'ask': {
+        const choices = Array.isArray(request.choices) ? request.choices : []
+        if (
+          typeof request.message !== 'string' ||
+          request.message.length > 2048 ||
+          choices.length === 0 ||
+          choices.length > 4 ||
+          !choices.every(choice => typeof choice === 'string' && choice.length <= 120)
+        ) {
+          throw new TypeError('a question needs a message and one to four short choices')
+        }
+        return (await options.ask?.(request.message, choices)) ?? null
+      }
       case 'export-files': {
         if (options.exportFiles === undefined) {
           return { state: 'refused', reason: 'this window cannot write exported files' }

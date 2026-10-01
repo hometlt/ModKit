@@ -107,6 +107,8 @@ export interface EditPanelOptions {
   readonly archiveGallery?: ArchiveGalleryOptions
   /** Operations extensions published for the image surface, and how to run one. */
   readonly pixelOperations?: ImageViewerOptions['pixelOperations']
+  /** Ask the person to pick one of `choices` in a modal; the index, or undefined for none. */
+  ask?(message: string, choices: readonly string[]): Promise<number | undefined>
 }
 
 const asRecord = (descriptor: AnyDescriptor): Record<string, unknown> =>
@@ -138,6 +140,32 @@ const pixelSaveHandler = (descriptor: Record<string, unknown>): string | undefin
   descriptorOperations(descriptor).find(item => item.id === 'edit.content' && item.mutatesSource)
     ?.handlerId
 
+/** Whether any pixel is neither opaque nor fully transparent, which DXT1 cannot store. */
+export function hasPartialAlpha(rgba: Uint8Array): boolean {
+  for (let index = 3; index < rgba.length; index += 4) {
+    const alpha = rgba[index] as number
+    if (alpha !== 0 && alpha !== 255) return true
+  }
+  return false
+}
+
+/**
+ * The encodings that keep partial alpha which the codec's own forms offer for `format` (a DDS:
+ * DXT5, and RGBA8 without loss), in that order.
+ */
+export function alphaEncodings(forms: readonly EditOperationForm[]): readonly string[] {
+  const offered = new Set(
+    forms.flatMap(form =>
+      form.fields.flatMap(field =>
+        field.name === 'format' && field.type.kind === 'enum'
+          ? field.type.members.map(member => member.id)
+          : [],
+      ),
+    ),
+  )
+  return ['dxt5', 'rgba8'].filter(id => offered.has(id))
+}
+
 /**
  * Why painted pixels of this subject cannot be saved, or undefined when they can. The Edit section
  * asks before it offers tools, and Save asks again, so the two never disagree.
@@ -164,13 +192,12 @@ export function createVsCodePixelSaver(
     const handlerId = pixelSaveHandler(descriptor)
     if (refusal !== undefined || ports === undefined || handlerId === undefined)
       return { state: 'refused', reason: refusal ?? localizer.text('vscode.edit.nothingHere') }
-    let result
-    try {
-      result = await request.operations.invoke(
+    const encode = (format: string) =>
+      request.operations.invoke(
         handlerId,
         {
           transform: 'replace',
-          format: 'keep',
+          format,
           image: {
             width: request.image.width,
             height: request.image.height,
@@ -179,12 +206,47 @@ export function createVsCodePixelSaver(
         },
         ...(signal === undefined ? [] : [{ signal }]),
       )
-    } catch (error) {
-      return { state: 'refused', reason: error instanceof Error ? error.message : String(error) }
+    // a codec's refusal arrives either way: a rejected result, or a thrown handler failure
+    const attempt = async (format: string) => {
+      try {
+        const result = await encode(format)
+        return isRejected(result)
+          ? { failure: invokeRefusalMessage(result, localizer) }
+          : { result, failure: undefined }
+      } catch (error) {
+        return { failure: error instanceof Error ? error.message : String(error) }
+      }
     }
-    if (isRejected(result)) {
-      return { state: 'refused', reason: invokeRefusalMessage(result, localizer) }
+    let attempted = await attempt('keep')
+    /*
+     * A DXT1 texture cannot keep the semi-transparent pixels an edit gave it, so its own encoding
+     * refuses them. Rather than a dead end, the editor's Save asks which encoding to keep them in
+     * (plan 7.4): DXT5, or RGBA8 without loss. A backup or Save As never asks.
+     */
+    const encodings = alphaEncodings(editOffer(descriptor, { editable: true, localizer }).forms)
+    if (
+      attempted.failure !== undefined &&
+      request.mode !== 'bytes' &&
+      options.ask !== undefined &&
+      encodings.length > 0 &&
+      hasPartialAlpha(request.image.rgba)
+    ) {
+      const picked = await options.ask(
+        localizer.text('vscode.edit.alphaRefused', { reason: attempted.failure }),
+        encodings.map(id =>
+          localizer.text(id === 'dxt5' ? 'vscode.edit.saveDxt5' : 'vscode.edit.saveRgba8'),
+        ),
+      )
+      const chosen = picked === undefined ? undefined : encodings[picked]
+      if (chosen !== undefined) attempted = await attempt(chosen)
     }
+    if (attempted.failure !== undefined || attempted.result === undefined) {
+      return {
+        state: 'refused',
+        reason: attempted.failure ?? localizer.text('vscode.edit.nothingHere'),
+      }
+    }
+    const result = attempted.result
     let plan: AssetEditPlan
     try {
       plan = editPlanFromOperationOutput(result.output)

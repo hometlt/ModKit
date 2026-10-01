@@ -5799,6 +5799,12 @@ async function activateModkit(
     }),
   )
 
+  const ask = async (message: string, choices: readonly string[]): Promise<number | undefined> => {
+    const answer = await vscode.window.showWarningMessage(message, { modal: true }, ...choices)
+    const index = answer === undefined ? -1 : choices.indexOf(answer)
+    return index < 0 ? undefined : index
+  }
+
   const confirmClose = async (message: string, savable: boolean): Promise<CloseAnswer> => {
     const save = localizer.text('vscode.shell.save')
     const discard = localizer.text('vscode.shell.discard')
@@ -8463,6 +8469,7 @@ async function activateModkit(
             },
           }),
       confirmClose,
+      ask,
       confirmLossyWrite,
       ...(openPath === undefined
         ? {}

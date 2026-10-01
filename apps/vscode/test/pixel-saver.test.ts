@@ -5,6 +5,7 @@ import type { AnyDescriptor, AssetEditPlan, OperationSession } from '@modkit/sdk
 import {
   createVsCodePixelSaver,
   editFormFields,
+  hasPartialAlpha,
   pixelSaveRefusal,
   wholeFileBytes,
 } from '../src/edit-panel.js'
@@ -49,6 +50,86 @@ describe('pixel saver', () => {
 
     expect((await save(request)).state).toBe('saved')
     expect(applyPlan).toHaveBeenCalledTimes(1)
+  })
+
+  it('asks for an encoding that keeps partial alpha when the source refuses it (7.4)', async () => {
+    const file = new Uint8Array([0x44, 0x44, 0x53, 0x20])
+    const applyPlan = vi.fn(async () => ({ failed: false, message: 'applied' }))
+    const ask = vi.fn(async (_message: string, choices: readonly string[]) => {
+      expect(choices).toEqual(['Save as DXT5', 'Save uncompressed (RGBA8, lossless)'])
+      return 0
+    })
+    const save = createVsCodePixelSaver({
+      localizer: createVscodeLocalizer('en'),
+      portsFor: () => ({ applyPlan }) as never,
+      reopen: async () => true,
+      lastOutcome: () => undefined,
+      recordOutcome: () => undefined,
+      ask,
+    })
+    const formats: unknown[] = []
+    const invoke = vi.fn(async (_handler: string, input: { format: string }) => {
+      formats.push(input.format)
+      // the codec refuses as the host reports a handler failure: thrown
+      if (input.format === 'keep') throw new Error('DXT1 conversion requires binary alpha')
+      return {
+        state: 'ok',
+        output: {
+          kind: 'edit-plan',
+          plan: planWith([
+            { operation: 'replace', targetId: 't', payload: { kind: 'inline', bytes: file } },
+          ]),
+        },
+      }
+    })
+    // the DDS codec's own form names the encodings it can write
+    const encoding = {
+      key: 'format',
+      label: 'Encoding',
+      type: {
+        kind: 'enum',
+        members: [{ id: 'keep' }, { id: 'dxt1' }, { id: 'dxt5' }, { id: 'rgba8' }],
+      },
+      inputPath: ['format'],
+      initial: 'dxt1',
+    }
+    const descriptor = {
+      operations: [
+        {
+          id: 'edit.content',
+          handlerId: 'image.edit',
+          mutatesSource: true,
+          state: 'available',
+          inputSchema: {
+            $ref: 'modkit://test/dds-edit-content.v1',
+            document: {
+              schemaVersion: 1,
+              forms: [
+                {
+                  id: 'dds-recompress',
+                  label: 'Change the DDS encoding',
+                  summary: 'Re-encodes the base surface.',
+                  baseInput: { transform: 'recompress' },
+                  fields: [encoding],
+                },
+              ],
+            },
+          },
+        },
+      ],
+    } as unknown as AnyDescriptor
+    const request = {
+      descriptor,
+      operations: { invoke } as unknown as OperationSession,
+      image: { width: 1, height: 1, rgba: new Uint8Array([255, 0, 0, 128]) },
+    }
+    expect(hasPartialAlpha(request.image.rgba)).toBe(true)
+    expect((await save(request)).state).toBe('saved')
+    expect(formats).toEqual(['keep', 'dxt5'])
+    expect(applyPlan).toHaveBeenCalledTimes(1)
+    // a backup never asks: it reports the refusal
+    expect((await save({ ...request, mode: 'bytes' })).state).toBe('refused')
+    expect(ask).toHaveBeenCalledTimes(1)
   })
 
   it('offers the paint tools only where Save can write the pixels', async () => {

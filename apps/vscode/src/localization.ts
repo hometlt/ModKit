@@ -463,6 +463,10 @@ const EN_MESSAGES = Object.freeze({
   'vscode.edit.reopenSuccess': '{outcome}; reopening the file to show the new revision',
   'vscode.edit.reopenFailed': '{outcome}; the tab could not be reopened, so this view is stale',
   'vscode.edit.nothingHere': 'Nothing here can change this file',
+  'vscode.edit.alphaRefused':
+    "The file's encoding cannot keep the edited pixels ({reason}). Save them in another encoding?",
+  'vscode.edit.saveDxt5': 'Save as DXT5',
+  'vscode.edit.saveRgba8': 'Save uncompressed (RGBA8, lossless)',
   'vscode.edit.notWholeFile':
     "This format's save does not write a whole file, so its edits cannot go to another file.",
   'vscode.document.saveAsUnsaved':
@@ -1027,6 +1031,10 @@ const RU_MESSAGES: Readonly<Record<keyof typeof EN_MESSAGES, string>> = Object.f
   'vscode.edit.reopenSuccess': '{outcome}; файл открывается заново в новой версии',
   'vscode.edit.reopenFailed': '{outcome}; вкладку не удалось открыть заново, данные устарели',
   'vscode.edit.nothingHere': 'Этот файл нельзя изменить здесь',
+  'vscode.edit.alphaRefused':
+    'Кодировка файла не может сохранить изменённые пиксели ({reason}). Сохранить их в другой кодировке?',
+  'vscode.edit.saveDxt5': 'Сохранить в DXT5',
+  'vscode.edit.saveRgba8': 'Сохранить без сжатия (RGBA8, без потерь)',
   'vscode.edit.notWholeFile':
     'Сохранение этого формата не пишет файл целиком, поэтому правки нельзя записать в другой файл.',
   'vscode.document.saveAsUnsaved':

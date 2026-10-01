@@ -132,6 +132,8 @@ export type ShellRequest =
   | { readonly op: 'document-revert'; readonly path: string }
   /** A webview iframe cannot show a modal of its own, so the prompt happens in the editor. */
   | { readonly op: 'confirm'; readonly message: string; readonly savable: boolean }
+  /** A modal with up to four choices; answers the picked index, or null. */
+  | { readonly op: 'ask'; readonly message: string; readonly choices: readonly string[] }
   /** Show another file in this editor (a gallery pick). */
   /** A file, or with `entry` one member of the container file at `path`. */
   | {
