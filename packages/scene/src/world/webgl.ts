@@ -2,6 +2,7 @@ import { Box3, OrthographicCamera, Raycaster, Sphere, Vector2, Vector3 } from 't
 import type {
   MapModelComponentPlacement,
   MapTerrainMaterialDefinition,
+  MapTerrainMaterialSample,
   MapTerrainWeightRaster,
   MapWaterMaterialDefinition,
   WorldSceneItem,
@@ -1685,18 +1686,29 @@ function transformedTerrainUv(
 }
 
 /**
- * Terrain UV at a cell corner. A sample transform is cell-local (tile rotation/flip); a material
- * transform acts in continuous terrain cell units (world tiling), so repeats cross cell borders
- * without seams. Integer cell offsets are invisible to repeat-wrapped tiles.
+ * Terrain UV at a cell corner. A sample's placement is cell-local (tile rotation/flip, or corner
+ * UVs); a material transform acts in continuous terrain cell units (world tiling), so repeats cross
+ * cell borders without seams. Integer cell offsets are invisible to repeat-wrapped tiles.
  */
 function terrainSurfaceUv(
   cell: Readonly<{ x: number; y: number }>,
   local: readonly [number, number],
-  sampleTransform: Parameters<typeof transformedTerrainUv>[1],
+  sample: Pick<MapTerrainMaterialSample, 'uvTransform' | 'cornerUv'> | undefined,
   materialTransform: Parameters<typeof transformedTerrainUv>[1],
 ): readonly [number, number] {
-  const inCell = transformedTerrainUv(local, sampleTransform)
-  return transformedTerrainUv([cell.x + inCell[0], cell.y + inCell[1]], materialTransform)
+  const corners = sample?.cornerUv
+  const [x, y] = local
+  const inCell =
+    corners === undefined
+      ? transformedTerrainUv(local, sample?.uvTransform)
+      : ([0, 1] as const).map(
+          axis =>
+            (1 - x) * (1 - y) * corners[0][axis] +
+            x * (1 - y) * corners[1][axis] +
+            x * y * corners[2][axis] +
+            (1 - x) * y * corners[3][axis],
+        )
+  return transformedTerrainUv([cell.x + inCell[0]!, cell.y + inCell[1]!], materialTransform)
 }
 
 interface AtlasGrid {
@@ -5030,11 +5042,13 @@ function prepareWorldStaticTerrain(
       `${item.x}:${item.y + 1}`,
     ]
     // Cut along the diagonal with the smaller height difference, so 45° cliff and ramp edges in
-    // either direction stay straight instead of zig-zagging across fixed-diagonal cells.
+    // either direction stay straight instead of zig-zagging across fixed-diagonal cells; a layer
+    // whose coverage singles out one corner cuts it off (MapTerrainMaterialSample.layers).
     const split =
-      Math.abs(corners[0][1] - corners[2][1]) <= Math.abs(corners[1][1] - corners[3][1])
+      cornerAlphaSplit(materialByCell.get(`${item.x}:${item.y}`)) ??
+      (Math.abs(corners[0][1] - corners[2][1]) <= Math.abs(corners[1][1] - corners[3][1])
         ? SPLIT_AC
-        : SPLIT_BD
+        : SPLIT_BD)
     drawnCells.set(`${item.x}:${item.y}`, {
       item,
       patches: [
@@ -5170,9 +5184,9 @@ function prepareWorldStaticTerrain(
       const materialSample = materialByCell.get(`${item.x}:${item.y}`)
       /**
        * A tile over the ground drawn below, same triangles, its alpha blending; lit as the ground is,
-       * with its own normal and specular maps and the ground's AO in colour alpha. `depth` orders the
-       * batches: a cell's upper tileset layers (`layers` after the first) in their order, then the
-       * decal.
+       * with its own normal and specular maps, the ground's AO in colour alpha and its coverage at
+       * the corners in colour red. `depth` orders the batches: a cell's upper tileset layers (`layers`
+       * after the first) in their order, then the decal.
        */
       const drawOverlay = (
         materialId: string,
@@ -5183,6 +5197,7 @@ function prepareWorldStaticTerrain(
           texture: SceneRendererTexture,
         ) => readonly [number, number],
         atlasLayer = false,
+        cornerAlpha?: readonly [number, number, number, number],
       ) => {
         const definition = input.terrainMaterials?.find(
           candidate => candidate.materialId === materialId,
@@ -5231,12 +5246,17 @@ function prepareWorldStaticTerrain(
           readonly [number, number],
           readonly [number, number],
         ]
-        const aoColors = cornerAo.map(ao => [1, 1, 1, ao] as const) as [
-          WorldColor,
-          WorldColor,
-          WorldColor,
-          WorldColor,
-        ]
+        const aoColors = patch.locals.map(([x, y], corner) => [
+          cornerAlpha === undefined
+            ? 1
+            : (1 - x) * (1 - y) * cornerAlpha[0] +
+              x * (1 - y) * cornerAlpha[1] +
+              x * y * cornerAlpha[2] +
+              (1 - x) * y * cornerAlpha[3],
+          1,
+          1,
+          cornerAo[corner]!,
+        ]) as unknown as [WorldColor, WorldColor, WorldColor, WorldColor]
         for (const index of [0, 1] as const) {
           pushTexturedTriangle(
             target,
@@ -5251,22 +5271,25 @@ function prepareWorldStaticTerrain(
       }
       const groundLayer = materialSample?.layers?.[0]
       const drawUpperLayers = () =>
-        materialSample?.layers?.slice(1).forEach((layer, index) =>
-          drawOverlay(
-            layer.materialId,
-            index + 1,
-            (local, definition, texture) =>
-              definition.atlas === undefined
-                ? terrainSurfaceUv(item, local, undefined, definition.uvTransform)
-                : atlasTileUv(local, definition.atlas, texture, layer.tile),
-            true,
-          ),
-        )
+        materialSample?.layers
+          ?.slice(1)
+          .forEach((layer, index) =>
+            drawOverlay(
+              layer.materialId,
+              index + 1,
+              (local, definition, texture) =>
+                definition.atlas === undefined
+                  ? terrainSurfaceUv(item, local, undefined, definition.uvTransform)
+                  : atlasTileUv(local, definition.atlas, texture, layer.tile),
+              true,
+              layer.cornerAlpha,
+            ),
+          )
       const drawDecal = () => {
         const decal = materialSample?.decal
         if (decal === undefined) return
         drawOverlay(decal.materialId, Number.MAX_SAFE_INTEGER, (local, definition) =>
-          terrainSurfaceUv(item, local, decal.uvTransform, definition.uvTransform),
+          terrainSurfaceUv(item, local, decal, definition.uvTransform),
         )
       }
       if (exactRasterSplat !== undefined) {
@@ -5404,7 +5427,7 @@ function prepareWorldStaticTerrain(
         splat.set(key, target)
         const coordinates = resolvedSplat.map(layer => {
           const transform = (uv: readonly [number, number]) =>
-            terrainSurfaceUv(item, uv, materialSample?.uvTransform, layer.definition.uvTransform)
+            terrainSurfaceUv(item, uv, materialSample, layer.definition.uvTransform)
           const [uvA, uvB, uvC, uvD] = patch.locals.map(transform) as [
             readonly [number, number],
             readonly [number, number],
@@ -5465,7 +5488,7 @@ function prepareWorldStaticTerrain(
         const uv = (local: readonly [number, number]) =>
           groundLayer !== undefined && material?.atlas !== undefined
             ? atlasTileUv(local, material.atlas, texture, groundLayer.tile)
-            : terrainSurfaceUv(item, local, materialSample?.uvTransform, material?.uvTransform)
+            : terrainSurfaceUv(item, local, materialSample, material?.uvTransform)
         const [uvA, uvB, uvC, uvD] = patch.locals.map(uv) as [
           readonly [number, number],
           readonly [number, number],
@@ -7479,8 +7502,10 @@ void main() {
   lighting += fillLight(resolvedNormal, fillLightDirection1, fillLightRadiance1) * diffuseScale * mix(1.0, ao, fillUsesVertexAo1);
   vec4 surface = vertexColor;
   float terrainSpecular = 0.0;
-  // A decal's colour alpha is its AO; its coverage is the texture's own alpha.
-  if (terrainSurface) surface.a = 1.0;
+  // A terrain surface's colour alpha is its AO; a decal's red is its coverage at the cell's corners,
+  // which the texture's own alpha multiplies.
+  if (terrainDecal > 0.5) surface = vec4(1.0, 1.0, 1.0, vertexColor.r);
+  else if (terrainSurface) surface.a = 1.0;
   if (textured > 0.5) surface *= baseColorSample(textureCoordinate);
   if (teamColorMode > 0.5) {
     vec3 teamMask = vec3(1.0);
@@ -11619,6 +11644,25 @@ const SPLIT_BD = [
   [1, 2, 3],
   [1, 3, 0],
 ] as const
+
+/**
+ * The diagonal a cell is cut along when an upper layer's corner coverage singles out one corner: the
+ * one between that corner's neighbours, so the blend runs straight across the corner's triangle.
+ */
+function cornerAlphaSplit(
+  sample: MapTerrainMaterialSample | undefined,
+): typeof SPLIT_AC | typeof SPLIT_BD | undefined {
+  for (const layer of sample?.layers?.slice(1) ?? []) {
+    const alpha = layer.cornerAlpha
+    if (alpha === undefined) continue
+    const odd = alpha.findIndex((value, corner) => {
+      const others = alpha.filter((_, index) => index !== corner)
+      return others.every(other => other === others[0] && other !== value)
+    })
+    if (odd >= 0) return odd % 2 === 0 ? SPLIT_BD : SPLIT_AC
+  }
+  return undefined
+}
 
 /** Directionals past the key light that the world shader sums (SC2 rigs ship Key, Fill, Back). */
 const MAXIMUM_FILL_LIGHTS = 2

@@ -785,6 +785,17 @@ export interface MapTerrainMaterialSample {
    */
   readonly uvTransform?: MapTerrainUvTransform
   /**
+   * In place of `uvTransform`, corner by corner: the in-cell coordinates the cell's corners take,
+   * local (0,0), (1,0), (1,1), (0,1), linear over each of the cell's triangles (SAGE cliff cells,
+   * whose texture is stretched over the cell). The material's own transform applies after.
+   */
+  readonly cornerUv?: readonly [
+    readonly [number, number],
+    readonly [number, number],
+    readonly [number, number],
+    readonly [number, number],
+  ]
+  /**
    * A tile drawn over this cell's blended ground with its base colour's alpha (Warzone 2100 decal
    * tiles): the material's texture over the cell, oriented by `uvTransform` as a tile is. Presentation
    * only; the weights stay the ground.
@@ -801,6 +812,14 @@ export interface MapTerrainMaterialSample {
   readonly layers?: readonly Readonly<{
     readonly materialId: string
     readonly tile: Readonly<{ readonly column: number; readonly row: number }>
+    /**
+     * An upper layer's coverage at the cell's corners, local (0,0), (1,0), (1,1), (0,1), 0..1, times
+     * its tile's alpha (SAGE blends: 0 or 1 by blend direction). Linear over each of the cell's two
+     * triangles; where one corner differs from the other three, the cell is cut along the diagonal
+     * between that corner's neighbours, so a diagonal blend runs straight (Generals WorldHeightMap,
+     * OpenSAGE Terrain.frag). Absent: 1 at every corner.
+     */
+    readonly cornerAlpha?: readonly [number, number, number, number]
   }>[]
 }
 

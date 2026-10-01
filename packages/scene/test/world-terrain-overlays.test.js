@@ -190,6 +190,133 @@ describe('world terrain overlays', () => {
     }
   })
 
+  it('blends an upper layer by its corner coverage, a single odd corner cut off straight', () => {
+    const planOf = cornerAlpha =>
+      createWorldWebGlPlan({
+        items: [
+          ...cell(),
+          {
+            facet: 'terrain-materials',
+            id: 'overlay-materials:0',
+            layerId: 'terrain-materials',
+            coordinateSpaceId: 'height-grid',
+            lod: 'exact',
+            x: 0,
+            y: 0,
+            textureIndex: 0,
+            layers: [
+              { materialId: 'grass', tile: { column: 0, row: 0 } },
+              { materialId: 'grass', tile: { column: 1, row: 0 }, cornerAlpha },
+            ],
+          },
+        ],
+        terrainMaterials: [
+          { materialId: 'grass', baseColorResourceId: 'grass.tga', atlas: { rows: 8 } },
+        ],
+        terrainTextures: new Map([['grass.tga', texture('grass.tga', 256, 256)]]),
+      })
+    const vertices = batch =>
+      Array.from({ length: 6 }, (_, vertex) => ({
+        at: [batch.positions[vertex * 3], batch.positions[vertex * 3 + 2]],
+        coverage: batch.colors[vertex * 4],
+        ao: batch.colors[vertex * 4 + 3],
+      }))
+    // a diagonal blend from corner (0,0): the cell is cut between (1,0) and (0,1)
+    const diagonal = vertices(planOf([1, 0, 0, 0]).terrainDecalTriangles[0])
+    assert.deepEqual(
+      diagonal.map(vertex => vertex.at),
+      [
+        [1, 0],
+        [1, 1],
+        [0, 1],
+        [1, 0],
+        [0, 1],
+        [0, 0],
+      ],
+    )
+    for (const vertex of diagonal) {
+      assert.equal(vertex.coverage, vertex.at[0] === 0 && vertex.at[1] === 0 ? 1 : 0)
+      assert.equal(vertex.ao, 1)
+    }
+    // the ground lies on the same triangles
+    const ground = planOf([1, 0, 0, 0]).texturedTriangles[0]
+    assert.deepEqual(
+      Array.from({ length: 6 }, (_, vertex) => [
+        ground.positions[vertex * 3],
+        ground.positions[vertex * 3 + 2],
+      ]),
+      diagonal.map(vertex => vertex.at),
+    )
+    // a blend toward one edge keeps the height field's cut, its coverage linear across the cell
+    const edge = vertices(planOf([0, 1, 1, 0]).terrainDecalTriangles[0])
+    assert.deepEqual(
+      edge.map(vertex => vertex.at),
+      [
+        [0, 0],
+        [1, 0],
+        [1, 1],
+        [0, 0],
+        [1, 1],
+        [0, 1],
+      ],
+    )
+    for (const vertex of edge) assert.equal(vertex.coverage, vertex.at[0])
+    // no corner coverage: the whole tile by its alpha
+    assert.ok(
+      vertices(planOf(undefined).terrainDecalTriangles[0]).every(vertex => vertex.coverage === 1),
+    )
+  })
+
+  it("lays a cell's ground by its corner UVs in place of its tile transform", () => {
+    const plan = createWorldWebGlPlan({
+      items: [
+        ...cell(),
+        {
+          facet: 'terrain-materials',
+          id: 'overlay-materials:0',
+          layerId: 'terrain-materials',
+          coordinateSpaceId: 'height-grid',
+          lod: 'exact',
+          x: 0,
+          y: 0,
+          textureIndex: 0,
+          weights: [{ materialId: 'cliff', weight: 1 }],
+          uvTransform: { offset: [0, 0], scale: [1, 1], rotation: Math.PI / 2 },
+          cornerUv: [
+            [0.25, 0],
+            [0.75, 0],
+            [0.75, 2],
+            [0.25, 2],
+          ],
+        },
+      ],
+      terrainMaterials: [
+        {
+          materialId: 'cliff',
+          baseColorResourceId: 'cliff.tga',
+          uvTransform: { offset: [0, 0], scale: [0.5, 0.5], rotation: 0 },
+        },
+      ],
+      terrainTextures: new Map([['cliff.tga', texture('cliff.tga', 64, 64)]]),
+    })
+    const batch = plan.texturedTriangles[0]
+    for (let vertex = 0; vertex < 6; vertex += 1) {
+      const x = batch.positions[vertex * 3]
+      const z = batch.positions[vertex * 3 + 2]
+      // the corner's UV, then the material's half scale about its centre
+      const corner = [0.25 + 0.5 * x, 2 * z]
+      const expected = corner.map(value => 0.5 + 0.5 * (value - 0.5))
+      assert.ok(
+        Math.abs(batch.textureCoordinates[vertex * 2] - expected[0]) < 1e-9,
+        `u of vertex ${vertex}`,
+      )
+      assert.ok(
+        Math.abs(batch.textureCoordinates[vertex * 2 + 1] - expected[1]) < 1e-9,
+        `v of vertex ${vertex}`,
+      )
+    }
+  })
+
   it('blends a cell decal tile over its ground with the tile orientation', () => {
     const items = [
       ...cell(),
