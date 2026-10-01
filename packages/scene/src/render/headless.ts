@@ -12,6 +12,12 @@ import {
   type SimpleEffectState,
 } from './simple-effect.js'
 import { sampleMaterialTexture } from './materials.js'
+import {
+  applyDrawTeamColor,
+  drawTeamColor,
+  teamMaskTexture,
+  type DrawTeamColor,
+} from './team-color.js'
 import { headlessDepthBias, type SceneDepthBias } from './depth-bias.js'
 import type {
   SceneRenderRequest,
@@ -19,6 +25,7 @@ import type {
   SceneRenderer,
   SceneRendererTexture,
   SceneRendererMaterial,
+  SceneRendererMaterialContext,
   SceneRendererPrimitive,
   SceneRendererDirectionalLight,
   SceneRendererDiagnostic,
@@ -61,6 +68,9 @@ interface Surface {
   alpha: MaterialAlpha
   shading: 'unlit' | 'lambert'
   texture?: SceneRendererTexture
+  teamColor?: DrawTeamColor
+  /** The team colour's mask texture; absent for a `whole` team colour. */
+  teamMask?: SceneRendererTexture
 }
 interface RasterContext {
   width: number
@@ -397,7 +407,11 @@ function rasterizeTriangle(
           alpha * ((a * colors[0][3] + b * colors[1][3] + c * colors[2][3]) / sum),
         )
       }
-      if (surface.texture !== undefined && (uvs !== undefined || effect?.screenUv !== undefined)) {
+      let maskTexel: Vec4 | undefined
+      if (
+        (surface.texture !== undefined || surface.teamMask !== undefined) &&
+        (uvs !== undefined || effect?.screenUv !== undefined)
+      ) {
         // perspective-correct: interpolate attribute/w and 1/w, then divide
         const invW =
           firstWeight * first.invW + secondWeight * second.invW + thirdWeight * third.invW
@@ -427,16 +441,25 @@ function rasterizeTriangle(
             )
             if (screen !== undefined) [u, v] = screen
           }
-          const texel =
-            effect === undefined
-              ? sampleTexture(surface.texture, u, v)
-              : sampleMaterialTexture(surface.texture, u, v, effect.wrapU, effect.wrapV)
-          red *= texel[0]
-          green *= texel[1]
-          blue *= texel[2]
-          alpha = Math.fround(alpha * Math.fround(texel[3]))
+          if (surface.texture !== undefined) {
+            const texel =
+              effect === undefined
+                ? sampleTexture(surface.texture, u, v)
+                : sampleMaterialTexture(surface.texture, u, v, effect.wrapU, effect.wrapV)
+            red *= texel[0]
+            green *= texel[1]
+            blue *= texel[2]
+            alpha = Math.fround(alpha * Math.fround(texel[3]))
+          }
+          if (surface.teamMask !== undefined) maskTexel = sampleTexture(surface.teamMask, u, v)
         }
       }
+      // the team colour tints the albedo, before light: a mask texel weighs it, `whole` is 1
+      if (
+        surface.teamColor !== undefined &&
+        (surface.teamMask === undefined || maskTexel !== undefined)
+      )
+        [red, green, blue] = applyDrawTeamColor(surface.teamColor, [red, green, blue], maskTexel)
       let shade = flatShade
       if (shaded && normals !== undefined && light !== undefined) {
         const smooth = normalize([
@@ -670,6 +693,7 @@ function materialSurfaces(
   materials: readonly SceneRendererMaterial[] | undefined,
   textures: Map<string, SceneRendererTexture>,
   diagnostics: SceneRendererDiagnostic[],
+  context: SceneRendererMaterialContext | undefined,
 ) {
   const surfaces = new Map<string, Surface>()
   for (const material of (materials ?? []).map(bindSimpleEffectTexture)) {
@@ -709,6 +733,16 @@ function materialSurfaces(
     }
     if (texture !== undefined && material.simpleEffect !== undefined)
       texture = { ...texture, filter: 'linear' as const }
+    let teamColor = drawTeamColor(material, context)
+    const teamMask = teamMaskTexture(teamColor, textures)
+    if (teamColor?.maskTexture !== undefined && teamMask === undefined) {
+      diagnostics.push({
+        severity: 'warning',
+        code: 'common.scene/team-color-mask-missing',
+        message: `material ${material.id} names team colour mask ${teamColor.maskTexture}, which the scene did not carry as a 2D texture`,
+      })
+      teamColor = undefined
+    }
     surfaces.set(
       material.id,
       Object.freeze({
@@ -719,6 +753,8 @@ function materialSurfaces(
           : { simpleEffect: readSimpleEffect(material.simpleEffect) as SimpleEffectState }),
         shading,
         ...(texture === undefined ? {} : { texture }),
+        ...(teamColor === undefined ? {} : { teamColor }),
+        ...(teamMask === undefined || teamColor === undefined ? {} : { teamMask }),
       }),
     )
   }
@@ -913,7 +949,7 @@ export async function renderHeadless(request: SceneRenderRequest): Promise<Scene
     frame,
     depth,
     viewProjection: matrix(camera.viewProjection, 'camera viewProjection'),
-    materials: materialSurfaces(scene.materials, textures, diagnostics),
+    materials: materialSurfaces(scene.materials, textures, diagnostics, scene.materialContext),
     light: sceneLight(scene.light),
     previewLighting: readPreviewLighting(scene.lights, scene.ambientLight),
     diagnostics,

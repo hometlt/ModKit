@@ -2,6 +2,7 @@ import type { JsonObject, RasterResourcePort } from '@modkit/sdk'
 import type {
   SceneRendererDiagnostic,
   SceneRendererMaterial,
+  SceneRendererTeamColor,
   SceneRendererTexture,
 } from '@modkit/sdk/renderer'
 import { createStandardMaterialPrograms, RENDER_MATERIAL_SHADER } from '../materials/index.js'
@@ -89,6 +90,67 @@ export function uvmMaterialDrawOrder(
   return {
     ...(typeof depthWrite === 'boolean' ? { depthWrite } : {}),
     ...(typeof priority === 'number' && Number.isFinite(priority) ? { priority } : {}),
+  }
+}
+
+const TEAM_BLENDS = new Set(['multiply', 'add', 'replace', 'overlay', 'lerp'])
+const TEAM_CHANNELS = new Set(['r', 'g', 'b', 'a', 'rgb'])
+
+/**
+ * `UV_game_material_team_color` as the base route draws it: `whole`, or a mask texture (a glTF
+ * texture index, drawn as `uvm-texture-<index>` with the base-colour UVs) weighing it by one
+ * channel, or per channel when the channel is `rgb` or unstated. What that route cannot draw
+ * yet — a vertex-colour or palette-range mask, a mask on other UVs — comes back as `unrendered`.
+ */
+export function uvmMaterialTeamColor(
+  material: JsonObject,
+  baseTexCoord: number,
+): Readonly<{ teamColor?: SceneRendererTeamColor; maskTexture?: number; unrendered?: string }> {
+  const extension = field(material['extensions'], 'UV_game_material_team_color')
+  if (extension === undefined) return {}
+  const team = object(extension, 'team colour')
+  const blend = team['blend'] ?? 'multiply'
+  const strength = team['strength'] ?? 1
+  if (typeof blend !== 'string' || !TEAM_BLENDS.has(blend))
+    return { unrendered: `blend ${String(blend)} is not one the extension names` }
+  if (typeof strength !== 'number' || !Number.isFinite(strength) || strength < 0)
+    return { unrendered: 'its strength is not a nonnegative number' }
+  const defaults = team['defaultColor']
+  const defaultColor =
+    Array.isArray(defaults) &&
+    defaults.length >= 3 &&
+    defaults.slice(0, 3).every(item => typeof item === 'number' && item >= 0 && item <= 1)
+      ? ([defaults[0], defaults[1], defaults[2]] as [number, number, number])
+      : undefined
+  const common = {
+    blend: blend as SceneRendererTeamColor['blend'],
+    ...(strength === 1 ? {} : { strength }),
+    ...(defaultColor === undefined ? {} : { defaultColor }),
+  }
+  const source = team['maskSource']
+  if (source === 'whole') return { teamColor: { mask: 'whole', ...common } }
+  if (source !== 'texture') return { unrendered: `its ${String(source)} mask is not drawn yet` }
+  const mask = object(team['maskTexture'] ?? {}, 'team colour mask texture')
+  const index = mask['index']
+  const texCoord = mask['texCoord'] ?? 0
+  const channel = mask['channel'] ?? 'rgb'
+  if (typeof index !== 'number' || !Number.isSafeInteger(index) || index < 0)
+    return { unrendered: 'its mask names no texture' }
+  if (texCoord !== baseTexCoord)
+    return {
+      unrendered: `its mask reads TEXCOORD_${String(texCoord)}, the base colour another set`,
+    }
+  if (typeof channel !== 'string' || !TEAM_CHANNELS.has(channel))
+    return { unrendered: `its mask channel ${String(channel)} is unknown` }
+  return {
+    teamColor: {
+      mask: {
+        texture: `uvm-texture-${String(index)}`,
+        channel: channel as 'r' | 'g' | 'b' | 'a' | 'rgb',
+      },
+      ...common,
+    },
+    maskTexture: index,
   }
 }
 

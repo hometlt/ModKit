@@ -24,6 +24,8 @@ import { sceneMaterialDraws } from './material-draws.js'
 import { materialWebGlDraws } from './material-webgl.js'
 import { applyTextureFilter } from './texture-filtering.js'
 import { sceneTextureBytes } from '../textures/cube.js'
+import { TEAM_COLOR_GLSL } from '@modkit/codec-kit/model-math/color-remap'
+import { drawTeamColor, teamMaskTexture } from './team-color.js'
 
 const RENDERER_ID = 'modkit.browser-webgl'
 const MAX_DIMENSION = 4_096
@@ -93,7 +95,16 @@ uniform vec2 screenUvTiling;
 uniform float screenUvAngle;
 uniform float screenUvThreshold;
 uniform sampler2D baseColorMap;
+// UV_game_material_team_color: 0 none, 1 whole, 2 weighed by a mask texture
+uniform float teamColorMode;
+uniform sampler2D teamMaskMap;
+// mask channel 0-3, or 4 for one weight per channel
+uniform float teamMaskChannel;
+uniform float teamBlend;
+uniform float teamStrength;
+uniform vec3 teamColor;
 ${PREVIEW_LIGHT_GLSL}
+${TEAM_COLOR_GLSL}
 out vec4 outColor;
 void main() {
   vec4 base = color;
@@ -107,6 +118,15 @@ void main() {
     sampleUv = (mat2(cosine, -sine, sine, cosine) * centered + vec2(0.5)) * screenUvTiling + screenUvOffset;
   }
   if (textured > 0.5) base *= texture(baseColorMap, sampleUv);
+  if (teamColorMode > 0.5) {
+    vec3 mask = vec3(1.0);
+    if (teamColorMode > 1.5) {
+      vec4 texel = texture(teamMaskMap, sampleUv);
+      float channel = teamMaskChannel < 0.5 ? texel.r : teamMaskChannel < 1.5 ? texel.g : teamMaskChannel < 2.5 ? texel.b : texel.a;
+      mask = teamMaskChannel > 3.5 ? texel.rgb : vec3(channel);
+    }
+    base.rgb = modkitTeamColor(base.rgb, mask, teamColor, int(teamBlend + 0.5), teamStrength);
+  }
   if (shaded > 0.5) {
     /*
      * Derivatives of the world position stand in for a normal the geometry did not publish, which
@@ -348,6 +368,12 @@ export async function renderBrowser(request: SceneRenderRequest): Promise<SceneR
   const texturedUniform = uniform('textured')
   const hasNormalsUniform = uniform('hasNormals')
   const baseColorMap = uniform('baseColorMap')
+  const teamColorMode = uniform('teamColorMode'),
+    teamMaskMap = uniform('teamMaskMap'),
+    teamMaskChannel = uniform('teamMaskChannel'),
+    teamBlend = uniform('teamBlend'),
+    teamStrength = uniform('teamStrength'),
+    teamColorUniform = uniform('teamColor')
   const coverageMode = uniform('coverageMode')
   const alphaCutoff = uniform('alphaCutoff')
   const screenUvEnabled = uniform('screenUvEnabled'),
@@ -381,22 +407,42 @@ export async function renderBrowser(request: SceneRenderRequest): Promise<SceneR
         .filter(texture => texture.dimension === 'cube')
         .map(texture => texture.id),
     )
+    const sceneTextures = new Map(
+      (request.scene.textures ?? []).map(texture => [texture.id, texture] as const),
+    )
     const materials = new Map(
-      (request.scene.materials ?? []).map(bindSimpleEffectTexture).map(material => [
-        material.id,
-        Object.freeze({
-          baseColor: material.baseColor,
-          simpleEffect: readSimpleEffect(material.simpleEffect),
-          sourceTexture: (request.scene.textures ?? []).find(
-            texture => texture.id === material.baseColorTexture,
-          ),
-          shading: material.shading ?? 'unlit',
-          texture:
-            material.baseColorTexture === undefined || cubeIds.has(material.baseColorTexture)
-              ? undefined
-              : textures.get(material.baseColorTexture),
-        }),
-      ]),
+      (request.scene.materials ?? [])
+        .map(bindSimpleEffectTexture)
+        .map(material => {
+          let team = drawTeamColor(material, request.scene.materialContext)
+          const mask = teamMaskTexture(team, sceneTextures)
+          if (team?.maskTexture !== undefined && (mask === undefined || !textures.has(mask.id))) {
+            diagnostics.push({
+              severity: 'warning',
+              code: 'common.scene/team-color-mask-missing',
+              message: `material ${material.id} names team colour mask ${team.maskTexture}, which the scene did not carry as a 2D texture`,
+            })
+            team = undefined
+          }
+          return [material.id, team, mask, material] as const
+        })
+        .map(([id, team, mask, material]) => [
+          id,
+          Object.freeze({
+            team,
+            teamMask: team === undefined || mask === undefined ? undefined : mask,
+            baseColor: material.baseColor,
+            simpleEffect: readSimpleEffect(material.simpleEffect),
+            sourceTexture: (request.scene.textures ?? []).find(
+              texture => texture.id === material.baseColorTexture,
+            ),
+            shading: material.shading ?? 'unlit',
+            texture:
+              material.baseColorTexture === undefined || cubeIds.has(material.baseColorTexture)
+                ? undefined
+                : textures.get(material.baseColorTexture),
+          }),
+        ]),
     )
     for (const material of (request.scene.materials ?? []).map(bindSimpleEffectTexture)) {
       if (material.baseColorTexture !== undefined && cubeIds.has(material.baseColorTexture))
@@ -430,6 +476,7 @@ export async function renderBrowser(request: SceneRenderRequest): Promise<SceneR
       if (ambient !== null) gl.uniform1f(ambient, light.ambient)
     }
     if (baseColorMap !== null) gl.uniform1i(baseColorMap, 0)
+    if (teamMaskMap !== null) gl.uniform1i(teamMaskMap, 1)
     let triangles = 0
     for (const draw of sceneMaterialDraws(
       request.scene.primitives,
@@ -514,9 +561,10 @@ export async function renderBrowser(request: SceneRenderRequest): Promise<SceneR
           ? undefined
           : attributeBuffer(gl, normal, primitive.normals, 3)
       const textured = surface?.texture !== undefined
+      const team = effect === undefined ? surface?.team : undefined
       const uvBuffer =
         uv < 0 ||
-        !textured ||
+        (!textured && surface?.teamMask === undefined) ||
         !(primitive.textureCoordinates instanceof Float32Array) ||
         primitive.textureCoordinates.length < vertexCount * 2
           ? undefined
@@ -590,6 +638,35 @@ export async function renderBrowser(request: SceneRenderRequest): Promise<SceneR
           gl.TEXTURE_WRAP_T,
           effect.wrapV === 'repeat' ? gl.REPEAT : gl.CLAMP_TO_EDGE,
         )
+      }
+      const teamMasked = team !== undefined && surface?.teamMask !== undefined
+      if (teamColorMode !== null)
+        gl.uniform1f(
+          teamColorMode,
+          team === undefined ? 0 : !teamMasked ? 1 : uvBuffer === undefined ? 0 : 2,
+        )
+      if (team !== undefined) {
+        if (teamBlend !== null) gl.uniform1f(teamBlend, team.blendIndex)
+        if (teamStrength !== null) gl.uniform1f(teamStrength, team.strength)
+        if (teamColorUniform !== null) gl.uniform3f(teamColorUniform, ...team.color)
+        if (teamMaskChannel !== null)
+          gl.uniform1f(teamMaskChannel, team.channel === 'rgb' ? 4 : team.channel)
+        if (teamMasked) {
+          const mask = surface.teamMask!
+          gl.activeTexture(gl.TEXTURE1)
+          gl.bindTexture(gl.TEXTURE_2D, textures.get(mask.id)!)
+          gl.texParameteri(
+            gl.TEXTURE_2D,
+            gl.TEXTURE_WRAP_S,
+            mask.wrapU === 'clamp' ? gl.CLAMP_TO_EDGE : gl.REPEAT,
+          )
+          gl.texParameteri(
+            gl.TEXTURE_2D,
+            gl.TEXTURE_WRAP_T,
+            mask.wrapV === 'clamp' ? gl.CLAMP_TO_EDGE : gl.REPEAT,
+          )
+          gl.activeTexture(gl.TEXTURE0)
+        }
       }
       let count = vertexCount
       let indexBuffer

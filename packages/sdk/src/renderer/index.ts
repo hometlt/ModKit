@@ -115,6 +115,12 @@ export interface SceneRendererMaterial {
   readonly shading?: SceneRendererShadingModel
   /** Draw back faces too. Absent means the provider's own default, as before. */
   readonly doubleSided?: boolean
+  /**
+   * Team colour as `UV_game_material_team_color` states it (SPEC_UVM §11.2). The base route draws
+   * it; a material program states its own team colour. The colour is the draw's
+   * `materialContext.teamColor`, else `defaultColor`.
+   */
+  readonly teamColor?: SceneRendererTeamColor
   /** Whether the draw writes depth; absent follows `alphaMode` (opaque and mask write, blend does not). */
   readonly depthWrite?: boolean
   /** Among blended draws, a higher priority draws later; equal priorities keep back-to-front. */
@@ -128,6 +134,22 @@ export interface SceneRendererMaterial {
     readonly resourceId: string
     readonly textureId: string
   }[]
+}
+
+/** Where a material's team colour applies and how it combines (`UV_game_material_team_color`). */
+export interface SceneRendererTeamColor {
+  /**
+   * `whole` tints the entire material; a mask texture (a scene texture id, sampled with the
+   * base-colour UVs) weighs it by one channel, or per channel with `rgb`.
+   */
+  readonly mask:
+    | 'whole'
+    | Readonly<{ readonly texture: string; readonly channel: 'r' | 'g' | 'b' | 'a' | 'rgb' }>
+  readonly blend: 'multiply' | 'add' | 'replace' | 'overlay' | 'lerp'
+  /** Weight of the blend, default 1. */
+  readonly strength?: number
+  /** RGB in 0..1, as `materialContext.teamColor`, when the draw names none; default white. */
+  readonly defaultColor?: readonly [number, number, number]
 }
 
 /** Explicit mapping for environment materials. Supplied by the scene, never inferred from a file. */

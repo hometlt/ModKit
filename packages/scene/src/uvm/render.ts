@@ -42,6 +42,7 @@ import {
   uvmMaterialBlendEffect,
   uvmMaterialDrawOrder,
   uvmMaterialShader,
+  uvmMaterialTeamColor,
   uvmMaterialResources,
   acquireUvmMaterialTextures,
 } from './materials.js'
@@ -656,6 +657,12 @@ async function prepareNestedUvmRender(
           'common.uvm/material-features-unrendered',
           `Material ${index} uses shading features beyond the current base-color scene contract.`,
         )
+      const team = uvmMaterialTeamColor(material, texCoord)
+      if (team.unrendered !== undefined)
+        warn(
+          'common.uvm/team-color-unrendered',
+          `Material ${index} team colour is not drawn: ${team.unrendered}.`,
+        )
       const simpleEffect = uvmMaterialBlendEffect(material, () => {
         const { wrapU, wrapV } =
           textureIndex === undefined
@@ -672,6 +679,7 @@ async function prepareNestedUvmRender(
         ...(textureIndex === undefined ? {} : { baseColorTexture: `uvm-texture-${textureIndex}` }),
         doubleSided: material['doubleSided'] === true,
         ...uvmMaterialDrawOrder(material),
+        ...(team.teamColor === undefined ? {} : { teamColor: team.teamColor }),
         ...(shader === undefined ? {} : { shader }),
         ...(simpleEffect === undefined ? {} : { simpleEffect }),
       }
@@ -824,14 +832,16 @@ async function prepareNestedUvmRender(
   // keep its `uvm-texture-<n>`: without it their sprites drew untextured, a white card tinted by the
   // particle colour.
   const materialById = new Map(materials.map(material => [material.id, material]))
-  const usedTextures = new Set(
-    primitives.flatMap(primitive => {
-      const index =
-        materialTextures.get(primitive.materialId ?? '') ??
-        documentTextureIndex(materialById.get(primitive.materialId ?? '')?.baseColorTexture)
-      return index === undefined ? [] : [index]
-    }),
-  )
+  // the base colour of a primitive's material, and the mask of its team colour
+  const drawnTextures = (materialId: string | undefined) => {
+    const material = materialById.get(materialId ?? '')
+    const mask = material?.teamColor?.mask
+    return [
+      materialTextures.get(materialId ?? '') ?? documentTextureIndex(material?.baseColorTexture),
+      mask === undefined || mask === 'whole' ? undefined : documentTextureIndex(mask.texture),
+    ].filter((index): index is number => index !== undefined)
+  }
+  const usedTextures = new Set(primitives.flatMap(primitive => drawnTextures(primitive.materialId)))
   const images =
     rasterResources === undefined
       ? []
@@ -877,13 +887,9 @@ async function prepareNestedUvmRender(
       .map(material => material.id),
   )
   const fallbackTextures = new Set(
-    primitives.flatMap(primitive => {
-      if (drawnByShader.has(primitive.materialId ?? '')) return []
-      const index =
-        materialTextures.get(primitive.materialId ?? '') ??
-        documentTextureIndex(materialById.get(primitive.materialId ?? '')?.baseColorTexture)
-      return index === undefined ? [] : [index]
-    }),
+    primitives.flatMap(primitive =>
+      drawnByShader.has(primitive.materialId ?? '') ? [] : drawnTextures(primitive.materialId),
+    ),
   )
   const decodedImages = new Map<number, Omit<SceneRendererTexture, 'id'>>()
   const failedImages = new Set<number>()
