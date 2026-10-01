@@ -28,7 +28,7 @@ import {
 import { snapshotJson } from '@modkit/codec-kit/json-snapshot'
 import { createModelAnimationSampler } from '@modkit/codec-kit/model/animation'
 import { readUvmContainer } from '@modkit/uv/model/container'
-import { readUvmPrimitiveVisibility } from '@modkit/uv/model/animation-clips'
+import { readUvmAnimationClips, readUvmPrimitiveVisibility } from '@modkit/uv/model/animation-clips'
 import { readUvmTextureColorKeys, validateUvmDocument } from '@modkit/uv/model/validation'
 import { applyColorKeyTransparency } from '@modkit/codec-kit/raster'
 import { createModelSceneSampler } from '../model/sampler.js'
@@ -70,8 +70,9 @@ export interface UvmRenderOptions extends UvmFrameOptions {
  * {schemaVersion:1, viewport:{width,height}, camera:{viewProjection:[16 numbers],viewMatrix?,eyePosition?},
  *  sceneIndex?, modelState?, clipId?, time?, poseSamples?:[{clipId,time,weight,additive?}], materialContext?:{teamColor?,teamColorIntensity?,ambient?,environment?}, collisions?, shadows?, clearColor?, rendererId?, lighting?:'unlit'|'material'}.
  * `lighting: 'material'` shades glTF materials with their own metallic-roughness (`pbr`); KHR_materials_unlit stays unlit.
- * A `clipId` is the `id` of a clip in `UV_game_animation_clips` (the publisher's clip id), or
- * `animation-<index>` of a glTF animation when the document has no clip catalog; `time` is seconds.
+ * A `clipId` is the `id` of a clip in `UV_game_animation_clips` or the publisher's own id it keeps as
+ * `sourceId`, or `animation-<index>` of a glTF animation when the document has no clip catalog;
+ * `time` is seconds.
  * Native extras are never interpreted here. Unsupported material/effect rendering is reported.
  */
 export interface PreparedUvmRender {
@@ -440,11 +441,31 @@ async function prepareNestedUvmRender(
   )
   const meshes = scene.meshes.filter(mesh => activeMeshes.has(mesh.id))
   const activePrimitives = new Set(meshes.flatMap(mesh => mesh.primitiveIds))
-  const clip =
-    clipId === undefined ? undefined : rig.clips.find(candidate => candidate.id === clipId)
+  // the publisher's clip id (the catalog's sourceId) names the clip as its catalog id does
+  const catalogIds = new Map(
+    (readUvmAnimationClips(document, signal) ?? []).flatMap(entry =>
+      entry.sourceId === undefined ? [] : [[entry.sourceId, entry.id] as const],
+    ),
+  )
+  const clipOf = (id: string) =>
+    rig.clips.find(candidate => candidate.id === id) ??
+    rig.clips.find(candidate => candidate.id === catalogIds.get(id))
+  const clip = clipId === undefined ? undefined : clipOf(clipId)
   if (clipId !== undefined && clip === undefined)
     throw new TypeError(`unknown UVM animation clip: ${clipId}`)
-  const poseSamples = readUvmPoseSamples(input['poseSamples'], rig.clips)
+  const requestedPoses = input['poseSamples']
+  const poseSamples = readUvmPoseSamples(
+    Array.isArray(requestedPoses)
+      ? requestedPoses.map(sample => {
+          const id = field(sample, 'clipId')
+          const canonical = typeof id === 'string' ? clipOf(id)?.id : undefined
+          return canonical === undefined || canonical === id
+            ? sample
+            : { ...object(sample, 'pose sample'), clipId: canonical }
+        })
+      : requestedPoses,
+    rig.clips,
+  )
   const visible = new Map<string, boolean>(
     readUvmPrimitiveVisibility(document, signal).map(
       item =>
