@@ -10,11 +10,11 @@ import {
   invokeRefusalMessage,
   isRejected,
   mountFieldEditor
-} from "./chunk-T2ZATGII.js";
+} from "./chunk-U4TV6KLH.js";
 import {
   createMediaShell,
   mountContributedSections
-} from "./chunk-7AYCSCX4.js";
+} from "./chunk-PBSMUV7F.js";
 import {
   MODEL_FALLBACK_MESSAGES,
   MODEL_GIZMO_FALLBACK_MESSAGES,
@@ -29,7 +29,7 @@ import {
   setViewerText,
   unknownSourceLease,
   withEnglishUiFallback
-} from "./chunk-2WG2ZDR7.js";
+} from "./chunk-7K5T5UE4.js";
 import {
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
 } from "./chunk-BLWUC7LO.js";
@@ -3736,7 +3736,7 @@ function createModelViewer(options = {}) {
             billboardCameraPerSample: true
           });
           let scene = orient(player.sample(0, scope.signal));
-          let selectedPrimitive;
+          const hiddenPrimitives = /* @__PURE__ */ new Set();
           let activeClip;
           let timeSeconds = 0;
           let teamColor = [0.851, 0.078, 0.059];
@@ -3765,7 +3765,7 @@ function createModelViewer(options = {}) {
             canvas.height = viewport.height;
             const placement = modelCamera(framing(), camera.basis(), camera.pose.distanceScale, viewport);
             for (const primitive of scene.primitives)
-              if (selectedPrimitive === void 0 || primitive.id === selectedPrimitive)
+              if (!hiddenPrimitives.has(primitive.id))
                 drawPrimitive(canvas, primitive, placement.viewProjection);
             const context = canvas.getContext("2d");
             if (context !== null && skeletonVisible)
@@ -3796,7 +3796,7 @@ function createModelViewer(options = {}) {
             }
             const drawnTime = timeSeconds;
             const joints = scene.joints;
-            const primitives = scene.primitives.filter((item) => selectedPrimitive === void 0 || item.id === selectedPrimitive);
+            const primitives = scene.primitives.filter((item) => !hiddenPrimitives.has(item.id));
             canvas.setAttribute("data-model-primitives", String(primitives.length));
             canvas.setAttribute("data-model-skeleton", String(joints.length));
             if (provider === void 0) {
@@ -3931,21 +3931,43 @@ function createModelViewer(options = {}) {
             canvas.setAttribute("data-model-team-color", "#d9140f");
           }
           if (model.primitiveIds.length > 1) {
-            const selector = element(controlRow(panel.rendering, localizer.text("viewer.modelPrimitive")).field, "select", { part: "model.primitive-selector" });
-            selector.setAttribute("aria-label", localizer.text("viewer.modelPrimitive"));
-            const all = element(selector, "option", {
-              text: localizer.text("viewer.modelAllPrimitives")
-            });
-            all.value = "";
-            for (const id of model.primitiveIds) {
-              const option = element(selector, "option", { text: id });
-              option.value = id;
-            }
-            selector.addEventListener("change", () => {
+            const field = controlRow(panel.rendering, localizer.text("viewer.modelPrimitive")).field;
+            const boxes = /* @__PURE__ */ new Map();
+            const apply = () => {
+              for (const [id, box] of boxes)
+                box.checked = !hiddenPrimitives.has(id);
               generation++;
-              selectedPrimitive = selector.value || void 0;
               redraw();
-            }, { signal: scope.signal });
+            };
+            const bulk = element(field, "div", { part: "model.toolbar" });
+            button(bulk, localizer.text("viewer.modelAllPrimitives"), "", () => {
+              hiddenPrimitives.clear();
+              apply();
+            });
+            button(bulk, localizer.text("viewer.modelNoPrimitives"), "", () => {
+              for (const id of model.primitiveIds)
+                hiddenPrimitives.add(id);
+              apply();
+            });
+            const list2 = element(field, "div", { part: "model.primitive-selector" });
+            list2.setAttribute("role", "group");
+            list2.setAttribute("aria-label", localizer.text("viewer.modelPrimitive"));
+            for (const id of model.primitiveIds) {
+              const line = element(list2, "label");
+              const box = element(line, "input");
+              box.type = "checkbox";
+              box.checked = true;
+              line.append(" ", id);
+              boxes.set(id, box);
+              box.addEventListener("change", () => {
+                if (box.checked)
+                  hiddenPrimitives.delete(id);
+                else
+                  hiddenPrimitives.add(id);
+                generation++;
+                redraw();
+              }, { signal: scope.signal });
+            }
           }
           const conversions = modelConversions(args.descriptor);
           if (conversions.length > 0) {

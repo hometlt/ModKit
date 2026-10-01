@@ -4,7 +4,7 @@ import {
   setPart,
   setState,
   withEnglishUiFallback
-} from "./chunk-2WG2ZDR7.js";
+} from "./chunk-7K5T5UE4.js";
 import {
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
 } from "./chunk-BLWUC7LO.js";
