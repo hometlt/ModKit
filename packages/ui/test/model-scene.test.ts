@@ -194,6 +194,44 @@ describe('model stage materials', () => {
     })
   })
 
+  it('draws a team-colour layer as the base route does (UV_game_material_team_color)', () => {
+    const texel = (id: string) => ({
+      id,
+      width: 1,
+      height: 1,
+      rgba: Uint8Array.of(255, 255, 255, 255),
+    })
+    const textures = new Map([
+      ['unit.dds', texel('texture:unit.dds')],
+      ['mask.dds', texel('texture:mask.dds')],
+    ])
+    const surfaces = sceneMaterials(
+      [
+        // a mask by its alpha channel, mixed in
+        {
+          id: 'masked',
+          layers: [
+            { slot: 'diffuse', resourceId: 'unit.dds' },
+            { slot: 'teamColor', resourceId: 'mask.dds', colorChannels: 8, blend: 'lerp' },
+          ],
+        },
+        // no mask: the whole material
+        { id: 'whole', layers: [{ slot: 'team' }] },
+        // a mask that did not resolve: drawn without
+        { id: 'unresolved', layers: [{ slot: 'team-color', resourceId: 'missing.dds' }] },
+      ],
+      textures,
+      true,
+    )
+    expect(surfaces.materials[0]?.teamColor).toEqual({
+      mask: { texture: 'texture:mask.dds', channel: 'a' },
+      blend: 'lerp',
+    })
+    expect(surfaces.materials[1]?.teamColor).toEqual({ mask: 'whole', blend: 'multiply' })
+    expect(surfaces.materials[2]?.teamColor).toBeUndefined()
+    expect(surfaces.textures.map(texture => texture.id)).toContain('texture:mask.dds')
+  })
+
   it('binds a resolved texture to the layer that names it', () => {
     const refs: readonly ModelMaterialRef[] = [
       { id: 'hull', layers: [{ slot: 'Diffuse' }, { slot: 'diffuse', resourceId: 'hull.dds' }] },
