@@ -94,6 +94,10 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
       }),
     },
   ]
+  const relationsStage = createRelationGraphViewer({
+    localizer: context.localizer,
+    ...(context.graphDepth === undefined ? {} : { depth: context.graphDepth }),
+  })
   return orderStages<PreviewStage>([
     {
       id: 'image',
@@ -280,6 +284,8 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
         ...(context.gameLocale === undefined ? {} : { locale: context.gameLocale }),
         previews: { model: modelViewer() },
         ...(context.textures === undefined ? {} : { textures: context.textures }),
+        // The subject's relations, walked from it, as a section of its card (MK2 had it there).
+        graph: relationsStage,
       }),
       optionalContracts: [
         'common.view/raster-image-source',
@@ -287,6 +293,7 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
         'common.view/video-media-source',
         'common.view/audio-media-source',
         'common.view/subject-selector-source',
+        'common.view/relation-graph-source',
       ],
     },
     {
@@ -326,10 +333,7 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
       id: 'relations',
       label: context.localizer.text('stage.relations'),
       contract: 'common.view/relation-graph-source',
-      module: createRelationGraphViewer({
-        localizer: context.localizer,
-        ...(context.graphDepth === undefined ? {} : { depth: context.graphDepth }),
-      }),
+      module: relationsStage,
     },
     {
       id: 'text',

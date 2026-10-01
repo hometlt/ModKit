@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import type { PresentationSlot, SubjectFactsSource } from '@modkit/sdk'
-import { relatedModelStageInputs } from '../src/card/index.js'
+import type { PresentationSlot, SubjectFactsSource, ViewerModule } from '@modkit/sdk'
+import { embedRelationGraph, relatedModelStageInputs } from '../src/card/index.js'
+import { DEFAULT_UI_LOCALIZER } from '../src/localization/index.js'
+import { ViewerMountScope } from '../src/viewer/index.js'
 
 const scene = { info: async () => ({ nodes: 1, meshes: 1, primitives: 1, materials: 0, animations: 0 }) }
 
@@ -45,5 +47,46 @@ describe('subject card related model', () => {
       new AbortController().signal,
     )
     await expect(sources.get(slot.bindings[0] as never)).rejects.toThrow(/not in any scope/u)
+  })
+
+  it('shows the relations graph, walked from the subject, in a collapsed section', async () => {
+    const scope = new ViewerMountScope()
+    const mounts: { container: unknown; slot: unknown }[] = []
+    let unmounted = false
+    const graph = {
+      abiVersion: 1,
+      async mount(args: { container: unknown; slot: unknown }) {
+        mounts.push(args)
+        return { unmount: () => void (unmounted = true) }
+      },
+    } as unknown as ViewerModule
+    type MountArgs = Parameters<ViewerModule['mount']>[0]
+    const unbound = { slot: { slotId: 'card', bindings: [] } } as unknown as MountArgs
+    expect(embedRelationGraph([], unbound, scope, DEFAULT_UI_LOCALIZER, graph)).toEqual([])
+
+    const slot = {
+      slotId: 'card',
+      bindings: [{ bindingId: 'graph', contract: 'common.view/relation-graph-source', major: 1 }],
+    }
+    const [section] = embedRelationGraph(
+      [],
+      { slot } as unknown as MountArgs,
+      scope,
+      DEFAULT_UI_LOCALIZER,
+      graph,
+    )
+    expect(section).toMatchObject({
+      kind: 'custom',
+      id: 'relations-graph',
+      title: 'Relations graph',
+      expanded: false,
+    })
+    // nothing is walked until the section opens
+    expect(mounts).toEqual([])
+    const host = { dataset: {}, setAttribute() {} } as unknown as HTMLElement
+    if (section?.kind === 'custom') await section.render(host)
+    expect(mounts).toMatchObject([{ container: host, slot }])
+    await scope.close()
+    expect(unmounted).toBe(true)
   })
 })

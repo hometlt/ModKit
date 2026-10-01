@@ -202,10 +202,13 @@ describe('VS Code view policy', () => {
     // The world renderer (and three.js behind it) is imported on first mount, not with the page.
     expect(source).toContain("import('@modkit/ui/world')")
     expect(source).not.toMatch(/from '@modkit\/ui'/u)
-    // the relations graph walks from its root as deep as `modkit.maxGraphHops` says
+    // the relations graph walks from its root as deep as `modkit.maxGraphHops` says, in its own
+    // view and in a section of the subject's card
     expect(source).toMatch(
-      /module: createRelationGraphViewer\(\{\s+localizer: context\.localizer,\s+\.\.\.\(context\.graphDepth === undefined \? \{\} : \{ depth: context\.graphDepth \}\),/u,
+      /const relationsStage = createRelationGraphViewer\(\{\s+localizer: context\.localizer,\s+\.\.\.\(context\.graphDepth === undefined \? \{\} : \{ depth: context\.graphDepth \}\),/u,
     )
+    expect(source).toMatch(/graph: relationsStage,/u)
+    expect(source).toMatch(/module: relationsStage,/u)
     expect(source).not.toContain('@modkit/ui/monaco')
     expect(source).not.toContain('@modkit/ui/settings')
     expect(source).not.toContain('@modkit/ui/workbench')

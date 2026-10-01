@@ -23,6 +23,7 @@ import type {
   SubjectFactsSource,
   SubjectEditTargetResult,
   ViewerModule,
+  ViewerMount,
   ViewerSources,
 } from '@modkit/sdk'
 import { createAccordion, accordionField } from '../primitives/accordion.js'
@@ -1236,6 +1237,8 @@ export interface SubjectCardViewerOptions {
   readonly textures?: ModelViewerOptions['textures']
   /** False drops the card's identity header (a host whose chrome already names the subject). */
   readonly header?: boolean
+  /** The host's relations stage (its default depth) for the card's relations graph section. */
+  readonly graph?: ViewerModule
 }
 
 export function createSubjectCardViewer(options: SubjectCardViewerOptions = {}): ViewerModule {
@@ -1336,7 +1339,13 @@ export function createSubjectCardViewer(options: SubjectCardViewerOptions = {}):
             }
             const sections = await embedRelatedModel(
               address === ownId
-                ? embedPreview(loaded, args, pageScope, localizer, options.previews)
+                ? embedRelationGraph(
+                    embedPreview(loaded, args, pageScope, localizer, options.previews),
+                    args,
+                    pageScope,
+                    localizer,
+                    options.graph,
+                  )
                 : loaded,
               source,
               args,
@@ -1460,27 +1469,81 @@ function embedPreview(
   return sections.map(section =>
     section.kind !== 'links' || section.id !== 'preview'
       ? section
-      : {
-          kind: 'custom' as const,
-          id: 'preview',
-          title: section.title,
-          expanded: true,
-          async render(host: HTMLElement) {
-            setPart(host, 'card.preview')
-            try {
-              const module = previews?.[kind] ?? (await defaultPreviewStage(kind, localizer))
-              if (scope.signal.aborted) return
-              const mount = await module.mount({ ...args, container: host, signal: scope.signal })
-              scope.cleanup(() => mount.unmount())
-            } catch (error) {
-              if (scope.signal.aborted) return
-              host.textContent = localizer.text('card.previewUnavailable', {
-                reason: safeViewerText(error instanceof Error ? error.message : String(error), 256),
-              })
-            }
+      : stageSection(
+          { id: 'preview', title: section.title, expanded: true },
+          scope,
+          localizer,
+          'card.previewUnavailable',
+          async host => {
+            const module = previews?.[kind] ?? (await defaultPreviewStage(kind, localizer))
+            return scope.signal.aborted
+              ? undefined
+              : module.mount({ ...args, container: host, signal: scope.signal })
           },
-        },
+        ),
   )
+}
+
+/**
+ * A card section a standard stage mounts in: a box of its own height that the reader can resize,
+ * torn down with the card page; a stage that fails says why inside the section.
+ */
+function stageSection(
+  section: { readonly id: string; readonly title: string; readonly expanded: boolean },
+  scope: ViewerMountScope,
+  localizer: UiLocalizer,
+  failure: 'card.previewUnavailable' | 'card.relationGraphUnavailable',
+  mountStage: (host: HTMLElement) => Promise<ViewerMount | undefined>,
+): CardSection {
+  return {
+    kind: 'custom',
+    ...section,
+    async render(host: HTMLElement) {
+      setPart(host, 'card.preview')
+      try {
+        const mount = await mountStage(host)
+        if (mount !== undefined) scope.cleanup(() => mount.unmount())
+      } catch (error) {
+        if (scope.signal.aborted) return
+        host.textContent = localizer.text(failure, {
+          reason: safeViewerText(error instanceof Error ? error.message : String(error), 256),
+        })
+      }
+    },
+  }
+}
+
+const RELATION_GRAPH_CONTRACT = 'common.view/relation-graph-source'
+
+/**
+ * The subject's relations inside its card, as MK2 showed them: the host's relations stage, walked
+ * from this subject, with its type filter, depth and direction. Collapsed until opened, so a card
+ * does not walk the graph nobody asked for.
+ */
+export function embedRelationGraph(
+  sections: readonly CardSection[],
+  args: Parameters<ViewerModule['mount']>[0],
+  scope: ViewerMountScope,
+  localizer: UiLocalizer,
+  graph: ViewerModule | undefined,
+): readonly CardSection[] {
+  if (bindingFor(args.slot, RELATION_GRAPH_CONTRACT) === undefined) return sections
+  return [
+    ...sections,
+    stageSection(
+      { id: 'relations-graph', title: localizer.text('card.relationGraph'), expanded: false },
+      scope,
+      localizer,
+      'card.relationGraphUnavailable',
+      async host => {
+        const module =
+          graph ?? (await import('../graph/index.js')).createRelationGraphViewer({ localizer })
+        return scope.signal.aborted
+          ? undefined
+          : module.mount({ ...args, container: host, signal: scope.signal })
+      },
+    ),
+  ]
 }
 
 const RELATED_MODEL_FACETS = [
@@ -1547,33 +1610,19 @@ async function embedRelatedModel(
   const model = (await source.summary(scope.signal)).identity.model
   if (model === undefined) return sections
   const { slot, sources } = relatedModelStageInputs(source, args.slot, scope.signal)
-  const section: CardSection = {
-    kind: 'custom',
-    id: 'model',
-    title: localizer.text('card.preview'),
-    expanded: true,
-    async render(host: HTMLElement) {
-      setPart(host, 'card.preview')
+  const section = stageSection(
+    { id: 'model', title: localizer.text('card.preview'), expanded: true },
+    scope,
+    localizer,
+    'card.previewUnavailable',
+    async host => {
       host.dataset['model'] = model
-      try {
-        const module = previews?.model ?? (await defaultPreviewStage('model', localizer))
-        if (scope.signal.aborted) return
-        const mount = await module.mount({
-          ...args,
-          container: host,
-          slot,
-          sources,
-          signal: scope.signal,
-        })
-        scope.cleanup(() => mount.unmount())
-      } catch (error) {
-        if (scope.signal.aborted) return
-        host.textContent = localizer.text('card.previewUnavailable', {
-          reason: safeViewerText(error instanceof Error ? error.message : String(error), 256),
-        })
-      }
+      const module = previews?.model ?? (await defaultPreviewStage('model', localizer))
+      return scope.signal.aborted
+        ? undefined
+        : module.mount({ ...args, container: host, slot, sources, signal: scope.signal })
     },
-  }
+  )
   const at = sections.findIndex(item => item.kind !== 'header')
   return at < 0
     ? [...sections, section]

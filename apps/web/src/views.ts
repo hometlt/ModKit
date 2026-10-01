@@ -492,6 +492,8 @@ export function createWebPreviewStages(context: WebViewContext): readonly Previe
       ...(context.renderer === undefined ? {} : { renderer: context.renderer }),
       ...(context.textures === undefined ? {} : { textures: context.textures }),
     })
+  // One relations stage: its own view and the section of a subject's card.
+  const relationsStage = createRelationGraphViewer({ localizer })
   return Object.freeze([
     {
       id: 'image',
@@ -561,6 +563,7 @@ export function createWebPreviewStages(context: WebViewContext): readonly Previe
         localizer,
         previews: { model: modelViewer(), audio: audioStage(localizer) },
         ...(context.textures === undefined ? {} : { textures: context.textures }),
+        graph: relationsStage,
       }),
       optionalContracts: [
         'common.view/raster-image-source',
@@ -570,6 +573,7 @@ export function createWebPreviewStages(context: WebViewContext): readonly Previe
         'common.view/audio-media-source',
         'common.view/transport-source',
         'common.view/subject-selector-source',
+        'common.view/relation-graph-source',
       ],
     },
     {
@@ -594,7 +598,7 @@ export function createWebPreviewStages(context: WebViewContext): readonly Previe
       id: 'relations',
       label: text('web.view.relations'),
       contract: 'common.view/relation-graph-source',
-      module: createRelationGraphViewer({ localizer }),
+      module: relationsStage,
     },
     {
       id: 'text',

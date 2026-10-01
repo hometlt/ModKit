@@ -104,6 +104,8 @@ export const CARD_FALLBACK_MESSAGES = {
   'card.previewUnavailable': 'Preview unavailable: {reason}',
   'card.relatedCapped': 'Related subjects are capped.',
   'card.relatedSubjects': 'Related subjects',
+  'card.relationGraph': 'Relations graph',
+  'card.relationGraphUnavailable': 'Relations graph unavailable: {reason}',
   'card.repository.fact.displayName': 'Display name',
   'card.repository.fact.extensionCount': 'Extensions and components',
   'card.repository.fact.gameCount': 'Games',
