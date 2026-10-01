@@ -153,7 +153,7 @@ describe('model stage materials', () => {
     ]
     const surfaces = sceneMaterials(refs, new Map(), true)
     expect(surfaces.textures).toEqual([])
-    expect(surfaces.materials[0]).toMatchObject({ id: 'hull', shading: 'lambert' })
+    expect(surfaces.materials[0]).toMatchObject({ id: 'hull', shading: 'pbr' })
     expect(surfaces.materials[0]?.baseColorTexture).toBeUndefined()
   })
 
@@ -187,7 +187,7 @@ describe('model stage materials', () => {
       // the factor multiplies the texture
       baseColor: [1, 0.5, 0.5, 0.5],
       baseColorTexture: 'texture:grille.dds',
-      shading: 'lambert',
+      shading: 'pbr',
       doubleSided: true,
       depthWrite: false,
       priority: 3,
@@ -230,6 +230,62 @@ describe('model stage materials', () => {
     expect(surfaces.materials[1]?.teamColor).toEqual({ mask: 'whole', blend: 'multiply' })
     expect(surfaces.materials[2]?.teamColor).toBeUndefined()
     expect(surfaces.textures.map(texture => texture.id)).toContain('texture:mask.dds')
+  })
+
+  it('lights a material by its own glTF metallic-roughness (П11)', () => {
+    const texel = (id: string) => ({
+      id,
+      width: 1,
+      height: 1,
+      rgba: Uint8Array.of(255, 255, 255, 255),
+    })
+    const textures = new Map([
+      ['base.png', texel('texture:base')],
+      ['mr.png', texel('texture:mr')],
+      ['ao.png', texel('texture:ao')],
+      ['glow.png', texel('texture:glow')],
+      ['normal.png', texel('texture:normal')],
+    ])
+    const surfaces = sceneMaterials(
+      [
+        {
+          id: 'metal',
+          metallicFactor: 1,
+          roughnessFactor: 0.25,
+          layers: [
+            { slot: 'baseColor', resourceId: 'base.png' },
+            { slot: 'metallicRoughness', resourceId: 'mr.png' },
+            { slot: 'ao', resourceId: 'ao.png' },
+            { slot: 'emissive', resourceId: 'glow.png' },
+            // on other UVs than the base colour: left out
+            { slot: 'normal', resourceId: 'normal.png', uvSource: 1 },
+          ],
+        },
+        // states nothing: a rough dielectric
+        { id: 'plain' },
+        { id: 'neon', unlit: true },
+      ],
+      textures,
+      true,
+    )
+    expect(surfaces.materials[0]).toMatchObject({
+      shading: 'pbr',
+      pbr: {
+        metallic: 1,
+        roughness: 0.25,
+        metallicRoughnessTexture: 'texture:mr',
+        occlusionTexture: 'texture:ao',
+        emissive: [1, 1, 1],
+        emissiveTexture: 'texture:glow',
+      },
+    })
+    expect(surfaces.materials[0]?.pbr?.normalTexture).toBeUndefined()
+    expect(surfaces.materials[1]).toMatchObject({
+      shading: 'pbr',
+      pbr: { metallic: 0, roughness: 1 },
+    })
+    expect(surfaces.materials[2]).toMatchObject({ shading: 'unlit' })
+    expect(surfaces.materials[2]?.pbr).toBeUndefined()
   })
 
   it('binds a resolved texture to the layer that names it', () => {

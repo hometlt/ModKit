@@ -24,6 +24,7 @@ import type {
   SceneRendererDirectionalLight,
   SceneRendererMaterial,
   SceneRendererMaterialContext,
+  SceneRendererPbr,
   SceneRendererTexture,
   SceneRendererPrimitive,
 } from '@modkit/sdk'
@@ -368,6 +369,54 @@ export function baseColorResourceOf(material: ModelMaterialRef): string | undefi
   return undefined
 }
 
+/** The layer slots a material's glTF textures go by, as the UVM facets and codecs name them. */
+const PBR_SLOTS: Readonly<
+  Record<string, 'metallicRoughness' | 'occlusion' | 'emissive' | 'normal'>
+> = {
+  metallicroughness: 'metallicRoughness',
+  occlusion: 'occlusion',
+  ao: 'occlusion',
+  ambientocclusion: 'occlusion',
+  emissive: 'emissive',
+  emission: 'emissive',
+  normal: 'normal',
+}
+
+/**
+ * A material's glTF metallic-roughness inputs for the base route's `pbr` shading (П11): its
+ * factors, and its metallic-roughness, occlusion, emissive and normal textures where they read the
+ * base colour's UVs. A material that states no factors is a rough dielectric, as Modkit writes one;
+ * an emissive texture without a factor glows at its own colour, as the materializer writes it.
+ */
+export function materialPbr(
+  ref: ModelMaterialRef,
+  textures: ReadonlyMap<string, SceneRendererTexture>,
+  uvSource: number,
+): SceneRendererPbr {
+  const texture = (role: string): string | undefined => {
+    const layer = (ref.layers ?? []).find(
+      item => PBR_SLOTS[slotKey(item.slot)] === role && item.resourceId !== undefined,
+    )
+    if (layer?.resourceId === undefined || (layer.uvSource ?? 0) !== uvSource) return undefined
+    return textures.get(layer.resourceId)?.id
+  }
+  const metallicRoughnessTexture = texture('metallicRoughness')
+  const occlusionTexture = texture('occlusion')
+  const emissiveTexture = texture('emissive')
+  const normalTexture = texture('normal')
+  const emissive =
+    ref.emissiveFactor ?? (emissiveTexture === undefined ? undefined : ([1, 1, 1] as const))
+  return {
+    metallic: ref.metallicFactor ?? 0,
+    roughness: ref.roughnessFactor ?? 1,
+    ...(metallicRoughnessTexture === undefined ? {} : { metallicRoughnessTexture }),
+    ...(occlusionTexture === undefined ? {} : { occlusionTexture }),
+    ...(emissive === undefined ? {} : { emissive }),
+    ...(emissiveTexture === undefined ? {} : { emissiveTexture }),
+    ...(normalTexture === undefined ? {} : { normalTexture }),
+  }
+}
+
 export interface ModelSceneMaterials {
   readonly materials: readonly SceneRendererMaterial[]
   readonly textures: readonly SceneRendererTexture[]
@@ -416,7 +465,10 @@ export function sceneMaterials(
         ref.baseColorFactor ??
         (texture === undefined ? materialColorFor(ref.id) : MODEL_TEXTURED_BASE_COLOR),
       ...(texture === undefined ? {} : { baseColorTexture: texture.id }),
-      shading: shaded && ref.unlit !== true ? ('lambert' as const) : ('unlit' as const),
+      // lit by its own glTF material (П11); an unlit one, or the flat view, draws its colour as is
+      ...(shaded && ref.unlit !== true
+        ? { shading: 'pbr' as const, pbr: materialPbr(ref, textures, base?.uvSource ?? 0) }
+        : { shading: 'unlit' as const }),
       ...(ref.doubleSided === undefined ? {} : { doubleSided: ref.doubleSided }),
       ...(ref.depthWrite === undefined ? {} : { depthWrite: ref.depthWrite }),
       ...(ref.priority === undefined ? {} : { priority: ref.priority }),
