@@ -100,6 +100,7 @@ export const CARD_FALLBACK_MESSAGES = {
   'card.loadingDescription': 'Loading description…',
   'card.locale': 'Locale',
   'card.namedSubject': '{label} subject card',
+  'card.openModel': 'Open model',
   'card.preview': 'Preview',
   'card.previewUnavailable': 'Preview unavailable: {reason}',
   'card.relatedCapped': 'Related subjects are capped.',

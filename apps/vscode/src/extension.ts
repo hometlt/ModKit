@@ -6992,10 +6992,11 @@ async function activateModkit(
     maxEdge: number,
   ) => Promise<{ width: number; height: number; rgba: Uint8Array } | undefined> = async () =>
     undefined
-  const assetImage = async (
-    request: LanguageAssetImageRequest,
-  ): Promise<LanguageAssetImage | undefined> => {
-    const uri = vscode.Uri.parse(request.documentUri, true)
+  /**
+   * Where a path the game names (an asset, a model) lies in the mod chain of the document at `uri`:
+   * a path on disk for a host layer, a `modkit-source:` address for a layer of a content source.
+   */
+  const locateInModChain = async (uri: vscode.Uri, path: string): Promise<string | undefined> => {
     const target = modContextTargetOf(subjectPathOf(uri))
     const source = await requireContentSources().catch(() => undefined)
     if (target === undefined || source?.openModContext === undefined) return undefined
@@ -7007,23 +7008,29 @@ async function activateModkit(
       ...(baseMods === undefined ? {} : { baseMods }),
     })
     try {
-      const located = await modContext.locate(request.path)
+      const located = await modContext.locate(path)
       const layer = modContext.layers.find(item => item.id === located?.layerId)
       if (located === undefined || layer === undefined) return undefined
-      const ref =
-        layer.sourceId === HOST_LAYER_SOURCE_ID
-          ? join(layer.sourcePath, located.path)
-          : vscode.Uri.from({
-              scheme: 'modkit-source',
-              authority: 'battlenet',
-              path: `/${layer.sourceId}/${layer.sourcePath}/${located.path}`,
-            }).toString()
-      const picture = await drawThumbnail(ref, request.maxEdge)
-      if (picture === undefined) return undefined
-      return { mediaType: 'image/png', bytes: await encodeRgbaPng(picture, request.signal) }
+      return layer.sourceId === HOST_LAYER_SOURCE_ID
+        ? join(layer.sourcePath, located.path)
+        : vscode.Uri.from({
+            scheme: 'modkit-source',
+            authority: 'battlenet',
+            path: `/${layer.sourceId}/${layer.sourcePath}/${located.path}`,
+          }).toString()
     } finally {
       await modContext.dispose()
     }
+  }
+
+  const assetImage = async (
+    request: LanguageAssetImageRequest,
+  ): Promise<LanguageAssetImage | undefined> => {
+    const ref = await locateInModChain(vscode.Uri.parse(request.documentUri, true), request.path)
+    if (ref === undefined) return undefined
+    const picture = await drawThumbnail(ref, request.maxEdge)
+    if (picture === undefined) return undefined
+    return { mediaType: 'image/png', bytes: await encodeRgbaPng(picture, request.signal) }
   }
 
   const languageWorkspace = createLanguageWorkspace({
@@ -8494,6 +8501,19 @@ async function activateModkit(
       openInEditor: async path => {
         // A tab of its own: a preview tab would replace the archive the member was opened from.
         await vscode.commands.executeCommand('vscode.open', subjectUriOf(path), { preview: false })
+      },
+      // A card's model: found in its subject's mod chain, opened as a subject of its own (plan 5.5).
+      openModel: async (subject, model) => {
+        const ref = await locateInModChain(subjectUriOf(subject), model)
+        if (ref === undefined) {
+          void vscode.window.showWarningMessage(
+            `Modkit: ${localizer.text('vscode.card.modelNotFound', { model })}`,
+          )
+          return
+        }
+        openResource(
+          ref.startsWith('modkit-source:') ? vscode.Uri.parse(ref) : vscode.Uri.file(ref),
+        )
       },
       // A card's source opens where Resources opens a declaration: the file, at its line.
       openSource: async (address, line, column) => {

@@ -302,6 +302,8 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
         ...(context.openSource === undefined ? {} : { openSource: context.openSource }),
         // A value written from the card changed the file: reopen at the new revision.
         onCommitted: descriptor => context.reopen(descriptor as unknown as Record<string, unknown>),
+        // The embedded model opens as a subject of its own, found in the subject's mod chain.
+        ...(context.openModel === undefined ? {} : { openModel: context.openModel }),
       }),
       // A writable fact edits in place through the subject's own editing arm, as a table cell does.
       usesEditorPorts: true,

@@ -134,6 +134,8 @@ export type ShellRequest =
   /** Show another file in this editor (a gallery pick). */
   /** A file, or with `entry` one member of the container file at `path`. */
   | { readonly op: 'open-in-editor'; readonly path: string; readonly entry?: string }
+  /** The model a card's subject names (a logical path), opened from that subject's mod chain. */
+  | { readonly op: 'open-model'; readonly subject: string; readonly model: string }
   /** A card's source: the declaring file, at its zero-based line and column when known. */
   | {
       readonly op: 'open-source'

@@ -706,6 +706,14 @@ async function mount(
         },
         // The recording's other view: its 2D player and its 3D world follow one transport.
         showStage: stageId => editors.showView(stageId),
+        // The model a card's subject names: the extension host finds it in that subject's mod chain.
+        openModel(model) {
+          const subject = focused ?? snapshot.openPath
+          if (subject === undefined) return
+          void bridge
+            .request({ op: 'open-model', subject, model })
+            .catch((error: unknown) => say(describe(error)))
+        },
         // A card's source: the extension host shows the declaring file at its line.
         openSource(location) {
           void bridge

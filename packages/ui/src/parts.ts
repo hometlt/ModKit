@@ -506,6 +506,7 @@ export const PARTS = Object.freeze([
   'image-editing.select',
   'image-editing.check',
   'card.preview',
+  'card.preview-open',
 
   // relation graph
   'graph',

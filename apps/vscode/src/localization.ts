@@ -382,6 +382,7 @@ const EN_MESSAGES = Object.freeze({
   'vscode.language.incomplete': 'Modkit: the first {count} results — the list is incomplete',
   'vscode.map.installationAmbiguous': 'Several installations of the game were found. Choose the one maps open with, then open the map again.',
   'vscode.map.chooseInstallation': 'Choose Installation',
+  'vscode.card.modelNotFound': '{model} is not in the mod chain of this subject.',
   'vscode.webview.noCodecClaimed':
     '{name} — no codec claimed it ({reason}); showing the raw bytes.',
   'vscode.webview.mapWorldUnavailable':
@@ -922,6 +923,7 @@ const RU_MESSAGES: Readonly<Record<keyof typeof EN_MESSAGES, string>> = Object.f
   'vscode.language.incomplete': 'Modkit: первые {count} результатов — список неполный',
   'vscode.map.installationAmbiguous': 'Найдено несколько установок игры. Выберите, с какой открывать карты, и откройте карту снова.',
   'vscode.map.chooseInstallation': 'Выбрать установку',
+  'vscode.card.modelNotFound': '{model} нет в цепочке модов этого субъекта.',
   'vscode.webview.noCodecClaimed':
     '{name} — ни один кодек не распознал файл ({reason}); показаны исходные байты.',
   'vscode.webview.mapWorldUnavailable':

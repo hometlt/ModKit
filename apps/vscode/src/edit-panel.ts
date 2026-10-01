@@ -90,6 +90,8 @@ export interface EditPanelOptions {
   openArchiveEntry?(entry: string): Promise<void>
   /** Show a card's source in the editor, at its line when the publisher knows it. */
   openSource?(location: CardLocation): void
+  /** Open the model a card's subject names in a tab of its own. */
+  openModel?(model: string): void
   /** Switch the open subject to another of its views (the replay's 3D world); false when absent. */
   showStage?(stageId: string): Promise<boolean>
   /** A file-manager action on the shown archive; `true` when it changed. */

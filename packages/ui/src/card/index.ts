@@ -1354,6 +1354,8 @@ export interface SubjectCardViewerOptions {
    * new revision (the session the card read was pinned to the old one).
    */
   readonly onCommitted?: (descriptor: AnyDescriptor) => void
+  /** Opens the model a subject names (`identity.model`) as a subject of its own, in its own tab. */
+  readonly openModel?: (model: string) => void
 }
 
 export function createSubjectCardViewer(options: SubjectCardViewerOptions = {}): ViewerModule {
@@ -1495,6 +1497,7 @@ export function createSubjectCardViewer(options: SubjectCardViewerOptions = {}):
               pageScope,
               localizer,
               options.previews,
+              options.openModel,
             )
             const card = createSubjectCard(document, {
               label: localizer.text('card.subject'),
@@ -1809,6 +1812,7 @@ async function embedRelatedModel(
   scope: ViewerMountScope,
   localizer: UiLocalizer,
   previews: SubjectCardViewerOptions['previews'],
+  openModel?: (model: string) => void,
 ): Promise<readonly CardSection[]> {
   if (source.openModel === undefined) return sections
   const model = (await source.summary(scope.signal)).identity.model
@@ -1822,9 +1826,25 @@ async function embedRelatedModel(
     async host => {
       host.dataset['model'] = model
       const module = previews?.model ?? (await defaultPreviewStage('model', localizer))
-      return scope.signal.aborted
-        ? undefined
-        : module.mount({ ...args, container: host, slot, sources, signal: scope.signal })
+      if (scope.signal.aborted) return undefined
+      const mount = await module.mount({
+        ...args,
+        container: host,
+        slot,
+        sources,
+        signal: scope.signal,
+      })
+      // the model as a subject of its own: its codec's views, sections and conversions in a tab
+      if (openModel !== undefined) {
+        const open = host.ownerDocument.createElement('button')
+        open.type = 'button'
+        open.textContent = localizer.text('card.openModel')
+        open.title = model
+        setPart(open, 'card.preview-open')
+        open.addEventListener('click', () => openModel(model))
+        host.append(open)
+      }
+      return mount
     },
   )
   const at = sections.findIndex(item => item.kind !== 'header')
