@@ -8,8 +8,10 @@ const repoRoot = resolve(import.meta.dirname, '..', '..')
 const commonRoot = join(repoRoot, 'extensions')
 
 describe('hand-authored linked extension entries', () => {
+  // A TypeScript root (java, lua) ships its built dist, not a hand-authored JavaScript entry.
   const extensions = authoredExtensionRootsRelativeTo(commonRoot)
     .filter(({ directory }) => existsSync(join(directory, 'contributions')))
+    .filter(({ directory }) => !existsSync(join(directory, 'tsconfig.json')))
     .sort((left, right) => left.relativePath.localeCompare(right.relativePath))
 
   it.each(extensions)('$relativePath mentions every contribution manifest', extension => {
@@ -34,7 +36,7 @@ describe('hand-authored linked extension entries', () => {
     const lines = readFileSync(join(commonRoot, 'images', 'src', 'linked.js'), 'utf8')
       .split(/\r?\n/u)
       .filter(line => line.trim().length > 0)
-    expect(lines).toHaveLength(102)
+    expect(lines).toHaveLength(106)
   })
 
   it('has no generated linked-extension package or emitter', () => {

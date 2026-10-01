@@ -124,7 +124,7 @@
         "modkit/tiff",
         "modkit/webp"
       ],
-      "digest": "sha256:e5571c446de17448bc4739ea1e718479b5f063739907f82bb564530b5d557097"
+      "digest": "sha256:d938d0ba220bc50b1b09d3daae34dc0143ec6fc82ba857ad883400552d75f08c"
     },
     {
       "name": "java",
@@ -163,7 +163,7 @@
       "declared": true,
       "coordinate": "modkit/translation",
       "contributions": ["modkit/translation"],
-      "digest": "sha256:aa43fef75ca70cd9176c0435e4d2b1a271a770947386c9ce7d18ddad6e6a7dd5"
+      "digest": "sha256:24969c260bd0b8403cb0edb0c092ccc09fdc3a3bc25d9189ee69d6f7665de58e"
     },
     {
       "name": "vector",

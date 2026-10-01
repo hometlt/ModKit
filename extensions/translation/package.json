@@ -8,6 +8,7 @@
     ".": "./src/index.js",
     "./provider": "./src/provider.js",
     "./backends": "./src/backends.js",
+    "./linked": "./src/linked.js",
     "./package.json": "./package.json"
   },
   "files": [

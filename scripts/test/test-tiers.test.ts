@@ -27,7 +27,8 @@ describe('1C test tier routing', () => {
   it('routes every current root Vitest file to exactly one owner or real tier', () => {
     expect(new Set([...owner, ...real]).size).toBe(all.length)
     expect(owner).not.toContainEqual(expect.stringMatching(/(?:corpus[^/]*|-real)\.test\.ts$/u))
-    expect(real).toEqual([
+    // files named *-real or *corpus* route themselves; only these are listed by hand
+    expect(real.filter(file => !/(?:corpus[^/]*|-real)\.test\.ts$/u.test(file))).toEqual([
       'apps/web/test/edit-panel.test.ts',
       'apps/web/test/embed.test.ts',
       'packages/ui/test/browser-e2e.test.ts',
@@ -37,13 +38,9 @@ describe('1C test tier routing', () => {
 
   it('keeps quick inside owner and all flattened image tests under root ownership', () => {
     expect(QUICK_TEST_INCLUDE.every(file => owner.includes(file))).toBe(true)
-    expect(owner.filter(file => file.startsWith('extensions/images/test/'))).toEqual([
-      'extensions/images/test/ani-raster-decode.test.ts',
-      'extensions/images/test/astc-ordinary-ldr.test.ts',
-      'extensions/images/test/astc-void-extent.test.ts',
-      'extensions/images/test/dds-subresources.test.ts',
-      'extensions/images/test/eac-r11-decode.test.ts',
-    ])
+    const images = all.filter(file => file.startsWith('extensions/images/test/'))
+    expect(images.length).toBeGreaterThan(0)
+    expect(owner.filter(file => file.startsWith('extensions/images/test/'))).toEqual(images)
   })
 
   it('keeps future corpus and real-name patterns visible in the real config', () => {
