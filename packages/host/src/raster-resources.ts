@@ -167,17 +167,23 @@ function ownedCompressedTexture(
 /**
  * What a logical raster id names after its last `#` (resourceIdParameters): a named atlas area
  * (`textures/tex.gaf#region=Metal01`), one frame of a many-frame image (`gi.shp#frame=3`), or both
- * (an area of that frame). A parameter list of other words stays part of the name, as before; a
- * frame that is no nonnegative integer is refused rather than read as a name.
+ * (an area of that frame), and its palette indices instead of its colours (`#plane=indices`). A
+ * parameter list of other words stays part of the name, as before; a frame that is no nonnegative
+ * integer, or another plane, is refused rather than read as a name.
  */
 export function rasterIdParameters(
   logicalId: string,
-): Readonly<{ name: string; region?: string; frame?: number }> {
+): Readonly<{ name: string; region?: string; frame?: number; plane?: 'indices' }> {
   const { name, parameters } = resourceIdParameters(logicalId)
   const keys = Object.keys(parameters)
-  if (keys.length === 0 || keys.some(key => key !== 'region' && key !== 'frame'))
+  if (
+    keys.length === 0 ||
+    keys.some(key => key !== 'region' && key !== 'frame' && key !== 'plane')
+  )
     return { name: logicalId }
-  const { region, frame } = parameters
+  const { region, frame, plane } = parameters
+  if (plane !== undefined && plane !== 'indices')
+    throw new TypeError('raster id plane must be indices')
   if (region !== undefined && region.length === 0)
     throw new TypeError('raster id region must name an area')
   if (
@@ -189,7 +195,36 @@ export function rasterIdParameters(
     name,
     ...(region === undefined ? {} : { region }),
     ...(frame === undefined ? {} : { frame: Number(frame) }),
+    ...(plane === undefined ? {} : { plane: 'indices' as const }),
   }
+}
+
+/**
+ * A palette-index region (`plane: 'indices'`, gray8) as the RGBA texture every reader takes: the
+ * index in red, green and blue, opaque. Undefined when the codec returned no bounded gray8 region.
+ */
+function indexPlaneRgba(
+  region: RasterRegion,
+  width: number,
+  height: number,
+): RasterRegion | undefined {
+  if (
+    region.width !== width ||
+    region.height !== height ||
+    region.pixelFormat !== 'gray8' ||
+    !Number.isSafeInteger(region.rowStride) ||
+    region.rowStride < width ||
+    !(region.pixels instanceof Uint8Array) ||
+    region.rowStride * (height - 1) + width > region.pixels.length
+  )
+    return undefined
+  const rgba = new Uint8Array(width * height * 4)
+  for (let y = 0; y < height; y += 1)
+    for (let x = 0; x < width; x += 1) {
+      const index = region.pixels[y * region.rowStride + x]!
+      rgba.set([index, index, index, 255], (y * width + x) * 4)
+    }
+  return Object.freeze({ width, height, rowStride: width * 4, pixelFormat: 'rgba8', pixels: rgba })
 }
 
 export function createSubjectRasterResources(
@@ -257,6 +292,8 @@ export function createSubjectRasterResources(
       let atlasRegion: string | undefined
       /** One frame of a many-frame image (`gi.shp#frame=3`): an image of its own, of one frame. */
       let frameOnly: number | undefined
+      /** The image's palette indices (`#plane=indices`), at level 0: a ramp reads them. */
+      let indices = false
       try {
         let source: ArtifactByteSource
         let hint: { path?: string; mediaType?: string } = {}
@@ -289,6 +326,9 @@ export function createSubjectRasterResources(
           }
           atlasRegion = parameters.region
           frameOnly = parameters.frame
+          indices = parameters.plane === 'indices'
+          // indices are never averaged into a smaller level
+          if (indices) selection = { ...selection, mipLevel: 0 }
           if (frameOnly !== undefined && (selection.frame ?? 0) !== 0)
             return refusal(
               'x3.host/raster-selection-invalid',
@@ -380,8 +420,15 @@ export function createSubjectRasterResources(
         )
         releases.push(() => raster.release())
         const info = Object.freeze({ ...(await raster.value.info(signal)) })
+        if (indices && info.indexed !== true)
+          return refusal(
+            'x3.host/raster-plane-missing',
+            'The image stores no palette indices to read.',
+            provenance,
+          )
         const compressedPlan =
           compressedFormats.size === 0 ||
+          indices ||
           atlasRegion !== undefined ||
           frameOnly !== undefined ||
           raster.value.readCompressed === undefined ||
@@ -446,18 +493,21 @@ export function createSubjectRasterResources(
               `The image has no atlas region named ${atlasRegion}.`,
               provenance,
             )
-          const region = await raster.value.readRegion(
+          const read = await raster.value.readRegion(
             {
               x: area.x,
               y: area.y,
               width: area.width,
               height: area.height,
               ...(frameOnly === undefined ? {} : { frame: frameOnly }),
-              pixelFormat: 'rgba8',
+              ...(indices
+                ? { pixelFormat: 'gray8' as const, plane: 'indices' as const }
+                : { pixelFormat: 'rgba8' as const }),
               maxBytes,
             },
             signal,
           )
+          const region = indices ? (indexPlaneRgba(read, area.width, area.height) ?? read) : read
           if (
             region.width !== area.width ||
             region.height !== area.height ||
@@ -509,18 +559,21 @@ export function createSubjectRasterResources(
               'The raster context is no longer readable.',
               provenance,
             )
-          const region = await raster.value.readRegion(
+          const read = await raster.value.readRegion(
             {
               x: 0,
               y: 0,
               width: plan.width,
               height: plan.height,
               ...subresource,
-              pixelFormat: 'rgba8',
+              ...(indices
+                ? { pixelFormat: 'gray8' as const, plane: 'indices' as const }
+                : { pixelFormat: 'rgba8' as const }),
               maxBytes: remaining,
             },
             signal,
           )
+          const region = indices ? (indexPlaneRgba(read, plan.width, plan.height) ?? read) : read
           signal?.throwIfAborted()
           if (!options.state.live || !options.isAuthorized())
             return refusal(

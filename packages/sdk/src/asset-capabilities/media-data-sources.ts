@@ -52,6 +52,11 @@ export interface RasterImageInfo {
    * different sizes). Cropping one is `readRegion` with its rectangle; absent means no atlas.
    */
   readonly atlasRegions?: readonly RasterAtlasRegion[]
+  /**
+   * The image stores palette indices: `readRegion` with `plane: 'indices'` returns each pixel's
+   * index as `gray8` (a team-colour ramp reads them; a resource id names the plane `#plane=indices`).
+   */
+  readonly indexed?: true
 }
 
 export interface RasterAtlasRegion {
@@ -74,6 +79,8 @@ export interface RasterRegionRequest {
   readonly face?: number
   readonly slice?: number
   readonly pixelFormat: RasterPixelFormat
+  /** `indices`: each pixel's palette index instead of its colour, `gray8` (`RasterImageInfo.indexed`). */
+  readonly plane?: 'indices'
   readonly maxBytes: number
 }
 
