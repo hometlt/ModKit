@@ -54,6 +54,17 @@ export function wikiKinds(
   return kinds.length > 0 ? kinds : [{ count: summary.totalSubjects }]
 }
 
+/** A subject's own id in its kind: the last segment of an address (`…/Unit/Marine` → `Marine`). */
+export function wikiSubjectId(subjectId: string): string {
+  if (!subjectId.includes('://')) return subjectId
+  const tail = subjectId.split('/').filter(Boolean).at(-1) ?? subjectId
+  try {
+    return decodeURIComponent(tail)
+  } catch {
+    return tail
+  }
+}
+
 export function createSubjectWikiViewer(options: SubjectWikiViewerOptions): ViewerModule {
   const localizer = withEnglishUiFallback(options.localizer, CARD_WIKI_FALLBACK_MESSAGES)
   return defineViewerModule({
@@ -245,7 +256,7 @@ export function createSubjectWikiViewer(options: SubjectWikiViewerOptions): View
             if (subject.portrait !== undefined)
               icons.push({ portrait: subject.portrait, canvas: icon })
             element(row, 'span', { text: subject.label })
-            element(row, 'small', { part: 'wiki.id', text: subject.subjectId })
+            element(row, 'small', { part: 'wiki.id', text: wikiSubjectId(subject.subjectId) })
             row.addEventListener('click', () => void openCard(subject, row), {
               signal: scope.signal,
             })

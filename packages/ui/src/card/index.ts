@@ -830,6 +830,29 @@ export function cardRefAction(
   return onNavigate !== undefined && item.href !== undefined ? () => onNavigate(item) : undefined
 }
 
+/**
+ * What a link shows: a source named by its address shows the file's name (and line); the whole
+ * address goes to the tooltip. A long `file:///…` per field otherwise filled a column.
+ */
+export function cardRefLabel(item: CardRef): string {
+  const label = item.label
+  if (!/^[a-z][\w+.-]*:\/\//iu.test(label)) return label
+  const tail =
+    label
+      .replace(/[?#].*$/u, '')
+      .split('/')
+      .filter(Boolean)
+      .at(-1) ?? label
+  let name = tail
+  try {
+    name = decodeURIComponent(tail)
+  } catch {
+    // a malformed escape shows as written
+  }
+  const line = item.location?.line
+  return line === undefined ? name : `${name}:${line + 1}`
+}
+
 function ref(
   document: Document,
   item: CardRef,
@@ -841,8 +864,10 @@ function ref(
   const node = document.createElement(navigable ? 'button' : 'span')
   node.className = 'modkit-card__ref'
   setPart(node, 'card.ref')
-  node.textContent = safeViewerText(item.label, 256)
+  const label = cardRefLabel(item)
+  node.textContent = safeViewerText(label, 256)
   if (item.title !== undefined) node.title = item.title
+  else if (label !== item.label) node.title = item.label
   if (item.dead === true) {
     node.setAttribute('aria-disabled', 'true')
     setState(node, ['disabled'])
@@ -1873,5 +1898,5 @@ export const subjectCardViewer: ViewerModule = createSubjectCardViewer()
 export default subjectCardViewer
 
 export { accordionField }
-export { createSubjectWikiViewer, wikiKinds, WIKI_PAGE_SIZE } from './wiki.js'
+export { createSubjectWikiViewer, wikiKinds, wikiSubjectId, WIKI_PAGE_SIZE } from './wiki.js'
 export type { SubjectWikiViewerOptions } from './wiki.js'
